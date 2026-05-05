@@ -2,6 +2,8 @@
   <div>
     <b-breadcrumb :items="breadcrumbs" />
 
+    <CommentPeriodBanner :component="component" @open-comments-panel="openCommentsPanel" />
+
     <ControlsPageLayout
       :has-selected-rule="!!selectedRule"
       :show-command-bar="true"
@@ -21,6 +23,7 @@
           @open-members="$bvModal.show(`members-modal-${component.id}`)"
           @toggle-panel="togglePanel"
           @spreadsheet-updated="refreshComponent"
+          @download="openExportModal"
         />
       </template>
 
@@ -64,6 +67,7 @@
             :advanced_fields="localAdvancedFields"
             :additional_questions="component.additional_questions"
             @open-related-modal="$bvModal.show('related-rules-modal')"
+            @open-composer="onOpenComposer"
             @toggle-panel="togglePanel"
             @toggle-advanced-fields="toggleAdvancedFields"
           />
@@ -78,6 +82,31 @@
           :read-only="true"
           :rule="selectedRule"
           :rule-stig-id="`${component.prefix}-${selectedRule.rule_id}`"
+        />
+
+        <!-- Comment composer modal. Opens via onOpenComposer
+             when a SectionCommentIcon emits open-composer. -->
+        <CommentComposerModal
+          v-if="selectedRule"
+          :component-id="component.id"
+          :rule-id="selectedRule.id"
+          :rule-displayed-name="`${component.prefix}-${selectedRule.rule_id}`"
+          :initial-section="composerSection"
+          :reply-to-review-id="composerReplyToId"
+          @posted="onComposerPosted"
+          @hidden="onComposerHidden"
+        />
+
+        <!-- Purpose + Format radios.
+             Disposition matrix piggybacks into the Working Copy CSV/Excel
+             outputs when comments exist (Steps 3+4). -->
+        <ExportModal
+          v-model="showExportModal"
+          :components="[component]"
+          :available-modes="availableExportModes"
+          :hide-component-selection="true"
+          @export="executeExport"
+          @cancel="showExportModal = false"
         />
       </template>
 
@@ -95,6 +124,7 @@
           @close-panel="closePanel"
           @component-updated="refreshComponent"
           @rule-selected="handleRuleSelected"
+          @open-reply-composer="onOpenReplyComposer"
         />
       </template>
     </ControlsPageLayout>
@@ -102,7 +132,7 @@
 </template>
 
 <script>
-import { computed } from "vue";
+import { ref } from "vue";
 import axios from "axios";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
@@ -118,6 +148,9 @@ import RuleNavigator from "../rules/RuleNavigator.vue";
 import RuleEditor from "../rules/RuleEditor.vue";
 import RelatedRulesModal from "../rules/RelatedRulesModal.vue";
 import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
+import CommentComposerModal from "./CommentComposerModal.vue";
+import CommentPeriodBanner from "./CommentPeriodBanner.vue";
+import ExportModal from "../shared/ExportModal.vue";
 
 export default {
   name: "ProjectComponent",
@@ -129,6 +162,9 @@ export default {
     RuleEditor,
     RelatedRulesModal,
     ControlsSidepanels,
+    CommentComposerModal,
+    CommentPeriodBanner,
+    ExportModal,
   },
   mixins: [
     DateFormatMixinVue,
@@ -137,6 +173,17 @@ export default {
     ConfirmComponentReleaseMixin,
     SortRulesMixin,
   ],
+  // Provide the component's comment_phase (and a derived `commentsClosed`
+  // boolean) to the rule-editor subtree so SectionCommentIcon can disable
+  // the comment affordance when the window isn't open. Function form
+  // keeps reactivity through Vue 2's non-reactive provide.
+  provide() {
+    return {
+      getCommentPhase: () => this.component.comment_phase || "open",
+      getClosedReason: () => this.component.closed_reason || null,
+      isCommentsClosed: () => (this.component.comment_phase || "open") !== "open",
+    };
+  },
   props: {
     queriedRule: {
       type: Object,
@@ -168,23 +215,23 @@ export default {
     },
   },
   setup(props) {
-    // Use computed to derive rules reactively — toRef on a plain object is not reactive in Vue 2.7
     const componentId = props.initialComponentState.id;
-    const rulesRef = computed(() => props.initialComponentState.rules || []);
+    // Local clone of the rules array so reactivity is owned by Vue (not
+    // the prop). Mutations via this ref reliably propagate through
+    // useRuleSelection → selectedRule → RuleEditor → SectionCommentIcon.
+    // Mirrors the pattern used by Rules.vue in the editor pack.
+    const localRules = ref(structuredClone(props.initialComponentState.rules || []));
 
-    // Use composables
     const { selectedRuleId, openRuleIds, selectedRule, selectRule, deselectRule } =
-      useRuleSelection(rulesRef, componentId, { autoSelectFirst: true });
+      useRuleSelection(localRules, componentId, { autoSelectFirst: true });
 
-    const { filters, counts, setFilter } = useRuleFilters(rulesRef, componentId);
+    const { filters, counts, setFilter } = useRuleFilters(localRules, componentId);
 
     const { activePanel, togglePanel, closePanel } = useSidebar();
 
-    // Backward compatibility aliases
     const handleRuleSelected = selectRule;
     const handleRuleDeselected = deselectRule;
 
-    // Filter update with localStorage persistence
     const updateFilter = (filterName, value) => {
       setFilter(filterName, value);
       localStorage.setItem(`ruleNavigatorFilters-${componentId}`, JSON.stringify(filters.value));
@@ -192,6 +239,7 @@ export default {
     };
 
     return {
+      localRules,
       selectedRuleId,
       openRuleIds,
       selectedRule,
@@ -212,11 +260,24 @@ export default {
       component: this.initialComponentState,
       localAdvancedFields: this.initialComponentState.advanced_fields,
       msg: MESSAGE_LABELS,
+      // section pre-selected on the comment composer when a
+      // SectionCommentIcon click bubbles open-composer up to here.
+      composerSection: null,
+      // top-level review id when the composer is opened in reply mode
+      // (CommentThread's "Reply" buttons emit open-reply-composer up
+      // through ControlsSidepanels → here).
+      composerReplyToId: null,
+      // per-component editor Download surface.
+      // Mode-aware ExportModal (Working Copy / Vendor Submission /
+      // STIG-Ready Publish Draft / Backup) hits the project export
+      // route scoped to this single component.
+      showExportModal: false,
+      availableExportModes: ["working_copy", "vendor_submission", "published_stig", "backup"],
     };
   },
   computed: {
     rules() {
-      return [...this.component.rules].sort(this.compareRules);
+      return [...this.localRules].sort(this.compareRules);
     },
     breadcrumbs() {
       // Build component name with version (e.g., "Test 2 V1R1")
@@ -242,26 +303,74 @@ export default {
       ];
     },
     componentPanels() {
-      return ["details", "metadata", "questions", "comp-history", "comp-reviews"];
+      return ["details", "metadata", "questions", "comp-history"];
     },
     rulePanels() {
       return ["satisfies", "rule-reviews", "rule-history"];
     },
   },
   mounted() {
-    // Handle deep linking to specific rule
     if (this.queriedRule && this.queriedRule.id) {
       this.selectRule(this.queriedRule.id);
-      window.history.pushState({}, "", `/components/${this.component.id}`);
+      // replaceState (not pushState) so back returns to the calling page.
+      window.history.replaceState({}, "", `/components/${this.component.id}`);
     }
   },
   methods: {
+    /**
+     * open the comment composer with a pre-selected section.
+     * Triggered when SectionCommentIcon emits open-composer; the event
+     * bubbles up RuleFormGroup → form → UnifiedRuleForm → RuleEditor.
+     */
+    onOpenComposer(section) {
+      this.composerSection = section;
+      this.composerReplyToId = null;
+      this.$bvModal.show("comment-composer-modal");
+    },
+    onOpenReplyComposer(reviewId) {
+      this.composerSection = null;
+      this.composerReplyToId = reviewId;
+      this.$bvModal.show("comment-composer-modal");
+    },
+    /**
+     * Refresh the rule whose composer just posted (in-place splice into
+     * the rules array) so reactivity reliably propagates to RuleReviews
+     * + the per-section pending-count badges. Object.assign on the whole
+     * component drops Vue 2 reactivity for nested arrays in this prop
+     * tree, so we mirror Rules.vue's per-rule splice pattern.
+     */
+    onComposerPosted() {
+      const ruleId = this.selectedRule?.id;
+      this.composerReplyToId = null;
+      this.composerSection = null;
+      if (!ruleId) {
+        this.refreshComponent();
+        return;
+      }
+      axios
+        .get(`/rules/${ruleId}`, { headers: { Accept: "application/json" } })
+        .then((response) => {
+          const idx = this.localRules.findIndex((r) => r.id === ruleId);
+          if (idx >= 0) {
+            this.localRules.splice(idx, 1, response.data);
+          }
+        })
+        .catch(this.alertOrNotifyResponse);
+    },
+    onComposerHidden() {
+      this.composerReplyToId = null;
+    },
+    openCommentsPanel() {
+      globalThis.location.href = `/components/${this.component.id}/triage`;
+    },
     refreshComponent() {
       axios
         .get(`/components/${this.component.id}.json`)
         .then((response) => {
-          // Update component properties in-place for Vue reactivity
           Object.assign(this.component, response.data);
+          if (response.data.rules) {
+            this.localRules = structuredClone(response.data.rules);
+          }
         })
         .catch((error) => {
           this.alertOrNotifyResponse(error);
@@ -280,6 +389,39 @@ export default {
           this.alertOrNotifyResponse(response);
           // Update local data property (not prop) for proper reactivity through slots
           this.localAdvancedFields = advanced_fields;
+        })
+        .catch(this.alertOrNotifyResponse);
+    },
+    /**
+     * open the unified Download/ExportModal. Listened from
+     * ControlsCommandBar's Download button.
+     */
+    openExportModal() {
+      this.showExportModal = true;
+    },
+    /**
+     * emitted by ExportModal when the user confirms export.
+     * Mirrors Project.vue's pattern but scopes component_ids to this single
+     * component. Disposition data piggybacks the CSV/Excel formats per
+     * Steps 3 and 4 — no extra wiring needed here.
+     */
+    executeExport({
+      type,
+      mode,
+      componentIds,
+      includeSrg,
+      includeMemberships,
+      excludeSatisfiedBy,
+    }) {
+      let url = `/projects/${this.project.id}/export/${type}?component_ids=${componentIds.join(",")}`;
+      if (mode) url += `&mode=${mode}`;
+      if (includeSrg) url += `&include_srg=true`;
+      if (includeMemberships === false) url += `&include_memberships=false`;
+      if (excludeSatisfiedBy) url += `&exclude_satisfied_by=true`;
+      axios
+        .get(url)
+        .then(() => {
+          window.open(url);
         })
         .catch(this.alertOrNotifyResponse);
     },

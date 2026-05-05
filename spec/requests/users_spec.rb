@@ -80,7 +80,8 @@ RSpec.describe 'Users' do
       expect(response.content_type).to include('application/json')
 
       json_response = response.parsed_body
-      expect(json_response['toast']).to eq('Successfully updated user')
+      expect(json_response['toast']).to be_a(Hash)
+      expect(json_response['toast']['title']).to eq('User updated.')
 
       target_user.reload
       expect(target_user.admin).to be true
@@ -160,7 +161,8 @@ RSpec.describe 'Users' do
       expect(response).to have_http_status(:ok)
       expect(response.content_type).to include('application/json')
       json = response.parsed_body
-      expect(json['toast']).to eq('Successfully removed user.')
+      expect(json['toast']).to be_a(Hash)
+      expect(json['toast']['title']).to eq('User removed.')
     end
 
     it 'returns JSON error response on failure' do
@@ -369,8 +371,10 @@ RSpec.describe 'Users' do
         expect(response).to have_http_status(:ok),
                             "Expected 200 but got #{response.status}. Body: #{response.body.truncate(500)}"
         json = response.parsed_body
-        expect(json['toast']).to include('Password reset')
-        expect(json['toast']).to include(target_user.email)
+        # canonical {title, message, variant} toast shape.
+        expect(json['toast']).to be_a(Hash)
+        expect(json['toast']['message'].join).to include('Password reset')
+        expect(json['toast']['message'].join).to include(target_user.email)
       end
 
       it 'does not leak exception message on internal error (71q.5)' do
@@ -423,7 +427,9 @@ RSpec.describe 'Users' do
         expect(response).to have_http_status(:ok)
         json = response.parsed_body
         expect(json['reset_url']).to include('reset_password_token=')
-        expect(json['toast']).to include('Reset link generated')
+        # canonical {title, message, variant} toast shape.
+        expect(json['toast']).to be_a(Hash)
+        expect(json['toast']['message'].join).to include('Reset link generated')
       end
 
       it 'sets reset_password_token on the user' do
@@ -483,7 +489,9 @@ RSpec.describe 'Users' do
         expect(response).to have_http_status(:ok),
                             "Expected 200 but got #{response.status}. Body: #{response.body.truncate(500)}"
         json = response.parsed_body
-        expect(json['toast']).to include(target_user.email)
+        # canonical {title, message, variant} toast shape.
+        expect(json['toast']).to be_a(Hash)
+        expect(json['toast']['message'].join).to include(target_user.email)
 
         # Verify the password actually works
         target_user.reload
@@ -558,6 +566,136 @@ RSpec.describe 'Users' do
       expect(response).to have_http_status(:ok)
       json = response.parsed_body
       expect(json['reset_url']).to include('reset_password_token=')
+    end
+  end
+
+  describe 'GET /users/:id/comments (My Comments)' do
+    let!(:my_project) { create(:project) }
+    let!(:srg) { create(:security_requirements_guide) }
+    let!(:my_component) { create(:component, project: my_project, based_on: srg) }
+    let!(:other_project) { create(:project) }
+    let!(:other_component) { create(:component, project: other_project, based_on: srg) }
+    let!(:viewer) { create(:user) }
+    let!(:other_viewer) { create(:user) }
+
+    before do
+      Membership.find_or_create_by!(user: viewer, membership: my_project) { |m| m.role = 'viewer' }
+      Membership.find_or_create_by!(user: viewer, membership: other_project) { |m| m.role = 'viewer' }
+      Membership.find_or_create_by!(user: other_viewer, membership: my_project) { |m| m.role = 'viewer' }
+
+      @my_c1 = Review.create!(action: 'comment', comment: 'one', user: viewer,
+                              rule: my_component.rules.first, section: 'check_content')
+      @my_c2 = Review.create!(action: 'comment', comment: 'two', user: viewer,
+                              rule: other_component.rules.first, section: nil)
+      @other_users_c = Review.create!(action: 'comment', comment: 'theirs', user: other_viewer,
+                                      rule: my_component.rules.first)
+      @my_reply = Review.create!(action: 'comment', comment: 'reply', user: viewer,
+                                 rule: my_component.rules.first,
+                                 responding_to_review_id: @other_users_c.id)
+    end
+
+    context 'as the viewer requesting their own comments' do
+      before { sign_in viewer }
+
+      it 'returns top-level comments across all projects, excluding replies and other users' do
+        get "/users/#{viewer.id}/comments", as: :json
+
+        expect(response).to have_http_status(:success)
+        ids = response.parsed_body['rows'].pluck('id')
+        expect(ids).to include(@my_c1.id, @my_c2.id)
+        expect(ids).not_to include(@other_users_c.id, @my_reply.id)
+      end
+
+      it 'returns DISA-native triage_status + XCCDF section keys plus enriched fields' do
+        get "/users/#{viewer.id}/comments", as: :json
+        first_row = response.parsed_body['rows'].find { |r| r['id'] == @my_c1.id }
+        expect(first_row['triage_status']).to eq('pending')
+        expect(first_row['section']).to eq('check_content')
+        expect(first_row['project_name']).to eq(my_project.name)
+        expect(first_row['component_name']).to eq(my_component.name)
+      end
+
+      it 'filters by triage_status' do
+        @my_c1.update!(triage_status: 'concur', triage_set_by_id: admin_user.id, triage_set_at: Time.current)
+        get "/users/#{viewer.id}/comments", params: { triage_status: 'concur' }, as: :json
+        ids = response.parsed_body['rows'].pluck('id')
+        expect(ids).to eq([@my_c1.id])
+      end
+
+      it 'filters by project_id' do
+        get "/users/#{viewer.id}/comments", params: { project_id: my_project.id }, as: :json
+        ids = response.parsed_body['rows'].pluck('id')
+        expect(ids).to eq([@my_c1.id])
+      end
+    end
+
+    context "as a peer member requesting another user's comments on a shared project" do
+      before { sign_in other_viewer }
+
+      it 'returns the comments visible on shared projects, omits projects the peer cannot see' do
+        # other_viewer is a member of my_project (shared with viewer) but NOT
+        # of other_project. So @my_c1 (on my_component) is visible; @my_c2
+        # (on other_component) is not.
+        get "/users/#{viewer.id}/comments", as: :json
+
+        expect(response).to have_http_status(:success)
+        ids = response.parsed_body['rows'].pluck('id')
+        expect(ids).to include(@my_c1.id)
+        expect(ids).not_to include(@my_c2.id)
+      end
+    end
+
+    context "as a non-member requesting another user's comments" do
+      let!(:outsider) { create(:user) }
+
+      before { sign_in outsider }
+
+      it 'returns an empty list (cross-tenant leak guard)' do
+        get "/users/#{viewer.id}/comments", as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body['rows']).to eq([])
+      end
+    end
+
+    context "as admin requesting another user's comments" do
+      before { sign_in admin_user }
+
+      it 'returns the comments across all projects (admins see everything)' do
+        get "/users/#{viewer.id}/comments", as: :json
+
+        expect(response).to have_http_status(:success)
+        ids = response.parsed_body['rows'].pluck('id')
+        expect(ids).to include(@my_c1.id, @my_c2.id)
+      end
+    end
+
+    context 'requesting a non-existent user' do
+      before { sign_in admin_user }
+
+      it 'returns 404' do
+        get '/users/9999999/comments', as: :json
+        expect(response).to have_http_status(:not_found)
+      end
+    end
+
+    context 'unauthenticated' do
+      it 'redirects to sign-in' do
+        get "/users/#{viewer.id}/comments", as: :json
+        expect(response.status).to be_in([302, 401])
+      end
+    end
+
+    # The same path serves the standalone My Comments page for HTML
+    # requests; the Vue mount point on the page consumes the JSON.
+    context 'HTML format (My Comments page)' do
+      before { sign_in viewer }
+
+      it 'renders the page successfully' do
+        get "/users/#{viewer.id}/comments"
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('mycommentspage')
+      end
     end
   end
 end

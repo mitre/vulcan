@@ -192,6 +192,7 @@
           @unlock="unlockRule($event)"
           @open-review-modal="$bvModal.show('review-modal')"
           @open-related-modal="$bvModal.show('related-rules-modal')"
+          @open-composer="onOpenComposer"
           @toggle-panel="togglePanel"
           @toggle-advanced-fields="toggleAdvancedFields"
           @toggle-section-lock="toggleSectionLock"
@@ -213,6 +214,21 @@
         @close-panel="closePanel"
         @component-updated="refreshComponent"
         @rule-selected="handleRuleSelected"
+        @open-reply-composer="onOpenReplyComposer"
+      />
+
+      <!-- Comment composer modal. Opens via onOpenComposer
+           when a SectionCommentIcon emits open-composer. Lives in the
+           right-panels slot but b-modal portals to the document body. -->
+      <CommentComposerModal
+        v-if="selectedRule"
+        :component-id="component.id"
+        :rule-id="selectedRule.id"
+        :rule-displayed-name="`${component.prefix}-${selectedRule.rule_id}`"
+        :initial-section="composerSection"
+        :reply-to-review-id="composerReplyToId"
+        @posted="onComposerPosted"
+        @hidden="onComposerHidden"
       />
     </template>
   </ControlsPageLayout>
@@ -229,6 +245,7 @@ import RuleFilterBar from "./RuleFilterBar.vue";
 import ControlsCommandBar from "../shared/ControlsCommandBar.vue";
 import ControlsPageLayout from "./ControlsPageLayout.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
+import CommentComposerModal from "../components/CommentComposerModal.vue";
 import { useRuleSelection, useRuleFilters, useSidebar } from "../../composables";
 import { useRuleAutosave } from "../../composables/useRuleAutosave";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
@@ -253,8 +270,19 @@ export default {
     NewRuleModalForm,
     Multiselect,
     ControlsSidepanels,
+    CommentComposerModal,
   },
   mixins: [DateFormatMixinVue, AlertMixinVue, RoleComparisonMixin],
+  // Mirror ProjectComponent's provide chain so SectionCommentIcon and
+  // RuleActionsToolbar can read the component's comment_phase from
+  // either host page.
+  provide() {
+    return {
+      getCommentPhase: () => this.component.comment_phase || "open",
+      getClosedReason: () => this.component.closed_reason || null,
+      isCommentsClosed: () => (this.component.comment_phase || "open") !== "open",
+    };
+  },
   props: {
     effectivePermissions: {
       type: String,
@@ -424,6 +452,12 @@ export default {
       filteredSelectRules: [],
       selectedSatisfiesRuleIds: [],
       showSRGIdChecked: null,
+      // section pre-selected on the comment composer when a
+      // SectionCommentIcon click bubbles open-composer up to here.
+      composerSection: null,
+      // top-level review id when the composer is opened in reply mode
+      // via CommentThread's "Reply" buttons.
+      composerReplyToId: null,
     };
   },
   computed: {
@@ -484,6 +518,35 @@ export default {
   },
   methods: {
     selectedCountLabel,
+    /**
+     * open the comment composer with a pre-selected section.
+     * Triggered when SectionCommentIcon emits open-composer; the event
+     * bubbles up RuleFormGroup → RuleForm/CheckForm/DisaRuleDescriptionForm
+     * → UnifiedRuleForm → RuleEditor → here.
+     */
+    onOpenComposer(section) {
+      this.composerSection = section;
+      this.composerReplyToId = null;
+      this.$bvModal.show("comment-composer-modal");
+    },
+    onOpenReplyComposer(reviewId) {
+      this.composerSection = null;
+      this.composerReplyToId = reviewId;
+      this.$bvModal.show("comment-composer-modal");
+    },
+    /**
+     * after a comment is posted, refresh the rule so the
+     * thread + per-section pending-count badge update without a reload.
+     */
+    onComposerPosted() {
+      if (this.selectedRule) {
+        this.$root.$emit("refresh:rule", this.selectedRule.id, "all");
+      }
+      this.composerReplyToId = null;
+    },
+    onComposerHidden() {
+      this.composerReplyToId = null;
+    },
     updateShowSRGIdChecked() {
       const componentId = this.component.id;
       this.showSRGIdChecked = localStorage.getItem(`showSRGIdChecked-${componentId}`);

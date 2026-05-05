@@ -43,7 +43,9 @@ RSpec.describe 'POST /users/:id/lock' do
       post "/users/#{target_user.id}/lock", headers: json_headers
 
       json = response.parsed_body
-      expect(json['toast']).to include('locked')
+      # canonical {title, message, variant} toast shape.
+      expect(json['toast']).to be_a(Hash)
+      expect(json['toast']['message'].join).to include('locked')
     end
 
     it 'returns user data with lock fields' do

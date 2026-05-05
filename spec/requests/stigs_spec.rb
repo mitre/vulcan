@@ -132,10 +132,33 @@ RSpec.describe 'Stigs' do
 
       expect(response).to have_http_status(:ok)
       json = response.parsed_body
-      expect(json['toast']).to include('Successfully added')
+      expect(json['toast']).to be_a(Hash)
+      expect(json['toast']['title']).to eq('STIG added.')
+      expect(json['toast']['message'].join).to include('Successfully added')
 
       temp_file.close
       temp_file.unlink
+    end
+
+    # opt the success path into the canonical-toast-response
+    # shared example so any future regression on this endpoint surfaces
+    # alongside the controller-specific assertions above.
+    context 'success-path toast shape' do
+      let(:temp_file) do
+        f = Tempfile.new(['test_stig', '.xml'])
+        f.write(stig.xml)
+        f.rewind
+        f
+      end
+
+      before do
+        sign_in user
+        post '/stigs', params: { file: Rack::Test::UploadedFile.new(temp_file.path, 'application/xml') }
+      end
+
+      after { temp_file.close && temp_file.unlink }
+
+      it_behaves_like 'a canonical toast response'
     end
   end
 
@@ -181,7 +204,9 @@ RSpec.describe 'Stigs' do
         expect(response).to have_http_status(:ok)
         expect(response.content_type).to include(application_json)
         json = response.parsed_body
-        expect(json['toast']).to include('Successfully removed')
+        expect(json['toast']).to be_a(Hash)
+        expect(json['toast']['title']).to eq('STIG removed.')
+        expect(json['toast']['message'].join).to include('Successfully removed')
       end
 
       it 'returns JSON error response on failure' do

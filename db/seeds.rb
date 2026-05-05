@@ -33,6 +33,30 @@ unless User.exists?(admin: true)
   puts "  Demo admin created (password from #{ENV.key?('VULCAN_SEED_ADMIN_PASSWORD') ? 'VULCAN_SEED_ADMIN_PASSWORD env var' : 'default'})"
 end
 
+# Demo role-tier users (PR #717 follow-up): email-as-role pattern mirroring
+# admin@example.com so manual + Playwright testing has a 30-second login/logout
+# loop across tiers. Project-level role wiring happens after Projects exist
+# (see "Setting demo role tiers on projects" block below).
+DEMO_ROLE_USERS = {
+  'viewer@example.com' => { name: 'Demo Viewer', role: 'viewer' },
+  'author@example.com' => { name: 'Demo Author', role: 'author' },
+  'reviewer@example.com' => { name: 'Demo Reviewer', role: 'reviewer' }
+}.freeze
+
+puts 'Creating demo role-tier users...'
+DEMO_ROLE_USERS.each do |email, attrs|
+  user = User.find_or_initialize_by(email: email)
+  if user.new_record?
+    user.name = attrs[:name]
+    user.password = DEMO_PASSWORD
+    user.skip_confirmation!
+    user.save!
+    puts "  Created #{email} (#{attrs[:role]} tier)"
+  else
+    puts "  Already exists: #{email}"
+  end
+end
+
 puts "Populating database for demo use:\n\n"
 
 # Helper to load an XCCDF XML file and create the corresponding model record.
@@ -113,6 +137,28 @@ puts 'Adding Users to Projects...'
 end
 puts 'Project Members added'
 
+# Upgrade the demo role users from default 'viewer' to their assigned tier on each
+# demo project. Idempotent: skips when role already matches.
+puts 'Setting demo role tiers on projects...'
+demo_projects = [photon3, photon4, vsphere, container_platform]
+DEMO_ROLE_USERS.each do |email, attrs|
+  user = User.find_by(email: email)
+  next unless user
+
+  demo_projects.each do |project|
+    membership = Membership.find_or_initialize_by(
+      user: user,
+      membership_type: 'Project',
+      membership_id: project.id
+    )
+    next if membership.role == attrs[:role]
+
+    membership.role = attrs[:role]
+    membership.save!
+  end
+end
+puts 'Demo role tiers set'
+
 # Counter cache update
 Project.find_each { |p| Project.reset_counters(p.id, :memberships_count) }
 
@@ -177,7 +223,8 @@ puts 'Creating Components...'
 
 photon3_v1r1 = seed_component(
   project: photon3, name: 'Photon OS 3', title: 'Photon OS 3 STIG Readiness Guide',
-  prefix: 'PHOS-03', based_on: gpos_srg, version: 1, release: 1
+  prefix: 'PHOS-03', based_on: gpos_srg, version: 1, release: 1,
+  admin_name: 'Photon OS Maintainer', admin_email: 'photon-team@example.com'
 )
 photon3_v1r1.reload
 photon3_v1r1.rules.update(locked: true)
@@ -192,7 +239,8 @@ end
 
 photon4_v1r1 = seed_component(
   project: photon4, name: 'Photon OS 4', title: 'Photon OS 4 STIG Readiness Guide',
-  prefix: 'PHOS-04', based_on: gpos_srg
+  prefix: 'PHOS-04', based_on: gpos_srg,
+  admin_name: 'Photon OS Maintainer', admin_email: 'photon-team@example.com'
 )
 photon4_v1r1.reload
 photon4_v1r1.rules.update(locked: false)
@@ -200,7 +248,8 @@ photon4_v1r1.rules.update(locked: false)
 photon3_v1r1_overlay = seed_component(
   project: vsphere, name: photon3_v1r1.name, title: 'Photon OS 3 Overlay for vSphere',
   prefix: photon3_v1r1.prefix, based_on: photon3_v1r1.based_on,
-  component_id: photon3_v1r1.id
+  component_id: photon3_v1r1.id,
+  admin_name: 'vSphere Maintainer', admin_email: 'vsphere-team@example.com'
 )
 # Overlay components need rules duplicated from the parent component
 if photon3_v1r1_overlay.rules.empty?
@@ -212,25 +261,34 @@ photon3_v1r1_overlay.rules.update(locked: false)
 
 seed_component(
   project: vsphere, name: 'vCenter Perf', title: 'vCenter Performance Service STIG Readiness Guide',
-  prefix: 'VCPF-01', based_on: web_srg
+  prefix: 'VCPF-01', based_on: web_srg,
+  admin_name: 'vCenter Maintainer', admin_email: 'vcenter-team@example.com'
 ).rules.update(locked: false)
 
 seed_component(
   project: vsphere, name: 'vCenter STS', title: 'vCenter STS Service STIG Readiness Guide',
-  prefix: 'VSTS-01', based_on: web_srg
+  prefix: 'VSTS-01', based_on: web_srg,
+  admin_name: 'vCenter Maintainer', admin_email: 'vcenter-team@example.com'
 ).rules.update(locked: false)
 
 seed_component(
   project: vsphere, name: 'vCenter VAMI', title: 'vCenter VAMI Service STIG Readiness Guide',
-  prefix: 'VAMI-01', based_on: web_srg
+  prefix: 'VAMI-01', based_on: web_srg,
+  admin_name: 'vCenter Maintainer', admin_email: 'vcenter-team@example.com'
 ).rules.update(locked: false)
 
-# Container Platform project (uses Container Platform SRG)
+# Container Platform project (uses Container Platform SRG).
+# Seeded with an active comment-period window so the banner + section
+# icons + composer are exercisable out of the box.
 container_srg = srg_records[:container]
 if container_srg
   seed_component(
     project: container_platform, name: 'Container Platform', title: 'Container Platform STIG Readiness Guide',
-    prefix: 'CNTR-01', based_on: container_srg
+    prefix: 'CNTR-01', based_on: container_srg,
+    admin_name: 'Container Platform Maintainer', admin_email: 'platform-team@example.com',
+    comment_phase: 'open',
+    comment_period_starts_at: 1.day.ago,
+    comment_period_ends_at: 14.days.from_now
   ).rules.update(locked: false)
 end
 
@@ -246,7 +304,9 @@ if dummy_project.components.count < 20
       description: rand < 0.5 ? "Test description #{n + 1}" : nil,
       prefix: 'zzzz-00',
       based_on: web_srg,
-      project: dummy_project
+      project: dummy_project,
+      admin_name: 'QA Test Maintainer',
+      admin_email: 'qa-team@example.com'
     )
     next unless c.persisted?
 
@@ -268,5 +328,233 @@ if dummy_project.components.count < 20
   end
 end
 puts 'Created Components'
+
+# Backfill PoC fields on any pre-existing components missing them. Necessary
+# because the dummy 20.times loop is gated on count < 20 + Component.duplicate
+# does not copy PoC, so legacy records wouldn't otherwise pick up admin_name/email.
+#
+# Pattern-aware: components whose name matches a known family get that family's
+# PoC (e.g. Photon OS 3 v1r2 dup gets "Photon OS Maintainer", not generic). Ensures
+# all versions of the same logical component share consistent PoC. Falls back to
+# generic "QA Test Maintainer" for anything unmatched (dummy hex-named filler).
+# Idempotent: rerun is a no-op once everything is populated.
+COMPONENT_POC_PATTERNS = [
+  [/Photon OS/i, { admin_name: 'Photon OS Maintainer', admin_email: 'photon-team@example.com' }],
+  [/vCenter/i, { admin_name: 'vCenter Maintainer', admin_email: 'vcenter-team@example.com' }],
+  [/Container Platform/i,
+   { admin_name: 'Container Platform Maintainer', admin_email: 'platform-team@example.com' }]
+].freeze
+GENERIC_POC = { admin_name: 'QA Test Maintainer', admin_email: 'qa-team@example.com' }.freeze
+
+backfilled = Component.where(admin_name: [nil, '']).count
+if backfilled.positive?
+  puts "Backfilling PoC on #{backfilled} legacy components..."
+  Component.where(admin_name: [nil, '']).find_each do |c|
+    matched = COMPONENT_POC_PATTERNS.find { |pattern, _| c.name =~ pattern }
+    attrs = matched ? matched[1] : GENERIC_POC
+    # update_columns skips validations + callbacks (incl. audited) by design —
+    # this is bulk seed-time data fix, no audit-trail value.
+    c.update_columns(attrs) # rubocop:disable Rails/SkipsModelValidations
+  end
+  puts 'PoC backfill complete'
+end
+
+# ------------------------------------------------------------ #
+# Seeds for public-comment-review demo (PR #717)               #
+# ------------------------------------------------------------ #
+# Seeds a small set of comments on the Container Platform component
+# so the triage table, my-comments page, and section icons have
+# something to render without manual setup.
+#
+# Idempotent: skips entirely if any 'comment' Reviews already exist.
+puts 'Seeding demo comments for public-comment-review workflow...'
+
+container_component = container_platform.components.find_by(name: 'Container Platform')
+
+# Helper: any top-level comment Reviews exist on this project's components?
+project_has_comments = lambda do |project|
+  Review.where(action: 'comment', responding_to_review_id: nil)
+        .joins(:rule)
+        .merge(Rule.where(component: project.components))
+        .exists?
+end
+
+if container_component.nil?
+  puts '  No Container Platform component — skipping comment seeds'
+else
+  # Prefer the named role-tier users (viewer@example.com / author@example.com) so
+  # the demo comments come from clearly-identifiable personas. Fall back to any
+  # non-admin users if the role users are absent.
+  demo_admin = User.find_by(admin: true)
+  named_viewer = User.find_by(email: 'viewer@example.com')
+  named_author = User.find_by(email: 'author@example.com')
+  fallback_non_admins = User.where(admin: [false, nil])
+                            .where.not(email: %w[viewer@example.com author@example.com reviewer@example.com])
+                            .limit(2).to_a
+  viewer_user = named_viewer || fallback_non_admins[0] || demo_admin
+  author_user = named_author || fallback_non_admins[1] || demo_admin
+  other_voice = User.where.not(id: [viewer_user&.id, author_user&.id, demo_admin&.id].compact)
+                    .where(admin: [false, nil]).first || viewer_user
+
+  if project_has_comments.call(container_platform)
+    puts '  Container Platform comments already seeded, skipping that block'
+  elsif container_component.rules.count < 4
+    puts "  Not enough rules on Container Platform (#{container_component.rules.count}) — skipping comment seeds"
+  else
+    # Memberships — viewer-tier on the project for the commenter, author-tier for
+    # the triager. find_or_create_by avoids duplicate-membership validator failures.
+    Membership.find_or_create_by!(user: viewer_user, membership: container_platform) do |m|
+      m.role = 'viewer'
+    end
+    Membership.find_or_create_by!(user: author_user, membership: container_platform) do |m|
+      m.role = 'author'
+    end
+    Membership.find_or_create_by!(user: other_voice, membership: container_platform) do |m|
+      m.role = 'viewer'
+    end
+
+    rules = container_component.rules.order(:rule_id).limit(6).to_a
+    rule_a, rule_b, rule_c, rule_d = rules
+
+    # 1) Pending comment, section-tagged to Check
+    Review.create!(
+      user: viewer_user, rule: rule_a, action: 'comment',
+      comment: 'The check text mentions runc 1.0 but the SRG section requires runc >= 1.1.4. Should this be tightened?',
+      section: 'check_content'
+    )
+
+    # 2) Pending comment, section-tagged to Fix (different rule, same author)
+    Review.create!(
+      user: viewer_user, rule: rule_b, action: 'comment',
+      comment: 'The fix text could include the seccomp profile path more explicitly.',
+      section: 'fixtext'
+    )
+
+    # 3) Pending general (un-sectioned) comment from a different user
+    Review.create!(
+      user: other_voice, rule: rule_c, action: 'comment',
+      comment: 'Could we soften the severity from CAT II to CAT III for environments without external network access?',
+      section: nil
+    )
+
+    # 4) Concur (accepted), with a triager response in the thread
+    accepted = Review.create!(
+      user: viewer_user, rule: rule_a, action: 'comment',
+      comment: 'Vulnerability discussion paragraph 2 has a typo: "kuberenetes" should be "kubernetes".',
+      section: 'vuln_discussion'
+    )
+    accepted.update!(triage_status: 'concur', triage_set_by_id: author_user.id, triage_set_at: 1.day.ago)
+    Review.create!(
+      user: author_user, rule: rule_a, action: 'comment',
+      comment: 'Thanks — fixing the typo in the next revision.',
+      section: 'vuln_discussion', responding_to_review_id: accepted.id
+    )
+
+    # 5) Non-concur (declined), with the required response in the thread
+    declined = Review.create!(
+      user: other_voice, rule: rule_b, action: 'comment',
+      comment: 'Suggest dropping the rule entirely — most operators will use OPA Gatekeeper instead.',
+      section: nil
+    )
+    declined.update!(triage_status: 'non_concur', triage_set_by_id: author_user.id, triage_set_at: 1.day.ago)
+    Review.create!(
+      user: author_user, rule: rule_b, action: 'comment',
+      comment: "Thanks for raising this. We're keeping the baseline rule for shops not running OPA — happy to add a documentable exception.",
+      responding_to_review_id: declined.id
+    )
+
+    # 6) Adjudicated (closed) — concur_with_comment that ran through full lifecycle
+    closed = Review.create!(
+      user: viewer_user, rule: rule_d, action: 'comment',
+      comment: 'The artifact description should accept either a screenshot or a CLI transcript, not both.',
+      section: 'artifact_description'
+    )
+    closed.update!(
+      triage_status: 'concur_with_comment',
+      triage_set_by_id: author_user.id, triage_set_at: 2.days.ago,
+      adjudicated_at: 1.day.ago, adjudicated_by_id: author_user.id
+    )
+
+    # 7) Informational — auto-adjudicated by the model callback
+    Review.create!(
+      user: other_voice, rule: rule_c, action: 'comment',
+      comment: 'FYI we shipped a similar control in our v1.2 baseline — same wording.',
+      triage_status: 'informational',
+      triage_set_by_id: author_user.id, triage_set_at: 3.hours.ago
+    )
+
+    # 8) Withdrawn (commenter retracted)
+    Review.create!(
+      user: viewer_user, rule: rule_a, action: 'comment',
+      comment: 'Never mind — I see this is already covered by the existing CCI mapping.',
+      triage_status: 'withdrawn'
+    )
+
+    puts '  Seeded demo comments (Container Platform): pending, concur+response, non_concur+response, adjudicated, informational, withdrawn'
+  end
+
+  # ---------------------------------------------------------- #
+  # Spread comments across other projects/components so the    #
+  # projects-list "Comments" column shows badges across rows   #
+  # — not just on Container Platform. Each project gets a      #
+  # distinct shape so the totals/pending split is testable.    #
+  # ---------------------------------------------------------- #
+  cross_project_membership = lambda do |user, project, role|
+    Membership.find_or_create_by!(user: user, membership: project) { |m| m.role = role }
+  end
+
+  Project.where.not(id: container_platform.id).find_each do |proj|
+    next if project_has_comments.call(proj)
+
+    components_with_rules = proj.components.includes(:rules).select { |c| c.rules.any? }
+    next if components_with_rules.empty?
+
+    cross_project_membership.call(viewer_user, proj, 'viewer')
+    cross_project_membership.call(other_voice, proj, 'viewer')
+    cross_project_membership.call(author_user, proj, 'author')
+
+    # rubocop:disable Style/CaseLikeIf -- if/elsif sidesteps Sonar S131
+    # which demands a default clause on every `case` statement; here the
+    # "no demo comments for any other project" branch is intentionally a
+    # no-op, and an empty `else nil` would itself trip Style/EmptyElse.
+    if proj.name == 'Photon 3'
+      # Mostly closed, one pending — exercises the "9 total / 1 pending" badge case
+      comp = components_with_rules.first
+      r = comp.rules.first
+      Review.create!(action: 'comment', user: viewer_user, rule: r, section: 'check_content',
+                     comment: 'Photon 3 baseline: should the audit rule include CIS Level 1 only?')
+      closed = Review.create!(action: 'comment', user: other_voice, rule: r, section: 'fixtext',
+                              comment: 'Fix script needs sudo wrapping for non-root execution.')
+      closed.update!(triage_status: 'concur', triage_set_by_id: author_user.id, triage_set_at: 2.days.ago,
+                     adjudicated_by_id: author_user.id, adjudicated_at: 1.day.ago)
+      r2 = comp.rules.second
+      Review.create!(action: 'comment', user: viewer_user, rule: r2, section: nil,
+                     comment: 'FYI we already shipped this in our internal hardening guide.',
+                     triage_status: 'informational',
+                     triage_set_by_id: author_user.id,
+                     triage_set_at: 1.day.ago)
+    elsif proj.name == 'Photon 4'
+      # Multiple pending across multiple components — exercises the
+      # /projects/:id#comments fallback link (no single-component target).
+      components_with_rules.first(2).each_with_index do |comp, idx|
+        Review.create!(action: 'comment', user: viewer_user, rule: comp.rules.first,
+                       section: 'vuln_discussion',
+                       comment: "Photon 4 component #{idx + 1}: vuln discussion para 2 typo.")
+        Review.create!(action: 'comment', user: other_voice, rule: comp.rules.first,
+                       section: 'check_content',
+                       comment: "Photon 4 component #{idx + 1}: check command needs --no-pager flag.")
+      end
+    elsif proj.name == 'vSphere 7.0'
+      # Single pending on a single component — exercises the
+      # /components/:id#comments single-target link from the list.
+      comp = components_with_rules.first
+      Review.create!(action: 'comment', user: viewer_user, rule: comp.rules.first,
+                     section: 'fixtext',
+                     comment: 'vSphere 7.0: fix command targets ESXi 6.7 path — should reference 7.0 layout.')
+    end
+    # rubocop:enable Style/CaseLikeIf
+  end
+  puts '  Seeded cross-project demo comments (Photon 3, Photon 4, vSphere 7.0)'
+end
 
 # rubocop:enable Rails/Output

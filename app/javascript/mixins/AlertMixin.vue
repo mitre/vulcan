@@ -11,13 +11,29 @@ export default {
     // - response["data"]["toast"]
     // - response["response"]["data"]["toast"]
     //
-    // Second, it will check if the toast is a string or object
-    // - If string -> generate a basic success toast with that message
-    // - If object -> generate a toast using 'title', 'variant', and 'message' parameters
+    // Second, it will render the toast object using 'title', 'variant',
+    // and 'message' parameters
     //   - 'message' is required and can be a string or array of strings
-    //   - 'title', and 'variant' are optional and will default to 'Success' and 'sucess'
+    //   - 'title', and 'variant' are optional and will default to 'Success' and 'success'
     // - If no response is provided -> show 'message' as an alert on the screen
+    // (PR-717 .19d: pre-fix the toast could also be a bare string;
+    //  every controller now returns the canonical object shape so the
+    //  string branch was removed.)
     alertOrNotifyResponse: function (response) {
+      // Structured permission-denied path (Plan B / B3): render a rich toast
+      // with the project admin contacts so the user knows who to ask for access.
+      const errorData = response?.response?.data;
+      if (response?.response?.status === 403 && errorData?.error === "permission_denied") {
+        const admins = Array.isArray(errorData.admins) ? errorData.admins : [];
+        this.$bvToast.toast(this.permissionDeniedBody(errorData.message, admins), {
+          title: "Permission denied",
+          variant: "danger",
+          solid: true,
+          autoHideDelay: 8000,
+        });
+        return;
+      }
+
       let toast = response["data"] && response["data"]["toast"] ? response["data"]["toast"] : null;
       if (
         !toast &&
@@ -28,17 +44,12 @@ export default {
         toast = response["response"]["data"]["toast"];
       }
 
-      // If toast is just a string, then assume it's a basic success message
-      if (typeof toast === "string" || toast instanceof String) {
-        this.$bvToast.toast(toast, {
-          title: "Success",
-          variant: "success",
-          solid: true,
-        });
-        return;
-      }
-
-      // If toast is an object, then gather its parameters with some defaults
+      // every controller now returns
+      // canonical {title, message, variant} object toasts (was a mix of
+      // string + object pre-fix). The string-handling branch was here
+      // and has been removed; if a backend still returns a string we
+      // fall through to the error branch below, which the dev sees in
+      // the console — caller will fix the backend.
       if (_.isPlainObject(toast)) {
         const title = toast["title"] || "Success";
         const variant = toast["variant"] || "success";
@@ -71,6 +82,25 @@ export default {
         "div",
         messageArray.map((message) => this.$createElement("p", message)),
       );
+    },
+    // Build a VNode body for a structured permission_denied response.
+    // Renders the message paragraph followed by a "Project administrators:"
+    // section listing each admin as "Name <email>" — so the user knows
+    // exactly who to contact for access.
+    permissionDeniedBody: function (message, admins) {
+      const h = this.$createElement;
+      const children = [h("p", { class: "mb-2" }, message)];
+      if (admins.length > 0) {
+        children.push(
+          h("p", { class: "mb-1 font-weight-bold" }, "Project administrators:"),
+          h(
+            "ul",
+            { class: "mb-0 pl-3" },
+            admins.map((a) => h("li", `${a.name} <${a.email}>`)),
+          ),
+        );
+      }
+      return h("div", children);
     },
   },
 };

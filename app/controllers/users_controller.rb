@@ -6,7 +6,8 @@
 class UsersController < ApplicationController
   USER_JSON_FIELDS = %i[id name email provider admin failed_attempts locked_at].freeze
 
-  before_action :authorize_admin
+  before_action :authorize_admin, except: %i[comments]
+  before_action :authorize_logged_in, only: %i[comments]
   before_action :set_user, only: %i[update destroy send_password_reset generate_reset_link set_password lock unlock]
 
   def index
@@ -72,9 +73,9 @@ class UsersController < ApplicationController
       # Only notify Slack when the admin flag actually changed. Previously this
       # fired on every update (e.g. name change, email change), spamming Slack
       # with "promoted/demoted" messages that weren't accurate.
-      if @user.saved_change_to_admin?
+      if @user.saved_change_to_admin? && Settings.slack.enabled
         notification_type = @user.admin ? :assign_vulcan_admin : :remove_vulcan_admin
-        send_slack_notification(notification_type, @user) if Settings.slack.enabled
+        safely_notify("#{notification_type}_user") { send_slack_notification(notification_type, @user) }
       end
 
       respond_to do |format|
@@ -82,7 +83,15 @@ class UsersController < ApplicationController
           flash.notice = 'Successfully updated user.'
           redirect_to action: 'index'
         end
-        format.json { render json: { toast: 'Successfully updated user', user: @user.as_json(only: USER_JSON_FIELDS) } }
+        # multi-key response (toast +
+        # user). Inline the canonical toast object since render_toast
+        # doesn't support piggybacking extra response keys.
+        format.json do
+          render json: {
+            toast: { title: 'User updated.', message: ['Successfully updated user.'], variant: 'success' },
+            user: @user.as_json(only: USER_JSON_FIELDS)
+          }
+        end
       end
     else
       respond_to do |format|
@@ -125,7 +134,11 @@ class UsersController < ApplicationController
           flash.notice = 'Successfully removed user.'
           redirect_to action: 'index'
         end
-        format.json { render json: { toast: 'Successfully removed user.' } }
+        format.json do
+          render_toast(title: 'User removed.',
+                       message: 'Successfully removed user.',
+                       variant: 'success', status: :ok)
+        end
       end
     else
       respond_to do |format|
@@ -155,7 +168,9 @@ class UsersController < ApplicationController
     end
 
     @user.send_reset_password_instructions
-    render json: { toast: "Password reset email sent to #{@user.email}." }
+    render_toast(title: 'Reset email sent.',
+                 message: "Password reset email sent to #{@user.email}.",
+                 variant: 'success', status: :ok)
   rescue StandardError => e
     Rails.logger.error "send_password_reset failed for user #{@user.id}: #{e.class}: #{e.message}\n#{e.backtrace&.first(5)&.join("\n")}"
     render json: {
@@ -166,8 +181,13 @@ class UsersController < ApplicationController
   # Generate a reset token and return the URL without sending email (no SMTP needed)
   def generate_reset_link
     reset_url = generate_reset_url(@user)
+    # multi-key response (toast + reset_url).
+    # Inline the canonical toast object since render_toast doesn't piggyback
+    # extra response keys.
     render json: {
-      toast: 'Reset link generated. Copy it and deliver to the user.',
+      toast: { title: 'Reset link generated.',
+               message: ['Reset link generated. Copy it and deliver to the user.'],
+               variant: 'success' },
       reset_url: reset_url
     }
   end
@@ -183,8 +203,11 @@ class UsersController < ApplicationController
     @user.lock_access!(send_instructions: false)
     @user.audits.create!(action: 'update', audited_changes: { 'locked_at' => [nil, @user.locked_at.iso8601] },
                          user: current_user, comment: "Account locked by #{current_user.name}")
+    # multi-key response (toast + user).
     render json: {
-      toast: "Account #{@user.email} locked.",
+      toast: { title: 'Account locked.',
+               message: ["Account #{@user.email} locked."],
+               variant: 'success' },
       user: @user.as_json(only: USER_JSON_FIELDS)
     }
   end
@@ -195,8 +218,11 @@ class UsersController < ApplicationController
     @user.unlock_access!
     @user.audits.create!(action: 'update', audited_changes: { 'locked_at' => [prev_locked_at, nil] },
                          user: current_user, comment: "Account unlocked by #{current_user.name}")
+    # multi-key response (toast + user).
     render json: {
-      toast: "Account #{@user.email} unlocked.",
+      toast: { title: 'Account unlocked.',
+               message: ["Account #{@user.email} unlocked."],
+               variant: 'success' },
       user: @user.as_json(only: USER_JSON_FIELDS)
     }
   end
@@ -211,7 +237,9 @@ class UsersController < ApplicationController
 
     @user.password = @user.password_confirmation = password_params[:password]
     if @user.save
-      render json: { toast: "Password updated for #{@user.email}." }
+      render_toast(title: 'Password updated.',
+                   message: "Password updated for #{@user.email}.",
+                   variant: 'success', status: :ok)
     else
       render json: {
         toast: { title: 'Could not set password.', message: @user.errors.full_messages, variant: 'danger' }
@@ -224,7 +252,82 @@ class UsersController < ApplicationController
     }, status: :internal_server_error
   end
 
+  # GET /users/:id/comments — comments authored by user :id, scoped to
+  # projects the requester can see. The endpoint is NOT identity-gated:
+  # comments are project-member-visible (see GET /components/:id/comments
+  # for the per-component slice), so the row scope prevents cross-tenant
+  # leak via Component → Project filter against
+  # current_user.available_projects.
+  #
+  # HTML returns the standalone "My Comments" page; JSON returns the
+  # paginated row data the page consumes.
+  #
+  # On-the-wire vocab is DISA-native (triage_status, section keys);
+  # frontend translates via triageVocabulary.js.
+  def comments
+    @target_user = User.find_by(id: params[:id])
+    return head :not_found unless @target_user
+
+    respond_to do |format|
+      format.html
+      format.json { render json: comments_json_payload }
+    end
+  end
+
   private
+
+  def comments_json_payload
+    page     = [params[:page].to_i, 1].max
+    per_page = (params[:per_page].presence || 25).to_i.clamp(1, 100)
+
+    visible_components = Component.where(project_id: current_user.available_projects.select(:id))
+
+    scope = Review.top_level_comments
+                  .where(user_id: @target_user.id)
+                  .joins(:rule)
+                  .merge(Rule.where(component: visible_components))
+                  .preload(rule: { component: :project })
+
+    scope = scope.where(triage_status: params[:triage_status]) if params[:triage_status].present? && params[:triage_status] != 'all'
+
+    scope = scope.merge(Rule.where(component: Component.where(project_id: params[:project_id]))) if params[:project_id].present?
+
+    total = scope.count
+    page_records = scope.order(created_at: :desc)
+                        .offset((page - 1) * per_page).limit(per_page).to_a
+    response_aggregates = Review.where(responding_to_review_id: page_records.map(&:id))
+                                .group(:responding_to_review_id)
+                                .pluck(Arel.sql('responding_to_review_id, MAX(created_at), COUNT(*)'))
+    latest_response_at = response_aggregates.to_h { |id, max_at, _count| [id, max_at] }
+    responses_count = response_aggregates.to_h { |id, _max_at, count| [id, count] }
+
+    rows = page_records.map { |r| comment_row_for(r, latest_response_at[r.id], responses_count[r.id] || 0) }
+
+    { rows: rows, pagination: { page: page, per_page: per_page, total: total } }
+  end
+
+  def comment_row_for(review, latest_response, responses_count)
+    rule      = review.rule
+    component = rule.component
+    project   = component.project
+    {
+      id: review.id,
+      project_id: project.id,
+      project_name: project.name,
+      component_id: component.id,
+      component_name: component.name,
+      rule_id: rule.id,
+      rule_displayed_name: "#{component.prefix}-#{rule.rule_id}",
+      section: review.section,
+      comment: review.comment,
+      created_at: review.created_at,
+      triage_status: review.triage_status,
+      triage_set_at: review.triage_set_at,
+      adjudicated_at: review.adjudicated_at,
+      latest_activity_at: [review.triage_set_at, review.adjudicated_at, latest_response].compact.max,
+      responses_count: responses_count
+    }
+  end
 
   def set_user
     @user = User.find(params[:id])

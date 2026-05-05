@@ -77,6 +77,7 @@
         :force_enable_additional_questions="forceEnableAdditionalQuestions"
         :additional_questions="additional_questions"
         @toggle-section-lock="onToggleSectionLock"
+        @open-composer="$emit('open-composer', $event)"
       />
     </b-form>
 

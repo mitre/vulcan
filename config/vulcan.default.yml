@@ -138,6 +138,12 @@ defaults: &defaults
     benchmark_name: <%= ENV.fetch('VULCAN_LIMIT_BENCHMARK_NAME', '500').to_i %>
     benchmark_title: <%= ENV.fetch('VULCAN_LIMIT_BENCHMARK_TITLE', '500').to_i %>
     benchmark_description: <%= ENV.fetch('VULCAN_LIMIT_BENCHMARK_DESCRIPTION', '10000').to_i %>
+  import:
+    # Maximum total uncompressed size of all entries in a json_archive zip
+    # upload, in megabytes. Pre-decompression upload caps in the controller
+    # (100 MB) and rubyzip's per-entry validation don't catch zip-bomb
+    # geometries where small archives expand to gigabytes. PR-717 .lsj.
+    json_archive_size_budget_mb: <%= ENV.fetch('VULCAN_IMPORT_JSON_ARCHIVE_SIZE_BUDGET_MB', '500').to_i %>
   slack:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_SLACK_COMMS']) || false %>
     api_token: <%= ENV['VULCAN_SLACK_API_TOKEN'] %>

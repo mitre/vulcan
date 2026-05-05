@@ -1,0 +1,8 @@
+-# Two-column shell for user settings sub-pages. Pass `active:` to mark
+-# the current section in the left rail. Yield the page content into
+-# the right column.
+.row.user-settings
+  .col-md-3.col-lg-2.mb-3
+    = render 'users/settings_nav', active: active
+  .col-md-9.col-lg-10
+    = yield

@@ -364,4 +364,56 @@ describe("RuleNavigator", () => {
       expect(wrapper.vm.hasParentRules).toBe(true);
     });
   });
+
+  // ─── PR #717 Task 19: Comment-count badge + open-only filter ──
+  describe("PR #717 comment-count badge", () => {
+    const ruleWithOpen = (id, ruleId, open = 0, total = 0) =>
+      createRule(id, ruleId, {
+        comment_summary: { open: open, total: total },
+      });
+
+    it("renders a comment-count badge for rules with open > 0", () => {
+      const rules = [ruleWithOpen(1, "000010", 3, 5), ruleWithOpen(2, "000020", 0, 0)];
+      wrapper = createWrapper({ rules });
+      // The badge wrapper has a stable data-test selector.
+      expect(wrapper.find('[data-test="rule-open-comment-1"]').exists()).toBe(true);
+      // Rule 2 has no comments — no badge.
+      expect(wrapper.find('[data-test="rule-open-comment-2"]').exists()).toBe(false);
+    });
+
+    it("badge is icon-only (no count text rendered) — count lives in the tooltip", () => {
+      const rules = [ruleWithOpen(7, "000070", 4, 4)];
+      wrapper = createWrapper({ rules });
+      const badge = wrapper.find('[data-test="rule-open-comment-7"]');
+      expect(badge.exists()).toBe(true);
+      // No digits in the rendered badge — the chat icon alone is the
+      // scan-time signal; the count is surfaced via the v-b-tooltip title.
+      expect(badge.text()).not.toMatch(/\d/);
+      // Tooltip carries the precise count for accessibility + on-hover detail.
+      expect(badge.attributes("title")).toContain("4");
+    });
+
+    it("does NOT render the badge when comment_summary is missing", () => {
+      const rules = [createRule(8, "000080")];
+      wrapper = createWrapper({ rules });
+      expect(wrapper.find('[data-test="rule-open-comment-8"]').exists()).toBe(false);
+    });
+
+    it("filteredRules narrows to rules with open > 0 when openCommentsOnly is set", () => {
+      const rules = [
+        ruleWithOpen(10, "000100", 3, 3),
+        ruleWithOpen(11, "000110", 0, 0),
+        createRule(12, "000120"),
+      ];
+      wrapper = createWrapper({ rules }, { openCommentsOnly: true });
+      const ids = wrapper.vm.filteredRules.map((r) => r.id);
+      expect(ids).toEqual([10]);
+    });
+
+    it("filteredRules behaves as before when openCommentsOnly is unset", () => {
+      const rules = [ruleWithOpen(20, "000200", 1, 1), ruleWithOpen(21, "000210", 0, 0)];
+      wrapper = createWrapper({ rules });
+      expect(wrapper.vm.filteredRules.length).toBe(2);
+    });
+  });
 });

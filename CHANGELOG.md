@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Project viewers can now post comments on rules. Previously the `viewer` role was strictly read-only; it now grants read + comment access. Save / Approve / Request Changes / Lock / Unlock remain restricted to higher roles. To restrict commenting you must remove the user's project membership.
+- Authorization rejection responses for JSON requests now return a structured `403 Forbidden` body (`{ error: 'permission_denied', message, admins: [...], toast }`) instead of `500 Internal Server Error`. The legacy `toast` shape is kept alongside so existing AlertMixin consumers keep working unchanged.
+
+### Added
+
+- `Review::VALID_ACTIONS` allowlist + inclusion validator on `Review#action` so unknown action strings no longer save silently as state-mutating no-ops
+- AlertMixin now renders structured permission-denied responses as a "Permission denied" toast that lists the project administrators (name and email) the user should contact for access — no more silent or generic failures on rejected actions
+
+### Fixed
+
+- `rescue_from` ordering bug in `ApplicationController` — `NotAuthorizedError` was being shadowed by the catch-all `StandardError` rescue (`ActiveSupport::Rescuable` matches handlers via `reverse_each`, so the LAST-declared rescue wins). The dedicated `not_authorized` handler was effectively dead code in any non-development environment for JSON requests, surfacing every unauthorized action as a 500 instead of the proper 401/403. Reordered so the specific rescue wins.
+
 ## [v2.3.5] - 2026-04-11
 
 ### Added

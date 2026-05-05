@@ -32,7 +32,9 @@ class SecurityRequirementsGuidesController < ApplicationController
     srg.xml = file.read
     if srg.save
       send_slack_notification(:upload_srg, srg) if Settings.slack.enabled
-      render(json: { toast: 'Successfully created SRG.' }, status: :ok)
+      render_toast(title: 'SRG created.',
+                   message: 'Successfully created SRG.',
+                   variant: 'success', status: :ok)
     else
       render(json: {
                toast: {
@@ -87,7 +89,11 @@ class SecurityRequirementsGuidesController < ApplicationController
           flash.notice = 'Successfully removed SRG.'
           redirect_to action: 'index'
         end
-        format.json { render json: { toast: 'Successfully removed SRG' } }
+        format.json do
+          render_toast(title: 'SRG removed.',
+                       message: 'Successfully removed SRG.',
+                       variant: 'success', status: :ok)
+        end
       end
     else
       respond_to do |format|

@@ -1,10 +1,9 @@
 - content_for :assets do
   = javascript_include_tag 'user_profile'
 
-#user-profile
-  %userprofile{                                           |
-    'v-bind:user': current_user.to_json,                  |
-    'v-bind:histories': (@histories || []).to_json,       |
-    'v-bind:password-policy': Settings.password.to_json,  |
-    'v-bind:session-auth-method': (session[:auth_method] || 'local').to_json |
-  }
+= render 'users/settings_layout', active: :profile do
+  #user-profile
+    %userprofile{
+      'v-bind:user': current_user.to_json,
+      'v-bind:session-auth-method': (session[:auth_method] || 'local').to_json
+    }

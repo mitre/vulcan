@@ -38,16 +38,14 @@
               title="Component Released"
             />
           </div>
-          <!-- Rules count info -->
+          <!-- Identity / configuration indicator (top-right): rules-count
+               only. The pending-triage signal is an action affordance
+               and lives in the action row below — not here. -->
           <div class="text-right">
-            <b-badge v-if="component.rules_count > 0" variant="info" pill class="px-3 py-2">
+            <b-badge v-if="component.rules_count > 0" variant="info" pill>
               <b-icon icon="shield-check" class="mr-1" />
               {{ ruleCountLabel(component.rules_count) }}
               <span v-if="component.component_id" class="ml-1">(Overlaid)</span>
-            </b-badge>
-            <b-badge v-else variant="secondary" pill class="px-3 py-2">
-              <b-icon icon="gear" class="mr-1" />
-              Not Configured
             </b-badge>
           </div>
         </div>
@@ -58,6 +56,24 @@
       <b-card-sub-title v-if="component.description" class="my-2">
         {{ component.description }}
       </b-card-sub-title>
+
+      <!-- Pending-comments callout. Lives in the body where it describes
+           the COMPONENT'S state, not in the action-button chrome below. -->
+      <b-alert
+        v-if="component.pending_comment_count > 0"
+        show
+        variant="warning"
+        class="mt-3 mb-2 py-2 px-3"
+      >
+        <b-icon icon="chat-left-text" class="mr-1" />
+        <strong>{{ component.pending_comment_count }}</strong>
+        pending public-review comment{{ component.pending_comment_count === 1 ? "" : "s" }}
+        —
+        <b-link :href="`/components/${component.id}/triage`" class="alert-link">
+          Open triage queue →
+        </b-link>
+      </b-alert>
+
       <p class="mt-4">
         <span v-if="component.admin_name">
           PoC: {{ component.admin_name }}
@@ -83,6 +99,18 @@
             class="d-flex align-items-center flex-wrap"
             style="gap: 0.25rem"
           >
+            <b-button
+              v-if="effectivePermissions == 'admin'"
+              v-b-tooltip.hover
+              :href="`/components/${component.id}/settings`"
+              variant="outline-secondary"
+              size="sm"
+              title="Component Settings — Identity, PoC, Public Comment Period"
+              data-test="component-card-settings-link"
+            >
+              <b-icon icon="gear" font-scale="0.9" /> Settings
+            </b-button>
+
             <LockControlsModal
               v-if="role_gte_to(effectivePermissions, 'reviewer')"
               :component_id="component.id"

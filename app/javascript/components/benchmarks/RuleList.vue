@@ -50,7 +50,12 @@
     <div ref="ruleListContainer" class="mt-3" style="max-height: 700px; overflow-y: auto">
       <h5 class="card-title">{{ RULE_TERM.plural }}</h5>
       <div class="d-flex mb-2">
-        <b-form-select v-model="field" :options="fieldOptions" size="sm" />
+        <FilterDropdown
+          v-model="field"
+          :options="fieldOptions"
+          aria-label="Filter rules by ID type"
+          size="sm"
+        />
         <b-icon
           v-if="sortOrder === 'asc'"
           icon="arrow-down-circle"
@@ -87,9 +92,11 @@
 <script>
 import { RULE_TERM } from "../../constants/terminology";
 import { truncateRuleId } from "../../utils/ruleIdFormatter";
+import FilterDropdown from "../shared/FilterDropdown.vue";
 
 export default {
   name: "RuleList",
+  components: { FilterDropdown },
   props: {
     rules: {
       type: Array,

@@ -412,4 +412,33 @@ describe("RuleSatisfactions", () => {
       expect(wrapper.text()).not.toContain("Also Satisfies");
     });
   });
+
+  // ---------------------------------------------------------------
+  // Cross-rule comment discovery is handled by the RuleNavigator
+  // sidebar (Task 19) and the component-scope triage queue. The
+  // Satisfies panel's job is showing the relationship — not also
+  // duplicating triage signals. No comment-count badge here.
+  // ---------------------------------------------------------------
+  describe("does not duplicate triage signal in the Satisfies panel", () => {
+    it("never renders a 'pending' label even when relateds have comments", () => {
+      const ruleWithCounts = {
+        ...baseRule,
+        satisfies: [{ ...sat1, pending_comment_count: 3, total_comment_count: 5 }],
+        satisfied_by: [],
+      };
+      ({ wrapper } = createWrapper({ rule: ruleWithCounts }));
+      expect(wrapper.text()).not.toMatch(/pending/i);
+    });
+
+    it("never renders the related-rule-comment-count test selector", () => {
+      const ruleWithCounts = {
+        ...baseRule,
+        satisfies: [{ ...sat1, pending_comment_count: 3, total_comment_count: 5 }],
+      };
+      ({ wrapper } = createWrapper({ rule: ruleWithCounts }));
+      expect(wrapper.find(`[data-test="related-rule-comment-count-${sat1.id}"]`).exists()).toBe(
+        false,
+      );
+    });
+  });
 });

@@ -22,6 +22,12 @@ Rails.application.routes.draw do
   # Requires current password. See Users::RegistrationsController#unlink_identity.
   devise_scope :user do
     post '/users/unlink_identity', to: 'users/registrations#unlink_identity', as: :unlink_identity
+    # Settings shell sub-pages — each section gets its own URL so it's
+    # bookmarkable and can be linked to directly from notifications,
+    # navbar dropdowns, etc. /users/edit (Devise's default) renders the
+    # Profile Information section.
+    get '/users/edit/password', to: 'users/registrations#edit_password', as: :edit_user_password_form
+    get '/users/edit/activity', to: 'users/registrations#edit_activity', as: :edit_user_activity
   end
 
   resources :users, only: %i[index update destroy] do
@@ -34,6 +40,10 @@ Rails.application.routes.draw do
       post :set_password
       post :lock
       post :unlock
+      # Privacy: only the user themselves can read their own comment list
+      # (no admin override — see UsersController#authorize_self).
+      # PR-717 .bpy — explicit action mapping per Sonar rubydre:S7875.
+      get :comments, to: 'users#comments'
     end
   end
   resources :srgs, only: %i[index show create destroy], controller: 'security_requirements_guides'
@@ -66,6 +76,29 @@ Rails.application.routes.draw do
 
   # Component activity history (B5 reactivity fix) — MUST be before :stig_id catch-all
   get '/components/:id/histories', to: 'components#histories'
+  # Public-comment-review triage table (PR #717) — MUST be before :stig_id catch-all
+  get '/components/:id/comments', to: 'components#comments'
+  get '/components/:id/triage',   to: 'components#triage', as: :component_triage
+  # Component admin settings page (PR #717 Task 22) — MUST be before :stig_id catch-all
+  get '/components/:id/settings', to: 'components#settings', as: :component_settings
+  get '/projects/:id/comments',   to: 'projects#comments'
+  get '/projects/:id/triage',     to: 'projects#triage', as: :project_triage
+  # Public-comment-review lifecycle endpoints (PR #717): triage / adjudicate /
+  # reopen / withdraw / update operate on a Review by id. See ReviewsController.
+  # Task 33: reply-chain reader. Auth via parent component's released-vs-member gate.
+  get   '/reviews/:id/responses',       to: 'reviews#responses'
+  patch '/reviews/:id/triage',          to: 'reviews#triage'
+  patch '/reviews/:id/adjudicate',      to: 'reviews#adjudicate'
+  patch '/reviews/:id/reopen',          to: 'reviews#reopen'
+  patch '/reviews/:id/withdraw',        to: 'reviews#withdraw'
+  # PR-717 Task 25 — admin overrides on a comment. Audit-comment required.
+  patch '/reviews/:id/admin_withdraw',  to: 'reviews#admin_withdraw'
+  patch '/reviews/:id/admin_restore',   to: 'reviews#admin_restore'
+  patch '/reviews/:id/move_to_rule',    to: 'reviews#move_to_rule'
+  delete '/reviews/:id/admin_destroy',  to: 'reviews#admin_destroy'
+  # PR-717 Task 30 — author+ retags a comment's section retroactively.
+  patch '/reviews/:id/section',         to: 'reviews#section'
+  put '/reviews/:id', to: 'reviews#update'
   # Add deep linking to specific rule (stig_id of format XXXX-XX-000000)
   get '/components/:id/:stig_id', to: 'components#show'
 

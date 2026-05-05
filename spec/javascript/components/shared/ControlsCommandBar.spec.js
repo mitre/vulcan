@@ -228,17 +228,53 @@ describe("ControlsCommandBar", () => {
     });
   });
 
+  // ==========================================================================
+  // per-component Download button. ProjectComponent.vue had
+  // no Download surface — users had to leave the editor to grab the export.
+  // ==========================================================================
+  describe("Download button", () => {
+    it("renders a Download button in the command bar", () => {
+      wrapper = createWrapper();
+      const downloadBtn = wrapper
+        .findAll("button")
+        .wrappers.find((b) => b.text().includes("Download"));
+      expect(downloadBtn).toBeDefined();
+    });
+
+    it("emits download event when clicked", async () => {
+      wrapper = createWrapper();
+      const downloadBtn = wrapper
+        .findAll("button")
+        .wrappers.find((b) => b.text().includes("Download"));
+      await downloadBtn.trigger("click");
+      expect(wrapper.emitted("download")).toBeTruthy();
+    });
+
+    it("renders the Download button in BOTH view (readOnly=true) and edit modes", () => {
+      wrapper = createWrapper({ readOnly: true });
+      const viewBtn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Download"));
+      expect(viewBtn).toBeDefined();
+      wrapper.destroy();
+
+      wrapper = createWrapper({ readOnly: false });
+      const editBtn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Download"));
+      expect(editBtn).toBeDefined();
+    });
+  });
+
   // ==========================================
   // COMPONENT PANELS
   // ==========================================
   describe("component panel buttons", () => {
-    it("renders all 5 component panel buttons with correct labels from terminology", () => {
+    it("renders the 4 component panel buttons + Triage link from terminology", () => {
       wrapper = createWrapper();
       expect(wrapper.text()).toContain(PANEL_LABELS.details);
       expect(wrapper.text()).toContain(PANEL_LABELS.metadata);
       expect(wrapper.text()).toContain(PANEL_LABELS.questions);
       expect(wrapper.text()).toContain(PANEL_LABELS.compHistory);
-      expect(wrapper.text()).toContain(PANEL_LABELS.compReviews);
+      // compReviews retired in PR #717 — replaced by a Triage link to
+      // the full-page /components/:id/triage route.
+      expect(wrapper.text()).toContain("Triage");
     });
 
     it("component panel buttons are NOT disabled when no rule selected", () => {

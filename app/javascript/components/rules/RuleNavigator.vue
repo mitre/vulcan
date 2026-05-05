@@ -26,6 +26,16 @@
         />
       </div>
 
+      <b-form-checkbox
+        v-model="filters.openCommentsOnly"
+        size="sm"
+        switch
+        class="mt-2"
+        data-test="filter-open-comments-only"
+      >
+        Open comments only
+      </b-form-checkbox>
+
       <hr class="mt-2 mb-2" />
 
       <!-- Currently opened rules -->
@@ -57,6 +67,15 @@
             <span v-else>{{ formatRuleId(rule.rule_id) }}</span>
           </span>
           <span>
+            <span
+              v-if="ruleOpen(rule) > 0"
+              v-b-tooltip.hover
+              :title="`${ruleOpen(rule)} open comments`"
+              :data-test="`rule-open-comment-${rule.id}`"
+              class="text-warning mr-1"
+            >
+              <b-icon icon="chat-left-text" aria-hidden="true" />
+            </span>
             <i
               v-if="rule.satisfies.length > 0"
               v-b-tooltip.hover
@@ -153,6 +172,15 @@
             </b-badge>
           </span>
           <span>
+            <span
+              v-if="ruleOpen(rule) > 0"
+              v-b-tooltip.hover
+              :title="`${ruleOpen(rule)} open comments`"
+              :data-test="`rule-open-comment-${rule.id}`"
+              class="text-warning mr-1"
+            >
+              <b-icon icon="chat-left-text" aria-hidden="true" />
+            </span>
             <i
               v-if="rule.satisfies.length > 0"
               v-b-tooltip.hover
@@ -529,7 +557,8 @@ export default {
           this.searchTextForRule(rule).includes(downcaseSearch) &&
           this.doesRuleHaveFilteredStatus(rule) &&
           this.doesRuleHaveFilteredReviewStatus(rule) &&
-          (downcaseSearch.length > 0 || this.listSatisfiedRule(rule))
+          (downcaseSearch.length > 0 || this.listSatisfiedRule(rule)) &&
+          (!this.filters.openCommentsOnly || this.ruleOpen(rule) > 0)
         );
       });
 
@@ -545,6 +574,13 @@ export default {
     },
     sortAlsoSatisfies: function (rules) {
       return [...rules].sort((a, b) => a.rule_id.localeCompare(b.rule_id));
+    },
+    // open comment count for a rule (non-adjudicated, including replies
+    // under open parents). Reads rule.comment_summary populated by
+    // RuleBlueprint default fields. Returns 0 when missing so the badge
+    // stays hidden for rules without any comments.
+    ruleOpen: function (rule) {
+      return (rule.comment_summary && rule.comment_summary.open) || 0;
     },
     formatRuleId: function (id) {
       return `${this.projectPrefix}-${id}`;

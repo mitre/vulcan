@@ -11,17 +11,17 @@ class ComponentsController < ApplicationController
   NO_FILE_PROVIDED = 'No file provided'
   CONTROL_NOT_FOUND_TITLE = 'Control not found'
 
-  before_action :set_component, only: %i[show update destroy export preview_spreadsheet_update apply_spreadsheet_update]
-  before_action :set_component_basic, only: %i[find based_on_same_srg histories]
-  before_action :set_project, only: %i[show create history]
-  before_action :set_component_permissions, only: %i[show]
+  before_action :set_component, only: %i[show update destroy export preview_spreadsheet_update apply_spreadsheet_update triage settings]
+  before_action :set_component_basic, only: %i[find based_on_same_srg histories comments]
+  before_action :set_project, only: %i[show create history triage settings]
+  before_action :set_component_permissions, only: %i[show triage settings]
   before_action :set_rule, only: %i[show]
   before_action :authorize_admin_project, only: %i[create]
-  before_action :authorize_admin_component, only: %i[destroy]
+  before_action :authorize_admin_component, only: %i[destroy settings]
   before_action :authorize_author_component, only: %i[update preview_spreadsheet_update apply_spreadsheet_update]
   before_action :check_permission_to_update_slackchannel, only: %i[update]
   before_action :check_admin_for_advanced_fields, only: %i[update]
-  before_action :authorize_component_access, only: %i[show export find histories]
+  before_action :authorize_component_access, only: %i[show export find histories comments triage]
   before_action :authorize_logged_in, only: %i[search index based_on_same_srg bulk_export detect_srg]
   before_action :authorize_compare_access, only: %i[compare]
   before_action :authorize_viewer_project, only: %i[history]
@@ -61,7 +61,7 @@ class ComponentsController < ApplicationController
     respond_to do |format|
       format.html do
         view = @effective_permissions ? :editor : :show
-        @component_json = ComponentBlueprint.render(@component, view: view)
+        @component_json = ComponentBlueprint.render(@component, view: view, **blueprint_render_options)
         @project_json = @component.project.to_json
       end
       format.json do
@@ -69,7 +69,7 @@ class ComponentsController < ApplicationController
           # Editor refresh: use blueprint directly so the refreshComponent() response
           # shape exactly matches the initial render and nothing drifts (e.g.,
           # memberships losing their MembershipBlueprint name/email decoration).
-          render json: ComponentBlueprint.render(@component, view: :editor)
+          render json: ComponentBlueprint.render(@component, view: :editor, **blueprint_render_options)
         else
           # Non-member: jbuilder produces a BenchmarkViewer-specific lightweight
           # rule shape that the :show blueprint view does not.
@@ -103,8 +103,10 @@ class ComponentsController < ApplicationController
           } }
         end
         component.save
-        send_slack_notification(:create_component, component) if Settings.slack.enabled
-        render json: { toast: 'Successfully added component to project.' }
+        safely_notify('create_component') { send_slack_notification(:create_component, component) } if Settings.slack.enabled
+        render_toast(title: 'Component added.',
+                     message: 'Successfully added component to project.',
+                     variant: 'success', status: :ok)
       else
         render json: {
           toast: {
@@ -121,7 +123,9 @@ class ComponentsController < ApplicationController
 
   def update
     if @component.update(component_update_params)
-      render json: { toast: 'Successfully updated component.' }
+      render_toast(title: 'Component updated.',
+                   message: 'Successfully updated component.',
+                   variant: 'success', status: :ok)
     else
       render json: {
         toast: {
@@ -134,6 +138,10 @@ class ComponentsController < ApplicationController
   end
 
   def destroy
+    # Render is intentionally OUTSIDE the transaction. Calling render inside
+    # the block was a latent DoubleRenderError trap: if the transaction's
+    # commit phase raised (e.g. deadlock, serialization failure), the rescue
+    # below would call render a second time and surface a 500 to the user.
     ActiveRecord::Base.transaction do
       rule_ids = Rule.unscoped.where(component_id: @component.id).ids
 
@@ -151,8 +159,11 @@ class ComponentsController < ApplicationController
 
       @component.destroy!
       send_slack_notification(:remove_component, @component) if Settings.slack.enabled
-      render json: { toast: 'Successfully removed component from project.' }
     end
+
+    render_toast(title: 'Component removed.',
+                 message: 'Successfully removed component from project.',
+                 variant: 'success', status: :ok)
   rescue StandardError
     render json: {
       toast: {
@@ -167,7 +178,7 @@ class ComponentsController < ApplicationController
     export_type = params[:type]&.to_sym
 
     # Other export types will be included in the future
-    unless %i[csv inspec xccdf json_archive].include?(export_type)
+    unless %i[csv inspec xccdf json_archive disposition_csv].include?(export_type)
       render json: {
         toast: {
           title: EXPORT_ERROR_TITLE,
@@ -175,6 +186,14 @@ class ComponentsController < ApplicationController
           variant: 'danger'
         }
       }, status: :bad_request
+      return
+    end
+
+    # disposition_csv is gated separately at author-tier minimum (PR #717
+    # Task 29). Viewers must NOT be able to export PII-adjacent data even
+    # though they can read it in the in-app triage table.
+    if export_type == :disposition_csv && !current_user.can_author_project?(@component.project)
+      head :forbidden
       return
     end
 
@@ -205,6 +224,8 @@ class ComponentsController < ApplicationController
             exportable: @component, mode: :backup, format: :json_archive,
             filename: "vulcan-backup-#{@component[:name].tr(' ', '-')}-#{version}#{release}.zip"
           )
+        when :disposition_csv
+          perform_disposition_csv_export
         end
       end
       # JSON responses are just used to validate ahead of time that this
@@ -271,6 +292,67 @@ class ComponentsController < ApplicationController
     return head :not_found unless @component
 
     render json: @component.histories(50)
+  end
+
+  # GET /components/:id/triage — full-page triage view for a single
+  # component's public-comment queue. Renders an HTML page that mounts a
+  # Vue app (ComponentTriagePage). The Vue app fetches rows from the
+  # JSON endpoint at GET /components/:id/comments. Replaces the legacy
+  # comments slideover.
+  #
+  # HTML-only — JSON requests return 406, since the data lives on the
+  # /components/:id/comments JSON endpoint.
+  def triage
+    respond_to do |format|
+      format.html do
+        @component_json = ComponentBlueprint.render(@component, view: :show)
+        @project_json = @component.project.to_json
+      end
+      # Explicit 406 for non-HTML formats so the catch-all StandardError
+      # rescue doesn't turn a missing-template into a 500.
+      format.any { head :not_acceptable }
+    end
+  end
+
+  # Component admin settings page. Dedicated full-page
+  # admin surface for typed lifecycle/configuration fields — Identity,
+  # Point of Contact, Public Comment Period — separated from rule-editor
+  # context. Free-form metadata + additional questions still live on
+  # their own slideovers; future phases can migrate them in here too.
+  #
+  # Admin-only via authorize_admin_component before_action.
+  def settings
+    respond_to do |format|
+      format.html do
+        @component_json = ComponentBlueprint.render(@component, view: :editor, **blueprint_render_options)
+        @project_json = @component.project.to_json
+      end
+      format.any { head :not_acceptable }
+    end
+  end
+
+  # Paginated triage table backing the public-comment-review workflow.
+  # Returns { rows: [...], pagination: {...} }. DISA-native vocab on the wire
+  # (triage_status / section keys); frontend translates via triageVocabulary.js.
+  #
+  # Sets Cache-Control: no-store so concurrent triagers cannot get a stale
+  # snapshot from a browser/proxy cache during a public-comment window.
+  def comments
+    return head :not_found unless @component
+
+    result = @component.paginated_comments(
+      triage_status: params[:triage_status].presence || 'pending',
+      section: params[:section].presence,
+      rule_id: params[:rule_id].presence,
+      author_id: params[:author_id].presence,
+      query: params[:q].presence,
+      page: params[:page].presence || 1,
+      per_page: params[:per_page].presence || 25,
+      resolved: params[:resolved].presence || 'all'
+    )
+
+    response.headers['Cache-Control'] = 'no-store'
+    render json: result
   end
 
   def based_on_same_srg
@@ -402,7 +484,9 @@ class ComponentsController < ApplicationController
 
     result = @component.apply_spreadsheet_update(file, current_user)
     if result[:success]
-      render json: { toast: "Successfully updated #{result[:count]} rules from spreadsheet." }
+      render_toast(title: 'Spreadsheet applied.',
+                   message: "Successfully updated #{result[:count]} rules from spreadsheet.",
+                   variant: 'success', status: :ok)
     elsif result[:error]
       render json: { error: result[:error] }, status: :unprocessable_entity
     end
@@ -432,6 +516,40 @@ class ComponentsController < ApplicationController
   end
 
   private
+
+  # DISA disposition matrix CSV export. Email column is
+  # opt-in and admin-tier-only (server-side enforcement, not just UI hiding).
+  # Audit log records who exported what + whether the email column was
+  # included so the audit "who has the roster" question has an
+  # answer.
+  def perform_disposition_csv_export
+    include_email = params[:include_email] == 'true' && current_user.can_admin_project?(@component.project)
+    csv_data = DispositionMatrixExport.generate(
+      component: @component,
+      triage_status_filter: params[:triage_status],
+      include_email: include_email
+    )
+    @component.audits.create!(
+      user: current_user,
+      action: 'export_disposition_csv',
+      audited_changes: {
+        triage_status_filter: params[:triage_status],
+        include_email: include_email
+      }
+    )
+    filename = "#{@component.project.name}-#{@component.prefix}-disposition-matrix-#{Date.current}.csv"
+    send_data csv_data,
+              type: 'text/csv; charset=utf-8',
+              disposition: "attachment; filename=\"#{filename}\""
+  end
+
+  # Render options shared by ComponentBlueprint calls — surfaces
+  # pending_comment_count + pending_comment_counts so the page header
+  # banner (CommentPeriodBanner) and any per-rule callouts have the
+  # accurate count. Without this, the blueprint defaults to zero.
+  def blueprint_render_options
+    { pending_comment_counts: Component.pending_comment_counts([@component.id]) }
+  end
 
   def create_or_duplicate
     if component_create_params[:duplicate] || component_create_params[:copy_component]
@@ -599,6 +717,7 @@ class ComponentsController < ApplicationController
     params.require(:component).permit(
       :released, :name, :version, :release, :title, :prefix,
       :description, :admin_name, :admin_email, :advanced_fields,
+      :comment_phase, :closed_reason, :comment_period_starts_at, :comment_period_ends_at,
       additional_questions_attributes: [:id, :name, :question_type, :_destroy, { options: [] }],
       component_metadata_attributes: { data: {} }
     )

@@ -87,6 +87,43 @@ class Component < ApplicationRecord
            :cannot_unrelease_component,
            :cannot_overlay_self
 
+  COMMENT_PHASES = %w[open closed].freeze
+  CLOSED_REASONS = %w[adjudicating finalized].freeze
+  validates :comment_phase, inclusion: { in: COMMENT_PHASES }
+  validates :closed_reason, inclusion: { in: CLOSED_REASONS }, allow_nil: true
+  validate  :closed_reason_only_when_closed
+  # Phase transitions are intentionally unrestricted — admins may regress,
+  # skip forward, etc. Compliance posture lives in the audit trail
+  # (vulcan_audited captures every phase change with optional audit_comment)
+  # plus frozen_for_writes? (blocks Review writes whenever the component IS
+  # currently closed+finalized, regardless of how it got there).
+
+  def accepting_new_comments?
+    comment_phase == 'open'
+  end
+
+  # Triage continues while comments are accepted OR while a closed
+  # component is still being adjudicated. Stops once finalized.
+  def triaging_active?
+    return true if comment_phase == 'open'
+
+    comment_phase == 'closed' && closed_reason == 'adjudicating'
+  end
+
+  # When closed+finalized the component is read-only: no new comments,
+  # no triage/adjudication writes, no rule edits.
+  def frozen_for_writes?
+    comment_phase == 'closed' && closed_reason == 'finalized'
+  end
+
+  # Returns nil when there is no actionable countdown — comments aren't
+  # being accepted, no end date is set, or the end date has passed.
+  def comment_period_days_remaining
+    return nil unless accepting_new_comments? && comment_period_ends_at&.future?
+
+    ((comment_period_ends_at - Time.current) / 1.day).ceil
+  end
+
   def as_json(options = {})
     methods = (options[:methods] || []) + %i[releasable additional_questions]
     # SeverityCounts concern already adds severity_counts via its as_json
@@ -552,6 +589,122 @@ class Component < ApplicationRecord
     end
   end
 
+  # Paginated, filterable accessor for top-level comment Reviews scoped to
+  # this component. Returns { rows: [...], pagination: {...} } where rows
+  # are pre-formatted hashes with author_name + rule_displayed_name injected.
+  # Aggregate count of top-level pending comments per component. Used by
+  # the project-detail page to render a "N pending" badge on each
+  # component card without N+1 queries (PR #717 follow-on, mirrors
+  # Project.pending_comment_counts).
+  #
+  # Returns a sparse hash: { component_id => count } — components with
+  # zero pending comments are omitted so callers can `counts[id] || 0`.
+  def self.pending_comment_counts(component_ids)
+    return {} if component_ids.blank?
+
+    Review.where(action: 'comment',
+                 responding_to_review_id: nil,
+                 triage_status: 'pending')
+          .joins(:rule)
+          .merge(Rule.where(component_id: component_ids))
+          .group('base_rules.component_id')
+          .count
+  end
+
+  # Backs GET /components/:id/comments — the triage table.
+  #
+  # On-the-wire vocabulary is DISA-native: triage_status keys (concur,
+  # non_concur, ...) and XCCDF section keys (check_content, fixtext, ...).
+  # The frontend translates to friendly labels via triageVocabulary.js.
+  def paginated_comments(triage_status: 'all', section: nil, rule_id: nil,
+                         author_id: nil, query: nil, page: 1, per_page: 25,
+                         resolved: 'all')
+    page = [page.to_i, 1].max
+    per_page = per_page.to_i.clamp(1, 100)
+
+    # Rule is STI on base_rules — must scope the join via Rule.where(...) merged
+    # in, otherwise AR's `where(rules: { ... })` references a non-existent alias.
+    # joins for the filter, preload for row serialization (avoids N+1).
+    scope = Review.top_level_comments
+                  .joins(:rule)
+                  .merge(Rule.where(component_id: id))
+                  .preload(:user, :triage_set_by, :adjudicated_by)
+
+    scope = scope.where(triage_status: triage_status) unless triage_status == 'all'
+    scope = scope.where(section: section) if section.present? && section != 'all'
+    scope = scope.where(rule_id: rule_id) if rule_id.present?
+    scope = scope.where(user_id: author_id) if author_id.present?
+
+    case resolved.to_s
+    when 'true'  then scope = scope.where.not(adjudicated_at: nil)
+    when 'false' then scope = scope.where(adjudicated_at: nil)
+    end
+
+    if query.present?
+      escaped = ActiveRecord::Base.sanitize_sql_like(query.to_s)
+      scope = scope.where('reviews.comment ILIKE ?', "%#{escaped}%")
+    end
+
+    total = scope.count
+
+    # Total includes replies — drives the dedup banner header so commenters
+    # see the full conversation size, not just the top-level count. Same
+    # filter scope as `scope` minus the top_level_comments filter.
+    total_comments_scope = Review.where(action: 'comment')
+                                 .joins(:rule)
+                                 .merge(Rule.where(component_id: id))
+    total_comments_scope = total_comments_scope.where(rule_id: rule_id) if rule_id.present?
+    total_comments_scope = total_comments_scope.where(section: section) if section.present? && section != 'all'
+    if query.present?
+      escaped = ActiveRecord::Base.sanitize_sql_like(query.to_s)
+      total_comments_scope = total_comments_scope.where('reviews.comment ILIKE ?', "%#{escaped}%")
+    end
+    total_comments = total_comments_scope.count
+
+    rule_id_to_displayed = rules.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
+
+    page_records = scope.order(created_at: :desc)
+                        .offset((page - 1) * per_page)
+                        .limit(per_page)
+                        .to_a
+
+    responses_count_lookup = Review.where(responding_to_review_id: page_records.map(&:id))
+                                   .group(:responding_to_review_id)
+                                   .count
+
+    rows = page_records.map do |r|
+      {
+        id: r.id,
+        rule_id: r.rule_id,
+        rule_displayed_name: rule_id_to_displayed[r.rule_id],
+        section: r.section,
+        author_name: r.user&.name,
+        # author_email intentionally omitted — comment endpoints are
+        # accessible to any project member, so exposing email enables
+        # scraping of every commenter's contact info during a public
+        # review window. Authorship is tracked by name + user_id only.
+        comment: r.comment,
+        created_at: r.created_at,
+        triage_status: r.triage_status,
+        triage_set_at: r.triage_set_at,
+        adjudicated_at: r.adjudicated_at,
+        duplicate_of_review_id: r.duplicate_of_review_id,
+        triager_display_name: r.triager_display_name,
+        triager_imported: r.triager_imported?,
+        adjudicator_display_name: r.adjudicator_display_name,
+        adjudicator_imported: r.adjudicator_imported?,
+        commenter_display_name: r.commenter_display_name,
+        commenter_imported: r.commenter_imported?,
+        responses_count: responses_count_lookup[r.id] || 0
+      }
+    end
+
+    {
+      rows: rows,
+      pagination: { page: page, per_page: per_page, total: total, total_comments: total_comments }
+    }
+  end
+
   def csv_export
     ::CSV.generate(headers: true) do |csv|
       csv << ExportConstants::EXPORT_HEADERS
@@ -606,6 +759,16 @@ class Component < ApplicationRecord
   end
 
   private
+
+  # closed_reason is meaningless on an open component; reject the
+  # combination rather than silently storing an inert value.
+  def closed_reason_only_when_closed
+    return if closed_reason.blank?
+    return if comment_phase == 'closed'
+
+    errors.add(:closed_reason,
+               'can only be set when comment_phase is "closed"')
+  end
 
   # Parse satisfaction text from any source string.
   # Returns { direction: "satisfies"|"satisfied by", identifiers: [...] } or nil.

@@ -49,8 +49,10 @@
 # Ignore test files
 /spec
 
-# Ignore documentation site (has its own node_modules)
-/docs
+# /docs is intentionally NOT excluded — DisaGuideController reads
+# markdown from docs/disa-process at runtime. The VitePress source is
+# ~1MB and harmless to ship; build artifacts + node_modules are
+# gitignored.
 
 # Ignore development downloads and test artifacts
 /downloads

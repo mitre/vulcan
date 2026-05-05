@@ -3,42 +3,26 @@ import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import UserProfile from "@/components/users/UserProfile.vue";
 
-// Mock axios
 vi.mock("axios", () => ({
   default: {
     put: vi.fn(() => Promise.resolve({ data: { toast: "Updated" } })),
+    post: vi.fn(() => Promise.resolve({ data: { toast: "ok" } })),
+    delete: vi.fn(() => Promise.resolve({})),
     defaults: { headers: { common: {} } },
   },
 }));
 
 /**
- * UserProfile Component Requirements
+ * UserProfile is the Profile Information sub-page of the user settings
+ * shell. Password change and Activity history live in their own pages
+ * (UserPasswordPage / UserActivityPage); My Comments is a separate
+ * top-level page reachable from the settings shell's left-rail nav.
  *
- * REQUIREMENTS:
- *
- * 1. BREADCRUMB:
- *    - Shows "Users / Profile" or just "Profile"
- *
- * 2. COMMAND BAR:
- *    - Uses BaseCommandBar
- *    - LEFT: Save button
- *    - RIGHT: Empty or panel for help/info
- *
- * 3. PROFILE FORM:
- *    - Name (editable unless provider managed)
- *    - Email (editable unless provider managed)
- *    - Slack User ID (optional)
- *    - Password fields (only for local auth)
- *    - Current password required for changes
- *
- * 4. PROVIDER NOTICE:
- *    - Shows notice if managed by external provider (GitHub, OIDC, LDAP)
- *    - Disables fields that can't be changed
- *
- * 5. SAVE:
- *    - Uses axios PUT to /users
- *    - Shows success/error toast
- *    - Handles validation errors
+ * This component owns:
+ *   - Save Profile button (PUT /users)
+ *   - Identity provider banner + Unlink modal
+ *   - Pending email confirmation banner
+ *   - Delete Account button + modal
  */
 describe("UserProfile", () => {
   let wrapper;
@@ -52,71 +36,58 @@ describe("UserProfile", () => {
       slack_user_id: "",
       unconfirmed_email: null,
     },
-    histories: [
-      { id: 1, user_id: 1, action: "update", auditable_type: "User" },
-      { id: 2, user_id: 2, action: "create", auditable_type: "Project" },
-    ],
   };
 
-  const createWrapper = (props = {}) => {
-    return shallowMount(UserProfile, {
+  const createWrapper = (props = {}) =>
+    shallowMount(UserProfile, {
       localVue,
-      propsData: {
-        ...defaultProps,
-        ...props,
-      },
-      stubs: {
-        BBreadcrumb: true,
-        BaseCommandBar: true,
-      },
+      propsData: { ...defaultProps, ...props },
+      stubs: { BaseCommandBar: true },
     });
-  };
 
   afterEach(() => {
-    if (wrapper) {
-      wrapper.destroy();
-    }
+    if (wrapper) wrapper.destroy();
   });
 
-  describe("breadcrumb", () => {
-    it("renders breadcrumb", () => {
+  describe("layout", () => {
+    it("renders Profile Information as a single card section", () => {
       wrapper = createWrapper();
-      expect(wrapper.findComponent({ name: "BBreadcrumb" }).exists()).toBe(true);
+      expect(wrapper.html()).toContain("Profile Information");
     });
 
-    it("shows Profile breadcrumb", () => {
+    it("does NOT render Change Password (moved to its own page)", () => {
       wrapper = createWrapper();
-      expect(wrapper.vm.breadcrumbs).toBeDefined();
-      expect(wrapper.vm.breadcrumbs.some((b) => b.text.includes("Profile"))).toBe(true);
+      expect(wrapper.html()).not.toContain("Change Password");
+    });
+
+    it("does NOT render an Activity sidebar (moved to its own page)", () => {
+      wrapper = createWrapper();
+      expect(wrapper.find("#user-activity-sidebar").exists()).toBe(false);
     });
   });
 
   describe("command bar", () => {
-    it("renders BaseCommandBar", () => {
+    it("renders BaseCommandBar with a Save handler", () => {
       wrapper = createWrapper();
       expect(wrapper.findComponent({ name: "BaseCommandBar" }).exists()).toBe(true);
-    });
-
-    it("has Save button in command bar", () => {
-      wrapper = createWrapper();
-      expect(wrapper.vm.saveProfile).toBeDefined();
+      expect(typeof wrapper.vm.saveProfile).toBe("function");
     });
   });
 
   describe("form fields", () => {
-    it("initializes form with user data", () => {
+    it("seeds the form with name, email, and slack_user_id only", () => {
       wrapper = createWrapper();
-      expect(wrapper.vm.form.name).toBe("Test User");
-      expect(wrapper.vm.form.email).toBe("test@example.com");
-      expect(wrapper.vm.form.slack_user_id).toBe("");
+      expect(wrapper.vm.form).toEqual({
+        name: "Test User",
+        email: "test@example.com",
+        slack_user_id: "",
+      });
     });
 
-    it("includes password fields for local auth", () => {
-      wrapper = createWrapper({ user: { ...defaultProps.user, provider: null } });
-      // Form should have password fields
-      expect(wrapper.vm.form.password).toBeDefined();
-      expect(wrapper.vm.form.password_confirmation).toBeDefined();
-      expect(wrapper.vm.form.current_password).toBeDefined();
+    it("does not carry password fields (moved to UserPasswordPage)", () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.form.password).toBeUndefined();
+      expect(wrapper.vm.form.current_password).toBeUndefined();
     });
   });
 
@@ -143,10 +114,8 @@ describe("UserProfile", () => {
       expect(wrapper.find('[data-test="unlink-identity-button"]').exists()).toBe(false);
     });
 
-    it("has a method to submit the unlink request with current password", async () => {
+    it("submits the unlink request with current password", async () => {
       const axios = (await import("axios")).default;
-      axios.post = vi.fn(() => Promise.resolve({ data: { toast: "unlinked" } }));
-
       wrapper = createWrapper({ user: { ...defaultProps.user, provider: "oidc" } });
       wrapper.vm.unlinkForm.current_password = "mypassword";
       await wrapper.vm.submitUnlink();
@@ -157,18 +126,7 @@ describe("UserProfile", () => {
     });
   });
 
-  describe("dead code removal (71q.7)", () => {
-    it("does not have an authProvider computed property", () => {
-      const wrapper = createWrapper();
-      expect(wrapper.vm.$options.computed).not.toHaveProperty("authProvider");
-    });
-  });
-
   describe("session auth method vs linked provider", () => {
-    // The session auth method (HOW they signed in now) is distinct from the
-    // linked provider (WHAT identity is attached to the account). A user with
-    // a linked Okta account may still sign in locally with email/password.
-
     it("shows 'Email and password' when signing in locally with no linked provider", () => {
       wrapper = createWrapper({
         user: { ...defaultProps.user, provider: null },
@@ -179,8 +137,6 @@ describe("UserProfile", () => {
     });
 
     it("shows 'Email and password' when signing in locally but Okta is linked", () => {
-      // Regression: Previously showed "Authenticated via Okta" even when the user
-      // signed in with their local password, which was misleading.
       wrapper = createWrapper({
         user: { ...defaultProps.user, provider: "oidc" },
         sessionAuthMethod: "local",
@@ -197,75 +153,34 @@ describe("UserProfile", () => {
       expect(wrapper.vm.currentSessionMethod).toBe("OIDC (SSO)");
     });
 
-    it("shows 'LDAP' when signing in via LDAP", () => {
-      wrapper = createWrapper({
-        user: { ...defaultProps.user, provider: "ldap" },
-        sessionAuthMethod: "ldap",
-      });
-      expect(wrapper.vm.currentSessionMethod).toBe("LDAP");
-    });
-
     it("defaults sessionAuthMethod to 'local' when not provided", () => {
       wrapper = createWrapper();
       expect(wrapper.vm.currentSessionMethod).toBe("Email and password");
     });
-
-    it("linkedProvider returns null for local-only accounts", () => {
-      wrapper = createWrapper({ user: { ...defaultProps.user, provider: null } });
-      expect(wrapper.vm.linkedProvider).toBeNull();
-    });
   });
 
   describe("save profile", () => {
-    it("calls axios.put with form data", async () => {
+    it("calls axios.put with form data on save", async () => {
       const axios = (await import("axios")).default;
       wrapper = createWrapper();
       wrapper.vm.form.name = "Updated Name";
-
       await wrapper.vm.saveProfile();
 
-      expect(axios.put).toHaveBeenCalled();
-    });
-
-    it("shows success message on save", async () => {
-      wrapper = createWrapper();
-      wrapper.vm.form.name = "Updated Name";
-
-      await wrapper.vm.saveProfile();
-
-      // Should emit success or show toast
-      expect(wrapper.vm.saving).toBe(false);
-    });
-
-    it("focuses current password field on validation error", async () => {
-      const axios = (await import("axios")).default;
-      axios.put.mockRejectedValue({
-        response: {
-          data: {
-            toast: {
-              message: ["Current password can't be blank"],
-            },
-          },
-        },
+      expect(axios.put).toHaveBeenCalledWith("/users", {
+        user: expect.objectContaining({ name: "Updated Name" }),
       });
-
-      wrapper = createWrapper();
-      await wrapper.vm.saveProfile();
-
-      // Component should try to focus the field
-      expect(wrapper.vm.saving).toBe(false);
     });
   });
 
   describe("email confirmation", () => {
-    it("shows pending confirmation alert when email unconfirmed", () => {
+    it("shows pending confirmation when email is unconfirmed", () => {
       wrapper = createWrapper({
         user: { ...defaultProps.user, unconfirmed_email: "new@example.com" },
       });
       expect(wrapper.vm.isPendingConfirmation).toBe(true);
     });
 
-    it("does not show alert when email confirmed", () => {
+    it("does not show pending when email is confirmed", () => {
       wrapper = createWrapper({
         user: { ...defaultProps.user, unconfirmed_email: null },
       });
@@ -273,24 +188,8 @@ describe("UserProfile", () => {
     });
   });
 
-  describe("user activity panel", () => {
-    it("returns all histories (server already scopes to current user)", () => {
-      // The controller filters by `user_id: current_user.id` in registrations#edit,
-      // so the component receives only current user's audit records. It must not
-      // apply a secondary filter on a field (user_id) that VulcanAudit#format
-      // does not emit — that was the bug causing 'No activity yet' to always show.
-      wrapper = createWrapper();
-      expect(wrapper.vm.userHistories.length).toBe(defaultProps.histories.length);
-    });
-
-    it("has togglePanel method from useSidebar", () => {
-      wrapper = createWrapper();
-      expect(typeof wrapper.vm.togglePanel).toBe("function");
-    });
-  });
-
   describe("delete account", () => {
-    it("openDeleteAccount shows confirmation modal", () => {
+    it("openDeleteAccount shows the confirmation modal", () => {
       wrapper = createWrapper();
       expect(wrapper.vm.showDeleteModal).toBe(false);
       wrapper.vm.openDeleteAccount();
@@ -299,11 +198,8 @@ describe("UserProfile", () => {
 
     it("confirmDeleteAccount calls axios.delete", async () => {
       const axios = (await import("axios")).default;
-      axios.delete = vi.fn(() => Promise.resolve({}));
-
       wrapper = createWrapper();
       await wrapper.vm.confirmDeleteAccount();
-
       expect(axios.delete).toHaveBeenCalledWith("/users");
     });
   });

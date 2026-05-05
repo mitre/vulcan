@@ -68,8 +68,13 @@ class RulesController < ApplicationController
   def create
     rule = create_or_duplicate
     if rule.save
-      render json: { toast: 'Successfully created control.',
-                     data: RuleBlueprint.render_as_hash(rule, view: :editor) }
+      # multi-key response (toast +
+      # data). Inline the canonical toast object since render_toast
+      # doesn't support piggybacking extra response keys.
+      render json: {
+        toast: { title: 'Control created.', message: ['Successfully created control.'], variant: 'success' },
+        data: RuleBlueprint.render_as_hash(rule, view: :editor)
+      }
     else
       render json: {
         toast: {
@@ -83,7 +88,9 @@ class RulesController < ApplicationController
 
   def update
     if @rule.update(rule_update_params)
-      render json: { toast: 'Successfully updated control.' }
+      render_toast(title: 'Control updated.',
+                   message: 'Successfully updated control.',
+                   variant: 'success', status: :ok)
     else
       render json: {
         toast: {
@@ -100,25 +107,45 @@ class RulesController < ApplicationController
     warnings << 'This control was locked.' if @rule.locked
     warnings << 'This control was under review.' if @rule.review_requestor_id.present?
 
-    # rubocop:disable Rails/SkipsModelValidations -- soft-delete must bypass validations/callbacks
-    @rule.update_columns(deleted_at: Time.zone.now, updated_at: Time.zone.now)
-    # rubocop:enable Rails/SkipsModelValidations
-    @rule.additional_answers.destroy_all
-    @rule.reviews.destroy_all
-    @rule.satisfied_by.destroy_all
+    # Wrap soft-delete + dependent cleanup in a single transaction so a
+    # failure in any destroy_all rolls back the rule's deleted_at column.
+    # Without this, a mid-cleanup failure left the rule soft-deleted with
+    # orphan additional_answers / reviews / satisfied_by rows.
+    Rule.transaction do
+      # rubocop:disable Rails/SkipsModelValidations -- soft-delete must bypass validations/callbacks
+      @rule.update_columns(deleted_at: Time.zone.now, updated_at: Time.zone.now)
+      # rubocop:enable Rails/SkipsModelValidations
+      @rule.additional_answers.destroy_all
+      @rule.reviews.destroy_all
+      @rule.satisfied_by.destroy_all
+    end
 
     Rails.logger.warn("Rule #{@rule.rule_id} (id=#{@rule.id}) deleted by #{current_user.email}: #{warnings.join(' ')}") if warnings.any?
 
     message = 'Successfully deleted control.'
     message += " Warning: #{warnings.join(' ')}" if warnings.any?
-    render json: { toast: message }
+    render_toast(title: 'Control deleted.',
+                 message: message,
+                 variant: warnings.any? ? 'warning' : 'success',
+                 status: :ok)
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::StatementInvalid => e
+    Rails.logger.error("Rule destroy failed for rule_id=#{@rule.id} user=#{current_user.id}: #{e.message}")
+    render json: {
+      toast: {
+        title: 'Could not delete control.',
+        message: 'A database error prevented the delete from completing. The control was not modified.',
+        variant: 'danger'
+      }
+    }, status: :unprocessable_entity
   end
 
   def revert
     Rule.revert(@rule, params[:audit_id], params[:fields], params[:audit_comment])
     # Save the rule to trigger callbacks (update inspec)
     @rule.save
-    render json: { toast: 'Successfully reverted history for control.' }
+    render_toast(title: 'History reverted.',
+                 message: 'Successfully reverted history for control.',
+                 variant: 'success', status: :ok)
   rescue RuleRevertError => e
     render json: {
       toast: {
@@ -146,7 +173,13 @@ class RulesController < ApplicationController
     @rule.audit_comment = comment.presence || "#{locked ? 'Locked' : 'Unlocked'} section: #{section}"
     @rule.update!(locked_fields: fields)
 
-    render json: { rule: RuleBlueprint.render_as_hash(@rule, view: :editor), toast: "#{section} #{locked ? 'locked' : 'unlocked'}" }
+    # multi-key response (rule + toast).
+    render json: {
+      rule: RuleBlueprint.render_as_hash(@rule, view: :editor),
+      toast: { title: locked ? 'Section locked.' : 'Section unlocked.',
+               message: ["#{section} #{locked ? 'locked' : 'unlocked'}"],
+               variant: 'success' }
+    }
   end
 
   def bulk_section_locks
@@ -170,7 +203,13 @@ class RulesController < ApplicationController
     @rule.audit_comment = comment.presence || "#{action_word} sections: #{sections.join(', ')}"
     @rule.update!(locked_fields: fields)
 
-    render json: { rule: RuleBlueprint.render_as_hash(@rule, view: :editor), toast: "#{action_word} #{sections.size} sections" }
+    # multi-key response (rule + toast).
+    render json: {
+      rule: RuleBlueprint.render_as_hash(@rule, view: :editor),
+      toast: { title: "Sections #{action_word.downcase}.",
+               message: ["#{action_word} #{sections.size} sections"],
+               variant: 'success' }
+    }
   end
 
   private
