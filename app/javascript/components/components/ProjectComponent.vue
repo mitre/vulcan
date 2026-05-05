@@ -346,8 +346,12 @@ export default {
         this.refreshComponent();
         return;
       }
+      // Explicit Accept header — this pack doesn't pull in FormMixin
+      // and esbuild gives each pack its own axios singleton, so the
+      // default Accept (`*/*`) would have Rails respond with HTML and
+      // the splice would write garbage into rules[idx].
       axios
-        .get(`/rules/${ruleId}`)
+        .get(`/rules/${ruleId}`, { headers: { Accept: "application/json" } })
         .then((response) => {
           const idx = this.component.rules.findIndex((r) => r.id === ruleId);
           if (idx >= 0) {
