@@ -12,7 +12,11 @@
 //   bin/vulcan build --push
 //
 // NOTE: RVM sets RUBY_VERSION with a "ruby-" prefix in some environments.
-// The Dockerfile uses a fixed UBI minimal base image and builds Ruby from source.
+// We use VULCAN_RUBY_VERSION to avoid this conflict. If you see errors like
+// "ruby:ruby-3.3.9-slim not found", either:
+//   - Set VULCAN_RUBY_VERSION=3.3.9, or
+//   - Run: unset RUBY_VERSION && docker buildx bake
+// The Dockerfile uses a fixed UBI minimal base image and builds Ruby from source based on the var.
 
 variable "REGISTRY" {
   default = "mitre"
@@ -24,6 +28,14 @@ variable "IMAGE_NAME" {
 
 variable "VERSION" {
   default = "latest"
+}
+
+variable "VULCAN_BUNDLER_VERSION" {
+  default = "2.3.27"
+}
+
+variable "VULCAN_RUBY_VERSION" {
+  default = "3.4.9"
 }
 
 variable "VULCAN_NODE_VERSION" {
@@ -59,8 +71,8 @@ target "production" {
   platforms = ["linux/amd64"]
 
   args = {
-    RUBY_VERSION = "3.4.9"
-    BUNDLER_VERSION = "4.0.11"
+    BUNDLER_VERSION = "${VULCAN_BUNDLER_VERSION}"
+    RUBY_VERSION = "${VULCAN_RUBY_VERSION}"
     NODE_VERSION = "${VULCAN_NODE_VERSION}"
   }
 
@@ -112,8 +124,8 @@ target "dev" {
   platforms = ["linux/amd64"]
 
   args = {
-    RUBY_VERSION = "3.4.9"
-    BUNDLER_VERSION = "4.0.11"
+    BUNDLER_VERSION = "${VULCAN_BUNDLER_VERSION}"
+    RUBY_VERSION = "${VULCAN_RUBY_VERSION}"
     NODE_VERSION = "${VULCAN_NODE_VERSION}"
   }
 
