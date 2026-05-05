@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
+import axios from "axios";
 import ProjectComponent from "@/components/components/ProjectComponent.vue";
 
 // Mock axios
@@ -133,7 +134,6 @@ describe("ProjectComponent", () => {
       wrapper = createWrapper();
       expect(wrapper.findComponent({ name: "RuleNavigator" }).exists()).toBe(true);
     });
-
   });
 
   describe("useRuleSelection composable integration", () => {
@@ -207,9 +207,12 @@ describe("ProjectComponent", () => {
       expect(wrapper.vm.componentPanels).toContain("comp-history");
     });
 
-    it("has comp-reviews slideover", () => {
+    // comp-reviews retired in PR #717 — slideover replaced by the
+    // full-page /components/:id/triage route. The Triage button on
+    // the command bar links there directly.
+    it("does NOT register a comp-reviews slideover panel anymore", () => {
       wrapper = createWrapper();
-      expect(wrapper.vm.componentPanels).toContain("comp-reviews");
+      expect(wrapper.vm.componentPanels).not.toContain("comp-reviews");
     });
   });
 
@@ -352,6 +355,69 @@ describe("ProjectComponent", () => {
 
       // Restore
       globalThis.location.reload = originalReload;
+    });
+  });
+
+  // ==========================================================================
+  // per-component editor Download surface. Mounts ExportModal
+  // and listens for the `download` event from ControlsCommandBar.
+  // ==========================================================================
+  describe("Download flow", () => {
+    it("mounts ExportModal as a child", () => {
+      wrapper = createWrapper();
+      expect(wrapper.findComponent({ name: "ExportModal" }).exists()).toBe(true);
+    });
+
+    it("opens the export modal when ControlsCommandBar emits download", async () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.showExportModal).toBe(false);
+      const commandBar = wrapper.findComponent({ name: "ControlsCommandBar" });
+      commandBar.vm.$emit("download");
+      await wrapper.vm.$nextTick();
+      expect(wrapper.vm.showExportModal).toBe(true);
+    });
+
+    it("closes the export modal when modal emits cancel", async () => {
+      wrapper = createWrapper();
+      wrapper.vm.showExportModal = true;
+      await wrapper.vm.$nextTick();
+      const modal = wrapper.findComponent({ name: "ExportModal" });
+      modal.vm.$emit("cancel");
+      await wrapper.vm.$nextTick();
+      expect(wrapper.vm.showExportModal).toBe(false);
+    });
+
+    it("executeExport hits the project export route with the component_id", () => {
+      wrapper = createWrapper();
+      axios.get.mockClear();
+      wrapper.vm.executeExport({
+        type: "csv",
+        mode: "working_copy",
+        componentIds: [41],
+      });
+      expect(axios.get).toHaveBeenCalledTimes(1);
+      const calledUrl = axios.get.mock.calls[0][0];
+      expect(calledUrl).toContain("/projects/1/export/csv?component_ids=41");
+      expect(calledUrl).toContain("mode=working_copy");
+    });
+
+    it("passes the available Working Copy / Vendor Submission / Publish Draft / Backup modes to ExportModal", () => {
+      wrapper = createWrapper();
+      const modal = wrapper.findComponent({ name: "ExportModal" });
+      expect(modal.props("availableModes")).toEqual([
+        "working_copy",
+        "vendor_submission",
+        "published_stig",
+        "backup",
+      ]);
+    });
+
+    it("passes the single component to ExportModal with hideComponentSelection=true", () => {
+      wrapper = createWrapper();
+      const modal = wrapper.findComponent({ name: "ExportModal" });
+      expect(modal.props("hideComponentSelection")).toBe(true);
+      expect(modal.props("components").length).toBe(1);
+      expect(modal.props("components")[0].id).toBe(41);
     });
   });
 });

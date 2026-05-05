@@ -494,6 +494,28 @@ describe("RuleList", () => {
   });
 
   // ==========================================
+  // FILTER DROPDOWN MIGRATION (Task 28)
+  // ==========================================
+  describe("filter dropdown migration (Task 28)", () => {
+    it("renders FilterDropdown for the field selector (not native <select>)", () => {
+      wrapper = createWrapper();
+      expect(wrapper.findComponent({ name: "FilterDropdown" }).exists()).toBe(true);
+      expect(wrapper.find("select").exists()).toBe(false);
+    });
+
+    it("FilterDropdown is bound to `field` and exposes the type-specific options", () => {
+      wrapper = createWrapper({ type: "stig" });
+      const fd = wrapper.findComponent({ name: "FilterDropdown" });
+      expect(fd.props("value")).toBe("rule_id");
+      expect(fd.props("options")).toEqual([
+        { value: "rule_id", text: "Rule ID" },
+        { value: "stig_id", text: "STIG ID" },
+        { value: "srg_id", text: "SRG ID" },
+      ]);
+    });
+  });
+
+  // ==========================================
   // ACCESSIBILITY
   // ==========================================
   describe("accessibility", () => {

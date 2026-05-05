@@ -142,6 +142,75 @@ describe("ComponentCard", () => {
       expect(html).toContain("patch-check-fill");
     });
 
+    // REQUIREMENT: pending-comment pill links to the full-page triage view
+    // (the slideover was retired). Anchor must point at /components/:id/triage,
+    // NOT the legacy /components/:id#comments hash URL.
+    // Pending comments appear as a contextual alert callout between the
+    // subtitle and PoC line — describing the state of the component, not
+    // adding to the action-button chrome. Keeps action row uncluttered
+    // and the urgency visible where the user is reading about the
+    // component itself.
+    describe("pending-comments alert callout", () => {
+      it("shows a warning alert with the count and a link to /triage when pending > 0", () => {
+        const comp = { ...defaultComponent, pending_comment_count: 4 };
+        wrapper = createWrapper({ component: comp });
+        const alert = wrapper.find(".alert");
+        expect(alert.exists()).toBe(true);
+        expect(alert.classes().some((c) => /warning/.test(c))).toBe(true);
+        expect(alert.text()).toContain("4");
+        const link = alert.find('a[href*="/triage"]');
+        expect(link.exists()).toBe(true);
+        expect(link.attributes("href")).toBe(`/components/${comp.id}/triage`);
+      });
+
+      it("does NOT render a pending button in the action row", () => {
+        const comp = { ...defaultComponent, pending_comment_count: 4 };
+        wrapper = createWrapper({ component: comp });
+        // The action row contains Open Component + admin actions. The
+        // pending count should NOT add a 6th button there.
+        const actionButtons = wrapper.findAll(".btn");
+        const triageBtn = actionButtons.wrappers.find((b) => /Triage/.test(b.text()));
+        expect(triageBtn).toBeUndefined();
+      });
+
+      it("does NOT render the alert when pending_comment_count is 0", () => {
+        const comp = { ...defaultComponent, pending_comment_count: 0 };
+        wrapper = createWrapper({ component: comp });
+        expect(wrapper.find(".alert").exists()).toBe(false);
+      });
+    });
+
+    // REQUIREMENT: top-right of the card stays compact. The "Not Configured"
+    // pill (which fired on rules_count == 0) was clutter — empty cards
+    // already convey their empty state via the rest of the card and the
+    // editor page handles the actual onboarding flow. Drop it.
+    describe("configuration state", () => {
+      it("does NOT render a Not Configured pill when rules_count is 0", () => {
+        const comp = { ...defaultComponent, rules_count: 0 };
+        wrapper = createWrapper({ component: comp });
+        expect(wrapper.text()).not.toContain("Not Configured");
+      });
+
+      it("renders the rules-count badge when rules_count > 0", () => {
+        const comp = { ...defaultComponent, rules_count: 203 };
+        wrapper = createWrapper({ component: comp });
+        expect(wrapper.text()).toContain("203");
+      });
+
+      it("renders the rules-count badge AND the pending-comments alert together", () => {
+        const comp = { ...defaultComponent, rules_count: 203, pending_comment_count: 4 };
+        wrapper = createWrapper({ component: comp });
+        expect(wrapper.text()).toContain("203");
+        expect(wrapper.find(".alert").exists()).toBe(true);
+      });
+
+      it("marks overlaid components with the (Overlaid) tag when component_id is set", () => {
+        const overlaid = { ...defaultComponent, rules_count: 203, component_id: 99 };
+        wrapper = createWrapper({ component: overlaid });
+        expect(wrapper.text()).toContain("Overlaid");
+      });
+    });
+
     it("does NOT show released indicator when component is not released", () => {
       const unreleasedComp = { ...defaultComponent, released: false };
       wrapper = createWrapper({ component: unreleasedComp });
@@ -235,6 +304,25 @@ describe("ComponentCard", () => {
       });
       // Should not show Delete button text
       expect(wrapper.text()).not.toContain("Delete");
+    });
+
+    it("shows a Settings link to admins that points to the component settings page", () => {
+      wrapper = createWrapper({
+        effectivePermissions: "admin",
+        component: { ...defaultComponent, id: 42 },
+      });
+      const link = wrapper.find('[data-test="component-card-settings-link"]');
+      expect(link.exists()).toBe(true);
+      expect(link.attributes("href")).toBe("/components/42/settings");
+      expect(link.text()).toContain("Settings");
+    });
+
+    it("hides the Settings link for non-admins", () => {
+      wrapper = createWrapper({
+        effectivePermissions: "author",
+        component: { ...defaultComponent, id: 42 },
+      });
+      expect(wrapper.find('[data-test="component-card-settings-link"]').exists()).toBe(false);
     });
 
     it("action buttons are in a flex container for visual consistency", () => {

@@ -15,6 +15,8 @@ module Import
         srg = resolve_srg
         return nil unless srg
 
+        phase, reason = normalize_comment_phase(@data['comment_phase'], @data['closed_reason'])
+
         component = @project.components.new(
           name: @data['name'],
           prefix: @data['prefix'],
@@ -26,7 +28,13 @@ module Import
           admin_name: @data['admin_name'],
           admin_email: @data['admin_email'],
           advanced_fields: @data['advanced_fields'] || false,
-          security_requirements_guide_id: srg.id
+          security_requirements_guide_id: srg.id,
+          # Legacy archives (draft / adjudication / final) are remapped
+          # to the current open/closed shape via #normalize_comment_phase.
+          comment_phase: phase,
+          closed_reason: reason,
+          comment_period_starts_at: @data['comment_period_starts_at'],
+          comment_period_ends_at: @data['comment_period_ends_at']
         )
         component.skip_import_srg_rules = true
 
@@ -45,6 +53,24 @@ module Import
       end
 
       private
+
+      # Map any combination of legacy four-value comment_phase + new
+      # closed_reason into the current two-value shape. Returns
+      # [phase, reason]. Defaults to [open, nil] when both are absent.
+      def normalize_comment_phase(legacy_phase, legacy_reason)
+        case legacy_phase
+        when 'draft', nil, ''
+          ['open', nil]
+        when 'adjudication'
+          %w[closed adjudicating]
+        when 'final'
+          %w[closed finalized]
+        when 'closed'
+          ['closed', legacy_reason.presence]
+        else
+          [legacy_phase, legacy_reason.presence]
+        end
+      end
 
       def resolve_srg
         based_on = @data['based_on']

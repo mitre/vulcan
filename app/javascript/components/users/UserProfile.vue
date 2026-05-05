@@ -1,8 +1,5 @@
 <template>
   <div>
-    <b-breadcrumb :items="breadcrumbs" />
-
-    <!-- Command Bar -->
     <BaseCommandBar>
       <template #left>
         <b-button variant="primary" size="sm" :disabled="saving" @click="saveProfile">
@@ -11,14 +8,6 @@
         </b-button>
       </template>
       <template #right>
-        <b-button-group size="sm" class="mr-2">
-          <b-button
-            :variant="isPanelActive('user-activity') ? 'secondary' : 'outline-secondary'"
-            @click="togglePanel('user-activity')"
-          >
-            <b-icon icon="clock-history" /> My Activity
-          </b-button>
-        </b-button-group>
         <b-button variant="outline-danger" size="sm" @click="openDeleteAccount">
           <b-icon icon="trash" /> Delete Account
         </b-button>
@@ -59,115 +48,53 @@
       email for the confirmation link.
     </b-alert>
 
-    <b-row>
-      <b-col md="6">
-        <b-card title="Profile Information">
-          <b-form @submit.prevent="saveProfile">
-            <!-- Name -->
-            <b-form-group label="Your Name" label-for="user-name">
-              <b-form-input
-                id="user-name"
-                v-model="form.name"
-                :disabled="isProviderManaged"
-                required
-                autocomplete="name"
-              />
-            </b-form-group>
-
-            <!-- Email -->
-            <b-form-group label="Email" label-for="user-email">
-              <b-form-input
-                id="user-email"
-                v-model="form.email"
-                type="email"
-                :disabled="isProviderManaged"
-                required
-                autocomplete="email"
-              />
-            </b-form-group>
-
-            <!-- Slack User ID -->
-            <b-form-group
-              label="Slack User ID (Optional)"
-              label-for="user-slack"
-              description="Provide your Slack user ID (e.g., U123456) for notifications"
-            >
-              <b-form-input
-                id="user-slack"
-                v-model="form.slack_user_id"
-                :disabled="isProviderManaged"
-                autocomplete="off"
-              />
-            </b-form-group>
-
-            <!-- Password fields (local auth only) -->
-            <template v-if="!isProviderManaged">
-              <hr class="my-4" />
-              <h5 class="mb-3">Change Password</h5>
-
-              <b-form-group
-                label="New Password"
-                label-for="user-password"
-                description="Leave blank if you don't want to change it"
-              >
-                <PasswordField
-                  id="user-password"
-                  v-model="form.password"
-                  name="user[password]"
-                  autocomplete="new-password"
-                  :policy="passwordPolicy"
-                />
-              </b-form-group>
-
-              <b-form-group label="Confirm New Password" label-for="user-password-confirmation">
-                <PasswordField
-                  id="user-password-confirmation"
-                  v-model="form.password_confirmation"
-                  name="user[password_confirmation]"
-                  autocomplete="new-password"
-                  :must-match="form.password"
-                />
-              </b-form-group>
-
-              <b-form-group
-                label="Current Password"
-                label-for="user-current-password"
-                description="Required to confirm your changes"
-              >
+    <b-card no-body>
+      <b-card-header>
+        <h5 class="mb-0"><b-icon icon="person" class="mr-1" /> Profile Information</h5>
+      </b-card-header>
+      <b-card-body>
+        <b-form @submit.prevent="saveProfile">
+          <b-form-row>
+            <b-col md="6">
+              <b-form-group label="Your Name" label-for="user-name">
                 <b-form-input
-                  id="user-current-password"
-                  v-model="form.current_password"
-                  type="password"
+                  id="user-name"
+                  v-model="form.name"
+                  :disabled="isProviderManaged"
                   required
-                  autocomplete="current-password"
+                  autocomplete="name"
                 />
               </b-form-group>
-            </template>
-          </b-form>
-        </b-card>
-      </b-col>
-    </b-row>
+            </b-col>
+            <b-col md="6">
+              <b-form-group label="Email" label-for="user-email">
+                <b-form-input
+                  id="user-email"
+                  v-model="form.email"
+                  type="email"
+                  :disabled="isProviderManaged"
+                  required
+                  autocomplete="email"
+                />
+              </b-form-group>
+            </b-col>
+          </b-form-row>
+          <b-form-group
+            label="Slack User ID (Optional)"
+            label-for="user-slack"
+            description="Provide your Slack user ID (e.g., U123456) for notifications"
+          >
+            <b-form-input
+              id="user-slack"
+              v-model="form.slack_user_id"
+              :disabled="isProviderManaged"
+              autocomplete="off"
+            />
+          </b-form-group>
+        </b-form>
+      </b-card-body>
+    </b-card>
 
-    <!-- User Activity Sidebar -->
-    <b-sidebar
-      id="user-activity-sidebar"
-      title="My Activity"
-      right
-      shadow
-      backdrop
-      :visible="activePanel === 'user-activity'"
-      @hidden="closePanel"
-    >
-      <div class="px-3 py-2">
-        <p v-if="userHistories.length === 0" class="text-muted">
-          No activity yet. Your actions (creating projects, editing components, etc.) will appear
-          here.
-        </p>
-        <History v-else :histories="userHistories" :revertable="false" />
-      </div>
-    </b-sidebar>
-
-    <!-- Unlink Identity Confirmation Modal -->
     <b-modal
       id="unlink-identity-modal"
       v-model="showUnlinkModal"
@@ -197,7 +124,6 @@
       </b-form-group>
     </b-modal>
 
-    <!-- Delete Account Confirmation Modal -->
     <ConfirmDeleteModal
       v-model="showDeleteModal"
       item-name="your account"
@@ -215,39 +141,22 @@
 import axios from "axios";
 import BaseCommandBar from "../shared/BaseCommandBar.vue";
 import ConfirmDeleteModal from "../shared/ConfirmDeleteModal.vue";
-import History from "../shared/History.vue";
-import PasswordField from "../shared/PasswordField.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import { useSidebar } from "../../composables";
 
 export default {
   name: "UserProfile",
-  components: { BaseCommandBar, ConfirmDeleteModal, History, PasswordField },
+  components: { BaseCommandBar, ConfirmDeleteModal },
   mixins: [FormMixinVue, AlertMixinVue],
   props: {
     user: {
       type: Object,
       required: true,
     },
-    histories: {
-      type: Array,
-      default: () => [],
-    },
-    passwordPolicy: {
-      type: Object,
-      default: null,
-    },
-    // How the user signed in THIS session: "local", "oidc", "ldap", "github".
-    // Distinct from user.provider which records linked identities.
     sessionAuthMethod: {
       type: String,
       default: "local",
     },
-  },
-  setup() {
-    const { activePanel, togglePanel, closePanel } = useSidebar();
-    return { activePanel, togglePanel, closePanel };
   },
   data() {
     return {
@@ -255,13 +164,8 @@ export default {
         name: this.user.name || "",
         email: this.user.email || "",
         slack_user_id: this.user.slack_user_id || "",
-        password: "",
-        password_confirmation: "",
-        current_password: "",
       },
-      unlinkForm: {
-        current_password: "",
-      },
+      unlinkForm: { current_password: "" },
       showUnlinkModal: false,
       isUnlinking: false,
       saving: false,
@@ -270,35 +174,18 @@ export default {
     };
   },
   computed: {
-    breadcrumbs() {
-      return [
-        { text: "Users", href: "/users" },
-        { text: "Profile", active: true },
-      ];
-    },
     isProviderManaged() {
       return !!this.user.provider;
     },
-    // The identity currently linked to this account (nil for local-only accounts).
     linkedProvider() {
       if (!this.user.provider) return null;
       return this.humanizeProvider(this.user.provider);
     },
-    // How the user signed in during THIS session.
     currentSessionMethod() {
       return this.humanizeProvider(this.sessionAuthMethod);
     },
     isPendingConfirmation() {
       return !!(this.user.unconfirmed_email && this.user.unconfirmed_email.length > 0);
-    },
-    isPanelActive() {
-      return (panel) => this.activePanel === panel;
-    },
-    userHistories() {
-      // The controller already scopes histories to the current user via
-      // `Audited.audit_class.where(user_id: current_user.id)` in registrations#edit.
-      // No further filtering needed here (VulcanAudit#format does not include user_id).
-      return this.histories;
     },
   },
   methods: {
@@ -314,27 +201,12 @@ export default {
     },
     async saveProfile() {
       if (this.saving) return;
-
       this.saving = true;
       try {
-        const response = await axios.put(`/users`, {
-          user: this.form,
-        });
+        const response = await axios.put(`/users`, { user: this.form });
         this.alertOrNotifyResponse(response);
-        // Clear password fields after successful save
-        this.form.password = "";
-        this.form.password_confirmation = "";
-        this.form.current_password = "";
       } catch (error) {
         this.alertOrNotifyResponse(error);
-        // Auto-focus the current password field if that's the error
-        const errorMsg = error.response?.data?.toast?.message;
-        if (errorMsg && errorMsg.some((msg) => msg.includes("Current password"))) {
-          this.$nextTick(() => {
-            const input = document.getElementById("user-current-password");
-            if (input) input.focus();
-          });
-        }
       } finally {
         this.saving = false;
       }
@@ -346,7 +218,6 @@ export default {
       this.isDeleting = true;
       try {
         await axios.delete("/users");
-        // Redirect to home after account deletion
         globalThis.location.href = "/";
       } catch (error) {
         this.alertOrNotifyResponse(error);
@@ -368,7 +239,6 @@ export default {
           current_password: this.unlinkForm.current_password,
         });
         this.alertOrNotifyResponse(response);
-        // Reload so the page reflects the unlinked state (provider nulled out)
         globalThis.location.reload();
       } catch (error) {
         this.alertOrNotifyResponse(error);

@@ -60,9 +60,30 @@
             <b-nav-item-dropdown right>
               <template #button-content>
                 <b-icon icon="person-circle" aria-hidden="true" />
+                <span v-if="userDisplayName" class="ml-2 d-none d-xl-inline">
+                  {{ userDisplayName }}
+                </span>
               </template>
-              <b-dropdown-item :href="profile_path">Profile</b-dropdown-item>
-              <b-dropdown-item v-if="users_path" :href="users_path">Manage Users</b-dropdown-item>
+              <b-dropdown-text v-if="userDisplayName" class="text-muted small">
+                <div class="font-weight-bold text-body">{{ userDisplayName }}</div>
+                <div v-if="current_user && current_user.email">{{ current_user.email }}</div>
+              </b-dropdown-text>
+              <b-dropdown-divider v-if="userDisplayName" />
+              <!-- data-turbolinks="false" — each profile sub-page is its
+                   own Vue pack, and Turbolinks-tracked navigation
+                   between packs sometimes lands before the new pack's
+                   turbolinks:load listener registers. Force a full page
+                   load to keep the mount reliable. -->
+              <b-dropdown-item :href="profile_path" data-turbolinks="false">
+                Profile
+              </b-dropdown-item>
+              <b-dropdown-item v-if="myCommentsPath" :href="myCommentsPath" data-turbolinks="false">
+                My Comments
+              </b-dropdown-item>
+              <b-dropdown-item v-if="users_path" :href="users_path" data-turbolinks="false">
+                Manage Users
+              </b-dropdown-item>
+              <b-dropdown-divider />
               <b-dropdown-item @click.prevent="signOut">Sign Out</b-dropdown-item>
             </b-nav-item-dropdown>
           </b-navbar-nav>
@@ -112,6 +133,11 @@ export default {
       type: String,
       required: false,
     },
+    current_user: {
+      type: Object,
+      required: false,
+      default: null,
+    },
     sign_out_path: {
       type: String,
       required: false,
@@ -151,6 +177,14 @@ export default {
   computed: {
     notificationCount() {
       return this.localAccessRequests.length + this.localLockedUsers.length;
+    },
+    userDisplayName() {
+      if (!this.current_user) return null;
+      return this.current_user.name || this.current_user.email || null;
+    },
+    myCommentsPath() {
+      if (!this.current_user || !this.current_user.id) return null;
+      return `/users/${this.current_user.id}/comments`;
     },
   },
   mounted() {

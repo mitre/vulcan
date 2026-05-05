@@ -1,0 +1,11 @@
+- content_for :assets do
+  = javascript_include_tag 'component_settings'
+  = stylesheet_link_tag 'project_component'
+
+#componentsettings
+  %componentsettings{
+    'v-bind:initial-component-state': @component_json,
+    'v-bind:project': @project_json,
+    'v-bind:effective-permissions': @effective_permissions.to_json,
+    'v-bind:current-user-id': current_user.id.to_json,
+  }

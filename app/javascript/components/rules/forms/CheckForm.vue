@@ -57,15 +57,18 @@
       />
     </RuleFormGroup>
 
-    <!-- content -->
+    <!-- content — Check Text. Primary user-facing field of the "Check"
+         section, so it owns the SectionCommentIcon (visual order, not
+         data-structure order, drives where the icon lives). -->
     <RuleFormGroup
       v-slot="{ inputId, isDisabled }"
-      v-bind="formGroupProps"
+      v-bind="formGroupPropsWithCommentIcon"
       field-name="content"
       label="Check"
       :tooltip="tooltips['content']"
       id-prefix="ruleEditor-check"
       @toggle-section-lock="$emit('toggle-section-lock', $event)"
+      @open-composer="bubbleOpenComposer"
     >
       <MarkdownTextarea
         :id="inputId"
@@ -83,13 +86,14 @@
 
 <script>
 import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
+import CommentIconHostMixin from "../../../mixins/CommentIconHostMixin.vue";
 import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
 import RuleFormGroup from "../../shared/RuleFormGroup.vue";
 
 export default {
   name: "CheckForm",
   components: { MarkdownTextarea, RuleFormGroup },
-  mixins: [FormFeedbackMixinVue],
+  mixins: [FormFeedbackMixinVue, CommentIconHostMixin],
   // `rule` and `index` are necessary if edits are to be made
   props: {
     rule: {
@@ -173,6 +177,8 @@ export default {
         invalidFeedback: this.invalidFeedback || {},
       };
     },
+    // formGroupPropsWithCommentIcon and bubbleOpenComposer come from
+    // CommentIconHostMixin.
   },
 };
 </script>

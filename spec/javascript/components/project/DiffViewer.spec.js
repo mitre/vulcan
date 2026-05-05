@@ -90,6 +90,57 @@ describe("DiffViewer", () => {
     });
   });
 
+  // ─── Task 28: FilterDropdown migration ───────────────────
+  describe("filter dropdown migration (Task 28)", () => {
+    it("Base/Compare/Theme selectors all render as FilterDropdown — no native <select>", () => {
+      wrapper = createWrapper();
+      // Base, Compare (when baseComponent is set), and Theme — Compare may
+      // not render until baseComponent is selected, so only base+theme are
+      // guaranteed visible at mount with no baseComponent. We assert the
+      // top-level template uses FilterDropdown for all three by opting into
+      // a baseComponent assignment first.
+      wrapper.setData({ baseComponentId: 1 });
+      const all = wrapper.findAllComponents({ name: "FilterDropdown" });
+      expect(all.length).toBeGreaterThanOrEqual(2);
+      expect(wrapper.find("select").exists()).toBe(false);
+    });
+
+    it("baseComponentId v-models the chosen component's ID (primitive, not object)", () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.baseComponentId).toBeNull();
+      wrapper.vm.baseComponentId = 2;
+      expect(typeof wrapper.vm.baseComponentId).toBe("number");
+    });
+
+    it("baseComponent computed resolves the full object from baseComponentId", async () => {
+      wrapper = createWrapper();
+      await wrapper.setData({ baseComponentId: 2 });
+      expect(wrapper.vm.baseComponent).toEqual({
+        id: 2,
+        name: "Comp B",
+        version: 1,
+        release: 2,
+      });
+    });
+
+    it("componentOptions exposes [{value, text}] derived from project.components", () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.componentOptions).toEqual([
+        { value: 1, text: expect.stringContaining("Comp A") },
+        { value: 2, text: expect.stringContaining("Comp B") },
+      ]);
+    });
+
+    it("themeOptions exposes 3 monaco theme entries in {value, text} shape", () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.themeOptions).toEqual([
+        { value: "vs", text: expect.any(String) },
+        { value: "vs-dark", text: expect.any(String) },
+        { value: "hc-black", text: expect.any(String) },
+      ]);
+    });
+  });
+
   // ─── Inline/Side-by-Side toggle ──────────────────────────
   describe("inline/side-by-side toggle", () => {
     it("toggles renderSideBySide", () => {

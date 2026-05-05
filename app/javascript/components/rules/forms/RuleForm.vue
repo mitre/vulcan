@@ -11,12 +11,13 @@
       >
         <!-- status -->
         <RuleFormGroup
-          v-bind="formGroupProps"
+          v-bind="formGroupPropsWithCommentIcon"
           field-name="status"
           label="Status"
           :tooltip="tooltips['status']"
           extra-class="col-md-8"
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
+          @open-composer="bubbleOpenComposer"
         >
           <template #default="{ inputId, isDisabled }">
             <b-form-select
@@ -32,12 +33,13 @@
 
         <!-- rule_severity -->
         <RuleFormGroup
-          v-bind="formGroupProps"
+          v-bind="formGroupPropsWithCommentIcon"
           field-name="rule_severity"
           label="Severity"
           :tooltip="tooltips['rule_severity']"
           extra-class="col-md-4"
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
+          @open-composer="bubbleOpenComposer"
         >
           <template #default="{ inputId, isDisabled }">
             <b-form-select
@@ -133,11 +135,12 @@
 
       <!-- title -->
       <RuleFormGroup
-        v-bind="formGroupProps"
+        v-bind="formGroupPropsWithCommentIcon"
         field-name="title"
         label="Title"
         :tooltip="tooltips['title']"
         @toggle-section-lock="$emit('toggle-section-lock', $event)"
+        @open-composer="bubbleOpenComposer"
       >
         <template #default="{ inputId, isDisabled }">
           <MarkdownTextarea
@@ -167,6 +170,7 @@
           :field-state-class-fn="fieldStateClassFn"
           :fields="disa_fields"
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
+          @open-composer="bubbleOpenComposer"
         />
       </template>
 
@@ -183,16 +187,18 @@
           :show-section-locks="showSectionLocks"
           :field-state-class-fn="fieldStateClassFn"
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
+          @open-composer="bubbleOpenComposer"
         />
       </template>
 
       <!-- fixtext -->
       <RuleFormGroup
-        v-bind="formGroupProps"
+        v-bind="formGroupPropsWithCommentIcon"
         field-name="fixtext"
         label="Fix"
         :tooltip="tooltips['fixtext']"
         @toggle-section-lock="$emit('toggle-section-lock', $event)"
+        @open-composer="bubbleOpenComposer"
       >
         <template #default="{ inputId, isDisabled }">
           <MarkdownTextarea
@@ -237,11 +243,12 @@
 
       <!-- artifact_description -->
       <RuleFormGroup
-        v-bind="formGroupProps"
+        v-bind="formGroupPropsWithCommentIcon"
         field-name="artifact_description"
         label="Artifact Description"
         :tooltip="tooltips['artifact_description']"
         @toggle-section-lock="$emit('toggle-section-lock', $event)"
+        @open-composer="bubbleOpenComposer"
       >
         <template #default="{ inputId, isDisabled }">
           <MarkdownTextarea
@@ -259,11 +266,12 @@
 
       <!-- vendor_comments -->
       <RuleFormGroup
-        v-bind="formGroupProps"
+        v-bind="formGroupPropsWithCommentIcon"
         field-name="vendor_comments"
         label="Vendor Comments"
         :tooltip="tooltips['vendor_comments']"
         @toggle-section-lock="$emit('toggle-section-lock', $event)"
+        @open-composer="bubbleOpenComposer"
       >
         <template #default="{ inputId, isDisabled }">
           <MarkdownTextarea
@@ -293,11 +301,12 @@
 
       <!-- version -->
       <RuleFormGroup
-        v-bind="formGroupProps"
+        v-bind="formGroupPropsWithCommentIcon"
         field-name="version"
         label="Version"
         :tooltip="tooltips['version']"
         @toggle-section-lock="$emit('toggle-section-lock', $event)"
+        @open-composer="bubbleOpenComposer"
       >
         <template #default="{ inputId, isDisabled }">
           <b-form-input
@@ -427,6 +436,7 @@
 
 <script>
 import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
+import CommentIconHostMixin from "../../../mixins/CommentIconHostMixin.vue";
 import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
 import RuleFormGroup from "../../shared/RuleFormGroup.vue";
 import DisaRuleDescriptionForm from "./DisaRuleDescriptionForm";
@@ -443,7 +453,7 @@ export default {
     MarkdownTextarea,
     RuleFormGroup,
   },
-  mixins: [FormFeedbackMixinVue],
+  mixins: [FormFeedbackMixinVue, CommentIconHostMixin],
   props: {
     rule: {
       type: Object,
@@ -517,6 +527,8 @@ export default {
     };
   },
   computed: {
+    // formGroupPropsWithCommentIcon and bubbleOpenComposer are provided by
+    // CommentIconHostMixin — keep this list focused on RuleForm-specific.
     formGroupProps() {
       return {
         fields: this.fields,

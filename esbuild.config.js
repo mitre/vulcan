@@ -13,6 +13,9 @@ const entryPoints = {
   project: "app/javascript/packs/project.js",
   project_components: "app/javascript/packs/project_components.js",
   project_component: "app/javascript/packs/project_component.js",
+  project_triage: "app/javascript/packs/project_triage.js",
+  component_triage: "app/javascript/packs/component_triage.js",
+  component_settings: "app/javascript/packs/component_settings.js",
   released_component: "app/javascript/packs/released_component.js",
   rules: "app/javascript/packs/rules.js",
   security_requirements_guides: "app/javascript/packs/security_requirements_guides.js",
@@ -21,6 +24,9 @@ const entryPoints = {
   stigs: "app/javascript/packs/stigs.js",
   users: "app/javascript/packs/users.js",
   user_profile: "app/javascript/packs/user_profile.js",
+  user_password: "app/javascript/packs/user_password.js",
+  user_activity: "app/javascript/packs/user_activity.js",
+  user_comments: "app/javascript/packs/user_comments.js",
 };
 
 // Check if we're in watch mode

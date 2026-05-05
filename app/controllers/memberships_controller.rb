@@ -14,17 +14,15 @@ class MembershipsController < ApplicationController
     if membership.save
       delete_access_request(membership_create_params[:access_request_id]) if membership_create_params[:access_request_id].present?
       flash.notice = 'Successfully created membership.'
-      send_smtp_notification(UserMailer, 'welcome_user', current_user, membership) if Settings.smtp.enabled
-      case membership.membership_type
-      when 'Project'
-        send_membership_notification(:create_project_membership, membership)
-      when 'Component'
-        send_membership_notification(:create_component_membership, membership)
-      end
+      notify_membership_change(membership, smtp_action: 'welcome_user', inapp_verb: 'create')
 
       respond_to do |format|
         format.html { redirect_to membership.membership }
-        format.json { render json: { toast: 'Successfully created membership.' } }
+        format.json do
+          render_toast(title: 'Membership created.',
+                       message: 'Successfully created membership.',
+                       variant: 'success', status: :ok)
+        end
       end
     else
       respond_to do |format|
@@ -47,20 +45,18 @@ class MembershipsController < ApplicationController
 
   def update
     if @membership.update(membership_update_params)
-      send_smtp_notification(UserMailer, 'update_membership', current_user, @membership) if Settings.smtp.enabled
-      case @membership.membership_type
-      when 'Project'
-        send_membership_notification(:update_project_membership, @membership)
-      when 'Component'
-        send_membership_notification(:update_component_membership, @membership)
-      end
+      notify_membership_change(@membership, smtp_action: 'update_membership', inapp_verb: 'update')
 
       respond_to do |format|
         format.html do
           flash.notice = 'Successfully updated membership.'
           redirect_to @membership.membership
         end
-        format.json { render json: { toast: 'Successfully updated membership' } }
+        format.json do
+          render_toast(title: 'Membership updated.',
+                       message: 'Successfully updated membership.',
+                       variant: 'success', status: :ok)
+        end
       end
     else
       respond_to do |format|
@@ -83,20 +79,18 @@ class MembershipsController < ApplicationController
 
   def destroy
     if @membership.destroy
-      send_smtp_notification(UserMailer, 'remove_membership', current_user, @membership) if Settings.smtp.enabled
-      case @membership.membership_type
-      when 'Project'
-        send_membership_notification(:remove_project_membership, @membership)
-      when 'Component'
-        send_membership_notification(:remove_component_membership, @membership)
-      end
+      notify_membership_change(@membership, smtp_action: 'remove_membership', inapp_verb: 'remove')
 
       respond_to do |format|
         format.html do
           flash.notice = 'Successfully removed membership.'
           redirect_to @membership.membership
         end
-        format.json { render json: { toast: 'Successfully removed membership.' } }
+        format.json do
+          render_toast(title: 'Membership removed.',
+                       message: 'Successfully removed membership.',
+                       variant: 'success', status: :ok)
+        end
       end
     else
       respond_to do |format|
@@ -118,6 +112,22 @@ class MembershipsController < ApplicationController
   end
 
   private
+
+  # Single dispatch point for SMTP + in-app membership notifications.
+  # Wraps each side-effect call in safely_notify so a notification failure
+  # cannot turn a successful state-change action into a 500.
+  def notify_membership_change(membership, smtp_action:, inapp_verb:)
+    if Settings.smtp.enabled
+      safely_notify("#{inapp_verb}_membership_smtp") do
+        send_smtp_notification(UserMailer, smtp_action, current_user, membership)
+      end
+    end
+
+    inapp_event = :"#{inapp_verb}_#{membership.membership_type.downcase}_membership"
+    safely_notify("#{inapp_verb}_membership_inapp") do
+      send_membership_notification(inapp_event, membership)
+    end
+  end
 
   def set_membership
     @membership = Membership.find(params[:id])

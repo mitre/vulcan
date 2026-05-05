@@ -181,6 +181,117 @@ RSpec.describe Export::Serializers::BackupSerializer do
       end
     end
 
+    # public-comment review workflow round-trip support. Backups
+    # taken mid-review must preserve the full lifecycle so a restore reconstructs
+    # disposition state without compliance loss. Validators on Review prevent
+    # cross-component replies, so this section uses a single rule for all the
+    # threaded examples.
+    describe 'public-comment review lifecycle preservation' do
+      let(:commenter) { create(:user, name: 'Commenter') }
+      let(:triager) { create(:user, name: 'Triager') }
+      let(:rule) { component.rules.first }
+
+      before do
+        # Reviews validate that the user has project access; seed memberships so
+        # the per-test Review.create! calls pass the cross-scope validator.
+        Membership.find_or_create_by!(user: commenter, membership: project) { |m| m.role = 'viewer' }
+        Membership.find_or_create_by!(user: triager, membership: project) { |m| m.role = 'author' }
+      end
+
+      describe 'component fields' do # rubocop:disable RSpec/NestedGroups
+        before do
+          component.update!(
+            comment_phase: 'open',
+            comment_period_starts_at: '2026-04-15T00:00:00Z',
+            comment_period_ends_at: '2026-04-30T00:00:00Z'
+          )
+          component.reload
+        end
+
+        it 'includes comment_phase' do
+          expect(data[:component][:comment_phase]).to eq('open')
+        end
+
+        it 'includes comment_period_starts_at as ISO8601' do
+          expect(data[:component][:comment_period_starts_at]).to match(TIMESTAMP_PATTERN)
+        end
+
+        it 'includes comment_period_ends_at as ISO8601' do
+          expect(data[:component][:comment_period_ends_at]).to match(TIMESTAMP_PATTERN)
+        end
+      end
+
+      describe 'review lifecycle fields' do # rubocop:disable RSpec/NestedGroups
+        let!(:top_level) do
+          Review.create!(user: commenter, rule: rule, action: 'comment',
+                         comment: 'TLS 1.2 EOL concern',
+                         section: 'check_content',
+                         triage_status: 'concur_with_comment',
+                         triage_set_by: triager, triage_set_at: 1.day.ago,
+                         adjudicated_at: 12.hours.ago, adjudicated_by: triager)
+        end
+        let!(:reply) do
+          Review.create!(user: triager, rule: rule, action: 'comment',
+                         responding_to_review_id: top_level.id,
+                         comment: 'will fix in next revision')
+        end
+
+        it 'preserves triage_status' do
+          row = data[:reviews].find { |r| r[:comment] == 'TLS 1.2 EOL concern' }
+          expect(row[:triage_status]).to eq('concur_with_comment')
+        end
+
+        it 'preserves section tag' do
+          row = data[:reviews].find { |r| r[:comment] == 'TLS 1.2 EOL concern' }
+          expect(row[:section]).to eq('check_content')
+        end
+
+        it 'preserves triage_set_by_email + triage_set_by_name + triage_set_at' do
+          row = data[:reviews].find { |r| r[:comment] == 'TLS 1.2 EOL concern' }
+          expect(row[:triage_set_by_email]).to eq(triager.email)
+          expect(row[:triage_set_by_name]).to eq('Triager')
+          expect(row[:triage_set_at]).to match(TIMESTAMP_PATTERN)
+        end
+
+        it 'preserves adjudicated_by_email + adjudicated_by_name + adjudicated_at' do
+          row = data[:reviews].find { |r| r[:comment] == 'TLS 1.2 EOL concern' }
+          expect(row[:adjudicated_by_email]).to eq(triager.email)
+          expect(row[:adjudicated_by_name]).to eq('Triager')
+          expect(row[:adjudicated_at]).to match(TIMESTAMP_PATTERN)
+        end
+
+        it 'tags each review with a stable external_id for re-linking' do
+          ids = data[:reviews].pluck(:external_id)
+          expect(ids.compact.uniq.size).to eq(data[:reviews].size)
+        end
+
+        it 'uses external_id to encode parent reference (responding_to_external_id)' do
+          parent_row = data[:reviews].find { |r| r[:comment] == 'TLS 1.2 EOL concern' }
+          reply_row  = data[:reviews].find { |r| r[:comment] == 'will fix in next revision' }
+          expect(reply_row[:responding_to_external_id]).to eq(parent_row[:external_id])
+        end
+      end
+
+      describe 'duplicate-of cross-link' do # rubocop:disable RSpec/NestedGroups
+        let!(:original) do
+          Review.create!(user: commenter, rule: rule, action: 'comment',
+                         comment: 'duplicate target')
+        end
+        let!(:dup) do
+          Review.create!(user: commenter, rule: rule, action: 'comment',
+                         comment: 'duplicate source',
+                         duplicate_of_review_id: original.id,
+                         triage_status: 'duplicate')
+        end
+
+        it 'encodes duplicate_of as external_id' do
+          original_row = data[:reviews].find { |r| r[:comment] == 'duplicate target' }
+          dup_row      = data[:reviews].find { |r| r[:comment] == 'duplicate source' }
+          expect(dup_row[:duplicate_of_external_id]).to eq(original_row[:external_id])
+        end
+      end
+    end
+
     describe 'additional answers serialization' do
       before do
         question = component.additional_questions.create!(

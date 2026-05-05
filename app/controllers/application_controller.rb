@@ -30,9 +30,72 @@ class ApplicationController < ActionController::Base
   end
   helper_method :consent_required?
 
+  # Order matters: ActiveSupport::Rescuable matches handlers via reverse_each,
+  # so the LAST-declared rescue_from is checked first. We want the specific
+  # NotAuthorizedError handler to win over the catch-all StandardError handler,
+  # so NotAuthorizedError must be declared AFTER StandardError.
+  rescue_from StandardError, with: :helpful_errors unless Rails.env.development?
+
   rescue_from NotAuthorizedError, with: :not_authorized
 
-  rescue_from StandardError, with: :helpful_errors unless Rails.env.development?
+  # toast helper. The Vue frontend's
+  # alertOrNotifyResponse mixin reads `{ toast: { title, message, variant } }`
+  # from JSON responses and renders a Bootstrap-Vue toast. Pre-fix the JSON
+  # shape was hand-written at ~45 sites in reviews_controller alone — typos
+  # in `variant:` (e.g. 'unprocessable_entity' instead of 'warning') shipped
+  # silently and broke the toast styling. This single helper centralizes
+  # the contract.
+  #
+  # `message` is normalized to an Array so a single string and an
+  # ActiveModel errors collection both render uniformly.
+  #
+  # `variant` defaults to 'danger' (the most common case). Caller can
+  # override to 'warning' / 'success' / 'info'.
+  #
+  # `status` defaults to :unprocessable_entity (matches the most common
+  # caller — a validation rejection). Caller overrides for 200 success
+  # toasts (e.g. idempotent reopen returning the current state).
+  def render_toast(title:, message:, variant: 'danger', status: :unprocessable_entity)
+    render json: {
+      toast: {
+        title: title,
+        message: Array(message),
+        variant: variant
+      }
+    }, status: status
+  end
+
+  # generic RecordInvalid handler. Each
+  # controller declares its own action_name → title map via the
+  # `record_invalid_titles` class method. The handler looks up the title
+  # by current `action_name` and falls back to a generic title for actions
+  # not explicitly mapped. The error's `record.errors.full_messages` becomes
+  # the toast message.
+  #
+  # Subclass example:
+  #   class ReviewsController < ApplicationController
+  #     record_invalid_titles(
+  #       triage: 'Could not save triage.',
+  #       adjudicate: 'Could not close.',
+  #       ...
+  #     )
+  #   end
+  rescue_from ActiveRecord::RecordInvalid do |e|
+    title = self.class.record_invalid_titles_map[action_name.to_sym] || 'Could not save.'
+    render_toast(title: title, message: e.record.errors.full_messages)
+  end
+
+  # `class_attribute` is the canonical Rails inheritance hook
+  # for per-class config maps. Subclasses get free inheritance + the
+  # ability to override without touching the parent (Devise + Pundit
+  # follow this pattern). Replaced an earlier hand-rolled
+  # `superclass.respond_to?(:record_invalid_title_for)` ancestor walk that
+  # was Rails-quirky and harder to reason about.
+  class_attribute :record_invalid_titles_map, default: {}.freeze
+
+  def self.record_invalid_titles(map)
+    self.record_invalid_titles_map = map.transform_keys(&:to_sym).freeze
+  end
 
   def set_project_permissions
     @effective_permissions = current_user&.effective_permissions(@project)
@@ -109,6 +172,22 @@ class ApplicationController < ActionController::Base
     return if current_user&.can_view_component?(@component)
 
     raise(NotAuthorizedError, 'You are not authorized to perform viewer actions on this component')
+  end
+
+  # Wrap a side-effect notification call (Slack, SMTP, in-app) so a failure
+  # does not bubble out and turn a successful state-change action into a 500.
+  # The state change has already committed by the time we notify; from the
+  # user's perspective the operation succeeded, even if downstream messaging
+  # is flaky. The error is logged so ops can still see and triage it.
+  #
+  # Usage:
+  #   safely_notify('remove_project') { send_slack_notification(:remove_project, @project) }
+  def safely_notify(context = nil)
+    yield
+  rescue StandardError => e
+    label = context ? " (#{context})" : ''
+    Rails.logger.warn("Notification failed#{label}: #{e.class}: #{e.message}")
+    nil
   end
 
   # NOTE: Anonymous rest args (*) is valid Ruby 3.2+ syntax for argument forwarding.
@@ -245,19 +324,48 @@ class ApplicationController < ActionController::Base
     # alert message, or redirect to home and display the alert.
     respond_to do |format|
       format.html do
-        flash.alert = exception.message
+        flash.alert = not_authorized_html_message(exception)
         redirect_back(fallback_location: root_path)
       end
       format.json do
-        render json: {
-          toast: {
-            title: 'Not Authorized.',
-            message: exception.message,
-            variant: 'danger'
-          }
-        }, status: :unauthorized
+        render json: permission_denied_payload(exception), status: :forbidden
       end
     end
+  end
+
+  # Builds the HTML flash message for an authorization denial. Non-admins get
+  # an appended hint to contact an administrator — the JSON path already
+  # surfaces structured admin contacts via permission_denied_payload, so this
+  # keeps the HTML and JSON paths aligned in user-helpfulness.
+  def not_authorized_html_message(exception)
+    return exception.message if current_user&.admin?
+
+    "#{exception.message} Please contact an administrator if you believe this message is in error."
+  end
+
+  # Builds the structured permission-denied JSON body. Includes the project
+  # admin contacts when a project (or component-with-project) is in scope so
+  # the frontend can tell the user exactly who to ask for access. The legacy
+  # `toast` shape is preserved alongside so AlertMixin keeps rendering a
+  # basic toast without changes.
+  def permission_denied_payload(exception)
+    project = permission_denied_project_context
+    admins = project ? project.admins.map { |a| { name: a.name, email: a.email } } : []
+
+    {
+      error: 'permission_denied',
+      message: exception.message,
+      admins: admins,
+      toast: {
+        title: 'Not Authorized.',
+        message: exception.message,
+        variant: 'danger'
+      }
+    }
+  end
+
+  def permission_denied_project_context
+    @project || @component&.project
   end
 
   def setup_navigation

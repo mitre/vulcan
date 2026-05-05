@@ -55,7 +55,8 @@ export const PANEL_LABELS = {
   metadata: "Metadata",
   questions: "Questions",
   compHistory: "Activity",
-  compReviews: "Reviews",
+  // compReviews retired in favor of the full-page /components/:id/triage
+  // route — the legacy slideover entry was removed in PR #717.
 
   // Rule panels (require selected rule)
   satisfies: "Satisfies",
@@ -69,7 +70,6 @@ export const SIDEBAR_TITLES = {
   metadata: `${COMPONENT_TERM.labelFull} Metadata`,
   questions: "Additional Questions",
   compHistory: `${COMPONENT_TERM.labelFull} Activity`,
-  compReviews: `${COMPONENT_TERM.labelFull} Reviews`,
   satisfies: "Also Satisfies",
   ruleHistory: `${RULE_TERM.singular} History`,
   ruleReviews: `${RULE_TERM.singular} Reviews`,
@@ -143,8 +143,8 @@ export const ACTION_DESCRIPTIONS = {
 // Role descriptions (used in NewMembership)
 // Order matches available_roles: viewer, author, reviewer, admin
 export const ROLE_DESCRIPTIONS = [
-  `Read only access to the Project or ${COMPONENT_TERM.singular}`,
-  `Edit, comment, and mark ${RULE_TERM.plural} as requiring review. Cannot sign-off or approve changes to a ${RULE_TERM.singular}. Great for individual contributors.`,
+  `Read access to the Project or ${COMPONENT_TERM.singular}, plus the ability to leave comments during a public comment window.`,
+  `Edit content and mark ${RULE_TERM.plural} as requiring review. Can also triage incoming comments. Cannot sign off on review requests. Great for individual contributors.`,
   `Author and approve changes to a ${RULE_TERM.singular}.`,
   `Full control of a Project or ${COMPONENT_TERM.singular}. Lock ${RULE_TERM.plural}, revert ${RULE_TERM.plural.toLowerCase()}, and manage members.`,
 ];

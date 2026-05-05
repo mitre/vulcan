@@ -36,6 +36,16 @@
         :data-testid="'section-lock-' + resolvedSection.replace(/\s+/g, '')"
         @click="canManageSectionLocks && $emit('toggle-section-lock', resolvedSection)"
       />
+      <SectionCommentIcon
+        v-if="showCommentIcon && xccdfSection"
+        :section="xccdfSection"
+        :open-count="openCommentCount"
+        :locked="ruleLocked"
+        :comments-closed="commentsClosedInjected"
+        :closed-reason="closedReasonInjected"
+        class="ml-1"
+        @open-composer="$emit('open-composer', xccdfSection)"
+      />
     </label>
 
     <!-- Input slot — parent provides the actual input element -->
@@ -55,11 +65,21 @@
 
 <script>
 import { FIELD_TO_SECTION } from "../../composables/ruleFieldConfig";
+import { DISPLAY_TO_XCCDF_SECTION } from "../../constants/triageVocabulary";
+import SectionCommentIcon from "./SectionCommentIcon.vue";
 
 let _rfgUid = 0;
 
 export default {
   name: "RuleFormGroup",
+  components: { SectionCommentIcon },
+  // Inject the parent's commentsClosed signal so the section comment icon
+  // can disable when the public-comment window isn't open. Default keeps
+  // tests + isolated mounts green.
+  inject: {
+    isCommentsClosed: { default: () => () => false },
+    getClosedReason: { default: () => () => null },
+  },
   props: {
     fieldName: { type: String, required: true },
     label: { type: String, required: true },
@@ -78,6 +98,11 @@ export default {
     extraClass: { type: [String, Array, Object], default: "" },
     idPrefix: { type: String, default: "ruleEditor" },
     customDisplayCheck: { type: Function, default: null },
+    // Section comment icon. Default false so existing call sites
+    // are unaffected; consumers opt in for the first field of each section.
+    showCommentIcon: { type: Boolean, default: false },
+    ruleReviews: { type: Array, default: () => [] },
+    ruleLocked: { type: Boolean, default: false },
   },
   data() {
     return { mod: _rfgUid++ };
@@ -121,6 +146,39 @@ export default {
     },
     hasInvalidFeedback() {
       return !!(this.invalidFeedback && this.invalidFeedback[this.fieldName]);
+    },
+    // resolvedSection returns the friendly display label ("Check"); the
+    // comments API expects the XCCDF key ("check_content").
+    xccdfSection() {
+      return this.resolvedSection ? DISPLAY_TO_XCCDF_SECTION[this.resolvedSection] || null : null;
+    },
+    // Open comments scoped to this section — non-adjudicated top-level
+    // comments (pending OR triaged-but-not-yet-closed OR needs_clarification)
+    // plus any replies whose parent is in that open set. Replies inherit
+    // the parent's section semantically (server stores null on the reply
+    // row). Once the parent is adjudicated, both it and its replies leave
+    // the count.
+    openCommentCount() {
+      if (!this.xccdfSection || !this.ruleReviews || this.ruleReviews.length === 0) return 0;
+      const topLevelOnSection = this.ruleReviews.filter(
+        (r) =>
+          r.action === "comment" &&
+          r.responding_to_review_id == null &&
+          r.adjudicated_at == null &&
+          r.section === this.xccdfSection,
+      );
+      if (topLevelOnSection.length === 0) return 0;
+      const parentIds = new Set(topLevelOnSection.map((r) => r.id));
+      const replies = this.ruleReviews.filter(
+        (r) => r.responding_to_review_id != null && parentIds.has(r.responding_to_review_id),
+      );
+      return topLevelOnSection.length + replies.length;
+    },
+    commentsClosedInjected() {
+      return this.isCommentsClosed();
+    },
+    closedReasonInjected() {
+      return this.getClosedReason();
     },
   },
 };

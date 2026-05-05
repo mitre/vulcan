@@ -58,16 +58,17 @@ describe("terminology constants", () => {
       expect(PANEL_LABELS).toHaveProperty("metadata");
       expect(PANEL_LABELS).toHaveProperty("questions");
       expect(PANEL_LABELS).toHaveProperty("compHistory");
-      expect(PANEL_LABELS).toHaveProperty("compReviews");
+      // compReviews retired in PR #717 — slideover replaced by full-page
+      // /components/:id/triage route. The Triage button on the command
+      // bar links there instead of toggling a panel.
       expect(PANEL_LABELS).toHaveProperty("satisfies");
       expect(PANEL_LABELS).toHaveProperty("ruleHistory");
       expect(PANEL_LABELS).toHaveProperty("ruleReviews");
     });
 
     it("component panel labels are concise (no prefix)", () => {
-      // REQUIREMENT: wdower review — "Comp Activity" → "Activity", "Comp Reviews" → "Reviews"
+      // REQUIREMENT: wdower review — "Comp Activity" → "Activity"
       expect(PANEL_LABELS.compHistory).toBe("Activity");
-      expect(PANEL_LABELS.compReviews).toBe("Reviews");
     });
 
     it("rule labels use RULE_TERM.label", () => {
@@ -82,7 +83,7 @@ describe("terminology constants", () => {
       expect(SIDEBAR_TITLES).toHaveProperty("metadata");
       expect(SIDEBAR_TITLES).toHaveProperty("questions");
       expect(SIDEBAR_TITLES).toHaveProperty("compHistory");
-      expect(SIDEBAR_TITLES).toHaveProperty("compReviews");
+      // compReviews retired with the slideover.
       expect(SIDEBAR_TITLES).toHaveProperty("satisfies");
       expect(SIDEBAR_TITLES).toHaveProperty("ruleHistory");
       expect(SIDEBAR_TITLES).toHaveProperty("ruleReviews");
@@ -92,7 +93,6 @@ describe("terminology constants", () => {
       expect(SIDEBAR_TITLES.details).toContain(COMPONENT_TERM.labelFull);
       expect(SIDEBAR_TITLES.metadata).toContain(COMPONENT_TERM.labelFull);
       expect(SIDEBAR_TITLES.compHistory).toContain(COMPONENT_TERM.labelFull);
-      expect(SIDEBAR_TITLES.compReviews).toContain(COMPONENT_TERM.labelFull);
     });
 
     it("rule sidebar titles use RULE_TERM.singular", () => {
@@ -362,10 +362,9 @@ describe("terminology constants", () => {
     });
 
     it("component panel labels are independent of COMPONENT_TERM", () => {
-      // REQUIREMENT: Panel labels "Activity" and "Reviews" are concise —
-      // they don't derive from COMPONENT_TERM since the panel context is obvious
+      // REQUIREMENT: Panel label "Activity" is concise — it doesn't
+      // derive from COMPONENT_TERM since the panel context is obvious.
       expect(PANEL_LABELS.compHistory).not.toContain(COMPONENT_TERM.label);
-      expect(PANEL_LABELS.compReviews).not.toContain(COMPONENT_TERM.label);
     });
   });
 });

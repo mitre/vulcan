@@ -1,0 +1,20 @@
+- content_for :assets do
+  = javascript_include_tag 'user_comments'
+
+- if @target_user.id == current_user.id
+  = render 'users/settings_layout', active: :my_comments do
+    #mycommentspage
+      %mycommentspage{
+        'v-bind:user-id': @target_user.id.to_json,
+        'v-bind:user-name': @target_user.name.to_json,
+        'v-bind:is-self': true.to_json
+      }
+- else
+  -# Viewing another user's comments — no settings shell since the nav
+  -# items are scoped to the viewer, not the target.
+  #mycommentspage
+    %mycommentspage{
+      'v-bind:user-id': @target_user.id.to_json,
+      'v-bind:user-name': @target_user.name.to_json,
+      'v-bind:is-self': false.to_json
+    }

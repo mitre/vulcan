@@ -1,0 +1,8 @@
+- content_for :assets do
+  = javascript_include_tag 'user_activity'
+
+= render 'users/settings_layout', active: :activity do
+  #user-activity-page
+    %useractivitypage{
+      'v-bind:histories': (@histories || []).to_json
+    }

@@ -39,7 +39,11 @@ RSpec.describe 'Format Handling Across Controllers' do
 
         json_response = response.parsed_body
         expect(json_response['redirect_url']).to be_present
-        expect(json_response['toast']).to eq('Successfully created project')
+        # toast canonicalized to
+        # {title:, message:, variant:} object across all controllers.
+        expect(json_response['toast']).to be_a(Hash)
+        expect(json_response['toast']['title']).to eq('Project created.')
+        expect(json_response['toast']['variant']).to eq('success')
       end
 
       it 'returns error JSON on failure' do
@@ -77,7 +81,9 @@ RSpec.describe 'Format Handling Across Controllers' do
         expect(response.content_type).to include('application/json')
 
         json_response = response.parsed_body
-        expect(json_response['toast']).to eq('Successfully updated user')
+        expect(json_response['toast']).to be_a(Hash)
+        expect(json_response['toast']['title']).to eq('User updated.')
+        expect(json_response['toast']['variant']).to eq('success')
       end
     end
   end
@@ -104,7 +110,9 @@ RSpec.describe 'Format Handling Across Controllers' do
         expect(response.content_type).to include('application/json')
 
         json_response = response.parsed_body
-        expect(json_response['toast']).to eq('Successfully updated membership')
+        expect(json_response['toast']).to be_a(Hash)
+        expect(json_response['toast']['title']).to eq('Membership updated.')
+        expect(json_response['toast']['variant']).to eq('success')
       end
     end
   end
@@ -129,7 +137,9 @@ RSpec.describe 'Format Handling Across Controllers' do
         expect(response.content_type).to include('application/json')
 
         json_response = response.parsed_body
-        expect(json_response['toast']).to eq('Successfully removed SRG')
+        expect(json_response['toast']).to be_a(Hash)
+        expect(json_response['toast']['title']).to eq('SRG removed.')
+        expect(json_response['toast']['variant']).to eq('success')
       end
     end
   end

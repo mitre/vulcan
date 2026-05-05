@@ -30,6 +30,20 @@
         </b-button>
       </span>
 
+      <!-- Download Button — opens the unified ExportModal in the parent.
+           Available to anyone with component access (gates within the modal
+           cover format-/mode-specific role restrictions). PR-717 Step 5 closed
+           the per-component-editor "where do I click" gap with this. -->
+      <b-button
+        variant="outline-secondary"
+        size="sm"
+        class="mr-2"
+        data-testid="download-btn"
+        @click="$emit('download')"
+      >
+        <b-icon icon="download" /> Download
+      </b-button>
+
       <!-- Update from Spreadsheet (author+ only) -->
       <UpdateFromSpreadsheetModal
         v-if="canEdit"
@@ -66,11 +80,22 @@
         >
           <b-icon icon="clock-history" /> {{ labels.compHistory }}
         </b-button>
+        <!-- Triage navigates to the dedicated full-page triage view
+             (the comp-reviews slideover was retired in PR #717). -->
+        <b-button :href="`/components/${component.id}/triage`" variant="outline-secondary">
+          <b-icon icon="chat-left-text" /> Triage
+        </b-button>
+        <!-- Component Settings — admin-only dedicated page for typed
+             configuration (Identity, PoC, Public Comment Period).
+             Replaces the "Update Details" button that lived inside
+             the Details slideover. -->
         <b-button
-          :variant="isPanelActive('comp-reviews') ? 'secondary' : 'outline-secondary'"
-          @click="onTogglePanel('comp-reviews')"
+          v-if="canAdmin"
+          :href="`/components/${component.id}/settings`"
+          variant="outline-secondary"
+          aria-label="Component settings"
         >
-          <b-icon icon="chat-left-text" /> {{ labels.compReviews }}
+          <b-icon icon="gear" /> Settings
         </b-button>
       </b-button-group>
       <!-- Rule panels (Satisfies, History, Reviews) moved to RuleActionsToolbar -->
@@ -156,6 +181,9 @@ export default {
   computed: {
     canEdit() {
       return this.role_gte_to(this.effectivePermissions, "author");
+    },
+    canAdmin() {
+      return this.effectivePermissions === "admin";
     },
     canRelease() {
       return this.effectivePermissions === "admin";
