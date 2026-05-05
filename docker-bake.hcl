@@ -60,6 +60,7 @@ target "production" {
 
   args = {
     RUBY_VERSION = "3.4.9"
+    BUNDLER_VERSION = "4.0.11"
     NODE_VERSION = "${VULCAN_NODE_VERSION}"
   }
 
@@ -112,6 +113,7 @@ target "dev" {
 
   args = {
     RUBY_VERSION = "3.4.9"
+    BUNDLER_VERSION = "4.0.11"
     NODE_VERSION = "${VULCAN_NODE_VERSION}"
   }
 

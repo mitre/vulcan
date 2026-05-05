@@ -14,6 +14,7 @@
 # =============================================================================
 
 ARG RUBY_VERSION=3.4.9
+ARG BUNDLER_VERSION=4.0.11
 ARG NODE_VERSION=24.14.0
 
 # =============================================================================
@@ -27,14 +28,10 @@ RUN mkdir -p /rails /usr/local/bundle && \
     chmod -R g=u /rails /usr/local/bundle
 WORKDIR /rails
 
-# Install base packages.
-# libvips removed — image_processing gem is commented out and ActiveStorage
-# is not used for file attachments. Install only the runtime packages here;
-# Ruby itself is compiled in build-base and copied into the final image.
-# check if can del postgres image later on
+# Install only the runtime packages here
+# Ruby itself is compiled in build-base and copied into the final image
 RUN microdnf install -y \
       ca-certificates \
-      curl \
       findutils \
       glibc-langpack-en \
       libffi \
@@ -57,8 +54,10 @@ RUN  update-ca-trust && \
 ENV LANG="en_US.UTF-8" \
     LC_ALL="en_US.UTF-8" \
     MALLOC_ARENA_MAX="2" \
+    HOME="/rails" \
     NODE_EXTRA_CA_CERTS="/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem" \
     BUNDLE_USER_HOME="/usr/local/bundle" \
+    BUNDLE_APP_CONFIG="/usr/local/bundle" \
     BUNDLE_PATH="/usr/local/bundle" \
     BUNDLE_BIN="/usr/local/bundle/bin" \
     GEM_HOME="/usr/local/bundle" \
@@ -72,16 +71,17 @@ USER 1001
 FROM base AS build-base
 
 ARG RUBY_VERSION
+ARG BUNDLER_VERSION
 
 USER 0
 
 # Install packages needed to compile Ruby, build gems, and install node modules
 RUN microdnf install -y \
       autoconf \
-      bison \
       findutils \
       gcc \
       gcc-c++ \
+      git \
       gmp-devel \
       libffi-devel \
       libyaml-devel \
@@ -90,14 +90,15 @@ RUN microdnf install -y \
       patch \
       perl \
       postgresql-devel \
-      readline-devel \
       rust \
       tar \
       xz \
       xz-devel \
       zlib-devel && \
-    microdnf clean all && \
-    curl -fsSL https://cache.ruby-lang.org/pub/ruby/${RUBY_VERSION%.*}/ruby-${RUBY_VERSION}.tar.gz -o /tmp/ruby.tar.gz && \
+    microdnf clean all
+
+# Compile Ruby using official sources
+RUN curl -fsSL https://cache.ruby-lang.org/pub/ruby/${RUBY_VERSION%.*}/ruby-${RUBY_VERSION}.tar.gz -o /tmp/ruby.tar.gz && \
     tar -xzf /tmp/ruby.tar.gz -C /tmp && \
     cd /tmp/ruby-${RUBY_VERSION} && \
     ./configure --prefix=/usr/local \
@@ -105,8 +106,11 @@ RUN microdnf install -y \
       --enable-yjit && \
     make -j"$(nproc)" && \
     make install && \
-    gem update --system && \
-    gem install bundler && \
+    gem update --system --no-document && \
+    gem install bundler:${BUNDLER_VERSION} --no-document && \
+    chown -R 1001:0 /usr/local/bundle && \
+    chmod -R g=u /usr/local/bundle && \
+    cd /tmp && \
     rm -rf /tmp/ruby-${RUBY_VERSION} /tmp/ruby.tar.gz && \
     ruby --version && \
     bundle --version
@@ -137,7 +141,7 @@ ENV RAILS_ENV="production" \
 
 COPY --chown=1001:0 Gemfile Gemfile.lock ./
 RUN bundle install && \
-    rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
+    rm -rf "${BUNDLE_PATH}"/cache "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
     bundle exec bootsnap precompile --gemfile
 
 # Install node modules (including dev dependencies needed for asset build)
@@ -177,9 +181,9 @@ FROM build-base AS development
 USER 0
 
 # Additional dev tools (build deps + Node.js already in build-base)
-RUN dnf install -y \
+RUN microdnf install -y \
       vim-enhanced && \
-    dnf clean all && \
+    microdnf clean all && \
     rm -rf /var/cache/dnf
 
 USER 1001
