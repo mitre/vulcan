@@ -27,6 +27,14 @@ class Project < ApplicationRecord
 
   scope :alphabetical, -> { order(:name) }
 
+  # The reviews→base_rules→components chain needs an explicit INNER JOIN to
+  # components because base_rules is the Rule STI table; AR's `joins(:rule)`
+  # alone doesn't resolve the components alias used in GROUP BY / HAVING.
+  # Pulled out as a constant so all three project-comment aggregate queries
+  # share the same join.
+  REVIEW_RULE_COMPONENT_JOIN = 'INNER JOIN components ON components.id = base_rules.component_id'
+  private_constant :REVIEW_RULE_COMPONENT_JOIN
+
   # Aggregate count of top-level pending comments per project. Used by the
   # projects-list page to render a "N pending comments" badge per row
   # without N+1 queries.
@@ -44,7 +52,7 @@ class Project < ApplicationRecord
                  triage_status: 'pending')
           .joins(:rule)
           .merge(Rule.where(component: Component.where(project_id: project_ids)))
-          .joins('INNER JOIN components ON components.id = base_rules.component_id')
+          .joins(REVIEW_RULE_COMPONENT_JOIN)
           .group('components.project_id')
           .count
   end
@@ -63,7 +71,7 @@ class Project < ApplicationRecord
     rows = Review.where(action: 'comment', responding_to_review_id: nil)
                  .joins(:rule)
                  .merge(Rule.where(component: Component.where(project_id: project_ids)))
-                 .joins('INNER JOIN components ON components.id = base_rules.component_id')
+                 .joins(REVIEW_RULE_COMPONENT_JOIN)
                  .group('components.project_id')
                  .pluck(
                    Arel.sql('components.project_id'),
@@ -92,7 +100,7 @@ class Project < ApplicationRecord
                         triage_status: 'pending')
                  .joins(:rule)
                  .merge(Rule.where(component: Component.where(project_id: project_ids)))
-                 .joins('INNER JOIN components ON components.id = base_rules.component_id')
+                 .joins(REVIEW_RULE_COMPONENT_JOIN)
                  .group('components.project_id')
                  .having('COUNT(DISTINCT base_rules.component_id) = 1')
                  .pluck('components.project_id', 'MIN(base_rules.component_id)')

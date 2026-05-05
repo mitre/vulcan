@@ -68,7 +68,7 @@ RSpec.describe 'Triage vocabulary parity (en.yml ↔ triageVocabulary.js)' do
     # in the JS source. Returns Set<String>.
     def js_const_keys(name, source)
       match = source.match(/export const #{Regexp.escape(name)} = Object\.freeze\(\{(.+?)\}\);/m)
-      raise "#{name} not found in triageVocabulary.js" if match.nil?
+      raise StandardError, "#{name} not found in triageVocabulary.js" if match.nil?
 
       match[1].scan(/^\s*(\w+):/).flatten.to_set
     end

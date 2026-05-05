@@ -91,8 +91,8 @@ export default {
       const h = this.$createElement;
       const children = [h("p", { class: "mb-2" }, message)];
       if (admins.length > 0) {
-        children.push(h("p", { class: "mb-1 font-weight-bold" }, "Project administrators:"));
         children.push(
+          h("p", { class: "mb-1 font-weight-bold" }, "Project administrators:"),
           h(
             "ul",
             { class: "mb-0 pl-3" },

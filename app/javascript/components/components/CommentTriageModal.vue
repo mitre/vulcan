@@ -325,7 +325,12 @@ import RulePicker from "./RulePicker.vue";
 // triage PATCH alone closes these out — a separate adjudicate call
 // would be redundant or 422, so we collapse to a single button when
 // the chosen status is one of these.
-const TERMINAL_BY_RULE = ["informational", "duplicate", "needs_clarification", "withdrawn"];
+const TERMINAL_BY_RULE = new Set([
+  "informational",
+  "duplicate",
+  "needs_clarification",
+  "withdrawn",
+]);
 
 export default {
   name: "CommentTriageModal",
@@ -410,7 +415,7 @@ export default {
     // meaningless — a single primary button avoids the dimmed-button
     // confusion users hit when picking those statuses.
     autoAdjudicating() {
-      return TERMINAL_BY_RULE.includes(this.triageStatus);
+      return TERMINAL_BY_RULE.has(this.triageStatus);
     },
     hasSaveDecisionOnlyOption() {
       return !this.autoAdjudicating;

@@ -161,7 +161,7 @@ RSpec.describe VulcanAudit do
 
     it 'restores the prior value even if the block raises' do
       Audited.store[:current_request_uuid] = 'outer-uuid'
-      expect { described_class.with_correlation_scope { raise 'boom' } }.to raise_error('boom')
+      expect { described_class.with_correlation_scope { raise StandardError, 'boom' } }.to raise_error('boom')
       expect(Audited.store[:current_request_uuid]).to eq('outer-uuid')
     end
 
