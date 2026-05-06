@@ -39,6 +39,15 @@
       </p>
       <p class="mb-1 white-space-pre-wrap">{{ parent.comment }}</p>
 
+      <ReactionButtons
+        v-if="parent.action === 'comment' && parent.reactions"
+        :review-id="parent.id"
+        :reactions="parent.reactions"
+        :disabled="commentsClosed || !currentUserId"
+        :closed-message="closedMessage"
+        @toggle="(kind) => toggleReaction(parent, kind)"
+      />
+
       <CommentThread
         v-if="parent.action === 'comment'"
         :ref="`thread-${parent.id}`"
@@ -46,6 +55,8 @@
         :responses-count="responsesCountFor(parent.id)"
         :can-reply="canReply"
         :initially-expanded="responsesCountFor(parent.id) > 0"
+        :reactions-disabled="commentsClosed || !currentUserId"
+        :closed-message="closedMessage"
         @reply="onReply"
       />
     </div>
@@ -75,17 +86,21 @@
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
+import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
 import { ACTION_DESCRIPTIONS } from "../../constants/terminology";
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
 import SectionLabel from "../shared/SectionLabel.vue";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
 import CommentThread from "../shared/CommentThread.vue";
+import ReactionButtons from "../shared/ReactionButtons.vue";
+import axios from "axios";
+import { commentsClosedTooltip } from "../../constants/triageVocabulary";
 
 export default {
   name: "RuleReviews",
-  components: { SectionLabel, TriageStatusBadge, FilterDropdown, CommentThread },
-  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
+  components: { SectionLabel, TriageStatusBadge, FilterDropdown, CommentThread, ReactionButtons },
+  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue, ReactionToggleMixin],
   props: {
     effectivePermissions: {
       type: String,
@@ -104,6 +119,10 @@ export default {
     commentsClosed: {
       type: Boolean,
       default: false,
+    },
+    closedReason: {
+      type: String,
+      default: null,
     },
   },
   data() {
@@ -152,6 +171,9 @@ export default {
       const componentId = this.rule?.component_id;
       return componentId ? `/components/${componentId}/triage` : null;
     },
+    closedMessage() {
+      return commentsClosedTooltip(this.closedReason);
+    },
   },
   methods: {
     // Count replies known locally on rule.reviews. CommentThread also fetches
@@ -162,6 +184,13 @@ export default {
     },
     onReply(parentId) {
       this.$emit("open-reply-composer", parentId);
+    },
+    toggleReaction(review, kind) {
+      const prev = { ...review.reactions };
+      const apply = (reactions) => {
+        this.$set(review, "reactions", reactions);
+      };
+      this.submitReactionToggle({ reviewId: review.id, prev, kind, apply });
     },
   },
 };

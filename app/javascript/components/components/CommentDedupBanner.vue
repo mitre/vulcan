@@ -16,7 +16,7 @@
     </b-alert>
     <ul v-show="expanded" :id="listId" class="list-unstyled mb-0 pl-3">
       <li v-for="row in rows" :key="row.id" class="mb-2">
-        <div>
+        <div class="text-break">
           <strong>{{ row.author_name }}</strong>
           <SectionLabel v-if="row.section" :section="row.section" class="badge badge-light ml-1" />
           <TriageStatusBadge
@@ -26,8 +26,14 @@
             :duplicate-of-id="row.duplicate_of_review_id"
             class="ml-1"
           />
-          ({{ relativeTime(row.created_at) }}) — &quot;{{ truncate(row.comment, 100) }}&quot;
+          ({{ relativeTime(row.created_at) }}) — &quot;{{ row.comment }}&quot;
         </div>
+        <ReactionButtons
+          v-if="row.reactions"
+          :review-id="row.id"
+          :reactions="row.reactions"
+          @toggle="(kind) => toggleReaction(row, kind)"
+        />
         <CommentThread
           :parent-review-id="row.id"
           :responses-count="row.responses_count || 0"
@@ -45,10 +51,14 @@ import { sectionLabel } from "../../constants/triageVocabulary";
 import SectionLabel from "../shared/SectionLabel.vue";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import CommentThread from "../shared/CommentThread.vue";
+import ReactionButtons from "../shared/ReactionButtons.vue";
+import AlertMixin from "../../mixins/AlertMixin.vue";
+import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
 
 export default {
   name: "CommentDedupBanner",
-  components: { SectionLabel, TriageStatusBadge, CommentThread },
+  components: { SectionLabel, TriageStatusBadge, CommentThread, ReactionButtons },
+  mixins: [AlertMixin, ReactionToggleMixin],
   props: {
     componentId: { type: [Number, String], required: true },
     ruleId: { type: [Number, String], required: true },
@@ -79,9 +89,6 @@ export default {
     ruleId: { immediate: true, handler: "fetch" },
   },
   methods: {
-    truncate(s, n) {
-      return s && s.length > n ? `${s.slice(0, n)}…` : s;
-    },
     relativeTime(iso) {
       return iso ? new Date(iso).toLocaleDateString() : "";
     },
@@ -103,6 +110,15 @@ export default {
         this.total = 0;
         this.totalComments = 0;
       }
+    },
+    toggleReaction(row, kind) {
+      const idx = this.rows.findIndex((r) => r.id === row.id);
+      if (idx < 0) return;
+      const prev = { ...row.reactions };
+      const apply = (reactions) => {
+        this.$set(this.rows, idx, { ...this.rows[idx], reactions });
+      };
+      this.submitReactionToggle({ reviewId: row.id, prev, kind, apply });
     },
   },
 };

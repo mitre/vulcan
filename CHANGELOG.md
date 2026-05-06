@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Comment reactions (👍/👎) on rule comments and replies. Reactions render as counts on each comment in the rule editor pullout, the comment thread (reply rows), and the triage modal; click the people-icon to see reactor names (works on hover, focus, and tap — accessible to keyboard and touch). Reactions are merged into the parent comment's `Thread Replies` cell in the disposition-matrix CSV export (alongside text replies, in chronological order) as `[name · timestamp] reacted thumbs-up` entries. Audited via `vulcan_audited` so the toggle history is preserved.
+- Rate limits on reaction endpoints: 60 toggles/min/user (POST) and 300 hover-fetches/min/user (GET) via Rack::Attack, with IP fallback for unauthenticated traffic.
+
 ### Changed
 
 - Project viewers can now post comments on rules. Previously the `viewer` role was strictly read-only; it now grants read + comment access. Save / Approve / Request Changes / Lock / Unlock remain restricted to higher roles. To restrict commenting you must remove the user's project membership.

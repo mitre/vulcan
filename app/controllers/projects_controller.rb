@@ -123,6 +123,7 @@ class ProjectsController < ApplicationController
       per_page: params[:per_page].presence || 25,
       resolved: params[:resolved].presence || 'all'
     )
+    inject_reactions_mine!(result[:rows])
     response.headers['Cache-Control'] = 'no-store'
     render json: result
   end

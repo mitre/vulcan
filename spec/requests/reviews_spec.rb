@@ -1615,6 +1615,15 @@ RSpec.describe 'Reviews' do
       expect(row['commenter_imported']).to be(true)
       expect(response.body).not_to include('leak@example.com')
     end
+
+    it 'includes reactions {up, down, mine} on each reply row' do
+      reply = rr_unreleased_parent.responses.first
+      Reaction.create!(review: reply, user: rr_member, kind: 'up')
+      sign_in rr_member
+      get "/reviews/#{rr_unreleased_parent.id}/responses", as: :json
+      row = response.parsed_body['rows'].find { |r| r['id'] == reply.id }
+      expect(row['reactions']).to eq('up' => 1, 'down' => 0, 'mine' => 'up')
+    end
   end
 
   # Task 33: defense-in-depth — replies must be rejected when comment_phase

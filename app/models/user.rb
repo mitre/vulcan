@@ -47,6 +47,7 @@ class User < ApplicationRecord
   after_create :promote_first_user_to_admin
 
   has_many :reviews, dependent: :nullify
+  has_many :reactions, dependent: :destroy
   has_many :memberships, dependent: :destroy
   has_many :projects, through: :memberships, source: :membership, source_type: 'Project'
   has_many :components, through: :memberships, source: :membership, source_type: 'Component'

@@ -25,7 +25,7 @@
       </b-button>
     </div>
 
-    <div v-show="expanded" :id="listId" class="thread-replies mt-2">
+    <div v-if="expanded" :id="listId" class="thread-replies">
       <div v-if="loading" class="text-muted small ml-3"><b-spinner small /> Loading replies…</div>
       <div v-else-if="loadError" class="text-danger small ml-3" role="alert">
         Failed to load replies.
@@ -56,6 +56,14 @@
           </b-button>
         </p>
         <p class="mb-1 white-space-pre-wrap">{{ reply.comment }}</p>
+        <ReactionButtons
+          v-if="reply.reactions"
+          :review-id="reply.id"
+          :reactions="reply.reactions"
+          :disabled="reactionsDisabled"
+          :closed-message="closedMessage"
+          @toggle="(kind) => toggleReaction(reply, kind)"
+        />
       </div>
     </div>
   </div>
@@ -63,15 +71,25 @@
 
 <script>
 import axios from "axios";
+import ReactionButtons from "./ReactionButtons.vue";
+import AlertMixin from "../../mixins/AlertMixin.vue";
+import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
 
 export default {
   name: "CommentThread",
+  components: { ReactionButtons },
+  mixins: [AlertMixin, ReactionToggleMixin],
   props: {
     parentReviewId: { type: [Number, String], required: true },
     responsesCount: { type: Number, default: 0 },
     canReply: { type: Boolean, default: true },
     initiallyExpanded: { type: Boolean, default: false },
     showZeroReplies: { type: Boolean, default: false },
+    reactionsDisabled: { type: Boolean, default: false },
+    closedMessage: {
+      type: String,
+      default: "Reactions are closed for this component.",
+    },
   },
   data() {
     return {
@@ -152,6 +170,15 @@ export default {
       this.loaded = false;
       this.replies = [];
       if (this.expanded) this.fetch();
+    },
+    toggleReaction(reply, kind) {
+      const idx = this.replies.findIndex((r) => r.id === reply.id);
+      if (idx < 0) return;
+      const prev = { ...reply.reactions };
+      const apply = (reactions) => {
+        this.$set(this.replies, idx, { ...this.replies[idx], reactions });
+      };
+      this.submitReactionToggle({ reviewId: reply.id, prev, kind, apply });
     },
   },
 };

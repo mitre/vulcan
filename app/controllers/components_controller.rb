@@ -351,6 +351,7 @@ class ComponentsController < ApplicationController
       resolved: params[:resolved].presence || 'all'
     )
 
+    inject_reactions_mine!(result[:rows])
     response.headers['Cache-Control'] = 'no-store'
     render json: result
   end
@@ -548,7 +549,11 @@ class ComponentsController < ApplicationController
   # banner (CommentPeriodBanner) and any per-rule callouts have the
   # accurate count. Without this, the blueprint defaults to zero.
   def blueprint_render_options
-    { pending_comment_counts: Component.pending_comment_counts([@component.id]) }
+    review_ids = @component ? Review.joins(:rule).merge(Rule.where(component_id: @component.id)).pluck(:id) : []
+    {
+      pending_comment_counts: Component.pending_comment_counts([@component.id]),
+      reactions_summary: Reaction.summary(review_ids, current_user&.id)
+    }
   end
 
   def create_or_duplicate

@@ -43,7 +43,8 @@ class RulesController < ApplicationController
   end
 
   def show
-    render json: RuleBlueprint.render_as_hash(@rule, view: :editor)
+    summary = Reaction.summary(@rule.reviews.map(&:id), current_user&.id)
+    render json: RuleBlueprint.render_as_hash(@rule, view: :editor, reactions_summary: summary)
   end
 
   def related_rules

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_02_180000) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_05_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -222,6 +222,18 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_02_180000) do
     t.index ["name"], name: "index_projects_on_name_trigram", opclass: :gin_trgm_ops, using: :gin
   end
 
+  create_table "reactions", force: :cascade do |t|
+    t.bigint "review_id", null: false
+    t.bigint "user_id", null: false
+    t.string "kind", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["review_id", "kind"], name: "index_reactions_on_review_id_and_kind"
+    t.index ["review_id", "user_id"], name: "index_reactions_on_review_id_and_user_id", unique: true
+    t.index ["review_id"], name: "index_reactions_on_review_id"
+    t.index ["user_id"], name: "index_reactions_on_user_id"
+  end
+
   create_table "references", force: :cascade do |t|
     t.string "contributor"
     t.string "coverage"
@@ -401,6 +413,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_02_180000) do
   add_foreign_key "memberships", "users"
   add_foreign_key "project_access_requests", "projects"
   add_foreign_key "project_access_requests", "users"
+  add_foreign_key "reactions", "reviews", on_delete: :cascade
+  add_foreign_key "reactions", "users", on_delete: :cascade
   add_foreign_key "reviews", "base_rules", column: "rule_id", on_delete: :restrict
   add_foreign_key "reviews", "reviews", column: "duplicate_of_review_id", on_delete: :nullify
   add_foreign_key "reviews", "reviews", column: "responding_to_review_id", on_delete: :restrict

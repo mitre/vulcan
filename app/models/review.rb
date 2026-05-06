@@ -30,6 +30,7 @@ class Review < ApplicationRecord
                              optional: true, inverse_of: :responses
   has_many :responses, class_name: 'Review', foreign_key: 'responding_to_review_id',
                        dependent: :destroy, inverse_of: :responding_to
+  has_many :reactions, dependent: :destroy
 
   TRIAGE_STATUSES = %w[
     pending concur concur_with_comment non_concur

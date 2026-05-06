@@ -411,4 +411,22 @@ class ApplicationController < ActionController::Base
                         .select(:id, :name, :email)
                         .as_json(only: %i[id name email])
   end
+
+  # Mutates each row hash by adding `mine: 'up' | 'down' | nil` inside
+  # its `reactions` key. Rows whose row[:reactions] is missing get a
+  # full { up:0, down:0, mine: } injected. Callers pass the array of
+  # rows (any iterable producing hashes) and the row id key (defaults
+  # to :id). Single batched query for current_user's reactions.
+  def inject_reactions_mine!(rows, id_key: :id)
+    return rows if rows.blank? || current_user.nil?
+
+    ids = rows.filter_map { |row| row[id_key] }
+    return rows if ids.empty?
+
+    mine = Reaction.where(review_id: ids, user_id: current_user.id).pluck(:review_id, :kind).to_h
+    rows.each do |row|
+      row[:reactions] ||= { up: 0, down: 0 }
+      row[:reactions][:mine] = mine[row[id_key]]
+    end
+  end
 end
