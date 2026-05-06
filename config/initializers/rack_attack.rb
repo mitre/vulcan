@@ -61,6 +61,26 @@ module Rack
     throttle('comments/user/minute', limit: 10, period: 60.seconds, &comment_post_user)
     throttle('comments/user/hour',   limit: 100, period: 1.hour,    &comment_post_user)
 
+    ### Throttle reaction endpoints ###
+    # POST = toggle (cheap action, but high-volume signal); GET = lazy
+    # hover-fetch of reactor names (per-comment, can fan out across a
+    # long thread). Discriminator falls back to req.ip when the user is
+    # unauthenticated so anonymous traffic still meters.
+    reactions_user = lambda do |req|
+      next nil unless req.path.match?(%r{\A/reviews/\d+/reactions\z})
+
+      user = req.env['warden']&.user
+      user ? user.id.to_s : req.ip
+    end
+
+    throttle('reactions_post/user', limit: 60, period: 60.seconds) do |req|
+      reactions_user.call(req) if req.post?
+    end
+
+    throttle('reactions_get/user', limit: 300, period: 60.seconds) do |req|
+      reactions_user.call(req) if req.get?
+    end
+
     ### Custom throttle response ###
     self.throttled_responder = lambda do |_req|
       [
