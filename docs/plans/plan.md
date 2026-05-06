@@ -19,7 +19,7 @@ Let any project member react to a comment with 👍 or 👎 — visible as a cou
 5. **Rate limiting:** Rack::Attack throttles — 60/min/user for POST, 300/min/user for GET (more generous because hover-fetch is per-comment). Both fall back to `req.ip` when unauthenticated so the throttle still meters anonymous traffic.
 6. **CSV export:** Reactions are appended to the existing per-comment `Thread Replies` cell (alongside text replies), in `[name · timestamp] reacted thumbs-up` / `thumbs-down` format. Existing replies are already concatenated into one cell with `\n---\n` separators; reactions slot into the same stream. Conceptually: a reaction is just a one-character reply, so it lives where replies live. No new column, no new rows.
 7. **Reactions on replies:** A user can react to any `action='comment'` Review, whether it's a top-level comment or a reply (a Review with `responding_to_review_id` set). Matches GitHub-comment-on-reply UX.
-8. **Audit trail:** Reactions are audited via `vulcan_audited only: %i[kind], associated_with: :review`. Public-comment context may need a paper trail (a 👎 from a DISA reviewer is functionally a non-concur signal); toggle-off destroys the row, so without audits the kind history is gone.
+8. **Audit trail:** Reactions are audited via `vulcan_audited only: %i[kind], associated_with: :review`. Public-comment context may need a paper trail (a 👎 from a DISA reviewer is functionally a non-concur signal); toggle-off destroys the row, so without audits the kind history is gone. Start with full create+update+destroy auditing; if heavy public-comment periods make the audit table noisy, downgrade to event-only (just `create`) — the toggle-off and switch paths can drop audits without losing the initial signal.
 9. **Vocabulary layering:** Following the PR #717 pattern, `kind` is stored DISA-neutral (`'up'`/`'down'`) on the wire and in the DB. UI labels (`'Thumbs up'`, `'Thumbs down'`), Bootstrap-Vue icon names (`hand-thumbs-up`, `hand-thumbs-down`), and CSV labels (`thumbs-up`, `thumbs-down`) all live in single-source-of-truth files: `config/locales/en.yml` (vulcan.reaction.*), `app/javascript/constants/reactionVocabulary.js`, and `Reaction::KIND_LABELS` (Ruby mirror). A parity spec asserts the three sources stay in sync.
 
 ## Architecture
@@ -199,8 +199,17 @@ Each task is one TDD loop ending in one git commit. Run rubocop + relevant specs
        icons:
          up:   "hand-thumbs-up"
          down: "hand-thumbs-down"
-       closed_period_message: "Reactions are closed for this component."
+       closed_period_message:
+         default:     "Reactions are closed for this component."
+         adjudicating: "Reactions are closed — the disposition is being adjudicated."
+         finalized:   "Reactions are closed — the disposition is finalized."
    ```
+
+   The three `closed_period_message` variants mirror the
+   `commentsClosedTooltip(closedReason)` helper in
+   `app/javascript/constants/triageVocabulary.js` so the user sees the
+   same wording for "comments closed" and "reactions closed". The
+   controller (Task 04) selects the variant based on `component.closed_reason`.
 3. Create `app/javascript/constants/reactionVocabulary.js`:
    ```js
    export const REACTION_KINDS = Object.freeze(["up", "down"]);
@@ -275,7 +284,7 @@ Each task is one TDD loop ending in one git commit. Run rubocop + relevant specs
    - **POST on non-comment review:** try to react to an `action=approve` review → returns the structured 403 (existence-oracle hardening, NOT 422 from the model — `set_review` rejects before the controller body runs).
    - **POST on nonexistent review id:** returns the structured 403 (same shape as authz denial — does NOT 404, see Endpoints section).
    - **POST on closed component:** create the review against a component with `comment_phase='closed'` → 422 with friendly message ("Reactions are closed for this component."). The phase gate filter rejects before model logic runs. (Task 06 hardens the gate further.)
-   - **POST concurrent toggle (TOCTOU spec):** simulate two simultaneous POSTs from the same user (use threads or Concurrent::Future). Assert both responses are 2xx, exactly one reaction row exists at the end, and no 500 leaks via unhandled `RecordNotUnique`.
+   - **POST concurrent toggle (TOCTOU spec):** simulate two simultaneous POSTs from the same user. Assert both responses are 2xx, exactly one reaction row exists at the end, and no 500 leaks via unhandled `RecordNotUnique`. **Heads up on the test infra:** RSpec's transactional fixtures + AR connection-pool semantics make multi-threaded tests flaky. Each thread needs its own connection (`ActiveRecord::Base.connection_pool.with_connection { ... }`) and the parent test transaction won't see the spawned threads' writes. If this proves too brittle, fall back to invoking `toggle_reaction` directly with `Concurrent::Promises.zip(future1, future2).value!` and a `before { ActiveRecord::Base.connection_pool.checkin_timeout = 5 }` setup, OR drop the multi-threaded path and add a unit-level test on `toggle_reaction` that mocks `find_by` to return a stale row, then asserts the rescue path.
    - **POST as outsider (no project membership):** structured 403 with admin contacts.
    - **GET happy path:** with 3 up + 1 down reactors → 200, body `up: [{name: ...}, {name: ...}, {name: ...}], down: [{name: ...}]`. Reactor objects contain `name` ONLY — assert `keys == ['name']` (no `email`, no `id`).
    - **GET on closed component:** still works (Decision 3 — historical reactions remain visible).
@@ -344,20 +353,27 @@ Each task is one TDD loop ending in one git commit. Run rubocop + relevant specs
        @project = @review&.rule&.component&.project
      end
 
+     # Soft-existence message: same 403 status whether the review is
+     # missing or unreachable, but the toast says "isn't available"
+     # rather than "permission denied" — closes the existence oracle
+     # without confusing a user who hit a stale link to a deleted comment.
      def deny!
-       # Build the same payload ApplicationController uses; we have no
-       # @project for the unknown-review case, so admins is empty.
        payload = { error: 'permission_denied',
-                   message: 'You do not have permission to perform that action.',
+                   message: "The requested comment isn't available.",
                    admins: [],
-                   toast: { title: 'Not Authorized.', message: 'You do not have permission to perform that action.', variant: 'danger' } }
+                   toast: { title: 'Not available.',
+                            message: "The requested comment isn't available.",
+                            variant: 'danger' } }
        render json: payload, status: :forbidden
      end
 
      def verify_comments_open
-       return if @review.rule.component.accepting_new_comments?
+       component = @review.rule.component
+       return if component.accepting_new_comments?
 
-       render json: error_toast(I18n.t('vulcan.reaction.closed_period_message')), status: :unprocessable_entity
+       message = I18n.t("vulcan.reaction.closed_period_message.#{component.closed_reason || 'default'}",
+                        default: I18n.t('vulcan.reaction.closed_period_message.default'))
+       render json: error_toast(message), status: :unprocessable_entity
      end
 
      def error_toast(message)
@@ -371,20 +387,29 @@ Each task is one TDD loop ending in one git commit. Run rubocop + relevant specs
 ### Task 05: Embed reactions summary in review payloads
 
 **Files:**
-- `app/controllers/components_controller.rb` (extend — inject `mine` into rows after model returns)
-- `app/controllers/projects_controller.rb` (or wherever the project-aggregate endpoint lives; mirror)
+- `app/controllers/components_controller.rb` (extend — triage table; inject `mine` into rows after model returns)
+- `app/controllers/users_controller.rb#comments_json_payload` (extend — My Comments page rows)
+- `app/controllers/reviews_controller.rb#responses` (extend — reply chain rows from the Task 33A endpoint)
 - `app/models/component.rb#paginated_comments` (extend rows builder — add `up`/`down` counts only)
 - `app/models/project.rb#paginated_comments` (mirror)
-- `app/blueprints/review_blueprint.rb` (extend, if it's the source for thread payloads — also mine-via-controller pattern)
+- `app/blueprints/review_blueprint.rb` (extend — source for the rule-thread review serialization that `RuleReviews.vue` and `CommentTriageModal` consume)
 - specs
 
 **Steps:**
 1. **Per Web Dev review #5: keep the model pure.** The model returns `up` and `down` counts only; `mine` is computed in the controller after the model returns rows. This avoids threading `current_user_id` through `paginated_comments` and its callers.
-2. Identify where review payloads are built for: (a) the rule thread (`RuleReviews.vue` consumes it), (b) the triage table (`ComponentComments.vue`). Likely `RuleBlueprint`'s child review serialization for (a) and `Component#paginated_comments` rows for (b).
-3. Failing specs in `spec/blueprints/review_blueprint_spec.rb` and `spec/models/components_spec.rb#paginated_comments` describing:
-   - Model rows have `reactions: { up: N, down: M }` (no `mine`).
-   - Controller wraps with `mine` injected per-row using a single batched `Reaction.where(review_id: ids, user_id: current_user.id).pluck(:review_id, :kind).to_h` lookup. Final payload row: `reactions: { up:, down:, mine: }`.
-4. **Watch N+1.** `Reaction.summary` (or a model variant returning just counts) is one GROUP BY across all returned review IDs. The controller's `mine` lookup is one additional indexed query. Two queries total per page render.
+2. Identify every payload site that emits review rows the frontend reads:
+   - **Rule thread** — `RuleBlueprint`'s `:editor` view associates `:reviews` via `ReviewBlueprint`. Consumed by `RuleReviews.vue` + `CommentTriageModal`.
+   - **Triage table** — `Component#paginated_comments` (component-scope) + `Project#paginated_comments` (project-aggregate). Consumed by `ComponentComments.vue`.
+   - **Dedup banner** — `components_controller#comments` reuses `paginated_comments`, so it inherits the change automatically.
+   - **My Comments page** — `users_controller#comments_json_payload` builds rows by hand. Needs the same per-row `up`/`down`/`mine` injection (without `mine`, the My Comments page can't show the user's own reaction state).
+   - **Reply chain endpoint** — `reviews_controller#responses` emits hand-built reply rows (see Task 33A). Replies are reactable (Decision 7); these rows need reactions too.
+3. Failing specs covering each site:
+   - `spec/blueprints/review_blueprint_spec.rb` — top-level + reply rows from `ReviewBlueprint` carry `reactions: { up: N, down: M }` (no `mine`).
+   - `spec/models/components_spec.rb#paginated_comments` + `spec/models/projects_spec.rb#paginated_comments` — same.
+   - `spec/requests/users_spec.rb` — My Comments JSON rows have `reactions: { up:, down:, mine: }` (mine injected by the controller).
+   - `spec/requests/reviews_spec.rb` — `GET /reviews/:id/responses` rows have `reactions: { up:, down:, mine: }`.
+   - Each controller test: counts come from the model; `mine` lookup is a single batched `Reaction.where(review_id: ids, user_id: current_user.id).pluck(:review_id, :kind).to_h`.
+4. **Watch N+1.** Per controller call: one GROUP BY for counts (already in the model row build), one indexed pluck for `mine`. Two queries total per page render regardless of row count. Reply-chain endpoint adds a third for its own ID set since reply IDs aren't in the parent payload.
 5. Run impacted specs, confirm green.
 6. Commit: `feat: embed reactions summary in review payloads`.
 
@@ -583,10 +608,11 @@ Skip if Task 04's specs already cover this comprehensively. (They probably do �
 
 **Steps:**
 1. Failing spec: given a comment with 1 text reply and 2 reactions across timestamps, the `Thread Replies` cell on the comment's row contains all 3 entries joined by `\n---\n`, in chronological (`created_at` ascending) order. Reactions render as `[name · iso8601_timestamp] reacted thumbs-up` (or `thumbs-down`). The CSV label literal comes from `Reaction::CSV_LABELS` (Task 02), not from a string-interpolated `kind` — keeps the wire/UI/CSV vocabularies aligned through one source of truth.
-2. **Spec for tie-stable ordering:** create a reply and a reaction with identical `created_at` (microsecond-equal); assert the rendered cell uses a deterministic order (`type` then `id` after `created_at`) so cross-export diffs don't churn.
-3. **Spec for nil-user defensive fallback:** create a reaction with no associated User (only reachable if the FK is breached, but defensive) — `reaction_author_label` should return `'(unknown)'`, not raise NoMethodError.
-4. Identify the existing reply-cell builder (`build_row` ~line 78 + `format_reply` ~line 107). Extend it to also accept the comment's reactions; format each reaction with a new `format_reaction` helper; merge-and-sort the two streams before joining.
-5. Add a `format_reaction` private helper:
+2. **Spec for reactions on replies (Decision 7):** create a top-level comment with one reply, then react to that reply (not the parent). The reaction MUST appear in the parent comment's `Thread Replies` cell, interleaved chronologically alongside the reply text. This is the gap the original plan missed: reactions on replies need to flow into the same per-top-level cell, not vanish.
+3. **Spec for tie-stable ordering:** create a reply and a reaction with identical `created_at` (microsecond-equal); assert the rendered cell uses a deterministic order (`type` then `id` after `created_at`) so cross-export diffs don't churn.
+4. **Spec for nil-user defensive fallback:** create a reaction with no associated User (only reachable if the FK is breached, but defensive) — `reaction_author_label` should return `'(unknown)'`, not raise NoMethodError.
+5. Identify the existing reply-cell builder (`build_row` + `format_reply` in `app/lib/disposition_matrix_export.rb`). Extend it to also accept the comment's reactions (including reactions on its replies); format each reaction with a new `format_reaction` helper; merge-and-sort the combined entry list before joining.
+6. Add a `format_reaction` private helper:
    ```ruby
    def self.format_reaction(reaction)
      label = Reaction::CSV_LABELS.fetch(reaction.kind)   # one source of truth
@@ -602,19 +628,33 @@ Skip if Task 04's specs already cover this comprehensively. (They probably do �
    end
    ```
    No imported-attribution branch — Task 01's schema doesn't add `commenter_imported_*` columns to `reactions`, and reactions are only creatable via the live UI in v1. If archive-import grows reaction support later, that task adds the columns + this fallback together.
-6. Update the row-builder caller to fetch `review.reactions.includes(:user)` alongside `review.replies`, then in `build_row` build a sortable-and-tiebreakable entry list:
+7. **Reactions-on-replies preload.** The existing reply preload (`load_replies(top_level_ids)`) groups replies by parent ID. The reaction preload must cover BOTH top-level review IDs AND their reply IDs so reactions posted on a reply still surface in the parent's cell. Sketch:
    ```ruby
-   entries = ((replies   || []).map { |r| { sort_key: [r.created_at, 'reply',    r.id], formatted: format_reply(r) } } +
-              (reactions || []).map { |r| { sort_key: [r.created_at, 'reaction', r.id], formatted: format_reaction(r) } })
-              .filter { |e| e[:formatted].present? }
-              .sort_by { |e| e[:sort_key] }
+   def self.load_reactions(top_level_reviews, replies_by_parent)
+     review_ids = top_level_reviews.map(&:id) +
+                  replies_by_parent.values.flatten.map(&:id)
+     return {} if review_ids.empty?
+     Reaction.where(review_id: review_ids).includes(:user).group_by(&:review_id)
+   end
+   ```
+   Then in `build_row`, when building the entry list for the parent comment, walk both the parent's reactions AND every reply's reactions:
+   ```ruby
+   reply_list = replies_by_parent[review.id] || []
+   reactions_for_parent = reactions_by_review[review.id] || []
+   reactions_for_replies = reply_list.flat_map { |r| reactions_by_review[r.id] || [] }
+
+   entries = (
+     reply_list.map { |r| { sort_key: [r.created_at, 'reply', r.id], formatted: format_reply(r) } } +
+     (reactions_for_parent + reactions_for_replies).map { |x| { sort_key: [x.created_at, 'reaction', x.id], formatted: format_reaction(x) } }
+   ).filter { |e| e[:formatted].present? }
+    .sort_by { |e| e[:sort_key] }
+
    thread_cell = entries.map { |e| e[:formatted] }.join("\n---\n")
    ```
-   The `[created_at, type, id]` triple is total-order-deterministic regardless of Ruby's `sort_by` stability spec.
-7. **Watch the N+1.** The existing reply fetch is batched at the top-level scope. Add a parallel reactions preload via `Reaction.where(review_id: top_level_ids).includes(:user).group_by(&:review_id)`; pass each comment's bucket into `build_row`. Two preloads, no per-row queries.
-8. Update existing CSV specs only if they asserted exact `Thread Replies` cell length with no reactions present — should be unaffected because reactions table is empty in those fixtures. Add new specs covering the happy mixed case + the tie-stable case + the nil-user case.
+   The `[created_at, type, id]` triple is total-order-deterministic regardless of Ruby's `sort_by` stability spec. Two preloads (replies + reactions), no per-row queries.
+8. Update existing CSV specs only if they asserted exact `Thread Replies` cell length with no reactions present — should be unaffected because the reactions table is empty in those fixtures. Add new specs covering: happy mixed case (top-level reaction + reply text), reactions-on-replies, tie-stable ordering, nil-user fallback.
 9. Lint, run impacted specs.
-10. Commit: `feat: append reactions to disposition-matrix Thread Replies cell`.
+10. Commit: `feat: append reactions (parent + reply targets) to disposition-matrix Thread Replies cell`.
 
 ### Task 11: Documentation + CHANGELOG
 
