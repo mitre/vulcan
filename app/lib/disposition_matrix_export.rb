@@ -42,9 +42,12 @@ module DispositionMatrixExport # rubocop:disable Metrics/ModuleLength
   def self.rows_and_headers(component:, triage_status_filter: nil, include_email: false)
     reviews = top_level_reviews(component, triage_status_filter)
     replies_by_parent = load_replies(reviews.map(&:id))
+    reactions_by_review = load_reactions(reviews, replies_by_parent)
     {
       headers: build_headers(include_email),
-      rows: reviews.map { |r| build_row(r, component, replies_by_parent[r.id], include_email: include_email) }
+      rows: reviews.map do |r|
+        build_row(r, component, replies_by_parent[r.id], reactions_by_review, include_email: include_email)
+      end
     }
   end
 
@@ -75,11 +78,19 @@ module DispositionMatrixExport # rubocop:disable Metrics/ModuleLength
     BASE_HEADERS.dup.insert(BASE_HEADERS.index('Comment'), 'Commenter Email')
   end
 
-  def self.build_row(review, component, replies, include_email:)
-    responses = (replies || [])
-                .sort_by(&:created_at)
-                .filter_map { |reply| format_reply(reply) }
-                .join("\n---\n")
+  def self.build_row(review, component, replies, reactions_by_review, include_email:)
+    reply_list = replies || []
+    reactions_for_parent = reactions_by_review[review.id] || []
+    reactions_for_replies = reply_list.flat_map { |r| reactions_by_review[r.id] || [] }
+
+    entries = reply_list.map { |r| { sort_key: [r.created_at, 'reply', r.id], formatted: format_reply(r) } } +
+              (reactions_for_parent + reactions_for_replies).map do |x|
+                { sort_key: [x.created_at, 'reaction', x.id], formatted: format_reaction(x) }
+              end
+    responses = entries.filter { |e| e[:formatted].present? }
+                       .sort_by { |e| e[:sort_key] }
+                       .pluck(:formatted)
+                       .join("\n---\n")
 
     row = [
       review.id,
@@ -109,6 +120,15 @@ module DispositionMatrixExport # rubocop:disable Metrics/ModuleLength
     return nil if body.blank?
 
     "[#{defang(reply_author_label(reply))} · #{reply.created_at.iso8601}] #{body}"
+  end
+
+  def self.format_reaction(reaction)
+    label = Reaction::CSV_LABELS.fetch(reaction.kind)
+    "[#{defang(reaction_author_label(reaction))} · #{reaction.created_at.iso8601}] reacted #{label}"
+  end
+
+  def self.reaction_author_label(reaction)
+    reaction.user&.name || '(unknown)'
   end
 
   def self.reply_author_label(reply)
@@ -174,5 +194,12 @@ module DispositionMatrixExport # rubocop:disable Metrics/ModuleLength
     Review.where(responding_to_review_id: parent_ids)
           .preload(:user)
           .group_by(&:responding_to_review_id)
+  end
+
+  def self.load_reactions(top_level_reviews, replies_by_parent)
+    review_ids = top_level_reviews.map(&:id) + replies_by_parent.values.flatten.map(&:id)
+    return {} if review_ids.empty?
+
+    Reaction.where(review_id: review_ids).preload(:user).group_by(&:review_id)
   end
 end
