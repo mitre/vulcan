@@ -85,6 +85,15 @@
       <blockquote class="border-left pl-3 py-2 mb-3 bg-light">
         {{ review.comment }}
       </blockquote>
+      <ReactionButtons
+        v-if="review.reactions"
+        :review-id="review.id"
+        :reactions="review.reactions"
+        :disabled="reactionsDisabled"
+        :closed-message="closedMessage"
+        class="mb-3"
+        @toggle="(kind) => toggleReaction(kind)"
+      />
 
       <!-- Reply chain. Lazy-loaded via /reviews/:id/responses on expand.
            Reply emits open-reply-composer up to the parent table, which
@@ -313,10 +322,11 @@ import axios from "axios";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import FormMixin from "../../mixins/FormMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
-import { SECTION_LABELS } from "../../constants/triageVocabulary";
+import { SECTION_LABELS, commentsClosedTooltip } from "../../constants/triageVocabulary";
 import SectionLabel from "../shared/SectionLabel.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
 import CommentThread from "../shared/CommentThread.vue";
+import ReactionButtons from "../shared/ReactionButtons.vue";
 import CanonicalCommentPicker from "./CanonicalCommentPicker.vue";
 import RulePicker from "./RulePicker.vue";
 
@@ -334,7 +344,14 @@ const TERMINAL_BY_RULE = new Set([
 
 export default {
   name: "CommentTriageModal",
-  components: { SectionLabel, FilterDropdown, CommentThread, CanonicalCommentPicker, RulePicker },
+  components: {
+    SectionLabel,
+    FilterDropdown,
+    CommentThread,
+    ReactionButtons,
+    CanonicalCommentPicker,
+    RulePicker,
+  },
   // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because the
   // ComponentTriagePage host pack does NOT include FormMixin, so without this the
   // modal's axios.patch calls get rejected at the Rails CSRF middleware (422).
@@ -353,6 +370,9 @@ export default {
     // get force-withdraw + restore (the inverse). Anything other than
     // 'admin' means the disclosure is not rendered.
     effectivePermissions: { type: String, default: null },
+    commentsClosed: { type: Boolean, default: false },
+    closedReason: { type: String, default: null },
+    currentUserId: { type: Number, default: null },
   },
   data() {
     return {
@@ -512,6 +532,12 @@ export default {
     canSubmitSectionChange() {
       return this.sectionAuditComment.trim().length > 0;
     },
+    reactionsDisabled() {
+      return this.commentsClosed || !this.currentUserId;
+    },
+    closedMessage() {
+      return commentsClosedTooltip(this.closedReason);
+    },
   },
   watch: {
     review(val) {
@@ -526,6 +552,37 @@ export default {
     relativeTime(iso) {
       if (!iso) return "";
       return new Date(iso).toLocaleString();
+    },
+    optimisticToggle(prev, kind) {
+      const next = { up: prev.up, down: prev.down, mine: null };
+      if (prev.mine === kind) {
+        next[kind] = Math.max(0, prev[kind] - 1);
+        next.mine = null;
+      } else if (prev.mine) {
+        next[prev.mine] = Math.max(0, prev[prev.mine] - 1);
+        next[kind] = prev[kind] + 1;
+        next.mine = kind;
+      } else {
+        next[kind] = prev[kind] + 1;
+        next.mine = kind;
+      }
+      return next;
+    },
+    async toggleReaction(kind) {
+      if (!this.review) return;
+      const prev = { ...this.review.reactions };
+      this.$emit("triaged", { ...this.review, reactions: this.optimisticToggle(prev, kind) });
+      try {
+        const { data } = await axios.post(
+          `/reviews/${this.review.id}/reactions`,
+          { kind },
+          { headers: { Accept: "application/json" } },
+        );
+        this.$emit("triaged", { ...this.review, reactions: data.reactions });
+      } catch (err) {
+        this.$emit("triaged", { ...this.review, reactions: prev });
+        this.alertOrNotifyResponse(err);
+      }
     },
     onDuplicateSelected(reviewId) {
       this.duplicateOfId = reviewId;

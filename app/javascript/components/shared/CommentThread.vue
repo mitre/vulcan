@@ -56,6 +56,14 @@
           </b-button>
         </p>
         <p class="mb-1 white-space-pre-wrap">{{ reply.comment }}</p>
+        <ReactionButtons
+          v-if="reply.reactions"
+          :review-id="reply.id"
+          :reactions="reply.reactions"
+          :disabled="reactionsDisabled"
+          :closed-message="closedMessage"
+          @toggle="(kind) => toggleReaction(reply, kind)"
+        />
       </div>
     </div>
   </div>
@@ -63,15 +71,22 @@
 
 <script>
 import axios from "axios";
+import ReactionButtons from "./ReactionButtons.vue";
 
 export default {
   name: "CommentThread",
+  components: { ReactionButtons },
   props: {
     parentReviewId: { type: [Number, String], required: true },
     responsesCount: { type: Number, default: 0 },
     canReply: { type: Boolean, default: true },
     initiallyExpanded: { type: Boolean, default: false },
     showZeroReplies: { type: Boolean, default: false },
+    reactionsDisabled: { type: Boolean, default: false },
+    closedMessage: {
+      type: String,
+      default: "Reactions are closed for this component.",
+    },
   },
   data() {
     return {
@@ -152,6 +167,40 @@ export default {
       this.loaded = false;
       this.replies = [];
       if (this.expanded) this.fetch();
+    },
+    optimisticToggle(prev, kind) {
+      const next = { up: prev.up, down: prev.down, mine: null };
+      if (prev.mine === kind) {
+        next[kind] = Math.max(0, prev[kind] - 1);
+        next.mine = null;
+      } else if (prev.mine) {
+        next[prev.mine] = Math.max(0, prev[prev.mine] - 1);
+        next[kind] = prev[kind] + 1;
+        next.mine = kind;
+      } else {
+        next[kind] = prev[kind] + 1;
+        next.mine = kind;
+      }
+      return next;
+    },
+    async toggleReaction(reply, kind) {
+      const prev = { ...reply.reactions };
+      const idx = this.replies.findIndex((r) => r.id === reply.id);
+      if (idx < 0) return;
+      this.$set(this.replies, idx, {
+        ...reply,
+        reactions: this.optimisticToggle(prev, kind),
+      });
+      try {
+        const { data } = await axios.post(
+          `/reviews/${reply.id}/reactions`,
+          { kind },
+          { headers: { Accept: "application/json" } },
+        );
+        this.$set(this.replies, idx, { ...this.replies[idx], reactions: data.reactions });
+      } catch {
+        this.$set(this.replies, idx, { ...this.replies[idx], reactions: prev });
+      }
     },
   },
 };
