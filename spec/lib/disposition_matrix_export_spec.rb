@@ -34,6 +34,45 @@ RSpec.describe DispositionMatrixExport do
                    comment: 'will fix in next revision')
   end
 
+  describe 'reactions in Thread Replies cell' do
+    let_it_be(:reactor) do
+      u = create(:user, name: 'Maya Reactor')
+      Membership.find_or_create_by!(user: u, membership: project) { |m| m.role = 'viewer' }
+      u
+    end
+
+    it 'appends a reaction on the parent comment as a [name · ts] reacted label entry' do
+      Reaction.create!(review: c1, user: reactor, kind: 'up', created_at: 30.minutes.ago)
+      out = CSV.parse(described_class.generate(component: component), headers: true)
+      cell = out.find { |r| r['Comment ID'] == c1.id.to_s }['Thread Replies']
+      expect(cell).to include('Maya Reactor')
+      expect(cell).to include('reacted thumbs-up')
+    end
+
+    it 'includes reactions on REPLIES too (Decision 7)' do
+      Reaction.create!(review: reply, user: reactor, kind: 'down', created_at: 5.minutes.ago)
+      out = CSV.parse(described_class.generate(component: component), headers: true)
+      cell = out.find { |r| r['Comment ID'] == c1.id.to_s }['Thread Replies']
+      expect(cell).to include('reacted thumbs-down')
+    end
+
+    it 'orders entries chronologically (created_at ascending)' do
+      r1 = Reaction.create!(review: c1, user: reactor, kind: 'up', created_at: 2.hours.ago)
+      r2 = Reaction.create!(review: c1, user: author, kind: 'down', created_at: 1.hour.ago)
+      out = CSV.parse(described_class.generate(component: component), headers: true)
+      cell = out.find { |r| r['Comment ID'] == c1.id.to_s }['Thread Replies']
+      idx_r1 = cell.index(r1.created_at.iso8601)
+      idx_r2 = cell.index(r2.created_at.iso8601)
+      expect(idx_r1).to be < idx_r2
+    end
+
+    it 'reaction_author_label returns (unknown) when the user association is nil' do
+      orphan = Reaction.new(kind: 'up')
+      allow(orphan).to receive(:user).and_return(nil)
+      expect(described_class.reaction_author_label(orphan)).to eq('(unknown)')
+    end
+  end
+
   describe '.generate' do
     subject(:csv) { described_class.generate(component: component) }
 

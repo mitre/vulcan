@@ -668,9 +668,11 @@ class Component < ApplicationRecord
                         .limit(per_page)
                         .to_a
 
-    responses_count_lookup = Review.where(responding_to_review_id: page_records.map(&:id))
+    page_review_ids = page_records.map(&:id)
+    responses_count_lookup = Review.where(responding_to_review_id: page_review_ids)
                                    .group(:responding_to_review_id)
                                    .count
+    reaction_counts = Reaction.where(review_id: page_review_ids).group(:review_id, :kind).count
 
     rows = page_records.map do |r|
       {
@@ -695,7 +697,9 @@ class Component < ApplicationRecord
         adjudicator_imported: r.adjudicator_imported?,
         commenter_display_name: r.commenter_display_name,
         commenter_imported: r.commenter_imported?,
-        responses_count: responses_count_lookup[r.id] || 0
+        responses_count: responses_count_lookup[r.id] || 0,
+        reactions: { up: reaction_counts[[r.id, 'up']] || 0,
+                     down: reaction_counts[[r.id, 'down']] || 0 }
       }
     end
 

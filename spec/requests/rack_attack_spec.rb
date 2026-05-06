@@ -127,4 +127,61 @@ RSpec.describe 'Rack::Attack throttling' do
       expect(response).not_to have_http_status(:too_many_requests)
     end
   end
+
+  describe 'reaction throttling' do
+    let_it_be(:srg) do
+      srg_xml = Rails.root.join('db/seeds/srgs/U_Web_Server_SRG_V4R4_Manual-xccdf.xml').read
+      parsed = Xccdf::Benchmark.parse(srg_xml)
+      s = SecurityRequirementsGuide.from_mapping(parsed)
+      s.xml = srg_xml
+      s.save!
+      s
+    end
+    let_it_be(:project) { Project.create!(name: "ReactThrottle #{SecureRandom.hex(4)}") }
+    let_it_be(:component) do
+      Component.create!(project: project, name: 'RC', title: 'RC', version: 'V1R1',
+                        prefix: 'RCTH-01', based_on: srg, comment_phase: 'open')
+    end
+    let_it_be(:rule) { component.rules.first }
+    let_it_be(:author) { create(:user) }
+    let_it_be(:comment_review) do
+      Membership.find_or_create_by!(user: author, membership: project) { |m| m.role = 'viewer' }
+      Review.create!(action: 'comment', comment: 'react target', user: author, rule: rule)
+    end
+    let(:viewer) { create(:user) }
+
+    before do
+      Membership.create!(user: viewer, membership: project, role: 'viewer')
+      sign_in viewer
+    end
+
+    it 'throttles the 61st reaction POST within a minute' do
+      60.times do |i|
+        post "/reviews/#{comment_review.id}/reactions", params: { kind: i.even? ? 'up' : 'down' }, as: :json
+      end
+      post "/reviews/#{comment_review.id}/reactions", params: { kind: 'up' }, as: :json
+      expect(response).to have_http_status(:too_many_requests)
+    end
+
+    it 'throttles the 301st reaction GET within a minute' do
+      300.times do
+        get "/reviews/#{comment_review.id}/reactions", as: :json
+      end
+      get "/reviews/#{comment_review.id}/reactions", as: :json
+      expect(response).to have_http_status(:too_many_requests)
+    end
+
+    it 'meters by IP when unauthenticated (no warden user)' do
+      sign_out viewer
+      # Devise redirects unauthenticated request to login (302); the throttle
+      # should still increment via req.ip fallback. Verify by exhausting and
+      # confirming the next request hits the throttle's 429 rather than the
+      # auth redirect.
+      305.times do
+        get "/reviews/#{comment_review.id}/reactions", as: :json
+      end
+      get "/reviews/#{comment_review.id}/reactions", as: :json
+      expect(response).to have_http_status(:too_many_requests)
+    end
+  end
 end

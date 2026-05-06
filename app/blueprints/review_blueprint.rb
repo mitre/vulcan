@@ -53,4 +53,12 @@ class ReviewBlueprint < Blueprinter::Base
   attribution_fields :triager
   attribution_fields :adjudicator
   attribution_fields :commenter
+
+  # Controllers pass `reactions_summary: Reaction.summary(ids, current_user.id)`
+  # via render_as_hash options. Falls back to zeros + nil mine when the
+  # option isn't supplied so older callers don't break.
+  field :reactions do |review, options|
+    summary = options[:reactions_summary] || {}
+    summary[review.id] || { up: 0, down: 0, mine: nil }
+  end
 end
