@@ -99,6 +99,11 @@ Rails.application.routes.draw do
   # PR-717 Task 30 — author+ retags a comment's section retroactively.
   patch '/reviews/:id/section',         to: 'reviews#section'
   put '/reviews/:id', to: 'reviews#update'
+  # Reactions: POST toggles current_user's 👍/👎 on the review;
+  # GET lists reactor names. POST is phase-gated (open only); GET is not.
+  resources :reviews, only: [] do
+    resources :reactions, only: %i[index create]
+  end
   # Add deep linking to specific rule (stig_id of format XXXX-XX-000000)
   get '/components/:id/:stig_id', to: 'components#show'
 
