@@ -52,10 +52,13 @@ import SectionLabel from "../shared/SectionLabel.vue";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import CommentThread from "../shared/CommentThread.vue";
 import ReactionButtons from "../shared/ReactionButtons.vue";
+import AlertMixin from "../../mixins/AlertMixin.vue";
+import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
 
 export default {
   name: "CommentDedupBanner",
   components: { SectionLabel, TriageStatusBadge, CommentThread, ReactionButtons },
+  mixins: [AlertMixin, ReactionToggleMixin],
   props: {
     componentId: { type: [Number, String], required: true },
     ruleId: { type: [Number, String], required: true },
@@ -108,36 +111,14 @@ export default {
         this.totalComments = 0;
       }
     },
-    optimisticToggle(prev, kind) {
-      const next = { up: prev.up, down: prev.down, mine: null };
-      if (prev.mine === kind) {
-        next[kind] = Math.max(0, prev[kind] - 1);
-        next.mine = null;
-      } else if (prev.mine) {
-        next[prev.mine] = Math.max(0, prev[prev.mine] - 1);
-        next[kind] = prev[kind] + 1;
-        next.mine = kind;
-      } else {
-        next[kind] = prev[kind] + 1;
-        next.mine = kind;
-      }
-      return next;
-    },
-    async toggleReaction(row, kind) {
+    toggleReaction(row, kind) {
       const idx = this.rows.findIndex((r) => r.id === row.id);
       if (idx < 0) return;
       const prev = { ...row.reactions };
-      this.$set(this.rows, idx, { ...row, reactions: this.optimisticToggle(prev, kind) });
-      try {
-        const { data } = await axios.post(
-          `/reviews/${row.id}/reactions`,
-          { kind },
-          { headers: { Accept: "application/json" } },
-        );
-        this.$set(this.rows, idx, { ...this.rows[idx], reactions: data.reactions });
-      } catch {
-        this.$set(this.rows, idx, { ...this.rows[idx], reactions: prev });
-      }
+      const apply = (reactions) => {
+        this.$set(this.rows, idx, { ...this.rows[idx], reactions });
+      };
+      this.submitReactionToggle({ reviewId: row.id, prev, kind, apply });
     },
   },
 };

@@ -322,6 +322,7 @@ import axios from "axios";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import FormMixin from "../../mixins/FormMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
+import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
 import { SECTION_LABELS, commentsClosedTooltip } from "../../constants/triageVocabulary";
 import SectionLabel from "../shared/SectionLabel.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
@@ -359,7 +360,7 @@ export default {
   // navbar pack's FormMixin doesn't reach the triage pack.
   // RoleComparisonMixin provides role_gte_to() for the canEditSection gate
   //.
-  mixins: [AlertMixin, FormMixin, RoleComparisonMixin],
+  mixins: [AlertMixin, FormMixin, RoleComparisonMixin, ReactionToggleMixin],
   props: {
     review: { type: Object, default: null },
     // Component the picker is scoped to — defaults to the review's
@@ -553,36 +554,13 @@ export default {
       if (!iso) return "";
       return new Date(iso).toLocaleString();
     },
-    optimisticToggle(prev, kind) {
-      const next = { up: prev.up, down: prev.down, mine: null };
-      if (prev.mine === kind) {
-        next[kind] = Math.max(0, prev[kind] - 1);
-        next.mine = null;
-      } else if (prev.mine) {
-        next[prev.mine] = Math.max(0, prev[prev.mine] - 1);
-        next[kind] = prev[kind] + 1;
-        next.mine = kind;
-      } else {
-        next[kind] = prev[kind] + 1;
-        next.mine = kind;
-      }
-      return next;
-    },
-    async toggleReaction(kind) {
+    toggleReaction(kind) {
       if (!this.review) return;
       const prev = { ...this.review.reactions };
-      this.$emit("triaged", { ...this.review, reactions: this.optimisticToggle(prev, kind) });
-      try {
-        const { data } = await axios.post(
-          `/reviews/${this.review.id}/reactions`,
-          { kind },
-          { headers: { Accept: "application/json" } },
-        );
-        this.$emit("triaged", { ...this.review, reactions: data.reactions });
-      } catch (err) {
-        this.$emit("triaged", { ...this.review, reactions: prev });
-        this.alertOrNotifyResponse(err);
-      }
+      const apply = (reactions) => {
+        this.$emit("triaged", { ...this.review, reactions });
+      };
+      this.submitReactionToggle({ reviewId: this.review.id, prev, kind, apply });
     },
     onDuplicateSelected(reviewId) {
       this.duplicateOfId = reviewId;

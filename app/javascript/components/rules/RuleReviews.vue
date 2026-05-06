@@ -86,6 +86,7 @@
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
+import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
 import { ACTION_DESCRIPTIONS } from "../../constants/terminology";
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
 import SectionLabel from "../shared/SectionLabel.vue";
@@ -99,7 +100,7 @@ import { commentsClosedTooltip } from "../../constants/triageVocabulary";
 export default {
   name: "RuleReviews",
   components: { SectionLabel, TriageStatusBadge, FilterDropdown, CommentThread, ReactionButtons },
-  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
+  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue, ReactionToggleMixin],
   props: {
     effectivePermissions: {
       type: String,
@@ -184,35 +185,12 @@ export default {
     onReply(parentId) {
       this.$emit("open-reply-composer", parentId);
     },
-    optimisticToggle(prev, kind) {
-      const next = { up: prev.up, down: prev.down, mine: null };
-      if (prev.mine === kind) {
-        next[kind] = Math.max(0, prev[kind] - 1);
-        next.mine = null;
-      } else if (prev.mine) {
-        next[prev.mine] = Math.max(0, prev[prev.mine] - 1);
-        next[kind] = prev[kind] + 1;
-        next.mine = kind;
-      } else {
-        next[kind] = prev[kind] + 1;
-        next.mine = kind;
-      }
-      return next;
-    },
-    async toggleReaction(review, kind) {
+    toggleReaction(review, kind) {
       const prev = { ...review.reactions };
-      this.$set(review, "reactions", this.optimisticToggle(prev, kind));
-      try {
-        const { data } = await axios.post(
-          `/reviews/${review.id}/reactions`,
-          { kind },
-          { headers: { Accept: "application/json" } },
-        );
-        this.$set(review, "reactions", data.reactions);
-      } catch (err) {
-        this.$set(review, "reactions", prev);
-        this.alertOrNotifyResponse(err);
-      }
+      const apply = (reactions) => {
+        this.$set(review, "reactions", reactions);
+      };
+      this.submitReactionToggle({ reviewId: review.id, prev, kind, apply });
     },
   },
 };

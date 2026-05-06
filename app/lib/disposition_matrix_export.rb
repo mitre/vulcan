@@ -83,9 +83,12 @@ module DispositionMatrixExport # rubocop:disable Metrics/ModuleLength
     reactions_for_parent = reactions_by_review[review.id] || []
     reactions_for_replies = reply_list.flat_map { |r| reactions_by_review[r.id] || [] }
 
-    entries = reply_list.map { |r| { sort_key: [r.created_at, 'reply', r.id], formatted: format_reply(r) } } +
+    # Tie-break rank: replies (0) before reactions (1) when timestamps
+    # match — explicit numeric ordering avoids relying on lexicographic
+    # comparison of the type discriminator.
+    entries = reply_list.map { |r| { sort_key: [r.created_at, 0, r.id], formatted: format_reply(r) } } +
               (reactions_for_parent + reactions_for_replies).map do |x|
-                { sort_key: [x.created_at, 'reaction', x.id], formatted: format_reaction(x) }
+                { sort_key: [x.created_at, 1, x.id], formatted: format_reaction(x) }
               end
     responses = entries.filter { |e| e[:formatted].present? }
                        .sort_by { |e| e[:sort_key] }

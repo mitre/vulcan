@@ -72,10 +72,13 @@
 <script>
 import axios from "axios";
 import ReactionButtons from "./ReactionButtons.vue";
+import AlertMixin from "../../mixins/AlertMixin.vue";
+import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
 
 export default {
   name: "CommentThread",
   components: { ReactionButtons },
+  mixins: [AlertMixin, ReactionToggleMixin],
   props: {
     parentReviewId: { type: [Number, String], required: true },
     responsesCount: { type: Number, default: 0 },
@@ -168,39 +171,14 @@ export default {
       this.replies = [];
       if (this.expanded) this.fetch();
     },
-    optimisticToggle(prev, kind) {
-      const next = { up: prev.up, down: prev.down, mine: null };
-      if (prev.mine === kind) {
-        next[kind] = Math.max(0, prev[kind] - 1);
-        next.mine = null;
-      } else if (prev.mine) {
-        next[prev.mine] = Math.max(0, prev[prev.mine] - 1);
-        next[kind] = prev[kind] + 1;
-        next.mine = kind;
-      } else {
-        next[kind] = prev[kind] + 1;
-        next.mine = kind;
-      }
-      return next;
-    },
-    async toggleReaction(reply, kind) {
-      const prev = { ...reply.reactions };
+    toggleReaction(reply, kind) {
       const idx = this.replies.findIndex((r) => r.id === reply.id);
       if (idx < 0) return;
-      this.$set(this.replies, idx, {
-        ...reply,
-        reactions: this.optimisticToggle(prev, kind),
-      });
-      try {
-        const { data } = await axios.post(
-          `/reviews/${reply.id}/reactions`,
-          { kind },
-          { headers: { Accept: "application/json" } },
-        );
-        this.$set(this.replies, idx, { ...this.replies[idx], reactions: data.reactions });
-      } catch {
-        this.$set(this.replies, idx, { ...this.replies[idx], reactions: prev });
-      }
+      const prev = { ...reply.reactions };
+      const apply = (reactions) => {
+        this.$set(this.replies, idx, { ...this.replies[idx], reactions });
+      };
+      this.submitReactionToggle({ reviewId: reply.id, prev, kind, apply });
     },
   },
 };

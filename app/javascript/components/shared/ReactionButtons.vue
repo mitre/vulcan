@@ -38,7 +38,7 @@
       <b-popover
         :target="popoverId"
         container="body"
-        triggers="hover"
+        triggers="hover focus"
         placement="top"
         @show="onPopoverShow"
       >
