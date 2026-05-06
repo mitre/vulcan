@@ -12,8 +12,9 @@
 //   bin/vulcan build --push
 //
 // NOTE: RVM sets RUBY_VERSION with a "ruby-" prefix in some environments.
-// We use VULCAN_RUBY_VERSION to avoid this conflict. If you see errors like
-// "ruby:ruby-3.3.9-slim not found", either:
+// We use VULCAN_RUBY_VERSION to avoid this conflict. If a prefixed value leaks into
+// the build, you may see an invalid Ruby source download URL or a failure to fetch
+// the Ruby tarball. Either:
 //   - Set VULCAN_RUBY_VERSION=3.3.9, or
 //   - Run: unset RUBY_VERSION && docker buildx bake
 // The Dockerfile uses a fixed UBI minimal base image and builds Ruby from source based on the var.
