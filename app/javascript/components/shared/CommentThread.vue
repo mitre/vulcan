@@ -25,7 +25,7 @@
       </b-button>
     </div>
 
-    <div v-show="expanded" :id="listId" class="thread-replies mt-2">
+    <div v-if="expanded" :id="listId" class="thread-replies">
       <div v-if="loading" class="text-muted small ml-3"><b-spinner small /> Loading replies…</div>
       <div v-else-if="loadError" class="text-danger small ml-3" role="alert">
         Failed to load replies.

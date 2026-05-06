@@ -1,6 +1,7 @@
 <template>
-  <span class="reaction-buttons">
+  <div class="reaction-buttons my-2">
     <b-button
+      size="sm"
       :variant="reactions.mine === 'up' ? 'primary' : 'outline-secondary'"
       class="reaction-btn"
       :disabled="disabled"
@@ -12,6 +13,7 @@
       <b-icon :icon="REACTION_ICONS.up" /> {{ reactions.up }}
     </b-button>
     <b-button
+      size="sm"
       :variant="reactions.mine === 'down' ? 'primary' : 'outline-secondary'"
       class="reaction-btn ml-1"
       :disabled="disabled"
@@ -35,7 +37,8 @@
       </b-button>
       <b-popover
         :target="popoverId"
-        triggers="hover focus click"
+        container="body"
+        triggers="hover"
         placement="top"
         @show="onPopoverShow"
       >
@@ -55,7 +58,7 @@
         </div>
       </b-popover>
     </template>
-  </span>
+  </div>
 </template>
 
 <script>
@@ -88,7 +91,7 @@ export default {
   },
   computed: {
     popoverId() {
-      return `reactors-popover-${this.reviewId}`;
+      return `reactors-popover-${this._uid}-${this.reviewId}`;
     },
     totalReactions() {
       return (this.reactions.up || 0) + (this.reactions.down || 0);
@@ -123,9 +126,10 @@ export default {
 </script>
 
 <style scoped>
+/* WCAG 2.5.8 (AA) target size minimum is 24×24 CSS px; size="sm" lands
+   roughly at 28×28 for the icon button. */
 .reaction-btn {
-  min-height: 44px;
-  min-width: 44px;
+  min-height: 28px;
 }
 .reactors-trigger {
   padding: 0 0.25rem;
