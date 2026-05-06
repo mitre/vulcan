@@ -108,6 +108,54 @@ RSpec.describe Reaction do
     end
   end
 
+  describe '.summary' do
+    let_it_be(:second_review) do
+      Review.create!(action: 'comment', comment: 'second', user: reactor, rule: rule)
+    end
+
+    it 'returns an empty hash when given an empty array' do
+      expect(described_class.summary([])).to eq({})
+    end
+
+    it 'returns zero counts and nil mine for a review with no reactions' do
+      expect(described_class.summary([comment_review.id], reactor.id)).to eq(
+        comment_review.id => { up: 0, down: 0, mine: nil }
+      )
+    end
+
+    it 'returns aggregated counts across multiple reviews' do
+      described_class.create!(review: comment_review, user: reactor, kind: 'up')
+      described_class.create!(review: comment_review, user: other_user, kind: 'up')
+      described_class.create!(review: second_review, user: reactor, kind: 'down')
+
+      expect(described_class.summary([comment_review.id, second_review.id])).to include(
+        comment_review.id => { up: 2, down: 0, mine: nil },
+        second_review.id => { up: 0, down: 1, mine: nil }
+      )
+    end
+
+    it 'sets mine to the current user kind when reactor matches' do
+      described_class.create!(review: comment_review, user: reactor, kind: 'up')
+
+      expect(described_class.summary([comment_review.id], reactor.id)[comment_review.id])
+        .to eq(up: 1, down: 0, mine: 'up')
+    end
+
+    it 'sets mine to nil when current user has not reacted' do
+      described_class.create!(review: comment_review, user: other_user, kind: 'down')
+
+      expect(described_class.summary([comment_review.id], reactor.id)[comment_review.id])
+        .to eq(up: 0, down: 1, mine: nil)
+    end
+
+    it 'omits mine plumbing entirely when current_user_id is nil' do
+      described_class.create!(review: comment_review, user: reactor, kind: 'up')
+
+      expect(described_class.summary([comment_review.id], nil)[comment_review.id])
+        .to eq(up: 1, down: 0, mine: nil)
+    end
+  end
+
   describe 'audit trail' do
     it 'writes an audit row on create' do
       review = comment_review
