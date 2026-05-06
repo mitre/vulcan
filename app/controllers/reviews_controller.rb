@@ -465,6 +465,7 @@ class ReviewsController < ApplicationController
     replies = @review.responses
                      .preload(:user)
                      .order(:created_at)
+    reaction_counts = Reaction.where(review_id: replies.map(&:id)).group(:review_id, :kind).count
     rows = replies.map do |r|
       {
         id: r.id,
@@ -473,9 +474,12 @@ class ReviewsController < ApplicationController
         comment: r.comment,
         created_at: r.created_at,
         commenter_display_name: r.commenter_display_name,
-        commenter_imported: r.commenter_imported?
+        commenter_imported: r.commenter_imported?,
+        reactions: { up: reaction_counts[[r.id, 'up']] || 0,
+                     down: reaction_counts[[r.id, 'down']] || 0 }
       }
     end
+    inject_reactions_mine!(rows)
     response.headers['Cache-Control'] = 'no-store'
     render json: { rows: rows }
   end

@@ -223,6 +223,19 @@ RSpec.describe 'Review and Membership Blueprints' do
         expect(json[:author_email]).to be_nil
       end
     end
+
+    describe 'reactions field' do
+      it 'returns zeros + nil mine when no reactions_summary option supplied' do
+        json = ReviewBlueprint.render_as_hash(review)
+        expect(json[:reactions]).to eq(up: 0, down: 0, mine: nil)
+      end
+
+      it 'reads counts and mine from reactions_summary option' do
+        summary = { review.id => { up: 3, down: 1, mine: 'up' } }
+        json = ReviewBlueprint.render_as_hash(review, reactions_summary: summary)
+        expect(json[:reactions]).to eq(up: 3, down: 1, mine: 'up')
+      end
+    end
   end
 
   describe MembershipBlueprint do

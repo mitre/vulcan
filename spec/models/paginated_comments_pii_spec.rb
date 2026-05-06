@@ -149,4 +149,31 @@ RSpec.describe 'paginated_comments — PII shape' do
       expect(row[:responses_count]).to eq(0)
     end
   end
+
+  describe 'reactions counts on row payloads' do
+    let_it_be(:up_user) do
+      u = create(:user, name: 'Up Voter')
+      Membership.find_or_create_by!(user: u, membership: project) { |m| m.role = 'viewer' }
+      u
+    end
+
+    it 'Component#paginated_comments includes reactions counts (up/down) without mine' do
+      Reaction.create!(review: posted_review, user: viewer, kind: 'up')
+      Reaction.create!(review: posted_review, user: up_user, kind: 'up')
+      row = component.paginated_comments[:rows].find { |r| r[:id] == posted_review.id }
+      expect(row[:reactions]).to eq(up: 2, down: 0)
+    end
+
+    it 'Project#paginated_comments includes reactions counts' do
+      Reaction.create!(review: posted_review, user: viewer, kind: 'down')
+      row = project.paginated_comments[:rows].find { |r| r[:id] == posted_review.id }
+      expect(row[:reactions]).to eq(up: 0, down: 1)
+    end
+
+    it 'returns zeros when a comment has no reactions' do
+      lone = Review.create!(action: 'comment', comment: 'lone', user: viewer, rule: posted_review.rule)
+      row = component.paginated_comments[:rows].find { |r| r[:id] == lone.id }
+      expect(row[:reactions]).to eq(up: 0, down: 0)
+    end
+  end
 end

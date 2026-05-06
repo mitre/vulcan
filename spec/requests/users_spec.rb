@@ -627,6 +627,14 @@ RSpec.describe 'Users' do
         ids = response.parsed_body['rows'].pluck('id')
         expect(ids).to eq([@my_c1.id])
       end
+
+      it 'includes reactions {up, down, mine} per row' do
+        Reaction.create!(review: @my_c1, user: viewer, kind: 'up')
+        Reaction.create!(review: @my_c1, user: other_viewer, kind: 'down')
+        get "/users/#{viewer.id}/comments", as: :json
+        row = response.parsed_body['rows'].find { |r| r['id'] == @my_c1.id }
+        expect(row['reactions']).to eq('up' => 1, 'down' => 1, 'mine' => 'up')
+      end
     end
 
     context "as a peer member requesting another user's comments on a shared project" do

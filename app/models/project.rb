@@ -166,9 +166,11 @@ class Project < ApplicationRecord
       [rid, { rule_id: rule_id, component_id: cid, prefix: component_lookup[cid]&.prefix }]
     end
 
-    responses_count_lookup = Review.where(responding_to_review_id: page_reviews.map(&:id))
+    page_review_ids = page_reviews.map(&:id)
+    responses_count_lookup = Review.where(responding_to_review_id: page_review_ids)
                                    .group(:responding_to_review_id)
                                    .count
+    reaction_counts = Reaction.where(review_id: page_review_ids).group(:review_id, :kind).count
 
     rows = page_reviews.map do |r|
       rule_meta = rule_lookup[r.rule_id] || {}
@@ -193,7 +195,9 @@ class Project < ApplicationRecord
         triager_imported: r.triager_imported?,
         adjudicator_display_name: r.adjudicator_display_name,
         adjudicator_imported: r.adjudicator_imported?,
-        responses_count: responses_count_lookup[r.id] || 0
+        responses_count: responses_count_lookup[r.id] || 0,
+        reactions: { up: reaction_counts[[r.id, 'up']] || 0,
+                     down: reaction_counts[[r.id, 'down']] || 0 }
       }
     end
 
