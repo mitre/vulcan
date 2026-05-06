@@ -10,6 +10,8 @@ class Reaction < ApplicationRecord
   vulcan_audited only: %i[kind], associated_with: :review
 
   KINDS = %w[up down].freeze
+  KIND_LABELS = { 'up' => 'Thumbs up', 'down' => 'Thumbs down' }.freeze
+  CSV_LABELS  = { 'up' => 'thumbs-up', 'down' => 'thumbs-down' }.freeze
 
   # rubocop:disable Rails/I18nLocaleTexts -- consistent with neighbor model validators
   validates :kind, inclusion: { in: KINDS }

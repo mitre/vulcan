@@ -78,3 +78,17 @@ en:
       closed_reason:
         adjudicating: "Adjudicating"
         finalized: "Finalized"
+    reaction:
+      labels:
+        up: "Thumbs up"
+        down: "Thumbs down"
+      csv_labels:
+        up: "thumbs-up"
+        down: "thumbs-down"
+      icons:
+        up: "hand-thumbs-up"
+        down: "hand-thumbs-down"
+      closed_period_message:
+        default: "Reactions are closed for this component."
+        adjudicating: "Reactions are closed — the disposition is being adjudicated."
+        finalized: "Reactions are closed — the disposition is finalized."
