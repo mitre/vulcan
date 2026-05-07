@@ -32,11 +32,11 @@ Vulcan models the Security Technical Implementation Guide (STIG) creation proces
 
 ## 🚀 Quick Start
 
-### Latest Release: [v2.3.1](https://github.com/mitre/vulcan/releases/tag/v2.3.1)
+### Latest Release: [v2.3.6](https://github.com/mitre/vulcan/releases/tag/v2.3.6)
 
 ```bash
 # Pull the latest Docker image
-docker pull mitre/vulcan:v2.3.1
+docker pull mitre/vulcan:v2.3.6
 
 # Or use docker compose for a complete setup
 wget https://raw.githubusercontent.com/mitre/vulcan/master/docker-compose.yml
@@ -82,7 +82,7 @@ yarn dev      # Start dev server
 
 ### Core Framework
 - **Ruby 3.4.9** with **Rails 8.0.2.1**
-- **PostgreSQL 12+** database
+- **PostgreSQL 18** database
 - **Node.js 24 LTS** for JavaScript runtime
 
 ### Frontend
@@ -100,7 +100,7 @@ yarn dev      # Start dev server
 - **bundler-audit** for dependency vulnerability scanning
 
 ### DevOps & Deployment
-- **Docker** with optimized production images (1.76GB)
+- **Docker** with optimized UBI 9 production images (~529MB)
 - **GitHub Actions** for CI/CD
 - **Heroku** compatible
 - **SonarCloud** integration for code quality
@@ -110,7 +110,7 @@ yarn dev      # Start dev server
 ### Prerequisites
 
 - Ruby 3.4.9 (use rbenv or rvm)
-- PostgreSQL 12+
+- PostgreSQL 18
 - Node.js 24 LTS
 - Yarn package manager
 
@@ -198,11 +198,11 @@ bundle exec bundler-audit
 
 ### Docker Image Features
 
-- **Optimized size**: 1.76GB (reduced from 6.5GB)
-- **Memory efficiency**: jemalloc for 20-40% reduction
-- **Multi-stage builds** for security and size
+- **Optimized size**: ~529MB on Red Hat UBI 9 Minimal (Iron Bank / DISA aligned)
+- **Memory efficiency**: jemalloc (compiled from source) + YJIT for 20-40% reduction
+- **Multi-stage builds** for security and size (Ruby + jemalloc compiled in build stage, stripped before production COPY)
 - **Health checks** configured
-- **Non-root user** execution
+- **Non-root user** execution (UID 1000)
 
 ## 🔐 Authentication Configuration
 

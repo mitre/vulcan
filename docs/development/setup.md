@@ -495,7 +495,7 @@ DATABASE_GSSENCMODE=disable
 
 1. Use `docker compose -f docker-compose.dev.yml up db -d` (database-only) for fastest development cycle
 2. Use `.dockerignore` for faster builds (excludes docs/, downloads/, coverage/)
-3. Production image uses multi-stage build with jemalloc (~596MB)
+3. Production image uses UBI 9 multi-stage build with jemalloc + YJIT (~529MB)
 4. `docker-compose.yml` supports Caddy or nginx reverse proxy profiles
 
 ## Performance Optimization

@@ -9,6 +9,8 @@ require 'rails_helper'
 # - Throttled responses return 429 with a JSON error message
 
 RSpec.describe 'Rack::Attack throttling' do
+  include ActiveSupport::Testing::TimeHelpers
+
   before do
     Rails.application.reload_routes!
     # Create a fresh, isolated cache store for each test to prevent
@@ -22,6 +24,8 @@ RSpec.describe 'Rack::Attack throttling' do
     # Restore default cache and clear to prevent bleeding into other tests
     Rack::Attack.cache.store = Rails.cache
     Rack::Attack.reset!
+    # travel_back is redundant — Rails 7+ ActiveSupport::Testing::TimeHelpers
+    # auto-restores time after each test (see Rails/RedundantTravelBack cop).
   end
 
   describe 'login throttling' do
@@ -155,20 +159,27 @@ RSpec.describe 'Rack::Attack throttling' do
       sign_in viewer
     end
 
+    # Rack::Attack uses fixed 60-second buckets; without freeze_time these
+    # tests can split across a bucket boundary in slow CI runs, never hitting
+    # the throttle limit. Freezing keeps all N requests in the same window.
     it 'throttles the 61st reaction POST within a minute' do
-      60.times do |i|
-        post "/reviews/#{comment_review.id}/reactions", params: { kind: i.even? ? 'up' : 'down' }, as: :json
+      freeze_time do
+        60.times do |i|
+          post "/reviews/#{comment_review.id}/reactions", params: { kind: i.even? ? 'up' : 'down' }, as: :json
+        end
+        post "/reviews/#{comment_review.id}/reactions", params: { kind: 'up' }, as: :json
+        expect(response).to have_http_status(:too_many_requests)
       end
-      post "/reviews/#{comment_review.id}/reactions", params: { kind: 'up' }, as: :json
-      expect(response).to have_http_status(:too_many_requests)
     end
 
     it 'throttles the 301st reaction GET within a minute' do
-      300.times do
+      freeze_time do
+        300.times do
+          get "/reviews/#{comment_review.id}/reactions", as: :json
+        end
         get "/reviews/#{comment_review.id}/reactions", as: :json
+        expect(response).to have_http_status(:too_many_requests)
       end
-      get "/reviews/#{comment_review.id}/reactions", as: :json
-      expect(response).to have_http_status(:too_many_requests)
     end
 
     it 'meters by IP when unauthenticated (no warden user)' do
@@ -177,11 +188,13 @@ RSpec.describe 'Rack::Attack throttling' do
       # should still increment via req.ip fallback. Verify by exhausting and
       # confirming the next request hits the throttle's 429 rather than the
       # auth redirect.
-      305.times do
+      freeze_time do
+        305.times do
+          get "/reviews/#{comment_review.id}/reactions", as: :json
+        end
         get "/reviews/#{comment_review.id}/reactions", as: :json
+        expect(response).to have_http_status(:too_many_requests)
       end
-      get "/reviews/#{comment_review.id}/reactions", as: :json
-      expect(response).to have_http_status(:too_many_requests)
     end
   end
 end

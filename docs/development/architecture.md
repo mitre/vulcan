@@ -160,7 +160,7 @@ See [Authorization Architecture](authorization.md) for details.
 - Jbuilder collection caching for JSON views
 - Composite indexes for severity count queries
 - Turbolinks for faster page transitions
-- Docker multi-stage builds with jemalloc for memory efficiency
+- Docker multi-stage builds; UBI9 minimal runtime with `MALLOC_ARENA_MAX=2` and Ruby YJIT enabled
 
 ### Monitoring
 - Health check endpoints (`/up`, `/health_check`, `/health_check/database`, `/health_check/migrations`)
@@ -172,11 +172,21 @@ See [Authorization Architecture](authorization.md) for details.
 ### Container-based
 ```dockerfile
 # Multi-stage build for optimization
-FROM ruby:3.4.9-slim as builder
-# Build dependencies and assets
 
-FROM ruby:3.4.9-slim
-# Runtime with jemalloc for memory optimization
+# Base stage - shared runtime foundation
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.7 AS base
+
+# Build-base stage - compile Ruby 3.4, install build tooling, and install Node.js
+FROM base AS build-base
+
+# Build stage - install gems, build assets, and prepare the app bundle
+FROM build-base AS build
+
+# Development stage - full dev environment with source-built Ruby 3.4
+FROM build-base AS development
+
+# Production stage - minimal runtime with Ruby and app artifacts copied from build
+FROM base AS production
 ```
 
 ### Platform Support

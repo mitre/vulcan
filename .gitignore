@@ -31,11 +31,13 @@ docs/node_modules
 # Do not commit settings file.
 /config/vulcan.yml
 
-# Do not commit Docker environment files
+# Do not commit Docker environment/config files (may contain domains, secrets)
 .env
 .env.*
 !.env.example
 !.env.production.example
+Caddyfile
+nginx.conf
 
 # Do not commit coverage
 /coverage

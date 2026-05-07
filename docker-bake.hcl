@@ -11,11 +11,13 @@
 //   bin/vulcan build --platform linux/amd64,linux/arm64
 //   bin/vulcan build --push
 //
-// NOTE: RVM sets RUBY_VERSION with "ruby-" prefix (e.g., "ruby-3.3.9").
-// We use VULCAN_RUBY_VERSION to avoid this conflict. If you see errors like
-// "ruby:ruby-3.3.9-slim not found", either:
-//   - Set VULCAN_RUBY_VERSION=3.3.9, or
+// NOTE: RVM sets RUBY_VERSION with a "ruby-" prefix in some environments.
+// We use VULCAN_RUBY_VERSION to avoid this conflict. If a prefixed value leaks into
+// the build, you may see an invalid Ruby source download URL or a failure to fetch
+// the Ruby tarball. Either:
+//   - Set VULCAN_RUBY_VERSION=3.4.9, or
 //   - Run: unset RUBY_VERSION && docker buildx bake
+// The Dockerfile uses a fixed UBI minimal base image and builds Ruby from source based on the var.
 
 variable "REGISTRY" {
   default = "mitre"
@@ -29,17 +31,16 @@ variable "VERSION" {
   default = "latest"
 }
 
-variable "BUNDLER_VERSION" {
-  default = "2.3.27"
+variable "VULCAN_BUNDLER_VERSION" {
+  default = "2.7.2"
 }
 
-// Use VULCAN_RUBY_VERSION to avoid conflict with RVM's RUBY_VERSION
 variable "VULCAN_RUBY_VERSION" {
-  default = "3.4.8"
+  default = "3.4.9"
 }
 
 variable "VULCAN_NODE_VERSION" {
-  default = "22.16.0"
+  default = "24.14.0"
 }
 
 // ============================================================================
@@ -71,10 +72,9 @@ target "production" {
   platforms = ["linux/amd64"]
 
   args = {
-    RUBY_VERSION    = "${VULCAN_RUBY_VERSION}"
-    NODE_VERSION    = "${VULCAN_NODE_VERSION}"
-    BUNDLER_VERSION = "${BUNDLER_VERSION}"
-
+    BUNDLER_VERSION = "${VULCAN_BUNDLER_VERSION}"
+    RUBY_VERSION = "${VULCAN_RUBY_VERSION}"
+    NODE_VERSION = "${VULCAN_NODE_VERSION}"
   }
 
   labels = {
@@ -83,6 +83,7 @@ target "production" {
     "org.opencontainers.image.vendor"      = "MITRE"
     "org.opencontainers.image.source"      = "https://github.com/mitre/vulcan"
     "org.opencontainers.image.version"     = "${VERSION}"
+    "org.opencontainers.image.base.name"   = "registry.access.redhat.com/ubi9/ubi-minimal:9.7"
   }
 
   // Build cache configuration (only for CI/registry push)
@@ -102,11 +103,6 @@ target "production-multiarch" {
     "linux/amd64",
     "linux/arm64"
   ]
-
-  tags = [
-    "${REGISTRY}/${IMAGE_NAME}:${VERSION}",
-    "${REGISTRY}/${IMAGE_NAME}:latest"
-  ]
 }
 
 // ============================================================================
@@ -114,28 +110,16 @@ target "production-multiarch" {
 // ============================================================================
 
 target "dev" {
-  dockerfile = "Dockerfile"
-  context    = "."
-  target     = "development"
+  inherits = ["production"]
+  target   = "development"
 
   tags = [
     "${REGISTRY}/${IMAGE_NAME}:dev"
   ]
 
-  platforms = ["linux/amd64"]
-
-  args = {
-    RUBY_VERSION    = "${VULCAN_RUBY_VERSION}"
-    NODE_VERSION    = "${VULCAN_NODE_VERSION}"
-    BUNDLER_VERSION = "${BUNDLER_VERSION}"
-
-  }
-
   labels = {
     "org.opencontainers.image.title"       = "Vulcan Development"
     "org.opencontainers.image.description" = "Vulcan development environment with all dependencies"
-    "org.opencontainers.image.vendor"      = "MITRE"
-    "org.opencontainers.image.source"      = "https://github.com/mitre/vulcan"
   }
 }
 

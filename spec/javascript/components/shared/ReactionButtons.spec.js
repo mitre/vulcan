@@ -137,6 +137,20 @@ describe("ReactionButtons", () => {
     expect(axios.get).toHaveBeenCalledTimes(2);
   });
 
+  it("invalidates cache when reactions.mine changes (switch vote bug fix)", async () => {
+    axios.get.mockResolvedValue({ data: { up: [{ name: "X" }], down: [] } });
+    const w = mount(ReactionButtons, {
+      localVue,
+      propsData: baseProps({ reactions: { up: 1, down: 0, mine: "up" } }),
+    });
+    await w.vm.onPopoverShow();
+    expect(axios.get).toHaveBeenCalledTimes(1);
+
+    await w.setProps({ reactions: { up: 0, down: 1, mine: "down" } });
+    await w.vm.onPopoverShow();
+    expect(axios.get).toHaveBeenCalledTimes(2);
+  });
+
   it("renders an error state when the fetch fails", async () => {
     axios.get.mockRejectedValueOnce(new Error("boom"));
     const w = mount(ReactionButtons, {

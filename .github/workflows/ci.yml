@@ -183,9 +183,104 @@ jobs:
           path: coverage
           retention-days: 5
 
+  docker:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      IMAGE_NAME: mitre/vulcan:ci-${{ github.sha }}
+      COMPOSE_PROJECT_NAME: vulcan-ci
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3
+
+      - name: Build production image with Bake
+        run: >-
+          docker buildx bake
+          --file docker-bake.hcl
+          --set *.cache-from=type=gha
+          --set *.cache-to=type=gha,mode=max
+          --set *.output=type=docker
+          --set *.platform=linux/amd64
+          --set *.tags=${IMAGE_NAME}
+          ci
+
+      - name: Save Docker image tarball
+        run: docker save --output vulcan-image.tar "$IMAGE_NAME"
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: vulcan-docker-image
+          path: vulcan-image.tar
+          retention-days: 5
+
+      - name: Create CI environment files
+        run: |
+          cat <<EOF > .env
+          VULCAN_DB_HOST=db
+          VULCAN_DB_PORT=5432
+          VULCAN_DB_NAME=vulcan_production
+          VULCAN_DB_USER=postgres
+          VULCAN_DB_PASSWORD=postgres
+          POSTGRES_DB=vulcan_production
+          POSTGRES_USER=postgres
+          POSTGRES_PASSWORD=postgres
+          SECRET_KEY_BASE=ci-secret-key-base-for-compose-healthcheck
+          VULCAN_ENABLE_OIDC=false
+          VULCAN_ENABLE_LDAP=false
+          IMAGE_NAME=${IMAGE_NAME}
+          EOF
+          cp .env .env.ci
+
+      - name: Start Docker Compose stack
+        run: |
+          docker compose up -d --no-build
+
+      - name: Wait for Vulcan to become healthy
+        run: |
+          container_id="$(docker compose ps -q web)"
+          if [ -z "$container_id" ]; then
+            echo "::error::Web container was not created"
+            docker compose ps
+            exit 1
+          fi
+
+          for attempt in $(seq 1 60); do
+            status="$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$container_id")"
+            if [ "$status" = "healthy" ]; then
+              echo "Vulcan is healthy"
+              exit 0
+            fi
+            if [ "$status" = "unhealthy" ]; then
+              echo "::error::Vulcan became unhealthy"
+              docker compose logs --no-color
+              exit 1
+            fi
+            sleep 5
+          done
+
+          echo "::error::Timed out waiting for Vulcan to become healthy"
+          docker compose ps
+          docker compose logs --no-color
+          exit 1
+
+      - name: Show compose logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down Docker Compose stack
+        if: always()
+        run: docker compose down -v
+
   # ─── GATE — single required status check for branch protection ───
   ci-gate:
-    needs: [lint, frontend, backend]
+    needs: [lint, frontend, backend, docker]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 2

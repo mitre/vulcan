@@ -191,7 +191,7 @@ This follows the same tag-triggered flow. There is no separate hotfix workflow.
 - **Registry**: [hub.docker.com/r/mitre/vulcan](https://hub.docker.com/r/mitre/vulcan)
 - **Architectures**: `linux/amd64`, `linux/arm64` (built natively via Docker Build Cloud)
 - **Tags**: `v2.3.2` (immutable) and `latest` (updated on each release)
-- **Base**: Ruby 3.4.9 on Debian Bookworm with jemalloc
+- **Base**: Red Hat UBI 9 Minimal with Ruby 3.4.9 + jemalloc (compiled from source, YJIT enabled)
 
 ## Troubleshooting
 
