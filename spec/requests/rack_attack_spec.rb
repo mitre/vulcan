@@ -24,7 +24,8 @@ RSpec.describe 'Rack::Attack throttling' do
     # Restore default cache and clear to prevent bleeding into other tests
     Rack::Attack.cache.store = Rails.cache
     Rack::Attack.reset!
-    travel_back
+    # travel_back is redundant — Rails 7+ ActiveSupport::Testing::TimeHelpers
+    # auto-restores time after each test (see Rails/RedundantTravelBack cop).
   end
 
   describe 'login throttling' do
