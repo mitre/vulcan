@@ -183,7 +183,8 @@ RUN bundle exec bootsnap precompile app/ lib/ && \
     esbuild.config.js && \
     find public/assets -name '*.map' -delete 2>/dev/null || true && \
     rm -rf "${BUNDLE_PATH}"/ruby/*/cache && \
-    find "${BUNDLE_PATH}" -name '*.o' -o -name '*.c' -o -name '*.h' | xargs rm -f 2>/dev/null || true
+    find "${BUNDLE_PATH}" -name '*.o' -o -name '*.c' -o -name '*.h' | xargs rm -f 2>/dev/null || true && \
+    chmod 440 Gemfile Gemfile.lock
 
 # =============================================================================
 # DEVELOPMENT STAGE - Full development environment
@@ -220,8 +221,11 @@ ENV RAILS_ENV="production" \
     RAILS_SERVE_STATIC_FILES="true"
 
 # /opt/node is intentionally NOT copied — production has no Node runtime.
+# /rails preserves source-tree modes from the build stage (config files
+# stay r--r-----, bin/* stay 0755) — no blanket --chmod that would clobber
+# the hardening applied earlier.
 COPY --from=build /usr/local /usr/local
-COPY --from=build --chmod=755 /rails /rails
+COPY --from=build /rails /rails
 
 RUN mkdir -p db log storage tmp && \
     chown -R rails:rails db log storage tmp && \

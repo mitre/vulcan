@@ -367,8 +367,9 @@ Rate limiting is enabled by default. Thresholds can be adjusted in `config/initi
 
 ```dockerfile
 # Secure Dockerfile Example
+# UBI9 minimal ships curl-minimal preinstalled; do not install curl (it conflicts).
 FROM registry.access.redhat.com/ubi9/ubi-minimal:9.7 AS base
-RUN microdnf install -y ca-certificates curl postgresql && microdnf clean all
+RUN microdnf install -y ca-certificates libpq shadow-utils && microdnf clean all
 
 FROM base AS build-base
 RUN microdnf install -y gcc gcc-c++ make openssl-devel libyaml-devel readline-devel zlib-devel rust && microdnf clean all
@@ -377,7 +378,7 @@ RUN microdnf install -y gcc gcc-c++ make openssl-devel libyaml-devel readline-de
 FROM base AS production
 COPY --from=build-base /usr/local /usr/local
 
-# Security: Run as non-root user
+# Security: Run as non-root user (shadow-utils provides groupadd/useradd on UBI minimal)
 RUN groupadd -r app && useradd -r -g app app
 
 # Security: Set secure permissions

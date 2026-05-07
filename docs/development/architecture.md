@@ -160,7 +160,7 @@ See [Authorization Architecture](authorization.md) for details.
 - Jbuilder collection caching for JSON views
 - Composite indexes for severity count queries
 - Turbolinks for faster page transitions
-- Docker multi-stage builds with jemalloc for memory efficiency
+- Docker multi-stage builds; UBI9 minimal runtime with `MALLOC_ARENA_MAX=2` and Ruby YJIT enabled
 
 ### Monitoring
 - Health check endpoints (`/up`, `/health_check`, `/health_check/database`, `/health_check/migrations`)
