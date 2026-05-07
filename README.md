@@ -100,7 +100,7 @@ yarn dev      # Start dev server
 - **bundler-audit** for dependency vulnerability scanning
 
 ### DevOps & Deployment
-- **Docker** with optimized production images (1.76GB)
+- **Docker** with optimized UBI 9 production images (~529MB)
 - **GitHub Actions** for CI/CD
 - **Heroku** compatible
 - **SonarCloud** integration for code quality
@@ -198,11 +198,11 @@ bundle exec bundler-audit
 
 ### Docker Image Features
 
-- **Optimized size**: 1.76GB (reduced from 6.5GB)
-- **Memory efficiency**: jemalloc for 20-40% reduction
-- **Multi-stage builds** for security and size
+- **Optimized size**: ~529MB on Red Hat UBI 9 Minimal (Iron Bank / DISA aligned)
+- **Memory efficiency**: jemalloc (compiled from source) + YJIT for 20-40% reduction
+- **Multi-stage builds** for security and size (Ruby + jemalloc compiled in build stage, stripped before production COPY)
 - **Health checks** configured
-- **Non-root user** execution
+- **Non-root user** execution (UID 1000)
 
 ## 🔐 Authentication Configuration
 

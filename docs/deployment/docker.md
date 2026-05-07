@@ -70,11 +70,11 @@ docker run -d \
 
 ## Image Details
 
-- **Base**: Ruby 3.4.9 on Debian Bookworm
+- **Base**: Red Hat UBI 9 Minimal (`ubi-minimal:9.7`) with Ruby 3.4.9 compiled from source (YJIT enabled)
 - **Architectures**: linux/amd64, linux/arm64 (multi-arch, built natively via Docker Build Cloud)
-- **Size**: ~1.76GB (73% smaller than v2.1)
-- **Memory**: Uses jemalloc for 20-40% memory reduction
-- **Security**: Non-root user, minimal attack surface
+- **Size**: ~529MB
+- **Memory**: jemalloc compiled from source + `MALLOC_ARENA_MAX=2` for 20-40% memory reduction
+- **Security**: Non-root user (UID 1000), minimal attack surface, Iron Bank / DISA-aligned base image
 
 ## Configuration
 
@@ -93,7 +93,7 @@ Key variables for Docker:
 
 ```yaml
 volumes:
-  - ./data/postgres:/var/lib/postgresql/data
+  - ./data/postgres:/var/lib/postgresql
   - ./data/uploads:/app/public/uploads
   - ./certs:/rails/certs  # For corporate SSL certificates
 ```

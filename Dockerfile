@@ -1,3 +1,6 @@
+# syntax=docker/dockerfile:1
+# check=error=true
+
 # =============================================================================
 # Vulcan Multi-Stage Dockerfile
 # =============================================================================
@@ -85,6 +88,7 @@ USER 0
 RUN microdnf update -y && \
     microdnf install -y \
       autoconf \
+      bzip2 \
       findutils \
       gcc \
       gcc-c++ \
@@ -123,6 +127,18 @@ RUN curl -fsSL https://cache.ruby-lang.org/pub/ruby/${RUBY_VERSION%.*}/ruby-${RU
     rm -rf /tmp/ruby-${RUBY_VERSION} /tmp/ruby.tar.gz && \
     ruby --version && \
     bundle --version
+
+# jemalloc — UBI doesn't ship it; compile from source for ~20-30% memory savings.
+ARG JEMALLOC_VERSION=5.3.0
+RUN curl -fsSL https://github.com/jemalloc/jemalloc/releases/download/${JEMALLOC_VERSION}/jemalloc-${JEMALLOC_VERSION}.tar.bz2 \
+      -o /tmp/jemalloc.tar.bz2 && \
+    tar -xjf /tmp/jemalloc.tar.bz2 -C /tmp && \
+    cd /tmp/jemalloc-${JEMALLOC_VERSION} && \
+    ./configure --prefix=/usr/local && \
+    make -j"$(nproc)" && \
+    make install && \
+    rm -rf /tmp/jemalloc* && \
+    ldconfig
 
 # Node.js is installed to /opt/node, not /usr/local, so the production
 # stage's `COPY --from=build /usr/local /usr/local` doesn't drag a Node
@@ -186,6 +202,19 @@ RUN bundle exec bootsnap precompile app/ lib/ && \
     find "${BUNDLE_PATH}" -name '*.o' -o -name '*.c' -o -name '*.h' | xargs rm -f 2>/dev/null || true && \
     chmod 440 Gemfile Gemfile.lock
 
+# Strip /usr/local build-only artifacts so production COPY gets a lean tree.
+# Needs root — /usr/local/share/man, /usr/local/include, etc. are root-owned
+# from the Ruby + jemalloc `make install` in build-base.
+# Node is already at /opt/node (not copied to production). jemalloc .so stays.
+USER 0
+RUN rm -rf /usr/local/include \
+           /usr/local/share/man /usr/local/share/doc /usr/local/share/ri \
+           /usr/local/lib/pkgconfig && \
+    find /usr/local/lib -name '*.a' -delete 2>/dev/null || true && \
+    find /usr/local -name '*.o' | xargs rm -f 2>/dev/null || true && \
+    ldconfig
+USER 1000
+
 # =============================================================================
 # DEVELOPMENT STAGE - Full development environment
 # =============================================================================
@@ -193,7 +222,8 @@ FROM build-base AS development
 
 ENV RAILS_ENV="development" \
     BUNDLE_WITHOUT="" \
-    BUNDLE_DEPLOYMENT="0"
+    BUNDLE_DEPLOYMENT="0" \
+    LD_PRELOAD="/usr/local/lib/libjemalloc.so"
 
 COPY --chown=1000:0 --chmod=440 Gemfile Gemfile.lock ./
 RUN bundle install
@@ -218,7 +248,9 @@ ENV RAILS_ENV="production" \
     BUNDLE_DEPLOYMENT="1" \
     BUNDLE_WITHOUT="development:test" \
     RAILS_LOG_TO_STDOUT="true" \
-    RAILS_SERVE_STATIC_FILES="true"
+    RAILS_SERVE_STATIC_FILES="true" \
+    LD_PRELOAD="/usr/local/lib/libjemalloc.so" \
+    RUBY_YJIT_ENABLE="1"
 
 # /opt/node is intentionally NOT copied — production has no Node runtime.
 # /rails preserves source-tree modes from the build stage (config files
