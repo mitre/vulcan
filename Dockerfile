@@ -14,7 +14,9 @@
 # =============================================================================
 
 ARG RUBY_VERSION=3.4.9
-ARG BUNDLER_VERSION=2.3.27
+# Upstream SHA256 from https://www.ruby-lang.org/en/news/<release>/
+ARG RUBY_SHA256=7bb4d4f5e807cc27251d14d9d6086d182c5b25875191e44ab15b709cd7a7dd9c
+ARG BUNDLER_VERSION=2.7.2
 ARG NODE_VERSION=24.14.0
 
 # =============================================================================
@@ -23,34 +25,38 @@ ARG NODE_VERSION=24.14.0
 FROM registry.access.redhat.com/ubi9/ubi-minimal:9.7 AS base
 
 USER 0
-RUN mkdir -p /rails /usr/local/bundle && \
-    chown -R 1001:0 /rails /usr/local/bundle && \
-    chmod -R g=u /rails /usr/local/bundle
-WORKDIR /rails
 
-# Install only the runtime packages here
-# Ruby itself is compiled in build-base and copied into the final image
-RUN microdnf install -y \
+# UBI9 ships curl-minimal preinstalled; installing curl would conflict.
+# The HEALTHCHECK below relies on curl-minimal.
+# libpq (postgresql-libs) is enough at runtime — the pg gem links against
+# it but the full postgresql client binaries are only needed at build time.
+RUN microdnf update -y && \
+    microdnf install -y \
       ca-certificates \
-      findutils \
       glibc-langpack-en \
       libffi \
+      libpq \
       libyaml \
       openssl \
-      postgresql \
       readline \
       shadow-utils \
-      tar \
-      xz \
       zlib && \
     microdnf clean all
 
-# Install custom SSL certificates if provided (single layer)
+RUN groupadd --system --gid 1000 rails && \
+    useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash
+
+RUN mkdir -p /rails /usr/local/bundle && \
+    chown -R 1000:0 /rails /usr/local/bundle && \
+    chmod -R g=u /rails /usr/local/bundle
+WORKDIR /rails
+
+# Optional custom-CA injection: drop PEMs into ./certs/, they get imported
+# into the system trust store and the source files are deleted from the layer.
 COPY certs/ /etc/pki/ca-trust/source/anchors/
 RUN  update-ca-trust && \
      rm -f /etc/pki/ca-trust/source/anchors/*
 
-# Common environment for all stages
 ENV LANG="en_US.UTF-8" \
     LC_ALL="en_US.UTF-8" \
     MALLOC_ARENA_MAX="2" \
@@ -63,7 +69,7 @@ ENV LANG="en_US.UTF-8" \
     GEM_HOME="/usr/local/bundle" \
     PATH="/usr/local/bundle/bin:/usr/local/bin:${PATH}"
 
-USER 1001
+USER 1000
 
 # =============================================================================
 # BUILD-BASE STAGE - Build tools + Node.js (shared by build and development)
@@ -71,12 +77,13 @@ USER 1001
 FROM base AS build-base
 
 ARG RUBY_VERSION
+ARG RUBY_SHA256
 ARG BUNDLER_VERSION
 
 USER 0
 
-# Install packages needed to compile Ruby, build gems, and install node modules
-RUN microdnf install -y \
+RUN microdnf update -y && \
+    microdnf install -y \
       autoconf \
       findutils \
       gcc \
@@ -96,9 +103,11 @@ RUN microdnf install -y \
       xz-devel \
       zlib-devel && \
     microdnf clean all
+# findutils, tar, xz are kept here (build-time only) and intentionally
+# excluded from the base stage — they're not needed at runtime.
 
-# Compile Ruby using official sources
 RUN curl -fsSL https://cache.ruby-lang.org/pub/ruby/${RUBY_VERSION%.*}/ruby-${RUBY_VERSION}.tar.gz -o /tmp/ruby.tar.gz && \
+    echo "${RUBY_SHA256}  /tmp/ruby.tar.gz" | sha256sum -c - && \
     tar -xzf /tmp/ruby.tar.gz -C /tmp && \
     cd /tmp/ruby-${RUBY_VERSION} && \
     ./configure --prefix=/usr/local \
@@ -108,53 +117,57 @@ RUN curl -fsSL https://cache.ruby-lang.org/pub/ruby/${RUBY_VERSION%.*}/ruby-${RU
     make install && \
     gem update --system --no-document && \
     gem install bundler:${BUNDLER_VERSION} --no-document && \
-    chown -R 1001:0 /usr/local/bundle && \
+    chown -R 1000:0 /usr/local/bundle && \
     chmod -R g=u /usr/local/bundle && \
     cd /tmp && \
     rm -rf /tmp/ruby-${RUBY_VERSION} /tmp/ruby.tar.gz && \
     ruby --version && \
     bundle --version
 
-# Install Node.js LTS using official binaries
+# Node.js is installed to /opt/node, not /usr/local, so the production
+# stage's `COPY --from=build /usr/local /usr/local` doesn't drag a Node
+# runtime into the final image. Asset compilation is build-stage-only.
 ARG NODE_VERSION
 ARG TARGETARCH
+ENV PATH="/opt/node/bin:${PATH}"
 RUN ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") && \
-    echo "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${ARCH}.tar.xz" && \
-    curl -fsSL https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${ARCH}.tar.xz -o node.tar.xz && \
-    tar -xJf node.tar.xz -C /usr/local --strip-components=1 && \
-    rm node.tar.xz && \
+    NODE_TARBALL="node-v${NODE_VERSION}-linux-${ARCH}.tar.xz" && \
+    curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/${NODE_TARBALL}" -o /tmp/node.tar.xz && \
+    curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/SHASUMS256.txt" -o /tmp/node.sha256 && \
+    awk -v t="${NODE_TARBALL}" '$2 == t { print $1 "  /tmp/node.tar.xz" }' /tmp/node.sha256 | sha256sum -c - && \
+    mkdir -p /opt/node && \
+    tar -xJf /tmp/node.tar.xz -C /opt/node --strip-components=1 && \
+    rm -f /tmp/node.tar.xz /tmp/node.sha256 && \
     corepack enable
 
-USER 1001
+USER 1000
 
 # =============================================================================
 # BUILD STAGE - Compile gems and assets (for production)
 # =============================================================================
 FROM build-base AS build
 
-# Build stage environment - production mode for asset compilation
-# Note: NODE_ENV is NOT set here because yarn skips devDependencies when NODE_ENV=production
-# and we need devDependencies (esbuild, sass-plugin, etc.) to build assets
+# NODE_ENV is intentionally NOT set: yarn skips devDependencies when
+# NODE_ENV=production, but we need esbuild/sass-plugin to build assets.
 ENV RAILS_ENV="production" \
     BUNDLE_DEPLOYMENT="1" \
     BUNDLE_WITHOUT="development:test"
 
-COPY --chown=1001:0 Gemfile Gemfile.lock ./
+COPY --chown=1000:0 Gemfile Gemfile.lock ./
 RUN bundle install && \
     rm -rf "${BUNDLE_PATH}"/cache "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
     bundle exec bootsnap precompile --gemfile
 
-# Install node modules (including dev dependencies needed for asset build)
-COPY --chown=1001:0 package.json yarn.lock esbuild.config.js ./
+COPY --chown=1000:0 package.json yarn.lock esbuild.config.js ./
 RUN yarn install --frozen-lockfile --production=false --network-timeout 100000
 
-# Copy application code
-COPY --chown=1001:0 . .
+COPY --chown=1000:0 . .
 
 RUN bundle exec bootsnap precompile app/ lib/ && \
     SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile && \
     rm -rf \
     node_modules \
+    .cache \
     tmp/cache \
     app/assets \
     vendor/assets \
@@ -169,7 +182,6 @@ RUN bundle exec bootsnap precompile app/ lib/ && \
     package.json \
     esbuild.config.js && \
     find public/assets -name '*.map' -delete 2>/dev/null || true && \
-    # Strip gem build artifacts and cached .o/.so files
     rm -rf "${BUNDLE_PATH}"/ruby/*/cache && \
     find "${BUNDLE_PATH}" -name '*.o' -o -name '*.c' -o -name '*.h' | xargs rm -f 2>/dev/null || true
 
@@ -178,45 +190,20 @@ RUN bundle exec bootsnap precompile app/ lib/ && \
 # =============================================================================
 FROM build-base AS development
 
-USER 0
-
-# Additional dev tools (build deps + Node.js already in build-base)
-RUN microdnf install -y \
-      vim-enhanced && \
-    microdnf clean all && \
-    rm -rf /var/cache/dnf
-
-USER 1001
-
-# Development environment
 ENV RAILS_ENV="development" \
     BUNDLE_WITHOUT="" \
     BUNDLE_DEPLOYMENT="0"
 
-# Install all gems including dev/test
-COPY --chown=1001:0 Gemfile Gemfile.lock ./
+COPY --chown=1000:0 Gemfile Gemfile.lock ./
 RUN bundle install
 
-# Install node modules
-COPY --chown=1001:0 package.json yarn.lock esbuild.config.js ./
+COPY --chown=1000:0 package.json yarn.lock esbuild.config.js ./
 RUN yarn install --frozen-lockfile
 
-# Copy application code
-COPY --chown=1001:0 . .
-
-USER 0
-
-# Create non-root user
-RUN groupadd --system --gid 1000 rails && \
-    useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash && \
-    mkdir -p db log storage tmp && \
-    chown -R rails:rails .
-
-USER 1000:1000
+COPY --chown=1000:0 . .
 
 EXPOSE 3000
 
-# Development server
 CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]
 
 # =============================================================================
@@ -226,30 +213,23 @@ FROM base AS production
 
 USER 0
 
-# Production environment — infrastructure only (12-factor: config via env vars at deploy time)
-# App config defaults live in config/vulcan.default.yml, database.yml, and production.rb.
-# Override at deploy time via docker-compose environment:, env_file:, or .env.
 ENV RAILS_ENV="production" \
     BUNDLE_DEPLOYMENT="1" \
     BUNDLE_WITHOUT="development:test" \
     RAILS_LOG_TO_STDOUT="true" \
     RAILS_SERVE_STATIC_FILES="true"
 
-# Copy built artifacts from build stage
+# /opt/node is intentionally NOT copied — production has no Node runtime.
 COPY --from=build /usr/local /usr/local
 COPY --from=build --chmod=755 /rails /rails
 
-# Create non-root user, writable dirs, and strip bundle artifacts in one layer
-RUN groupadd --system --gid 1000 rails && \
-    useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash && \
-    mkdir -p db log storage tmp && \
+RUN mkdir -p db log storage tmp && \
     chown -R rails:rails db log storage tmp && \
     rm -rf "${BUNDLE_PATH}"/ruby/*/cache \
            "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git
 
 USER 1000:1000
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:3000/up || exit 1
 
@@ -258,5 +238,4 @@ EXPOSE 3000
 # Entrypoint handles db:prepare on server start (Rails standard pattern)
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
-# Production server
 CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]

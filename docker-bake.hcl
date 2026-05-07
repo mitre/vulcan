@@ -32,7 +32,7 @@ variable "VERSION" {
 }
 
 variable "VULCAN_BUNDLER_VERSION" {
-  default = "2.3.27"
+  default = "2.7.2"
 }
 
 variable "VULCAN_RUBY_VERSION" {
@@ -40,7 +40,7 @@ variable "VULCAN_RUBY_VERSION" {
 }
 
 variable "VULCAN_NODE_VERSION" {
-  default = "22.16.0"
+  default = "24.14.0"
 }
 
 // ============================================================================
