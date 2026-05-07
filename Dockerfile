@@ -153,12 +153,12 @@ ENV RAILS_ENV="production" \
     BUNDLE_DEPLOYMENT="1" \
     BUNDLE_WITHOUT="development:test"
 
-COPY --chown=1000:0 Gemfile Gemfile.lock ./
+COPY --chown=1000:0 --chmod=440 Gemfile Gemfile.lock ./
 RUN bundle install && \
     rm -rf "${BUNDLE_PATH}"/cache "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
     bundle exec bootsnap precompile --gemfile
 
-COPY --chown=1000:0 package.json yarn.lock esbuild.config.js ./
+COPY --chown=1000:0 --chmod=440 package.json yarn.lock esbuild.config.js ./
 RUN yarn install --frozen-lockfile --production=false --network-timeout 100000
 
 COPY --chown=1000:0 . .
@@ -194,10 +194,10 @@ ENV RAILS_ENV="development" \
     BUNDLE_WITHOUT="" \
     BUNDLE_DEPLOYMENT="0"
 
-COPY --chown=1000:0 Gemfile Gemfile.lock ./
+COPY --chown=1000:0 --chmod=440 Gemfile Gemfile.lock ./
 RUN bundle install
 
-COPY --chown=1000:0 package.json yarn.lock esbuild.config.js ./
+COPY --chown=1000:0 --chmod=440 package.json yarn.lock esbuild.config.js ./
 RUN yarn install --frozen-lockfile
 
 COPY --chown=1000:0 . .
