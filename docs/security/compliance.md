@@ -365,17 +365,24 @@ Rate limiting is enabled by default. Thresholds can be adjusted in `config/initi
 
 ### Container Security
 
+> **Pseudocode.** This snippet illustrates the security-relevant *shape* of the
+> production Dockerfile (UBI9 minimal base, multi-stage build, non-root runtime,
+> healthcheck). The Ruby compile + bundler install in `build-base` is elided
+> for brevity. See the repo's actual `Dockerfile` for the full build —
+> including the version-pinned Ruby source download, configure flags, jemalloc
+> wiring, and asset precompile.
+
 ```dockerfile
-# Secure Dockerfile Example
 # UBI9 minimal ships curl-minimal preinstalled; do not install curl (it conflicts).
 FROM registry.access.redhat.com/ubi9/ubi-minimal:9.7 AS base
 RUN microdnf install -y ca-certificates libpq shadow-utils && microdnf clean all
 
 FROM base AS build-base
 RUN microdnf install -y gcc gcc-c++ make openssl-devel libyaml-devel readline-devel zlib-devel rust && microdnf clean all
-# Compile Ruby 3.4 here and install bundler
+# (omitted: download/verify Ruby source, ./configure --prefix=/usr/local, make, make install, gem install bundler)
 
 FROM base AS production
+# Inherits /usr/local/bin/ruby + /usr/local/lib/ruby/* from build-base
 COPY --from=build-base /usr/local /usr/local
 
 # Security: Run as non-root user (shadow-utils provides groupadd/useradd on UBI minimal)
