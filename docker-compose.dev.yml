@@ -59,12 +59,16 @@ services:
       - "${VULCAN_PORT:-3000}:3000"
     volumes:
       - .:/rails
+      - /rails/node_modules
     depends_on:
       db:
         condition: service_healthy
     command: >
       bash -c "rm -f tmp/pids/server.pid &&
-      bin/rails db:prepare && yarn build:watch &
+      bin/rails db:prepare &&
+      yarn install --frozen-lockfile &&
+      yarn build &&
+      yarn build:watch &
       bundle exec rails server -b 0.0.0.0 -p 3000"
 
 volumes:

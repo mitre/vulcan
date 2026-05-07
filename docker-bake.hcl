@@ -83,6 +83,7 @@ target "production" {
     "org.opencontainers.image.vendor"      = "MITRE"
     "org.opencontainers.image.source"      = "https://github.com/mitre/vulcan"
     "org.opencontainers.image.version"     = "${VERSION}"
+    "org.opencontainers.image.base.name"   = "registry.access.redhat.com/ubi9/ubi-minimal:9.7"
   }
 
   // Build cache configuration (only for CI/registry push)
@@ -102,11 +103,6 @@ target "production-multiarch" {
     "linux/amd64",
     "linux/arm64"
   ]
-
-  tags = [
-    "${REGISTRY}/${IMAGE_NAME}:${VERSION}",
-    "${REGISTRY}/${IMAGE_NAME}:latest"
-  ]
 }
 
 // ============================================================================
@@ -114,27 +110,16 @@ target "production-multiarch" {
 // ============================================================================
 
 target "dev" {
-  dockerfile = "Dockerfile"
-  context    = "."
-  target     = "development"
+  inherits = ["production"]
+  target   = "development"
 
   tags = [
     "${REGISTRY}/${IMAGE_NAME}:dev"
   ]
 
-  platforms = ["linux/amd64"]
-
-  args = {
-    BUNDLER_VERSION = "${VULCAN_BUNDLER_VERSION}"
-    RUBY_VERSION = "${VULCAN_RUBY_VERSION}"
-    NODE_VERSION = "${VULCAN_NODE_VERSION}"
-  }
-
   labels = {
     "org.opencontainers.image.title"       = "Vulcan Development"
     "org.opencontainers.image.description" = "Vulcan development environment with all dependencies"
-    "org.opencontainers.image.vendor"      = "MITRE"
-    "org.opencontainers.image.source"      = "https://github.com/mitre/vulcan"
   }
 }
 

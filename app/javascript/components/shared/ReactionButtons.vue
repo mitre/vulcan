@@ -103,6 +103,9 @@ export default {
       this.reactors = { up: [], down: [] };
       this.loadError = false;
     },
+    "reactions.mine"() {
+      this.loaded = false;
+    },
   },
   methods: {
     async onPopoverShow() {

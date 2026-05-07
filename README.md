@@ -32,11 +32,11 @@ Vulcan models the Security Technical Implementation Guide (STIG) creation proces
 
 ## 🚀 Quick Start
 
-### Latest Release: [v2.3.1](https://github.com/mitre/vulcan/releases/tag/v2.3.1)
+### Latest Release: [v2.3.6](https://github.com/mitre/vulcan/releases/tag/v2.3.6)
 
 ```bash
 # Pull the latest Docker image
-docker pull mitre/vulcan:v2.3.1
+docker pull mitre/vulcan:v2.3.6
 
 # Or use docker compose for a complete setup
 wget https://raw.githubusercontent.com/mitre/vulcan/master/docker-compose.yml
@@ -82,7 +82,7 @@ yarn dev      # Start dev server
 
 ### Core Framework
 - **Ruby 3.4.9** with **Rails 8.0.2.1**
-- **PostgreSQL 12+** database
+- **PostgreSQL 18** database
 - **Node.js 24 LTS** for JavaScript runtime
 
 ### Frontend
@@ -110,7 +110,7 @@ yarn dev      # Start dev server
 ### Prerequisites
 
 - Ruby 3.4.9 (use rbenv or rvm)
-- PostgreSQL 12+
+- PostgreSQL 18
 - Node.js 24 LTS
 - Yarn package manager
 

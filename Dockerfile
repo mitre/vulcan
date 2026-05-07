@@ -54,11 +54,14 @@ RUN mkdir -p /rails /usr/local/bundle && \
     chmod -R g=u /rails /usr/local/bundle
 WORKDIR /rails
 
-# Optional custom-CA injection: drop PEMs into ./certs/, they get imported
-# into the system trust store and the source files are deleted from the layer.
+# Optional custom-CA injection: drop PEM/CRT files into ./certs/ and they
+# get imported into the system trust store. The COPY always succeeds because
+# certs/ contains at least README.md (tracked in git); the RUN strips it
+# before update-ca-trust so only real certs are imported.
 COPY certs/ /etc/pki/ca-trust/source/anchors/
-RUN  update-ca-trust && \
-     rm -f /etc/pki/ca-trust/source/anchors/*
+RUN rm -f /etc/pki/ca-trust/source/anchors/README.md && \
+    update-ca-trust && \
+    rm -f /etc/pki/ca-trust/source/anchors/*
 
 ENV LANG="en_US.UTF-8" \
     LC_ALL="en_US.UTF-8" \
@@ -85,6 +88,8 @@ ARG BUNDLER_VERSION
 
 USER 0
 
+# rust is required by Ruby's YJIT JIT compiler (--enable-yjit at configure time).
+# Not needed by any gem. Only present in build-base; not copied to production.
 RUN microdnf update -y && \
     microdnf install -y \
       autoconf \
@@ -130,8 +135,10 @@ RUN curl -fsSL https://cache.ruby-lang.org/pub/ruby/${RUBY_VERSION%.*}/ruby-${RU
 
 # jemalloc — UBI doesn't ship it; compile from source for ~20-30% memory savings.
 ARG JEMALLOC_VERSION=5.3.0
+ARG JEMALLOC_SHA256=2db82d1e7119df3e71b7640219b6dfe84789bc0537983c3b7ac4f7189aecfeaa
 RUN curl -fsSL https://github.com/jemalloc/jemalloc/releases/download/${JEMALLOC_VERSION}/jemalloc-${JEMALLOC_VERSION}.tar.bz2 \
       -o /tmp/jemalloc.tar.bz2 && \
+    echo "${JEMALLOC_SHA256}  /tmp/jemalloc.tar.bz2" | sha256sum -c - && \
     tar -xjf /tmp/jemalloc.tar.bz2 -C /tmp && \
     cd /tmp/jemalloc-${JEMALLOC_VERSION} && \
     ./configure --prefix=/usr/local && \
@@ -170,12 +177,14 @@ ENV RAILS_ENV="production" \
     BUNDLE_WITHOUT="development:test"
 
 COPY --chown=1000:0 --chmod=440 Gemfile Gemfile.lock ./
-RUN bundle install && \
-    rm -rf "${BUNDLE_PATH}"/cache "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
+RUN --mount=type=cache,target=/usr/local/bundle/cache,uid=1000 \
+    bundle install && \
+    rm -rf "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
     bundle exec bootsnap precompile --gemfile
 
 COPY --chown=1000:0 --chmod=440 package.json yarn.lock esbuild.config.js ./
-RUN yarn install --frozen-lockfile --production=false --network-timeout 100000
+RUN --mount=type=cache,target=/tmp/.yarn-cache,uid=1000 \
+    yarn install --frozen-lockfile --production=false --network-timeout 100000 --cache-folder /tmp/.yarn-cache
 
 COPY --chown=1000:0 . .
 
@@ -198,7 +207,6 @@ RUN bundle exec bootsnap precompile app/ lib/ && \
     package.json \
     esbuild.config.js && \
     find public/assets -name '*.map' -delete 2>/dev/null || true && \
-    rm -rf "${BUNDLE_PATH}"/ruby/*/cache && \
     find "${BUNDLE_PATH}" -name '*.o' -o -name '*.c' -o -name '*.h' | xargs rm -f 2>/dev/null || true && \
     chmod 440 Gemfile Gemfile.lock
 
@@ -266,7 +274,7 @@ RUN mkdir -p db log storage tmp && \
 
 USER 1000:1000
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
   CMD curl -f http://localhost:3000/up || exit 1
 
 EXPOSE 3000
