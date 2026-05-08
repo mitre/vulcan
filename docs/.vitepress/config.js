@@ -16,10 +16,10 @@ export default defineConfig({
 
   // Head tags
   head: [
-    ["link", { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" }],
-    ["link", { rel: "alternate icon", href: "/favicon.ico" }],
-    ["link", { rel: "apple-touch-icon", href: "/app-icon.svg" }],
-    ["meta", { name: "theme-color", content: "#3498db" }],
+    // Match Vulcan's main app and saf-site — all three use the same saf-logo.svg
+    ["link", { rel: "icon", type: "image/svg+xml", href: "/saf-logo.svg" }],
+    ["link", { rel: "apple-touch-icon", href: "/saf-logo.svg" }],
+    ["meta", { name: "theme-color", content: "#005288" }],
   ],
 
   // Theme configuration

@@ -6,8 +6,8 @@ hero:
   text: "STIG-Ready Security Guidance"
   tagline: Streamline the creation of STIG documentation and InSpec validation profiles
   image:
-    src: /logo.svg
-    alt: Vulcan
+    src: /icons/plan.svg
+    alt: Vulcan — the Plan pillar of MITRE SAF
   actions:
     - theme: brand
       text: Get Started
@@ -18,27 +18,56 @@ hero:
     - theme: alt
       text: View on GitHub
       link: https://github.com/mitre/vulcan
-
-features:
-  - icon: 📋
-    title: STIG Process Modeling
-    details: Manage the complete workflow between vendors and sponsors for STIG creation
-  - icon: 🔍
-    title: InSpec Integration
-    details: Write and test validation code locally or across SSH, AWS, and Docker targets
-  - icon: 📊
-    title: Control Management
-    details: Track control status, revision history, and relationships between requirements
-  - icon: 👥
-    title: Collaborative Authoring
-    details: Multiple authors can work on control sets with built-in review workflows
-  - icon: 🔗
-    title: Cross-Reference STIGs
-    details: Look up related controls across all published STIGs for consistency
-  - icon: 🔐
-    title: Enterprise Security
-    details: Database encryption, flexible authentication with OIDC, LDAP, and GitHub
 ---
+
+<script setup>
+import {
+  ClipboardList,
+  Search,
+  BarChart3,
+  Users,
+  Link2,
+  ShieldCheck,
+  BookOpen,
+  GitPullRequest,
+  MessageSquare,
+} from 'lucide-vue-next'
+
+const features = [
+  { icon: ClipboardList, title: 'STIG Process Modeling',
+    details: 'Manage the complete workflow between vendors and sponsors for STIG creation' },
+  { icon: Search, title: 'InSpec Integration',
+    details: 'Write and test validation code locally or across SSH, AWS, and Docker targets' },
+  { icon: BarChart3, title: 'Control Management',
+    details: 'Track control status, revision history, and relationships between requirements' },
+  { icon: Users, title: 'Collaborative Authoring',
+    details: 'Multiple authors can work on control sets with built-in review workflows' },
+  { icon: Link2, title: 'Cross-Reference STIGs',
+    details: 'Look up related controls across all published STIGs for consistency' },
+  { icon: ShieldCheck, title: 'Enterprise Security',
+    details: 'Database encryption, flexible authentication with OIDC, LDAP, and GitHub' },
+]
+
+const involvement = [
+  { icon: BookOpen, title: 'Documentation',
+    details: 'Comprehensive guides for users and developers',
+    href: '/getting-started/installation', cta: 'Read the Docs →' },
+  { icon: GitPullRequest, title: 'Contributing',
+    details: 'Help improve Vulcan with code, docs, or feedback',
+    href: 'https://github.com/mitre/vulcan/blob/master/CONTRIBUTING.md', cta: 'Contribution Guide →' },
+  { icon: MessageSquare, title: 'Community',
+    details: 'Get help and discuss with other users',
+    href: 'https://github.com/mitre/vulcan/discussions', cta: 'Join Discussions →' },
+]
+</script>
+
+<div class="feature-grid">
+  <div v-for="f in features" :key="f.title" class="feature-card">
+    <component :is="f.icon" class="feature-icon" :size="32" :stroke-width="1.75" />
+    <h3>{{ f.title }}</h3>
+    <p>{{ f.details }}</p>
+  </div>
+</div>
 
 ## Quick Start
 
@@ -66,10 +95,10 @@ docker compose up
 ## Latest Release
 
 ::: info Current Version
-**v2.3.1** - Released February 2026
+**v2.3.6** - Released May 2026
 
-DISA process documentation, SRG ID display, export improvements, and DRY refactors.
-[View Release Notes →](/release-notes/v2.3.1)
+UBI9 base image (Iron Bank / DISA-aligned), public-comment review workflow with triage + adjudication, viewer-can-comment, comment reactions, structured 403s.
+[View Release Notes →](/release-notes/v2.3.6)
 :::
 
 ## Why Vulcan?
@@ -132,24 +161,65 @@ Vulcan is a core component of the [MITRE Security Automation Framework (SAF)](ht
 ## Get Involved
 
 <div class="action-cards">
-  <div class="action-card">
-    <h3>📚 Documentation</h3>
-    <p>Comprehensive guides for users and developers</p>
-    <a href="/getting-started/installation">Read the Docs →</a>
-  </div>
-  <div class="action-card">
-    <h3>🤝 Contributing</h3>
-    <p>Help improve Vulcan with code, docs, or feedback</p>
-    <a href="https://github.com/mitre/vulcan/blob/master/CONTRIBUTING.md">Contribution Guide →</a>
-  </div>
-  <div class="action-card">
-    <h3>💬 Community</h3>
-    <p>Get help and discuss with other users</p>
-    <a href="https://github.com/mitre/vulcan/discussions">Join Discussions →</a>
+  <div v-for="i in involvement" :key="i.title" class="action-card">
+    <h3>
+      <component :is="i.icon" class="action-icon" :size="20" :stroke-width="1.75" />
+      {{ i.title }}
+    </h3>
+    <p>{{ i.details }}</p>
+    <a :href="i.href">{{ i.cta }}</a>
   </div>
 </div>
 
 <style>
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.feature-card {
+  padding: 1.5rem;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 12px;
+  background: var(--vp-c-bg-soft);
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.feature-card:hover {
+  border-color: var(--vp-c-brand-1);
+  transform: translateY(-2px);
+}
+
+.feature-icon {
+  color: var(--vp-c-brand-1);
+  margin-bottom: 0.75rem;
+}
+
+.feature-card h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+.feature-card p {
+  color: var(--vp-c-text-2);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.action-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.action-icon {
+  color: var(--vp-c-brand-1);
+  flex-shrink: 0;
+}
+
 .tech-stack {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -212,10 +282,6 @@ Vulcan is a core component of the [MITRE Security Automation Framework (SAF)](ht
   padding: 1.5rem;
   border: 1px solid var(--vp-c-divider);
   border-radius: 8px;
-}
-
-.action-card h3 {
-  margin: 0 0 0.5rem 0;
 }
 
 .action-card p {
