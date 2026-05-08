@@ -162,15 +162,16 @@ export default {
     topLevelFilteredVisible() {
       return this.topLevelFilteredAll.slice(0, this.numShownReviews);
     },
-    // Authenticated viewer+ can reply to comments whenever the component is
-    // not frozen. New top-level comments require an open window; replies are
-    // still allowed during adjudication so commenters can continue the
-    // back-and-forth with project managers after the comment period closes.
-    // Server enforces via reject_if_comments_closed + authorize_viewer_project.
+    // Authenticated viewer+ can reply during open phase or closed-adjudicating
+    // phase. Replies are blocked when finalized or when the component is closed
+    // without a reason. Server enforces via reject_if_comments_closed +
+    // authorize_viewer_project.
     canReply() {
       if (!this.currentUserId || !this.effectivePermissions) return false;
-      // Block replies only when the component is fully finalized (frozen).
-      return this.closedReason !== 'finalized';
+      if (!this.commentsClosed) return true;
+      // Allow replies only during the adjudicating phase; block when finalized
+      // or when the component is closed without a reason set.
+      return this.closedReason === 'adjudicating';
     },
     triageHref() {
       const componentId = this.rule?.component_id;
