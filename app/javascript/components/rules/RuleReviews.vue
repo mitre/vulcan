@@ -164,13 +164,11 @@ export default {
     },
     // Authenticated viewer+ can reply during open phase or closed-adjudicating
     // phase. Replies are blocked when finalized or when the component is closed
-    // without a reason. Server enforces via reject_if_comments_closed +
-    // authorize_viewer_project.
+    // without a reason (closedReason is null). Server enforces via
+    // reject_if_comments_closed + authorize_viewer_project.
     canReply() {
       if (!this.currentUserId || !this.effectivePermissions) return false;
       if (!this.commentsClosed) return true;
-      // Allow replies only during the adjudicating phase; block when finalized
-      // or when the component is closed without a reason set.
       return this.closedReason === 'adjudicating';
     },
     triageHref() {
