@@ -796,6 +796,98 @@ RSpec.describe 'Reviews' do
       end
     end
 
+    # Replies (responding_to_review_id present) are allowed when the
+    # component is in a triaging-active phase (open OR closed+adjudicating)
+    # so needs-clarification round-trips finish even after the public
+    # comment window closes. closed+finalized still blocks everything.
+    describe 'POST /rules/:rule_id/reviews — replies during closed phases' do
+      let!(:parent_comment) do
+        phase_component.update_columns(comment_phase: 'open', closed_reason: nil)
+        Review.create!(rule: phase_rule, user: phase_commenter, action: 'comment',
+                       comment: 'parent', triage_status: 'pending')
+      end
+
+      before { sign_in phase_viewer }
+
+      it 'allows a reply during closed+adjudicating' do
+        phase_component.update_columns(comment_phase: 'closed', closed_reason: 'adjudicating')
+        post "/rules/#{phase_rule.id}/reviews",
+             params: { review: { action: 'comment', comment: 'reply during adjudication',
+                                 component_id: phase_component.id,
+                                 responding_to_review_id: parent_comment.id } },
+             as: :json
+        expect(response).to have_http_status(:success)
+        expect(Review.last.responding_to_review_id).to eq(parent_comment.id)
+      end
+
+      it 'rejects a reply during closed+finalized' do
+        phase_component.update_columns(comment_phase: 'closed', closed_reason: 'finalized')
+        post "/rules/#{phase_rule.id}/reviews",
+             params: { review: { action: 'comment', comment: 'too late',
+                                 component_id: phase_component.id,
+                                 responding_to_review_id: parent_comment.id } },
+             as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.body).to include('Comments are closed')
+      end
+
+      it 'rejects a new top-level comment during closed+adjudicating (gate still applies without responding_to_review_id)' do
+        phase_component.update_columns(comment_phase: 'closed', closed_reason: 'adjudicating')
+        post "/rules/#{phase_rule.id}/reviews",
+             params: { review: { action: 'comment', comment: 'sneaky new',
+                                 component_id: phase_component.id } },
+             as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.body).to include('Comments are closed')
+      end
+
+      it 'rejects a reply pointing at a non-comment review (defensive — guards against ID confusion)' do
+        @phase_rule_under_review = phase_rule
+        non_comment = Review.create!(rule: phase_rule, user: phase_author, action: 'request_review',
+                                     comment: 'requesting review', triage_status: 'pending')
+        phase_component.update_columns(comment_phase: 'closed', closed_reason: 'adjudicating')
+        post "/rules/#{phase_rule.id}/reviews",
+             params: { review: { action: 'comment', comment: 'sneaky',
+                                 component_id: phase_component.id,
+                                 responding_to_review_id: non_comment.id } },
+             as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.body).to include('Comments are closed')
+      end
+
+      it 'rejects a reply pointing at a missing/deleted parent' do
+        phase_component.update_columns(comment_phase: 'closed', closed_reason: 'adjudicating')
+        post "/rules/#{phase_rule.id}/reviews",
+             params: { review: { action: 'comment', comment: 'orphan reply',
+                                 component_id: phase_component.id,
+                                 responding_to_review_id: 999_999 } },
+             as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.body).to include('Comments are closed')
+      end
+
+      it 'rejects a reply whose parent is on a different component (cross-component bypass attempt)' do
+        # Parent on a separate, OPEN component. We're posting to phase_rule
+        # whose component is CLOSED. Should NOT bypass the closed gate just
+        # because the smuggled responding_to_review_id resolves elsewhere.
+        other_project = create(:project)
+        other_component = create(:component, project: other_project, based_on: srg, comment_phase: 'open')
+        other_rule = other_component.rules.first
+        Membership.find_or_create_by!(user: phase_viewer, membership: other_project) { |m| m.role = 'viewer' }
+        cross_parent = Review.create!(rule: other_rule, user: phase_viewer, action: 'comment',
+                                      comment: 'parent in other project', triage_status: 'pending')
+
+        phase_component.update_columns(comment_phase: 'closed', closed_reason: 'adjudicating')
+        post "/rules/#{phase_rule.id}/reviews",
+             params: { review: { action: 'comment', comment: 'cross-bypass attempt',
+                                 component_id: phase_component.id,
+                                 responding_to_review_id: cross_parent.id } },
+             as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.body).to include('Comments are closed')
+      end
+    end
+
     describe 'PATCH /reviews/:id/triage — closed+finalized freezes triage' do
       let!(:open_comment) do
         phase_component.update_columns(comment_phase: 'open')

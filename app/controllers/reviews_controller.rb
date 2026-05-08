@@ -731,12 +731,34 @@ class ReviewsController < ApplicationController
   # (request_review, approve, request_changes, lock_control,
   # unlock_control) are role-gated independently and unaffected by this
   # filter — we early-return for them.
+  #
+  # Replies (with responding_to_review_id) to threads on a triaging-active
+  # component (open OR closed+adjudicating) are allowed even when the
+  # component is no longer accepting NEW top-level comments — needs-
+  # clarification round-trips don't always finish before the comment
+  # window officially closes. Closed+finalized still blocks everything.
   def reject_if_comments_closed
     return unless params.dig(:review, :action) == 'comment'
     return if @rule&.component&.accepting_new_comments?
+    return if accepting_reply_to_active_thread?
 
     render_toast(title: 'Could not add comment.',
                  message: 'Comments are closed for this component.')
+  end
+
+  def accepting_reply_to_active_thread?
+    responding_to_id = params.dig(:review, :responding_to_review_id)
+    return false if responding_to_id.blank?
+    return false unless @rule
+
+    parent = Review.find_by(id: responding_to_id)
+    return false unless parent && parent.action == 'comment'
+    # Defensive: parent must be on the same component as the rule we're
+    # posting to. Prevents a closed-phase bypass via cross-component
+    # responding_to_review_id smuggling.
+    return false unless parent.rule&.component_id == @rule.component_id
+
+    parent.rule.component.triaging_active?
   end
 
   # once a component's comment_phase reaches 'final',
