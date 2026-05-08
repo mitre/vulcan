@@ -7,25 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v2.3.6] - 2026-05-08
+
 ### Changed
 
 - **BREAKING (Docker):** Base image changed from `ruby:3.4.9-slim` (Debian) to `registry.access.redhat.com/ubi9/ubi-minimal:9.7` (Red Hat UBI 9). Ruby is now compiled from source in the build stage. This aligns the container with Iron Bank / DISA compliance requirements. jemalloc is compiled from source and re-enabled via `LD_PRELOAD`.
 - **BREAKING (Docker Compose):** PostgreSQL 18 requires the volume mount at `/var/lib/postgresql` (was `/var/lib/postgresql/data`). **Existing deployments** must migrate data before upgrading: `docker compose down`, then either (a) back up and restore the database, or (b) rename the volume contents to match the new layout. Running `docker compose up` with an old `vulcan_dbdata` volume on the new mount path will initialize a fresh empty database.
-
-### Added
-
-- Comment reactions (👍/👎) on rule comments and replies. Reactions render as counts on each comment in the rule editor pullout, the comment thread (reply rows), and the triage modal; click the people-icon to see reactor names (works on hover, focus, and tap — accessible to keyboard and touch). Reactions are merged into the parent comment's `Thread Replies` cell in the disposition-matrix CSV export (alongside text replies, in chronological order) as `[name · timestamp] reacted thumbs-up` entries. Audited via `vulcan_audited` so the toggle history is preserved.
-- Rate limits on reaction endpoints: 60 toggles/min/user (POST) and 300 hover-fetches/min/user (GET) via Rack::Attack, with IP fallback for unauthenticated traffic.
-
-### Changed
-
 - Project viewers can now post comments on rules. Previously the `viewer` role was strictly read-only; it now grants read + comment access. Save / Approve / Request Changes / Lock / Unlock remain restricted to higher roles. To restrict commenting you must remove the user's project membership.
 - Authorization rejection responses for JSON requests now return a structured `403 Forbidden` body (`{ error: 'permission_denied', message, admins: [...], toast }`) instead of `500 Internal Server Error`. The legacy `toast` shape is kept alongside so existing AlertMixin consumers keep working unchanged.
 
 ### Added
 
-- `Review::VALID_ACTIONS` allowlist + inclusion validator on `Review#action` so unknown action strings no longer save silently as state-mutating no-ops
-- AlertMixin now renders structured permission-denied responses as a "Permission denied" toast that lists the project administrators (name and email) the user should contact for access — no more silent or generic failures on rejected actions
+- Comment reactions (👍/👎) on rule comments and replies. Reactions render as counts on each comment in the rule editor pullout, the comment thread (reply rows), and the triage modal; click the people-icon to see reactor names (works on hover, focus, and tap — accessible to keyboard and touch). Reactions are merged into the parent comment's `Thread Replies` cell in the disposition-matrix CSV export (alongside text replies, in chronological order) as `[name · timestamp] reacted thumbs-up` entries. Audited via `vulcan_audited` so the toggle history is preserved.
+- Rate limits on reaction endpoints: 60 toggles/min/user (POST) and 300 hover-fetches/min/user (GET) via Rack::Attack, with IP fallback for unauthenticated traffic.
+- `Review::VALID_ACTIONS` allowlist + inclusion validator on `Review#action` so unknown action strings no longer save silently as state-mutating no-ops.
+- AlertMixin now renders structured permission-denied responses as a "Permission denied" toast that lists the project administrators (name and email) the user should contact for access — no more silent or generic failures on rejected actions.
 
 ### Fixed
 

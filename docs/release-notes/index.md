@@ -4,10 +4,11 @@ All Vulcan releases with changelogs and migration notes.
 
 ## Current Release
 
-- **[v2.3.5](v2.3.5)** — Server-side user search (information disclosure fix), editor refresh shape drift fix, CI/release workflow split
+- **[v2.3.6](v2.3.6)** — UBI9 base image (Iron Bank / DISA-aligned), public-comment-review workflow with triage + adjudication, viewer-can-comment, comment reactions (👍/👎), structured 403s with admin contacts. **Includes breaking Docker / Compose volume changes — read the release notes before upgrading.**
 
 ## Previous Releases
 
+- **[v2.3.5](v2.3.5)** — Server-side user search (information disclosure fix), editor refresh shape drift fix, CI/release workflow split
 - **[v2.3.4](v2.3.4)** — Blueprinter JSON serialization, query performance hardening, OIDC fix, auth UX
 - **[v2.3.1](v2.3.1)** — Per-section rule locking, field state visualization, export modal UX, JSON archive backup/restore
 
