@@ -726,17 +726,8 @@ class ReviewsController < ApplicationController
     params.expect(review: %i[component_id action comment section responding_to_review_id])
   end
 
-  # a public comment (action='comment') can only be
-  # posted while the component's comment_phase is 'open'. Other actions
-  # (request_review, approve, request_changes, lock_control,
-  # unlock_control) are role-gated independently and unaffected by this
-  # filter — we early-return for them.
-  #
-  # Replies (with responding_to_review_id) to threads on a triaging-active
-  # component (open OR closed+adjudicating) are allowed even when the
-  # component is no longer accepting NEW top-level comments — needs-
-  # clarification round-trips don't always finish before the comment
-  # window officially closes. Closed+finalized still blocks everything.
+  # Phase-gates new top-level comments to comment_phase=open. Replies (with
+  # responding_to_review_id) are allowed during any triaging-active phase.
   def reject_if_comments_closed
     return unless params.dig(:review, :action) == 'comment'
     return if @rule&.component&.accepting_new_comments?
@@ -753,9 +744,7 @@ class ReviewsController < ApplicationController
 
     parent = Review.find_by(id: responding_to_id)
     return false unless parent && parent.action == 'comment'
-    # Defensive: parent must be on the same component as the rule we're
-    # posting to. Prevents a closed-phase bypass via cross-component
-    # responding_to_review_id smuggling.
+    # Same-component check blocks a closed-phase bypass via cross-component ID smuggling.
     return false unless parent.rule&.component_id == @rule.component_id
 
     parent.rule.component.triaging_active?

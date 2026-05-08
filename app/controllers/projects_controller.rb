@@ -245,7 +245,7 @@ class ProjectsController < ApplicationController
       export_mode = :vendor_submission
     end
 
-    unless %i[csv excel xccdf inspec json_archive].include?(export_type)
+    unless %i[csv excel xccdf inspec json_archive disposition_csv].include?(export_type)
       render json: {
         toast: {
           title: 'Export error',
@@ -253,6 +253,12 @@ class ProjectsController < ApplicationController
           variant: 'danger'
         }
       }, status: :bad_request
+      return
+    end
+
+    # disposition_csv: author-tier+ only (PII-adjacent data; mirrors per-component endpoint).
+    if export_type == :disposition_csv && !current_user.can_author_project?(@project)
+      head :forbidden
       return
     end
 
@@ -304,6 +310,8 @@ class ProjectsController < ApplicationController
             zip_filename: "vulcan-backup-#{@project.name}-#{Date.current}.zip",
             formatter_options: { include_srg: params[:include_srg] == 'true' }
           )
+        when :disposition_csv
+          perform_project_disposition_csv_export
         end
       end
       # JSON responses are just used to validate ahead of time that this
@@ -516,6 +524,29 @@ class ProjectsController < ApplicationController
     slack_id = params.dig(:project, :project_metadata_attributes, :data, 'Slack Channel ID')
     condition = slack_id.present? || params.dig(:project, :visibility).present?
     authorize_admin_project if condition
+  end
+
+  # Project-aggregate DISA disposition matrix CSV (mirrors the per-component endpoint).
+  def perform_project_disposition_csv_export
+    include_email = params[:include_email] == 'true' && current_user.can_admin_project?(@project)
+    csv_data = DispositionMatrixExport.generate_for_project(
+      project: @project,
+      triage_status_filter: params[:triage_status],
+      include_email: include_email
+    )
+    @project.audits.create!(
+      user: current_user,
+      action: 'export_disposition_csv',
+      audited_changes: {
+        triage_status_filter: params[:triage_status],
+        include_email: include_email,
+        scope: 'project'
+      }
+    )
+    filename = "#{@project.name}-disposition-matrix-#{Date.current}.csv"
+    send_data csv_data,
+              type: 'text/csv; charset=utf-8',
+              disposition: "attachment; filename=\"#{filename}\""
   end
 
   # Parse session[:components_to_export] from comma-separated string to integer array.

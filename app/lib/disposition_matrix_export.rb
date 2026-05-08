@@ -51,6 +51,23 @@ module DispositionMatrixExport # rubocop:disable Metrics/ModuleLength
     }
   end
 
+  # Project-aggregate: per-component rows unioned with a leading "Component" column.
+  def self.generate_for_project(project:, triage_status_filter: nil, include_email: false)
+    components = project.components.includes(:project).order(:prefix).to_a
+    headers = ['Component'] + build_headers(include_email)
+    CSV.generate(row_sep: "\r\n") do |out|
+      out << headers
+      components.each do |c|
+        component_label = "#{c.prefix} — #{c.name}"
+        rows_and_headers(
+          component: c,
+          triage_status_filter: triage_status_filter,
+          include_email: include_email
+        )[:rows].each { |row| out << ([component_label] + row) }
+      end
+    end
+  end
+
   # True iff the component has at least one top-level review (a row that
   # would appear in the disposition matrix). Used by the Working Copy
   # CSV/Excel piggyback paths to decide whether to attach the disposition

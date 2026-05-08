@@ -373,4 +373,51 @@ RSpec.describe DispositionMatrixExport do
       expect(filtered[:rows].first[status_index]).to eq('pending')
     end
   end
+
+  describe '.generate_for_project' do
+    let!(:second_component) do
+      c = create(:component, project: project, based_on: srg, prefix: 'XYZW-99', name: 'Second component')
+      Review.create!(rule: c.rules.first, user: commenter, action: 'comment',
+                     comment: 'on second component', triage_status: 'pending')
+      c
+    end
+
+    it 'unions rows from every component with a leading Component column' do
+      csv = described_class.generate_for_project(project: project)
+      out = CSV.parse(csv, headers: true)
+      expect(out.headers.first).to eq('Component')
+      components_in_output = out.pluck('Component').uniq
+      expect(components_in_output.size).to eq(2)
+      expect(components_in_output).to include(a_string_matching(/#{component.prefix} — /))
+      expect(components_in_output).to include(a_string_matching(/XYZW-99 — Second component/))
+    end
+
+    it 'preserves row count = sum of per-component row counts' do
+      per_component_rows = project.components.sum do |c|
+        described_class.rows_and_headers(component: c)[:rows].length
+      end
+      project_rows = CSV.parse(described_class.generate_for_project(project: project), headers: true)
+      expect(project_rows.length).to eq(per_component_rows)
+    end
+
+    it 'returns headers-only CSV when project has no components' do
+      empty_project = create(:project)
+      csv = described_class.generate_for_project(project: empty_project)
+      out = CSV.parse(csv, headers: true)
+      expect(out.headers.first).to eq('Component')
+      expect(out.length).to eq(0)
+    end
+
+    it 'forwards triage_status_filter across all components' do
+      csv = described_class.generate_for_project(project: project, triage_status_filter: 'pending')
+      out = CSV.parse(csv, headers: true)
+      expect(out.pluck('Triage Status').uniq).to eq(['pending'])
+    end
+
+    it 'opt-in include_email adds Commenter Email column' do
+      csv = described_class.generate_for_project(project: project, include_email: true)
+      out = CSV.parse(csv, headers: true)
+      expect(out.headers).to include('Commenter Email')
+    end
+  end
 end

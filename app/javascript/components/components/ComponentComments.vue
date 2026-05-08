@@ -288,15 +288,18 @@ export default {
     canReply() {
       return !!this.effectivePermissions;
     },
-    // The DISA disposition matrix CSV export is a
-    // public-comment-period deliverable. Server enforces author-tier
-    // minimum + admin-only include_email; the UI hides the button for
-    // viewers and in project-aggregate scope (no single-component endpoint).
+    // Author-tier+ gate; server enforces author-tier minimum + admin-only include_email.
     canExportDisposition() {
-      return this.scope === "component" && this.componentId != null && this.canTriage;
+      if (!this.canTriage) return false;
+      if (this.scope === "component") return this.componentId != null;
+      if (this.scope === "project") return this.projectId != null;
+      return false;
     },
     dispositionExportUrl() {
-      const base = `/components/${this.componentId}/export/disposition_csv`;
+      const base =
+        this.scope === "project"
+          ? `/projects/${this.projectId}/export/disposition_csv`
+          : `/components/${this.componentId}/export/disposition_csv`;
       if (!this.filterStatus || this.filterStatus === "all") return base;
       return `${base}?triage_status=${encodeURIComponent(this.filterStatus)}`;
     },
