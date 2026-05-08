@@ -731,12 +731,25 @@ class ReviewsController < ApplicationController
   # (request_review, approve, request_changes, lock_control,
   # unlock_control) are role-gated independently and unaffected by this
   # filter — we early-return for them.
+  # Replies to existing threads (responding_to_review_id present) are
+  # still permitted during the adjudicating phase to support back-and-forth
+  # clarification with project managers after the comment window closes.
   def reject_if_comments_closed
     return unless params.dig(:review, :action) == 'comment'
-    return if @rule&.component&.accepting_new_comments?
 
-    render_toast(title: 'Could not add comment.',
-                 message: 'Comments are closed for this component.')
+    component = @rule&.component
+    return if component&.accepting_new_comments?
+
+    is_reply = params.dig(:review, :responding_to_review_id).present?
+    return if is_reply && component&.accepting_replies?
+
+    if is_reply
+      render_toast(title: 'Could not add reply.',
+                   message: 'Replies are closed for this component.')
+    else
+      render_toast(title: 'Could not add comment.',
+                   message: 'Comments are closed for this component.')
+    end
   end
 
   # once a component's comment_phase reaches 'final',

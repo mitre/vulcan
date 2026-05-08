@@ -884,6 +884,26 @@ RSpec.describe Component do
       end
     end
 
+    describe '#accepting_replies?' do
+      it 'is true for open and for closed+adjudicating' do
+        component.comment_phase = 'open'
+        expect(component.accepting_replies?).to be(true)
+
+        component.comment_phase = 'closed'
+        component.closed_reason = 'adjudicating'
+        expect(component.accepting_replies?).to be(true)
+      end
+
+      it 'is false for closed+finalized and closed-without-reason' do
+        component.comment_phase = 'closed'
+        component.closed_reason = 'finalized'
+        expect(component.accepting_replies?).to be(false)
+
+        component.closed_reason = nil
+        expect(component.accepting_replies?).to be(false)
+      end
+    end
+
     describe '#triaging_active?' do
       it 'is true for open and for closed+adjudicating' do
         component.comment_phase = 'open'

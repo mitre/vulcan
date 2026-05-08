@@ -1626,11 +1626,11 @@ RSpec.describe 'Reviews' do
     end
   end
 
-  # Task 33: defense-in-depth — replies must be rejected when comment_phase
-  # is closed. Today the existing reject_if_comments_closed filter applies
-  # to action='comment' reviews regardless of responding_to_review_id, so
-  # this is documenting+locking that behavior.
-  describe 'POST /rules/:rule_id/reviews — closed-window reply rejection' do
+  # Reply-flow behavior after the comment window closes:
+  # - closed+finalized: replies are rejected (frozen for all writes)
+  # - closed+adjudicating: replies are still allowed so commenters can
+  #   continue back-and-forth with project managers during triage.
+  describe 'POST /rules/:rule_id/reviews — closed-window reply behavior' do
     let_it_be(:closed_member) { create(:user) }
     let_it_be(:closed_component) do
       create(:component, project: project, based_on: srg, comment_phase: 'open')
@@ -1641,20 +1641,60 @@ RSpec.describe 'Reviews' do
                      rule: closed_component.rules.first)
     end
 
-    before do
-      closed_component.update_columns(comment_phase: 'closed', closed_reason: 'finalized')
-      sign_in closed_member
+    context 'when the component is closed+finalized' do
+      before do
+        closed_component.update_columns(comment_phase: 'closed', closed_reason: 'finalized')
+        sign_in closed_member
+      end
+
+      it 'rejects a reply post' do
+        expect do
+          post "/rules/#{closed_component.rules.first.id}/reviews", params: {
+            review: { action: 'comment', comment: 'late reply',
+                      component_id: closed_component.id,
+                      responding_to_review_id: closed_parent.id }
+          }, as: :json
+        end.not_to change(Review, :count)
+        expect(response.parsed_body.dig('toast', 'message').join).to match(/closed/i)
+      end
+
+      it 'rejects a new top-level comment post' do
+        expect do
+          post "/rules/#{closed_component.rules.first.id}/reviews", params: {
+            review: { action: 'comment', comment: 'new comment',
+                      component_id: closed_component.id }
+          }, as: :json
+        end.not_to change(Review, :count)
+        expect(response.parsed_body.dig('toast', 'message').join).to match(/closed/i)
+      end
     end
 
-    it 'rejects a reply post when the component is closed for comments' do
-      expect do
-        post "/rules/#{closed_component.rules.first.id}/reviews", params: {
-          review: { action: 'comment', comment: 'late reply',
-                    component_id: closed_component.id,
-                    responding_to_review_id: closed_parent.id }
-        }, as: :json
-      end.not_to change(Review, :count)
-      expect(response.parsed_body.dig('toast', 'message').join).to match(/closed/i)
+    context 'when the component is closed+adjudicating' do
+      before do
+        closed_component.update_columns(comment_phase: 'closed', closed_reason: 'adjudicating')
+        sign_in closed_member
+      end
+
+      it 'allows a reply post' do
+        expect do
+          post "/rules/#{closed_component.rules.first.id}/reviews", params: {
+            review: { action: 'comment', comment: 'follow-up reply',
+                      component_id: closed_component.id,
+                      responding_to_review_id: closed_parent.id }
+          }, as: :json
+        end.to change(Review, :count).by(1)
+        expect(response).to have_http_status(:ok)
+      end
+
+      it 'rejects a new top-level comment post' do
+        expect do
+          post "/rules/#{closed_component.rules.first.id}/reviews", params: {
+            review: { action: 'comment', comment: 'new comment',
+                      component_id: closed_component.id }
+          }, as: :json
+        end.not_to change(Review, :count)
+        expect(response.parsed_body.dig('toast', 'message').join).to match(/closed/i)
+      end
     end
   end
 end

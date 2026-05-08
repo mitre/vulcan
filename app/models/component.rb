@@ -102,6 +102,13 @@ class Component < ApplicationRecord
     comment_phase == 'open'
   end
 
+  # Replies to existing comment threads are allowed whenever triage is
+  # active (open OR closed-adjudicating). They are blocked once the
+  # component reaches closed-finalized so the audit trail stays immutable.
+  def accepting_replies?
+    triaging_active?
+  end
+
   # Triage continues while comments are accepted OR while a closed
   # component is still being adjudicated. Stops once finalized.
   def triaging_active?

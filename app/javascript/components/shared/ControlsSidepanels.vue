@@ -177,6 +177,7 @@
           :effective-permissions="effectivePermissions"
           :current-user-id="currentUserId"
           :comments-closed="commentsClosed"
+          :closed-reason="closedReason"
           @open-reply-composer="$emit('open-reply-composer', $event)"
         />
       </div>
@@ -275,6 +276,9 @@ export default {
   computed: {
     commentsClosed() {
       return (this.component?.comment_phase || "open") !== "open";
+    },
+    closedReason() {
+      return this.component?.closed_reason || null;
     },
     canAdmin() {
       return this.role_gte_to(this.effectivePermissions, "admin");
