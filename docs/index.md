@@ -21,6 +21,7 @@ hero:
 ---
 
 <script setup>
+import { withBase } from 'vitepress'
 import {
   ClipboardList,
   Search,
@@ -167,7 +168,7 @@ Vulcan is a core component of the [MITRE Security Automation Framework (SAF)](ht
       {{ i.title }}
     </h3>
     <p>{{ i.details }}</p>
-    <a :href="i.href">{{ i.cta }}</a>
+    <a :href="i.href.startsWith('http') ? i.href : withBase(i.href)">{{ i.cta }}</a>
   </div>
 </div>
 

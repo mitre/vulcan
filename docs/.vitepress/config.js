@@ -18,7 +18,7 @@ export default defineConfig({
   head: [
     // Match Vulcan's main app and saf-site — all three use the same saf-logo.svg
     ["link", { rel: "icon", type: "image/svg+xml", href: "/saf-logo.svg" }],
-    ["link", { rel: "apple-touch-icon", href: "/saf-logo.svg" }],
+    ["link", { rel: "apple-touch-icon", sizes: "180x180", href: "/saf-logo-180.png" }],
     ["meta", { name: "theme-color", content: "#005288" }],
   ],
 
