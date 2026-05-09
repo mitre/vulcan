@@ -36,7 +36,7 @@
           :class="{ 'opacity-65': commentButtonDisabled }"
           @click="$emit('open-composer', null)"
         >
-          <b-icon icon="pencil-square" /> Leave a Comment
+          <b-icon icon="pencil-square" /> Comment
         </b-button>
         <b-button variant="outline-info" size="sm" href="/disa-guide" target="_blank">
           <b-icon icon="question-circle" /> DISA Guide

@@ -46,6 +46,15 @@
       >
         <b-icon icon="download" /> Export CSV
       </b-button>
+      <b-button
+        v-if="canCommentOnComponent"
+        variant="primary"
+        size="sm"
+        aria-label="Add component-level comment"
+        @click="openComponentComposer"
+      >
+        <b-icon icon="chat-left-text" /> Comment
+      </b-button>
     </div>
 
     <!-- Table -->
@@ -69,7 +78,10 @@
              turbolinks navigates to the rule editor but the project_component
              pack registers its turbolinks:load listener after the event has
              already fired, so Vue never mounts and the page is blank. -->
-        <a :href="ruleHref(item)" data-turbolinks="false">
+        <span v-if="item.commentable_type === 'Component'" class="text-muted font-italic">
+          {{ item.rule_displayed_name }}
+        </span>
+        <a v-else :href="ruleHref(item)" data-turbolinks="false">
           {{ item.rule_displayed_name }}
         </a>
       </template>
@@ -78,10 +90,10 @@
           {{ item.component_name }}
         </a>
       </template>
-      <template #cell(section)="{ value }">
+      <template #cell(section)="{ item, value }">
         <!-- Use (general) label not em-dash for null section so a rule-level
              comment is clearly identified rather than looking like missing data. -->
-        <SectionLabel :section="value" />
+        <SectionLabel :section="value" :commentable-type="item.commentable_type" />
       </template>
       <template #cell(comment)="{ item, value }">
         <div :title="value">{{ truncate(value, 80) }}</div>
@@ -171,15 +183,15 @@
       @hidden="selectedRow = null"
     />
 
-    <!-- Reply composer. Opened when CommentThread (in any row) emits
-         reply, or when CommentTriageModal emits open-reply-composer. The
-         row carries everything we need for the modal's bindings. -->
+    <!-- Composer. Reply mode (composerReplyRow set) or new component-level
+         comment mode (composerNewComponent set). -->
     <CommentComposerModal
-      v-if="composerReplyRow"
-      :component-id="composerReplyRow.component_id || componentId"
-      :rule-id="composerReplyRow.rule_id"
-      :rule-displayed-name="composerReplyRow.rule_displayed_name"
-      :reply-to-review-id="composerReplyRow.id"
+      v-if="composerReplyRow || composerNewComponent"
+      :component-id="composerReplyRow ? (composerReplyRow.component_id || componentId) : componentId"
+      :rule-id="composerReplyRow ? composerReplyRow.rule_id : null"
+      :rule-displayed-name="composerReplyRow ? composerReplyRow.rule_displayed_name : ''"
+      :component-displayed-name="composerNewComponent ? componentDisplayedName : ''"
+      :reply-to-review-id="composerReplyRow ? composerReplyRow.id : null"
       @posted="onComposerPosted"
       @hidden="onComposerHidden"
     />
@@ -220,6 +232,7 @@ export default {
     // scope) is required — but not both. The scope prop disambiguates and
     // selects the correct backend endpoint.
     componentId: { type: [Number, String], default: null },
+    componentDisplayedName: { type: String, default: "" },
     projectId: { type: [Number, String], default: null },
     scope: {
       type: String,
@@ -269,6 +282,7 @@ export default {
       // the composer is not open. Populated when a row's CommentThread
       // emits 'reply' (or the triage modal asks for a reply composer).
       composerReplyRow: null,
+      composerNewComponent: false,
       fields,
     };
   },
@@ -287,6 +301,9 @@ export default {
     // pattern used for SectionCommentIcon.
     canReply() {
       return !!this.effectivePermissions;
+    },
+    canCommentOnComponent() {
+      return this.scope === "component" && this.componentId != null && this.canReply;
     },
     // Author-tier+ gate; server enforces author-tier minimum + admin-only include_email.
     canExportDisposition() {
@@ -323,7 +340,7 @@ export default {
       const friendly = Object.entries(SECTION_LABELS).map(([value, text]) => ({ value, text }));
       return [
         { value: null, text: "All sections" },
-        { value: "(general)", text: "(general)" },
+        { value: "(general)", text: "Overall Requirement" },
         ...friendly,
       ];
     },
@@ -514,11 +531,15 @@ export default {
       this.$bvModal.hide("comment-triage-modal");
       this.openReplyComposer(row);
     },
+    openComponentComposer() {
+      this.composerReplyRow = null;
+      this.composerNewComponent = true;
+      this.$nextTick(() => this.$bvModal.show("comment-composer-modal"));
+    },
     onComposerPosted() {
       const id = this.composerReplyRow?.id;
       this.composerReplyRow = null;
-      // Refresh the row's responses_count + the local thread state. The
-      // bumped count drives the row's CommentThread toggle visibility.
+      this.composerNewComponent = false;
       this.fetch();
       if (id) {
         this.$nextTick(() => {
@@ -530,6 +551,7 @@ export default {
     },
     onComposerHidden() {
       this.composerReplyRow = null;
+      this.composerNewComponent = false;
     },
   },
 };

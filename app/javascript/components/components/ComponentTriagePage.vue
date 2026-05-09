@@ -22,6 +22,7 @@
       <ComponentComments
         scope="component"
         :component-id="component.id"
+        :component-displayed-name="component.name"
         :effective-permissions="effectivePermissions"
       />
     </div>

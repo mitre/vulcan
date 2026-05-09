@@ -41,7 +41,7 @@ RSpec.describe DispositionMatrixExport do
       u
     end
 
-    it 'appends a reaction on the parent comment as a [name · ts] reacted label entry' do
+    it 'appends a reaction on the parent comment as a [name | ts] reacted label entry' do
       Reaction.create!(review: c1, user: reactor, kind: 'up', created_at: 30.minutes.ago)
       out = CSV.parse(described_class.generate(component: component), headers: true)
       cell = out.find { |r| r['Comment ID'] == c1.id.to_s }['Thread Replies']
@@ -388,8 +388,8 @@ RSpec.describe DispositionMatrixExport do
       expect(out.headers.first).to eq('Component')
       components_in_output = out.pluck('Component').uniq
       expect(components_in_output.size).to eq(2)
-      expect(components_in_output).to include(a_string_matching(/#{component.prefix} — /))
-      expect(components_in_output).to include(a_string_matching(/XYZW-99 — Second component/))
+      expect(components_in_output).to include(a_string_matching(/#{component.prefix} - /))
+      expect(components_in_output).to include(a_string_matching(/XYZW-99 - Second component/))
     end
 
     it 'preserves row count = sum of per-component row counts' do
@@ -418,6 +418,28 @@ RSpec.describe DispositionMatrixExport do
       csv = described_class.generate_for_project(project: project, include_email: true)
       out = CSV.parse(csv, headers: true)
       expect(out.headers).to include('Commenter Email')
+    end
+  end
+
+  describe 'component-scoped reviews (issue #725)' do
+    let!(:component_level_comment) do
+      Review.create!(commentable: component, user: commenter, action: 'comment',
+                     comment: 'overall feedback on this component')
+    end
+
+    it 'includes a row whose Rule cell is the (component) sentinel and Section reads Overall Component' do
+      out = CSV.parse(described_class.generate(component: component), headers: true)
+      row = out.find { |r| r['Comment ID'] == component_level_comment.id.to_s }
+      expect(row).not_to be_nil
+      expect(row['Rule']).to eq('(component)')
+      expect(row['SRG ID']).to eq('')
+      expect(row['Section']).to eq('Overall Component')
+    end
+
+    it 'records_exist? is true for a component with only component-scoped comments' do
+      isolated = create(:component, project: project, based_on: srg)
+      Review.create!(commentable: isolated, user: commenter, action: 'comment', comment: 'iso')
+      expect(described_class.records_exist?(isolated)).to be(true)
     end
   end
 end

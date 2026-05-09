@@ -9,7 +9,7 @@
         @click="expanded = !expanded"
       >
         <span aria-hidden="true">ⓘ</span>
-        {{ totalComments }} existing comment{{ totalComments === 1 ? "" : "s" }} on this rule
+        {{ totalComments }} existing comment{{ totalComments === 1 ? "" : "s" }} on this {{ scopeNoun }}
         <template v-if="sectionDisplay"> ({{ inSection }} on {{ sectionDisplay }}) </template>
         <span>{{ expanded ? "Hide ▴" : "Read first ▾" }}</span>
       </button>
@@ -61,18 +61,22 @@ export default {
   mixins: [AlertMixin, ReactionToggleMixin],
   props: {
     componentId: { type: [Number, String], required: true },
-    ruleId: { type: [Number, String], required: true },
+    ruleId: { type: [Number, String], default: null },
     section: { type: String, default: null },
+    componentScoped: { type: Boolean, default: false },
   },
   data() {
     return { rows: [], total: 0, totalComments: 0, expanded: false };
   },
   computed: {
     sectionDisplay() {
-      return this.section ? sectionLabel(this.section) : "";
+      return this.section && !this.componentScoped ? sectionLabel(this.section) : "";
+    },
+    scopeNoun() {
+      return this.componentScoped ? "component" : "rule";
     },
     listId() {
-      return `dedup-list-${this.componentId}-${this.ruleId}`;
+      return `dedup-list-${this.componentId}-${this.componentScoped ? "component" : this.ruleId}`;
     },
     // How many of the loaded rows match the currently-selected section?
     // Surfaced in the alert header so commenters can see at a glance
@@ -83,10 +87,12 @@ export default {
     },
   },
   watch: {
-    // Refetch on rule change; section change does NOT refetch (we always
-    // load all rule-level comments and let the user see prior context
-    // across sections — section-specific count is shown via inSection).
+    // Refetch on rule change OR scope flip (rule ↔ component); section
+    // change does NOT refetch (we always load all comments at the current
+    // scope and let the user see prior context across sections —
+    // section-specific count is shown via inSection).
     ruleId: { immediate: true, handler: "fetch" },
+    componentScoped: "fetch",
   },
   methods: {
     relativeTime(iso) {
@@ -94,11 +100,20 @@ export default {
     },
     async fetch() {
       try {
-        // Fetch ALL rule-level comments regardless of section so the
-        // commenter sees prior conversation across the whole rule (not
-        // just the section they happen to have selected). Section-scoped
-        // count is computed client-side via the inSection computed.
-        const params = { rule_id: this.ruleId, triage_status: "all" };
+        // Fetch all comments at the current scope (rule-level or
+        // component-level) so the commenter sees prior conversation across
+        // sections. Section-scoped count is computed client-side via inSection.
+        const params = { triage_status: "all" };
+        if (this.componentScoped) {
+          params.commentable_type = "component";
+        } else if (this.ruleId) {
+          params.rule_id = this.ruleId;
+        } else {
+          this.rows = [];
+          this.total = 0;
+          this.totalComments = 0;
+          return;
+        }
         const { data } = await axios.get(`/components/${this.componentId}/comments`, {
           params,
         });

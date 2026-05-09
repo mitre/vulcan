@@ -50,6 +50,20 @@
         :component="component"
         @spreadsheet-updated="onSpreadsheetUpdated"
       />
+
+      <!-- Component-level comment composer entry point. Visible to anyone
+           with project access; closed-phase clicks surface a rejection toast
+           rather than hiding the button (matches SectionCommentIcon). -->
+      <b-button
+        v-if="canCommentOnComponent"
+        variant="outline-secondary"
+        size="sm"
+        class="mr-2"
+        data-testid="comment-on-component-btn"
+        @click="$emit('open-component-composer')"
+      >
+        <b-icon icon="chat-left-text" /> Comment
+      </b-button>
     </template>
 
     <!-- Right: Panel Toggles -->
@@ -184,6 +198,9 @@ export default {
     },
     canAdmin() {
       return this.effectivePermissions === "admin";
+    },
+    canCommentOnComponent() {
+      return !!this.effectivePermissions;
     },
     canRelease() {
       return this.effectivePermissions === "admin";

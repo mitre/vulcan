@@ -2,7 +2,11 @@
   <div>
     <b-breadcrumb :items="breadcrumbs" />
 
-    <CommentPeriodBanner :component="component" @open-comments-panel="openCommentsPanel" />
+    <CommentPeriodBanner
+      :component="component"
+      @open-comments-panel="openCommentsPanel"
+      @open-component-composer="onOpenComponentComposer"
+    />
 
     <ControlsPageLayout
       :has-selected-rule="!!selectedRule"
@@ -24,6 +28,7 @@
           @toggle-panel="togglePanel"
           @spreadsheet-updated="refreshComponent"
           @download="openExportModal"
+          @open-component-composer="onOpenComponentComposer"
         />
       </template>
 
@@ -84,13 +89,16 @@
           :rule-stig-id="`${component.prefix}-${selectedRule.rule_id}`"
         />
 
-        <!-- Comment composer modal. Opens via onOpenComposer
-             when a SectionCommentIcon emits open-composer. -->
+        <!-- Comment composer modal. Two modes: rule-scoped (selectedRule
+             present) or component-scoped (componentComposerActive). -->
         <CommentComposerModal
-          v-if="selectedRule"
+          v-if="selectedRule || componentComposerActive"
           :component-id="component.id"
-          :rule-id="selectedRule.id"
-          :rule-displayed-name="`${component.prefix}-${selectedRule.rule_id}`"
+          :rule-id="componentComposerActive ? null : selectedRule.id"
+          :rule-displayed-name="
+            componentComposerActive ? '' : `${component.prefix}-${selectedRule.rule_id}`
+          "
+          :component-displayed-name="component.name"
           :initial-section="composerSection"
           :reply-to-review-id="composerReplyToId"
           @posted="onComposerPosted"
@@ -267,6 +275,7 @@ export default {
       // (CommentThread's "Reply" buttons emit open-reply-composer up
       // through ControlsSidepanels → here).
       composerReplyToId: null,
+      componentComposerActive: false,
       // per-component editor Download surface.
       // Mode-aware ExportModal (Working Copy / Vendor Submission /
       // STIG-Ready Publish Draft / Backup) hits the project export
@@ -340,9 +349,10 @@ export default {
      * tree, so we mirror Rules.vue's per-rule splice pattern.
      */
     onComposerPosted() {
-      const ruleId = this.selectedRule?.id;
+      const ruleId = this.componentComposerActive ? null : this.selectedRule?.id;
       this.composerReplyToId = null;
       this.composerSection = null;
+      this.componentComposerActive = false;
       if (!ruleId) {
         this.refreshComponent();
         return;
@@ -359,6 +369,13 @@ export default {
     },
     onComposerHidden() {
       this.composerReplyToId = null;
+      this.componentComposerActive = false;
+    },
+    onOpenComponentComposer() {
+      this.composerSection = null;
+      this.composerReplyToId = null;
+      this.componentComposerActive = true;
+      this.$nextTick(() => this.$bvModal.show("comment-composer-modal"));
     },
     openCommentsPanel() {
       globalThis.location.href = `/components/${this.component.id}/triage`;

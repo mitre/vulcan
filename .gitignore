@@ -60,6 +60,8 @@ dev_output.log
 # Ignore local development files
 CLAUDE.md
 .claude/
+.DS_Store
+**/.DS_Store
 downloads/
 *.backup
 *_backup/

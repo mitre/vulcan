@@ -27,84 +27,87 @@ class Project < ApplicationRecord
 
   scope :alphabetical, -> { order(:name) }
 
-  # The reviews→base_rules→components chain needs an explicit INNER JOIN to
-  # components because base_rules is the Rule STI table; AR's `joins(:rule)`
-  # alone doesn't resolve the components alias used in GROUP BY / HAVING.
-  # Pulled out as a constant so all three project-comment aggregate queries
-  # share the same join.
-  REVIEW_RULE_COMPONENT_JOIN = 'INNER JOIN components ON components.id = base_rules.component_id'
-  private_constant :REVIEW_RULE_COMPONENT_JOIN
+  # Inner SELECT body that unions rule-scoped and component-scoped top-level
+  # comment Reviews. Two ? placeholders (one per UNION branch) bind the
+  # project_ids list. Public methods below wrap this with their aggregate
+  # SELECT and route the whole thing through sanitize_sql_array for binding.
+  REVIEW_COMPONENT_UNION_BODY = <<~SQL.squish.freeze
+    SELECT components.project_id, base_rules.component_id, reviews.triage_status
+    FROM reviews
+    INNER JOIN base_rules ON base_rules.id = reviews.commentable_id
+    INNER JOIN components ON components.id = base_rules.component_id
+    WHERE reviews.commentable_type = 'BaseRule'
+      AND reviews.action = 'comment'
+      AND reviews.responding_to_review_id IS NULL
+      AND components.project_id IN (?)
+    UNION ALL
+    SELECT components.project_id, components.id, reviews.triage_status
+    FROM reviews
+    INNER JOIN components ON components.id = reviews.commentable_id
+    WHERE reviews.commentable_type = 'Component'
+      AND reviews.action = 'comment'
+      AND reviews.responding_to_review_id IS NULL
+      AND components.project_id IN (?)
+  SQL
+  private_constant :REVIEW_COMPONENT_UNION_BODY
 
-  # Aggregate count of top-level pending comments per project. Used by the
-  # projects-list page to render a "N pending comments" badge per row
-  # without N+1 queries.
-  #
-  # Returns a sparse hash: { project_id => count } — projects with zero
-  # pending comments are omitted so callers can `counts[id] || 0`.
-  #
-  # Single SQL query joins reviews → base_rules (Rule STI) → components,
-  # filters to top-level pending comment Reviews, groups by project_id.
+  PENDING_COMMENT_COUNTS_SQL = <<~SQL.squish.freeze
+    SELECT project_id, COUNT(*) AS cnt
+    FROM (#{REVIEW_COMPONENT_UNION_BODY}) AS comments
+    WHERE triage_status = 'pending'
+    GROUP BY project_id
+  SQL
+  private_constant :PENDING_COMMENT_COUNTS_SQL
+
+  COMMENT_COUNTS_SQL = <<~SQL.squish.freeze
+    SELECT project_id,
+           COUNT(*) FILTER (WHERE triage_status = 'pending') AS pending,
+           COUNT(*) AS total
+    FROM (#{REVIEW_COMPONENT_UNION_BODY}) AS comments
+    GROUP BY project_id
+  SQL
+  private_constant :COMMENT_COUNTS_SQL
+
+  PENDING_COMMENT_TARGET_COMPONENTS_SQL = <<~SQL.squish.freeze
+    SELECT project_id, MIN(component_id) AS component_id
+    FROM (#{REVIEW_COMPONENT_UNION_BODY}) AS comments
+    WHERE triage_status = 'pending'
+    GROUP BY project_id
+    HAVING COUNT(DISTINCT component_id) = 1
+  SQL
+  private_constant :PENDING_COMMENT_TARGET_COMPONENTS_SQL
+
+  # Per-project pending top-level comment counts. Sparse hash; callers
+  # `counts[id] || 0`. Includes both rule-scoped and component-scoped reviews.
   def self.pending_comment_counts(project_ids)
     return {} if project_ids.blank?
 
-    Review.where(action: 'comment',
-                 responding_to_review_id: nil,
-                 triage_status: 'pending')
-          .joins(:rule)
-          .merge(Rule.where(component: Component.where(project_id: project_ids)))
-          .joins(REVIEW_RULE_COMPONENT_JOIN)
-          .group('components.project_id')
-          .count
+    sql = sanitize_sql_array([PENDING_COMMENT_COUNTS_SQL, project_ids, project_ids])
+    rows = connection.exec_query(sql)
+    rows.each_with_object({}) { |r, h| h[r['project_id']] = r['cnt'] }
   end
 
-  # Pending + total top-level comment counts per project, returned as a
-  # sparse hash: { project_id => { pending: N, total: M } }. Drives the
-  # projects-list "Comments" column — pending is the
-  # action-needed metric, total is the ambient activity metric.
-  #
-  # Single GROUP BY using Postgres FILTER aggregate so we count both
-  # without a second query. Projects with zero top-level comments are
-  # omitted; callers can `result[id] || { pending: 0, total: 0 }`.
+  # Pending + total top-level comment counts per project. Sparse hash;
+  # callers `result[id] || { pending: 0, total: 0 }`.
   def self.comment_counts(project_ids)
     return {} if project_ids.blank?
 
-    rows = Review.where(action: 'comment', responding_to_review_id: nil)
-                 .joins(:rule)
-                 .merge(Rule.where(component: Component.where(project_id: project_ids)))
-                 .joins(REVIEW_RULE_COMPONENT_JOIN)
-                 .group('components.project_id')
-                 .pluck(
-                   Arel.sql('components.project_id'),
-                   Arel.sql("COUNT(*) FILTER (WHERE reviews.triage_status = 'pending')"),
-                   Arel.sql('COUNT(*)')
-                 )
-    rows.each_with_object({}) do |(pid, pending, total), h|
-      h[pid] = { pending: pending, total: total }
+    sql = sanitize_sql_array([COMMENT_COUNTS_SQL, project_ids, project_ids])
+    rows = connection.exec_query(sql)
+    rows.each_with_object({}) do |r, h|
+      h[r['project_id']] = { pending: r['pending'], total: r['total'] }
     end
   end
 
-  # Per-project deep-link target for the projects-list "Comments" column.
-  # Returns the unique pending component_id ONLY when a project has
-  # exactly one component with pending comments — letting the list link
-  # bypass the project page entirely (one click → triage panel). When a
-  # project has multiple pending components, callers fall back to the
-  # project-detail page so the user can pick.
-  #
-  # Returns a sparse hash: { project_id => component_id } — projects
-  # with 0 or 2+ pending components are omitted. Single GROUP-BY-HAVING.
+  # Per-project deep-link target: the unique pending component_id when a
+  # project has exactly one hot component (one click → triage panel).
+  # Sparse hash; projects with 0 or 2+ pending components are omitted.
   def self.pending_comment_target_components(project_ids)
     return {} if project_ids.blank?
 
-    rows = Review.where(action: 'comment',
-                        responding_to_review_id: nil,
-                        triage_status: 'pending')
-                 .joins(:rule)
-                 .merge(Rule.where(component: Component.where(project_id: project_ids)))
-                 .joins(REVIEW_RULE_COMPONENT_JOIN)
-                 .group('components.project_id')
-                 .having('COUNT(DISTINCT base_rules.component_id) = 1')
-                 .pluck('components.project_id', 'MIN(base_rules.component_id)')
-    rows.to_h
+    sql = sanitize_sql_array([PENDING_COMMENT_TARGET_COMPONENTS_SQL, project_ids, project_ids])
+    rows = connection.exec_query(sql)
+    rows.each_with_object({}) { |r, h| h[r['project_id']] = r['component_id'] }
   end
 
   # Backs GET /projects/:id/comments — same row shape as
@@ -127,10 +130,13 @@ class Project < ApplicationRecord
     scope_components = component_id.present? ? [component_id.to_i] & component_ids_in_project : component_ids_in_project
     return { rows: [], pagination: { page: 1, per_page: per_page, total: 0 } } if scope_components.empty?
 
-    scope = Review.top_level_comments
-                  .joins(:rule)
-                  .merge(Rule.where(component_id: scope_components))
-                  .preload(:user, :triage_set_by, :adjudicated_by)
+    rule_id_subquery = Rule.where(component_id: scope_components).select(:id)
+    rule_scoped = Review.top_level_comments
+                        .where(commentable_type: 'BaseRule', commentable_id: rule_id_subquery)
+    component_scoped = Review.top_level_comments
+                             .where(commentable_type: 'Component', commentable_id: scope_components)
+    scope = rule_scoped.or(component_scoped)
+                       .preload(:user, :triage_set_by, :adjudicated_by, :commentable)
 
     scope = scope.where(triage_status: triage_status) unless triage_status == 'all'
     scope = scope.where(section: section) if section.present? && section != 'all'
@@ -161,7 +167,7 @@ class Project < ApplicationRecord
                         .offset((page - 1) * per_page)
                         .limit(per_page)
                         .to_a
-    page_rule_ids = page_reviews.map(&:rule_id).uniq
+    page_rule_ids = page_reviews.filter_map(&:rule_id).uniq
     rule_lookup = Rule.where(id: page_rule_ids).pluck(:id, :rule_id, :component_id).to_h do |rid, rule_id, cid|
       [rid, { rule_id: rule_id, component_id: cid, prefix: component_lookup[cid]&.prefix }]
     end
@@ -173,12 +179,18 @@ class Project < ApplicationRecord
     reaction_counts = Reaction.where(review_id: page_review_ids).group(:review_id, :kind).count
 
     rows = page_reviews.map do |r|
-      rule_meta = rule_lookup[r.rule_id] || {}
-      cid = rule_meta[:component_id]
+      component_scoped_row = r.commentable_type == 'Component'
+      rule_meta = component_scoped_row ? {} : (rule_lookup[r.rule_id] || {})
+      cid = component_scoped_row ? r.commentable_id : rule_meta[:component_id]
       {
         id: r.id,
-        rule_id: r.rule_id,
-        rule_displayed_name: rule_meta[:prefix] ? "#{rule_meta[:prefix]}-#{rule_meta[:rule_id]}" : nil,
+        rule_id: component_scoped_row ? nil : r.rule_id,
+        rule_displayed_name: if component_scoped_row
+                               '(component)'
+                             else
+                               (rule_meta[:prefix] ? "#{rule_meta[:prefix]}-#{rule_meta[:rule_id]}" : nil)
+                             end,
+        commentable_type: r.commentable_type,
         component_id: cid,
         component_name: component_lookup[cid]&.name,
         section: r.section,

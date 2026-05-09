@@ -58,7 +58,7 @@ module DispositionMatrixExport # rubocop:disable Metrics/ModuleLength
     CSV.generate(row_sep: "\r\n") do |out|
       out << headers
       components.each do |c|
-        component_label = "#{c.prefix} — #{c.name}"
+        component_label = "#{c.prefix} - #{c.name}"
         rows_and_headers(
           component: c,
           triage_status_filter: triage_status_filter,
@@ -73,10 +73,9 @@ module DispositionMatrixExport # rubocop:disable Metrics/ModuleLength
   # CSV/Excel piggyback paths to decide whether to attach the disposition
   # artifact for this component. Matches top_level_reviews semantics.
   def self.records_exist?(component)
-    Review.top_level_comments
-          .joins(:rule)
-          .merge(Rule.where(component_id: component.id))
-          .exists?
+    rule_id_subquery = Rule.where(component_id: component.id).select(:id)
+    Review.top_level_comments.exists?(commentable_type: 'BaseRule', commentable_id: rule_id_subquery) ||
+      Review.top_level_comments.exists?(commentable_type: 'Component', commentable_id: component.id)
   end
 
   # Wraps generate(component:) in an Export::Result so the single-component
@@ -112,11 +111,12 @@ module DispositionMatrixExport # rubocop:disable Metrics/ModuleLength
                        .pluck(:formatted)
                        .join("\n---\n")
 
+    component_scoped = review.commentable_type == 'Component'
     row = [
       review.id,
-      "#{component.prefix}-#{review.rule.rule_id}",
-      review.rule.version,
-      review.section.to_s,
+      component_scoped ? '(component)' : "#{component.prefix}-#{review.rule.rule_id}",
+      component_scoped ? '' : review.rule.version,
+      component_scoped ? 'Overall Component' : review.section.to_s,
       defang(review.user&.name)
     ]
     row << defang(review.user&.email) if include_email
@@ -139,12 +139,12 @@ module DispositionMatrixExport # rubocop:disable Metrics/ModuleLength
     body = defang(reply.comment.to_s.strip)
     return nil if body.blank?
 
-    "[#{defang(reply_author_label(reply))} · #{reply.created_at.iso8601}] #{body}"
+    "[#{defang(reply_author_label(reply))} | #{reply.created_at.iso8601}] #{body}"
   end
 
   def self.format_reaction(reaction)
     label = Reaction::CSV_LABELS.fetch(reaction.kind)
-    "[#{defang(reaction_author_label(reaction))} · #{reaction.created_at.iso8601}] reacted #{label}"
+    "[#{defang(reaction_author_label(reaction))} | #{reaction.created_at.iso8601}] reacted #{label}"
   end
 
   def self.reaction_author_label(reaction)
@@ -199,11 +199,14 @@ module DispositionMatrixExport # rubocop:disable Metrics/ModuleLength
   end
 
   def self.top_level_reviews(component, status_filter)
-    scope = Review.top_level_comments
-                  .joins(:rule)
-                  .merge(Rule.where(component_id: component.id))
-                  .preload(:user, :triage_set_by, :adjudicated_by, :rule)
-                  .order(created_at: :asc)
+    rule_id_subquery = Rule.where(component_id: component.id).select(:id)
+    rule_scoped = Review.top_level_comments
+                        .where(commentable_type: 'BaseRule', commentable_id: rule_id_subquery)
+    component_scoped = Review.top_level_comments
+                             .where(commentable_type: 'Component', commentable_id: component.id)
+    scope = rule_scoped.or(component_scoped)
+                       .preload(:user, :triage_set_by, :adjudicated_by, :rule)
+                       .order(created_at: :asc)
     scope = scope.where(triage_status: status_filter) if status_filter.present? && status_filter != 'all'
     scope.to_a
   end

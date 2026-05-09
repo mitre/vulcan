@@ -348,7 +348,8 @@ class ComponentsController < ApplicationController
       query: params[:q].presence,
       page: params[:page].presence || 1,
       per_page: params[:per_page].presence || 25,
-      resolved: params[:resolved].presence || 'all'
+      resolved: params[:resolved].presence || 'all',
+      commentable_type: params[:commentable_type].presence
     )
 
     inject_reactions_mine!(result[:rows])

@@ -15,6 +15,7 @@
         :read-only="false"
         @open-members="$bvModal.show(`members-modal-${component.id}`)"
         @toggle-panel="togglePanel"
+        @open-component-composer="onOpenComponentComposer"
       />
 
       <!-- Review Modal -->
@@ -221,10 +222,13 @@
            when a SectionCommentIcon emits open-composer. Lives in the
            right-panels slot but b-modal portals to the document body. -->
       <CommentComposerModal
-        v-if="selectedRule"
+        v-if="selectedRule || componentComposerActive"
         :component-id="component.id"
-        :rule-id="selectedRule.id"
-        :rule-displayed-name="`${component.prefix}-${selectedRule.rule_id}`"
+        :rule-id="componentComposerActive ? null : selectedRule.id"
+        :rule-displayed-name="
+          componentComposerActive ? '' : `${component.prefix}-${selectedRule.rule_id}`
+        "
+        :component-displayed-name="component.name"
         :initial-section="composerSection"
         :reply-to-review-id="composerReplyToId"
         @posted="onComposerPosted"
@@ -458,6 +462,7 @@ export default {
       // top-level review id when the composer is opened in reply mode
       // via CommentThread's "Reply" buttons.
       composerReplyToId: null,
+      componentComposerActive: false,
     };
   },
   computed: {
@@ -539,13 +544,21 @@ export default {
      * thread + per-section pending-count badge update without a reload.
      */
     onComposerPosted() {
-      if (this.selectedRule) {
+      if (this.selectedRule && !this.componentComposerActive) {
         this.$root.$emit("refresh:rule", this.selectedRule.id, "all");
       }
       this.composerReplyToId = null;
+      this.componentComposerActive = false;
     },
     onComposerHidden() {
       this.composerReplyToId = null;
+      this.componentComposerActive = false;
+    },
+    onOpenComponentComposer() {
+      this.composerSection = null;
+      this.composerReplyToId = null;
+      this.componentComposerActive = true;
+      this.$nextTick(() => this.$bvModal.show("comment-composer-modal"));
     },
     updateShowSRGIdChecked() {
       const componentId = this.component.id;
