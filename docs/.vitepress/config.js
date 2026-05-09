@@ -16,10 +16,10 @@ export default defineConfig({
 
   // Head tags
   head: [
-    ["link", { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" }],
-    ["link", { rel: "alternate icon", href: "/favicon.ico" }],
-    ["link", { rel: "apple-touch-icon", href: "/app-icon.svg" }],
-    ["meta", { name: "theme-color", content: "#3498db" }],
+    // Match Vulcan's main app and saf-site — all three use the same saf-logo.svg
+    ["link", { rel: "icon", type: "image/svg+xml", href: "/saf-logo.svg" }],
+    ["link", { rel: "apple-touch-icon", sizes: "180x180", href: "/saf-logo-180.png" }],
+    ["meta", { name: "theme-color", content: "#005288" }],
   ],
 
   // Theme configuration
@@ -29,35 +29,53 @@ export default defineConfig({
 
     // Navigation bar
     nav: [
-      { text: "Home", link: "/" },
-      { text: "Getting Started", link: "/getting-started/quick-start" },
       {
         text: "User Guide",
         items: [
-          { text: "Overview", link: "/user-guide/overview" },
-          { text: "Authoring Rules", link: "/user-guide/authoring-rules" },
-          { text: "User Management", link: "/user-guide/user-management" },
-          { text: "Section Locks", link: "/user-guide/section-locks" },
-          { text: "Data Management", link: "/user-guide/data-management/" },
+          {
+            text: "Get Started",
+            items: [
+              { text: "Quick Start", link: "/getting-started/quick-start" },
+              { text: "Installation", link: "/getting-started/installation" },
+              { text: "Configuration", link: "/getting-started/configuration" },
+              { text: "Environment Variables", link: "/getting-started/environment-variables" },
+              { text: "Troubleshooting", link: "/getting-started/troubleshooting" },
+            ],
+          },
+          {
+            text: "Using Vulcan",
+            items: [
+              { text: "Overview", link: "/user-guide/overview" },
+              { text: "Authoring Rules", link: "/user-guide/authoring-rules" },
+              { text: "User Management", link: "/user-guide/user-management" },
+              { text: "Section Locks", link: "/user-guide/section-locks" },
+              { text: "Data Management", link: "/user-guide/data-management/" },
+            ],
+          },
           { text: "SAF Training", link: "https://mitre.github.io/saf-training/courses/guidance/" },
         ],
       },
       {
         text: "Deployment",
         items: [
-          { text: "Overview", link: "/deployment/" },
-          { text: "Docker", link: "/deployment/docker" },
-          { text: "Kubernetes", link: "/deployment/kubernetes" },
-          { text: "Heroku", link: "/deployment/heroku" },
-          { text: "Bare Metal", link: "/deployment/bare-metal" },
-        ],
-      },
-      {
-        text: "Authentication",
-        items: [
-          { text: "OIDC/OKTA", link: "/deployment/auth/oidc-okta" },
-          { text: "LDAP", link: "/deployment/auth/ldap" },
-          { text: "GitHub OAuth", link: "/deployment/auth/github" },
+          {
+            text: "Install",
+            items: [
+              { text: "Overview", link: "/deployment/" },
+              { text: "Docker", link: "/deployment/docker" },
+              { text: "Kubernetes", link: "/deployment/kubernetes" },
+              { text: "Heroku", link: "/deployment/heroku" },
+              { text: "Bare Metal", link: "/deployment/bare-metal" },
+            ],
+          },
+          {
+            text: "Authentication",
+            items: [
+              { text: "OIDC/OKTA", link: "/deployment/auth/oidc-okta" },
+              { text: "LDAP", link: "/deployment/auth/ldap" },
+              { text: "GitHub OAuth", link: "/deployment/auth/github" },
+            ],
+          },
         ],
       },
       {
@@ -90,30 +108,37 @@ export default defineConfig({
         ],
       },
       {
-        text: "Security",
-        items: [
-          { text: "Security Policy", link: "/SECURITY.md" },
-          { text: "Compliance Guide", link: "/security/compliance" },
-          { text: "ASD SRG Responses", link: "/security/security-controls" },
-        ],
-      },
-      {
         text: "Project",
         items: [
-          { text: "About", link: "/README.md" },
-          { text: "Changelog", link: "/CHANGELOG.md" },
-          { text: "Roadmap", link: "/ROADMAP.md" },
-          { text: "Contributing", link: "/CONTRIBUTING.md" },
-          { text: "Code of Conduct", link: "/CODE_OF_CONDUCT.md" },
-          { text: "License", link: "/LICENSE.md" },
-          { text: "Notice", link: "/NOTICE.md" },
-          { text: "Security Policy", link: "/SECURITY.md" },
+          {
+            text: "About",
+            items: [
+              { text: "README", link: "/README.md" },
+              { text: "Changelog", link: "/CHANGELOG.md" },
+              { text: "Roadmap", link: "/ROADMAP.md" },
+              { text: "Contributing", link: "/CONTRIBUTING.md" },
+              { text: "Code of Conduct", link: "/CODE_OF_CONDUCT.md" },
+              { text: "License", link: "/LICENSE.md" },
+              { text: "Notice", link: "/NOTICE.md" },
+            ],
+          },
+          {
+            text: "Security",
+            items: [
+              { text: "Security Policy", link: "/SECURITY.md" },
+              { text: "Compliance Guide", link: "/security/compliance" },
+              { text: "ASD SRG Responses", link: "/security/security-controls" },
+            ],
+          },
         ],
       },
       {
-        text: "v2.3.1",
+        text: "v2.3.6",
         items: [
-          { text: "Release Notes", link: "/release-notes/v2.3.1" },
+          { text: "Release Notes", link: "/release-notes/v2.3.6" },
+          { text: "v2.3.5", link: "/release-notes/v2.3.5" },
+          { text: "v2.3.4", link: "/release-notes/v2.3.4" },
+          { text: "v2.3.1", link: "/release-notes/v2.3.1" },
           { text: "v2.2.1", link: "/release-notes/v2.2.1" },
           { text: "v2.2.0", link: "/release-notes/v2.2.0" },
           { text: "All Releases", link: "/release-notes/" },
