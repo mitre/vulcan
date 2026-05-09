@@ -715,8 +715,13 @@ class ReviewsController < ApplicationController
 
   # Phase-gates new top-level comments to comment_phase=open. Replies (with
   # responding_to_review_id) are allowed during any triaging-active phase.
+  # The component route always creates comments (action is forced to 'comment'
+  # in `create`), so gate it unconditionally; the rule route only gates when
+  # the request body's action is 'comment' — other rule actions like
+  # 'request_review' bypass the comment-period gate by design.
   def reject_if_comments_closed
-    return unless params.dig(:review, :action) == 'comment' || @component
+    creating_comment = @component.present? || params.dig(:review, :action) == 'comment'
+    return unless creating_comment
 
     component = @rule&.component || @component
     return if component&.accepting_new_comments?

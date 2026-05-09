@@ -314,9 +314,9 @@ class UsersController < ApplicationController
 
   def comment_row_for(review, latest_response, responses_count, reaction_counts)
     component_scoped = review.commentable_type == 'Component'
-    component = component_scoped ? review.commentable : review.rule&.component
+    rule      = component_scoped ? nil : (review.rule || review.commentable)
+    component = component_scoped ? review.commentable : rule&.component
     project   = component&.project
-    rule      = component_scoped ? nil : review.rule
     {
       id: review.id,
       project_id: project&.id,
@@ -324,7 +324,7 @@ class UsersController < ApplicationController
       component_id: component&.id,
       component_name: component&.name,
       rule_id: rule&.id,
-      rule_displayed_name: component_scoped ? '(component)' : "#{component.prefix}-#{rule.rule_id}",
+      rule_displayed_name: rule ? "#{component&.prefix}-#{rule.rule_id}" : '(component)',
       commentable_type: review.commentable_type,
       section: review.section,
       comment: review.comment,

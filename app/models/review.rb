@@ -27,12 +27,13 @@ class Review < ApplicationRecord
   before_validation :sync_commentable_from_rule
   validate :commentable_must_be_present
 
-  # Unified component accessor — works for both rule-scoped and
-  # component-scoped reviews. Replaces the prior `has_one :through`.
+  # Unified component accessor for rule-scoped or component-scoped reviews.
+  # Polymorphic commentable is preferred (forward-compat for rule_id-less rows);
+  # rule fallback covers any row whose dual-write callback didn't fire.
   def component
     return commentable if commentable_type == 'Component'
 
-    commentable.is_a?(Rule) ? commentable.component : rule&.component
+    (commentable || rule)&.component
   end
 
   belongs_to :triage_set_by, class_name: 'User', optional: true

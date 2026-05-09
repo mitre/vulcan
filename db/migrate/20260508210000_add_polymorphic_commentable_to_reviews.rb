@@ -10,16 +10,14 @@ class AddPolymorphicCommentableToReviews < ActiveRecord::Migration[8.0]
   def up
     add_reference :reviews, :commentable, polymorphic: true, null: true, index: true
 
-    # Backfill: every existing review is rule-scoped.
-    Review.reset_column_information
-    Review.where(commentable_id: nil).where.not(rule_id: nil).find_in_batches do |batch|
-      ids = batch.map(&:id)
-      execute(<<~SQL.squish)
-        UPDATE reviews
-        SET commentable_type = 'BaseRule', commentable_id = rule_id
-        WHERE id IN (#{ids.join(',')})
-      SQL
-    end
+    # Backfill: every existing review is rule-scoped. Single SQL UPDATE — no
+    # application model reference (avoids future-deploy fragility), no batching
+    # (postgres handles the row count fine for a single column-copy UPDATE).
+    execute(<<~SQL.squish)
+      UPDATE reviews
+      SET commentable_type = 'BaseRule', commentable_id = rule_id
+      WHERE commentable_id IS NULL AND rule_id IS NOT NULL
+    SQL
   end
 
   def down
