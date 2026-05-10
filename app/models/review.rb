@@ -17,8 +17,24 @@ class Review < ApplicationRecord
   # Original commenter attribution lives on commenter_imported_email/name
   # columns; #commenter_display_name (step B1) provides the display fallback.
   belongs_to :user, optional: true
-  belongs_to :rule
-  has_one :component, through: :rule
+  # Polymorphic target: a Review can be on a Rule (existing — rule-scoped
+  # comments) or a Component (issue #725 — overall component feedback).
+  # `rule` is kept optional + dual-written for back-compat during the
+  # transition; reads should prefer `commentable` going forward.
+  belongs_to :rule, optional: true
+  belongs_to :commentable, polymorphic: true, optional: true
+
+  before_validation :sync_commentable_from_rule
+  validate :commentable_must_be_present
+
+  # Unified component accessor for rule-scoped or component-scoped reviews.
+  # Polymorphic commentable is preferred (forward-compat for rule_id-less rows);
+  # rule fallback covers any row whose dual-write callback didn't fire.
+  def component
+    return commentable if commentable_type == 'Component'
+
+    (commentable || rule)&.component
+  end
 
   belongs_to :triage_set_by, class_name: 'User', optional: true
   belongs_to :adjudicated_by, class_name: 'User', optional: true
@@ -242,14 +258,30 @@ class Review < ApplicationRecord
 
   private
 
+  # Dual-write so existing call sites that set only `rule:` keep the
+  # polymorphic columns populated. New component-scoped code sets
+  # `commentable:` directly.
+  def sync_commentable_from_rule
+    return if commentable.present?
+    return if rule.blank?
+
+    self.commentable = rule
+  end
+
+  def commentable_must_be_present
+    return if commentable.present? || rule.present?
+
+    errors.add(:base, 'must target a Rule or a Component')
+  end
+
   ##
   # Helper to fetch the permissions the reviewing user has on the review's project
   def project_permissions
-    user.effective_permissions(rule.component)
+    user.effective_permissions(component)
   end
 
   def validate_project_permissions
-    return unless user && rule
+    return unless user && component
 
     required_tier = ACTION_PERMISSIONS[action]
     return if required_tier.nil? # inclusion validator catches unknown actions

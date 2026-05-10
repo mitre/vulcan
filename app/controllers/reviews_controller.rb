@@ -4,7 +4,7 @@
 # Reviews for rule reviews.
 #
 class ReviewsController < ApplicationController
-  before_action :set_rule, only: %i[create]
+  before_action :set_commentable_target, only: %i[create]
   before_action :set_component, only: %i[lock_controls lock_sections]
   before_action :set_review, only: %i[triage adjudicate reopen withdraw update admin_withdraw admin_restore admin_destroy move_to_rule section responses]
   # withdraw added so :authorize_viewer_project
@@ -70,15 +70,10 @@ class ReviewsController < ApplicationController
   )
 
   def create
-    review_params_without_component_id = review_params.except('component_id')
-    review = Review.new(review_params_without_component_id.merge({ user: current_user, rule: @rule }))
+    base = review_params.except('component_id').merge(user: current_user)
+    base = @rule ? base.merge(rule: @rule) : base.merge(commentable: @component, action: 'comment', section: nil)
+    review = Review.new(base)
 
-    # Explicit transaction + StatementInvalid rescue. AR's save-internal
-    # transaction already rolls back take_review_action's rule.save! when an
-    # insert raises, but propagating the raw exception to the client returns
-    # a 500. Wrap + rescue pairs data-integrity protection with graceful
-    # error rendering so the user gets a danger toast and the audit trail
-    # remains in sync.
     saved = false
     begin
       Review.transaction do
@@ -86,38 +81,26 @@ class ReviewsController < ApplicationController
         raise ActiveRecord::Rollback unless saved
       end
     rescue ActiveRecord::StatementInvalid => e
-      Rails.logger.error("Review save failed for rule=#{@rule.id} user=#{current_user.id}: #{e.message}")
+      target = @rule ? "rule=#{@rule.id}" : "component=#{@component.id}"
+      Rails.logger.error("Review save failed for #{target} user=#{current_user.id}: #{e.message}")
       review.errors.add(:base, 'Could not save review due to a database error. Please retry.')
       saved = false
     end
 
     if saved
-      if Settings.smtp.enabled
+      if @rule && Settings.smtp.enabled
         safely_notify("review_#{review_params[:action]}_smtp") do
-          send_smtp_notification(
-            UserMailer,
-            review_params[:action],
-            current_user,
-            review_params[:component_id],
-            review_params[:comment],
-            @rule
-          )
+          send_smtp_notification(UserMailer, review_params[:action], current_user,
+                                 review_params[:component_id], review_params[:comment], @rule)
         end
       end
 
-      if Settings.slack.enabled
+      if @rule && Settings.slack.enabled
         safely_notify("review_#{review_params[:action]}_slack") do
-          send_slack_notification(
-            review_params[:action].to_sym,
-            @rule,
-            review_params[:comment]
-          )
+          send_slack_notification(review_params[:action].to_sym, @rule, review_params[:comment])
         end
       end
 
-      # canonical object-shape toast
-      # (was a bare string pre-fix). Frontend AlertMixin now sees a
-      # uniform shape across every PR-717 endpoint.
       render_toast(title: 'Comment posted.', message: '', variant: 'success', status: :ok)
     else
       render_toast(title: 'Could not add review.', message: review.errors.full_messages)
@@ -649,6 +632,11 @@ class ReviewsController < ApplicationController
     @component = Component.find(params[:component_id])
   end
 
+  # Picks rule (POST /rules/:rule_id/reviews) or component (POST /components/:component_id/reviews).
+  def set_commentable_target
+    params[:rule_id].present? ? set_rule : set_component
+  end
+
   # Lifecycle endpoints (triage / adjudicate / withdraw / update) operate on
   # a Review by id. Look it up here so the action body never has to.
   def set_review
@@ -663,8 +651,7 @@ class ReviewsController < ApplicationController
   def set_project_from_review
     return unless @review
 
-    component = @review.rule&.component
-    @project = component&.project
+    @project = @review.component&.project
   end
 
   # rubocop:disable Naming/MemoizedInstanceVariableName -- this is a filter,
@@ -691,7 +678,7 @@ class ReviewsController < ApplicationController
   # tracks parent-comment visibility exactly. Sets @component for the
   # authorize_viewer_component delegate.
   def authorize_review_visibility
-    @component = @review&.rule&.component
+    @component = @review&.component
     return head :not_found unless @component
 
     if @component.released
@@ -726,17 +713,38 @@ class ReviewsController < ApplicationController
     params.expect(review: %i[component_id action comment section responding_to_review_id])
   end
 
-  # a public comment (action='comment') can only be
-  # posted while the component's comment_phase is 'open'. Other actions
-  # (request_review, approve, request_changes, lock_control,
-  # unlock_control) are role-gated independently and unaffected by this
-  # filter — we early-return for them.
+  # Phase-gates new top-level comments to comment_phase=open. Replies (with
+  # responding_to_review_id) are allowed during any triaging-active phase.
+  # The component route always creates comments (action is forced to 'comment'
+  # in `create`), so gate it unconditionally; the rule route only gates when
+  # the request body's action is 'comment' — other rule actions like
+  # 'request_review' bypass the comment-period gate by design.
   def reject_if_comments_closed
-    return unless params.dig(:review, :action) == 'comment'
-    return if @rule&.component&.accepting_new_comments?
+    creating_comment = @component.present? || params.dig(:review, :action) == 'comment'
+    return unless creating_comment
+
+    component = @rule&.component || @component
+    return if component&.accepting_new_comments?
+    return if accepting_reply_to_active_thread?
 
     render_toast(title: 'Could not add comment.',
                  message: 'Comments are closed for this component.')
+  end
+
+  def accepting_reply_to_active_thread?
+    responding_to_id = params.dig(:review, :responding_to_review_id)
+    return false if responding_to_id.blank?
+
+    target_component = @rule&.component || @component
+    return false unless target_component
+
+    parent = Review.find_by(id: responding_to_id)
+    return false unless parent && parent.action == 'comment'
+
+    parent_component = parent.rule&.component || (parent.commentable if parent.commentable_type == 'Component')
+    return false unless parent_component&.id == target_component.id
+
+    target_component.triaging_active?
   end
 
   # once a component's comment_phase reaches 'final',
@@ -744,7 +752,7 @@ class ReviewsController < ApplicationController
   # withdrawals, or self-edits can be applied to its Reviews. The
   # disposition matrix is published; the trail is immutable.
   def reject_if_frozen_for_writes
-    component = @review&.rule&.component
+    component = @review&.component
     return unless component&.frozen_for_writes?
 
     render_toast(title: 'Cannot modify review.',

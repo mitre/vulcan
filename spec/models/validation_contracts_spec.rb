@@ -242,10 +242,11 @@ RSpec.describe 'Model validation contracts' do
         expect(review).to be_valid
       end
 
-      it 'requires a rule' do
+      it 'requires a commentable target (rule or component)' do
         review.rule = nil
+        review.commentable = nil
         expect(review).not_to be_valid
-        expect(review.errors[:rule]).to be_present
+        expect(review.errors[:base]).to include('must target a Rule or a Component')
       end
     end
   end

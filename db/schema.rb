@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_05_100000) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_08_210000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -276,7 +276,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_05_100000) do
     t.string "adjudicated_by_imported_name"
     t.string "commenter_imported_email"
     t.string "commenter_imported_name"
+    t.string "commentable_type"
+    t.bigint "commentable_id"
     t.index ["action", "triage_status"], name: "index_reviews_on_action_and_triage_status"
+    t.index ["commentable_type", "commentable_id"], name: "index_reviews_on_commentable"
     t.index ["duplicate_of_review_id"], name: "index_reviews_on_duplicate_of_review_id"
     t.index ["responding_to_review_id"], name: "index_reviews_on_responding_to_review_id"
     t.index ["rule_id", "section", "triage_status"], name: "index_reviews_on_rule_id_and_section_and_triage_status"

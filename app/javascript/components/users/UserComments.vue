@@ -46,7 +46,12 @@
                editor's project_component pack registers its turbolinks:load
                listener before the event fires (otherwise Vue never mounts
                and the rule editor is blank). -->
-          <a :href="ruleHref(item)" data-turbolinks="false">{{ item.rule_displayed_name }}</a>
+          <span v-if="item.commentable_type === 'Component'" class="text-muted font-italic">
+            {{ item.rule_displayed_name }}
+          </span>
+          <a v-else :href="ruleHref(item)" data-turbolinks="false">{{
+            item.rule_displayed_name
+          }}</a>
         </template>
         <template #cell(component_name)="{ item }">
           <a :href="`/components/${item.component_id}`" data-turbolinks="false">
@@ -54,8 +59,8 @@
           </a>
           <small class="text-muted d-block">{{ item.project_name }}</small>
         </template>
-        <template #cell(section)="{ value }">
-          <SectionLabel :section="value" />
+        <template #cell(section)="{ item, value }">
+          <SectionLabel :section="value" :commentable-type="item.commentable_type" />
         </template>
         <template #cell(comment)="{ item, value }">
           <div :title="value">{{ truncate(value, 80) }}</div>

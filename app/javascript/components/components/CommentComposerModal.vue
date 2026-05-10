@@ -8,8 +8,8 @@
     @hidden="onHidden"
   >
     <p class="mb-2">
-      <strong>{{ ruleDisplayedName }}</strong>
-      <template v-if="!currentReplyToId">
+      <strong>{{ scopeLabel }}</strong>
+      <template v-if="!currentReplyToId && ruleId">
         ·
         <FilterDropdown
           v-model="section"
@@ -18,7 +18,7 @@
           class="ml-1 d-inline-block"
         />
       </template>
-      <template v-else>
+      <template v-else-if="currentReplyToId">
         · Replying to comment #{{ currentReplyToId }}
         <b-button variant="link" size="sm" class="p-0 ml-1" @click="cancelReply">
           (cancel)
@@ -31,6 +31,7 @@
       :component-id="componentId"
       :rule-id="ruleId"
       :section="section"
+      :component-scoped="isComponentScoped"
       @reply="onReplyClicked"
     />
 
@@ -63,6 +64,7 @@ import CommentDedupBanner from "./CommentDedupBanner.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
 
 const COMMENT_MAX = 4000;
+const COMPONENT_SECTION_VALUE = "__component__";
 
 export default {
   name: "CommentComposerModal",
@@ -75,8 +77,9 @@ export default {
   mixins: [AlertMixin, FormMixin],
   props: {
     componentId: { type: [Number, String], required: true },
-    ruleId: { type: [Number, String], required: true },
+    ruleId: { type: [Number, String], default: null },
     ruleDisplayedName: { type: String, default: "" },
+    componentDisplayedName: { type: String, default: "" },
     initialSection: { type: String, default: null },
     replyToReviewId: { type: [Number, String], default: null },
   },
@@ -94,10 +97,13 @@ export default {
   },
   computed: {
     sectionOptions() {
-      return [
-        { value: null, text: "(general)" },
-        ...Object.entries(SECTION_LABELS).map(([value, text]) => ({ value, text })),
-      ];
+      const opts = [];
+      if (this.componentDisplayedName) {
+        opts.push({ value: COMPONENT_SECTION_VALUE, text: "Overall Component" });
+      }
+      opts.push({ value: null, text: "Overall Requirement" });
+      opts.push(...Object.entries(SECTION_LABELS).map(([value, text]) => ({ value, text })));
+      return opts;
     },
     modalTitle() {
       return this.currentReplyToId ? "Reply to comment" : "New comment";
@@ -114,6 +120,12 @@ export default {
     },
     canSubmit() {
       return this.commentText.trim().length > 0 && this.commentText.length <= COMMENT_MAX;
+    },
+    isComponentScoped() {
+      return !this.ruleId || this.section === COMPONENT_SECTION_VALUE;
+    },
+    scopeLabel() {
+      return this.isComponentScoped ? this.componentDisplayedName : this.ruleDisplayedName;
     },
   },
   watch: {
@@ -136,13 +148,16 @@ export default {
           component_id: this.componentId,
         },
       };
-      if (this.section) payload.review.section = this.section;
+      if (this.section && !this.isComponentScoped) payload.review.section = this.section;
       if (this.currentReplyToId) {
         payload.review.responding_to_review_id = this.currentReplyToId;
       }
 
+      const url = this.isComponentScoped
+        ? `/components/${this.componentId}/reviews`
+        : `/rules/${this.ruleId}/reviews`;
       try {
-        const res = await axios.post(`/rules/${this.ruleId}/reviews`, payload);
+        const res = await axios.post(url, payload);
         // confirm to the commenter that the
         // post landed. ReviewsController#create returns the canonical
         // toast object; AlertMixin renders it identically to the other

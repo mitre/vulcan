@@ -280,17 +280,18 @@ class UsersController < ApplicationController
     page     = [params[:page].to_i, 1].max
     per_page = (params[:per_page].presence || 25).to_i.clamp(1, 100)
 
-    visible_components = Component.where(project_id: current_user.available_projects.select(:id))
+    visible_component_ids = Component.where(project_id: current_user.available_projects.select(:id)).select(:id)
+    visible_component_ids = visible_component_ids.where(project_id: params[:project_id]) if params[:project_id].present?
 
-    scope = Review.top_level_comments
-                  .where(user_id: @target_user.id)
-                  .joins(:rule)
-                  .merge(Rule.where(component: visible_components))
-                  .preload(rule: { component: :project })
+    rule_id_subquery = Rule.where(component_id: visible_component_ids).select(:id)
+    rule_scoped = Review.top_level_comments
+                        .where(user_id: @target_user.id, commentable_type: 'BaseRule', commentable_id: rule_id_subquery)
+    component_scoped = Review.top_level_comments
+                             .where(user_id: @target_user.id, commentable_type: 'Component', commentable_id: visible_component_ids)
+    scope = rule_scoped.or(component_scoped)
+                       .preload(rule: { component: :project }, commentable: :project)
 
     scope = scope.where(triage_status: params[:triage_status]) if params[:triage_status].present? && params[:triage_status] != 'all'
-
-    scope = scope.merge(Rule.where(component: Component.where(project_id: params[:project_id]))) if params[:project_id].present?
 
     total = scope.count
     page_records = scope.order(created_at: :desc)
@@ -312,17 +313,19 @@ class UsersController < ApplicationController
   end
 
   def comment_row_for(review, latest_response, responses_count, reaction_counts)
-    rule      = review.rule
-    component = rule.component
-    project   = component.project
+    component_scoped = review.commentable_type == 'Component'
+    rule      = component_scoped ? nil : (review.rule || review.commentable)
+    component = component_scoped ? review.commentable : rule&.component
+    project   = component&.project
     {
       id: review.id,
-      project_id: project.id,
-      project_name: project.name,
-      component_id: component.id,
-      component_name: component.name,
-      rule_id: rule.id,
-      rule_displayed_name: "#{component.prefix}-#{rule.rule_id}",
+      project_id: project&.id,
+      project_name: project&.name,
+      component_id: component&.id,
+      component_name: component&.name,
+      rule_id: rule&.id,
+      rule_displayed_name: rule ? "#{component&.prefix}-#{rule.rule_id}" : '(component)',
+      commentable_type: review.commentable_type,
       section: review.section,
       comment: review.comment,
       created_at: review.created_at,

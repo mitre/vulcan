@@ -637,6 +637,26 @@ RSpec.describe 'Users' do
       end
     end
 
+    context 'with component-scoped reviews (issue #725)' do
+      before { sign_in viewer }
+
+      let!(:my_component_comment) do
+        Review.create!(action: 'comment', comment: 'overall component', user: viewer,
+                       commentable: my_component)
+      end
+
+      it "includes the user's component-scoped reviews alongside rule-scoped ones" do
+        get "/users/#{viewer.id}/comments", as: :json
+        rows = response.parsed_body['rows']
+        comp_row = rows.find { |r| r['id'] == my_component_comment.id }
+        expect(comp_row).not_to be_nil
+        expect(comp_row['rule_displayed_name']).to eq('(component)')
+        expect(comp_row['commentable_type']).to eq('Component')
+        expect(comp_row['component_id']).to eq(my_component.id)
+        expect(comp_row['rule_id']).to be_nil
+      end
+    end
+
     context "as a peer member requesting another user's comments on a shared project" do
       before { sign_in other_viewer }
 

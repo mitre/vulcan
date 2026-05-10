@@ -10,7 +10,8 @@
     <template v-if="review">
       <p class="mb-1">
         <strong>{{ review.rule_displayed_name }}</strong>
-        · Section: <SectionLabel :section="review.section" />
+        · Section:
+        <SectionLabel :section="review.section" :commentable-type="review.commentable_type" />
         <b-button
           v-if="canEditSection && !sectionEditMode"
           variant="link"
@@ -525,7 +526,7 @@ export default {
     // surfaces an identical menu when retagging post-creation.
     sectionOptions() {
       return [
-        { value: null, text: "(general)" },
+        { value: null, text: "Overall Requirement" },
         ...Object.entries(SECTION_LABELS).map(([value, text]) => ({ value, text })),
       ];
     },

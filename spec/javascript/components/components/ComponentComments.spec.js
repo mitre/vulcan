@@ -515,14 +515,15 @@ describe("ComponentComments", () => {
       expect(btn).toBeUndefined();
     });
 
-    it("hides the Export CSV button in project (aggregate) scope", async () => {
+    it("renders the Export CSV button in project (aggregate) scope and links to the project endpoint", async () => {
       const wrapper = mount(ComponentComments, {
         propsData: { projectId: 7, effectivePermissions: "author", scope: "project" },
         stubs: noBtnStubs,
       });
       await flushPromises();
       const btn = wrapper.findAll("a").wrappers.find((a) => a.text().includes("Export CSV"));
-      expect(btn).toBeUndefined();
+      expect(btn).toBeDefined();
+      expect(btn.attributes("href")).toContain("/projects/7/export/disposition_csv");
     });
   });
 

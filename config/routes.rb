@@ -54,6 +54,7 @@ Rails.application.routes.draw do
     resources :components, only: %i[show create update destroy], shallow: true do
       post 'lock', to: 'reviews#lock_controls'
       patch 'lock_sections', to: 'reviews#lock_sections'
+      resources :reviews, only: %i[create]
       resources :rules, only: %i[index show create update destroy], shallow: true do
         post 'revert', on: :member
         patch 'section_locks', on: :member

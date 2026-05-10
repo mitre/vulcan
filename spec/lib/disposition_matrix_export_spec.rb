@@ -41,7 +41,7 @@ RSpec.describe DispositionMatrixExport do
       u
     end
 
-    it 'appends a reaction on the parent comment as a [name · ts] reacted label entry' do
+    it 'appends a reaction on the parent comment as a [name | ts] reacted label entry' do
       Reaction.create!(review: c1, user: reactor, kind: 'up', created_at: 30.minutes.ago)
       out = CSV.parse(described_class.generate(component: component), headers: true)
       cell = out.find { |r| r['Comment ID'] == c1.id.to_s }['Thread Replies']
@@ -371,6 +371,75 @@ RSpec.describe DispositionMatrixExport do
       expect(filtered[:rows].length).to eq(1)
       status_index = filtered[:headers].index('Triage Status')
       expect(filtered[:rows].first[status_index]).to eq('pending')
+    end
+  end
+
+  describe '.generate_for_project' do
+    let!(:second_component) do
+      c = create(:component, project: project, based_on: srg, prefix: 'XYZW-99', name: 'Second component')
+      Review.create!(rule: c.rules.first, user: commenter, action: 'comment',
+                     comment: 'on second component', triage_status: 'pending')
+      c
+    end
+
+    it 'unions rows from every component with a leading Component column' do
+      csv = described_class.generate_for_project(project: project)
+      out = CSV.parse(csv, headers: true)
+      expect(out.headers.first).to eq('Component')
+      components_in_output = out.pluck('Component').uniq
+      expect(components_in_output.size).to eq(2)
+      expect(components_in_output).to include(a_string_matching(/#{component.prefix} - /))
+      expect(components_in_output).to include(a_string_matching(/XYZW-99 - Second component/))
+    end
+
+    it 'preserves row count = sum of per-component row counts' do
+      per_component_rows = project.components.sum do |c|
+        described_class.rows_and_headers(component: c)[:rows].length
+      end
+      project_rows = CSV.parse(described_class.generate_for_project(project: project), headers: true)
+      expect(project_rows.length).to eq(per_component_rows)
+    end
+
+    it 'returns headers-only CSV when project has no components' do
+      empty_project = create(:project)
+      csv = described_class.generate_for_project(project: empty_project)
+      out = CSV.parse(csv, headers: true)
+      expect(out.headers.first).to eq('Component')
+      expect(out.length).to eq(0)
+    end
+
+    it 'forwards triage_status_filter across all components' do
+      csv = described_class.generate_for_project(project: project, triage_status_filter: 'pending')
+      out = CSV.parse(csv, headers: true)
+      expect(out.pluck('Triage Status').uniq).to eq(['pending'])
+    end
+
+    it 'opt-in include_email adds Commenter Email column' do
+      csv = described_class.generate_for_project(project: project, include_email: true)
+      out = CSV.parse(csv, headers: true)
+      expect(out.headers).to include('Commenter Email')
+    end
+  end
+
+  describe 'component-scoped reviews (issue #725)' do
+    let!(:component_level_comment) do
+      Review.create!(commentable: component, user: commenter, action: 'comment',
+                     comment: 'overall feedback on this component')
+    end
+
+    it 'includes a row whose Rule cell is the (component) sentinel and Section reads Overall Component' do
+      out = CSV.parse(described_class.generate(component: component), headers: true)
+      row = out.find { |r| r['Comment ID'] == component_level_comment.id.to_s }
+      expect(row).not_to be_nil
+      expect(row['Rule']).to eq('(component)')
+      expect(row['SRG ID']).to eq('')
+      expect(row['Section']).to eq('Overall Component')
+    end
+
+    it 'records_exist? is true for a component with only component-scoped comments' do
+      isolated = create(:component, project: project, based_on: srg)
+      Review.create!(commentable: isolated, user: commenter, action: 'comment', comment: 'iso')
+      expect(described_class.records_exist?(isolated)).to be(true)
     end
   end
 end

@@ -117,7 +117,7 @@ export function commentsClosedTooltip(reason) {
 
 // Helper: render the section label for a possibly-null section value
 export function sectionLabel(section) {
-  if (section === null || section === undefined) return "(general)";
+  if (section === null || section === undefined) return "Overall Requirement";
   return SECTION_LABELS[section] || section;
 }
 

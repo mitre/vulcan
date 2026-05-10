@@ -63,7 +63,7 @@ class ReactionsController < ApplicationController
     @review = Review.find_by(id: params[:review_id])
     return deny_existence! unless @review && @review.action == 'comment'
 
-    @project = @review.rule&.component&.project
+    @project = @review.component&.project
   end
 
   # Soft 403: same shape as authz denial regardless of whether the
@@ -82,8 +82,8 @@ class ReactionsController < ApplicationController
   end
 
   def verify_comments_open
-    component = @review.rule.component
-    return if component.accepting_new_comments?
+    component = @review.component
+    return if component&.accepting_new_comments?
 
     key = "vulcan.reaction.closed_period_message.#{component.closed_reason || 'default'}"
     message = I18n.t(key, default: I18n.t('vulcan.reaction.closed_period_message.default'))

@@ -21,6 +21,18 @@
         Open Comments panel <b-icon icon="arrow-right-short" />
       </b-button>
     </template>
+    <template v-if="bannerKind === 'open-with-deadline'">
+      <br />
+      <b-button
+        variant="primary"
+        size="sm"
+        class="mt-2"
+        data-testid="banner-comment-on-component"
+        @click="$emit('open-component-composer')"
+      >
+        <b-icon icon="chat-left-text" /> Comment
+      </b-button>
+    </template>
   </b-alert>
 </template>
 

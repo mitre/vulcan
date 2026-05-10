@@ -616,23 +616,29 @@ class Component < ApplicationRecord
   # On-the-wire vocabulary is DISA-native: triage_status keys (concur,
   # non_concur, ...) and XCCDF section keys (check_content, fixtext, ...).
   # The frontend translates to friendly labels via triageVocabulary.js.
-  def paginated_comments(triage_status: 'all', section: nil, rule_id: nil,
+  def paginated_comments(triage_status: 'all', section: nil, rule_id: nil, # rubocop:disable Metrics/ParameterLists
                          author_id: nil, query: nil, page: 1, per_page: 25,
-                         resolved: 'all')
+                         resolved: 'all', commentable_type: nil)
     page = [page.to_i, 1].max
     per_page = per_page.to_i.clamp(1, 100)
 
-    # Rule is STI on base_rules — must scope the join via Rule.where(...) merged
-    # in, otherwise AR's `where(rules: { ... })` references a non-existent alias.
-    # joins for the filter, preload for row serialization (avoids N+1).
-    scope = Review.top_level_comments
-                  .joins(:rule)
-                  .merge(Rule.where(component_id: id))
-                  .preload(:user, :triage_set_by, :adjudicated_by)
+    # Polymorphic union: rule-scoped reviews on this component's rules OR
+    # component-scoped reviews on this component (backfill in 20260508210000).
+    rule_id_subquery = rules.select(:id)
+    rule_scoped = Review.top_level_comments
+                        .where(commentable_type: 'BaseRule', commentable_id: rule_id_subquery)
+    component_scoped = Review.top_level_comments
+                             .where(commentable_type: 'Component', commentable_id: id)
+    scope = case commentable_type.to_s.downcase
+            when 'component' then component_scoped
+            when 'rule'      then rule_scoped
+            else                  rule_scoped.or(component_scoped)
+            end
+    scope = scope.preload(:user, :triage_set_by, :adjudicated_by, :commentable)
 
     scope = scope.where(triage_status: triage_status) unless triage_status == 'all'
     scope = scope.where(section: section) if section.present? && section != 'all'
-    scope = scope.where(rule_id: rule_id) if rule_id.present?
+    scope = scope.where(commentable_type: 'BaseRule', commentable_id: rule_id) if rule_id.present?
     scope = scope.where(user_id: author_id) if author_id.present?
 
     case resolved.to_s
@@ -647,13 +653,19 @@ class Component < ApplicationRecord
 
     total = scope.count
 
-    # Total includes replies — drives the dedup banner header so commenters
-    # see the full conversation size, not just the top-level count. Same
-    # filter scope as `scope` minus the top_level_comments filter.
-    total_comments_scope = Review.where(action: 'comment')
-                                 .joins(:rule)
-                                 .merge(Rule.where(component_id: id))
-    total_comments_scope = total_comments_scope.where(rule_id: rule_id) if rule_id.present?
+    # Total-including-replies drives the dedup banner header.
+    rule_replies = Review.where(action: 'comment',
+                                commentable_type: 'BaseRule',
+                                commentable_id: rule_id_subquery)
+    component_replies = Review.where(action: 'comment',
+                                     commentable_type: 'Component',
+                                     commentable_id: id)
+    total_comments_scope = case commentable_type.to_s.downcase
+                           when 'component' then component_replies
+                           when 'rule'      then rule_replies
+                           else                  rule_replies.or(component_replies)
+                           end
+    total_comments_scope = total_comments_scope.where(commentable_type: 'BaseRule', commentable_id: rule_id) if rule_id.present?
     total_comments_scope = total_comments_scope.where(section: section) if section.present? && section != 'all'
     if query.present?
       escaped = ActiveRecord::Base.sanitize_sql_like(query.to_s)
@@ -675,16 +687,15 @@ class Component < ApplicationRecord
     reaction_counts = Reaction.where(review_id: page_review_ids).group(:review_id, :kind).count
 
     rows = page_records.map do |r|
+      component_scoped_row = r.commentable_type == 'Component'
       {
         id: r.id,
-        rule_id: r.rule_id,
-        rule_displayed_name: rule_id_to_displayed[r.rule_id],
+        rule_id: component_scoped_row ? nil : r.rule_id,
+        rule_displayed_name: component_scoped_row ? '(component)' : rule_id_to_displayed[r.rule_id],
+        commentable_type: r.commentable_type,
         section: r.section,
         author_name: r.user&.name,
-        # author_email intentionally omitted — comment endpoints are
-        # accessible to any project member, so exposing email enables
-        # scraping of every commenter's contact info during a public
-        # review window. Authorship is tracked by name + user_id only.
+        # email omitted — see comment-endpoint PII guard.
         comment: r.comment,
         created_at: r.created_at,
         triage_status: r.triage_status,

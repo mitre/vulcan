@@ -51,15 +51,41 @@ module DispositionMatrixExport # rubocop:disable Metrics/ModuleLength
     }
   end
 
+  # Project-aggregate: per-component rows unioned with a leading "Component"
+  # column. Fetches reviews/replies/reactions across ALL components in three
+  # queries (vs. 3 per component) and groups in Ruby — avoids the per-component
+  # N+1 of looping rows_and_headers across project.components.
+  def self.generate_for_project(project:, triage_status_filter: nil, include_email: false)
+    components = project.components.includes(:project).order(:prefix).to_a
+    headers = ['Component'] + build_headers(include_email)
+    return CSV.generate(row_sep: "\r\n") { |out| out << headers } if components.empty?
+
+    reviews_by_component = top_level_reviews_for_components(components, triage_status_filter)
+    all_reviews = reviews_by_component.values.flatten
+    replies_by_parent = load_replies(all_reviews.map(&:id))
+    reactions_by_review = load_reactions(all_reviews, replies_by_parent)
+
+    CSV.generate(row_sep: "\r\n") do |out|
+      out << headers
+      components.each do |c|
+        label = "#{c.prefix} - #{c.name}"
+        (reviews_by_component[c.id] || []).each do |review|
+          row = build_row(review, c, replies_by_parent[review.id], reactions_by_review,
+                          include_email: include_email)
+          out << ([label] + row)
+        end
+      end
+    end
+  end
+
   # True iff the component has at least one top-level review (a row that
   # would appear in the disposition matrix). Used by the Working Copy
   # CSV/Excel piggyback paths to decide whether to attach the disposition
   # artifact for this component. Matches top_level_reviews semantics.
   def self.records_exist?(component)
-    Review.top_level_comments
-          .joins(:rule)
-          .merge(Rule.where(component_id: component.id))
-          .exists?
+    rule_id_subquery = Rule.where(component_id: component.id).select(:id)
+    Review.top_level_comments.exists?(commentable_type: 'BaseRule', commentable_id: rule_id_subquery) ||
+      Review.top_level_comments.exists?(commentable_type: 'Component', commentable_id: component.id)
   end
 
   # Wraps generate(component:) in an Export::Result so the single-component
@@ -95,11 +121,12 @@ module DispositionMatrixExport # rubocop:disable Metrics/ModuleLength
                        .pluck(:formatted)
                        .join("\n---\n")
 
+    component_scoped = review.commentable_type == 'Component'
     row = [
       review.id,
-      "#{component.prefix}-#{review.rule.rule_id}",
-      review.rule.version,
-      review.section.to_s,
+      component_scoped ? '(component)' : "#{component.prefix}-#{review.rule.rule_id}",
+      component_scoped ? '' : review.rule.version,
+      component_scoped ? 'Overall Component' : review.section.to_s,
       defang(review.user&.name)
     ]
     row << defang(review.user&.email) if include_email
@@ -122,12 +149,12 @@ module DispositionMatrixExport # rubocop:disable Metrics/ModuleLength
     body = defang(reply.comment.to_s.strip)
     return nil if body.blank?
 
-    "[#{defang(reply_author_label(reply))} · #{reply.created_at.iso8601}] #{body}"
+    "[#{defang(reply_author_label(reply))} | #{reply.created_at.iso8601}] #{body}"
   end
 
   def self.format_reaction(reaction)
     label = Reaction::CSV_LABELS.fetch(reaction.kind)
-    "[#{defang(reaction_author_label(reaction))} · #{reaction.created_at.iso8601}] reacted #{label}"
+    "[#{defang(reaction_author_label(reaction))} | #{reaction.created_at.iso8601}] reacted #{label}"
   end
 
   def self.reaction_author_label(reaction)
@@ -182,13 +209,36 @@ module DispositionMatrixExport # rubocop:disable Metrics/ModuleLength
   end
 
   def self.top_level_reviews(component, status_filter)
-    scope = Review.top_level_comments
-                  .joins(:rule)
-                  .merge(Rule.where(component_id: component.id))
-                  .preload(:user, :triage_set_by, :adjudicated_by, :rule)
-                  .order(created_at: :asc)
+    rule_id_subquery = Rule.where(component_id: component.id).select(:id)
+    rule_scoped = Review.top_level_comments
+                        .where(commentable_type: 'BaseRule', commentable_id: rule_id_subquery)
+    component_scoped = Review.top_level_comments
+                             .where(commentable_type: 'Component', commentable_id: component.id)
+    scope = rule_scoped.or(component_scoped)
+                       .preload(:user, :triage_set_by, :adjudicated_by, :rule)
+                       .order(created_at: :asc)
     scope = scope.where(triage_status: status_filter) if status_filter.present? && status_filter != 'all'
     scope.to_a
+  end
+
+  # Bulk variant for project-aggregate export. Returns reviews grouped by
+  # owning component_id (rule-scoped resolved via base_rules.component_id;
+  # component-scoped resolved directly). Single review query; one extra
+  # rule→component lookup query.
+  def self.top_level_reviews_for_components(components, status_filter)
+    component_ids = components.map(&:id)
+    rule_id_to_component = Rule.where(component_id: component_ids).pluck(:id, :component_id).to_h
+    rule_scoped = Review.top_level_comments
+                        .where(commentable_type: 'BaseRule', commentable_id: rule_id_to_component.keys)
+    component_scoped = Review.top_level_comments
+                             .where(commentable_type: 'Component', commentable_id: component_ids)
+    scope = rule_scoped.or(component_scoped)
+                       .preload(:user, :triage_set_by, :adjudicated_by, :rule)
+                       .order(created_at: :asc)
+    scope = scope.where(triage_status: status_filter) if status_filter.present? && status_filter != 'all'
+    scope.to_a.group_by do |review|
+      review.commentable_type == 'Component' ? review.commentable_id : rule_id_to_component[review.commentable_id]
+    end
   end
 
   def self.load_replies(parent_ids)

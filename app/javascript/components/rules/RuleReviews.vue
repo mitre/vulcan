@@ -136,7 +136,7 @@ export default {
     sectionFilterOptions() {
       return [
         { value: "all", text: "All sections" },
-        { value: "(general)", text: "(general)" },
+        { value: "(general)", text: "Overall Requirement" },
         ...Object.entries(SECTION_LABELS).map(([value, text]) => ({ value, text })),
       ];
     },
