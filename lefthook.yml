@@ -13,8 +13,10 @@ pre-commit:
       stage_fixed: true
     eslint:
       glob: "*.{js,vue}"
-      run: yarn eslint --fix {staged_files}
-      stage_fixed: true
+      # No --fix on purpose: matches the CI lint:ci behavior so prettier
+      # and lint errors fail the commit instead of being silently fixed.
+      # Run `yarn lint` manually to apply autofixes.
+      run: yarn eslint --max-warnings 0 {staged_files}
     # Trailing whitespace handled by RuboCop (Ruby) and ESLint (JS/Vue)
     # No separate fix-whitespace needed
     yaml-syntax:
