@@ -79,9 +79,9 @@ describe("triageVocabulary", () => {
     expect(commentsClosedTooltip("finalized")).toMatch(/finaliz/i);
   });
 
-  it("sectionLabel renders null as (general)", () => {
-    expect(sectionLabel(null)).toBe("(general)");
-    expect(sectionLabel(undefined)).toBe("(general)");
+  it("sectionLabel renders null as Overall Requirement", () => {
+    expect(sectionLabel(null)).toBe("Overall Requirement");
+    expect(sectionLabel(undefined)).toBe("Overall Requirement");
   });
 
   it("sectionLabel renders known keys via SECTION_LABELS", () => {

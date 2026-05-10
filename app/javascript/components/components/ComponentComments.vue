@@ -187,7 +187,7 @@
          comment mode (composerNewComponent set). -->
     <CommentComposerModal
       v-if="composerReplyRow || composerNewComponent"
-      :component-id="composerReplyRow ? (composerReplyRow.component_id || componentId) : componentId"
+      :component-id="composerReplyRow ? composerReplyRow.component_id || componentId : componentId"
       :rule-id="composerReplyRow ? composerReplyRow.rule_id : null"
       :rule-displayed-name="composerReplyRow ? composerReplyRow.rule_displayed_name : ''"
       :component-displayed-name="composerNewComponent ? componentDisplayedName : ''"

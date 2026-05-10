@@ -9,7 +9,8 @@
         @click="expanded = !expanded"
       >
         <span aria-hidden="true">ⓘ</span>
-        {{ totalComments }} existing comment{{ totalComments === 1 ? "" : "s" }} on this {{ scopeNoun }}
+        {{ totalComments }} existing comment{{ totalComments === 1 ? "" : "s" }} on this
+        {{ scopeNoun }}
         <template v-if="sectionDisplay"> ({{ inSection }} on {{ sectionDisplay }}) </template>
         <span>{{ expanded ? "Hide ▴" : "Read first ▾" }}</span>
       </button>

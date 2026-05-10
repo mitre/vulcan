@@ -49,7 +49,9 @@
           <span v-if="item.commentable_type === 'Component'" class="text-muted font-italic">
             {{ item.rule_displayed_name }}
           </span>
-          <a v-else :href="ruleHref(item)" data-turbolinks="false">{{ item.rule_displayed_name }}</a>
+          <a v-else :href="ruleHref(item)" data-turbolinks="false">{{
+            item.rule_displayed_name
+          }}</a>
         </template>
         <template #cell(component_name)="{ item }">
           <a :href="`/components/${item.component_id}`" data-turbolinks="false">

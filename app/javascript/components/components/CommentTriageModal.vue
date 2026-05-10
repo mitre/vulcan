@@ -10,7 +10,8 @@
     <template v-if="review">
       <p class="mb-1">
         <strong>{{ review.rule_displayed_name }}</strong>
-        · Section: <SectionLabel :section="review.section" :commentable-type="review.commentable_type" />
+        · Section:
+        <SectionLabel :section="review.section" :commentable-type="review.commentable_type" />
         <b-button
           v-if="canEditSection && !sectionEditMode"
           variant="link"

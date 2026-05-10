@@ -8,9 +8,9 @@ describe("SectionLabel", () => {
     expect(w.text()).toBe("Check");
   });
 
-  it("renders (general) for null", () => {
+  it("renders Overall Requirement for null", () => {
     const w = mount(SectionLabel, { propsData: { section: null } });
-    expect(w.text()).toBe("(general)");
+    expect(w.text()).toBe("Overall Requirement");
   });
 
   it("renders em-dash placeholder for null when 'placeholder' prop is set", () => {
