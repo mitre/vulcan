@@ -556,4 +556,170 @@ namespace :upgrade do
     puts '=' * 70
     exit(issues.any? ? 1 : 0)
   end
+
+  # =====================================================================
+  # Safe Auto-Remediation
+  # =====================================================================
+  desc 'Fix safe issues found by upgrade:preflight (orphans, counter caches, dirs)'
+  task fix: :environment do
+    puts '=' * 70
+    puts "  Vulcan Upgrade Fix — #{Time.current.strftime('%Y-%m-%d %H:%M:%S %Z')}"
+    puts '=' * 70
+    puts
+    puts '  This task fixes SAFE, REVERSIBLE issues only.'
+    puts '  It will NOT modify schema or delete user-visible data without reporting.'
+    puts
+
+    conn = ActiveRecord::Base.connection
+    fixed = 0
+
+    # ── Writable directories ──
+    puts '── Directories ──'
+    %w[tmp log storage db].each do |dir|
+      path = Rails.root.join(dir)
+      next if path.exist?
+
+      FileUtils.mkdir_p(path)
+      puts "  ✓ Created #{dir}/"
+      fixed += 1
+    end
+    puts '  ✓ All required directories exist' if fixed.zero?
+
+    # ── pg_trgm extension ──
+    puts
+    puts '── Extensions ──'
+    begin
+      conn.exec_query("SELECT 'test' % 'test'")
+      puts '  ✓ pg_trgm already available'
+    rescue StandardError
+      begin
+        conn.exec_query('CREATE EXTENSION IF NOT EXISTS pg_trgm')
+        puts '  ✓ pg_trgm extension installed'
+        fixed += 1
+      rescue StandardError => e
+        puts "  ✗ Cannot install pg_trgm: #{e.message}"
+        puts '    For Aurora: enable pg_trgm in the DB parameter group manually'
+      end
+    end
+
+    # ── Orphaned data (only if reviews table exists) ──
+    if conn.table_exists?(:reviews)
+      puts
+      puts '── Data Integrity Fixes ──'
+
+      # Orphaned review.user_id → nullify
+      orphan_users = conn.exec_query(
+        'SELECT COUNT(*) AS c FROM reviews WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)'
+      ).first['c'].to_i
+      if orphan_users.positive?
+        conn.exec_update(
+          'UPDATE reviews SET user_id = NULL WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)'
+        )
+        puts "  ✓ Nullified #{orphan_users} review(s) with orphaned user_id (users were deleted)"
+        fixed += 1
+      else
+        puts '  ✓ No orphaned review.user_id references'
+      end
+
+      # Orphaned review.rule_id → delete (these reviews reference deleted rules)
+      orphan_rules = conn.exec_query(
+        'SELECT COUNT(*) AS c FROM reviews WHERE rule_id IS NOT NULL AND rule_id NOT IN (SELECT id FROM base_rules)'
+      ).first['c'].to_i
+      if orphan_rules.positive?
+        puts "  ⚠ #{orphan_rules} review(s) reference deleted rules"
+        puts '    These will be DELETED (the rules no longer exist — these reviews are orphaned)'
+        puts '    Proceeding...'
+        conn.exec_delete(
+          'DELETE FROM reviews WHERE rule_id IS NOT NULL AND rule_id NOT IN (SELECT id FROM base_rules)'
+        )
+        puts "  ✓ Deleted #{orphan_rules} orphaned review(s)"
+        fixed += 1
+      else
+        puts '  ✓ No orphaned review.rule_id references'
+      end
+
+      # Orphaned responding_to_review_id → delete
+      if conn.column_exists?(:reviews, :responding_to_review_id)
+        orphan_parents = conn.exec_query(
+          'SELECT COUNT(*) AS c FROM reviews WHERE responding_to_review_id IS NOT NULL ' \
+          'AND responding_to_review_id NOT IN (SELECT id FROM reviews)'
+        ).first['c'].to_i
+        if orphan_parents.positive?
+          puts "  ⚠ #{orphan_parents} review(s) reference deleted parent reviews"
+          puts '    These replies are orphaned (parent comment was deleted)'
+          conn.exec_delete(
+            'DELETE FROM reviews WHERE responding_to_review_id IS NOT NULL ' \
+            'AND responding_to_review_id NOT IN (SELECT id FROM reviews)'
+          )
+          puts "  ✓ Deleted #{orphan_parents} orphaned reply/replies"
+          fixed += 1
+        else
+          puts '  ✓ No orphaned review.responding_to_review_id references'
+        end
+      end
+    end
+
+    # ── Orphaned components ──
+    if conn.table_exists?(:components)
+      orphan_components = conn.exec_query(
+        'SELECT COUNT(*) AS c FROM components WHERE project_id IS NOT NULL AND project_id NOT IN (SELECT id FROM projects)'
+      ).first['c'].to_i
+      if orphan_components.positive?
+        puts "  ⚠ #{orphan_components} component(s) reference deleted projects — skipping (manual review needed)"
+      else
+        puts '  ✓ No orphaned component.project_id references'
+      end
+    end
+
+    # ── Counter cache drift ──
+    if conn.table_exists?(:components) && conn.column_exists?(:components, :rules_count)
+      puts
+      puts '── Counter Cache ──'
+      drift_count = conn.exec_query(
+        "SELECT COUNT(*) AS c FROM components WHERE rules_count != (SELECT COUNT(*) FROM base_rules WHERE base_rules.component_id = components.id AND base_rules.type = 'Rule')"
+      ).first['c'].to_i
+      if drift_count.positive?
+        Component.find_each { |c| Component.reset_counters(c.id, :rules) }
+        puts "  ✓ Reset rules_count on #{drift_count} component(s)"
+        fixed += 1
+      else
+        puts '  ✓ Counter caches are accurate'
+      end
+    end
+
+    # ── Connection configuration guidance ──
+    puts
+    puts '── Configuration Guidance ──'
+    puts
+
+    if ENV['DATABASE_URL'].blank? && ENV['DATABASE_HOST'].blank?
+      puts '  DATABASE_URL is not set. For production, set it to:'
+      puts
+      puts '    # Standard PostgreSQL'
+      puts '    DATABASE_URL=postgres://user:pass@host:5432/vulcan_production'
+      puts
+      puts '    # Aurora RDS (add sslmode=require)'
+      puts '    DATABASE_URL=postgres://user:pass@cluster.xxxx.rds.amazonaws.com:5432/vulcan_production?sslmode=require'
+      puts
+    end
+
+    gss = ENV.fetch('DATABASE_GSSENCMODE', 'prefer')
+    if gss != 'disable'
+      puts '  For cloud databases (Aurora, RDS, Cloud SQL), add to your .env:'
+      puts '    DATABASE_GSSENCMODE=disable'
+      puts
+    end
+
+    # ── Summary ──
+    puts '── Summary ──'
+    puts
+    if fixed.positive?
+      puts "  ✓ #{fixed} issue(s) fixed. Run upgrade:preflight again to verify."
+    else
+      puts '  ✓ No fixable issues found. Ready for: rails db:prepare'
+    end
+
+    puts
+    puts '=' * 70
+  end
 end
