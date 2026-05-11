@@ -1,8 +1,14 @@
 # Vulcan Upgrade Guide
 
+## How it works
+
+From v2.3.6+, the Docker entrypoint automatically tests the database connection **before** Rails boots. If the connection fails, you get a plain-English diagnostic with exact fix commands — not a Ruby backtrace.
+
+If the connection succeeds, `db:prepare` runs pending migrations and the server starts.
+
 ## Quick Start
 
-The upgrade toolkit is built into every Vulcan image from v2.3.6+. No file injection, no extra installs — just pull and run.
+Just pull the new image and start. The container tells you what's wrong.
 
 ### Docker Compose (most common)
 
