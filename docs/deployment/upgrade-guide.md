@@ -4,18 +4,57 @@
 
 ### Step 1: Install the upgrade toolkit
 
-If you're on an older release (before the toolkit was merged), drop the rake file into your existing install:
+Choose the method that matches your deployment:
+
+#### Bare metal / systemd
 
 ```bash
-# Option A: Download directly from GitHub
+# Download directly into your Vulcan source tree
+cd /path/to/vulcan
 curl -fsSL https://raw.githubusercontent.com/mitre/vulcan/master/lib/tasks/upgrade_preflight.rake \
   -o lib/tasks/upgrade_preflight.rake
-
-# Option B: From the tarball (if someone sent you the package)
-tar -xzf vulcan-upgrade-toolkit.tar.gz
 ```
 
-No gem installs, no Gemfile changes — it's one file that uses Rails and PostgreSQL APIs already in your app.
+#### Docker Compose
+
+```bash
+# Copy the rake file into your RUNNING container (no image rebuild needed)
+curl -fsSL https://raw.githubusercontent.com/mitre/vulcan/master/lib/tasks/upgrade_preflight.rake \
+  -o /tmp/upgrade_preflight.rake
+docker cp /tmp/upgrade_preflight.rake $(docker compose ps -q web):/rails/lib/tasks/upgrade_preflight.rake
+```
+
+#### ECS / Kubernetes / any container orchestrator
+
+```bash
+# Option A: Exec into the running task/pod and download
+kubectl exec -it deploy/vulcan-web -- bash -c \
+  "curl -fsSL https://raw.githubusercontent.com/mitre/vulcan/master/lib/tasks/upgrade_preflight.rake \
+   -o lib/tasks/upgrade_preflight.rake"
+
+# Option B: If curl isn't available in the container, copy from local
+kubectl cp /tmp/upgrade_preflight.rake vulcan-web-pod:/rails/lib/tasks/upgrade_preflight.rake
+
+# ECS equivalent (using aws cli + ssm exec)
+aws ecs execute-command --cluster vulcan --task $TASK_ID --container web \
+  --command "curl -fsSL https://raw.githubusercontent.com/mitre/vulcan/master/lib/tasks/upgrade_preflight.rake \
+  -o lib/tasks/upgrade_preflight.rake" --interactive
+```
+
+#### Can't modify the container at all?
+
+Use the standalone diagnostic script — no Rails required, just `psql`:
+
+```bash
+# Download and run from any machine that can reach your database
+curl -fsSL https://raw.githubusercontent.com/mitre/vulcan/master/bin/upgrade-check.sh \
+  -o upgrade-check.sh && chmod +x upgrade-check.sh
+
+# Point it at your database
+./upgrade-check.sh postgres://user:pass@your-db-host:5432/vulcan_production
+```
+
+No gem installs, no Gemfile changes, no image rebuilds. The rake task is one file that uses Rails APIs already in the app. The shell script uses only `psql`.
 
 ### Step 2: Back up your database
 
@@ -32,6 +71,10 @@ pg_dump -Fc -h your-cluster.cluster-xxxx.us-east-1.rds.amazonaws.com \
 # Docker Compose
 docker compose exec db pg_dump -Fc -U postgres vulcan_postgres_production \
   > vulcan_backup_$(date +%Y%m%d).dump
+
+# ECS / Kubernetes (exec into the db container or use a bastion)
+kubectl exec -it deploy/vulcan-db -- pg_dump -Fc -U postgres vulcan_production \
+  > vulcan_backup_$(date +%Y%m%d).dump
 ```
 
 ### Step 3: Run the preflight check
@@ -40,11 +83,14 @@ docker compose exec db pg_dump -Fc -U postgres vulcan_postgres_production \
 # Bare metal / systemd
 bundle exec rails upgrade:preflight
 
-# Docker Compose (existing container)
+# Docker Compose
 docker compose exec web rails upgrade:preflight
 
-# Docker (new image, existing database)
+# Docker (new image against existing database)
 docker run --rm --env-file .env vulcan:new-version rails upgrade:preflight
+
+# ECS / Kubernetes
+kubectl exec -it deploy/vulcan-web -- rails upgrade:preflight
 ```
 
 The preflight reports:
