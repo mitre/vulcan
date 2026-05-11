@@ -108,7 +108,7 @@ bundle exec rails upgrade:fix
 docker compose exec web rails upgrade:fix
 ```
 
-The fix task only runs **safe, reversible operations** — it will NOT:
+The fix task only runs **safe operations** — it will NOT:
 - Delete data without telling you exactly what and how many rows
 - Modify schema (that's what db:prepare does)
 - Change configuration (it tells you what to set)

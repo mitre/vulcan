@@ -566,8 +566,9 @@ namespace :upgrade do
     puts "  Vulcan Upgrade Fix — #{Time.current.strftime('%Y-%m-%d %H:%M:%S %Z')}"
     puts '=' * 70
     puts
-    puts '  This task fixes SAFE, REVERSIBLE issues only.'
-    puts '  It will NOT modify schema or delete user-visible data without reporting.'
+    puts '  This task fixes SAFE issues only.'
+    puts '  It will NOT modify schema. Orphan deletions are reported with counts.'
+    puts '  BACK UP YOUR DATABASE FIRST if you have not already.'
     puts
 
     conn = ActiveRecord::Base.connection
@@ -607,54 +608,60 @@ namespace :upgrade do
       puts
       puts '── Data Integrity Fixes ──'
 
+      # Each orphan fix runs inside a transaction so the count and
+      # mutation are atomic (no TOCTOU race with concurrent requests).
+
       # Orphaned review.user_id → nullify
-      orphan_users = conn.exec_query(
-        'SELECT COUNT(*) AS c FROM reviews WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)'
-      ).first['c'].to_i
-      if orphan_users.positive?
-        conn.exec_update(
-          'UPDATE reviews SET user_id = NULL WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)'
-        )
-        puts "  ✓ Nullified #{orphan_users} review(s) with orphaned user_id (users were deleted)"
-        fixed += 1
-      else
-        puts '  ✓ No orphaned review.user_id references'
+      ActiveRecord::Base.transaction do
+        orphan_users = conn.exec_query(
+          'SELECT COUNT(*) AS c FROM reviews WHERE user_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM users WHERE users.id = reviews.user_id)'
+        ).first['c'].to_i
+        if orphan_users.positive?
+          conn.exec_update(
+            'UPDATE reviews SET user_id = NULL WHERE user_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM users WHERE users.id = reviews.user_id)'
+          )
+          puts "  ✓ Nullified #{orphan_users} review(s) with orphaned user_id (users were deleted)"
+          fixed += 1
+        else
+          puts '  ✓ No orphaned review.user_id references'
+        end
       end
 
-      # Orphaned review.rule_id → delete (these reviews reference deleted rules)
-      orphan_rules = conn.exec_query(
-        'SELECT COUNT(*) AS c FROM reviews WHERE rule_id IS NOT NULL AND rule_id NOT IN (SELECT id FROM base_rules)'
-      ).first['c'].to_i
-      if orphan_rules.positive?
-        puts "  ⚠ #{orphan_rules} review(s) reference deleted rules"
-        puts '    These will be DELETED (the rules no longer exist — these reviews are orphaned)'
-        puts '    Proceeding...'
-        conn.exec_delete(
-          'DELETE FROM reviews WHERE rule_id IS NOT NULL AND rule_id NOT IN (SELECT id FROM base_rules)'
-        )
-        puts "  ✓ Deleted #{orphan_rules} orphaned review(s)"
-        fixed += 1
-      else
-        puts '  ✓ No orphaned review.rule_id references'
+      # Orphaned review.rule_id → delete
+      ActiveRecord::Base.transaction do
+        orphan_rules = conn.exec_query(
+          'SELECT COUNT(*) AS c FROM reviews WHERE rule_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM base_rules WHERE base_rules.id = reviews.rule_id)'
+        ).first['c'].to_i
+        if orphan_rules.positive?
+          puts "  ⚠ #{orphan_rules} review(s) reference deleted rules — DELETING"
+          conn.exec_delete(
+            'DELETE FROM reviews WHERE rule_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM base_rules WHERE base_rules.id = reviews.rule_id)'
+          )
+          puts "  ✓ Deleted #{orphan_rules} orphaned review(s)"
+          fixed += 1
+        else
+          puts '  ✓ No orphaned review.rule_id references'
+        end
       end
 
       # Orphaned responding_to_review_id → delete
       if conn.column_exists?(:reviews, :responding_to_review_id)
-        orphan_parents = conn.exec_query(
-          'SELECT COUNT(*) AS c FROM reviews WHERE responding_to_review_id IS NOT NULL ' \
-          'AND responding_to_review_id NOT IN (SELECT id FROM reviews)'
-        ).first['c'].to_i
-        if orphan_parents.positive?
-          puts "  ⚠ #{orphan_parents} review(s) reference deleted parent reviews"
-          puts '    These replies are orphaned (parent comment was deleted)'
-          conn.exec_delete(
-            'DELETE FROM reviews WHERE responding_to_review_id IS NOT NULL ' \
-            'AND responding_to_review_id NOT IN (SELECT id FROM reviews)'
-          )
-          puts "  ✓ Deleted #{orphan_parents} orphaned reply/replies"
-          fixed += 1
-        else
-          puts '  ✓ No orphaned review.responding_to_review_id references'
+        ActiveRecord::Base.transaction do
+          orphan_parents = conn.exec_query(
+            'SELECT COUNT(*) AS c FROM reviews WHERE responding_to_review_id IS NOT NULL ' \
+            'AND NOT EXISTS (SELECT 1 FROM reviews r2 WHERE r2.id = reviews.responding_to_review_id)'
+          ).first['c'].to_i
+          if orphan_parents.positive?
+            puts "  ⚠ #{orphan_parents} orphaned parent review references — DELETING"
+            conn.exec_delete(
+              'DELETE FROM reviews WHERE responding_to_review_id IS NOT NULL ' \
+              'AND NOT EXISTS (SELECT 1 FROM reviews r2 WHERE r2.id = reviews.responding_to_review_id)'
+            )
+            puts "  ✓ Deleted #{orphan_parents} orphaned reply/replies"
+            fixed += 1
+          else
+            puts '  ✓ No orphaned review.responding_to_review_id references'
+          end
         end
       end
     end
