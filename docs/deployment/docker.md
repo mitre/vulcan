@@ -165,6 +165,21 @@ docker compose run --rm web bundle exec rails db:migrate
 
 > **Why `db:prepare` and not `db:migrate`?** `db:prepare` handles both fresh and existing databases. It is the Rails 8 standard pattern for Docker entrypoints. Unlike `db:schema:load`, `db:prepare` does NOT need `DISABLE_DATABASE_ENVIRONMENT_CHECK` — it calls `load_schema()` as a Ruby method, bypassing the protected environment check by design. See [Rails source: DatabaseTasks#initialize_database](https://github.com/rails/rails/blob/main/activerecord/lib/active_record/tasks/database_tasks.rb) for details.
 
+### Upgrading Between Versions
+
+For major upgrades (e.g., v2.2.x → v2.3.x), run the preflight diagnostic before pulling the new image:
+
+```bash
+# Copy the diagnostic into your running container
+docker cp lib/tasks/upgrade_preflight.rake $(docker compose ps -q web):/rails/lib/tasks/
+docker compose exec web rails upgrade:preflight
+
+# Or use the standalone script (no container modification needed)
+./bin/upgrade-check.sh "$DATABASE_URL"
+```
+
+See the full [Upgrade Guide](upgrade-guide) for step-by-step instructions, Aurora RDS notes, and auto-fix for common data issues.
+
 ## Monitoring
 
 ### Health Check Endpoints
