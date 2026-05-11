@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v2.3.7] - 2026-05-10
+
 ### Added
 
 - Component-level comments — `Review` records can now target a `Component` directly (in addition to the existing `Rule` target), enabling overall-component feedback that doesn't fit a single requirement. New `POST /components/:id/reviews` endpoint with toolbar + comment-period-banner entry points and dedup-banner support at component scope. The triage queue, project-aggregate counters, My Comments, and the DISA disposition CSV all surface component-scoped comments alongside rule-scoped ones (Section column reads `Overall Component`; Rule column reads `(component)`). The composer's Section dropdown adds an "Overall Component" option that flips the modal to component scope. Schema migration `20260508210000_add_polymorphic_commentable_to_reviews.rb` — production deploys require `db:migrate`. (Closes #725)
@@ -17,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replies are now accepted on active comment threads after the public-comment period has officially closed, as long as the parent rule's component is in any triaging-active phase (open OR closed+adjudicating). New top-level comments still require `accepting_new_comments?`. Closed+finalized still blocks all new content. Resolves the friction where commenters' replies to "needs_clarification" round-trips were getting rejected when the deadline passed mid-conversation. Defensive checks on the smuggled `responding_to_review_id`: parent must exist, parent must be a comment-action Review (not state-changing), parent's component must match the rule's component. (Closes #726)
 - DISA disposition CSV separator characters are now ASCII (`|`, `-`) instead of Unicode (`·`, `–`) so macOS Numbers and Excel decode the file correctly without a UTF-8 BOM.
 - `(general)` section label renamed to `Overall Requirement` everywhere (rule composer, triage modal, CSV exports, vocabulary file) for parallelism with the new "Overall Component" option.
+- Rule toolbar's "Leave a Comment" button is now labelled "Comment" to match the parallel "Comment History" panel button and the new component-level "Comment" entry point.
 - Documentation site (VitePress) top navigation consolidated from 11 items to 7 to fix overflow at moderate browser zoom on smaller laptop displays. Aligns visual treatment with the upcoming SAF site refresh; fixes the "latest version" reference that was stuck at v2.3.1.
 
 ## [v2.3.6] - 2026-05-08

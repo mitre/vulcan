@@ -96,10 +96,10 @@ docker compose up
 ## Latest Release
 
 ::: info Current Version
-**v2.3.6** - Released May 2026
+**v2.3.7** - Released May 2026
 
-UBI9 base image (Iron Bank / DISA-aligned), public-comment review workflow with triage + adjudication, viewer-can-comment, comment reactions, structured 403s.
-[View Release Notes →](/release-notes/v2.3.6)
+Component-level comments via polymorphic reviews, project-aggregate disposition matrix CSV export, "Comment" toolbar button rename, replies allowed on active threads after a comment period closes.
+[View Release Notes →](/release-notes/v2.3.7)
 :::
 
 ## Why Vulcan?
