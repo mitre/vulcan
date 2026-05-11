@@ -167,18 +167,17 @@ docker compose run --rm web bundle exec rails db:migrate
 
 ### Upgrading Between Versions
 
-For major upgrades (e.g., v2.2.x → v2.3.x), run the preflight diagnostic before pulling the new image:
+The upgrade toolkit is built into every image from v2.3.6+:
 
 ```bash
-# Copy the diagnostic into your running container
-docker cp lib/tasks/upgrade_preflight.rake $(docker compose ps -q web):/rails/lib/tasks/
-docker compose exec web rails upgrade:preflight
-
-# Or use the standalone script (no container modification needed)
-./bin/upgrade-check.sh "$DATABASE_URL"
+docker compose pull                                  # Get new image
+docker compose run --rm web rails upgrade:preflight   # Check before upgrading
+docker compose run --rm web rails upgrade:fix         # Fix any issues
+docker compose up -d                                  # Start (runs db:prepare)
+docker compose exec web rails upgrade:verify          # Confirm success
 ```
 
-See the full [Upgrade Guide](upgrade-guide) for step-by-step instructions, Aurora RDS notes, and auto-fix for common data issues.
+See the full [Upgrade Guide](upgrade-guide) for Aurora RDS notes, Kubernetes/ECS paths, and troubleshooting.
 
 ## Monitoring
 

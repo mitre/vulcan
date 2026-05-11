@@ -1,137 +1,116 @@
 # Vulcan Upgrade Guide
 
-## Quick Start (for any version upgrade)
+## Quick Start
 
-### Step 1: Install the upgrade toolkit
+The upgrade toolkit is built into every Vulcan image from v2.3.6+. No file injection, no extra installs — just pull and run.
 
-Choose the method that matches your deployment:
-
-#### Bare metal / systemd
+### Docker Compose (most common)
 
 ```bash
-# Download directly into your Vulcan source tree
-cd /path/to/vulcan
-curl -fsSL https://raw.githubusercontent.com/mitre/vulcan/master/lib/tasks/upgrade_preflight.rake \
-  -o lib/tasks/upgrade_preflight.rake
-```
-
-#### Docker Compose
-
-```bash
-# Copy the rake file into your RUNNING container (no image rebuild needed)
-curl -fsSL https://raw.githubusercontent.com/mitre/vulcan/master/lib/tasks/upgrade_preflight.rake \
-  -o /tmp/upgrade_preflight.rake
-docker cp /tmp/upgrade_preflight.rake $(docker compose ps -q web):/rails/lib/tasks/upgrade_preflight.rake
-```
-
-#### ECS / Kubernetes / any container orchestrator
-
-```bash
-# Option A: Exec into the running task/pod and download
-kubectl exec -it deploy/vulcan-web -- bash -c \
-  "curl -fsSL https://raw.githubusercontent.com/mitre/vulcan/master/lib/tasks/upgrade_preflight.rake \
-   -o lib/tasks/upgrade_preflight.rake"
-
-# Option B: If curl isn't available in the container, copy from local
-kubectl cp /tmp/upgrade_preflight.rake vulcan-web-pod:/rails/lib/tasks/upgrade_preflight.rake
-
-# ECS equivalent (using aws cli + ssm exec)
-aws ecs execute-command --cluster vulcan --task $TASK_ID --container web \
-  --command "curl -fsSL https://raw.githubusercontent.com/mitre/vulcan/master/lib/tasks/upgrade_preflight.rake \
-  -o lib/tasks/upgrade_preflight.rake" --interactive
-```
-
-#### Can't modify the container at all?
-
-Use the standalone diagnostic script — no Rails required, just `psql`:
-
-```bash
-# Download and run from any machine that can reach your database
-curl -fsSL https://raw.githubusercontent.com/mitre/vulcan/master/bin/upgrade-check.sh \
-  -o upgrade-check.sh && chmod +x upgrade-check.sh
-
-# Point it at your database
-./upgrade-check.sh postgres://user:pass@your-db-host:5432/vulcan_production
-```
-
-No gem installs, no Gemfile changes, no image rebuilds. The rake task is one file that uses Rails APIs already in the app. The shell script uses only `psql`.
-
-### Step 2: Back up your database
-
-**Do this before anything else.** Every upgrade path is tested, but your data is unique.
-
-```bash
-# Vanilla PostgreSQL
-pg_dump -Fc your_database > vulcan_backup_$(date +%Y%m%d).dump
-
-# Aurora RDS (from a bastion or local machine with psql access)
-pg_dump -Fc -h your-cluster.cluster-xxxx.us-east-1.rds.amazonaws.com \
-  -U vulcan_user -d vulcan_production > vulcan_backup_$(date +%Y%m%d).dump
-
-# Docker Compose
+# 1. Back up your database
 docker compose exec db pg_dump -Fc -U postgres vulcan_postgres_production \
   > vulcan_backup_$(date +%Y%m%d).dump
 
-# ECS / Kubernetes (exec into the db container or use a bastion)
-kubectl exec -it deploy/vulcan-db -- pg_dump -Fc -U postgres vulcan_production \
-  > vulcan_backup_$(date +%Y%m%d).dump
+# 2. Pull the new image (or update your image tag in docker-compose.yml)
+docker compose pull
+
+# 3. Preflight check (runs the NEW image against your EXISTING database)
+docker compose run --rm web rails upgrade:preflight
+
+# 4. Fix any issues it finds
+docker compose run --rm web rails upgrade:fix
+
+# 5. Start (db:prepare runs automatically via the entrypoint)
+docker compose up -d
+
+# 6. Verify
+docker compose exec web rails upgrade:verify
 ```
 
-### Step 3: Run the preflight check
+### Kubernetes / ECS
 
 ```bash
-# Bare metal / systemd
+# 1. Back up your database (use your standard backup procedure)
+
+# 2. Run preflight as a one-shot pod/task with the NEW image
+kubectl run vulcan-preflight --rm -it \
+  --image=mitre/vulcan:v2.3.6 \
+  --env-from=secret/vulcan-env \
+  -- rails upgrade:preflight
+
+# 3. Fix if needed
+kubectl run vulcan-fix --rm -it \
+  --image=mitre/vulcan:v2.3.6 \
+  --env-from=secret/vulcan-env \
+  -- rails upgrade:fix
+
+# 4. Deploy the new image (your standard deploy process)
+# 5. Verify
+kubectl exec -it deploy/vulcan-web -- rails upgrade:verify
+```
+
+### Bare metal / systemd
+
+```bash
+# 1. Back up
+pg_dump -Fc your_database > vulcan_backup_$(date +%Y%m%d).dump
+
+# 2. Pull new code
+cd /path/to/vulcan && git pull
+
+# 3. Preflight
 bundle exec rails upgrade:preflight
 
-# Docker Compose
-docker compose exec web rails upgrade:preflight
+# 4. Fix
+bundle exec rails upgrade:fix
 
-# Docker (new image against existing database)
-docker run --rm --env-file .env vulcan:new-version rails upgrade:preflight
+# 5. Upgrade
+bundle exec rails db:prepare
 
-# ECS / Kubernetes
-kubectl exec -it deploy/vulcan-web -- rails upgrade:preflight
+# 6. Verify
+bundle exec rails upgrade:verify
 ```
+
+### Can't even connect? (quick diagnostic)
+
+If the new container won't start at all, use the standalone script from any machine with `psql`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mitre/vulcan/master/bin/upgrade-check.sh -o upgrade-check.sh
+chmod +x upgrade-check.sh
+./upgrade-check.sh "postgres://user:pass@your-db-host:5432/vulcan_production?sslmode=require"
+```
+
+No Rails, no Ruby, no container — just raw database diagnostics.
+
+### What the tools do
+
+| Command | When | What |
+|---|---|---|
+| `rails upgrade:preflight` | Before upgrade | Checks connectivity, SSL, schema, orphaned data, config (read-only) |
+| `rails upgrade:fix` | Before upgrade | Fixes orphaned records, counter caches, missing dirs (safe writes) |
+| `rails upgrade:verify` | After upgrade | Validates schema, models, routes, assets, admin user |
+| `bin/upgrade-check.sh` | Can't start container | Raw psql diagnostic — tests connection, SSL, encoding |
 
 The preflight reports:
 - ✓ = good
 - ⚠ = warning (review, but won't block)
 - ✗ = blocker (must fix before upgrading)
 
-### Step 4: Fix any issues
+### Upgrading from pre-v2.3.6 (toolkit not in image)
+
+If your CURRENT image doesn't have the toolkit yet, run the preflight from the NEW image:
 
 ```bash
-# Auto-fix safe issues (orphaned records, counter caches, missing dirs)
-bundle exec rails upgrade:fix
+# Pull the new image but don't start it yet
+docker pull mitre/vulcan:v2.3.6
 
-# Or in Docker
-docker compose exec web rails upgrade:fix
+# Run preflight from the new image against your existing database
+docker run --rm --env-file .env mitre/vulcan:v2.3.6 rails upgrade:preflight
+docker run --rm --env-file .env mitre/vulcan:v2.3.6 rails upgrade:fix
 ```
 
-The fix task only runs **safe operations** — it will NOT:
-- Delete data without telling you exactly what and how many rows
-- Modify schema (that's what db:prepare does)
-- Change configuration (it tells you what to set)
-
-For connection issues (the most common upgrade blocker), the fix task prints the exact environment variables you need to set.
-
-### Step 5: Run the upgrade
-
-```bash
-# This runs pending migrations (safe — preflight already validated)
-bundle exec rails db:prepare
-
-# Docker: the entrypoint does this automatically on container start
-docker compose up
-```
-
-### Step 6: Verify
-
-```bash
-bundle exec rails upgrade:verify
-# or
-docker compose exec web rails upgrade:verify
-```
+The `--env-file .env` passes your existing database credentials to the new container.
 
 ---
 
