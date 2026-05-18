@@ -349,7 +349,8 @@ class ComponentsController < ApplicationController
       page: params[:page].presence || 1,
       per_page: params[:per_page].presence || 25,
       resolved: params[:resolved].presence || 'all',
-      commentable_type: params[:commentable_type].presence
+      commentable_type: params[:commentable_type].presence,
+      include_rule_content: ActiveModel::Type::Boolean.new.cast(params[:include_rule_content])
     )
 
     inject_reactions_mine!(result[:rows])

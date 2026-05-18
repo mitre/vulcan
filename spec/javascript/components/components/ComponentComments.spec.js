@@ -143,19 +143,15 @@ describe("ComponentComments", () => {
     );
   });
 
-  it("opens the triage modal via $bvModal.show when openTriageFor is called", async () => {
+  it("enters split mode when openTriageFor is called", async () => {
     const wrapper = mount(ComponentComments, {
       propsData: { componentId: 42 },
       stubs: SHARED_STUBS,
     });
     await flushPromises();
-    // BootstrapVue installs $bvModal as a read-only instance property, so
-    // we spy on its show method directly after mount.
-    const showSpy = vi.spyOn(wrapper.vm.$bvModal, "show").mockImplementation(() => {});
     wrapper.vm.openTriageFor(mockResponse.data.rows[0]);
-    expect(wrapper.vm.selectedRow.id).toBe(142);
-    expect(showSpy).toHaveBeenCalledWith("comment-triage-modal");
-    showSpy.mockRestore();
+    expect(wrapper.vm.splitMode).toBe(true);
+    expect(wrapper.vm.splitCommentId).toBe(142);
   });
 
   // REQUIREMENT: rule deep-link must URL-encode the rule_displayed_name so

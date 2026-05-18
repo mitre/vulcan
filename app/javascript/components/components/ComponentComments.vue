@@ -57,8 +57,23 @@
       </b-button>
     </div>
 
+    <!-- Split-pane triage view. Replaces table+modal with side-by-side
+         rule content + triage form. Entered by clicking "Triage" on a row. -->
+    <TriageSplitView
+      v-if="splitMode"
+      :rows="rows"
+      :initial-comment-id="splitCommentId"
+      :component-id="componentId"
+      :effective-permissions="effectivePermissions"
+      @exit="exitSplitMode"
+      @triaged="onTriaged"
+      @adjudicated="onAdjudicated"
+      @response-posted="onTriageResponsePosted"
+    />
+
     <!-- Table -->
     <b-table
+      v-else
       :items="rows"
       :fields="fields"
       :busy="loading"
@@ -209,6 +224,7 @@ import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import SectionLabel from "../shared/SectionLabel.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
 import CommentThread from "../shared/CommentThread.vue";
+import TriageSplitView from "../triage/TriageSplitView.vue";
 import CommentTriageModal from "./CommentTriageModal.vue";
 import CommentComposerModal from "./CommentComposerModal.vue";
 
@@ -219,6 +235,7 @@ export default {
     SectionLabel,
     FilterDropdown,
     CommentThread,
+    TriageSplitView,
     CommentTriageModal,
     CommentComposerModal,
   },
@@ -277,6 +294,8 @@ export default {
       // shows the arrow when sortBy/sortDesc are controlled.
       sortBy: "id",
       sortDesc: false,
+      splitMode: false,
+      splitCommentId: null,
       selectedRow: null,
       // Row that the inline reply composer is open against. Null when
       // the composer is not open. Populated when a row's CommentThread
@@ -408,6 +427,7 @@ export default {
           per_page: this.perPage,
           triage_status: this.filterStatus,
         };
+        if (this.splitMode) params.include_rule_content = true;
         if (this.filterText) params.q = this.filterText;
         if (this.filterSection && this.filterSection !== "(general)") {
           params.section = this.filterSection;
@@ -434,8 +454,14 @@ export default {
       return `/components/${compId}/${encodeURIComponent(row.rule_displayed_name)}`;
     },
     openTriageFor(row) {
-      this.selectedRow = row;
-      this.$bvModal.show("comment-triage-modal");
+      this.splitCommentId = row.id;
+      this.splitMode = true;
+      this.fetch();
+    },
+    exitSplitMode() {
+      this.splitMode = false;
+      this.splitCommentId = null;
+      this.fetch();
     },
     // Button label clarifies the lifecycle stage: pending → triage,
     // already-triaged but not yet adjudicated → "Edit / Close" makes
