@@ -69,6 +69,7 @@
       @triaged="onTriaged"
       @adjudicated="onAdjudicated"
       @response-posted="onTriageResponsePosted"
+      @open-reply-composer="openReplyComposer"
     />
 
     <!-- Table -->
@@ -456,11 +457,13 @@ export default {
     openTriageFor(row) {
       this.splitCommentId = row.id;
       this.splitMode = true;
+      this.$emit("split-mode-changed", true);
       this.fetch();
     },
     exitSplitMode() {
       this.splitMode = false;
       this.splitCommentId = null;
+      this.$emit("split-mode-changed", false);
       this.fetch();
     },
     // Button label clarifies the lifecycle stage: pending → triage,

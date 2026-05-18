@@ -113,6 +113,13 @@ describe("TriageQueueNav", () => {
     expect(w.find('[data-testid="queue-dropdown"]').exists()).toBe(true);
   });
 
+  it("dropdown items show #id (not array position) for clarity", () => {
+    const w = mount(TriageQueueNav, { localVue, propsData: baseProps() });
+    const items = w.findAll('[data-testid="queue-dropdown-item"]');
+    expect(items.at(0).text()).toContain("#1");
+    expect(items.at(2).text()).toContain("#3");
+  });
+
   it("dropdown items emit select with the chosen comment ID", async () => {
     const w = mount(TriageQueueNav, { localVue, propsData: baseProps() });
     const items = w.findAll('[data-testid="queue-dropdown-item"]');

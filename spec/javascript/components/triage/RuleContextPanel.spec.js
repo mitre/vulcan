@@ -34,9 +34,46 @@ describe("RuleContextPanel", () => {
     expect(w.text()).toContain("The container platform must limit privileges");
   });
 
-  // ── Focused section (fisheye) ──────────────────────────────────────
+  // ── Inline sections (single-line: title, severity, status) ─────────
 
-  it("shows focused section body as visible", () => {
+  it("renders title, severity, status as inline key:value pairs (no accordion)", () => {
+    const w = mount(RuleContextPanel, {
+      localVue,
+      propsData: { ruleContent, focusedSection: null },
+    });
+    const titleSection = w.find('[data-section="title"]');
+    expect(titleSection.exists()).toBe(true);
+    expect(titleSection.find(".section-header").exists()).toBe(false);
+    expect(titleSection.find(".section-body").exists()).toBe(false);
+    expect(titleSection.text()).toContain("Title:");
+    expect(titleSection.text()).toContain("The container platform must limit privileges");
+  });
+
+  it("renders severity inline", () => {
+    const w = mount(RuleContextPanel, {
+      localVue,
+      propsData: { ruleContent, focusedSection: null },
+    });
+    const section = w.find('[data-section="severity"]');
+    expect(section.exists()).toBe(true);
+    expect(section.text()).toContain("Severity:");
+    expect(section.text()).toContain("CAT II");
+  });
+
+  it("renders status inline", () => {
+    const w = mount(RuleContextPanel, {
+      localVue,
+      propsData: { ruleContent, focusedSection: null },
+    });
+    const section = w.find('[data-section="status"]');
+    expect(section.exists()).toBe(true);
+    expect(section.text()).toContain("Status:");
+    expect(section.text()).toContain("Applicable - Configurable");
+  });
+
+  // ── Collapsible sections (multi-line: fix, check, vuln_discussion) ─
+
+  it("shows focused collapsible section body as visible", () => {
     const w = mount(RuleContextPanel, {
       localVue,
       propsData: { ruleContent, focusedSection: "check_content" },
@@ -56,9 +93,7 @@ describe("RuleContextPanel", () => {
     expect(header.find(".bi-chevron-down").exists()).toBe(true);
   });
 
-  // ── Non-focused sections (collapsed) ───────────────────────────────
-
-  it("hides non-focused section bodies", () => {
+  it("hides non-focused collapsible section bodies", () => {
     const w = mount(RuleContextPanel, {
       localVue,
       propsData: { ruleContent, focusedSection: "check_content" },
@@ -110,15 +145,15 @@ describe("RuleContextPanel", () => {
 
   // ── General comment (focusedSection = null) ────────────────────────
 
-  it("expands all sections when focusedSection is null", () => {
+  it("expands all collapsible sections when focusedSection is null", () => {
     const w = mount(RuleContextPanel, {
       localVue,
       propsData: { ruleContent, focusedSection: null },
     });
-    const sections = w.findAll("[data-section]");
-    expect(sections.length).toBeGreaterThan(0);
-    sections.wrappers.forEach((s) => {
-      expect(s.find(".section-body").isVisible()).toBe(true);
+    const collapsible = w.findAll(".section-body");
+    expect(collapsible.length).toBe(3);
+    collapsible.wrappers.forEach((s) => {
+      expect(s.isVisible()).toBe(true);
     });
   });
 
@@ -163,7 +198,7 @@ describe("RuleContextPanel", () => {
     });
     expect(w.find('[data-section="fixtext"]').exists()).toBe(true);
     expect(w.find('[data-section="check_content"]').exists()).toBe(false);
-    expect(w.find('[data-section="vuln_discussion"]').exists()).toBe(false);
+    expect(w.find('[data-section="severity"]').exists()).toBe(false);
   });
 
   // ── focusedSection watcher resets manual toggles ───────────────────
@@ -173,13 +208,10 @@ describe("RuleContextPanel", () => {
       localVue,
       propsData: { ruleContent, focusedSection: "check_content" },
     });
-    // Manually expand fixtext
     await w.find('[data-section="fixtext"] .section-header').trigger("click");
     expect(w.find('[data-section="fixtext"] .section-body').isVisible()).toBe(true);
 
-    // Change focused section — manual toggle should reset
     await w.setProps({ focusedSection: "fixtext" });
-    // Now fixtext is focused (expanded), check_content should collapse
     expect(w.find('[data-section="fixtext"] .section-body').isVisible()).toBe(true);
     expect(w.find('[data-section="check_content"] .section-body').isVisible()).toBe(false);
   });

@@ -1,6 +1,6 @@
 <template>
   <div class="triage-split-view">
-    <TriageQueueNav :comments="rows" :current-id="activeCommentId" @select="onQueueSelect" />
+    <TriageQueueNav :comments="sortedRows" :current-id="activeCommentId" @select="onQueueSelect" />
 
     <b-alert
       v-if="conflictAlert"
@@ -32,11 +32,19 @@
             <strong>{{ activeComment.author_name || "—" }}</strong>
             · posted {{ relativeTime(activeComment.created_at) }}
           </p>
-          <blockquote class="border-left pl-3 py-2 mb-3 bg-light">
+          <blockquote class="border-left pl-3 py-2 mb-2 bg-light">
             {{ activeComment.comment }}
           </blockquote>
+          <CommentThread
+            :parent-review-id="activeComment.id"
+            :responses-count="activeComment.responses_count || 0"
+            :can-reply="true"
+            class="mb-3"
+            @reply="$emit('open-reply-composer', activeComment)"
+          />
         </div>
         <CommentTriageForm
+          v-if="canTriage"
           :review="activeComment"
           :component-id="componentId"
           :loading="saving"
@@ -45,6 +53,9 @@
           @cancel="onCancel"
           @dirty="isDirty = $event"
         />
+        <p v-else class="text-muted small font-italic">
+          Read-only — author or higher role required to triage.
+        </p>
       </b-col>
     </b-row>
   </div>
@@ -54,16 +65,18 @@
 import axios from "axios";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import FormMixin from "../../mixins/FormMixin.vue";
+import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import { SINGLE_BUTTON_STATUSES } from "../../constants/triageVocabulary";
 import SectionLabel from "../shared/SectionLabel.vue";
+import CommentThread from "../shared/CommentThread.vue";
 import TriageQueueNav from "./TriageQueueNav.vue";
 import RuleContextPanel from "./RuleContextPanel.vue";
 import CommentTriageForm from "./CommentTriageForm.vue";
 
 export default {
   name: "TriageSplitView",
-  components: { TriageQueueNav, RuleContextPanel, CommentTriageForm, SectionLabel },
-  mixins: [AlertMixin, FormMixin],
+  components: { TriageQueueNav, RuleContextPanel, CommentTriageForm, CommentThread, SectionLabel },
+  mixins: [AlertMixin, FormMixin, RoleComparisonMixin],
   props: {
     rows: { type: Array, required: true },
     initialCommentId: { type: [Number, String], required: true },
@@ -79,8 +92,14 @@ export default {
     };
   },
   computed: {
+    sortedRows() {
+      return [...this.rows].sort((a, b) => a.id - b.id);
+    },
     activeComment() {
-      return this.rows.find((r) => r.id === this.activeCommentId) || null;
+      return this.sortedRows.find((r) => r.id === this.activeCommentId) || null;
+    },
+    canTriage() {
+      return this.role_gte_to(this.effectivePermissions, "author");
     },
   },
   watch: {
@@ -156,9 +175,9 @@ export default {
       }
     },
     advanceToNext() {
-      const idx = this.rows.findIndex((r) => r.id === this.activeCommentId);
-      if (idx >= 0 && idx < this.rows.length - 1) {
-        this.activeCommentId = this.rows[idx + 1].id;
+      const idx = this.sortedRows.findIndex((r) => r.id === this.activeCommentId);
+      if (idx >= 0 && idx < this.sortedRows.length - 1) {
+        this.activeCommentId = this.sortedRows[idx + 1].id;
       }
     },
     onCancel() {

@@ -2,11 +2,28 @@
   <div class="rule-context-panel">
     <template v-if="ruleContent">
       <h6 class="mb-1 font-weight-bold">{{ ruleContent.rule_displayed_name }}</h6>
-      <p v-if="ruleContent.rule_title" class="text-muted small mb-3">
+      <p v-if="ruleContent.rule_title" class="text-muted small mb-2">
         {{ ruleContent.rule_title }}
       </p>
 
-      <div v-for="section in sections" :key="section.key" :data-section="section.key" class="mb-2">
+      <div v-if="inlineSections.length" class="mb-3">
+        <div
+          v-for="section in inlineSections"
+          :key="section.key"
+          :data-section="section.key"
+          class="d-flex small mb-1"
+        >
+          <strong class="mr-2 text-nowrap">{{ section.label }}:</strong>
+          <span class="text-muted">{{ section.content }}</span>
+        </div>
+      </div>
+
+      <div
+        v-for="section in collapsibleSections"
+        :key="section.key"
+        :data-section="section.key"
+        class="mb-2"
+      >
         <div
           class="section-header d-flex align-items-center px-2 py-1 rounded"
           :class="{ 'section-header--collapsed': !isSectionExpanded(section.key) }"
@@ -31,11 +48,10 @@
         </div>
         <div
           v-show="isSectionExpanded(section.key)"
-          class="section-body pl-4 pr-2 py-2 small"
+          class="section-body small"
           :class="{ 'section-body--focused': section.key === focusedSection }"
-        >
-          {{ section.content }}
-        </div>
+          v-text="section.content"
+        />
       </div>
     </template>
 
@@ -52,6 +68,8 @@
 <script>
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
 
+const INLINE_SECTIONS = new Set(["title", "severity", "status"]);
+
 export default {
   name: "RuleContextPanel",
   props: {
@@ -64,7 +82,7 @@ export default {
     };
   },
   computed: {
-    sections() {
+    allSections() {
       if (!this.ruleContent) return [];
       return Object.entries(SECTION_LABELS)
         .map(([key, label]) => ({
@@ -73,6 +91,12 @@ export default {
           content: this.ruleContent[`rule_${key}`] || null,
         }))
         .filter((s) => s.content !== null && s.content !== undefined);
+    },
+    inlineSections() {
+      return this.allSections.filter((s) => INLINE_SECTIONS.has(s.key));
+    },
+    collapsibleSections() {
+      return this.allSections.filter((s) => !INLINE_SECTIONS.has(s.key));
     },
   },
   watch: {
@@ -116,11 +140,12 @@ export default {
   overflow-y: auto;
   white-space: pre-wrap;
   word-break: break-word;
+  padding: 0.5rem 0.5rem 0.5rem 2rem;
 }
 
 .section-body--focused {
   border-left: 3px solid #007bff;
-  padding-left: calc(1.5rem - 3px) !important;
+  padding-left: calc(2rem - 3px);
 }
 
 .section-preview {

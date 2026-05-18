@@ -14,16 +14,26 @@
           </p>
         </div>
         <div>
-          <b-button :href="`/components/${component.id}`" variant="outline-secondary" size="sm">
+          <b-button v-if="isSplitMode" variant="outline-secondary" size="sm" @click="exitSplit">
+            <b-icon icon="arrow-left" /> Back to Triage Table
+          </b-button>
+          <b-button
+            v-else
+            :href="`/components/${component.id}`"
+            variant="outline-secondary"
+            size="sm"
+          >
             <b-icon icon="arrow-left" /> Back to Component Editor
           </b-button>
         </div>
       </div>
       <ComponentComments
+        ref="comments"
         scope="component"
         :component-id="component.id"
         :component-displayed-name="component.name"
         :effective-permissions="effectivePermissions"
+        @split-mode-changed="isSplitMode = $event"
       />
     </div>
   </div>
@@ -44,6 +54,7 @@ export default {
   data() {
     return {
       component: this.initialComponentState,
+      isSplitMode: false,
     };
   },
   computed: {
@@ -54,6 +65,14 @@ export default {
         { text: this.component.name, href: `/components/${this.component.id}` },
         { text: "Triage", active: true },
       ];
+    },
+  },
+  methods: {
+    exitSplit() {
+      this.isSplitMode = false;
+      if (this.$refs.comments) {
+        this.$refs.comments.exitSplitMode();
+      }
     },
   },
 };

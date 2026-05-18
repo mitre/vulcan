@@ -40,14 +40,14 @@
         class="queue-dropdown"
       >
         <b-dropdown-item
-          v-for="(comment, idx) in comments"
+          v-for="comment in comments"
           :key="comment.id"
           data-testid="queue-dropdown-item"
           :active="comment.id === currentId"
           @click="$emit('select', comment.id)"
         >
           <span class="small">
-            {{ idx + 1 }}.
+            #{{ comment.id }}
             {{ comment.rule_displayed_name }}
           </span>
           <TriageStatusBadge

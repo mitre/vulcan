@@ -247,4 +247,47 @@ describe("TriageSplitView", () => {
     w.vm.onCancel();
     expect(w.emitted("exit")).toBeTruthy();
   });
+
+  // ── sortedRows: queue nav matches table id-ascending order ─────────
+
+  it("sorts rows by id ascending so queue position matches table order", () => {
+    const reversed = [...rows].reverse();
+    const w = mount(TriageSplitView, {
+      localVue,
+      propsData: baseProps({ rows: reversed, initialCommentId: 1 }),
+    });
+    expect(w.vm.sortedRows[0].id).toBe(1);
+    expect(w.vm.sortedRows[1].id).toBe(2);
+    expect(w.vm.sortedRows[2].id).toBe(3);
+    const nav = w.findComponent({ name: "TriageQueueNav" });
+    expect(nav.props("comments")[0].id).toBe(1);
+  });
+
+  // ── Role gating: viewer cannot see triage form ─────────────────────
+
+  it("hides CommentTriageForm for viewer role", () => {
+    const w = mount(TriageSplitView, {
+      localVue,
+      propsData: baseProps({ effectivePermissions: "viewer" }),
+    });
+    expect(w.findComponent({ name: "CommentTriageForm" }).exists()).toBe(false);
+    expect(w.text()).toContain("Read-only");
+  });
+
+  it("shows CommentTriageForm for author role", () => {
+    const w = mount(TriageSplitView, {
+      localVue,
+      propsData: baseProps({ effectivePermissions: "author" }),
+    });
+    expect(w.findComponent({ name: "CommentTriageForm" }).exists()).toBe(true);
+  });
+
+  // ── Reply thread integration ───────────────────────────────────────
+
+  it("renders CommentThread for inline replies", () => {
+    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const thread = w.findComponent({ name: "CommentThread" });
+    expect(thread.exists()).toBe(true);
+    expect(thread.props("parentReviewId")).toBe(1);
+  });
 });
