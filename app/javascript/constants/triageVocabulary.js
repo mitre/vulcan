@@ -121,6 +121,16 @@ export function sectionLabel(section) {
   return SECTION_LABELS[section] || section;
 }
 
+// Statuses the server auto-adjudicates (sets adjudicated_at on save).
+// Matches Ruby Review::TERMINAL_AUTO_ADJUDICATE_STATUSES exactly.
+export const TERMINAL_AUTO_ADJUDICATE = new Set(["duplicate", "informational", "withdrawn"]);
+
+// Statuses that collapse the triage form footer to a single button.
+// Superset of TERMINAL_AUTO_ADJUDICATE: includes needs_clarification, which
+// round-trips with the commenter (no adjudicate) but still doesn't need
+// a separate "Save decision" vs "Save & close" distinction.
+export const SINGLE_BUTTON_STATUSES = new Set([...TERMINAL_AUTO_ADJUDICATE, "needs_clarification"]);
+
 // Helper: triage status pair (glyph + label) for templates that need both
 export function triageDisplay(status) {
   return {

@@ -5,6 +5,7 @@
     :title="modalTitle"
     centered
     no-close-on-backdrop
+    hide-footer
     @hidden="$emit('hidden')"
   >
     <template v-if="review">
@@ -137,49 +138,15 @@
         · {{ relativeTime(review.adjudicated_at) }}
       </p>
 
-      <b-form-group label="Decision" stacked>
-        <b-form-radio v-model="triageStatus" name="triage" value="concur">
-          Accept (Concur) — incorporate as suggested
-        </b-form-radio>
-        <b-form-radio v-model="triageStatus" name="triage" value="concur_with_comment">
-          Accept with changes (Concur with comment) — incorporate with changes
-        </b-form-radio>
-        <b-form-radio v-model="triageStatus" name="triage" value="non_concur">
-          Decline (Non-concur) — won't incorporate (response required)
-        </b-form-radio>
-        <b-form-radio v-model="triageStatus" name="triage" value="duplicate">
-          Duplicate of another comment in this component
-        </b-form-radio>
-        <CanonicalCommentPicker
-          v-if="triageStatus === 'duplicate' && pickerComponentId"
-          class="mt-2 ml-4"
-          :component-id="pickerComponentId"
-          :exclude-review-id="review.id"
-          :selected-review-id="duplicateOfId"
-          @selected="onDuplicateSelected"
-        />
-        <b-form-radio v-model="triageStatus" name="triage" value="informational">
-          Informational — note acknowledged, no action required
-        </b-form-radio>
-        <b-form-radio v-model="triageStatus" name="triage" value="needs_clarification">
-          Needs clarification — round-trip with commenter
-        </b-form-radio>
-      </b-form-group>
-
-      <b-form-group
-        label="Response to commenter (visible in their thread + 'My Comments' page)"
-        :description="nonConcurHint"
-      >
-        <b-form-textarea
-          v-model="responseComment"
-          rows="3"
-          :placeholder="responsePlaceholder"
-          :state="responseState"
-        />
-        <b-form-invalid-feedback v-if="responseState === false" role="alert">
-          Decline requires a response — explain why so the commenter understands.
-        </b-form-invalid-feedback>
-      </b-form-group>
+      <CommentTriageForm
+        :review="review"
+        :component-id="pickerComponentId"
+        :loading="saving"
+        @save="onFormSave"
+        @save-and-next="onFormSaveAndNext"
+        @cancel="$bvModal.hide('comment-triage-modal')"
+        @dirty="isDirty = $event"
+      />
 
       <!-- admin override actions. Visible only to project
            admins. Audit comment required server-side; the Confirm button
@@ -300,21 +267,6 @@
         </div>
       </div>
     </template>
-
-    <template #modal-footer="{ cancel }">
-      <b-button variant="secondary" @click="cancel()">Cancel</b-button>
-      <b-button
-        v-if="hasSaveDecisionOnlyOption"
-        variant="outline-primary"
-        :disabled="!canSave"
-        @click="saveTriage(false)"
-      >
-        Save decision
-      </b-button>
-      <b-button variant="primary" :disabled="!canSave" @click="saveTriage(true)">
-        {{ saveAndCloseLabel }}
-      </b-button>
-    </template>
   </b-modal>
 </template>
 
@@ -324,25 +276,17 @@ import AlertMixin from "../../mixins/AlertMixin.vue";
 import FormMixin from "../../mixins/FormMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
-import { SECTION_LABELS, commentsClosedTooltip } from "../../constants/triageVocabulary";
+import {
+  SECTION_LABELS,
+  SINGLE_BUTTON_STATUSES,
+  commentsClosedTooltip,
+} from "../../constants/triageVocabulary";
 import SectionLabel from "../shared/SectionLabel.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
 import CommentThread from "../shared/CommentThread.vue";
 import ReactionButtons from "../shared/ReactionButtons.vue";
-import CanonicalCommentPicker from "./CanonicalCommentPicker.vue";
+import CommentTriageForm from "../triage/CommentTriageForm.vue";
 import RulePicker from "./RulePicker.vue";
-
-// Statuses that auto-set adjudicated_at server-side via the
-// Review#auto_set_adjudicated_for_terminal_statuses callback. The
-// triage PATCH alone closes these out — a separate adjudicate call
-// would be redundant or 422, so we collapse to a single button when
-// the chosen status is one of these.
-const TERMINAL_BY_RULE = new Set([
-  "informational",
-  "duplicate",
-  "needs_clarification",
-  "withdrawn",
-]);
 
 export default {
   name: "CommentTriageModal",
@@ -351,7 +295,7 @@ export default {
     FilterDropdown,
     CommentThread,
     ReactionButtons,
-    CanonicalCommentPicker,
+    CommentTriageForm,
     RulePicker,
   },
   // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because the
@@ -378,22 +322,13 @@ export default {
   },
   data() {
     return {
-      triageStatus: null,
-      responseComment: "",
-      duplicateOfId: null,
-      // Admin actions disclosure state. Closed by default
-      // so triagers don't accidentally click into the override panel.
+      saving: false,
+      isDirty: false,
       adminActionsOpen: false,
-      adminAction: null, // 'force-withdraw' | 'restore' | 'hard-delete' | null
+      adminAction: null,
       adminAuditComment: "",
-      // typed-confirmation safeguard for irreversible
-      // hard-delete. Admin must type the review ID exactly to enable Confirm.
       adminConfirmationId: "",
-      // target rule chosen via RulePicker for move-to-rule.
       adminTargetRuleId: null,
-      // section editing sub-form state. Author+ retags
-      // a comment's section retroactively. Closed by default — opens via
-      // the pencil button next to the section badge in the modal header.
       sectionEditMode: false,
       newSection: null,
       sectionAuditComment: "",
@@ -403,48 +338,6 @@ export default {
     modalTitle() {
       if (!this.review) return "Triage comment";
       return `Triage comment #${this.review.id}`;
-    },
-    nonConcurHint() {
-      return this.triageStatus === "non_concur" ? "A response is required when declining." : "";
-    },
-    responsePlaceholder() {
-      switch (this.triageStatus) {
-        case "concur":
-          return "Thanks — we'll adopt this as suggested.";
-        case "concur_with_comment":
-          return "Thanks — we'll adopt with the following changes...";
-        case "non_concur":
-          return "Thanks for the suggestion. We won't adopt because...";
-        default:
-          return "Optional response to the commenter.";
-      }
-    },
-    responseState() {
-      if (this.triageStatus === "non_concur" && !this.responseComment.trim()) {
-        return false;
-      }
-      return null;
-    },
-    canSave() {
-      if (!this.triageStatus) return false;
-      if (this.triageStatus === "non_concur" && !this.responseComment.trim()) return false;
-      if (this.triageStatus === "duplicate" && !this.duplicateOfId) return false;
-      return true;
-    },
-    // Two-button vs one-button footer. For statuses that auto-adjudicate
-    // (informational / duplicate / needs_clarification / withdrawn) the
-    // distinction between "save decision" and "save & adjudicate" is
-    // meaningless — a single primary button avoids the dimmed-button
-    // confusion users hit when picking those statuses.
-    autoAdjudicating() {
-      return TERMINAL_BY_RULE.has(this.triageStatus);
-    },
-    hasSaveDecisionOnlyOption() {
-      return !this.autoAdjudicating;
-    },
-    saveAndCloseLabel() {
-      if (this.triageStatus === "needs_clarification") return "Save & wait for commenter";
-      return "Save & close";
     },
     pickerComponentId() {
       return this.componentId || this.review?.component_id || null;
@@ -541,15 +434,6 @@ export default {
       return commentsClosedTooltip(this.closedReason);
     },
   },
-  watch: {
-    review(val) {
-      if (val) {
-        this.triageStatus = val.triage_status === "pending" ? null : val.triage_status;
-        this.responseComment = "";
-        this.duplicateOfId = val.duplicate_of_review_id || null;
-      }
-    },
-  },
   methods: {
     relativeTime(iso) {
       if (!iso) return "";
@@ -562,9 +446,6 @@ export default {
         this.$emit("triaged", { ...this.review, reactions });
       };
       this.submitReactionToggle({ reviewId: this.review.id, prev, kind, apply });
-    },
-    onDuplicateSelected(reviewId) {
-      this.duplicateOfId = reviewId;
     },
     onTargetRuleSelected(ruleId) {
       this.adminTargetRuleId = ruleId;
@@ -645,24 +526,22 @@ export default {
         this.alertOrNotifyResponse(error);
       }
     },
-    async saveTriage(alsoAdjudicate) {
+    async doTriage(decision, alsoAdjudicate) {
       if (!this.review) return;
+      this.saving = true;
       try {
         const triagePayload = {
-          triage_status: this.triageStatus,
+          triage_status: decision.triage_status,
         };
-        if (this.responseComment.trim()) {
-          triagePayload.response_comment = this.responseComment.trim();
+        if (decision.response_comment) {
+          triagePayload.response_comment = decision.response_comment;
         }
-        if (this.triageStatus === "duplicate") {
-          triagePayload.duplicate_of_review_id = this.duplicateOfId;
+        if (decision.triage_status === "duplicate") {
+          triagePayload.duplicate_of_review_id = decision.duplicate_of_review_id;
         }
 
         const triageRes = await axios.patch(`/reviews/${this.review.id}/triage`, triagePayload);
         this.$emit("triaged", triageRes.data.review);
-        // Server atomically creates a child Review when response_comment is
-        // supplied. Surface it so the parent table can bump the row's
-        // responses_count + refresh the open thread without a refetch.
         if (triageRes.data.response_review) {
           this.$emit("response-posted", {
             parentId: this.review.id,
@@ -670,9 +549,7 @@ export default {
           });
         }
 
-        // Skip the explicit adjudicate call for statuses that already
-        // auto-adjudicated server-side via the triage callback.
-        if (alsoAdjudicate && !this.autoAdjudicating) {
+        if (alsoAdjudicate && !SINGLE_BUTTON_STATUSES.has(decision.triage_status)) {
           const adjudicateRes = await axios.patch(`/reviews/${this.review.id}/adjudicate`, {});
           this.$emit("adjudicated", adjudicateRes.data.review);
         }
@@ -680,7 +557,15 @@ export default {
         this.$bvModal.hide("comment-triage-modal");
       } catch (error) {
         this.alertOrNotifyResponse(error);
+      } finally {
+        this.saving = false;
       }
+    },
+    onFormSave(decision) {
+      this.doTriage(decision, false);
+    },
+    onFormSaveAndNext(decision) {
+      this.doTriage(decision, true);
     },
   },
 };

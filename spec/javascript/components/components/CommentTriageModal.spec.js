@@ -72,31 +72,36 @@ describe("CommentTriageModal", () => {
     expect(html).toMatch(/Decline[^<]*Non-concur\)/);
   });
 
-  it("requires response_comment when triage_status=non_concur (client-side gate)", () => {
+  it("embeds CommentTriageForm with non_concur validation delegated to the form", () => {
     const w = mount(CommentTriageModal, {
       localVue,
       propsData: { review: sampleReview },
+      stubs: visibleModalStub,
     });
-    w.vm.triageStatus = "non_concur";
-    w.vm.responseComment = "";
-    expect(w.vm.canSave).toBe(false);
-    w.vm.responseComment = "we already addressed differently";
-    expect(w.vm.canSave).toBe(true);
+    const form = w.findComponent({ name: "CommentTriageForm" });
+    expect(form.exists()).toBe(true);
+    form.vm.triageStatus = "non_concur";
+    form.vm.responseComment = "";
+    expect(form.vm.canSave).toBe(false);
+    form.vm.responseComment = "we already addressed differently";
+    expect(form.vm.canSave).toBe(true);
   });
 
-  it("requires duplicate_of_review_id when triage_status=duplicate", () => {
+  it("embeds CommentTriageForm with duplicate validation delegated to the form", () => {
     const w = mount(CommentTriageModal, {
       localVue,
       propsData: { review: sampleReview },
+      stubs: visibleModalStub,
     });
-    w.vm.triageStatus = "duplicate";
-    w.vm.duplicateOfId = null;
-    expect(w.vm.canSave).toBe(false);
-    w.vm.duplicateOfId = 99;
-    expect(w.vm.canSave).toBe(true);
+    const form = w.findComponent({ name: "CommentTriageForm" });
+    form.vm.triageStatus = "duplicate";
+    form.vm.duplicateOfId = null;
+    expect(form.vm.canSave).toBe(false);
+    form.vm.duplicateOfId = 99;
+    expect(form.vm.canSave).toBe(true);
   });
 
-  it("posts to /reviews/:id/triage on Save decision", async () => {
+  it("posts to /reviews/:id/triage when form emits save", async () => {
     axios.patch.mockResolvedValue({
       data: { review: { ...sampleReview, triage_status: "concur" } },
     });
@@ -106,9 +111,7 @@ describe("CommentTriageModal", () => {
     });
     vi.spyOn(w.vm.$bvModal, "hide").mockImplementation(() => {});
 
-    w.vm.triageStatus = "concur";
-    w.vm.responseComment = "thanks";
-    await w.vm.saveTriage(false);
+    await w.vm.doTriage({ triage_status: "concur", response_comment: "thanks" }, false);
     await flushPromises(w);
 
     expect(axios.patch).toHaveBeenCalledWith(
@@ -118,7 +121,7 @@ describe("CommentTriageModal", () => {
     expect(w.emitted("triaged")).toBeTruthy();
   });
 
-  it("'Save & close' fires triage AND adjudicate atomically", async () => {
+  it("'Save & next' fires triage AND adjudicate for non-terminal statuses", async () => {
     axios.patch
       .mockResolvedValueOnce({
         data: { review: { ...sampleReview, triage_status: "concur" } },
@@ -134,9 +137,7 @@ describe("CommentTriageModal", () => {
     });
     vi.spyOn(w.vm.$bvModal, "hide").mockImplementation(() => {});
 
-    w.vm.triageStatus = "concur";
-    w.vm.responseComment = "done";
-    await w.vm.saveTriage(true);
+    await w.vm.doTriage({ triage_status: "concur", response_comment: "done" }, true);
     await flushPromises(w);
 
     expect(axios.patch).toHaveBeenCalledTimes(2);
@@ -144,30 +145,33 @@ describe("CommentTriageModal", () => {
     expect(w.emitted("adjudicated")).toBeTruthy();
   });
 
-  it("collapses the footer to one button for terminal-by-rule statuses (no separate 'Save decision' option)", () => {
+  it("delegates single-button and label logic to the embedded CommentTriageForm", () => {
     const w = mount(CommentTriageModal, {
       localVue,
       propsData: { review: sampleReview },
+      stubs: visibleModalStub,
     });
+    const form = w.findComponent({ name: "CommentTriageForm" });
+    expect(form.exists()).toBe(true);
     ["informational", "duplicate", "needs_clarification", "withdrawn"].forEach((status) => {
-      w.vm.triageStatus = status;
-      expect(w.vm.autoAdjudicating).toBe(true);
-      expect(w.vm.hasSaveDecisionOnlyOption).toBe(false);
+      form.vm.triageStatus = status;
+      expect(form.vm.hasSaveDecisionOnlyOption).toBe(false);
     });
-    w.vm.triageStatus = "concur";
-    expect(w.vm.autoAdjudicating).toBe(false);
-    expect(w.vm.hasSaveDecisionOnlyOption).toBe(true);
+    form.vm.triageStatus = "concur";
+    expect(form.vm.hasSaveDecisionOnlyOption).toBe(true);
   });
 
-  it("relabels the primary button to 'Save & wait for commenter' when status is needs_clarification", () => {
+  it("form uses 'Save & wait for commenter' label for needs_clarification", () => {
     const w = mount(CommentTriageModal, {
       localVue,
       propsData: { review: sampleReview },
+      stubs: visibleModalStub,
     });
-    w.vm.triageStatus = "needs_clarification";
-    expect(w.vm.saveAndCloseLabel).toBe("Save & wait for commenter");
-    w.vm.triageStatus = "concur";
-    expect(w.vm.saveAndCloseLabel).toBe("Save & close");
+    const form = w.findComponent({ name: "CommentTriageForm" });
+    form.vm.triageStatus = "needs_clarification";
+    expect(form.vm.primaryButtonLabel).toBe("Save & wait for commenter");
+    form.vm.triageStatus = "concur";
+    expect(form.vm.primaryButtonLabel).toBe("Save & next");
   });
 
   it("skips the redundant adjudicate call for auto-adjudicating statuses", async () => {
@@ -180,8 +184,7 @@ describe("CommentTriageModal", () => {
     });
     vi.spyOn(w.vm.$bvModal, "hide").mockImplementation(() => {});
 
-    w.vm.triageStatus = "informational";
-    await w.vm.saveTriage(true);
+    await w.vm.doTriage({ triage_status: "informational" }, true);
     await flushPromises(w);
 
     expect(axios.patch).toHaveBeenCalledTimes(1);
@@ -197,8 +200,7 @@ describe("CommentTriageModal", () => {
     });
     const alertSpy = vi.spyOn(w.vm, "alertOrNotifyResponse").mockImplementation(() => {});
 
-    w.vm.triageStatus = "concur";
-    await w.vm.saveTriage(false);
+    await w.vm.doTriage({ triage_status: "concur" }, false);
     await flushPromises(w);
 
     expect(alertSpy).toHaveBeenCalled();
@@ -507,6 +509,7 @@ describe("CommentTriageModal", () => {
       const w = mount(CommentTriageModal, {
         localVue,
         propsData: { review: sampleReview, effectivePermissions: "author" },
+        stubs: visibleModalStub,
       });
       const hideSpy = vi.spyOn(w.vm.$bvModal, "hide").mockImplementation(() => {});
 
