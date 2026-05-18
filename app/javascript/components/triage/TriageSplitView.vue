@@ -18,6 +18,7 @@
       <b-col lg="5">
         <RuleContextPanel
           :rule-content="activeComment.rule_content"
+          :rule-displayed-name="activeComment.rule_displayed_name"
           :rule-status="activeComment.rule_content ? activeComment.rule_content.status : null"
           :focused-section="activeComment.section"
         />

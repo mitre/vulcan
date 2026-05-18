@@ -98,7 +98,7 @@ describe("TriageSplitView", () => {
   it("derives activeComment from activeCommentId via computed", () => {
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
     expect(w.vm.activeCommentId).toBe(1);
-    expect(w.vm.activeComment).toBeTruthy();
+    expect(w.vm.activeComment).not.toBeNull();
     expect(w.vm.activeComment.id).toBe(1);
     expect(w.vm.activeComment.rule_displayed_name).toBe("CNTR-01-000001");
   });
@@ -113,14 +113,15 @@ describe("TriageSplitView", () => {
 
   // ── Rule content passed to RuleContextPanel ────────────────────────
 
-  it("passes rule_content from the active row to RuleContextPanel", () => {
+  it("passes rule_content and ruleDisplayedName to RuleContextPanel", () => {
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
     const panel = w.findComponent({ name: "RuleContextPanel" });
     expect(panel.exists()).toBe(true);
-    expect(panel.props("ruleContent")).toBeTruthy();
+    expect(panel.props("ruleContent")).not.toBeNull();
     expect(panel.props("ruleContent").title).toBe(
       "The container platform must limit privileges",
     );
+    expect(panel.props("ruleDisplayedName")).toBe("CNTR-01-000001");
   });
 
   it("passes ruleStatus from the active comment's rule_content.status", () => {
@@ -207,7 +208,9 @@ describe("TriageSplitView", () => {
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
     await w.vm.onTriageSave({ triage_status: "concur" });
     await flushPromises(w);
-    expect(w.emitted("triaged")).toBeTruthy();
+    const payload = w.emitted("triaged");
+    expect(payload).toHaveLength(1);
+    expect(payload[0][0].triage_status).toBe("concur");
   });
 
   // ── Save button disabled during request ────────────────────────────
@@ -229,7 +232,8 @@ describe("TriageSplitView", () => {
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
     await w.vm.onTriageSave({ triage_status: "concur" });
     await flushPromises(w);
-    expect(w.vm.conflictAlert).toBeTruthy();
+    expect(w.vm.conflictAlert).toBe(true);
+    expect(w.vm.saving).toBe(false);
   });
 
   it("surfaces 422 errors via AlertMixin", async () => {

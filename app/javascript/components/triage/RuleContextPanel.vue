@@ -1,7 +1,7 @@
 <template>
   <div class="rule-context-panel">
     <template v-if="ruleContent">
-      <h6 class="mb-1 font-weight-bold">{{ ruleContent.rule_displayed_name }}</h6>
+      <h6 class="mb-1 font-weight-bold">{{ ruleDisplayedName }}</h6>
       <p v-if="ruleContent.title" class="text-muted small mb-2">
         {{ ruleContent.title }}
       </p>
@@ -66,39 +66,9 @@
 </template>
 
 <script>
-import { SECTION_LABELS } from "../../constants/triageVocabulary";
-import { STATUS_FIELD_CONFIG } from "../../composables/ruleFieldConfig";
+import { STATUS_FIELD_CONFIG, FIELD_LABELS } from "../../composables/ruleFieldConfig";
 
 const INLINE_SECTIONS = new Set(["status", "rule_severity"]);
-
-const FIELD_LABELS = {
-  ...Object.fromEntries(Object.entries(SECTION_LABELS).map(([k, v]) => [k, v])),
-  rule_severity: "Severity",
-  status_justification: "Status Justification",
-  vendor_comments: "Vendor Comments",
-  artifact_description: "Artifact Description",
-  fix_id: "Fix ID",
-  fixtext_fixref: "Fix Text Reference",
-  version: "Version",
-  rule_weight: "Rule Weight",
-  ident: "Identifier",
-  ident_system: "Identifier System",
-  documentable: "Documentable",
-  false_positives: "False Positives",
-  false_negatives: "False Negatives",
-  mitigations_available: "Mitigations Available",
-  mitigations: "Mitigations",
-  poam_available: "POA&M Available",
-  poam: "POA&M",
-  potential_impacts: "Potential Impacts",
-  third_party_tools: "Third Party Tools",
-  mitigation_control: "Mitigation Control",
-  responsibility: "Responsibility",
-  ia_controls: "IA Controls",
-  severity_override_guidance: "Severity Override Guidance",
-  content: "Check",
-  check_content: "Check",
-};
 
 function fieldLabel(key) {
   return FIELD_LABELS[key] || key;
@@ -108,6 +78,7 @@ export default {
   name: "RuleContextPanel",
   props: {
     ruleContent: { type: Object, default: null },
+    ruleDisplayedName: { type: String, default: null },
     ruleStatus: { type: String, default: null },
     focusedSection: { type: String, default: null },
   },

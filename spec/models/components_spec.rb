@@ -1135,22 +1135,31 @@ RSpec.describe Component do
       end
     end
 
-    it 'includes rule_content hash with all fields when include_rule_content: true' do
+    it 'includes rule_content hash with all 26 expected fields when include_rule_content: true' do
       result = shared_component.paginated_comments(triage_status: 'all', include_rule_content: true)
       c1_row = result[:rows].find { |r| r[:id] == @c1.id }
-      rule = shared_component.rules.find_by(id: @c1.rule_id)
       rc = c1_row[:rule_content]
 
       expect(rc).to be_a(Hash)
+      expected_keys = %i[
+        title rule_severity status fixtext status_justification
+        vendor_comments artifact_description fix_id fixtext_fixref
+        version rule_weight ident ident_system
+        vuln_discussion documentable false_positives false_negatives
+        mitigations_available mitigations poam_available poam
+        potential_impacts third_party_tools mitigation_control
+        responsibility ia_controls severity_override_guidance
+        check_content
+      ]
+      expect(rc.keys).to match_array(expected_keys)
+
+      rule = shared_component.rules.find_by(id: @c1.rule_id)
       expect(rc[:title]).to eq(rule.title)
       expect(rc[:rule_severity]).to eq(rule.rule_severity)
       expect(rc[:status]).to eq(rule.status)
       expect(rc[:fixtext]).to eq(rule.fixtext)
       expect(rc[:vuln_discussion]).to eq(rule.disa_rule_descriptions.first&.vuln_discussion)
       expect(rc[:check_content]).to eq(rule.checks.first&.content)
-      expect(rc[:vendor_comments]).to eq(rule.vendor_comments)
-      expect(rc[:status_justification]).to eq(rule.status_justification)
-      expect(rc[:artifact_description]).to eq(rule.artifact_description)
     end
 
     it 'returns nil rule_content for component-scoped comments with include_rule_content: true' do
