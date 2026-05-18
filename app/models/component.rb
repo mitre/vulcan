@@ -618,7 +618,8 @@ class Component < ApplicationRecord
   # The frontend translates to friendly labels via triageVocabulary.js.
   def paginated_comments(triage_status: 'all', section: nil, rule_id: nil, # rubocop:disable Metrics/ParameterLists
                          author_id: nil, query: nil, page: 1, per_page: 25,
-                         resolved: 'all', commentable_type: nil)
+                         resolved: 'all', commentable_type: nil,
+                         include_rule_content: false)
     page = [page.to_i, 1].max
     per_page = per_page.to_i.clamp(1, 100)
 
@@ -634,7 +635,12 @@ class Component < ApplicationRecord
             when 'rule'      then rule_scoped
             else                  rule_scoped.or(component_scoped)
             end
-    scope = scope.preload(:user, :triage_set_by, :adjudicated_by, :commentable)
+    commentable_preloads = if include_rule_content
+                             { commentable: %i[disa_rule_descriptions checks] }
+                           else
+                             :commentable
+                           end
+    scope = scope.preload(:user, :triage_set_by, :adjudicated_by, commentable_preloads)
 
     scope = scope.where(triage_status: triage_status) unless triage_status == 'all'
     scope = scope.where(section: section) if section.present? && section != 'all'
@@ -688,7 +694,7 @@ class Component < ApplicationRecord
 
     rows = page_records.map do |r|
       component_scoped_row = r.commentable_type == 'Component'
-      {
+      row = {
         id: r.id,
         rule_id: component_scoped_row ? nil : r.rule_id,
         rule_displayed_name: component_scoped_row ? '(component)' : rule_id_to_displayed[r.rule_id],
@@ -710,8 +716,21 @@ class Component < ApplicationRecord
         commenter_imported: r.commenter_imported?,
         responses_count: responses_count_lookup[r.id] || 0,
         reactions: { up: reaction_counts[[r.id, 'up']] || 0,
-                     down: reaction_counts[[r.id, 'down']] || 0 }
+                     down: reaction_counts[[r.id, 'down']] || 0 },
+        updated_at: r.updated_at
       }
+
+      if include_rule_content
+        is_component_scoped = component_scoped_row
+        row[:rule_title]            = is_component_scoped ? nil : r.commentable&.title
+        row[:rule_severity]         = is_component_scoped ? nil : r.commentable&.rule_severity
+        row[:rule_status]           = is_component_scoped ? nil : r.commentable&.status
+        row[:rule_fixtext]          = is_component_scoped ? nil : r.commentable&.fixtext
+        row[:rule_vuln_discussion]  = is_component_scoped ? nil : r.commentable&.disa_rule_descriptions&.first&.vuln_discussion
+        row[:rule_check_content]    = is_component_scoped ? nil : r.commentable&.checks&.first&.content
+      end
+
+      row
     end
 
     {
