@@ -307,4 +307,72 @@ describe("TriageSplitView", () => {
     expect(thread.exists()).toBe(true);
     expect(thread.props("parentReviewId")).toBe(1);
   });
+
+  // ── Admin actions (migrated from modal) ────────────────────────────
+
+  it("shows admin actions disclosure for admin role", () => {
+    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    expect(w.find('[data-testid="open-admin-actions"]').exists()).toBe(true);
+  });
+
+  it("hides admin actions for non-admin roles", () => {
+    const w = mount(TriageSplitView, {
+      localVue,
+      propsData: baseProps({ effectivePermissions: "author" }),
+    });
+    expect(w.find('[data-testid="open-admin-actions"]').exists()).toBe(false);
+  });
+
+  it("posts to admin_withdraw with audit comment", async () => {
+    axios.patch.mockResolvedValue({
+      data: { review: { ...rows[0], triage_status: "withdrawn" } },
+    });
+    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    w.vm.adminAction = "force-withdraw";
+    w.vm.adminAuditComment = "spam content";
+    await w.vm.submitAdminAction();
+    await flushPromises(w);
+    expect(axios.patch).toHaveBeenCalledWith(
+      "/reviews/1/admin_withdraw",
+      expect.objectContaining({ audit_comment: "spam content" }),
+    );
+    expect(w.emitted("triaged")).toHaveLength(1);
+  });
+
+  it("posts DELETE to admin_destroy with audit comment and typed-id confirmation", async () => {
+    axios.delete.mockResolvedValue({ data: { ok: true } });
+    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    w.vm.adminAction = "hard-delete";
+    w.vm.adminAuditComment = "PII removed";
+    w.vm.adminConfirmationId = "1";
+    await w.vm.submitAdminAction();
+    await flushPromises(w);
+    expect(axios.delete).toHaveBeenCalledWith(
+      "/reviews/1/admin_destroy",
+      expect.objectContaining({
+        data: expect.objectContaining({ audit_comment: "PII removed" }),
+      }),
+    );
+    expect(w.emitted("destroyed")).toHaveLength(1);
+    expect(w.emitted("destroyed")[0][0]).toBe(1);
+  });
+
+  it("canSubmitAdminAction requires audit comment", () => {
+    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    w.vm.adminAction = "force-withdraw";
+    w.vm.adminAuditComment = "";
+    expect(w.vm.canSubmitAdminAction).toBe(false);
+    w.vm.adminAuditComment = "reason";
+    expect(w.vm.canSubmitAdminAction).toBe(true);
+  });
+
+  it("canSubmitAdminAction for hard-delete requires typed-id match", () => {
+    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    w.vm.adminAction = "hard-delete";
+    w.vm.adminAuditComment = "reason";
+    w.vm.adminConfirmationId = "wrong";
+    expect(w.vm.canSubmitAdminAction).toBe(false);
+    w.vm.adminConfirmationId = "1";
+    expect(w.vm.canSubmitAdminAction).toBe(true);
+  });
 });

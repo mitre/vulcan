@@ -69,6 +69,7 @@
       @triaged="onTriaged"
       @adjudicated="onAdjudicated"
       @response-posted="onTriageResponsePosted"
+      @destroyed="onDestroyed"
       @open-reply-composer="openReplyComposer"
     />
 
@@ -183,22 +184,6 @@
       />
     </div>
 
-    <!-- Triage modal — fully implemented in Task 15. componentId is passed
-         through so the duplicate-of picker (Task 24) can scope its candidate
-         search to the right component, both in component-scope (componentId
-         prop on this view) and project-scope (selectedRow.component_id). -->
-    <CommentTriageModal
-      :review="selectedRow"
-      :component-id="modalComponentId"
-      :effective-permissions="effectivePermissions"
-      @triaged="onTriaged"
-      @adjudicated="onAdjudicated"
-      @response-posted="onTriageResponsePosted"
-      @destroyed="onDestroyed"
-      @open-reply-composer="onTriageModalReplyRequested"
-      @hidden="selectedRow = null"
-    />
-
     <!-- Composer. Reply mode (composerReplyRow set) or new component-level
          comment mode (composerNewComponent set). -->
     <CommentComposerModal
@@ -226,7 +211,6 @@ import SectionLabel from "../shared/SectionLabel.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
 import CommentThread from "../shared/CommentThread.vue";
 import TriageSplitView from "../triage/TriageSplitView.vue";
-import CommentTriageModal from "./CommentTriageModal.vue";
 import CommentComposerModal from "./CommentComposerModal.vue";
 
 export default {
@@ -237,7 +221,6 @@ export default {
     FilterDropdown,
     CommentThread,
     TriageSplitView,
-    CommentTriageModal,
     CommentComposerModal,
   },
   // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because
@@ -297,7 +280,6 @@ export default {
       sortDesc: false,
       splitMode: false,
       splitCommentId: null,
-      selectedRow: null,
       // Row that the inline reply composer is open against. Null when
       // the composer is not open. Populated when a row's CommentThread
       // emits 'reply' (or the triage modal asks for a reply composer).
@@ -339,12 +321,6 @@ export default {
           : `/components/${this.componentId}/export/disposition_csv`;
       if (!this.filterStatus || this.filterStatus === "all") return base;
       return `${base}?triage_status=${encodeURIComponent(this.filterStatus)}`;
-    },
-    modalComponentId() {
-      // Component-scope: this view's componentId. Project-aggregate scope:
-      // selectedRow carries component_id per row (different rows can be on
-      // different components). Picker (Task 24) needs the right one.
-      return this.componentId || this.selectedRow?.component_id || null;
     },
     statusOptions() {
       const friendly = Object.entries(TRIAGE_LABELS)
@@ -551,10 +527,6 @@ export default {
     openReplyComposer(row) {
       this.composerReplyRow = row;
       this.$nextTick(() => this.$bvModal.show("comment-composer-modal"));
-    },
-    onTriageModalReplyRequested(row) {
-      this.$bvModal.hide("comment-triage-modal");
-      this.openReplyComposer(row);
     },
     openComponentComposer() {
       this.composerReplyRow = null;
