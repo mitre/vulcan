@@ -275,8 +275,8 @@ export default {
       // .sync-bound to b-table so column-header clicks update state and
       // the active sort-direction arrow renders. BootstrapVue 2 only
       // shows the arrow when sortBy/sortDesc are controlled.
-      sortBy: "created_at",
-      sortDesc: true,
+      sortBy: "id",
+      sortDesc: false,
       selectedRow: null,
       // Row that the inline reply composer is open against. Null when
       // the composer is not open. Populated when a row's CommentThread

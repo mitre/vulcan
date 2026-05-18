@@ -581,6 +581,17 @@ describe("ComponentComments", () => {
     });
   });
 
+  // REQUIREMENT: default sort is by # ascending (oldest/lowest first)
+  // so the queue reads top-to-bottom in submission order.
+  it("defaults to sorting by id ascending", () => {
+    const wrapper = mount(ComponentComments, {
+      propsData: { componentId: 42 },
+      stubs: SHARED_STUBS,
+    });
+    expect(wrapper.vm.sortBy).toBe("id");
+    expect(wrapper.vm.sortDesc).toBe(false);
+  });
+
   // REQUIREMENT: comment # column must be sortable so triagers can
   // order the queue by comment ID (arrival order, oldest-first, etc.).
   it("marks the # (id) column as sortable", () => {
