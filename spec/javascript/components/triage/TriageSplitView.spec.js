@@ -11,6 +11,28 @@ const flushPromises = async (wrapper) => {
   if (wrapper) await wrapper.vm.$nextTick();
 };
 
+const ruleContent1 = {
+  rule_displayed_name: "CNTR-01-000001",
+  title: "The container platform must limit privileges",
+  rule_severity: "CAT II",
+  status: "Applicable - Configurable",
+  fixtext: "Configure the container platform to restrict access",
+  check_content: "Verify that the container runtime enforces privilege restrictions",
+  vuln_discussion: "Without proper privilege restriction, containers could escalate",
+  vendor_comments: null,
+};
+
+const ruleContent2 = {
+  rule_displayed_name: "CNTR-01-000002",
+  title: "Test rule 2",
+  rule_severity: "CAT III",
+  status: "Applicable - Configurable",
+  fixtext: null,
+  check_content: null,
+  vuln_discussion: null,
+  vendor_comments: null,
+};
+
 const rows = [
   {
     id: 1,
@@ -24,12 +46,7 @@ const rows = [
     created_at: "2026-05-01T00:00:00Z",
     adjudicated_at: null,
     updated_at: "2026-05-01T00:00:00Z",
-    rule_title: "The container platform must limit privileges",
-    rule_severity: "CAT II",
-    rule_status: "Applicable - Configurable",
-    rule_fixtext: "Configure the container platform to restrict access",
-    rule_check_content: "Verify that the container runtime enforces privilege restrictions",
-    rule_vuln_discussion: "Without proper privilege restriction, containers could escalate",
+    rule_content: ruleContent1,
   },
   {
     id: 2,
@@ -43,12 +60,7 @@ const rows = [
     created_at: "2026-05-01T01:00:00Z",
     adjudicated_at: null,
     updated_at: "2026-05-01T01:00:00Z",
-    rule_title: "The container platform must limit privileges",
-    rule_severity: "CAT II",
-    rule_status: "Applicable - Configurable",
-    rule_fixtext: "Configure the container platform to restrict access",
-    rule_check_content: "Verify that the container runtime enforces privilege restrictions",
-    rule_vuln_discussion: "Without proper privilege restriction, containers could escalate",
+    rule_content: ruleContent1,
   },
   {
     id: 3,
@@ -62,12 +74,7 @@ const rows = [
     created_at: "2026-05-01T02:00:00Z",
     adjudicated_at: null,
     updated_at: "2026-05-01T02:00:00Z",
-    rule_title: "Test rule 2",
-    rule_severity: "CAT III",
-    rule_status: "Applicable - Configurable",
-    rule_fixtext: null,
-    rule_check_content: null,
-    rule_vuln_discussion: null,
+    rule_content: ruleContent2,
   },
 ];
 
@@ -106,14 +113,20 @@ describe("TriageSplitView", () => {
 
   // ── Rule content passed to RuleContextPanel ────────────────────────
 
-  it("passes rule content from the active row to RuleContextPanel", () => {
+  it("passes rule_content from the active row to RuleContextPanel", () => {
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
     const panel = w.findComponent({ name: "RuleContextPanel" });
     expect(panel.exists()).toBe(true);
     expect(panel.props("ruleContent")).toBeTruthy();
-    expect(panel.props("ruleContent").rule_title).toBe(
+    expect(panel.props("ruleContent").title).toBe(
       "The container platform must limit privileges",
     );
+  });
+
+  it("passes ruleStatus from the active comment's rule_content.status", () => {
+    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const panel = w.findComponent({ name: "RuleContextPanel" });
+    expect(panel.props("ruleStatus")).toBe("Applicable - Configurable");
   });
 
   it("passes focusedSection from the active comment's section", () => {

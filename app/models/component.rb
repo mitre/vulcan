@@ -720,15 +720,7 @@ class Component < ApplicationRecord
         updated_at: r.updated_at
       }
 
-      if include_rule_content
-        is_component_scoped = component_scoped_row
-        row[:rule_title]            = is_component_scoped ? nil : r.commentable&.title
-        row[:rule_severity]         = is_component_scoped ? nil : r.commentable&.rule_severity
-        row[:rule_status]           = is_component_scoped ? nil : r.commentable&.status
-        row[:rule_fixtext]          = is_component_scoped ? nil : r.commentable&.fixtext
-        row[:rule_vuln_discussion]  = is_component_scoped ? nil : r.commentable&.disa_rule_descriptions&.first&.vuln_discussion
-        row[:rule_check_content]    = is_component_scoped ? nil : r.commentable&.checks&.first&.content
-      end
+      row[:rule_content] = include_rule_content ? serialize_rule_content(r, component_scoped_row) : nil if include_rule_content
 
       row
     end
@@ -1026,5 +1018,43 @@ class Component < ApplicationRecord
     return if releasable
 
     errors.add(:base, 'Cannot release a component that contains rules that are not yet locked')
+  end
+
+  def serialize_rule_content(review, component_scoped)
+    return nil if component_scoped
+
+    rule = review.commentable
+    disa = rule&.disa_rule_descriptions&.first
+    check = rule&.checks&.first
+    {
+      title: rule&.title,
+      rule_severity: rule&.rule_severity,
+      status: rule&.status,
+      fixtext: rule&.fixtext,
+      status_justification: rule&.status_justification,
+      vendor_comments: rule&.vendor_comments,
+      artifact_description: rule&.artifact_description,
+      fix_id: rule&.fix_id,
+      fixtext_fixref: rule&.fixtext_fixref,
+      version: rule&.version,
+      rule_weight: rule&.rule_weight,
+      ident: rule&.ident,
+      ident_system: rule&.ident_system,
+      vuln_discussion: disa&.vuln_discussion,
+      documentable: disa&.documentable,
+      false_positives: disa&.false_positives,
+      false_negatives: disa&.false_negatives,
+      mitigations_available: disa&.mitigations_available,
+      mitigations: disa&.mitigations,
+      poam_available: disa&.poam_available,
+      poam: disa&.poam,
+      potential_impacts: disa&.potential_impacts,
+      third_party_tools: disa&.third_party_tools,
+      mitigation_control: disa&.mitigation_control,
+      responsibility: disa&.responsibility,
+      ia_controls: disa&.ia_controls,
+      severity_override_guidance: disa&.severity_override_guidance,
+      check_content: check&.content
+    }
   end
 end

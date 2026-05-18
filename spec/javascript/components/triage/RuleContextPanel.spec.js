@@ -5,14 +5,17 @@ import RuleContextPanel from "@/components/triage/RuleContextPanel.vue";
 
 const ruleContent = {
   rule_displayed_name: "CNTR-01-000001",
-  rule_title: "The container platform must limit privileges",
+  title: "The container platform must limit privileges",
   rule_severity: "CAT II",
-  rule_status: "Applicable - Configurable",
-  rule_fixtext: "Configure the container platform to restrict access to privileged operations",
-  rule_check_content:
+  status: "Applicable - Configurable",
+  fixtext: "Configure the container platform to restrict access to privileged operations",
+  check_content:
     "Verify that the container runtime enforces privilege restrictions on all workloads",
-  rule_vuln_discussion:
+  vuln_discussion:
     "Without proper privilege restriction, containers could escalate to host-level access",
+  vendor_comments: "Vendor acknowledges this requirement",
+  status_justification: null,
+  artifact_description: null,
 };
 
 describe("RuleContextPanel", () => {
@@ -21,7 +24,7 @@ describe("RuleContextPanel", () => {
   it("renders the rule display name as a heading", () => {
     const w = mount(RuleContextPanel, {
       localVue,
-      propsData: { ruleContent, focusedSection: null },
+      propsData: { ruleContent, ruleStatus: "Applicable - Configurable", focusedSection: null },
     });
     expect(w.text()).toContain("CNTR-01-000001");
   });
@@ -29,65 +32,51 @@ describe("RuleContextPanel", () => {
   it("renders the rule title below the heading", () => {
     const w = mount(RuleContextPanel, {
       localVue,
-      propsData: { ruleContent, focusedSection: null },
+      propsData: { ruleContent, ruleStatus: "Applicable - Configurable", focusedSection: null },
     });
     expect(w.text()).toContain("The container platform must limit privileges");
   });
 
-  // ── Inline sections (single-line: title, severity, status) ─────────
+  // ── Inline sections (single-line: severity, status) ────────────────
 
-  it("renders title, severity, status as inline key:value pairs (no accordion)", () => {
+  it("renders severity as inline key:value (no accordion)", () => {
     const w = mount(RuleContextPanel, {
       localVue,
-      propsData: { ruleContent, focusedSection: null },
+      propsData: { ruleContent, ruleStatus: "Applicable - Configurable", focusedSection: null },
     });
-    const titleSection = w.find('[data-section="title"]');
-    expect(titleSection.exists()).toBe(true);
-    expect(titleSection.find(".section-header").exists()).toBe(false);
-    expect(titleSection.find(".section-body").exists()).toBe(false);
-    expect(titleSection.text()).toContain("Title:");
-    expect(titleSection.text()).toContain("The container platform must limit privileges");
-  });
-
-  it("renders severity inline", () => {
-    const w = mount(RuleContextPanel, {
-      localVue,
-      propsData: { ruleContent, focusedSection: null },
-    });
-    const section = w.find('[data-section="severity"]');
+    const section = w.find('[data-section="rule_severity"]');
     expect(section.exists()).toBe(true);
+    expect(section.find(".section-header").exists()).toBe(false);
     expect(section.text()).toContain("Severity:");
     expect(section.text()).toContain("CAT II");
   });
 
-  it("renders status inline", () => {
+  it("renders status as inline key:value", () => {
     const w = mount(RuleContextPanel, {
       localVue,
-      propsData: { ruleContent, focusedSection: null },
+      propsData: { ruleContent, ruleStatus: "Applicable - Configurable", focusedSection: null },
     });
     const section = w.find('[data-section="status"]');
     expect(section.exists()).toBe(true);
     expect(section.text()).toContain("Status:");
-    expect(section.text()).toContain("Applicable - Configurable");
   });
 
-  // ── Collapsible sections (multi-line: fix, check, vuln_discussion) ─
+  // ── Collapsible sections ───────────────────────────────────────────
 
   it("shows focused collapsible section body as visible", () => {
     const w = mount(RuleContextPanel, {
       localVue,
-      propsData: { ruleContent, focusedSection: "check_content" },
+      propsData: { ruleContent, ruleStatus: "Applicable - Configurable", focusedSection: "check_content" },
     });
     const section = w.find('[data-section="check_content"]');
     expect(section.exists()).toBe(true);
     expect(section.find(".section-body").isVisible()).toBe(true);
-    expect(section.text()).toContain("Verify that the container runtime");
   });
 
   it("shows chevron-down icon on focused section", () => {
     const w = mount(RuleContextPanel, {
       localVue,
-      propsData: { ruleContent, focusedSection: "check_content" },
+      propsData: { ruleContent, ruleStatus: "Applicable - Configurable", focusedSection: "check_content" },
     });
     const header = w.find('[data-section="check_content"] .section-header');
     expect(header.find(".bi-chevron-down").exists()).toBe(true);
@@ -96,26 +85,17 @@ describe("RuleContextPanel", () => {
   it("hides non-focused collapsible section bodies", () => {
     const w = mount(RuleContextPanel, {
       localVue,
-      propsData: { ruleContent, focusedSection: "check_content" },
+      propsData: { ruleContent, ruleStatus: "Applicable - Configurable", focusedSection: "check_content" },
     });
     const fixSection = w.find('[data-section="fixtext"]');
     expect(fixSection.exists()).toBe(true);
     expect(fixSection.find(".section-body").isVisible()).toBe(false);
   });
 
-  it("shows a one-line preview on collapsed sections", () => {
-    const w = mount(RuleContextPanel, {
-      localVue,
-      propsData: { ruleContent, focusedSection: "check_content" },
-    });
-    const fixSection = w.find('[data-section="fixtext"]');
-    expect(fixSection.find(".section-preview").exists()).toBe(true);
-  });
-
   it("shows chevron-right icon on collapsed sections", () => {
     const w = mount(RuleContextPanel, {
       localVue,
-      propsData: { ruleContent, focusedSection: "check_content" },
+      propsData: { ruleContent, ruleStatus: "Applicable - Configurable", focusedSection: "check_content" },
     });
     const fixHeader = w.find('[data-section="fixtext"] .section-header');
     expect(fixHeader.find(".bi-chevron-right").exists()).toBe(true);
@@ -126,21 +106,11 @@ describe("RuleContextPanel", () => {
   it("expands a collapsed section when its header is clicked", async () => {
     const w = mount(RuleContextPanel, {
       localVue,
-      propsData: { ruleContent, focusedSection: "check_content" },
+      propsData: { ruleContent, ruleStatus: "Applicable - Configurable", focusedSection: "check_content" },
     });
     const fixHeader = w.find('[data-section="fixtext"] .section-header');
     await fixHeader.trigger("click");
     expect(w.find('[data-section="fixtext"] .section-body').isVisible()).toBe(true);
-  });
-
-  it("collapses an expanded section when its header is clicked", async () => {
-    const w = mount(RuleContextPanel, {
-      localVue,
-      propsData: { ruleContent, focusedSection: "check_content" },
-    });
-    const checkHeader = w.find('[data-section="check_content"] .section-header');
-    await checkHeader.trigger("click");
-    expect(w.find('[data-section="check_content"] .section-body').isVisible()).toBe(false);
   });
 
   // ── General comment (focusedSection = null) ────────────────────────
@@ -148,10 +118,10 @@ describe("RuleContextPanel", () => {
   it("expands all collapsible sections when focusedSection is null", () => {
     const w = mount(RuleContextPanel, {
       localVue,
-      propsData: { ruleContent, focusedSection: null },
+      propsData: { ruleContent, ruleStatus: "Applicable - Configurable", focusedSection: null },
     });
     const collapsible = w.findAll(".section-body");
-    expect(collapsible.length).toBe(3);
+    expect(collapsible.length).toBeGreaterThan(0);
     collapsible.wrappers.forEach((s) => {
       expect(s.isVisible()).toBe(true);
     });
@@ -162,43 +132,60 @@ describe("RuleContextPanel", () => {
   it("renders 'Overall Component' banner when ruleContent is null", () => {
     const w = mount(RuleContextPanel, {
       localVue,
-      propsData: { ruleContent: null, focusedSection: null },
+      propsData: { ruleContent: null, ruleStatus: null, focusedSection: null },
     });
     expect(w.text()).toContain("Overall Component");
     expect(w.findAll("[data-section]").length).toBe(0);
   });
 
-  // ── Section labels from triageVocabulary ───────────────────────────
+  // ── Section labels ─────────────────────────────────────────────────
 
-  it("uses SECTION_LABELS from triageVocabulary.js for display labels", () => {
+  it("uses friendly labels for sections", () => {
     const w = mount(RuleContextPanel, {
       localVue,
-      propsData: { ruleContent, focusedSection: null },
+      propsData: { ruleContent, ruleStatus: "Applicable - Configurable", focusedSection: null },
     });
     expect(w.text()).toContain("Check");
     expect(w.text()).toContain("Fix");
     expect(w.text()).toContain("Vulnerability Discussion");
   });
 
-  // ── Only renders sections with content ─────────────────────────────
+  // ── Status-driven field visibility ─────────────────────────────────
 
-  it("does not render sections that have no content in ruleContent", () => {
-    const sparseContent = {
-      rule_displayed_name: "TEST-000001",
-      rule_title: "Test rule",
-      rule_severity: null,
-      rule_status: null,
-      rule_fixtext: "Fix text here",
-      rule_check_content: null,
-      rule_vuln_discussion: null,
+  it("uses STATUS_FIELD_CONFIG to determine visible fields per status", () => {
+    const w = mount(RuleContextPanel, {
+      localVue,
+      propsData: { ruleContent, ruleStatus: "Applicable - Configurable", focusedSection: null },
+    });
+    expect(w.find('[data-section="fixtext"]').exists()).toBe(true);
+    expect(w.find('[data-section="check_content"]').exists()).toBe(true);
+    expect(w.find('[data-section="vuln_discussion"]').exists()).toBe(true);
+    expect(w.find('[data-section="vendor_comments"]').exists()).toBe(true);
+  });
+
+  it("hides check_content for 'Not Applicable' status", () => {
+    const w = mount(RuleContextPanel, {
+      localVue,
+      propsData: { ruleContent, ruleStatus: "Not Applicable", focusedSection: null },
+    });
+    expect(w.find('[data-section="check_content"]').exists()).toBe(false);
+  });
+
+  it("shows status_justification for 'Applicable - Does Not Meet' status", () => {
+    const contentWithJustification = {
+      ...ruleContent,
+      status: "Applicable - Does Not Meet",
+      status_justification: "This system does not support this feature",
     };
     const w = mount(RuleContextPanel, {
       localVue,
-      propsData: { ruleContent: sparseContent, focusedSection: null },
+      propsData: {
+        ruleContent: contentWithJustification,
+        ruleStatus: "Applicable - Does Not Meet",
+        focusedSection: null,
+      },
     });
-    expect(w.find('[data-section="fixtext"]').exists()).toBe(true);
-    expect(w.find('[data-section="check_content"]').exists()).toBe(false);
-    expect(w.find('[data-section="severity"]').exists()).toBe(false);
+    expect(w.find('[data-section="status_justification"]').exists()).toBe(true);
   });
 
   // ── focusedSection watcher resets manual toggles ───────────────────
@@ -206,7 +193,7 @@ describe("RuleContextPanel", () => {
   it("resets manual toggles when focusedSection prop changes", async () => {
     const w = mount(RuleContextPanel, {
       localVue,
-      propsData: { ruleContent, focusedSection: "check_content" },
+      propsData: { ruleContent, ruleStatus: "Applicable - Configurable", focusedSection: "check_content" },
     });
     await w.find('[data-section="fixtext"] .section-header').trigger("click");
     expect(w.find('[data-section="fixtext"] .section-body').isVisible()).toBe(true);

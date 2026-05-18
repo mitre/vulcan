@@ -16,7 +16,11 @@
 
     <b-row v-if="activeComment" class="mt-3">
       <b-col lg="5">
-        <RuleContextPanel :rule-content="activeComment" :focused-section="activeComment.section" />
+        <RuleContextPanel
+          :rule-content="activeComment.rule_content"
+          :rule-status="activeComment.rule_content ? activeComment.rule_content.status : null"
+          :focused-section="activeComment.section"
+        />
       </b-col>
       <b-col lg="7">
         <div class="mb-2">

@@ -1135,40 +1135,38 @@ RSpec.describe Component do
       end
     end
 
-    it 'includes 6 rule content fields when include_rule_content: true' do
+    it 'includes rule_content hash with all fields when include_rule_content: true' do
       result = shared_component.paginated_comments(triage_status: 'all', include_rule_content: true)
       c1_row = result[:rows].find { |r| r[:id] == @c1.id }
       rule = shared_component.rules.find_by(id: @c1.rule_id)
+      rc = c1_row[:rule_content]
 
-      expect(c1_row[:rule_title]).to eq(rule.title)
-      expect(c1_row[:rule_severity]).to eq(rule.rule_severity)
-      expect(c1_row[:rule_status]).to eq(rule.status)
-      expect(c1_row[:rule_fixtext]).to eq(rule.fixtext)
-      expect(c1_row[:rule_vuln_discussion]).to eq(rule.disa_rule_descriptions.first&.vuln_discussion)
-      expect(c1_row[:rule_check_content]).to eq(rule.checks.first&.content)
+      expect(rc).to be_a(Hash)
+      expect(rc[:title]).to eq(rule.title)
+      expect(rc[:rule_severity]).to eq(rule.rule_severity)
+      expect(rc[:status]).to eq(rule.status)
+      expect(rc[:fixtext]).to eq(rule.fixtext)
+      expect(rc[:vuln_discussion]).to eq(rule.disa_rule_descriptions.first&.vuln_discussion)
+      expect(rc[:check_content]).to eq(rule.checks.first&.content)
+      expect(rc[:vendor_comments]).to eq(rule.vendor_comments)
+      expect(rc[:status_justification]).to eq(rule.status_justification)
+      expect(rc[:artifact_description]).to eq(rule.artifact_description)
     end
 
-    it 'returns nil rule content fields for component-scoped comments with include_rule_content: true' do
+    it 'returns nil rule_content for component-scoped comments with include_rule_content: true' do
       comp_review = Review.create!(
         action: 'comment', comment: 'component-level feedback',
         user: pc_viewer, commentable: shared_component, section: nil
       )
       result = shared_component.paginated_comments(triage_status: 'all', include_rule_content: true)
       comp_row = result[:rows].find { |r| r[:id] == comp_review.id }
-      expect(comp_row[:rule_title]).to be_nil
-      expect(comp_row[:rule_severity]).to be_nil
-      expect(comp_row[:rule_check_content]).to be_nil
+      expect(comp_row[:rule_content]).to be_nil
     end
 
-    it 'omits rule content keys in default table mode (no include_rule_content)' do
+    it 'omits rule_content key in default table mode (no include_rule_content)' do
       result = shared_component.paginated_comments(triage_status: 'all')
       c1_row = result[:rows].find { |r| r[:id] == @c1.id }
-      expect(c1_row).not_to have_key(:rule_title)
-      expect(c1_row).not_to have_key(:rule_severity)
-      expect(c1_row).not_to have_key(:rule_fixtext)
-      expect(c1_row).not_to have_key(:rule_check_content)
-      expect(c1_row).not_to have_key(:rule_vuln_discussion)
-      expect(c1_row).not_to have_key(:rule_status)
+      expect(c1_row).not_to have_key(:rule_content)
     end
 
     it 'always includes updated_at for optimistic locking regardless of include_rule_content' do
