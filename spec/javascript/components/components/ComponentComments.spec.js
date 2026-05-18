@@ -581,6 +581,49 @@ describe("ComponentComments", () => {
     });
   });
 
+  // REQUIREMENT: comment # column must be sortable so triagers can
+  // order the queue by comment ID (arrival order, oldest-first, etc.).
+  it("marks the # (id) column as sortable", () => {
+    const wrapper = mount(ComponentComments, {
+      propsData: { componentId: 42 },
+      stubs: SHARED_STUBS,
+    });
+    const idField = wrapper.vm.fields.find((f) => f.key === "id");
+    expect(idField).toBeDefined();
+    expect(idField.sortable).toBe(true);
+  });
+
+  // REQUIREMENT: full comment text must be visible in the table cell —
+  // truncation to 80 chars + "..." hides context that triagers need
+  // to see without opening the modal.
+  it("renders full comment text without truncation", async () => {
+    const longComment = "A".repeat(200);
+    axios.get.mockResolvedValueOnce({
+      data: {
+        rows: [
+          {
+            id: 1,
+            rule_id: 1,
+            rule_displayed_name: "X-1",
+            commentable_type: "Rule",
+            section: null,
+            author_name: "Tester",
+            comment: longComment,
+            created_at: "2026-05-01T00:00:00Z",
+            triage_status: "pending",
+            adjudicated_at: null,
+          },
+        ],
+        pagination: { page: 1, per_page: 25, total: 1 },
+      },
+    });
+    const wrapper = mount(ComponentComments, {
+      propsData: { componentId: 42, effectivePermissions: "author" },
+    });
+    await flushPromises(wrapper);
+    expect(wrapper.text()).toContain(longComment);
+  });
+
   it("surfaces fetch errors via alertOrNotifyResponse without crashing", async () => {
     axios.get.mockRejectedValueOnce({ response: { status: 500, data: {} } });
     const wrapper = mount(ComponentComments, {

@@ -96,7 +96,7 @@
         <SectionLabel :section="value" :commentable-type="item.commentable_type" />
       </template>
       <template #cell(comment)="{ item, value }">
-        <div :title="value">{{ truncate(value, 80) }}</div>
+        <div class="comment-text">{{ value }}</div>
         <CommentThread
           :ref="`thread-${item.id}`"
           :parent-review-id="item.id"
@@ -247,7 +247,7 @@ export default {
   data() {
     const persisted = this.loadPersistedFilters();
     const fields = [
-      { key: "id", label: "#", sortable: false },
+      { key: "id", label: "#", sortable: true },
       { key: "rule_displayed_name", label: "Rule", sortable: true },
     ];
     // Project-scope view spans multiple components — show a Component
@@ -394,10 +394,6 @@ export default {
         // eslint-disable-next-line no-console
         console.warn("ComponentComments: filter persistence failed", e);
       }
-    },
-    truncate(text, n) {
-      if (!text) return "";
-      return text.length > n ? `${text.slice(0, n)}…` : text;
     },
     onFilterChanged() {
       this.page = 1;
