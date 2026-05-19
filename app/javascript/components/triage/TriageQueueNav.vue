@@ -14,7 +14,10 @@
       </b-button>
 
       <span class="small mr-2">
-        <strong>{{ currentIndex + 1 }}</strong> of <strong>{{ comments.length }}</strong>
+        Rule <strong>{{ currentRuleIndex + 1 }}</strong> of
+        <strong>{{ ruleGroups.length }}</strong>
+        — Comment <strong>{{ currentCommentInRule + 1 }}</strong> of
+        <strong>{{ currentRuleGroup ? currentRuleGroup.comments.length : 0 }}</strong>
       </span>
 
       <b-button
@@ -39,23 +42,28 @@
         no-caret
         class="queue-dropdown"
       >
-        <b-dropdown-item
-          v-for="comment in comments"
-          :key="comment.id"
-          data-testid="queue-dropdown-item"
-          :active="comment.id === currentId"
-          @click="$emit('select', comment.id)"
-        >
-          <span class="small">
-            #{{ comment.id }}
-            {{ comment.rule_displayed_name }}
-          </span>
-          <TriageStatusBadge
-            :status="comment.triage_status"
-            :adjudicated-at="comment.adjudicated_at"
-            class="ml-2"
-          />
-        </b-dropdown-item>
+        <template v-for="group in ruleGroups">
+          <b-dropdown-header :key="'hdr-' + group.ruleId" data-testid="queue-dropdown-rule-header">
+            {{ group.ruleName }} ({{ group.comments.length }})
+          </b-dropdown-header>
+          <b-dropdown-item
+            v-for="comment in group.comments"
+            :key="comment.id"
+            data-testid="queue-dropdown-item"
+            :active="comment.id === currentId"
+            @click="$emit('select', comment.id)"
+          >
+            <span class="small ml-2">
+              #{{ comment.id }}
+              <span v-if="comment.section" class="text-muted">· {{ comment.section }}</span>
+            </span>
+            <TriageStatusBadge
+              :status="comment.triage_status"
+              :adjudicated-at="comment.adjudicated_at"
+              class="ml-2"
+            />
+          </b-dropdown-item>
+        </template>
       </b-dropdown>
     </template>
 
@@ -74,30 +82,84 @@ export default {
     currentId: { type: [Number, String], default: null },
   },
   computed: {
-    currentIndex() {
-      if (!this.currentId) return -1;
-      return this.comments.findIndex((c) => c.id === this.currentId);
+    ruleGroups() {
+      const groups = [];
+      const seen = new Map();
+      for (const c of this.comments) {
+        const key = c.rule_id || `component-${c.id}`;
+        if (!seen.has(key)) {
+          const group = {
+            ruleId: key,
+            ruleName: c.rule_displayed_name || "(component)",
+            comments: [],
+          };
+          seen.set(key, group);
+          groups.push(group);
+        }
+        seen.get(key).comments.push(c);
+      }
+      return groups;
+    },
+    currentPosition() {
+      for (let gi = 0; gi < this.ruleGroups.length; gi++) {
+        const group = this.ruleGroups[gi];
+        for (let ci = 0; ci < group.comments.length; ci++) {
+          if (group.comments[ci].id === this.currentId) {
+            return { ruleIndex: gi, commentIndex: ci };
+          }
+        }
+      }
+      return { ruleIndex: -1, commentIndex: -1 };
+    },
+    currentRuleIndex() {
+      return this.currentPosition.ruleIndex;
+    },
+    currentCommentInRule() {
+      return this.currentPosition.commentIndex;
+    },
+    currentRuleGroup() {
+      return this.ruleGroups[this.currentRuleIndex] || null;
+    },
+    flatIndex() {
+      let idx = 0;
+      for (let gi = 0; gi < this.ruleGroups.length; gi++) {
+        for (let ci = 0; ci < this.ruleGroups[gi].comments.length; ci++) {
+          if (this.ruleGroups[gi].comments[ci].id === this.currentId) return idx;
+          idx++;
+        }
+      }
+      return -1;
     },
     hasPrev() {
-      return this.currentIndex > 0;
+      return this.flatIndex > 0;
     },
     hasNext() {
-      return this.currentIndex >= 0 && this.currentIndex < this.comments.length - 1;
+      return this.flatIndex >= 0 && this.flatIndex < this.comments.length - 1;
     },
     pendingCount() {
       return this.comments.filter((c) => c.triage_status === "pending").length;
     },
   },
   methods: {
-    goPrev() {
-      if (this.hasPrev) {
-        this.$emit("select", this.comments[this.currentIndex - 1].id);
+    flatComment(offset) {
+      const target = this.flatIndex + offset;
+      if (target < 0 || target >= this.comments.length) return null;
+      let idx = 0;
+      for (const group of this.ruleGroups) {
+        for (const c of group.comments) {
+          if (idx === target) return c.id;
+          idx++;
+        }
       }
+      return null;
+    },
+    goPrev() {
+      const id = this.flatComment(-1);
+      if (id !== null) this.$emit("select", id);
     },
     goNext() {
-      if (this.hasNext) {
-        this.$emit("select", this.comments[this.currentIndex + 1].id);
-      }
+      const id = this.flatComment(1);
+      if (id !== null) this.$emit("select", id);
     },
   },
 };

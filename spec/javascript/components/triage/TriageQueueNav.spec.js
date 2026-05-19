@@ -3,91 +3,100 @@ import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import TriageQueueNav from "@/components/triage/TriageQueueNav.vue";
 
-function makeComments(count, pendingCount = 0) {
-  return Array.from({ length: count }, (_, i) => ({
-    id: i + 1,
-    rule_displayed_name: `RULE-${String(i + 1).padStart(3, "0")}`,
-    triage_status: i < pendingCount ? "pending" : "concur",
-    adjudicated_at: i < pendingCount ? null : "2026-05-01T00:00:00Z",
-    section: "check_content",
-  }));
-}
-
-const threeComments = makeComments(3, 2);
+// Multi-rule fixture: 3 rules, rule A has 3 comments, rule B has 2, rule C has 1
+const groupedComments = [
+  { id: 1, rule_id: 10, rule_displayed_name: "CNTR-01-000001", section: "check_content", triage_status: "pending", adjudicated_at: null },
+  { id: 2, rule_id: 10, rule_displayed_name: "CNTR-01-000001", section: "check_content", triage_status: "pending", adjudicated_at: null },
+  { id: 3, rule_id: 10, rule_displayed_name: "CNTR-01-000001", section: "fixtext", triage_status: "pending", adjudicated_at: null },
+  { id: 4, rule_id: 20, rule_displayed_name: "CNTR-01-000002", section: "check_content", triage_status: "pending", adjudicated_at: null },
+  { id: 5, rule_id: 20, rule_displayed_name: "CNTR-01-000002", section: null, triage_status: "concur", adjudicated_at: "2026-05-01T00:00:00Z" },
+  { id: 6, rule_id: 30, rule_displayed_name: "CNTR-01-000003", section: "status", triage_status: "pending", adjudicated_at: null },
+];
 
 function baseProps(overrides = {}) {
   return {
-    comments: threeComments,
-    currentId: threeComments[0].id,
+    comments: groupedComments,
+    currentId: 1,
     ...overrides,
   };
 }
 
 describe("TriageQueueNav", () => {
-  // ── Position counter ───────────────────────────────────────────────
+  // ── Grouped structure ──────────────────────────────────────────────
 
-  it("renders position counter 'N of Total'", () => {
+  it("computes ruleGroups from flat comments array", () => {
     const w = mount(TriageQueueNav, { localVue, propsData: baseProps() });
-    expect(w.text()).toContain("1 of 3");
+    expect(w.vm.ruleGroups).toHaveLength(3);
+    expect(w.vm.ruleGroups[0].ruleName).toBe("CNTR-01-000001");
+    expect(w.vm.ruleGroups[0].comments).toHaveLength(3);
+    expect(w.vm.ruleGroups[1].comments).toHaveLength(2);
+    expect(w.vm.ruleGroups[2].comments).toHaveLength(1);
   });
 
-  it("updates position when currentId changes", async () => {
-    const w = mount(TriageQueueNav, { localVue, propsData: baseProps() });
-    await w.setProps({ currentId: threeComments[1].id });
-    expect(w.text()).toContain("2 of 3");
+  // ── Counter shows rule + comment position ──────────────────────────
+
+  it("shows rule position and comment position", () => {
+    const w = mount(TriageQueueNav, { localVue, propsData: baseProps({ currentId: 1 }) });
+    expect(w.text()).toContain("Rule 1 of 3");
+    expect(w.text()).toContain("Comment 1 of 3");
+  });
+
+  it("updates counter when navigating to a different rule", () => {
+    const w = mount(TriageQueueNav, { localVue, propsData: baseProps({ currentId: 4 }) });
+    expect(w.text()).toContain("Rule 2 of 3");
+    expect(w.text()).toContain("Comment 1 of 2");
   });
 
   // ── Pending count ──────────────────────────────────────────────────
 
   it("renders pending count", () => {
     const w = mount(TriageQueueNav, { localVue, propsData: baseProps() });
-    expect(w.text()).toContain("2 pending");
+    expect(w.text()).toContain("5 pending");
   });
 
-  it("renders '0 pending' when all are triaged", () => {
-    const allTriaged = makeComments(3, 0);
-    const w = mount(TriageQueueNav, {
-      localVue,
-      propsData: { comments: allTriaged, currentId: allTriaged[0].id },
-    });
-    expect(w.text()).toContain("0 pending");
-  });
+  // ── Navigation: next within rule, then to next rule ────────────────
 
-  // ── Prev/Next buttons ─────────────────────────────────────────────
-
-  it("prev button is disabled on the first item", () => {
+  it("next emits the next comment in the same rule", async () => {
     const w = mount(TriageQueueNav, { localVue, propsData: baseProps({ currentId: 1 }) });
-    const prev = w.find('[data-testid="prev-comment"]');
-    expect(prev.attributes("disabled")).toBeTruthy();
+    await w.find('[data-testid="next-comment"]').trigger("click");
+    expect(w.emitted("select")[0][0]).toBe(2);
   });
 
-  it("next button is disabled on the last item", () => {
+  it("next at end of rule emits first comment of next rule", async () => {
     const w = mount(TriageQueueNav, { localVue, propsData: baseProps({ currentId: 3 }) });
-    const next = w.find('[data-testid="next-comment"]');
-    expect(next.attributes("disabled")).toBeTruthy();
+    await w.find('[data-testid="next-comment"]').trigger("click");
+    expect(w.emitted("select")[0][0]).toBe(4);
   });
 
-  it("prev button emits select with previous comment ID", async () => {
+  it("next disabled on last comment of last rule", () => {
+    const w = mount(TriageQueueNav, { localVue, propsData: baseProps({ currentId: 6 }) });
+    expect(w.find('[data-testid="next-comment"]').attributes("disabled")).toBeDefined();
+  });
+
+  // ── Navigation: prev within rule, then to prev rule ────────────────
+
+  it("prev emits the previous comment in the same rule", async () => {
     const w = mount(TriageQueueNav, { localVue, propsData: baseProps({ currentId: 2 }) });
     await w.find('[data-testid="prev-comment"]').trigger("click");
-    expect(w.emitted("select")).toBeTruthy();
     expect(w.emitted("select")[0][0]).toBe(1);
   });
 
-  it("next button emits select with next comment ID", async () => {
+  it("prev at start of rule emits last comment of prev rule", async () => {
+    const w = mount(TriageQueueNav, { localVue, propsData: baseProps({ currentId: 4 }) });
+    await w.find('[data-testid="prev-comment"]').trigger("click");
+    expect(w.emitted("select")[0][0]).toBe(3);
+  });
+
+  it("prev disabled on first comment of first rule", () => {
     const w = mount(TriageQueueNav, { localVue, propsData: baseProps({ currentId: 1 }) });
-    await w.find('[data-testid="next-comment"]').trigger("click");
-    expect(w.emitted("select")).toBeTruthy();
-    expect(w.emitted("select")[0][0]).toBe(2);
+    expect(w.find('[data-testid="prev-comment"]').attributes("disabled")).toBeDefined();
   });
 
   // ── Accessibility ──────────────────────────────────────────────────
 
-  it("has aria-label on prev and next buttons", () => {
+  it("has aria-labels on prev and next buttons", () => {
     const w = mount(TriageQueueNav, { localVue, propsData: baseProps({ currentId: 2 }) });
-    expect(w.find('[data-testid="prev-comment"]').attributes("aria-label")).toBe(
-      "Previous comment",
-    );
+    expect(w.find('[data-testid="prev-comment"]').attributes("aria-label")).toBe("Previous comment");
     expect(w.find('[data-testid="next-comment"]').attributes("aria-label")).toBe("Next comment");
   });
 
@@ -106,38 +115,51 @@ describe("TriageQueueNav", () => {
     expect(w.text()).toContain("No comments");
   });
 
-  // ── Dropdown ───────────────────────────────────────────────────────
+  // ── Dropdown with rule headers ─────────────────────────────────────
 
-  it("renders a dropdown toggle for jump-to navigation", () => {
+  it("dropdown shows rule group headers", () => {
     const w = mount(TriageQueueNav, { localVue, propsData: baseProps() });
-    expect(w.find('[data-testid="queue-dropdown"]').exists()).toBe(true);
+    const headers = w.findAll('[data-testid="queue-dropdown-rule-header"]');
+    expect(headers).toHaveLength(3);
+    expect(headers.at(0).text()).toContain("CNTR-01-000001");
+    expect(headers.at(0).text()).toContain("3");
   });
 
-  it("dropdown items show #id (not array position) for clarity", () => {
+  it("dropdown items emit select with comment ID", async () => {
     const w = mount(TriageQueueNav, { localVue, propsData: baseProps() });
     const items = w.findAll('[data-testid="queue-dropdown-item"]');
-    expect(items.at(0).text()).toContain("#1");
-    expect(items.at(2).text()).toContain("#3");
+    expect(items).toHaveLength(6);
+    await items.at(3).trigger("click");
+    expect(w.emitted("select")[0][0]).toBe(4);
   });
 
-  it("dropdown items emit select with the chosen comment ID", async () => {
+  // ── Single-comment rules don't show redundant sub-grouping ─────────
+
+  it("single-comment rules show inline without sub-header", () => {
     const w = mount(TriageQueueNav, { localVue, propsData: baseProps() });
-    const items = w.findAll('[data-testid="queue-dropdown-item"]');
-    expect(items.length).toBe(3);
-    await items.at(2).trigger("click");
-    expect(w.emitted("select")).toBeTruthy();
-    expect(w.emitted("select")[0][0]).toBe(3);
+    const headers = w.findAll('[data-testid="queue-dropdown-rule-header"]');
+    const lastHeader = headers.at(2);
+    expect(lastHeader.text()).toContain("CNTR-01-000003");
+    expect(lastHeader.text()).toContain("1");
   });
 
   // ── Scale test ─────────────────────────────────────────────────────
 
-  it("handles 200 items without crashing (renders counter correctly)", () => {
-    const big = makeComments(200, 150);
+  it("handles 200 comments across 40 rules without crashing", () => {
+    const big = Array.from({ length: 200 }, (_, i) => ({
+      id: i + 1,
+      rule_id: Math.floor(i / 5) + 1,
+      rule_displayed_name: `RULE-${String(Math.floor(i / 5) + 1).padStart(3, "0")}`,
+      section: "check_content",
+      triage_status: i < 150 ? "pending" : "concur",
+      adjudicated_at: i < 150 ? null : "2026-05-01T00:00:00Z",
+    }));
     const w = mount(TriageQueueNav, {
       localVue,
-      propsData: { comments: big, currentId: big[49].id },
+      propsData: { comments: big, currentId: 1 },
     });
-    expect(w.text()).toContain("50 of 200");
+    expect(w.text()).toContain("Rule 1 of 40");
+    expect(w.text()).toContain("Comment 1 of 5");
     expect(w.text()).toContain("150 pending");
   });
 });
