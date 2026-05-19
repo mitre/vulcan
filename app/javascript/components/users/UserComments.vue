@@ -206,15 +206,8 @@ export default {
         ruleName: row.rule_displayed_name,
       });
     },
-    afterComposerPosted(parentReviewId, _snapshot) {
+    afterComposerPosted() {
       this.fetch();
-      if (parentReviewId) {
-        this.$nextTick(() => {
-          const ref = this.$refs[`thread-${parentReviewId}`];
-          const thread = Array.isArray(ref) ? ref[0] : ref;
-          thread?.refresh?.();
-        });
-      }
     },
     async fetch() {
       this.loading = true;

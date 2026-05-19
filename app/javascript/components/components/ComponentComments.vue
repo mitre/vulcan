@@ -502,8 +502,7 @@ export default {
     },
     // Fired after a triage decision that included a response_comment —
     // server creates a child Review atomically. Bump the parent row's
-    // responses_count so the inline thread badge updates, and refresh
-    // the open thread (responsesCount watcher in CommentThread will fire).
+    // responses_count so CommentThread's watcher auto-refreshes.
     onTriageResponsePosted({ parentId }) {
       const idx = this.rows.findIndex((r) => r.id === parentId);
       if (idx < 0) return;
@@ -511,11 +510,6 @@ export default {
       this.rows.splice(idx, 1, {
         ...row,
         responses_count: (row.responses_count || 0) + 1,
-      });
-      this.$nextTick(() => {
-        const ref = this.$refs[`thread-${parentId}`];
-        const thread = Array.isArray(ref) ? ref[0] : ref;
-        thread?.refresh?.();
       });
     },
     // admin hard-delete destroys the review entirely;
@@ -534,15 +528,8 @@ export default {
     openComponentComposerLocal() {
       this.openComponentComposer(this.componentId);
     },
-    afterComposerPosted(parentReviewId, _snapshot) {
+    afterComposerPosted() {
       this.fetch();
-      if (parentReviewId) {
-        this.$nextTick(() => {
-          const ref = this.$refs[`thread-${parentReviewId}`];
-          const thread = Array.isArray(ref) ? ref[0] : ref;
-          thread?.refresh?.();
-        });
-      }
     },
   },
 };
