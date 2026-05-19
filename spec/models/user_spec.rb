@@ -170,8 +170,7 @@ RSpec.describe User do
     end
 
     it 'sets commenter_imported_email + commenter_imported_name on each review' do
-      review = Review.create!(action: 'comment', comment: 'a comment', user: commenter,
-                              rule: rule, triage_status: 'pending')
+      review = create(:review, :comment, comment: 'a comment', user: commenter, rule: rule)
       commenter.destroy
       review.reload
       expect(review.user_id).to be_nil
@@ -180,9 +179,9 @@ RSpec.describe User do
     end
 
     it 'covers every review the user authored (multi-row case)' do
-      r1 = Review.create!(action: 'comment', comment: 'one', user: commenter, rule: rule, triage_status: 'pending')
-      r2 = Review.create!(action: 'comment', comment: 'two', user: commenter,
-                          rule: component.rules.second, triage_status: 'pending')
+      r1 = create(:review, :comment, comment: 'one', user: commenter, rule: rule)
+      r2 = create(:review, :comment, comment: 'two', user: commenter,
+                                     rule: component.rules.second)
       commenter.destroy
       [r1, r2].each(&:reload)
       expect([r1.user_id, r2.user_id]).to all(be_nil)
@@ -193,10 +192,8 @@ RSpec.describe User do
     it 'does not touch reviews from other users' do
       other = create(:user, email: 'other-d1@example.com', name: 'Other User')
       Membership.find_or_create_by!(user: other, membership: project) { |m| m.role = 'viewer' }
-      mine = Review.create!(action: 'comment', comment: 'mine', user: commenter,
-                            rule: rule, triage_status: 'pending')
-      theirs = Review.create!(action: 'comment', comment: 'theirs', user: other,
-                              rule: rule, triage_status: 'pending')
+      mine = create(:review, :comment, comment: 'mine', user: commenter, rule: rule)
+      theirs = create(:review, :comment, comment: 'theirs', user: other, rule: rule)
       commenter.destroy
       mine.reload
       theirs.reload
@@ -207,8 +204,7 @@ RSpec.describe User do
     end
 
     it 'commenter_display_name resolves to imported_name post-destroy' do
-      review = Review.create!(action: 'comment', comment: 'd', user: commenter,
-                              rule: rule, triage_status: 'pending')
+      review = create(:review, :comment, comment: 'd', user: commenter, rule: rule)
       commenter.destroy
       expect(review.reload.commenter_display_name).to eq('Commenter Dee')
       expect(review.commenter_imported?).to be(true)

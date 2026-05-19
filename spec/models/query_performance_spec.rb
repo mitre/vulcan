@@ -129,7 +129,7 @@ RSpec.describe 'Query performance optimizations' do
     let(:reviewer) { create(:user) }
 
     before do
-      Review.create!(user: reviewer, rule: rule, action: 'request_review', comment: 'Please review')
+      create(:review, user: reviewer, rule: rule, action: 'request_review', comment: 'Please review')
     end
 
     it 'returns reviews with correct displayed_rule_name' do
@@ -140,11 +140,11 @@ RSpec.describe 'Query performance optimizations' do
 
     it 'limits to 20 reviews' do
       # Already has 1 from before block
-      19.times { |i| Review.create!(user: reviewer, rule: rule, action: 'comment', comment: "Comment #{i}") }
+      19.times { |i| create(:review, :comment, user: reviewer, rule: rule, comment: "Comment #{i}") }
       expect(component.reviews.length).to eq(20)
 
       # Add one more — should still be 20
-      Review.create!(user: reviewer, rule: rule, action: 'comment', comment: 'Extra')
+      create(:review, :comment, user: reviewer, rule: rule, comment: 'Extra')
       expect(component.reviews.length).to eq(20)
     end
 

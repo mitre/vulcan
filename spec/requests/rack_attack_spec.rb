@@ -150,7 +150,7 @@ RSpec.describe 'Rack::Attack throttling' do
     let_it_be(:author) { create(:user) }
     let_it_be(:comment_review) do
       Membership.find_or_create_by!(user: author, membership: project) { |m| m.role = 'viewer' }
-      Review.create!(action: 'comment', comment: 'react target', user: author, rule: rule)
+      create(:review, :comment, comment: 'react target', user: author, rule: rule)
     end
     let(:viewer) { create(:user) }
 

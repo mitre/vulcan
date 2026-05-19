@@ -231,8 +231,8 @@ RSpec.describe 'Reviews' do
 
     let(:other_rule) { other_component.rules.first }
     let!(:comment) do
-      Review.create!(action: 'comment', comment: 'check text issue', user: commenter,
-                     rule: rule, section: 'check_content')
+      create(:review, :comment, comment: 'check text issue', user: commenter,
+                                rule: rule, section: 'check_content')
     end
 
     context 'as an author' do
@@ -284,12 +284,12 @@ RSpec.describe 'Reviews' do
       describe 'duplicate marking' do # rubocop:disable RSpec/NestedGroups
         let_it_be(:rule_b) { component.rules.second }
         let!(:canonical) do
-          Review.create!(rule: rule, user: commenter, action: 'comment',
-                         comment: 'canonical concern', triage_status: 'pending')
+          create(:review, :comment, rule: rule, user: commenter,
+                                    comment: 'canonical concern', section: nil, triage_status: 'pending')
         end
         let!(:dup_target_comment) do
-          Review.create!(rule: rule_b, user: commenter, action: 'comment',
-                         comment: 'same concern, other rule', triage_status: 'pending')
+          create(:review, :comment, rule: rule_b, user: commenter,
+                                    comment: 'same concern, other rule', section: nil, triage_status: 'pending')
         end
 
         it 'sets triage_status=duplicate + duplicate_of_review_id when valid' do
@@ -318,8 +318,8 @@ RSpec.describe 'Reviews' do
         it 'rejects cross-component canonical' do
           # anchor_admin has system-admin so they can create the foreign canonical
           # without the cross-scope validator tripping during test setup.
-          other_canonical = Review.create!(rule: other_rule, user: anchor_admin, action: 'comment',
-                                           comment: 'foreign', triage_status: 'pending')
+          other_canonical = create(:review, :comment, rule: other_rule, user: anchor_admin,
+                                                      comment: 'foreign', section: nil, triage_status: 'pending')
           patch "/reviews/#{dup_target_comment.id}/triage", params: {
             triage_status: 'duplicate',
             duplicate_of_review_id: other_canonical.id
@@ -329,9 +329,9 @@ RSpec.describe 'Reviews' do
         end
 
         it 'rejects chained duplicates (canonical itself is a duplicate)' do
-          chained = Review.create!(rule: rule, user: commenter, action: 'comment',
-                                   comment: 'already a dup', triage_status: 'duplicate',
-                                   duplicate_of_review_id: canonical.id)
+          chained = create(:review, :comment, rule: rule, user: commenter,
+                                              comment: 'already a dup', section: nil, triage_status: 'duplicate',
+                                              duplicate_of_review_id: canonical.id)
           patch "/reviews/#{dup_target_comment.id}/triage", params: {
             triage_status: 'duplicate',
             duplicate_of_review_id: chained.id
@@ -344,8 +344,8 @@ RSpec.describe 'Reviews' do
 
         it 'allows re-marking to a different canonical' do
           dup_target_comment.update!(triage_status: 'duplicate', duplicate_of_review_id: canonical.id)
-          new_canonical = Review.create!(rule: rule, user: commenter, action: 'comment',
-                                         comment: 'better canonical', triage_status: 'pending')
+          new_canonical = create(:review, :comment, rule: rule, user: commenter,
+                                                    comment: 'better canonical', section: nil, triage_status: 'pending')
           patch "/reviews/#{dup_target_comment.id}/triage", params: {
             triage_status: 'duplicate',
             duplicate_of_review_id: new_canonical.id
@@ -412,8 +412,8 @@ RSpec.describe 'Reviews' do
       let!(:other_comment) do
         outsider = create(:user)
         Membership.find_or_create_by!(user: outsider, membership: other_project) { |m| m.role = 'viewer' }
-        Review.create!(action: 'comment', comment: 'in other project',
-                       user: outsider, rule: other_rule)
+        create(:review, :comment, comment: 'in other project', section: nil,
+                                  user: outsider, rule: other_rule)
       end
 
       it 'returns 403 with structured permission_denied body' do
@@ -448,8 +448,8 @@ RSpec.describe 'Reviews' do
     end
 
     let!(:triaged_comment) do
-      c = Review.create!(action: 'comment', comment: 'check issue', user: adj_commenter,
-                         rule: rule, section: 'check_content')
+      c = create(:review, :comment, comment: 'check issue', user: adj_commenter,
+                                    rule: rule, section: 'check_content')
       c.update!(triage_status: 'concur_with_comment',
                 triage_set_by_id: adj_triager.id, triage_set_at: Time.current)
       c
@@ -491,8 +491,8 @@ RSpec.describe 'Reviews' do
       end
 
       it 'rejects adjudicating a still-pending comment' do
-        pending_comment = Review.create!(action: 'comment', comment: 'still pending',
-                                         user: adj_commenter, rule: rule)
+        pending_comment = create(:review, :comment, comment: 'still pending', section: nil,
+                                                    user: adj_commenter, rule: rule)
         patch "/reviews/#{pending_comment.id}/adjudicate", params: {}, as: :json
 
         expect(response).to have_http_status(:unprocessable_entity)
@@ -525,8 +525,8 @@ RSpec.describe 'Reviews' do
     end
 
     def adjudicated_comment(triage_status: 'concur')
-      c = Review.create!(action: 'comment', comment: 'check issue', user: reopen_commenter,
-                         rule: rule, section: 'check_content')
+      c = create(:review, :comment, comment: 'check issue', user: reopen_commenter,
+                                    rule: rule, section: 'check_content')
       c.update!(triage_status: triage_status,
                 triage_set_by_id: reopen_triager.id,
                 triage_set_at: Time.current,
@@ -550,16 +550,16 @@ RSpec.describe 'Reviews' do
       end
 
       it 'rejects re-opening a non-adjudicated comment (nothing to revert)' do
-        pending_comment = Review.create!(action: 'comment', comment: 'still pending',
-                                         user: reopen_commenter, rule: rule)
+        pending_comment = create(:review, :comment, comment: 'still pending', section: nil,
+                                                    user: reopen_commenter, rule: rule)
         patch "/reviews/#{pending_comment.id}/reopen", as: :json
 
         expect(response).to have_http_status(:unprocessable_entity)
       end
 
       it 'rejects re-opening a withdrawn comment (commenter-revoked is locked from triagers)' do
-        withdrawn = Review.create!(action: 'comment', comment: 'going back', user: reopen_commenter,
-                                   rule: rule)
+        withdrawn = create(:review, :comment, comment: 'going back', section: nil,
+                                              user: reopen_commenter, rule: rule)
         withdrawn.update!(triage_status: 'withdrawn')
 
         patch "/reviews/#{withdrawn.id}/reopen", as: :json
@@ -598,7 +598,7 @@ RSpec.describe 'Reviews' do
     end
 
     let!(:my_comment) do
-      Review.create!(action: 'comment', comment: 'my idea', user: wd_owner, rule: rule)
+      create(:review, :comment, comment: 'my idea', section: nil, user: wd_owner, rule: rule)
     end
 
     context 'as the original commenter on a pending comment' do
@@ -671,7 +671,7 @@ RSpec.describe 'Reviews' do
     end
 
     let!(:my_comment) do
-      Review.create!(action: 'comment', comment: 'original text', user: edit_owner, rule: rule)
+      create(:review, :comment, comment: 'original text', section: nil, user: edit_owner, rule: rule)
     end
 
     context 'as the original commenter while pending' do
@@ -803,8 +803,8 @@ RSpec.describe 'Reviews' do
     describe 'POST /rules/:rule_id/reviews — replies during closed phases' do
       let!(:parent_comment) do
         phase_component.update_columns(comment_phase: 'open', closed_reason: nil)
-        Review.create!(rule: phase_rule, user: phase_commenter, action: 'comment',
-                       comment: 'parent', triage_status: 'pending')
+        create(:review, :comment, rule: phase_rule, user: phase_commenter,
+                                  comment: 'parent', section: nil, triage_status: 'pending')
       end
 
       before { sign_in phase_viewer }
@@ -843,8 +843,8 @@ RSpec.describe 'Reviews' do
 
       it 'rejects a reply pointing at a non-comment review (defensive — guards against ID confusion)' do
         @phase_rule_under_review = phase_rule
-        non_comment = Review.create!(rule: phase_rule, user: phase_author, action: 'request_review',
-                                     comment: 'requesting review', triage_status: 'pending')
+        non_comment = create(:review, rule: phase_rule, user: phase_author,
+                                      comment: 'requesting review', triage_status: 'pending')
         phase_component.update_columns(comment_phase: 'closed', closed_reason: 'adjudicating')
         post "/rules/#{phase_rule.id}/reviews",
              params: { review: { action: 'comment', comment: 'sneaky',
@@ -874,8 +874,8 @@ RSpec.describe 'Reviews' do
         other_component = create(:component, project: other_project, based_on: srg, comment_phase: 'open')
         other_rule = other_component.rules.first
         Membership.find_or_create_by!(user: phase_viewer, membership: other_project) { |m| m.role = 'viewer' }
-        cross_parent = Review.create!(rule: other_rule, user: phase_viewer, action: 'comment',
-                                      comment: 'parent in other project', triage_status: 'pending')
+        cross_parent = create(:review, :comment, rule: other_rule, user: phase_viewer,
+                                                 comment: 'parent in other project', section: nil, triage_status: 'pending')
 
         phase_component.update_columns(comment_phase: 'closed', closed_reason: 'adjudicating')
         post "/rules/#{phase_rule.id}/reviews",
@@ -891,8 +891,8 @@ RSpec.describe 'Reviews' do
     describe 'PATCH /reviews/:id/triage — closed+finalized freezes triage' do
       let!(:open_comment) do
         phase_component.update_columns(comment_phase: 'open')
-        Review.create!(rule: phase_rule, user: phase_commenter, action: 'comment',
-                       comment: 'first', triage_status: 'pending')
+        create(:review, :comment, rule: phase_rule, user: phase_commenter,
+                                  comment: 'first', section: nil, triage_status: 'pending')
       end
 
       before { sign_in phase_author }
@@ -923,8 +923,8 @@ RSpec.describe 'Reviews' do
     describe 'PATCH /reviews/:id/adjudicate — closed+finalized freezes adjudication' do
       let!(:triaged_comment) do
         phase_component.update_columns(comment_phase: 'open')
-        Review.create!(rule: phase_rule, user: phase_commenter, action: 'comment',
-                       comment: 'first', triage_status: 'concur')
+        create(:review, :comment, :concur, rule: phase_rule, user: phase_commenter,
+                                           comment: 'first', section: nil)
       end
 
       before { sign_in phase_author }
@@ -940,8 +940,8 @@ RSpec.describe 'Reviews' do
     describe 'PATCH /reviews/:id/withdraw — closed+finalized freezes withdraw' do
       let!(:my_comment) do
         phase_component.update_columns(comment_phase: 'open')
-        Review.create!(rule: phase_rule, user: phase_commenter, action: 'comment',
-                       comment: 'mine', triage_status: 'pending')
+        create(:review, :comment, rule: phase_rule, user: phase_commenter,
+                                  comment: 'mine', section: nil, triage_status: 'pending')
       end
 
       before { sign_in phase_commenter }
@@ -957,8 +957,8 @@ RSpec.describe 'Reviews' do
     describe 'PUT /reviews/:id — closed+finalized freezes self-edit' do
       let!(:my_comment) do
         phase_component.update_columns(comment_phase: 'open')
-        Review.create!(rule: phase_rule, user: phase_commenter, action: 'comment',
-                       comment: 'original', triage_status: 'pending')
+        create(:review, :comment, rule: phase_rule, user: phase_commenter,
+                                  comment: 'original', section: nil, triage_status: 'pending')
       end
 
       before { sign_in phase_commenter }
@@ -993,7 +993,7 @@ RSpec.describe 'Reviews' do
     end
 
     let!(:target_review) do
-      Review.create!(action: 'comment', comment: 'spam content', user: adm_commenter, rule: rule)
+      create(:review, :comment, comment: 'spam content', section: nil, user: adm_commenter, rule: rule)
     end
 
     context 'as project admin' do
@@ -1089,7 +1089,7 @@ RSpec.describe 'Reviews' do
     end
 
     let!(:withdrawn_review) do
-      r = Review.create!(action: 'comment', comment: 'something', user: adm_r_commenter, rule: rule)
+      r = create(:review, :comment, comment: 'something', section: nil, user: adm_r_commenter, rule: rule)
       r.update!(triage_status: 'withdrawn',
                 adjudicated_at: 1.hour.ago,
                 adjudicated_by_id: adm_r_admin.id)
@@ -1118,8 +1118,8 @@ RSpec.describe 'Reviews' do
       end
 
       it 'rejects restoring a non-adjudicated comment (nothing to restore from)' do
-        pending_review = Review.create!(action: 'comment', comment: 'still pending',
-                                        user: adm_r_commenter, rule: rule)
+        pending_review = create(:review, :comment, comment: 'still pending', section: nil,
+                                                   user: adm_r_commenter, rule: rule)
         patch "/reviews/#{pending_review.id}/admin_restore",
               params: { audit_comment: 'no-op attempt' }, as: :json
         expect(response).to have_http_status(:unprocessable_entity)
@@ -1154,11 +1154,11 @@ RSpec.describe 'Reviews' do
     end
 
     let!(:doomed_review) do
-      Review.create!(action: 'comment', comment: 'PII content', user: adm_d_commenter, rule: rule)
+      create(:review, :comment, comment: 'PII content', section: nil, user: adm_d_commenter, rule: rule)
     end
     let!(:reply_to_doomed) do
-      Review.create!(action: 'comment', comment: 'reply text', user: adm_d_author, rule: rule,
-                     responding_to_review_id: doomed_review.id)
+      create(:review, :comment, comment: 'reply text', section: nil, user: adm_d_author, rule: rule,
+                                responding_to_review_id: doomed_review.id)
     end
 
     context 'as project admin' do
@@ -1217,10 +1217,9 @@ RSpec.describe 'Reviews' do
       # the request_uuid correlation primitive AuditEventBundle uses for
       # forensic reconstruction.
       it 'cascades parent + child + grandchild via Rails callbacks; all events share one request_uuid' do
-        grandchild = Review.create!(
-          action: 'comment', comment: 'grandchild', user: adm_d_commenter, rule: rule,
-          responding_to_review_id: reply_to_doomed.id
-        )
+        grandchild = create(:review, :comment, comment: 'grandchild', section: nil,
+                                               user: adm_d_commenter, rule: rule,
+                                               responding_to_review_id: reply_to_doomed.id)
         delete "/reviews/#{doomed_review.id}/admin_destroy",
                params: { audit_comment: 'cascade-correlation test' }, as: :json
         expect(response).to have_http_status(:ok)
@@ -1275,11 +1274,9 @@ RSpec.describe 'Reviews' do
       # audited_changes. For PII/legal hard-delete, the operator-facing
       # snapshot IS the legal record — not just reply_count integer.
       it 'captures destroyed_review_snapshots covering parent + every descendant' do
-        grandchild = Review.create!(
-          action: 'comment', comment: 'grandchild legal-record content',
-          user: adm_d_commenter, rule: rule,
-          responding_to_review_id: reply_to_doomed.id
-        )
+        grandchild = create(:review, :comment, comment: 'grandchild legal-record content',
+                                               section: nil, user: adm_d_commenter, rule: rule,
+                                               responding_to_review_id: reply_to_doomed.id)
         delete "/reviews/#{doomed_review.id}/admin_destroy",
                params: { audit_comment: 'snapshot test' }, as: :json
         expect(response).to have_http_status(:ok)
@@ -1347,20 +1344,20 @@ RSpec.describe 'Reviews' do
     let(:rule_other_component) { other_component.rules.first }
 
     let!(:parent_review) do
-      Review.create!(action: 'comment', comment: 'misplaced concern', user: mtr_commenter, rule: rule_a,
-                     triage_status: 'pending')
+      create(:review, :comment, comment: 'misplaced concern', section: nil, user: mtr_commenter, rule: rule_a,
+                                triage_status: 'pending')
     end
     let!(:reply_review) do
-      Review.create!(action: 'comment', comment: 'thanks for raising', user: mtr_author, rule: rule_a,
-                     responding_to_review_id: parent_review.id)
+      create(:review, :comment, comment: 'thanks for raising', section: nil, user: mtr_author, rule: rule_a,
+                                responding_to_review_id: parent_review.id)
     end
     # reply-of-reply, exercises depth>=2 in
     # move_review_subtree!. Without this, a regression that only descended
     # one level (e.g. responses.first&.update! instead of recursion) would
     # pass the original test.
     let!(:nested_reply_review) do
-      Review.create!(action: 'comment', comment: 'follow-up to the reply', user: mtr_commenter, rule: rule_a,
-                     responding_to_review_id: reply_review.id)
+      create(:review, :comment, comment: 'follow-up to the reply', section: nil, user: mtr_commenter, rule: rule_a,
+                                responding_to_review_id: reply_review.id)
     end
 
     context 'as project admin' do
@@ -1514,8 +1511,8 @@ RSpec.describe 'Reviews' do
     end
 
     let!(:section_review) do
-      Review.create!(action: 'comment', comment: 'misclassified', user: sec_commenter, rule: rule,
-                     triage_status: 'pending', section: nil)
+      create(:review, :comment, comment: 'misclassified', user: sec_commenter, rule: rule,
+                                triage_status: 'pending', section: nil)
     end
 
     context 'as a triager (author tier — minimum allowed)' do
@@ -1631,21 +1628,21 @@ RSpec.describe 'Reviews' do
 
     let_it_be(:rr_unreleased_parent) do
       Membership.find_or_create_by!(user: rr_member, membership: project) { |m| m.role = 'viewer' }
-      Review.create!(action: 'comment', comment: 'parent', user: rr_member,
-                     rule: rr_unreleased_component.rules.first)
+      create(:review, :comment, comment: 'parent', section: nil, user: rr_member,
+                                rule: rr_unreleased_component.rules.first)
     end
 
     let_it_be(:rr_released_parent) do
-      Review.create!(action: 'comment', comment: 'parent on released', user: rr_member,
-                     rule: rr_released_component.rules.first)
+      create(:review, :comment, comment: 'parent on released', section: nil, user: rr_member,
+                                rule: rr_released_component.rules.first)
     end
 
     before do
-      Review.create!(action: 'comment', comment: 'first reply', user: rr_member,
-                     rule: rr_unreleased_parent.rule, responding_to_review_id: rr_unreleased_parent.id,
-                     created_at: 1.minute.ago)
-      Review.create!(action: 'comment', comment: 'second reply', user: rr_member,
-                     rule: rr_unreleased_parent.rule, responding_to_review_id: rr_unreleased_parent.id)
+      create(:review, :comment, comment: 'first reply', section: nil, user: rr_member,
+                                rule: rr_unreleased_parent.rule, responding_to_review_id: rr_unreleased_parent.id,
+                                created_at: 1.minute.ago)
+      create(:review, :comment, comment: 'second reply', section: nil, user: rr_member,
+                                rule: rr_unreleased_parent.rule, responding_to_review_id: rr_unreleased_parent.id)
     end
 
     context 'on an unreleased component' do
@@ -1729,8 +1726,8 @@ RSpec.describe 'Reviews' do
     end
     let_it_be(:closed_parent) do
       Membership.find_or_create_by!(user: closed_member, membership: project) { |m| m.role = 'viewer' }
-      Review.create!(action: 'comment', comment: 'parent', user: closed_member,
-                     rule: closed_component.rules.first)
+      create(:review, :comment, comment: 'parent', section: nil, user: closed_member,
+                                rule: closed_component.rules.first)
     end
 
     before do

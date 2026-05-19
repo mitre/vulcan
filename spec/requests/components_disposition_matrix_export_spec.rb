@@ -46,11 +46,11 @@ RSpec.describe 'GET /components/:id/export?type=disposition_csv' do
 
   let(:rule) { component.rules.first }
   let!(:c1) do
-    Review.create!(rule: rule, user: commenter, action: 'comment',
-                   section: 'check_content', comment: 'check text issue',
-                   triage_status: 'concur_with_comment',
-                   triage_set_by: triager, triage_set_at: 1.day.ago,
-                   adjudicated_at: 12.hours.ago, adjudicated_by: triager)
+    create(:review, :comment, :concur_with_comment, :adjudicated,
+           rule: rule, user: commenter,
+           section: 'check_content', comment: 'check text issue',
+           triage_set_by: triager, triage_set_at: 1.day.ago,
+           adjudicated_at: 12.hours.ago, adjudicated_by: triager)
   end
 
   context 'as author (triager tier — minimum allowed)' do

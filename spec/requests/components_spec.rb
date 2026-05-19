@@ -351,7 +351,7 @@ RSpec.describe 'Components' do
   describe 'GET /components/:id/comments' do
     before do
       rule = component.rules.first
-      Review.create!(action: 'comment', comment: 'check issue', user: user, rule: rule, section: 'check_content')
+      create(:review, :comment, comment: 'check issue', user: user, rule: rule, section: 'check_content')
     end
 
     it 'returns paginated comments + DISA-native triage_status on the wire' do

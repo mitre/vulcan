@@ -487,7 +487,7 @@ RSpec.describe Review do
 
   describe 'duplicate_of_review_id invariants' do
     let!(:original) do
-      Review.create!(action: 'comment', comment: 'original', user: @p_viewer, rule: @p1r1)
+      create(:review, :comment, comment: 'original', section: nil, user: @p_viewer, rule: @p1r1)
     end
 
     it 'requires a target when triage_status is duplicate' do
@@ -498,7 +498,7 @@ RSpec.describe Review do
     end
 
     it 'rejects self-referencing duplicate' do
-      review = Review.create!(action: 'comment', comment: 'dup', user: @p_viewer, rule: @p1r1)
+      review = create(:review, :comment, comment: 'dup', section: nil, user: @p_viewer, rule: @p1r1)
       review.update(triage_status: 'duplicate', duplicate_of_review_id: review.id)
       expect(review.errors[:duplicate_of_review_id].join).to match(/cannot reference itself/i)
     end
@@ -507,8 +507,8 @@ RSpec.describe Review do
     # ultimate canonical, not at a comment that is itself a duplicate. Otherwise
     # the disposition matrix has multiple coalescing targets per logical issue.
     it 'rejects pointing duplicate_of at a comment that is itself a duplicate' do
-      already_dup = Review.create!(action: 'comment', comment: 'A', user: @p_viewer, rule: @p1r1,
-                                   triage_status: 'duplicate', duplicate_of_review_id: original.id)
+      already_dup = create(:review, :comment, comment: 'A', section: nil, user: @p_viewer, rule: @p1r1,
+                                              triage_status: 'duplicate', duplicate_of_review_id: original.id)
       chained = Review.new(action: 'comment', comment: 'B', user: @p_viewer, rule: @p1r1,
                            triage_status: 'duplicate', duplicate_of_review_id: already_dup.id)
       expect(chained).not_to be_valid
@@ -541,24 +541,24 @@ RSpec.describe Review do
 
   describe 'responding_to_review_id invariants' do
     let!(:parent) do
-      Review.create!(action: 'comment', comment: 'parent', user: @p_viewer, rule: @p1r1)
+      create(:review, :comment, comment: 'parent', section: nil, user: @p_viewer, rule: @p1r1)
     end
 
     it 'rejects self-referencing reply' do
-      response = Review.create!(action: 'comment', comment: 'reply', user: @p_admin, rule: @p1r1)
+      response = create(:review, :comment, comment: 'reply', section: nil, user: @p_admin, rule: @p1r1)
       response.update(responding_to_review_id: response.id)
       expect(response.errors[:responding_to_review_id].join).to match(/cannot reference itself/i)
     end
 
     it 'links a reply via responding_to_review_id' do
-      response = Review.create!(action: 'comment', comment: 'reply', user: @p_admin, rule: @p1r1,
-                                responding_to_review_id: parent.id)
+      response = create(:review, :comment, comment: 'reply', section: nil, user: @p_admin, rule: @p1r1,
+                                           responding_to_review_id: parent.id)
       expect(parent.reload.responses).to include(response)
     end
 
     it 'cascade-deletes responses when parent is deleted' do
-      Review.create!(action: 'comment', comment: 'reply', user: @p_admin, rule: @p1r1,
-                     responding_to_review_id: parent.id)
+      create(:review, :comment, comment: 'reply', section: nil, user: @p_admin, rule: @p1r1,
+                                responding_to_review_id: parent.id)
       expect { parent.destroy }.to change(Review, :count).by(-2)
     end
 
@@ -583,8 +583,8 @@ RSpec.describe Review do
   describe 'auto-set adjudicated_at on terminal triage statuses' do
     %w[duplicate informational withdrawn].each do |status|
       it "sets adjudicated_at when triage_status becomes #{status}" do
-        review = Review.create!(action: 'comment', comment: 'x', user: @p_viewer, rule: @p1r1)
-        original_dup = Review.create!(action: 'comment', comment: 'orig', user: @p_viewer, rule: @p1r1)
+        review = create(:review, :comment, comment: 'x', section: nil, user: @p_viewer, rule: @p1r1)
+        original_dup = create(:review, :comment, comment: 'orig', section: nil, user: @p_viewer, rule: @p1r1)
 
         attrs = { triage_status: status, triage_set_by_id: @p_admin.id, triage_set_at: Time.current }
         attrs[:duplicate_of_review_id] = original_dup.id if status == 'duplicate'
@@ -599,9 +599,9 @@ RSpec.describe Review do
   # in the audit log so the disposition record reflects who retagged what + why.
   describe 'section auditing' do
     let!(:section_review) do
-      Review.create!(rule: @p1r1, user: @p_viewer, action: 'comment',
-                     comment: 'misclassified', triage_status: 'pending',
-                     section: nil)
+      create(:review, :comment, rule: @p1r1, user: @p_viewer,
+                                comment: 'misclassified', triage_status: 'pending',
+                                section: nil)
     end
 
     it 'records an audit entry when section changes' do
@@ -634,8 +634,8 @@ RSpec.describe Review do
   # resolves to a Rule instance through STI.
   describe 'audit-trail association via associated_with: :rule' do
     let!(:assoc_review) do
-      Review.create!(rule: @p1r1, user: @p_viewer, action: 'comment',
-                     comment: 'something', triage_status: 'pending')
+      create(:review, :comment, rule: @p1r1, user: @p_viewer,
+                                comment: 'something', triage_status: 'pending', section: nil)
     end
 
     it 'populates associated to the rule on a triage update audit' do
@@ -662,7 +662,7 @@ RSpec.describe Review do
 
   describe 'withdrawn auto-sets adjudicated_by_id to commenter' do
     it 'sets adjudicated_by_id to user_id (the commenter themselves)' do
-      review = Review.create!(action: 'comment', comment: 'x', user: @p_viewer, rule: @p1r1)
+      review = create(:review, :comment, comment: 'x', section: nil, user: @p_viewer, rule: @p1r1)
       review.update!(triage_status: 'withdrawn')
       expect(review.reload.adjudicated_by_id).to eq(@p_viewer.id)
     end
@@ -670,12 +670,12 @@ RSpec.describe Review do
 
   describe 'scopes' do
     before do
-      @c1 = Review.create!(action: 'comment', comment: 'one', user: @p_viewer, rule: @p1r1,
-                           triage_status: 'pending')
-      @c2 = Review.create!(action: 'comment', comment: 'two', user: @p_viewer, rule: @p1r1,
-                           triage_status: 'concur', triage_set_by_id: @p_admin.id, triage_set_at: Time.current)
-      @reply = Review.create!(action: 'comment', comment: 'reply', user: @p_admin, rule: @p1r1,
-                              responding_to_review_id: @c1.id)
+      @c1 = create(:review, :comment, comment: 'one', section: nil, user: @p_viewer, rule: @p1r1,
+                                      triage_status: 'pending')
+      @c2 = create(:review, :comment, comment: 'two', section: nil, user: @p_viewer, rule: @p1r1,
+                                      triage_status: 'concur', triage_set_by_id: @p_admin.id, triage_set_at: Time.current)
+      @reply = create(:review, :comment, comment: 'reply', section: nil, user: @p_admin, rule: @p1r1,
+                                         responding_to_review_id: @c1.id)
     end
 
     it 'top_level_comments excludes responses' do
@@ -701,8 +701,8 @@ RSpec.describe Review do
     # `where.not(triage_status: nil)` clause for explicit intent.
     context 'with legacy reviews (NULL triage_status)' do
       let!(:legacy_comment) do
-        review = Review.create!(action: 'comment', comment: 'legacy', user: @p_viewer, rule: @p1r1,
-                                triage_status: 'pending')
+        review = create(:review, :comment, comment: 'legacy', section: nil, user: @p_viewer, rule: @p1r1,
+                                           triage_status: 'pending')
         # Simulate the legacy state directly. update_columns bypasses
         # validators + callbacks; the DB-level NOT NULL constraint must
         # be dropped by the migration before this can succeed.
@@ -734,7 +734,7 @@ RSpec.describe Review do
 
   describe 'audits' do
     it 'audits triage_status changes' do
-      review = Review.create!(action: 'comment', comment: 'x', user: @p_viewer, rule: @p1r1)
+      review = create(:review, :comment, comment: 'x', section: nil, user: @p_viewer, rule: @p1r1)
       expect do
         review.update!(triage_status: 'concur', triage_set_by_id: @p_admin.id, triage_set_at: Time.current)
       end.to change(review.audits, :count).by(1)
@@ -749,13 +749,13 @@ RSpec.describe Review do
   # ISO8601 timestamps so YAML safe-load doesn't break on Audit#find).
   describe '#snapshot_attributes' do
     let!(:snap_review) do
-      Review.create!(action: 'comment', comment: 'snap content', user: @p_viewer, rule: @p1r1,
-                     section: 'check_content',
-                     triage_status: 'concur',
-                     triage_set_by_id: @p_admin.id,
-                     triage_set_at: Time.zone.parse('2026-04-01T10:00:00Z'),
-                     adjudicated_at: Time.zone.parse('2026-04-02T11:00:00Z'),
-                     adjudicated_by_id: @p_admin.id)
+      create(:review, :comment, comment: 'snap content', user: @p_viewer, rule: @p1r1,
+                                section: 'check_content',
+                                triage_status: 'concur',
+                                triage_set_by_id: @p_admin.id,
+                                triage_set_at: Time.zone.parse('2026-04-01T10:00:00Z'),
+                                adjudicated_at: Time.zone.parse('2026-04-02T11:00:00Z'),
+                                adjudicated_by_id: @p_admin.id)
     end
 
     it 'returns a hash with every audited + lifecycle + imported_attribution column' do
@@ -787,7 +787,7 @@ RSpec.describe Review do
     end
 
     it 'returns nil for unset nullable fields, not empty strings' do
-      bare = Review.create!(action: 'comment', comment: 'bare', user: @p_viewer, rule: @p1r1)
+      bare = create(:review, :comment, comment: 'bare', section: nil, user: @p_viewer, rule: @p1r1)
       h = bare.snapshot_attributes
       expect(h['triage_set_by_id']).to be_nil
       expect(h['adjudicated_at']).to be_nil
@@ -801,19 +801,19 @@ RSpec.describe Review do
   # depth-first-ish order so the audit-row snapshot is reproducible.
   describe '.subtree_with_ancestry' do
     let!(:root) do
-      Review.create!(action: 'comment', comment: 'root', user: @p_viewer, rule: @p1r1)
+      create(:review, :comment, comment: 'root', section: nil, user: @p_viewer, rule: @p1r1)
     end
     let!(:child_a) do
-      Review.create!(action: 'comment', comment: 'child A', user: @p_viewer, rule: @p1r1,
-                     responding_to_review_id: root.id)
+      create(:review, :comment, comment: 'child A', section: nil, user: @p_viewer, rule: @p1r1,
+                                responding_to_review_id: root.id)
     end
     let!(:child_b) do
-      Review.create!(action: 'comment', comment: 'child B', user: @p_viewer, rule: @p1r1,
-                     responding_to_review_id: root.id)
+      create(:review, :comment, comment: 'child B', section: nil, user: @p_viewer, rule: @p1r1,
+                                responding_to_review_id: root.id)
     end
     let!(:grandchild) do
-      Review.create!(action: 'comment', comment: 'grandchild of A', user: @p_viewer, rule: @p1r1,
-                     responding_to_review_id: child_a.id)
+      create(:review, :comment, comment: 'grandchild of A', section: nil, user: @p_viewer, rule: @p1r1,
+                                responding_to_review_id: child_a.id)
     end
 
     it 'returns the root and every descendant' do
@@ -822,7 +822,7 @@ RSpec.describe Review do
     end
 
     it 'returns just the root when there are no replies' do
-      lone = Review.create!(action: 'comment', comment: 'lone', user: @p_viewer, rule: @p1r1)
+      lone = create(:review, :comment, comment: 'lone', section: nil, user: @p_viewer, rule: @p1r1)
       expect(Review.subtree_with_ancestry(lone.id).map(&:id)).to eq([lone.id])
     end
 
@@ -949,8 +949,8 @@ RSpec.describe Review do
   # display + export layers fall back to those columns when user_id is nil.
   describe 'belongs_to :user is optional' do
     it 'is valid with user_id nil and commenter_imported_* present' do
-      review = Review.create!(action: 'comment', comment: 'c', user: @p_viewer,
-                              rule: @p1r1, triage_status: 'pending')
+      review = create(:review, :comment, comment: 'c', section: nil, user: @p_viewer,
+                                         rule: @p1r1, triage_status: 'pending')
       review.update_columns(user_id: nil,
                             commenter_imported_email: 'former@example.com',
                             commenter_imported_name: 'Former User')
@@ -962,8 +962,8 @@ RSpec.describe Review do
       # Loose validity at the model layer — the row can persist without
       # a user FK. Display layer handles the "no commenter" case via
       # commenter_display_name (step B1).
-      review = Review.create!(action: 'comment', comment: 'c', user: @p_viewer,
-                              rule: @p1r1, triage_status: 'pending')
+      review = create(:review, :comment, comment: 'c', section: nil, user: @p_viewer,
+                                         rule: @p1r1, triage_status: 'pending')
       review.update_columns(user_id: nil)
       review.reload
       expect(review).to be_valid
@@ -987,8 +987,8 @@ RSpec.describe Review do
     end
 
     it 'persists commenter_imported_email + commenter_imported_name values' do
-      review = Review.create!(action: 'comment', comment: 'c', user: @p_viewer,
-                              rule: @p1r1, triage_status: 'pending')
+      review = create(:review, :comment, comment: 'c', section: nil, user: @p_viewer,
+                                         rule: @p1r1, triage_status: 'pending')
       review.update_columns(commenter_imported_email: 'imp@old.example',
                             commenter_imported_name: 'Imported Person')
       review.reload
@@ -999,7 +999,7 @@ RSpec.describe Review do
 
   describe 'attribution display helpers' do
     let(:base) do
-      Review.create!(action: 'comment', comment: 'c', user: @p_viewer, rule: @p1r1, triage_status: 'pending')
+      create(:review, :comment, comment: 'c', section: nil, user: @p_viewer, rule: @p1r1, triage_status: 'pending')
     end
 
     describe '#triager_display_name' do
@@ -1091,7 +1091,7 @@ RSpec.describe Review do
   # imported_email → nil.
   describe 'commenter display helpers' do
     let(:base) do
-      Review.create!(action: 'comment', comment: 'c', user: @p_viewer, rule: @p1r1, triage_status: 'pending')
+      create(:review, :comment, comment: 'c', section: nil, user: @p_viewer, rule: @p1r1, triage_status: 'pending')
     end
 
     describe '#commenter_display_name' do

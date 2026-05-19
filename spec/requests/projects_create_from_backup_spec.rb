@@ -142,8 +142,8 @@ RSpec.describe 'Project Create From Backup' do
       end
 
       it 'handles include_reviews param' do
-        Review.create!(user: admin_user, rule: source_component.rules.first,
-                       action: 'request_review', comment: 'Test')
+        create(:review, user: admin_user, rule: source_component.rules.first,
+                        comment: 'Test')
 
         zip = Export::Base.new(
           exportable: source_project,

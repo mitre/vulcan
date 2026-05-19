@@ -18,13 +18,13 @@ RSpec.describe 'Polymorphic Review.commentable' do
 
   describe 'commentable polymorphism' do
     it 'stores commentable_type=BaseRule (STI base class) when targeting a Rule via the dual-write callback' do
-      r = Review.create!(rule: rule, user: user, action: 'comment', comment: 'rule-scoped')
+      r = create(:review, :comment, rule: rule, user: user, comment: 'rule-scoped')
       expect(r.commentable_type).to eq('BaseRule')
       expect(r.commentable_id).to eq(rule.id)
     end
 
     it 'stores commentable_type=Component when targeting a Component directly' do
-      r = Review.create!(commentable: component, user: user, action: 'comment', comment: 'component-scoped')
+      r = create(:review, :component_comment, user: user, commentable: component, comment: 'component-scoped')
       expect(r.commentable_type).to eq('Component')
       expect(r.commentable_id).to eq(component.id)
       expect(r.rule_id).to be_nil
@@ -32,8 +32,8 @@ RSpec.describe 'Polymorphic Review.commentable' do
   end
 
   describe 'Component#paginated_comments union' do
-    let!(:rule_comment) { Review.create!(rule: rule, user: user, action: 'comment', comment: 'rule comment') }
-    let!(:component_comment) { Review.create!(commentable: component, user: user, action: 'comment', comment: 'component comment') }
+    let!(:rule_comment) { create(:review, :comment, rule: rule, user: user, comment: 'rule comment') }
+    let!(:component_comment) { create(:review, :component_comment, user: user, commentable: component, comment: 'component comment') }
 
     it 'returns BOTH rule-scoped and component-scoped top-level comments' do
       result = component.paginated_comments
@@ -58,8 +58,8 @@ RSpec.describe 'Polymorphic Review.commentable' do
   end
 
   describe 'Project#paginated_comments union' do
-    let!(:rule_comment) { Review.create!(rule: rule, user: user, action: 'comment', comment: 'rc') }
-    let!(:component_comment) { Review.create!(commentable: component, user: user, action: 'comment', comment: 'cc') }
+    let!(:rule_comment) { create(:review, :comment, rule: rule, user: user, comment: 'rc') }
+    let!(:component_comment) { create(:review, :component_comment, user: user, commentable: component, comment: 'cc') }
 
     it 'aggregates rule-scoped and component-scoped reviews across the project' do
       result = project.paginated_comments
@@ -70,8 +70,8 @@ RSpec.describe 'Polymorphic Review.commentable' do
   end
 
   describe 'Project aggregate counts' do
-    let!(:rule_pending) { Review.create!(rule: rule, user: user, action: 'comment', comment: 'rp') }
-    let!(:component_pending) { Review.create!(commentable: component, user: user, action: 'comment', comment: 'cp') }
+    let!(:rule_pending) { create(:review, :comment, rule: rule, user: user, comment: 'rp') }
+    let!(:component_pending) { create(:review, :component_comment, user: user, commentable: component, comment: 'cp') }
 
     it 'pending_comment_counts includes both scopes' do
       counts = Project.pending_comment_counts([project.id])

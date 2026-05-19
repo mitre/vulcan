@@ -73,9 +73,9 @@ RSpec.describe 'JSON Archive Backup Round-Trip' do
     RuleSatisfaction.create!(rule_id: rules[5].id, satisfied_by_rule_id: rules[0].id)
 
     # Add reviews
-    Review.create!(user: review_user, rule: rules[1], action: 'lock_control', comment: 'Locking for release review')
+    create(:review, user: review_user, rule: rules[1], action: 'lock_control', comment: 'Locking for release review')
     rules[1].reload
-    Review.create!(user: review_user, rule: rules[1], action: 'unlock_control', comment: 'Unlocking after review')
+    create(:review, user: review_user, rule: rules[1], action: 'unlock_control', comment: 'Unlocking after review')
 
     # Add additional question + answer
     question = source_component.additional_questions.create!(

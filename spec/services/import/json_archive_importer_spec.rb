@@ -179,7 +179,7 @@ RSpec.describe Import::JsonArchiveImporter do
       let(:zip_with_named_review) do
         Membership.create!(user: named_user, membership: source_project, role: 'admin')
         rule = source_component.rules.first
-        Review.create!(user: named_user, rule: rule, action: 'lock_control', comment: 'Locking')
+        create(:review, user: named_user, rule: rule, action: 'lock_control', comment: 'Locking')
         Export::Base.new(
           exportable: source_component,
           mode: :backup,
@@ -205,7 +205,7 @@ RSpec.describe Import::JsonArchiveImporter do
         ghost_user = create(:user, email: 'ghost@example.com', name: 'Ghost')
         Membership.create!(user: ghost_user, membership: source_project, role: 'admin')
         rule = source_component.rules.first
-        Review.create!(user: ghost_user, rule: rule, action: 'lock_control', comment: 'Haunted')
+        create(:review, user: ghost_user, rule: rule, action: 'lock_control', comment: 'Haunted')
 
         zip = Export::Base.new(
           exportable: source_component,
@@ -524,35 +524,30 @@ RSpec.describe Import::JsonArchiveImporter do
         Membership.find_or_create_by!(
           user: lifecycle_triager, membership: lifecycle_project
         ) { |m| m.role = 'author' }
-        Review.create!(
-          user: lifecycle_commenter, rule: lifecycle_component.rules.first,
-          action: 'comment', comment: 'TLS 1.2 EOL',
-          section: 'check_content',
-          triage_status: 'concur_with_comment',
-          triage_set_by: lifecycle_triager, triage_set_at: 1.day.ago,
-          adjudicated_at: 12.hours.ago, adjudicated_by: lifecycle_triager
-        )
+        create(:review, :comment, :concur_with_comment, :adjudicated,
+               user: lifecycle_commenter, rule: lifecycle_component.rules.first,
+               comment: 'TLS 1.2 EOL',
+               section: 'check_content',
+               triage_set_by: lifecycle_triager, triage_set_at: 1.day.ago,
+               adjudicated_at: 12.hours.ago, adjudicated_by: lifecycle_triager)
       end
       let_it_be(:lifecycle_reply) do
-        Review.create!(
-          user: lifecycle_triager, rule: lifecycle_component.rules.first,
-          action: 'comment', comment: 'will fix in next revision',
-          responding_to_review_id: lifecycle_top_review.id
-        )
+        create(:review, :comment,
+               user: lifecycle_triager, rule: lifecycle_component.rules.first,
+               comment: 'will fix in next revision',
+               responding_to_review_id: lifecycle_top_review.id)
       end
       let_it_be(:lifecycle_dup_target) do
-        Review.create!(
-          user: lifecycle_commenter, rule: lifecycle_component.rules.second,
-          action: 'comment', comment: 'duplicate target'
-        )
+        create(:review, :comment,
+               user: lifecycle_commenter, rule: lifecycle_component.rules.second,
+               comment: 'duplicate target')
       end
       let_it_be(:lifecycle_dup) do
-        Review.create!(
-          user: lifecycle_commenter, rule: lifecycle_component.rules.second,
-          action: 'comment', comment: 'duplicate source',
-          duplicate_of_review_id: lifecycle_dup_target.id,
-          triage_status: 'duplicate'
-        )
+        create(:review, :comment,
+               user: lifecycle_commenter, rule: lifecycle_component.rules.second,
+               comment: 'duplicate source',
+               duplicate_of_review_id: lifecycle_dup_target.id,
+               triage_status: 'duplicate')
       end
 
       let_it_be(:lifecycle_zip) do
@@ -645,13 +640,11 @@ RSpec.describe Import::JsonArchiveImporter do
         let_it_be(:orphan_review) do
           Membership.find_or_create_by!(user: orphan_commenter, membership: orphan_proj) { |m| m.role = 'viewer' }
           Membership.find_or_create_by!(user: orphan_triager, membership: orphan_proj) { |m| m.role = 'author' }
-          Review.create!(
-            user: orphan_commenter, rule: orphan_component.rules.first,
-            action: 'comment', comment: 'orphan-test comment',
-            triage_status: 'concur',
-            triage_set_by: orphan_triager, triage_set_at: 1.day.ago,
-            adjudicated_at: 12.hours.ago, adjudicated_by: orphan_triager
-          )
+          create(:review, :comment, :concur, :adjudicated,
+                 user: orphan_commenter, rule: orphan_component.rules.first,
+                 comment: 'orphan-test comment',
+                 triage_set_by: orphan_triager, triage_set_at: 1.day.ago,
+                 adjudicated_at: 12.hours.ago, adjudicated_by: orphan_triager)
         end
         let_it_be(:orphan_zip) do
           Export::Base.new(
@@ -704,10 +697,9 @@ RSpec.describe Import::JsonArchiveImporter do
           plain_component = create(:component, project: plain_proj)
           plain_commenter = create(:user, name: 'Plain Commenter')
           Membership.find_or_create_by!(user: plain_commenter, membership: plain_proj) { |m| m.role = 'viewer' }
-          Review.create!(
-            user: plain_commenter, rule: plain_component.rules.first,
-            action: 'comment', comment: 'plain comment without triage'
-          )
+          create(:review, :comment,
+                 user: plain_commenter, rule: plain_component.rules.first,
+                 comment: 'plain comment without triage')
           plain_zip = Export::Base.new(
             exportable: plain_component, mode: :backup, format: :json_archive
           ).call.data

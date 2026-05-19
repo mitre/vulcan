@@ -33,8 +33,8 @@ RSpec.describe Review do
 
   describe 'responding_to_review_id scoping' do
     let(:original_in_a1) do
-      Review.create!(action: 'comment', user: viewer, rule: component_a1.rules.first,
-                     comment: 'original on a1')
+      create(:review, :comment, user: viewer, rule: component_a1.rules.first,
+                                comment: 'original on a1')
     end
 
     it 'rejects a reply that targets a comment on a different rule (different component)' do
@@ -69,14 +69,14 @@ RSpec.describe Review do
 
   describe 'duplicate_of_review_id scoping' do
     let(:original_in_a1) do
-      Review.create!(action: 'comment', user: viewer, rule: component_a1.rules.first,
-                     comment: 'first occurrence on a1')
+      create(:review, :comment, user: viewer, rule: component_a1.rules.first,
+                                comment: 'first occurrence on a1')
     end
 
     it 'rejects a duplicate that targets a comment in a different project' do
-      original_in_b1 = Review.create!(action: 'comment', user: viewer,
-                                      rule: component_b1.rules.first,
-                                      comment: 'unrelated comment in project B')
+      original_in_b1 = create(:review, :comment, user: viewer,
+                                                 rule: component_b1.rules.first,
+                                                 comment: 'unrelated comment in project B')
       dup = Review.new(action: 'comment', user: viewer,
                        rule: component_a1.rules.first,
                        comment: 'cross-project duplicate attempt',
@@ -89,9 +89,9 @@ RSpec.describe Review do
     end
 
     it 'rejects a duplicate that targets a comment in a different component (same project)' do
-      original_in_a2 = Review.create!(action: 'comment', user: viewer,
-                                      rule: component_a2.rules.first,
-                                      comment: 'unrelated comment on a2')
+      original_in_a2 = create(:review, :comment, user: viewer,
+                                                 rule: component_a2.rules.first,
+                                                 comment: 'unrelated comment on a2')
       dup = Review.new(action: 'comment', user: viewer,
                        rule: component_a1.rules.first,
                        comment: 'cross-component duplicate attempt',
@@ -104,9 +104,9 @@ RSpec.describe Review do
     end
 
     it 'accepts a duplicate that targets a comment on the same component' do
-      another_in_a1 = Review.create!(action: 'comment', user: viewer,
-                                     rule: component_a1.rules.first,
-                                     comment: 'first occurrence')
+      another_in_a1 = create(:review, :comment, user: viewer,
+                                                rule: component_a1.rules.first,
+                                                comment: 'first occurrence')
       dup = Review.new(action: 'comment', user: viewer,
                        rule: component_a1.rules.first,
                        comment: 'duplicate of the first',

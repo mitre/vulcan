@@ -159,7 +159,7 @@ RSpec.describe Export::Serializers::BackupSerializer do
 
       before do
         rule = component.rules.first
-        Review.create!(user: user, rule: rule, action: 'request_review', comment: 'Looks good')
+        create(:review, user: user, rule: rule, comment: 'Looks good')
       end
 
       it 'includes reviews with user attribution' do
@@ -193,7 +193,7 @@ RSpec.describe Export::Serializers::BackupSerializer do
 
       before do
         # Reviews validate that the user has project access; seed memberships so
-        # the per-test Review.create! calls pass the cross-scope validator.
+        # the per-test create(:review, ...) calls pass the cross-scope validator.
         Membership.find_or_create_by!(user: commenter, membership: project) { |m| m.role = 'viewer' }
         Membership.find_or_create_by!(user: triager, membership: project) { |m| m.role = 'author' }
       end
@@ -223,17 +223,18 @@ RSpec.describe Export::Serializers::BackupSerializer do
 
       describe 'review lifecycle fields' do # rubocop:disable RSpec/NestedGroups
         let!(:top_level) do
-          Review.create!(user: commenter, rule: rule, action: 'comment',
-                         comment: 'TLS 1.2 EOL concern',
-                         section: 'check_content',
-                         triage_status: 'concur_with_comment',
-                         triage_set_by: triager, triage_set_at: 1.day.ago,
-                         adjudicated_at: 12.hours.ago, adjudicated_by: triager)
+          create(:review, :comment, :concur_with_comment, :adjudicated,
+                 user: commenter, rule: rule,
+                 comment: 'TLS 1.2 EOL concern',
+                 section: 'check_content',
+                 triage_set_by: triager, triage_set_at: 1.day.ago,
+                 adjudicated_at: 12.hours.ago, adjudicated_by: triager)
         end
         let!(:reply) do
-          Review.create!(user: triager, rule: rule, action: 'comment',
-                         responding_to_review_id: top_level.id,
-                         comment: 'will fix in next revision')
+          create(:review, :comment,
+                 user: triager, rule: rule,
+                 responding_to_review_id: top_level.id,
+                 comment: 'will fix in next revision')
         end
 
         it 'preserves triage_status' do
@@ -274,14 +275,14 @@ RSpec.describe Export::Serializers::BackupSerializer do
 
       describe 'duplicate-of cross-link' do # rubocop:disable RSpec/NestedGroups
         let!(:original) do
-          Review.create!(user: commenter, rule: rule, action: 'comment',
-                         comment: 'duplicate target')
+          create(:review, :comment, user: commenter, rule: rule,
+                                    comment: 'duplicate target')
         end
         let!(:dup) do
-          Review.create!(user: commenter, rule: rule, action: 'comment',
-                         comment: 'duplicate source',
-                         duplicate_of_review_id: original.id,
-                         triage_status: 'duplicate')
+          create(:review, :comment, user: commenter, rule: rule,
+                                    comment: 'duplicate source',
+                                    duplicate_of_review_id: original.id,
+                                    triage_status: 'duplicate')
         end
 
         it 'encodes duplicate_of as external_id' do

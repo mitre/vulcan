@@ -61,7 +61,7 @@ RSpec.describe 'Component-level reviews' do
     end
 
     it 'allows replies during closed/adjudicating' do
-      parent = Review.create!(commentable: component, user: viewer, action: 'comment', comment: 'parent')
+      parent = create(:review, :component_comment, commentable: component, user: viewer, comment: 'parent')
       component.update_columns(comment_phase: 'closed', closed_reason: 'adjudicating')
 
       expect do
@@ -80,7 +80,7 @@ RSpec.describe 'Component-level reviews' do
       u
     end
     let!(:parent) do
-      Review.create!(commentable: component, user: viewer, action: 'comment', comment: 'parent')
+      create(:review, :component_comment, commentable: component, user: viewer, comment: 'parent')
     end
 
     before { sign_in viewer }
@@ -93,8 +93,8 @@ RSpec.describe 'Component-level reviews' do
     end
 
     it 'GET /reviews/:id/responses on a component-scoped review returns the reply list' do
-      Review.create!(commentable: component, user: viewer, action: 'comment',
-                     comment: 'reply 1', responding_to_review_id: parent.id)
+      create(:review, :component_comment, commentable: component, user: viewer,
+                                          comment: 'reply 1', responding_to_review_id: parent.id)
       get "/reviews/#{parent.id}/responses", as: :json
       expect(response).to have_http_status(:ok)
       expect(response.parsed_body['rows'].length).to eq(1)

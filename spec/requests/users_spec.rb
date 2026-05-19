@@ -583,15 +583,15 @@ RSpec.describe 'Users' do
       Membership.find_or_create_by!(user: viewer, membership: other_project) { |m| m.role = 'viewer' }
       Membership.find_or_create_by!(user: other_viewer, membership: my_project) { |m| m.role = 'viewer' }
 
-      @my_c1 = Review.create!(action: 'comment', comment: 'one', user: viewer,
-                              rule: my_component.rules.first, section: 'check_content')
-      @my_c2 = Review.create!(action: 'comment', comment: 'two', user: viewer,
-                              rule: other_component.rules.first, section: nil)
-      @other_users_c = Review.create!(action: 'comment', comment: 'theirs', user: other_viewer,
-                                      rule: my_component.rules.first)
-      @my_reply = Review.create!(action: 'comment', comment: 'reply', user: viewer,
-                                 rule: my_component.rules.first,
-                                 responding_to_review_id: @other_users_c.id)
+      @my_c1 = create(:review, :comment, comment: 'one', user: viewer,
+                                         rule: my_component.rules.first, section: 'check_content')
+      @my_c2 = create(:review, :comment, comment: 'two', user: viewer,
+                                         rule: other_component.rules.first, section: nil)
+      @other_users_c = create(:review, :comment, comment: 'theirs', user: other_viewer,
+                                                 rule: my_component.rules.first)
+      @my_reply = create(:review, :comment, comment: 'reply', user: viewer,
+                                            rule: my_component.rules.first,
+                                            responding_to_review_id: @other_users_c.id)
     end
 
     context 'as the viewer requesting their own comments' do
@@ -641,8 +641,8 @@ RSpec.describe 'Users' do
       before { sign_in viewer }
 
       let!(:my_component_comment) do
-        Review.create!(action: 'comment', comment: 'overall component', user: viewer,
-                       commentable: my_component)
+        create(:review, :component_comment, comment: 'overall component', user: viewer,
+                                            commentable: my_component)
       end
 
       it "includes the user's component-scoped reviews alongside rule-scoped ones" do

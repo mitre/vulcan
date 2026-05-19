@@ -19,7 +19,7 @@ RSpec.describe 'Review and Membership Blueprints' do
     # attribution. Savepoint rolls the DB back, but the cached in-memory
     # object would still carry mutated attributes without refind.
     let_it_be(:review, refind: true) do
-      Review.create!(user: user, rule: rule, action: 'comment', comment: 'Looks good')
+      create(:review, :comment, user: user, rule: rule, comment: 'Looks good')
     end
 
     it 'includes id, action, comment, created_at, and name' do
@@ -172,16 +172,16 @@ RSpec.describe 'Review and Membership Blueprints' do
       end
 
       it 'exposes responding_to_review_id (modal distinguishes top-level vs reply)' do
-        parent = Review.create!(user: user, rule: rule, action: 'comment', comment: 'parent')
-        reply = Review.create!(user: user, rule: rule, action: 'comment',
-                               comment: 'reply', responding_to_review_id: parent.id)
+        parent = create(:review, :comment, user: user, rule: rule, comment: 'parent')
+        reply = create(:review, :comment, user: user, rule: rule,
+                                          comment: 'reply', responding_to_review_id: parent.id)
         json = ReviewBlueprint.render_as_hash(reply)
         expect(json[:responding_to_review_id]).to eq(parent.id)
       end
 
       it 'exposes duplicate_of_review_id (modal renders dup-target picker state)' do
-        target = Review.create!(user: user, rule: rule, action: 'comment',
-                                comment: 'target', triage_status: 'pending')
+        target = create(:review, :comment, user: user, rule: rule,
+                                           comment: 'target')
         review.update_columns(triage_status: 'duplicate', duplicate_of_review_id: target.id)
         json = ReviewBlueprint.render_as_hash(review.reload)
         expect(json[:duplicate_of_review_id]).to eq(target.id)

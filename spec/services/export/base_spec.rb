@@ -151,13 +151,11 @@ RSpec.describe Export::Base do
       end
       # One top-level review on dpb_component so it has disposition data.
       # dpb_clean stays comment-free.
-      Review.create!(
-        rule: dpb_component.rules.first,
-        user: dpb_commenter,
-        action: 'comment',
-        comment: 'check text issue',
-        triage_status: 'pending'
-      )
+      create(:review, :comment,
+             rule: dpb_component.rules.first,
+             user: dpb_commenter,
+             comment: 'check text issue',
+             triage_status: 'pending')
     end
 
     let(:single_component_export) do
@@ -258,13 +256,11 @@ RSpec.describe Export::Base do
       Membership.find_or_create_by!(user: dpe_commenter, membership: dpe_project) do |m|
         m.role = 'viewer'
       end
-      Review.create!(
-        rule: dpe_component.rules.first,
-        user: dpe_commenter,
-        action: 'comment',
-        comment: 'check text issue',
-        triage_status: 'pending'
-      )
+      create(:review, :comment,
+             rule: dpe_component.rules.first,
+             user: dpe_commenter,
+             comment: 'check text issue',
+             triage_status: 'pending')
     end
 
     let(:export) do

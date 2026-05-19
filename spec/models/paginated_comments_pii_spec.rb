@@ -19,8 +19,8 @@ RSpec.describe 'paginated_comments — PII shape' do
 
   let_it_be(:posted_review) do
     Membership.find_or_create_by!(user: viewer, membership: project) { |m| m.role = 'viewer' }
-    Review.create!(action: 'comment', user: viewer, rule: component.rules.first,
-                   comment: 'spec-fixture comment')
+    create(:review, :comment, user: viewer, rule: component.rules.first,
+                              comment: 'spec-fixture comment')
   end
 
   describe 'Component#paginated_comments' do
@@ -127,10 +127,10 @@ RSpec.describe 'paginated_comments — PII shape' do
     end
 
     before do
-      Review.create!(action: 'comment', comment: 'first reply', user: replier,
-                     rule: posted_review.rule, responding_to_review_id: posted_review.id)
-      Review.create!(action: 'comment', comment: 'second reply', user: replier,
-                     rule: posted_review.rule, responding_to_review_id: posted_review.id)
+      create(:review, :comment, comment: 'first reply', user: replier,
+                                rule: posted_review.rule, responding_to_review_id: posted_review.id)
+      create(:review, :comment, comment: 'second reply', user: replier,
+                                rule: posted_review.rule, responding_to_review_id: posted_review.id)
     end
 
     it 'Component#paginated_comments includes responses_count' do
@@ -144,7 +144,7 @@ RSpec.describe 'paginated_comments — PII shape' do
     end
 
     it 'returns 0 when a top-level comment has no replies' do
-      lone = Review.create!(action: 'comment', comment: 'lone', user: replier, rule: posted_review.rule)
+      lone = create(:review, :comment, comment: 'lone', user: replier, rule: posted_review.rule)
       row = component.paginated_comments[:rows].find { |r| r[:id] == lone.id }
       expect(row[:responses_count]).to eq(0)
     end
@@ -171,7 +171,7 @@ RSpec.describe 'paginated_comments — PII shape' do
     end
 
     it 'returns zeros when a comment has no reactions' do
-      lone = Review.create!(action: 'comment', comment: 'lone', user: viewer, rule: posted_review.rule)
+      lone = create(:review, :comment, comment: 'lone', user: viewer, rule: posted_review.rule)
       row = component.paginated_comments[:rows].find { |r| r[:id] == lone.id }
       expect(row[:reactions]).to eq(up: 0, down: 0)
     end

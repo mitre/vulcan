@@ -12,7 +12,7 @@ RSpec.describe 'Reactions' do
   let_it_be(:outsider) { create(:user) }
   let(:rule) { component.rules.first }
   let(:comment_review) do
-    Review.create!(action: 'comment', comment: 'a comment', user: viewer, rule: rule)
+    create(:review, :comment, comment: 'a comment', user: viewer, rule: rule)
   end
 
   before do
@@ -73,8 +73,8 @@ RSpec.describe 'Reactions' do
       end
 
       it 'allows reacting to a reply (Decision 7)' do
-        reply = Review.create!(action: 'comment', comment: 'reply', user: viewer, rule: rule,
-                               responding_to_review_id: comment_review.id)
+        reply = create(:review, :comment, comment: 'reply', user: viewer, rule: rule,
+                                          responding_to_review_id: comment_review.id)
         expect do
           post "/reviews/#{reply.id}/reactions", params: { kind: 'up' }, as: :json
         end.to change(Reaction, :count).by(1)

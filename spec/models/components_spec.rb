@@ -987,13 +987,12 @@ RSpec.describe Component do
 
       rule1 = shared_component.rules[0]
       rule2 = shared_component.rules[1]
-      @c1 = Review.create!(action: 'comment', comment: 'first', user: pc_viewer, rule: rule1, section: 'check_content')
-      @c2 = Review.create!(action: 'comment', comment: 'second', user: pc_viewer, rule: rule1, section: 'fixtext')
-      @c3 = Review.create!(action: 'comment', comment: 'third', user: pc_viewer, rule: rule2,
-                           section: nil, triage_status: 'concur',
-                           triage_set_by_id: pc_author.id, triage_set_at: Time.current)
-      @reply = Review.create!(action: 'comment', comment: 'thanks', user: pc_author, rule: rule1,
-                              responding_to_review_id: @c1.id, section: 'check_content')
+      @c1 = create(:review, :comment, comment: 'first', user: pc_viewer, rule: rule1, section: 'check_content')
+      @c2 = create(:review, :comment, comment: 'second', user: pc_viewer, rule: rule1, section: 'fixtext')
+      @c3 = create(:review, :comment, :concur, comment: 'third', user: pc_viewer, rule: rule2,
+                                               section: nil)
+      @reply = create(:review, :comment, comment: 'thanks', user: pc_author, rule: rule1,
+                                         responding_to_review_id: @c1.id, section: 'check_content')
     end
 
     it 'returns top-level comments only (no replies)' do
@@ -1163,10 +1162,9 @@ RSpec.describe Component do
     end
 
     it 'returns nil rule_content for component-scoped comments with include_rule_content: true' do
-      comp_review = Review.create!(
-        action: 'comment', comment: 'component-level feedback',
-        user: pc_viewer, commentable: shared_component, section: nil
-      )
+      comp_review = create(:review, :component_comment,
+                           comment: 'component-level feedback',
+                           user: pc_viewer, commentable: shared_component)
       result = shared_component.paginated_comments(triage_status: 'all', include_rule_content: true)
       comp_row = result[:rows].find { |r| r[:id] == comp_review.id }
       expect(comp_row[:rule_content]).to be_nil

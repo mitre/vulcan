@@ -143,7 +143,7 @@ RSpec.describe 'Project Import Backup' do
       sign_in admin_user
       # Add a review to the source component
       rule = source_component.rules.first
-      Review.create!(user: admin_user, rule: rule, action: 'request_review', comment: 'Test')
+      create(:review, user: admin_user, rule: rule, comment: 'Test')
     end
 
     it 'includes reviews by default' do

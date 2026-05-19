@@ -28,15 +28,15 @@ RSpec.describe 'GET /projects/:id/export/disposition_csv' do
   end
 
   let!(:c1) do
-    Review.create!(rule: component_a.rules.first, user: commenter, action: 'comment',
-                   section: 'check_content', comment: 'check text issue on a',
-                   triage_status: 'pending')
+    create(:review, :comment, rule: component_a.rules.first, user: commenter,
+                              section: 'check_content', comment: 'check text issue on a',
+                              triage_status: 'pending')
   end
 
   let!(:component_b) do
     c = create(:component, project: project, based_on: srg, prefix: 'XYZW-99', name: 'Second component')
-    Review.create!(rule: c.rules.first, user: commenter, action: 'comment',
-                   comment: 'check text issue on b', triage_status: 'pending')
+    create(:review, :comment, rule: c.rules.first, user: commenter,
+                              comment: 'check text issue on b', triage_status: 'pending')
     c
   end
 
@@ -80,9 +80,8 @@ RSpec.describe 'GET /projects/:id/export/disposition_csv' do
     end
 
     it 'forwards triage_status filter through to all components' do
-      Review.create!(rule: component_a.rules.first, user: commenter, action: 'comment',
-                     comment: 'concurred', triage_status: 'concur',
-                     triage_set_by: triager, triage_set_at: 1.hour.ago)
+      create(:review, :comment, :concur, rule: component_a.rules.first, user: commenter,
+                                         comment: 'concurred', triage_set_by: triager, triage_set_at: 1.hour.ago)
       get "/projects/#{project.id}/export/disposition_csv", params: { triage_status: 'pending' }
       out = CSV.parse(response.body, headers: true)
       expect(out.pluck('Triage Status').uniq).to eq(['pending'])

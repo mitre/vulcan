@@ -137,19 +137,19 @@ RSpec.describe 'RuleBlueprint' do
     end
 
     it 'counts replies in total' do
-      parent = Review.create!(action: 'comment', user: commenter, rule: rule, comment: 'parent')
-      Review.create!(action: 'comment', user: commenter, rule: rule, comment: 'reply 1',
-                     responding_to_review_id: parent.id)
-      Review.create!(action: 'comment', user: commenter, rule: rule, comment: 'reply 2',
-                     responding_to_review_id: parent.id)
+      parent = create(:review, :comment, user: commenter, rule: rule, comment: 'parent')
+      create(:review, :comment, user: commenter, rule: rule, comment: 'reply 1',
+                                responding_to_review_id: parent.id)
+      create(:review, :comment, user: commenter, rule: rule, comment: 'reply 2',
+                                responding_to_review_id: parent.id)
       json = RuleBlueprint.render_as_hash(rule.reload, view: :editor)
       expect(json[:comment_summary]).to include(total: 3)
     end
 
     it 'rolls replies of an open parent into the open count' do
-      open_parent = Review.create!(action: 'comment', user: commenter, rule: rule, comment: 'open parent')
-      Review.create!(action: 'comment', user: commenter, rule: rule, comment: 'reply',
-                     responding_to_review_id: open_parent.id)
+      open_parent = create(:review, :comment, user: commenter, rule: rule, comment: 'open parent')
+      create(:review, :comment, user: commenter, rule: rule, comment: 'reply',
+                                responding_to_review_id: open_parent.id)
       json = RuleBlueprint.render_as_hash(rule.reload, view: :editor)
       # 1 open parent + 1 reply = 2 open interactions
       expect(json[:comment_summary]).to include(open: 2, total: 2)
@@ -158,30 +158,27 @@ RSpec.describe 'RuleBlueprint' do
     # "Needs clarification" / "concur" without adjudicate keep the
     # parent in the open set — the conversation is not yet closed.
     it 'counts triaged-but-not-adjudicated parents as open' do
-      parent = Review.create!(action: 'comment', user: commenter, rule: rule, comment: 'needs more info')
-      parent.update_columns(triage_status: 'needs_clarification',
-                            triage_set_by_id: commenter.id, triage_set_at: Time.current)
-      Review.create!(action: 'comment', user: commenter, rule: rule, comment: 'reply',
-                     responding_to_review_id: parent.id)
+      parent = create(:review, :comment, :needs_clarification, user: commenter, rule: rule, comment: 'needs more info')
+      create(:review, :comment, user: commenter, rule: rule, comment: 'reply',
+                                responding_to_review_id: parent.id)
       json = RuleBlueprint.render_as_hash(rule.reload, view: :editor)
       expect(json[:comment_summary]).to include(open: 2, total: 2)
     end
 
     it 'walks transitively for reply-of-reply chains' do
-      parent = Review.create!(action: 'comment', user: commenter, rule: rule, comment: 'parent')
-      reply = Review.create!(action: 'comment', user: commenter, rule: rule, comment: 'reply',
-                             responding_to_review_id: parent.id)
-      Review.create!(action: 'comment', user: commenter, rule: rule, comment: 'reply-of-reply',
-                     responding_to_review_id: reply.id)
+      parent = create(:review, :comment, user: commenter, rule: rule, comment: 'parent')
+      reply = create(:review, :comment, user: commenter, rule: rule, comment: 'reply',
+                                        responding_to_review_id: parent.id)
+      create(:review, :comment, user: commenter, rule: rule, comment: 'reply-of-reply',
+                                responding_to_review_id: reply.id)
       json = RuleBlueprint.render_as_hash(rule.reload, view: :editor)
       expect(json[:comment_summary]).to include(open: 3, total: 3)
     end
 
     it 'does NOT count replies whose parent has been adjudicated' do
-      adjudicated = Review.create!(action: 'comment', user: commenter, rule: rule, comment: 'closed')
-      adjudicated.update_columns(triage_status: 'concur', adjudicated_at: Time.current)
-      Review.create!(action: 'comment', user: commenter, rule: rule, comment: 'late reply',
-                     responding_to_review_id: adjudicated.id)
+      adjudicated = create(:review, :comment, :concur, :adjudicated, user: commenter, rule: rule, comment: 'closed')
+      create(:review, :comment, user: commenter, rule: rule, comment: 'late reply',
+                                responding_to_review_id: adjudicated.id)
       json = RuleBlueprint.render_as_hash(rule.reload, view: :editor)
       expect(json[:comment_summary]).to include(open: 0, total: 2)
     end
