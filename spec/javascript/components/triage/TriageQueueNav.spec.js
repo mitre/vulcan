@@ -143,6 +143,47 @@ describe("TriageQueueNav", () => {
     expect(lastHeader.text()).toContain("1");
   });
 
+  // ── 2D Navigation: rule arrows (left/right) ─────────────────────────
+
+  describe("rule-level navigation (left/right)", () => {
+    it("prev-rule jumps to first comment of previous rule", async () => {
+      const w = mount(TriageQueueNav, { localVue, propsData: baseProps({ currentId: 4 }) });
+      await w.find('[data-testid="prev-rule"]').trigger("click");
+      expect(w.emitted("select")[0][0]).toBe(1);
+    });
+
+    it("next-rule jumps to first comment of next rule", async () => {
+      const w = mount(TriageQueueNav, { localVue, propsData: baseProps({ currentId: 1 }) });
+      await w.find('[data-testid="next-rule"]').trigger("click");
+      expect(w.emitted("select")[0][0]).toBe(4);
+    });
+
+    it("prev-rule disabled on first rule", () => {
+      const w = mount(TriageQueueNav, { localVue, propsData: baseProps({ currentId: 1 }) });
+      expect(w.find('[data-testid="prev-rule"]').attributes("disabled")).toBeDefined();
+    });
+
+    it("next-rule disabled on last rule", () => {
+      const w = mount(TriageQueueNav, { localVue, propsData: baseProps({ currentId: 6 }) });
+      expect(w.find('[data-testid="next-rule"]').attributes("disabled")).toBeDefined();
+    });
+
+    it("next-rule from middle of a rule jumps to first comment of next rule", async () => {
+      const w = mount(TriageQueueNav, { localVue, propsData: baseProps({ currentId: 2 }) });
+      await w.find('[data-testid="next-rule"]').trigger("click");
+      expect(w.emitted("select")[0][0]).toBe(4);
+    });
+  });
+
+  // ── Bold rule headers in dropdown ──────────────────────────────────
+
+  it("dropdown rule headers have bold rule name", () => {
+    const w = mount(TriageQueueNav, { localVue, propsData: baseProps() });
+    const headers = w.findAll('[data-testid="queue-dropdown-rule-header"]');
+    expect(headers.at(0).find("strong").exists()).toBe(true);
+    expect(headers.at(0).find("strong").text()).toBe("CNTR-01-000001");
+  });
+
   // ── Scale test ─────────────────────────────────────────────────────
 
   it("handles 200 comments across 40 rules without crashing", () => {

@@ -2,6 +2,17 @@
   <div class="triage-queue-nav d-flex align-items-center" role="navigation">
     <template v-if="comments.length > 0">
       <b-button
+        data-testid="prev-rule"
+        size="sm"
+        variant="outline-secondary"
+        :disabled="!hasPrevRule"
+        aria-label="Previous rule"
+        class="mr-1"
+        @click="goPrevRule"
+      >
+        <b-icon icon="chevron-bar-left" />
+      </b-button>
+      <b-button
         data-testid="prev-comment"
         size="sm"
         variant="outline-secondary"
@@ -26,10 +37,21 @@
         variant="outline-secondary"
         :disabled="!hasNext"
         aria-label="Next comment"
-        class="mr-3"
+        class="mr-1"
         @click="goNext"
       >
         <b-icon icon="chevron-right" />
+      </b-button>
+      <b-button
+        data-testid="next-rule"
+        size="sm"
+        variant="outline-secondary"
+        :disabled="!hasNextRule"
+        aria-label="Next rule"
+        class="mr-3"
+        @click="goNextRule"
+      >
+        <b-icon icon="chevron-bar-right" />
       </b-button>
 
       <span class="small text-muted mr-3">{{ pendingCount }} pending</span>
@@ -44,7 +66,7 @@
       >
         <template v-for="group in ruleGroups">
           <b-dropdown-header :key="'hdr-' + group.ruleId" data-testid="queue-dropdown-rule-header">
-            {{ group.ruleName }} ({{ group.comments.length }})
+            <strong>{{ group.ruleName }}</strong> ({{ group.comments.length }})
           </b-dropdown-header>
           <b-dropdown-item
             v-for="comment in group.comments"
@@ -136,6 +158,12 @@ export default {
     hasNext() {
       return this.flatIndex >= 0 && this.flatIndex < this.comments.length - 1;
     },
+    hasPrevRule() {
+      return this.currentRuleIndex > 0;
+    },
+    hasNextRule() {
+      return this.currentRuleIndex >= 0 && this.currentRuleIndex < this.ruleGroups.length - 1;
+    },
     pendingCount() {
       return this.comments.filter((c) => c.triage_status === "pending").length;
     },
@@ -160,6 +188,16 @@ export default {
     goNext() {
       const id = this.flatComment(1);
       if (id !== null) this.$emit("select", id);
+    },
+    goPrevRule() {
+      if (!this.hasPrevRule) return;
+      const prevGroup = this.ruleGroups[this.currentRuleIndex - 1];
+      this.$emit("select", prevGroup.comments[0].id);
+    },
+    goNextRule() {
+      if (!this.hasNextRule) return;
+      const nextGroup = this.ruleGroups[this.currentRuleIndex + 1];
+      this.$emit("select", nextGroup.comments[0].id);
     },
   },
 };
