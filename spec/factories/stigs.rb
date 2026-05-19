@@ -11,5 +11,9 @@ FactoryBot.define do
     sequence(:version) { |n| "V#{(n / 10) + 1}R#{(n % 10) + 1}" }
     xml { XML_FILE_STIG }
     benchmark_date { '2023-07-20' }
+
+    trait :skip_rules do
+      after(:build) { |stig| stig.define_singleton_method(:import_stig_rules) { nil } }
+    end
   end
 end
