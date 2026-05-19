@@ -11,7 +11,10 @@ RSpec.describe 'seed file idempotency and completeness' do
 
   include ConfigFileHelpers
 
-  let(:seeds) { Rails.root.join('db/seeds.rb').read }
+  let(:seeds) do
+    Rails.root.glob('db/seeds/data/*.rb').map { |f| File.read(f) }.join("\n")
+  end
+  let(:loader) { Rails.root.join('db/seeds.rb').read }
 
   describe 'idempotency' do
     it 'does not use bare create! for Projects' do
@@ -22,8 +25,9 @@ RSpec.describe 'seed file idempotency and completeness' do
     end
 
     it 'SRG/STIG seeding checks for existing records before save' do
-      expect(seeds).to match(/find_by.*srg_id|find_by.*stig_id/),
-                       'seed_xccdf must check for existing records before save!'
+      helpers = Rails.root.join('lib/seed_helpers.rb').read
+      expect(helpers).to match(/find_by.*srg_id|find_by.*stig_id/),
+                         'SeedHelpers.seed_xccdf must check for existing records before save!'
     end
 
     it 'does not use bare Membership.import without dedup' do
@@ -33,10 +37,11 @@ RSpec.describe 'seed file idempotency and completeness' do
   end
 
   describe 'Component title requirement' do
-    it 'all named Component.create/find_or_create calls include title' do
-      # The seed_component helper must require title (either as a named param or via fetch)
-      expect(seeds).to match(/def seed_component/).and(match(/\.fetch\(:title\)/)),
-                       'seed_component helper must require title parameter'
+    let(:seed_helpers) { Rails.root.join('lib/seed_helpers.rb').read }
+
+    it 'SeedHelpers.seed_component requires title parameter' do
+      expect(seed_helpers).to match(/def self\.seed_component/).and(match(/\.fetch\(:title\)/)),
+                              'SeedHelpers.seed_component must require title parameter'
     end
   end
 
@@ -73,7 +78,7 @@ RSpec.describe 'seed file idempotency and completeness' do
   # across all projects (not just Container Platform / Photon OS 4). Caught live
   # 2026-05-01 — projects 1 (Photon 3) and 5 (Nothing to See Here) had blank PoC.
   describe 'component PoC coverage' do
-    let(:seed_component_calls) { seeds.scan(/seed_component\(.*?\n\)/m) }
+    let(:seed_component_calls) { seeds.scan(/(?:SeedHelpers\.)?seed_component\(.*?\n\)/m) }
 
     it 'has at least one seed_component call (sanity check)' do
       expect(seed_component_calls).not_to be_empty,

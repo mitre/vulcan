@@ -255,30 +255,89 @@ describe('ProjectCard', () => {
 
 ## Test Helpers
 
-### FactoryBot
+### FactoryBot — Available Traits
+
+Vulcan factories are in `spec/factories/`. Every model that appears in seeds or tests has a factory with traits covering all real-world states.
+
+#### User
 
 ```ruby
-# spec/factories/users.rb
-FactoryBot.define do
-  factory :user do
-    sequence(:email) { |n| "user#{n}@example.com" }
-    password { 'S3cure!#Pass001' }
-    first_name { Faker::Name.first_name }
-    last_name { Faker::Name.last_name }
-    confirmed_at { Time.now }
-
-    trait :admin do
-      admin { true }
-    end
-
-    trait :unconfirmed do
-      confirmed_at { nil }
-    end
-
-    factory :admin_user, traits: [:admin]
-  end
-end
+create(:user)                              # Basic confirmed user
+create(:user, :admin)                      # Site admin
+create(:user, :viewer, :with_membership)   # Viewer on auto-created project
+create(:user, :author, :with_membership, project: my_project)  # Author on specific project
+create(:user, :reviewer, :with_membership) # Reviewer
+create(:ldap_user)                         # LDAP-authenticated user
 ```
+
+#### Project
+
+```ruby
+create(:project)                           # Empty project
+create(:project, :with_admin)              # Project with 1 admin membership
+create(:project, :with_admin, admin_user: existing_user)  # Specific admin
+create(:project, :with_members)            # All 4 role tiers (viewer/author/reviewer/admin)
+```
+
+#### Component
+
+```ruby
+create(:component)                         # Full component with SRG rules imported (~500ms)
+create(:component, :skip_rules)            # Lightweight — no SRG rule import (fast)
+create(:component, :skip_rules, :open_comment_period)  # Active comment window
+create(:component, :skip_rules, :with_poc) # Has admin_name + admin_email
+create(:component, :released)              # Released with all rules locked
+```
+
+#### Rule
+
+```ruby
+create(:rule)                              # Default: Not Yet Determined, unlocked
+create(:rule, :locked)                     # Locked rule
+create(:rule, :applicable_configurable)    # Status: Applicable - Configurable
+create(:rule, :not_applicable)             # Status: Not Applicable
+create(:rule, :not_yet_determined)         # Status: Not Yet Determined (explicit)
+```
+
+#### Membership
+
+```ruby
+create(:membership)                        # Default: viewer on a project
+create(:membership, :viewer)               # Explicit viewer
+create(:membership, :author)               # Author role
+create(:membership, :reviewer)             # Reviewer role
+create(:membership, :admin)                # Admin role
+create(:membership, :for_component)        # Component-level membership
+```
+
+#### Review (comments, triage, workflow)
+
+```ruby
+# Comments
+create(:review, :comment)                  # Top-level comment (auto-pending triage)
+create(:review, :reply)                    # Reply linked to auto-created parent
+create(:review, :component_comment)        # Comment on a Component (not a Rule)
+
+# Triage statuses (compose with :comment)
+create(:review, :comment, :concur)         # Triaged as concur
+create(:review, :comment, :non_concur)     # Triaged as non-concur
+create(:review, :comment, :concur_with_comment)
+create(:review, :comment, :needs_clarification)
+create(:review, :comment, :informational)  # Terminal — auto-adjudicated
+create(:review, :comment, :withdrawn)      # Terminal — auto-adjudicated
+create(:review, :comment, :duplicate)      # Terminal — requires duplicate_of target
+
+# Lifecycle
+create(:review, :comment, :triaged)        # Has triage_set_by + triage_set_at
+create(:review, :comment, :concur, :adjudicated)  # Fully closed
+
+# Workflow actions
+create(:review)                            # Default: request_review action
+```
+
+> **Note:** The Review factory automatically creates a Membership linking the user
+> to the rule's project with the minimum required role for the action. You don't
+> need to manually wire up permissions in tests.
 
 ### Custom Matchers
 
