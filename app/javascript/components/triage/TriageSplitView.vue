@@ -46,6 +46,11 @@
           <blockquote class="border-left pl-3 py-2 mb-2 bg-light">
             {{ activeComment.comment }}
           </blockquote>
+          <ReactionButtons
+            :review-id="activeComment.id"
+            :reactions="activeComment.reactions || { up: 0, down: 0 }"
+            @toggle="onReactionToggle"
+          />
           <CommentThread
             :parent-review-id="activeComment.id"
             :responses-count="activeComment.responses_count || 0"
@@ -194,6 +199,7 @@ import TriageQueueNav from "./TriageQueueNav.vue";
 import RuleContextPanel from "./RuleContextPanel.vue";
 import CommentTriageForm from "./CommentTriageForm.vue";
 import RulePicker from "../components/RulePicker.vue";
+import ReactionButtons from "../shared/ReactionButtons.vue";
 
 export default {
   name: "TriageSplitView",
@@ -204,6 +210,7 @@ export default {
     CommentThread,
     SectionLabel,
     RulePicker,
+    ReactionButtons,
   },
   mixins: [AlertMixin, FormMixin, RoleComparisonMixin],
   props: {
@@ -390,6 +397,19 @@ export default {
     },
     onCancel() {
       this.$emit("exit");
+    },
+    async onReactionToggle(kind) {
+      if (!this.activeComment) return;
+      try {
+        await axios.post(
+          `/reviews/${this.activeComment.id}/reactions`,
+          { kind },
+          { headers: { Accept: "application/json" } },
+        );
+        this.$emit("refresh");
+      } catch (err) {
+        this.showAlert("danger", "Reaction failed", err?.response?.data?.error || "Unknown error");
+      }
     },
     onTargetRuleSelected(ruleId) {
       this.adminTargetRuleId = ruleId;

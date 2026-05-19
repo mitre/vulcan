@@ -47,6 +47,7 @@ const rows = [
     adjudicated_at: null,
     updated_at: "2026-05-01T00:00:00Z",
     rule_content: ruleContent1,
+    reactions: { up: 2, down: 1 },
   },
   {
     id: 2,
@@ -369,5 +370,18 @@ describe("TriageSplitView", () => {
     expect(w.vm.canSubmitAdminAction).toBe(false);
     w.vm.adminConfirmationId = "1";
     expect(w.vm.canSubmitAdminAction).toBe(true);
+  });
+
+  // ── Reaction buttons ──────────────────────────────────────────────
+
+  it("renders ReactionButtons for the active comment", async () => {
+    const w = mount(TriageSplitView, {
+      localVue,
+      propsData: baseProps({ initialCommentId: 1 }),
+    });
+    await flushPromises(w);
+    const reactionBtns = w.findComponent({ name: "ReactionButtons" });
+    expect(reactionBtns.exists()).toBe(true);
+    expect(reactionBtns.props("reviewId")).toBe(1);
   });
 });
