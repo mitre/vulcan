@@ -39,6 +39,9 @@
             class="mr-2 flex-shrink-0"
           />
           <strong class="small">{{ section.label }}</strong>
+          <span v-if="sectionCount(section.key) > 0" class="badge badge-pill badge-secondary ml-1"
+            >({{ sectionCount(section.key) }})</span
+          >
           <span
             v-if="!isSectionExpanded(section.key)"
             class="section-preview text-muted small ml-2 text-truncate"
@@ -52,6 +55,25 @@
           :class="{ 'section-body--focused': section.key === focusedSection }"
           v-text="section.content"
         />
+        <div
+          v-if="isSectionExpanded(section.key) && sectionCommentsFor(section.key).length > 0"
+          class="related-comments-list small ml-4 mt-1 mb-2"
+        >
+          <div
+            v-for="rc in sectionCommentsFor(section.key)"
+            :key="rc.id"
+            class="related-comment d-flex align-items-baseline px-2 py-1 rounded mb-1"
+            :class="{ 'related-comment--active': rc.id === activeCommentId }"
+            role="button"
+            tabindex="0"
+            @click="$emit('select-comment', rc.id)"
+            @keydown.enter="$emit('select-comment', rc.id)"
+          >
+            <span class="text-muted mr-1">#{{ rc.id }}</span>
+            <strong class="mr-1">{{ rc.author_name || "—" }}</strong>
+            <span class="text-muted text-truncate">{{ truncate(rc.comment, 60) }}</span>
+          </div>
+        </div>
       </div>
     </template>
 
@@ -83,6 +105,9 @@ export default {
     focusedSection: { type: String, default: null },
     contextMode: { type: String, default: "all" },
     commentedSections: { type: Set, default: () => new Set() },
+    sectionCommentCounts: { type: Object, default: () => ({}) },
+    sectionComments: { type: Array, default: () => [] },
+    activeCommentId: { type: Number, default: null },
   },
   data() {
     return {
@@ -154,6 +179,12 @@ export default {
     toggleSection(key) {
       this.$set(this.manualToggles, key, !this.isSectionExpanded(key));
     },
+    sectionCount(key) {
+      return this.sectionCommentCounts[key] || 0;
+    },
+    sectionCommentsFor(key) {
+      return this.sectionComments.filter((c) => c.section === key);
+    },
     truncate(text, len) {
       if (!text || text.length <= len) return text;
       return text.slice(0, len) + "...";
@@ -191,5 +222,20 @@ export default {
 
 .section-preview {
   max-width: 60%;
+}
+
+.related-comment {
+  cursor: pointer;
+  border-left: 2px solid transparent;
+}
+
+.related-comment:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.related-comment--active {
+  border-left-color: #007bff;
+  background-color: rgba(0, 123, 255, 0.06);
+  font-weight: 500;
 }
 </style>

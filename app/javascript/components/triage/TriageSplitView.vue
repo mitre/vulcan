@@ -23,6 +23,10 @@
           :focused-section="activeComment.section"
           :context-mode="contextMode"
           :commented-sections="commentedSections"
+          :section-comment-counts="sectionCommentCounts"
+          :section-comments="activeRuleComments"
+          :active-comment-id="activeCommentId"
+          @select-comment="onQueueSelect"
         />
       </b-col>
       <b-col lg="7">
@@ -232,14 +236,21 @@ export default {
     canTriage() {
       return this.role_gte_to(this.effectivePermissions, "author");
     },
-    commentedSections() {
-      if (!this.activeComment) return new Set();
-      return new Set(
-        this.sortedRows
-          .filter((r) => r.rule_id === this.activeComment.rule_id && !r.responding_to_review_id)
-          .map((r) => r.section)
-          .filter(Boolean),
+    activeRuleComments() {
+      if (!this.activeComment) return [];
+      return this.sortedRows.filter(
+        (r) => r.rule_id === this.activeComment.rule_id && !r.responding_to_review_id,
       );
+    },
+    commentedSections() {
+      return new Set(this.activeRuleComments.map((r) => r.section).filter(Boolean));
+    },
+    sectionCommentCounts() {
+      const counts = {};
+      for (const r of this.activeRuleComments) {
+        if (r.section) counts[r.section] = (counts[r.section] || 0) + 1;
+      }
+      return counts;
     },
     canAdminAct() {
       return this.effectivePermissions === "admin";

@@ -244,4 +244,133 @@ describe("RuleContextPanel", () => {
     expect(FIELD_LABELS.vuln_discussion).toBe("Vulnerability Discussion");
     expect(FIELD_LABELS.rule_severity).toBe("Severity");
   });
+
+  // ── Section comment count badges (agw.11) ──────────────────────────
+
+  describe("section comment count badges", () => {
+    const sectionCounts = { check_content: 3, fixtext: 1 };
+
+    it('shows "(3)" badge on section header when 3 comments target that section', () => {
+      const w = mount(RuleContextPanel, {
+        localVue,
+        propsData: props({ sectionCommentCounts: sectionCounts }),
+      });
+      const checkHeader = w.find('[data-section="check_content"] .section-header');
+      expect(checkHeader.text()).toContain("(3)");
+    });
+
+    it('shows "(1)" badge on fixtext section', () => {
+      const w = mount(RuleContextPanel, {
+        localVue,
+        propsData: props({ sectionCommentCounts: sectionCounts }),
+      });
+      const fixHeader = w.find('[data-section="fixtext"] .section-header');
+      expect(fixHeader.text()).toContain("(1)");
+    });
+
+    it("shows no badge when section has 0 comments", () => {
+      const w = mount(RuleContextPanel, {
+        localVue,
+        propsData: props({ sectionCommentCounts: sectionCounts }),
+      });
+      const vulnHeader = w.find('[data-section="vuln_discussion"] .section-header');
+      expect(vulnHeader.text()).not.toMatch(/\(\d+\)/);
+    });
+
+    it("shows no badges when sectionCommentCounts is empty", () => {
+      const w = mount(RuleContextPanel, {
+        localVue,
+        propsData: props({ sectionCommentCounts: {} }),
+      });
+      const headers = w.findAll(".section-header");
+      headers.wrappers.forEach((h) => {
+        expect(h.text()).not.toMatch(/\(\d+\)/);
+      });
+    });
+  });
+
+  // ── Related comments list in expanded section (agw.11) ─────────────
+
+  describe("related comments list", () => {
+    const relatedComments = [
+      { id: 1, section: "check_content", author_name: "Viewer", comment: "First comment", triage_status: "pending" },
+      { id: 2, section: "check_content", author_name: "Reviewer", comment: "Second comment", triage_status: "concur" },
+      { id: 3, section: "fixtext", author_name: "Author", comment: "Fix comment", triage_status: "pending" },
+    ];
+
+    it("renders related comments below the expanded section body", () => {
+      const w = mount(RuleContextPanel, {
+        localVue,
+        propsData: props({
+          focusedSection: "check_content",
+          sectionComments: relatedComments,
+          activeCommentId: 1,
+          sectionCommentCounts: { check_content: 2, fixtext: 1 },
+        }),
+      });
+      const section = w.find('[data-section="check_content"]');
+      const relatedList = section.findAll(".related-comment");
+      expect(relatedList.length).toBe(2);
+    });
+
+    it("shows author name and truncated text for each related comment", () => {
+      const w = mount(RuleContextPanel, {
+        localVue,
+        propsData: props({
+          focusedSection: "check_content",
+          sectionComments: relatedComments,
+          activeCommentId: 1,
+          sectionCommentCounts: { check_content: 2 },
+        }),
+      });
+      const items = w.findAll('[data-section="check_content"] .related-comment');
+      expect(items.at(0).text()).toContain("Viewer");
+      expect(items.at(1).text()).toContain("Reviewer");
+    });
+
+    it("highlights the active comment in the related list", () => {
+      const w = mount(RuleContextPanel, {
+        localVue,
+        propsData: props({
+          focusedSection: "check_content",
+          sectionComments: relatedComments,
+          activeCommentId: 1,
+          sectionCommentCounts: { check_content: 2 },
+        }),
+      });
+      const items = w.findAll('[data-section="check_content"] .related-comment');
+      expect(items.at(0).classes()).toContain("related-comment--active");
+      expect(items.at(1).classes()).not.toContain("related-comment--active");
+    });
+
+    it("emits select-comment when a related comment is clicked", async () => {
+      const w = mount(RuleContextPanel, {
+        localVue,
+        propsData: props({
+          focusedSection: "check_content",
+          sectionComments: relatedComments,
+          activeCommentId: 1,
+          sectionCommentCounts: { check_content: 2 },
+        }),
+      });
+      const items = w.findAll('[data-section="check_content"] .related-comment');
+      await items.at(1).trigger("click");
+      expect(w.emitted("select-comment")).toBeTruthy();
+      expect(w.emitted("select-comment")[0][0]).toBe(2);
+    });
+
+    it("does not render related comments for collapsed sections", () => {
+      const w = mount(RuleContextPanel, {
+        localVue,
+        propsData: props({
+          focusedSection: "check_content",
+          sectionComments: relatedComments,
+          activeCommentId: 1,
+          sectionCommentCounts: { fixtext: 1 },
+        }),
+      });
+      const fixSection = w.find('[data-section="fixtext"]');
+      expect(fixSection.findAll(".related-comment").length).toBe(0);
+    });
+  });
 });
