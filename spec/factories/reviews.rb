@@ -7,7 +7,7 @@ FactoryBot.define do
     action { 'request_review' }
     comment { 'Requesting review' }
 
-    after(:build) do |review|
+    before(:create) do |review|
       next unless review.user && review.rule&.component&.project
 
       project = review.rule.component.project

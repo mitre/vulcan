@@ -13,14 +13,8 @@ unless User.exists?(admin: true)
 end
 
 # Demo role-tier users: email-as-role pattern for 30-second login/logout test loop
-DEMO_ROLE_USERS = {
-  'viewer@example.com' => { name: 'Demo Viewer', role: 'viewer' },
-  'author@example.com' => { name: 'Demo Author', role: 'author' },
-  'reviewer@example.com' => { name: 'Demo Reviewer', role: 'reviewer' }
-}.freeze
-
 puts 'Creating demo role-tier users...'
-DEMO_ROLE_USERS.each do |email, attrs|
+SeedHelpers::DEMO_ROLE_USERS.each do |email, attrs|
   user = User.find_or_initialize_by(email: email)
   if user.new_record?
     user.name = attrs[:name]

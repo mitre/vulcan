@@ -3,6 +3,7 @@
 namespace :dev do
   desc 'Load demo data idempotently (alias for db:seed)'
   task prime: :environment do
+    Rake::Task['db:seed'].reenable
     Rake::Task['db:seed'].invoke
   end
 
@@ -37,10 +38,12 @@ namespace :dev do
     require_relative '../seed_helpers'
 
     puts 'Clearing demo data...'
-    Review.where(action: 'comment').delete_all
-    puts "  Deleted #{Review.where(action: 'comment').none? ? 'all' : 'some'} comments"
+    count = Review.where(action: 'comment').count
+    Review.where(action: 'comment').destroy_all
+    puts "  Deleted #{count} comments"
 
     puts 'Re-priming...'
+    Rake::Task['db:seed'].reenable
     Rake::Task['db:seed'].invoke
     puts 'Done.'
   end

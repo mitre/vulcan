@@ -74,6 +74,7 @@
       @adjudicated="onAdjudicated"
       @response-posted="onTriageResponsePosted"
       @destroyed="onDestroyed"
+      @reaction-updated="updateRowInPlace"
       @open-reply-composer="openReplyComposerFromRow"
       @admin-panel-close="$emit('admin-panel-close')"
     />

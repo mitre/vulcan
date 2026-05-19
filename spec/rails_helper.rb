@@ -144,6 +144,12 @@ RSpec.configure do |config|
   config.filter_rails_from_backtrace!
   # arbitrary gems may also be filtered via:
   # config.filter_gems_from_backtrace("gem name")
+
+  # Exclude seed_pipeline specs from normal and parallel_rspec runs.
+  # The seed pipeline spec uses DatabaseCleaner.strategy = :truncation in
+  # before(:all), which corrupts parallel test databases. Run it standalone:
+  #   bundle exec rspec spec/seeds/seed_pipeline_spec.rb --tag seed_pipeline
+  config.filter_run_excluding seed_pipeline: true
   config.include FactoryBot::Syntax::Methods
 
   config.include Devise::Test::ControllerHelpers, type: :controller

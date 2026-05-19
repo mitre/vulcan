@@ -401,16 +401,12 @@ export default {
     },
     onReactionToggle(kind) {
       if (!this.activeComment) return;
+      const reviewId = this.activeComment.id;
       const prev = { ...this.activeComment.reactions };
       const apply = (reactions) => {
-        this.$set(this.activeComment, "reactions", reactions);
+        this.$emit("reaction-updated", { id: reviewId, reactions });
       };
-      this.submitReactionToggle({
-        reviewId: this.activeComment.id,
-        prev,
-        kind,
-        apply,
-      });
+      this.submitReactionToggle({ reviewId, prev, kind, apply });
     },
     onTargetRuleSelected(ruleId) {
       this.adminTargetRuleId = ruleId;

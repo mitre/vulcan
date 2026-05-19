@@ -91,7 +91,7 @@ Returns an Array of error strings. Empty array means all checks pass. Checks: ad
 
 1. Create a numbered file in `db/seeds/data/` — pick a number that respects dependencies (users before memberships, SRGs before components, etc.)
 2. Use `SeedHelpers` methods for idempotent creation
-3. For Review/comment data, use `SeedHelpers.find_or_seed_review` (backed by FactoryBot)
+3. For Review/comment data, use `SeedHelpers.find_or_seed_review` (uses `Review.create!`, plain ActiveRecord)
 4. Add progress output with `puts`
 5. Test idempotency: run `rails db:seed` twice, verify `rails dev:status` shows the same counts
 6. Update `SeedHelpers.verify!` if your seed adds data that should be checked

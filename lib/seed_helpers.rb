@@ -5,6 +5,20 @@ module SeedHelpers # rubocop:disable Style/Documentation
   DEMO_PASSWORD = ENV.fetch('VULCAN_SEED_ADMIN_PASSWORD', '12qwaszx!@QWASZX')
   DEMO_EMAILS = %w[admin@example.com viewer@example.com author@example.com reviewer@example.com].freeze
 
+  DEMO_ROLE_USERS = {
+    'viewer@example.com' => { name: 'Demo Viewer', role: 'viewer' },
+    'author@example.com' => { name: 'Demo Author', role: 'author' },
+    'reviewer@example.com' => { name: 'Demo Reviewer', role: 'reviewer' }
+  }.freeze
+
+  COMPONENT_POC_PATTERNS = [
+    [/Photon OS/i, { admin_name: 'Photon OS Maintainer', admin_email: 'photon-team@example.com' }],
+    [/vCenter/i, { admin_name: 'vCenter Maintainer', admin_email: 'vcenter-team@example.com' }],
+    [/Container Platform/i,
+     { admin_name: 'Container Platform Maintainer', admin_email: 'platform-team@example.com' }]
+  ].freeze
+  GENERIC_POC = { admin_name: 'QA Test Maintainer', admin_email: 'qa-team@example.com' }.freeze
+
   # rubocop:disable Rails/Output
   def self.seed_xccdf(filepath)
     xml = File.read(filepath)
@@ -63,7 +77,7 @@ module SeedHelpers # rubocop:disable Style/Documentation
   end
 
   def self.find_or_seed_review(rule:, user:, section:, comment:, **extra)
-    existing = Review.find_by(action: 'comment', comment: comment)
+    existing = Review.find_by(action: 'comment', comment: comment, rule: rule)
     return existing if existing
 
     Review.create!(

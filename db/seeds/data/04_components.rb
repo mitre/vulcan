@@ -125,20 +125,12 @@ if needed.positive?
 end
 
 # ── PoC backfill for legacy components ──
-COMPONENT_POC_PATTERNS = [
-  [/Photon OS/i, { admin_name: 'Photon OS Maintainer', admin_email: 'photon-team@example.com' }],
-  [/vCenter/i, { admin_name: 'vCenter Maintainer', admin_email: 'vcenter-team@example.com' }],
-  [/Container Platform/i,
-   { admin_name: 'Container Platform Maintainer', admin_email: 'platform-team@example.com' }]
-].freeze
-GENERIC_POC = { admin_name: 'QA Test Maintainer', admin_email: 'qa-team@example.com' }.freeze
-
 backfilled = Component.where(admin_name: [nil, '']).count
 if backfilled.positive?
   puts "  Backfilling PoC on #{backfilled} legacy components..."
   Component.where(admin_name: [nil, '']).find_each do |c|
-    matched = COMPONENT_POC_PATTERNS.find { |pattern, _| c.name =~ pattern }
-    attrs = matched ? matched[1] : GENERIC_POC
+    matched = SeedHelpers::COMPONENT_POC_PATTERNS.find { |pattern, _| c.name =~ pattern }
+    attrs = matched ? matched[1] : SeedHelpers::GENERIC_POC
     c.update_columns(attrs)
   end
   puts '  PoC backfill complete'

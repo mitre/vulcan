@@ -720,7 +720,7 @@ class Component < ApplicationRecord
         updated_at: r.updated_at
       }
 
-      row[:rule_content] = include_rule_content ? serialize_rule_content(r, component_scoped_row) : nil if include_rule_content
+      row[:rule_content] = serialize_rule_content(r, component_scoped_row) if include_rule_content
 
       row
     end

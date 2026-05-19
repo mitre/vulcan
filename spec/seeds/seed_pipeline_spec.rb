@@ -7,9 +7,12 @@ require_relative '../../lib/seed_helpers'
 # into a clean database and checking the results. It uses the :truncation
 # strategy instead of transactions so seed data persists across examples.
 #
-# Run with: bundle exec rspec spec/seeds/
-# Or via rake: rails dev:verify (uses SeedHelpers.verify! for the same checks)
-RSpec.describe 'seed pipeline', type: :model do
+# IMPORTANT: Tagged :seed_pipeline so it is excluded from parallel_rspec runs.
+# The truncation strategy in before(:all) corrupts other parallel test databases.
+#
+# Run standalone: bundle exec rspec spec/seeds/seed_pipeline_spec.rb --tag seed_pipeline
+# Or via rake:    rails dev:verify (uses SeedHelpers.verify! for the same checks)
+RSpec.describe 'seed pipeline', :seed_pipeline, type: :model do
   before(:all) do
     Rails.application.reload_routes!
     DatabaseCleaner.strategy = :truncation
