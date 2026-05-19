@@ -262,10 +262,11 @@ class Review < ApplicationRecord
   # polymorphic columns populated. New component-scoped code sets
   # `commentable:` directly.
   def sync_commentable_from_rule
-    return if commentable.present?
-    return if rule.blank?
-
-    self.commentable = rule
+    if commentable.blank? && rule.present?
+      self.commentable = rule
+    elsif commentable_type == 'BaseRule' && commentable_id.present? && rule_id.blank?
+      self.rule_id = commentable_id
+    end
   end
 
   def commentable_must_be_present
