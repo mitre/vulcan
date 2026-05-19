@@ -1,31 +1,45 @@
 <template>
   <div>
     <b-breadcrumb :items="breadcrumbs" />
-    <div class="px-3">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-          <h1 class="h3 mb-1">Triage Queue</h1>
-          <p class="text-muted mb-0">
-            <strong>{{ component.name }}</strong>
-            <span v-if="component.version || component.release" class="ml-1">
-              v{{ component.version }}r{{ component.release }}
-            </span>
-            <span class="ml-2">— {{ project.name }}</span>
-          </p>
-        </div>
-        <div>
-          <b-button v-if="isSplitMode" variant="outline-secondary" size="sm" @click="exitSplit">
-            <b-icon icon="arrow-left" /> Back to Triage Table
-          </b-button>
+
+    <BaseCommandBar>
+      <template #left>
+        <b-button
+          v-if="isSplitMode"
+          variant="outline-secondary"
+          size="sm"
+          class="mr-2"
+          @click="exitSplit"
+        >
+          <b-icon icon="arrow-left" /> Back to Triage Table
+        </b-button>
+        <b-button :href="`/components/${component.id}`" variant="outline-secondary" size="sm">
+          <b-icon icon="arrow-left" /> Back to Component Editor
+        </b-button>
+      </template>
+      <template #right>
+        <b-button-group v-if="isSplitMode && isAdmin" size="sm">
           <b-button
-            v-else
-            :href="`/components/${component.id}`"
-            variant="outline-secondary"
-            size="sm"
+            :variant="adminPanelOpen ? 'secondary' : 'outline-secondary'"
+            data-testid="open-admin-actions"
+            @click="adminPanelOpen = !adminPanelOpen"
           >
-            <b-icon icon="arrow-left" /> Back to Component Editor
+            <b-icon icon="shield-lock" /> Admin
           </b-button>
-        </div>
+        </b-button-group>
+      </template>
+    </BaseCommandBar>
+
+    <div class="px-3">
+      <div class="mb-3">
+        <h1 class="h3 mb-1">Triage Queue</h1>
+        <p class="text-muted mb-0">
+          <strong>{{ component.name }}</strong>
+          <span v-if="component.version || component.release" class="ml-1">
+            v{{ component.version }}r{{ component.release }}
+          </span>
+          <span class="ml-2">— {{ project.name }}</span>
+        </p>
       </div>
       <ComponentComments
         ref="comments"
@@ -33,18 +47,21 @@
         :component-id="component.id"
         :component-displayed-name="component.name"
         :effective-permissions="effectivePermissions"
-        @split-mode-changed="isSplitMode = $event"
+        :admin-panel-open="adminPanelOpen"
+        @split-mode-changed="onSplitModeChanged"
+        @admin-panel-close="adminPanelOpen = false"
       />
     </div>
   </div>
 </template>
 
 <script>
+import BaseCommandBar from "../shared/BaseCommandBar.vue";
 import ComponentComments from "./ComponentComments.vue";
 
 export default {
   name: "ComponentTriagePage",
-  components: { ComponentComments },
+  components: { BaseCommandBar, ComponentComments },
   props: {
     initialComponentState: { type: Object, required: true },
     project: { type: Object, required: true },
@@ -55,9 +72,13 @@ export default {
     return {
       component: this.initialComponentState,
       isSplitMode: false,
+      adminPanelOpen: false,
     };
   },
   computed: {
+    isAdmin() {
+      return this.effectivePermissions === "admin";
+    },
     breadcrumbs() {
       return [
         { text: "Projects", href: "/projects" },
@@ -68,8 +89,13 @@ export default {
     },
   },
   methods: {
+    onSplitModeChanged(val) {
+      this.isSplitMode = val;
+      if (!val) this.adminPanelOpen = false;
+    },
     exitSplit() {
       this.isSplitMode = false;
+      this.adminPanelOpen = false;
       if (this.$refs.comments) {
         this.$refs.comments.exitSplitMode();
       }

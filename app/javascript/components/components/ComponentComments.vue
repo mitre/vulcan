@@ -65,12 +65,14 @@
       :initial-comment-id="splitCommentId"
       :component-id="componentId"
       :effective-permissions="effectivePermissions"
+      :admin-panel-open="adminPanelOpen"
       @exit="exitSplitMode"
       @triaged="onTriaged"
       @adjudicated="onAdjudicated"
       @response-posted="onTriageResponsePosted"
       @destroyed="onDestroyed"
       @open-reply-composer="openReplyComposer"
+      @admin-panel-close="$emit('admin-panel-close')"
     />
 
     <!-- Table -->
@@ -244,6 +246,7 @@ export default {
     // triage queue but cannot mutate — author+ can triage / adjudicate
     // / re-open. Mirrors the backend authorize_author_project gates.
     effectivePermissions: { type: String, default: null },
+    adminPanelOpen: { type: Boolean, default: false },
   },
   data() {
     const persisted = this.loadPersistedFilters();

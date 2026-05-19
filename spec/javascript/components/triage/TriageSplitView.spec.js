@@ -310,17 +310,12 @@ describe("TriageSplitView", () => {
 
   // ── Admin actions (migrated from modal) ────────────────────────────
 
-  it("shows admin actions disclosure for admin role", () => {
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
-    expect(w.find('[data-testid="open-admin-actions"]').exists()).toBe(true);
-  });
-
-  it("hides admin actions for non-admin roles", () => {
+  it("renders admin sidebar when adminPanelOpen prop is true", () => {
     const w = mount(TriageSplitView, {
       localVue,
-      propsData: baseProps({ effectivePermissions: "author" }),
+      propsData: baseProps({ adminPanelOpen: true }),
     });
-    expect(w.find('[data-testid="open-admin-actions"]').exists()).toBe(false);
+    expect(w.find("#sidebar-admin-actions").exists()).toBe(true);
   });
 
   it("posts to admin_withdraw with audit comment", async () => {
