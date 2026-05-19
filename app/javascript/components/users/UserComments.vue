@@ -70,7 +70,7 @@
             :responses-count="item.responses_count || 0"
             :can-reply="true"
             class="mt-1"
-            @reply="openReplyComposer(item)"
+            @reply="openReplyComposerFromRow(item)"
           />
         </template>
         <template #cell(created_at)="{ value }">
@@ -111,11 +111,8 @@
            emitted reply. componentId/ruleId/ruleDisplayedName come from
            the row payload (carried in /users/:id/comments). -->
       <CommentComposerModal
-        v-if="composerReplyRow"
-        :component-id="composerReplyRow.component_id"
-        :rule-id="composerReplyRow.rule_id"
-        :rule-displayed-name="composerReplyRow.rule_displayed_name"
-        :reply-to-review-id="composerReplyRow.id"
+        v-if="composerActive"
+        v-bind="composerProps"
         @posted="onComposerPosted"
         @hidden="onComposerHidden"
       />
@@ -133,6 +130,7 @@ import SectionLabel from "../shared/SectionLabel.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
 import CommentThread from "../shared/CommentThread.vue";
 import CommentComposerModal from "../components/CommentComposerModal.vue";
+import ReplyComposerMixin from "../../mixins/ReplyComposerMixin.vue";
 
 export default {
   name: "UserComments",
@@ -143,7 +141,7 @@ export default {
     CommentThread,
     CommentComposerModal,
   },
-  mixins: [AlertMixin, DateFormatMixin],
+  mixins: [AlertMixin, DateFormatMixin, ReplyComposerMixin],
   props: {
     userId: { type: [Number, String], required: true },
   },
@@ -159,7 +157,6 @@ export default {
       // when the user clicks a column header.
       sortBy: "created_at",
       sortDesc: true,
-      composerReplyRow: null,
       fields: [
         { key: "rule_displayed_name", label: "Rule", sortable: true },
         { key: "component_name", label: "Component / Project", sortable: true },
@@ -201,24 +198,23 @@ export default {
       this.page = 1;
       this.fetch();
     },
-    openReplyComposer(row) {
-      this.composerReplyRow = row;
-      this.$nextTick(() => this.$bvModal.show("comment-composer-modal"));
+    openReplyComposerFromRow(row) {
+      this.openReplyComposer({
+        reviewId: row.id,
+        ruleId: row.rule_id,
+        componentId: row.component_id,
+        ruleName: row.rule_displayed_name,
+      });
     },
-    onComposerPosted() {
-      const id = this.composerReplyRow?.id;
-      this.composerReplyRow = null;
+    afterComposerPosted(parentReviewId, _snapshot) {
       this.fetch();
-      if (id) {
+      if (parentReviewId) {
         this.$nextTick(() => {
-          const ref = this.$refs[`thread-${id}`];
+          const ref = this.$refs[`thread-${parentReviewId}`];
           const thread = Array.isArray(ref) ? ref[0] : ref;
           thread?.refresh?.();
         });
       }
-    },
-    onComposerHidden() {
-      this.composerReplyRow = null;
     },
     async fetch() {
       this.loading = true;

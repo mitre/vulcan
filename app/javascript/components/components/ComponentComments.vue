@@ -53,7 +53,7 @@
         variant="primary"
         size="sm"
         aria-label="Add component-level comment"
-        @click="openComponentComposer"
+        @click="openComponentComposerLocal"
       >
         <b-icon icon="chat-left-text" /> Comment
       </b-button>
@@ -74,7 +74,7 @@
       @adjudicated="onAdjudicated"
       @response-posted="onTriageResponsePosted"
       @destroyed="onDestroyed"
-      @open-reply-composer="openReplyComposer"
+      @open-reply-composer="openReplyComposerFromRow"
       @admin-panel-close="$emit('admin-panel-close')"
     />
 
@@ -125,7 +125,7 @@
           :responses-count="item.responses_count || 0"
           :can-reply="canReply"
           class="mt-1"
-          @reply="openReplyComposer(item)"
+          @reply="openReplyComposerFromRow(item)"
         />
       </template>
       <template #cell(created_at)="{ value }">
@@ -189,15 +189,10 @@
       />
     </div>
 
-    <!-- Composer. Reply mode (composerReplyRow set) or new component-level
-         comment mode (composerNewComponent set). -->
     <CommentComposerModal
-      v-if="composerReplyRow || composerNewComponent"
-      :component-id="composerReplyRow ? composerReplyRow.component_id || componentId : componentId"
-      :rule-id="composerReplyRow ? composerReplyRow.rule_id : null"
-      :rule-displayed-name="composerReplyRow ? composerReplyRow.rule_displayed_name : ''"
-      :component-displayed-name="composerNewComponent ? componentDisplayedName : ''"
-      :reply-to-review-id="composerReplyRow ? composerReplyRow.id : null"
+      v-if="composerActive"
+      v-bind="composerProps"
+      :component-displayed-name="composerState.mode === 'component' ? componentDisplayedName : ''"
       @posted="onComposerPosted"
       @hidden="onComposerHidden"
     />
@@ -217,6 +212,7 @@ import FilterDropdown from "../shared/FilterDropdown.vue";
 import CommentThread from "../shared/CommentThread.vue";
 import TriageSplitView from "../triage/TriageSplitView.vue";
 import CommentComposerModal from "./CommentComposerModal.vue";
+import ReplyComposerMixin from "../../mixins/ReplyComposerMixin.vue";
 
 export default {
   name: "ComponentComments",
@@ -232,7 +228,7 @@ export default {
   // each esbuild pack has its own axios singleton (bundle isolation) — the
   // navbar pack's FormMixin doesn't reach the consuming pack. The reopen
   // PATCH would 422 on CSRF in a pack that lacks pack-level CSRF setup.
-  mixins: [AlertMixin, DateFormatMixin, FormMixin, RoleComparisonMixin],
+  mixins: [AlertMixin, DateFormatMixin, FormMixin, RoleComparisonMixin, ReplyComposerMixin],
   props: {
     // Either componentId (single-component scope) or projectId (aggregate
     // scope) is required — but not both. The scope prop disambiguates and
@@ -287,11 +283,6 @@ export default {
       sortDesc: false,
       splitMode: false,
       splitCommentId: null,
-      // Row that the inline reply composer is open against. Null when
-      // the composer is not open. Populated when a row's CommentThread
-      // emits 'reply' (or the triage modal asks for a reply composer).
-      composerReplyRow: null,
-      composerNewComponent: false,
       fields,
     };
   },
@@ -532,33 +523,26 @@ export default {
     onDestroyed() {
       this.fetch();
     },
-    // Open the composer in reply mode for `row`. Reached either from the
-    // row's CommentThread (inline) or from the triage modal's Reply button.
-    openReplyComposer(row) {
-      this.composerReplyRow = row;
-      this.$nextTick(() => this.$bvModal.show("comment-composer-modal"));
+    openReplyComposerFromRow(row) {
+      this.openReplyComposer({
+        reviewId: row.id,
+        ruleId: row.rule_id,
+        componentId: row.component_id || this.componentId,
+        ruleName: row.rule_displayed_name,
+      });
     },
-    openComponentComposer() {
-      this.composerReplyRow = null;
-      this.composerNewComponent = true;
-      this.$nextTick(() => this.$bvModal.show("comment-composer-modal"));
+    openComponentComposerLocal() {
+      this.openComponentComposer(this.componentId);
     },
-    onComposerPosted() {
-      const id = this.composerReplyRow?.id;
-      this.composerReplyRow = null;
-      this.composerNewComponent = false;
+    afterComposerPosted(parentReviewId, _snapshot) {
       this.fetch();
-      if (id) {
+      if (parentReviewId) {
         this.$nextTick(() => {
-          const ref = this.$refs[`thread-${id}`];
+          const ref = this.$refs[`thread-${parentReviewId}`];
           const thread = Array.isArray(ref) ? ref[0] : ref;
           thread?.refresh?.();
         });
       }
-    },
-    onComposerHidden() {
-      this.composerReplyRow = null;
-      this.composerNewComponent = false;
     },
   },
 };

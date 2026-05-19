@@ -89,18 +89,10 @@
           :rule-stig-id="`${component.prefix}-${selectedRule.rule_id}`"
         />
 
-        <!-- Comment composer modal. Two modes: rule-scoped (selectedRule
-             present) or component-scoped (componentComposerActive). -->
         <CommentComposerModal
-          v-if="selectedRule || componentComposerActive"
-          :component-id="component.id"
-          :rule-id="componentComposerActive ? null : selectedRule.id"
-          :rule-displayed-name="
-            componentComposerActive ? '' : `${component.prefix}-${selectedRule.rule_id}`
-          "
+          v-if="composerActive"
+          v-bind="composerProps"
           :component-displayed-name="component.name"
-          :initial-section="composerSection"
-          :reply-to-review-id="composerReplyToId"
           @posted="onComposerPosted"
           @hidden="onComposerHidden"
         />
@@ -159,6 +151,7 @@ import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
 import CommentComposerModal from "./CommentComposerModal.vue";
 import CommentPeriodBanner from "./CommentPeriodBanner.vue";
 import ExportModal from "../shared/ExportModal.vue";
+import ReplyComposerMixin from "../../mixins/ReplyComposerMixin.vue";
 
 export default {
   name: "ProjectComponent",
@@ -180,6 +173,7 @@ export default {
     RoleComparisonMixin,
     ConfirmComponentReleaseMixin,
     SortRulesMixin,
+    ReplyComposerMixin,
   ],
   // Provide the component's comment_phase (and a derived `commentsClosed`
   // boolean) to the rule-editor subtree so SectionCommentIcon can disable
@@ -268,14 +262,6 @@ export default {
       component: this.initialComponentState,
       localAdvancedFields: this.initialComponentState.advanced_fields,
       msg: MESSAGE_LABELS,
-      // section pre-selected on the comment composer when a
-      // SectionCommentIcon click bubbles open-composer up to here.
-      composerSection: null,
-      // top-level review id when the composer is opened in reply mode
-      // (CommentThread's "Reply" buttons emit open-reply-composer up
-      // through ControlsSidepanels → here).
-      composerReplyToId: null,
-      componentComposerActive: false,
       // per-component editor Download surface.
       // Mode-aware ExportModal (Working Copy / Vendor Submission /
       // STIG-Ready Publish Draft / Backup) hits the project export
@@ -332,27 +318,28 @@ export default {
      * bubbles up RuleFormGroup → form → UnifiedRuleForm → RuleEditor.
      */
     onOpenComposer(section) {
-      this.composerSection = section;
-      this.composerReplyToId = null;
-      this.$bvModal.show("comment-composer-modal");
+      this.openSectionComposer({
+        ruleId: this.selectedRule?.id,
+        componentId: this.component.id,
+        section,
+        ruleName: this.selectedRule
+          ? `${this.component.prefix}-${this.selectedRule.rule_id}`
+          : null,
+      });
     },
     onOpenReplyComposer(reviewId) {
-      this.composerSection = null;
-      this.composerReplyToId = reviewId;
-      this.$bvModal.show("comment-composer-modal");
+      this.openReplyComposer({
+        reviewId,
+        ruleId: this.selectedRule?.id,
+        componentId: this.component.id,
+        ruleName: this.selectedRule
+          ? `${this.component.prefix}-${this.selectedRule.rule_id}`
+          : null,
+      });
     },
-    /**
-     * Refresh the rule whose composer just posted (in-place splice into
-     * the rules array) so reactivity reliably propagates to RuleReviews
-     * + the per-section pending-count badges. Object.assign on the whole
-     * component drops Vue 2 reactivity for nested arrays in this prop
-     * tree, so we mirror Rules.vue's per-rule splice pattern.
-     */
-    onComposerPosted() {
-      const ruleId = this.componentComposerActive ? null : this.selectedRule?.id;
-      this.composerReplyToId = null;
-      this.composerSection = null;
-      this.componentComposerActive = false;
+    afterComposerPosted(parentReviewId, snapshot) {
+      const ruleId =
+        snapshot.mode === "component" ? null : this.selectedRule?.id || snapshot.ruleId;
       if (!ruleId) {
         this.refreshComponent();
         return;
@@ -367,15 +354,8 @@ export default {
         })
         .catch(this.alertOrNotifyResponse);
     },
-    onComposerHidden() {
-      this.composerReplyToId = null;
-      this.componentComposerActive = false;
-    },
     onOpenComponentComposer() {
-      this.composerSection = null;
-      this.composerReplyToId = null;
-      this.componentComposerActive = true;
-      this.$nextTick(() => this.$bvModal.show("comment-composer-modal"));
+      this.openComponentComposer(this.component.id);
     },
     openCommentsPanel() {
       globalThis.location.href = `/components/${this.component.id}/triage`;

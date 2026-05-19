@@ -78,15 +78,16 @@ export default {
       };
     },
     onComposerPosted() {
-      const parentReviewId = this.composerState.reviewId || null;
+      const snapshot = { ...this.composerState };
       this.closeComposer();
-      this.afterComposerPosted(parentReviewId);
+      this.afterComposerPosted(snapshot.reviewId || null, snapshot);
     },
     onComposerHidden() {
       this.closeComposer();
     },
-    afterComposerPosted() {
-      // No-op — consumers override with screen-specific refresh logic
+    afterComposerPosted(/* parentReviewId, stateSnapshot */) {
+      // No-op — consumers override with screen-specific refresh logic.
+      // stateSnapshot is the composerState before it was cleared.
     },
   },
 };

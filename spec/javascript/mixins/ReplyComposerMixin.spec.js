@@ -127,30 +127,38 @@ describe("ReplyComposerMixin", () => {
 
   // ── onComposerPosted ───────────────────────────────────────────────
 
-  it("clears state and calls afterComposerPosted with reviewId", async () => {
+  it("clears state and calls afterComposerPosted with reviewId + snapshot", async () => {
     const afterSpy = vi.fn();
     const w = createHost({ afterComposerPosted: afterSpy });
     w.vm.openReplyComposer(replyPayload);
     await w.vm.$nextTick();
     w.vm.onComposerPosted();
     expect(w.vm.composerState.mode).toBe(null);
-    expect(afterSpy).toHaveBeenCalledWith(42);
+    expect(afterSpy).toHaveBeenCalledWith(42, expect.objectContaining({
+      mode: "reply",
+      reviewId: 42,
+      ruleId: 10,
+      componentId: 8,
+    }));
   });
 
-  it("calls afterComposerPosted with null for component mode", async () => {
+  it("calls afterComposerPosted with null reviewId for component mode", async () => {
     const afterSpy = vi.fn();
     const w = createHost({ afterComposerPosted: afterSpy });
     w.vm.openComponentComposer(8);
     await w.vm.$nextTick();
     w.vm.onComposerPosted();
-    expect(afterSpy).toHaveBeenCalledWith(null);
+    expect(afterSpy).toHaveBeenCalledWith(null, expect.objectContaining({
+      mode: "component",
+      componentId: 8,
+    }));
   });
 
   it("calls afterComposerPosted with null when composer was never opened", () => {
     const afterSpy = vi.fn();
     const w = createHost({ afterComposerPosted: afterSpy });
     w.vm.onComposerPosted();
-    expect(afterSpy).toHaveBeenCalledWith(null);
+    expect(afterSpy).toHaveBeenCalledWith(null, expect.objectContaining({ mode: null }));
   });
 
   // ── composerProps computed ─────────────────────────────────────────

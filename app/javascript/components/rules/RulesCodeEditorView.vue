@@ -222,15 +222,9 @@
            when a SectionCommentIcon emits open-composer. Lives in the
            right-panels slot but b-modal portals to the document body. -->
       <CommentComposerModal
-        v-if="selectedRule || componentComposerActive"
-        :component-id="component.id"
-        :rule-id="componentComposerActive ? null : selectedRule.id"
-        :rule-displayed-name="
-          componentComposerActive ? '' : `${component.prefix}-${selectedRule.rule_id}`
-        "
+        v-if="composerActive"
+        v-bind="composerProps"
         :component-displayed-name="component.name"
-        :initial-section="composerSection"
-        :reply-to-review-id="composerReplyToId"
         @posted="onComposerPosted"
         @hidden="onComposerHidden"
       />
@@ -250,6 +244,7 @@ import ControlsCommandBar from "../shared/ControlsCommandBar.vue";
 import ControlsPageLayout from "./ControlsPageLayout.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
 import CommentComposerModal from "../components/CommentComposerModal.vue";
+import ReplyComposerMixin from "../../mixins/ReplyComposerMixin.vue";
 import { useRuleSelection, useRuleFilters, useSidebar } from "../../composables";
 import { useRuleAutosave } from "../../composables/useRuleAutosave";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
@@ -276,7 +271,7 @@ export default {
     ControlsSidepanels,
     CommentComposerModal,
   },
-  mixins: [DateFormatMixinVue, AlertMixinVue, RoleComparisonMixin],
+  mixins: [DateFormatMixinVue, AlertMixinVue, RoleComparisonMixin, ReplyComposerMixin],
   // Mirror ProjectComponent's provide chain so SectionCommentIcon and
   // RuleActionsToolbar can read the component's comment_phase from
   // either host page.
@@ -456,13 +451,6 @@ export default {
       filteredSelectRules: [],
       selectedSatisfiesRuleIds: [],
       showSRGIdChecked: null,
-      // section pre-selected on the comment composer when a
-      // SectionCommentIcon click bubbles open-composer up to here.
-      composerSection: null,
-      // top-level review id when the composer is opened in reply mode
-      // via CommentThread's "Reply" buttons.
-      composerReplyToId: null,
-      componentComposerActive: false,
     };
   },
   computed: {
@@ -530,35 +518,32 @@ export default {
      * → UnifiedRuleForm → RuleEditor → here.
      */
     onOpenComposer(section) {
-      this.composerSection = section;
-      this.composerReplyToId = null;
-      this.$bvModal.show("comment-composer-modal");
+      this.openSectionComposer({
+        ruleId: this.selectedRule?.id,
+        componentId: this.component.id,
+        section,
+        ruleName: this.selectedRule
+          ? `${this.component.prefix}-${this.selectedRule.rule_id}`
+          : null,
+      });
     },
     onOpenReplyComposer(reviewId) {
-      this.composerSection = null;
-      this.composerReplyToId = reviewId;
-      this.$bvModal.show("comment-composer-modal");
+      this.openReplyComposer({
+        reviewId,
+        ruleId: this.selectedRule?.id,
+        componentId: this.component.id,
+        ruleName: this.selectedRule
+          ? `${this.component.prefix}-${this.selectedRule.rule_id}`
+          : null,
+      });
     },
-    /**
-     * after a comment is posted, refresh the rule so the
-     * thread + per-section pending-count badge update without a reload.
-     */
-    onComposerPosted() {
-      if (this.selectedRule && !this.componentComposerActive) {
+    afterComposerPosted(parentReviewId, snapshot) {
+      if (this.selectedRule && snapshot.mode !== "component") {
         this.$root.$emit("refresh:rule", this.selectedRule.id, "all");
       }
-      this.composerReplyToId = null;
-      this.componentComposerActive = false;
-    },
-    onComposerHidden() {
-      this.composerReplyToId = null;
-      this.componentComposerActive = false;
     },
     onOpenComponentComposer() {
-      this.composerSection = null;
-      this.composerReplyToId = null;
-      this.componentComposerActive = true;
-      this.$nextTick(() => this.$bvModal.show("comment-composer-modal"));
+      this.openComponentComposer(this.component.id);
     },
     updateShowSRGIdChecked() {
       const componentId = this.component.id;
