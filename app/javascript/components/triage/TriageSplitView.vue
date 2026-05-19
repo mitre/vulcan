@@ -200,6 +200,7 @@ import RuleContextPanel from "./RuleContextPanel.vue";
 import CommentTriageForm from "./CommentTriageForm.vue";
 import RulePicker from "../components/RulePicker.vue";
 import ReactionButtons from "../shared/ReactionButtons.vue";
+import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
 
 export default {
   name: "TriageSplitView",
@@ -212,7 +213,7 @@ export default {
     RulePicker,
     ReactionButtons,
   },
-  mixins: [AlertMixin, FormMixin, RoleComparisonMixin],
+  mixins: [AlertMixin, FormMixin, RoleComparisonMixin, ReactionToggleMixin],
   props: {
     rows: { type: Array, required: true },
     initialCommentId: { type: [Number, String], required: true },
@@ -398,18 +399,18 @@ export default {
     onCancel() {
       this.$emit("exit");
     },
-    async onReactionToggle(kind) {
+    onReactionToggle(kind) {
       if (!this.activeComment) return;
-      try {
-        await axios.post(
-          `/reviews/${this.activeComment.id}/reactions`,
-          { kind },
-          { headers: { Accept: "application/json" } },
-        );
-        this.$emit("refresh");
-      } catch (err) {
-        this.showAlert("danger", "Reaction failed", err?.response?.data?.error || "Unknown error");
-      }
+      const prev = { ...this.activeComment.reactions };
+      const apply = (reactions) => {
+        this.$set(this.activeComment, "reactions", reactions);
+      };
+      this.submitReactionToggle({
+        reviewId: this.activeComment.id,
+        prev,
+        kind,
+        apply,
+      });
     },
     onTargetRuleSelected(ruleId) {
       this.adminTargetRuleId = ruleId;
