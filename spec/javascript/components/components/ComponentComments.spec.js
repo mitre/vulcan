@@ -631,6 +631,28 @@ describe("ComponentComments", () => {
     expect(wrapper.text()).toContain(longComment);
   });
 
+  // REQUIREMENT: section filter and search box hidden in split mode —
+  // the queue nav handles navigation, these controls are redundant.
+  it("hides section filter and search in split mode", async () => {
+    const wrapper = mount(ComponentComments, {
+      propsData: { componentId: 42 },
+      stubs: SHARED_STUBS,
+    });
+    await flushPromises();
+    wrapper.vm.splitMode = true;
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.splitModeFilterVisible).toBe(false);
+  });
+
+  it("shows section filter and search in table mode", async () => {
+    const wrapper = mount(ComponentComments, {
+      propsData: { componentId: 42 },
+      stubs: SHARED_STUBS,
+    });
+    await flushPromises();
+    expect(wrapper.vm.splitModeFilterVisible).toBe(true);
+  });
+
   it("surfaces fetch errors via alertOrNotifyResponse without crashing", async () => {
     axios.get.mockRejectedValueOnce({ response: { status: 500, data: {} } });
     const wrapper = mount(ComponentComments, {

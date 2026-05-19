@@ -206,6 +206,35 @@ describe("RuleContextPanel", () => {
     expect(w.find('[data-section="check_content"] .section-body').isVisible()).toBe(false);
   });
 
+  // ── contextMode: "commented" filters to commented sections only ─────
+
+  it("in 'commented' mode shows only sections in commentedSections", () => {
+    const w = mount(RuleContextPanel, {
+      localVue,
+      propsData: props({
+        contextMode: "commented",
+        commentedSections: new Set(["check_content", "fixtext"]),
+      }),
+    });
+    expect(w.find('[data-section="check_content"]').exists()).toBe(true);
+    expect(w.find('[data-section="fixtext"]').exists()).toBe(true);
+    expect(w.find('[data-section="vuln_discussion"]').exists()).toBe(false);
+    expect(w.find('[data-section="vendor_comments"]').exists()).toBe(false);
+  });
+
+  it("in 'all' mode shows all fields regardless of commentedSections", () => {
+    const w = mount(RuleContextPanel, {
+      localVue,
+      propsData: props({
+        contextMode: "all",
+        commentedSections: new Set(["check_content"]),
+      }),
+    });
+    expect(w.find('[data-section="check_content"]').exists()).toBe(true);
+    expect(w.find('[data-section="fixtext"]').exists()).toBe(true);
+    expect(w.find('[data-section="vuln_discussion"]').exists()).toBe(true);
+  });
+
   // ── Labels come from FIELD_LABELS registry (Gate 5: DRY) ──────────
 
   it("imports labels from ruleFieldConfig, not a local dict", async () => {

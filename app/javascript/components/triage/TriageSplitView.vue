@@ -21,6 +21,8 @@
           :rule-displayed-name="activeComment.rule_displayed_name"
           :rule-status="activeComment.rule_content ? activeComment.rule_content.status : null"
           :focused-section="activeComment.section"
+          :context-mode="contextMode"
+          :commented-sections="commentedSections"
         />
       </b-col>
       <b-col lg="7">
@@ -206,6 +208,7 @@ export default {
     componentId: { type: [Number, String], required: true },
     effectivePermissions: { type: String, default: null },
     adminPanelOpen: { type: Boolean, default: false },
+    contextMode: { type: String, default: "commented" },
   },
   data() {
     return {
@@ -228,6 +231,15 @@ export default {
     },
     canTriage() {
       return this.role_gte_to(this.effectivePermissions, "author");
+    },
+    commentedSections() {
+      if (!this.activeComment) return new Set();
+      return new Set(
+        this.sortedRows
+          .filter((r) => r.rule_id === this.activeComment.rule_id && !r.responding_to_review_id)
+          .map((r) => r.section)
+          .filter(Boolean),
+      );
     },
     canAdminAct() {
       return this.effectivePermissions === "admin";

@@ -18,6 +18,22 @@
         </b-button>
       </template>
       <template #right>
+        <b-button-group v-if="isSplitMode" size="sm" class="mr-2">
+          <b-button
+            :variant="contextMode === 'commented' ? 'secondary' : 'outline-secondary'"
+            data-testid="context-mode-commented"
+            @click="contextMode = 'commented'"
+          >
+            Commented
+          </b-button>
+          <b-button
+            :variant="contextMode === 'all' ? 'secondary' : 'outline-secondary'"
+            data-testid="context-mode-all"
+            @click="contextMode = 'all'"
+          >
+            All fields
+          </b-button>
+        </b-button-group>
         <b-button-group v-if="isSplitMode && isAdmin" size="sm">
           <b-button
             :variant="adminPanelOpen ? 'secondary' : 'outline-secondary'"
@@ -48,6 +64,7 @@
         :component-displayed-name="component.name"
         :effective-permissions="effectivePermissions"
         :admin-panel-open="adminPanelOpen"
+        :context-mode="contextMode"
         @split-mode-changed="onSplitModeChanged"
         @admin-panel-close="adminPanelOpen = false"
       />
@@ -73,6 +90,7 @@ export default {
       component: this.initialComponentState,
       isSplitMode: false,
       adminPanelOpen: false,
+      contextMode: "commented",
     };
   },
   computed: {

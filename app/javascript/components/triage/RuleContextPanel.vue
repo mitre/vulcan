@@ -81,6 +81,8 @@ export default {
     ruleDisplayedName: { type: String, default: null },
     ruleStatus: { type: String, default: null },
     focusedSection: { type: String, default: null },
+    contextMode: { type: String, default: "all" },
+    commentedSections: { type: Set, default: () => new Set() },
   },
   data() {
     return {
@@ -116,6 +118,9 @@ export default {
       if (config.rule.advancedDisplayed) addFields(config.rule.advancedDisplayed);
       if (config.disa.advancedDisplayed) addFields(config.disa.advancedDisplayed);
 
+      if (this.contextMode === "commented" && this.commentedSections.size > 0) {
+        return fields.filter((f) => this.commentedSections.has(f.key));
+      }
       return fields;
     },
     inlineSections() {

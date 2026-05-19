@@ -11,12 +11,14 @@
         @input="onFilterChanged"
       />
       <FilterDropdown
+        v-if="splitModeFilterVisible"
         v-model="filterSection"
         :options="sectionOptions"
         aria-label="Filter by section"
         @input="onFilterChanged"
       />
       <b-form-input
+        v-if="splitModeFilterVisible"
         v-model="filterText"
         placeholder="Search comments..."
         debounce="300"
@@ -66,6 +68,7 @@
       :component-id="componentId"
       :effective-permissions="effectivePermissions"
       :admin-panel-open="adminPanelOpen"
+      :context-mode="contextMode"
       @exit="exitSplitMode"
       @triaged="onTriaged"
       @adjudicated="onAdjudicated"
@@ -247,6 +250,7 @@ export default {
     // / re-open. Mirrors the backend authorize_author_project gates.
     effectivePermissions: { type: String, default: null },
     adminPanelOpen: { type: Boolean, default: false },
+    contextMode: { type: String, default: "commented" },
   },
   data() {
     const persisted = this.loadPersistedFilters();
@@ -297,6 +301,9 @@ export default {
     // authorize_author_project on the /reviews/:id/* endpoints.
     canTriage() {
       return this.role_gte_to(this.effectivePermissions, "author");
+    },
+    splitModeFilterVisible() {
+      return !this.splitMode;
     },
     // Anyone authenticated with project visibility can reply during an
     // open comment window. Server enforces via reject_if_comments_closed
