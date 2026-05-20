@@ -60,14 +60,14 @@
 
       <span class="small text-muted mr-3">{{ pendingCount }} pending</span>
 
-      <div class="position-relative">
+      <div v-click-outside="closeBrowse" class="position-relative">
         <b-button
           data-testid="browse-toggle"
           size="sm"
-          variant="outline-secondary"
+          :variant="browseOpen ? 'secondary' : 'outline-secondary'"
           @click="browseOpen = !browseOpen"
         >
-          <b-icon icon="list-ul" /> Browse
+          <b-icon :icon="browseOpen ? 'x' : 'list-ul'" /> Browse
         </b-button>
         <div
           v-if="browseOpen"
@@ -139,6 +139,19 @@ import { SECTION_LABELS } from "../../constants/triageVocabulary";
 
 export default {
   name: "TriageQueueNav",
+  directives: {
+    clickOutside: {
+      bind(el, binding) {
+        el._clickOutside = (e) => {
+          if (!el.contains(e.target)) binding.value();
+        };
+        document.addEventListener("click", el._clickOutside);
+      },
+      unbind(el) {
+        document.removeEventListener("click", el._clickOutside);
+      },
+    },
+  },
   components: { TriageStatusBadge },
   props: {
     comments: { type: Array, required: true },
@@ -274,6 +287,9 @@ export default {
     },
     sectionLabel(key) {
       return SECTION_LABELS[key] || key;
+    },
+    closeBrowse() {
+      this.browseOpen = false;
     },
     onBrowseSelect(id) {
       this.$emit("select", id);
