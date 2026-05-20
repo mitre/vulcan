@@ -56,7 +56,7 @@ RSpec.describe SeedHelpers do
     let!(:membership) { create(:membership, user: user, membership: project, role: 'viewer') }
     let(:rule) { component.rules.first }
 
-    it 'creates a review comment using FactoryBot' do
+    it 'creates a review comment via Review.create!' do
       review = described_class.find_or_seed_review(
         rule: rule, user: user, section: 'check_content',
         comment: 'Test comment for seed helper'

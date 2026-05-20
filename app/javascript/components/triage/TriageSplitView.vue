@@ -252,7 +252,7 @@ export default {
       );
     },
     commentedSections() {
-      return new Set(this.activeRuleComments.map((r) => r.section).filter(Boolean));
+      return [...new Set(this.activeRuleComments.map((r) => r.section).filter(Boolean))];
     },
     sectionCommentCounts() {
       const counts = {};

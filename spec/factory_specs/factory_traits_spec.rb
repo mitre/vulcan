@@ -75,8 +75,8 @@ RSpec.describe 'Factory traits', type: :model do
   describe 'Component :with_poc' do
     it 'sets admin_name and admin_email' do
       component = create(:component, :skip_rules, :with_poc)
-      expect(component.admin_name).to be_present
-      expect(component.admin_email).to include('@')
+      expect(component.admin_name).to eq('Test Maintainer')
+      expect(component.admin_email).to eq('maintainer@example.com')
     end
   end
 

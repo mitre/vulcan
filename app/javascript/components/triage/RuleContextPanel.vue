@@ -69,6 +69,7 @@
             tabindex="0"
             @click="$emit('select-comment', rc.id)"
             @keydown.enter="$emit('select-comment', rc.id)"
+            @keydown.space.prevent="$emit('select-comment', rc.id)"
           >
             <span class="text-muted mr-1">#{{ rc.id }}</span>
             <strong class="mr-1">{{ rc.author_name || "—" }}</strong>
@@ -104,8 +105,12 @@ export default {
     ruleDisplayedName: { type: String, default: null },
     ruleStatus: { type: String, default: null },
     focusedSection: { type: String, default: null },
-    contextMode: { type: String, default: "all" },
-    commentedSections: { type: Set, default: () => new Set() },
+    contextMode: {
+      type: String,
+      default: "all",
+      validator: (v) => ["commented", "all"].includes(v),
+    },
+    commentedSections: { type: Array, default: () => [] },
     sectionCommentCounts: { type: Object, default: () => ({}) },
     sectionComments: { type: Array, default: () => [] },
     activeCommentId: { type: Number, default: null },
@@ -116,6 +121,9 @@ export default {
     };
   },
   computed: {
+    commentedSectionsSet() {
+      return new Set(this.commentedSections);
+    },
     visibleFields() {
       if (!this.ruleContent) return [];
       const config = STATUS_FIELD_CONFIG[this.ruleStatus];
@@ -144,8 +152,8 @@ export default {
       if (config.rule.advancedDisplayed) addFields(config.rule.advancedDisplayed);
       if (config.disa.advancedDisplayed) addFields(config.disa.advancedDisplayed);
 
-      if (this.contextMode === "commented" && this.commentedSections.size > 0) {
-        return fields.filter((f) => this.commentedSections.has(f.key));
+      if (this.contextMode === "commented" && this.commentedSectionsSet.size > 0) {
+        return fields.filter((f) => this.commentedSectionsSet.has(f.key));
       }
       return fields;
     },
@@ -213,7 +221,7 @@ export default {
 }
 
 .section-body--focused {
-  border-left: 3px solid #007bff;
+  border-left: 3px solid var(--primary);
   padding-left: calc(2rem - 3px);
 }
 
@@ -231,7 +239,7 @@ export default {
 }
 
 .related-comment--active {
-  border-left-color: #007bff;
+  border-left-color: var(--primary);
   background-color: rgba(0, 123, 255, 0.06);
   font-weight: 500;
 }
