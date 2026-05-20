@@ -173,6 +173,30 @@ describe("CommentsByRule", () => {
     expect(header.text()).toContain("2 total");
   });
 
+  // ── Expand all / collapse all ──────────────────────────────────────
+
+  it("expands all groups when allExpanded prop becomes true", async () => {
+    const w = mount(CommentsByRule, { propsData: { rows: mockRows, allExpanded: false } });
+    expect(w.find("[data-testid='rule-group-content']").isVisible()).toBe(false);
+
+    await w.setProps({ allExpanded: true });
+
+    const contents = w.findAll("[data-testid='rule-group-content']");
+    contents.wrappers.forEach((c) => {
+      expect(c.isVisible()).toBe(true);
+    });
+  });
+
+  it("collapses all groups when allExpanded prop becomes false", async () => {
+    const w = mount(CommentsByRule, { propsData: { rows: mockRows, allExpanded: true } });
+    await w.setProps({ allExpanded: false });
+
+    const contents = w.findAll("[data-testid='rule-group-content']");
+    contents.wrappers.forEach((c) => {
+      expect(c.isVisible()).toBe(false);
+    });
+  });
+
   // ── Collapse/expand ───────────────────────────────────────────────
 
   it("expands rule group on click, collapses on second click", async () => {

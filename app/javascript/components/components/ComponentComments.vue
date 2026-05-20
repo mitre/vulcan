@@ -55,7 +55,17 @@
         class="ml-auto mr-3"
         data-testid="show-resolved-toggle"
       >
-        <small class="text-muted">Show resolved</small>
+        <small class="text-muted">Show Resolved</small>
+      </b-form-checkbox>
+      <b-form-checkbox
+        v-if="viewMode === 'by-rule'"
+        v-model="allExpanded"
+        switch
+        size="sm"
+        class="mr-3"
+        data-testid="expand-all"
+      >
+        <small class="text-muted">Expand All</small>
       </b-form-checkbox>
       <b-button-group v-if="!splitMode" size="sm">
         <b-button
@@ -115,6 +125,7 @@
     <CommentsByRule
       v-else-if="viewMode === 'by-rule'"
       :rows="rows"
+      :all-expanded="allExpanded"
       @reaction-updated="updateRowInPlace"
     />
 
@@ -328,6 +339,7 @@ export default {
       splitMode: false,
       splitCommentId: null,
       viewMode: this.loadPersistedViewMode(),
+      allExpanded: false,
       fields,
     };
   },

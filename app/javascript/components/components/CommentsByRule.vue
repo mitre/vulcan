@@ -89,6 +89,7 @@ export default {
   mixins: [DateFormatMixin, ReactionToggleMixin],
   props: {
     rows: { type: Array, required: true },
+    allExpanded: { type: Boolean, default: false },
   },
   data() {
     return {
@@ -131,12 +132,31 @@ export default {
         }));
     },
   },
+  watch: {
+    allExpanded(val) {
+      if (val) {
+        this.expandAll();
+      } else {
+        this.collapseAll();
+      }
+    },
+  },
   methods: {
     isExpanded(ruleName) {
       return this.collapsed[ruleName] === true;
     },
     toggleRule(ruleName) {
       this.$set(this.collapsed, ruleName, !this.isExpanded(ruleName));
+    },
+    expandAll() {
+      this.ruleGroups.forEach((g) => {
+        this.$set(this.collapsed, g.ruleName, true);
+      });
+    },
+    collapseAll() {
+      this.ruleGroups.forEach((g) => {
+        this.$set(this.collapsed, g.ruleName, false);
+      });
     },
     triageBgClass(status) {
       return getTriageBgClass(status);
