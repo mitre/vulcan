@@ -680,6 +680,21 @@ it 'does something' do
 end
 ```
 
+## Known Build Warnings
+
+### PostCSS plugin deprecation (`postcss.plugin was deprecated`)
+
+During `yarn build`, you will see warnings like:
+
+```
+trim: postcss.plugin was deprecated. Migration guide:
+https://evilmartians.com/chronicles/postcss-8-plugin-migration
+add-id: postcss.plugin was deprecated. Migration guide:
+https://evilmartians.com/chronicles/postcss-8-plugin-migration
+```
+
+These come from `@vue/component-compiler-utils` which uses the legacy PostCSS 8 plugin API for Vue 2 SFC scoped style processing (the `trim` and `add-id` internal plugins). This package is end-of-life and will never be updated. The warnings are **build-time only with zero runtime impact**. They will disappear when the project migrates to Vue 3.
+
 ## Resources
 
 - [RSpec Documentation](https://rspec.info/)

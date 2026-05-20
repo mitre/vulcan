@@ -48,7 +48,16 @@
       >
         <b-icon icon="download" /> Export CSV
       </b-button>
-      <b-button-group v-if="!splitMode" size="sm" class="ml-auto">
+      <b-form-checkbox
+        v-model="showResolved"
+        switch
+        size="sm"
+        class="ml-auto mr-3"
+        data-testid="show-resolved-toggle"
+      >
+        <small class="text-muted">Show resolved</small>
+      </b-form-checkbox>
+      <b-button-group v-if="!splitMode" size="sm">
         <b-button
           v-b-tooltip.hover
           :variant="viewMode === 'table' ? 'secondary' : 'outline-secondary'"
@@ -324,6 +333,15 @@ export default {
     // Triagers (author+) get the mutating action buttons; viewers get
     // a read-only label. Server enforces the same gate via
     // authorize_author_project on the /reviews/:id/* endpoints.
+    showResolved: {
+      get() {
+        return this.filterStatus === "all";
+      },
+      set(val) {
+        this.filterStatus = val ? "all" : "pending";
+        this.onFilterChanged();
+      },
+    },
     canTriage() {
       return this.role_gte_to(this.effectivePermissions, "author");
     },

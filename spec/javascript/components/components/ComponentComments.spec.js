@@ -668,4 +668,32 @@ describe("ComponentComments", () => {
     expect(alertSpy).toHaveBeenCalled();
     alertSpy.mockRestore();
   });
+
+  // ── Show resolved toggle ─────────────────────────────────────────
+
+  it("renders a 'Show resolved' toggle switch", async () => {
+    axios.get.mockResolvedValue({ data: { rows: [], pagination: { total: 0 } } });
+    const wrapper = mount(ComponentComments, { propsData: { componentId: 42 } });
+    await flushPromises(wrapper);
+    expect(wrapper.find("[data-testid='show-resolved-toggle']").exists()).toBe(true);
+  });
+
+  it("defaults filterStatus to 'pending' (resolved hidden)", async () => {
+    localStorage.clear();
+    axios.get.mockResolvedValue({ data: { rows: [], pagination: { total: 0 } } });
+    const wrapper = mount(ComponentComments, { propsData: { componentId: 42 } });
+    await flushPromises(wrapper);
+    expect(wrapper.vm.filterStatus).toBe("pending");
+  });
+
+  it("switches filterStatus to 'all' when toggle is turned on", async () => {
+    localStorage.clear();
+    axios.get.mockResolvedValue({ data: { rows: [], pagination: { total: 0 } } });
+    const wrapper = mount(ComponentComments, { propsData: { componentId: 42 } });
+    await flushPromises(wrapper);
+
+    wrapper.vm.showResolved = true;
+    await flushPromises(wrapper);
+    expect(wrapper.vm.filterStatus).toBe("all");
+  });
 });
