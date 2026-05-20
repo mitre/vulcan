@@ -1,32 +1,30 @@
 <template>
   <div class="triage-queue-nav d-flex align-items-center" role="navigation">
     <template v-if="comments.length > 0">
-      <b-button
-        v-b-tooltip.hover
-        data-testid="prev-rule"
-        size="sm"
-        variant="outline-secondary"
-        :disabled="!hasPrevRule"
-        aria-label="Previous rule"
-        title="Previous rule"
-        class="mr-1"
-        @click="goPrevRule"
-      >
-        <b-icon icon="skip-start-fill" />
-      </b-button>
-      <b-button
-        v-b-tooltip.hover
-        data-testid="prev-comment"
-        size="sm"
-        variant="outline-secondary"
-        :disabled="!hasPrev"
-        aria-label="Previous comment"
-        title="Previous comment"
-        class="mr-2"
-        @click="goPrev"
-      >
-        <b-icon icon="chevron-left" />
-      </b-button>
+      <span v-b-tooltip.hover title="Previous rule" class="mr-1">
+        <b-button
+          data-testid="prev-rule"
+          size="sm"
+          variant="outline-secondary"
+          :disabled="!hasPrevRule"
+          aria-label="Previous rule"
+          @click="goPrevRule"
+        >
+          <b-icon icon="skip-start-fill" />
+        </b-button>
+      </span>
+      <span v-b-tooltip.hover title="Previous comment" class="mr-2">
+        <b-button
+          data-testid="prev-comment"
+          size="sm"
+          variant="outline-secondary"
+          :disabled="!hasPrev"
+          aria-label="Previous comment"
+          @click="goPrev"
+        >
+          <b-icon icon="chevron-left" />
+        </b-button>
+      </span>
 
       <span class="small mr-2">
         Rule <strong>{{ currentRuleIndex + 1 }}</strong> of
@@ -35,32 +33,30 @@
         <strong>{{ currentRuleGroup ? currentRuleGroup.comments.length : 0 }}</strong>
       </span>
 
-      <b-button
-        v-b-tooltip.hover
-        data-testid="next-comment"
-        size="sm"
-        variant="outline-secondary"
-        :disabled="!hasNext"
-        aria-label="Next comment"
-        title="Next comment"
-        class="mr-1"
-        @click="goNext"
-      >
-        <b-icon icon="chevron-right" />
-      </b-button>
-      <b-button
-        v-b-tooltip.hover
-        data-testid="next-rule"
-        size="sm"
-        variant="outline-secondary"
-        :disabled="!hasNextRule"
-        aria-label="Next rule"
-        title="Next rule"
-        class="mr-3"
-        @click="goNextRule"
-      >
-        <b-icon icon="skip-end-fill" />
-      </b-button>
+      <span v-b-tooltip.hover title="Next comment" class="mr-1">
+        <b-button
+          data-testid="next-comment"
+          size="sm"
+          variant="outline-secondary"
+          :disabled="!hasNext"
+          aria-label="Next comment"
+          @click="goNext"
+        >
+          <b-icon icon="chevron-right" />
+        </b-button>
+      </span>
+      <span v-b-tooltip.hover title="Next rule" class="mr-3">
+        <b-button
+          data-testid="next-rule"
+          size="sm"
+          variant="outline-secondary"
+          :disabled="!hasNextRule"
+          aria-label="Next rule"
+          @click="goNextRule"
+        >
+          <b-icon icon="skip-end-fill" />
+        </b-button>
+      </span>
 
       <span class="small text-muted mr-3">{{ pendingCount }} pending</span>
 
@@ -131,7 +127,14 @@ export default {
         }
         seen.get(key).comments.push(c);
       }
-      return groups;
+      return groups.sort((a, b) => {
+        const aComp = !a.comments[0]?.rule_id;
+        const bComp = !b.comments[0]?.rule_id;
+        if (aComp && !bComp) return -1;
+        if (!aComp && bComp) return 1;
+        if (aComp && bComp) return 0;
+        return a.ruleName.localeCompare(b.ruleName, undefined, { numeric: true });
+      });
     },
     currentPosition() {
       for (let gi = 0; gi < this.ruleGroups.length; gi++) {
