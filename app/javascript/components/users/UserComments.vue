@@ -32,6 +32,7 @@
         :busy="loading"
         :sort-by.sync="sortBy"
         :sort-desc.sync="sortDesc"
+        :tbody-tr-class="rowTriageClass"
         primary-key="id"
         hover
         striped
@@ -123,6 +124,7 @@
 <script>
 import axios from "axios";
 import { buildStatusFilterOptions } from "../../constants/triageVocabulary";
+import { triageBgClass } from "../../utils/triageBgClass";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
@@ -177,6 +179,9 @@ export default {
     this.fetch();
   },
   methods: {
+    rowTriageClass(item) {
+      return triageBgClass(item?.triage_status);
+    },
     // Deep link to the rule editor with the rule selected. Encode the
     // rule name segment so unusual characters can't break out of the
     // path (mirrors ComponentComments#ruleHref).

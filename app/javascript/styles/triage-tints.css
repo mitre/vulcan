@@ -1,0 +1,26 @@
+/* Triage status background tints — shared across all comment views.
+   Applied via triageBgClass() method or :class binding using
+   triage-bg--{status} pattern. Pending has no tint (white). */
+
+.triage-bg--concur,
+.triage-bg--concur_with_comment {
+  background-color: rgba(40, 167, 69, 0.08) !important;
+  border-left-color: #28a745 !important;
+}
+
+.triage-bg--non_concur {
+  background-color: rgba(220, 53, 69, 0.08) !important;
+  border-left-color: #dc3545 !important;
+}
+
+.triage-bg--informational,
+.triage-bg--needs_clarification {
+  background-color: rgba(255, 193, 7, 0.08) !important;
+  border-left-color: #ffc107 !important;
+}
+
+.triage-bg--withdrawn,
+.triage-bg--duplicate {
+  background-color: rgba(108, 117, 125, 0.08) !important;
+  border-left-color: #6c757d !important;
+}

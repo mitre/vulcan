@@ -158,7 +158,7 @@ describe("CommentsByRule", () => {
     expect(header.text()).toContain("2 total");
   });
 
-  it("shows just count when all comments in a group are pending", () => {
+  it("shows pending/total even when all comments are pending (consistent format)", () => {
     const allPending = [
       { id: 1, rule_id: 100, rule_displayed_name: "R1", section: "check_content",
         author_name: "A", comment: "C1", created_at: "2026-01-01", triage_status: "pending",
@@ -169,8 +169,8 @@ describe("CommentsByRule", () => {
     ];
     const w = mount(CommentsByRule, { propsData: { rows: allPending } });
     const header = w.find("[data-testid='rule-group-header']");
-    expect(header.text()).not.toContain("pending");
-    expect(header.text()).toContain("2");
+    expect(header.text()).toContain("2 pending");
+    expect(header.text()).toContain("2 total");
   });
 
   // ── Collapse/expand ───────────────────────────────────────────────

@@ -126,6 +126,7 @@
       :busy="loading"
       :sort-by.sync="sortBy"
       :sort-desc.sync="sortDesc"
+      :tbody-tr-class="rowTriageClass"
       primary-key="id"
       hover
       striped
@@ -254,6 +255,7 @@ import TriageSplitView from "../triage/TriageSplitView.vue";
 import CommentComposerModal from "./CommentComposerModal.vue";
 import CommentsByRule from "./CommentsByRule.vue";
 import ReplyComposerMixin from "../../mixins/ReplyComposerMixin.vue";
+import { triageBgClass } from "../../utils/triageBgClass";
 
 export default {
   name: "ComponentComments",
@@ -455,6 +457,9 @@ export default {
         // eslint-disable-next-line no-console
         console.warn("ComponentComments: filter persistence failed", e);
       }
+    },
+    rowTriageClass(item) {
+      return triageBgClass(item?.triage_status);
     },
     onFilterChanged() {
       this.page = 1;

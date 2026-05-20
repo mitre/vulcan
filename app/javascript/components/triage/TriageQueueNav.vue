@@ -103,10 +103,13 @@
                 :key="comment.id"
                 data-testid="browse-item"
                 class="browse-item px-3 py-1 small d-flex align-items-center cursor-pointer"
-                :class="{
-                  active: comment.id === normalizedCurrentId,
-                  'browse-focused': browseFocusIndex === flatIndexOf(comment.id),
-                }"
+                :class="[
+                  triageBgClass(comment.triage_status),
+                  {
+                    active: comment.id === normalizedCurrentId,
+                    'browse-focused': browseFocusIndex === flatIndexOf(comment.id),
+                  },
+                ]"
                 role="button"
                 tabindex="0"
                 @click="onBrowseSelect(comment.id)"
@@ -136,6 +139,7 @@
 <script>
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
+import { triageBgClass } from "../../utils/triageBgClass";
 
 export default {
   name: "TriageQueueNav",
@@ -255,6 +259,7 @@ export default {
     },
   },
   methods: {
+    triageBgClass,
     flatComment(offset) {
       const target = this.flatIndex + offset;
       if (target < 0 || target >= this.comments.length) return null;

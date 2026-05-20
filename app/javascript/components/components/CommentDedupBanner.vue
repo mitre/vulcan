@@ -16,7 +16,12 @@
       </button>
     </b-alert>
     <ul v-show="expanded" :id="listId" class="list-unstyled mb-0 pl-3">
-      <li v-for="row in rows" :key="row.id" class="mb-2">
+      <li
+        v-for="row in rows"
+        :key="row.id"
+        class="mb-2 rounded px-2 py-1"
+        :class="triageBgClass(row.triage_status)"
+      >
         <div class="text-break">
           <strong>{{ row.author_name }}</strong>
           <SectionLabel v-if="row.section" :section="row.section" class="badge badge-light ml-1" />
@@ -56,6 +61,7 @@ import ReactionButtons from "../shared/ReactionButtons.vue";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
 import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
+import { triageBgClass } from "../../utils/triageBgClass";
 
 export default {
   name: "CommentDedupBanner",
@@ -97,6 +103,7 @@ export default {
     componentScoped: "fetch",
   },
   methods: {
+    triageBgClass,
     async fetch() {
       try {
         // Fetch all comments at the current scope (rule-level or

@@ -21,10 +21,7 @@
         />
         <strong>{{ group.ruleName }}</strong>
         <b-badge variant="secondary" pill class="ml-2">
-          <template v-if="group.pendingCount < group.comments.length">
-            {{ group.pendingCount }} pending / {{ group.comments.length }} total
-          </template>
-          <template v-else>{{ group.comments.length }}</template>
+          {{ group.pendingCount }} pending / {{ group.comments.length }} total
         </b-badge>
       </div>
 
@@ -40,7 +37,7 @@
             :key="comment.id"
             data-testid="comment-entry"
             class="border-left pl-3 py-2 mb-1"
-            :class="triageBgClass(comment)"
+            :class="triageBgClass(comment.triage_status)"
           >
             <div class="d-flex justify-content-between align-items-baseline">
               <div>
@@ -84,6 +81,7 @@ import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import ReactionButtons from "../shared/ReactionButtons.vue";
 import CommentThread from "../shared/CommentThread.vue";
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
+import { triageBgClass as getTriageBgClass } from "../../utils/triageBgClass";
 
 export default {
   name: "CommentsByRule",
@@ -140,10 +138,8 @@ export default {
     toggleRule(ruleName) {
       this.$set(this.collapsed, ruleName, !this.isExpanded(ruleName));
     },
-    triageBgClass(comment) {
-      const s = comment.triage_status;
-      if (!s || s === "pending") return "";
-      return `triage-bg--${s}`;
+    triageBgClass(status) {
+      return getTriageBgClass(status);
     },
     toggleCommentReaction(comment, kind) {
       const prev = { ...comment.reactions };
@@ -165,26 +161,5 @@ export default {
   cursor: pointer;
 }
 
-.triage-bg--concur,
-.triage-bg--concur_with_comment {
-  background-color: rgba(40, 167, 69, 0.08);
-  border-left-color: #28a745 !important;
-}
-
-.triage-bg--non_concur {
-  background-color: rgba(220, 53, 69, 0.08);
-  border-left-color: #dc3545 !important;
-}
-
-.triage-bg--informational,
-.triage-bg--needs_clarification {
-  background-color: rgba(255, 193, 7, 0.08);
-  border-left-color: #ffc107 !important;
-}
-
-.triage-bg--withdrawn,
-.triage-bg--duplicate {
-  background-color: rgba(108, 117, 125, 0.08);
-  border-left-color: #6c757d !important;
-}
+/* triage-bg--* tint classes are in styles/triage-tints.css (global) */
 </style>

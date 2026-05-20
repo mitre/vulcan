@@ -53,7 +53,10 @@
               Section updated since this comment
             </b-badge>
           </p>
-          <blockquote class="border-left pl-3 py-2 mb-2 bg-light">
+          <blockquote
+            class="border-left pl-3 py-2 mb-2 bg-light"
+            :class="triageBgClass(activeComment.triage_status)"
+          >
             {{ activeComment.comment }}
           </blockquote>
           <ReactionButtons
@@ -194,6 +197,7 @@ import RulePicker from "../components/RulePicker.vue";
 import ReactionButtons from "../shared/ReactionButtons.vue";
 import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
 import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
+import { triageBgClass } from "../../utils/triageBgClass";
 
 export default {
   name: "TriageSplitView",
@@ -326,6 +330,7 @@ export default {
     },
   },
   methods: {
+    triageBgClass,
     onQueueSelect(id) {
       if (this.isDirty) {
         if (!window.confirm("You have unsaved changes. Switch anyway?")) return;
