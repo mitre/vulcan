@@ -1,7 +1,24 @@
 <template>
   <div class="rule-context-panel">
     <template v-if="ruleContent">
-      <h6 class="mb-1 font-weight-bold">{{ ruleDisplayedName }}</h6>
+      <h6 class="mb-1 font-weight-bold">
+        <b-icon
+          v-if="ruleContent.locked"
+          icon="lock"
+          class="text-warning mr-1"
+          aria-hidden="true"
+        />
+        {{ ruleDisplayedName }}
+        <b-badge
+          v-if="ruleContent.locked"
+          variant="warning"
+          pill
+          class="ml-1 small"
+          data-testid="locked-indicator"
+        >
+          Locked
+        </b-badge>
+      </h6>
       <p v-if="ruleContent.title" class="text-muted small mb-2">
         {{ ruleContent.title }}
       </p>

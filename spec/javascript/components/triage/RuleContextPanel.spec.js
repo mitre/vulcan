@@ -373,4 +373,33 @@ describe("RuleContextPanel", () => {
       expect(fixSection.findAll(".related-comment").length).toBe(0);
     });
   });
+
+  // ── Locked status ──────────────────────────────────────────────────
+
+  describe("locked status indicator", () => {
+    it("shows lock icon when ruleContent.locked is true", () => {
+      const w = mount(RuleContextPanel, {
+        localVue,
+        propsData: props({ ruleContent: { ...ruleContent, locked: true } }),
+      });
+      expect(w.find("[data-testid='locked-indicator']").exists()).toBe(true);
+      expect(w.text()).toContain("Locked");
+    });
+
+    it("does not show lock icon when ruleContent.locked is false", () => {
+      const w = mount(RuleContextPanel, {
+        localVue,
+        propsData: props({ ruleContent: { ...ruleContent, locked: false } }),
+      });
+      expect(w.find("[data-testid='locked-indicator']").exists()).toBe(false);
+    });
+
+    it("does not show lock icon when locked is not present", () => {
+      const w = mount(RuleContextPanel, {
+        localVue,
+        propsData: props(),
+      });
+      expect(w.find("[data-testid='locked-indicator']").exists()).toBe(false);
+    });
+  });
 });

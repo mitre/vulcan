@@ -1054,7 +1054,8 @@ class Component < ApplicationRecord
       responsibility: disa&.responsibility,
       ia_controls: disa&.ia_controls,
       severity_override_guidance: disa&.severity_override_guidance,
-      check_content: check&.content
+      check_content: check&.content,
+      locked: rule&.locked
     }
   end
 end
