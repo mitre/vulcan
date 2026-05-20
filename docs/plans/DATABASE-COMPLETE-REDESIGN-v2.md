@@ -301,6 +301,117 @@ def rules_with_matching_requirements
 end
 ```
 
+#### Problem 11: `set_component` Eager-Load Cartesian Explosion + Review-Author N+1 [PRODUCTION HOTSPOT]
+
+```ruby
+# app/controllers/components_controller.rb -- set_component (loaded on every
+# component show/triage/settings/export request)
+@component = Component.eager_load(
+  rules: [:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
+          :additional_answers, { satisfies: :srg_rule }, { satisfied_by: :srg_rule },
+          { srg_rule: %i[disa_rule_descriptions rule_descriptions checks] }]
+).find_by(id: params[:id])
+```
+
+`eager_load` forces a single LEFT OUTER JOIN across multiple sibling `has_many`
+collections on Rule. Postgres returns the cartesian product per rule (rows =
+reviews x checks x descriptions x ...), with every joined row replicating the
+large text columns (vuln_discussion, check content, inspec bodies). Latent
+since #286 (2021); harmless while reviews were sparse. The comment-feedback
+work in #729 drove comment volume up and the latent multiplier started biting:
+500-1000ms component-page hits observed in prod on big components, can drive
+Puma worker memory pressure (R14) and indirect instance-wide slowdown when a
+worker queues / restarts.
+
+Compounding: `set_component` eager-loads `:reviews` but NOT
+`reviews: %i[user triage_set_by adjudicated_by]`. `RuleBlueprint :editor`
+renders every review via `ReviewBlueprint`, which touches `review.user.name`,
+`triager_display_name`, and `adjudicator_display_name` -- up to three N+1
+user lookups per review.
+
+**Proposed fix (tactical, ships independently of redesign):**
+
+```ruby
+Component.preload(
+  rules: [{ reviews: %i[user triage_set_by adjudicated_by] },
+          :disa_rule_descriptions, :rule_descriptions, :checks, :additional_answers,
+          { satisfies: :srg_rule }, { satisfied_by: :srg_rule },
+          { srg_rule: %i[disa_rule_descriptions rule_descriptions checks] }]
+).find_by(id: params[:id])
+```
+
+`preload` issues separate flat queries -- no cartesian product. The set of
+`set_component` callers (`show update destroy export preview_spreadsheet_update
+apply_spreadsheet_update triage settings`) does not filter on the joined
+tables, so the swap is safe. Phase 1's `DisplayFallback` scope (Problem 6
+follow-up) should preserve this preload shape rather than reintroducing
+`eager_load`.
+
+#### Problem 12: Unbounded `check_access_request_notifications` Per-Request Query [PRODUCTION HOTSPOT]
+
+```ruby
+# app/controllers/application_controller.rb
+before_action :check_access_request_notifications  # runs on every HTML request
+
+def check_access_request_notifications
+  ...
+  pending_requests = if current_user.admin?
+                       ProjectAccessRequest.eager_load(:user, :project)  # NO .limit
+                     else
+                       ProjectAccessRequest.where(project_id: admin_project_ids)
+                                           .eager_load(:user, :project)
+                     end
+  @access_requests = pending_requests.map { |ar| {...} }
+end
+```
+
+Super admins load the entire `project_access_requests` table on every HTML
+request. The table grows with new-user onboarding (each new user typically
+files one access request) and shrinks only when a request is approved or
+denied. Per-row cost is small (UserBlueprint is trivial + associations are
+preloaded), but the query is unbounded -- at scale this becomes a permanent
+per-request tax that is most visible to admins navigating between pages, and
+correlates with the recent user-onboarding wave.
+
+**Proposed fix (tactical):** Replace the eager full-table load with a count
+for the navbar badge; load the actual list lazily via a JSON endpoint when
+the admin opens the dropdown. Alternative minimal diff: `.limit(50)` plus an
+"N more" indicator when total exceeds 50.
+
+#### Problem 13: Polymorphic-Commentable Correctness Regressions [CORRECTNESS REGRESSION]
+
+Two `Component` methods shipped alongside #729's polymorphic commentable
+still scope to rule-only commentables and miss component-scoped reviews
+(`commentable_type='Component'`, `rule_id=nil`):
+
+```ruby
+# app/models/component.rb -- Component#reviews
+def reviews
+  rule_names = rules.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
+  Review.where(rule_id: rule_names.keys)...  # misses component-scoped reviews
+end
+
+# app/models/component.rb -- Component.pending_comment_counts
+def self.pending_comment_counts(component_ids)
+  Review.where(action: 'comment', responding_to_review_id: nil, triage_status: 'pending')
+        .joins(:rule)                                       # INNER JOIN drops rule_id=NULL rows
+        .merge(Rule.where(component_id: component_ids))
+        .group('base_rules.component_id').count
+end
+```
+
+`Component#reviews` is rendered into the editor blueprint (`field :reviews`);
+`pending_comment_counts` drives the "N pending" badge on the component card.
+Both silently undercount when a component has overall-component (non-rule)
+comments.
+
+**Proposed fix (tactical):** Rewrite both as polymorphic UNIONs mirroring
+`Component#paginated_comments` -- rule-scoped reviews on this component's
+rules OR component-scoped reviews on this component.
+`Project.pending_comment_counts` already uses the correct union shape (see
+`REVIEW_COMPONENT_UNION_BODY` constant in `app/models/project.rb`); the
+pattern is ready to reuse.
+
 ### MINOR: Schema Cleanup
 
 #### Problem 9: Unused/Sparse Columns
