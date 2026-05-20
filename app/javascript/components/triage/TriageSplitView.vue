@@ -43,6 +43,15 @@
           <p class="mb-1 text-muted small">
             <strong>{{ activeComment.author_name || "—" }}</strong>
             · posted {{ friendlyDateTime(activeComment.created_at) }}
+            <b-badge
+              v-if="isContentStale"
+              variant="warning"
+              pill
+              class="ml-2"
+              data-testid="staleness-badge"
+            >
+              Section updated since this comment
+            </b-badge>
           </p>
           <blockquote class="border-left pl-3 py-2 mb-2 bg-light">
             {{ activeComment.comment }}
@@ -227,6 +236,13 @@ export default {
     },
     canTriage() {
       return this.role_gte_to(this.effectivePermissions, "author");
+    },
+    isContentStale() {
+      if (!this.activeComment?.rule_content?.rule_updated_at) return false;
+      return (
+        new Date(this.activeComment.rule_content.rule_updated_at) >
+        new Date(this.activeComment.created_at)
+      );
     },
     activeRuleComments() {
       if (!this.activeComment) return [];

@@ -383,6 +383,40 @@ describe("TriageSplitView", () => {
 
   // ── Reaction buttons ──────────────────────────────────────────────
 
+  // ── Staleness badge ──────────────────────────────────────────────
+
+  it("shows staleness badge when rule updated after comment was posted", () => {
+    const staleRows = rows.map((r) => ({
+      ...r,
+      rule_content: {
+        ...ruleContent1,
+        rule_updated_at: "2026-06-01T00:00:00.000Z",
+      },
+    }));
+    const w = mount(TriageSplitView, {
+      localVue,
+      propsData: baseProps({ rows: staleRows, initialCommentId: 1 }),
+    });
+    expect(w.find("[data-testid='staleness-badge']").exists()).toBe(true);
+  });
+
+  it("hides staleness badge when rule not updated after comment", () => {
+    const freshRows = rows.map((r) => ({
+      ...r,
+      rule_content: {
+        ...ruleContent1,
+        rule_updated_at: "2026-01-01T00:00:00.000Z",
+      },
+    }));
+    const w = mount(TriageSplitView, {
+      localVue,
+      propsData: baseProps({ rows: freshRows, initialCommentId: 1 }),
+    });
+    expect(w.find("[data-testid='staleness-badge']").exists()).toBe(false);
+  });
+
+  // ── Reaction buttons ──────────────────────────────────────────────
+
   it("renders ReactionButtons for the active comment", async () => {
     const w = mount(TriageSplitView, {
       localVue,
