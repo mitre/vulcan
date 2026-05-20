@@ -50,7 +50,7 @@ export default {
       return sectionLabel(this.section);
     },
     isInactive() {
-      return this.locked || this.commentsClosed;
+      return this.commentsClosed;
     },
     glyphIcon() {
       // Filled glyph when there's prior conversation — quick visual
@@ -64,13 +64,13 @@ export default {
     ariaLabel() {
       const base = `Add comment on ${this.sectionDisplay} section`;
       // Order matters — narrowest scope first wins.
-      if (this.locked) return `${base} (rule is locked)`;
+      if (this.locked) return `${base} (rule is locked — comments still accepted)`;
       if (this.commentsClosed) return `${base} (comments are closed for this component)`;
       return this.openCount > 0 ? `${base} (${this.openCount} open)` : base;
     },
     tooltipText() {
       // Rule-scope (locked) before component-scope (commentsClosed).
-      if (this.locked) return "Rule is locked — comments are closed for this rule";
+      if (this.locked) return "Rule is locked — editing disabled, comments still accepted";
       if (this.commentsClosed) return commentsClosedTooltip(this.closedReason);
       return this.openCount > 0
         ? `${this.openCount} open comments on ${this.sectionDisplay}`

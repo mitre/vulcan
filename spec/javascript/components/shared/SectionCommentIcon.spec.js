@@ -111,24 +111,22 @@ describe("SectionCommentIcon", () => {
 
   // Locked is inactive (greyed) with explanatory tooltip rather than
   // hidden, mirroring the unlock-icon pattern.
-  it("applies text-muted + opacity-50 when locked=true (no clickable)", () => {
+  it("remains clickable when locked=true (comments allowed on locked fields)", () => {
     const w = mount(SectionCommentIcon, {
       localVue,
       propsData: { section: "title", openCount: 0, locked: true },
     });
     const glyph = findGlyph(w);
-    expect(glyph.classes()).toContain("text-muted");
-    expect(glyph.classes()).toContain("opacity-50");
-    expect(glyph.classes()).not.toContain("clickable");
+    expect(glyph.classes()).toContain("clickable");
   });
 
-  it("does NOT emit 'open-composer' when clicked while locked", async () => {
+  it("emits 'open-composer' when clicked while locked (comments allowed)", async () => {
     const w = mount(SectionCommentIcon, {
       localVue,
       propsData: { section: "check_content", openCount: 0, locked: true },
     });
     await w.find(".section-comment-icon").trigger("click");
-    expect(w.emitted("open-composer")).toBeUndefined();
+    expect(w.emitted("open-composer")).toHaveLength(1);
   });
 
   // Tooltip-content tests assert the computed contract. BootstrapVue's
@@ -244,12 +242,12 @@ describe("SectionCommentIcon", () => {
     expect(glyph.attributes("tabindex")).toBe("0");
   });
 
-  it("is NOT keyboard-focusable when locked (tabindex=-1)", () => {
+  it("is keyboard-focusable when locked (comments still accepted)", () => {
     const w = mount(SectionCommentIcon, {
       localVue,
       propsData: { section: "title", openCount: 0, locked: true },
     });
-    expect(findGlyph(w).attributes("tabindex")).toBe("-1");
+    expect(findGlyph(w).attributes("tabindex")).toBe("0");
   });
 
   it("emits 'open-composer' on Enter keydown when active", async () => {
