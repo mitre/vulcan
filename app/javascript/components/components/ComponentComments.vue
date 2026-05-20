@@ -48,6 +48,28 @@
       >
         <b-icon icon="download" /> Export CSV
       </b-button>
+      <b-button-group v-if="!splitMode" size="sm" class="ml-auto">
+        <b-button
+          v-b-tooltip.hover
+          :variant="viewMode === 'table' ? 'secondary' : 'outline-secondary'"
+          title="Table view"
+          aria-label="Table view"
+          data-testid="view-mode-table"
+          @click="setViewMode('table')"
+        >
+          <b-icon icon="table" />
+        </b-button>
+        <b-button
+          v-b-tooltip.hover
+          :variant="viewMode === 'by-rule' ? 'secondary' : 'outline-secondary'"
+          title="Group by rule"
+          aria-label="Group by rule"
+          data-testid="view-mode-by-rule"
+          @click="setViewMode('by-rule')"
+        >
+          <b-icon icon="list-nested" />
+        </b-button>
+      </b-button-group>
       <b-button
         v-if="canCommentOnComponent"
         variant="primary"
@@ -77,6 +99,13 @@
       @reaction-updated="updateRowInPlace"
       @open-reply-composer="openReplyComposerFromRow"
       @admin-panel-close="$emit('admin-panel-close')"
+    />
+
+    <!-- By-rule grouped view -->
+    <CommentsByRule
+      v-else-if="viewMode === 'by-rule'"
+      :rows="rows"
+      @reaction-updated="updateRowInPlace"
     />
 
     <!-- Table -->
@@ -213,6 +242,7 @@ import FilterDropdown from "../shared/FilterDropdown.vue";
 import CommentThread from "../shared/CommentThread.vue";
 import TriageSplitView from "../triage/TriageSplitView.vue";
 import CommentComposerModal from "./CommentComposerModal.vue";
+import CommentsByRule from "./CommentsByRule.vue";
 import ReplyComposerMixin from "../../mixins/ReplyComposerMixin.vue";
 
 export default {
@@ -224,6 +254,7 @@ export default {
     CommentThread,
     TriageSplitView,
     CommentComposerModal,
+    CommentsByRule,
   },
   // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because
   // each esbuild pack has its own axios singleton (bundle isolation) — the
@@ -284,6 +315,7 @@ export default {
       sortDesc: false,
       splitMode: false,
       splitCommentId: null,
+      viewMode: this.loadPersistedViewMode(),
       fields,
     };
   },
@@ -348,6 +380,25 @@ export default {
     scopeKey() {
       const id = this.scope === "project" ? this.projectId : this.componentId;
       return `${this.scope}-${id}`;
+    },
+    viewModeKey() {
+      return `commentTriageViewMode-${this.scopeKey()}`;
+    },
+    loadPersistedViewMode() {
+      try {
+        const mode = localStorage.getItem(this.viewModeKey());
+        return mode === "by-rule" ? "by-rule" : "table";
+      } catch {
+        return "table";
+      }
+    },
+    setViewMode(mode) {
+      this.viewMode = mode;
+      try {
+        localStorage.setItem(this.viewModeKey(), mode);
+      } catch {
+        // Non-fatal
+      }
     },
     persistKey() {
       return `commentTriageFilters-${this.scopeKey()}`;

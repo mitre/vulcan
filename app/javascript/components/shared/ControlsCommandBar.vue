@@ -96,8 +96,15 @@
         </b-button>
         <!-- Triage navigates to the dedicated full-page triage view
              (the comp-reviews slideover was retired in PR #717). -->
-        <b-button :href="`/components/${component.id}/triage`" variant="outline-secondary">
+        <b-button
+          :href="`/components/${component.id}/triage`"
+          variant="outline-secondary"
+          data-testid="triage-btn"
+        >
           <b-icon icon="chat-left-text" /> Triage
+          <b-badge v-if="component.pending_comment_count > 0" variant="primary" pill class="ml-1">
+            {{ component.pending_comment_count }}
+          </b-badge>
         </b-button>
         <!-- Component Settings — admin-only dedicated page for typed
              configuration (Identity, PoC, Public Comment Period).

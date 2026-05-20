@@ -113,19 +113,24 @@ class ProjectsController < ApplicationController
   def comments
     return head :not_found unless @project
 
-    result = @project.paginated_comments(
-      triage_status: params[:triage_status].presence || 'pending',
-      section: params[:section].presence,
-      component_id: params[:component_id].presence,
-      author_id: params[:author_id].presence,
-      query: params[:q].presence,
-      page: params[:page].presence || 1,
-      per_page: params[:per_page].presence || 25,
-      resolved: params[:resolved].presence || 'all'
-    )
-    inject_reactions_mine!(result[:rows])
-    response.headers['Cache-Control'] = 'no-store'
-    render json: result
+    respond_to do |format|
+      format.html { redirect_to "/projects/#{@project.id}/triage" }
+      format.json do
+        result = @project.paginated_comments(
+          triage_status: params[:triage_status].presence || 'pending',
+          section: params[:section].presence,
+          component_id: params[:component_id].presence,
+          author_id: params[:author_id].presence,
+          query: params[:q].presence,
+          page: params[:page].presence || 1,
+          per_page: params[:per_page].presence || 25,
+          resolved: params[:resolved].presence || 'all'
+        )
+        inject_reactions_mine!(result[:rows])
+        response.headers['Cache-Control'] = 'no-store'
+        render json: result
+      end
+    end
   end
 
   def create
