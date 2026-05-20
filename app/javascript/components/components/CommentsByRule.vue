@@ -20,7 +20,12 @@
           class="mr-2"
         />
         <strong>{{ group.ruleName }}</strong>
-        <b-badge variant="secondary" pill class="ml-2">{{ group.comments.length }}</b-badge>
+        <b-badge variant="secondary" pill class="ml-2">
+          <template v-if="group.pendingCount < group.comments.length">
+            {{ group.pendingCount }} pending / {{ group.comments.length }} total
+          </template>
+          <template v-else>{{ group.comments.length }}</template>
+        </b-badge>
       </div>
 
       <div v-show="isExpanded(group.ruleName)" data-testid="rule-group-content" class="ml-3 mt-2">
@@ -35,6 +40,7 @@
             :key="comment.id"
             data-testid="comment-entry"
             class="border-left pl-3 py-2 mb-1"
+            :class="triageBgClass(comment)"
           >
             <div class="d-flex justify-content-between align-items-baseline">
               <div>
@@ -118,6 +124,7 @@ export default {
         })
         .map((g) => ({
           ...g,
+          pendingCount: g.comments.filter((c) => c.triage_status === "pending").length,
           sections: Object.entries(g.sectionMap).map(([key, comments]) => ({
             key,
             label: key === "(general)" ? "Overall Requirement" : SECTION_LABELS[key] || key,
@@ -132,6 +139,11 @@ export default {
     },
     toggleRule(ruleName) {
       this.$set(this.collapsed, ruleName, !this.isExpanded(ruleName));
+    },
+    triageBgClass(comment) {
+      const s = comment.triage_status;
+      if (!s || s === "pending") return "";
+      return `triage-bg--${s}`;
     },
     toggleCommentReaction(comment, kind) {
       const prev = { ...comment.reactions };
@@ -151,5 +163,28 @@ export default {
 <style scoped>
 .cursor-pointer {
   cursor: pointer;
+}
+
+.triage-bg--concur,
+.triage-bg--concur_with_comment {
+  background-color: rgba(40, 167, 69, 0.08);
+  border-left-color: #28a745 !important;
+}
+
+.triage-bg--non_concur {
+  background-color: rgba(220, 53, 69, 0.08);
+  border-left-color: #dc3545 !important;
+}
+
+.triage-bg--informational,
+.triage-bg--needs_clarification {
+  background-color: rgba(255, 193, 7, 0.08);
+  border-left-color: #ffc107 !important;
+}
+
+.triage-bg--withdrawn,
+.triage-bg--duplicate {
+  background-color: rgba(108, 117, 125, 0.08);
+  border-left-color: #6c757d !important;
 }
 </style>
