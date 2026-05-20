@@ -124,7 +124,7 @@
       stacked="md"
       show-empty
       role="table"
-      aria-label="Component comments triage queue"
+      aria-label="Component comments table"
     >
       <template #cell(rule_displayed_name)="{ item }">
         <!-- data-turbolinks="false" forces a full page load. Without it,

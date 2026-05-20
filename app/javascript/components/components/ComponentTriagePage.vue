@@ -11,7 +11,7 @@
           class="mr-2"
           @click="exitSplit"
         >
-          <b-icon icon="arrow-left" /> Back to Triage Table
+          <b-icon icon="arrow-left" /> Back to Comments Table
         </b-button>
         <b-button :href="`/components/${component.id}`" variant="outline-secondary" size="sm">
           <b-icon icon="arrow-left" /> Back to Component Editor
@@ -22,7 +22,7 @@
 
     <div class="px-3">
       <div class="mb-3">
-        <h1 class="h3 mb-1">Triage Queue</h1>
+        <h1 class="h3 mb-1">Comments</h1>
         <p class="text-muted mb-0">
           <strong>{{ component.name }}</strong>
           <span v-if="component.version || component.release" class="ml-1">
@@ -76,7 +76,7 @@ export default {
         { text: "Projects", href: "/projects" },
         { text: this.project.name, href: `/projects/${this.project.id}` },
         { text: this.component.name, href: `/components/${this.component.id}` },
-        { text: "Triage", active: true },
+        { text: "Comments", active: true },
       ];
     },
   },

@@ -4,7 +4,7 @@
     <div class="px-3">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-          <h1 class="h3 mb-1">Project Triage Queue</h1>
+          <h1 class="h3 mb-1">Project Comments</h1>
           <p class="text-muted mb-0">
             All public-comment-review activity across {{ project.name }} components.
           </p>
@@ -40,7 +40,7 @@ export default {
       return [
         { text: "Projects", href: "/projects" },
         { text: this.project.name, href: `/projects/${this.project.id}` },
-        { text: "Triage", active: true },
+        { text: "Comments", active: true },
       ];
     },
   },
