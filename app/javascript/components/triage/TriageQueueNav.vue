@@ -105,7 +105,7 @@
                 class="browse-item px-3 py-1 small d-flex align-items-center cursor-pointer"
                 :class="{
                   active: comment.id === normalizedCurrentId,
-                  'bg-light': browseFocusIndex === flatIndexOf(comment.id),
+                  'browse-focused': browseFocusIndex === flatIndexOf(comment.id),
                 }"
                 role="button"
                 tabindex="0"
@@ -370,18 +370,25 @@ export default {
 }
 
 .browse-item:hover,
-.browse-item:focus {
-  background-color: rgba(0, 0, 0, 0.04);
+.browse-item:focus,
+.browse-item.browse-focused {
+  background-color: rgba(0, 0, 0, 0.06);
   outline: none;
 }
 
 .browse-item.active {
-  background-color: var(--primary);
-  color: white;
+  background-color: var(--primary) !important;
+  color: white !important;
 }
 
 .browse-item.active .text-muted {
   color: rgba(255, 255, 255, 0.75) !important;
+}
+
+.browse-item.active:hover,
+.browse-item.active:focus,
+.browse-item.active.browse-focused {
+  background-color: #0056b3 !important;
 }
 
 .cursor-pointer {
