@@ -92,7 +92,7 @@ describe("triageVocabulary", () => {
   it("triageDisplay returns glyph + label + tooltip + cssClass", () => {
     const r = triageDisplay("concur_with_comment");
     expect(r.glyph).toBe("◐");
-    expect(r.label).toBe("Accept with changes");
+    expect(r.label).toBe("Accepted with Changes");
     expect(r.tooltip).toMatch(/incorporate with changes/i);
     expect(r.cssClass).toBe("triage-status--concur_with_comment");
   });

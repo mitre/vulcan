@@ -56,11 +56,56 @@ export default {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   white-space: nowrap;
+  padding: 0.2em 0.5em;
+  border-radius: 0.25rem;
+  font-weight: 600;
 }
+
 .triage-status > [data-test="glyph"] {
   font-size: 1em;
   line-height: 1;
+}
+
+.triage-status--pending {
+  color: #6c757d;
+  background-color: rgba(108, 117, 125, 0.1);
+}
+
+.triage-status--concur {
+  color: #155724;
+  background-color: rgba(40, 167, 69, 0.2);
+}
+
+.triage-status--concur_with_comment {
+  color: #2e7d32;
+  background-color: rgba(76, 175, 80, 0.12);
+}
+
+.triage-status--non_concur {
+  color: #721c24;
+  background-color: rgba(220, 53, 69, 0.12);
+}
+
+.triage-status--informational {
+  color: #856404;
+  background-color: rgba(255, 193, 7, 0.15);
+}
+
+.triage-status--needs_clarification {
+  color: #856404;
+  background-color: rgba(255, 193, 7, 0.12);
+}
+
+.triage-status--withdrawn,
+.triage-status--duplicate {
+  color: #6c757d;
+  background-color: rgba(108, 117, 125, 0.1);
+  text-decoration: line-through;
+}
+
+.triage-status--adjudicated {
+  font-style: italic;
 }
 </style>

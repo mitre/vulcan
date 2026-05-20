@@ -4,12 +4,12 @@
 //
 // Storage = DISA-native. UI = friendly English. See DESIGN §3.1.1 for why.
 
-// Database / API key → friendly UI label
+// Database / API key → friendly UI label (past tense for status display)
 export const TRIAGE_LABELS = Object.freeze({
   pending: "Pending",
-  concur: "Accept",
-  concur_with_comment: "Accept with changes",
-  non_concur: "Decline",
+  concur: "Accepted",
+  concur_with_comment: "Accepted with Changes",
+  non_concur: "Declined",
   duplicate: "Duplicate",
   informational: "Informational",
   needs_clarification: "Needs clarification",
