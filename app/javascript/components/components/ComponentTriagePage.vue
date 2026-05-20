@@ -34,15 +34,6 @@
             All fields
           </b-button>
         </b-button-group>
-        <b-button-group v-if="isSplitMode && isAdmin" size="sm">
-          <b-button
-            :variant="adminPanelOpen ? 'secondary' : 'outline-secondary'"
-            data-testid="open-admin-actions"
-            @click="adminPanelOpen = !adminPanelOpen"
-          >
-            <b-icon icon="shield-lock" /> Admin
-          </b-button>
-        </b-button-group>
       </template>
     </BaseCommandBar>
 

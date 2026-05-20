@@ -311,12 +311,21 @@ describe("TriageSplitView", () => {
 
   // ── Admin actions (migrated from modal) ────────────────────────────
 
-  it("renders admin sidebar when adminPanelOpen prop is true", () => {
+  it("renders inline admin actions for admin users", () => {
     const w = mount(TriageSplitView, {
       localVue,
-      propsData: baseProps({ adminPanelOpen: true }),
+      propsData: baseProps({ effectivePermissions: "admin" }),
     });
-    expect(w.find("#sidebar-admin-actions").exists()).toBe(true);
+    expect(w.find("[data-testid='admin-actions-inline']").exists()).toBe(true);
+    expect(w.find("[data-testid='admin-action-force-withdraw']").exists()).toBe(true);
+  });
+
+  it("hides admin actions for non-admin users", () => {
+    const w = mount(TriageSplitView, {
+      localVue,
+      propsData: baseProps({ effectivePermissions: "author" }),
+    });
+    expect(w.find("[data-testid='admin-actions-inline']").exists()).toBe(false);
   });
 
   it("posts to admin_withdraw with audit comment", async () => {

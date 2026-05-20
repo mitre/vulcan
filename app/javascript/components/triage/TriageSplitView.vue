@@ -72,118 +72,109 @@
         <p v-else class="text-muted small font-italic">
           Read-only — author or higher role required to triage.
         </p>
-      </b-col>
-    </b-row>
 
-    <b-sidebar
-      id="sidebar-admin-actions"
-      title="Admin Actions"
-      right
-      shadow
-      backdrop
-      width="400px"
-      :visible="adminPanelOpen"
-      @hidden="$emit('admin-panel-close')"
-    >
-      <div v-if="activeComment" class="px-3 py-2">
-        <p class="text-muted small mb-3">
-          Admin overrides are recorded in the audit log. Use sparingly.
-        </p>
-        <p class="small mb-3">
-          Comment <strong>#{{ activeComment.id }}</strong> on
-          <strong>{{ activeComment.rule_displayed_name }}</strong>
-        </p>
-
-        <div v-if="!adminAction" class="d-flex flex-column" style="gap: 0.5rem">
-          <b-button
-            size="sm"
-            variant="outline-warning"
-            data-testid="admin-action-force-withdraw"
-            @click="adminAction = 'force-withdraw'"
-          >
-            <b-icon icon="x-octagon" /> Force-withdraw
-          </b-button>
-          <b-button
-            v-if="canRestore"
-            size="sm"
-            variant="outline-secondary"
-            data-testid="admin-action-restore"
-            @click="adminAction = 'restore'"
-          >
-            <b-icon icon="arrow-counterclockwise" /> Restore
-          </b-button>
-          <b-button
-            size="sm"
-            variant="outline-secondary"
-            data-testid="admin-action-move-to-rule"
-            @click="adminAction = 'move-to-rule'"
-          >
-            <b-icon icon="arrow-right-square" /> Move to rule
-          </b-button>
-          <b-button
-            size="sm"
-            variant="outline-danger"
-            data-testid="admin-action-hard-delete"
-            @click="adminAction = 'hard-delete'"
-          >
-            <b-icon icon="trash" /> Hard-delete
-          </b-button>
-        </div>
-        <div v-else>
-          <p
-            v-if="adminAction === 'hard-delete'"
-            class="text-danger small mb-2 font-weight-bold"
-            role="alert"
-          >
-            <b-icon icon="exclamation-triangle-fill" />
-            This permanently deletes the comment AND ALL REPLIES. It cannot be undone.
-          </p>
-          <RulePicker
-            v-if="adminAction === 'move-to-rule' && resolvedComponentId"
-            class="mb-2"
-            :component-id="resolvedComponentId"
-            :exclude-rule-id="activeComment.rule_id"
-            :selected-rule-id="adminTargetRuleId"
-            @selected="onTargetRuleSelected"
-          />
-          <b-form-textarea
-            v-model="adminAuditComment"
-            rows="2"
-            :placeholder="adminActionPrompt"
-            size="sm"
-            data-testid="admin-action-audit-comment"
-          />
-          <div v-if="adminAction === 'hard-delete'" class="mt-2">
-            <label for="split-admin-confirmation-id" class="small text-muted mb-1">
-              Type the comment ID
-              <strong>{{ activeComment.id }}</strong>
-              to confirm:
-            </label>
-            <b-form-input
-              id="split-admin-confirmation-id"
-              v-model="adminConfirmationId"
-              size="sm"
-              placeholder="Comment ID"
-              data-testid="admin-action-confirmation-id"
-            />
+        <!-- Admin actions inline (admin-only, below triage form) -->
+        <div
+          v-if="canAdminAct && activeComment"
+          class="mt-3 pt-3 border-top"
+          data-testid="admin-actions-inline"
+        >
+          <div class="d-flex align-items-center mb-2">
+            <b-icon icon="shield-lock" class="text-muted mr-1" />
+            <small class="text-muted font-weight-bold">Admin Actions</small>
           </div>
-          <div class="mt-2">
-            <b-button size="sm" data-testid="admin-action-cancel" @click="cancelAdminAction">
-              Cancel
+
+          <div v-if="!adminAction" class="d-flex flex-wrap" style="gap: 0.25rem">
+            <b-button
+              size="sm"
+              variant="outline-warning"
+              data-testid="admin-action-force-withdraw"
+              @click="adminAction = 'force-withdraw'"
+            >
+              <b-icon icon="x-octagon" /> Force-withdraw
+            </b-button>
+            <b-button
+              v-if="canRestore"
+              size="sm"
+              variant="outline-secondary"
+              data-testid="admin-action-restore"
+              @click="adminAction = 'restore'"
+            >
+              <b-icon icon="arrow-counterclockwise" /> Restore
             </b-button>
             <b-button
               size="sm"
-              :variant="adminConfirmVariant"
-              data-testid="admin-action-confirm"
-              :disabled="!canSubmitAdminAction"
-              @click="submitAdminAction"
+              variant="outline-secondary"
+              data-testid="admin-action-move-to-rule"
+              @click="adminAction = 'move-to-rule'"
             >
-              Confirm {{ adminConfirmLabel }}
+              <b-icon icon="arrow-right-square" /> Move to rule
+            </b-button>
+            <b-button
+              size="sm"
+              variant="outline-danger"
+              data-testid="admin-action-hard-delete"
+              @click="adminAction = 'hard-delete'"
+            >
+              <b-icon icon="trash" /> Hard-delete
             </b-button>
           </div>
+          <div v-else>
+            <p
+              v-if="adminAction === 'hard-delete'"
+              class="text-danger small mb-2 font-weight-bold"
+              role="alert"
+            >
+              <b-icon icon="exclamation-triangle-fill" />
+              This permanently deletes the comment AND ALL REPLIES. It cannot be undone.
+            </p>
+            <RulePicker
+              v-if="adminAction === 'move-to-rule' && resolvedComponentId"
+              class="mb-2"
+              :component-id="resolvedComponentId"
+              :exclude-rule-id="activeComment.rule_id"
+              :selected-rule-id="adminTargetRuleId"
+              @selected="onTargetRuleSelected"
+            />
+            <b-form-textarea
+              v-model="adminAuditComment"
+              rows="2"
+              :placeholder="adminActionPrompt"
+              size="sm"
+              data-testid="admin-action-audit-comment"
+            />
+            <div v-if="adminAction === 'hard-delete'" class="mt-2">
+              <label for="split-admin-confirmation-id" class="small text-muted mb-1">
+                Type the comment ID
+                <strong>{{ activeComment.id }}</strong>
+                to confirm:
+              </label>
+              <b-form-input
+                id="split-admin-confirmation-id"
+                v-model="adminConfirmationId"
+                size="sm"
+                placeholder="Comment ID"
+                data-testid="admin-action-confirmation-id"
+              />
+            </div>
+            <div class="mt-2">
+              <b-button size="sm" data-testid="admin-action-cancel" @click="cancelAdminAction">
+                Cancel
+              </b-button>
+              <b-button
+                size="sm"
+                :variant="adminConfirmVariant"
+                data-testid="admin-action-confirm"
+                :disabled="!canSubmitAdminAction"
+                @click="submitAdminAction"
+              >
+                Confirm {{ adminConfirmLabel }}
+              </b-button>
+            </div>
+          </div>
         </div>
-      </div>
-    </b-sidebar>
+      </b-col>
+    </b-row>
   </div>
 </template>
 
