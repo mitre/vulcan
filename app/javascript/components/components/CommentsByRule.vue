@@ -107,14 +107,23 @@ export default {
         groups[name].sectionMap[sectionKey].push(row);
       });
 
-      return Object.values(groups).map((g) => ({
-        ...g,
-        sections: Object.entries(g.sectionMap).map(([key, comments]) => ({
-          key,
-          label: key === "(general)" ? "Overall Requirement" : SECTION_LABELS[key] || key,
-          comments,
-        })),
-      }));
+      return Object.values(groups)
+        .sort((a, b) => {
+          const aComp = a.ruleId === null || a.ruleId === undefined;
+          const bComp = b.ruleId === null || b.ruleId === undefined;
+          if (aComp && !bComp) return -1;
+          if (!aComp && bComp) return 1;
+          if (aComp && bComp) return 0;
+          return a.ruleName.localeCompare(b.ruleName, undefined, { numeric: true });
+        })
+        .map((g) => ({
+          ...g,
+          sections: Object.entries(g.sectionMap).map(([key, comments]) => ({
+            key,
+            label: key === "(general)" ? "Overall Requirement" : SECTION_LABELS[key] || key,
+            comments,
+          })),
+        }));
     },
   },
   methods: {
