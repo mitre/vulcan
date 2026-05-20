@@ -2,10 +2,14 @@
    Applied via triageBgClass() method or :class binding using
    triage-bg--{status} pattern. Pending has no tint (white). */
 
-.triage-bg--concur,
-.triage-bg--concur_with_comment {
+.triage-bg--concur {
   background-color: rgba(40, 167, 69, 0.08) !important;
   border-left-color: #28a745 !important;
+}
+
+.triage-bg--concur_with_comment {
+  background-color: rgba(23, 162, 184, 0.08) !important;
+  border-left-color: #17a2b8 !important;
 }
 
 .triage-bg--non_concur {
