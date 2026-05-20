@@ -60,37 +60,73 @@
 
       <span class="small text-muted mr-3">{{ pendingCount }} pending</span>
 
-      <b-dropdown
-        data-testid="queue-dropdown"
-        size="sm"
-        variant="outline-secondary"
-        text="Browse"
-        no-caret
-        class="queue-dropdown"
-      >
-        <template v-for="group in ruleGroups">
-          <b-dropdown-header :key="'hdr-' + group.ruleId" data-testid="queue-dropdown-rule-header">
-            <strong>{{ group.ruleName }}</strong> ({{ group.comments.length }})
-          </b-dropdown-header>
-          <b-dropdown-item
-            v-for="comment in group.comments"
-            :key="comment.id"
-            data-testid="queue-dropdown-item"
-            :active="comment.id === normalizedCurrentId"
-            @click="$emit('select', comment.id)"
-          >
-            <span class="small ml-2">
-              #{{ comment.id }}
-              <span v-if="comment.section" class="text-muted">· {{ comment.section }}</span>
-            </span>
-            <TriageStatusBadge
-              :status="comment.triage_status"
-              :adjudicated-at="comment.adjudicated_at"
-              class="ml-2"
+      <div class="position-relative">
+        <b-button
+          data-testid="browse-toggle"
+          size="sm"
+          variant="outline-secondary"
+          @click="browseOpen = !browseOpen"
+        >
+          <b-icon icon="list-ul" /> Browse
+        </b-button>
+        <div
+          v-if="browseOpen"
+          data-testid="browse-panel"
+          class="browse-panel position-absolute border rounded shadow bg-white"
+        >
+          <div class="p-2 border-bottom">
+            <b-form-input
+              v-model="browseFilter"
+              data-testid="browse-search"
+              size="sm"
+              placeholder="Filter by rule or comment..."
+              autofocus
             />
-          </b-dropdown-item>
-        </template>
-      </b-dropdown>
+          </div>
+          <div
+            ref="browseList"
+            class="browse-panel__list"
+            role="listbox"
+            tabindex="0"
+            @keydown="handleBrowseKeydown"
+          >
+            <template v-for="group in filteredBrowseGroups">
+              <div
+                :key="'hdr-' + group.ruleId"
+                data-testid="browse-rule-header"
+                class="px-3 py-1 bg-light border-bottom small font-weight-bold"
+              >
+                {{ group.ruleName }} ({{ group.comments.length }})
+              </div>
+              <div
+                v-for="comment in group.comments"
+                :key="comment.id"
+                data-testid="browse-item"
+                class="browse-item px-3 py-1 small d-flex align-items-center cursor-pointer"
+                :class="{
+                  active: comment.id === normalizedCurrentId,
+                  'bg-light': browseFocusIndex === flatIndexOf(comment.id),
+                }"
+                role="button"
+                tabindex="0"
+                @click="onBrowseSelect(comment.id)"
+                @keydown.enter="onBrowseSelect(comment.id)"
+              >
+                <span class="flex-grow-1">
+                  #{{ comment.id }}
+                  <span v-if="comment.section" class="text-muted"
+                    >· {{ sectionLabel(comment.section) }}</span
+                  >
+                </span>
+                <TriageStatusBadge
+                  :status="comment.triage_status"
+                  :adjudicated-at="comment.adjudicated_at"
+                />
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
     </template>
 
     <span v-else class="small text-muted">No comments</span>
@@ -99,6 +135,7 @@
 
 <script>
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
+import { SECTION_LABELS } from "../../constants/triageVocabulary";
 
 export default {
   name: "TriageQueueNav",
@@ -106,6 +143,13 @@ export default {
   props: {
     comments: { type: Array, required: true },
     currentId: { type: [Number, String], default: null },
+  },
+  data() {
+    return {
+      browseOpen: false,
+      browseFilter: "",
+      browseFocusIndex: -1,
+    };
   },
   computed: {
     normalizedCurrentId() {
@@ -181,6 +225,21 @@ export default {
     pendingCount() {
       return this.comments.filter((c) => c.triage_status === "pending").length;
     },
+    filteredBrowseGroups() {
+      if (!this.browseFilter) return this.ruleGroups;
+      const q = this.browseFilter.toLowerCase();
+      return this.ruleGroups
+        .map((g) => ({
+          ...g,
+          comments: g.comments.filter(
+            (c) =>
+              g.ruleName.toLowerCase().includes(q) ||
+              (c.section && c.section.toLowerCase().includes(q)) ||
+              String(c.id).includes(q),
+          ),
+        }))
+        .filter((g) => g.comments.length > 0);
+    },
   },
   methods: {
     flatComment(offset) {
@@ -213,13 +272,93 @@ export default {
       const nextGroup = this.ruleGroups[this.currentRuleIndex + 1];
       this.$emit("select", nextGroup.comments[0].id);
     },
+    sectionLabel(key) {
+      return SECTION_LABELS[key] || key;
+    },
+    onBrowseSelect(id) {
+      this.$emit("select", id);
+      this.browseOpen = false;
+      this.browseFocusIndex = -1;
+    },
+    flatIndexOf(commentId) {
+      let idx = 0;
+      for (const g of this.filteredBrowseGroups) {
+        for (const c of g.comments) {
+          if (c.id === commentId) return idx;
+          idx++;
+        }
+      }
+      return -1;
+    },
+    flatBrowseComments() {
+      const flat = [];
+      for (const g of this.filteredBrowseGroups) {
+        for (const c of g.comments) flat.push(c);
+      }
+      return flat;
+    },
+    handleBrowseKeydown(event) {
+      const items = this.flatBrowseComments();
+      if (!items.length) return;
+
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        if (event.key === "ArrowDown") {
+          this.browseFocusIndex =
+            this.browseFocusIndex < items.length - 1 ? this.browseFocusIndex + 1 : 0;
+        } else {
+          this.browseFocusIndex =
+            this.browseFocusIndex > 0 ? this.browseFocusIndex - 1 : items.length - 1;
+        }
+        this.$nextTick(() => {
+          const el = this.$refs.browseList?.querySelectorAll("[data-testid='browse-item']")[
+            this.browseFocusIndex
+          ];
+          if (el) el.scrollIntoView({ block: "nearest" });
+        });
+      } else if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        if (this.browseFocusIndex >= 0 && this.browseFocusIndex < items.length) {
+          this.onBrowseSelect(items[this.browseFocusIndex].id);
+        }
+      } else if (event.key === "Escape") {
+        this.browseOpen = false;
+      }
+    },
   },
 };
 </script>
 
 <style scoped>
-.queue-dropdown :deep(.dropdown-menu) {
-  max-height: 300px;
+.browse-panel {
+  right: 0;
+  top: 100%;
+  z-index: 1050;
+  width: 300px;
+  margin-top: 4px;
+}
+
+.browse-panel__list {
+  max-height: 400px;
   overflow-y: auto;
+}
+
+.browse-item:hover,
+.browse-item:focus {
+  background-color: rgba(0, 0, 0, 0.04);
+  outline: none;
+}
+
+.browse-item.active {
+  background-color: var(--primary);
+  color: white;
+}
+
+.browse-item.active .text-muted {
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
+.cursor-pointer {
+  cursor: pointer;
 }
 </style>

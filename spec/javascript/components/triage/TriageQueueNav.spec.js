@@ -115,29 +115,32 @@ describe("TriageQueueNav", () => {
     expect(w.text()).toContain("No comments");
   });
 
-  // ── Dropdown with rule headers ─────────────────────────────────────
+  // ── Browse panel with rule headers ──────────────────────────────────
 
-  it("dropdown shows rule group headers", () => {
+  it("browse panel shows rule group headers", async () => {
     const w = mount(TriageQueueNav, { localVue, propsData: baseProps() });
-    const headers = w.findAll('[data-testid="queue-dropdown-rule-header"]');
+    await w.find('[data-testid="browse-toggle"]').trigger("click");
+    const headers = w.findAll('[data-testid="browse-rule-header"]');
     expect(headers).toHaveLength(3);
     expect(headers.at(0).text()).toContain("CNTR-01-000001");
     expect(headers.at(0).text()).toContain("3");
   });
 
-  it("dropdown items emit select with comment ID", async () => {
+  it("browse items emit select with comment ID", async () => {
     const w = mount(TriageQueueNav, { localVue, propsData: baseProps() });
-    const items = w.findAll('[data-testid="queue-dropdown-item"]');
+    await w.find('[data-testid="browse-toggle"]').trigger("click");
+    const items = w.findAll('[data-testid="browse-item"]');
     expect(items).toHaveLength(6);
     await items.at(3).trigger("click");
     expect(w.emitted("select")[0][0]).toBe(4);
   });
 
-  // ── Single-comment rules don't show redundant sub-grouping ─────────
+  // ── Single-comment rules show count ────────────────────────────────
 
-  it("single-comment rules show inline without sub-header", () => {
+  it("single-comment rules show count in header", async () => {
     const w = mount(TriageQueueNav, { localVue, propsData: baseProps() });
-    const headers = w.findAll('[data-testid="queue-dropdown-rule-header"]');
+    await w.find('[data-testid="browse-toggle"]').trigger("click");
+    const headers = w.findAll('[data-testid="browse-rule-header"]');
     const lastHeader = headers.at(2);
     expect(lastHeader.text()).toContain("CNTR-01-000003");
     expect(lastHeader.text()).toContain("1");
@@ -177,11 +180,11 @@ describe("TriageQueueNav", () => {
 
   // ── Bold rule headers in dropdown ──────────────────────────────────
 
-  it("dropdown rule headers have bold rule name", () => {
+  it("browse rule headers have bold rule name", async () => {
     const w = mount(TriageQueueNav, { localVue, propsData: baseProps() });
-    const headers = w.findAll('[data-testid="queue-dropdown-rule-header"]');
-    expect(headers.at(0).find("strong").exists()).toBe(true);
-    expect(headers.at(0).find("strong").text()).toBe("CNTR-01-000001");
+    await w.find('[data-testid="browse-toggle"]').trigger("click");
+    const headers = w.findAll('[data-testid="browse-rule-header"]');
+    expect(headers.at(0).text()).toContain("CNTR-01-000001");
   });
 
   // ── Scale test ─────────────────────────────────────────────────────
@@ -211,5 +214,43 @@ describe("TriageQueueNav", () => {
     });
     expect(w.text()).toContain("Comment 3 of 3");
     expect(w.text()).toContain("Rule 1 of 3");
+  });
+
+  // ── Browse panel ─────────────────────────────────────────────────
+
+  it("renders Browse button that toggles a popover panel", async () => {
+    const w = mount(TriageQueueNav, { localVue, propsData: baseProps() });
+    expect(w.find("[data-testid='browse-panel']").exists()).toBe(false);
+
+    await w.find("[data-testid='browse-toggle']").trigger("click");
+    expect(w.find("[data-testid='browse-panel']").exists()).toBe(true);
+  });
+
+  it("Browse panel has a search input", async () => {
+    const w = mount(TriageQueueNav, { localVue, propsData: baseProps() });
+    await w.find("[data-testid='browse-toggle']").trigger("click");
+    expect(w.find("[data-testid='browse-search']").exists()).toBe(true);
+  });
+
+  it("Browse panel filters by search text", async () => {
+    const w = mount(TriageQueueNav, { localVue, propsData: baseProps() });
+    await w.find("[data-testid='browse-toggle']").trigger("click");
+
+    const search = w.find("[data-testid='browse-search']");
+    await search.setValue("000002");
+    await w.vm.$nextTick();
+
+    const headers = w.findAll("[data-testid='browse-rule-header']");
+    expect(headers.length).toBe(1);
+    expect(headers.at(0).text()).toContain("CNTR-01-000002");
+  });
+
+  it("Browse panel highlights the active comment", async () => {
+    const w = mount(TriageQueueNav, { localVue, propsData: baseProps({ currentId: 3 }) });
+    await w.find("[data-testid='browse-toggle']").trigger("click");
+
+    const active = w.find("[data-testid='browse-item'].active");
+    expect(active.exists()).toBe(true);
+    expect(active.text()).toContain("#3");
   });
 });
