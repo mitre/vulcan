@@ -203,4 +203,13 @@ describe("TriageQueueNav", () => {
     expect(w.text()).toContain("Comment 1 of 5");
     expect(w.text()).toContain("150 pending");
   });
+
+  it("handles string currentId from route params (type coercion)", () => {
+    const w = mount(TriageQueueNav, {
+      localVue,
+      propsData: baseProps({ currentId: "3" }),
+    });
+    expect(w.text()).toContain("Comment 3 of 3");
+    expect(w.text()).toContain("Rule 1 of 3");
+  });
 });

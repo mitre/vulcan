@@ -72,7 +72,7 @@
             v-for="comment in group.comments"
             :key="comment.id"
             data-testid="queue-dropdown-item"
-            :active="comment.id === currentId"
+            :active="comment.id === normalizedCurrentId"
             @click="$emit('select', comment.id)"
           >
             <span class="small ml-2">
@@ -104,6 +104,9 @@ export default {
     currentId: { type: [Number, String], default: null },
   },
   computed: {
+    normalizedCurrentId() {
+      return this.currentId != null ? Number(this.currentId) : null;
+    },
     ruleGroups() {
       const groups = [];
       const seen = new Map();
@@ -126,7 +129,7 @@ export default {
       for (let gi = 0; gi < this.ruleGroups.length; gi++) {
         const group = this.ruleGroups[gi];
         for (let ci = 0; ci < group.comments.length; ci++) {
-          if (group.comments[ci].id === this.currentId) {
+          if (group.comments[ci].id === this.normalizedCurrentId) {
             return { ruleIndex: gi, commentIndex: ci };
           }
         }
@@ -146,7 +149,7 @@ export default {
       let idx = 0;
       for (let gi = 0; gi < this.ruleGroups.length; gi++) {
         for (let ci = 0; ci < this.ruleGroups[gi].comments.length; ci++) {
-          if (this.ruleGroups[gi].comments[ci].id === this.currentId) return idx;
+          if (this.ruleGroups[gi].comments[ci].id === this.normalizedCurrentId) return idx;
           idx++;
         }
       }

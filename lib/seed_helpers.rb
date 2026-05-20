@@ -43,7 +43,7 @@ module SeedHelpers # rubocop:disable Style/Documentation
         puts "  Already exists: #{existing.name} (Stig)"
         return existing
       end
-      record.xml = Nokogiri::XML(xml)
+      record.xml = xml
     else
       puts "  Skipping #{File.basename(filepath)} (unrecognized benchmark type)"
       return nil

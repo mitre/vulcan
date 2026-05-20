@@ -31,7 +31,7 @@ FactoryBot.define do
       comment { 'Reply to parent comment' }
       triage_status { nil }
 
-      after(:build) do |review, _evaluator|
+      before(:create) do |review, _evaluator|
         unless review.responding_to_review_id
           parent = create(:review, :comment, user: review.user, rule: review.rule)
           review.responding_to_review_id = parent.id
@@ -46,7 +46,7 @@ FactoryBot.define do
       section { nil }
       comment { 'Component-level comment' }
 
-      after(:build) do |review|
+      before(:create) do |review|
         unless review.commentable_type == 'Component'
           component = create(:component, :skip_rules)
           review.commentable = component
@@ -119,7 +119,7 @@ FactoryBot.define do
     trait :duplicate do
       triage_status { 'duplicate' }
 
-      after(:build) do |review|
+      before(:create) do |review|
         review.triage_set_by ||= create(:user)
         review.triage_set_at ||= Time.current
         unless review.duplicate_of_review_id

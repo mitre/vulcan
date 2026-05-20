@@ -225,7 +225,7 @@ export default {
   },
   data() {
     return {
-      activeCommentId: this.initialCommentId,
+      activeCommentId: Number(this.initialCommentId),
       isDirty: false,
       saving: false,
       conflictAlert: null,
@@ -331,7 +331,7 @@ export default {
       if (this.isDirty) {
         if (!window.confirm("You have unsaved changes. Switch anyway?")) return;
       }
-      this.activeCommentId = id;
+      this.activeCommentId = Number(id);
       this.isDirty = false;
       this.conflictAlert = null;
     },
@@ -367,7 +367,7 @@ export default {
           });
         }
 
-        if (!SINGLE_BUTTON_STATUSES.has(decision.triage_status)) {
+        if (advance && !SINGLE_BUTTON_STATUSES.has(decision.triage_status)) {
           const adjRes = await axios.patch(`/reviews/${this.activeComment.id}/adjudicate`, {});
           this.$emit("adjudicated", adjRes.data.review);
         }

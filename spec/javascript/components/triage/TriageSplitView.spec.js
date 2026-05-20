@@ -384,4 +384,71 @@ describe("TriageSplitView", () => {
     expect(reactionBtns.exists()).toBe(true);
     expect(reactionBtns.props("reviewId")).toBe(1);
   });
+
+  // ── doSave adjudicate logic ─────────────────────────────────────────
+
+  it("doSave with advance=false should NOT call adjudicate endpoint", async () => {
+    axios.patch.mockResolvedValue({
+      data: { review: { id: 1, triage_status: "concur" } },
+    });
+
+    const w = mount(TriageSplitView, {
+      localVue,
+      propsData: baseProps({ initialCommentId: 1 }),
+    });
+    await flushPromises(w);
+
+    await w.vm.doSave({ triage_status: "concur" }, false);
+    await flushPromises(w);
+
+    const patchCalls = axios.patch.mock.calls;
+    const triageCalls = patchCalls.filter(([url]) => url.includes("/triage"));
+    const adjudicateCalls = patchCalls.filter(([url]) => url.includes("/adjudicate"));
+
+    expect(triageCalls.length).toBe(1);
+    expect(adjudicateCalls.length).toBe(0);
+  });
+
+  it("doSave with advance=true should call adjudicate endpoint for non-terminal statuses", async () => {
+    axios.patch.mockResolvedValueOnce({
+      data: { review: { id: 1, triage_status: "concur" } },
+    });
+    axios.patch.mockResolvedValueOnce({
+      data: { review: { id: 1, triage_status: "concur", adjudicated_at: "2026-05-20" } },
+    });
+
+    const w = mount(TriageSplitView, {
+      localVue,
+      propsData: baseProps({ initialCommentId: 1 }),
+    });
+    await flushPromises(w);
+
+    await w.vm.doSave({ triage_status: "concur" }, true);
+    await flushPromises(w);
+
+    const patchCalls = axios.patch.mock.calls;
+    const triageCalls = patchCalls.filter(([url]) => url.includes("/triage"));
+    const adjudicateCalls = patchCalls.filter(([url]) => url.includes("/adjudicate"));
+
+    expect(triageCalls.length).toBe(1);
+    expect(adjudicateCalls.length).toBe(1);
+  });
+
+  it("doSave with advance=true should NOT adjudicate for SINGLE_BUTTON statuses", async () => {
+    axios.patch.mockResolvedValue({
+      data: { review: { id: 1, triage_status: "withdrawn" } },
+    });
+
+    const w = mount(TriageSplitView, {
+      localVue,
+      propsData: baseProps({ initialCommentId: 1 }),
+    });
+    await flushPromises(w);
+
+    await w.vm.doSave({ triage_status: "withdrawn" }, true);
+    await flushPromises(w);
+
+    const adjudicateCalls = axios.patch.mock.calls.filter(([url]) => url.includes("/adjudicate"));
+    expect(adjudicateCalls.length).toBe(0);
+  });
 });
