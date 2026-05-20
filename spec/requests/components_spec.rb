@@ -383,10 +383,16 @@ RSpec.describe 'Components' do
       expect(response).to redirect_to("/components/#{component.id}/triage")
     end
 
-    # REQUIREMENT: triage rows change moment-to-moment during a public-comment
-    # window — every concurrent triager refresh needs the latest data.
-    # Browsers/proxies must not cache the JSON response, or one triager will
-    # see another's already-handled comment as still-pending and double-act.
+    it 'includes status_counts hash with per-status totals' do
+      get "/components/#{component.id}/comments", params: { triage_status: 'all' },
+                                                  headers: { 'Accept' => application_json }
+      expect(response).to have_http_status(:success)
+      body = response.parsed_body
+      expect(body).to have_key('status_counts')
+      expect(body['status_counts']).to be_a(Hash)
+      expect(body['status_counts']['pending']).to eq(1)
+    end
+
     it 'sets Cache-Control: no-store so browsers/proxies cannot cache the queue' do
       get "/components/#{component.id}/comments", headers: { 'Accept' => application_json }
       expect(response.headers['Cache-Control'].to_s).to match(/no-store/i)

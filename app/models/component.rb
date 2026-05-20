@@ -642,6 +642,7 @@ class Component < ApplicationRecord
                            end
     scope = scope.preload(:user, :triage_set_by, :adjudicated_by, commentable_preloads)
 
+    base_scope_for_counts = scope
     scope = scope.where(triage_status: triage_status) unless triage_status == 'all'
     scope = scope.where(section: section) if section.present? && section != 'all'
     scope = scope.where(commentable_type: 'BaseRule', commentable_id: rule_id) if rule_id.present?
@@ -725,9 +726,12 @@ class Component < ApplicationRecord
       row
     end
 
+    status_counts = base_scope_for_counts.group(:triage_status).count
+
     {
       rows: rows,
-      pagination: { page: page, per_page: per_page, total: total, total_comments: total_comments }
+      pagination: { page: page, per_page: per_page, total: total, total_comments: total_comments },
+      status_counts: status_counts
     }
   end
 

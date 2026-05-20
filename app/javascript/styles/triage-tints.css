@@ -1,30 +1,73 @@
-/* Triage status background tints — shared across all comment views.
-   Applied via triageBgClass() method or :class binding using
-   triage-bg--{status} pattern. Pending has no tint (white). */
+/* Triage status color palette — SINGLE SOURCE OF TRUTH.
+   All triage-colored UI (row tints, badges, progress bar pills/segments)
+   must use these CSS custom properties, not hardcoded hex values.
+
+   Palette rationale (ISO 3864 + USWDS + UX research):
+   - Green  = Accepted (unconditional positive)
+   - Blue   = Accepted with Changes (positive + action required — ISO blue = mandatory action)
+   - Red    = Declined (negative)
+   - Yellow = Informational / Needs clarification (neutral advisory)
+   - Grey   = Pending, Withdrawn, Duplicate (inactive / terminal) */
+
+:root {
+  --triage-concur: #28a745;
+  --triage-concur-tint: rgba(40, 167, 69, 0.15);
+  --triage-concur-text: #fff;
+
+  --triage-concur-with-comment: #007bff;
+  --triage-concur-with-comment-tint: rgba(0, 123, 255, 0.10);
+  --triage-concur-with-comment-text: #004085;
+
+  --triage-non-concur: #dc3545;
+  --triage-non-concur-tint: rgba(220, 53, 69, 0.08);
+  --triage-non-concur-text: #721c24;
+
+  --triage-informational: #ffc107;
+  --triage-informational-tint: rgba(255, 193, 7, 0.08);
+  --triage-informational-text: #856404;
+
+  --triage-pending: #6c757d;
+  --triage-pending-tint: rgba(108, 117, 125, 0.08);
+  --triage-pending-text: #6c757d;
+
+  --triage-withdrawn: #8b5cf6;
+  --triage-withdrawn-tint: rgba(139, 92, 246, 0.08);
+  --triage-withdrawn-text: #5b21b6;
+
+  --triage-duplicate: #14b8a6;
+  --triage-duplicate-tint: rgba(20, 184, 166, 0.08);
+  --triage-duplicate-text: #0f766e;
+}
+
+/* Row background tints — applied via triageBgClass() utility */
 
 .triage-bg--concur {
-  background-color: rgba(40, 167, 69, 0.15) !important;
-  border-left-color: #28a745 !important;
+  background-color: var(--triage-concur-tint) !important;
+  border-left-color: var(--triage-concur) !important;
 }
 
 .triage-bg--concur_with_comment {
-  background-color: rgba(76, 175, 80, 0.08) !important;
-  border-left-color: #4caf50 !important;
+  background-color: var(--triage-concur-with-comment-tint) !important;
+  border-left-color: var(--triage-concur-with-comment) !important;
 }
 
 .triage-bg--non_concur {
-  background-color: rgba(220, 53, 69, 0.08) !important;
-  border-left-color: #dc3545 !important;
+  background-color: var(--triage-non-concur-tint) !important;
+  border-left-color: var(--triage-non-concur) !important;
 }
 
 .triage-bg--informational,
 .triage-bg--needs_clarification {
-  background-color: rgba(255, 193, 7, 0.08) !important;
-  border-left-color: #ffc107 !important;
+  background-color: var(--triage-informational-tint) !important;
+  border-left-color: var(--triage-informational) !important;
 }
 
-.triage-bg--withdrawn,
+.triage-bg--withdrawn {
+  background-color: var(--triage-withdrawn-tint) !important;
+  border-left-color: var(--triage-withdrawn) !important;
+}
+
 .triage-bg--duplicate {
-  background-color: rgba(108, 117, 125, 0.08) !important;
-  border-left-color: #6c757d !important;
+  background-color: var(--triage-duplicate-tint) !important;
+  border-left-color: var(--triage-duplicate) !important;
 }

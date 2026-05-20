@@ -1,8 +1,12 @@
 <template>
   <div>
-    <!-- Filter row. Uses shared FilterDropdown so menus stay in viewport
-         even in narrow panels / slideovers (native <select> ignores
-         boundary props and clips at viewport edges). -->
+    <CommentProgressBar
+      v-if="hasStatusCounts"
+      :status-counts="statusCounts"
+      :active-filter="filterStatus"
+      class="mb-2"
+      @filter="onPillFilter"
+    />
     <div class="d-flex flex-wrap align-items-center mb-2" style="gap: 0.5rem">
       <FilterDropdown
         v-model="filterStatus"
@@ -49,23 +53,11 @@
         <b-icon icon="download" /> Export CSV
       </b-button>
       <b-form-checkbox
-        v-model="showResolved"
-        switch
-        size="sm"
-        class="ml-auto mr-3"
-        data-testid="show-resolved-toggle"
-      >
-        <small class="text-muted">
-          Show Resolved
-          <InfoTooltip text="Include triaged and adjudicated comments" />
-        </small>
-      </b-form-checkbox>
-      <b-form-checkbox
         v-if="viewMode === 'by-rule'"
         v-model="allExpanded"
         switch
         size="sm"
-        class="mr-3"
+        class="ml-auto mr-3"
         data-testid="expand-all"
       >
         <small class="text-muted">
@@ -73,7 +65,7 @@
           <InfoTooltip text="Expand or collapse all rule groups" />
         </small>
       </b-form-checkbox>
-      <b-button-group v-if="!splitMode" size="sm">
+      <b-button-group v-if="!splitMode" size="sm" :class="{ 'ml-auto': viewMode !== 'by-rule' }">
         <b-button
           v-b-tooltip.hover
           :variant="viewMode === 'table' ? 'secondary' : 'outline-secondary'"
@@ -272,6 +264,7 @@ import TriageSplitView from "../triage/TriageSplitView.vue";
 import CommentComposerModal from "./CommentComposerModal.vue";
 import CommentsByRule from "./CommentsByRule.vue";
 import InfoTooltip from "../shared/InfoTooltip.vue";
+import CommentProgressBar from "../triage/CommentProgressBar.vue";
 import ReplyComposerMixin from "../../mixins/ReplyComposerMixin.vue";
 import { triageBgClass } from "../../utils/triageBgClass";
 
@@ -286,6 +279,7 @@ export default {
     CommentComposerModal,
     CommentsByRule,
     InfoTooltip,
+    CommentProgressBar,
   },
   // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because
   // each esbuild pack has its own axios singleton (bundle isolation) — the
@@ -344,6 +338,7 @@ export default {
       // shows the arrow when sortBy/sortDesc are controlled.
       sortBy: "id",
       sortDesc: false,
+      statusCounts: {},
       splitMode: false,
       splitCommentId: null,
       viewMode: this.loadPersistedViewMode(),
@@ -352,17 +347,8 @@ export default {
     };
   },
   computed: {
-    // Triagers (author+) get the mutating action buttons; viewers get
-    // a read-only label. Server enforces the same gate via
-    // authorize_author_project on the /reviews/:id/* endpoints.
-    showResolved: {
-      get() {
-        return this.filterStatus === "all";
-      },
-      set(val) {
-        this.filterStatus = val ? "all" : "pending";
-        this.onFilterChanged();
-      },
+    hasStatusCounts() {
+      return Object.values(this.statusCounts).some((n) => n > 0);
     },
     canTriage() {
       return this.role_gte_to(this.effectivePermissions, "author");
@@ -483,8 +469,14 @@ export default {
     },
     onFilterChanged() {
       this.page = 1;
+      if (this.viewMode === "by-rule") this.allExpanded = true;
       this.persistFilters();
       this.fetch();
+    },
+    onPillFilter(status) {
+      this.filterStatus = status;
+      if (this.viewMode === "by-rule") this.allExpanded = true;
+      this.onFilterChanged();
     },
     async fetch() {
       this.loading = true;
@@ -506,6 +498,7 @@ export default {
         const { data } = await axios.get(url, { params });
         this.rows = data.rows;
         this.total = data.pagination.total;
+        if (data.status_counts) this.statusCounts = data.status_counts;
       } catch (error) {
         this.alertOrNotifyResponse(error);
       } finally {

@@ -69,39 +69,44 @@ export default {
 }
 
 .triage-status--pending {
-  color: #6c757d;
-  background-color: rgba(108, 117, 125, 0.1);
+  color: var(--triage-pending-text);
+  background-color: var(--triage-pending-tint);
 }
 
 .triage-status--concur {
-  color: #fff;
-  background-color: #28a745;
+  color: var(--triage-concur-text);
+  background-color: var(--triage-concur);
 }
 
 .triage-status--concur_with_comment {
-  color: #2e7d32;
-  background-color: rgba(76, 175, 80, 0.12);
+  color: var(--triage-concur-with-comment-text);
+  background-color: var(--triage-concur-with-comment-tint);
 }
 
 .triage-status--non_concur {
-  color: #721c24;
-  background-color: rgba(220, 53, 69, 0.12);
+  color: var(--triage-non-concur-text);
+  background-color: var(--triage-non-concur-tint);
 }
 
 .triage-status--informational {
-  color: #856404;
-  background-color: rgba(255, 193, 7, 0.15);
+  color: var(--triage-informational-text);
+  background-color: var(--triage-informational-tint);
 }
 
 .triage-status--needs_clarification {
-  color: #856404;
-  background-color: rgba(255, 193, 7, 0.12);
+  color: var(--triage-informational-text);
+  background-color: var(--triage-informational-tint);
 }
 
-.triage-status--withdrawn,
+.triage-status--withdrawn {
+  color: var(--triage-withdrawn-text);
+  background-color: var(--triage-withdrawn-tint);
+  text-decoration: line-through;
+}
+
 .triage-status--duplicate {
-  color: #6c757d;
-  background-color: rgba(108, 117, 125, 0.1);
+  color: var(--triage-duplicate-text);
+  background-color: var(--triage-duplicate-tint);
   text-decoration: line-through;
 }
 

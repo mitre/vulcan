@@ -138,6 +138,7 @@ class Project < ApplicationRecord
     scope = rule_scoped.or(component_scoped)
                        .preload(:user, :triage_set_by, :adjudicated_by, :commentable)
 
+    base_scope_for_counts = scope
     scope = scope.where(triage_status: triage_status) unless triage_status == 'all'
     scope = scope.where(section: section) if section.present? && section != 'all'
     scope = scope.where(user_id: author_id) if author_id.present?
@@ -213,7 +214,9 @@ class Project < ApplicationRecord
       }
     end
 
-    { rows: rows, pagination: { page: page, per_page: per_page, total: total } }
+    status_counts = base_scope_for_counts.group(:triage_status).count
+
+    { rows: rows, pagination: { page: page, per_page: per_page, total: total }, status_counts: status_counts }
   end
 
   # Helper method to extract data from Project Metadata

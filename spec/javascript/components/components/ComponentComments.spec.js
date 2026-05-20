@@ -58,6 +58,7 @@ const mockResponse = {
       },
     ],
     pagination: { page: 1, per_page: 25, total: 2 },
+    status_counts: { pending: 1, concur_with_comment: 1 },
   },
 };
 
@@ -669,16 +670,16 @@ describe("ComponentComments", () => {
     alertSpy.mockRestore();
   });
 
-  // ── Show resolved toggle ─────────────────────────────────────────
+  // ── Filter state (pills are the sole filter control) ─────────────
 
-  it("renders a 'Show resolved' toggle switch", async () => {
+  it("does not render a Show Resolved toggle (pills replace it)", async () => {
     axios.get.mockResolvedValue({ data: { rows: [], pagination: { total: 0 } } });
     const wrapper = mount(ComponentComments, { propsData: { componentId: 42 } });
     await flushPromises(wrapper);
-    expect(wrapper.find("[data-testid='show-resolved-toggle']").exists()).toBe(true);
+    expect(wrapper.find("[data-testid='show-resolved-toggle']").exists()).toBe(false);
   });
 
-  it("defaults filterStatus to 'pending' (resolved hidden)", async () => {
+  it("defaults filterStatus to 'pending'", async () => {
     localStorage.clear();
     axios.get.mockResolvedValue({ data: { rows: [], pagination: { total: 0 } } });
     const wrapper = mount(ComponentComments, { propsData: { componentId: 42 } });
@@ -686,14 +687,96 @@ describe("ComponentComments", () => {
     expect(wrapper.vm.filterStatus).toBe("pending");
   });
 
-  it("switches filterStatus to 'all' when toggle is turned on", async () => {
-    localStorage.clear();
-    axios.get.mockResolvedValue({ data: { rows: [], pagination: { total: 0 } } });
-    const wrapper = mount(ComponentComments, { propsData: { componentId: 42 } });
-    await flushPromises(wrapper);
+  // ── CommentProgressBar integration ──────────────────────────────────
 
-    wrapper.vm.showResolved = true;
+  it("renders CommentProgressBar with status_counts from API response", async () => {
+    const wrapper = mount(ComponentComments, {
+      propsData: { componentId: 42 },
+      stubs: SHARED_STUBS,
+    });
     await flushPromises(wrapper);
+    const bar = wrapper.findComponent({ name: "CommentProgressBar" });
+    expect(bar.exists()).toBe(true);
+    expect(bar.props("statusCounts")).toEqual({ pending: 1, concur_with_comment: 1 });
+  });
+
+  it("hides CommentProgressBar when status_counts is empty", async () => {
+    axios.get.mockResolvedValue({
+      data: { rows: [], pagination: { total: 0 }, status_counts: {} },
+    });
+    const wrapper = mount(ComponentComments, {
+      propsData: { componentId: 42 },
+      stubs: SHARED_STUBS,
+    });
+    await flushPromises(wrapper);
+    const bar = wrapper.findComponent({ name: "CommentProgressBar" });
+    expect(bar.exists()).toBe(false);
+  });
+
+  it("updates CommentProgressBar when data is refetched", async () => {
+    const wrapper = mount(ComponentComments, {
+      propsData: { componentId: 42 },
+      stubs: SHARED_STUBS,
+    });
+    await flushPromises(wrapper);
+    expect(wrapper.vm.statusCounts).toEqual({ pending: 1, concur_with_comment: 1 });
+
+    axios.get.mockResolvedValueOnce({
+      data: {
+        rows: [],
+        pagination: { total: 0 },
+        status_counts: { pending: 0, concur: 5 },
+      },
+    });
+    await wrapper.vm.fetch();
+    await flushPromises(wrapper);
+    expect(wrapper.vm.statusCounts).toEqual({ pending: 0, concur: 5 });
+  });
+
+  it("sets filterStatus when progress bar pill is clicked", async () => {
+    const wrapper = mount(ComponentComments, {
+      propsData: { componentId: 42 },
+      stubs: SHARED_STUBS,
+    });
+    await flushPromises(wrapper);
+    wrapper.vm.onPillFilter("non_concur");
+    expect(wrapper.vm.filterStatus).toBe("non_concur");
+  });
+
+  it("passes filterStatus as activeFilter to CommentProgressBar", async () => {
+    localStorage.clear();
+    const wrapper = mount(ComponentComments, {
+      propsData: { componentId: 42 },
+      stubs: SHARED_STUBS,
+    });
+    await flushPromises(wrapper);
+    const bar = wrapper.findComponent({ name: "CommentProgressBar" });
+    expect(bar.props("activeFilter")).toBe("pending");
+  });
+
+  // ── Pill filter sets filterStatus (no separate indicator needed) ──
+
+  it("pill click sets filterStatus and expands accordions in by-rule view", async () => {
+    const wrapper = mount(ComponentComments, {
+      propsData: { componentId: 42 },
+      stubs: SHARED_STUBS,
+    });
+    await flushPromises(wrapper);
+    wrapper.vm.viewMode = "by-rule";
+    wrapper.vm.onPillFilter("non_concur");
+    expect(wrapper.vm.filterStatus).toBe("non_concur");
+    expect(wrapper.vm.allExpanded).toBe(true);
+  });
+
+  it("clicking active pill toggles back to 'all'", async () => {
+    const wrapper = mount(ComponentComments, {
+      propsData: { componentId: 42 },
+      stubs: SHARED_STUBS,
+    });
+    await flushPromises(wrapper);
+    wrapper.vm.onPillFilter("non_concur");
+    expect(wrapper.vm.filterStatus).toBe("non_concur");
+    wrapper.vm.onPillFilter("all");
     expect(wrapper.vm.filterStatus).toBe("all");
   });
 });
