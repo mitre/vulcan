@@ -124,6 +124,7 @@ RSpec.describe 'GET /projects/:id/comments' do
         next unless sql.is_a?(String)
         next unless sql.match?(/FROM\s+"?base_rules"?/i)
         next if sql.match?(/INNER JOIN/i) # row-fetch joins, not the lookup
+        next if sql.match?(/GROUP BY/i) # aggregate counts (status_counts), not the lookup
 
         captured_rule_lookup_sql = sql
       end

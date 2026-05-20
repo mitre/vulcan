@@ -1134,7 +1134,7 @@ RSpec.describe Component do
       end
     end
 
-    it 'includes rule_content hash with all 26 expected fields when include_rule_content: true' do
+    it 'includes rule_content hash with all expected fields when include_rule_content: true' do
       result = shared_component.paginated_comments(triage_status: 'all', include_rule_content: true)
       c1_row = result[:rows].find { |r| r[:id] == @c1.id }
       rc = c1_row[:rule_content]
@@ -1148,7 +1148,7 @@ RSpec.describe Component do
         mitigations_available mitigations poam_available poam
         potential_impacts third_party_tools mitigation_control
         responsibility ia_controls severity_override_guidance
-        check_content
+        check_content locked rule_updated_at
       ]
       expect(rc.keys).to match_array(expected_keys)
 
