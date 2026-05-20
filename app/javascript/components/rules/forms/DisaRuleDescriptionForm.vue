@@ -25,12 +25,7 @@
           "
         >
           Documentable
-          <b-icon
-            v-if="tooltips['documentable']"
-            v-b-tooltip.hover.html="tooltips['documentable']"
-            icon="info-circle"
-            aria-hidden="true"
-          />
+          <InfoTooltip v-if="tooltips['documentable']" :text="tooltips['documentable']" />
         </b-form-checkbox>
       </template>
     </RuleFormGroup>
@@ -446,9 +441,10 @@ import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
 import CommentIconHostMixin from "../../../mixins/CommentIconHostMixin.vue";
 import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
 import RuleFormGroup from "../../shared/RuleFormGroup.vue";
+import InfoTooltip from "../../shared/InfoTooltip.vue";
 export default {
   name: "DisaRuleDescriptionForm",
-  components: { MarkdownTextarea, RuleFormGroup },
+  components: { MarkdownTextarea, RuleFormGroup, InfoTooltip },
   mixins: [FormFeedbackMixinVue, CommentIconHostMixin],
   // `rule` and `index` are necessary if edits are to be made
   props: {

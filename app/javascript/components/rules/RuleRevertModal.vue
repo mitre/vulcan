@@ -37,25 +37,15 @@
           <!-- Custom Header for prev_value -->
           <template #head(prev_value)="">
             Changed From
-            <b-icon
-              v-b-tooltip.hover.html="
-                'This is the state of the record before the author made the change.<br>When a row is selected, the record will revert to this value.'
-              "
-              icon="info-circle"
-              aria-hidden="true"
+            <InfoTooltip
+              text="This is the state of the record before the author made the change. When a row is selected, the record will revert to this value."
             />
           </template>
 
           <!-- Custom Header for new_value -->
           <template #head(new_value)="">
             Changed To
-            <b-icon
-              v-b-tooltip.hover.html="
-                'This is the state of the record after the author made the change.'
-              "
-              icon="info-circle"
-              aria-hidden="true"
-            />
+            <InfoTooltip text="This is the state of the record after the author made the change." />
           </template>
 
           <!-- Selected Column -->
@@ -127,9 +117,11 @@ import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import HumanizedTypesMixInVue from "../../mixins/HumanizedTypesMixIn.vue";
 import { MESSAGE_LABELS } from "../../constants/terminology";
+import InfoTooltip from "../shared/InfoTooltip.vue";
 
 export default {
   name: "RuleRevertModal",
+  components: { InfoTooltip },
   mixins: [AlertMixinVue, DateFormatMixinVue, HumanizedTypesMixInVue],
   props: {
     rule: {

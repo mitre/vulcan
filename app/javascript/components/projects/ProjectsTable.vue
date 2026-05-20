@@ -52,20 +52,12 @@
         </b-form-checkbox>
         <b-form-checkbox v-model="filter.myProjectsToggled" size="lg" class="ml-3" switch>
           <small>Show My Projects</small>
-          <b-icon
-            v-b-tooltip.hover.html="'Projects I am a member of'"
-            icon="info-circle"
-            aria-hidden="true"
-          />
+          <InfoTooltip text="Projects I am a member of" />
         </b-form-checkbox>
         <b-form-checkbox v-model="filter.discoverableToggled" size="lg" class="ml-3" switch>
           <small>Show Discoverable Projects</small>
-          <b-icon
-            v-b-tooltip.hover.html="
-              'Projects intended to be discovered and potentially collaborated upon by other users. Interested users can request access to the project'
-            "
-            icon="info-circle"
-            aria-hidden="true"
+          <InfoTooltip
+            text="Projects intended to be discovered and potentially collaborated upon by other users. Interested users can request access to the project"
           />
         </b-form-checkbox>
       </div>
@@ -196,11 +188,12 @@ import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FormMixin from "../../mixins/FormMixin.vue";
 import UpdateProjectDetailsModal from "./UpdateProjectDetailsModal.vue";
 import ConfirmDeleteModal from "../shared/ConfirmDeleteModal.vue";
+import InfoTooltip from "../shared/InfoTooltip.vue";
 import { useDeleteConfirmation } from "../../composables";
 
 export default {
   name: "ProjectsTable",
-  components: { UpdateProjectDetailsModal, ConfirmDeleteModal },
+  components: { UpdateProjectDetailsModal, ConfirmDeleteModal, InfoTooltip },
   // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because
   // each esbuild pack has its own axios singleton (bundle isolation) — the
   // navbar pack's FormMixin doesn't reach the consuming pack. The DELETE

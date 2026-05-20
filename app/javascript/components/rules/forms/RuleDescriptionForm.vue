@@ -5,12 +5,7 @@
       <b-form-group :id="`ruleEditor-rule_description-group-${mod}`">
         <label :for="`ruleEditor-rule_description-${mod}`">
           Rule Description
-          <b-icon
-            v-if="tooltips['rule_description']"
-            v-b-tooltip.hover.html="tooltips['rule_description']"
-            icon="info-circle"
-            aria-hidden="true"
-          />
+          <InfoTooltip v-if="tooltips['rule_description']" :text="tooltips['rule_description']" />
         </label>
         <MarkdownTextarea
           :id="`ruleEditor-rule_description-${mod}`"
@@ -38,10 +33,11 @@
 <script>
 import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
 import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
+import InfoTooltip from "../../shared/InfoTooltip.vue";
 
 export default {
   name: "RuleDescriptionForm",
-  components: { MarkdownTextarea },
+  components: { MarkdownTextarea, InfoTooltip },
   mixins: [FormFeedbackMixinVue],
   // `rule` and `index` are necessary if edits are to be made
   props: {

@@ -10,12 +10,7 @@
         <div class="col-4">
           <!-- nist_control (aka IA Control) -->
           <strong>IA Control</strong>
-          <b-icon
-            v-if="tooltips['nist_control']"
-            v-b-tooltip.hover.html="tooltips['nist_control']"
-            icon="info-circle"
-            aria-hidden="true"
-          />
+          <InfoTooltip v-if="tooltips['nist_control']" :text="tooltips['nist_control']" />
         </div>
         <div class="col-8">
           {{ nist_control_family }}
@@ -25,12 +20,7 @@
         <div class="col-4">
           <!-- cci -->
           <strong>CCI</strong>
-          <b-icon
-            v-if="tooltips['cci']"
-            v-b-tooltip.hover.html="tooltips['cci']"
-            icon="info-circle"
-            aria-hidden="true"
-          />
+          <InfoTooltip v-if="tooltips['cci']" :text="tooltips['cci']" />
         </div>
         <div class="col-8">
           {{ cci }}
@@ -40,12 +30,7 @@
         <div class="col-4">
           <!-- srg_requirement -->
           <strong>SRG Requirement</strong>
-          <b-icon
-            v-if="tooltips['srg_requirement']"
-            v-b-tooltip.hover.html="tooltips['srg_requirement']"
-            icon="info-circle"
-            aria-hidden="true"
-          />
+          <InfoTooltip v-if="tooltips['srg_requirement']" :text="tooltips['srg_requirement']" />
         </div>
         <div class="col-8">{{ srg_rule.title }}</div>
       </div>
@@ -53,11 +38,9 @@
         <div class="col-4">
           <!-- srg_vuln_discussion -->
           <strong>SRG Vulnerability Discussion</strong>
-          <b-icon
+          <InfoTooltip
             v-if="tooltips['srg_vuln_discussion']"
-            v-b-tooltip.hover.html="tooltips['srg_vuln_discussion']"
-            icon="info-circle"
-            aria-hidden="true"
+            :text="tooltips['srg_vuln_discussion']"
           />
         </div>
         <div class="col-8">{{ srg_rule.disa_rule_descriptions_attributes[0].vuln_discussion }}</div>
@@ -66,12 +49,7 @@
         <div class="col-4">
           <!-- srg_check_text -->
           <strong>SRG Check Text</strong>
-          <b-icon
-            v-if="tooltips['srg_check_text']"
-            v-b-tooltip.hover.html="tooltips['srg_check_text']"
-            icon="info-circle"
-            aria-hidden="true"
-          />
+          <InfoTooltip v-if="tooltips['srg_check_text']" :text="tooltips['srg_check_text']" />
         </div>
         <div class="col-8">{{ srg_rule.checks_attributes[0].content }}</div>
       </div>
@@ -79,12 +57,7 @@
         <div class="col-4">
           <!-- srg_fix_text -->
           <strong>SRG Fix Text</strong>
-          <b-icon
-            v-if="tooltips['srg_fix_text']"
-            v-b-tooltip.hover.html="tooltips['srg_fix_text']"
-            icon="info-circle"
-            aria-hidden="true"
-          />
+          <InfoTooltip v-if="tooltips['srg_fix_text']" :text="tooltips['srg_fix_text']" />
         </div>
         <div class="col-8">{{ srg_rule.fixtext }}</div>
       </div>
@@ -92,24 +65,14 @@
         <div class="col-4">
           <!-- srg_version aka ID -->
           <strong>SRG ID</strong>
-          <b-icon
-            v-if="tooltips['srg_id']"
-            v-b-tooltip.hover.html="tooltips['srg_id']"
-            icon="info-circle"
-            aria-hidden="true"
-          />
+          <InfoTooltip v-if="tooltips['srg_id']" :text="tooltips['srg_id']" />
         </div>
         <div class="col-8">{{ srg_rule.version }}</div>
       </div>
       <div class="row">
         <div class="col-4">
           <strong>SRG Version</strong>
-          <b-icon
-            v-if="tooltips['srg_version']"
-            v-b-tooltip.hover.html="tooltips['srg_version']"
-            icon="info-circle"
-            aria-hidden="true"
-          />
+          <InfoTooltip v-if="tooltips['srg_version']" :text="tooltips['srg_version']" />
         </div>
         <div class="col-8">{{ srg_info.version }}</div>
       </div>
@@ -117,8 +80,11 @@
   </div>
 </template>
 <script>
+import InfoTooltip from "../shared/InfoTooltip.vue";
+
 export default {
   name: "RuleSecurityRequirementsGuideInformation",
+  components: { InfoTooltip },
   props: {
     nist_control_family: {
       type: String,

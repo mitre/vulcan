@@ -3,12 +3,7 @@
     <!-- Label with tooltip + lock icons (skip for checkbox mode) -->
     <label v-if="!checkboxMode" :for="inputId">
       {{ label }}
-      <b-icon
-        v-if="tooltipText"
-        v-b-tooltip.hover.html="tooltipText"
-        icon="info-circle"
-        aria-hidden="true"
-      />
+      <InfoTooltip v-if="tooltipText" :text="tooltipText" />
       <b-icon
         v-if="showSectionLockIcon && isSectionLocked"
         v-b-tooltip.hover="
@@ -67,12 +62,13 @@
 import { FIELD_TO_SECTION } from "../../composables/ruleFieldConfig";
 import { DISPLAY_TO_XCCDF_SECTION } from "../../constants/triageVocabulary";
 import SectionCommentIcon from "./SectionCommentIcon.vue";
+import InfoTooltip from "./InfoTooltip.vue";
 
 let _rfgUid = 0;
 
 export default {
   name: "RuleFormGroup",
-  components: { SectionCommentIcon },
+  components: { SectionCommentIcon, InfoTooltip },
   // Inject the parent's commentsClosed signal so the section comment icon
   // can disable when the public-comment window isn't open. Default keeps
   // tests + isolated mounts green.

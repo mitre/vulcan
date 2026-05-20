@@ -103,9 +103,10 @@
             />
           </b-input-group>
 
-          <p class="text-muted small mb-3">
-            <b-icon icon="info-circle" /> These members are inherited from the project and cannot be
-            modified here.
+          <p class="mb-3">
+            <InfoNotice
+              text="These members are inherited from the project and cannot be modified here."
+            />
           </p>
 
           <!-- Inherited Members List -->
@@ -186,11 +187,12 @@ import debounce from "lodash/debounce";
 import VueMultiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
+import InfoNotice from "../shared/InfoNotice.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 
 export default {
   name: "MembersModal",
-  components: { VueMultiselect },
+  components: { VueMultiselect, InfoNotice },
   mixins: [RoleComparisonMixin, FormMixinVue],
   props: {
     component: {
