@@ -4,7 +4,7 @@
 # Used as nested data inside RuleBlueprint :editor view for the srg_rule_attributes field.
 # Excludes internal fields that the editor doesn't need (id, locked, timestamps, etc.).
 class SrgRuleBlueprint < Blueprinter::Base
-  # No identifier — this is always nested, never fetched by ID
+  identifier :id
 
   fields :rule_id, :title, :version, :rule_severity, :rule_weight,
          :ident, :ident_system, :fixtext, :fixtext_fixref, :fix_id,
