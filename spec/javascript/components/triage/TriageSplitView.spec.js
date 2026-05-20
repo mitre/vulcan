@@ -146,14 +146,20 @@ describe("TriageSplitView", () => {
     expect(form.props("review").id).toBe(1);
   });
 
-  // ── TriageQueueNav integration ─────────────────────────────────────
+  // ── Three-column layout with TriageRuleSidebar ─────────────────────
 
-  it("renders TriageQueueNav with rows and currentId", () => {
+  it("renders TriageRuleSidebar in the left column", () => {
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
-    const nav = w.findComponent({ name: "TriageQueueNav" });
-    expect(nav.exists()).toBe(true);
-    expect(nav.props("currentId")).toBe(1);
-    expect(nav.props("comments")).toHaveLength(3);
+    const sidebar = w.findComponent({ name: "TriageRuleSidebar" });
+    expect(sidebar.exists()).toBe(true);
+    expect(sidebar.props("currentId")).toBe(1);
+    expect(sidebar.props("comments")).toHaveLength(3);
+  });
+
+  it("uses a three-column layout with sidebar, context, and triage panes", () => {
+    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const cols = w.findAll(".col-lg-2, .col-lg-5");
+    expect(cols.length).toBe(3);
   });
 
   // ── Dirty-form guard ───────────────────────────────────────────────
@@ -249,13 +255,45 @@ describe("TriageSplitView", () => {
     alertSpy.mockRestore();
   });
 
-  // ── Exit when active comment filtered out ──────────────────────────
+  // ── Filter resilience: stay in split-pane when rows change ─────────
 
-  it("emits exit when active comment is removed from rows", async () => {
+  it("selects first available row when active comment is filtered out but rows remain", async () => {
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    expect(w.vm.activeCommentId).toBe(1);
     await w.setProps({ rows: rows.filter((r) => r.id !== 1) });
     await w.vm.$nextTick();
+    expect(w.vm.activeCommentId).toBe(2);
+    expect(w.emitted("exit")).toBeFalsy();
+  });
+
+  it("emits exit only when ALL rows are removed (empty result set)", async () => {
+    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    await w.setProps({ rows: [] });
+    await w.vm.$nextTick();
     expect(w.emitted("exit")).toBeTruthy();
+  });
+
+  it("does not exit when rows change to a different filtered set", async () => {
+    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const filteredRows = [rows[2]];
+    await w.setProps({ rows: filteredRows });
+    await w.vm.$nextTick();
+    expect(w.vm.activeCommentId).toBe(3);
+    expect(w.emitted("exit")).toBeFalsy();
+  });
+
+  it("refocuses content heading when auto-selecting new comment after filter", async () => {
+    const w = mount(TriageSplitView, {
+      localVue,
+      propsData: baseProps(),
+      attachTo: document.body,
+    });
+    await w.vm.$nextTick();
+    await w.setProps({ rows: rows.filter((r) => r.id !== 1) });
+    await w.vm.$nextTick();
+    await w.vm.$nextTick();
+    expect(w.vm.activeCommentId).toBe(2);
+    w.destroy();
   });
 
   // ── Cancel emits exit ──────────────────────────────────────────────
@@ -268,7 +306,7 @@ describe("TriageSplitView", () => {
 
   // ── sortedRows: queue nav matches table id-ascending order ─────────
 
-  it("sorts rows by id ascending so queue position matches table order", () => {
+  it("sorts rows by id ascending so sidebar position matches table order", () => {
     const reversed = [...rows].reverse();
     const w = mount(TriageSplitView, {
       localVue,
@@ -277,8 +315,8 @@ describe("TriageSplitView", () => {
     expect(w.vm.sortedRows[0].id).toBe(1);
     expect(w.vm.sortedRows[1].id).toBe(2);
     expect(w.vm.sortedRows[2].id).toBe(3);
-    const nav = w.findComponent({ name: "TriageQueueNav" });
-    expect(nav.props("comments")[0].id).toBe(1);
+    const sidebar = w.findComponent({ name: "TriageRuleSidebar" });
+    expect(sidebar.props("comments")[0].id).toBe(1);
   });
 
   // ── Role gating: viewer cannot see triage form ─────────────────────
@@ -475,6 +513,69 @@ describe("TriageSplitView", () => {
 
     expect(triageCalls.length).toBe(1);
     expect(adjudicateCalls.length).toBe(1);
+  });
+
+  // ── ARIA landmarks + focus management ──────────────────────────────
+
+  it("wraps sidebar in nav[aria-label='Comment triage queue']", () => {
+    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const nav = w.find("nav[aria-label='Comment triage queue']");
+    expect(nav.exists()).toBe(true);
+    expect(nav.findComponent({ name: "TriageRuleSidebar" }).exists()).toBe(true);
+  });
+
+  it("wraps content pane in region with aria-label 'Comment details'", () => {
+    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const main = w.find("[role='main'][aria-label='Comment details']");
+    expect(main.exists()).toBe(true);
+    expect(main.findComponent({ name: "RuleContextPanel" }).exists()).toBe(true);
+  });
+
+  it("wraps action pane in region with aria-label 'Triage decision'", () => {
+    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const aside = w.find("[role='complementary'][aria-label='Triage decision']");
+    expect(aside.exists()).toBe(true);
+  });
+
+  it("renders skip links for keyboard users", () => {
+    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const skipLinks = w.findAll(".sr-only-focusable, .skip-link");
+    expect(skipLinks.length).toBeGreaterThanOrEqual(2);
+    const hrefs = skipLinks.wrappers.map((s) => s.attributes("href"));
+    expect(hrefs).toContain("#triage-content");
+    expect(hrefs).toContain("#triage-form");
+  });
+
+  it("focuses the content heading on mount", async () => {
+    const w = mount(TriageSplitView, {
+      localVue,
+      propsData: baseProps(),
+      attachTo: document.body,
+    });
+    await w.vm.$nextTick();
+    await w.vm.$nextTick();
+    const heading = w.find("[data-testid='content-heading']");
+    expect(heading.exists()).toBe(true);
+    expect(heading.attributes("tabindex")).toBe("-1");
+    w.destroy();
+  });
+
+  it("refocuses content heading after advanceToNext", async () => {
+    axios.patch.mockResolvedValueOnce({
+      data: { review: { id: 1, triage_status: "concur" } },
+    });
+    axios.patch.mockResolvedValueOnce({
+      data: { review: { id: 1, triage_status: "concur", adjudicated_at: "2026-05-20" } },
+    });
+    const w = mount(TriageSplitView, {
+      localVue,
+      propsData: baseProps(),
+      attachTo: document.body,
+    });
+    await w.vm.doSave({ triage_status: "concur" }, true);
+    await flushPromises(w);
+    expect(w.vm.activeCommentId).toBe(2);
+    w.destroy();
   });
 
   it("doSave with advance=true should NOT adjudicate for SINGLE_BUTTON statuses", async () => {

@@ -1,21 +1,36 @@
 <template>
   <div class="triage-split-view">
-    <TriageQueueNav :comments="sortedRows" :current-id="activeCommentId" @select="onQueueSelect" />
-
     <b-alert
       v-if="conflictAlert"
       variant="warning"
       show
       dismissible
-      class="mt-2"
+      class="mt-2 mb-2"
       @dismissed="conflictAlert = null"
     >
       <strong>Conflict:</strong> This comment was modified by another user since you loaded it.
       Please refresh and try again.
     </b-alert>
 
-    <b-row v-if="activeComment" class="mt-3">
-      <b-col lg="5">
+    <div v-if="activeComment" class="skip-links">
+      <a href="#triage-content" class="skip-link sr-only sr-only-focusable">Skip to content</a>
+      <a href="#triage-form" class="skip-link sr-only sr-only-focusable">Skip to triage form</a>
+    </div>
+
+    <b-row v-if="activeComment">
+      <b-col lg="2" class="border-right pr-0">
+        <nav aria-label="Comment triage queue">
+          <TriageRuleSidebar
+            :comments="sortedRows"
+            :current-id="activeCommentId"
+            @select="onQueueSelect"
+          />
+        </nav>
+      </b-col>
+      <b-col id="triage-content" lg="5" role="main" aria-label="Comment details">
+        <h6 ref="contentHeading" tabindex="-1" class="sr-only" data-testid="content-heading">
+          {{ activeComment.rule_displayed_name }} — {{ activeComment.section || "Overall" }}
+        </h6>
         <RuleContextPanel
           :rule-content="activeComment.rule_content"
           :rule-displayed-name="activeComment.rule_displayed_name"
@@ -30,7 +45,7 @@
           @select-comment="onQueueSelect"
         />
       </b-col>
-      <b-col lg="7">
+      <b-col id="triage-form" lg="5" role="complementary" aria-label="Triage decision">
         <div class="mb-2">
           <p class="mb-1">
             <strong>{{ activeComment.rule_displayed_name }}</strong>
@@ -190,7 +205,7 @@ import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import { SINGLE_BUTTON_STATUSES } from "../../constants/triageVocabulary";
 import SectionLabel from "../shared/SectionLabel.vue";
 import CommentThread from "../shared/CommentThread.vue";
-import TriageQueueNav from "./TriageQueueNav.vue";
+import TriageRuleSidebar from "./TriageRuleSidebar.vue";
 import RuleContextPanel from "./RuleContextPanel.vue";
 import CommentTriageForm from "./CommentTriageForm.vue";
 import RulePicker from "../components/RulePicker.vue";
@@ -202,7 +217,7 @@ import { triageBgClass } from "../../utils/triageBgClass";
 export default {
   name: "TriageSplitView",
   components: {
-    TriageQueueNav,
+    TriageRuleSidebar,
     RuleContextPanel,
     CommentTriageForm,
     CommentThread,
@@ -324,12 +339,22 @@ export default {
   },
   watch: {
     activeComment(val) {
-      if (!val) {
+      if (!val && this.sortedRows.length === 0) {
         this.$emit("exit");
+      } else if (!val && this.sortedRows.length > 0) {
+        this.activeCommentId = this.sortedRows[0].id;
+        this.$nextTick(() => this.focusContentHeading());
       }
     },
   },
+  mounted() {
+    this.$nextTick(() => this.focusContentHeading());
+  },
   methods: {
+    focusContentHeading() {
+      const el = this.$refs.contentHeading;
+      if (el && el.focus) el.focus();
+    },
     triageBgClass,
     onQueueSelect(id) {
       if (this.isDirty) {
@@ -395,6 +420,7 @@ export default {
       const idx = this.sortedRows.findIndex((r) => r.id === this.activeCommentId);
       if (idx >= 0 && idx < this.sortedRows.length - 1) {
         this.activeCommentId = this.sortedRows[idx + 1].id;
+        this.$nextTick(() => this.focusContentHeading());
       }
     },
     onCancel() {
