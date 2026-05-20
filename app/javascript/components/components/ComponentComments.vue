@@ -48,25 +48,21 @@
       >
         <b-icon icon="download" /> Export CSV
       </b-button>
-      <b-form-checkbox
-        v-model="showResolved"
-        switch
-        size="sm"
-        class="ml-auto mr-3"
-        data-testid="show-resolved-toggle"
-      >
-        <small class="text-muted">Show Resolved</small>
-      </b-form-checkbox>
-      <b-form-checkbox
+      <span v-b-tooltip.hover title="Include triaged and adjudicated comments" class="ml-auto mr-3">
+        <b-form-checkbox v-model="showResolved" switch size="sm" data-testid="show-resolved-toggle">
+          <small class="text-muted">Show Resolved</small>
+        </b-form-checkbox>
+      </span>
+      <span
         v-if="viewMode === 'by-rule'"
-        v-model="allExpanded"
-        switch
-        size="sm"
+        v-b-tooltip.hover
+        title="Expand or collapse all rule groups"
         class="mr-3"
-        data-testid="expand-all"
       >
-        <small class="text-muted">Expand All</small>
-      </b-form-checkbox>
+        <b-form-checkbox v-model="allExpanded" switch size="sm" data-testid="expand-all">
+          <small class="text-muted">Expand All</small>
+        </b-form-checkbox>
+      </span>
       <b-button-group v-if="!splitMode" size="sm">
         <b-button
           v-b-tooltip.hover

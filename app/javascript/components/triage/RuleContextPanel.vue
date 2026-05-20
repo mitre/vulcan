@@ -20,16 +20,21 @@
             Locked
           </b-badge>
         </h6>
-        <b-form-checkbox
-          :checked="contextMode === 'all'"
-          switch
-          size="sm"
+        <span
+          v-b-tooltip.hover
+          title="Show all rule fields or only sections with comments"
           class="ml-2 flex-shrink-0"
-          data-testid="context-mode-toggle"
-          @change="$emit('update:contextMode', $event ? 'all' : 'commented')"
         >
-          <small class="text-muted">All fields</small>
-        </b-form-checkbox>
+          <b-form-checkbox
+            :checked="contextMode === 'all'"
+            switch
+            size="sm"
+            data-testid="context-mode-toggle"
+            @change="$emit('update:contextMode', $event ? 'all' : 'commented')"
+          >
+            <small class="text-muted">All Fields</small>
+          </b-form-checkbox>
+        </span>
       </div>
       <p v-if="ruleContent.title" class="text-muted small mb-2">
         {{ ruleContent.title }}
