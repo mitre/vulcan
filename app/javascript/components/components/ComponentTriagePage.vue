@@ -17,24 +17,7 @@
           <b-icon icon="arrow-left" /> Back to Component Editor
         </b-button>
       </template>
-      <template #right>
-        <b-button-group v-if="isSplitMode" size="sm" class="mr-2">
-          <b-button
-            :variant="contextMode === 'commented' ? 'secondary' : 'outline-secondary'"
-            data-testid="context-mode-commented"
-            @click="contextMode = 'commented'"
-          >
-            Commented
-          </b-button>
-          <b-button
-            :variant="contextMode === 'all' ? 'secondary' : 'outline-secondary'"
-            data-testid="context-mode-all"
-            @click="contextMode = 'all'"
-          >
-            All fields
-          </b-button>
-        </b-button-group>
-      </template>
+      <template #right />
     </BaseCommandBar>
 
     <div class="px-3">
@@ -55,7 +38,7 @@
         :component-displayed-name="component.name"
         :effective-permissions="effectivePermissions"
         :admin-panel-open="adminPanelOpen"
-        :context-mode="contextMode"
+        :context-mode.sync="contextMode"
         @split-mode-changed="onSplitModeChanged"
         @admin-panel-close="adminPanelOpen = false"
       />

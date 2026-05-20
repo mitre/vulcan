@@ -91,6 +91,7 @@
       :effective-permissions="effectivePermissions"
       :admin-panel-open="adminPanelOpen"
       :context-mode="contextMode"
+      @update:contextMode="$emit('update:contextMode', $event)"
       @exit="exitSplitMode"
       @triaged="onTriaged"
       @adjudicated="onAdjudicated"

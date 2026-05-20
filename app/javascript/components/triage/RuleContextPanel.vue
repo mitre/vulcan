@@ -19,9 +19,27 @@
           Locked
         </b-badge>
       </h6>
-      <p v-if="ruleContent.title" class="text-muted small mb-2">
-        {{ ruleContent.title }}
-      </p>
+      <div class="d-flex align-items-center mb-2">
+        <p v-if="ruleContent.title" class="text-muted small mb-0 flex-grow-1">
+          {{ ruleContent.title }}
+        </p>
+        <b-button-group size="sm" class="ml-2 flex-shrink-0">
+          <b-button
+            :variant="contextMode === 'commented' ? 'secondary' : 'outline-secondary'"
+            data-testid="context-mode-commented"
+            @click="$emit('update:contextMode', 'commented')"
+          >
+            Commented
+          </b-button>
+          <b-button
+            :variant="contextMode === 'all' ? 'secondary' : 'outline-secondary'"
+            data-testid="context-mode-all"
+            @click="$emit('update:contextMode', 'all')"
+          >
+            All fields
+          </b-button>
+        </b-button-group>
+      </div>
 
       <div v-if="inlineSections.length" class="mb-3">
         <div
