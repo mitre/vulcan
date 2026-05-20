@@ -65,7 +65,7 @@
           data-testid="browse-toggle"
           size="sm"
           :variant="browseOpen ? 'secondary' : 'outline-secondary'"
-          @click="browseOpen = !browseOpen"
+          @click="toggleBrowse"
         >
           <b-icon :icon="browseOpen ? 'x' : 'list-ul'" /> Browse
         </b-button>
@@ -172,7 +172,7 @@ export default {
       const groups = [];
       const seen = new Map();
       for (const c of this.comments) {
-        const key = c.rule_id || `component-${c.id}`;
+        const key = c.rule_id || "component";
         if (!seen.has(key)) {
           const group = {
             ruleId: key,
@@ -287,6 +287,16 @@ export default {
     },
     sectionLabel(key) {
       return SECTION_LABELS[key] || key;
+    },
+    toggleBrowse() {
+      this.browseOpen = !this.browseOpen;
+      if (this.browseOpen) {
+        this.browseFocusIndex = this.flatIndexOf(this.normalizedCurrentId);
+        this.$nextTick(() => {
+          const active = this.$refs.browseList?.querySelector(".browse-item.active");
+          if (active) active.scrollIntoView({ block: "nearest" });
+        });
+      }
     },
     closeBrowse() {
       this.browseOpen = false;
