@@ -48,21 +48,31 @@
       >
         <b-icon icon="download" /> Export CSV
       </b-button>
-      <span v-b-tooltip.hover title="Include triaged and adjudicated comments" class="ml-auto mr-3">
-        <b-form-checkbox v-model="showResolved" switch size="sm" data-testid="show-resolved-toggle">
-          <small class="text-muted">Show Resolved</small>
-        </b-form-checkbox>
-      </span>
-      <span
-        v-if="viewMode === 'by-rule'"
-        v-b-tooltip.hover
-        title="Expand or collapse all rule groups"
-        class="mr-3"
+      <b-form-checkbox
+        v-model="showResolved"
+        switch
+        size="sm"
+        class="ml-auto mr-3"
+        data-testid="show-resolved-toggle"
       >
-        <b-form-checkbox v-model="allExpanded" switch size="sm" data-testid="expand-all">
-          <small class="text-muted">Expand All</small>
-        </b-form-checkbox>
-      </span>
+        <small class="text-muted">
+          Show Resolved
+          <InfoTooltip text="Include triaged and adjudicated comments" />
+        </small>
+      </b-form-checkbox>
+      <b-form-checkbox
+        v-if="viewMode === 'by-rule'"
+        v-model="allExpanded"
+        switch
+        size="sm"
+        class="mr-3"
+        data-testid="expand-all"
+      >
+        <small class="text-muted">
+          Expand All
+          <InfoTooltip text="Expand or collapse all rule groups" />
+        </small>
+      </b-form-checkbox>
       <b-button-group v-if="!splitMode" size="sm">
         <b-button
           v-b-tooltip.hover
@@ -261,6 +271,7 @@ import CommentThread from "../shared/CommentThread.vue";
 import TriageSplitView from "../triage/TriageSplitView.vue";
 import CommentComposerModal from "./CommentComposerModal.vue";
 import CommentsByRule from "./CommentsByRule.vue";
+import InfoTooltip from "../shared/InfoTooltip.vue";
 import ReplyComposerMixin from "../../mixins/ReplyComposerMixin.vue";
 import { triageBgClass } from "../../utils/triageBgClass";
 
@@ -274,6 +285,7 @@ export default {
     TriageSplitView,
     CommentComposerModal,
     CommentsByRule,
+    InfoTooltip,
   },
   // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because
   // each esbuild pack has its own axios singleton (bundle isolation) — the

@@ -20,21 +20,19 @@
             Locked
           </b-badge>
         </h6>
-        <span
-          v-b-tooltip.hover
-          title="Show all rule fields or only sections with comments"
+        <b-form-checkbox
+          :checked="contextMode === 'all'"
+          switch
+          size="sm"
           class="ml-2 flex-shrink-0"
+          data-testid="context-mode-toggle"
+          @change="$emit('update:contextMode', $event ? 'all' : 'commented')"
         >
-          <b-form-checkbox
-            :checked="contextMode === 'all'"
-            switch
-            size="sm"
-            data-testid="context-mode-toggle"
-            @change="$emit('update:contextMode', $event ? 'all' : 'commented')"
-          >
-            <small class="text-muted">All Fields</small>
-          </b-form-checkbox>
-        </span>
+          <small class="text-muted">
+            All Fields
+            <InfoTooltip text="Show all rule fields or only sections with comments" />
+          </small>
+        </b-form-checkbox>
       </div>
       <p v-if="ruleContent.title" class="text-muted small mb-2">
         {{ ruleContent.title }}
@@ -125,6 +123,7 @@
 
 <script>
 import { STATUS_FIELD_CONFIG, FIELD_LABELS } from "../../composables/ruleFieldConfig";
+import InfoTooltip from "../shared/InfoTooltip.vue";
 
 const INLINE_SECTIONS = new Set(["status", "rule_severity"]);
 
@@ -134,6 +133,7 @@ function fieldLabel(key) {
 
 export default {
   name: "RuleContextPanel",
+  components: { InfoTooltip },
   props: {
     ruleContent: { type: Object, default: null },
     ruleDisplayedName: { type: String, default: null },
