@@ -69,7 +69,7 @@ RSpec.describe 'Lock Controls (B10)' do
       post "/components/#{component.id}/lock",
            params: { review: { action: 'lock_control', comment: 'All NYD' } }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       body = response.parsed_body
       expect(body['toast']['variant']).to eq('warning')
       expect(body['toast']['title']).to include('No controls could be locked')
@@ -89,7 +89,7 @@ RSpec.describe 'Lock Controls (B10)' do
       post "/components/#{component.id}/lock",
            params: { review: { action: 'lock_control', comment: 'fail mid-tx' } }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       body = response.parsed_body
       expect(body.dig('toast', 'variant')).to eq('danger')
       expect(body.dig('toast', 'title')).to include('Could not lock')

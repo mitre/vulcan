@@ -72,7 +72,7 @@ RSpec.describe 'Users::RegistrationsController#unlink_identity' do
         post '/users/unlink_identity',
              params: { current_password: 'wrong-password' },
              headers: { 'Accept' => 'application/json' }
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
 

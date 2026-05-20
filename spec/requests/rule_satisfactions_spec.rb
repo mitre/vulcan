@@ -40,7 +40,7 @@ RSpec.describe 'Rule Satisfactions' do
              params: { rule_id: rule_a.id, satisfied_by_rule_id: rule_b.id }
       end.not_to change(RuleSatisfaction, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(rule_a.reload.satisfied_by).not_to include(rule_b)
     end
   end
@@ -63,7 +63,7 @@ RSpec.describe 'Rule Satisfactions' do
                params: { rule_id: rule_a.id, satisfied_by_rule_id: rule_b.id }
       end.not_to change(RuleSatisfaction, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(rule_a.reload.satisfied_by).to include(rule_b)
     end
   end

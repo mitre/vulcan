@@ -74,7 +74,7 @@ RSpec.describe 'Reviews' do
           review: { action: 'approve', comment: 'lgtm', component_id: component.id }
         }, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.parsed_body.dig('toast', 'message').join).to match(/Only admins and reviewers can approve/i)
       end
 
@@ -85,7 +85,7 @@ RSpec.describe 'Reviews' do
           review: { action: 'request_changes', comment: 'no', component_id: component.id }
         }, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it 'rejects an attempt to request_review' do
@@ -93,7 +93,7 @@ RSpec.describe 'Reviews' do
           review: { action: 'request_review', comment: 'please look', component_id: component.id }
         }, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.parsed_body.dig('toast', 'message').join)
           .to match(/Only admins, reviewers, and authors can request a review/i)
         expect(rule.reload.review_requestor_id).to be_nil
@@ -104,7 +104,7 @@ RSpec.describe 'Reviews' do
           review: { action: 'definitely_not_real', comment: 'sneaky', component_id: component.id }
         }, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.parsed_body.dig('toast', 'message').join).to match(/not a recognized review action/i)
       end
     end
@@ -208,7 +208,7 @@ RSpec.describe 'Reviews' do
         }, as: :json
       end.not_to change(Review, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body.dig('toast', 'variant')).to eq('danger')
       expect(rule.reload.review_requestor_id).to be_nil
     end
@@ -263,7 +263,7 @@ RSpec.describe 'Reviews' do
           triage_status: 'non_concur'
         }, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.parsed_body.dig('toast', 'message').join).to match(/decline requires a response/i)
         expect(comment.reload.triage_status).to eq('pending')
       end
@@ -273,7 +273,7 @@ RSpec.describe 'Reviews' do
           triage_status: 'duplicate'
         }, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.parsed_body.dig('toast', 'message').join).to match(/canonical comment/i)
       end
 
@@ -311,7 +311,7 @@ RSpec.describe 'Reviews' do
             duplicate_of_review_id: dup_target_comment.id
           }, as: :json
 
-          expect(response).to have_http_status(:unprocessable_entity)
+          expect(response).to have_http_status(:unprocessable_content)
           expect(dup_target_comment.reload.triage_status).to eq('pending')
         end
 
@@ -325,7 +325,7 @@ RSpec.describe 'Reviews' do
             duplicate_of_review_id: other_canonical.id
           }, as: :json
 
-          expect(response).to have_http_status(:unprocessable_entity)
+          expect(response).to have_http_status(:unprocessable_content)
         end
 
         it 'rejects chained duplicates (canonical itself is a duplicate)' do
@@ -337,7 +337,7 @@ RSpec.describe 'Reviews' do
             duplicate_of_review_id: chained.id
           }, as: :json
 
-          expect(response).to have_http_status(:unprocessable_entity)
+          expect(response).to have_http_status(:unprocessable_content)
           expect(response.parsed_body.dig('toast', 'message').join)
             .to match(/ultimate canonical|another duplicate/i)
         end
@@ -383,7 +383,7 @@ RSpec.describe 'Reviews' do
 
       it 'rejects an unknown triage_status' do
         patch "/reviews/#{comment.id}/triage", params: { triage_status: 'whatever' }, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(comment.reload.triage_status).to eq('pending')
       end
 
@@ -394,7 +394,7 @@ RSpec.describe 'Reviews' do
       # with a fake "triaged by current_user" entry. Reject 422.
       it 'rejects triage_status=pending (no decision is being made)' do
         patch "/reviews/#{comment.id}/triage", params: { triage_status: 'pending' }, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         comment.reload
         expect(comment.triage_set_by_id).to be_nil
         expect(comment.triage_set_at).to be_nil
@@ -495,7 +495,7 @@ RSpec.describe 'Reviews' do
                                                     user: adj_commenter, rule: rule)
         patch "/reviews/#{pending_comment.id}/adjudicate", params: {}, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.parsed_body.dig('toast', 'message').join).to match(/triaged before/i)
         expect(pending_comment.reload.adjudicated_at).to be_nil
       end
@@ -554,7 +554,7 @@ RSpec.describe 'Reviews' do
                                                     user: reopen_commenter, rule: rule)
         patch "/reviews/#{pending_comment.id}/reopen", as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it 'rejects re-opening a withdrawn comment (commenter-revoked is locked from triagers)' do
@@ -564,7 +564,7 @@ RSpec.describe 'Reviews' do
 
         patch "/reviews/#{withdrawn.id}/reopen", as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(withdrawn.reload.adjudicated_at).to be_present
       end
 
@@ -634,7 +634,7 @@ RSpec.describe 'Reviews' do
 
       it 'rejects withdraw on a triaged comment with a 422' do
         patch "/reviews/#{my_comment.id}/withdraw", as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(my_comment.reload.triage_status).to eq('concur')
       end
     end
@@ -709,7 +709,7 @@ RSpec.describe 'Reviews' do
 
       it 'rejects edits with a 422' do
         put "/reviews/#{my_comment.id}", params: { review: { comment: 'too late' } }, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(my_comment.reload.comment).to eq('original text')
       end
     end
@@ -778,7 +778,7 @@ RSpec.describe 'Reviews' do
           post "/rules/#{phase_rule.id}/reviews",
                params: { review: { action: 'comment', comment: 'no', component_id: phase_component.id } },
                as: :json
-          expect(response).to have_http_status(:unprocessable_entity)
+          expect(response).to have_http_status(:unprocessable_content)
           expect(response.body).to include('Comments are closed')
         end
       end
@@ -827,7 +827,7 @@ RSpec.describe 'Reviews' do
                                  component_id: phase_component.id,
                                  responding_to_review_id: parent_comment.id } },
              as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.body).to include('Comments are closed')
       end
 
@@ -837,7 +837,7 @@ RSpec.describe 'Reviews' do
              params: { review: { action: 'comment', comment: 'sneaky new',
                                  component_id: phase_component.id } },
              as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.body).to include('Comments are closed')
       end
 
@@ -851,7 +851,7 @@ RSpec.describe 'Reviews' do
                                  component_id: phase_component.id,
                                  responding_to_review_id: non_comment.id } },
              as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.body).to include('Comments are closed')
       end
 
@@ -862,7 +862,7 @@ RSpec.describe 'Reviews' do
                                  component_id: phase_component.id,
                                  responding_to_review_id: 999_999 } },
              as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.body).to include('Comments are closed')
       end
 
@@ -883,7 +883,7 @@ RSpec.describe 'Reviews' do
                                  component_id: phase_component.id,
                                  responding_to_review_id: cross_parent.id } },
              as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.body).to include('Comments are closed')
       end
     end
@@ -915,7 +915,7 @@ RSpec.describe 'Reviews' do
         phase_component.update_columns(comment_phase: 'closed', closed_reason: 'finalized')
         patch "/reviews/#{open_comment.id}/triage",
               params: { triage_status: 'concur' }, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.body).to include('frozen')
       end
     end
@@ -932,7 +932,7 @@ RSpec.describe 'Reviews' do
       it 'rejects adjudicate when phase is closed+finalized' do
         phase_component.update_columns(comment_phase: 'closed', closed_reason: 'finalized')
         patch "/reviews/#{triaged_comment.id}/adjudicate", as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.body).to include('frozen')
       end
     end
@@ -949,7 +949,7 @@ RSpec.describe 'Reviews' do
       it 'rejects withdraw when phase is closed+finalized' do
         phase_component.update_columns(comment_phase: 'closed', closed_reason: 'finalized')
         patch "/reviews/#{my_comment.id}/withdraw", as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.body).to include('frozen')
       end
     end
@@ -967,7 +967,7 @@ RSpec.describe 'Reviews' do
         phase_component.update_columns(comment_phase: 'closed', closed_reason: 'finalized')
         put "/reviews/#{my_comment.id}",
             params: { review: { comment: 'edited' } }, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.body).to include('frozen')
       end
     end
@@ -1014,7 +1014,7 @@ RSpec.describe 'Reviews' do
       it 'rejects when audit_comment is blank' do
         patch "/reviews/#{target_review.id}/admin_withdraw",
               params: { audit_comment: '' }, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       # defense-in-depth length cap.
@@ -1028,7 +1028,7 @@ RSpec.describe 'Reviews' do
       it 'rejects a 4097-char audit_comment with 422' do
         patch "/reviews/#{target_review.id}/admin_withdraw",
               params: { audit_comment: 'x' * 4097 }, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.parsed_body.dig('toast', 'title')).to match(/too long/i)
       end
 
@@ -1114,7 +1114,7 @@ RSpec.describe 'Reviews' do
       it 'rejects when audit_comment is blank' do
         patch "/reviews/#{withdrawn_review.id}/admin_restore",
               params: { audit_comment: '' }, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it 'rejects restoring a non-adjudicated comment (nothing to restore from)' do
@@ -1122,7 +1122,7 @@ RSpec.describe 'Reviews' do
                                                    user: adm_r_commenter, rule: rule)
         patch "/reviews/#{pending_review.id}/admin_restore",
               params: { audit_comment: 'no-op attempt' }, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
 
@@ -1190,7 +1190,7 @@ RSpec.describe 'Reviews' do
       it 'rejects when audit_comment is blank' do
         delete "/reviews/#{doomed_review.id}/admin_destroy",
                params: { audit_comment: '' }, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(Review.exists?(doomed_review.id)).to be(true)
       end
 
@@ -1375,7 +1375,7 @@ RSpec.describe 'Reviews' do
       it 'rejects when target rule is in a different component' do
         patch "/reviews/#{parent_review.id}/move_to_rule",
               params: { rule_id: rule_other_component.id, audit_comment: 'cross-component attempt' }, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(parent_review.reload.rule_id).to eq(rule_a.id)
         # toast variant must be a valid Bootstrap-Vue
         # value (success/warning/danger/info). The original code shipped
@@ -1386,7 +1386,7 @@ RSpec.describe 'Reviews' do
       it 'rejects when target rule is the same as the source rule' do
         patch "/reviews/#{parent_review.id}/move_to_rule",
               params: { rule_id: rule_a.id, audit_comment: 'no-op' }, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it 'rejects when target rule does not exist' do
@@ -1398,7 +1398,7 @@ RSpec.describe 'Reviews' do
       it 'rejects when audit_comment is blank' do
         patch "/reviews/#{parent_review.id}/move_to_rule",
               params: { rule_id: rule_b.id, audit_comment: '' }, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it 'preserves triage_status and adjudication on move' do
@@ -1539,14 +1539,14 @@ RSpec.describe 'Reviews' do
       it 'rejects an invalid section key' do
         patch "/reviews/#{section_review.id}/section",
               params: { section: 'bogus_key', audit_comment: 'x' }, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(section_review.reload.section).to be_nil
       end
 
       it 'rejects when audit_comment is blank' do
         patch "/reviews/#{section_review.id}/section",
               params: { section: 'check_content', audit_comment: '' }, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(section_review.reload.section).to be_nil
       end
 

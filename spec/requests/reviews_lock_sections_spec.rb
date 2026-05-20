@@ -37,7 +37,7 @@ RSpec.describe 'Lock Sections' do
       patch "/components/#{component.id}/lock_sections",
             params: { sections: %w[NotAField], locked: true, comment: 'bogus' }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body['error']).to include('Invalid sections')
     end
 
@@ -61,7 +61,7 @@ RSpec.describe 'Lock Sections' do
       patch "/components/#{component.id}/lock_sections",
             params: { sections: %w[Title], locked: true, comment: 'partial-write test' }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body.dig('toast', 'variant')).to eq('danger')
 
       # Critical: the FIRST rule's update was rolled back too — no partial write

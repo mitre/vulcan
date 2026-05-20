@@ -302,7 +302,7 @@ RSpec.describe 'Rules' do
 
         delete "/rules/#{rule_id}"
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         # Critical: rule must NOT be soft-deleted (deleted_at stays nil)
         expect(Rule.unscoped.find(rule_id).deleted_at).to be_nil
         # And reviews stay intact

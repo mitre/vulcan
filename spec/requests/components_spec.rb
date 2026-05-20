@@ -104,7 +104,7 @@ RSpec.describe 'Components' do
           component: { comment_phase: 'not-a-real-phase' }
         }
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(component.reload.comment_phase).not_to eq('not-a-real-phase')
       end
     end
