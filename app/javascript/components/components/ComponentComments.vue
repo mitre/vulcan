@@ -202,7 +202,7 @@
 
 <script>
 import axios from "axios";
-import { TRIAGE_LABELS, SECTION_LABELS } from "../../constants/triageVocabulary";
+import { SECTION_LABELS, buildStatusFilterOptions } from "../../constants/triageVocabulary";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
 import FormMixin from "../../mixins/FormMixin.vue";
@@ -325,14 +325,7 @@ export default {
       return `${base}?triage_status=${encodeURIComponent(this.filterStatus)}`;
     },
     statusOptions() {
-      const friendly = Object.entries(TRIAGE_LABELS)
-        .filter(([value]) => value !== "pending")
-        .map(([value, text]) => ({ value, text }));
-      return [
-        { value: "all", text: "All statuses" },
-        { value: "pending", text: "Pending" },
-        ...friendly,
-      ];
+      return buildStatusFilterOptions();
     },
     sectionOptions() {
       const friendly = Object.entries(SECTION_LABELS).map(([value, text]) => ({ value, text }));

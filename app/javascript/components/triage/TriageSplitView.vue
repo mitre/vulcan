@@ -41,7 +41,7 @@
           </p>
           <p class="mb-1 text-muted small">
             <strong>{{ activeComment.author_name || "—" }}</strong>
-            · posted {{ relativeTime(activeComment.created_at) }}
+            · posted {{ friendlyDateTime(activeComment.created_at) }}
           </p>
           <blockquote class="border-left pl-3 py-2 mb-2 bg-light">
             {{ activeComment.comment }}
@@ -201,6 +201,7 @@ import CommentTriageForm from "./CommentTriageForm.vue";
 import RulePicker from "../components/RulePicker.vue";
 import ReactionButtons from "../shared/ReactionButtons.vue";
 import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
+import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
 
 export default {
   name: "TriageSplitView",
@@ -213,7 +214,7 @@ export default {
     RulePicker,
     ReactionButtons,
   },
-  mixins: [AlertMixin, FormMixin, RoleComparisonMixin, ReactionToggleMixin],
+  mixins: [AlertMixin, FormMixin, RoleComparisonMixin, ReactionToggleMixin, DateFormatMixin],
   props: {
     rows: { type: Array, required: true },
     initialCommentId: { type: [Number, String], required: true },
@@ -326,10 +327,6 @@ export default {
     },
   },
   methods: {
-    relativeTime(iso) {
-      if (!iso) return "";
-      return new Date(iso).toLocaleString();
-    },
     onQueueSelect(id) {
       if (this.isDirty) {
         if (!window.confirm("You have unsaved changes. Switch anyway?")) return;

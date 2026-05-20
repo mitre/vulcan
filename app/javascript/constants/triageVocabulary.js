@@ -131,6 +131,19 @@ export const TERMINAL_AUTO_ADJUDICATE = new Set(["duplicate", "informational", "
 // a separate "Save decision" vs "Save & close" distinction.
 export const SINGLE_BUTTON_STATUSES = new Set([...TERMINAL_AUTO_ADJUDICATE, "needs_clarification"]);
 
+// Bootstrap-Vue <b-form-select> options for triage status filters.
+// "All statuses" + "Pending" first, then remaining statuses in TRIAGE_LABELS order.
+export function buildStatusFilterOptions() {
+  const friendly = Object.entries(TRIAGE_LABELS)
+    .filter(([value]) => value !== "pending")
+    .map(([value, text]) => ({ value, text }));
+  return [
+    { value: "all", text: "All statuses" },
+    { value: "pending", text: "Pending" },
+    ...friendly,
+  ];
+}
+
 // Helper: triage status pair (glyph + label) for templates that need both
 export function triageDisplay(status) {
   return {

@@ -63,7 +63,7 @@
           <SectionLabel :section="value" :commentable-type="item.commentable_type" />
         </template>
         <template #cell(comment)="{ item, value }">
-          <div :title="value">{{ truncate(value, 80) }}</div>
+          <div class="text-truncate" style="max-width: 300px" :title="value">{{ value }}</div>
           <CommentThread
             :ref="`thread-${item.id}`"
             :parent-review-id="item.id"
@@ -122,7 +122,7 @@
 
 <script>
 import axios from "axios";
-import { TRIAGE_LABELS } from "../../constants/triageVocabulary";
+import { buildStatusFilterOptions } from "../../constants/triageVocabulary";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
@@ -170,24 +170,13 @@ export default {
   },
   computed: {
     statusOptions() {
-      const friendly = Object.entries(TRIAGE_LABELS)
-        .filter(([value]) => value !== "pending")
-        .map(([value, text]) => ({ value, text }));
-      return [
-        { value: "all", text: "All statuses" },
-        { value: "pending", text: "Pending" },
-        ...friendly,
-      ];
+      return buildStatusFilterOptions();
     },
   },
   mounted() {
     this.fetch();
   },
   methods: {
-    truncate(text, n) {
-      if (!text) return "";
-      return text.length > n ? `${text.slice(0, n)}…` : text;
-    },
     // Deep link to the rule editor with the rule selected. Encode the
     // rule name segment so unusual characters can't break out of the
     // path (mirrors ComponentComments#ruleHref).

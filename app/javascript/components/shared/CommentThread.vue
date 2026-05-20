@@ -43,7 +43,7 @@
           <b-badge v-if="reply.commenter_imported" variant="warning" class="ml-1">
             imported
           </b-badge>
-          <small class="text-muted ml-2">{{ relativeTime(reply.created_at) }}</small>
+          <small class="text-muted ml-2">{{ friendlyDateTime(reply.created_at) }}</small>
           <b-button
             v-if="canReply"
             size="sm"
@@ -74,11 +74,12 @@ import axios from "axios";
 import ReactionButtons from "./ReactionButtons.vue";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
+import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
 
 export default {
   name: "CommentThread",
   components: { ReactionButtons },
-  mixins: [AlertMixin, ReactionToggleMixin],
+  mixins: [AlertMixin, ReactionToggleMixin, DateFormatMixin],
   props: {
     parentReviewId: { type: [Number, String], required: true },
     responsesCount: { type: Number, default: 0 },
@@ -143,10 +144,6 @@ export default {
       if (this.expanded && !this.loaded && !this.loading) {
         this.fetch();
       }
-    },
-    relativeTime(iso) {
-      if (!iso) return "";
-      return new Date(iso).toLocaleString();
     },
     async fetch() {
       this.loading = true;

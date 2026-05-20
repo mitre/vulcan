@@ -27,7 +27,7 @@
             :duplicate-of-id="row.duplicate_of_review_id"
             class="ml-1"
           />
-          ({{ relativeTime(row.created_at) }}) — &quot;{{ row.comment }}&quot;
+          ({{ friendlyDateTime(row.created_at) }}) — &quot;{{ row.comment }}&quot;
         </div>
         <ReactionButtons
           v-if="row.reactions"
@@ -55,11 +55,12 @@ import CommentThread from "../shared/CommentThread.vue";
 import ReactionButtons from "../shared/ReactionButtons.vue";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
+import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
 
 export default {
   name: "CommentDedupBanner",
   components: { SectionLabel, TriageStatusBadge, CommentThread, ReactionButtons },
-  mixins: [AlertMixin, ReactionToggleMixin],
+  mixins: [AlertMixin, ReactionToggleMixin, DateFormatMixin],
   props: {
     componentId: { type: [Number, String], required: true },
     ruleId: { type: [Number, String], default: null },
@@ -96,9 +97,6 @@ export default {
     componentScoped: "fetch",
   },
   methods: {
-    relativeTime(iso) {
-      return iso ? new Date(iso).toLocaleDateString() : "";
-    },
     async fetch() {
       try {
         // Fetch all comments at the current scope (rule-level or

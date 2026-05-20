@@ -82,7 +82,7 @@
         <span v-if="review.author_email && !review.commenter_imported">
           · {{ review.author_email }}</span
         >
-        · posted {{ relativeTime(review.created_at) }}
+        · posted {{ friendlyDateTime(review.created_at) }}
       </p>
       <blockquote class="border-left pl-3 py-2 mb-3 bg-light">
         {{ review.comment }}
@@ -123,7 +123,7 @@
         Triaged by
         <strong>{{ review.triager_display_name || "—" }}</strong>
         <b-badge v-if="review.triager_imported" variant="warning" class="ml-1"> imported </b-badge>
-        · {{ relativeTime(review.triage_set_at) }}
+        · {{ friendlyDateTime(review.triage_set_at) }}
       </p>
       <p
         v-if="review.adjudicated_at"
@@ -135,7 +135,7 @@
         <b-badge v-if="review.adjudicator_imported" variant="warning" class="ml-1">
           imported
         </b-badge>
-        · {{ relativeTime(review.adjudicated_at) }}
+        · {{ friendlyDateTime(review.adjudicated_at) }}
       </p>
 
       <CommentTriageForm
@@ -276,6 +276,7 @@ import AlertMixin from "../../mixins/AlertMixin.vue";
 import FormMixin from "../../mixins/FormMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
+import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
 import {
   SECTION_LABELS,
   SINGLE_BUTTON_STATUSES,
@@ -305,7 +306,7 @@ export default {
   // navbar pack's FormMixin doesn't reach the triage pack.
   // RoleComparisonMixin provides role_gte_to() for the canEditSection gate
   //.
-  mixins: [AlertMixin, FormMixin, RoleComparisonMixin, ReactionToggleMixin],
+  mixins: [AlertMixin, FormMixin, RoleComparisonMixin, ReactionToggleMixin, DateFormatMixin],
   props: {
     review: { type: Object, default: null },
     // Component the picker is scoped to — defaults to the review's
@@ -435,10 +436,6 @@ export default {
     },
   },
   methods: {
-    relativeTime(iso) {
-      if (!iso) return "";
-      return new Date(iso).toLocaleString();
-    },
     toggleReaction(kind) {
       if (!this.review) return;
       const prev = { ...this.review.reactions };

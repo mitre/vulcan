@@ -378,6 +378,11 @@ RSpec.describe 'Components' do
       expect(response.parsed_body['rows'].size).to eq(0)
     end
 
+    it 'redirects HTML requests to the triage page' do
+      get "/components/#{component.id}/comments"
+      expect(response).to redirect_to("/components/#{component.id}/triage")
+    end
+
     # REQUIREMENT: triage rows change moment-to-moment during a public-comment
     # window — every concurrent triager refresh needs the latest data.
     # Browsers/proxies must not cache the JSON response, or one triager will

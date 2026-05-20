@@ -340,22 +340,27 @@ class ComponentsController < ApplicationController
   def comments
     return head :not_found unless @component
 
-    result = @component.paginated_comments(
-      triage_status: params[:triage_status].presence || 'pending',
-      section: params[:section].presence,
-      rule_id: params[:rule_id].presence,
-      author_id: params[:author_id].presence,
-      query: params[:q].presence,
-      page: params[:page].presence || 1,
-      per_page: params[:per_page].presence || 25,
-      resolved: params[:resolved].presence || 'all',
-      commentable_type: params[:commentable_type].presence,
-      include_rule_content: ActiveModel::Type::Boolean.new.cast(params[:include_rule_content])
-    )
+    respond_to do |format|
+      format.html { redirect_to "/components/#{@component.id}/triage" }
+      format.json do
+        result = @component.paginated_comments(
+          triage_status: params[:triage_status].presence || 'pending',
+          section: params[:section].presence,
+          rule_id: params[:rule_id].presence,
+          author_id: params[:author_id].presence,
+          query: params[:q].presence,
+          page: params[:page].presence || 1,
+          per_page: params[:per_page].presence || 25,
+          resolved: params[:resolved].presence || 'all',
+          commentable_type: params[:commentable_type].presence,
+          include_rule_content: ActiveModel::Type::Boolean.new.cast(params[:include_rule_content])
+        )
 
-    inject_reactions_mine!(result[:rows])
-    response.headers['Cache-Control'] = 'no-store'
-    render json: result
+        inject_reactions_mine!(result[:rows])
+        response.headers['Cache-Control'] = 'no-store'
+        render json: result
+      end
+    end
   end
 
   def based_on_same_srg

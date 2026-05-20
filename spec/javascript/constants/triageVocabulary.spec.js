@@ -12,6 +12,7 @@ import {
   commentsClosedTooltip,
   sectionLabel,
   triageDisplay,
+  buildStatusFilterOptions,
 } from "@/constants/triageVocabulary";
 
 const expectedStatuses = [
@@ -99,6 +100,27 @@ describe("triageVocabulary", () => {
   it("freezes all the maps", () => {
     expect(Object.isFrozen(TRIAGE_LABELS)).toBe(true);
     expect(Object.isFrozen(TRIAGE_GLYPHS)).toBe(true);
+  });
+
+  describe("buildStatusFilterOptions", () => {
+    it("returns 'All statuses' as first option", () => {
+      const opts = buildStatusFilterOptions();
+      expect(opts[0]).toEqual({ value: "all", text: "All statuses" });
+    });
+
+    it("returns 'Pending' as second option", () => {
+      const opts = buildStatusFilterOptions();
+      expect(opts[1]).toEqual({ value: "pending", text: "Pending" });
+    });
+
+    it("includes all non-pending TRIAGE_LABELS entries after Pending", () => {
+      const opts = buildStatusFilterOptions();
+      const nonPending = Object.entries(TRIAGE_LABELS).filter(([k]) => k !== "pending");
+      expect(opts.length).toBe(2 + nonPending.length);
+      nonPending.forEach(([value, text], i) => {
+        expect(opts[2 + i]).toEqual({ value, text });
+      });
+    });
   });
 
   it("DISPLAY_TO_XCCDF_SECTION is the inverse of SECTION_LABELS (parity)", () => {

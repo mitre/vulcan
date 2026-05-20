@@ -45,8 +45,9 @@
           <span
             v-if="!isSectionExpanded(section.key)"
             class="section-preview text-muted small ml-2 text-truncate"
+            :title="section.content"
           >
-            {{ truncate(section.content, 80) }}
+            {{ section.content }}
           </span>
         </div>
         <div
@@ -71,7 +72,7 @@
           >
             <span class="text-muted mr-1">#{{ rc.id }}</span>
             <strong class="mr-1">{{ rc.author_name || "—" }}</strong>
-            <span class="text-muted text-truncate">{{ truncate(rc.comment, 60) }}</span>
+            <span class="text-muted text-truncate" :title="rc.comment">{{ rc.comment }}</span>
           </div>
         </div>
       </div>
@@ -184,10 +185,6 @@ export default {
     },
     sectionCommentsFor(key) {
       return this.sectionComments.filter((c) => c.section === key);
-    },
-    truncate(text, len) {
-      if (!text || text.length <= len) return text;
-      return text.slice(0, len) + "...";
     },
   },
 };
