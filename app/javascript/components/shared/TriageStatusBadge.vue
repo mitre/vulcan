@@ -74,8 +74,8 @@ export default {
 }
 
 .triage-status--concur {
-  color: #155724;
-  background-color: rgba(40, 167, 69, 0.2);
+  color: #fff;
+  background-color: #28a745;
 }
 
 .triage-status--concur_with_comment {

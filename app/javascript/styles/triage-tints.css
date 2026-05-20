@@ -3,12 +3,12 @@
    triage-bg--{status} pattern. Pending has no tint (white). */
 
 .triage-bg--concur {
-  background-color: rgba(40, 167, 69, 0.10) !important;
+  background-color: rgba(40, 167, 69, 0.15) !important;
   border-left-color: #28a745 !important;
 }
 
 .triage-bg--concur_with_comment {
-  background-color: rgba(76, 175, 80, 0.06) !important;
+  background-color: rgba(76, 175, 80, 0.08) !important;
   border-left-color: #4caf50 !important;
 }
 
