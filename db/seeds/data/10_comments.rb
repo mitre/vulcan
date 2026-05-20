@@ -143,6 +143,23 @@ c_withdrawn = SeedHelpers.find_or_seed_review(
 )
 SeedHelpers.seed_triage(c_withdrawn, user: viewer_user, status: 'withdrawn')
 
+# ── Demo Admin comments (so My Comments page has data when logged in as admin) ──
+admin_comment_texts = [
+  { rule: rules[0], section: 'check_content',
+    comment: 'As the STIG author, I want to note that the check procedure intentionally uses generic language here because the specific CLI commands vary by container runtime (containerd vs CRI-O vs Docker). We should add a table mapping runtimes to their verification commands.' },
+  { rule: rules[1], section: 'fixtext',
+    comment: 'The fix text references "node and component communication" but we should be more precise about which communication channels require TLS — etcd peer, kubelet-to-API, and external ingress all have different configuration paths.' },
+  { rule: rules[3], section: 'vuln_discussion',
+    comment: 'Good catch on the account inactivity timeout. For Kubernetes environments, this is typically handled at the IdP level (OIDC/LDAP), not the platform itself. We should document that distinction in the vendor comments.' }
+]
+
+admin_comment_texts.each do |entry|
+  SeedHelpers.find_or_seed_review(
+    rule: entry[:rule], user: demo_admin, section: entry[:section],
+    comment: entry[:comment]
+  )
+end
+
 # ── Component-scoped (no rule) ──
 comp_text_one = 'Overall the STIG draft is well-structured and the SRG mappings are accurate. Suggest cross-referencing the CIS Container Benchmark for implementations that address multiple SRG requirements with a single control.'
 unless Review.exists?(action: 'comment', comment: comp_text_one)
