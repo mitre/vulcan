@@ -1,45 +1,39 @@
 <template>
   <div class="rule-context-panel">
     <template v-if="ruleContent">
-      <h6 class="mb-1 font-weight-bold">
-        <b-icon
-          v-if="ruleContent.locked"
-          icon="lock"
-          class="text-warning mr-1"
-          aria-hidden="true"
-        />
-        {{ ruleDisplayedName }}
-        <b-badge
-          v-if="ruleContent.locked"
-          variant="warning"
-          pill
-          class="ml-1 small"
-          data-testid="locked-indicator"
+      <div class="d-flex align-items-center mb-1">
+        <h6 class="mb-0 font-weight-bold flex-grow-1">
+          <b-icon
+            v-if="ruleContent.locked"
+            icon="lock"
+            class="text-warning mr-1"
+            aria-hidden="true"
+          />
+          {{ ruleDisplayedName }}
+          <b-badge
+            v-if="ruleContent.locked"
+            variant="warning"
+            pill
+            class="ml-1 small"
+            data-testid="locked-indicator"
+          >
+            Locked
+          </b-badge>
+        </h6>
+        <b-form-checkbox
+          :checked="contextMode === 'all'"
+          switch
+          size="sm"
+          class="ml-2 flex-shrink-0"
+          data-testid="context-mode-toggle"
+          @change="$emit('update:contextMode', $event ? 'all' : 'commented')"
         >
-          Locked
-        </b-badge>
-      </h6>
-      <div class="d-flex align-items-center mb-2">
-        <p v-if="ruleContent.title" class="text-muted small mb-0 flex-grow-1">
-          {{ ruleContent.title }}
-        </p>
-        <b-button-group size="sm" class="ml-2 flex-shrink-0">
-          <b-button
-            :variant="contextMode === 'commented' ? 'secondary' : 'outline-secondary'"
-            data-testid="context-mode-commented"
-            @click="$emit('update:contextMode', 'commented')"
-          >
-            Commented
-          </b-button>
-          <b-button
-            :variant="contextMode === 'all' ? 'secondary' : 'outline-secondary'"
-            data-testid="context-mode-all"
-            @click="$emit('update:contextMode', 'all')"
-          >
-            All fields
-          </b-button>
-        </b-button-group>
+          <small class="text-muted">All fields</small>
+        </b-form-checkbox>
       </div>
+      <p v-if="ruleContent.title" class="text-muted small mb-2">
+        {{ ruleContent.title }}
+      </p>
 
       <div v-if="inlineSections.length" class="mb-3">
         <div

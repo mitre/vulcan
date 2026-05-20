@@ -44,28 +44,33 @@
       </b-form-invalid-feedback>
     </b-form-group>
 
-    <div class="d-flex justify-content-end">
-      <b-button data-testid="cancel" variant="secondary" class="mr-2" @click="$emit('cancel')">
-        Cancel
-      </b-button>
-      <b-button
-        v-if="hasSaveDecisionOnlyOption"
-        data-testid="save-decision"
-        variant="outline-primary"
-        class="mr-2"
-        :disabled="!canSave || loading"
-        @click="emitSave"
-      >
-        Save decision
-      </b-button>
-      <b-button
-        data-testid="save-and-next"
-        variant="primary"
-        :disabled="!canSave || loading"
-        @click="emitSaveAndNext"
-      >
-        {{ primaryButtonLabel }}
-      </b-button>
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <slot name="actions-left" />
+      </div>
+      <div>
+        <b-button data-testid="cancel" variant="secondary" class="mr-2" @click="$emit('cancel')">
+          Cancel
+        </b-button>
+        <b-button
+          v-if="hasSaveDecisionOnlyOption"
+          data-testid="save-decision"
+          variant="outline-primary"
+          class="mr-2"
+          :disabled="!canSave || loading"
+          @click="emitSave"
+        >
+          Save decision
+        </b-button>
+        <b-button
+          data-testid="save-and-next"
+          variant="primary"
+          :disabled="!canSave || loading"
+          @click="emitSaveAndNext"
+        >
+          {{ primaryButtonLabel }}
+        </b-button>
+      </div>
     </div>
   </div>
 </template>
