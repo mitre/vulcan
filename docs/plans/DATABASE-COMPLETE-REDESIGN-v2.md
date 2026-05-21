@@ -301,117 +301,6 @@ def rules_with_matching_requirements
 end
 ```
 
-#### Problem 11: `set_component` Eager-Load Cartesian Explosion + Review-Author N+1 [PRODUCTION HOTSPOT]
-
-```ruby
-# app/controllers/components_controller.rb -- set_component (loaded on every
-# component show/triage/settings/export request)
-@component = Component.eager_load(
-  rules: [:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
-          :additional_answers, { satisfies: :srg_rule }, { satisfied_by: :srg_rule },
-          { srg_rule: %i[disa_rule_descriptions rule_descriptions checks] }]
-).find_by(id: params[:id])
-```
-
-`eager_load` forces a single LEFT OUTER JOIN across multiple sibling `has_many`
-collections on Rule. Postgres returns the cartesian product per rule (rows =
-reviews x checks x descriptions x ...), with every joined row replicating the
-large text columns (vuln_discussion, check content, inspec bodies). Latent
-since #286 (2021); harmless while reviews were sparse. The comment-feedback
-work in #729 drove comment volume up and the latent multiplier started biting:
-500-1000ms component-page hits observed in prod on big components, can drive
-Puma worker memory pressure (R14) and indirect instance-wide slowdown when a
-worker queues / restarts.
-
-Compounding: `set_component` eager-loads `:reviews` but NOT
-`reviews: %i[user triage_set_by adjudicated_by]`. `RuleBlueprint :editor`
-renders every review via `ReviewBlueprint`, which touches `review.user.name`,
-`triager_display_name`, and `adjudicator_display_name` -- up to three N+1
-user lookups per review.
-
-**Proposed fix (tactical, ships independently of redesign):**
-
-```ruby
-Component.preload(
-  rules: [{ reviews: %i[user triage_set_by adjudicated_by] },
-          :disa_rule_descriptions, :rule_descriptions, :checks, :additional_answers,
-          { satisfies: :srg_rule }, { satisfied_by: :srg_rule },
-          { srg_rule: %i[disa_rule_descriptions rule_descriptions checks] }]
-).find_by(id: params[:id])
-```
-
-`preload` issues separate flat queries -- no cartesian product. The set of
-`set_component` callers (`show update destroy export preview_spreadsheet_update
-apply_spreadsheet_update triage settings`) does not filter on the joined
-tables, so the swap is safe. Phase 1's `DisplayFallback` scope (Problem 6
-follow-up) should preserve this preload shape rather than reintroducing
-`eager_load`.
-
-#### Problem 12: Unbounded `check_access_request_notifications` Per-Request Query [PRODUCTION HOTSPOT]
-
-```ruby
-# app/controllers/application_controller.rb
-before_action :check_access_request_notifications  # runs on every HTML request
-
-def check_access_request_notifications
-  ...
-  pending_requests = if current_user.admin?
-                       ProjectAccessRequest.eager_load(:user, :project)  # NO .limit
-                     else
-                       ProjectAccessRequest.where(project_id: admin_project_ids)
-                                           .eager_load(:user, :project)
-                     end
-  @access_requests = pending_requests.map { |ar| {...} }
-end
-```
-
-Super admins load the entire `project_access_requests` table on every HTML
-request. The table grows with new-user onboarding (each new user typically
-files one access request) and shrinks only when a request is approved or
-denied. Per-row cost is small (UserBlueprint is trivial + associations are
-preloaded), but the query is unbounded -- at scale this becomes a permanent
-per-request tax that is most visible to admins navigating between pages, and
-correlates with the recent user-onboarding wave.
-
-**Proposed fix (tactical):** Replace the eager full-table load with a count
-for the navbar badge; load the actual list lazily via a JSON endpoint when
-the admin opens the dropdown. Alternative minimal diff: `.limit(50)` plus an
-"N more" indicator when total exceeds 50.
-
-#### Problem 13: Polymorphic-Commentable Correctness Regressions [CORRECTNESS REGRESSION]
-
-Two `Component` methods shipped alongside #729's polymorphic commentable
-still scope to rule-only commentables and miss component-scoped reviews
-(`commentable_type='Component'`, `rule_id=nil`):
-
-```ruby
-# app/models/component.rb -- Component#reviews
-def reviews
-  rule_names = rules.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
-  Review.where(rule_id: rule_names.keys)...  # misses component-scoped reviews
-end
-
-# app/models/component.rb -- Component.pending_comment_counts
-def self.pending_comment_counts(component_ids)
-  Review.where(action: 'comment', responding_to_review_id: nil, triage_status: 'pending')
-        .joins(:rule)                                       # INNER JOIN drops rule_id=NULL rows
-        .merge(Rule.where(component_id: component_ids))
-        .group('base_rules.component_id').count
-end
-```
-
-`Component#reviews` is rendered into the editor blueprint (`field :reviews`);
-`pending_comment_counts` drives the "N pending" badge on the component card.
-Both silently undercount when a component has overall-component (non-rule)
-comments.
-
-**Proposed fix (tactical):** Rewrite both as polymorphic UNIONs mirroring
-`Component#paginated_comments` -- rule-scoped reviews on this component's
-rules OR component-scoped reviews on this component.
-`Project.pending_comment_counts` already uses the correct union shape (see
-`REVIEW_COMPONENT_UNION_BODY` constant in `app/models/project.rb`); the
-pattern is ready to reuse.
-
 ### MINOR: Schema Cleanup
 
 #### Problem 9: Unused/Sparse Columns
@@ -2049,6 +1938,346 @@ where it was addressed.
 | 4 | Redundant satisfaction index | PG Expert | Drop standalone (rule_id), keep composite unique |
 | 5 | STI split needs setval() on sequences | PG Expert | Added to Phase 2 migration |
 | 6 | Phase 7 cleanup needs transaction + idempotency | Rails Expert | Wrapped in transaction |
+
+---
+
+## Rollback Strategy
+
+Each phase follows the **expand-contract** pattern (GitLab, Shopify standard):
+
+1. **Expand**: Add new tables/columns alongside old ones. Dual-write where needed. Fully reversible.
+2. **Migrate**: Backfill data from old to new. Validate with row counts.
+3. **Contract**: Drop old columns/tables. Irreversible — only after validation period.
+
+### Per-Phase Rollback Plan
+
+| Phase | Rollback Method | Recovery Time |
+|-------|----------------|---------------|
+| 0 (Backup) | N/A — read-only | N/A |
+| 1 (DisplayFallback) | Remove concern, revert blueprints. Zero schema change. | Minutes |
+| 2 (STI Split) | `pg_restore` from Phase 0 checkpoint. Code revert. | 5-15 min |
+| 2.5 (Reviews FK) | `pg_restore` from Phase 2 checkpoint. | 5-15 min |
+| 3 (Override tables) | Drop override tables, revert Rule model. Data still in old columns. | Minutes |
+| 4 (Satisfactions) | `pg_restore` from Phase 3 checkpoint. | 5-15 min |
+| 5 (Changesets) | Drop benchmark_changesets table. No data dependency. | Minutes |
+| 6 (Counter caches) | Drop counter columns, revert to query-based counts. | Minutes |
+| 7 (Metadata merge) | Reverse: extract jsonb back to separate tables. | Minutes |
+| 8 (Cleanup) | Cannot roll back column drops. Checkpoint required before phase. | Restore from backup |
+
+### Checkpoint Protocol
+
+```bash
+# Before each irreversible phase (2, 2.5, 4, 8):
+pg_dump -Fc vulcan_production > checkpoint_phase_N_$(date +%Y%m%d_%H%M).dump
+
+# Verify backup integrity:
+pg_restore --list checkpoint_phase_N_*.dump | tail -5
+
+# Restore if needed:
+pg_restore -c -d vulcan_production checkpoint_phase_N_*.dump
+```
+
+### Rules
+
+- Phases 1, 3, 5, 6, 7 are **additive** — rollback is code-only (remove concern/table, revert model)
+- Phases 2, 2.5, 4, 8 are **destructive** — require `pg_dump` checkpoint before execution
+- Never rename columns directly — add new, backfill, deploy code reading new, then drop old
+- Use `raise ActiveRecord::IrreversibleMigration` in `down` for data-lossy migrations [already done]
+- Production deploys: code that reads new schema must also handle old schema during the transition window
+
+---
+
+## Post-Migration Data Validation
+
+### Validation Rake Task
+
+```ruby
+# lib/tasks/db_validate.rake
+namespace :db do
+  desc 'Validate data integrity after migration phase'
+  task validate: :environment do
+    errors = []
+
+    # 1. Row count verification
+    puts "=== Row Counts ==="
+    %w[rules components security_requirements_guides stigs reviews reactions
+       rule_satisfactions].each do |table|
+      count = ActiveRecord::Base.connection.execute("SELECT COUNT(*) FROM #{table}").first['count']
+      puts "  #{table}: #{count}"
+    end
+
+    # 2. Orphaned FK records
+    puts "\n=== Orphaned Records ==="
+    orphan_checks = {
+      'rules → components' => <<~SQL,
+        SELECT COUNT(*) FROM rules r
+        LEFT JOIN components c ON r.component_id = c.id
+        WHERE c.id IS NULL AND r.deleted_at IS NULL
+      SQL
+      'rules → srg_rules' => <<~SQL,
+        SELECT COUNT(*) FROM rules r
+        LEFT JOIN srg_rules sr ON r.srg_rule_id = sr.id
+        WHERE sr.id IS NULL AND r.deleted_at IS NULL
+      SQL
+      'reviews → users' => <<~SQL,
+        SELECT COUNT(*) FROM reviews r
+        LEFT JOIN users u ON r.user_id = u.id
+        WHERE r.user_id IS NOT NULL AND u.id IS NULL
+      SQL
+      'rule_satisfactions → rules' => <<~SQL,
+        SELECT COUNT(*) FROM rule_satisfactions rs
+        LEFT JOIN rules r ON rs.rule_id = r.id
+        WHERE r.id IS NULL
+      SQL
+      'rule_satisfactions → srg_rules' => <<~SQL,
+        SELECT COUNT(*) FROM rule_satisfactions rs
+        LEFT JOIN srg_rules sr ON rs.srg_rule_id = sr.id
+        WHERE sr.id IS NULL
+      SQL
+    }
+
+    orphan_checks.each do |label, sql|
+      count = ActiveRecord::Base.connection.execute(sql).first['count'].to_i
+      status = count.zero? ? '✓' : "✗ #{count} orphaned"
+      errors << "#{label}: #{count} orphaned" if count > 0
+      puts "  #{label}: #{status}"
+    end
+
+    # 3. Unexpected NULLs in required fields
+    puts "\n=== NULL Checks ==="
+    null_checks = {
+      'rules.status' => "SELECT COUNT(*) FROM rules WHERE status IS NULL AND deleted_at IS NULL",
+      'rules.component_id' => "SELECT COUNT(*) FROM rules WHERE component_id IS NULL",
+      'srg_rules.version' => "SELECT COUNT(*) FROM srg_rules WHERE version IS NULL",
+      'reviews.action' => "SELECT COUNT(*) FROM reviews WHERE action IS NULL",
+    }
+
+    null_checks.each do |field, sql|
+      count = ActiveRecord::Base.connection.execute(sql).first['count'].to_i
+      status = count.zero? ? '✓' : "✗ #{count} unexpected NULLs"
+      errors << "#{field}: #{count} NULLs" if count > 0
+      puts "  #{field}: #{status}"
+    end
+
+    # 4. Duplicate detection
+    puts "\n=== Duplicate Checks ==="
+    dup_sql = <<~SQL
+      SELECT rule_id, srg_rule_id, COUNT(*)
+      FROM rule_satisfactions
+      GROUP BY 1, 2 HAVING COUNT(*) > 1
+    SQL
+    dups = ActiveRecord::Base.connection.execute(dup_sql).to_a
+    if dups.empty?
+      puts "  rule_satisfactions uniqueness: ✓"
+    else
+      puts "  rule_satisfactions uniqueness: ✗ #{dups.size} duplicates"
+      errors << "rule_satisfactions: #{dups.size} duplicates"
+    end
+
+    # 5. Override consistency (post Phase 3)
+    if ActiveRecord::Base.connection.table_exists?('rule_check_overrides')
+      puts "\n=== Override Consistency ==="
+      override_sql = <<~SQL
+        SELECT COUNT(*) FROM rule_check_overrides rco
+        LEFT JOIN rules r ON rco.rule_id = r.id
+        WHERE r.id IS NULL
+      SQL
+      count = ActiveRecord::Base.connection.execute(override_sql).first['count'].to_i
+      status = count.zero? ? '✓' : "✗ #{count} orphaned overrides"
+      errors << "rule_check_overrides: #{count} orphaned" if count > 0
+      puts "  check overrides → rules: #{status}"
+    end
+
+    # Summary
+    puts "\n=== Summary ==="
+    if errors.empty?
+      puts "All validations passed ✓"
+    else
+      puts "#{errors.size} validation errors:"
+      errors.each { |e| puts "  ✗ #{e}" }
+      exit 1
+    end
+  end
+end
+```
+
+Run after each phase: `bundle exec rails db:validate`
+
+### CI Integration
+
+Add `db:validate` to the CI pipeline as a post-migration step. Fail the deploy if any check produces non-zero results.
+
+---
+
+## Performance Benchmarks
+
+### Baseline Metrics (Capture Before Phase 0)
+
+```ruby
+# lib/tasks/db_benchmark.rake
+namespace :db do
+  desc 'Capture performance baseline for key endpoints'
+  task benchmark: :environment do
+    require 'benchmark'
+
+    component = Component.includes(:rules).first
+    project = Project.first
+
+    results = {}
+
+    # 1. Component show (full rule load)
+    results['component_show'] = Benchmark.measure {
+      10.times { component.reload.rules.includes(
+        :reviews, :disa_rule_descriptions, :checks,
+        :satisfies, :satisfied_by, srg_rule: [:disa_rule_descriptions, :checks]
+      ).to_a }
+    }.real / 10
+
+    # 2. Paginated comments
+    results['paginated_comments'] = Benchmark.measure {
+      10.times { component.paginated_comments(triage_status: 'all', per_page: 25) }
+    }.real / 10
+
+    # 3. Rules summary (counter caches target)
+    results['rules_summary'] = Benchmark.measure {
+      10.times { component.batch_rules_summary }
+    }.real / 10
+
+    # 4. Project index (pending comment counts)
+    results['pending_counts'] = Benchmark.measure {
+      10.times { Component.pending_comment_counts(project.component_ids) }
+    }.real / 10
+
+    # 5. SQL query count per component show
+    query_count = 0
+    counter = ->(_name, _start, _finish, _id, payload) {
+      query_count += 1 unless payload[:name] == 'SCHEMA' || payload[:sql]&.match?(/^(BEGIN|COMMIT|ROLLBACK)/)
+    }
+    ActiveSupport::Notifications.subscribed(counter, 'sql.active_record') do
+      component.reload.rules.includes(
+        :reviews, :disa_rule_descriptions, :checks
+      ).to_a
+    end
+    results['component_show_queries'] = query_count
+
+    puts "\n=== Performance Baseline ==="
+    results.each { |k, v| puts "  #{k}: #{v.is_a?(Float) ? '%.4fs' % v : v}" }
+
+    File.write('tmp/db_benchmark_baseline.json', JSON.pretty_generate(results))
+    puts "\nSaved to tmp/db_benchmark_baseline.json"
+  end
+end
+```
+
+### Target Thresholds
+
+| Endpoint | Current (est.) | Post-Migration Target | Regression Threshold |
+|----------|---------------|----------------------|---------------------|
+| Component show (full rule load) | ~800ms | <300ms | +10% of target |
+| Paginated comments (25/page) | ~200ms | <150ms | +10% of target |
+| Rules summary (batch) | ~100ms | <20ms (counter cache) | +10% of target |
+| Pending comment counts | ~50ms | <30ms | +10% of target |
+| Component show SQL queries | ~15-20 | <8 (preload) | +2 queries |
+
+### Test Assertions
+
+```ruby
+# spec/support/query_counter.rb
+module QueryCounter
+  def assert_query_count(expected_max, message = nil, &block)
+    count = 0
+    counter = ->(*) { count += 1 }
+    ActiveSupport::Notifications.subscribed(counter, 'sql.active_record', &block)
+    assert count <= expected_max,
+      message || "Expected at most #{expected_max} queries, got #{count}"
+  end
+end
+
+# Usage in specs:
+it 'loads component show with bounded queries' do
+  assert_query_count(8) do
+    get "/components/#{component.id}.json"
+  end
+end
+```
+
+### Tooling
+
+- **`rack-mini-profiler`** — add to Gemfile `:development` group for per-request SQL timing in browser
+- **`bullet`** gem — detects N+1 and unused eager loads; configure to raise in test environment
+- **`db:benchmark`** — run before Phase 0 and after each phase to track regression
+- **`EXPLAIN (ANALYZE, BUFFERS)`** — run on slow queries post-migration to verify new indexes are used
+
+### Regression Rule
+
+No endpoint may regress more than **10% on p95 response time** or gain more than **2 additional SQL queries** after any migration phase. If a regression is detected, the phase must be rolled back and the query plan investigated before re-deploying.
+
+---
+
+## ORM Evaluation: Drizzle over Prisma
+
+The full database rebuild requires an ORM that can express Vulcan's query patterns natively. Prisma was evaluated and rejected; Drizzle is recommended.
+
+### Why Not Prisma
+
+Prisma cannot express the following patterns that this schema requires:
+
+| Pattern | Vulcan Usage | Prisma Support |
+|---------|-------------|----------------|
+| UNION / UNION ALL queries | `pending_comment_counts`, `paginated_comments` polymorphic union | `$queryRaw` only |
+| GROUP BY with HAVING | Status counts, counter cache recalculation | `$queryRaw` only |
+| Partial indexes | `WHERE deleted_at IS NULL` on rules | Not expressible in schema |
+| GIN indexes | JSONB containment, full-text search | Not expressible in schema |
+| CHECK constraints | `pg_column_size(changes) < 256000` | Not expressible in schema |
+| Polymorphic associations | `reviews.commentable_type/id → Rule or Component` | No concept — manual workarounds |
+| Covering indexes (INCLUDE) | `UNIQUE (rule_id) INCLUDE (content)` on override tables | Not supported |
+
+**Estimated raw SQL fallback rate with Prisma: 40-60%** of this schema's query patterns. At that point the ORM is overhead, not help.
+
+Prisma's migration system also **silently drops** PostgreSQL-specific features it doesn't understand. A GIN index defined in a Prisma schema is simply ignored. For a security compliance application where data integrity is non-negotiable, silent feature drops are unacceptable.
+
+### Why Drizzle
+
+| Capability | Drizzle Support | Notes |
+|-----------|----------------|-------|
+| UNION / GROUP BY / HAVING | First-class, typed | `union(q1, q2)`, `.groupBy().having()` |
+| Partial indexes | `index().where()` in schema | Native `drizzle-kit` support |
+| GIN indexes | `.using('gin')` in schema | Native support |
+| CHECK constraints | `check()` in table definition | Native support |
+| Polymorphic joins | Manual typed `relations()` | Same as any typed ORM — no magic, no footguns |
+| Covering indexes | `index().include()` | Supported |
+| Bulk insert/upsert | `.values([...]).onConflictDoUpdate()` | Single statement, 10K+ rows |
+| Relational queries (preloading) | `findMany({ with: { reviews: true } })` | Typed equivalent of AR `includes()` |
+| Raw SQL fallback | `sql` tagged template (typed, composable) | Not a string escape hatch |
+
+**Estimated raw SQL fallback rate with Drizzle: 10-15%** (materialized views, complex CTEs).
+
+### Drizzle Ecosystem for This Project
+
+| Tool | Package | Source | Use Case |
+|------|---------|--------|----------|
+| Schema → Zod validation | `drizzle-zod` | Official (1.57M/wk) | Input validation from schema — no manual Zod duplication |
+| Deterministic seeding | `drizzle-seed` | Official (257K/wk) | Dev/test seeds with typed generators |
+| Row-Level Security | `pgTable.withRLS()` | Official (core) | PostgreSQL RLS policies in schema |
+| In-memory test DB | `@electric-sql/pglite` | Official driver (8.59M/wk) | WASM Postgres for tests — no Docker |
+| Migration diffing | `drizzle-kit` | Official (7.97M/wk) | Schema diff → reviewed SQL, snapshots for CI |
+| Logging | Built-in `Logger` interface | Official (core) | Custom `logQuery(sql, params)` |
+
+### Gaps (DIY Required)
+
+| Need | Approach |
+|------|----------|
+| Soft deletes | `deletedAt` column + query wrapper (no plugin exists) |
+| Audit trails | PostgreSQL `AFTER INSERT/UPDATE/DELETE` trigger — more reliable than app-layer auditing for compliance |
+| JSONB typed operators | `sql` template for `@>`, `?` operators — functional but untyped |
+| Full-text search | `sql` template for `to_tsvector()`, `@@` — documented pattern, no abstraction |
+| Nuxt integration | Manual wiring in `server/utils/db.ts` — no official module |
+
+### Recommendation
+
+**Use Drizzle for the full database rebuild.** It handles 85-90% of Vulcan's query patterns natively with type safety, versus Prisma's 40-60%. The schema-as-TypeScript-code approach means the 3NF schema in this document can be directly translated to Drizzle table definitions with all PostgreSQL-specific features (partial indexes, GIN, CHECK constraints, RLS) preserved.
+
+For the gaps (soft deletes, audit trails, FTS), PostgreSQL-native solutions are actually superior to ORM plugins for a compliance application — trigger-based auditing is tamper-resistant and doesn't depend on application code paths.
 
 ---
 
