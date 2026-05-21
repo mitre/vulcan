@@ -31,19 +31,25 @@ RSpec.describe Component do
                      responding_to_review_id: parent.id)
       parent.update!(triage_status: 'concur', triage_set_by_id: author.id, triage_set_at: Time.current)
 
-      # Component B: 1 pending top-level
+      # Component B: 1 pending top-level rule-scoped + 1 pending component-scoped.
+      # The component-scoped row exercises the polymorphic union: previously
+      # `.joins(:rule)` INNER-JOINed away commentable_type='Component' rows
+      # (rule_id IS NULL). See docs/plans/DATABASE-COMPLETE-REDESIGN-v2.md
+      # Problem 13.
       Review.create!(action: 'comment', comment: 'b-pending', user: viewer,
                      rule: component_b.rules.first)
+      Review.create!(action: 'comment', comment: 'b-component-pending', user: viewer,
+                     commentable: component_b)
 
       # Component C: zero pending — should be omitted from result
     end
 
-    it 'returns a hash keyed by component_id with pending top-level counts' do
+    it 'returns a hash keyed by component_id with pending top-level counts (incl. component-scoped)' do
       counts = described_class.pending_comment_counts(
         [component_a.id, component_b.id, component_c.id]
       )
       expect(counts[component_a.id]).to eq(2)
-      expect(counts[component_b.id]).to eq(1)
+      expect(counts[component_b.id]).to eq(2) # rule-scoped + component-scoped
     end
 
     it 'omits components with zero pending comments from the hash (sparse)' do
