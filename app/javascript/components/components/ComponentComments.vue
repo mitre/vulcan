@@ -151,6 +151,7 @@
       :rows="rows"
       :all-expanded="allExpanded"
       @reaction-updated="updateRowInPlace"
+      @triage="openTriageFor($event)"
     />
 
     <!-- Table -->

@@ -55,7 +55,17 @@
               <b-icon icon="arrow-return-right" class="mr-1" />
               Posted on {{ comment.rule_displayed_name }}
             </small>
-            <p class="mb-1 mt-1">{{ comment.comment }}</p>
+            <div v-if="comment.comment && comment.comment.length > 200" class="mb-1 mt-1">
+              {{ expanded[comment.id] ? comment.comment : comment.comment.substring(0, 200) + "…" }}
+              <a
+                href="#"
+                class="text-primary ml-1"
+                @click.prevent="$set(expanded, comment.id, !expanded[comment.id])"
+              >
+                {{ expanded[comment.id] ? "show less" : "show more" }}
+              </a>
+            </div>
+            <p v-else class="mb-1 mt-1">{{ comment.comment }}</p>
             <div class="d-flex align-items-center">
               <ReactionButtons
                 v-if="comment.reactions"
@@ -70,6 +80,14 @@
                 :can-reply="false"
                 class="ml-2"
               />
+              <b-button
+                size="sm"
+                variant="outline-primary"
+                class="ml-auto"
+                @click="$emit('triage', comment)"
+              >
+                Triage
+              </b-button>
             </div>
           </div>
         </div>
@@ -98,6 +116,7 @@ export default {
   data() {
     return {
       collapsed: {},
+      expanded: {},
     };
   },
   computed: {
