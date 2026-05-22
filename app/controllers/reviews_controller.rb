@@ -101,7 +101,14 @@ class ReviewsController < ApplicationController
         end
       end
 
-      render_toast(title: 'Comment posted.', message: '', variant: 'success', status: :ok)
+      if review.original_commentable_id
+        parent_label = "#{review.rule.component.prefix}-#{review.rule.rule_id}"
+        render_toast(title: 'Comment posted.',
+                     message: ["Posted on parent control #{parent_label}"],
+                     variant: 'success', status: :ok)
+      else
+        render_toast(title: 'Comment posted.', message: [''], variant: 'success', status: :ok)
+      end
     else
       render_toast(title: 'Could not add review.', message: review.errors.full_messages)
     end

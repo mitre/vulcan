@@ -489,12 +489,13 @@ describe("RulesCodeEditorView", () => {
       expect(ids).toContain(4);
     });
 
-    it("displays truncated SRG ID as option text", () => {
+    it("displays both SRG ID and Rule ID as option text", () => {
       wrapper = createWrapper({ rules: rulesWithSrgIds });
       wrapper.vm.selectRule(1);
       wrapper.vm.filterRulesForSatisfies();
       const rule2Option = wrapper.vm.filteredSelectRules.find((r) => r.value === 2);
-      expect(rule2Option.text).toBe("SRG-OS-000002");
+      expect(rule2Option.text).toContain("SRG-OS-000002");
+      expect(rule2Option.text).toContain("TEST-002");
     });
 
     it("falls back to prefix-rule_id when srg_id is null", () => {
@@ -502,7 +503,7 @@ describe("RulesCodeEditorView", () => {
       wrapper.vm.selectRule(1);
       wrapper.vm.filterRulesForSatisfies();
       const rule4Option = wrapper.vm.filteredSelectRules.find((r) => r.value === 4);
-      expect(rule4Option.text).toBe("TEST-004");
+      expect(rule4Option.text).toContain("TEST-004");
     });
 
     it("returns empty when no rule is selected", () => {

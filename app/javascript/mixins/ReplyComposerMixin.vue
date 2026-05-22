@@ -15,6 +15,8 @@ export default {
         componentId: null,
         section: null,
         ruleName: null,
+        parentRuleId: null,
+        parentRuleName: null,
       },
     };
   },
@@ -30,6 +32,8 @@ export default {
         ruleDisplayedName: s.ruleName,
         initialSection: s.section,
         replyToReviewId: s.reviewId,
+        parentRuleId: s.parentRuleId,
+        parentRuleName: s.parentRuleName,
       };
     },
   },
@@ -45,7 +49,7 @@ export default {
       };
       this.$nextTick(() => this.$bvModal.show("comment-composer-modal"));
     },
-    openSectionComposer({ ruleId, componentId, section, ruleName }) {
+    openSectionComposer({ ruleId, componentId, section, ruleName, parentRuleId, parentRuleName }) {
       this.composerState = {
         mode: "new-comment",
         reviewId: null,
@@ -53,6 +57,8 @@ export default {
         componentId: componentId || null,
         section: section || null,
         ruleName: ruleName || null,
+        parentRuleId: parentRuleId || null,
+        parentRuleName: parentRuleName || null,
       };
       this.$nextTick(() => this.$bvModal.show("comment-composer-modal"));
     },
@@ -75,6 +81,8 @@ export default {
         componentId: null,
         section: null,
         ruleName: null,
+        parentRuleId: null,
+        parentRuleName: null,
       };
     },
     onComposerPosted() {

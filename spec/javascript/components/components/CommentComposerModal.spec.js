@@ -273,10 +273,10 @@ describe("CommentComposerModal", () => {
     expect(w.emitted("posted")).toBeTruthy();
   });
 
-  it("surfaces the success toast via AlertMixin on a successful post", async () => {
+  it("shows inline success message on a successful post", async () => {
     const successResponse = {
       data: {
-        toast: { title: "Comment posted.", message: "", variant: "success" },
+        toast: { title: "Comment posted.", message: ["Posted on parent control CNTR-00-000030"], variant: "success" },
       },
     };
     axios.post.mockResolvedValue(successResponse);
@@ -286,14 +286,31 @@ describe("CommentComposerModal", () => {
       stubs: visibleModalStub,
     });
     vi.spyOn(w.vm.$bvModal, "hide").mockImplementation(() => {});
-    const alertSpy = vi.spyOn(w.vm, "alertOrNotifyResponse").mockImplementation(() => {});
 
     w.vm.commentText = "my new comment";
     await w.vm.submit();
     await flushPromises(w);
 
-    expect(alertSpy).toHaveBeenCalledWith(successResponse);
+    expect(w.vm.successMessage).toBe("Posted on parent control CNTR-00-000030");
     expect(w.emitted("posted")).toBeTruthy();
+  });
+
+  it("shows default success message when toast has no message", async () => {
+    axios.post.mockResolvedValue({
+      data: { toast: { title: "Comment posted.", message: [""], variant: "success" } },
+    });
+    const w = mount(CommentComposerModal, {
+      localVue,
+      propsData: baseProps,
+      stubs: visibleModalStub,
+    });
+    vi.spyOn(w.vm.$bvModal, "hide").mockImplementation(() => {});
+
+    w.vm.commentText = "test";
+    await w.vm.submit();
+    await flushPromises(w);
+
+    expect(w.vm.successMessage).toBe("Comment posted.");
   });
 
   it("posts with responding_to_review_id when in reply mode", async () => {
@@ -341,5 +358,52 @@ describe("CommentComposerModal", () => {
 
     expect(alertSpy).toHaveBeenCalled();
     alertSpy.mockRestore();
+  });
+
+  describe("nested rule parent awareness", () => {
+    const nestedProps = {
+      ...baseProps,
+      parentRuleId: 99,
+      parentRuleName: "CNTR-00-000030",
+    };
+
+    it("shows InfoNotice when parentRuleId is set", () => {
+      const w = mount(CommentComposerModal, {
+        localVue,
+        propsData: nestedProps,
+        stubs: { ...visibleModalStub, CommentDedupBanner: true, FilterDropdown: true },
+      });
+      expect(w.find(".parent-redirect-notice").exists()).toBe(true);
+      expect(w.find(".parent-redirect-notice").text()).toContain("CNTR-00-000030");
+    });
+
+    it("does NOT show InfoNotice when parentRuleId is null", () => {
+      const w = mount(CommentComposerModal, {
+        localVue,
+        propsData: baseProps,
+        stubs: { ...visibleModalStub, CommentDedupBanner: true, FilterDropdown: true },
+      });
+      expect(w.find(".parent-redirect-notice").exists()).toBe(false);
+    });
+
+    it("passes parentRuleId to CommentDedupBanner instead of ruleId", () => {
+      const w = mount(CommentComposerModal, {
+        localVue,
+        propsData: nestedProps,
+        stubs: { ...visibleModalStub, FilterDropdown: true },
+      });
+      const banner = w.findComponent({ name: "CommentDedupBanner" });
+      expect(banner.props("ruleId")).toBe(99);
+    });
+
+    it("passes regular ruleId to CommentDedupBanner when not nested", () => {
+      const w = mount(CommentComposerModal, {
+        localVue,
+        propsData: baseProps,
+        stubs: { ...visibleModalStub, FilterDropdown: true },
+      });
+      const banner = w.findComponent({ name: "CommentDedupBanner" });
+      expect(banner.props("ruleId")).toBe(7);
+    });
   });
 });

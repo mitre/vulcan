@@ -318,13 +318,15 @@ export default {
      * bubbles up RuleFormGroup → form → UnifiedRuleForm → RuleEditor.
      */
     onOpenComposer(section) {
+      const rule = this.selectedRule;
+      const parent = rule?.satisfied_by?.[0];
       this.openSectionComposer({
-        ruleId: this.selectedRule?.id,
+        ruleId: rule?.id,
         componentId: this.component.id,
         section,
-        ruleName: this.selectedRule
-          ? `${this.component.prefix}-${this.selectedRule.rule_id}`
-          : null,
+        ruleName: rule ? `${this.component.prefix}-${rule.rule_id}` : null,
+        parentRuleId: parent?.id || null,
+        parentRuleName: parent ? `${this.component.prefix}-${parent.rule_id}` : null,
       });
     },
     onOpenReplyComposer(reviewId) {

@@ -26,16 +26,29 @@
       </template>
     </p>
 
+    <div v-if="parentRuleId" class="parent-redirect-notice alert alert-info py-2 mb-2">
+      <small>
+        <b-icon icon="info-circle" class="mr-1" />
+        This requirement is satisfied by <strong>{{ parentRuleName }}</strong
+        >. Your comment will be posted there.
+      </small>
+    </div>
+
     <CommentDedupBanner
       v-if="!currentReplyToId"
       :component-id="componentId"
-      :rule-id="ruleId"
+      :rule-id="effectiveRuleId"
       :section="section"
       :component-scoped="isComponentScoped"
       @reply="onReplyClicked"
     />
 
-    <b-form-group :description="charCount" class="mb-0">
+    <div v-if="successMessage" class="alert alert-success py-2 mb-2">
+      <b-icon icon="check-circle" class="mr-1" />
+      {{ successMessage }}
+    </div>
+
+    <b-form-group v-if="!successMessage" :description="charCount" class="mb-0">
       <b-form-textarea
         v-model="commentText"
         rows="4"
@@ -82,6 +95,8 @@ export default {
     componentDisplayedName: { type: String, default: "" },
     initialSection: { type: String, default: null },
     replyToReviewId: { type: [Number, String], default: null },
+    parentRuleId: { type: [Number, String], default: null },
+    parentRuleName: { type: String, default: null },
   },
   data() {
     return {
@@ -93,6 +108,7 @@ export default {
       section: this.initialSection,
       currentReplyToId: this.replyToReviewId,
       commentText: "",
+      successMessage: null,
     };
   },
   computed: {
@@ -110,6 +126,9 @@ export default {
     },
     placeholder() {
       return this.currentReplyToId ? "Reply to this comment..." : "Type your comment...";
+    },
+    effectiveRuleId() {
+      return this.parentRuleId || this.ruleId;
     },
     textState() {
       if (!this.commentText) return null;
@@ -158,14 +177,15 @@ export default {
         : `/rules/${this.ruleId}/reviews`;
       try {
         const res = await axios.post(url, payload);
-        // confirm to the commenter that the
-        // post landed. ReviewsController#create returns the canonical
-        // toast object; AlertMixin renders it identically to the other
-        // success-toast endpoints in the app.
-        this.alertOrNotifyResponse(res);
+        const toast = res?.data?.toast;
+        const msg = toast?.message;
+        this.successMessage = Array.isArray(msg) && msg[0] ? msg.join(" ") : "Comment posted.";
         this.$emit("posted");
-        this.$bvModal.hide("comment-composer-modal");
-        this.commentText = "";
+        setTimeout(() => {
+          this.$bvModal.hide("comment-composer-modal");
+          this.commentText = "";
+          this.successMessage = null;
+        }, 1500);
       } catch (error) {
         this.alertOrNotifyResponse(error);
       }
