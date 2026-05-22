@@ -443,4 +443,41 @@ RSpec.describe DispositionMatrixExport do
       expect(described_class.records_exist?(isolated)).to be(true)
     end
   end
+
+  describe 'soft-redirected comment provenance' do
+    let(:child_rule) { component.rules.second }
+    let(:parent_rule) { component.rules.first }
+
+    let!(:redirected_comment) do
+      create(:review, :comment,
+             rule: parent_rule, user: commenter,
+             comment: 'This check is too vendor-specific',
+             original_commentable_id: child_rule.id)
+    end
+
+    it 'places redirected comment on original child requirement row' do
+      out = CSV.parse(described_class.generate(component: component), headers: true)
+      row = out.find { |r| r['Comment ID'] == redirected_comment.id.to_s }
+
+      expect(row['Rule']).to eq("#{component.prefix}-#{child_rule.rule_id}")
+    end
+
+    it 'shows original child SRG ID not parent SRG ID' do
+      out = CSV.parse(described_class.generate(component: component), headers: true)
+      row = out.find { |r| r['Comment ID'] == redirected_comment.id.to_s }
+
+      expect(row['SRG ID']).to eq(child_rule.version)
+    end
+
+    it 'shows parent rule for non-redirected comments' do
+      direct = create(:review, :comment,
+                      rule: parent_rule, user: commenter,
+                      comment: 'Direct comment on parent')
+
+      out = CSV.parse(described_class.generate(component: component), headers: true)
+      row = out.find { |r| r['Comment ID'] == direct.id.to_s }
+
+      expect(row['Rule']).to eq("#{component.prefix}-#{parent_rule.rule_id}")
+    end
+  end
 end
