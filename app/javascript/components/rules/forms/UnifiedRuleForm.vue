@@ -177,7 +177,7 @@ export default {
     },
     canManageSectionLocks() {
       if (!this.showSectionLocks) return false;
-      return this.rule.status !== "Not Yet Determined";
+      return true;
     },
   },
   methods: {
