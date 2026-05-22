@@ -11,6 +11,15 @@
           />
           {{ ruleDisplayedName }}
           <b-badge
+            v-if="parentRuleDisplayedName"
+            variant="info"
+            pill
+            class="ml-1 small"
+            data-testid="child-indicator"
+          >
+            child of {{ parentRuleDisplayedName }}
+          </b-badge>
+          <b-badge
             v-if="ruleContent.locked"
             variant="warning"
             pill
@@ -137,6 +146,7 @@ export default {
   props: {
     ruleContent: { type: Object, default: null },
     ruleDisplayedName: { type: String, default: null },
+    parentRuleDisplayedName: { type: String, default: null },
     ruleStatus: { type: String, default: null },
     focusedSection: { type: String, default: null },
     contextMode: {
