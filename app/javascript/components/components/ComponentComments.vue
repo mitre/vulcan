@@ -280,8 +280,11 @@
       </template>
     </b-table>
 
-    <!-- Pagination -->
-    <div v-if="total > perPage" class="d-flex justify-content-center mt-2">
+    <!-- Pagination (hidden in by-rule view — all comments loaded for grouping) -->
+    <div
+      v-if="total > perPage && viewMode !== 'by-rule'"
+      class="d-flex justify-content-center mt-2"
+    >
       <b-pagination
         v-model="page"
         :total-rows="total"
@@ -537,12 +540,15 @@ export default {
       }
     },
     setViewMode(mode) {
+      const wasByRule = this.viewMode === "by-rule";
+      const isNowByRule = mode === "by-rule";
       this.viewMode = mode;
       try {
         localStorage.setItem(this.viewModeKey(), mode);
       } catch {
         // Non-fatal
       }
+      if (wasByRule !== isNowByRule) this.fetch();
     },
     persistKey() {
       return `commentTriageFilters-${this.scopeKey()}`;
@@ -598,9 +604,10 @@ export default {
     async fetch() {
       this.loading = true;
       try {
+        const byRuleMode = this.viewMode === "by-rule";
         const params = {
-          page: this.page,
-          per_page: this.perPage,
+          page: byRuleMode ? 1 : this.page,
+          per_page: byRuleMode ? 1000 : this.perPage,
           triage_status: this.filterStatus,
         };
         if (this.splitMode) params.include_rule_content = true;
