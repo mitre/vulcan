@@ -108,6 +108,13 @@
       </b-button>
     </div>
 
+    <div v-if="filterRuleId" class="mb-2">
+      <b-badge variant="info" class="p-2">
+        Showing: {{ filterRuleDisplayName }}
+        <b-icon icon="x-circle" class="ml-1 clickable" @click="clearRuleFilter" />
+      </b-badge>
+    </div>
+
     <!-- Split-pane triage view. Replaces table+modal with side-by-side
          rule content + triage form. Entered by clicking "Triage" on a row. -->
     <TriageSplitView
@@ -372,6 +379,8 @@ export default {
       filterText: persisted.filterText,
       filterStatus: persisted.filterStatus,
       filterSection: persisted.filterSection,
+      filterRuleId: null,
+      filterRuleDisplayName: "",
       // .sync-bound to b-table so column-header clicks update state and
       // the active sort-direction arrow renders. BootstrapVue 2 only
       // shows the arrow when sortBy/sortDesc are controlled.
@@ -440,8 +449,17 @@ export default {
   },
   methods: {
     onSearchResultSelected(result) {
-      this.filterText = result.rule_id ? `${this.componentPrefix}-${result.rule_id}` : "";
-      this.onFilterChanged();
+      const prefix = result.component_prefix || this.componentPrefix;
+      this.filterRuleId = result.id;
+      this.filterRuleDisplayName = result.rule_id ? `${prefix}-${result.rule_id}` : "";
+      this.page = 1;
+      this.fetch();
+    },
+    clearRuleFilter() {
+      this.filterRuleId = null;
+      this.filterRuleDisplayName = "";
+      this.page = 1;
+      this.fetch();
     },
     // Identifier used for localStorage filter persistence. Disambiguates
     // component-scope vs project-scope so a user's filter on component 42
@@ -532,6 +550,7 @@ export default {
         };
         if (this.splitMode) params.include_rule_content = true;
         if (this.filterText) params.q = this.filterText;
+        if (this.filterRuleId) params.rule_id = this.filterRuleId;
         if (this.filterSection && this.filterSection !== "(general)") {
           params.section = this.filterSection;
         }

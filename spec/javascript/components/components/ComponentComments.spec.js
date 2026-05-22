@@ -862,4 +862,69 @@ describe("ComponentComments", () => {
       expect(authorField.label).toBe("Author");
     });
   });
+
+  describe("search result selection (rule_id filtering)", () => {
+    it("sets filterRuleId from search result (DB id, not rule_id string)", () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 29, componentPrefix: "CNTR" },
+        stubs: SHARED_STUBS,
+      });
+      wrapper.vm.onSearchResultSelected({ id: 42, rule_id: "000050" });
+      expect(wrapper.vm.filterRuleId).toBe(42);
+    });
+
+    it("does NOT set filterText when search result is selected", () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 29, componentPrefix: "CNTR" },
+        stubs: SHARED_STUBS,
+      });
+      wrapper.vm.onSearchResultSelected({ id: 42, rule_id: "000050" });
+      expect(wrapper.vm.filterText).toBe("");
+    });
+
+    it("sets filterRuleDisplayName for the chip display", () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 29, componentPrefix: "CNTR" },
+        stubs: SHARED_STUBS,
+      });
+      wrapper.vm.onSearchResultSelected({ id: 42, rule_id: "000050", component_prefix: "CNTR" });
+      expect(wrapper.vm.filterRuleDisplayName).toBe("CNTR-000050");
+    });
+
+    it("clears filterRuleId when clearRuleFilter is called", () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 29, componentPrefix: "CNTR" },
+        stubs: SHARED_STUBS,
+      });
+      wrapper.vm.filterRuleId = 42;
+      wrapper.vm.filterRuleDisplayName = "CNTR-000050";
+      wrapper.vm.clearRuleFilter();
+      expect(wrapper.vm.filterRuleId).toBeNull();
+      expect(wrapper.vm.filterRuleDisplayName).toBe("");
+    });
+
+    it("sends rule_id param in fetch when filterRuleId is set", async () => {
+      axios.get.mockResolvedValue(mockResponse);
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 29, componentPrefix: "CNTR" },
+        stubs: SHARED_STUBS,
+      });
+      wrapper.vm.filterRuleId = 42;
+      await wrapper.vm.fetch();
+      const callArgs = axios.get.mock.calls[axios.get.mock.calls.length - 1];
+      expect(callArgs[1].params.rule_id).toBe(42);
+    });
+
+    it("does NOT send rule_id param when filterRuleId is null", async () => {
+      axios.get.mockResolvedValue(mockResponse);
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 29, componentPrefix: "CNTR" },
+        stubs: SHARED_STUBS,
+      });
+      wrapper.vm.filterRuleId = null;
+      await wrapper.vm.fetch();
+      const callArgs = axios.get.mock.calls[axios.get.mock.calls.length - 1];
+      expect(callArgs[1].params.rule_id).toBeUndefined();
+    });
+  });
 });
