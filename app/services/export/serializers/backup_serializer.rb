@@ -208,6 +208,7 @@ module Export
           adjudicated_at: review.adjudicated_at&.iso8601,
           responding_to_external_id: review.responding_to_review_id,
           duplicate_of_external_id: review.duplicate_of_review_id,
+          original_rule_id: review.original_commentable_id ? BaseRule.find_by(id: review.original_commentable_id)&.rule_id : nil,
           created_at: review.created_at&.iso8601
         }
       end

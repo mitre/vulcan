@@ -83,6 +83,8 @@ module Import
         created_at = parse_time(review_data['created_at']) || Time.current
         attrs = {
           rule_id: rule_db_id,
+          commentable_type: 'BaseRule',
+          commentable_id: rule_db_id,
           action: review_data['action'],
           comment: review_data['comment'],
           created_at: created_at,
@@ -90,6 +92,7 @@ module Import
         }
         attrs.merge!(commenter)
         attrs.merge!(lifecycle_attrs(review_data))
+        attrs.merge!(provenance_attrs(review_data))
 
         # rubocop:disable Rails/SkipsModelValidations
         # Direct INSERT bypasses model callbacks (same pattern as
@@ -241,6 +244,16 @@ module Import
           Review.where(id: new_id).update_all(updates) if updates.any?
           # rubocop:enable Rails/SkipsModelValidations
         end
+      end
+
+      def provenance_attrs(review_data)
+        original_rule_id_str = review_data['original_rule_id']
+        return {} if original_rule_id_str.blank?
+
+        original_db_id = @rule_id_map[original_rule_id_str]
+        return {} unless original_db_id
+
+        { original_commentable_id: original_db_id }
       end
 
       def parse_time(raw)
