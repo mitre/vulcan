@@ -12,7 +12,7 @@ class RuleSatisfactionsController < ApplicationController
     Rule.transaction do
       raise ActiveRecord::Rollback unless @rule.satisfies.empty? && (@rule.satisfied_by << @satisfied_by_rule)
 
-      apply_adnm_status(@rule, @satisfied_by_rule)
+      @rule.apply_nesting_status!(@satisfied_by_rule)
 
       @satisfied_by_rule.save!
       success = true
@@ -35,7 +35,7 @@ class RuleSatisfactionsController < ApplicationController
     Rule.transaction do
       raise ActiveRecord::Rollback unless @rule.satisfied_by.delete(@satisfied_by_rule)
 
-      revert_adnm_status(@rule)
+      @rule.revert_nesting_status!
 
       @satisfied_by_rule.save!
       success = true
@@ -69,48 +69,5 @@ class RuleSatisfactionsController < ApplicationController
     @rule = Rule.find(params[:rule_id])
     @satisfied_by_rule = Rule.find(params[:satisfied_by_rule_id])
     @component = @rule.component
-  end
-
-  def apply_adnm_status(child, parent)
-    parent_label = "#{parent.component.prefix}-#{parent.rule_id}"
-    parent_title = parent.title.presence || parent.srg_rule&.title || parent_label
-
-    child.update!(
-      status: 'Applicable - Does Not Meet',
-      status_justification: "This requirement is addressed by #{parent_label} (#{parent_title}).",
-      audit_comment: "Auto-set ADNM: satisfied by #{parent_label} (was: #{child.status})"
-    )
-
-    drd = child.disa_rule_descriptions.first_or_create!
-    drd.update!(
-      mitigations: "This requirement is fully mitigated by #{parent_label}. " \
-                   'With the implementation of this mitigation, the overall risk is fully mitigated.'
-    )
-  end
-
-  def revert_adnm_status(child)
-    original_status = find_pre_nesting_status(child)
-
-    child.update!(
-      status: original_status,
-      status_justification: nil,
-      audit_comment: "Reverted to #{original_status}: satisfaction removed"
-    )
-
-    drd = child.disa_rule_descriptions.first
-    drd&.update!(mitigations: nil)
-  end
-
-  def find_pre_nesting_status(child)
-    nesting_audit = child.audits
-                         .where("comment LIKE 'Auto-set ADNM:%'")
-                         .order(created_at: :desc)
-                         .first
-
-    if nesting_audit&.comment&.match(/\(was: (.+)\)/)
-      Regexp.last_match(1)
-    else
-      'Not Yet Determined'
-    end
   end
 end

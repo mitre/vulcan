@@ -135,10 +135,36 @@ class Rule < BaseRule
     rule
   end
 
-  # Status is set explicitly by RuleSatisfactionsController when a
-  # satisfaction relationship is created (ADNM) or removed (NYD).
-  # Previously this was overridden to hardcode AC for satisfied-by rules,
-  # which violated DISA Vendor STIG Process Guide V4R1 §4.1.9/§4.1.15.
+  # DISA ADNM nesting automation (V4R1 §4.1.9/§4.1.15).
+  # Called by RuleSatisfactionsController AND rake tasks.
+  def apply_nesting_status!(parent)
+    parent_label = "#{parent.component.prefix}-#{parent.rule_id}"
+    parent_title = parent.title.presence || parent.srg_rule&.title || parent_label
+
+    update!(
+      status: 'Applicable - Does Not Meet',
+      status_justification: "This requirement is addressed by #{parent_label} (#{parent_title}).",
+      audit_comment: "Auto-set ADNM: satisfied by #{parent_label} (was: #{status})"
+    )
+
+    drd = disa_rule_descriptions.first_or_create!
+    drd.update!(
+      mitigations: "This requirement is fully mitigated by #{parent_label}. " \
+                   'With the implementation of this mitigation, the overall risk is fully mitigated.'
+    )
+  end
+
+  def revert_nesting_status!
+    original = find_pre_nesting_status
+
+    update!(
+      status: original,
+      status_justification: nil,
+      audit_comment: "Reverted to #{original}: satisfaction removed"
+    )
+
+    disa_rule_descriptions.first&.update!(mitigations: nil)
+  end
 
   ##
   # Serialization is handled by RuleBlueprint.
@@ -344,6 +370,19 @@ class Rule < BaseRule
   end
 
   private
+
+  def find_pre_nesting_status
+    nesting_audit = audits
+                    .where("comment LIKE 'Auto-set ADNM:%'")
+                    .order(created_at: :desc)
+                    .first
+
+    if nesting_audit&.comment&.match(/\(was: (.+)\)/)
+      Regexp.last_match(1)
+    else
+      'Not Yet Determined'
+    end
+  end
 
   def locked_fields_must_be_valid_sections
     return if locked_fields.blank?
