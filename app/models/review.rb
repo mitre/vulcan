@@ -191,6 +191,7 @@ class Review < ApplicationRecord
   # (responding_to_review_id present) and non-comment actions
   # (request_review/approve/etc.) stay NULL — they're not triage candidates.
   before_create :default_triage_status_for_new_top_level_comment
+  before_create :redirect_to_parent_if_satisfied_by
 
   # user-action validators are explicitly
   # scoped to :create + :update so they run on normal saves but NOT in
@@ -257,6 +258,20 @@ class Review < ApplicationRecord
   end
 
   private
+
+  def redirect_to_parent_if_satisfied_by
+    return unless rule
+    return unless action == 'comment'
+
+    parent = rule.satisfied_by.first
+    return unless parent
+
+    prefix = rule.component&.prefix || 'RULE'
+    self.original_commentable_id = rule_id
+    self.comment = "[Re: #{prefix}-#{rule.rule_id}] #{comment}"
+    self.rule = parent
+    self.commentable = parent
+  end
 
   # Dual-write so existing call sites that set only `rule:` keep the
   # polymorphic columns populated. New component-scoped code sets
