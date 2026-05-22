@@ -60,6 +60,21 @@ RSpec.describe Import::JsonArchive::ReviewBuilder do
       expect(Review.where(comment: 'clean comment').count).to eq(1)
     end
 
+    # Regression: insert! bypasses sync_commentable_from_rule, so the importer
+    # must dual-write commentable_type/commentable_id itself. Without them the
+    # comment is counted (count joins rule_id) but never listed (paginated_comments
+    # filters commentable_*) — the "imported comments invisible in triage" bug.
+    it 'dual-writes the polymorphic commentable so imported comments are listable' do
+      # Unambiguous single-rule map: component and other_component share an SRG,
+      # so their rules' rule_id values collide in the shared rule_id_map.
+      data = [review_attrs(external_id: 3001, comment: 'commentable-backfill sample')]
+      described_class.new(data, { rule_a.rule_id => rule_a.id }, result).build_all
+      review = Review.find_by(comment: 'commentable-backfill sample')
+      expect(review.commentable_type).to eq('BaseRule')
+      expect(review.commentable_id).to eq(rule_a.id)
+      expect(component.paginated_comments[:rows].pluck(:id)).to include(review.id)
+    end
+
     it 'warns and removes a duplicate-status review with no target' do
       data = [review_attrs(
         external_id: 2001,

@@ -808,6 +808,29 @@ RSpec.describe Component do
       dup.destroy!
     end
 
+    # Regression: the raw-SQL copy bypasses sync_commentable_from_rule, so it
+    # must dual-write commentable_*. Without them the copied comment is counted
+    # but never listed in the triage view (paginated_comments filters commentable).
+    it 'duplicate_reviews_and_history dual-writes commentable on copied reviews' do
+      original = shared_component
+      commenter = Membership.find_or_create_by!(user: create(:user), membership: original.project) do |m|
+        m.role = 'viewer'
+      end.user
+      Review.create!(rule: original.rules.first, user: commenter, action: 'comment', comment: 'orig comment')
+
+      dup = original.duplicate(new_version: 96, new_release: 96)
+      dup.save!
+      dup.duplicate_reviews_and_history(original.id)
+
+      copied = Review.where(rule_id: dup.rules.pluck(:id), comment: 'orig comment').first
+      expect(copied).to be_present
+      expect(copied.commentable_type).to eq('BaseRule')
+      expect(copied.commentable_id).to eq(copied.rule_id)
+      expect(dup.paginated_comments[:rows].pluck(:id)).to include(copied.id)
+
+      dup.destroy!
+    end
+
     it 'auditing can be suppressed during save for performance' do
       original = shared_component
       dup = original.duplicate(new_version: 97, new_release: 97)

@@ -83,6 +83,23 @@ class Review < ApplicationRecord
                       .where(adjudicated_at: nil)
   }
 
+  # Rule-scoped reviews whose polymorphic commentable columns were never
+  # populated: legacy `rule_id` is set but `commentable_*` is NULL. Bulk
+  # INSERT paths (Import::JsonArchive::ReviewBuilder, Component#
+  # duplicate_reviews_and_history) bypass sync_commentable_from_rule, so the
+  # read paths (paginated_comments) that filter on commentable would miss them.
+  scope :missing_commentable, -> { where(commentable_id: nil).where.not(rule_id: nil) }
+
+  # Defensive net for the bulk-insert paths above: backfill commentable from
+  # rule_id (mirrors migration 20260508210000). Single UPDATE, idempotent,
+  # callback-free. Chainable onto a relation, e.g.
+  # `Review.where(id: ids).repair_missing_commentable!`.
+  def self.repair_missing_commentable!
+    # rubocop:disable Rails/SkipsModelValidations
+    missing_commentable.update_all("commentable_type = 'BaseRule', commentable_id = rule_id")
+    # rubocop:enable Rails/SkipsModelValidations
+  end
+
   # recursive subtree fetch via
   # Postgres WITH RECURSIVE CTE. Returns root + every descendant via
   # responding_to_review_id chain in one query, ordered so the root

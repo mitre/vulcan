@@ -428,11 +428,16 @@ class Component < ApplicationRecord
       "JOIN rule_map ON a.auditable_id = rule_map.orig_id WHERE a.auditable_type = 'BaseRule'"
     )
 
-    # 4. Copy reviews from original rules
+    # 4. Copy reviews from original rules. Dual-write the polymorphic
+    # commentable target (BaseRule + new rule id) — this raw INSERT bypasses
+    # sync_commentable_from_rule, and the triage read paths filter on
+    # commentable_*, so omitting them hides the copied comments.
     conn.exec_insert(
       "WITH #{mapping_cte} " \
-      'INSERT INTO reviews (user_id, rule_id, action, comment, created_at, updated_at) ' \
-      'SELECT r.user_id, rule_map.new_id, r.action, r.comment, r.created_at, r.updated_at ' \
+      'INSERT INTO reviews (user_id, rule_id, commentable_type, commentable_id, ' \
+      'action, comment, created_at, updated_at) ' \
+      "SELECT r.user_id, rule_map.new_id, 'BaseRule', rule_map.new_id, " \
+      'r.action, r.comment, r.created_at, r.updated_at ' \
       'FROM reviews r JOIN rule_map ON r.rule_id = rule_map.orig_id'
     )
   end

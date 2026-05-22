@@ -68,6 +68,11 @@ module Import
           # cascade-delete via the FK semantics on responding_to_review_id.
           dropped = drop_invalid_reviews(external_to_new_id)
 
+          # Defensive net: insert_review dual-writes commentable, but guard
+          # against any future insert!/raw-SQL path that forgets it so the
+          # triage read paths never silently hide imported comments.
+          Review.where(id: external_to_new_id.values).repair_missing_commentable!
+
           # write a Component-level audit row
           # listing imported external_ids + archive identifier. Recovery
           # trail for admin_destroy → re-import scenarios.
@@ -83,6 +88,10 @@ module Import
         created_at = parse_time(review_data['created_at']) || Time.current
         attrs = {
           rule_id: rule_db_id,
+          # Dual-write the polymorphic target. insert! skips
+          # sync_commentable_from_rule, and the triage read paths filter on
+          # commentable_type/commentable_id — without these the imported
+          # comments are counted but never listed.
           commentable_type: 'BaseRule',
           commentable_id: rule_db_id,
           action: review_data['action'],

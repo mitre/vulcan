@@ -31,6 +31,24 @@ RSpec.describe 'Polymorphic Review.commentable' do
     end
   end
 
+  # Defensive net for bulk-insert paths (import, component duplication) that
+  # bypass the sync_commentable_from_rule callback and leave commentable NULL.
+  describe '.repair_missing_commentable!' do
+    it 'backfills commentable from rule_id and is scoped + idempotent' do
+      r = create(:review, :comment, rule: rule, user: user, comment: 'orphan')
+      r.update_columns(commentable_type: nil, commentable_id: nil)
+      expect(Review.missing_commentable).to include(r)
+
+      Review.where(id: r.id).repair_missing_commentable!
+
+      r.reload
+      expect(r.commentable_type).to eq('BaseRule')
+      expect(r.commentable_id).to eq(rule.id)
+      expect(Review.missing_commentable).to be_empty
+      expect { Review.where(id: r.id).repair_missing_commentable! }.not_to(change { r.reload.commentable_id })
+    end
+  end
+
   describe 'Component#paginated_comments union' do
     let!(:rule_comment) { create(:review, :comment, rule: rule, user: user, comment: 'rule comment') }
     let!(:component_comment) { create(:review, :component_comment, user: user, commentable: component, comment: 'component comment') }
