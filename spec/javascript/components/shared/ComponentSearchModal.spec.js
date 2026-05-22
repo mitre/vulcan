@@ -244,6 +244,44 @@ describe("ComponentSearchModal", () => {
     });
   });
 
+  describe("search term highlighting", () => {
+    it("computes searchWords from query splitting on spaces", () => {
+      wrapper = createWrapper();
+      wrapper.vm.query = "container runtime";
+      expect(wrapper.vm.searchWords).toEqual(["container", "runtime"]);
+    });
+
+    it("filters out single-character words from searchWords", () => {
+      wrapper = createWrapper();
+      wrapper.vm.query = "a container b";
+      expect(wrapper.vm.searchWords).toEqual(["container"]);
+    });
+
+    it("returns empty searchWords when query is empty", () => {
+      wrapper = createWrapper();
+      wrapper.vm.query = "";
+      expect(wrapper.vm.searchWords).toEqual([]);
+    });
+  });
+
+  describe("Cmd+K keyboard shortcut", () => {
+    it("registers global keydown listener on mount", () => {
+      const addSpy = vi.spyOn(document, "addEventListener");
+      wrapper = createWrapper();
+      expect(addSpy).toHaveBeenCalledWith("keydown", expect.any(Function));
+      addSpy.mockRestore();
+    });
+
+    it("removes global keydown listener on destroy", () => {
+      const removeSpy = vi.spyOn(document, "removeEventListener");
+      wrapper = createWrapper();
+      wrapper.destroy();
+      expect(removeSpy).toHaveBeenCalledWith("keydown", expect.any(Function));
+      removeSpy.mockRestore();
+      wrapper = null;
+    });
+  });
+
   describe("reset on close", () => {
     it("clears query, results, and highlight on modal hidden", () => {
       wrapper = createWrapper();

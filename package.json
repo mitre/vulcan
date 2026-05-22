@@ -23,6 +23,7 @@
     "turbolinks": "^5.2.0",
     "v-linkify": "^1.0.12",
     "vue": "~2.7.16",
+    "vue-highlight-words": "1.2.0",
     "vue-loader": "^15.10.0",
     "vue-monaco": "^1.2.2",
     "vue-multiselect": "^2.1.9",

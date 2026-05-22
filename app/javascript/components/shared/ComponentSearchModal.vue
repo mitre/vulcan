@@ -48,10 +48,25 @@
           <b-icon :icon="resultIcon" class="result-icon mt-1 mr-2" />
           <div class="flex-grow-1 overflow-hidden">
             <div class="result-label text-truncate">
-              {{ formatResultLabel(result) }}
+              <Highlighter
+                v-if="searchWords.length > 0"
+                highlight-class-name="search-highlight"
+                :search-words="searchWords"
+                :auto-escape="true"
+                :text-to-highlight="formatResultLabel(result)"
+              />
+              <template v-else>{{ formatResultLabel(result) }}</template>
+              <span v-if="result.title" class="result-title ml-1">{{ result.title }}</span>
             </div>
-            <div v-if="result.snippet" class="result-snippet text-truncate">
-              {{ result.snippet }}
+            <div v-if="result.snippet" class="result-snippet">
+              <Highlighter
+                v-if="searchWords.length > 0"
+                highlight-class-name="search-highlight"
+                :search-words="searchWords"
+                :auto-escape="true"
+                :text-to-highlight="result.snippet"
+              />
+              <template v-else>{{ result.snippet }}</template>
             </div>
             <div v-if="result.parentLabel" class="result-parent text-muted">
               <b-icon icon="arrow-return-right" class="mr-1" />
@@ -79,9 +94,11 @@
 <script>
 import _ from "lodash";
 import axios from "axios";
+import Highlighter from "vue-highlight-words";
 
 export default {
   name: "ComponentSearchModal",
+  components: { Highlighter },
   props: {
     componentId: { type: [Number, String], required: true },
     projectPrefix: { type: String, required: true },
@@ -110,6 +127,25 @@ export default {
       const n = this.results.length;
       return `${n} result${n === 1 ? "" : "s"}`;
     },
+    searchWords() {
+      const term = (this.query || "").trim();
+      if (!term) return [];
+      return term.split(/\s+/).filter((w) => w.length >= 2);
+    },
+  },
+  mounted() {
+    this._onGlobalKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        this.$bvModal.show("component-search-modal");
+      }
+    };
+    document.addEventListener("keydown", this._onGlobalKeyDown);
+  },
+  beforeDestroy() {
+    if (this._onGlobalKeyDown) {
+      document.removeEventListener("keydown", this._onGlobalKeyDown);
+    }
   },
   methods: {
     onShown() {
@@ -233,25 +269,39 @@ export default {
 
 .search-result-item:hover,
 .search-result-item.active {
-  background-color: #e8f0fe;
+  background-color: #cce5ff; /* Bootstrap 4 $blue-100 / alert-primary bg */
 }
 
 .result-icon {
-  color: #6c757d;
+  color: #6c757d; /* $gray-600 */
   flex-shrink: 0;
 }
 
 .search-result-item.active .result-icon {
-  color: #0d6efd;
+  color: #007bff; /* Bootstrap 4 $primary */
 }
 
 .result-label {
   font-weight: 500;
 }
 
+.result-title {
+  font-weight: 400;
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
 .result-snippet {
   font-size: 0.8rem;
   color: #6c757d;
+}
+
+.search-highlight {
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 0 0.125rem;
+  border-radius: 2px;
+  font-weight: 600;
 }
 
 .result-parent {
