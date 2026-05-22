@@ -362,20 +362,21 @@ describe("RuleForm", () => {
   });
 
   // ─── R7: satisfied_by status display ────────────────────────
+  // Backend sets ADNM when satisfied_by. Frontend displays the actual status.
   describe("satisfied_by status display (R7)", () => {
-    it('shows "Applicable - Configurable" in status dropdown when satisfied_by is set', () => {
+    it('shows "Applicable - Does Not Meet" in status dropdown when satisfied_by is set', () => {
       wrapper = createWrapper({
         rule: makeRule({
-          status: "Not Yet Determined",
+          status: "Applicable - Does Not Meet",
           satisfied_by: [{ id: 1, fixtext: "parent fix" }],
         }),
         fields: {
-          displayed: ["status", "rule_severity", "title", "fixtext", "vendor_comments"],
-          disabled: ["title", "fixtext"],
+          displayed: ["status", "rule_severity", "status_justification", "vendor_comments"],
+          disabled: [],
         },
       });
       const select = wrapper.find('select[id^="ruleEditor-status-"]');
-      expect(select.element.value).toBe("Applicable - Configurable");
+      expect(select.element.value).toBe("Applicable - Does Not Meet");
     });
   });
 

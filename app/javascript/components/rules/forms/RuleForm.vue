@@ -545,7 +545,7 @@ export default {
       return SEVERITY_OPTIONS;
     },
     status_text: function () {
-      return this.rule.satisfied_by.length > 0 ? "Applicable - Configurable" : this.rule.status;
+      return this.rule.status;
     },
     nydTooltip() {
       if (this.rule.status !== "Not Yet Determined") return null;

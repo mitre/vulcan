@@ -135,14 +135,10 @@ class Rule < BaseRule
     rule
   end
 
-  # Overrides for satisfied controls
-  def status
-    satisfied_by.size.positive? ? 'Applicable - Configurable' : self[:status]
-  end
-
-  def status=(value)
-    super unless satisfied_by.size.positive?
-  end
+  # Status is set explicitly by RuleSatisfactionsController when a
+  # satisfaction relationship is created (ADNM) or removed (NYD).
+  # Previously this was overridden to hardcode AC for satisfied-by rules,
+  # which violated DISA Vendor STIG Process Guide V4R1 §4.1.9/§4.1.15.
 
   ##
   # Serialization is handled by RuleBlueprint.
