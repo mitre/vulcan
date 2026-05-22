@@ -74,8 +74,7 @@ describe("TriageRuleSidebar", () => {
   it("shows pending and total counts per rule", () => {
     const w = mount(TriageRuleSidebar, { localVue, propsData: baseProps() });
     const headers = w.findAll("[data-testid='sidebar-rule-header']");
-    expect(headers.at(1).text()).toContain("1 pending");
-    expect(headers.at(1).text()).toContain("2 total");
+    expect(headers.at(1).text()).toContain("1/2");
   });
 
   it("highlights the rule group containing the current comment", () => {

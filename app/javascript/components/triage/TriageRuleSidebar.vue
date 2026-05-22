@@ -37,9 +37,19 @@
           @keydown.enter="selectGroup(item.group)"
           @keydown.space.prevent="selectGroup(item.group)"
         >
-          <strong class="flex-grow-1 text-truncate">{{ item.group.ruleName }}</strong>
-          <span class="badge badge-pill badge-secondary ml-1">
-            {{ item.group.pendingCount }} pending / {{ item.group.comments.length }} total
+          <strong
+            v-b-tooltip.hover
+            :title="item.group.ruleName"
+            class="flex-grow-1 text-truncate"
+            >{{ item.group.ruleName }}</strong
+          >
+          <span
+            v-b-tooltip.hover
+            :title="`${item.group.pendingCount} pending / ${item.group.comments.length} total`"
+            class="badge badge-pill ml-1"
+            :class="item.group.pendingCount > 0 ? 'badge-warning' : 'badge-secondary'"
+          >
+            {{ item.group.pendingCount }}/{{ item.group.comments.length }}
           </span>
         </div>
         <div
