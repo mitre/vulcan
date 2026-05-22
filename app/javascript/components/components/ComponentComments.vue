@@ -201,7 +201,7 @@
       </template>
       <template #cell(comment)="{ item, value }">
         <div class="comment-cell">
-          <div v-if="value && value.length > 200" class="comment-text">
+          <div v-if="value && value.length > 200 && !commentSearchActive" class="comment-text">
             {{ commentExpanded[item.id] ? value : value.substring(0, 200) + "…" }}
             <a
               href="#"
@@ -210,6 +210,14 @@
             >
               {{ commentExpanded[item.id] ? "show less" : "show more" }}
             </a>
+          </div>
+          <div v-else-if="commentSearchActive" class="comment-text">
+            <Highlighter
+              highlight-class-name="search-term-mark"
+              :search-words="commentSearchWords"
+              :auto-escape="true"
+              :text-to-highlight="value || ''"
+            />
           </div>
           <div v-else class="comment-text">{{ value }}</div>
         </div>
@@ -318,6 +326,7 @@ import CommentsByRule from "./CommentsByRule.vue";
 import InfoTooltip from "../shared/InfoTooltip.vue";
 import CommentProgressBar from "../triage/CommentProgressBar.vue";
 import ComponentSearchModal from "../shared/ComponentSearchModal.vue";
+import Highlighter from "vue-highlight-words";
 import ReplyComposerMixin from "../../mixins/ReplyComposerMixin.vue";
 import { triageBgClass } from "../../utils/triageBgClass";
 
@@ -334,6 +343,7 @@ export default {
     InfoTooltip,
     CommentProgressBar,
     ComponentSearchModal,
+    Highlighter,
   },
   // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because
   // each esbuild pack has its own axios singleton (bundle isolation) — the
@@ -407,6 +417,14 @@ export default {
     };
   },
   computed: {
+    commentSearchWords() {
+      const term = (this.filterText || "").trim();
+      if (!term) return [];
+      return term.split(/\s+/).filter((w) => w.length >= 2);
+    },
+    commentSearchActive() {
+      return this.commentSearchWords.length > 0;
+    },
     hasStatusCounts() {
       return Object.values(this.statusCounts).some((n) => n > 0);
     },
@@ -702,3 +720,13 @@ export default {
   },
 };
 </script>
+
+<style>
+.search-term-mark {
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 0 2px;
+  border-radius: 2px;
+  font-weight: 600;
+}
+</style>
