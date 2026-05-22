@@ -10,10 +10,18 @@
         class="mb-2"
       />
 
-      <!-- Rule search -->
+      <!-- Rule filter + search -->
       <p class="mb-2">
-        <strong>Filter &amp; Search</strong>
+        <strong>Filter</strong>
         <span class="text-primary clickable float-right" @click="clearFilters">reset</span>
+        <span
+          v-b-tooltip.hover
+          title="Search requirements (Cmd+K)"
+          class="text-primary clickable float-right mr-2"
+          @click="$bvModal.show('component-search-modal')"
+        >
+          <b-icon icon="search" />
+        </span>
       </p>
       <div class="input-group">
         <input
@@ -21,10 +29,17 @@
           ref="ruleSearch"
           type="text"
           class="form-control"
-          :placeholder="navLabels.searchPlaceholder"
+          placeholder="Filter by ID..."
           @input="searchUpdated($event.target.value)"
         />
       </div>
+
+      <ComponentSearchModal
+        :component-id="componentId"
+        :project-prefix="projectPrefix"
+        search-type="rules"
+        @selected="onSearchResultSelected"
+      />
 
       <b-form-checkbox
         v-model="filters.openCommentsOnly"
@@ -282,12 +297,13 @@ import _ from "lodash";
 import axios from "axios";
 import FindAndReplace from "./FindAndReplace.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
+import ComponentSearchModal from "../shared/ComponentSearchModal.vue";
 import { getDefaultFilters } from "../../composables/useRuleFilters";
 import { NAVIGATOR_LABELS } from "../../constants/terminology";
 import { truncateId } from "../../utils/idFormatter";
 export default {
   name: "RuleNavigator",
-  components: { FindAndReplace, NewRuleModalForm },
+  components: { FindAndReplace, NewRuleModalForm, ComponentSearchModal },
   props: {
     effectivePermissions: {
       type: String,
@@ -589,6 +605,12 @@ export default {
     },
     formatRuleId: function (id) {
       return `${this.projectPrefix}-${id}`;
+    },
+    onSearchResultSelected: function (result) {
+      const rule = this.rules.find((r) => r.id === result.id);
+      if (rule) {
+        this.ruleSelected(rule);
+      }
     },
     // This is a super basic function that provides a single searchable string for a given rule
     // It does not do anything like exclude attributes from search depending on the rule status.

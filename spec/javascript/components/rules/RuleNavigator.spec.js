@@ -576,6 +576,26 @@ describe("RuleNavigator", () => {
     });
   });
 
+  describe("search modal integration", () => {
+    it("renders ComponentSearchModal with correct props", () => {
+      const rules = [createRule(1, "000001")];
+      wrapper = createWrapper({ rules });
+      const modal = wrapper.findComponent({ name: "ComponentSearchModal" });
+      expect(modal.exists()).toBe(true);
+      expect(modal.props("componentId")).toBe(41);
+      expect(modal.props("projectPrefix")).toBe("TEST");
+      expect(modal.props("searchType")).toBe("rules");
+    });
+
+    it("selects rule when search result is chosen", () => {
+      const rules = [createRule(1, "000001"), createRule(2, "000002")];
+      wrapper = createWrapper({ rules });
+      wrapper.vm.onSearchResultSelected({ id: 2, rule_id: "000002" });
+      expect(wrapper.emitted("ruleSelected")).toBeTruthy();
+      expect(wrapper.emitted("ruleSelected")[0][0]).toBe(2);
+    });
+  });
+
   describe("sidebarStyle banner clearance", () => {
     it("subtracts banner height from max-height to prevent content hiding behind fixed banner", () => {
       wrapper = createWrapper();
