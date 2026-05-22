@@ -12,8 +12,21 @@ class RuleBlueprint < Blueprinter::Base
   identifier :id
 
   # === Default view: fields shared by ALL views ===
-  fields :rule_id, :title, :version, :status, :rule_severity, :locked,
+  fields :rule_id, :version, :status, :locked,
          :review_requestor_id, :changes_requested
+
+  # title + rule_severity resolve through DisplayFallback: the rule's own value
+  # when customized, otherwise the SRG template. A no-op while rules still copy
+  # template content, but lets later phases (7+) null duplicated columns without
+  # breaking the API. Reads the eager-loaded :srg_rule association only when the
+  # rule's own value is blank, so it stays N+1-free for loaded collections.
+  field :title do |rule, _options|
+    rule.display_title
+  end
+
+  field :rule_severity do |rule, _options|
+    rule.display_severity
+  end
 
   # per-rule comment summary surfaced on the navigator + section
   # icon badges so triagers + commenters can spot rules with active
@@ -59,10 +72,19 @@ class RuleBlueprint < Blueprinter::Base
 
   # === Viewer view: read-only detail ===
   view :viewer do
-    fields :rule_weight, :fixtext, :fixtext_fixref, :ident, :ident_system,
+    fields :rule_weight, :fixtext_fixref, :ident_system,
            :vendor_comments, :vuln_id, :legacy_ids,
            :component_id, :status_justification, :artifact_description,
            :locked_fields
+
+    # fixtext + ident resolve through DisplayFallback (see default view).
+    field :fixtext do |rule, _options|
+      rule.display_fixtext
+    end
+
+    field :ident do |rule, _options|
+      rule.display_ident
+    end
 
     field :nist_control_family do |rule, _options|
       rule.nist_control_family

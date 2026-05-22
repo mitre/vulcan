@@ -6,6 +6,7 @@ require 'inspec/objects'
 # Benchmark XCCDF.
 class Rule < BaseRule
   include PgSearch::Model
+  include DisplayFallback
 
   attr_accessor :skip_update_inspec_code
 
