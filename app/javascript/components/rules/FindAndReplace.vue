@@ -61,9 +61,9 @@
         </small>
         <small v-else>No results found.</small>
       </span>
-      <hr v-if="!Object.keys(find_results).length == 0" />
+      <hr v-if="Object.keys(find_results).length > 0" />
       <div
-        v-if="!Object.keys(find_results).length == 0"
+        v-if="Object.keys(find_results).length > 0"
         class="d-flex justify-content-end align-items-center"
       >
         <b-button variant="primary" :disabled="fr.find == '' || loading" class="mr-4" @click="find"
@@ -80,7 +80,7 @@
           @comment="replace_all($event)"
         />
       </div>
-      <hr v-if="!Object.keys(find_results).length == 0" />
+      <hr v-if="Object.keys(find_results).length > 0" />
       <div v-for="[id, find_result] in sortFindResults()" :key="`${find_results_ver}-${id}`">
         <b-card :title="formatRuleId(find_result.rule_id)" class="mb-3">
           <b-card-text>
@@ -123,6 +123,17 @@ import FindAndReplaceMixinVue from "../../mixins/FindAndReplaceMixin.vue";
 import CommentModal from "../shared/CommentModal.vue";
 import FindAndReplaceResult from "./FindAndReplaceResult.vue";
 
+const CONTROL_FIELDS = [
+  "Artifact Description",
+  "Check",
+  "Fix",
+  "Mitigations",
+  "Status Justification",
+  "Title",
+  "Vendor Comments",
+  "Vulnerability Discussion",
+];
+
 export default {
   name: "FindAndReplace",
   components: { CommentModal, FindAndReplaceResult },
@@ -149,22 +160,13 @@ export default {
     return {
       allFieldsSelected: true,
       indeterminate: false,
-      controlFields: [
-        "Artifact Description",
-        "Check",
-        "Fix",
-        "Mitigations",
-        "Status Justification",
-        "Title",
-        "Vendor Comments",
-        "Vulnerability Discussion",
-      ],
+      controlFields: CONTROL_FIELDS,
       loading: false,
       fr: {
         find: "",
         replace: "",
         matchCase: false,
-        fields: this.controlFields,
+        fields: CONTROL_FIELDS.slice(),
       },
       find_text: "",
       find_results: {},
@@ -205,7 +207,7 @@ export default {
         find: "",
         replace: "",
         matchCase: false,
-        fields: this.controlFields,
+        fields: CONTROL_FIELDS.slice(),
       };
       this.find_text = "";
       this.find_results = {};
