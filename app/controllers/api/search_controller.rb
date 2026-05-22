@@ -118,6 +118,7 @@ module Api
       rules_scope.includes(:component, :disa_rule_descriptions, :checks)
                  .limit(limit)
                  .map do |rule|
+        snippet_data = generate_snippet_with_field(rule, @query[:normalized])
         {
           id: rule.id,
           rule_id: rule.rule_id,
@@ -125,7 +126,8 @@ module Api
           status: rule.status,
           component_id: rule.component_id,
           component_prefix: rule.component&.prefix,
-          snippet: generate_snippet(rule, @query[:normalized])
+          snippet: snippet_data[:snippet],
+          matched_field: snippet_data[:matched_field]
         }
       end
     end
@@ -326,7 +328,7 @@ module Api
     # Generate a snippet showing context around the search match
     # Searches through title, fixtext, vuln_discussion, and check content
     #
-    def generate_snippet(rule, query)
+    def generate_snippet_with_field(rule, query)
       searchable_fields = [
         { field: 'title', content: rule.title },
         { field: 'fixtext', content: rule.fixtext },
@@ -334,7 +336,6 @@ module Api
         { field: 'check', content: rule.checks.first&.content }
       ]
 
-      # Find which field contains the match
       query_words = query.downcase.split(/\s+/)
 
       match = searchable_fields.find do |field_info|
@@ -345,9 +346,10 @@ module Api
         query_words.all? { |word| content_lower.include?(word) }
       end
 
-      return nil unless match
+      return { snippet: nil, matched_field: nil } unless match
 
-      extract_snippet(match[:content].to_s, query_words.first, match[:field])
+      snippet = extract_snippet(match[:content].to_s, query_words.first, match[:field])
+      { snippet: snippet, matched_field: match[:field] }
     end
 
     ##

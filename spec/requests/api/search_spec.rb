@@ -169,6 +169,26 @@ RSpec.describe 'Api::Search' do
         expect(json['rules'][0]['title']).to eq('Xylophone Configuration Requirements')
       end
 
+      it 'returns matched_field indicating which field matched' do
+        get search_path, params: { q: 'Xylophone' }
+
+        expect(response).to have_http_status(:success)
+        json = response.parsed_body
+        rule_result = json['rules'].find { |r| r['title'] == 'Xylophone Configuration Requirements' }
+        expect(rule_result).not_to be_nil
+        expect(rule_result['matched_field']).to eq('title')
+      end
+
+      it 'returns matched_field for fixtext matches' do
+        get search_path, params: { q: 'strict policy' }
+
+        expect(response).to have_http_status(:success)
+        json = response.parsed_body
+        rule_result = json['rules'].find { |r| r['rule_id'] == rule1.rule_id }
+        expect(rule_result).not_to be_nil
+        expect(rule_result['matched_field']).to eq('fixtext')
+      end
+
       it 'only returns rules from accessible components' do
         # Update a rule in component2 (which user doesn't have access to)
         rule2 = component2.rules.first

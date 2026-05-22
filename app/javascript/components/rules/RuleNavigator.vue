@@ -610,7 +610,25 @@ export default {
       const rule = this.rules.find((r) => r.id === result.id);
       if (rule) {
         this.ruleSelected(rule);
+        if (result.matched_field) {
+          this.scrollToField(result.matched_field);
+        }
       }
+    },
+    scrollToField: function (backendField) {
+      const FIELD_MAP = { check: "content" };
+      const fieldName = FIELD_MAP[backendField] || backendField;
+      this.$nextTick(() => {
+        setTimeout(() => {
+          const el = document.querySelector(`[data-field-name="${fieldName}"]`);
+          if (!el) return;
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.classList.add("search-field-highlight");
+          el.addEventListener("animationend", () => el.classList.remove("search-field-highlight"), {
+            once: true,
+          });
+        }, 300);
+      });
     },
     // This is a super basic function that provides a single searchable string for a given rule
     // It does not do anything like exclude attributes from search depending on the rule status.
@@ -819,5 +837,20 @@ export default {
 .child-count {
   font-size: 0.75em;
   font-weight: normal;
+}
+</style>
+
+<style>
+.search-field-highlight {
+  animation: field-highlight-ring 2s ease-out;
+}
+@keyframes field-highlight-ring {
+  0% {
+    box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.8);
+    border-radius: 4px;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
 }
 </style>

@@ -1,5 +1,10 @@
 <template>
-  <b-form-group v-if="shouldDisplay" :id="groupId" :class="[extraClass, stateClass]">
+  <b-form-group
+    v-if="shouldDisplay"
+    :id="groupId"
+    :data-field-name="fieldName"
+    :class="[extraClass, stateClass]"
+  >
     <!-- Label with tooltip + lock icons (skip for checkbox mode) -->
     <label v-if="!checkboxMode" :for="inputId">
       {{ label }}
