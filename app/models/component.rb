@@ -701,8 +701,8 @@ class Component < ApplicationRecord
         rule_displayed_name: component_scoped_row ? '(component)' : rule_id_to_displayed[r.rule_id],
         commentable_type: r.commentable_type,
         section: r.section,
-        author_name: r.user&.name,
-        # email omitted — see comment-endpoint PII guard.
+        author_name: r.commenter_display_name,
+        author_email: r.user&.email || r.commenter_imported_email,
         comment: r.comment,
         created_at: r.created_at,
         triage_status: r.triage_status,

@@ -779,4 +779,87 @@ describe("ComponentComments", () => {
     wrapper.vm.onPillFilter("all");
     expect(wrapper.vm.filterStatus).toBe("all");
   });
+
+  describe("commenter email visibility", () => {
+    it("stores author_email in row data after fetch", async () => {
+      axios.get.mockResolvedValueOnce({
+        data: {
+          rows: [
+            {
+              id: 900,
+              rule_id: 7,
+              rule_displayed_name: "CNTR-00-000010",
+              section: "fix",
+              author_name: "John Osborne",
+              author_email: "josborne@chainguard.dev",
+              comment: "Test comment",
+              created_at: "2026-05-19T16:15:00Z",
+              triage_status: "pending",
+            },
+          ],
+          pagination: { page: 1, per_page: 25, total: 1 },
+          status_counts: { pending: 1 },
+        },
+      });
+
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 29 },
+        stubs: SHARED_STUBS,
+      });
+      await flushPromises(wrapper);
+
+      expect(wrapper.vm.rows[0].author_email).toBe("josborne@chainguard.dev");
+      expect(wrapper.vm.rows[0].author_name).toBe("John Osborne");
+    });
+
+    it("stores imported email when user is not on this instance", async () => {
+      axios.get.mockResolvedValueOnce({
+        data: {
+          rows: [
+            {
+              id: 901,
+              rule_id: 7,
+              rule_displayed_name: "CNTR-00-000010",
+              section: "fix",
+              author_name: null,
+              author_email: "external@example.com",
+              commenter_display_name: "External User",
+              commenter_imported: true,
+              comment: "Imported comment",
+              created_at: "2026-05-19T16:15:00Z",
+              triage_status: "pending",
+            },
+          ],
+          pagination: { page: 1, per_page: 25, total: 1 },
+          status_counts: { pending: 1 },
+        },
+      });
+
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 29 },
+        stubs: SHARED_STUBS,
+      });
+      await flushPromises(wrapper);
+
+      expect(wrapper.vm.rows[0].author_email).toBe("external@example.com");
+    });
+
+    it("includes commentExpanded in data for truncation state", () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 29 },
+        stubs: SHARED_STUBS,
+      });
+      expect(wrapper.vm.commentExpanded).toEqual({});
+    });
+
+    it("table fields include author_name column", () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 29 },
+        stubs: SHARED_STUBS,
+      });
+      const authorField = wrapper.vm.fields.find((f) => f.key === "author_name");
+      expect(authorField).toBeDefined();
+      expect(authorField.label).toBe("Author");
+    });
+  });
 });

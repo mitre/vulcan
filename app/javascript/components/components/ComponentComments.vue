@@ -167,8 +167,26 @@
              comment is clearly identified rather than looking like missing data. -->
         <SectionLabel :section="value" :commentable-type="item.commentable_type" />
       </template>
+      <template #cell(author_name)="{ item }">
+        <div class="author-cell">
+          <div>{{ item.author_name || item.commenter_display_name || "—" }}</div>
+          <small v-if="item.author_email" class="text-muted">{{ item.author_email }}</small>
+        </div>
+      </template>
       <template #cell(comment)="{ item, value }">
-        <div class="comment-text">{{ value }}</div>
+        <div class="comment-cell">
+          <div v-if="value && value.length > 200" class="comment-text">
+            {{ commentExpanded[item.id] ? value : value.substring(0, 200) + "…" }}
+            <a
+              href="#"
+              class="comment-toggle text-primary ml-1"
+              @click.prevent="$set(commentExpanded, item.id, !commentExpanded[item.id])"
+            >
+              {{ commentExpanded[item.id] ? "show less" : "show more" }}
+            </a>
+          </div>
+          <div v-else class="comment-text">{{ value }}</div>
+        </div>
         <CommentThread
           :ref="`thread-${item.id}`"
           :parent-review-id="item.id"
@@ -339,6 +357,7 @@ export default {
       sortBy: "id",
       sortDesc: false,
       statusCounts: {},
+      commentExpanded: {},
       splitMode: false,
       splitCommentId: null,
       viewMode: this.loadPersistedViewMode(),
