@@ -626,7 +626,7 @@ class Component < ApplicationRecord
                          resolved: 'all', commentable_type: nil,
                          include_rule_content: false)
     page = [page.to_i, 1].max
-    per_page = per_page.to_i.clamp(1, 100)
+    per_page = per_page.to_i.clamp(1, 1000)
 
     # Polymorphic union: rule-scoped reviews on this component's rules OR
     # component-scoped reviews on this component (backfill in 20260508210000).

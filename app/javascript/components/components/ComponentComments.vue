@@ -283,7 +283,7 @@
 
     <!-- Pagination (hidden in by-rule view — all comments loaded for grouping) -->
     <div
-      v-if="total > perPage && viewMode !== 'by-rule'"
+      v-if="total > perPage && viewMode === 'table' && !splitMode"
       class="d-flex justify-content-center mt-2"
     >
       <b-pagination
@@ -605,10 +605,10 @@ export default {
     async fetch() {
       this.loading = true;
       try {
-        const byRuleMode = this.viewMode === "by-rule";
+        const loadAll = this.viewMode === "by-rule" || this.splitMode;
         const params = {
-          page: byRuleMode ? 1 : this.page,
-          per_page: byRuleMode ? 1000 : this.perPage,
+          page: loadAll ? 1 : this.page,
+          per_page: loadAll ? 1000 : this.perPage,
           triage_status: this.filterStatus,
         };
         if (this.splitMode) params.include_rule_content = true;
