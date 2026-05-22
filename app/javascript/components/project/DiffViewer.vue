@@ -141,7 +141,7 @@ export default {
   computed: {
     sidebarStyle: function () {
       return {
-        "max-height": `calc(100vh - ${this.sidebarOffset}px)`,
+        "max-height": `calc(100vh - ${this.sidebarOffset}px - 20px)`,
       };
     },
     baseComponent() {

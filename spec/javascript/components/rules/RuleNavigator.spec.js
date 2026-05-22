@@ -416,4 +416,28 @@ describe("RuleNavigator", () => {
       expect(wrapper.vm.filteredRules.length).toBe(2);
     });
   });
+
+  describe("sidebarStyle banner clearance", () => {
+    it("subtracts banner height from max-height to prevent content hiding behind fixed banner", () => {
+      wrapper = createWrapper();
+      // Simulate sidebarOffset as if the sidebar top is 200px from viewport top
+      wrapper.setData({ sidebarOffset: 200 });
+
+      const style = wrapper.vm.sidebarStyle;
+      // The max-height must account for the 20px fixed bottom classification banner
+      // Expected: calc(100vh - 200px - 20px) or equivalent
+      expect(style["max-height"]).toContain("20px");
+      expect(style["max-height"]).toContain("200px");
+      expect(style["max-height"]).toMatch(/calc\(100vh\s*-\s*\d+px\s*-\s*20px\)/);
+    });
+
+    it("clears banner even when sidebarOffset is 0", () => {
+      wrapper = createWrapper();
+      wrapper.setData({ sidebarOffset: 0 });
+
+      const style = wrapper.vm.sidebarStyle;
+      // Even with 0 offset, must still subtract banner height
+      expect(style["max-height"]).toMatch(/calc\(100vh\s*-\s*0px\s*-\s*20px\)/);
+    });
+  });
 });
