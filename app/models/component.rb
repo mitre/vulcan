@@ -687,6 +687,12 @@ class Component < ApplicationRecord
 
     rule_id_to_displayed = rules.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
 
+    child_to_parent = RuleSatisfaction
+                      .where(rule_id: rules.ids)
+                      .pluck(:rule_id, :satisfied_by_rule_id)
+                      .to_h
+    parent_id_to_displayed = child_to_parent.values.uniq.index_with { |pid| rule_id_to_displayed[pid] }
+
     page_records = scope.order(created_at: :desc)
                         .offset((page - 1) * per_page)
                         .limit(per_page)
@@ -723,9 +729,12 @@ class Component < ApplicationRecord
         responses_count: responses_count_lookup[r.id] || 0,
         reactions: { up: reaction_counts[[r.id, 'up']] || 0,
                      down: reaction_counts[[r.id, 'down']] || 0 },
-        updated_at: r.updated_at
+        updated_at: r.updated_at,
+        parent_rule_displayed_name: component_scoped_row ? nil : parent_id_to_displayed[child_to_parent[r.rule_id]],
+        group_rule_displayed_name: nil
       }
 
+      row[:group_rule_displayed_name] = row[:parent_rule_displayed_name] || row[:rule_displayed_name]
       row[:rule_content] = serialize_rule_content(r, component_scoped_row) if include_rule_content
 
       row

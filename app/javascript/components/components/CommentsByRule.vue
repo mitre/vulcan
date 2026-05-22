@@ -51,6 +51,10 @@
                 :duplicate-of-id="comment.duplicate_of_review_id"
               />
             </div>
+            <small v-if="comment.parent_rule_displayed_name" class="text-muted d-block mb-1">
+              <b-icon icon="arrow-return-right" class="mr-1" />
+              Posted on {{ comment.rule_displayed_name }}
+            </small>
             <p class="mb-1 mt-1">{{ comment.comment }}</p>
             <div class="d-flex align-items-center">
               <ReactionButtons
@@ -100,7 +104,7 @@ export default {
     ruleGroups() {
       const groups = {};
       this.rows.forEach((row) => {
-        const name = row.rule_displayed_name || "(unknown)";
+        const name = row.group_rule_displayed_name || row.rule_displayed_name || "(unknown)";
         if (!groups[name]) {
           groups[name] = { ruleName: name, ruleId: row.rule_id, comments: [], sectionMap: {} };
         }
