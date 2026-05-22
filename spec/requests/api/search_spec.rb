@@ -679,6 +679,38 @@ RSpec.describe 'Api::Search' do
                              'Search loaded srgs.xml — should use .select() to exclude xml'
     end
 
+    context 'result metadata (comment_count + parent_info)' do
+      before { sign_in user }
+
+      let!(:rule_with_comments) do
+        rule = component1.rules.first
+        rule.update!(title: 'Quokka Unique Metadata Test')
+        create(:review, rule: rule, action: 'comment', comment: 'Test comment')
+        create(:review, rule: rule, action: 'comment', comment: 'Another comment')
+        rule
+      end
+
+      it 'returns comment_count for each rule result' do
+        get search_path, params: { q: 'Quokka' }
+
+        json = response.parsed_body
+        result = json['rules'].find { |r| r['rule_id'] == rule_with_comments.rule_id }
+        expect(result).not_to be_nil
+        expect(result['comment_count']).to eq(2)
+      end
+
+      it 'returns null parent_rule_id for standalone rules' do
+        get search_path, params: { q: 'Quokka' }
+
+        json = response.parsed_body
+        result = json['rules'].find { |r| r['rule_id'] == rule_with_comments.rule_id }
+        expect(result).to have_key('parent_rule_id')
+        expect(result['parent_rule_id']).to be_nil
+        expect(result).to have_key('parent_display_name')
+        expect(result['parent_display_name']).to be_nil
+      end
+    end
+
     context 'component-scoped search' do
       before { sign_in user }
 

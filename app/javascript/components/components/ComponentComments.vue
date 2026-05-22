@@ -113,6 +113,15 @@
         Showing: {{ filterRuleDisplayName }}
         <b-icon icon="x-circle" class="ml-1 clickable" @click="clearRuleFilter" />
       </b-badge>
+      <div v-if="filterParentRuleId && rows.length === 0" class="alert alert-info py-2 mt-2">
+        <b-icon icon="info-circle" class="mr-1" />
+        This rule is satisfied by
+        <strong>{{ filterParentDisplayName }}</strong
+        >. Comments are posted on the parent.
+        <a href="#" class="alert-link" @click.prevent="viewParentComments">
+          View parent comments
+        </a>
+      </div>
     </div>
 
     <!-- Split-pane triage view. Replaces table+modal with side-by-side
@@ -381,6 +390,8 @@ export default {
       filterSection: persisted.filterSection,
       filterRuleId: null,
       filterRuleDisplayName: "",
+      filterParentRuleId: null,
+      filterParentDisplayName: "",
       // .sync-bound to b-table so column-header clicks update state and
       // the active sort-direction arrow renders. BootstrapVue 2 only
       // shows the arrow when sortBy/sortDesc are controlled.
@@ -452,12 +463,24 @@ export default {
       const prefix = result.component_prefix || this.componentPrefix;
       this.filterRuleId = result.id;
       this.filterRuleDisplayName = result.rule_id ? `${prefix}-${result.rule_id}` : "";
+      this.filterParentRuleId = result.parent_rule_id || null;
+      this.filterParentDisplayName = result.parent_display_name || "";
+      this.page = 1;
+      this.fetch();
+    },
+    viewParentComments() {
+      this.filterRuleId = this.filterParentRuleId;
+      this.filterRuleDisplayName = this.filterParentDisplayName;
+      this.filterParentRuleId = null;
+      this.filterParentDisplayName = "";
       this.page = 1;
       this.fetch();
     },
     clearRuleFilter() {
       this.filterRuleId = null;
       this.filterRuleDisplayName = "";
+      this.filterParentRuleId = null;
+      this.filterParentDisplayName = "";
       this.page = 1;
       this.fetch();
     },

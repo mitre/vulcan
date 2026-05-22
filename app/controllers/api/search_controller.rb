@@ -115,10 +115,11 @@ module Api
                       rules_scope.search_content(search_term)
                     end
 
-      rules_scope.includes(:component, :disa_rule_descriptions, :checks)
+      rules_scope.includes(:component, :disa_rule_descriptions, :checks, :satisfied_by)
                  .limit(limit)
                  .map do |rule|
         snippet_data = generate_snippet_with_field(rule, @query[:normalized])
+        parent = rule.satisfied_by.first
         {
           id: rule.id,
           rule_id: rule.rule_id,
@@ -127,7 +128,10 @@ module Api
           component_id: rule.component_id,
           component_prefix: rule.component&.prefix,
           snippet: snippet_data[:snippet],
-          matched_field: snippet_data[:matched_field]
+          matched_field: snippet_data[:matched_field],
+          comment_count: rule.reviews.where(action: 'comment').size,
+          parent_rule_id: parent&.id,
+          parent_display_name: parent ? "#{rule.component&.prefix}-#{parent.rule_id}" : nil
         }
       end
     end

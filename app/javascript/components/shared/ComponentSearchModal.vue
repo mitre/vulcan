@@ -68,9 +68,15 @@
               />
               <template v-else>{{ result.snippet }}</template>
             </div>
-            <div v-if="result.parentLabel" class="result-parent text-muted">
-              <b-icon icon="arrow-return-right" class="mr-1" />
-              child of {{ result.parentLabel }}
+            <div class="result-meta text-muted">
+              <template v-if="result.parent_display_name">
+                <b-icon icon="arrow-return-right" class="mr-1" />
+                child of {{ result.parent_display_name }}
+                ·
+              </template>
+              <span v-if="result.comment_count != null">
+                {{ result.comment_count }} comment{{ result.comment_count === 1 ? "" : "s" }}
+              </span>
             </div>
           </div>
           <span v-if="index === highlightedIndex" class="result-hint">
@@ -205,7 +211,7 @@ export default {
       }
     },
     selectResult(result) {
-      this.$emit("selected", result);
+      this.$emit("selected", { ...result, searchQuery: this.query });
       this.$bvModal.hide("component-search-modal");
     },
     formatResultLabel(result) {
@@ -304,7 +310,7 @@ export default {
   font-weight: 600;
 }
 
-.result-parent {
+.result-meta {
   font-size: 0.75rem;
 }
 
