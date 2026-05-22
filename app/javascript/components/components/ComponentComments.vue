@@ -35,6 +35,16 @@
         v-b-tooltip.hover
         variant="outline-secondary"
         size="sm"
+        aria-label="Search requirements (Cmd+K)"
+        title="Search requirements (Cmd+K)"
+        @click="$bvModal.show('component-search-modal')"
+      >
+        <b-icon icon="search" />
+      </b-button>
+      <b-button
+        v-b-tooltip.hover
+        variant="outline-secondary"
+        size="sm"
         aria-label="Refresh"
         title="Refresh"
         @click="fetch"
@@ -264,6 +274,14 @@
       @posted="onComposerPosted"
       @hidden="onComposerHidden"
     />
+
+    <ComponentSearchModal
+      v-if="componentId"
+      :component-id="componentId"
+      :project-prefix="componentPrefix"
+      search-type="rules"
+      @selected="onSearchResultSelected"
+    />
   </div>
 </template>
 
@@ -283,6 +301,7 @@ import CommentComposerModal from "./CommentComposerModal.vue";
 import CommentsByRule from "./CommentsByRule.vue";
 import InfoTooltip from "../shared/InfoTooltip.vue";
 import CommentProgressBar from "../triage/CommentProgressBar.vue";
+import ComponentSearchModal from "../shared/ComponentSearchModal.vue";
 import ReplyComposerMixin from "../../mixins/ReplyComposerMixin.vue";
 import { triageBgClass } from "../../utils/triageBgClass";
 
@@ -298,6 +317,7 @@ export default {
     CommentsByRule,
     InfoTooltip,
     CommentProgressBar,
+    ComponentSearchModal,
   },
   // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because
   // each esbuild pack has its own axios singleton (bundle isolation) — the
@@ -310,6 +330,7 @@ export default {
     // selects the correct backend endpoint.
     componentId: { type: [Number, String], default: null },
     componentDisplayedName: { type: String, default: "" },
+    componentPrefix: { type: String, default: "" },
     projectId: { type: [Number, String], default: null },
     scope: {
       type: String,
@@ -418,6 +439,10 @@ export default {
     this.fetch();
   },
   methods: {
+    onSearchResultSelected(result) {
+      this.filterText = result.rule_id ? `${this.componentPrefix}-${result.rule_id}` : "";
+      this.onFilterChanged();
+    },
     // Identifier used for localStorage filter persistence. Disambiguates
     // component-scope vs project-scope so a user's filter on component 42
     // doesn't override their filter on project 42 (different IDs, different

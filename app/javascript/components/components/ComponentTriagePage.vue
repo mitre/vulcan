@@ -36,6 +36,7 @@
         scope="component"
         :component-id="component.id"
         :component-displayed-name="component.name"
+        :component-prefix="component.prefix"
         :effective-permissions="effectivePermissions"
         :admin-panel-open="adminPanelOpen"
         :context-mode.sync="contextMode"
