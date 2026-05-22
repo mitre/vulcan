@@ -23,6 +23,10 @@
         <em>Edit mode required to modify</em>
       </p>
 
+      <b-form-checkbox v-model="showRuleIds" switch size="sm" class="mb-2">
+        Show Rule IDs
+      </b-form-checkbox>
+
       <div
         v-for="satisfies in rule.satisfies"
         :key="satisfies.id"
@@ -31,11 +35,11 @@
       >
         <span
           v-b-tooltip.hover
-          :title="satisfies.srg_id"
+          :title="showRuleIds ? satisfies.srg_id : `${projectPrefix}-${satisfies.rule_id}`"
           class="clickable"
           @click="ruleSelected(satisfies)"
         >
-          {{ truncateId(satisfies.srg_id) }}
+          {{ showRuleIds ? `${projectPrefix}-${satisfies.rule_id}` : truncateId(satisfies.srg_id) }}
         </span>
         <b-button
           v-b-modal.unmark-satisfies-modal
@@ -82,6 +86,10 @@
         <em>Edit mode required to modify</em>
       </p>
 
+      <b-form-checkbox v-model="showRuleIds" switch size="sm" class="mb-2">
+        Show Rule IDs
+      </b-form-checkbox>
+
       <div
         v-for="satisfied_by in rule.satisfied_by"
         :key="satisfied_by.id"
@@ -90,11 +98,15 @@
       >
         <span
           v-b-tooltip.hover
-          :title="satisfied_by.srg_id"
+          :title="showRuleIds ? satisfied_by.srg_id : `${projectPrefix}-${satisfied_by.rule_id}`"
           class="clickable"
           @click="ruleSelected(satisfied_by)"
         >
-          {{ truncateId(satisfied_by.srg_id) }}
+          {{
+            showRuleIds
+              ? `${projectPrefix}-${satisfied_by.rule_id}`
+              : truncateId(satisfied_by.srg_id)
+          }}
         </span>
         <b-button
           v-b-modal.unmark-satisfied-by-modal
@@ -168,6 +180,7 @@ export default {
     return {
       satisfies_rule: null,
       satisfied_by_rule: null,
+      showRuleIds: false,
       truncateId, // Expose utility for template
     };
   },

@@ -90,12 +90,15 @@
         <!-- Also Satisfies Modal (multi-select) -->
         <b-modal
           id="also-satisfies-modal"
-          title="Also Satisfies"
+          :title="`Also Satisfies (${filteredSelectRules.length} available)`"
           centered
           size="lg"
           @ok="addMultipleSatisfiedRules"
           @hidden="clearSelectedRules"
         >
+          <b-form-checkbox v-model="satisfiesShowRuleId" class="mb-2" switch size="sm">
+            Show Rule IDs instead of SRG IDs
+          </b-form-checkbox>
           <b-form-group :label="msg.satisfiesPrompt">
             <multiselect
               v-model="selectedSatisfiesRuleIds"
@@ -116,8 +119,25 @@
               </template>
             </multiselect>
           </b-form-group>
-          <div class="mt-2 text-muted">
-            <small>{{ selectedCountLabel(selectedSatisfiesRuleIds.length) }}</small>
+          <div v-if="selectedSatisfiesRuleIds.length" class="mt-2">
+            <small class="text-muted">Selected ({{ selectedSatisfiesRuleIds.length }}):</small>
+            <div
+              v-for="sel in selectedSatisfiesRuleIds"
+              :key="sel.value"
+              class="d-flex align-items-center mt-1"
+            >
+              <b-badge variant="light" class="mr-1">{{ sel.text }}</b-badge>
+              <b-icon
+                icon="x-circle"
+                class="text-danger clickable"
+                font-scale="0.8"
+                @click="
+                  selectedSatisfiesRuleIds = selectedSatisfiesRuleIds.filter(
+                    (s) => s.value !== sel.value,
+                  )
+                "
+              />
+            </div>
           </div>
           <template #modal-footer="{ cancel, ok }">
             <b-button @click="cancel()">Cancel</b-button>
@@ -450,6 +470,7 @@ export default {
       msg: MESSAGE_LABELS,
       filteredSelectRules: [],
       selectedSatisfiesRuleIds: [],
+      satisfiesShowRuleId: false,
       showSRGIdChecked: null,
     };
   },
@@ -480,6 +501,9 @@ export default {
         this.filterRulesForSatisfies();
       },
       immediate: true,
+    },
+    satisfiesShowRuleId() {
+      this.filterRulesForSatisfies();
     },
   },
   mounted() {
@@ -571,10 +595,13 @@ export default {
           );
         })
         .map((r) => {
+          const ruleLabel = `${this.component.prefix}-${r.rule_id}`;
+          const srgLabel = truncateId(r.srg_id) || ruleLabel;
           return {
             value: r.id,
-            // Satisfaction relationships ALWAYS show SRG requirements (semantic requirement)
-            text: truncateId(r.srg_id) || `${this.component.prefix}-${r.rule_id}`,
+            text: this.satisfiesShowRuleId
+              ? `${ruleLabel} (${srgLabel})`
+              : `${srgLabel} (${ruleLabel})`,
           };
         });
     },
