@@ -72,7 +72,21 @@
             class="border-left pl-3 py-2 mb-2 bg-light"
             :class="triageBgClass(activeComment.triage_status)"
           >
-            {{ activeComment.comment }}
+            <template v-if="activeComment.comment && activeComment.comment.length > 200">
+              {{
+                commentExpanded
+                  ? activeComment.comment
+                  : activeComment.comment.substring(0, 200) + "…"
+              }}
+              <a
+                href="#"
+                class="text-primary ml-1"
+                @click.prevent="commentExpanded = !commentExpanded"
+              >
+                {{ commentExpanded ? "show less" : "show more" }}
+              </a>
+            </template>
+            <template v-else>{{ activeComment.comment }}</template>
           </blockquote>
           <ReactionButtons
             :review-id="activeComment.id"
@@ -244,6 +258,7 @@ export default {
       adminAuditComment: "",
       adminConfirmationId: "",
       adminTargetRuleId: null,
+      commentExpanded: false,
     };
   },
   computed: {
@@ -338,6 +353,9 @@ export default {
     },
   },
   watch: {
+    activeCommentId() {
+      this.commentExpanded = false;
+    },
     activeComment(val) {
       if (!val && this.sortedRows.length === 0) {
         this.$emit("exit");
