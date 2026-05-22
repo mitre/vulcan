@@ -94,12 +94,16 @@ module Api
     def search_rules(limit)
       return [] unless current_user
 
-      # Get components from user's available projects
       project_ids = current_user.available_projects.ids
-      component_ids = Component.where(project_id: project_ids).ids
+      component_ids = if params[:component_id].present?
+                        comp = Component.where(id: params[:component_id], project_id: project_ids).first
+                        return [] unless comp
 
-      # Use phrase search (websearch_to_tsquery) for quoted phrases
-      # Otherwise use pg_search with word matching
+                        [comp.id]
+                      else
+                        Component.where(project_id: project_ids).ids
+                      end
+
       rules_scope = Rule.where(component_id: component_ids)
 
       rules_scope = if @has_phrases

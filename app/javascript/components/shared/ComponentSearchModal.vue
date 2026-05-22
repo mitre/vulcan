@@ -1,0 +1,286 @@
+<template>
+  <b-modal
+    id="component-search-modal"
+    size="lg"
+    centered
+    hide-header
+    hide-footer
+    body-class="p-0"
+    content-class="component-search-modal"
+    @shown="onShown"
+    @hidden="onModalHidden"
+  >
+    <div class="search-header">
+      <b-icon icon="search" class="text-muted mr-2" />
+      <input
+        ref="searchInput"
+        v-model="query"
+        type="text"
+        class="search-input"
+        :placeholder="placeholder"
+        @input="onInput"
+        @keydown="onKeyDown"
+      />
+      <b-spinner v-if="loading" small class="text-muted" />
+      <kbd v-else class="search-kbd">ESC</kbd>
+    </div>
+
+    <div class="search-results">
+      <div v-if="results.length === 0 && !loading" class="search-empty">
+        <template v-if="query && query.length >= 2">
+          <b-icon icon="search" class="mr-1" />
+          No results for "{{ query }}"
+        </template>
+        <template v-else-if="query && query.length < 2">
+          Type at least 2 characters to search...
+        </template>
+        <template v-else> Start typing to search... </template>
+      </div>
+
+      <div
+        v-for="(result, index) in results"
+        :key="result.id"
+        :class="['search-result-item', { active: index === highlightedIndex }]"
+        @click="selectResult(result)"
+        @mouseenter="highlightedIndex = index"
+      >
+        <div class="d-flex align-items-start w-100">
+          <b-icon :icon="resultIcon" class="result-icon mt-1 mr-2" />
+          <div class="flex-grow-1 overflow-hidden">
+            <div class="result-label text-truncate">
+              {{ formatResultLabel(result) }}
+            </div>
+            <div v-if="result.snippet" class="result-snippet text-truncate">
+              {{ result.snippet }}
+            </div>
+            <div v-if="result.parentLabel" class="result-parent text-muted">
+              <b-icon icon="arrow-return-right" class="mr-1" />
+              child of {{ result.parentLabel }}
+            </div>
+          </div>
+          <span v-if="index === highlightedIndex" class="result-hint">
+            <b-icon icon="arrow-return-left" />
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="results.length > 0" class="search-footer">
+      <div class="d-flex text-muted small">
+        <span class="mr-3"><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+        <span class="mr-3"><kbd>↵</kbd> Select</span>
+        <span><kbd>esc</kbd> Close</span>
+      </div>
+      <span class="text-muted small">{{ resultCount }}</span>
+    </div>
+  </b-modal>
+</template>
+
+<script>
+import _ from "lodash";
+import axios from "axios";
+
+export default {
+  name: "ComponentSearchModal",
+  props: {
+    componentId: { type: [Number, String], required: true },
+    projectPrefix: { type: String, required: true },
+    searchType: {
+      type: String,
+      default: "rules",
+      validator: (v) => ["rules", "comments"].includes(v),
+    },
+  },
+  data() {
+    return {
+      query: "",
+      results: [],
+      loading: false,
+      highlightedIndex: -1,
+    };
+  },
+  computed: {
+    placeholder() {
+      return this.searchType === "comments" ? "Search comments..." : "Search requirements...";
+    },
+    resultIcon() {
+      return this.searchType === "comments" ? "chat-left-text" : "file-earmark-text";
+    },
+    resultCount() {
+      const n = this.results.length;
+      return `${n} result${n === 1 ? "" : "s"}`;
+    },
+  },
+  methods: {
+    onShown() {
+      this.$nextTick(() => {
+        if (this.$refs.searchInput) {
+          this.$refs.searchInput.focus();
+        }
+      });
+    },
+    onModalHidden() {
+      this.query = "";
+      this.results = [];
+      this.highlightedIndex = -1;
+      this.loading = false;
+      this.$emit("hidden");
+    },
+    onInput: _.debounce(function () {
+      this.performSearch(this.query);
+    }, 300),
+    async performSearch(q) {
+      const trimmed = (q || "").trim();
+      if (trimmed.length < 2) {
+        this.results = [];
+        this.loading = false;
+        return;
+      }
+
+      this.loading = true;
+      try {
+        const response = await axios.get("/api/search/global", {
+          params: { q: trimmed, limit: 20, component_id: this.componentId },
+        });
+        this.results = response.data.rules || [];
+        this.highlightedIndex = this.results.length > 0 ? 0 : -1;
+      } catch (err) {
+        this.results = [];
+      } finally {
+        this.loading = false;
+      }
+    },
+    onKeyDown(event) {
+      const { key } = event;
+      if (key === "ArrowDown") {
+        event.preventDefault();
+        if (this.results.length === 0) return;
+        this.highlightedIndex = (this.highlightedIndex + 1) % this.results.length;
+      } else if (key === "ArrowUp") {
+        event.preventDefault();
+        if (this.results.length === 0) return;
+        this.highlightedIndex =
+          this.highlightedIndex <= 0 ? this.results.length - 1 : this.highlightedIndex - 1;
+      } else if (key === "Enter") {
+        event.preventDefault();
+        if (this.highlightedIndex >= 0 && this.highlightedIndex < this.results.length) {
+          this.selectResult(this.results[this.highlightedIndex]);
+        }
+      }
+    },
+    selectResult(result) {
+      this.$emit("selected", result);
+      this.$bvModal.hide("component-search-modal");
+    },
+    formatResultLabel(result) {
+      const prefix = result.component_prefix || this.projectPrefix;
+      return `${prefix}-${result.rule_id}`;
+    },
+  },
+};
+</script>
+
+<style scoped>
+.search-header {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  outline: none;
+}
+
+.search-input::placeholder {
+  color: #6c757d;
+}
+
+.search-kbd {
+  padding: 0.125rem 0.375rem;
+  font-size: 0.75rem;
+  font-family: monospace;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 0.2rem;
+  color: #6c757d;
+}
+
+.search-results {
+  max-height: calc(70vh - 120px);
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.search-empty {
+  padding: 2rem;
+  text-align: center;
+  color: #6c757d;
+}
+
+.search-result-item {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+
+.search-result-item:hover,
+.search-result-item.active {
+  background-color: #e8f0fe;
+}
+
+.result-icon {
+  color: #6c757d;
+  flex-shrink: 0;
+}
+
+.search-result-item.active .result-icon {
+  color: #0d6efd;
+}
+
+.result-label {
+  font-weight: 500;
+}
+
+.result-snippet {
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
+.result-parent {
+  font-size: 0.75rem;
+}
+
+.result-hint {
+  color: #6c757d;
+  opacity: 0;
+}
+
+.search-result-item.active .result-hint {
+  opacity: 1;
+}
+
+.search-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-top: 1px solid #dee2e6;
+}
+
+.search-footer kbd {
+  padding: 0.1rem 0.3rem;
+  font-size: 0.7rem;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 0.15rem;
+  margin: 0 0.1rem;
+}
+</style>

@@ -658,5 +658,45 @@ RSpec.describe 'Api::Search' do
       expect(xml_queries).to be_empty,
                              'Search loaded srgs.xml — should use .select() to exclude xml'
     end
+
+    context 'component-scoped search' do
+      before { sign_in user }
+
+      let!(:rule_scoped) do
+        rule = component1.rules.first
+        rule.update!(title: 'Zeppelin Unique Scoped Title')
+        rule
+      end
+
+      it 'scopes rules to the specified component_id' do
+        get search_path, params: { q: 'Zeppelin', component_id: component1.id }
+
+        expect(response).to have_http_status(:success)
+        json = response.parsed_body
+        expect(json['rules'].length).to be >= 1
+        json['rules'].each do |rule|
+          expect(rule['component_id']).to eq(component1.id)
+        end
+      end
+
+      it 'returns empty when component_id belongs to inaccessible project' do
+        rule2 = component2.rules.first
+        rule2.update!(title: 'Zeppelin Secret Rule')
+
+        get search_path, params: { q: 'Zeppelin', component_id: component2.id }
+
+        expect(response).to have_http_status(:success)
+        json = response.parsed_body
+        expect(json['rules']).to eq([])
+      end
+
+      it 'returns all accessible rules when no component_id provided' do
+        get search_path, params: { q: 'Zeppelin' }
+
+        expect(response).to have_http_status(:success)
+        json = response.parsed_body
+        expect(json['rules'].length).to be >= 1
+      end
+    end
   end
 end
