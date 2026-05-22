@@ -41,6 +41,8 @@ describe("ReplyComposerMixin", () => {
       componentId: null,
       section: null,
       ruleName: null,
+      parentRuleId: null,
+      parentRuleName: null,
     });
   });
 

@@ -35,7 +35,7 @@
       >
         <span
           v-b-tooltip.hover
-          :title="showRuleIds ? satisfies.srg_id : `${projectPrefix}-${satisfies.rule_id}`"
+          :title="satisfies.srg_id"
           class="clickable"
           @click="ruleSelected(satisfies)"
         >
@@ -98,7 +98,7 @@
       >
         <span
           v-b-tooltip.hover
-          :title="showRuleIds ? satisfied_by.srg_id : `${projectPrefix}-${satisfied_by.rule_id}`"
+          :title="satisfied_by.srg_id"
           class="clickable"
           @click="ruleSelected(satisfied_by)"
         >

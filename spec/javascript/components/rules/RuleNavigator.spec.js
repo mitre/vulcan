@@ -417,6 +417,165 @@ describe("RuleNavigator", () => {
     });
   });
 
+  // ===========================================================================
+  // REQUIREMENT: ruleOpen() must return rolled-up comment counts for parent
+  // rules — the parent's own open count PLUS all children's open counts.
+  // A parent that satisfies 3 children with 2, 1, 0 open comments and has
+  // 1 of its own should show 4 total. This drives the comment badge and
+  // the "open comments only" filter.
+  // ===========================================================================
+  describe("ruleOpen rolled-up comment counts", () => {
+    const ruleWithComments = (id, ruleId, open, total, overrides = {}) =>
+      createRule(id, ruleId, {
+        comment_summary: { open, total },
+        ...overrides,
+      });
+
+    it("returns the parent's own count plus all children's open counts", () => {
+      const child1 = ruleWithComments(10, "001002", 2, 3);
+      const child2 = ruleWithComments(11, "001003", 1, 2);
+      const child3 = ruleWithComments(12, "001004", 0, 1);
+      const parent = ruleWithComments(1, "000020", 1, 5, {
+        satisfies: [
+          createSatisfactionRef(10, "001002", "SRG-OS-000010"),
+          createSatisfactionRef(11, "001003", "SRG-OS-000011"),
+          createSatisfactionRef(12, "001004", "SRG-OS-000012"),
+        ],
+      });
+
+      wrapper = createWrapper({ rules: [parent, child1, child2, child3] });
+      // Parent's own: 1, child1: 2, child2: 1, child3: 0 => total 4
+      expect(wrapper.vm.ruleOpen(parent)).toBe(4);
+    });
+
+    it("returns only the rule's own count for non-parent rules (no satisfies)", () => {
+      const leaf = ruleWithComments(5, "000050", 3, 5);
+      wrapper = createWrapper({ rules: [leaf] });
+      expect(wrapper.vm.ruleOpen(leaf)).toBe(3);
+    });
+
+    it("returns children's counts even when parent has zero own comments", () => {
+      const child1 = ruleWithComments(10, "001002", 5, 5);
+      const parent = ruleWithComments(1, "000020", 0, 0, {
+        satisfies: [createSatisfactionRef(10, "001002", "SRG-OS-000010")],
+      });
+
+      wrapper = createWrapper({ rules: [parent, child1] });
+      expect(wrapper.vm.ruleOpen(parent)).toBe(5);
+    });
+
+    it("returns 0 when parent and all children have no comments", () => {
+      const child1 = createRule(10, "001002");
+      const parent = createRule(1, "000020", {
+        satisfies: [createSatisfactionRef(10, "001002", "SRG-OS-000010")],
+      });
+
+      wrapper = createWrapper({ rules: [parent, child1] });
+      expect(wrapper.vm.ruleOpen(parent)).toBe(0);
+    });
+
+    it("open comments only filter includes parents with children that have open comments", () => {
+      const child1 = ruleWithComments(10, "001002", 3, 3);
+      const parent = ruleWithComments(1, "000020", 0, 0, {
+        satisfies: [createSatisfactionRef(10, "001002", "SRG-OS-000010")],
+      });
+      // Standalone rule with no comments
+      const standalone = createRule(2, "000030");
+
+      wrapper = createWrapper(
+        { rules: [parent, child1, standalone] },
+        { openCommentsOnly: true },
+      );
+      const ids = wrapper.vm.filteredRules.map((r) => r.id);
+      // Parent should appear because child has open comments
+      expect(ids).toContain(1);
+      // Standalone with no comments should NOT appear
+      expect(ids).not.toContain(2);
+    });
+  });
+
+  // ===========================================================================
+  // REQUIREMENT: Search must respect nesting filter. When
+  // nestSatisfiedRulesChecked is true, searching should NOT reveal
+  // hidden children. Only parent/standalone rules matching the search
+  // should appear. Children are accessed via disclosure, not search.
+  // ===========================================================================
+  describe("search respects nesting filter", () => {
+    it("does not show satisfied-by children even when they match the search text", () => {
+      const child = createRule(10, "001002", {
+        title: "unique-child-keyword",
+        satisfied_by: [{ id: 1 }],
+      });
+      const parent = createRule(1, "000020", {
+        title: "Parent control",
+        satisfies: [createSatisfactionRef(10, "001002", "SRG-OS-000010")],
+      });
+
+      wrapper = createWrapper(
+        { rules: [parent, child] },
+        { nestSatisfiedRulesChecked: true, search: "unique-child-keyword" },
+      );
+
+      const ids = wrapper.vm.filteredRules.map((r) => r.id);
+      // Child should NOT appear — it's nested under parent
+      expect(ids).not.toContain(10);
+    });
+
+    it("shows parent rules that match search text when nesting is enabled", () => {
+      const child = createRule(10, "001002", {
+        title: "Child rule",
+        satisfied_by: [{ id: 1 }],
+      });
+      const parent = createRule(1, "000020", {
+        title: "unique-parent-keyword",
+        satisfies: [createSatisfactionRef(10, "001002", "SRG-OS-000010")],
+      });
+
+      wrapper = createWrapper(
+        { rules: [parent, child] },
+        { nestSatisfiedRulesChecked: true, search: "unique-parent-keyword" },
+      );
+
+      const ids = wrapper.vm.filteredRules.map((r) => r.id);
+      expect(ids).toContain(1);
+    });
+
+    it("shows children when nesting is DISABLED and they match search", () => {
+      const child = createRule(10, "001002", {
+        title: "unique-child-keyword",
+        satisfied_by: [{ id: 1 }],
+      });
+      const parent = createRule(1, "000020", {
+        title: "Parent control",
+        satisfies: [createSatisfactionRef(10, "001002", "SRG-OS-000010")],
+      });
+
+      wrapper = createWrapper(
+        { rules: [parent, child] },
+        { nestSatisfiedRulesChecked: false, search: "unique-child-keyword" },
+      );
+
+      const ids = wrapper.vm.filteredRules.map((r) => r.id);
+      // With nesting off, child should appear
+      expect(ids).toContain(10);
+    });
+
+    it("shows standalone rules that match search regardless of nesting toggle", () => {
+      const standalone = createRule(5, "000050", {
+        title: "unique-standalone-keyword",
+        satisfied_by: [],
+      });
+
+      wrapper = createWrapper(
+        { rules: [standalone] },
+        { nestSatisfiedRulesChecked: true, search: "unique-standalone-keyword" },
+      );
+
+      const ids = wrapper.vm.filteredRules.map((r) => r.id);
+      expect(ids).toContain(5);
+    });
+  });
+
   describe("sidebarStyle banner clearance", () => {
     it("subtracts banner height from max-height to prevent content hiding behind fixed banner", () => {
       wrapper = createWrapper();

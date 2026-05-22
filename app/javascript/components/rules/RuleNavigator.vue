@@ -557,7 +557,7 @@ export default {
           this.searchTextForRule(rule).includes(downcaseSearch) &&
           this.doesRuleHaveFilteredStatus(rule) &&
           this.doesRuleHaveFilteredReviewStatus(rule) &&
-          (downcaseSearch.length > 0 || this.listSatisfiedRule(rule)) &&
+          this.listSatisfiedRule(rule) &&
           (!this.filters.openCommentsOnly || this.ruleOpen(rule) > 0)
         );
       });
@@ -575,12 +575,17 @@ export default {
     sortAlsoSatisfies: function (rules) {
       return [...rules].sort((a, b) => a.rule_id.localeCompare(b.rule_id));
     },
-    // open comment count for a rule (non-adjudicated, including replies
-    // under open parents). Reads rule.comment_summary populated by
-    // RuleBlueprint default fields. Returns 0 when missing so the badge
-    // stays hidden for rules without any comments.
     ruleOpen: function (rule) {
-      return (rule.comment_summary && rule.comment_summary.open) || 0;
+      let count = (rule.comment_summary && rule.comment_summary.open) || 0;
+      if (rule.satisfies && rule.satisfies.length > 0) {
+        for (const sat of rule.satisfies) {
+          const child = this.rules.find((r) => r.id === sat.id);
+          if (child && child.comment_summary) {
+            count += child.comment_summary.open || 0;
+          }
+        }
+      }
+      return count;
     },
     formatRuleId: function (id) {
       return `${this.projectPrefix}-${id}`;

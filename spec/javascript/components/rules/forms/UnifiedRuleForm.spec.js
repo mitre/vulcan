@@ -324,7 +324,7 @@ describe("UnifiedRuleForm", () => {
 
   // ─── satisfied_by behavior (R3) ────────────────────────────
   describe("satisfied_by behavior (R3)", () => {
-    it("uses Configurable fields when satisfied_by is set", () => {
+    it("uses actual status fields when satisfied_by is set (no AC override)", () => {
       wrapper = createWrapper(
         {
           status: "Not Yet Determined",
@@ -334,9 +334,12 @@ describe("UnifiedRuleForm", () => {
       );
       const ruleForm = wrapper.findComponent({ name: "RuleForm" });
       const fields = ruleForm.props("fields");
+      // NYD field set: status, rule_severity, title, fixtext — no vendor_comments
+      // (AC override was removed per DISA V4R1 — backend sets ADNM, not frontend)
       expect(fields.displayed).toEqual(
-        expect.arrayContaining(["status", "rule_severity", "title", "fixtext", "vendor_comments"]),
+        expect.arrayContaining(["status", "rule_severity", "title", "fixtext"]),
       );
+      expect(fields.displayed).not.toContain("vendor_comments");
     });
 
     it("disables title and fixtext when satisfied_by is set", () => {
@@ -523,9 +526,9 @@ describe("UnifiedRuleForm", () => {
       });
       ruleForm = wrapper.findComponent({ name: "RuleForm" });
       const fields = ruleForm.props("fields");
-      // Now uses Configurable displayed fields
-      expect(fields.displayed).toContain("vendor_comments");
-      // But title and fixtext still disabled by satisfied_by
+      // Still NYD field set — no AC override (removed per DISA V4R1)
+      expect(fields.displayed).not.toContain("vendor_comments");
+      // Title and fixtext still disabled by NYD config
       expect(fields.disabled).toContain("title");
       expect(fields.disabled).toContain("fixtext");
     });
@@ -558,12 +561,12 @@ describe("UnifiedRuleForm", () => {
       expect(wrapper.vm.showSectionLocks).toBe(true);
     });
 
-    it("canManageSectionLocks is false when status is Not Yet Determined", () => {
+    it("canManageSectionLocks is true for admin even when status is NYD (prevents circular lock)", () => {
       wrapper = createWrapper(
         { status: "Not Yet Determined", locked: false, review_requestor_id: null },
         { effectivePermissions: "admin" },
       );
-      expect(wrapper.vm.canManageSectionLocks).toBe(false);
+      expect(wrapper.vm.canManageSectionLocks).toBe(true);
     });
 
     it("both showSectionLocks and canManageSectionLocks true for Configurable admin", () => {
@@ -607,7 +610,7 @@ describe("UnifiedRuleForm", () => {
       );
       const ruleForm = wrapper.findComponent({ name: "RuleForm" });
       expect(ruleForm.props("showSectionLocks")).toBe(true);
-      expect(ruleForm.props("canManageSectionLocks")).toBe(false);
+      expect(ruleForm.props("canManageSectionLocks")).toBe(true);
     });
   });
 });
