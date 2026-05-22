@@ -185,7 +185,7 @@ export default {
           this.$bvModal.hide("comment-composer-modal");
           this.commentText = "";
           this.successMessage = null;
-        }, 1500);
+        }, 3000);
       } catch (error) {
         this.alertOrNotifyResponse(error);
       }
