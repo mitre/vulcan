@@ -86,6 +86,7 @@ AGENT-STATUS/
 .dolt/
 *.db
 .beads-credential-key
-# Beads auto-exports the entire issues database to issues.jsonl on each
-# bd write — local-only artifact, not meant for git.
+# Beads auto-exports to issues.jsonl on each bd write.
+# The .beads/ copy is tracked for team visibility.
 issues.jsonl
+!.beads/issues.jsonl
