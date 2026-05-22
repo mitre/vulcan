@@ -35,8 +35,8 @@
         v-b-tooltip.hover
         variant="outline-secondary"
         size="sm"
-        aria-label="Search requirements (Cmd+K)"
-        title="Search requirements (Cmd+K)"
+        aria-label="Search comments (Cmd+K)"
+        title="Search comments (Cmd+K)"
         @click="$bvModal.show('component-search-modal')"
       >
         <b-icon icon="search" />
@@ -303,8 +303,8 @@
       v-if="componentId"
       :component-id="componentId"
       :project-prefix="componentPrefix"
-      search-type="rules"
-      @selected="onSearchResultSelected"
+      search-type="comments"
+      @selected="onCommentSearchResultSelected"
     />
   </div>
 </template>
@@ -477,6 +477,20 @@ export default {
     this.fetch();
   },
   methods: {
+    onCommentSearchResultSelected(result) {
+      if (result.searchQuery) {
+        this.filterText = result.searchQuery;
+      }
+      if (result.rule_id) {
+        this.filterRuleId = result.rule_id;
+        this.filterRuleDisplayName = result.rule_displayed_name || "";
+        this.filterParentRuleId = null;
+        this.filterParentDisplayName = "";
+      }
+      this.page = 1;
+      this.persistFilters();
+      this.fetch();
+    },
     onSearchResultSelected(result) {
       const prefix = result.component_prefix || this.componentPrefix;
       this.filterRuleId = result.id;

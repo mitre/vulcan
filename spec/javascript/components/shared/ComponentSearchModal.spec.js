@@ -244,6 +244,62 @@ describe("ComponentSearchModal", () => {
     });
   });
 
+  describe("comment search mode", () => {
+    const mockCommentResults = {
+      data: {
+        rows: [
+          {
+            id: 301,
+            rule_id: 7,
+            rule_displayed_name: "CNTR-00-000020",
+            comment: "The container runtime should enforce least privilege",
+            author_name: "John Doe",
+            section: "check_content",
+            triage_status: "pending",
+          },
+          {
+            id: 302,
+            rule_id: 7,
+            rule_displayed_name: "CNTR-00-000020",
+            comment: "Container isolation must be validated",
+            author_name: "Jane Smith",
+            section: "title",
+            triage_status: "accepted",
+          },
+        ],
+        pagination: { total: 2 },
+      },
+    };
+
+    it("calls comments endpoint when searchType is comments", async () => {
+      axios.get.mockResolvedValue(mockCommentResults);
+      wrapper = createWrapper({ searchType: "comments" });
+      await wrapper.vm.performSearch("container");
+      const callArgs = axios.get.mock.calls[axios.get.mock.calls.length - 1];
+      expect(callArgs[0]).toBe("/components/29/comments");
+      expect(callArgs[1].params.q).toBe("container");
+      expect(callArgs[1].params.triage_status).toBe("all");
+    });
+
+    it("transforms comment rows into result items", async () => {
+      axios.get.mockResolvedValue(mockCommentResults);
+      wrapper = createWrapper({ searchType: "comments" });
+      await wrapper.vm.performSearch("container");
+      expect(wrapper.vm.results.length).toBe(2);
+      expect(wrapper.vm.results[0].id).toBe(301);
+      expect(wrapper.vm.results[0].author_name).toBe("John Doe");
+      expect(wrapper.vm.results[0].snippet).toContain("container runtime");
+    });
+
+    it("formats comment result label with rule name and author", async () => {
+      axios.get.mockResolvedValue(mockCommentResults);
+      wrapper = createWrapper({ searchType: "comments" });
+      await wrapper.vm.performSearch("container");
+      const label = wrapper.vm.formatResultLabel(wrapper.vm.results[0]);
+      expect(label).toBe("CNTR-00-000020");
+    });
+  });
+
   describe("search term highlighting", () => {
     it("computes searchWords from query splitting on spaces", () => {
       wrapper = createWrapper();

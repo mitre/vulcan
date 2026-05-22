@@ -69,14 +69,21 @@
               <template v-else>{{ result.snippet }}</template>
             </div>
             <div class="result-meta text-muted">
-              <template v-if="result.parent_display_name">
-                <b-icon icon="arrow-return-right" class="mr-1" />
-                child of {{ result.parent_display_name }}
-                ·
+              <template v-if="result.author_name">
+                <b-icon icon="person" class="mr-1" />
+                {{ result.author_name }}
+                <template v-if="result.triage_status"> · {{ result.triage_status }} </template>
               </template>
-              <span v-if="result.comment_count != null">
-                {{ result.comment_count }} comment{{ result.comment_count === 1 ? "" : "s" }}
-              </span>
+              <template v-else>
+                <template v-if="result.parent_display_name">
+                  <b-icon icon="arrow-return-right" class="mr-1" />
+                  child of {{ result.parent_display_name }}
+                  ·
+                </template>
+                <span v-if="result.comment_count != null">
+                  {{ result.comment_count }} comment{{ result.comment_count === 1 ? "" : "s" }}
+                </span>
+              </template>
             </div>
           </div>
           <span v-if="index === highlightedIndex" class="result-hint">
@@ -181,16 +188,38 @@ export default {
 
       this.loading = true;
       try {
-        const response = await axios.get("/api/search/global", {
-          params: { q: trimmed, limit: 20, component_id: this.componentId },
-        });
-        this.results = response.data.rules || [];
+        if (this.searchType === "comments") {
+          await this.searchComments(trimmed);
+        } else {
+          await this.searchRules(trimmed);
+        }
         this.highlightedIndex = this.results.length > 0 ? 0 : -1;
       } catch (err) {
         this.results = [];
       } finally {
         this.loading = false;
       }
+    },
+    async searchRules(q) {
+      const response = await axios.get("/api/search/global", {
+        params: { q, limit: 20, component_id: this.componentId },
+      });
+      this.results = response.data.rules || [];
+    },
+    async searchComments(q) {
+      const response = await axios.get(`/components/${this.componentId}/comments`, {
+        params: { q, triage_status: "all", per_page: 20 },
+      });
+      this.results = (response.data.rows || []).map((row) => ({
+        id: row.id,
+        rule_id: row.rule_id,
+        rule_displayed_name: row.rule_displayed_name,
+        author_name: row.author_name,
+        section: row.section,
+        triage_status: row.triage_status,
+        comment: row.comment,
+        snippet: row.comment,
+      }));
     },
     onKeyDown(event) {
       const { key } = event;
@@ -215,6 +244,7 @@ export default {
       this.$bvModal.hide("component-search-modal");
     },
     formatResultLabel(result) {
+      if (result.rule_displayed_name) return result.rule_displayed_name;
       const prefix = result.component_prefix || this.projectPrefix;
       return `${prefix}-${result.rule_id}`;
     },
