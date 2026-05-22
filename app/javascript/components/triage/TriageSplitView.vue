@@ -17,6 +17,14 @@
       <a href="#triage-form" class="skip-link sr-only sr-only-focusable">Skip to triage form</a>
     </div>
 
+    <TriageQueueNav
+      v-if="activeComment"
+      :comments="sortedRows"
+      :current-id="activeCommentId"
+      class="mb-2"
+      @select="onQueueSelect"
+    />
+
     <b-row v-if="activeComment">
       <b-col lg="2" class="border-right pr-0">
         <nav aria-label="Comment triage queue">
@@ -220,6 +228,7 @@ import { SINGLE_BUTTON_STATUSES } from "../../constants/triageVocabulary";
 import SectionLabel from "../shared/SectionLabel.vue";
 import CommentThread from "../shared/CommentThread.vue";
 import TriageRuleSidebar from "./TriageRuleSidebar.vue";
+import TriageQueueNav from "./TriageQueueNav.vue";
 import RuleContextPanel from "./RuleContextPanel.vue";
 import CommentTriageForm from "./CommentTriageForm.vue";
 import RulePicker from "../components/RulePicker.vue";
@@ -232,6 +241,7 @@ export default {
   name: "TriageSplitView",
   components: {
     TriageRuleSidebar,
+    TriageQueueNav,
     RuleContextPanel,
     CommentTriageForm,
     CommentThread,
