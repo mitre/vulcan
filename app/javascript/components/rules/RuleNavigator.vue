@@ -611,11 +611,11 @@ export default {
       if (rule) {
         this.ruleSelected(rule);
         if (result.matched_field) {
-          this.scrollToField(result.matched_field);
+          this.scrollToField(result.matched_field, result.searchQuery);
         }
       }
     },
-    scrollToField: function (backendField) {
+    scrollToField: function (backendField, searchQuery) {
       const FIELD_MAP = { check: "content" };
       const fieldName = FIELD_MAP[backendField] || backendField;
       this.$nextTick(() => {
@@ -627,8 +627,58 @@ export default {
           el.addEventListener("animationend", () => el.classList.remove("search-field-highlight"), {
             once: true,
           });
+          if (searchQuery) {
+            this.highlightTextInElement(el, searchQuery);
+          }
         }, 300);
       });
+    },
+    highlightTextInElement: function (container, query) {
+      const words = query
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((w) => w.length >= 2);
+      if (words.length === 0) return;
+
+      const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+      const marks = [];
+
+      while (walker.nextNode()) {
+        const node = walker.currentNode;
+        const parent = node.parentElement;
+        if (!parent || parent.tagName === "TEXTAREA" || parent.tagName === "INPUT") continue;
+        if (parent.classList.contains("search-term-mark")) continue;
+
+        const text = node.textContent;
+        const lower = text.toLowerCase();
+
+        for (const word of words) {
+          let pos = lower.indexOf(word);
+          if (pos !== -1) {
+            marks.push({ node, pos, len: word.length });
+            break;
+          }
+        }
+      }
+
+      for (const { node, pos, len } of marks.reverse()) {
+        const range = document.createRange();
+        range.setStart(node, pos);
+        range.setEnd(node, pos + len);
+        const mark = document.createElement("mark");
+        mark.className = "search-term-mark";
+        range.surroundContents(mark);
+      }
+
+      if (marks.length > 0) {
+        setTimeout(() => {
+          container.querySelectorAll(".search-term-mark").forEach((m) => {
+            const parent = m.parentNode;
+            parent.replaceChild(document.createTextNode(m.textContent), m);
+            parent.normalize();
+          });
+        }, 5000);
+      }
     },
     // This is a super basic function that provides a single searchable string for a given rule
     // It does not do anything like exclude attributes from search depending on the rule status.
@@ -852,5 +902,12 @@ export default {
   100% {
     box-shadow: 0 0 0 0 transparent;
   }
+}
+.search-term-mark {
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 0 2px;
+  border-radius: 2px;
+  font-weight: 600;
 }
 </style>

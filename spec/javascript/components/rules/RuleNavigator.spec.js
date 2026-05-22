@@ -595,7 +595,7 @@ describe("RuleNavigator", () => {
       expect(wrapper.emitted("ruleSelected")[0][0]).toBe(2);
     });
 
-    it("calls scrollToField when result has matched_field", () => {
+    it("calls scrollToField with matched_field and searchQuery", () => {
       const rules = [createRule(1, "000001")];
       wrapper = createWrapper({ rules });
       const spy = vi.spyOn(wrapper.vm, "scrollToField");
@@ -603,8 +603,9 @@ describe("RuleNavigator", () => {
         id: 1,
         rule_id: "000001",
         matched_field: "fixtext",
+        searchQuery: "least privilege",
       });
-      expect(spy).toHaveBeenCalledWith("fixtext");
+      expect(spy).toHaveBeenCalledWith("fixtext", "least privilege");
     });
 
     it("does not call scrollToField when result has no matched_field", () => {
