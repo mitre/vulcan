@@ -42,6 +42,7 @@ class Review < ApplicationRecord
                             optional: true, inverse_of: :duplicates
   has_many :duplicates, class_name: 'Review', foreign_key: 'duplicate_of_review_id',
                         dependent: :nullify, inverse_of: :duplicate_of
+  belongs_to :addressed_by_rule, class_name: 'BaseRule', optional: true
   belongs_to :responding_to, class_name: 'Review', foreign_key: 'responding_to_review_id',
                              optional: true, inverse_of: :responses
   has_many :responses, class_name: 'Review', foreign_key: 'responding_to_review_id',
@@ -50,10 +51,10 @@ class Review < ApplicationRecord
 
   TRIAGE_STATUSES = %w[
     pending concur concur_with_comment non_concur
-    duplicate informational needs_clarification withdrawn
+    duplicate informational needs_clarification withdrawn addressed_by
   ].freeze
 
-  TERMINAL_AUTO_ADJUDICATE_STATUSES = %w[duplicate informational withdrawn].freeze
+  TERMINAL_AUTO_ADJUDICATE_STATUSES = %w[duplicate informational withdrawn addressed_by].freeze
 
   SECTION_KEYS = %w[
     title severity status fixtext check_content vuln_discussion
@@ -73,7 +74,7 @@ class Review < ApplicationRecord
   # remain queryable through Rule after admin_destroy cascades a subtree
   # (auditable_id points to a deleted Review; associated_id still points
   # to a valid Rule). Matches the pattern on every other audited model.
-  vulcan_audited only: %i[triage_status adjudicated_by_id duplicate_of_review_id comment rule_id section],
+  vulcan_audited only: %i[triage_status adjudicated_by_id duplicate_of_review_id addressed_by_rule_id comment rule_id section],
                  associated_with: :rule
 
   scope :top_level_comments, -> { where(action: 'comment', responding_to_review_id: nil) }
@@ -189,6 +190,11 @@ class Review < ApplicationRecord
   validates :duplicate_of_review_id, absence: { message: 'must be blank when triage_status is not duplicate' },
                                      unless: -> { triage_status == 'duplicate' }
   # rubocop:enable Rails/I18nLocaleTexts
+  validate :addressed_by_status_requires_rule
+  # rubocop:disable Rails/I18nLocaleTexts -- consistent with neighbor validators on this model
+  validates :addressed_by_rule_id, absence: { message: 'must be blank when triage_status is not addressed_by' },
+                                   unless: -> { triage_status == 'addressed_by' }
+  # rubocop:enable Rails/I18nLocaleTexts
   validate :no_self_responding_reference
   validate :no_self_duplicate_reference
   validate :responding_to_must_be_same_rule
@@ -260,7 +266,7 @@ class Review < ApplicationRecord
     id user_id rule_id action comment section
     triage_status triage_set_by_id triage_set_at
     adjudicated_at adjudicated_by_id
-    duplicate_of_review_id responding_to_review_id
+    duplicate_of_review_id addressed_by_rule_id responding_to_review_id
     triage_set_by_imported_email triage_set_by_imported_name
     adjudicated_by_imported_email adjudicated_by_imported_name
     commenter_imported_email commenter_imported_name
@@ -452,6 +458,12 @@ class Review < ApplicationRecord
     return unless triage_status == 'duplicate' && duplicate_of_review_id.blank?
 
     errors.add(:duplicate_of_review_id, 'is required when triage_status is duplicate')
+  end
+
+  def addressed_by_status_requires_rule
+    return unless triage_status == 'addressed_by' && addressed_by_rule_id.blank?
+
+    errors.add(:addressed_by_rule_id, 'is required when triage_status is addressed_by')
   end
 
   def no_self_responding_reference

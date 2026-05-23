@@ -367,6 +367,32 @@ RSpec.describe 'Reviews' do
         expect(comment.adjudicated_at).to be_within(5.seconds).of(Time.current)
       end
 
+      describe 'addressed_by marking' do # rubocop:disable RSpec/NestedGroups
+        let_it_be(:parent_rule) { component.rules.second }
+
+        it 'sets triage_status=addressed_by + addressed_by_rule_id + auto-adjudicates' do
+          patch "/reviews/#{comment.id}/triage", params: {
+            triage_status: 'addressed_by',
+            addressed_by_rule_id: parent_rule.id
+          }, as: :json
+
+          expect(response).to have_http_status(:ok)
+          comment.reload
+          expect(comment.triage_status).to eq('addressed_by')
+          expect(comment.addressed_by_rule_id).to eq(parent_rule.id)
+          expect(comment.adjudicated_at).to be_within(5.seconds).of(Time.current)
+        end
+
+        it 'rejects addressed_by without addressed_by_rule_id' do
+          patch "/reviews/#{comment.id}/triage", params: {
+            triage_status: 'addressed_by'
+          }, as: :json
+
+          expect(response).to have_http_status(:unprocessable_content)
+          expect(comment.reload.triage_status).to eq('pending')
+        end
+      end
+
       it 'is idempotent on re-triage and audits each transition' do
         patch "/reviews/#{comment.id}/triage",
               params: { triage_status: 'concur', response_comment: 'first call' }, as: :json

@@ -144,7 +144,8 @@ class ReviewsController < ApplicationController
         triage_status: params[:triage_status],
         triage_set_by_id: current_user.id,
         triage_set_at: Time.current,
-        duplicate_of_review_id: params[:duplicate_of_review_id]
+        duplicate_of_review_id: params[:duplicate_of_review_id],
+        addressed_by_rule_id: params[:addressed_by_rule_id]
       )
 
       if params[:response_comment].present?
@@ -708,6 +709,7 @@ class ReviewsController < ApplicationController
     return 'Triage decision cannot be "pending" — pick a real status.' if status == 'pending'
     return I18n.t('vulcan.triage.errors.decline_requires_response') if status == 'non_concur' && params[:response_comment].blank?
     return I18n.t('vulcan.triage.errors.duplicate_requires_target') if status == 'duplicate' && params[:duplicate_of_review_id].blank?
+    return 'Addressed-by requires a target rule.' if status == 'addressed_by' && params[:addressed_by_rule_id].blank?
 
     nil
   end

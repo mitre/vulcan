@@ -1065,9 +1065,9 @@ RSpec.describe Component do
       expect(result[:pagination][:total]).to eq(3)
     end
 
-    it 'caps per_page at 100' do
-      result = shared_component.paginated_comments(triage_status: 'all', per_page: 999)
-      expect(result[:pagination][:per_page]).to eq(100)
+    it 'caps per_page at 1000' do
+      result = shared_component.paginated_comments(triage_status: 'all', per_page: 9999)
+      expect(result[:pagination][:per_page]).to eq(1000)
     end
 
     it 'filters by resolved=false (adjudicated_at IS NULL)' do

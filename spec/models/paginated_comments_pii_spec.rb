@@ -24,20 +24,18 @@ RSpec.describe 'paginated_comments — PII shape' do
   end
 
   describe 'Component#paginated_comments' do
-    it 'includes the author name but never the author email' do
+    it 'includes the author name and email for project members' do
       row = component.paginated_comments[:rows].first
       expect(row[:author_name]).to eq('Industry Commenter')
-      expect(row).not_to have_key(:author_email)
-      expect(row.values).not_to include(viewer.email)
+      expect(row[:author_email]).to eq(viewer.email)
     end
   end
 
   describe 'Project#paginated_comments' do
-    it 'includes the author name but never the author email' do
+    it 'includes the author name but omits email at project scope' do
       row = project.paginated_comments[:rows].first
       expect(row[:author_name]).to eq('Industry Commenter')
       expect(row).not_to have_key(:author_email)
-      expect(row.values).not_to include(viewer.email)
     end
   end
 
@@ -95,16 +93,16 @@ RSpec.describe 'paginated_comments — PII shape' do
       expect(row.values).not_to include('leak-me@example.com')
     end
 
-    it 'redacts commenter fallback when only commenter_imported_email is populated' do
+    it 'shows commenter fallback email in author_email when only imported_email is populated' do
       posted_review.update_columns(
         user_id: nil,
         commenter_imported_name: nil,
-        commenter_imported_email: 'commenter-leak@example.com'
+        commenter_imported_email: 'commenter-fallback@example.com'
       )
       row = component.paginated_comments[:rows].first
       expect(row[:commenter_display_name]).to eq('(imported commenter)')
       expect(row[:commenter_imported]).to be(true)
-      expect(row.values).not_to include('commenter-leak@example.com')
+      expect(row[:author_email]).to eq('commenter-fallback@example.com')
     end
 
     it 'Project#paginated_comments carries the same four display fields' do

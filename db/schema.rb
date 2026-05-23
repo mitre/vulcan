@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_22_010000) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_23_175456) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -279,7 +279,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_22_010000) do
     t.string "commentable_type"
     t.bigint "commentable_id"
     t.bigint "original_commentable_id"
+    t.bigint "addressed_by_rule_id"
     t.index ["action", "triage_status"], name: "index_reviews_on_action_and_triage_status"
+    t.index ["addressed_by_rule_id"], name: "index_reviews_on_addressed_by_rule_id"
     t.index ["commentable_type", "commentable_id"], name: "index_reviews_on_commentable"
     t.index ["duplicate_of_review_id"], name: "index_reviews_on_duplicate_of_review_id"
     t.index ["responding_to_review_id"], name: "index_reviews_on_responding_to_review_id"
@@ -419,6 +421,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_22_010000) do
   add_foreign_key "project_access_requests", "users"
   add_foreign_key "reactions", "reviews", on_delete: :cascade
   add_foreign_key "reactions", "users", on_delete: :cascade
+  add_foreign_key "reviews", "base_rules", column: "addressed_by_rule_id", on_delete: :restrict
   add_foreign_key "reviews", "base_rules", column: "rule_id", on_delete: :restrict
   add_foreign_key "reviews", "reviews", column: "duplicate_of_review_id", on_delete: :nullify
   add_foreign_key "reviews", "reviews", column: "responding_to_review_id", on_delete: :restrict

@@ -539,6 +539,62 @@ RSpec.describe Review do
     end
   end
 
+  describe 'addressed_by_rule_id invariants' do
+    let!(:parent_rule) do
+      Rule.create(component: shared_component, rule_id: 'P1-R2', status: 'Applicable - Configurable',
+                  rule_severity: 'medium', srg_rule: shared_srg.srg_rules.second)
+    end
+
+    it 'requires addressed_by_rule_id when triage_status is addressed_by' do
+      review = Review.new(action: 'comment', comment: 'child comment', user: @p_viewer, rule: @p1r1,
+                          triage_status: 'addressed_by', addressed_by_rule_id: nil)
+      expect(review).not_to be_valid
+      expect(review.errors[:addressed_by_rule_id].join).to match(/required/i)
+    end
+
+    it 'accepts addressed_by with a valid rule reference' do
+      review = Review.new(action: 'comment', comment: 'child comment', user: @p_viewer, rule: @p1r1,
+                          triage_status: 'addressed_by', addressed_by_rule_id: parent_rule.id)
+      review.valid?
+      expect(review.errors[:addressed_by_rule_id]).to be_empty
+    end
+
+    it 'rejects a stray addressed_by_rule_id on a non-addressed_by triage' do
+      review = Review.new(action: 'comment', comment: 'x', user: @p_viewer, rule: @p1r1,
+                          triage_status: 'concur', addressed_by_rule_id: parent_rule.id)
+      expect(review).not_to be_valid
+      expect(review.errors[:addressed_by_rule_id].join).to match(/blank.*not addressed_by/i)
+    end
+
+    it 'allows nil addressed_by_rule_id on a non-addressed_by triage' do
+      review = Review.new(action: 'comment', comment: 'fine', user: @p_viewer, rule: @p1r1,
+                          triage_status: 'concur', addressed_by_rule_id: nil)
+      expect(review).to be_valid
+    end
+
+    it 'auto-adjudicates addressed_by as a terminal status' do
+      review = create(:review, :comment, comment: 'child comment', section: nil, user: @p_viewer, rule: @p1r1)
+      review.update!(
+        triage_status: 'addressed_by',
+        addressed_by_rule_id: parent_rule.id,
+        triage_set_by_id: @p_admin.id,
+        triage_set_at: Time.current
+      )
+      expect(review.reload.adjudicated_at).to be_present
+    end
+
+    it 'exposes the addressed_by association' do
+      review = create(:review, :comment, comment: 'child comment', section: nil, user: @p_viewer, rule: @p1r1)
+      review.update!(
+        triage_status: 'addressed_by',
+        addressed_by_rule_id: parent_rule.id,
+        triage_set_by_id: @p_admin.id,
+        triage_set_at: Time.current
+      )
+      expect(review.reload.addressed_by_rule).to eq(parent_rule)
+    end
+  end
+
   describe 'responding_to_review_id invariants' do
     let!(:parent) do
       create(:review, :comment, comment: 'parent', section: nil, user: @p_viewer, rule: @p1r1)
