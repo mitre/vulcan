@@ -1,7 +1,7 @@
 <template>
   <div class="rule-context-panel">
     <template v-if="ruleContent">
-      <div class="d-flex align-items-center mb-1">
+      <div class="rule-context-header d-flex align-items-center mb-2">
         <h6 class="mb-0 font-weight-bold flex-grow-1">
           <b-icon
             v-if="ruleContent.locked"
@@ -79,6 +79,7 @@
           </b-button>
         </span>
       </div>
+      <hr class="rule-context-divider mt-1 mb-2" />
       <p v-if="ruleContent.title" class="text-muted small mb-2">
         {{ ruleContent.title }}
       </p>
@@ -99,7 +100,7 @@
         v-for="section in collapsibleSections"
         :key="section.key"
         :data-section="section.key"
-        class="mb-2"
+        class="mb-3"
       >
         <div
           class="section-header d-flex align-items-center px-2 py-1 rounded"
@@ -116,9 +117,9 @@
             class="mr-2 flex-shrink-0"
           />
           <span class="section-title">{{ section.label }}</span>
-          <span v-if="sectionCount(section.key) > 0" class="badge badge-pill badge-secondary ml-1"
-            >({{ sectionCount(section.key) }})</span
-          >
+          <span v-if="sectionCount(section.key) > 0" class="comment-count-badge">{{
+            sectionCount(section.key)
+          }}</span>
           <span
             v-if="!isSectionExpanded(section.key)"
             class="section-preview text-muted small ml-2 text-truncate"
@@ -287,9 +288,36 @@ export default {
   background-color: rgba(0, 0, 0, 0.04);
 }
 
+.rule-context-header {
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.rule-context-divider {
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
 .section-title {
-  font-weight: 600;
-  font-size: 0.85rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.comment-count-badge {
+  position: relative;
+  top: -0.5em;
+  font-size: 0.65rem;
+  font-weight: 700;
+  background-color: var(--secondary);
+  color: white;
+  border-radius: 50%;
+  min-width: 1.2em;
+  height: 1.2em;
+  padding: 0 0.3em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  margin-left: 0.15em;
 }
 
 .section-header--collapsed {

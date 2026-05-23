@@ -250,22 +250,24 @@ describe("RuleContextPanel", () => {
   describe("section comment count badges", () => {
     const sectionCounts = { check_content: 3, fixtext: 1 };
 
-    it('shows "(3)" badge on section header when 3 comments target that section', () => {
+    it("shows badge with count 3 on check_content section header", () => {
       const w = mount(RuleContextPanel, {
         localVue,
         propsData: props({ sectionCommentCounts: sectionCounts }),
       });
-      const checkHeader = w.find('[data-section="check_content"] .section-header');
-      expect(checkHeader.text()).toContain("(3)");
+      const badge = w.find('[data-section="check_content"] .comment-count-badge');
+      expect(badge.exists()).toBe(true);
+      expect(badge.text()).toBe("3");
     });
 
-    it('shows "(1)" badge on fixtext section', () => {
+    it("shows badge with count 1 on fixtext section", () => {
       const w = mount(RuleContextPanel, {
         localVue,
         propsData: props({ sectionCommentCounts: sectionCounts }),
       });
-      const fixHeader = w.find('[data-section="fixtext"] .section-header');
-      expect(fixHeader.text()).toContain("(1)");
+      const badge = w.find('[data-section="fixtext"] .comment-count-badge');
+      expect(badge.exists()).toBe(true);
+      expect(badge.text()).toBe("1");
     });
 
     it("shows no badge when section has 0 comments", () => {
@@ -273,8 +275,8 @@ describe("RuleContextPanel", () => {
         localVue,
         propsData: props({ sectionCommentCounts: sectionCounts }),
       });
-      const vulnHeader = w.find('[data-section="vuln_discussion"] .section-header');
-      expect(vulnHeader.text()).not.toMatch(/\(\d+\)/);
+      const badge = w.find('[data-section="vuln_discussion"] .comment-count-badge');
+      expect(badge.exists()).toBe(false);
     });
 
     it("shows no badges when sectionCommentCounts is empty", () => {
@@ -282,10 +284,7 @@ describe("RuleContextPanel", () => {
         localVue,
         propsData: props({ sectionCommentCounts: {} }),
       });
-      const headers = w.findAll(".section-header");
-      headers.wrappers.forEach((h) => {
-        expect(h.text()).not.toMatch(/\(\d+\)/);
-      });
+      expect(w.findAll(".comment-count-badge").length).toBe(0);
     });
   });
 
@@ -317,8 +316,9 @@ describe("RuleContextPanel", () => {
       localVue,
       propsData: props({ sectionCommentCounts: { check_content: 3, fixtext: 1 } }),
     });
-    const checkHeader = w.find('[data-section="check_content"] .section-header');
-    expect(checkHeader.text()).toContain("(3)");
+    const badge = w.find('[data-section="check_content"] .comment-count-badge');
+    expect(badge.exists()).toBe(true);
+    expect(badge.text()).toBe("3");
   });
 
   // ── Fix 4: Advanced fields toggle (default collapsed) ──────────────
@@ -418,6 +418,45 @@ describe("RuleContextPanel", () => {
     expect(fixIdx).toBeGreaterThan(-1);
     expect(vendorIdx).toBeGreaterThan(-1);
     expect(fixIdx).toBeLessThan(vendorIdx);
+  });
+
+  // ── Notification badge on section comment count ─────────────────────
+
+  it("renders comment count as a superscript badge, not inline text", () => {
+    const w = mount(RuleContextPanel, {
+      localVue,
+      propsData: props({ sectionCommentCounts: { check_content: 3 } }),
+    });
+    const badge = w.find('[data-section="check_content"] .comment-count-badge');
+    expect(badge.exists()).toBe(true);
+    expect(badge.text()).toBe("3");
+  });
+
+  // ── Visual separator between header and content ───────────────────
+
+  it("renders a separator between header controls and rule description", () => {
+    const w = mount(RuleContextPanel, { localVue, propsData: props() });
+    expect(w.find(".rule-context-header").exists()).toBe(true);
+    expect(w.find(".rule-context-divider").exists()).toBe(true);
+  });
+
+  // ── Expand/collapse all buttons ───────────────────────────────────
+
+  it("expands all sections when expand-all is clicked", async () => {
+    const w = mount(RuleContextPanel, {
+      localVue,
+      propsData: props({ focusedSection: "check_content" }),
+    });
+    expect(w.find('[data-section="fixtext"] .section-body').isVisible()).toBe(false);
+    await w.find("[data-testid='expand-all-sections']").trigger("click");
+    expect(w.find('[data-section="fixtext"] .section-body').isVisible()).toBe(true);
+  });
+
+  it("collapses all sections when collapse-all is clicked", async () => {
+    const w = mount(RuleContextPanel, { localVue, propsData: props() });
+    expect(w.find('[data-section="fixtext"] .section-body').isVisible()).toBe(true);
+    await w.find("[data-testid='collapse-all-sections']").trigger("click");
+    expect(w.find('[data-section="fixtext"] .section-body').isVisible()).toBe(false);
   });
 
   // ── Fix 6: Toggle label is "Focus Section" not "All Fields" ───────
