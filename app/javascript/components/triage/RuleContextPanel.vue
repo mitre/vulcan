@@ -116,7 +116,7 @@
             :icon="isSectionExpanded(section.key) ? 'chevron-down' : 'chevron-right'"
             class="mr-2 flex-shrink-0"
           />
-          <span class="section-title">{{ section.label }}</span>
+          <span class="section-title text-nowrap">{{ section.label }}</span>
           <b-badge
             v-if="sectionCount(section.key) > 0"
             variant="secondary"
