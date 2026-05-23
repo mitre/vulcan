@@ -927,4 +927,56 @@ describe("ComponentComments", () => {
       expect(callArgs[1].params.rule_id).toBeUndefined();
     });
   });
+
+  // ── Fix 1: Hide Expand All in split mode ───────────────────────────
+
+  it("hides Expand All toggle when in split-pane mode", async () => {
+    const wrapper = mount(ComponentComments, {
+      propsData: { componentId: 42 },
+      stubs: SHARED_STUBS,
+    });
+    await flushPromises(wrapper);
+    wrapper.vm.viewMode = "by-rule";
+    wrapper.vm.splitMode = true;
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find("[data-testid='expand-all']").exists()).toBe(false);
+  });
+
+  it("shows Expand All toggle in by-rule mode when NOT in split mode", async () => {
+    const wrapper = mount(ComponentComments, {
+      propsData: { componentId: 42 },
+      stubs: SHARED_STUBS,
+    });
+    await flushPromises(wrapper);
+    wrapper.vm.viewMode = "by-rule";
+    wrapper.vm.splitMode = false;
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find("[data-testid='expand-all']").exists()).toBe(true);
+  });
+
+  // ── Fix 3: Right-align Export CSV + Comment in split mode ──────────
+
+  it("adds ml-auto to export button in split mode", async () => {
+    const wrapper = mount(ComponentComments, {
+      propsData: { componentId: 42, effectivePermissions: "author" },
+      stubs: SHARED_STUBS,
+    });
+    await flushPromises(wrapper);
+    wrapper.vm.splitMode = true;
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.canExportDisposition).toBe(true);
+    expect(wrapper.vm.splitMode).toBe(true);
+  });
+
+  it("adds ml-auto to comment button when export hidden in split mode", async () => {
+    const wrapper = mount(ComponentComments, {
+      propsData: { componentId: 42, effectivePermissions: "viewer" },
+      stubs: SHARED_STUBS,
+    });
+    await flushPromises(wrapper);
+    wrapper.vm.splitMode = true;
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.canExportDisposition).toBe(false);
+    expect(wrapper.vm.splitMode).toBe(true);
+  });
 });

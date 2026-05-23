@@ -162,6 +162,13 @@ export default {
         }
       },
     },
+    normalizedCurrentId(id) {
+      if (id == null) return;
+      const idx = this.flatItems.findIndex(
+        (item) => item.type === "comment" && item.comment.id === id,
+      );
+      if (idx >= 0) this.focusedIndex = idx;
+    },
   },
   methods: {
     isActiveGroup(group) {

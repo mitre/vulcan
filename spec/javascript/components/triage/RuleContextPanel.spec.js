@@ -289,89 +289,107 @@ describe("RuleContextPanel", () => {
     });
   });
 
-  // ── Related comments list in expanded section (agw.11) ─────────────
+  // ── Fix 2: No inline comments in triage panel ──────────────────────
+  // REQUIREMENT: Sidebar handles comment navigation — inline comment
+  // stubs in the rule content panel are a duplicate affordance that
+  // violates Nielsen's consistency heuristic.
 
-  describe("related comments list", () => {
-    const relatedComments = [
-      { id: 1, section: "check_content", author_name: "Viewer", comment: "First comment", triage_status: "pending" },
-      { id: 2, section: "check_content", author_name: "Reviewer", comment: "Second comment", triage_status: "concur" },
-      { id: 3, section: "fixtext", author_name: "Author", comment: "Fix comment", triage_status: "pending" },
+  it("does NOT render inline comment stubs under section headers", () => {
+    const sectionComments = [
+      { id: 1, section: "check_content", author_name: "Viewer", comment: "First", triage_status: "pending" },
+      { id: 2, section: "check_content", author_name: "Reviewer", comment: "Second", triage_status: "concur" },
     ];
+    const w = mount(RuleContextPanel, {
+      localVue,
+      propsData: props({
+        focusedSection: "check_content",
+        sectionComments,
+        activeCommentId: 1,
+        sectionCommentCounts: { check_content: 2 },
+      }),
+    });
+    expect(w.findAll(".related-comment").length).toBe(0);
+    expect(w.findAll(".related-comments-list").length).toBe(0);
+  });
 
-    it("renders related comments below the expanded section body", () => {
+  it("still shows section comment count badges after removing inline comments", () => {
+    const w = mount(RuleContextPanel, {
+      localVue,
+      propsData: props({ sectionCommentCounts: { check_content: 3, fixtext: 1 } }),
+    });
+    const checkHeader = w.find('[data-section="check_content"] .section-header');
+    expect(checkHeader.text()).toContain("(3)");
+  });
+
+  // ── Fix 4: Advanced fields toggle (default collapsed) ──────────────
+  // REQUIREMENT: Advanced fields (status_justification, version,
+  // rule_weight, etc.) should be hidden by default in triage mode.
+  // Triagers can expand them but shouldn't see the full kitchen sink.
+
+  describe("advanced fields toggle", () => {
+    it("hides advanced fields by default", () => {
+      const contentWithAdvanced = {
+        ...ruleContent,
+        status_justification: "Because reasons",
+        version: "003.001",
+        rule_weight: "10.0",
+      };
       const w = mount(RuleContextPanel, {
         localVue,
-        propsData: props({
-          focusedSection: "check_content",
-          sectionComments: relatedComments,
-          activeCommentId: 1,
-          sectionCommentCounts: { check_content: 2, fixtext: 1 },
-        }),
+        propsData: props({ ruleContent: contentWithAdvanced }),
       });
-      const section = w.find('[data-section="check_content"]');
-      const relatedList = section.findAll(".related-comment");
-      expect(relatedList.length).toBe(2);
+      expect(w.find('[data-section="status_justification"]').exists()).toBe(false);
+      expect(w.find('[data-section="version"]').exists()).toBe(false);
     });
 
-    it("shows author name and truncated text for each related comment", () => {
+    it("shows advanced fields when toggle is enabled", async () => {
+      const contentWithAdvanced = {
+        ...ruleContent,
+        status_justification: "Because reasons",
+        version: "003.001",
+      };
       const w = mount(RuleContextPanel, {
         localVue,
-        propsData: props({
-          focusedSection: "check_content",
-          sectionComments: relatedComments,
-          activeCommentId: 1,
-          sectionCommentCounts: { check_content: 2 },
-        }),
+        propsData: props({ ruleContent: contentWithAdvanced }),
       });
-      const items = w.findAll('[data-section="check_content"] .related-comment');
-      expect(items.at(0).text()).toContain("Viewer");
-      expect(items.at(1).text()).toContain("Reviewer");
+      w.vm.showAdvanced = true;
+      await w.vm.$nextTick();
+      expect(w.find('[data-section="status_justification"]').exists()).toBe(true);
+      expect(w.find('[data-section="version"]').exists()).toBe(true);
     });
 
-    it("highlights the active comment in the related list", () => {
-      const w = mount(RuleContextPanel, {
-        localVue,
-        propsData: props({
-          focusedSection: "check_content",
-          sectionComments: relatedComments,
-          activeCommentId: 1,
-          sectionCommentCounts: { check_content: 2 },
-        }),
-      });
-      const items = w.findAll('[data-section="check_content"] .related-comment');
-      expect(items.at(0).classes()).toContain("related-comment--active");
-      expect(items.at(1).classes()).not.toContain("related-comment--active");
+    it("renders an Advanced Fields toggle control", () => {
+      const w = mount(RuleContextPanel, { localVue, propsData: props() });
+      expect(w.find("[data-testid='advanced-fields-toggle']").exists()).toBe(true);
     });
+  });
 
-    it("emits select-comment when a related comment is clicked", async () => {
-      const w = mount(RuleContextPanel, {
-        localVue,
-        propsData: props({
-          focusedSection: "check_content",
-          sectionComments: relatedComments,
-          activeCommentId: 1,
-          sectionCommentCounts: { check_content: 2 },
-        }),
-      });
-      const items = w.findAll('[data-section="check_content"] .related-comment');
-      await items.at(1).trigger("click");
-      expect(w.emitted("select-comment")).toBeTruthy();
-      expect(w.emitted("select-comment")[0][0]).toBe(2);
-    });
+  // ── Fix 5: Focused section background highlight ────────────────────
 
-    it("does not render related comments for collapsed sections", () => {
-      const w = mount(RuleContextPanel, {
-        localVue,
-        propsData: props({
-          focusedSection: "check_content",
-          sectionComments: relatedComments,
-          activeCommentId: 1,
-          sectionCommentCounts: { fixtext: 1 },
-        }),
-      });
-      const fixSection = w.find('[data-section="fixtext"]');
-      expect(fixSection.findAll(".related-comment").length).toBe(0);
+  it("applies focus background tint to the focused section body", () => {
+    const w = mount(RuleContextPanel, {
+      localVue,
+      propsData: props({ focusedSection: "check_content" }),
     });
+    const body = w.find('[data-section="check_content"] .section-body');
+    expect(body.classes()).toContain("section-body--focused");
+  });
+
+  it("does NOT apply focus tint to non-focused sections", () => {
+    const w = mount(RuleContextPanel, {
+      localVue,
+      propsData: props({ focusedSection: "check_content" }),
+    });
+    const body = w.find('[data-section="fixtext"] .section-body');
+    expect(body.classes()).not.toContain("section-body--focused");
+  });
+
+  // ── Fix 6: Toggle label is "Focus Section" not "All Fields" ───────
+
+  it("labels the context mode toggle as 'Focus Section'", () => {
+    const w = mount(RuleContextPanel, { localVue, propsData: props() });
+    expect(w.text()).toContain("Focus Section");
+    expect(w.text()).not.toContain("All Fields");
   });
 
   // ── Locked status ──────────────────────────────────────────────────

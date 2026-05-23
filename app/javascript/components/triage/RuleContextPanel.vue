@@ -30,16 +30,16 @@
           </b-badge>
         </h6>
         <b-form-checkbox
-          :checked="contextMode === 'all'"
+          :checked="contextMode === 'commented'"
           switch
           size="sm"
           class="ml-2 flex-shrink-0"
           data-testid="context-mode-toggle"
-          @change="$emit('update:contextMode', $event ? 'all' : 'commented')"
+          @change="$emit('update:contextMode', $event ? 'commented' : 'all')"
         >
           <small class="text-muted">
-            All Fields
-            <InfoTooltip text="Show all rule fields or only sections with comments" />
+            Focus Section
+            <InfoTooltip text="Show only the section this comment targets, or expand all fields" />
           </small>
         </b-form-checkbox>
       </div>
@@ -97,26 +97,22 @@
           :class="{ 'section-body--focused': section.key === focusedSection }"
           v-text="section.content"
         />
-        <div
-          v-if="isSectionExpanded(section.key) && sectionCommentsFor(section.key).length > 0"
-          class="related-comments-list small ml-4 mt-1 mb-2"
-        >
-          <div
-            v-for="rc in sectionCommentsFor(section.key)"
-            :key="rc.id"
-            class="related-comment d-flex align-items-baseline px-2 py-1 rounded mb-1"
-            :class="{ 'related-comment--active': rc.id === activeCommentId }"
-            role="button"
-            tabindex="0"
-            @click="$emit('select-comment', rc.id)"
-            @keydown.enter="$emit('select-comment', rc.id)"
-            @keydown.space.prevent="$emit('select-comment', rc.id)"
-          >
-            <span class="text-muted mr-1">#{{ rc.id }}</span>
-            <strong class="mr-1">{{ rc.author_name || "—" }}</strong>
-            <span class="text-muted text-truncate" :title="rc.comment">{{ rc.comment }}</span>
-          </div>
-        </div>
+      </div>
+      <div
+        class="advanced-toggle d-flex align-items-center px-2 py-1 mt-2 rounded small"
+        data-testid="advanced-fields-toggle"
+        role="button"
+        tabindex="0"
+        @click="showAdvanced = !showAdvanced"
+        @keydown.enter="showAdvanced = !showAdvanced"
+        @keydown.space.prevent="showAdvanced = !showAdvanced"
+      >
+        <b-icon :icon="showAdvanced ? 'chevron-down' : 'chevron-right'" class="mr-2" />
+        <strong>Advanced Fields</strong>
+        <InfoTooltip
+          text="Additional metadata fields (version, weight, identifiers). Most triagers do not need these."
+          class="ml-1"
+        />
       </div>
     </template>
 
@@ -162,6 +158,7 @@ export default {
   data() {
     return {
       manualToggles: {},
+      showAdvanced: false,
     };
   },
   computed: {
@@ -193,8 +190,10 @@ export default {
       addFields(config.rule.displayed);
       addFields(config.disa.displayed);
       addFields(config.check.displayed);
-      if (config.rule.advancedDisplayed) addFields(config.rule.advancedDisplayed);
-      if (config.disa.advancedDisplayed) addFields(config.disa.advancedDisplayed);
+      if (this.showAdvanced) {
+        if (config.rule.advancedDisplayed) addFields(config.rule.advancedDisplayed);
+        if (config.disa.advancedDisplayed) addFields(config.disa.advancedDisplayed);
+      }
 
       if (this.contextMode === "commented" && this.commentedSectionsSet.size > 0) {
         return fields.filter((f) => this.commentedSectionsSet.has(f.key));
@@ -235,9 +234,6 @@ export default {
     sectionCount(key) {
       return this.sectionCommentCounts[key] || 0;
     },
-    sectionCommentsFor(key) {
-      return this.sectionComments.filter((c) => c.section === key);
-    },
   },
 };
 </script>
@@ -253,7 +249,7 @@ export default {
 }
 
 .section-header--collapsed {
-  opacity: 0.85;
+  opacity: 0.7;
 }
 
 .section-body {
@@ -267,24 +263,21 @@ export default {
 .section-body--focused {
   border-left: 3px solid var(--primary);
   padding-left: calc(2rem - 3px);
+  background-color: rgba(0, 123, 255, 0.04);
+  border-radius: 0 0.25rem 0.25rem 0;
 }
 
 .section-preview {
   max-width: 60%;
 }
 
-.related-comment {
+.advanced-toggle {
   cursor: pointer;
-  border-left: 2px solid transparent;
+  user-select: none;
+  border: 1px dashed rgba(0, 0, 0, 0.15);
 }
 
-.related-comment:hover {
+.advanced-toggle:hover {
   background-color: rgba(0, 0, 0, 0.04);
-}
-
-.related-comment--active {
-  border-left-color: var(--primary);
-  background-color: rgba(0, 123, 255, 0.06);
-  font-weight: 500;
 }
 </style>

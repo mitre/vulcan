@@ -185,6 +185,30 @@ describe("TriageRuleSidebar", () => {
     expect(w.find("[data-testid='sidebar-header']").text()).toContain("3 pending");
   });
 
+  // ── Fix 7: Keyboard nav syncs with clicks ──────────────────────────
+  // REQUIREMENT: When user clicks a comment, keyboard navigation
+  // should continue from that position, not restart from the top.
+
+  it("syncs focusedIndex to the clicked comment position", async () => {
+    const w = mount(TriageRuleSidebar, { localVue, propsData: baseProps({ currentId: 1 }) });
+    await w.setProps({ currentId: 3 });
+    await w.vm.$nextTick();
+    const idx = w.vm.flatItems.findIndex(
+      (item) => item.type === "comment" && item.comment.id === 3,
+    );
+    expect(w.vm.focusedIndex).toBe(idx);
+  });
+
+  it("keyboard ArrowDown from synced position goes to next item", async () => {
+    const w = mount(TriageRuleSidebar, { localVue, propsData: baseProps({ currentId: 1 }) });
+    await w.setProps({ currentId: 2 });
+    await w.vm.$nextTick();
+    const syncedIdx = w.vm.focusedIndex;
+    const list = w.find("[data-testid='sidebar-list']");
+    await list.trigger("keydown", { key: "ArrowDown" });
+    expect(w.vm.focusedIndex).toBe(syncedIdx + 1);
+  });
+
   describe("parent/child grouping", () => {
     const nestedComments = [
       {

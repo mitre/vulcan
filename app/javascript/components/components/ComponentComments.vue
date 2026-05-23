@@ -57,13 +57,14 @@
         :href="dispositionExportUrl"
         variant="outline-secondary"
         size="sm"
+        :class="{ 'ml-auto': splitMode }"
         aria-label="Export disposition matrix CSV"
         title="Export DISA disposition matrix (CSV) — passes through the active status filter"
       >
         <b-icon icon="download" /> Export CSV
       </b-button>
       <b-form-checkbox
-        v-if="viewMode === 'by-rule'"
+        v-if="viewMode === 'by-rule' && !splitMode"
         v-model="allExpanded"
         switch
         size="sm"
@@ -101,6 +102,7 @@
         v-if="canCommentOnComponent"
         variant="primary"
         size="sm"
+        :class="{ 'ml-auto': splitMode && !canExportDisposition }"
         aria-label="Add component-level comment"
         @click="openComponentComposerLocal"
       >
