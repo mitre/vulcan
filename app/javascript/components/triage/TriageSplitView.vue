@@ -529,13 +529,18 @@ export default {
 </script>
 
 <style scoped>
-.triage-columns {
-  height: calc(100vh - 320px);
-  min-height: 400px;
+.triage-col {
+  overflow-y: auto;
 }
 
-.triage-col {
-  height: 100%;
-  overflow-y: auto;
+@media (min-width: 992px) {
+  .triage-columns {
+    height: calc(100vh - 320px);
+    min-height: 400px;
+  }
+
+  .triage-col {
+    height: 100%;
+  }
 }
 </style>
