@@ -187,6 +187,22 @@ describe("TriageRuleSidebar", () => {
     expect(header.element.tagName).toBe("H6");
   });
 
+  // ── Auto-collapse: clicking a new group closes the previous one ────
+
+  it("collapses the previously expanded group when a new group is clicked", async () => {
+    const w = mount(TriageRuleSidebar, { localVue, propsData: baseProps({ currentId: 1 }) });
+    const headers = w.findAll("[data-testid='sidebar-rule-header']");
+    await headers.at(2).trigger("click");
+    expect(w.vm.expandedGroups["CNTR-01-000002"]).toBe(true);
+    expect(w.vm.expandedGroups["CNTR-01-000001"]).toBe(false);
+  });
+
+  it("keeps expand-all override when toggle is used", async () => {
+    const w = mount(TriageRuleSidebar, { localVue, propsData: baseProps({ currentId: 1 }) });
+    await w.find("[data-testid='toggle-sidebar-groups']").trigger("click");
+    expect(w.vm.allGroupsExpanded).toBe(true);
+  });
+
   // ── 05f.25: Comments within a group respect input order ─────────
   // Sidebar displays comments in the order received from sortedRows.
   // TriageSplitView.sortedRows sorts by compareBySectionOrder before

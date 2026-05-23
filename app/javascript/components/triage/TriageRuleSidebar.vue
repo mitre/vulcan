@@ -199,6 +199,9 @@ export default {
       if (this.expandedGroups[group.key]) {
         this.$set(this.expandedGroups, group.key, false);
       } else {
+        for (const g of this.filteredGroups) {
+          this.$set(this.expandedGroups, g.key, false);
+        }
         this.$set(this.expandedGroups, group.key, true);
         this.$emit("select", group.comments[0].id);
       }
