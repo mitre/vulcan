@@ -1,6 +1,6 @@
 <template>
   <div class="triage-rule-sidebar">
-    <div data-testid="sidebar-header" class="px-2 py-1 border-bottom small font-weight-bold">
+    <div data-testid="sidebar-header" class="px-2 py-1 border-bottom font-weight-bold">
       {{ totalPending }} pending of {{ comments.length }} total
     </div>
     <div class="px-2 py-1">
