@@ -139,6 +139,81 @@ def sanitize_satisfaction_sql(template, *values)
 end
 
 namespace :container_srg do
+  desc 'Revert backfill_adnm: restore original statuses + reopen adjudicated comments (dry-run by default)'
+  task revert_backfill: :environment do
+    component_id = ENV.fetch('COMPONENT_ID', '29')
+    component = Component.find(component_id)
+    dry_run = ENV.fetch('EXECUTE', 'false') != 'true'
+    admin = User.find_by(admin: true)
+
+    puts dry_run ? '=== DRY RUN (set EXECUTE=true to apply) ===' : '=== EXECUTING ==='
+    puts "Component: #{component.id} - #{component.prefix} - #{component.name}"
+    puts
+
+    children = component.rules.includes(:satisfied_by, :audits, :disa_rule_descriptions)
+                        .select { |r| r.satisfied_by.any? }
+    adnm_children = children.select { |r| r.status == 'Applicable - Does Not Meet' }
+    child_ids = children.map(&:id)
+
+    addressed_comments = Review.where(rule_id: child_ids, action: 'comment',
+                                      responding_to_review_id: nil, triage_status: 'addressed_by')
+
+    response_pattern = 'This requirement is addressed by %'
+    auto_responses = Review.where(responding_to_review_id: addressed_comments.select(:id))
+                           .where(user_id: admin&.id)
+                           .where('comment LIKE ?', response_pattern)
+
+    puts "ADNM children to revert: #{adnm_children.size}"
+    puts "Addressed_by comments to reopen: #{addressed_comments.count}"
+    puts "Auto-generated responses to remove: #{auto_responses.count}"
+    puts
+
+    puts '--- Status reverts ---'
+    adnm_children.each do |child|
+      original = child.send(:find_pre_nesting_status)
+      puts "  #{component.prefix}-#{child.rule_id.ljust(8)} ADNM → #{original}"
+      child.revert_nesting_status! unless dry_run
+    end
+
+    puts
+    puts '--- Comment reopening ---'
+    addressed_comments.find_each do |comment|
+      puts "  ##{comment.id} on #{component.prefix}-#{comment.rule&.rule_id} → pending"
+      next if dry_run
+
+      # rubocop:disable Rails/SkipsModelValidations
+      comment.update_columns(
+        triage_status: 'pending',
+        addressed_by_rule_id: nil,
+        triage_set_by_id: nil,
+        triage_set_at: nil,
+        adjudicated_at: nil,
+        adjudicated_by_id: nil
+      )
+      # rubocop:enable Rails/SkipsModelValidations
+    end
+
+    puts
+    puts '--- Auto-response cleanup ---'
+    auto_responses.find_each do |resp|
+      puts "  DELETE response ##{resp.id} (reply to ##{resp.responding_to_review_id})"
+      resp.destroy! unless dry_run
+    end
+
+    puts
+    puts '=== SUMMARY ==='
+    if dry_run
+      puts "Would revert #{adnm_children.size} rules + reopen #{addressed_comments.count} comments + delete #{auto_responses.count} responses"
+      puts 'Re-run with EXECUTE=true to apply'
+    else
+      still_adnm = component.rules.includes(:satisfied_by)
+                            .select { |r| r.satisfied_by.any? && r.status == 'Applicable - Does Not Meet' }
+      puts "Children still ADNM: #{still_adnm.size}"
+      still_addressed = Review.where(rule_id: child_ids, triage_status: 'addressed_by').count
+      puts "Comments still addressed_by: #{still_addressed}"
+    end
+  end
+
   desc 'Backfill ADNM status on children + auto-adjudicate pending comments as addressed_by (dry-run by default)'
   task backfill_adnm: :environment do
     component_id = ENV.fetch('COMPONENT_ID', '29')
