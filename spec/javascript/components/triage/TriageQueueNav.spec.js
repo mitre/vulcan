@@ -227,6 +227,15 @@ describe("TriageQueueNav", () => {
     expect(list.attributes("aria-label")).toBe("Browse all comments");
   });
 
+  it("closes browse panel on Escape key", async () => {
+    const w = mount(TriageQueueNav, { localVue, propsData: baseProps() });
+    w.vm.browseOpen = true;
+    await w.vm.$nextTick();
+    const list = w.find("[role='listbox']");
+    await list.trigger("keydown", { key: "Escape" });
+    expect(w.vm.browseOpen).toBe(false);
+  });
+
   it("handles string currentId from route params (type coercion)", () => {
     const w = mount(TriageQueueNav, {
       localVue,

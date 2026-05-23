@@ -928,6 +928,36 @@ describe("ComponentComments", () => {
     });
   });
 
+  // ── 05f.28.5: viewParentComments + exitSplitMode ───────────────────
+
+  it("viewParentComments swaps filter to parent rule", async () => {
+    const wrapper = mount(ComponentComments, {
+      propsData: { componentId: 42 },
+      stubs: SHARED_STUBS,
+    });
+    await flushPromises(wrapper);
+    wrapper.vm.filterRuleId = 100;
+    wrapper.vm.filterParentRuleId = 200;
+    wrapper.vm.filterParentDisplayName = "PARENT-001";
+    wrapper.vm.viewParentComments();
+    expect(wrapper.vm.filterRuleId).toBe(200);
+    expect(wrapper.vm.filterRuleDisplayName).toBe("PARENT-001");
+  });
+
+  it("exitSplitMode resets split state and emits", async () => {
+    const wrapper = mount(ComponentComments, {
+      propsData: { componentId: 42 },
+      stubs: SHARED_STUBS,
+    });
+    await flushPromises(wrapper);
+    wrapper.vm.splitMode = true;
+    wrapper.vm.splitCommentId = 42;
+    wrapper.vm.exitSplitMode();
+    expect(wrapper.vm.splitMode).toBe(false);
+    expect(wrapper.vm.splitCommentId).toBeNull();
+    expect(wrapper.emitted("split-mode-changed")[0][0]).toBe(false);
+  });
+
   // ── Fix 1: Hide Expand All in split mode ───────────────────────────
 
   it("hides Expand All toggle when in split-pane mode", async () => {

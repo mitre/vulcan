@@ -255,6 +255,28 @@ describe("TriageRuleSidebar", () => {
     expect(w.vm.focusedIndex).toBe(syncedIdx + 1);
   });
 
+  // ── 05f.28.5: Edge cases ───────────────────────────────────────────
+
+  it("renders empty state with zero comments", () => {
+    const w = mount(TriageRuleSidebar, {
+      localVue,
+      propsData: { comments: [], currentId: null },
+    });
+    expect(w.findAll("[data-testid='sidebar-rule-header']").length).toBe(0);
+    expect(w.find("[data-testid='sidebar-header']").text()).toContain("0 of 0");
+  });
+
+  it("collapses expanded group when clicking its header again", async () => {
+    const w = mount(TriageRuleSidebar, { localVue, propsData: baseProps({ currentId: 1 }) });
+    const headers = w.findAll("[data-testid='sidebar-rule-header']");
+    const items = w.findAll("[data-testid='sidebar-comment-item']");
+    expect(items.length).toBeGreaterThan(0);
+    await headers.at(1).trigger("click");
+    await w.vm.$nextTick();
+    const itemsAfter = w.findAll("[data-testid='sidebar-comment-item']");
+    expect(itemsAfter.length).toBe(0);
+  });
+
   describe("parent/child grouping", () => {
     const nestedComments = [
       {

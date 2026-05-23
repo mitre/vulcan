@@ -622,4 +622,44 @@ describe("TriageSplitView", () => {
     });
     expect(w.find("[data-testid='comment-divider']").exists()).toBe(true);
   });
+
+  // ── 05f.28.5: doSave payload variants ────────────────────────────
+
+  it("includes response_comment in triage PATCH when provided", async () => {
+    axios.patch.mockResolvedValue({ data: { review: { id: 1, triage_status: "concur" } } });
+    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    await w.vm.doSave({ triage_status: "concur", response_comment: "Thanks!" }, false);
+    await flushPromises(w);
+    const call = axios.patch.mock.calls.find(([url]) => url.includes("/triage"));
+    expect(call[1].response_comment).toBe("Thanks!");
+  });
+
+  it("includes duplicate_of_review_id when status is duplicate", async () => {
+    axios.patch.mockResolvedValue({ data: { review: { id: 1, triage_status: "duplicate" } } });
+    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    await w.vm.doSave({ triage_status: "duplicate", duplicate_of_review_id: 99 }, false);
+    await flushPromises(w);
+    const call = axios.patch.mock.calls.find(([url]) => url.includes("/triage"));
+    expect(call[1].duplicate_of_review_id).toBe(99);
+  });
+
+  // ── 05f.28.5: advanceToNext boundary ────────────────────────────
+
+  it("stays on last comment when advanceToNext at end of list", async () => {
+    const w = mount(TriageSplitView, {
+      localVue,
+      propsData: baseProps({ initialCommentId: 3 }),
+    });
+    const before = w.vm.activeCommentId;
+    w.vm.advanceToNext();
+    expect(w.vm.activeCommentId).toBe(before);
+  });
+
+  // ── 05f.28.5: exitSplitMode via ComponentComments ─────────────
+
+  it("emits exit when cancel is called", () => {
+    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    w.vm.onCancel();
+    expect(w.emitted("exit")).toBeTruthy();
+  });
 });

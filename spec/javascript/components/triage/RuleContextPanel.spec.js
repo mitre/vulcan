@@ -213,7 +213,7 @@ describe("RuleContextPanel", () => {
       localVue,
       propsData: props({
         contextMode: "commented",
-        commentedSections: new Set(["check_content", "fixtext"]),
+        commentedSections: ["check_content", "fixtext"],
       }),
     });
     expect(w.find('[data-section="check_content"]').exists()).toBe(true);
@@ -227,7 +227,7 @@ describe("RuleContextPanel", () => {
       localVue,
       propsData: props({
         contextMode: "all",
-        commentedSections: new Set(["check_content"]),
+        commentedSections: ["check_content"],
       }),
     });
     expect(w.find('[data-section="check_content"]').exists()).toBe(true);
