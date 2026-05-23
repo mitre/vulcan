@@ -1003,7 +1003,7 @@ describe("ComponentComments", () => {
       delete window.location;
       window.location = { href: "" };
       wrapper.vm.openTriageFor(row);
-      expect(window.location.href).toContain("/components/29/triage");
+      expect(window.location.href).toContain("/components/29/triage?comment=42");
     });
   });
 });

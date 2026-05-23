@@ -81,6 +81,13 @@ export default {
       ];
     },
   },
+  mounted() {
+    const params = new URLSearchParams(window.location.search);
+    const commentId = params.get("comment");
+    if (commentId && this.$refs.comments) {
+      this.$refs.comments.openTriageFor({ id: Number(commentId) });
+    }
+  },
   methods: {
     onSplitModeChanged(val) {
       this.isSplitMode = val;

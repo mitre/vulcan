@@ -647,7 +647,7 @@ export default {
     },
     openTriageFor(row) {
       if (this.scope === "project" && row.component_id) {
-        window.location.href = `/components/${row.component_id}/triage`;
+        window.location.href = `/components/${row.component_id}/triage?comment=${row.id}`;
         return;
       }
       this.splitCommentId = row.id;
