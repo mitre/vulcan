@@ -82,7 +82,7 @@
         </span>
       </div>
       <hr class="rule-context-divider mt-4 mb-2" />
-      <p v-if="ruleContent.title" class="text-muted small mb-2">
+      <p v-if="ruleContent.title" class="text-muted mb-2">
         {{ ruleContent.title }}
       </p>
 
@@ -136,7 +136,7 @@
         </div>
         <div
           v-show="isSectionExpanded(section.key)"
-          class="section-body small"
+          class="section-body"
           :class="{ 'section-body--focused': section.key === focusedSection }"
           v-text="section.content"
         />
