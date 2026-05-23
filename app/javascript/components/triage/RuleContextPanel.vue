@@ -81,7 +81,7 @@
           </b-button>
         </span>
       </div>
-      <hr class="rule-context-divider mt-3 mb-2" />
+      <hr class="rule-context-divider mt-4 mb-2" />
       <p v-if="ruleContent.title" class="text-muted small mb-2">
         {{ ruleContent.title }}
       </p>
