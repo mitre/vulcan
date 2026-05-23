@@ -170,8 +170,6 @@ export default {
     },
     commentedSections: { type: Array, default: () => [] },
     sectionCommentCounts: { type: Object, default: () => ({}) },
-    sectionComments: { type: Array, default: () => [] },
-    activeCommentId: { type: Number, default: null },
   },
   data() {
     return {
@@ -213,10 +211,11 @@ export default {
         if (config.disa.advancedDisplayed) addFields(config.disa.advancedDisplayed);
       }
 
-      fields.sort(
-        (a, b) =>
-          (FIELD_DISPLAY_ORDER.indexOf(a.key) ?? 999) - (FIELD_DISPLAY_ORDER.indexOf(b.key) ?? 999),
-      );
+      fields.sort((a, b) => {
+        const idxA = FIELD_DISPLAY_ORDER.indexOf(a.key);
+        const idxB = FIELD_DISPLAY_ORDER.indexOf(b.key);
+        return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB);
+      });
 
       if (this.contextMode === "commented" && this.commentedSectionsSet.size > 0) {
         return fields.filter((f) => this.commentedSectionsSet.has(f.key));

@@ -864,30 +864,30 @@ describe("ComponentComments", () => {
   });
 
   describe("search result selection (rule_id filtering)", () => {
-    it("sets filterRuleId from search result (DB id, not rule_id string)", () => {
+    it("sets filterRuleId from comment search result", () => {
       const wrapper = mount(ComponentComments, {
         propsData: { componentId: 29, componentPrefix: "CNTR" },
         stubs: SHARED_STUBS,
       });
-      wrapper.vm.onSearchResultSelected({ id: 42, rule_id: "000050" });
+      wrapper.vm.onCommentSearchResultSelected({ rule_id: 42, rule_displayed_name: "CNTR-000050" });
       expect(wrapper.vm.filterRuleId).toBe(42);
     });
 
-    it("does NOT set filterText when search result is selected", () => {
+    it("sets filterText from searchQuery in comment search result", () => {
       const wrapper = mount(ComponentComments, {
         propsData: { componentId: 29, componentPrefix: "CNTR" },
         stubs: SHARED_STUBS,
       });
-      wrapper.vm.onSearchResultSelected({ id: 42, rule_id: "000050" });
-      expect(wrapper.vm.filterText).toBe("");
+      wrapper.vm.onCommentSearchResultSelected({ searchQuery: "runc", rule_id: 42, rule_displayed_name: "CNTR-000050" });
+      expect(wrapper.vm.filterText).toBe("runc");
     });
 
-    it("sets filterRuleDisplayName for the chip display", () => {
+    it("sets filterRuleDisplayName from comment search result", () => {
       const wrapper = mount(ComponentComments, {
         propsData: { componentId: 29, componentPrefix: "CNTR" },
         stubs: SHARED_STUBS,
       });
-      wrapper.vm.onSearchResultSelected({ id: 42, rule_id: "000050", component_prefix: "CNTR" });
+      wrapper.vm.onCommentSearchResultSelected({ rule_id: 42, rule_displayed_name: "CNTR-000050" });
       expect(wrapper.vm.filterRuleDisplayName).toBe("CNTR-000050");
     });
 

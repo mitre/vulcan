@@ -58,7 +58,6 @@ export default {
     initialComponentState: { type: Object, required: true },
     project: { type: Object, required: true },
     effectivePermissions: { type: String, default: null },
-    currentUserId: { type: Number, required: true },
   },
   data() {
     return {
@@ -69,9 +68,6 @@ export default {
     };
   },
   computed: {
-    isAdmin() {
-      return this.effectivePermissions === "admin";
-    },
     breadcrumbs() {
       return [
         { text: "Projects", href: "/projects" },

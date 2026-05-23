@@ -501,15 +501,6 @@ export default {
       this.persistFilters();
       this.fetch();
     },
-    onSearchResultSelected(result) {
-      const prefix = result.component_prefix || this.componentPrefix;
-      this.filterRuleId = result.id;
-      this.filterRuleDisplayName = result.rule_id ? `${prefix}-${result.rule_id}` : "";
-      this.filterParentRuleId = result.parent_rule_id || null;
-      this.filterParentDisplayName = result.parent_display_name || "";
-      this.page = 1;
-      this.fetch();
-    },
     viewParentComments() {
       this.filterRuleId = this.filterParentRuleId;
       this.filterRuleDisplayName = this.filterParentDisplayName;

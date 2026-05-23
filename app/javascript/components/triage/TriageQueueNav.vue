@@ -237,9 +237,6 @@ export default {
     hasNextRule() {
       return this.currentRuleIndex >= 0 && this.currentRuleIndex < this.ruleGroups.length - 1;
     },
-    pendingCount() {
-      return this.comments.filter((c) => c.triage_status === "pending").length;
-    },
     filteredBrowseGroups() {
       if (!this.browseFilter) return this.ruleGroups;
       const q = this.browseFilter.toLowerCase();

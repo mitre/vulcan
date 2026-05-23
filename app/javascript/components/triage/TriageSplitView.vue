@@ -49,10 +49,7 @@
           :context-mode="contextMode"
           :commented-sections="commentedSections"
           :section-comment-counts="sectionCommentCounts"
-          :section-comments="activeRuleComments"
-          :active-comment-id="activeCommentId"
           @update:contextMode="$emit('update:contextMode', $event)"
-          @select-comment="onQueueSelect"
         />
       </b-col>
       <b-col

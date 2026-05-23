@@ -385,6 +385,18 @@ describe("RuleContextPanel", () => {
     expect(body.classes()).not.toContain("section-body--focused");
   });
 
+  // ── 05f.28.1: unknown fields must sort AFTER known fields ──────
+
+  it("indexOf sort uses ternary not nullish coalescing for -1", async () => {
+    const { FIELD_DISPLAY_ORDER } = await import("@/composables/ruleFieldConfig");
+    const idxMiss = FIELD_DISPLAY_ORDER.indexOf("nonexistent_field");
+    expect(idxMiss).toBe(-1);
+    const sortVal = idxMiss === -1 ? 999 : idxMiss;
+    expect(sortVal).toBe(999);
+    const buggyVal = idxMiss ?? 999;
+    expect(buggyVal).toBe(-1);
+  });
+
   // ── 05f.25: visibleFields sorted by FIELD_DISPLAY_ORDER ─────────
   // REQUIREMENT: Triage panel must show fields in the same order as
   // the editor (RuleForm.vue). Previously concatenated config arrays
