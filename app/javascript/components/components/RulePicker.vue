@@ -31,7 +31,7 @@
         :key="rule.id"
         :data-test="`target-rule-${rule.id}`"
         class="border rounded p-2 mb-1 rule-candidate"
-        :class="{ 'border-primary bg-light': Number(selectedRuleId) === rule.id }"
+        :class="ruleItemClasses(rule.id)"
         role="option"
         :aria-selected="Number(selectedRuleId) === rule.id"
         tabindex="0"
@@ -40,6 +40,13 @@
       >
         <div>
           <strong>{{ rule.displayed_name || `#${rule.rule_id}` }}</strong>
+          <span
+            v-if="relationshipLabel(rule.id)"
+            data-test="relationship-badge"
+            class="badge ml-1"
+            :class="relationshipLabel(rule.id) === 'Parent' ? 'badge-primary' : 'badge-secondary'"
+            >{{ relationshipLabel(rule.id) }}</span
+          >
           <small v-if="rule.title" class="text-muted ml-2">{{ truncate(rule.title, 80) }}</small>
         </div>
       </li>
@@ -69,9 +76,21 @@ export default {
     };
   },
   computed: {
+    sourceRule() {
+      return this.rules.find((r) => r.id === Number(this.excludeRuleId)) || null;
+    },
+    parentRuleIds() {
+      if (!this.sourceRule) return new Set();
+      return new Set((this.sourceRule.satisfied_by || []).map((r) => r.id));
+    },
+    childRuleIds() {
+      if (!this.sourceRule) return new Set();
+      return new Set((this.sourceRule.satisfies || []).map((r) => r.id));
+    },
     filteredRules() {
       const exclude = Number(this.excludeRuleId);
       const q = this.query.toLowerCase().trim();
+      const parents = this.parentRuleIds;
       return this.rules
         .filter((r) => r.id !== exclude)
         .filter((r) => {
@@ -79,6 +98,11 @@ export default {
           const name = (r.displayed_name || r.rule_id || "").toLowerCase();
           const title = (r.title || "").toLowerCase();
           return name.includes(q) || title.includes(q);
+        })
+        .sort((a, b) => {
+          const aParent = parents.has(a.id) ? 0 : 1;
+          const bParent = parents.has(b.id) ? 0 : 1;
+          return aParent - bParent;
         })
         .slice(0, 50);
     },
@@ -103,9 +127,35 @@ export default {
           this.loading = false;
         });
     },
+    ruleItemClasses(ruleId) {
+      const selected = Number(this.selectedRuleId) === ruleId;
+      const rel = this.relationshipLabel(ruleId);
+      return {
+        "border-primary bg-light": selected,
+        "rule-candidate--parent": rel === "Parent" && !selected,
+        "rule-candidate--child": rel === "Child" && !selected,
+      };
+    },
+    relationshipLabel(ruleId) {
+      if (this.parentRuleIds.has(ruleId)) return "Parent";
+      if (this.childRuleIds.has(ruleId)) return "Child";
+      return null;
+    },
     truncate(s, n) {
       return s && s.length > n ? `${s.slice(0, n)}…` : s;
     },
   },
 };
 </script>
+
+<style scoped>
+.rule-candidate--parent {
+  border-left: 3px solid var(--triage-addressed-by, #6366f1) !important;
+  background-color: var(--triage-addressed-by-tint, rgba(99, 102, 241, 0.06));
+}
+
+.rule-candidate--child {
+  border-left: 3px solid var(--vulcan-text-muted, #6c757d) !important;
+  background-color: rgba(108, 117, 125, 0.04);
+}
+</style>
