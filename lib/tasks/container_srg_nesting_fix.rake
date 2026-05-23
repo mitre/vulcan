@@ -137,3 +137,83 @@ end
 def sanitize_satisfaction_sql(template, *values)
   ActiveRecord::Base.sanitize_sql_array([template, *values])
 end
+
+namespace :container_srg do
+  desc 'Backfill ADNM status on children + auto-adjudicate pending comments as addressed_by (dry-run by default)'
+  task backfill_adnm: :environment do
+    component_id = ENV.fetch('COMPONENT_ID', '29')
+    component = Component.find(component_id)
+    dry_run = ENV.fetch('EXECUTE', 'false') != 'true'
+    admin = User.find_by(admin: true)
+
+    puts dry_run ? '=== DRY RUN (set EXECUTE=true to apply) ===' : '=== EXECUTING ==='
+    puts "Component: #{component.id} - #{component.prefix} - #{component.name}"
+    puts
+
+    children = component.rules.includes(:satisfied_by, :disa_rule_descriptions).select { |r| r.satisfied_by.any? }
+    wrong_status = children.reject { |r| r.status == 'Applicable - Does Not Meet' }
+    child_ids = children.map(&:id)
+    pending_comments = Review.where(rule_id: child_ids, action: 'comment',
+                                    responding_to_review_id: nil, triage_status: 'pending')
+
+    puts "Children with satisfied_by: #{children.size}"
+    puts "  Already ADNM: #{children.size - wrong_status.size}"
+    puts "  Need ADNM fix: #{wrong_status.size}"
+    puts "Pending comments on children: #{pending_comments.count}"
+    puts
+
+    puts '--- ADNM status fixes ---'
+    wrong_status.each do |child|
+      parent = child.satisfied_by.first
+      puts "  #{component.prefix}-#{child.rule_id.ljust(8)} #{child.status} → ADNM (parent: #{parent.rule_id})"
+      child.apply_nesting_status!(parent) unless dry_run
+    end
+
+    puts
+    puts '--- Comment adjudication ---'
+    pending_comments.find_each do |comment|
+      parent = children.find { |r| r.id == comment.rule_id }&.satisfied_by&.first
+      unless parent
+        puts "  SKIP ##{comment.id}: no parent found for rule_id #{comment.rule_id}"
+        next
+      end
+
+      puts "  ##{comment.id} on #{component.prefix}-#{comment.rule&.rule_id} → addressed_by #{parent.rule_id}"
+      next if dry_run
+
+      Review.transaction do
+        comment.update!(
+          triage_status: 'addressed_by',
+          addressed_by_rule_id: parent.id,
+          triage_set_by_id: admin.id,
+          triage_set_at: Time.current,
+          audit_comment: "Auto-adjudicated: requirement addressed by #{component.prefix}-#{parent.rule_id}"
+        )
+
+        Review.create!(
+          action: 'comment',
+          comment: "This requirement is addressed by #{component.prefix}-#{parent.rule_id}. " \
+                   'Your feedback applies to that requirement.',
+          user: admin,
+          rule: comment.rule,
+          responding_to_review_id: comment.id,
+          section: comment.section
+        )
+      end
+    end
+
+    puts
+    puts '=== SUMMARY ==='
+    if dry_run
+      puts "Would fix #{wrong_status.size} rules + adjudicate #{pending_comments.count} comments"
+      puts 'Re-run with EXECUTE=true to apply'
+    else
+      remaining = component.rules.includes(:satisfied_by)
+                           .select { |r| r.satisfied_by.any? && r.status != 'Applicable - Does Not Meet' }
+      puts "Rules still needing ADNM: #{remaining.size}"
+      still_pending = Review.where(rule_id: child_ids, action: 'comment',
+                                   responding_to_review_id: nil, triage_status: 'pending')
+      puts "Comments still pending: #{still_pending.count}"
+    end
+  end
+end

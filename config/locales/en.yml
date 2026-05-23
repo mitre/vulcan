@@ -42,6 +42,7 @@ en:
         informational: "Informational"
         needs_clarification: "Needs clarification"
         withdrawn: "Withdrawn"
+        addressed_by: "Addressed by"
       disa_status:
         pending: "Pending"
         concur: "Concur"
@@ -51,6 +52,7 @@ en:
         informational: "Informational"
         needs_clarification: "Needs clarification"
         withdrawn: "Withdrawn"
+        addressed_by: "Addressed by another requirement"
       adjudicated:
         label: "Closed"
         tooltip: "Adjudicated — work complete"

@@ -16,7 +16,7 @@ RSpec.describe 'Triage vocabulary parity (en.yml ↔ triageVocabulary.js)' do
 
   let(:expected_statuses) do
     %w[pending concur concur_with_comment non_concur
-       duplicate informational needs_clarification withdrawn]
+       duplicate informational needs_clarification withdrawn addressed_by]
   end
 
   it 'has all expected status keys in en.yml' do
