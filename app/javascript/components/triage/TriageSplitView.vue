@@ -25,9 +25,9 @@
       @select="onQueueSelect"
     />
 
-    <b-row v-if="activeComment">
-      <b-col lg="2" class="border-right pr-0">
-        <nav aria-label="Comment triage queue">
+    <b-row v-if="activeComment" class="triage-columns">
+      <b-col lg="2" class="border-right pr-0 triage-col">
+        <nav aria-label="Comment triage queue" class="h-100">
           <TriageRuleSidebar
             :comments="sortedRows"
             :current-id="activeCommentId"
@@ -35,7 +35,7 @@
           />
         </nav>
       </b-col>
-      <b-col id="triage-content" lg="5" role="main" aria-label="Comment details">
+      <b-col id="triage-content" lg="5" class="triage-col" role="main" aria-label="Comment details">
         <h6 ref="contentHeading" tabindex="-1" class="sr-only" data-testid="content-heading">
           {{ activeComment.rule_displayed_name }} — {{ activeComment.section || "Overall" }}
         </h6>
@@ -54,7 +54,13 @@
           @select-comment="onQueueSelect"
         />
       </b-col>
-      <b-col id="triage-form" lg="5" role="complementary" aria-label="Triage decision">
+      <b-col
+        id="triage-form"
+        lg="5"
+        class="triage-col"
+        role="complementary"
+        aria-label="Triage decision"
+      >
         <div class="mb-2">
           <p class="mb-1">
             <strong>{{ activeComment.rule_displayed_name }}</strong>
@@ -506,3 +512,15 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.triage-columns {
+  height: calc(100vh - 320px);
+  min-height: 400px;
+}
+
+.triage-col {
+  height: 100%;
+  overflow-y: auto;
+}
+</style>
