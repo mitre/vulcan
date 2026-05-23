@@ -41,6 +41,7 @@ const rows = [
     commentable_type: "Rule",
     section: "check_content",
     author_name: "Demo Viewer",
+    author_email: "viewer@example.com",
     comment: "The check text mentions runc 1.0",
     triage_status: "pending",
     created_at: "2026-05-01T00:00:00Z",
@@ -594,5 +595,24 @@ describe("TriageSplitView", () => {
 
     const adjudicateCalls = axios.patch.mock.calls.filter(([url]) => url.includes("/adjudicate"));
     expect(adjudicateCalls.length).toBe(0);
+  });
+
+  // ── Author email + divider in triage form ─────────────────────────
+
+  it("shows author email under the author name", () => {
+    const w = mount(TriageSplitView, {
+      localVue,
+      propsData: baseProps(),
+    });
+    expect(w.find("[data-testid='author-email']").exists()).toBe(true);
+    expect(w.find("[data-testid='author-email']").text()).toBe("viewer@example.com");
+  });
+
+  it("renders a divider between author info and comment blockquote", () => {
+    const w = mount(TriageSplitView, {
+      localVue,
+      propsData: baseProps(),
+    });
+    expect(w.find("[data-testid='comment-divider']").exists()).toBe(true);
   });
 });
