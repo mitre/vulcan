@@ -415,4 +415,29 @@ RSpec.describe 'Components' do
       expect(Rule.unscoped.where(id: rule_ids).count).to eq(0)
     end
   end
+
+  describe 'GET /components/:id/rules_picker.json' do
+    it 'returns lightweight rule data with satisfaction IDs' do
+      get "/components/#{component.id}/rules_picker.json"
+      expect(response).to have_http_status(:ok)
+
+      body = response.parsed_body
+      expect(body).to have_key('rules')
+      rule = body['rules'].first
+      expect(rule).to have_key('id')
+      expect(rule).to have_key('rule_id')
+      expect(rule).to have_key('title')
+      expect(rule).to have_key('satisfied_by')
+      expect(rule).to have_key('satisfies')
+      expect(rule).not_to have_key('fixtext')
+      expect(rule).not_to have_key('vuln_discussion')
+      expect(rule).not_to have_key('checks_attributes')
+    end
+
+    it 'requires authentication' do
+      sign_out user
+      get "/components/#{component.id}/rules_picker.json"
+      expect(response).to have_http_status(:unauthorized)
+    end
+  end
 end

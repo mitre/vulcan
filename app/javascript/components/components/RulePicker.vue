@@ -114,7 +114,7 @@ export default {
     fetchRules() {
       this.loading = true;
       axios
-        .get(`/components/${this.componentId}.json`)
+        .get(`/components/${this.componentId}/rules_picker.json`)
         .then((res) => {
           // ComponentBlueprint :show / :editor view exposes a `rules` array
           // shaped at minimum: { id, rule_id, displayed_name?, title? }

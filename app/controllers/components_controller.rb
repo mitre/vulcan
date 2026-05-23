@@ -12,7 +12,7 @@ class ComponentsController < ApplicationController
   CONTROL_NOT_FOUND_TITLE = 'Control not found'
 
   before_action :set_component, only: %i[show update destroy export preview_spreadsheet_update apply_spreadsheet_update triage settings]
-  before_action :set_component_basic, only: %i[find based_on_same_srg histories comments]
+  before_action :set_component_basic, only: %i[find based_on_same_srg histories comments rules_picker]
   before_action :set_project, only: %i[show create history triage settings]
   before_action :set_component_permissions, only: %i[show triage settings]
   before_action :set_rule, only: %i[show]
@@ -21,7 +21,7 @@ class ComponentsController < ApplicationController
   before_action :authorize_author_component, only: %i[update preview_spreadsheet_update apply_spreadsheet_update]
   before_action :check_permission_to_update_slackchannel, only: %i[update]
   before_action :check_admin_for_advanced_fields, only: %i[update]
-  before_action :authorize_component_access, only: %i[show export find histories comments triage]
+  before_action :authorize_component_access, only: %i[show export find histories comments triage rules_picker]
   before_action :authorize_logged_in, only: %i[search index based_on_same_srg bulk_export detect_srg]
   before_action :authorize_compare_access, only: %i[compare]
   before_action :authorize_viewer_project, only: %i[history]
@@ -337,6 +337,13 @@ class ComponentsController < ApplicationController
   #
   # Sets Cache-Control: no-store so concurrent triagers cannot get a stale
   # snapshot from a browser/proxy cache during a public-comment window.
+  def rules_picker
+    return head :not_found unless @component
+
+    rules = @component.rules.includes(:satisfied_by, :satisfies)
+    render json: { rules: RuleBlueprint.render_as_hash(rules, view: :picker) }
+  end
+
   def comments
     return head :not_found unless @component
 
