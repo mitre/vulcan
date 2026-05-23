@@ -76,7 +76,11 @@
           <InfoTooltip text="Expand or collapse all rule groups" />
         </small>
       </b-form-checkbox>
-      <b-button-group v-if="!splitMode" size="sm" :class="{ 'ml-auto': viewMode !== 'by-rule' }">
+      <b-button-group
+        v-if="!splitMode && scope === 'component'"
+        size="sm"
+        :class="{ 'ml-auto': viewMode !== 'by-rule' }"
+      >
         <b-button
           v-b-tooltip.hover
           :variant="viewMode === 'table' ? 'secondary' : 'outline-secondary'"
@@ -642,6 +646,10 @@ export default {
       return `/components/${compId}/${encodeURIComponent(row.rule_displayed_name)}`;
     },
     openTriageFor(row) {
+      if (this.scope === "project" && row.component_id) {
+        window.location.href = `/components/${row.component_id}/triage`;
+        return;
+      }
       this.splitCommentId = row.id;
       this.splitMode = true;
       this.$emit("split-mode-changed", true);

@@ -979,4 +979,31 @@ describe("ComponentComments", () => {
     expect(wrapper.vm.canExportDisposition).toBe(false);
     expect(wrapper.vm.splitMode).toBe(true);
   });
+
+  // ── Project scope: table only, triage navigates to component ──────
+
+  describe("project scope", () => {
+    it("hides view mode toggle in project scope", async () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { projectId: 6, scope: "project" },
+        stubs: SHARED_STUBS,
+      });
+      await flushPromises(wrapper);
+      expect(wrapper.find("[data-testid='view-mode-table']").exists()).toBe(false);
+      expect(wrapper.find("[data-testid='view-mode-by-rule']").exists()).toBe(false);
+    });
+
+    it("navigates to component triage instead of entering split mode", async () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { projectId: 6, scope: "project", effectivePermissions: "author" },
+        stubs: SHARED_STUBS,
+      });
+      await flushPromises(wrapper);
+      const row = { id: 42, component_id: 29, rule_id: 7 };
+      delete window.location;
+      window.location = { href: "" };
+      wrapper.vm.openTriageFor(row);
+      expect(window.location.href).toContain("/components/29/triage");
+    });
+  });
 });
