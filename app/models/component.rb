@@ -720,6 +720,8 @@ class Component < ApplicationRecord
         triage_set_at: r.triage_set_at,
         adjudicated_at: r.adjudicated_at,
         duplicate_of_review_id: r.duplicate_of_review_id,
+        addressed_by_rule_id: r.addressed_by_rule_id,
+        addressed_by_rule_name: r.addressed_by_rule_id ? rule_id_to_displayed[r.addressed_by_rule_id] : nil,
         triager_display_name: r.triager_display_name,
         triager_imported: r.triager_imported?,
         adjudicator_display_name: r.adjudicator_display_name,

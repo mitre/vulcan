@@ -245,6 +245,8 @@
           :status="item.triage_status"
           :adjudicated-at="item.adjudicated_at"
           :duplicate-of-id="item.duplicate_of_review_id"
+          :addressed-by-rule-id="item.addressed_by_rule_id"
+          :addressed-by-rule-name="item.addressed_by_rule_name"
         />
       </template>
       <template #cell(actions)="{ item }">

@@ -21,6 +21,7 @@ export default {
     adjudicatedAt: { type: [String, Date], default: null },
     duplicateOfId: { type: [Number, String], default: null },
     addressedByRuleId: { type: [Number, String], default: null },
+    addressedByRuleName: { type: String, default: null },
   },
   computed: {
     isAdjudicated() {
@@ -34,8 +35,8 @@ export default {
       if (this.status === "duplicate" && this.duplicateOfId) {
         return `Duplicate of #${this.duplicateOfId}`;
       }
-      if (this.status === "addressed_by" && this.addressedByRuleId) {
-        return `Addressed by rule #${this.addressedByRuleId}`;
+      if (this.status === "addressed_by" && (this.addressedByRuleName || this.addressedByRuleId)) {
+        return `Addressed by ${this.addressedByRuleName || `#${this.addressedByRuleId}`}`;
       }
       if (this.isAdjudicated) {
         return `${ADJUDICATED_LABEL} (${TRIAGE_LABELS[this.status] || this.status})`;
