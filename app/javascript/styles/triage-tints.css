@@ -67,40 +67,86 @@
   --triage-addressed-by-text: var(--vulcan-indigo-text);
 }
 
-/* Row background tints — applied via triageBgClass() utility */
+/* ── Layer 3: Data-attribute selectors → intermediate variables ────────
+   Components set data-triage="status" on elements. These selectors map
+   each status to intermediate CSS custom properties that components read.
+   Adding a new status = add ONE block here. Zero component CSS changes.
 
-.triage-bg--concur {
-  background-color: var(--triage-concur-tint) !important;
-  border-left-color: var(--triage-concur) !important;
+   Intermediate variables:
+     --status-color    solid color (pills, segments, borders)
+     --status-tint     light background (badges, row tints)
+     --status-fg       text on tint background
+     --status-pill-fg  text on solid background (white or dark) */
+
+[data-triage="pending"] {
+  --status-color: var(--triage-pending);
+  --status-tint: var(--triage-pending-tint);
+  --status-fg: var(--triage-pending-text);
+  --status-pill-fg: #fff;
 }
 
-.triage-bg--concur_with_comment {
-  background-color: var(--triage-concur-with-comment-tint) !important;
-  border-left-color: var(--triage-concur-with-comment) !important;
+[data-triage="concur"] {
+  --status-color: var(--triage-concur);
+  --status-tint: var(--triage-concur-tint);
+  --status-fg: var(--triage-concur-text);
+  --status-pill-fg: var(--triage-concur-text);
 }
 
-.triage-bg--non_concur {
-  background-color: var(--triage-non-concur-tint) !important;
-  border-left-color: var(--triage-non-concur) !important;
+[data-triage="concur_with_comment"] {
+  --status-color: var(--triage-concur-with-comment);
+  --status-tint: var(--triage-concur-with-comment-tint);
+  --status-fg: var(--triage-concur-with-comment-text);
+  --status-pill-fg: #fff;
 }
 
-.triage-bg--informational,
-.triage-bg--needs_clarification {
-  background-color: var(--triage-informational-tint) !important;
-  border-left-color: var(--triage-informational) !important;
+[data-triage="non_concur"] {
+  --status-color: var(--triage-non-concur);
+  --status-tint: var(--triage-non-concur-tint);
+  --status-fg: var(--triage-non-concur-text);
+  --status-pill-fg: #fff;
 }
 
-.triage-bg--withdrawn {
-  background-color: var(--triage-withdrawn-tint) !important;
-  border-left-color: var(--triage-withdrawn) !important;
+[data-triage="informational"],
+[data-triage="needs_clarification"] {
+  --status-color: var(--triage-informational);
+  --status-tint: var(--triage-informational-tint);
+  --status-fg: var(--triage-informational-text);
+  --status-pill-fg: var(--vulcan-text);
 }
 
-.triage-bg--duplicate {
-  background-color: var(--triage-duplicate-tint) !important;
-  border-left-color: var(--triage-duplicate) !important;
+[data-triage="withdrawn"] {
+  --status-color: var(--triage-withdrawn);
+  --status-tint: var(--triage-withdrawn-tint);
+  --status-fg: var(--triage-withdrawn-text);
+  --status-pill-fg: #fff;
 }
 
-.triage-bg--addressed_by {
-  background-color: var(--triage-addressed-by-tint) !important;
-  border-left-color: var(--triage-addressed-by) !important;
+[data-triage="duplicate"] {
+  --status-color: var(--triage-duplicate);
+  --status-tint: var(--triage-duplicate-tint);
+  --status-fg: var(--triage-duplicate-text);
+  --status-pill-fg: #fff;
 }
+
+[data-triage="addressed_by"] {
+  --status-color: var(--triage-addressed-by);
+  --status-tint: var(--triage-addressed-by-tint);
+  --status-fg: var(--triage-addressed-by-text);
+  --status-pill-fg: #fff;
+}
+
+/* Row background tints — ONE rule reads the intermediate variables.
+   Consumer sets data-triage="status" on the element with class triage-bg. */
+.triage-bg[data-triage] {
+  background-color: var(--status-tint) !important;
+  border-left-color: var(--status-color) !important;
+}
+
+/* Legacy class-based row tints (for triageBgClass() consumers not yet migrated) */
+.triage-bg--concur { background-color: var(--triage-concur-tint) !important; border-left-color: var(--triage-concur) !important; }
+.triage-bg--concur_with_comment { background-color: var(--triage-concur-with-comment-tint) !important; border-left-color: var(--triage-concur-with-comment) !important; }
+.triage-bg--non_concur { background-color: var(--triage-non-concur-tint) !important; border-left-color: var(--triage-non-concur) !important; }
+.triage-bg--informational, .triage-bg--needs_clarification { background-color: var(--triage-informational-tint) !important; border-left-color: var(--triage-informational) !important; }
+.triage-bg--withdrawn { background-color: var(--triage-withdrawn-tint) !important; border-left-color: var(--triage-withdrawn) !important; }
+.triage-bg--duplicate { background-color: var(--triage-duplicate-tint) !important; border-left-color: var(--triage-duplicate) !important; }
+.triage-bg--addressed_by { background-color: var(--triage-addressed-by-tint) !important; border-left-color: var(--triage-addressed-by) !important; }

@@ -28,4 +28,20 @@ RSpec.describe 'Triage tints CSS — Layer 2 semantic mapping' do
     expect(hex_lines).to be_empty,
                          "Found hardcoded hex in --triage-* definitions:\n#{hex_lines.join}"
   end
+
+  it 'has data-attribute selectors for every triage status' do
+    Review::TRIAGE_STATUSES.each do |status|
+      expect(css_source).to include("[data-triage=\"#{status}\"]"),
+                            "Missing [data-triage=\"#{status}\"] selector in triage-tints.css"
+    end
+  end
+
+  it 'each data-attribute selector sets --status-color and --status-tint' do
+    Review::TRIAGE_STATUSES.reject { |s| s == 'pending' }.each do |status|
+      block = css_source[/\[data-triage="#{status}"\][^{]*\{[^}]+\}/m]
+      expect(block).to be_present, "No data-triage block for #{status}"
+      expect(block).to include('--status-color'), "#{status} block missing --status-color"
+      expect(block).to include('--status-tint'), "#{status} block missing --status-tint"
+    end
+  end
 end

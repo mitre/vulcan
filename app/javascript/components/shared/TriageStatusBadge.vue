@@ -1,5 +1,10 @@
 <template>
-  <span data-test="badge" :class="['triage-status', cssClass]" :title="tooltip">
+  <span
+    data-test="badge"
+    :class="['triage-status', cssClass]"
+    :data-triage="status"
+    :title="tooltip"
+  >
     <span data-test="glyph" aria-hidden="true">{{ glyph }}</span>
     <span data-test="label">{{ displayLabel }}</span>
   </span>
@@ -73,51 +78,16 @@ export default {
   line-height: 1;
 }
 
-.triage-status--pending {
-  color: var(--triage-pending-text);
-  background-color: var(--triage-pending-tint);
+/* Color comes from data-triage attribute → intermediate CSS vars (Layer 3) */
+.triage-status[data-triage] {
+  color: var(--status-pill-fg, #fff);
+  background-color: var(--status-color);
 }
 
-.triage-status--concur {
-  color: var(--triage-concur-text);
-  background-color: var(--triage-concur);
-}
-
-.triage-status--concur_with_comment {
-  color: var(--triage-concur-with-comment-text);
-  background-color: var(--triage-concur-with-comment-tint);
-}
-
-.triage-status--non_concur {
-  color: var(--triage-non-concur-text);
-  background-color: var(--triage-non-concur-tint);
-}
-
-.triage-status--informational {
-  color: var(--triage-informational-text);
-  background-color: var(--triage-informational-tint);
-}
-
-.triage-status--needs_clarification {
-  color: var(--triage-informational-text);
-  background-color: var(--triage-informational-tint);
-}
-
-.triage-status--withdrawn {
-  color: var(--triage-withdrawn-text);
-  background-color: var(--triage-withdrawn-tint);
-  text-decoration: line-through;
-}
-
+/* Semantic decorations — unique per-status, NOT color */
+.triage-status--withdrawn,
 .triage-status--duplicate {
-  color: var(--triage-duplicate-text);
-  background-color: var(--triage-duplicate-tint);
   text-decoration: line-through;
-}
-
-.triage-status--addressed_by {
-  color: var(--triage-addressed-by-text);
-  background-color: var(--triage-addressed-by-tint);
 }
 
 .triage-status--adjudicated {

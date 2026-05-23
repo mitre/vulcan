@@ -16,6 +16,7 @@
       <span
         v-if="pendingCount > 0"
         data-testid="status-pill"
+        data-triage="pending"
         class="badge progress-pill progress-pill--pending"
         :class="{ 'progress-pill--active': activeFilter === 'pending' }"
         role="button"
@@ -36,6 +37,7 @@
           'progress-pill--' + entry.status,
           { 'progress-pill--active': activeFilter === entry.status },
         ]"
+        :data-triage="entry.status"
         role="button"
         tabindex="0"
         @click="onPillClick(entry.status)"
@@ -52,6 +54,7 @@
         data-testid="progress-segment"
         class="progress-segment"
         :class="'progress-segment--' + entry.status"
+        :data-triage="entry.status"
         :style="{ width: entry.displayWidth }"
         :title="entry.label + ': ' + entry.count"
       />
@@ -192,69 +195,20 @@ export default {
     0 0 0 4px currentColor;
 }
 
+/* "All" pill is the only one without a triage status */
 .progress-pill--all {
   background-color: var(--vulcan-dark);
   color: white;
 }
 
-.progress-pill--pending {
-  background-color: var(--triage-pending);
-  color: white;
-}
-.progress-pill--concur {
-  background-color: var(--triage-concur);
-  color: white;
-}
-.progress-pill--concur_with_comment {
-  background-color: var(--triage-concur-with-comment);
-  color: white;
-}
-.progress-pill--non_concur {
-  background-color: var(--triage-non-concur);
-  color: white;
-}
-.progress-pill--informational,
-.progress-pill--needs_clarification {
-  background-color: var(--triage-informational);
-  color: var(--vulcan-text);
-}
-.progress-pill--duplicate {
-  background-color: var(--triage-duplicate);
-  color: white;
-}
-.progress-pill--withdrawn {
-  background-color: var(--triage-withdrawn);
-  color: white;
-}
-.progress-pill--addressed_by {
-  background-color: var(--triage-addressed-by);
-  color: white;
+/* Color from data-triage → intermediate CSS vars (Layer 3) */
+.progress-pill[data-triage] {
+  background-color: var(--status-color);
+  color: var(--status-pill-fg, #fff);
 }
 
-/* ── Bar segment colors (match pills via same CSS vars) ── */
-.progress-segment--pending {
-  background-color: var(--triage-pending);
-}
-.progress-segment--concur {
-  background-color: var(--triage-concur);
-}
-.progress-segment--concur_with_comment {
-  background-color: var(--triage-concur-with-comment);
-}
-.progress-segment--non_concur {
-  background-color: var(--triage-non-concur);
-}
-.progress-segment--informational,
-.progress-segment--needs_clarification {
-  background-color: var(--triage-informational);
-}
-.progress-segment--duplicate {
-  background-color: var(--triage-duplicate);
-}
-.progress-segment--withdrawn {
-  background-color: var(--triage-withdrawn);
-}
-.progress-segment--addressed_by {
-  background-color: var(--triage-addressed-by);
+/* ── Bar segment colors — ONE rule via intermediate variable ── */
+.progress-segment[data-triage] {
+  background-color: var(--status-color);
 }
 </style>
