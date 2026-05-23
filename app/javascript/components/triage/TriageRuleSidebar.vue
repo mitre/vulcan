@@ -33,9 +33,9 @@
           role="option"
           :aria-selected="String(isActiveGroup(item.group))"
           tabindex="-1"
-          @click="selectGroup(item.group)"
+          @click="toggleGroup(item.group)"
           @keydown.enter="selectGroup(item.group)"
-          @keydown.space.prevent="selectGroup(item.group)"
+          @keydown.space.prevent="toggleGroup(item.group)"
         >
           <strong
             v-b-tooltip.hover
@@ -92,6 +92,7 @@ export default {
     return {
       searchText: "",
       focusedIndex: -1,
+      expandedGroups: {},
     };
   },
   computed: {
@@ -152,11 +153,30 @@ export default {
       return items;
     },
   },
+  watch: {
+    activeGroupKey: {
+      immediate: true,
+      handler(newKey) {
+        if (newKey && !this.expandedGroups[newKey]) {
+          this.$set(this.expandedGroups, newKey, true);
+        }
+      },
+    },
+  },
   methods: {
     isActiveGroup(group) {
-      return group.key === this.activeGroupKey;
+      return this.expandedGroups[group.key] === true;
+    },
+    toggleGroup(group) {
+      if (this.expandedGroups[group.key]) {
+        this.$set(this.expandedGroups, group.key, false);
+      } else {
+        this.$set(this.expandedGroups, group.key, true);
+        this.$emit("select", group.comments[0].id);
+      }
     },
     selectGroup(group) {
+      this.$set(this.expandedGroups, group.key, true);
       this.$emit("select", group.comments[0].id);
     },
     handleKeydown(event) {
@@ -171,12 +191,22 @@ export default {
           this.focusedIndex = this.focusedIndex > 0 ? this.focusedIndex - 1 : items.length - 1;
         }
         this.$nextTick(() => this.scrollFocusedIntoView());
-      } else if (event.key === "Enter" || event.key === " ") {
+      } else if (event.key === "Enter") {
         event.preventDefault();
         if (this.focusedIndex >= 0 && this.focusedIndex < items.length) {
           const item = items[this.focusedIndex];
           if (item.type === "group") {
             this.selectGroup(item.group);
+          } else {
+            this.$emit("select", item.comment.id);
+          }
+        }
+      } else if (event.key === " ") {
+        event.preventDefault();
+        if (this.focusedIndex >= 0 && this.focusedIndex < items.length) {
+          const item = items[this.focusedIndex];
+          if (item.type === "group") {
+            this.toggleGroup(item.group);
           } else {
             this.$emit("select", item.comment.id);
           }
@@ -194,9 +224,16 @@ export default {
 </script>
 
 <style scoped>
+.triage-rule-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 .sidebar-list {
-  max-height: calc(100vh - 200px);
+  flex: 1;
   overflow-y: auto;
+  min-height: 0;
 }
 
 .sidebar-rule-header {
