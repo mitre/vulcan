@@ -532,6 +532,8 @@ export default {
 
 @media (min-width: 992px) {
   .triage-columns {
+    /* 320px = navbar ~56px + breadcrumb ~40px + page header ~60px
+       + progress bar ~50px + filters ~40px + nav bar ~40px + margins ~34px */
     height: calc(100vh - 320px);
     min-height: 400px;
   }

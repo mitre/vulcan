@@ -10,6 +10,23 @@
    - Grey   = Pending, Withdrawn, Duplicate (inactive / terminal) */
 
 :root {
+  /* Vulcan UI palette — theme-wide interactive colors.
+     Override these to rebrand the entire triage workspace. */
+  --vulcan-text: #212529;
+  --vulcan-text-muted: #6c757d;
+  --vulcan-primary-dark: #0056b3;
+  --vulcan-hover-bg: rgba(0, 0, 0, 0.06);
+  --vulcan-hover-bg-light: rgba(0, 0, 0, 0.04);
+  --vulcan-divider: rgba(0, 0, 0, 0.1);
+  --vulcan-active-tint: rgba(0, 123, 255, 0.08);
+  --vulcan-active-tint-hover: rgba(0, 123, 255, 0.15);
+  --vulcan-focus-tint: rgba(0, 123, 255, 0.04);
+  --vulcan-border-light: #ced4da;
+  --vulcan-bg-light: #e9ecef;
+  --vulcan-dark: #343a40;
+
+  /* Triage status colors — per-status palette.
+     Override these to change triage status appearance. */
   --triage-concur: #28a745;
   --triage-concur-tint: rgba(40, 167, 69, 0.15);
   --triage-concur-text: #fff;

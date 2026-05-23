@@ -167,12 +167,12 @@ export default {
 .progress-separator {
   width: 1px;
   align-self: stretch;
-  background-color: #ced4da;
+  background-color: var(--vulcan-border-light);
 }
 
 .progress-bar-track {
   height: 8px;
-  background-color: #e9ecef;
+  background-color: var(--vulcan-bg-light);
 }
 
 .progress-segment {
@@ -201,7 +201,7 @@ export default {
 }
 
 .progress-pill--all {
-  background-color: #343a40;
+  background-color: var(--vulcan-dark);
   color: white;
 }
 
@@ -224,7 +224,7 @@ export default {
 .progress-pill--informational,
 .progress-pill--needs_clarification {
   background-color: var(--triage-informational);
-  color: #212529;
+  color: var(--vulcan-text);
 }
 .progress-pill--duplicate {
   background-color: var(--triage-duplicate);

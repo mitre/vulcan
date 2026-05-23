@@ -275,18 +275,18 @@ export default {
 
 .sidebar-rule-header:hover,
 .sidebar-rule-header.sidebar-focused {
-  background-color: rgba(0, 0, 0, 0.06);
+  background-color: var(--vulcan-hover-bg);
   outline: none;
 }
 
 .sidebar-rule--active {
-  background-color: rgba(0, 123, 255, 0.08);
+  background-color: var(--vulcan-active-tint);
   border-left: 3px solid var(--primary);
 }
 
 .sidebar-rule--active:hover,
 .sidebar-rule--active.sidebar-focused {
-  background-color: rgba(0, 123, 255, 0.15);
+  background-color: var(--vulcan-active-tint-hover);
 }
 
 .sidebar-comment-item {
@@ -297,7 +297,7 @@ export default {
 .sidebar-comment-item:hover,
 .sidebar-comment-item:focus,
 .sidebar-comment-item.sidebar-focused {
-  background-color: rgba(0, 0, 0, 0.06);
+  background-color: var(--vulcan-hover-bg);
   outline: none;
 }
 
@@ -313,6 +313,6 @@ export default {
 .sidebar-comment--active:hover,
 .sidebar-comment--active:focus,
 .sidebar-comment--active.sidebar-focused {
-  background-color: #0056b3 !important;
+  background-color: var(--vulcan-primary-dark) !important;
 }
 </style>

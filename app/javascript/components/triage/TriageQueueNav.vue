@@ -361,7 +361,7 @@ export default {
 .browse-panel {
   right: 0;
   top: 100%;
-  z-index: 1050;
+  z-index: 1030;
   width: 300px;
   margin-top: 4px;
 }
@@ -374,7 +374,7 @@ export default {
 .browse-item:hover,
 .browse-item:focus,
 .browse-item.browse-focused {
-  background-color: rgba(0, 0, 0, 0.06);
+  background-color: var(--vulcan-hover-bg);
   outline: none;
 }
 
@@ -390,7 +390,7 @@ export default {
 .browse-item.active:hover,
 .browse-item.active:focus,
 .browse-item.active.browse-focused {
-  background-color: #0056b3 !important;
+  background-color: var(--vulcan-primary-dark) !important;
 }
 
 .cursor-pointer {

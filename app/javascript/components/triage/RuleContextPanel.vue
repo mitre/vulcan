@@ -277,7 +277,7 @@ export default {
 }
 
 .section-header:hover {
-  background-color: rgba(0, 0, 0, 0.04);
+  background-color: var(--vulcan-hover-bg-light);
 }
 
 .rule-context-header {
@@ -286,7 +286,7 @@ export default {
 }
 
 .rule-context-divider {
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  border-top: 1px solid var(--vulcan-divider);
 }
 
 .section-title {
@@ -308,7 +308,7 @@ export default {
 
 .section-header--collapsed .section-preview {
   opacity: 1;
-  color: #6c757d;
+  color: var(--vulcan-text-muted);
 }
 
 .section-body {
@@ -322,7 +322,7 @@ export default {
 .section-body--focused {
   border-left: 3px solid var(--primary);
   padding-left: calc(2rem - 3px);
-  background-color: rgba(0, 123, 255, 0.04);
+  background-color: var(--vulcan-focus-tint);
   border-radius: 0 0.25rem 0.25rem 0;
 }
 
