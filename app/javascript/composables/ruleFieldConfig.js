@@ -193,6 +193,49 @@ export const FIELD_LABELS = Object.freeze({
   severity_override_guidance: "Severity Override Guidance",
 });
 
+// Canonical visual rendering order — matches the RuleForm.vue template layout.
+// ONE array for ALL statuses. STATUS_FIELD_CONFIG controls VISIBILITY (which
+// fields appear), this array controls ORDER (where they appear).
+// If the editor template order changes, update this array — RuleContextPanel
+// and comment sorting follow automatically.
+export const FIELD_DISPLAY_ORDER = Object.freeze([
+  // Section 1: Policy Decision
+  "status",
+  "rule_severity",
+  "severity_override_guidance",
+  // Section 3: Content Authoring
+  "title",
+  // DISA block (DisaRuleDescriptionForm template order)
+  "documentable",
+  "vuln_discussion",
+  "false_positives",
+  "false_negatives",
+  "mitigations_available",
+  "mitigations",
+  "poam_available",
+  "poam",
+  "potential_impacts",
+  "third_party_tools",
+  "mitigation_control",
+  "responsibility",
+  "ia_controls",
+  // Check block
+  "check_content",
+  // Fix
+  "fixtext",
+  // Section 4: Justification & Evidence
+  "status_justification",
+  "artifact_description",
+  "vendor_comments",
+  // Section 5: XCCDF Metadata (Advanced)
+  "version",
+  "fix_id",
+  "fixtext_fixref",
+  "rule_weight",
+  "ident",
+  "ident_system",
+]);
+
 // Statuses where severity is editable (can be changed from SRG default)
 export const SEVERITY_EDITABLE_STATUSES = [
   "Applicable - Configurable",
