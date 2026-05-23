@@ -58,7 +58,7 @@
         </b-button>
       </span>
 
-      <div v-click-outside="closeBrowse" class="position-relative ml-auto">
+      <div v-click-outside="closeBrowse" class="position-relative ml-3">
         <b-button
           data-testid="browse-toggle"
           size="sm"

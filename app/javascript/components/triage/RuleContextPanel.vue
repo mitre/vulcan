@@ -56,30 +56,17 @@
             <InfoTooltip text="Show additional metadata fields (version, weight, identifiers)" />
           </small>
         </b-form-checkbox>
-        <span class="ml-auto flex-shrink-0">
-          <b-button
-            v-b-tooltip.hover
-            size="sm"
-            variant="link"
-            class="p-0 text-muted"
-            title="Expand all sections"
-            data-testid="expand-all-sections"
-            @click="expandAllSections"
-          >
-            <b-icon icon="arrows-expand" />
-          </b-button>
-          <b-button
-            v-b-tooltip.hover
-            size="sm"
-            variant="link"
-            class="p-0 ml-1 text-muted"
-            title="Collapse all sections"
-            data-testid="collapse-all-sections"
-            @click="collapseAllSections"
-          >
-            <b-icon icon="arrows-collapse" />
-          </b-button>
-        </span>
+        <b-button
+          v-b-tooltip.hover
+          size="sm"
+          variant="link"
+          class="p-0 ml-auto text-muted"
+          :title="allSectionsExpanded ? 'Collapse all sections' : 'Expand all sections'"
+          data-testid="toggle-sections"
+          @click="toggleAllSections"
+        >
+          <b-icon :icon="allSectionsExpanded ? 'arrows-collapse' : 'arrows-expand'" />
+        </b-button>
       </div>
       <hr class="rule-context-divider mt-4 mb-2" />
       <p v-if="ruleContent.title" class="text-muted mb-2">
@@ -242,6 +229,9 @@ export default {
     collapsibleSections() {
       return this.visibleFields.filter((s) => !INLINE_SECTIONS.has(s.key));
     },
+    allSectionsExpanded() {
+      return this.collapsibleSections.every((s) => this.isSectionExpanded(s.key));
+    },
   },
   watch: {
     focusedSection() {
@@ -267,14 +257,10 @@ export default {
     toggleSection(key) {
       this.$set(this.manualToggles, key, !this.isSectionExpanded(key));
     },
-    expandAllSections() {
+    toggleAllSections() {
+      const expand = !this.allSectionsExpanded;
       for (const s of this.collapsibleSections) {
-        this.$set(this.manualToggles, s.key, true);
-      }
-    },
-    collapseAllSections() {
-      for (const s of this.collapsibleSections) {
-        this.$set(this.manualToggles, s.key, false);
+        this.$set(this.manualToggles, s.key, expand);
       }
     },
     sectionCount(key) {

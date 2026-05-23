@@ -95,6 +95,13 @@ describe("TriageSplitView", () => {
     vi.clearAllMocks();
   });
 
+  // ── Separator below nav bar ────────────────────────────────────────
+
+  it("renders a separator between nav bar and three-column layout", () => {
+    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    expect(w.find("[data-testid='nav-separator']").exists()).toBe(true);
+  });
+
   // ── Reactivity: activeCommentId as data, object via computed ────────
 
   it("derives activeComment from activeCommentId via computed", () => {

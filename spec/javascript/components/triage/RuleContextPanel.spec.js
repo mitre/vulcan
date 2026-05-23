@@ -450,26 +450,18 @@ describe("RuleContextPanel", () => {
     expect(nameRow.find("[data-testid='context-mode-toggle']").exists()).toBe(false);
     expect(toolbar.find("[data-testid='context-mode-toggle']").exists()).toBe(true);
     expect(toolbar.find("[data-testid='advanced-fields-toggle']").exists()).toBe(true);
-    expect(toolbar.find("[data-testid='expand-all-sections']").exists()).toBe(true);
+    expect(toolbar.find("[data-testid='toggle-sections']").exists()).toBe(true);
   });
 
-  // ── Expand/collapse all buttons ───────────────────────────────────
+  // ── Expand/collapse toggle (single button) ─────────────────────────
 
-  it("expands all sections when expand-all is clicked", async () => {
-    const w = mount(RuleContextPanel, {
-      localVue,
-      propsData: props({ focusedSection: "check_content" }),
-    });
-    expect(w.find('[data-section="fixtext"] .section-body').isVisible()).toBe(false);
-    await w.find("[data-testid='expand-all-sections']").trigger("click");
-    expect(w.find('[data-section="fixtext"] .section-body').isVisible()).toBe(true);
-  });
-
-  it("collapses all sections when collapse-all is clicked", async () => {
+  it("toggles all sections expanded/collapsed with one button", async () => {
     const w = mount(RuleContextPanel, { localVue, propsData: props() });
     expect(w.find('[data-section="fixtext"] .section-body').isVisible()).toBe(true);
-    await w.find("[data-testid='collapse-all-sections']").trigger("click");
+    await w.find("[data-testid='toggle-sections']").trigger("click");
     expect(w.find('[data-section="fixtext"] .section-body').isVisible()).toBe(false);
+    await w.find("[data-testid='toggle-sections']").trigger("click");
+    expect(w.find('[data-section="fixtext"] .section-body').isVisible()).toBe(true);
   });
 
   // ── Fix 6: Toggle label is "Focus Section" not "All Fields" ───────

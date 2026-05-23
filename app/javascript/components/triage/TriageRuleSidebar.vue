@@ -1,16 +1,27 @@
 <template>
   <div class="triage-rule-sidebar">
-    <div data-testid="sidebar-header" class="px-2 py-1 border-bottom font-weight-bold">
-      {{ totalPending }} pending of {{ comments.length }}
-    </div>
-    <div class="px-2 py-1">
+    <h6 data-testid="sidebar-header" class="px-2 py-1 border-bottom mb-0 font-weight-bold">
+      {{ totalPending }} of {{ comments.length }} pending
+    </h6>
+    <div class="px-2 py-1 d-flex align-items-center">
       <input
         v-model="searchText"
         type="text"
-        class="form-control form-control-sm"
+        class="form-control form-control-sm flex-grow-1"
         placeholder="Filter rules..."
         data-testid="sidebar-search"
       />
+      <b-button
+        v-b-tooltip.hover
+        size="sm"
+        variant="link"
+        class="p-0 ml-2 text-muted flex-shrink-0"
+        :title="allGroupsExpanded ? 'Collapse all groups' : 'Expand all groups'"
+        data-testid="toggle-sidebar-groups"
+        @click="toggleAllGroups"
+      >
+        <b-icon :icon="allGroupsExpanded ? 'arrows-collapse' : 'arrows-expand'" />
+      </b-button>
     </div>
     <hr class="my-1" />
     <div
@@ -153,6 +164,9 @@ export default {
       }
       return items;
     },
+    allGroupsExpanded() {
+      return this.filteredGroups.every((g) => this.expandedGroups[g.key] === true);
+    },
   },
   watch: {
     activeGroupKey: {
@@ -174,6 +188,12 @@ export default {
   methods: {
     isActiveGroup(group) {
       return this.expandedGroups[group.key] === true;
+    },
+    toggleAllGroups() {
+      const expand = !this.allGroupsExpanded;
+      for (const g of this.filteredGroups) {
+        this.$set(this.expandedGroups, g.key, expand);
+      }
     },
     toggleGroup(group) {
       if (this.expandedGroups[group.key]) {

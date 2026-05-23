@@ -180,9 +180,11 @@ describe("TriageRuleSidebar", () => {
     });
   });
 
-  it("shows total pending count in sidebar header", () => {
+  it("shows total pending count in sidebar header as h6", () => {
     const w = mount(TriageRuleSidebar, { localVue, propsData: baseProps() });
-    expect(w.find("[data-testid='sidebar-header']").text()).toContain("3 pending");
+    const header = w.find("[data-testid='sidebar-header']");
+    expect(header.text()).toContain("3 of 4 pending");
+    expect(header.element.tagName).toBe("H6");
   });
 
   // ── 05f.25: Comments within a group respect input order ─────────

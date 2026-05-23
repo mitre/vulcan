@@ -25,6 +25,7 @@
       @select="onQueueSelect"
     />
 
+    <hr v-if="activeComment" class="mt-1 mb-2" data-testid="nav-separator" />
     <b-row v-if="activeComment" class="triage-columns">
       <b-col lg="2" class="border-right pr-0 triage-col">
         <nav aria-label="Comment triage queue" class="h-100">
