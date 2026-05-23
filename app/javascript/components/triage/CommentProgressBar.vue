@@ -65,15 +65,7 @@
 <script>
 import { TRIAGE_LABELS } from "../../constants/triageVocabulary";
 
-const RESOLVED_STATUSES = [
-  "concur",
-  "concur_with_comment",
-  "non_concur",
-  "informational",
-  "needs_clarification",
-  "duplicate",
-  "withdrawn",
-];
+const RESOLVED_STATUSES = Object.keys(TRIAGE_LABELS).filter((s) => s !== "pending");
 
 const MIN_SEGMENT_PERCENT = 2;
 
@@ -234,6 +226,10 @@ export default {
   background-color: var(--triage-withdrawn);
   color: white;
 }
+.progress-pill--addressed_by {
+  background-color: var(--triage-addressed-by);
+  color: white;
+}
 
 /* ── Bar segment colors (match pills via same CSS vars) ── */
 .progress-segment--pending {
@@ -257,5 +253,8 @@ export default {
 }
 .progress-segment--withdrawn {
   background-color: var(--triage-withdrawn);
+}
+.progress-segment--addressed_by {
+  background-color: var(--triage-addressed-by);
 }
 </style>
