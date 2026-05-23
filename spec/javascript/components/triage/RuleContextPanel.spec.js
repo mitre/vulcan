@@ -358,9 +358,10 @@ describe("RuleContextPanel", () => {
       expect(w.find('[data-section="version"]').exists()).toBe(true);
     });
 
-    it("renders an Advanced Fields toggle control", () => {
+    it("renders an Advanced Fields toggle switch", () => {
       const w = mount(RuleContextPanel, { localVue, propsData: props() });
-      expect(w.find("[data-testid='advanced-fields-toggle']").exists()).toBe(true);
+      const toggle = w.find("[data-testid='advanced-fields-toggle']");
+      expect(toggle.exists()).toBe(true);
     });
   });
 

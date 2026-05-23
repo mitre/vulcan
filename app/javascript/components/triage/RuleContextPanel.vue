@@ -42,6 +42,18 @@
             <InfoTooltip text="Show only the section this comment targets, or expand all fields" />
           </small>
         </b-form-checkbox>
+        <b-form-checkbox
+          v-model="showAdvanced"
+          switch
+          size="sm"
+          class="ml-2 flex-shrink-0"
+          data-testid="advanced-fields-toggle"
+        >
+          <small class="text-muted">
+            Advanced
+            <InfoTooltip text="Show additional metadata fields (version, weight, identifiers)" />
+          </small>
+        </b-form-checkbox>
       </div>
       <p v-if="ruleContent.title" class="text-muted small mb-2">
         {{ ruleContent.title }}
@@ -96,22 +108,6 @@
           class="section-body small"
           :class="{ 'section-body--focused': section.key === focusedSection }"
           v-text="section.content"
-        />
-      </div>
-      <div
-        class="advanced-toggle d-flex align-items-center px-2 py-1 mt-2 rounded small"
-        data-testid="advanced-fields-toggle"
-        role="button"
-        tabindex="0"
-        @click="showAdvanced = !showAdvanced"
-        @keydown.enter="showAdvanced = !showAdvanced"
-        @keydown.space.prevent="showAdvanced = !showAdvanced"
-      >
-        <b-icon :icon="showAdvanced ? 'chevron-down' : 'chevron-right'" class="mr-2" />
-        <strong>Advanced Fields</strong>
-        <InfoTooltip
-          text="Additional metadata fields (version, weight, identifiers). Most triagers do not need these."
-          class="ml-1"
         />
       </div>
     </template>
@@ -278,15 +274,5 @@ export default {
 
 .section-preview {
   max-width: 60%;
-}
-
-.advanced-toggle {
-  cursor: pointer;
-  user-select: none;
-  border: 1px dashed rgba(0, 0, 0, 0.15);
-}
-
-.advanced-toggle:hover {
-  background-color: rgba(0, 0, 0, 0.04);
 }
 </style>
