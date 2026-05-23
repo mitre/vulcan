@@ -124,6 +124,8 @@
                 <TriageStatusBadge
                   :status="comment.triage_status"
                   :adjudicated-at="comment.adjudicated_at"
+                  :addressed-by-rule-id="comment.addressed_by_rule_id"
+                  :addressed-by-rule-name="comment.addressed_by_rule_name"
                 />
               </div>
             </template>

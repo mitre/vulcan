@@ -25,39 +25,46 @@
   --vulcan-bg-light: #e9ecef;
   --vulcan-dark: #343a40;
 
-  /* Triage status colors — per-status palette.
-     Override these to change triage status appearance. */
-  --triage-concur: #28a745;
-  --triage-concur-tint: rgba(40, 167, 69, 0.15);
-  --triage-concur-text: #fff;
+  /* ── Layer 2: Triage status → core palette mapping ──────────────
+     Each --triage-* references a --vulcan-* core color from Layer 1
+     (application.scss). To change a triage color, either:
+       (a) Override the --vulcan-* core color (changes ALL consumers), or
+       (b) Override the --triage-* alias (changes only triage).
+     Text contrast colors use Bootstrap color-yiq via Layer 1 for
+     solid backgrounds; custom overrides below for tint backgrounds
+     where color-yiq's white/dark binary is insufficient. */
 
-  --triage-concur-with-comment: #007bff;
-  --triage-concur-with-comment-tint: rgba(0, 123, 255, 0.10);
-  --triage-concur-with-comment-text: #004085;
+  --triage-concur: var(--vulcan-success);
+  --triage-concur-tint: var(--vulcan-success-tint);
+  --triage-concur-text: var(--vulcan-success-text);
 
-  --triage-non-concur: #dc3545;
-  --triage-non-concur-tint: rgba(220, 53, 69, 0.08);
-  --triage-non-concur-text: #721c24;
+  --triage-concur-with-comment: var(--vulcan-primary);
+  --triage-concur-with-comment-tint: var(--vulcan-primary-tint);
+  --triage-concur-with-comment-text: var(--vulcan-primary-text);
 
-  --triage-informational: #ffc107;
-  --triage-informational-tint: rgba(255, 193, 7, 0.08);
-  --triage-informational-text: #856404;
+  --triage-non-concur: var(--vulcan-danger);
+  --triage-non-concur-tint: var(--vulcan-danger-tint);
+  --triage-non-concur-text: var(--vulcan-danger-text);
 
-  --triage-pending: #6c757d;
-  --triage-pending-tint: rgba(108, 117, 125, 0.08);
-  --triage-pending-text: #6c757d;
+  --triage-informational: var(--vulcan-warning);
+  --triage-informational-tint: var(--vulcan-warning-tint);
+  --triage-informational-text: var(--vulcan-warning-text);
 
-  --triage-withdrawn: #8b5cf6;
-  --triage-withdrawn-tint: rgba(139, 92, 246, 0.08);
-  --triage-withdrawn-text: #5b21b6;
+  --triage-pending: var(--vulcan-secondary);
+  --triage-pending-tint: var(--vulcan-secondary-tint);
+  --triage-pending-text: var(--vulcan-secondary);
 
-  --triage-duplicate: #14b8a6;
-  --triage-duplicate-tint: rgba(20, 184, 166, 0.08);
-  --triage-duplicate-text: #0f766e;
+  --triage-withdrawn: var(--vulcan-purple);
+  --triage-withdrawn-tint: var(--vulcan-purple-tint);
+  --triage-withdrawn-text: var(--vulcan-purple-text);
 
-  --triage-addressed-by: #6366f1;
-  --triage-addressed-by-tint: rgba(99, 102, 241, 0.08);
-  --triage-addressed-by-text: #3730a3;
+  --triage-duplicate: var(--vulcan-teal);
+  --triage-duplicate-tint: var(--vulcan-teal-tint);
+  --triage-duplicate-text: var(--vulcan-teal-text);
+
+  --triage-addressed-by: var(--vulcan-indigo);
+  --triage-addressed-by-tint: var(--vulcan-indigo-tint);
+  --triage-addressed-by-text: var(--vulcan-indigo-text);
 }
 
 /* Row background tints — applied via triageBgClass() utility */

@@ -332,11 +332,21 @@ class UsersController < ApplicationController
       triage_status: review.triage_status,
       triage_set_at: review.triage_set_at,
       adjudicated_at: review.adjudicated_at,
+      duplicate_of_review_id: review.duplicate_of_review_id,
+      addressed_by_rule_id: review.addressed_by_rule_id,
+      addressed_by_rule_name: review.addressed_by_rule_id ? addressed_by_rule_name(review) : nil,
       latest_activity_at: [review.triage_set_at, review.adjudicated_at, latest_response].compact.max,
       responses_count: responses_count,
       reactions: { up: reaction_counts[[review.id, 'up']] || 0,
                    down: reaction_counts[[review.id, 'down']] || 0 }
     }
+  end
+
+  def addressed_by_rule_name(review)
+    addressed_rule = review.addressed_by_rule
+    return nil unless addressed_rule
+
+    "#{addressed_rule.component&.prefix}-#{addressed_rule.rule_id}"
   end
 
   def set_user

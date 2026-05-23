@@ -31,6 +31,8 @@
           :status="parent.triage_status"
           :adjudicated-at="parent.adjudicated_at"
           :duplicate-of-id="parent.duplicate_of_review_id"
+          :addressed-by-rule-id="parent.addressed_by_rule_id"
+          :addressed-by-rule-name="parent.addressed_by_rule_name"
           class="ml-2"
         />
       </p>

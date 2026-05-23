@@ -30,6 +30,8 @@
             :status="row.triage_status"
             :adjudicated-at="row.adjudicated_at"
             :duplicate-of-id="row.duplicate_of_review_id"
+            :addressed-by-rule-id="row.addressed_by_rule_id"
+            :addressed-by-rule-name="row.addressed_by_rule_name"
             class="ml-1"
           />
           ({{ friendlyDateTime(row.created_at) }}) — &quot;{{ row.comment }}&quot;

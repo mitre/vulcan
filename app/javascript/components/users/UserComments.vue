@@ -78,7 +78,13 @@
           {{ friendlyDateTime(value) }}
         </template>
         <template #cell(triage_status)="{ item }">
-          <TriageStatusBadge :status="item.triage_status" :adjudicated-at="item.adjudicated_at" />
+          <TriageStatusBadge
+            :status="item.triage_status"
+            :adjudicated-at="item.adjudicated_at"
+            :duplicate-of-id="item.duplicate_of_review_id"
+            :addressed-by-rule-id="item.addressed_by_rule_id"
+            :addressed-by-rule-name="item.addressed_by_rule_name"
+          />
         </template>
         <template #cell(latest_activity_at)="{ value }">
           <span v-if="value">{{ friendlyDateTime(value) }}</span>

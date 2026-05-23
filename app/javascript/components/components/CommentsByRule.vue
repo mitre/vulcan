@@ -49,6 +49,8 @@
                 :status="comment.triage_status"
                 :adjudicated-at="comment.adjudicated_at"
                 :duplicate-of-id="comment.duplicate_of_review_id"
+                :addressed-by-rule-id="comment.addressed_by_rule_id"
+                :addressed-by-rule-name="comment.addressed_by_rule_name"
               />
             </div>
             <small v-if="comment.parent_rule_displayed_name" class="text-muted d-block mb-1">
