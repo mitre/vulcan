@@ -117,9 +117,13 @@
             class="mr-2 flex-shrink-0"
           />
           <span class="section-title">{{ section.label }}</span>
-          <span v-if="sectionCount(section.key) > 0" class="comment-count-badge">{{
-            sectionCount(section.key)
-          }}</span>
+          <b-badge
+            v-if="sectionCount(section.key) > 0"
+            variant="secondary"
+            pill
+            class="comment-count-badge"
+            >{{ sectionCount(section.key) }}</b-badge
+          >
           <span
             v-if="!isSectionExpanded(section.key)"
             class="section-preview text-muted small ml-2 text-truncate"
@@ -304,20 +308,10 @@ export default {
 
 .comment-count-badge {
   position: relative;
-  top: -0.5em;
-  font-size: 0.65rem;
-  font-weight: 700;
-  background-color: var(--secondary);
-  color: white;
-  border-radius: 50%;
-  min-width: 1.2em;
-  height: 1.2em;
-  padding: 0 0.3em;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  margin-left: 0.15em;
+  top: -0.6em;
+  font-size: 0.6rem;
+  margin-left: 0.1em;
+  vertical-align: super;
 }
 
 .section-header--collapsed {
