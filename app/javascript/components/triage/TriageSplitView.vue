@@ -136,12 +136,7 @@
           @dirty="isDirty = $event"
         >
           <template v-if="canAdminAct" #actions-left>
-            <b-dropdown
-              size="sm"
-              variant="outline-secondary"
-              data-testid="admin-actions-inline"
-              no-caret
-            >
+            <b-dropdown variant="outline-secondary" data-testid="admin-actions-inline" no-caret>
               <template #button-content> <b-icon icon="shield-lock" /> Admin </template>
               <b-dropdown-item
                 data-testid="admin-action-force-withdraw"
