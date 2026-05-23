@@ -1,5 +1,64 @@
 @import "bootstrap/scss/bootstrap";
 @import "bootstrap-vue/src/index.scss";
+
+// ── Vulcan Design System: Layer 1 ──────────────────────────────────────
+// Bridge Bootstrap 4 Sass variables to CSS custom properties so Vue
+// components can reference the palette at runtime. Bootstrap 4 compiles
+// Sass to hardcoded hex — these variables make the palette available
+// as design tokens for dynamic coloring (triage badges, status pills,
+// progress bars, row tints).
+//
+// Convention: --vulcan-{color} (base), --vulcan-{color}-tint (15% bg),
+// --vulcan-{color}-text (contrast text). Triage and other semantic layers
+// reference these via var() — see triage-tints.css Layer 2.
+:root {
+  // Core Bootstrap theme colors
+  --vulcan-primary: #{$primary};
+  --vulcan-primary-tint: #{rgba($primary, 0.10)};
+  --vulcan-primary-text: #{color-yiq($primary)};
+
+  --vulcan-secondary: #{$secondary};
+  --vulcan-secondary-tint: #{rgba($secondary, 0.08)};
+  --vulcan-secondary-text: #{color-yiq($secondary)};
+
+  --vulcan-success: #{$success};
+  --vulcan-success-tint: #{rgba($success, 0.15)};
+  --vulcan-success-text: #{color-yiq($success)};
+
+  --vulcan-danger: #{$danger};
+  --vulcan-danger-tint: #{rgba($danger, 0.08)};
+  --vulcan-danger-text: #{color-yiq($danger)};
+
+  --vulcan-warning: #{$warning};
+  --vulcan-warning-tint: #{rgba($warning, 0.08)};
+  --vulcan-warning-text: #{color-yiq($warning)};
+
+  --vulcan-info: #{$info};
+  --vulcan-info-tint: #{rgba($info, 0.08)};
+  --vulcan-info-text: #{color-yiq($info)};
+
+  --vulcan-light: #{$light};
+  --vulcan-light-tint: #{rgba($light, 0.15)};
+  --vulcan-light-text: #{color-yiq($light)};
+
+  --vulcan-dark: #{$dark};
+  --vulcan-dark-tint: #{rgba($dark, 0.08)};
+  --vulcan-dark-text: #{color-yiq($dark)};
+
+  // Extended palette — Bootstrap raw colors not in the theme map
+  --vulcan-purple: #{$purple};
+  --vulcan-purple-tint: #{rgba($purple, 0.08)};
+  --vulcan-purple-text: #{color-yiq($purple)};
+
+  --vulcan-teal: #{$teal};
+  --vulcan-teal-tint: #{rgba($teal, 0.08)};
+  --vulcan-teal-text: #{color-yiq($teal)};
+
+  --vulcan-indigo: #{$indigo};
+  --vulcan-indigo-tint: #{rgba($indigo, 0.08)};
+  --vulcan-indigo-text: #{color-yiq($indigo)};
+}
+
 @import "./styles/triage-tints.css";
 
 // Bootstrap Icons are included via the IconsPlugin in Vue
