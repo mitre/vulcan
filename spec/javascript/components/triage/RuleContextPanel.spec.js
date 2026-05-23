@@ -476,6 +476,17 @@ describe("RuleContextPanel", () => {
     expect(w.find('[data-section="fixtext"] .section-body').isVisible()).toBe(true);
   });
 
+  // ── WCAG: section buttons have aria-label (05f.28.2) ───────────────
+
+  it("adds aria-label to collapsible section buttons", () => {
+    const w = mount(RuleContextPanel, {
+      localVue,
+      propsData: props({ focusedSection: "check_content" }),
+    });
+    const header = w.find('[data-section="check_content"] .section-header');
+    expect(header.attributes("aria-label")).toContain("Check");
+  });
+
   // ── Fix 6: Toggle label is "Focus Section" not "All Fields" ───────
 
   it("labels the context mode toggle as 'Focus Section'", () => {

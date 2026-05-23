@@ -97,6 +97,7 @@
           role="button"
           tabindex="0"
           :aria-expanded="String(isSectionExpanded(section.key))"
+          :aria-label="'Toggle ' + section.label + ' section'"
           @click="toggleSection(section.key)"
           @keydown.enter="toggleSection(section.key)"
           @keydown.space.prevent="toggleSection(section.key)"
@@ -302,7 +303,12 @@ export default {
 }
 
 .section-header--collapsed {
-  opacity: 0.7;
+  opacity: 0.75;
+}
+
+.section-header--collapsed .section-preview {
+  opacity: 1;
+  color: #6c757d;
 }
 
 .section-body {

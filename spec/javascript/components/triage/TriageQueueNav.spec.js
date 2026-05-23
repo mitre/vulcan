@@ -200,6 +200,33 @@ describe("TriageQueueNav", () => {
     expect(w.text()).toContain("Rule 1 of 40");
   });
 
+  // ── WCAG + ARIA fixes (05f.28.2) ──────────────────────────────────
+
+  it("uses role='option' on browse items, not role='button'", async () => {
+    const w = mount(TriageQueueNav, { localVue, propsData: baseProps() });
+    await w.find("[data-testid='browse-toggle']").trigger("click");
+    const items = w.findAll("[data-testid='browse-item']");
+    items.wrappers.forEach((item) => {
+      expect(item.attributes("role")).toBe("option");
+    });
+  });
+
+  it("wraps position counter in aria-live region", () => {
+    const w = mount(TriageQueueNav, { localVue, propsData: baseProps() });
+    const counter = w.find("[data-testid='position-counter']");
+    expect(counter.exists()).toBe(true);
+    expect(counter.attributes("aria-live")).toBe("polite");
+  });
+
+  it("has aria-label on browse listbox", async () => {
+    const w = mount(TriageQueueNav, { localVue, propsData: baseProps() });
+    w.vm.browseOpen = true;
+    await w.vm.$nextTick();
+    const list = w.find("[role='listbox']");
+    expect(list.exists()).toBe(true);
+    expect(list.attributes("aria-label")).toBe("Browse all comments");
+  });
+
   it("handles string currentId from route params (type coercion)", () => {
     const w = mount(TriageQueueNav, {
       localVue,

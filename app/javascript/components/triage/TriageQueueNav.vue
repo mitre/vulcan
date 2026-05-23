@@ -26,7 +26,7 @@
         </b-button>
       </span>
 
-      <span class="small mr-2">
+      <span class="small mr-2" aria-live="polite" data-testid="position-counter">
         Rule <strong>{{ currentRuleIndex + 1 }}</strong> of
         <strong>{{ ruleGroups.length }}</strong>
         — Comment <strong>{{ currentCommentInRule + 1 }}</strong> of
@@ -85,6 +85,7 @@
             ref="browseList"
             class="browse-panel__list"
             role="listbox"
+            aria-label="Browse all comments"
             tabindex="0"
             @keydown="handleBrowseKeydown"
           >
@@ -108,7 +109,8 @@
                     'browse-focused': browseFocusIndex === flatIndexOf(comment.id),
                   },
                 ]"
-                role="button"
+                role="option"
+                :aria-selected="String(comment.id === normalizedCurrentId)"
                 tabindex="0"
                 @click="onBrowseSelect(comment.id)"
                 @keydown.enter="onBrowseSelect(comment.id)"
@@ -382,7 +384,7 @@ export default {
 }
 
 .browse-item.active .text-muted {
-  color: rgba(255, 255, 255, 0.75) !important;
+  color: #fff !important;
 }
 
 .browse-item.active:hover,

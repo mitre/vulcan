@@ -29,6 +29,7 @@
       data-testid="sidebar-list"
       class="sidebar-list"
       role="listbox"
+      aria-label="Comments by rule"
       tabindex="0"
       @keydown="handleKeydown"
     >
@@ -306,7 +307,7 @@ export default {
 }
 
 .sidebar-comment--active .text-muted {
-  color: rgba(255, 255, 255, 0.75) !important;
+  color: #fff !important;
 }
 
 .sidebar-comment--active:hover,

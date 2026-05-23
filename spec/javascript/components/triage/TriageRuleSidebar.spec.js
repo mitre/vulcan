@@ -165,6 +165,12 @@ describe("TriageRuleSidebar", () => {
     expect(w.vm.focusedIndex).toBe(0);
   });
 
+  it("has aria-label on sidebar listbox", () => {
+    const w = mount(TriageRuleSidebar, { localVue, propsData: baseProps() });
+    const list = w.find("[data-testid='sidebar-list']");
+    expect(list.attributes("aria-label")).toBeTruthy();
+  });
+
   it("is a composite widget — sidebar-list has single tabindex=0", () => {
     const w = mount(TriageRuleSidebar, { localVue, propsData: baseProps() });
     const list = w.find("[data-testid='sidebar-list']");
