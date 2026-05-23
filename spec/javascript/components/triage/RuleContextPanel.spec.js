@@ -384,6 +384,41 @@ describe("RuleContextPanel", () => {
     expect(body.classes()).not.toContain("section-body--focused");
   });
 
+  // ── 05f.25: visibleFields sorted by FIELD_DISPLAY_ORDER ─────────
+  // REQUIREMENT: Triage panel must show fields in the same order as
+  // the editor (RuleForm.vue). Previously concatenated config arrays
+  // in wrong order (fix before vuln_discussion).
+
+  it("renders vuln_discussion before check_content (FIELD_DISPLAY_ORDER)", () => {
+    const w = mount(RuleContextPanel, { localVue, propsData: props() });
+    const sections = w.findAll("[data-section]").wrappers.map((s) => s.attributes("data-section"));
+    const vulnIdx = sections.indexOf("vuln_discussion");
+    const checkIdx = sections.indexOf("check_content");
+    expect(vulnIdx).toBeGreaterThan(-1);
+    expect(checkIdx).toBeGreaterThan(-1);
+    expect(vulnIdx).toBeLessThan(checkIdx);
+  });
+
+  it("renders check_content before fixtext (FIELD_DISPLAY_ORDER)", () => {
+    const w = mount(RuleContextPanel, { localVue, propsData: props() });
+    const sections = w.findAll("[data-section]").wrappers.map((s) => s.attributes("data-section"));
+    const checkIdx = sections.indexOf("check_content");
+    const fixIdx = sections.indexOf("fixtext");
+    expect(checkIdx).toBeGreaterThan(-1);
+    expect(fixIdx).toBeGreaterThan(-1);
+    expect(checkIdx).toBeLessThan(fixIdx);
+  });
+
+  it("renders fixtext before vendor_comments (FIELD_DISPLAY_ORDER)", () => {
+    const w = mount(RuleContextPanel, { localVue, propsData: props() });
+    const sections = w.findAll("[data-section]").wrappers.map((s) => s.attributes("data-section"));
+    const fixIdx = sections.indexOf("fixtext");
+    const vendorIdx = sections.indexOf("vendor_comments");
+    expect(fixIdx).toBeGreaterThan(-1);
+    expect(vendorIdx).toBeGreaterThan(-1);
+    expect(fixIdx).toBeLessThan(vendorIdx);
+  });
+
   // ── Fix 6: Toggle label is "Focus Section" not "All Fields" ───────
 
   it("labels the context mode toggle as 'Focus Section'", () => {

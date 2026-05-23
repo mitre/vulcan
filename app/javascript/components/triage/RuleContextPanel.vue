@@ -127,7 +127,11 @@
 </template>
 
 <script>
-import { STATUS_FIELD_CONFIG, FIELD_LABELS } from "../../composables/ruleFieldConfig";
+import {
+  STATUS_FIELD_CONFIG,
+  FIELD_LABELS,
+  FIELD_DISPLAY_ORDER,
+} from "../../composables/ruleFieldConfig";
 import InfoTooltip from "../shared/InfoTooltip.vue";
 
 const INLINE_SECTIONS = new Set(["status", "rule_severity"]);
@@ -194,6 +198,11 @@ export default {
         if (config.rule.advancedDisplayed) addFields(config.rule.advancedDisplayed);
         if (config.disa.advancedDisplayed) addFields(config.disa.advancedDisplayed);
       }
+
+      fields.sort(
+        (a, b) =>
+          (FIELD_DISPLAY_ORDER.indexOf(a.key) ?? 999) - (FIELD_DISPLAY_ORDER.indexOf(b.key) ?? 999),
+      );
 
       if (this.contextMode === "commented" && this.commentedSectionsSet.size > 0) {
         return fields.filter((f) => this.commentedSectionsSet.has(f.key));
