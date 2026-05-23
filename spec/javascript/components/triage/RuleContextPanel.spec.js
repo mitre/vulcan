@@ -440,6 +440,19 @@ describe("RuleContextPanel", () => {
     expect(w.find(".rule-context-divider").exists()).toBe(true);
   });
 
+  // ── Header: rule name row + controls row ────────────────────────────
+
+  it("renders rule name separate from controls toolbar", () => {
+    const w = mount(RuleContextPanel, { localVue, propsData: props() });
+    const nameRow = w.find(".rule-context-header");
+    const toolbar = w.find("[data-testid='context-toolbar']");
+    expect(nameRow.text()).toContain("CNTR-01-000001");
+    expect(nameRow.find("[data-testid='context-mode-toggle']").exists()).toBe(false);
+    expect(toolbar.find("[data-testid='context-mode-toggle']").exists()).toBe(true);
+    expect(toolbar.find("[data-testid='advanced-fields-toggle']").exists()).toBe(true);
+    expect(toolbar.find("[data-testid='expand-all-sections']").exists()).toBe(true);
+  });
+
   // ── Expand/collapse all buttons ───────────────────────────────────
 
   it("expands all sections when expand-all is clicked", async () => {

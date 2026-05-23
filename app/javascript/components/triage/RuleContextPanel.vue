@@ -1,8 +1,8 @@
 <template>
   <div class="rule-context-panel">
     <template v-if="ruleContent">
-      <div class="rule-context-header d-flex align-items-center mb-2">
-        <h6 class="mb-0 font-weight-bold flex-grow-1">
+      <div class="rule-context-header mb-1">
+        <h6 class="mb-0 font-weight-bold">
           <b-icon
             v-if="ruleContent.locked"
             icon="lock"
@@ -29,11 +29,13 @@
             Locked
           </b-badge>
         </h6>
+      </div>
+      <div class="d-flex align-items-center mb-2" data-testid="context-toolbar">
         <b-form-checkbox
           :checked="contextMode === 'commented'"
           switch
           size="sm"
-          class="ml-2 flex-shrink-0"
+          class="flex-shrink-0"
           data-testid="context-mode-toggle"
           @change="$emit('update:contextMode', $event ? 'commented' : 'all')"
         >
@@ -46,7 +48,7 @@
           v-model="showAdvanced"
           switch
           size="sm"
-          class="ml-2 flex-shrink-0"
+          class="ml-3 flex-shrink-0"
           data-testid="advanced-fields-toggle"
         >
           <small class="text-muted">
@@ -54,7 +56,7 @@
             <InfoTooltip text="Show additional metadata fields (version, weight, identifiers)" />
           </small>
         </b-form-checkbox>
-        <span class="ml-2 flex-shrink-0">
+        <span class="ml-auto flex-shrink-0">
           <b-button
             v-b-tooltip.hover
             size="sm"
