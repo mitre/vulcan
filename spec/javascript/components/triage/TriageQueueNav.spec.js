@@ -47,13 +47,6 @@ describe("TriageQueueNav", () => {
     expect(w.text()).toContain("Comment 1 of 2");
   });
 
-  // ── Pending count ──────────────────────────────────────────────────
-
-  it("renders pending count", () => {
-    const w = mount(TriageQueueNav, { localVue, propsData: baseProps() });
-    expect(w.text()).toContain("5 pending");
-  });
-
   // ── Navigation: next within rule, then to next rule ────────────────
 
   it("next emits the next comment in the same rule", async () => {
@@ -204,7 +197,7 @@ describe("TriageQueueNav", () => {
     });
     expect(w.text()).toContain("Rule 1 of 40");
     expect(w.text()).toContain("Comment 1 of 5");
-    expect(w.text()).toContain("150 pending");
+    expect(w.text()).toContain("Rule 1 of 40");
   });
 
   it("handles string currentId from route params (type coercion)", () => {

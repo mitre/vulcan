@@ -58,9 +58,7 @@
         </b-button>
       </span>
 
-      <span class="small text-muted ml-auto mr-3">{{ pendingCount }} pending</span>
-
-      <div v-click-outside="closeBrowse" class="position-relative">
+      <div v-click-outside="closeBrowse" class="position-relative ml-auto">
         <b-button
           data-testid="browse-toggle"
           size="sm"
