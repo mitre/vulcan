@@ -105,6 +105,7 @@ import CommentThread from "../shared/CommentThread.vue";
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
 import { triageBgClass as getTriageBgClass } from "../../utils/triageBgClass";
 import { sectionIndex } from "../../utils/sectionSortOrder";
+import { groupCommentsByRule } from "../../utils/groupCommentsByRule";
 
 export default {
   name: "CommentsByRule",
@@ -116,39 +117,23 @@ export default {
   },
   data() {
     return {
-      collapsed: {},
+      expandedGroups: {},
       expanded: {},
     };
   },
   computed: {
     ruleGroups() {
-      const groups = {};
-      this.rows.forEach((row) => {
-        const name = row.group_rule_displayed_name || row.rule_displayed_name || "(unknown)";
-        if (!groups[name]) {
-          groups[name] = { ruleName: name, ruleId: row.rule_id, comments: [], sectionMap: {} };
+      const baseGroups = groupCommentsByRule(this.rows);
+      return baseGroups.map((g) => {
+        const sectionMap = {};
+        for (const c of g.comments) {
+          const sectionKey = c.section || "(general)";
+          if (!sectionMap[sectionKey]) sectionMap[sectionKey] = [];
+          sectionMap[sectionKey].push(c);
         }
-        groups[name].comments.push(row);
-        const sectionKey = row.section || "(general)";
-        if (!groups[name].sectionMap[sectionKey]) {
-          groups[name].sectionMap[sectionKey] = [];
-        }
-        groups[name].sectionMap[sectionKey].push(row);
-      });
-
-      return Object.values(groups)
-        .sort((a, b) => {
-          const aComp = a.ruleId === null || a.ruleId === undefined;
-          const bComp = b.ruleId === null || b.ruleId === undefined;
-          if (aComp && !bComp) return -1;
-          if (!aComp && bComp) return 1;
-          if (aComp && bComp) return 0;
-          return a.ruleName.localeCompare(b.ruleName, undefined, { numeric: true });
-        })
-        .map((g) => ({
+        return {
           ...g,
-          pendingCount: g.comments.filter((c) => c.triage_status === "pending").length,
-          sections: Object.entries(g.sectionMap)
+          sections: Object.entries(sectionMap)
             .sort(([keyA], [keyB]) => {
               const idxA = keyA === "(general)" ? -1 : sectionIndex(keyA);
               const idxB = keyB === "(general)" ? -1 : sectionIndex(keyB);
@@ -159,7 +144,8 @@ export default {
               label: key === "(general)" ? "Overall Requirement" : SECTION_LABELS[key] || key,
               comments,
             })),
-        }));
+        };
+      });
     },
   },
   watch: {
@@ -173,19 +159,19 @@ export default {
   },
   methods: {
     isExpanded(ruleName) {
-      return this.collapsed[ruleName] === true;
+      return this.expandedGroups[ruleName] === true;
     },
     toggleRule(ruleName) {
-      this.$set(this.collapsed, ruleName, !this.isExpanded(ruleName));
+      this.$set(this.expandedGroups, ruleName, !this.isExpanded(ruleName));
     },
     expandAll() {
       this.ruleGroups.forEach((g) => {
-        this.$set(this.collapsed, g.ruleName, true);
+        this.$set(this.expandedGroups, g.ruleName, true);
       });
     },
     collapseAll() {
       this.ruleGroups.forEach((g) => {
-        this.$set(this.collapsed, g.ruleName, false);
+        this.$set(this.expandedGroups, g.ruleName, false);
       });
     },
     triageBgClass(status) {

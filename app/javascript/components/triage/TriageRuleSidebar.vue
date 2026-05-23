@@ -95,6 +95,8 @@
 </template>
 
 <script>
+import { groupCommentsByRule } from "../../utils/groupCommentsByRule";
+
 export default {
   name: "TriageRuleSidebar",
   props: {
@@ -116,31 +118,7 @@ export default {
       return this.comments.filter((c) => c.triage_status === "pending").length;
     },
     ruleGroups() {
-      const groups = [];
-      const seen = new Map();
-      for (const c of this.comments) {
-        const key = c.group_rule_displayed_name || c.rule_displayed_name || "(component)";
-        if (!seen.has(key)) {
-          const group = {
-            key,
-            ruleName: key,
-            comments: [],
-            pendingCount: 0,
-          };
-          seen.set(key, group);
-          groups.push(group);
-        }
-        const g = seen.get(key);
-        g.comments.push(c);
-        if (c.triage_status === "pending") g.pendingCount++;
-      }
-      return groups.sort((a, b) => {
-        const aComp = a.key === "(component)";
-        const bComp = b.key === "(component)";
-        if (aComp && !bComp) return -1;
-        if (!aComp && bComp) return 1;
-        return a.ruleName.localeCompare(b.ruleName, undefined, { numeric: true });
-      });
+      return groupCommentsByRule(this.comments);
     },
     filteredGroups() {
       if (!this.searchText) return this.ruleGroups;

@@ -91,7 +91,7 @@
           >
             <template v-for="group in filteredBrowseGroups">
               <div
-                :key="'hdr-' + group.ruleId"
+                :key="'hdr-' + group.key"
                 data-testid="browse-rule-header"
                 class="px-3 py-1 bg-light border-bottom small font-weight-bold"
               >
@@ -106,7 +106,7 @@
                   triageBgClass(comment.triage_status),
                   {
                     active: comment.id === normalizedCurrentId,
-                    'browse-focused': browseFocusIndex === flatIndexOf(comment.id),
+                    'browse-focused': browseFocusIndex === browseIndexMap[comment.id],
                   },
                 ]"
                 role="option"
@@ -140,6 +140,7 @@
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
 import { triageBgClass } from "../../utils/triageBgClass";
+import { groupCommentsByRule } from "../../utils/groupCommentsByRule";
 
 export default {
   name: "TriageQueueNav",
@@ -173,29 +174,7 @@ export default {
       return this.currentId != null ? Number(this.currentId) : null;
     },
     ruleGroups() {
-      const groups = [];
-      const seen = new Map();
-      for (const c of this.comments) {
-        const key = c.group_rule_displayed_name || c.rule_displayed_name || "(component)";
-        if (!seen.has(key)) {
-          const group = {
-            ruleId: key,
-            ruleName: key,
-            comments: [],
-          };
-          seen.set(key, group);
-          groups.push(group);
-        }
-        seen.get(key).comments.push(c);
-      }
-      return groups.sort((a, b) => {
-        const aComp = a.ruleId === "(component)";
-        const bComp = b.ruleId === "(component)";
-        if (aComp && !bComp) return -1;
-        if (!aComp && bComp) return 1;
-        if (aComp && bComp) return 0;
-        return a.ruleName.localeCompare(b.ruleName, undefined, { numeric: true });
-      });
+      return groupCommentsByRule(this.comments);
     },
     currentPosition() {
       for (let gi = 0; gi < this.ruleGroups.length; gi++) {
@@ -238,6 +217,20 @@ export default {
     },
     hasNextRule() {
       return this.currentRuleIndex >= 0 && this.currentRuleIndex < this.ruleGroups.length - 1;
+    },
+    flatBrowseComments() {
+      const flat = [];
+      for (const g of this.filteredBrowseGroups) {
+        for (const c of g.comments) flat.push(c);
+      }
+      return flat;
+    },
+    browseIndexMap() {
+      const map = {};
+      this.flatBrowseComments.forEach((c, i) => {
+        map[c.id] = i;
+      });
+      return map;
     },
     filteredBrowseGroups() {
       if (!this.browseFilter) return this.ruleGroups;
@@ -293,7 +286,7 @@ export default {
     toggleBrowse() {
       this.browseOpen = !this.browseOpen;
       if (this.browseOpen) {
-        this.browseFocusIndex = this.flatIndexOf(this.normalizedCurrentId);
+        this.browseFocusIndex = this.browseIndexMap[this.normalizedCurrentId] ?? -1;
         this.$nextTick(() => {
           const active = this.$refs.browseList?.querySelector(".browse-item.active");
           if (active) active.scrollIntoView({ block: "nearest" });
@@ -308,25 +301,8 @@ export default {
       this.browseOpen = false;
       this.browseFocusIndex = -1;
     },
-    flatIndexOf(commentId) {
-      let idx = 0;
-      for (const g of this.filteredBrowseGroups) {
-        for (const c of g.comments) {
-          if (c.id === commentId) return idx;
-          idx++;
-        }
-      }
-      return -1;
-    },
-    flatBrowseComments() {
-      const flat = [];
-      for (const g of this.filteredBrowseGroups) {
-        for (const c of g.comments) flat.push(c);
-      }
-      return flat;
-    },
     handleBrowseKeydown(event) {
-      const items = this.flatBrowseComments();
+      const items = this.flatBrowseComments;
       if (!items.length) return;
 
       if (event.key === "ArrowDown" || event.key === "ArrowUp") {

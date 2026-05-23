@@ -49,14 +49,21 @@
         <slot name="actions-left" />
       </div>
       <div>
-        <b-button data-testid="cancel" variant="secondary" class="mr-2" @click="$emit('cancel')">
+        <b-button
+          data-testid="cancel"
+          variant="secondary"
+          size="sm"
+          class="mr-1"
+          @click="$emit('cancel')"
+        >
           Cancel
         </b-button>
         <b-button
           v-if="hasSaveDecisionOnlyOption"
           data-testid="save-decision"
           variant="outline-primary"
-          class="mr-2"
+          size="sm"
+          class="mr-1"
           :disabled="!canSave || loading"
           @click="emitSave"
         >
@@ -65,6 +72,7 @@
         <b-button
           data-testid="save-and-next"
           variant="primary"
+          size="sm"
           :disabled="!canSave || loading"
           @click="emitSaveAndNext"
         >
