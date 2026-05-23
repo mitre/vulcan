@@ -54,6 +54,30 @@
             <InfoTooltip text="Show additional metadata fields (version, weight, identifiers)" />
           </small>
         </b-form-checkbox>
+        <span class="ml-2 flex-shrink-0">
+          <b-button
+            v-b-tooltip.hover
+            size="sm"
+            variant="link"
+            class="p-0 text-muted"
+            title="Expand all sections"
+            data-testid="expand-all-sections"
+            @click="expandAllSections"
+          >
+            <b-icon icon="arrows-expand" />
+          </b-button>
+          <b-button
+            v-b-tooltip.hover
+            size="sm"
+            variant="link"
+            class="p-0 ml-1 text-muted"
+            title="Collapse all sections"
+            data-testid="collapse-all-sections"
+            @click="collapseAllSections"
+          >
+            <b-icon icon="arrows-collapse" />
+          </b-button>
+        </span>
       </div>
       <p v-if="ruleContent.title" class="text-muted small mb-2">
         {{ ruleContent.title }}
@@ -91,7 +115,7 @@
             :icon="isSectionExpanded(section.key) ? 'chevron-down' : 'chevron-right'"
             class="mr-2 flex-shrink-0"
           />
-          <strong class="small">{{ section.label }}</strong>
+          <span class="section-title">{{ section.label }}</span>
           <span v-if="sectionCount(section.key) > 0" class="badge badge-pill badge-secondary ml-1"
             >({{ sectionCount(section.key) }})</span
           >
@@ -236,6 +260,16 @@ export default {
     toggleSection(key) {
       this.$set(this.manualToggles, key, !this.isSectionExpanded(key));
     },
+    expandAllSections() {
+      for (const s of this.collapsibleSections) {
+        this.$set(this.manualToggles, s.key, true);
+      }
+    },
+    collapseAllSections() {
+      for (const s of this.collapsibleSections) {
+        this.$set(this.manualToggles, s.key, false);
+      }
+    },
     sectionCount(key) {
       return this.sectionCommentCounts[key] || 0;
     },
@@ -251,6 +285,11 @@ export default {
 
 .section-header:hover {
   background-color: rgba(0, 0, 0, 0.04);
+}
+
+.section-title {
+  font-weight: 600;
+  font-size: 0.85rem;
 }
 
 .section-header--collapsed {
