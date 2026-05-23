@@ -185,6 +185,28 @@ describe("TriageRuleSidebar", () => {
     expect(w.find("[data-testid='sidebar-header']").text()).toContain("3 pending");
   });
 
+  // ── 05f.25: Comments within a group respect input order ─────────
+  // Sidebar displays comments in the order received from sortedRows.
+  // TriageSplitView.sortedRows sorts by compareBySectionOrder before
+  // passing to the sidebar — test that the sidebar preserves that order.
+
+  it("preserves section-ordered input from sortedRows", () => {
+    const sectionComments = [
+      { id: 78, rule_id: 10, rule_displayed_name: "CNTR-01-000001", section: null, triage_status: "pending", comment: "Overall" },
+      { id: 171, rule_id: 10, rule_displayed_name: "CNTR-01-000001", section: "title", triage_status: "pending", comment: "Title" },
+      { id: 168, rule_id: 10, rule_displayed_name: "CNTR-01-000001", section: "vuln_discussion", triage_status: "pending", comment: "Vuln" },
+      { id: 42, rule_id: 10, rule_displayed_name: "CNTR-01-000001", section: "check_content", triage_status: "pending", comment: "Check" },
+      { id: 43, rule_id: 10, rule_displayed_name: "CNTR-01-000001", section: "fixtext", triage_status: "pending", comment: "Fix" },
+    ];
+    const w = mount(TriageRuleSidebar, {
+      localVue,
+      propsData: { comments: sectionComments, currentId: 78 },
+    });
+    const items = w.findAll("[data-testid='sidebar-comment-item']");
+    const ids = items.wrappers.map((item) => item.text().match(/#(\d+)/)?.[1]);
+    expect(ids).toEqual(["78", "171", "168", "42", "43"]);
+  });
+
   // ── Fix 7: Keyboard nav syncs with clicks ──────────────────────────
   // REQUIREMENT: When user clicks a comment, keyboard navigation
   // should continue from that position, not restart from the top.

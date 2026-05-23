@@ -730,6 +730,7 @@ class Component < ApplicationRecord
         reactions: { up: reaction_counts[[r.id, 'up']] || 0,
                      down: reaction_counts[[r.id, 'down']] || 0 },
         updated_at: r.updated_at,
+        rule_status: component_scoped_row ? nil : r.commentable&.status,
         parent_rule_displayed_name: component_scoped_row ? nil : parent_id_to_displayed[child_to_parent[r.rule_id]],
         group_rule_displayed_name: nil
       }

@@ -104,6 +104,7 @@ import ReactionButtons from "../shared/ReactionButtons.vue";
 import CommentThread from "../shared/CommentThread.vue";
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
 import { triageBgClass as getTriageBgClass } from "../../utils/triageBgClass";
+import { sectionIndex } from "../../utils/sectionSortOrder";
 
 export default {
   name: "CommentsByRule",
@@ -147,11 +148,17 @@ export default {
         .map((g) => ({
           ...g,
           pendingCount: g.comments.filter((c) => c.triage_status === "pending").length,
-          sections: Object.entries(g.sectionMap).map(([key, comments]) => ({
-            key,
-            label: key === "(general)" ? "Overall Requirement" : SECTION_LABELS[key] || key,
-            comments,
-          })),
+          sections: Object.entries(g.sectionMap)
+            .sort(([keyA], [keyB]) => {
+              const idxA = keyA === "(general)" ? -1 : sectionIndex(keyA);
+              const idxB = keyB === "(general)" ? -1 : sectionIndex(keyB);
+              return idxA - idxB;
+            })
+            .map(([key, comments]) => ({
+              key,
+              label: key === "(general)" ? "Overall Requirement" : SECTION_LABELS[key] || key,
+              comments,
+            })),
         }));
     },
   },

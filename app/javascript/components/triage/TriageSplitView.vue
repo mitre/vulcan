@@ -243,6 +243,7 @@ import ReactionButtons from "../shared/ReactionButtons.vue";
 import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
 import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
 import { triageBgClass } from "../../utils/triageBgClass";
+import { compareBySectionOrder } from "../../utils/sectionSortOrder";
 
 export default {
   name: "TriageSplitView",
@@ -280,7 +281,17 @@ export default {
   },
   computed: {
     sortedRows() {
-      return [...this.rows].sort((a, b) => a.id - b.id);
+      return [...this.rows].sort((a, b) => {
+        const groupA = a.group_rule_displayed_name || a.rule_displayed_name || "(component)";
+        const groupB = b.group_rule_displayed_name || b.rule_displayed_name || "(component)";
+        if (groupA !== groupB) {
+          if (groupA === "(component)") return -1;
+          if (groupB === "(component)") return 1;
+          const cmp = groupA.localeCompare(groupB, undefined, { numeric: true });
+          if (cmp !== 0) return cmp;
+        }
+        return compareBySectionOrder(a, b);
+      });
     },
     activeComment() {
       return this.sortedRows.find((r) => r.id === this.activeCommentId) || null;
