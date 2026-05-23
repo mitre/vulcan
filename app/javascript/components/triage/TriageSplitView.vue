@@ -437,6 +437,9 @@ export default {
         if (decision.triage_status === "duplicate") {
           payload.duplicate_of_review_id = decision.duplicate_of_review_id;
         }
+        if (decision.triage_status === "addressed_by") {
+          payload.addressed_by_rule_id = decision.addressed_by_rule_id;
+        }
 
         const triageRes = await axios.patch(`/reviews/${this.activeComment.id}/triage`, payload);
         this.$emit("triaged", triageRes.data.review);

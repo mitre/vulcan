@@ -30,10 +30,10 @@ describe("CommentTriageForm", () => {
 
   // ── Rendering ──────────────────────────────────────────────────────
 
-  it("renders all 6 decision radio buttons", () => {
+  it("renders all 7 decision radio buttons", () => {
     const w = mount(CommentTriageForm, { localVue, propsData: baseProps() });
     const radios = w.findAll('input[type="radio"][name="triage"]');
-    expect(radios.length).toBe(6);
+    expect(radios.length).toBe(7);
   });
 
   it("renders response textarea", () => {
@@ -101,7 +101,7 @@ describe("CommentTriageForm", () => {
 
   it("hides 'Save decision' for single-button statuses (terminal + needs_clarification)", () => {
     const w = mount(CommentTriageForm, { localVue, propsData: baseProps() });
-    ["informational", "duplicate", "needs_clarification", "withdrawn"].forEach((status) => {
+    ["informational", "duplicate", "needs_clarification", "withdrawn", "addressed_by"].forEach((status) => {
       w.vm.triageStatus = status;
       expect(w.vm.hasSaveDecisionOnlyOption).toBe(false);
     });
@@ -229,5 +229,58 @@ describe("CommentTriageForm", () => {
     await w.find('[data-testid="save-and-next"]').trigger("click");
     const payload = w.emitted("save-and-next")[0][0];
     expect(payload.duplicate_of_review_id).toBeUndefined();
+  });
+
+  // ── addressed_by status ──────────────────────────────────────────────
+
+  it("shows RulePicker when addressed_by is selected", async () => {
+    const w = mount(CommentTriageForm, { localVue, propsData: baseProps() });
+    w.vm.triageStatus = "addressed_by";
+    await w.vm.$nextTick();
+    expect(w.findComponent({ name: "RulePicker" }).exists()).toBe(true);
+  });
+
+  it("canSave is false when addressed_by is selected without a rule", () => {
+    const w = mount(CommentTriageForm, { localVue, propsData: baseProps() });
+    w.vm.triageStatus = "addressed_by";
+    w.vm.addressedByRuleId = null;
+    expect(w.vm.canSave).toBe(false);
+  });
+
+  it("canSave is true when addressed_by is selected with a rule", () => {
+    const w = mount(CommentTriageForm, { localVue, propsData: baseProps() });
+    w.vm.triageStatus = "addressed_by";
+    w.vm.addressedByRuleId = 42;
+    expect(w.vm.canSave).toBe(true);
+  });
+
+  it("includes addressed_by_rule_id in payload when status is addressed_by", async () => {
+    const w = mount(CommentTriageForm, { localVue, propsData: baseProps() });
+    w.vm.triageStatus = "addressed_by";
+    w.vm.addressedByRuleId = 42;
+    await w.vm.$nextTick();
+    await w.find('[data-testid="save-and-next"]').trigger("click");
+    const payload = w.emitted("save-and-next")[0][0];
+    expect(payload.addressed_by_rule_id).toBe(42);
+  });
+
+  it("does NOT include addressed_by_rule_id for non-addressed_by statuses", async () => {
+    const w = mount(CommentTriageForm, { localVue, propsData: baseProps() });
+    w.vm.triageStatus = "concur";
+    await w.vm.$nextTick();
+    await w.find('[data-testid="save-and-next"]').trigger("click");
+    const payload = w.emitted("save-and-next")[0][0];
+    expect(payload.addressed_by_rule_id).toBeUndefined();
+  });
+
+  it("seeds addressedByRuleId from review when restoring an addressed_by triage", () => {
+    const w = mount(CommentTriageForm, {
+      localVue,
+      propsData: baseProps({
+        review: { ...sampleReview, triage_status: "addressed_by", addressed_by_rule_id: 99 },
+      }),
+    });
+    expect(w.vm.triageStatus).toBe("addressed_by");
+    expect(w.vm.addressedByRuleId).toBe(99);
   });
 });

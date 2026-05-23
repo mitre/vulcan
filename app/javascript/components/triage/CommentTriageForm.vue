@@ -24,6 +24,17 @@
       <b-form-radio v-model="triageStatus" name="triage" value="informational">
         Informational — note acknowledged, no action required
       </b-form-radio>
+      <b-form-radio v-model="triageStatus" name="triage" value="addressed_by">
+        Addressed by another requirement
+      </b-form-radio>
+      <RulePicker
+        v-if="triageStatus === 'addressed_by' && resolvedComponentId"
+        class="mt-2 ml-4"
+        :component-id="resolvedComponentId"
+        :exclude-rule-id="review.rule_id || 0"
+        :selected-rule-id="addressedByRuleId"
+        @selected="onAddressedBySelected"
+      />
       <b-form-radio v-model="triageStatus" name="triage" value="needs_clarification">
         Needs clarification — round-trip with commenter
       </b-form-radio>
@@ -86,10 +97,11 @@
 <script>
 import { SINGLE_BUTTON_STATUSES } from "../../constants/triageVocabulary";
 import CanonicalCommentPicker from "../components/CanonicalCommentPicker.vue";
+import RulePicker from "../components/RulePicker.vue";
 
 export default {
   name: "CommentTriageForm",
-  components: { CanonicalCommentPicker },
+  components: { CanonicalCommentPicker, RulePicker },
   props: {
     review: { type: Object, required: true },
     componentId: { type: [Number, String], default: null },
@@ -100,6 +112,7 @@ export default {
       triageStatus: null,
       responseComment: "",
       duplicateOfId: null,
+      addressedByRuleId: null,
     };
   },
   computed: {
@@ -131,6 +144,7 @@ export default {
       if (!this.triageStatus) return false;
       if (this.triageStatus === "non_concur" && !this.responseComment.trim()) return false;
       if (this.triageStatus === "duplicate" && !this.duplicateOfId) return false;
+      if (this.triageStatus === "addressed_by" && !this.addressedByRuleId) return false;
       return true;
     },
     singleButtonMode() {
@@ -151,6 +165,7 @@ export default {
           this.triageStatus = val.triage_status === "pending" ? null : val.triage_status;
           this.responseComment = "";
           this.duplicateOfId = val.duplicate_of_review_id || null;
+          this.addressedByRuleId = val.addressed_by_rule_id || null;
         }
       },
       immediate: true,
@@ -164,6 +179,9 @@ export default {
     duplicateOfId() {
       this.emitDirty();
     },
+    addressedByRuleId() {
+      this.emitDirty();
+    },
   },
   methods: {
     buildDecision() {
@@ -175,6 +193,9 @@ export default {
       }
       if (this.triageStatus === "duplicate") {
         decision.duplicate_of_review_id = this.duplicateOfId;
+      }
+      if (this.triageStatus === "addressed_by") {
+        decision.addressed_by_rule_id = this.addressedByRuleId;
       }
       return decision;
     },
@@ -197,6 +218,9 @@ export default {
     },
     onDuplicateSelected(reviewId) {
       this.duplicateOfId = reviewId;
+    },
+    onAddressedBySelected(ruleId) {
+      this.addressedByRuleId = ruleId;
     },
   },
 };

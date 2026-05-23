@@ -54,6 +54,10 @@
   --triage-duplicate: #14b8a6;
   --triage-duplicate-tint: rgba(20, 184, 166, 0.08);
   --triage-duplicate-text: #0f766e;
+
+  --triage-addressed-by: #6366f1;
+  --triage-addressed-by-tint: rgba(99, 102, 241, 0.08);
+  --triage-addressed-by-text: #3730a3;
 }
 
 /* Row background tints — applied via triageBgClass() utility */
@@ -87,4 +91,9 @@
 .triage-bg--duplicate {
   background-color: var(--triage-duplicate-tint) !important;
   border-left-color: var(--triage-duplicate) !important;
+}
+
+.triage-bg--addressed_by {
+  background-color: var(--triage-addressed-by-tint) !important;
+  border-left-color: var(--triage-addressed-by) !important;
 }

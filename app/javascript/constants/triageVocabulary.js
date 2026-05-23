@@ -14,6 +14,7 @@ export const TRIAGE_LABELS = Object.freeze({
   informational: "Informational",
   needs_clarification: "Needs clarification",
   withdrawn: "Withdrawn",
+  addressed_by: "Addressed by",
 });
 
 // Database / API key → DISA-matrix term (for tooltips and CSV/OSCAL export)
@@ -26,6 +27,7 @@ export const TRIAGE_DISA_LABELS = Object.freeze({
   informational: "Informational",
   needs_clarification: "Needs clarification",
   withdrawn: "Withdrawn",
+  addressed_by: "Addressed by another requirement",
 });
 
 // Database / API key → tooltip text (DISA term + brief explanation)
@@ -38,6 +40,7 @@ export const TRIAGE_TOOLTIPS = Object.freeze({
   informational: "Note acknowledged, no action required",
   needs_clarification: "Awaiting more info from commenter",
   withdrawn: "Commenter retracted this comment",
+  addressed_by: "Addressed by another requirement",
 });
 
 // Database / API key → glyph (text characters; pair with text label, never alone).
@@ -52,6 +55,7 @@ export const TRIAGE_GLYPHS = Object.freeze({
   informational: "ⓘ",
   needs_clarification: "?",
   withdrawn: "⊘",
+  addressed_by: "↗",
 });
 
 // "Closed" indicator (when adjudicated_at is set on a triaged review)
@@ -123,7 +127,12 @@ export function sectionLabel(section) {
 
 // Statuses the server auto-adjudicates (sets adjudicated_at on save).
 // Matches Ruby Review::TERMINAL_AUTO_ADJUDICATE_STATUSES exactly.
-export const TERMINAL_AUTO_ADJUDICATE = new Set(["duplicate", "informational", "withdrawn"]);
+export const TERMINAL_AUTO_ADJUDICATE = new Set([
+  "duplicate",
+  "informational",
+  "withdrawn",
+  "addressed_by",
+]);
 
 // Statuses that collapse the triage form footer to a single button.
 // Superset of TERMINAL_AUTO_ADJUDICATE: includes needs_clarification, which

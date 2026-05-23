@@ -20,6 +20,7 @@ export default {
     status: { type: String, required: true },
     adjudicatedAt: { type: [String, Date], default: null },
     duplicateOfId: { type: [Number, String], default: null },
+    addressedByRuleId: { type: [Number, String], default: null },
   },
   computed: {
     isAdjudicated() {
@@ -32,6 +33,9 @@ export default {
     displayLabel() {
       if (this.status === "duplicate" && this.duplicateOfId) {
         return `Duplicate of #${this.duplicateOfId}`;
+      }
+      if (this.status === "addressed_by" && this.addressedByRuleId) {
+        return `Addressed by rule #${this.addressedByRuleId}`;
       }
       if (this.isAdjudicated) {
         return `${ADJUDICATED_LABEL} (${TRIAGE_LABELS[this.status] || this.status})`;
@@ -108,6 +112,11 @@ export default {
   color: var(--triage-duplicate-text);
   background-color: var(--triage-duplicate-tint);
   text-decoration: line-through;
+}
+
+.triage-status--addressed_by {
+  color: var(--triage-addressed-by-text);
+  background-color: var(--triage-addressed-by-tint);
 }
 
 .triage-status--adjudicated {
