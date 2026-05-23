@@ -285,7 +285,7 @@ export default {
 }
 
 .sidebar-comment--active .text-muted {
-  color: #fff !important;
+  color: white !important;
 }
 
 .sidebar-comment--active:hover,

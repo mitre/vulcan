@@ -840,7 +840,7 @@ export default {
 
 .filter-count {
   font-size: 0.85em;
-  color: #6c757d;
+  color: var(--vulcan-secondary);
   min-width: 40px;
   text-align: right;
 }
@@ -858,12 +858,12 @@ export default {
 /* Collapsible tree styles */
 .tree-toggle {
   cursor: pointer;
-  color: #6c757d;
+  color: var(--vulcan-secondary);
   transition: transform 0.15s ease;
 }
 
 .tree-toggle:hover {
-  color: #007bff;
+  color: var(--vulcan-primary);
 }
 
 /* Spacer for leaf nodes to align text with parent nodes */
@@ -875,13 +875,13 @@ export default {
 
 .nested-children {
   margin-left: 1rem;
-  border-left: 1px solid #dee2e6;
+  border-left: 1px solid var(--vulcan-gray-300);
   padding-left: 0.5rem;
 }
 
 .child-row {
   font-size: 0.9em;
-  color: #495057;
+  color: var(--vulcan-gray-700);
 }
 
 .child-count {
@@ -904,8 +904,8 @@ export default {
   }
 }
 .search-term-mark {
-  background-color: #fff3cd;
-  color: #856404;
+  background-color: var(--vulcan-warning-tint);
+  color: var(--vulcan-warning-text);
   padding: 0 2px;
   border-radius: 2px;
   font-weight: 600;

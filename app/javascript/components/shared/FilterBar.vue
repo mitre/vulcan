@@ -210,8 +210,8 @@ export default {
 .filter-bar {
   gap: 0.75rem;
   align-items: stretch; /* Unify heights */
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
+  background-color: var(--vulcan-gray-100);
+  border: 1px solid var(--vulcan-gray-300);
   border-radius: 0.375rem;
   padding: 0.75rem;
 }

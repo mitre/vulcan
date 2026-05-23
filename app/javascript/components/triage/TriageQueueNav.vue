@@ -362,7 +362,7 @@ export default {
 }
 
 .browse-item.active .text-muted {
-  color: #fff !important;
+  color: white !important;
 }
 
 .browse-item.active:hover,

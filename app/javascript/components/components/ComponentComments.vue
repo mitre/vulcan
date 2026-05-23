@@ -748,8 +748,8 @@ export default {
 
 <style>
 .search-term-mark {
-  background-color: #fff3cd;
-  color: #856404;
+  background-color: var(--vulcan-warning-tint);
+  color: var(--vulcan-warning-text);
   padding: 0 2px;
   border-radius: 2px;
   font-weight: 600;

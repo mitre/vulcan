@@ -269,7 +269,7 @@ export default {
   top: 0;
   z-index: 100;
   border-radius: 0.375rem;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--vulcan-gray-300);
 }
 
 .command-bar > div {

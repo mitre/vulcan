@@ -56,7 +56,7 @@ export default {
 <style scoped>
 .filter-group {
   min-width: 200px;
-  border: 1px solid #ced4da;
+  border: 1px solid var(--vulcan-gray-400);
   border-radius: 0.375rem;
   background-color: #fff;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -67,8 +67,8 @@ export default {
   justify-content: space-between;
   align-items: center;
   font-size: 0.875rem;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #ced4da;
+  background-color: var(--vulcan-gray-100);
+  border-bottom: 1px solid var(--vulcan-gray-400);
   padding: 0.5rem 0.75rem;
   border-radius: 0.375rem 0.375rem 0 0;
 }
@@ -84,7 +84,7 @@ export default {
 
 .reset-link {
   font-size: 0.75rem;
-  color: #007bff;
+  color: var(--vulcan-primary);
   cursor: pointer;
 }
 
@@ -94,29 +94,29 @@ export default {
 
 /* Disabled state - greyed out appearance matching Bootstrap pattern */
 .filter-group-disabled {
-  background-color: #f8f9fa;
+  background-color: var(--vulcan-gray-100);
 }
 
 .filter-group-disabled .filter-group-header {
-  color: #6c757d;
+  color: var(--vulcan-secondary);
 }
 
 .filter-group-disabled .filter-group-body {
   pointer-events: none;
-  color: #6c757d;
+  color: var(--vulcan-secondary);
 }
 
 /* Grey out switch toggles when disabled */
 .filter-group-disabled :deep(.custom-switch .custom-control-label::before) {
-  background-color: #dee2e6;
-  border-color: #adb5bd;
+  background-color: var(--vulcan-gray-300);
+  border-color: var(--vulcan-gray-500);
 }
 
 .filter-group-disabled :deep(.custom-switch .custom-control-label::after) {
-  background-color: #adb5bd;
+  background-color: var(--vulcan-gray-500);
 }
 
 .filter-group-disabled :deep(.custom-control-label) {
-  color: #6c757d;
+  color: var(--vulcan-secondary);
 }
 </style>

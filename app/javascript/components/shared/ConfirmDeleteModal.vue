@@ -168,7 +168,7 @@ export default {
 <style>
 /* Warning border for delete confirmation modal */
 .confirm-delete-modal .modal-content {
-  border: 2px solid #ffc107 !important; /* Bootstrap 4 warning color */
+  border: 2px solid var(--vulcan-warning) !important; /* Bootstrap 4 warning color */
   border-radius: 0.5rem;
 }
 </style>

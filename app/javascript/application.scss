@@ -57,6 +57,17 @@
   --vulcan-indigo: #{$indigo};
   --vulcan-indigo-tint: #{rgba($indigo, 0.08)};
   --vulcan-indigo-text: #{color-yiq($indigo)};
+
+  // Gray scale — Bootstrap 4 $gray-100 through $gray-900
+  --vulcan-gray-100: #{$gray-100};
+  --vulcan-gray-200: #{$gray-200};
+  --vulcan-gray-300: #{$gray-300};
+  --vulcan-gray-400: #{$gray-400};
+  --vulcan-gray-500: #{$gray-500};
+  --vulcan-gray-600: #{$gray-600};
+  --vulcan-gray-700: #{$gray-700};
+  --vulcan-gray-800: #{$gray-800};
+  --vulcan-gray-900: #{$gray-900};
 }
 
 @import "./styles/triage-tints.css";

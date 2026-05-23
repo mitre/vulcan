@@ -289,15 +289,15 @@ export default {
 }
 
 .markdown-preview :deep(blockquote) {
-  border-left: 3px solid #dee2e6;
+  border-left: 3px solid var(--vulcan-gray-300);
   padding-left: 0.75rem;
   margin-left: 0;
   margin-bottom: 0.5rem;
-  color: #6c757d;
+  color: var(--vulcan-secondary);
 }
 
 .markdown-preview :deep(a) {
-  color: #007bff;
+  color: var(--vulcan-primary);
   text-decoration: none;
 }
 
@@ -324,7 +324,7 @@ export default {
 
 .markdown-preview :deep(th),
 .markdown-preview :deep(td) {
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--vulcan-gray-300);
   padding: 0.25rem 0.5rem;
 }
 
@@ -337,7 +337,7 @@ export default {
 /* to bypass CSS specificity issues with EasyMDE's dynamically created elements */
 
 .easymde-wrapper :deep(.CodeMirror) {
-  border: 1px solid #ced4da;
+  border: 1px solid var(--vulcan-gray-400);
   border-radius: 0 0 0.25rem 0.25rem;
   font-size: 0.875rem;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
@@ -350,7 +350,7 @@ export default {
 }
 
 .easymde-wrapper :deep(.editor-toolbar) {
-  border: 1px solid #ced4da;
+  border: 1px solid var(--vulcan-gray-400);
   border-bottom: none;
   border-radius: 0.25rem 0.25rem 0 0;
 }
@@ -382,7 +382,7 @@ export default {
   right: 0;
   bottom: 0;
   left: 50%;
-  border-left: 1px solid #ced4da;
+  border-left: 1px solid var(--vulcan-gray-400);
 }
 
 /* Disable true fullscreen - keep within container */

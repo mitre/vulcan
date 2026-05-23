@@ -179,8 +179,8 @@ export default {
 <style scoped>
 .rule-actions-toolbar {
   padding: 0.375rem 0.5rem;
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
+  background-color: var(--vulcan-gray-100);
+  border: 1px solid var(--vulcan-gray-300);
   border-radius: 0.375rem;
   position: sticky;
   top: 0;
@@ -199,7 +199,7 @@ export default {
   font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #6c757d;
+  color: var(--vulcan-secondary);
   min-width: 2.75rem;
   flex-shrink: 0;
 }
@@ -208,7 +208,7 @@ export default {
 .toolbar-divider {
   margin: 0.25rem 0;
   border: 0;
-  border-top: 1px solid #dee2e6;
+  border-top: 1px solid var(--vulcan-gray-300);
 }
 
 /* Individual rounded buttons with consistent spacing */
@@ -222,8 +222,8 @@ export default {
 .rule-actions-toolbar >>> .btn:disabled,
 .rule-actions-toolbar >>> .btn.disabled {
   opacity: 0.5;
-  color: #6c757d !important;
-  border-color: #6c757d !important;
+  color: var(--vulcan-secondary) !important;
+  border-color: var(--vulcan-secondary) !important;
   background-color: transparent !important;
   cursor: not-allowed;
 }

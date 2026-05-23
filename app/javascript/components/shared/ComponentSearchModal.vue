@@ -257,7 +257,7 @@ export default {
   display: flex;
   align-items: center;
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid var(--vulcan-gray-300);
 }
 
 .search-input {
@@ -269,17 +269,17 @@ export default {
 }
 
 .search-input::placeholder {
-  color: #6c757d;
+  color: var(--vulcan-secondary);
 }
 
 .search-kbd {
   padding: 0.125rem 0.375rem;
   font-size: 0.75rem;
   font-family: monospace;
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
+  background-color: var(--vulcan-gray-100);
+  border: 1px solid var(--vulcan-gray-300);
   border-radius: 0.2rem;
-  color: #6c757d;
+  color: var(--vulcan-secondary);
 }
 
 .search-results {
@@ -291,7 +291,7 @@ export default {
 .search-empty {
   padding: 2rem;
   text-align: center;
-  color: #6c757d;
+  color: var(--vulcan-secondary);
 }
 
 .search-result-item {
@@ -309,12 +309,12 @@ export default {
 }
 
 .result-icon {
-  color: #6c757d; /* $gray-600 */
+  color: var(--vulcan-secondary); /* $gray-600 */
   flex-shrink: 0;
 }
 
 .search-result-item.active .result-icon {
-  color: #007bff; /* Bootstrap 4 $primary */
+  color: var(--vulcan-primary); /* Bootstrap 4 $primary */
 }
 
 .result-label {
@@ -324,17 +324,17 @@ export default {
 .result-title {
   font-weight: 400;
   font-size: 0.85rem;
-  color: #6c757d;
+  color: var(--vulcan-secondary);
 }
 
 .result-snippet {
   font-size: 0.8rem;
-  color: #6c757d;
+  color: var(--vulcan-secondary);
 }
 
 .search-highlight {
-  background-color: #fff3cd;
-  color: #856404;
+  background-color: var(--vulcan-warning-tint);
+  color: var(--vulcan-warning-text);
   padding: 0 0.125rem;
   border-radius: 2px;
   font-weight: 600;
@@ -345,7 +345,7 @@ export default {
 }
 
 .result-hint {
-  color: #6c757d;
+  color: var(--vulcan-secondary);
   opacity: 0;
 }
 
@@ -358,14 +358,14 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 0.5rem 1rem;
-  border-top: 1px solid #dee2e6;
+  border-top: 1px solid var(--vulcan-gray-300);
 }
 
 .search-footer kbd {
   padding: 0.1rem 0.3rem;
   font-size: 0.7rem;
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
+  background-color: var(--vulcan-gray-100);
+  border: 1px solid var(--vulcan-gray-300);
   border-radius: 0.15rem;
   margin: 0 0.1rem;
 }

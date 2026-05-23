@@ -483,12 +483,12 @@ export default {
 
 <style scoped>
 .diff-old {
-  background-color: #f8d7da;
+  background-color: var(--vulcan-danger-tint);
   white-space: pre-wrap;
   word-break: break-word;
 }
 .diff-new {
-  background-color: #d4edda;
+  background-color: var(--vulcan-success-tint);
   white-space: pre-wrap;
   word-break: break-word;
 }
