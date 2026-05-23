@@ -176,11 +176,11 @@ export default {
       const groups = [];
       const seen = new Map();
       for (const c of this.comments) {
-        const key = c.rule_id || "component";
+        const key = c.group_rule_displayed_name || c.rule_displayed_name || "(component)";
         if (!seen.has(key)) {
           const group = {
             ruleId: key,
-            ruleName: c.rule_displayed_name || "(component)",
+            ruleName: key,
             comments: [],
           };
           seen.set(key, group);
@@ -189,8 +189,8 @@ export default {
         seen.get(key).comments.push(c);
       }
       return groups.sort((a, b) => {
-        const aComp = !a.comments[0]?.rule_id;
-        const bComp = !b.comments[0]?.rule_id;
+        const aComp = a.ruleId === "(component)";
+        const bComp = b.ruleId === "(component)";
         if (aComp && !bComp) return -1;
         if (!aComp && bComp) return 1;
         if (aComp && bComp) return 0;

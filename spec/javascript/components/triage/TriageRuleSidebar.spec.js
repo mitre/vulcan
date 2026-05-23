@@ -184,4 +184,81 @@ describe("TriageRuleSidebar", () => {
     const w = mount(TriageRuleSidebar, { localVue, propsData: baseProps() });
     expect(w.find("[data-testid='sidebar-header']").text()).toContain("3 pending");
   });
+
+  describe("parent/child grouping", () => {
+    const nestedComments = [
+      {
+        id: 10,
+        rule_id: 100,
+        rule_displayed_name: "CNTR-00-000010",
+        group_rule_displayed_name: "CNTR-00-000010",
+        parent_rule_displayed_name: null,
+        triage_status: "pending",
+        comment: "Parent's own comment",
+      },
+      {
+        id: 11,
+        rule_id: 200,
+        rule_displayed_name: "CNTR-00-001002",
+        group_rule_displayed_name: "CNTR-00-000010",
+        parent_rule_displayed_name: "CNTR-00-000010",
+        triage_status: "pending",
+        comment: "Child comment on 001002",
+      },
+      {
+        id: 12,
+        rule_id: 300,
+        rule_displayed_name: "CNTR-00-001003",
+        group_rule_displayed_name: "CNTR-00-000010",
+        parent_rule_displayed_name: "CNTR-00-000010",
+        triage_status: "pending",
+        comment: "Child comment on 001003",
+      },
+      {
+        id: 20,
+        rule_id: 400,
+        rule_displayed_name: "CNTR-00-000020",
+        group_rule_displayed_name: "CNTR-00-000020",
+        parent_rule_displayed_name: null,
+        triage_status: "pending",
+        comment: "Standalone parent comment",
+      },
+    ];
+
+    function nestedProps(overrides = {}) {
+      return { comments: nestedComments, currentId: 10, ...overrides };
+    }
+
+    it("groups child comments under their parent control", () => {
+      const w = mount(TriageRuleSidebar, { localVue, propsData: nestedProps() });
+      const headers = w.findAll("[data-testid='sidebar-rule-header']");
+      expect(headers.length).toBe(2);
+      expect(headers.at(0).text()).toContain("CNTR-00-000010");
+      expect(headers.at(1).text()).toContain("CNTR-00-000020");
+    });
+
+    it("shows rolled-up count including children", () => {
+      const w = mount(TriageRuleSidebar, { localVue, propsData: nestedProps() });
+      const headers = w.findAll("[data-testid='sidebar-rule-header']");
+      expect(headers.at(0).text()).toContain("3/3");
+    });
+
+    it("tracks active group correctly when current comment is on a child", () => {
+      const w = mount(TriageRuleSidebar, {
+        localVue,
+        propsData: nestedProps({ currentId: 11 }),
+      });
+      const headers = w.findAll("[data-testid='sidebar-rule-header']");
+      expect(headers.at(0).classes()).toContain("sidebar-rule--active");
+    });
+
+    it("expands parent group when a child comment is active", () => {
+      const w = mount(TriageRuleSidebar, {
+        localVue,
+        propsData: nestedProps({ currentId: 11 }),
+      });
+      const items = w.findAll("[data-testid='sidebar-comment-item']");
+      expect(items.length).toBe(3);
+    });
+  });
 });

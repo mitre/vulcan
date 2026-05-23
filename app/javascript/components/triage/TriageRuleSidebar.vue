@@ -69,7 +69,10 @@
           @keydown.space.prevent="$emit('select', item.comment.id)"
         >
           <span class="text-muted mr-1">#{{ item.comment.id }}</span>
-          <span v-if="item.comment.section" class="text-muted text-truncate">
+          <span v-if="item.comment.parent_rule_displayed_name" class="text-muted text-truncate">
+            · {{ item.comment.rule_displayed_name }}
+          </span>
+          <span v-else-if="item.comment.section" class="text-muted text-truncate">
             · {{ item.comment.section }}
           </span>
         </div>
@@ -102,11 +105,11 @@ export default {
       const groups = [];
       const seen = new Map();
       for (const c of this.comments) {
-        const key = c.rule_id || "component";
+        const key = c.group_rule_displayed_name || c.rule_displayed_name || "(component)";
         if (!seen.has(key)) {
           const group = {
             key,
-            ruleName: c.rule_displayed_name || "(component)",
+            ruleName: key,
             comments: [],
             pendingCount: 0,
           };
@@ -118,8 +121,8 @@ export default {
         if (c.triage_status === "pending") g.pendingCount++;
       }
       return groups.sort((a, b) => {
-        const aComp = a.key === "component";
-        const bComp = b.key === "component";
+        const aComp = a.key === "(component)";
+        const bComp = b.key === "(component)";
         if (aComp && !bComp) return -1;
         if (!aComp && bComp) return 1;
         return a.ruleName.localeCompare(b.ruleName, undefined, { numeric: true });
@@ -133,7 +136,8 @@ export default {
     activeGroupKey() {
       if (this.normalizedCurrentId == null) return null;
       const comment = this.comments.find((c) => c.id === this.normalizedCurrentId);
-      return comment ? comment.rule_id || "component" : null;
+      if (!comment) return null;
+      return comment.group_rule_displayed_name || comment.rule_displayed_name || "(component)";
     },
     flatItems() {
       const items = [];
