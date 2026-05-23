@@ -599,13 +599,13 @@ describe("TriageSplitView", () => {
 
   // ── Author email + divider in triage form ─────────────────────────
 
-  it("shows author email under the author name", () => {
+  it("shows author email inline with the author name", () => {
     const w = mount(TriageSplitView, {
       localVue,
       propsData: baseProps(),
     });
     expect(w.find("[data-testid='author-email']").exists()).toBe(true);
-    expect(w.find("[data-testid='author-email']").text()).toBe("viewer@example.com");
+    expect(w.find("[data-testid='author-email']").text()).toContain("viewer@example.com");
   });
 
   it("renders a divider between author info and comment blockquote", () => {

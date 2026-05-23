@@ -70,27 +70,22 @@
               :commentable-type="activeComment.commentable_type"
             />
           </p>
-          <div class="mb-1">
-            <p class="mb-0 text-muted small">
-              <strong>{{ activeComment.author_name || "—" }}</strong>
-              · posted {{ friendlyDateTime(activeComment.created_at) }}
-              <b-badge
-                v-if="isContentStale"
-                variant="warning"
-                pill
-                class="ml-2"
-                data-testid="staleness-badge"
-              >
-                Section updated since this comment
-              </b-badge>
-            </p>
-            <small
-              v-if="activeComment.author_email"
-              class="text-muted"
-              data-testid="author-email"
-              >{{ activeComment.author_email }}</small
+          <p class="mb-1 text-muted small">
+            <strong>{{ activeComment.author_name || "—" }}</strong>
+            <span v-if="activeComment.author_email" data-testid="author-email">
+              · {{ activeComment.author_email }}
+            </span>
+            · posted {{ friendlyDateTime(activeComment.created_at) }}
+            <b-badge
+              v-if="isContentStale"
+              variant="warning"
+              pill
+              class="ml-2"
+              data-testid="staleness-badge"
             >
-          </div>
+              Section updated since this comment
+            </b-badge>
+          </p>
           <hr class="mt-1 mb-2" data-testid="comment-divider" />
           <blockquote
             class="border-left pl-3 py-2 mb-2 bg-light"
