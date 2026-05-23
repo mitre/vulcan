@@ -3,7 +3,7 @@
     <div data-testid="sidebar-header" class="px-2 py-1 border-bottom small font-weight-bold">
       {{ totalPending }} pending of {{ comments.length }} total
     </div>
-    <div class="px-2 py-1 border-bottom">
+    <div class="px-2 py-1">
       <input
         v-model="searchText"
         type="text"
@@ -12,6 +12,7 @@
         data-testid="sidebar-search"
       />
     </div>
+    <hr class="my-1" />
     <div
       ref="sidebarList"
       data-testid="sidebar-list"
