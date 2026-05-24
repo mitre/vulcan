@@ -21,7 +21,8 @@ import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
 import githubLight from "@shikijs/themes/github-light";
 import githubDark from "@shikijs/themes/github-dark";
 
-// Import languages commonly used in security documentation
+// Import languages used in security documentation and STIG authoring.
+// Add new imports here + to LANGS array + isLanguageSupported list.
 import bash from "@shikijs/langs/bash";
 import ruby from "@shikijs/langs/ruby";
 import powershell from "@shikijs/langs/powershell";
@@ -29,8 +30,35 @@ import xml from "@shikijs/langs/xml";
 import yaml from "@shikijs/langs/yaml";
 import json from "@shikijs/langs/json";
 import javascript from "@shikijs/langs/javascript";
+import dockerfile from "@shikijs/langs/dockerfile";
+import ini from "@shikijs/langs/ini";
+import python from "@shikijs/langs/python";
+import hcl from "@shikijs/langs/hcl";
+import sql from "@shikijs/langs/sql";
+import c from "@shikijs/langs/c";
+import go from "@shikijs/langs/go";
+import toml from "@shikijs/langs/toml";
 
-// Language aliases for common variations
+const LANGS = [
+  bash,
+  ruby,
+  powershell,
+  xml,
+  yaml,
+  json,
+  javascript,
+  dockerfile,
+  ini,
+  python,
+  hcl,
+  sql,
+  c,
+  go,
+  toml,
+];
+
+const LANG_NAMES = LANGS.map((l) => (Array.isArray(l) ? l[0].name : l.name));
+
 const LANGUAGE_ALIASES = {
   sh: "bash",
   shell: "bash",
@@ -39,6 +67,13 @@ const LANGUAGE_ALIASES = {
   ps: "powershell",
   yml: "yaml",
   js: "javascript",
+  docker: "dockerfile",
+  containerfile: "dockerfile",
+  conf: "ini",
+  py: "python",
+  tf: "hcl",
+  terraform: "hcl",
+  golang: "go",
 };
 
 // Singleton highlighter instance
@@ -52,7 +87,7 @@ function getHighlighter() {
   if (!highlighterInstance) {
     highlighterInstance = createHighlighterCoreSync({
       themes: [githubLight, githubDark],
-      langs: [bash, ruby, powershell, xml, yaml, json, javascript],
+      langs: LANGS,
       engine: createJavaScriptRegexEngine(),
     });
   }
@@ -76,8 +111,7 @@ function normalizeLanguage(lang) {
  * @returns {boolean} True if language is supported
  */
 function isLanguageSupported(lang) {
-  const supported = ["bash", "ruby", "powershell", "xml", "yaml", "json", "javascript"];
-  return supported.includes(normalizeLanguage(lang));
+  return LANG_NAMES.includes(normalizeLanguage(lang));
 }
 
 /**
@@ -89,14 +123,19 @@ function isLanguageSupported(lang) {
  * @returns {string} HTML string with syntax highlighting
  */
 export function highlightCode(code, lang, options = {}) {
-  const { theme = "github-light" } = options;
+  const isDark =
+    typeof document !== "undefined" &&
+    document.documentElement.getAttribute("data-bs-theme") === "dark";
+  const { theme = isDark ? "github-dark" : "github-light" } = options;
 
   const normalizedLang = normalizeLanguage(lang);
 
-  // If language not supported, return escaped code in a pre/code block
+  const fallbackBg = isDark ? "#24292e" : "#f6f8fa";
+  const fallbackColor = isDark ? "#e1e4e8" : "#24292e";
+
   if (!isLanguageSupported(normalizedLang)) {
     const escapedCode = escapeHtml(code);
-    return `<pre class="shiki" style="background-color:#fff"><code>${escapedCode}</code></pre>`;
+    return `<pre class="shiki" style="background-color:${fallbackBg};color:${fallbackColor}"><code>${escapedCode}</code></pre>`;
   }
 
   try {
@@ -106,11 +145,10 @@ export function highlightCode(code, lang, options = {}) {
       theme: theme,
     });
   } catch (error) {
-    // Fallback to escaped plain text on error
     // eslint-disable-next-line no-console
     console.error(`Syntax highlighting failed for language "${lang}":`, error);
     const escapedCode = escapeHtml(code);
-    return `<pre class="shiki" style="background-color:#fff"><code>${escapedCode}</code></pre>`;
+    return `<pre class="shiki" style="background-color:${fallbackBg};color:${fallbackColor}"><code>${escapedCode}</code></pre>`;
   }
 }
 
@@ -135,20 +173,7 @@ function escapeHtml(text) {
  * @returns {string[]} Array of supported language identifiers
  */
 export function getSupportedLanguages() {
-  return [
-    "bash",
-    "shell",
-    "sh",
-    "ruby",
-    "powershell",
-    "ps1",
-    "xml",
-    "yaml",
-    "yml",
-    "json",
-    "javascript",
-    "js",
-  ];
+  return [...LANG_NAMES, ...Object.keys(LANGUAGE_ALIASES)];
 }
 
 export default {

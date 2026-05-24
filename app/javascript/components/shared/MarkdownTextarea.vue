@@ -71,6 +71,11 @@ export default {
   data() {
     return {
       easyMDE: null,
+      currentTheme:
+        typeof document !== "undefined"
+          ? document.documentElement.getAttribute("data-bs-theme") || "light"
+          : "light",
+      themeObserver: null,
     };
   },
   computed: {
@@ -78,6 +83,10 @@ export default {
       if (!this.value) {
         return '<span class="text-muted font-italic">No content</span>';
       }
+      // Touch currentTheme to force re-render when dark mode toggles.
+      // The module-level renderer's highlightCode() auto-detects the
+      // theme from data-bs-theme at call time — no duplicate renderer.
+      void this.currentTheme;
       const html = marked.parse(this.value, { breaks: false, renderer });
       return DOMPurify.sanitize(html);
     },
@@ -116,9 +125,24 @@ export default {
     if (!this.disabled) {
       this.initEasyMDE();
     }
+    this.themeObserver = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        if (m.attributeName === "data-bs-theme") {
+          this.currentTheme = document.documentElement.getAttribute("data-bs-theme") || "light";
+        }
+      }
+    });
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-bs-theme"],
+    });
   },
   beforeDestroy() {
     this.destroyEasyMDE();
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+      this.themeObserver = null;
+    }
   },
   methods: {
     initEasyMDE() {
@@ -204,7 +228,7 @@ export default {
         toolbar.style.overflowX = "auto";
         toolbar.style.display = "block";
         toolbar.style.padding = "4px 5px";
-        toolbar.style.background = "#f8f9fa";
+        toolbar.style.background = "var(--vulcan-component-bg-alt, #f8f9fa)";
 
         // Compact button sizing
         const buttons = toolbar.querySelectorAll("button");
@@ -271,7 +295,7 @@ export default {
 
 /* Shiki syntax highlighting styles */
 .markdown-preview :deep(.shiki) {
-  background-color: #f6f8fa !important;
+  background-color: var(--vulcan-component-bg-alt, #f6f8fa) !important;
   padding: 0.75rem;
   border-radius: 0.375rem;
   overflow-x: auto;
@@ -345,7 +369,7 @@ export default {
 }
 
 .easymde-wrapper :deep(.CodeMirror-focused) {
-  border-color: #80bdff;
+  border-color: var(--vulcan-input-focus-border, #80bdff);
   box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
@@ -395,7 +419,7 @@ export default {
 /* Shiki styles in EasyMDE preview */
 .easymde-wrapper :deep(.editor-preview .shiki),
 .easymde-wrapper :deep(.editor-preview-side .shiki) {
-  background-color: #f6f8fa !important;
+  background-color: var(--vulcan-component-bg-alt, #f6f8fa) !important;
   padding: 0.75rem;
   border-radius: 0.375rem;
   overflow-x: auto;
@@ -415,7 +439,7 @@ export default {
 /* Make preview code blocks look consistent */
 .easymde-wrapper :deep(.editor-preview pre),
 .easymde-wrapper :deep(.editor-preview-side pre) {
-  background-color: #f6f8fa;
+  background-color: var(--vulcan-component-bg-alt, #f6f8fa);
   padding: 0.75rem;
   border-radius: 0.375rem;
   overflow-x: auto;
