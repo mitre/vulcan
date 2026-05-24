@@ -336,6 +336,65 @@
     background-color: var(--vulcan-component-bg);
     border-color: var(--vulcan-border-color);
   }
+
+  // ── fad.4: Navbar, sidebar, breadcrumbs, tabs ────────────────────
+  .breadcrumb {
+    background-color: var(--vulcan-component-bg-alt);
+
+    .breadcrumb-item + .breadcrumb-item::before {
+      color: var(--vulcan-text-muted);
+    }
+
+    .breadcrumb-item.active {
+      color: var(--vulcan-body-color);
+    }
+  }
+
+  .nav-tabs {
+    border-color: var(--vulcan-border-color);
+
+    .nav-link {
+      color: var(--vulcan-link-color);
+
+      &:hover,
+      &:focus {
+        border-color: var(--vulcan-border-color);
+      }
+
+      &.active {
+        background-color: var(--vulcan-component-bg);
+        border-color: var(--vulcan-border-color);
+        border-bottom-color: var(--vulcan-component-bg);
+        color: var(--vulcan-emphasis-color);
+      }
+    }
+  }
+
+  .nav-pills .nav-link.active {
+    background-color: var(--vulcan-primary);
+  }
+
+  // Sidebar (rule navigator)
+  #sidebar-wrapper {
+    background-color: var(--vulcan-component-bg);
+    border-color: var(--vulcan-border-color);
+  }
+
+  // Close button
+  .close {
+    color: var(--vulcan-body-color);
+    text-shadow: none;
+  }
+
+  // Jumbotron (if used)
+  .jumbotron {
+    background-color: var(--vulcan-component-bg-alt);
+  }
+
+  // hr elements
+  hr {
+    border-color: var(--vulcan-border-color);
+  }
 }
 
 // OS preference fallback (no JS needed)
