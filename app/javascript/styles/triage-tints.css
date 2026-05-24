@@ -10,20 +10,9 @@
    - Grey   = Pending, Withdrawn, Duplicate (inactive / terminal) */
 
 :root {
-  /* Vulcan UI palette — theme-wide interactive colors.
-     Override these to rebrand the entire triage workspace. */
-  --vulcan-text: #212529;
-  --vulcan-text-muted: #6c757d;
-  --vulcan-primary-dark: #0056b3;
-  --vulcan-hover-bg: rgba(0, 0, 0, 0.06);
-  --vulcan-hover-bg-light: rgba(0, 0, 0, 0.04);
-  --vulcan-divider: rgba(0, 0, 0, 0.1);
-  --vulcan-active-tint: rgba(0, 123, 255, 0.08);
-  --vulcan-active-tint-hover: rgba(0, 123, 255, 0.15);
-  --vulcan-focus-tint: rgba(0, 123, 255, 0.04);
-  --vulcan-border-light: #ced4da;
-  --vulcan-bg-light: #e9ecef;
-  --vulcan-dark: #343a40;
+  /* Layer 1 core variables are defined in application.scss (:root + [data-bs-theme="dark"]).
+     Do NOT redefine --vulcan-* here — duplicates override dark mode values.
+     This file defines only Layer 2 (--triage-*) and Layer 3 ([data-triage]) selectors. */
 
   /* ── Layer 2: Triage status → core palette mapping ──────────────
      Each --triage-* references a --vulcan-* core color from Layer 1

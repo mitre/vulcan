@@ -77,6 +77,20 @@
   --vulcan-component-bg: #fff;
   --vulcan-component-bg-alt: #{$gray-100};
   --vulcan-emphasis-color: #{$gray-900};
+
+  // Semantic highlight colors for diffs, search results, validation
+  --vulcan-highlight-selected: #cce5ff;
+  --vulcan-highlight-added: #abd5ac;
+  --vulcan-highlight-removed: #e39d9b;
+  --vulcan-highlight-error: #f5c6cb;
+  --vulcan-highlight-success: #a3cfbb;
+  --vulcan-input-focus-border: #80bdff;
+  --vulcan-disabled-bg: #{$gray-200};
+
+  // Triage-specific interaction colors (moved from triage-tints.css)
+  --vulcan-primary-dark: #0056b3;
+  --vulcan-active-tint-hover: rgba(0, 123, 255, 0.15);
+  --vulcan-focus-tint: rgba(0, 123, 255, 0.04);
 }
 
 // ── Dark mode: Override Layer 1 variables ──────────────────────────────
@@ -145,9 +159,100 @@
   --vulcan-active-tint: #{rgba($primary-dark, 0.12)};
   --vulcan-border-light: #{$gray-700};
 
-  // Apply body colors
+  // Semantic highlights — desaturated for dark bg per Material Design
+  --vulcan-highlight-selected: #{rgba($primary-dark, 0.25)};
+  --vulcan-highlight-added: #{rgba($success-dark, 0.25)};
+  --vulcan-highlight-removed: #{rgba($danger-dark, 0.25)};
+  --vulcan-highlight-error: #{rgba($danger-dark, 0.20)};
+  --vulcan-highlight-success: #{rgba($success-dark, 0.20)};
+  --vulcan-input-focus-border: #{$primary-dark};
+  --vulcan-disabled-bg: #{$gray-700};
+
+  // Triage interaction colors — dark variants
+  --vulcan-primary-dark: #{$primary-dark};
+  --vulcan-active-tint-hover: #{rgba($primary-dark, 0.20)};
+  --vulcan-focus-tint: #{rgba($primary-dark, 0.08)};
+
+  // Apply body colors — must target body explicitly because Bootstrap 4
+  // compiles body { background-color: #fff; color: #212529 } as hardcoded
+  // values that override the html element's dark mode properties.
   color: var(--vulcan-body-color);
   background-color: var(--vulcan-body-bg);
+
+  body {
+    background-color: var(--vulcan-body-bg);
+    color: var(--vulcan-body-color);
+  }
+
+  // ── fad.8.2: Outline button dark mode colors ─────────────────────
+  // Bootstrap 5.3 uses tint-color($color, 40%) for text-emphasis-dark.
+  // BS4 equivalent: mix(white, $color, 40%). Outline buttons use these
+  // as text + border color for WCAG AA 4.5:1 contrast on dark surfaces.
+  $secondary-dark-text: mix(white, $secondary, 40%);
+  $primary-dark-text: mix(white, $primary, 40%);
+  $success-dark-text: mix(white, $success, 40%);
+  $danger-dark-text: mix(white, $danger, 40%);
+  $warning-dark-text: mix(white, $warning, 40%);
+  $info-dark-text: mix(white, $info, 40%);
+
+  .btn-outline-secondary {
+    color: $secondary-dark-text;
+    border-color: $secondary-dark-text;
+  }
+
+  .btn-outline-primary {
+    color: $primary-dark-text;
+    border-color: $primary-dark-text;
+  }
+
+  .btn-outline-success {
+    color: $success-dark-text;
+    border-color: $success-dark-text;
+  }
+
+  .btn-outline-danger {
+    color: $danger-dark-text;
+    border-color: $danger-dark-text;
+  }
+
+  .btn-outline-warning {
+    color: $warning-dark-text;
+    border-color: $warning-dark-text;
+  }
+
+  .btn-outline-info {
+    color: $info-dark-text;
+    border-color: $info-dark-text;
+  }
+
+  // ── fad.8.4: Badge dark mode desaturation ─────────────────────────
+  // Material Design M2: "avoid saturated colors on dark backgrounds —
+  // they produce optical vibrations causing eye strain." Use tinted bg
+  // (shade-color 80% per BS5.3) with tinted text (tint-color 40%).
+  .badge-warning {
+    background-color: #{mix(black, $warning, 60%)};
+    color: $warning-dark-text;
+  }
+
+  .badge-info {
+    background-color: #{mix(black, $info, 60%)};
+    color: $info-dark-text;
+  }
+
+  .badge-success {
+    background-color: #{mix(black, $success, 60%)};
+    color: $success-dark-text;
+  }
+
+  .badge-danger {
+    background-color: #{mix(black, $danger, 60%)};
+    color: $danger-dark-text;
+  }
+
+  .badge-secondary {
+    background-color: #{mix(black, $secondary, 40%)};
+    color: $secondary-dark-text;
+  }
 
   // ── fad.2: Component backgrounds ─────────────────────────────────
   .card,
@@ -199,7 +304,24 @@
   }
 
   .tooltip-inner {
-    background-color: var(--vulcan-emphasis-color);
+    background-color: var(--vulcan-gray-800);
+    color: var(--vulcan-gray-100);
+  }
+
+  .bs-tooltip-top .arrow::before {
+    border-top-color: var(--vulcan-gray-800);
+  }
+
+  .bs-tooltip-bottom .arrow::before {
+    border-bottom-color: var(--vulcan-gray-800);
+  }
+
+  .bs-tooltip-left .arrow::before {
+    border-left-color: var(--vulcan-gray-800);
+  }
+
+  .bs-tooltip-right .arrow::before {
+    border-right-color: var(--vulcan-gray-800);
   }
 
   // bg-light and bg-white utilities
@@ -209,6 +331,13 @@
 
   .bg-white {
     background-color: var(--vulcan-component-bg) !important;
+  }
+
+  // btn-light / btn-dark — inverted for dark mode (OIDC sign-in, etc.)
+  .btn-light {
+    background-color: var(--vulcan-component-bg-alt) !important;
+    color: var(--vulcan-body-color) !important;
+    border-color: var(--vulcan-border-color) !important;
   }
 
   // Text utilities
@@ -337,6 +466,72 @@
     border-color: var(--vulcan-border-color);
   }
 
+  // Custom file input (b-form-file) — 5 consumers across project/component modals
+  .custom-file-label {
+    background-color: var(--vulcan-component-bg);
+    color: var(--vulcan-body-color);
+    border-color: var(--vulcan-border-color);
+
+    &::after {
+      background-color: var(--vulcan-component-bg-alt);
+      color: var(--vulcan-body-color);
+      border-color: var(--vulcan-border-color);
+    }
+  }
+
+  // vue-multiselect — 7 consumers (membership, component, SRG modals)
+  .multiselect__tags {
+    background: var(--vulcan-component-bg);
+    border-color: var(--vulcan-border-color);
+    color: var(--vulcan-body-color);
+  }
+
+  .multiselect__input,
+  .multiselect__single {
+    background: var(--vulcan-component-bg);
+    color: var(--vulcan-body-color);
+  }
+
+  .multiselect__content-wrapper {
+    background: var(--vulcan-component-bg);
+    border-color: var(--vulcan-border-color);
+  }
+
+  .multiselect__option--highlight {
+    background: var(--vulcan-primary);
+  }
+
+  .multiselect__option {
+    color: var(--vulcan-body-color);
+  }
+
+  .multiselect__option--highlight {
+    background: var(--vulcan-primary);
+    color: #fff;
+  }
+
+  .multiselect__option--selected {
+    background: var(--vulcan-component-bg-alt);
+    color: var(--vulcan-body-color);
+  }
+
+  .multiselect__option--disabled {
+    background: var(--vulcan-component-bg) !important;
+    color: var(--vulcan-text-muted) !important;
+  }
+
+  .multiselect__spinner {
+    background: var(--vulcan-component-bg);
+  }
+
+  .multiselect__placeholder {
+    color: var(--vulcan-text-muted);
+  }
+
+  .multiselect {
+    color: var(--vulcan-body-color);
+  }
+
   // ── fad.4: Navbar, sidebar, breadcrumbs, tabs ────────────────────
   .breadcrumb {
     background-color: var(--vulcan-component-bg-alt);
@@ -374,8 +569,33 @@
     background-color: var(--vulcan-primary);
   }
 
+  // ── fad.8.3: Navbar link legibility + table header differentiation ──
+  // BS5.3 uses --bs-navbar-active-color: rgba(255,255,255,0.9) and
+  // --bs-nav-link-color: rgba(255,255,255,0.75). BS4 default is 0.5.
+  .navbar-dark .nav-link {
+    color: rgba(255, 255, 255, 0.75);
+
+    &:hover,
+    &:focus {
+      color: rgba(255, 255, 255, 0.9);
+    }
+  }
+
+  .navbar-dark .nav-link.active,
+  .navbar-dark .navbar-nav .active > .nav-link {
+    color: rgba(255, 255, 255, 1);
+  }
+
+  // Table header: elevated surface per Material Design (2dp = +7% white)
+  thead th {
+    background-color: var(--vulcan-component-bg-alt);
+  }
+
   // Sidebar (rule navigator)
-  #sidebar-wrapper {
+  // #sidebar-wrapper is the SRG viewer sidebar; .left-sidebar-column
+  // is the component editor sidebar — different markup, same purpose.
+  #sidebar-wrapper,
+  .left-sidebar-column {
     background-color: var(--vulcan-component-bg);
     border-color: var(--vulcan-border-color);
   }
@@ -484,6 +704,50 @@
   // Markdown preview in dark
   .markdown-preview {
     color: var(--vulcan-body-color);
+  }
+
+  // ── fad.8.6: Triage badge desaturation (Google Material Design) ───
+  // Saturated badge colors cause optical vibrations on dark surfaces.
+  // Override --status-color to use shade-color 60% bg with tinted text.
+  [data-triage="concur"] {
+    --status-color: #{mix(black, $success, 40%)};
+    --status-pill-fg: #{mix(white, $success, 40%)};
+  }
+
+  [data-triage="concur_with_comment"] {
+    --status-color: #{mix(black, $primary, 40%)};
+    --status-pill-fg: #{mix(white, $primary, 40%)};
+  }
+
+  [data-triage="non_concur"] {
+    --status-color: #{mix(black, $danger, 40%)};
+    --status-pill-fg: #{mix(white, $danger, 40%)};
+  }
+
+  [data-triage="informational"],
+  [data-triage="needs_clarification"] {
+    --status-color: #{mix(black, $warning, 40%)};
+    --status-pill-fg: #{mix(white, $warning, 40%)};
+  }
+
+  [data-triage="pending"] {
+    --status-color: #{mix(black, $secondary, 20%)};
+    --status-pill-fg: #{mix(white, $secondary, 40%)};
+  }
+
+  [data-triage="withdrawn"] {
+    --status-color: #{mix(black, $purple, 40%)};
+    --status-pill-fg: #{mix(white, $purple, 40%)};
+  }
+
+  [data-triage="duplicate"] {
+    --status-color: #{mix(black, $teal, 40%)};
+    --status-pill-fg: #{mix(white, $teal, 40%)};
+  }
+
+  [data-triage="addressed_by"] {
+    --status-color: #{mix(black, $indigo, 40%)};
+    --status-pill-fg: #{mix(white, $indigo, 40%)};
   }
 
   // Text muted overrides for readability
