@@ -219,9 +219,9 @@ export default {
       return fields;
     },
     formatVersion(item) {
-      const v = item.version ?? "";
+      const v = String(item.version ?? "");
       if (v.startsWith("V")) return v;
-      const r = item.release ?? "";
+      const r = String(item.release ?? "");
       return `V${v}R${r}`;
     },
     formatDate(value) {
