@@ -625,131 +625,13 @@ class Component < ApplicationRecord
                          author_id: nil, query: nil, page: 1, per_page: 25,
                          resolved: 'all', commentable_type: nil,
                          include_rule_content: false)
-    page = [page.to_i, 1].max
-    per_page = per_page.to_i.clamp(1, 1000)
-
-    # Polymorphic union: rule-scoped reviews on this component's rules OR
-    # component-scoped reviews on this component (backfill in 20260508210000).
-    rule_id_subquery = rules.select(:id)
-    rule_scoped = Review.top_level_comments
-                        .where(commentable_type: 'BaseRule', commentable_id: rule_id_subquery)
-    component_scoped = Review.top_level_comments
-                             .where(commentable_type: 'Component', commentable_id: id)
-    scope = case commentable_type.to_s.downcase
-            when 'component' then component_scoped
-            when 'rule'      then rule_scoped
-            else                  rule_scoped.or(component_scoped)
-            end
-    commentable_preloads = if include_rule_content
-                             { commentable: %i[disa_rule_descriptions checks] }
-                           else
-                             :commentable
-                           end
-    scope = scope.preload(:user, :triage_set_by, :adjudicated_by, commentable_preloads)
-
-    base_scope_for_counts = scope
-    scope = scope.where(triage_status: triage_status) unless triage_status == 'all'
-    scope = scope.where(section: section) if section.present? && section != 'all'
-    scope = scope.where(commentable_type: 'BaseRule', commentable_id: rule_id) if rule_id.present?
-    scope = scope.where(user_id: author_id) if author_id.present?
-
-    case resolved.to_s
-    when 'true'  then scope = scope.where.not(adjudicated_at: nil)
-    when 'false' then scope = scope.where(adjudicated_at: nil)
-    end
-
-    if query.present?
-      escaped = ActiveRecord::Base.sanitize_sql_like(query.to_s)
-      scope = scope.where('reviews.comment ILIKE ?', "%#{escaped}%")
-    end
-
-    total = scope.count
-
-    # Total-including-replies drives the dedup banner header.
-    rule_replies = Review.where(action: Review::ACTION_COMMENT,
-                                commentable_type: 'BaseRule',
-                                commentable_id: rule_id_subquery)
-    component_replies = Review.where(action: Review::ACTION_COMMENT,
-                                     commentable_type: 'Component',
-                                     commentable_id: id)
-    total_comments_scope = case commentable_type.to_s.downcase
-                           when 'component' then component_replies
-                           when 'rule'      then rule_replies
-                           else                  rule_replies.or(component_replies)
-                           end
-    total_comments_scope = total_comments_scope.where(commentable_type: 'BaseRule', commentable_id: rule_id) if rule_id.present?
-    total_comments_scope = total_comments_scope.where(section: section) if section.present? && section != 'all'
-    if query.present?
-      escaped = ActiveRecord::Base.sanitize_sql_like(query.to_s)
-      total_comments_scope = total_comments_scope.where('reviews.comment ILIKE ?', "%#{escaped}%")
-    end
-    total_comments = total_comments_scope.count
-
-    rule_id_to_displayed = rules.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
-
-    child_to_parent = RuleSatisfaction
-                      .where(rule_id: rules.ids)
-                      .pluck(:rule_id, :satisfied_by_rule_id)
-                      .to_h
-    parent_id_to_displayed = child_to_parent.values.uniq.index_with { |pid| rule_id_to_displayed[pid] }
-
-    page_records = scope.order(created_at: :desc)
-                        .offset((page - 1) * per_page)
-                        .limit(per_page)
-                        .to_a
-
-    page_review_ids = page_records.map(&:id)
-    responses_count_lookup = Review.where(responding_to_review_id: page_review_ids)
-                                   .group(:responding_to_review_id)
-                                   .count
-    reaction_counts = Reaction.where(review_id: page_review_ids).group(:review_id, :kind).count
-
-    rows = page_records.map do |r|
-      component_scoped_row = r.commentable_type == 'Component'
-      row = {
-        id: r.id,
-        rule_id: component_scoped_row ? nil : r.rule_id,
-        rule_displayed_name: component_scoped_row ? '(component)' : rule_id_to_displayed[r.rule_id],
-        commentable_type: r.commentable_type,
-        section: r.section,
-        author_name: r.commenter_display_name,
-        author_email: r.user&.email || r.commenter_imported_email,
-        comment: r.comment,
-        created_at: r.created_at,
-        triage_status: r.triage_status,
-        triage_set_at: r.triage_set_at,
-        adjudicated_at: r.adjudicated_at,
-        duplicate_of_review_id: r.duplicate_of_review_id,
-        addressed_by_rule_id: r.addressed_by_rule_id,
-        addressed_by_rule_name: r.addressed_by_rule_id ? rule_id_to_displayed[r.addressed_by_rule_id] : nil,
-        triager_display_name: r.triager_display_name,
-        triager_imported: r.triager_imported?,
-        adjudicator_display_name: r.adjudicator_display_name,
-        adjudicator_imported: r.adjudicator_imported?,
-        commenter_display_name: r.commenter_display_name,
-        commenter_imported: r.commenter_imported?,
-        responses_count: responses_count_lookup[r.id] || 0,
-        reactions: { up: reaction_counts[[r.id, 'up']] || 0,
-                     down: reaction_counts[[r.id, 'down']] || 0 },
-        updated_at: r.updated_at,
-        rule_status: component_scoped_row ? nil : r.commentable&.status,
-        parent_rule_displayed_name: component_scoped_row ? nil : parent_id_to_displayed[child_to_parent[r.rule_id]],
-        group_rule_displayed_name: nil
-      }
-
-      row[:group_rule_displayed_name] = row[:parent_rule_displayed_name] || row[:rule_displayed_name]
-      row[:rule_content] = serialize_rule_content(r, component_scoped_row) if include_rule_content
-
-      row
-    end
-
-    status_counts = base_scope_for_counts.group(:triage_status).count
-
-    {
-      rows: rows,
-      pagination: { page: page, per_page: per_page, total: total, total_comments: total_comments },
-      status_counts: status_counts
-    }
+    CommentQueryService.new(
+      self,
+      triage_status: triage_status, section: section, rule_id: rule_id,
+      author_id: author_id, query: query, page: page, per_page: per_page,
+      resolved: resolved, commentable_type: commentable_type,
+      include_rule_content: include_rule_content
+    ).call
   end
 
   def csv_export
