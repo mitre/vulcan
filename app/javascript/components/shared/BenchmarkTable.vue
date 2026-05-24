@@ -55,7 +55,7 @@
         </span>
       </template>
       <template v-if="type === 'Component'" #cell(component_version)="data">
-        {{ formatVersion(data.item) }}
+        <span class="version-badge">{{ formatVersion(data.item) }}</span>
       </template>
       <template #cell(version)="data">
         <span class="version-badge">{{ formatVersion(data.item) }}</span>
