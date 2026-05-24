@@ -141,11 +141,11 @@ class Component < ApplicationRecord
   def status_counts
     counts = rules.where(deleted_at: nil).group(:status).count
     {
-      not_yet_determined: counts['Not Yet Determined'] || 0,
+      not_yet_determined: counts[STATUS_NYD] || 0,
       applicable_configurable: counts[STATUS_APPLICABLE_CONFIGURABLE] || 0,
-      applicable_inherently_meets: counts['Applicable - Inherently Meets'] || 0,
-      applicable_does_not_meet: counts['Applicable - Does Not Meet'] || 0,
-      not_applicable: counts['Not Applicable'] || 0
+      applicable_inherently_meets: counts[STATUS_APPLICABLE_IM] || 0,
+      applicable_does_not_meet: counts[STATUS_APPLICABLE_DNM] || 0,
+      not_applicable: counts[STATUS_NOT_APPLICABLE] || 0
     }
   end
 
@@ -607,7 +607,7 @@ class Component < ApplicationRecord
   def self.pending_comment_counts(component_ids)
     return {} if component_ids.blank?
 
-    Review.where(action: 'comment',
+    Review.where(action: Review::ACTION_COMMENT,
                  responding_to_review_id: nil,
                  triage_status: 'pending')
           .joins(:rule)
@@ -666,10 +666,10 @@ class Component < ApplicationRecord
     total = scope.count
 
     # Total-including-replies drives the dedup banner header.
-    rule_replies = Review.where(action: 'comment',
+    rule_replies = Review.where(action: Review::ACTION_COMMENT,
                                 commentable_type: 'BaseRule',
                                 commentable_id: rule_id_subquery)
-    component_replies = Review.where(action: 'comment',
+    component_replies = Review.where(action: Review::ACTION_COMMENT,
                                      commentable_type: 'Component',
                                      commentable_id: id)
     total_comments_scope = case commentable_type.to_s.downcase

@@ -60,20 +60,28 @@ RSpec.describe 'seed pipeline', :seed_pipeline, type: :model do
 
   describe 'comment seed data' do
     it 'has at least 18 top-level comments' do
-      top_level = Review.where(action: 'comment', responding_to_review_id: nil).count
+      top_level = Review.where(action: Review::ACTION_COMMENT, responding_to_review_id: nil).count
       expect(top_level).to be >= 18
     end
 
     it 'has at least 5 replies' do
-      replies = Review.where(action: 'comment').where.not(responding_to_review_id: nil).count
+      replies = Review.where(action: Review::ACTION_COMMENT).where.not(responding_to_review_id: nil).count
       expect(replies).to be >= 5
     end
 
     it 'covers key triage statuses' do
-      statuses = Review.where(action: 'comment').distinct.pluck(:triage_status).compact
+      statuses = Review.where(action: Review::ACTION_COMMENT).distinct.pluck(:triage_status).compact
       %w[pending concur non_concur informational withdrawn].each do |s|
         expect(statuses).to include(s), "Missing triage status '#{s}' — found: #{statuses.inspect}"
       end
+    end
+
+    it 'all reply threading references are valid (no orphaned responding_to)' do
+      orphaned = Review.where(action: Review::ACTION_COMMENT)
+                       .where.not(responding_to_review_id: nil)
+                       .where.not(responding_to_review_id: Review.select(:id))
+      expect(orphaned.count).to eq(0),
+                                "Found #{orphaned.count} replies pointing to nonexistent parent reviews: #{orphaned.pluck(:id).inspect}"
     end
   end
 

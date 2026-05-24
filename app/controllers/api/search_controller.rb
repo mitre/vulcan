@@ -129,7 +129,7 @@ module Api
           component_prefix: rule.component&.prefix,
           snippet: snippet_data[:snippet],
           matched_field: snippet_data[:matched_field],
-          comment_count: rule.reviews.where(action: 'comment').size,
+          comment_count: rule.reviews.where(action: Review::ACTION_COMMENT).size,
           parent_rule_id: parent&.id,
           parent_display_name: parent ? "#{rule.component&.prefix}-#{parent.rule_id}" : nil
         }

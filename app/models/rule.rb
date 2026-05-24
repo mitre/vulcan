@@ -142,7 +142,7 @@ class Rule < BaseRule
     parent_title = parent.title.presence || parent.srg_rule&.title || parent_label
 
     update!(
-      status: 'Applicable - Does Not Meet',
+      status: RuleConstants::STATUS_APPLICABLE_DNM,
       status_justification: "This requirement is addressed by #{parent_label} (#{parent_title}).",
       audit_comment: "Auto-set ADNM: satisfied by #{parent_label} (was: #{status})"
     )
@@ -380,7 +380,7 @@ class Rule < BaseRule
     if nesting_audit&.comment&.match(/\(was: (.+)\)/)
       Regexp.last_match(1)
     else
-      'Not Yet Determined'
+      RuleConstants::STATUS_NYD
     end
   end
 

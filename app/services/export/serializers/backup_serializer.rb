@@ -181,9 +181,10 @@ module Export
       end
 
       def serialize_reviews
-        rules_collection.flat_map do |rule|
-          rule.reviews.order(:created_at).map { |review| serialize_review(review, rule) }
-        end
+        all_reviews = rules_collection.flat_map { |rule| rule.reviews.order(:created_at).map { |r| [r, rule] } }
+        original_ids = all_reviews.filter_map { |r, _| r.original_commentable_id }.uniq
+        @original_rule_id_map = original_ids.any? ? BaseRule.where(id: original_ids).pluck(:id, :rule_id).to_h : {}
+        all_reviews.map { |review, rule| serialize_review(review, rule) }
       end
 
       # external_id is the original DB id used as a stable in-archive key so
@@ -208,7 +209,7 @@ module Export
           adjudicated_at: review.adjudicated_at&.iso8601,
           responding_to_external_id: review.responding_to_review_id,
           duplicate_of_external_id: review.duplicate_of_review_id,
-          original_rule_id: review.original_commentable_id ? BaseRule.find_by(id: review.original_commentable_id)&.rule_id : nil,
+          original_rule_id: review.original_commentable_id ? @original_rule_id_map[review.original_commentable_id] : nil,
           created_at: review.created_at&.iso8601
         }
       end

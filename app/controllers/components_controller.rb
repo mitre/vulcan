@@ -88,15 +88,13 @@ class ComponentsController < ApplicationController
     # original audit history is copied in bulk by duplicate_reviews_and_history.
     # This avoids creating 200+ redundant audit records per rule.
     is_duplicate = component_create_params[:duplicate] || component_create_params[:copy_component]
-    Audited.auditing_enabled = false if is_duplicate
-    begin
+    save_block = lambda {
       if component.errors.empty? && component.save
-        Audited.auditing_enabled = true
         component.admin_name = component_create_params[:admin_name].presence || current_user.name
         component.admin_email = component_create_params[:admin_email].presence || current_user.email
         component.duplicate_reviews_and_history(component_create_params[:id])
         component.create_rule_satisfactions if component_create_params[:file]
-        component.rules_count = component.rules.where(deleted_at: nil).size
+        Component.reset_counters(component.id, :rules)
         if component_create_params[:slack_channel_id].present?
           component.component_metadata_attributes = { data: {
             'Slack Channel ID' => component_create_params[:slack_channel_id]
@@ -116,8 +114,11 @@ class ComponentsController < ApplicationController
           }
         }, status: :unprocessable_entity
       end
-    ensure
-      Audited.auditing_enabled = true
+    }
+    if is_duplicate
+      Component.without_auditing(&save_block)
+    else
+      save_block.call
     end
   end
 
@@ -164,11 +165,12 @@ class ComponentsController < ApplicationController
     render_toast(title: 'Component removed.',
                  message: 'Successfully removed component from project.',
                  variant: 'success', status: :ok)
-  rescue StandardError
+  rescue ActiveRecord::StatementInvalid, ActiveRecord::RecordNotDestroyed => e
+    Rails.logger.error("[ComponentsController#destroy] Failed to remove component #{@component.id}: #{e.class} — #{e.message}")
     render json: {
       toast: {
         title: 'Error',
-        message: 'Could not remove component from project.',
+        message: ["Could not remove component: #{e.message.truncate(200)}"],
         variant: 'danger'
       }
     }, status: :unprocessable_entity
@@ -508,7 +510,7 @@ class ComponentsController < ApplicationController
   end
 
   def find
-    find_param = params.require(:find).downcase
+    find_param = ActiveRecord::Base.sanitize_sql_like(params.require(:find).downcase)
     component_id = params.require(:id)
 
     rules = Component.find_by(id: component_id).rules

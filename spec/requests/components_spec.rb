@@ -440,4 +440,21 @@ RSpec.describe 'Components' do
       expect(response).to have_http_status(:unauthorized)
     end
   end
+
+  describe 'POST /components/:id/find' do
+    let_it_be(:rule) { component.rules.first || create(:rule, component: component, title: 'Test LIKE injection rule') }
+
+    it 'sanitizes LIKE wildcards in search input' do
+      post "/components/#{component.id}/find", params: { find: '%' }, as: :json
+      expect(response).to have_http_status(:ok)
+      results = response.parsed_body
+      expect(results).to be_an(Array)
+      expect(results.length).to be < component.rules.count
+    end
+
+    it 'returns matching rules for normal search' do
+      post "/components/#{component.id}/find", params: { find: rule.title.first(8) }, as: :json
+      expect(response).to have_http_status(:ok)
+    end
+  end
 end

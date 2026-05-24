@@ -36,6 +36,14 @@ class ApplicationController < ActionController::Base
   # so NotAuthorizedError must be declared AFTER StandardError.
   rescue_from StandardError, with: :helpful_errors unless Rails.env.development?
 
+  rescue_from ActiveRecord::RecordNotFound do |_e|
+    respond_to do |format|
+      format.json { head :not_found }
+      format.html { render plain: 'Not Found', status: :not_found }
+      format.any  { head :not_found }
+    end
+  end
+
   rescue_from NotAuthorizedError, with: :not_authorized
 
   # toast helper. The Vue frontend's

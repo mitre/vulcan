@@ -77,7 +77,7 @@ class Review < ApplicationRecord
   vulcan_audited only: %i[triage_status adjudicated_by_id duplicate_of_review_id addressed_by_rule_id comment rule_id section],
                  associated_with: :rule
 
-  scope :top_level_comments, -> { where(action: 'comment', responding_to_review_id: nil) }
+  scope :top_level_comments, -> { where(action: ACTION_COMMENT, responding_to_review_id: nil) }
   scope :pending_triage, -> { top_level_comments.where(triage_status: 'pending') }
   scope :awaiting_adjudication, lambda {
     top_level_comments.where(triage_status: %w[concur concur_with_comment non_concur])
@@ -152,6 +152,7 @@ class Review < ApplicationRecord
   # Back-compat alias — derived from ACTION_PERMISSIONS so adding a new action
   # is one map entry instead of two.
   VALID_ACTIONS = ACTION_PERMISSIONS.keys.freeze
+  ACTION_COMMENT = 'comment'
 
   validates :comment, :action, presence: true
   # rubocop:disable Rails/I18nLocaleTexts
@@ -164,7 +165,7 @@ class Review < ApplicationRecord
   validates :comment, length: {
     maximum: lambda { |r|
       cap = Settings.input_limits.review_comment
-      r.action == 'comment' ? [cap, 4000].min : cap
+      r.action == ACTION_COMMENT ? [cap, 4000].min : cap
     }
   }
 
@@ -284,7 +285,7 @@ class Review < ApplicationRecord
 
   def redirect_to_parent_if_satisfied_by
     return unless rule
-    return unless action == 'comment'
+    return unless action == ACTION_COMMENT
 
     parent = rule.satisfied_by.first
     return unless parent
@@ -420,13 +421,13 @@ class Review < ApplicationRecord
     elsif !rule.review_requestor_id.nil?
       errors.add(:base, 'Cannot unlock a control that is currently under review')
     elsif !rule.locked
-      errors.add(:base, 'Control is already unlocked') unless rule.locked
+      errors.add(:base, 'Control is already unlocked')
     end
   end
 
   def default_triage_status_for_new_top_level_comment
     return if triage_status.present?
-    return unless action == 'comment' && responding_to_review_id.nil?
+    return unless action == ACTION_COMMENT && responding_to_review_id.nil?
 
     self.triage_status = 'pending'
   end

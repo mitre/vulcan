@@ -61,7 +61,7 @@ class ReactionsController < ApplicationController
 
   def set_review
     @review = Review.find_by(id: params[:review_id])
-    return deny_existence! unless @review && @review.action == 'comment'
+    return deny_existence! unless @review && @review.action == Review::ACTION_COMMENT
 
     @project = @review.component&.project
   end

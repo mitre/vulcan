@@ -71,7 +71,7 @@ class ReviewsController < ApplicationController
 
   def create
     base = review_params.except('component_id').merge(user: current_user)
-    base = @rule ? base.merge(rule: @rule) : base.merge(commentable: @component, action: 'comment', section: nil)
+    base = @rule ? base.merge(rule: @rule) : base.merge(commentable: @component, action: Review::ACTION_COMMENT, section: nil)
     review = Review.new(base)
 
     saved = false
@@ -150,7 +150,7 @@ class ReviewsController < ApplicationController
 
       if params[:response_comment].present?
         response_review = Review.create!(
-          action: 'comment',
+          action: Review::ACTION_COMMENT,
           comment: params[:response_comment],
           user: current_user,
           rule: @review.rule,
@@ -194,7 +194,7 @@ class ReviewsController < ApplicationController
 
       if params[:resolution_comment].present?
         response_review = Review.create!(
-          action: 'comment',
+          action: Review::ACTION_COMMENT,
           comment: params[:resolution_comment],
           user: current_user,
           rule: @review.rule,
@@ -483,7 +483,7 @@ class ReviewsController < ApplicationController
     warnings = []
 
     # NYD rules without satisfactions
-    nyd_rules = unlocked.where(status: 'Not Yet Determined')
+    nyd_rules = unlocked.where(status: RuleConstants::STATUS_NYD)
     satisfied_ids = RuleSatisfaction.where(rule_id: nyd_rules).pluck(:rule_id)
     nyd_skipped = nyd_rules.where.not(id: satisfied_ids).order(:rule_id)
     if nyd_skipped.any?
@@ -494,7 +494,7 @@ class ReviewsController < ApplicationController
 
     # ADNM without mitigations
     adnm_skipped = unlocked.includes(:disa_rule_descriptions)
-                           .where(status: 'Applicable - Does Not Meet',
+                           .where(status: RuleConstants::STATUS_APPLICABLE_DNM,
                                   disa_rule_descriptions: { mitigations: [nil, ''] })
                            .distinct.order(:rule_id)
     if adnm_skipped.any?
@@ -504,7 +504,7 @@ class ReviewsController < ApplicationController
     end
 
     # AIM without artifact description
-    aim_skipped = unlocked.where(status: 'Applicable - Inherently Meets',
+    aim_skipped = unlocked.where(status: RuleConstants::STATUS_APPLICABLE_IM,
                                  artifact_description: [nil, '']).order(:rule_id)
     if aim_skipped.any?
       skipped_ids.merge(aim_skipped.ids)
@@ -648,8 +648,7 @@ class ReviewsController < ApplicationController
   # Lifecycle endpoints (triage / adjudicate / withdraw / update) operate on
   # a Review by id. Look it up here so the action body never has to.
   def set_review
-    @review = Review.find_by(id: params[:id])
-    head :not_found unless @review
+    @review = Review.find(params[:id])
   end
 
   # Derives @project from @review's rule chain so the standard
@@ -729,7 +728,7 @@ class ReviewsController < ApplicationController
   # the request body's action is 'comment' — other rule actions like
   # 'request_review' bypass the comment-period gate by design.
   def reject_if_comments_closed
-    creating_comment = @component.present? || params.dig(:review, :action) == 'comment'
+    creating_comment = @component.present? || params.dig(:review, :action) == Review::ACTION_COMMENT
     return unless creating_comment
 
     component = @rule&.component || @component
@@ -748,7 +747,7 @@ class ReviewsController < ApplicationController
     return false unless target_component
 
     parent = Review.find_by(id: responding_to_id)
-    return false unless parent && parent.action == 'comment'
+    return false unless parent && parent.action == Review::ACTION_COMMENT
 
     parent_component = parent.rule&.component || (parent.commentable if parent.commentable_type == 'Component')
     return false unless parent_component&.id == target_component.id

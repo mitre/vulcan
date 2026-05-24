@@ -44,6 +44,6 @@ class Reaction < ApplicationRecord
   def must_be_comment_review
     return unless review
 
-    errors.add(:review, 'can only react to comment-action reviews') if review.action != 'comment'
+    errors.add(:review, 'can only react to comment-action reviews') if review.action != Review::ACTION_COMMENT
   end
 end

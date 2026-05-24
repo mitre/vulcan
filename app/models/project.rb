@@ -272,11 +272,11 @@ class Project < ApplicationRecord
     ).count
 
     {
-      ac: status_counts['Applicable - Configurable'] || 0,
-      aim: status_counts['Applicable - Inherently Meets'] || 0,
-      adnm: status_counts['Applicable - Does Not Meet'] || 0,
-      na: status_counts['Not Applicable'] || 0,
-      nyd: status_counts['Not Yet Determined'] || 0,
+      ac: status_counts[RuleConstants::STATUS_APPLICABLE_CONFIGURABLE] || 0,
+      aim: status_counts[RuleConstants::STATUS_APPLICABLE_IM] || 0,
+      adnm: status_counts[RuleConstants::STATUS_APPLICABLE_DNM] || 0,
+      na: status_counts[RuleConstants::STATUS_NOT_APPLICABLE] || 0,
+      nyd: status_counts[RuleConstants::STATUS_NYD] || 0,
       nur: review_counts['nur'] || 0,
       ur: review_counts['ur'] || 0,
       lck: lock_counts[true] || 0,

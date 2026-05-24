@@ -237,7 +237,7 @@ class RulesController < ApplicationController
         component: @component,
         srg_rule: db_srg_rule,
         rule_id: (@component.rules.order(:rule_id).pluck(:rule_id).last.to_i + 1).to_s.rjust(6, '0'),
-        status: 'Not Yet Determined',
+        status: RuleConstants::STATUS_NYD,
         rule_severity: 'unknown',
         rule_weight: db_srg_rule&.rule_weight || '10.0',
         version: db_srg_rule&.version,
