@@ -123,4 +123,30 @@ RSpec.describe 'Dark mode compiled CSS verification' do
       expect(decls).not_to be_empty, 'Missing cursor color for dark mode editor'
     end
   end
+
+  # ── fad.6: Triage workspace + custom components ─────────────────────
+
+  describe 'triage workspace (fad.6)' do
+    it 'has dark override for triage row tint opacity' do
+      decls = declarations_for('[data-bs-theme="dark"] .triage-bg')
+      expect(decls).not_to be_empty,
+                           'Missing .triage-bg dark override (row tints need opacity adjustment)'
+    end
+
+    it 'has no hardcoded white BACKGROUNDS in scoped styles' do
+      vue_dir = Rails.root.join('app/javascript/components')
+      offenders = []
+      Dir.glob(vue_dir.join('**/*.vue')).each do |path|
+        content = File.read(path)
+        style_block = content[%r{<style[^>]*>(.+?)</style>}m, 1] || ''
+        lines = style_block.lines.reject { |l| l.include?('var(') }
+        bg_white = lines.grep(/background(-color)?:\s*(#fff\b|white\s*;)/)
+        bg_white.each do |line|
+          offenders << "#{File.basename(path)}: #{line.strip}"
+        end
+      end
+      expect(offenders).to be_empty,
+                           "Hardcoded white backgrounds in scoped styles:\n#{offenders.join("\n")}"
+    end
+  end
 end

@@ -368,7 +368,7 @@ export default {
 .easymde-wrapper :deep(.editor-preview),
 .easymde-wrapper :deep(.editor-preview-side) {
   padding: 0.75rem;
-  background: #fff;
+  background: var(--vulcan-component-bg, #fff);
 }
 
 /* Constrain fullscreen/side-by-side to component */

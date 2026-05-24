@@ -58,7 +58,7 @@ export default {
   min-width: 200px;
   border: 1px solid var(--vulcan-gray-400);
   border-radius: 0.375rem;
-  background-color: #fff;
+  background-color: var(--vulcan-component-bg, #fff);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 

@@ -458,6 +458,38 @@
 
   // Monaco — theme auto-switches via InspecControlEditor
   // (no CSS overrides needed; Monaco's vs-dark theme is self-contained)
+
+  // ── fad.6: Triage workspace + custom component overrides ─────────
+  // Row tints need higher opacity on dark backgrounds to be visible
+  .triage-bg[data-triage] {
+    --status-tint: rgba(var(--status-color), 0.18);
+  }
+
+  // Triage split-pane panels
+  .comment-triage-form {
+    background-color: var(--vulcan-component-bg);
+  }
+
+  // Browse panel (already has bg-white utility, handled by fad.2)
+  // Rule context panel
+  .rule-context-panel {
+    background-color: var(--vulcan-component-bg);
+  }
+
+  // Comment thread backgrounds
+  .comment-thread {
+    background-color: var(--vulcan-component-bg);
+  }
+
+  // Markdown preview in dark
+  .markdown-preview {
+    color: var(--vulcan-body-color);
+  }
+
+  // Text muted overrides for readability
+  .text-muted {
+    color: var(--vulcan-text-muted) !important;
+  }
 }
 
 // OS preference fallback (no JS needed)
