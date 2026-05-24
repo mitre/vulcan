@@ -4,7 +4,7 @@
 class SrgBlueprint < Blueprinter::Base
   identifier :id
 
-  fields :srg_id, :name, :title, :version
+  fields :srg_id, :name, :title, :version, :release_date
 
   field :severity_counts do |srg, _options|
     srg.severity_counts_hash
@@ -15,8 +15,6 @@ class SrgBlueprint < Blueprinter::Base
   end
 
   view :show do
-    field :release_date
-
     association :srg_rules, blueprint: SrgRuleBlueprint do |srg, _options|
       srg.srg_rules
     end

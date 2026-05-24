@@ -68,7 +68,7 @@ RSpec.describe 'Stig and SRG Blueprints' do
       let(:json) { SrgBlueprint.render_as_hash(srg, view: :index) }
 
       it 'includes listing fields' do
-        %i[id srg_id name title version].each do |f|
+        %i[id srg_id name title version release_date].each do |f|
           expect(json).to have_key(f), "Missing :index field: #{f}"
         end
       end
