@@ -156,18 +156,12 @@
             Cancel Access Request
           </b-button>
         </span>
-        <b-button
-          v-b-tooltip.hover="canAdminProject(data.item) ? '' : ADMIN_ONLY_TOOLTIP"
-          class="px-2 m-2"
-          variant="danger"
-          data-testid="remove-project-btn"
+        <TableActionButtons
+          :item-name="data.item.name"
           :disabled="!canAdminProject(data.item)"
-          :title="canAdminProject(data.item) ? '' : ADMIN_ONLY_TOOLTIP"
-          @click="openDeleteModal(data.item)"
-        >
-          <b-icon icon="trash" aria-hidden="true" />
-          Remove
-        </b-button>
+          data-testid="remove-project-btn"
+          @delete="openDeleteModal(data.item)"
+        />
       </template>
     </b-table>
 
@@ -189,11 +183,12 @@ import FormMixin from "../../mixins/FormMixin.vue";
 import UpdateProjectDetailsModal from "./UpdateProjectDetailsModal.vue";
 import ConfirmDeleteModal from "../shared/ConfirmDeleteModal.vue";
 import InfoTooltip from "../shared/InfoTooltip.vue";
+import TableActionButtons from "../shared/TableActionButtons.vue";
 import { useDeleteConfirmation } from "../../composables";
 
 export default {
   name: "ProjectsTable",
-  components: { UpdateProjectDetailsModal, ConfirmDeleteModal, InfoTooltip },
+  components: { UpdateProjectDetailsModal, ConfirmDeleteModal, InfoTooltip, TableActionButtons },
   // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because
   // each esbuild pack has its own axios singleton (bundle isolation) — the
   // navbar pack's FormMixin doesn't reach the consuming pack. The DELETE
@@ -259,9 +254,9 @@ export default {
         { key: "updated_at", label: "Last Updated", sortable: true },
         {
           key: "actions",
-          label: "Actions",
-          thClass: "text-right",
-          tdClass: "p-0 text-right",
+          label: "",
+          thClass: "text-center",
+          tdClass: "text-center align-middle",
         },
       ],
     };

@@ -65,23 +65,11 @@
 
       <!-- Column template for Actions -->
       <template #cell(actions)="data">
-        <b-button
-          size="sm"
-          variant="outline-secondary"
-          class="mr-1"
-          :aria-label="'Edit ' + data.item.name"
-          @click="$emit('edit-user', data.item)"
-        >
-          <b-icon icon="pencil" aria-hidden="true" />
-        </b-button>
-        <b-button
-          size="sm"
-          variant="outline-danger"
-          :aria-label="'Remove ' + data.item.name"
-          @click="confirmDelete(data.item)"
-        >
-          <b-icon icon="trash" aria-hidden="true" />
-        </b-button>
+        <TableActionButtons
+          :item-name="data.item.name"
+          @edit="$emit('edit-user', data.item)"
+          @delete="confirmDelete(data.item)"
+        />
       </template>
     </b-table>
 
@@ -110,10 +98,11 @@ import axios from "axios";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import ConfirmDeleteModal from "../shared/ConfirmDeleteModal.vue";
+import TableActionButtons from "../shared/TableActionButtons.vue";
 
 export default {
   name: "UsersTable",
-  components: { ConfirmDeleteModal },
+  components: { ConfirmDeleteModal, TableActionButtons },
   mixins: [FormMixinVue, AlertMixinVue],
   props: {
     users: {
@@ -138,7 +127,7 @@ export default {
         { key: "provider", label: "Type", sortable: true },
         { key: "role", label: "Role", sortable: true },
         { key: "last_sign_in_at", label: "Last Sign In", sortable: true },
-        { key: "actions", label: "" },
+        { key: "actions", label: "", tdClass: "text-center align-middle" },
       ],
     };
   },

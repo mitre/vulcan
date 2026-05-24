@@ -64,18 +64,11 @@
         <SeverityBadges :counts="data.item.severity_counts" />
       </template>
       <template #cell(actions)="data">
-        <div class="d-flex justify-content-center">
-          <b-button
-            v-if="is_vulcan_admin"
-            v-b-tooltip.hover
-            title="Remove"
-            variant="outline-danger"
-            size="sm"
-            @click="openDeleteModal(data.item)"
-          >
-            <b-icon icon="trash" aria-hidden="true" />
-          </b-button>
-        </div>
+        <TableActionButtons
+          v-if="is_vulcan_admin"
+          :item-name="data.item.title || data.item.name || ''"
+          @delete="openDeleteModal(data.item)"
+        />
       </template>
     </b-table>
     <!-- Pagination controls -->
@@ -95,11 +88,12 @@ import { formatDate as formatDateUtil } from "../../utils/dateFormatter";
 import { abbreviateSrgName as abbreviateSrgNameUtil } from "../../utils/srgNameAbbreviator";
 import SeverityBadges from "./SeverityBadges.vue";
 import ConfirmDeleteModal from "./ConfirmDeleteModal.vue";
+import TableActionButtons from "./TableActionButtons.vue";
 import { useDeleteConfirmation } from "../../composables/useDeleteConfirmation";
 
 export default {
   name: "BenchmarkTable",
-  components: { SeverityBadges, ConfirmDeleteModal },
+  components: { SeverityBadges, ConfirmDeleteModal, TableActionButtons },
   mixins: [FormMixinVue, AlertMixinVue],
   props: {
     srgs: {

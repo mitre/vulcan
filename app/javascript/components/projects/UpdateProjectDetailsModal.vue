@@ -1,15 +1,16 @@
 <template>
   <span>
     <b-button
-      v-b-tooltip.hover="disabled ? disabledTitle : ''"
-      class="px-2 m-2"
-      :variant="is_project_table ? 'primary' : 'success'"
+      v-b-tooltip.hover="disabled ? disabledTitle : is_project_table ? 'Edit' : ''"
+      :class="is_project_table ? '' : 'px-2 m-2'"
+      :size="is_project_table ? 'sm' : undefined"
+      :variant="is_project_table ? 'outline-secondary' : 'success'"
       :disabled="disabled"
-      :title="disabled ? disabledTitle : ''"
+      :title="disabled ? disabledTitle : is_project_table ? 'Edit' : ''"
       @click="showModal()"
     >
-      <b-icon v-if="is_project_table" icon="wrench" aria-hidden="true" />
-      {{ is_project_table ? "Update" : "Update Details" }}
+      <b-icon :icon="is_project_table ? 'pencil' : 'wrench'" aria-hidden="true" />
+      <span v-if="!is_project_table">Update Details</span>
     </b-button>
     <b-modal
       ref="updateProjectDetailsModal"
