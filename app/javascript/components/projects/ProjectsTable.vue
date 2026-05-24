@@ -159,7 +159,7 @@
         <TableActionButtons
           :item-name="data.item.name"
           :disabled="!canAdminProject(data.item)"
-          data-testid="remove-project-btn"
+          :disabled-tooltip="ADMIN_ONLY_TOOLTIP"
           @delete="openDeleteModal(data.item)"
         />
       </template>

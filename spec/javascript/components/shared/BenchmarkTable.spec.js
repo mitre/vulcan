@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import { localVue } from '@test/testHelper'
-import SecurityRequirementsGuidesTable from '@/components/security_requirements_guides/SecurityRequirementsGuidesTable.vue'
+import SecurityRequirementsGuidesTable from '@/components/shared/BenchmarkTable.vue'
 
 /**
  * SecurityRequirementsGuidesTable Component Tests

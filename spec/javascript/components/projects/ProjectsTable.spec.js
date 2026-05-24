@@ -196,7 +196,7 @@ describe("ProjectsTable", () => {
   describe("admin action buttons (disabled-not-hidden)", () => {
     it("renders enabled Remove button for vulcan site admin (on all projects)", () => {
       wrapper = createWrapper({ is_vulcan_admin: true });
-      const removeBtns = wrapper.findAll('[data-testid="remove-project-btn"]');
+      const removeBtns = wrapper.findAll('[data-testid="action-delete"]');
       expect(removeBtns.length).toBe(sampleProjects.length);
       removeBtns.wrappers.forEach((btn) => {
         expect(btn.attributes("disabled")).toBeUndefined();
@@ -206,7 +206,7 @@ describe("ProjectsTable", () => {
     it("renders enabled Remove button for project admin on their projects, disabled elsewhere", () => {
       // sampleProjects[0] has admin: true, sampleProjects[1] has admin: false
       wrapper = createWrapper({ is_vulcan_admin: false });
-      const removeBtns = wrapper.findAll('[data-testid="remove-project-btn"]');
+      const removeBtns = wrapper.findAll('[data-testid="action-delete"]');
       expect(removeBtns.length).toBe(sampleProjects.length);
       // Table sorts by name — "Another Project" (admin: false) is first, "Test Project" (admin: true) is second
       expect(removeBtns.at(0).attributes("disabled")).toBeDefined();
@@ -223,7 +223,7 @@ describe("ProjectsTable", () => {
         propsData: { projects: nonAdminProjects, is_vulcan_admin: false },
         stubs: { UpdateProjectDetailsModal: true },
       });
-      const removeBtns = wrapper.findAll('[data-testid="remove-project-btn"]');
+      const removeBtns = wrapper.findAll('[data-testid="action-delete"]');
       expect(removeBtns.length).toBe(nonAdminProjects.length);
       removeBtns.wrappers.forEach((btn) => {
         expect(btn.attributes("disabled")).toBeDefined();
@@ -264,7 +264,7 @@ describe("ProjectsTable", () => {
       wrapper = createWrapper({ is_vulcan_admin: true });
       expect(wrapper.vm.showDeleteModal).toBe(false);
 
-      const removeBtn = wrapper.find('[data-testid="remove-project-btn"]');
+      const removeBtn = wrapper.find('[data-testid="action-delete"]');
       await removeBtn.trigger("click");
 
       expect(wrapper.vm.showDeleteModal).toBe(true);
@@ -272,7 +272,7 @@ describe("ProjectsTable", () => {
 
     it("stores project to delete when modal opens", async () => {
       wrapper = createWrapper({ is_vulcan_admin: true });
-      const removeBtn = wrapper.find('[data-testid="remove-project-btn"]');
+      const removeBtn = wrapper.find('[data-testid="action-delete"]');
       await removeBtn.trigger("click");
 
       // Table sorts by name — "Another Project" is first alphabetically
@@ -281,7 +281,7 @@ describe("ProjectsTable", () => {
 
     it("shows project name in modal", async () => {
       wrapper = createWrapper({ is_vulcan_admin: true });
-      const removeBtn = wrapper.find('[data-testid="remove-project-btn"]');
+      const removeBtn = wrapper.find('[data-testid="action-delete"]');
       await removeBtn.trigger("click");
       await wrapper.vm.$nextTick();
 
@@ -292,7 +292,7 @@ describe("ProjectsTable", () => {
     it("Cancel closes modal without deleting", async () => {
       wrapper = createWrapper({ is_vulcan_admin: true });
       // Open modal
-      const removeBtn = wrapper.find('[data-testid="remove-project-btn"]');
+      const removeBtn = wrapper.find('[data-testid="action-delete"]');
       await removeBtn.trigger("click");
       expect(wrapper.vm.showDeleteModal).toBe(true);
 

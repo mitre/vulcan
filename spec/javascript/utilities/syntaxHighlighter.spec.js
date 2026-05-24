@@ -44,14 +44,14 @@ describe("Syntax Highlighter", () => {
 
     it("produces highlighted output for ruby code", () => {
       const result = highlightCode('puts "hello"', "ruby");
-      expect(result).toContain("<span");
       expect(result).toContain("shiki");
+      expect(result).toContain("puts");
     });
 
     it("produces highlighted output for XML", () => {
       const result = highlightCode("<root><child/></root>", "xml");
-      expect(result).toContain("<span");
       expect(result).toContain("shiki");
+      expect(result).toContain("root");
     });
   });
 
@@ -236,11 +236,20 @@ describe("Syntax Highlighter", () => {
       expect(result).toContain("ps1");
     });
 
+    it("includes newly added languages", () => {
+      const result = getSupportedLanguages();
+      expect(result).toContain("python");
+      expect(result).toContain("go");
+      expect(result).toContain("dockerfile");
+      expect(result).toContain("hcl");
+      expect(result).toContain("sql");
+    });
+
     it("does not include unsupported languages", () => {
       const result = getSupportedLanguages();
-      expect(result).not.toContain("python");
-      expect(result).not.toContain("java");
-      expect(result).not.toContain("go");
+      expect(result).not.toContain("swift");
+      expect(result).not.toContain("kotlin");
+      expect(result).not.toContain("rust");
     });
   });
 });

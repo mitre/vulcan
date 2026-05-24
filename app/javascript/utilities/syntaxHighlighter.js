@@ -57,7 +57,10 @@ const LANGS = [
   toml,
 ];
 
-const LANG_NAMES = LANGS.map((l) => (Array.isArray(l) ? l[0].name : l.name));
+const LANG_NAMES = LANGS.flatMap((l) => {
+  const grammars = Array.isArray(l) ? l : [l];
+  return grammars.flatMap((g) => [g.name, ...(g.aliases || [])]);
+});
 
 const LANGUAGE_ALIASES = {
   sh: "bash",
