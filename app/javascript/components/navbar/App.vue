@@ -19,6 +19,21 @@
           </b-navbar-nav>
         </div>
 
+        <!-- Dark mode toggle — always visible, even on login page -->
+        <b-navbar-nav v-if="!signed_in" class="ml-auto">
+          <b-nav-item>
+            <b-button
+              size="sm"
+              variant="link"
+              class="text-light p-0"
+              aria-label="Toggle dark mode"
+              @click="toggleColorMode"
+            >
+              <b-icon :icon="isDarkMode ? 'sun' : 'moon'" />
+            </b-button>
+          </b-nav-item>
+        </b-navbar-nav>
+
         <div
           v-if="signed_in"
           class="d-flex flex-column flex-xl-row align-items-xl-center w-100 mt-2 mt-xl-0 right-container"

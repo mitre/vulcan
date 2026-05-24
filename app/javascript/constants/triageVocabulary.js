@@ -14,7 +14,7 @@ export const TRIAGE_LABELS = Object.freeze({
   informational: "Informational",
   needs_clarification: "Needs clarification",
   withdrawn: "Withdrawn",
-  addressed_by: "Addressed by",
+  addressed_by: "Addressed by Other Requirement",
 });
 
 // Database / API key → DISA-matrix term (for tooltips and CSV/OSCAL export)

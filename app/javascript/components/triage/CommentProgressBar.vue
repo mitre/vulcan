@@ -1,6 +1,6 @@
 <template>
   <div v-if="total > 0" class="comment-progress-bar">
-    <div class="progress-pills mb-1">
+    <div class="progress-pills mb-4">
       <span
         data-testid="status-pill"
         class="badge progress-pill progress-pill--all"
@@ -59,7 +59,7 @@
         :title="entry.label + ': ' + entry.count"
       />
     </div>
-    <small data-testid="progress-summary" class="text-muted">
+    <small data-testid="progress-summary" class="text-muted d-block mb-3">
       {{ resolvedCount }} of {{ total }} resolved ({{ resolvedPercent }}%)
     </small>
   </div>
@@ -156,7 +156,8 @@ export default {
 .progress-pills {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .progress-separator {
@@ -166,8 +167,9 @@ export default {
 }
 
 .progress-bar-track {
-  height: 8px;
+  height: 10px;
   background-color: var(--vulcan-bg-light);
+  border-radius: 2px;
 }
 
 .progress-segment {
@@ -191,14 +193,15 @@ export default {
 
 .progress-pill--active {
   box-shadow:
-    0 0 0 2px white,
+    0 0 0 2px var(--vulcan-body-bg, white),
     0 0 0 4px currentColor;
 }
 
 /* "All" pill is the only one without a triage status */
 .progress-pill--all {
-  background-color: var(--vulcan-dark);
-  color: white;
+  background-color: var(--vulcan-component-bg-alt, var(--vulcan-dark));
+  color: var(--vulcan-emphasis-color, white);
+  border: 1px solid var(--vulcan-border-color, transparent);
 }
 
 /* Color from data-triage → intermediate CSS vars (Layer 3) */
