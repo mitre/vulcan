@@ -44,7 +44,7 @@ import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 
 export default {
-  name: "SecurityRequirementsGuidesUpload",
+  name: "BenchmarkUpload",
   mixins: [FormMixinVue, AlertMixinVue],
   props: {
     value: {

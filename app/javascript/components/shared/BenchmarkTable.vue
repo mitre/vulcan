@@ -47,13 +47,16 @@
       <template v-if="type === 'Component'" #cell(component_version)="data">
         {{ formatVersion(data.item) }}
       </template>
+      <template #cell(version)="data">
+        <span class="version-badge">{{ formatVersion(data.item) }}</span>
+      </template>
       <template #cell(severity_counts)="data">
         <SeverityBadges :counts="data.item.severity_counts" />
       </template>
       <template #cell(actions)="data">
         <b-button
           v-if="is_vulcan_admin"
-          class="float-right"
+          class="float-right action-btn"
           variant="danger"
           size="sm"
           data-confirm="Are you sure you want to remove this SRG from Vulcan?"
@@ -62,7 +65,7 @@
           rel="nofollow"
         >
           <b-icon icon="trash" aria-hidden="true" />
-          Remove
+          <span class="action-label">Remove</span>
         </b-button>
       </template>
     </b-table>
@@ -79,10 +82,10 @@
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import { formatDate as formatDateUtil } from "../../utils/dateFormatter";
 import { abbreviateSrgName as abbreviateSrgNameUtil } from "../../utils/srgNameAbbreviator";
-import SeverityBadges from "../shared/SeverityBadges.vue";
+import SeverityBadges from "./SeverityBadges.vue";
 
 export default {
-  name: "SecurityRequirementsGuidesTable",
+  name: "BenchmarkTable",
   components: { SeverityBadges },
   mixins: [FormMixinVue],
   props: {
@@ -185,6 +188,7 @@ export default {
     },
     formatVersion(item) {
       const v = item.version ?? "";
+      if (v.startsWith("V")) return v;
       const r = item.release ?? "";
       return `V${v}R${r}`;
     },
@@ -211,3 +215,29 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.version-badge {
+  display: inline-block;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.25rem;
+  background-color: var(--vulcan-component-bg-alt, #e9ecef);
+  color: var(--vulcan-emphasis-color, #212529);
+  border: 1px solid var(--vulcan-border-color, #dee2e6);
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+}
+
+.action-btn {
+  white-space: nowrap;
+}
+
+@media (max-width: 991px) {
+  .action-label {
+    display: none;
+  }
+}
+</style>

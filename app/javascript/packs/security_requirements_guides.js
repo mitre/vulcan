@@ -1,13 +1,13 @@
 import TurbolinksAdapter from "vue-turbolinks";
 import Vue from "vue";
 import { BootstrapVue, IconsPlugin } from "bootstrap-vue";
-import SecurityRequirementsGuides from "../components/security_requirements_guides/SecurityRequirementsGuides.vue";
+import BenchmarkListPage from "../components/shared/BenchmarkListPage.vue";
 
 Vue.use(TurbolinksAdapter);
 Vue.use(BootstrapVue);
 Vue.use(IconsPlugin);
 
-Vue.component("Securityrequirementsguides", SecurityRequirementsGuides);
+Vue.component("BenchmarkListPage", BenchmarkListPage);
 
 document.addEventListener("turbolinks:load", () => {
   new Vue({

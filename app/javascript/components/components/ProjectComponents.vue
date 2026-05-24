@@ -23,7 +23,7 @@
       <b>Component Count:</b> <span>{{ components.length }}</span>
     </p>
 
-    <SecurityRequirementsGuidesTable :srgs="components" :is_vulcan_admin="false" type="Component" />
+    <BenchmarkTable :srgs="components" :is_vulcan_admin="false" type="Component" />
 
     <!-- Export Modal -->
     <ExportModal
@@ -37,7 +37,7 @@
 
 <script>
 import axios from "axios";
-import SecurityRequirementsGuidesTable from "../security_requirements_guides/SecurityRequirementsGuidesTable.vue";
+import BenchmarkTable from "../shared/BenchmarkTable.vue";
 import BaseCommandBar from "../shared/BaseCommandBar.vue";
 import ExportModal from "../shared/ExportModal.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
@@ -45,7 +45,7 @@ import AlertMixinVue from "../../mixins/AlertMixin.vue";
 export default {
   name: "Projectcomponent",
   components: {
-    SecurityRequirementsGuidesTable,
+    BenchmarkTable,
     BaseCommandBar,
     ExportModal,
   },
