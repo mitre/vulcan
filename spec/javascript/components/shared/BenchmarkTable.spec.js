@@ -270,6 +270,40 @@ describe('SecurityRequirementsGuidesTable', () => {
   })
 
   // ==========================================
+  // PAGINATION ROW COUNT BUG FIX
+  // ==========================================
+  describe('pagination row count', () => {
+    it('rows computed returns filtered count not total count', () => {
+      wrapper = shallowMount(SecurityRequirementsGuidesTable, {
+        localVue,
+        propsData: {
+          srgs: sampleSRGs,
+          is_vulcan_admin: false,
+          type: 'SRG',
+        },
+        stubs: { BTable: true, BPagination: true, BIcon: true },
+      })
+      // Set search to filter down to 1 result
+      wrapper.setData({ search: 'General Purpose' })
+      // rows should reflect filtered count (1), not total (2)
+      expect(wrapper.vm.rows).toBe(1)
+    })
+
+    it('rows returns total count when search is empty', () => {
+      wrapper = shallowMount(SecurityRequirementsGuidesTable, {
+        localVue,
+        propsData: {
+          srgs: sampleSRGs,
+          is_vulcan_admin: false,
+          type: 'SRG',
+        },
+        stubs: { BTable: true, BPagination: true, BIcon: true },
+      })
+      expect(wrapper.vm.rows).toBe(2)
+    })
+  })
+
+  // ==========================================
   // COLUMN VISIBILITY TOGGLE
   // ==========================================
   describe('column visibility toggle', () => {

@@ -203,7 +203,6 @@ export default {
     is_vulcan_admin: {
       type: Boolean,
       required: true,
-      default: false,
     },
   },
   setup() {
@@ -330,9 +329,6 @@ export default {
         localStorage.removeItem("projectTableFilters");
       }
     }
-  },
-  destroyed() {
-    window.removeEventListener("scroll", this.handleScroll);
   },
   created: function () {
     this.projects.forEach((project) => {

@@ -4,17 +4,16 @@ import TableActionButtons from "../../../../app/javascript/components/shared/Tab
 describe("TableActionButtons", () => {
   const stubs = ["b-button", "b-icon"];
 
-  it("renders edit button when onEdit is provided", () => {
+  it("renders edit button when showEdit is true", () => {
     const wrapper = mount(TableActionButtons, {
-      propsData: { itemName: "Test Project" },
-      listeners: { edit: () => {} },
+      propsData: { itemName: "Test Project", showEdit: true },
       stubs,
     });
     const editBtn = wrapper.find('[data-testid="action-edit"]');
     expect(editBtn.exists()).toBe(true);
   });
 
-  it("hides edit button when no edit listener", () => {
+  it("hides edit button by default (showEdit defaults to false)", () => {
     const wrapper = mount(TableActionButtons, {
       propsData: { itemName: "Test" },
       stubs,
@@ -23,20 +22,27 @@ describe("TableActionButtons", () => {
     expect(editBtn.exists()).toBe(false);
   });
 
-  it("renders delete button when onDelete is provided", () => {
+  it("renders delete button by default (showDelete defaults to true)", () => {
     const wrapper = mount(TableActionButtons, {
       propsData: { itemName: "Test" },
-      listeners: { delete: () => {} },
       stubs,
     });
     const deleteBtn = wrapper.find('[data-testid="action-delete"]');
     expect(deleteBtn.exists()).toBe(true);
   });
 
+  it("hides delete button when showDelete is false", () => {
+    const wrapper = mount(TableActionButtons, {
+      propsData: { itemName: "Test", showDelete: false },
+      stubs,
+    });
+    const deleteBtn = wrapper.find('[data-testid="action-delete"]');
+    expect(deleteBtn.exists()).toBe(false);
+  });
+
   it("uses outline-danger for delete and outline-secondary for edit", () => {
     const wrapper = mount(TableActionButtons, {
-      propsData: { itemName: "Test" },
-      listeners: { edit: () => {}, delete: () => {} },
+      propsData: { itemName: "Test", showEdit: true, showDelete: true },
       stubs,
     });
     const editBtn = wrapper.find('[data-testid="action-edit"]');
@@ -47,8 +53,7 @@ describe("TableActionButtons", () => {
 
   it("sets aria-label with item name", () => {
     const wrapper = mount(TableActionButtons, {
-      propsData: { itemName: "My Project" },
-      listeners: { edit: () => {}, delete: () => {} },
+      propsData: { itemName: "My Project", showEdit: true, showDelete: true },
       stubs,
     });
     expect(wrapper.find('[data-testid="action-edit"]').attributes("aria-label")).toBe("Edit My Project");
@@ -57,8 +62,7 @@ describe("TableActionButtons", () => {
 
   it("disables buttons when disabled prop is true", () => {
     const wrapper = mount(TableActionButtons, {
-      propsData: { itemName: "Test", disabled: true },
-      listeners: { edit: () => {}, delete: () => {} },
+      propsData: { itemName: "Test", disabled: true, showEdit: true, showDelete: true },
       stubs,
     });
     expect(wrapper.find('[data-testid="action-edit"]').attributes("disabled")).toBe("true");
@@ -67,8 +71,7 @@ describe("TableActionButtons", () => {
 
   it("all buttons use size sm", () => {
     const wrapper = mount(TableActionButtons, {
-      propsData: { itemName: "Test" },
-      listeners: { edit: () => {}, delete: () => {} },
+      propsData: { itemName: "Test", showEdit: true, showDelete: true },
       stubs,
     });
     expect(wrapper.find('[data-testid="action-edit"]').attributes("size")).toBe("sm");

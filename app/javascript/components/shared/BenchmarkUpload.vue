@@ -53,7 +53,7 @@ export default {
     },
     post_path: {
       type: String,
-      required: false,
+      default: null,
     },
   },
   data: function () {

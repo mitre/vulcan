@@ -7,7 +7,7 @@
     <div class="filter-group-body">
       <div v-for="item in items" :key="item.key" class="filter-item">
         <b-form-checkbox
-          :id="`filter-${_uid}-${item.key}`"
+          :id="`filter-${instanceId}-${item.key}`"
           :checked="item.checked"
           :disabled="disabled"
           switch
@@ -38,6 +38,11 @@ export default {
       type: Boolean,
       default: false,
     },
+  },
+  data() {
+    return {
+      instanceId: Math.random().toString(36).slice(2, 9),
+    };
   },
   methods: {
     onToggleChange(key, checked) {

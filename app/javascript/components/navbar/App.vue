@@ -154,24 +154,23 @@ export default {
     },
     users_path: {
       type: String,
-      required: false,
+      default: null,
     },
     profile_path: {
       type: String,
-      required: false,
+      default: null,
     },
     current_user: {
       type: Object,
-      required: false,
       default: null,
     },
     sign_out_path: {
       type: String,
-      required: false,
+      default: null,
     },
     access_requests: {
       type: Array,
-      required: false,
+      default: null,
       default: () => [],
     },
     locked_users: {
@@ -250,14 +249,15 @@ export default {
     fetchLatestRelease() {
       const owner = "mitre";
       const repo = "vulcan";
-      // Make the API request to fetch the latest release
+      // Uses fetch() intentionally — axios sends X-CSRF-Token globally (FormMixin),
+      // which GitHub's CORS policy rejects. fetch() has no global interceptors.
       fetch(`https://api.github.com/repos/${owner}/${repo}/releases/latest`)
         .then((response) => response.json())
         .then((data) => {
           this.latestRelease = data.tag_name.substring(1);
           this.updateAvailable = this.checkUpdateAvailable();
         })
-        .catch((error) => {
+        .catch(() => {
           this.latestRelease = "";
         });
     },

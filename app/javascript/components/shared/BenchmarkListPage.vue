@@ -117,7 +117,7 @@ export default {
     },
   },
   mounted() {
-    this.items = this.givenItems;
+    this.items = [...this.givenItems];
   },
   methods: {
     handleExport({ type, componentIds, columns }) {

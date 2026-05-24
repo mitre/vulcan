@@ -90,6 +90,7 @@ import SeverityBadges from "./SeverityBadges.vue";
 import ConfirmDeleteModal from "./ConfirmDeleteModal.vue";
 import TableActionButtons from "./TableActionButtons.vue";
 import { useDeleteConfirmation } from "../../composables/useDeleteConfirmation";
+import { useTableSearch } from "../../composables/useTableSearch";
 
 export default {
   name: "BenchmarkTable",
@@ -109,7 +110,7 @@ export default {
       default: "SRG",
     },
   },
-  setup() {
+  setup(props) {
     const {
       showModal: showDeleteModal,
       itemToDelete,
@@ -119,6 +120,18 @@ export default {
       confirm: confirmDeleteAction,
     } = useDeleteConfirmation();
 
+    const filterFn = (item, q) => {
+      if (props.type === "Component") {
+        return (item.name || "").toLowerCase().includes(q);
+      }
+      return (item.title || "").toLowerCase().includes(q);
+    };
+
+    const { search, perPage, currentPage, filteredItems, totalRows } = useTableSearch(
+      () => props.srgs,
+      filterFn,
+    );
+
     return {
       showDeleteModal,
       itemToDelete,
@@ -126,20 +139,19 @@ export default {
       openDeleteModal,
       cancelDelete,
       confirmDeleteAction,
+      search,
+      perPage,
+      currentPage,
+      searchedCollection: filteredItems,
+      rows: totalRows,
     };
   },
   data: function () {
-    const search = "";
-    const perPage = 10;
-    const currentPage = 1;
     const fields = this.buildFields();
     const allColumnKeys = fields.map((f) => f.key);
     return {
       fields,
-      perPage,
-      currentPage,
-      search,
-      visibleColumns: [...allColumnKeys], // All columns visible by default
+      visibleColumns: [...allColumnKeys],
       allColumnKeys,
     };
   },
@@ -148,25 +160,9 @@ export default {
       if (this.type === "Component") return "Search components by name...";
       return `Search ${this.type === "STIG" ? "STIG" : "SRG"} by title...`;
     },
-    searchedCollection: function () {
-      let downcaseSearch = this.search.toLowerCase();
-      if (this.type === "Component") {
-        return this.srgs.filter((item) => (item.name || "").toLowerCase().includes(downcaseSearch));
-      }
-      return this.srgs.filter((srg) => (srg.title || "").toLowerCase().includes(downcaseSearch));
-    },
-    // Used by b-pagination to know how many total rows there are
-    rows: function () {
-      return this.srgs.length;
-    },
     // Filter fields based on visibility
     filteredFields() {
       return this.fields.filter((f) => this.visibleColumns.includes(f.key));
-    },
-  },
-  watch: {
-    refresh: function () {
-      this.loadSrgs();
     },
   },
   methods: {

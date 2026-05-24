@@ -67,6 +67,7 @@
       <template #cell(actions)="data">
         <TableActionButtons
           :item-name="data.item.name"
+          :show-edit="true"
           @edit="$emit('edit-user', data.item)"
           @delete="confirmDelete(data.item)"
         />
@@ -89,6 +90,7 @@
       :is-deleting="isDeleting"
       warning-message="This action cannot be undone. All user data will be permanently removed."
       @confirm="handleDelete"
+      @cancel="cancelDelete"
     />
   </div>
 </template>
@@ -99,6 +101,8 @@ import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import ConfirmDeleteModal from "../shared/ConfirmDeleteModal.vue";
 import TableActionButtons from "../shared/TableActionButtons.vue";
+import { useDeleteConfirmation } from "../../composables/useDeleteConfirmation";
+import { useTableSearch } from "../../composables/useTableSearch";
 
 export default {
   name: "UsersTable",
@@ -114,14 +118,38 @@ export default {
       default: false,
     },
   },
+  setup(props) {
+    const {
+      showModal: showDeleteModal,
+      itemToDelete: userToDelete,
+      isDeleting,
+      openModal: openDeleteModal,
+      cancel: cancelDelete,
+      confirm: confirmDeleteAction,
+    } = useDeleteConfirmation();
+
+    const { search, perPage, currentPage, filteredItems, totalRows } = useTableSearch(
+      () => props.users,
+      (user, q) =>
+        (user.email || "").toLowerCase().includes(q) || (user.name || "").toLowerCase().includes(q),
+    );
+
+    return {
+      showDeleteModal,
+      userToDelete,
+      isDeleting,
+      openDeleteModal,
+      cancelDelete,
+      confirmDeleteAction,
+      search,
+      perPage,
+      currentPage,
+      searchedUsers: filteredItems,
+      rows: totalRows,
+    };
+  },
   data: function () {
     return {
-      search: "",
-      perPage: 10,
-      currentPage: 1,
-      showDeleteModal: false,
-      userToDelete: null,
-      isDeleting: false,
       fields: [
         { key: "name", label: "User", sortable: true },
         { key: "provider", label: "Type", sortable: true },
@@ -132,17 +160,6 @@ export default {
     };
   },
   computed: {
-    searchedUsers: function () {
-      let downcaseSearch = this.search.toLowerCase();
-      return this.users.filter(
-        (user) =>
-          (user.email || "").toLowerCase().includes(downcaseSearch) ||
-          (user.name || "").toLowerCase().includes(downcaseSearch),
-      );
-    },
-    rows: function () {
-      return this.searchedUsers.length;
-    },
     userCount: function () {
       return this.users.length;
     },
@@ -161,23 +178,17 @@ export default {
       });
     },
     confirmDelete(user) {
-      this.userToDelete = user;
-      this.showDeleteModal = true;
+      this.openDeleteModal(user);
     },
     async handleDelete() {
-      if (!this.userToDelete) return;
-      this.isDeleting = true;
-
-      try {
-        const response = await axios.delete(`/users/${this.userToDelete.id}`);
+      const { success, error } = await this.confirmDeleteAction(async (user) => {
+        const response = await axios.delete(`/users/${user.id}`);
         this.alertOrNotifyResponse(response);
-        this.$emit("user-deleted", this.userToDelete);
-      } catch (error) {
+        this.$emit("user-deleted", user);
+      });
+
+      if (error) {
         this.alertOrNotifyResponse(error);
-      } finally {
-        this.isDeleting = false;
-        this.showDeleteModal = false;
-        this.userToDelete = null;
       }
     },
   },

@@ -156,7 +156,9 @@ export default {
         if (token !== this.fetchToken) return;
         this.replies = data.rows || [];
         this.loaded = true;
-      } catch {
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error("[CommentThread] Failed to load replies:", err);
         if (token !== this.fetchToken) return;
         this.loadError = true;
       } finally {

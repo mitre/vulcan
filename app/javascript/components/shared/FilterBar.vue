@@ -6,7 +6,7 @@
       title="Status"
       :items="statusItems"
       :disabled="disabledStatus"
-      @update:items="onStatusUpdate"
+      @update:items="onGroupUpdate"
       @reset="onStatusReset"
     />
 
@@ -16,7 +16,7 @@
       title="Display"
       :items="displayItems"
       :disabled="disabledDisplay"
-      @update:items="onDisplayUpdate"
+      @update:items="onGroupUpdate"
       @reset="onDisplayReset"
     />
 
@@ -26,7 +26,7 @@
       title="Review"
       :items="reviewItems"
       :disabled="disabledReview"
-      @update:items="onReviewUpdate"
+      @update:items="onGroupUpdate"
       @reset="onReviewReset"
     />
   </div>
@@ -155,21 +155,7 @@ export default {
       const newFilters = { ...this.filters, ...updates };
       this.$emit("update:filters", newFilters);
     },
-    onStatusUpdate(items) {
-      const updates = {};
-      items.forEach((item) => {
-        updates[item.key] = item.checked;
-      });
-      this.emitUpdatedFilters(updates);
-    },
-    onReviewUpdate(items) {
-      const updates = {};
-      items.forEach((item) => {
-        updates[item.key] = item.checked;
-      });
-      this.emitUpdatedFilters(updates);
-    },
-    onDisplayUpdate(items) {
+    onGroupUpdate(items) {
       const updates = {};
       items.forEach((item) => {
         updates[item.key] = item.checked;

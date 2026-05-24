@@ -1,7 +1,7 @@
 <template>
   <div class="d-inline-flex align-items-center" style="gap: 0.35rem">
     <b-button
-      v-if="hasEditListener"
+      v-if="showEdit"
       v-b-tooltip.hover="disabled ? disabledTooltip : 'Edit'"
       data-testid="action-edit"
       size="sm"
@@ -14,7 +14,7 @@
       <b-icon icon="pencil" aria-hidden="true" />
     </b-button>
     <b-button
-      v-if="hasDeleteListener"
+      v-if="showDelete"
       v-b-tooltip.hover="disabled ? disabledTooltip : 'Remove'"
       data-testid="action-delete"
       size="sm"
@@ -36,14 +36,8 @@ export default {
     itemName: { type: String, default: "" },
     disabled: { type: Boolean, default: false },
     disabledTooltip: { type: String, default: "" },
-  },
-  computed: {
-    hasEditListener() {
-      return !!(this.$listeners && this.$listeners.edit);
-    },
-    hasDeleteListener() {
-      return !!(this.$listeners && this.$listeners.delete);
-    },
+    showEdit: { type: Boolean, default: false },
+    showDelete: { type: Boolean, default: true },
   },
 };
 </script>

@@ -15,12 +15,12 @@ describe("BenchmarkListPage", () => {
     expect(wrapper.find("b-breadcrumb-stub").exists()).toBe(true);
   });
 
-  it("renders breadcrumb with STIGs for type=STIG", () => {
+  it("renders STIG Count label for type=STIG", () => {
     const wrapper = mount(BenchmarkListPage, {
       propsData: { type: "STIG", givenItems: mockItems, isAdmin: false },
       stubs: ["BaseCommandBar", "BenchmarkTable", "BenchmarkUpload", "ExportModal", "b-breadcrumb", "b-badge"],
     });
-    expect(wrapper.vm.pluralLabel).toBe("STIGs");
+    expect(wrapper.text()).toContain("STIG Count:");
   });
 
   it("shows upload button only for admins", () => {
@@ -51,12 +51,12 @@ describe("BenchmarkListPage", () => {
     expect(table.props("type")).toBe("STIG");
   });
 
-  it("derives apiPath from type", () => {
+  it("renders SRG Count label for type=SRG", () => {
     const wrapper = mount(BenchmarkListPage, {
-      propsData: { type: "SRG", givenItems: [], isAdmin: false },
+      propsData: { type: "SRG", givenItems: mockItems, isAdmin: false },
       stubs: ["BaseCommandBar", "BenchmarkTable", "BenchmarkUpload", "ExportModal", "b-breadcrumb", "b-badge"],
     });
-    expect(wrapper.vm.apiPath).toBe("/srgs");
+    expect(wrapper.text()).toContain("SRG Count:");
   });
 
   it("derives apiPath for STIG type", () => {
