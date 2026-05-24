@@ -105,12 +105,12 @@ RSpec.describe 'Dark mode CSS foundation' do
       expect(dark_block).to include('.editor-toolbar')
     end
 
-    it 'has Monaco theme integration via colorMode' do
+    it 'Monaco reads theme from data-bs-theme attribute' do
       inspec_source = Rails.root.join(
         'app/javascript/components/rules/InspecControlEditor.vue'
       ).read
-      expect(inspec_source).to include('colorMode'),
-                               'InspecControlEditor should import colorMode'
+      expect(inspec_source).to include('data-bs-theme'),
+                               'InspecControlEditor should read data-bs-theme for theme sync'
     end
   end
 end

@@ -46,7 +46,6 @@
 
 <script>
 import MonacoEditor from "vue-monaco";
-import { getPreferredTheme } from "../../utils/colorMode";
 
 export default {
   name: "InspecControlEditor",
@@ -98,12 +97,33 @@ export default {
     },
   },
   mounted: function () {
-    // Load saved theme
+    // Sync Monaco theme with dark mode (data-bs-theme attribute)
+    const isDark = document.documentElement.getAttribute("data-bs-theme") === "dark";
     const savedTheme = localStorage.getItem("monacoEditorTheme");
     if (savedTheme) {
       this.monacoEditorOptions.theme = savedTheme;
-      this.editorKey += 1;
+    } else if (isDark) {
+      this.monacoEditorOptions.theme = "vs-dark";
     }
+    this.editorKey += 1;
+
+    // Watch for dark mode toggle changes
+    this._themeObserver = new MutationObserver(() => {
+      const dark = document.documentElement.getAttribute("data-bs-theme") === "dark";
+      const newTheme = dark ? "vs-dark" : "vs";
+      if (this.monacoEditorOptions.theme !== newTheme) {
+        this.monacoEditorOptions.theme = newTheme;
+        this.editorKey += 1;
+        localStorage.removeItem("monacoEditorTheme");
+      }
+    });
+    this._themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-bs-theme"],
+    });
+  },
+  beforeDestroy: function () {
+    if (this._themeObserver) this._themeObserver.disconnect();
   },
   methods: {
     copyText: function () {
