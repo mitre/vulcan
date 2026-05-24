@@ -148,6 +148,112 @@
   // Apply body colors
   color: var(--vulcan-body-color);
   background-color: var(--vulcan-body-bg);
+
+  // ── fad.2: Component backgrounds ─────────────────────────────────
+  .card,
+  .list-group-item,
+  .modal-content,
+  .popover,
+  .dropdown-menu {
+    background-color: var(--vulcan-component-bg) !important;
+    color: var(--vulcan-body-color) !important;
+  }
+
+  .card {
+    border-color: var(--vulcan-border-color);
+  }
+
+  .modal-content {
+    border-color: var(--vulcan-border-color);
+  }
+
+  .dropdown-menu {
+    border-color: var(--vulcan-border-color);
+  }
+
+  .dropdown-item {
+    color: var(--vulcan-body-color);
+
+    &:hover,
+    &:focus {
+      background-color: var(--vulcan-component-bg-alt);
+      color: var(--vulcan-emphasis-color);
+    }
+  }
+
+  .dropdown-divider {
+    border-color: var(--vulcan-border-color);
+  }
+
+  .list-group-item {
+    border-color: var(--vulcan-border-color);
+  }
+
+  .popover-header {
+    background-color: var(--vulcan-component-bg-alt);
+    border-color: var(--vulcan-border-color);
+  }
+
+  .popover-body {
+    color: var(--vulcan-body-color);
+  }
+
+  .tooltip-inner {
+    background-color: var(--vulcan-emphasis-color);
+  }
+
+  // bg-light and bg-white utilities
+  .bg-light {
+    background-color: var(--vulcan-component-bg-alt) !important;
+  }
+
+  .bg-white {
+    background-color: var(--vulcan-component-bg) !important;
+  }
+
+  // Text utilities
+  .text-dark {
+    color: var(--vulcan-emphasis-color) !important;
+  }
+
+  .text-body {
+    color: var(--vulcan-body-color) !important;
+  }
+
+  // Border utility
+  .border {
+    border-color: var(--vulcan-border-color) !important;
+  }
+
+  // Alert variants — darken background
+  .alert-warning {
+    background-color: #{rgba(mix(white, $warning, 20%), 0.15)};
+    border-color: #{rgba(mix(white, $warning, 20%), 0.25)};
+    color: #{mix(white, $warning, 40%)};
+  }
+
+  .alert-danger {
+    background-color: #{rgba(mix(white, $danger, 20%), 0.15)};
+    border-color: #{rgba(mix(white, $danger, 20%), 0.25)};
+    color: #{mix(white, $danger, 40%)};
+  }
+
+  .alert-success {
+    background-color: #{rgba(mix(white, $success, 20%), 0.15)};
+    border-color: #{rgba(mix(white, $success, 20%), 0.25)};
+    color: #{mix(white, $success, 40%)};
+  }
+
+  .alert-info {
+    background-color: #{rgba(mix(white, $info, 20%), 0.15)};
+    border-color: #{rgba(mix(white, $info, 20%), 0.25)};
+    color: #{mix(white, $info, 40%)};
+  }
+
+  // Links
+  a:not(.btn):not(.nav-link):not(.dropdown-item):not(.navbar-brand) {
+    color: var(--vulcan-link-color);
+  }
 }
 
 // OS preference fallback (no JS needed)
