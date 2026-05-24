@@ -46,6 +46,7 @@
 
 <script>
 import MonacoEditor from "vue-monaco";
+import { getPreferredTheme } from "../../utils/colorMode";
 
 export default {
   name: "InspecControlEditor",

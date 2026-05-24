@@ -395,6 +395,69 @@
   hr {
     border-color: var(--vulcan-border-color);
   }
+
+  // ── fad.5: EasyMDE + Monaco editor dark themes ───────────────────
+  // EasyMDE (CodeMirror 5 underneath)
+  .CodeMirror {
+    background-color: var(--vulcan-component-bg) !important;
+    color: var(--vulcan-body-color) !important;
+    border-color: var(--vulcan-border-color) !important;
+  }
+
+  .CodeMirror-cursor {
+    border-left-color: var(--vulcan-body-color) !important;
+  }
+
+  .CodeMirror-gutters {
+    background-color: var(--vulcan-component-bg-alt) !important;
+    border-color: var(--vulcan-border-color) !important;
+  }
+
+  .CodeMirror-linenumber {
+    color: var(--vulcan-text-muted) !important;
+  }
+
+  .CodeMirror-selected {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .editor-toolbar {
+    background-color: var(--vulcan-component-bg-alt) !important;
+    border-color: var(--vulcan-border-color) !important;
+
+    a {
+      color: var(--vulcan-body-color) !important;
+
+      &:hover,
+      &.active {
+        background-color: var(--vulcan-hover-bg) !important;
+      }
+    }
+
+    &.disabled-for-preview a:not(.no-disable) {
+      opacity: 0.4;
+    }
+  }
+
+  .editor-toolbar.fullscreen,
+  .CodeMirror-fullscreen {
+    background-color: var(--vulcan-body-bg) !important;
+  }
+
+  // EasyMDE preview
+  .editor-preview,
+  .editor-preview-side {
+    background-color: var(--vulcan-component-bg) !important;
+    color: var(--vulcan-body-color) !important;
+  }
+
+  // EasyMDE status bar
+  .editor-statusbar {
+    color: var(--vulcan-text-muted);
+  }
+
+  // Monaco — theme auto-switches via InspecControlEditor
+  // (no CSS overrides needed; Monaco's vs-dark theme is self-contained)
 }
 
 // OS preference fallback (no JS needed)
