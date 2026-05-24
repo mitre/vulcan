@@ -254,6 +254,88 @@
   a:not(.btn):not(.nav-link):not(.dropdown-item):not(.navbar-brand) {
     color: var(--vulcan-link-color);
   }
+
+  // ── fad.3: Form controls, tables, input groups ───────────────────
+  .form-control,
+  .custom-select {
+    background-color: var(--vulcan-component-bg) !important;
+    color: var(--vulcan-body-color) !important;
+    border-color: var(--vulcan-border-color) !important;
+
+    &::placeholder {
+      color: var(--vulcan-text-muted);
+    }
+
+    &:focus {
+      background-color: var(--vulcan-component-bg) !important;
+      color: var(--vulcan-body-color) !important;
+      border-color: var(--vulcan-link-color);
+    }
+
+    &:disabled,
+    &[readonly] {
+      background-color: var(--vulcan-component-bg-alt) !important;
+      color: var(--vulcan-text-muted) !important;
+    }
+  }
+
+  .input-group-text {
+    background-color: var(--vulcan-component-bg-alt);
+    color: var(--vulcan-body-color);
+    border-color: var(--vulcan-border-color);
+  }
+
+  .table {
+    color: var(--vulcan-body-color);
+
+    th,
+    td {
+      border-color: var(--vulcan-border-color);
+    }
+
+    thead th {
+      border-color: var(--vulcan-border-color);
+      color: var(--vulcan-emphasis-color);
+    }
+  }
+
+  .table-hover tbody tr:hover {
+    color: var(--vulcan-emphasis-color);
+    background-color: var(--vulcan-hover-bg);
+  }
+
+  .table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(255, 255, 255, 0.03);
+  }
+
+  // b-table Bootstrap-Vue specific
+  .b-table-sticky-header {
+    background-color: var(--vulcan-component-bg);
+  }
+
+  // Pagination
+  .page-link {
+    background-color: var(--vulcan-component-bg);
+    border-color: var(--vulcan-border-color);
+    color: var(--vulcan-link-color);
+  }
+
+  .page-item.active .page-link {
+    background-color: var(--vulcan-primary);
+    border-color: var(--vulcan-primary);
+  }
+
+  .page-item.disabled .page-link {
+    background-color: var(--vulcan-component-bg-alt);
+    border-color: var(--vulcan-border-color);
+    color: var(--vulcan-text-muted);
+  }
+
+  // Custom checkbox/radio/switch
+  .custom-control-label::before {
+    background-color: var(--vulcan-component-bg);
+    border-color: var(--vulcan-border-color);
+  }
 }
 
 // OS preference fallback (no JS needed)
