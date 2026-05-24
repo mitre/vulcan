@@ -31,25 +31,25 @@ RSpec.describe 'Dark mode compiled CSS verification' do
                                                                                      'Missing color-scheme: dark in [data-bs-theme="dark"] block'
     end
 
-    it 'overrides --vulcan-body-bg to a dark value' do
+    it 'overrides --vulcan-body-bg to #212529 (gray-900)' do
       decls = declarations_for('[data-bs-theme="dark"]')
       bg_decl = decls.find { |d| d.include?('--vulcan-body-bg') }
-      expect(bg_decl).to be_present, 'Missing --vulcan-body-bg override in dark mode'
-      expect(bg_decl).not_to include('#fff'), '--vulcan-body-bg should not be white in dark mode'
+      expect(bg_decl).to include('#212529'),
+                         "--vulcan-body-bg should be #212529 (gray-900) in dark mode, got: #{bg_decl}"
     end
 
-    it 'overrides body background-color in dark mode' do
+    it 'overrides body background-color to var(--vulcan-body-bg) in dark mode' do
       decls = declarations_for('[data-bs-theme="dark"] body')
       bg = decls.find { |d| d.include?('background-color') }
-      expect(bg).to be_present,
-                    'Missing [data-bs-theme="dark"] body { background-color } — Bootstrap 4 sets body bg to #fff which paints over html'
+      expect(bg).to include('var(--vulcan-body-bg)'),
+                    "body background-color should reference var(--vulcan-body-bg), got: #{bg}"
     end
 
-    it 'overrides body color in dark mode' do
+    it 'overrides body color to var(--vulcan-body-color) in dark mode' do
       decls = declarations_for('[data-bs-theme="dark"] body')
       color = decls.find { |d| d.start_with?('color:') }
-      expect(color).to be_present,
-                       'Missing [data-bs-theme="dark"] body { color } — Bootstrap 4 sets body color to dark text'
+      expect(color).to include('var(--vulcan-body-color)'),
+                       "body color should reference var(--vulcan-body-color), got: #{color}"
     end
   end
 
@@ -57,15 +57,19 @@ RSpec.describe 'Dark mode compiled CSS verification' do
 
   describe 'outline button colors (fad.8.2)' do
     %w[secondary primary success danger warning info].each do |variant|
-      it "has dark override for .btn-outline-#{variant}" do
+      it "has dark override for .btn-outline-#{variant} with actual color value" do
         selector = "[data-bs-theme=\"dark\"] .btn-outline-#{variant}"
         decls = declarations_for(selector)
         color_decl = decls.find { |d| d.start_with?('color:') }
         border_decl = decls.find { |d| d.include?('border-color') }
-        expect(color_decl).to be_present,
-                              "Missing color override for #{selector} — outline text is invisible on dark bg"
-        expect(border_decl).to be_present,
-                               "Missing border-color override for #{selector} — outline border invisible on dark bg"
+        expect(color_decl).not_to be_nil,
+                                  "Missing color override for #{selector}"
+        expect(color_decl).not_to include('inherit'),
+                                  "#{selector} color should not be inherit (invisible on dark bg), got: #{color_decl}"
+        expect(border_decl).not_to be_nil,
+                                   "Missing border-color override for #{selector}"
+        expect(border_decl).not_to include('inherit'),
+                                   "#{selector} border-color should not be inherit, got: #{border_decl}"
       end
     end
   end
@@ -73,18 +77,22 @@ RSpec.describe 'Dark mode compiled CSS verification' do
   # ── fad.8.3: Navbar link opacity + table header bg ─────────────────
 
   describe 'navbar + table header (fad.8.3)' do
-    it 'overrides .navbar-dark .nav-link color for better legibility' do
+    it 'overrides .navbar-dark .nav-link color with rgba opacity value' do
       decls = declarations_for('[data-bs-theme="dark"] .navbar-dark .nav-link')
       color_decl = decls.find { |d| d.start_with?('color:') }
-      expect(color_decl).to be_present,
-                            'Missing .navbar-dark .nav-link color override — 50% opacity too dim'
+      expect(color_decl).not_to be_nil,
+                                'Missing .navbar-dark .nav-link color override'
+      expect(color_decl).to match(/rgba|#[0-9a-f]/i),
+                            "nav-link color should be rgba or hex, got: #{color_decl}"
     end
 
-    it 'adds background to thead th for row differentiation' do
+    it 'adds dark background to thead th (not white)' do
       decls = declarations_for('[data-bs-theme="dark"] thead th')
       bg_decl = decls.find { |d| d.include?('background-color') }
-      expect(bg_decl).to be_present,
-                         'Missing thead th background-color — headers indistinguishable from body rows'
+      expect(bg_decl).not_to be_nil,
+                             'Missing thead th background-color'
+      expect(bg_decl).not_to include('#fff'),
+                             "thead th background should not be white in dark mode, got: #{bg_decl}"
     end
   end
 
@@ -104,11 +112,13 @@ RSpec.describe 'Dark mode compiled CSS verification' do
   # ── fad.8.5: Sidebar surface differentiation ────────────────────────
 
   describe 'sidebar differentiation (fad.8.5)' do
-    it 'gives .left-sidebar-column a background in dark mode' do
+    it 'gives .left-sidebar-column a dark background (not white)' do
       decls = declarations_for('[data-bs-theme="dark"] .left-sidebar-column')
       bg_decl = decls.find { |d| d.include?('background-color') }
-      expect(bg_decl).to be_present,
-                         'Missing .left-sidebar-column background — sidebar indistinguishable from main content'
+      expect(bg_decl).not_to be_nil,
+                             'Missing .left-sidebar-column background-color'
+      expect(bg_decl).not_to include('#fff'),
+                             "Sidebar should not be white in dark mode, got: #{bg_decl}"
     end
   end
 
@@ -116,11 +126,13 @@ RSpec.describe 'Dark mode compiled CSS verification' do
 
   describe 'semantic highlight variables (fad.8.6)' do
     %w[highlight-selected highlight-added highlight-removed highlight-error highlight-success].each do |name|
-      it "defines --vulcan-#{name} in dark mode" do
+      it "defines --vulcan-#{name} with rgba value in dark mode" do
         decls = declarations_for('[data-bs-theme="dark"]')
         var_decl = decls.find { |d| d.include?("--vulcan-#{name}") }
-        expect(var_decl).to be_present,
-                            "Missing --vulcan-#{name} in dark mode — hardcoded highlight colors won't adapt"
+        expect(var_decl).not_to be_nil,
+                                "Missing --vulcan-#{name} in dark mode"
+        expect(var_decl).to match(/rgba/i),
+                            "--vulcan-#{name} should use rgba for transparency, got: #{var_decl}"
       end
     end
   end
@@ -151,11 +163,13 @@ RSpec.describe 'Dark mode compiled CSS verification' do
   # ── fad.3: Form controls + tables ───────────────────────────────────
 
   describe 'form controls and tables (fad.3)' do
-    it 'has dark override for .form-control' do
+    it 'has dark override for .form-control with non-white background' do
       decls = declarations_for('[data-bs-theme="dark"] .form-control')
       bg = decls.find { |d| d.include?('background-color') }
-      expect(bg).to be_present, 'Missing .form-control background-color dark override'
-      expect(bg).not_to include('#fff'), '.form-control should not be white in dark mode'
+      expect(bg).not_to be_nil, 'Missing .form-control background-color dark override'
+      expect(bg).not_to include('#fff'), ".form-control should not be white in dark mode, got: #{bg}"
+      expect(bg).to match(/var\(--vulcan|#[0-9a-f]{3,8}/i),
+                    ".form-control bg should use CSS var or hex, got: #{bg}"
     end
 
     it 'has dark override for .table color' do
@@ -187,10 +201,11 @@ RSpec.describe 'Dark mode compiled CSS verification' do
   # ── fad.5: Editors ──────────────────────────────────────────────────
 
   describe 'editors (fad.5)' do
-    it 'has dark override for .CodeMirror' do
+    it 'has dark override for .CodeMirror with non-white background' do
       decls = declarations_for('[data-bs-theme="dark"] .CodeMirror')
       bg = decls.find { |d| d.include?('background-color') }
-      expect(bg).to be_present, 'Missing .CodeMirror background-color dark override'
+      expect(bg).not_to be_nil, 'Missing .CodeMirror background-color dark override'
+      expect(bg).not_to include('#fff'), ".CodeMirror should not be white in dark mode, got: #{bg}"
     end
 
     it 'has dark override for .editor-toolbar' do
@@ -227,6 +242,28 @@ RSpec.describe 'Dark mode compiled CSS verification' do
       end
       expect(offenders).to be_empty,
                            "Hardcoded white backgrounds in scoped styles:\n#{offenders.join("\n")}"
+    end
+  end
+
+  # ── 678.3: Variables must be defined in :root, not only in dark block ──
+
+  describe ':root variable completeness (678.3)' do
+    it '--vulcan-text is defined in :root' do
+      decls = declarations_for(':root')
+      expect(decls.any? { |d| d.include?('--vulcan-text') && d.exclude?('--vulcan-text-muted') }).to be(true),
+                                                                                                     '--vulcan-text must be defined in :root for light mode (not only in dark block)'
+    end
+
+    it '--vulcan-bg-light is defined in :root' do
+      decls = declarations_for(':root')
+      expect(decls.any? { |d| d.include?('--vulcan-bg-light') }).to be(true),
+                                                                    '--vulcan-bg-light must be defined in :root for light mode'
+    end
+
+    it '--vulcan-border-light is defined in :root' do
+      decls = declarations_for(':root')
+      expect(decls.any? { |d| d.include?('--vulcan-border-light') }).to be(true),
+                                                                        '--vulcan-border-light must be defined in :root for light mode'
     end
   end
 end

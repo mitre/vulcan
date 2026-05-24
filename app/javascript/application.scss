@@ -72,6 +72,9 @@
   // Body-level semantic tokens (Bootstrap 5 pattern)
   --vulcan-body-bg: #{$body-bg};
   --vulcan-body-color: #{$body-color};
+  --vulcan-text: #{$body-color};
+  --vulcan-bg-light: #{$gray-100};
+  --vulcan-border-light: #{$gray-200};
   --vulcan-border-color: #{$gray-300};
   --vulcan-link-color: #{$link-color};
   --vulcan-component-bg: #fff;
@@ -497,10 +500,6 @@
     border-color: var(--vulcan-border-color);
   }
 
-  .multiselect__option--highlight {
-    background: var(--vulcan-primary);
-  }
-
   .multiselect__option {
     color: var(--vulcan-body-color);
   }
@@ -785,7 +784,6 @@
 .unselectable {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
-  -khtml-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
