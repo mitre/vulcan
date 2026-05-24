@@ -263,6 +263,7 @@
 </template>
 <script>
 import axios from "axios";
+import DOMPurify from "dompurify";
 import VueMultiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
 export default {
@@ -463,7 +464,7 @@ export default {
 
     formatAndHighlightSearchWord: function (text) {
       if (!text) return;
-      let formattedText = this.escapeHtml(text);
+      let formattedText = DOMPurify.sanitize(text, { ALLOWED_TAGS: [] });
       if (this.keywordList.length) {
         const words = this.keywordList.map((w) => w.toLowerCase());
         for (let word of words) {
@@ -473,16 +474,10 @@ export default {
           });
         }
       }
-      return formattedText.replace(/\n/g, "<br />");
-    },
-    escapeHtml: function (text) {
-      if (!text) return;
-      return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+      return DOMPurify.sanitize(formattedText.replace(/\n/g, "<br />"), {
+        ALLOWED_TAGS: ["mark", "br"],
+        ALLOWED_ATTR: ["class"],
+      });
     },
     copyCheckContentToRule: function (root, checkContent) {
       const check = this.rule.checks_attributes[0];

@@ -4,9 +4,10 @@
     <!-- Read-only preview (shown when disabled) -->
     <div
       v-if="disabled"
-      class="markdown-preview form-control bg-light"
+      class="markdown-preview form-control"
+      style="background-color: var(--vulcan-component-bg, #fff)"
       :class="containerClass"
-      :style="previewStyle"
+      :style="[previewStyle, plainText ? { whiteSpace: 'pre-wrap' } : {}]"
       v-html="renderedContent"
     />
 
@@ -20,6 +21,7 @@
 <script>
 import EasyMDE from "easymde";
 import "easymde/dist/easymde.min.css";
+import "../../styles/shiki-preview.css";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import { highlightCode } from "../../utilities/syntaxHighlighter";
@@ -48,6 +50,10 @@ export default {
       default: "",
     },
     disabled: {
+      type: Boolean,
+      default: false,
+    },
+    plainText: {
       type: Boolean,
       default: false,
     },
@@ -82,6 +88,9 @@ export default {
     renderedContent() {
       if (!this.value) {
         return '<span class="text-muted font-italic">No content</span>';
+      }
+      if (this.plainText) {
+        return DOMPurify.sanitize(this.value);
       }
       // Touch currentTheme to force re-render when dark mode toggles.
       // The module-level renderer's highlightCode() auto-detects the
@@ -273,14 +282,14 @@ export default {
 }
 
 .markdown-preview :deep(code) {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: var(--vulcan-component-bg-alt, #f1f3f5);
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
   font-size: 0.875em;
 }
 
 .markdown-preview :deep(pre) {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: var(--vulcan-component-bg-alt, #f1f3f5);
   padding: 0.5rem;
   border-radius: 0.25rem;
   overflow-x: auto;
@@ -293,24 +302,7 @@ export default {
   padding: 0;
 }
 
-/* Shiki syntax highlighting styles */
-.markdown-preview :deep(.shiki) {
-  background-color: var(--vulcan-component-bg-alt, #f6f8fa) !important;
-  padding: 0.75rem;
-  border-radius: 0.375rem;
-  overflow-x: auto;
-  margin-bottom: 0.5rem;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  white-space: pre-wrap;
-}
-
-.markdown-preview :deep(.shiki code) {
-  background-color: transparent;
-  padding: 0;
-  font-family:
-    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-}
+/* Shiki styles imported from shared shiki-preview.css via @import below */
 
 .markdown-preview :deep(blockquote) {
   border-left: 3px solid var(--vulcan-gray-300);
@@ -353,7 +345,7 @@ export default {
 }
 
 .markdown-preview :deep(th) {
-  background-color: rgba(0, 0, 0, 0.03);
+  background-color: var(--vulcan-component-bg-alt, #f1f3f5);
 }
 
 /* EasyMDE customizations */
@@ -370,7 +362,7 @@ export default {
 
 .easymde-wrapper :deep(.CodeMirror-focused) {
   border-color: var(--vulcan-input-focus-border, #80bdff);
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  box-shadow: 0 0 0 0.2rem var(--vulcan-primary-tint, rgba(0, 123, 255, 0.25));
 }
 
 .easymde-wrapper :deep(.editor-toolbar) {
@@ -416,27 +408,9 @@ export default {
   z-index: 10;
 }
 
-/* Shiki styles in EasyMDE preview */
-.easymde-wrapper :deep(.editor-preview .shiki),
-.easymde-wrapper :deep(.editor-preview-side .shiki) {
-  background-color: var(--vulcan-component-bg-alt, #f6f8fa) !important;
-  padding: 0.75rem;
-  border-radius: 0.375rem;
-  overflow-x: auto;
-  margin-bottom: 0.5rem;
-  font-size: 0.875rem;
-  line-height: 1.5;
-}
+/* Shiki styles in EasyMDE preview — shared .shiki rules from shiki-preview.css apply via :deep */
 
-.easymde-wrapper :deep(.editor-preview .shiki code),
-.easymde-wrapper :deep(.editor-preview-side .shiki code) {
-  background-color: transparent;
-  padding: 0;
-  font-family:
-    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-}
-
-/* Make preview code blocks look consistent */
+/* Make EasyMDE preview code blocks consistent with standalone preview */
 .easymde-wrapper :deep(.editor-preview pre),
 .easymde-wrapper :deep(.editor-preview-side pre) {
   background-color: var(--vulcan-component-bg-alt, #f6f8fa);

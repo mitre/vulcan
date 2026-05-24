@@ -47,7 +47,7 @@
     </div>
 
     <!-- Table of Rules -->
-    <div ref="ruleListContainer" class="mt-3" style="max-height: 700px; overflow-y: auto">
+    <div class="mt-3">
       <h5 class="card-title">{{ RULE_TERM.plural }}</h5>
       <div class="d-flex mb-2">
         <FilterDropdown
@@ -71,18 +71,20 @@
           @click="sortOrder = 'asc'"
         />
       </div>
-      <div role="listbox" tabindex="0" :aria-label="RULE_TERM.plural" @keydown="handleKeydown">
-        <div
-          v-for="(rule, index) in sortedRules"
-          :key="rule.id"
-          :class="rowClass(rule, index)"
-          :tabindex="index === focusedIndex || (focusedIndex === -1 && index === 0) ? 0 : -1"
-          role="option"
-          :aria-selected="String(selectedRule && selectedRule.id === rule.id)"
-          class="p-2 border-bottom cursor-pointer"
-          @click="selectRule(rule)"
-        >
-          {{ displayField(rule) }}
+      <div ref="ruleListContainer" style="max-height: 600px; overflow-y: auto">
+        <div role="listbox" tabindex="0" :aria-label="RULE_TERM.plural" @keydown="handleKeydown">
+          <div
+            v-for="(rule, index) in sortedRules"
+            :key="rule.id"
+            :class="rowClass(rule, index)"
+            :tabindex="index === focusedIndex || (focusedIndex === -1 && index === 0) ? 0 : -1"
+            role="option"
+            :aria-selected="String(selectedRule && selectedRule.id === rule.id)"
+            class="p-2 border-bottom cursor-pointer"
+            @click="selectRule(rule)"
+          >
+            {{ displayField(rule) }}
+          </div>
         </div>
       </div>
     </div>

@@ -518,6 +518,23 @@ describe("RuleList", () => {
   // ==========================================
   // ACCESSIBILITY
   // ==========================================
+  describe("scroll container layout", () => {
+    it("renders title and filter outside the scroll container", () => {
+      wrapper = createWrapper({ type: "stig", rules: stigRules });
+      const scrollContainer = wrapper.find({ ref: "ruleListContainer" });
+      expect(scrollContainer.exists()).toBe(true);
+      // Heading and filter dropdown should NOT be inside the overflow scroll area
+      expect(scrollContainer.find("h5").exists()).toBe(false);
+      expect(scrollContainer.find("[aria-label='Filter rules by ID type']").exists()).toBe(false);
+    });
+
+    it("renders rule listbox inside the scroll container", () => {
+      wrapper = createWrapper({ type: "stig", rules: stigRules });
+      const scrollContainer = wrapper.find({ ref: "ruleListContainer" });
+      expect(scrollContainer.find("[role='listbox']").exists()).toBe(true);
+    });
+  });
+
   describe("accessibility", () => {
     it("list container has listbox role", () => {
       wrapper = createWrapper();
