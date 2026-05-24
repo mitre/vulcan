@@ -68,6 +68,95 @@
   --vulcan-gray-700: #{$gray-700};
   --vulcan-gray-800: #{$gray-800};
   --vulcan-gray-900: #{$gray-900};
+
+  // Body-level semantic tokens (Bootstrap 5 pattern)
+  --vulcan-body-bg: #{$body-bg};
+  --vulcan-body-color: #{$body-color};
+  --vulcan-border-color: #{$gray-300};
+  --vulcan-link-color: #{$link-color};
+  --vulcan-component-bg: #fff;
+  --vulcan-component-bg-alt: #{$gray-100};
+  --vulcan-emphasis-color: #{$gray-900};
+}
+
+// ── Dark mode: Override Layer 1 variables ──────────────────────────────
+// Mirrors Bootstrap 5.3's [data-bs-theme="dark"] pattern. Components
+// that reference --vulcan-* variables automatically adapt. Uses Sass
+// shade-color()/tint-color() for consistent darkening.
+[data-bs-theme="dark"] {
+  color-scheme: dark;
+
+  // Sass locals — lightened colors for dark mode readability
+  // Bootstrap 4 has no tint-color(); use mix(white, $color, %)
+  $primary-dark: mix(white, $primary, 20%);
+  $success-dark: mix(white, $success, 20%);
+  $danger-dark: mix(white, $danger, 20%);
+  $warning-dark: mix(white, $warning, 20%);
+  $info-dark: mix(white, $info, 20%);
+  $purple-dark: mix(white, $purple, 30%);
+  $teal-dark: mix(white, $teal, 30%);
+  $indigo-dark: mix(white, $indigo, 30%);
+
+  // Body
+  --vulcan-body-bg: #{$gray-900};
+  --vulcan-body-color: #{$gray-300};
+  --vulcan-border-color: #{$gray-700};
+  --vulcan-link-color: #{$primary-dark};
+  --vulcan-component-bg: #{$gray-800};
+  --vulcan-component-bg-alt: #{$gray-700};
+  --vulcan-emphasis-color: #{$white};
+
+  --vulcan-primary: #{$primary-dark};
+  --vulcan-primary-tint: #{rgba($primary-dark, 0.15)};
+  --vulcan-success: #{$success-dark};
+  --vulcan-success-tint: #{rgba($success-dark, 0.15)};
+  --vulcan-danger: #{$danger-dark};
+  --vulcan-danger-tint: #{rgba($danger-dark, 0.15)};
+  --vulcan-warning: #{$warning-dark};
+  --vulcan-warning-tint: #{rgba($warning-dark, 0.12)};
+  --vulcan-info: #{$info-dark};
+  --vulcan-secondary: #{$gray-500};
+  --vulcan-secondary-tint: #{rgba($gray-500, 0.12)};
+
+  // Extended palette — lighter
+  --vulcan-purple: #{$purple-dark};
+  --vulcan-teal: #{$teal-dark};
+  --vulcan-indigo: #{$indigo-dark};
+
+  // Gray scale inverts
+  --vulcan-gray-100: #{$gray-900};
+  --vulcan-gray-200: #{$gray-800};
+  --vulcan-gray-300: #{$gray-700};
+  --vulcan-gray-400: #{$gray-600};
+  --vulcan-gray-500: #{$gray-500};
+  --vulcan-gray-600: #{$gray-400};
+  --vulcan-gray-700: #{$gray-300};
+  --vulcan-gray-800: #{$gray-200};
+  --vulcan-gray-900: #{$gray-100};
+
+  // UI palette overrides
+  --vulcan-text: #{$gray-300};
+  --vulcan-text-muted: #{$gray-500};
+  --vulcan-dark: #{$gray-200};
+  --vulcan-bg-light: #{$gray-800};
+  --vulcan-hover-bg: rgba(255, 255, 255, 0.06);
+  --vulcan-hover-bg-light: rgba(255, 255, 255, 0.04);
+  --vulcan-divider: rgba(255, 255, 255, 0.1);
+  --vulcan-active-tint: #{rgba($primary-dark, 0.12)};
+  --vulcan-border-light: #{$gray-700};
+
+  // Apply body colors
+  color: var(--vulcan-body-color);
+  background-color: var(--vulcan-body-bg);
+}
+
+// OS preference fallback (no JS needed)
+@media (prefers-color-scheme: dark) {
+  :root:not([data-bs-theme="light"]):not([data-bs-theme="dark"]) {
+    // Only apply if user hasn't explicitly chosen — initTheme() sets
+    // the attribute, so this only fires before JS loads or if JS is disabled.
+    color-scheme: dark;
+  }
 }
 
 @import "./styles/triage-tints.css";

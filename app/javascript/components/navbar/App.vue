@@ -57,6 +57,17 @@
                 {{ locked_user.name }} ({{ locked_user.email }}) account is locked
               </b-dropdown-item>
             </b-nav-item-dropdown>
+            <b-nav-item class="ml-2">
+              <b-button
+                size="sm"
+                variant="link"
+                class="text-light p-0"
+                aria-label="Toggle dark mode"
+                @click="toggleColorMode"
+              >
+                <b-icon :icon="isDarkMode ? 'sun' : 'moon'" />
+              </b-button>
+            </b-nav-item>
             <b-nav-item-dropdown right>
               <template #button-content>
                 <b-icon icon="person-circle" aria-hidden="true" />
@@ -111,6 +122,7 @@ import NavbarItem from "./NavbarItem.vue";
 import GlobalSearch from "./GlobalSearch.vue";
 import ConsentModal from "../shared/ConsentModal.vue";
 import { EVENTS, listen } from "../../utils/notificationEvents";
+import { initTheme, toggleTheme } from "../../utils/colorMode";
 
 export default {
   name: "Navbar",
@@ -172,6 +184,7 @@ export default {
       localAccessRequests: [...this.access_requests],
       cleanupLockout: null,
       cleanupAccessRequest: null,
+      isDarkMode: false,
     };
   },
   computed: {
@@ -188,6 +201,8 @@ export default {
     },
   },
   mounted() {
+    initTheme();
+    this.isDarkMode = document.documentElement.getAttribute("data-bs-theme") === "dark";
     this.fetchLatestRelease();
     this.cleanupLockout = listen(EVENTS.LOCKOUT_CHANGED, this.onLockoutChanged);
     this.cleanupAccessRequest = listen(EVENTS.ACCESS_REQUEST_CHANGED, this.onAccessRequestChanged);
@@ -197,6 +212,10 @@ export default {
     if (this.cleanupAccessRequest) this.cleanupAccessRequest();
   },
   methods: {
+    toggleColorMode() {
+      const newTheme = toggleTheme();
+      this.isDarkMode = newTheme === "dark";
+    },
     onLockoutChanged(event) {
       const { action, user } = event.detail;
       if (action === "locked") {
