@@ -260,7 +260,7 @@ describe("CommentTriageModal", () => {
 
       w.vm.adminAction = "force-withdraw";
       w.vm.adminAuditComment = "spam content removed";
-      await w.vm.submitAdminAction();
+      await w.vm.doSubmitAdminAction();
       await flushPromises(w);
 
       expect(axios.patch).toHaveBeenCalledWith(
@@ -281,7 +281,7 @@ describe("CommentTriageModal", () => {
 
       w.vm.adminAction = "restore";
       w.vm.adminAuditComment = "withdrew the wrong one";
-      await w.vm.submitAdminAction();
+      await w.vm.doSubmitAdminAction();
       await flushPromises(w);
 
       expect(axios.patch).toHaveBeenCalledWith(
@@ -360,7 +360,7 @@ describe("CommentTriageModal", () => {
       w.vm.adminAction = "hard-delete";
       w.vm.adminAuditComment = "PII removed per legal";
       w.vm.adminConfirmationId = String(sampleReview.id);
-      await w.vm.submitAdminAction();
+      await w.vm.doSubmitAdminAction();
       await flushPromises(w);
 
       expect(axios.delete).toHaveBeenCalledWith(
@@ -382,7 +382,7 @@ describe("CommentTriageModal", () => {
       w.vm.adminAction = "hard-delete";
       w.vm.adminAuditComment = "cleanup";
       w.vm.adminConfirmationId = String(sampleReview.id);
-      await w.vm.submitAdminAction();
+      await w.vm.doSubmitAdminAction();
       await flushPromises(w);
 
       expect(w.emitted("destroyed")).toBeTruthy();
@@ -433,7 +433,7 @@ describe("CommentTriageModal", () => {
       w.vm.adminAction = "move-to-rule";
       w.vm.adminAuditComment = "belongs on rule 99";
       w.vm.adminTargetRuleId = 99;
-      await w.vm.submitAdminAction();
+      await w.vm.doSubmitAdminAction();
       await flushPromises(w);
 
       expect(axios.patch).toHaveBeenCalledWith(

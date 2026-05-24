@@ -381,7 +381,7 @@ describe("TriageSplitView", () => {
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
     w.vm.adminAction = "force-withdraw";
     w.vm.adminAuditComment = "spam content";
-    await w.vm.submitAdminAction();
+    await w.vm.doSubmitAdminAction();
     await flushPromises(w);
     expect(axios.patch).toHaveBeenCalledWith(
       "/reviews/1/admin_withdraw",
@@ -396,7 +396,7 @@ describe("TriageSplitView", () => {
     w.vm.adminAction = "hard-delete";
     w.vm.adminAuditComment = "PII removed";
     w.vm.adminConfirmationId = "1";
-    await w.vm.submitAdminAction();
+    await w.vm.doSubmitAdminAction();
     await flushPromises(w);
     expect(axios.delete).toHaveBeenCalledWith(
       "/reviews/1/admin_destroy",

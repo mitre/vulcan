@@ -221,7 +221,7 @@
               :variant="adminConfirmVariant"
               data-testid="admin-action-confirm"
               :disabled="!canSubmitAdminAction"
-              @click="submitAdminAction"
+              @click="doSubmitAdminAction"
             >
               Confirm {{ adminConfirmLabel }}
             </b-button>
@@ -233,11 +233,11 @@
 </template>
 
 <script>
-import axios from "axios";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import FormMixin from "../../mixins/FormMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import { SINGLE_BUTTON_STATUSES } from "../../constants/triageVocabulary";
+import { submitTriage, submitAdjudicate, submitAdminAction } from "../../services/triageService";
 import SectionLabel from "../shared/SectionLabel.vue";
 import CommentThread from "../shared/CommentThread.vue";
 import TriageRuleSidebar from "./TriageRuleSidebar.vue";
@@ -441,7 +441,7 @@ export default {
           payload.addressed_by_rule_id = decision.addressed_by_rule_id;
         }
 
-        const triageRes = await axios.patch(`/reviews/${this.activeComment.id}/triage`, payload);
+        const triageRes = await submitTriage(this.activeComment.id, payload);
         this.$emit("triaged", triageRes.data.review);
 
         if (triageRes.data.response_review) {
@@ -452,7 +452,7 @@ export default {
         }
 
         if (advance && !SINGLE_BUTTON_STATUSES.has(decision.triage_status)) {
-          const adjRes = await axios.patch(`/reviews/${this.activeComment.id}/adjudicate`, {});
+          const adjRes = await submitAdjudicate(this.activeComment.id);
           this.$emit("adjudicated", adjRes.data.review);
         }
 
@@ -499,28 +499,19 @@ export default {
       this.adminConfirmationId = "";
       this.adminTargetRuleId = null;
     },
-    async submitAdminAction() {
+    async doSubmitAdminAction() {
       if (!this.activeComment || !this.canSubmitAdminAction) return;
       const reviewId = this.activeComment.id;
       const auditComment = this.adminAuditComment.trim();
       try {
+        const params = { audit_comment: auditComment };
+        if (this.adminAction === "move-to-rule") params.rule_id = this.adminTargetRuleId;
+
+        const res = await submitAdminAction(reviewId, this.adminAction, params);
+
         if (this.adminAction === "hard-delete") {
-          await axios.delete(`/reviews/${reviewId}/admin_destroy`, {
-            data: { audit_comment: auditComment },
-          });
           this.$emit("destroyed", reviewId);
-        } else if (this.adminAction === "move-to-rule") {
-          const res = await axios.patch(`/reviews/${reviewId}/move_to_rule`, {
-            rule_id: this.adminTargetRuleId,
-            audit_comment: auditComment,
-          });
-          this.$emit("triaged", res.data.review);
         } else {
-          const endpoint =
-            this.adminAction === "force-withdraw" ? "admin_withdraw" : "admin_restore";
-          const res = await axios.patch(`/reviews/${reviewId}/${endpoint}`, {
-            audit_comment: auditComment,
-          });
           this.$emit("triaged", res.data.review);
         }
         this.cancelAdminAction();

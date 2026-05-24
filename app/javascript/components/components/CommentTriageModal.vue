@@ -258,7 +258,7 @@
                 :variant="adminConfirmVariant"
                 data-testid="admin-action-confirm"
                 :disabled="!canSubmitAdminAction"
-                @click="submitAdminAction"
+                @click="doSubmitAdminAction"
               >
                 Confirm {{ adminConfirmLabel }}
               </b-button>
@@ -277,6 +277,7 @@ import FormMixin from "../../mixins/FormMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
 import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
+import { submitTriage, submitAdjudicate, submitAdminAction } from "../../services/triageService";
 import {
   SECTION_LABELS,
   SINGLE_BUTTON_STATUSES,
@@ -492,28 +493,19 @@ export default {
     // admin action. Emits 'triaged' on patch operations so the parent
     // table refreshes, or 'destroyed' on hard-delete so the parent can
     // remove the row entirely. All paths reset state and close the modal.
-    async submitAdminAction() {
+    async doSubmitAdminAction() {
       if (!this.review || !this.canSubmitAdminAction) return;
       const reviewId = this.review.id;
       const auditComment = this.adminAuditComment.trim();
       try {
+        const params = { audit_comment: auditComment };
+        if (this.adminAction === "move-to-rule") params.rule_id = this.adminTargetRuleId;
+
+        const res = await submitAdminAction(reviewId, this.adminAction, params);
+
         if (this.adminAction === "hard-delete") {
-          await axios.delete(`/reviews/${reviewId}/admin_destroy`, {
-            data: { audit_comment: auditComment },
-          });
           this.$emit("destroyed", reviewId);
-        } else if (this.adminAction === "move-to-rule") {
-          const res = await axios.patch(`/reviews/${reviewId}/move_to_rule`, {
-            rule_id: this.adminTargetRuleId,
-            audit_comment: auditComment,
-          });
-          this.$emit("triaged", res.data.review);
         } else {
-          const endpoint =
-            this.adminAction === "force-withdraw" ? "admin_withdraw" : "admin_restore";
-          const res = await axios.patch(`/reviews/${reviewId}/${endpoint}`, {
-            audit_comment: auditComment,
-          });
           this.$emit("triaged", res.data.review);
         }
         this.cancelAdminAction();
@@ -537,7 +529,7 @@ export default {
           triagePayload.duplicate_of_review_id = decision.duplicate_of_review_id;
         }
 
-        const triageRes = await axios.patch(`/reviews/${this.review.id}/triage`, triagePayload);
+        const triageRes = await submitTriage(this.review.id, triagePayload);
         this.$emit("triaged", triageRes.data.review);
         if (triageRes.data.response_review) {
           this.$emit("response-posted", {
@@ -547,7 +539,7 @@ export default {
         }
 
         if (alsoAdjudicate && !SINGLE_BUTTON_STATUSES.has(decision.triage_status)) {
-          const adjudicateRes = await axios.patch(`/reviews/${this.review.id}/adjudicate`, {});
+          const adjudicateRes = await submitAdjudicate(this.review.id);
           this.$emit("adjudicated", adjudicateRes.data.review);
         }
 
