@@ -13,7 +13,7 @@
           <b-icon icon="download" /> Download
         </b-button>
         <b-button
-          v-if="isAdmin"
+          v-if="isAdmin && config.canUpload"
           variant="primary"
           size="sm"
           class="ml-2"
@@ -33,7 +33,12 @@
 
     <BenchmarkTable :srgs="items" :is_vulcan_admin="isAdmin" :type="type" @deleted="loadItems" />
 
-    <BenchmarkUpload v-model="showUploadComponent" :post_path="apiPath" @uploaded="loadItems" />
+    <BenchmarkUpload
+      v-if="config.canUpload"
+      v-model="showUploadComponent"
+      :post_path="apiPath"
+      @uploaded="loadItems"
+    />
 
     <ExportModal
       v-model="showExportModal"
@@ -57,8 +62,22 @@ import ExportModal from "./ExportModal.vue";
 import { SRG_CSV_COLUMNS, STIG_CSV_COLUMNS } from "../../constants/csvColumns";
 
 const CONFIG = {
-  SRG: { label: "SRG", plural: "SRGs", api: "/srgs", columns: SRG_CSV_COLUMNS },
-  STIG: { label: "STIG", plural: "STIGs", api: "/stigs", columns: STIG_CSV_COLUMNS },
+  SRG: { label: "SRG", plural: "SRGs", api: "/srgs", columns: SRG_CSV_COLUMNS, canUpload: true },
+  STIG: {
+    label: "STIG",
+    plural: "STIGs",
+    api: "/stigs",
+    columns: STIG_CSV_COLUMNS,
+    canUpload: true,
+  },
+  Component: {
+    label: "Component",
+    plural: "Released Components",
+    api: "/components",
+    columns: null,
+    canUpload: false,
+    bulkExport: true,
+  },
 };
 
 export default {
@@ -102,13 +121,18 @@ export default {
   },
   methods: {
     handleExport({ type, componentIds, columns }) {
-      componentIds.forEach((id) => {
-        let url = `${this.apiPath}/${id}/export/${type}`;
-        if (columns && columns.length > 0) {
-          url += `?columns=${columns.join(",")}`;
-        }
+      if (this.config.bulkExport) {
+        const url = `${this.apiPath}/bulk_export/${type}?component_ids=${componentIds.join(",")}`;
         window.open(url);
-      });
+      } else {
+        componentIds.forEach((id) => {
+          let url = `${this.apiPath}/${id}/export/${type}`;
+          if (columns && columns.length > 0) {
+            url += `?columns=${columns.join(",")}`;
+          }
+          window.open(url);
+        });
+      }
     },
     loadItems() {
       axios

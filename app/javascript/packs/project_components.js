@@ -1,7 +1,7 @@
 import TurbolinksAdapter from "vue-turbolinks";
 import Vue from "vue";
 import { BootstrapVue, IconsPlugin } from "bootstrap-vue";
-import ProjectComponents from "../components/components/ProjectComponents.vue";
+import BenchmarkListPage from "../components/shared/BenchmarkListPage.vue";
 import linkify from "v-linkify";
 
 Vue.use(TurbolinksAdapter);
@@ -10,7 +10,7 @@ Vue.use(IconsPlugin);
 
 Vue.directive("linkified", linkify);
 
-Vue.component("Projectcomponents", ProjectComponents);
+Vue.component("BenchmarkListPage", BenchmarkListPage);
 
 document.addEventListener("turbolinks:load", () => {
   new Vue({

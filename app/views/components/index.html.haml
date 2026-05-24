@@ -1,8 +1,9 @@
 - content_for :assets do
   = javascript_include_tag 'project_components'
-  -# = stylesheet_link_tag 'project_components'
 
 #projectcomponents
-  %projectcomponents{                      |
-    'v-bind:components': @components_json, |
+  %benchmark-list-page{                                                   |
+    'v-bind:given-items': @components_json,                               |
+    'v-bind:is-admin': "false",                                           |
+    type: "Component"                                                     |
   }

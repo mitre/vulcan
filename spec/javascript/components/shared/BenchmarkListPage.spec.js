@@ -74,4 +74,39 @@ describe("BenchmarkListPage", () => {
     });
     expect(wrapper.text()).toContain("SRG Count:");
   });
+
+  // Component type tests
+  it("derives apiPath for Component type", () => {
+    const wrapper = mount(BenchmarkListPage, {
+      propsData: { type: "Component", givenItems: [], isAdmin: false },
+      stubs: ["BaseCommandBar", "BenchmarkTable", "BenchmarkUpload", "ExportModal", "b-breadcrumb", "b-badge"],
+    });
+    expect(wrapper.vm.apiPath).toBe("/components");
+    expect(wrapper.vm.pluralLabel).toBe("Released Components");
+  });
+
+  it("hides upload button for Component type even when admin", () => {
+    const wrapper = mount(BenchmarkListPage, {
+      propsData: { type: "Component", givenItems: mockItems, isAdmin: true },
+      stubs: ["BaseCommandBar", "BenchmarkTable", "BenchmarkUpload", "ExportModal", "b-breadcrumb", "b-badge", "b-button", "b-icon"],
+    });
+    const uploadBtn = wrapper.find('[data-testid="upload-btn"]');
+    expect(uploadBtn.exists()).toBe(false);
+  });
+
+  it("does not render BenchmarkUpload for Component type", () => {
+    const wrapper = mount(BenchmarkListPage, {
+      propsData: { type: "Component", givenItems: mockItems, isAdmin: true },
+      stubs: ["BaseCommandBar", "BenchmarkTable", "ExportModal", "b-breadcrumb", "b-badge", "b-button", "b-icon", "BenchmarkUpload"],
+    });
+    expect(wrapper.findComponent({ name: "BenchmarkUpload" }).exists()).toBe(false);
+  });
+
+  it("config.bulkExport is true for Component type", () => {
+    const wrapper = mount(BenchmarkListPage, {
+      propsData: { type: "Component", givenItems: [], isAdmin: false },
+      stubs: ["BaseCommandBar", "BenchmarkTable", "BenchmarkUpload", "ExportModal", "b-breadcrumb", "b-badge"],
+    });
+    expect(wrapper.vm.config.bulkExport).toBe(true);
+  });
 });
