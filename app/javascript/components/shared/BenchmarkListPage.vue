@@ -31,7 +31,7 @@
       <b-badge variant="secondary">{{ items.length }}</b-badge>
     </p>
 
-    <BenchmarkTable :srgs="items" :is_vulcan_admin="isAdmin" :type="type" />
+    <BenchmarkTable :srgs="items" :is_vulcan_admin="isAdmin" :type="type" @deleted="loadItems" />
 
     <BenchmarkUpload v-model="showUploadComponent" :post_path="apiPath" @uploaded="loadItems" />
 

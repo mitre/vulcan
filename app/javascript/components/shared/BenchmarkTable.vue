@@ -1,5 +1,15 @@
 <template>
   <div>
+    <ConfirmDeleteModal
+      v-model="showDeleteModal"
+      :item-name="itemToDelete ? itemToDelete.title || itemToDelete.name || '' : ''"
+      :item-type="type.toLowerCase()"
+      :is-deleting="isDeleting"
+      :warning-message="`This will permanently remove this ${type} from Vulcan.`"
+      @confirm="confirmDelete"
+      @cancel="cancelDelete"
+    />
+
     <!-- SRG/STIG/Component search -->
     <div class="row">
       <div class="col-6">
@@ -54,19 +64,18 @@
         <SeverityBadges :counts="data.item.severity_counts" />
       </template>
       <template #cell(actions)="data">
-        <b-button
-          v-if="is_vulcan_admin"
-          class="float-right action-btn"
-          variant="danger"
-          size="sm"
-          data-confirm="Are you sure you want to remove this SRG from Vulcan?"
-          data-method="delete"
-          :href="destroyAction(data.item)"
-          rel="nofollow"
-        >
-          <b-icon icon="trash" aria-hidden="true" />
-          <span class="action-label">Remove</span>
-        </b-button>
+        <div class="d-flex justify-content-center">
+          <b-button
+            v-if="is_vulcan_admin"
+            v-b-tooltip.hover
+            title="Remove"
+            variant="outline-danger"
+            size="sm"
+            @click="openDeleteModal(data.item)"
+          >
+            <b-icon icon="trash" aria-hidden="true" />
+          </b-button>
+        </div>
       </template>
     </b-table>
     <!-- Pagination controls -->
@@ -79,15 +88,19 @@
   </div>
 </template>
 <script>
+import axios from "axios";
 import FormMixinVue from "../../mixins/FormMixin.vue";
+import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import { formatDate as formatDateUtil } from "../../utils/dateFormatter";
 import { abbreviateSrgName as abbreviateSrgNameUtil } from "../../utils/srgNameAbbreviator";
 import SeverityBadges from "./SeverityBadges.vue";
+import ConfirmDeleteModal from "./ConfirmDeleteModal.vue";
+import { useDeleteConfirmation } from "../../composables/useDeleteConfirmation";
 
 export default {
   name: "BenchmarkTable",
-  components: { SeverityBadges },
-  mixins: [FormMixinVue],
+  components: { SeverityBadges, ConfirmDeleteModal },
+  mixins: [FormMixinVue, AlertMixinVue],
   props: {
     srgs: {
       type: Array,
@@ -101,6 +114,25 @@ export default {
       type: String,
       default: "SRG",
     },
+  },
+  setup() {
+    const {
+      showModal: showDeleteModal,
+      itemToDelete,
+      isDeleting,
+      openModal: openDeleteModal,
+      cancel: cancelDelete,
+      confirm: confirmDeleteAction,
+    } = useDeleteConfirmation();
+
+    return {
+      showDeleteModal,
+      itemToDelete,
+      isDeleting,
+      openDeleteModal,
+      cancelDelete,
+      confirmDeleteAction,
+    };
   },
   data: function () {
     const search = "";
@@ -179,9 +211,9 @@ export default {
       if (this.is_vulcan_admin) {
         fields.push({
           key: "actions",
-          label: "Actions",
-          thClass: "text-right",
-          tdClass: "p-0 text-right",
+          label: "",
+          thClass: "text-center",
+          tdClass: "text-center align-middle",
         });
       }
       return fields;
@@ -209,8 +241,28 @@ export default {
     isColumnVisible(columnKey) {
       return this.visibleColumns.includes(columnKey);
     },
-    destroyAction: function (item) {
-      return `/${this.type === "SRG" ? "srgs" : "stigs"}/${item.id}`;
+    apiBasePath() {
+      const paths = { SRG: "srgs", STIG: "stigs", Component: "components" };
+      return paths[this.type] || this.type.toLowerCase() + "s";
+    },
+    async confirmDelete() {
+      const { success, error } = await this.confirmDeleteAction(async (item) => {
+        await axios.delete(`/${this.apiBasePath()}/${item.id}.json`);
+      });
+      if (success) {
+        this.$emit("deleted");
+        this.alertOrNotifyResponse({
+          data: {
+            toast: {
+              title: "Removed",
+              message: [`${this.type} removed successfully.`],
+              variant: "success",
+            },
+          },
+        });
+      } else if (error) {
+        this.alertOrNotifyResponse(error.response || error);
+      }
     },
   },
 };
@@ -229,15 +281,5 @@ export default {
   border: 1px solid var(--vulcan-border-color, #dee2e6);
   letter-spacing: 0.025em;
   white-space: nowrap;
-}
-
-.action-btn {
-  white-space: nowrap;
-}
-
-@media (max-width: 991px) {
-  .action-label {
-    display: none;
-  }
 }
 </style>
