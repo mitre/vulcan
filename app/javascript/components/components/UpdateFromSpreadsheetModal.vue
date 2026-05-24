@@ -497,13 +497,13 @@ export default {
   user-select: none;
 }
 .diff-highlight-old {
-  background-color: #f5c6cb;
+  background-color: var(--vulcan-highlight-error, #f5c6cb);
   font-weight: bold;
   border-radius: 2px;
   padding: 0 1px;
 }
 .diff-highlight-new {
-  background-color: #a3cfbb;
+  background-color: var(--vulcan-highlight-success, #a3cfbb);
   font-weight: bold;
   border-radius: 2px;
   padding: 0 1px;

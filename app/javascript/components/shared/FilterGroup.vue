@@ -67,7 +67,7 @@ export default {
   justify-content: space-between;
   align-items: center;
   font-size: 0.875rem;
-  background-color: var(--vulcan-gray-100);
+  background-color: var(--vulcan-component-bg-alt, var(--vulcan-gray-100));
   border-bottom: 1px solid var(--vulcan-gray-400);
   padding: 0.5rem 0.75rem;
   border-radius: 0.375rem 0.375rem 0 0;
@@ -92,9 +92,9 @@ export default {
   text-decoration: underline;
 }
 
-/* Disabled state - greyed out appearance matching Bootstrap pattern */
+/* Disabled state — same surface as active panels, subtly dimmed */
 .filter-group-disabled {
-  background-color: var(--vulcan-gray-100);
+  opacity: 0.75;
 }
 
 .filter-group-disabled .filter-group-header {

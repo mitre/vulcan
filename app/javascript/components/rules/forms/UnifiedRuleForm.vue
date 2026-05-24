@@ -24,8 +24,8 @@
           style="
             width: 12px;
             height: 12px;
-            border-left: 3px solid #ffc107;
-            background: rgba(255, 193, 7, 0.15);
+            border-left: 3px solid var(--vulcan-warning, #ffc107);
+            background: var(--vulcan-warning-tint, rgba(255, 193, 7, 0.15));
           "
         />
         Section locked
@@ -39,8 +39,8 @@
           style="
             width: 12px;
             height: 12px;
-            border-left: 3px solid #17a2b8;
-            background: rgba(23, 162, 184, 0.15);
+            border-left: 3px solid var(--vulcan-info, #17a2b8);
+            background: var(--vulcan-info-tint, rgba(23, 162, 184, 0.15));
           "
         />
         Under review
@@ -54,8 +54,8 @@
           style="
             width: 12px;
             height: 12px;
-            border-left: 3px solid #6c757d;
-            background: rgba(108, 117, 125, 0.15);
+            border-left: 3px solid var(--vulcan-secondary, #6c757d);
+            background: var(--vulcan-secondary-tint, rgba(108, 117, 125, 0.15));
           "
         />
         Locked

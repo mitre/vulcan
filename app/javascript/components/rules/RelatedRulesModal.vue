@@ -185,7 +185,12 @@
                     </b-button>
                     <div
                       class="border p-2 overflow-auto"
-                      style="background: #e9ecef; opacity: 1; height: 375px; line-height: 1.5"
+                      style="
+                        background: var(--vulcan-disabled-bg, #e9ecef);
+                        opacity: 1;
+                        height: 375px;
+                        line-height: 1.5;
+                      "
                       v-html="
                         formatAndHighlightSearchWord(
                           relatedRule.disa_rule_descriptions_attributes[0].vuln_discussion,
@@ -211,7 +216,12 @@
                     </b-button>
                     <div
                       class="border p-2 overflow-auto"
-                      style="background: #e9ecef; opacity: 1; height: 375px; line-height: 1.5"
+                      style="
+                        background: var(--vulcan-disabled-bg, #e9ecef);
+                        opacity: 1;
+                        height: 375px;
+                        line-height: 1.5;
+                      "
                       v-html="
                         formatAndHighlightSearchWord(relatedRule.checks_attributes[0].content)
                       "
@@ -233,7 +243,12 @@
                     </b-button>
                     <div
                       class="border p-2 overflow-auto"
-                      style="background: #e9ecef; opacity: 1; height: 375px; line-height: 1.5"
+                      style="
+                        background: var(--vulcan-disabled-bg, #e9ecef);
+                        opacity: 1;
+                        height: 375px;
+                        line-height: 1.5;
+                      "
                       v-html="formatAndHighlightSearchWord(relatedRule.fixtext)"
                     />
                   </b-card-text>
@@ -520,7 +535,7 @@ export default {
 .keyword-bubble {
   display: inline-block;
   padding: 10px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--vulcan-border-color, #ccc);
   border-radius: 10px;
   margin: 5px;
   width: 50px;

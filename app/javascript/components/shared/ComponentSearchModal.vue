@@ -305,7 +305,7 @@ export default {
 
 .search-result-item:hover,
 .search-result-item.active {
-  background-color: #cce5ff; /* Bootstrap 4 $blue-100 / alert-primary bg */
+  background-color: var(--vulcan-highlight-selected, #cce5ff);
 }
 
 .result-icon {
