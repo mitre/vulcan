@@ -130,7 +130,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import { signOut } from "../../api/authApi";
 import semver from "semver";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import NavbarItem from "./NavbarItem.vue";
@@ -263,7 +263,7 @@ export default {
     },
     async signOut() {
       try {
-        await axios.delete(this.sign_out_path);
+        await signOut(this.sign_out_path);
       } catch {
         // Sign-out may return a redirect (302) which axios treats as an error.
         // Either way, navigate to the root to complete sign-out.

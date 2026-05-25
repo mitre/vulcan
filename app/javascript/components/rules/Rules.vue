@@ -15,7 +15,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../../api/baseApi";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import RulesCodeEditorView from "./RulesCodeEditorView.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
@@ -111,7 +111,7 @@ export default {
      * Previously called refreshRule() which overwrote local changes with server data.
      */
     addSatisfiedRule: function (rule_id, satisfied_by_rule_id, successCallback = null) {
-      axios
+      api
         .post(`/rule_satisfactions`, { rule_id, satisfied_by_rule_id })
         .then((response) => {
           this.alertOrNotifyResponse(response);
@@ -164,7 +164,7 @@ export default {
      * Previously called refreshRule() which overwrote local changes with server data.
      */
     removeSatisfiedRule: function (rule_id, satisfied_by_rule_id, successCallback = null) {
-      axios
+      api
         .delete(`/rule_satisfactions/${rule_id}`, { data: { rule_id, satisfied_by_rule_id } })
         .then((response) => {
           this.alertOrNotifyResponse(response);
@@ -200,7 +200,7 @@ export default {
      * Event handler for @delete:rule
      */
     deleteRule: function (rule_id, successCallback = null) {
-      axios
+      api
         .delete(`/rules/${rule_id}`)
         .then((response) => {
           this.alertOrNotifyResponse(response);
@@ -223,7 +223,7 @@ export default {
      * Event handler for @create:rule
      */
     createRule: function (rule, successCallback = null) {
-      axios
+      api
         .post(`/components/${this.reactiveComponent.id}/rules`, { rule: rule })
         .then((response) => {
           this.alertOrNotifyResponse(response);
@@ -358,7 +358,7 @@ export default {
      * updated: How the rule is expected to have been changed. Expects any of ['all', 'comments']
      */
     refreshRule: function (id, updated = "all") {
-      axios
+      api
         .get(`/rules/${id}`)
         .then((response) => this.ruleFetchSuccess(response, updated))
         .catch(this.alertOrNotifyResponse);

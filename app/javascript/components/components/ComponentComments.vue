@@ -322,7 +322,8 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../../api/baseApi";
+import { reopenReview } from "../../api/reviewsApi";
 import { SECTION_LABELS, buildStatusFilterOptions } from "../../constants/triageVocabulary";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
@@ -620,7 +621,8 @@ export default {
           this.scope === "project"
             ? `/projects/${this.projectId}/comments`
             : `/components/${this.componentId}/comments`;
-        const { data } = await axios.get(url, { params });
+        // URL depends on scope (project vs component) — use baseApi directly
+        const { data } = await api.get(url, { params });
         this.rows = data.rows;
         this.total = data.pagination.total;
         if (data.status_counts) this.statusCounts = data.status_counts;
@@ -664,7 +666,7 @@ export default {
     },
     async openReopen(row) {
       try {
-        const { data } = await axios.patch(`/reviews/${row.id}/reopen`);
+        const { data } = await reopenReview(row.id);
         // Server returns the updated Review hash on the `review` key.
         if (data && data.review) {
           this.alertOrNotifyResponse({

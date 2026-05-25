@@ -57,7 +57,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../../api/baseApi";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 
@@ -107,7 +107,7 @@ export default {
           additional_questions_attributes: this.questions.concat(this.deleted_questions),
         },
       };
-      axios
+      api
         .put(`/components/${this.component.id}`, payload)
         .then(this.updateAdditionalQuestionsSuccess)
         .catch(this.alertOrNotifyResponse);

@@ -32,7 +32,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../../api/baseApi";
 import CommentModal from "../shared/CommentModal.vue";
 
 export default {

@@ -176,7 +176,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import { deleteProject } from "../../api/projectsApi";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FormMixin from "../../mixins/FormMixin.vue";
@@ -388,7 +388,7 @@ export default {
     },
     async confirmDelete() {
       const { success, error } = await this.confirmDeleteAction(async (project) => {
-        const response = await axios.delete(`/projects/${project.id}.json`);
+        const response = await deleteProject(project.id);
         this.alertOrNotifyResponse(response);
       });
 

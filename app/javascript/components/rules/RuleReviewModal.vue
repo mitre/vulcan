@@ -46,7 +46,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../../api/baseApi";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import { buildReviewActions } from "../../utils/reviewActionHelpers";
 
@@ -97,7 +97,7 @@ export default {
         return;
       }
 
-      axios
+      api
         .post(`/rules/${this.rule.id}/reviews`, {
           review: {
             component_id: this.rule.component_id,

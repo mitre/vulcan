@@ -76,7 +76,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../../api/baseApi";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import { MESSAGE_LABELS } from "../../constants/terminology";
@@ -138,7 +138,7 @@ export default {
     },
     lockControls: function () {
       this.loading = true;
-      axios
+      api
         .post(`/components/${this.component_id}/lock`, {
           review: { action: "lock_control", comment: this.comment },
         })
@@ -148,7 +148,7 @@ export default {
     },
     lockSections: function () {
       this.loading = true;
-      axios
+      api
         .patch(`/components/${this.component_id}/lock_sections`, {
           sections: this.selectedSections,
           locked: true,

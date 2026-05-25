@@ -100,7 +100,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import { createUser } from "../../api/usersApi";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import PasswordField from "../shared/PasswordField.vue";
@@ -167,9 +167,7 @@ export default {
       }
 
       try {
-        const response = await axios.post("/users/admin_create", {
-          user: payload,
-        });
+        const response = await createUser(payload);
         this.alertOrNotifyResponse(response);
         this.$emit("user-created", response.data.user);
 

@@ -33,7 +33,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../../api/baseApi";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 
@@ -80,7 +80,7 @@ export default {
         },
       };
 
-      axios
+      api
         .put(`/components/${this.component.id}`, payload)
         .then(this.updateMetadataSuccess)
         .catch(this.alertOrNotifyResponse);

@@ -60,7 +60,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../../api/baseApi";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import DisplayedComponentMixin from "../../mixins/DisplayedComponentMixin.vue";
@@ -126,7 +126,7 @@ export default {
         },
       };
 
-      axios
+      api
         .post(`/projects/${this.project_id}/components`, payload)
         .then(this.addComponentSuccess)
         .catch(this.alertOrNotifyResponse);

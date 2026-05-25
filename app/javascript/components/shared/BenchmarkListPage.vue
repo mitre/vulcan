@@ -53,7 +53,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../../api/baseApi";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import BaseCommandBar from "./BaseCommandBar.vue";
 import BenchmarkTable from "./BenchmarkTable.vue";
@@ -135,7 +135,7 @@ export default {
       }
     },
     loadItems() {
-      axios
+      api
         .get(this.apiPath)
         .then(({ data }) => {
           this.items = data;

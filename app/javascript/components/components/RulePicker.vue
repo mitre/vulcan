@@ -55,7 +55,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../../api/baseApi";
 
 // Picker for the "move to rule" admin action on the triage modal. Scoped
 // to the same component as the source review (server enforces same-component
@@ -113,7 +113,7 @@ export default {
   methods: {
     fetchRules() {
       this.loading = true;
-      axios
+      api
         .get(`/components/${this.componentId}/rules_picker.json`)
         .then((res) => {
           // ComponentBlueprint :show / :editor view exposes a `rules` array

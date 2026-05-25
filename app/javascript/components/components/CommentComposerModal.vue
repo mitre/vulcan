@@ -69,7 +69,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import { createReview } from "../../api/reviewsApi";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import FormMixin from "../../mixins/FormMixin.vue";
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
@@ -176,7 +176,7 @@ export default {
         ? `/components/${this.componentId}/reviews`
         : `/rules/${this.ruleId}/reviews`;
       try {
-        const res = await axios.post(url, payload);
+        const res = await createReview(url, payload);
         const toast = res?.data?.toast;
         const msg = toast?.message;
         this.successMessage = Array.isArray(msg) && msg[0] ? msg.join(" ") : "Comment posted.";

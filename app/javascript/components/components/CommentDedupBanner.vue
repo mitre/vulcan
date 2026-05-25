@@ -54,7 +54,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import { getComments } from "../../api/componentsApi";
 import { sectionLabel } from "../../constants/triageVocabulary";
 import SectionLabel from "../shared/SectionLabel.vue";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
@@ -122,9 +122,7 @@ export default {
           this.totalComments = 0;
           return;
         }
-        const { data } = await axios.get(`/components/${this.componentId}/comments`, {
-          params,
-        });
+        const { data } = await getComments(this.componentId, params);
         this.rows = data.rows.slice(0, 5);
         this.total = data.pagination.total;
         this.totalComments = data.pagination.total_comments ?? data.pagination.total;

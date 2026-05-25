@@ -138,7 +138,8 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../../api/baseApi";
+import { updateProfile, deleteAccount } from "../../api/usersApi";
 import BaseCommandBar from "../shared/BaseCommandBar.vue";
 import ConfirmDeleteModal from "../shared/ConfirmDeleteModal.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
@@ -203,7 +204,7 @@ export default {
       if (this.saving) return;
       this.saving = true;
       try {
-        const response = await axios.put(`/users`, { user: this.form });
+        const response = await updateProfile(this.form);
         this.alertOrNotifyResponse(response);
       } catch (error) {
         this.alertOrNotifyResponse(error);
@@ -217,7 +218,7 @@ export default {
     async confirmDeleteAccount() {
       this.isDeleting = true;
       try {
-        await axios.delete("/users");
+        await deleteAccount();
         globalThis.location.href = "/";
       } catch (error) {
         this.alertOrNotifyResponse(error);
@@ -235,7 +236,9 @@ export default {
       if (this.isUnlinking) return;
       this.isUnlinking = true;
       try {
-        const response = await axios.post("/users/unlink_identity", {
+        // unlinkIdentity() sends { provider } but this call sends { current_password }
+        // — different payload shape, so use baseApi directly.
+        const response = await api.post("/users/unlink_identity", {
           current_password: this.unlinkForm.current_password,
         });
         this.alertOrNotifyResponse(response);

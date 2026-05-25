@@ -129,7 +129,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import { globalSearch } from "../../api/searchApi";
 
 export default {
   name: "GlobalSearch",
@@ -184,9 +184,7 @@ export default {
 
       try {
         // Use new unified search API
-        const response = await axios.get("/api/search/global", {
-          params: { q: query, limit: 10 },
-        });
+        const response = await globalSearch({ q: query, limit: 10 });
 
         // Transform API response to match expected format
         // projects: [[id, name], ...]

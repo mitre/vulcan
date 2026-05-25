@@ -76,7 +76,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../../api/baseApi";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import BackupPreview from "../shared/BackupPreview.vue";
@@ -144,7 +144,8 @@ export default {
     async submitDryRun() {
       this.loading = true;
       try {
-        const response = await axios.post(
+        // File upload to project import route — no matching API function
+        const response = await api.post(
           `/projects/${this.project_id}/import_backup`,
           this.buildFormData(true),
           { headers: { "Content-Type": "multipart/form-data" } },
@@ -166,7 +167,7 @@ export default {
     async submitImport() {
       this.loading = true;
       try {
-        const response = await axios.post(
+        const response = await api.post(
           `/projects/${this.project_id}/import_backup`,
           this.buildFormData(false),
           { headers: { "Content-Type": "multipart/form-data" } },

@@ -22,7 +22,7 @@
 <script>
 import { marked } from "marked";
 import DOMPurify from "dompurify";
-import axios from "axios";
+import { acknowledgeConsent } from "../../api/authApi";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 
 export default {
@@ -63,7 +63,7 @@ export default {
   methods: {
     async onAgree() {
       try {
-        await axios.post("/consent/acknowledge");
+        await acknowledgeConsent();
         this.acknowledged = true;
         this.showModal = false;
       } catch {

@@ -182,7 +182,8 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../../api/baseApi";
+import { updateMembership, deleteMembership } from "../../api/membershipsApi";
 import debounce from "lodash/debounce";
 import VueMultiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
@@ -280,7 +281,9 @@ export default {
       }
       this.isMemberSearching = true;
       try {
-        const { data } = await axios.get("/api/users/search", {
+        // Passes extra params (membership_type, membership_id) beyond what
+        // searchUsers() accepts — use baseApi directly.
+        const { data } = await api.get("/api/users/search", {
           params: {
             q: query,
             membership_type: "Component",
@@ -299,7 +302,9 @@ export default {
       if (!userId) return;
 
       try {
-        await axios.post("/memberships.json", {
+        // Passes membership_type="Component" — createMembership() is shaped for
+        // project memberships, so use baseApi directly for component memberships.
+        await api.post("/memberships.json", {
           membership: {
             user_id: userId,
             role: this.newMember.role,
@@ -317,9 +322,7 @@ export default {
     },
     async updateRole(member) {
       try {
-        await axios.put(`/memberships/${member.id}.json`, {
-          membership: { role: member.role },
-        });
+        await updateMembership(member.id, member.role);
         this.$emit("memberships-updated");
       } catch (error) {
         const message = error.response?.data?.toast?.message || "Could not update role.";
@@ -334,7 +337,7 @@ export default {
       if (!this.memberToRemove) return;
 
       try {
-        await axios.delete(`/memberships/${this.memberToRemove.id}.json`);
+        await deleteMembership(this.memberToRemove.id);
         this.memberToRemove = null;
         this.$emit("memberships-updated");
       } catch (error) {

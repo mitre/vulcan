@@ -104,7 +104,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import { createFromBackup } from "../../api/projectsApi";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import BackupPreview from "../shared/BackupPreview.vue";
@@ -160,7 +160,7 @@ export default {
         formData.append("include_reviews", String(this.includeReviews));
         formData.append("include_memberships", String(this.includeMemberships));
 
-        const response = await axios.post("/projects/create_from_backup", formData, {
+        const response = await createFromBackup(formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
 
@@ -197,7 +197,7 @@ export default {
         formData.append("include_reviews", String(this.includeReviews));
         formData.append("include_memberships", String(this.includeMemberships));
 
-        const response = await axios.post("/projects/create_from_backup", formData, {
+        const response = await createFromBackup(formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
 

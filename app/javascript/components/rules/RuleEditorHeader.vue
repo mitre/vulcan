@@ -180,7 +180,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../../api/baseApi";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
@@ -349,7 +349,7 @@ export default {
           audit_comment: comment,
         },
       };
-      axios
+      api
         .put(`/rules/${this.rule.id}`, payload)
         .then(this.saveRuleSuccess)
         .catch(this.alertOrNotifyResponse);
@@ -367,7 +367,7 @@ export default {
         return;
       }
 
-      axios
+      api
         .post(`/rules/${this.rule.id}/reviews`, {
           review: {
             action: "comment",
@@ -385,7 +385,7 @@ export default {
         return;
       }
 
-      axios
+      api
         .post(`/rules/${this.rule.id}/reviews`, {
           review: {
             component_id: this.rule.component_id,

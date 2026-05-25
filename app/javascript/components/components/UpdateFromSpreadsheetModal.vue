@@ -190,7 +190,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../../api/baseApi";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 
 export default {
@@ -363,7 +363,7 @@ export default {
       const formData = new FormData();
       formData.append("file", this.selectedFile);
 
-      return axios
+      return api
         .post(`/components/${this.component.id}/preview_spreadsheet_update`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
         })
@@ -386,7 +386,7 @@ export default {
       const formData = new FormData();
       formData.append("file", this.selectedFile);
 
-      return axios
+      return api
         .patch(`/components/${this.component.id}/apply_spreadsheet_update`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
         })

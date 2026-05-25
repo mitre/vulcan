@@ -70,7 +70,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import { getResponses } from "../../api/reviewsApi";
 import ReactionButtons from "./ReactionButtons.vue";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
@@ -150,9 +150,7 @@ export default {
       this.loadError = false;
       const token = ++this.fetchToken;
       try {
-        const { data } = await axios.get(`/reviews/${this.parentReviewId}/responses`, {
-          headers: { Accept: "application/json" },
-        });
+        const { data } = await getResponses(this.parentReviewId);
         if (token !== this.fetchToken) return;
         this.replies = data.rows || [];
         this.loaded = true;

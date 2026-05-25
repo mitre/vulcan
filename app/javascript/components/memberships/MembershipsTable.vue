@@ -148,7 +148,8 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../../api/baseApi";
+import { updateMembership, deleteMembership } from "../../api/membershipsApi";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
@@ -259,9 +260,7 @@ export default {
     async roleChanged(event, project_member) {
       const previousRole = event?.target?.dataset?.previousValue || project_member.role;
       try {
-        const response = await axios.put(`/memberships/${project_member.id}.json`, {
-          membership: { role: project_member.role },
-        });
+        const response = await updateMembership(project_member.id, project_member.role);
         this.alertOrNotifyResponse(response);
       } catch (error) {
         project_member.role = previousRole;
@@ -272,7 +271,7 @@ export default {
       if (!confirm("Are you sure you want to remove this user?")) return;
       this.removingId = project_member.id;
       try {
-        const response = await axios.delete(`/memberships/${project_member.id}.json`);
+        const response = await deleteMembership(project_member.id);
         this.alertOrNotifyResponse(response);
         this.$emit("memberRemoved", project_member);
       } catch (error) {
@@ -286,7 +285,9 @@ export default {
       this.rejectingId = requestId;
 
       try {
-        const response = await axios.delete(
+        // Nested route — deleteAccessRequest() doesn't match this URL structure,
+        // so use baseApi directly.
+        const response = await api.delete(
           `/projects/${this.membership_id}/project_access_requests/${requestId}.json`,
         );
         this.alertOrNotifyResponse(response);

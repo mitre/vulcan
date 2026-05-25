@@ -49,7 +49,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import { getComments } from "../../api/componentsApi";
 import SectionLabel from "../shared/SectionLabel.vue";
 
 // Picker for the "duplicate of" target on the triage modal. Scoped to the
@@ -106,7 +106,7 @@ export default {
       try {
         const params = { triage_status: "all", per_page: 25 };
         if (this.query) params.q = this.query;
-        const { data } = await axios.get(`/components/${this.componentId}/comments`, { params });
+        const { data } = await getComments(this.componentId, params);
         this.rows = data.rows || [];
       } catch (err) {
         // Log so a backend 500 / auth error / network failure is visible

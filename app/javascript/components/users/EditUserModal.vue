@@ -191,7 +191,14 @@
 </template>
 
 <script>
-import axios from "axios";
+import {
+  lockUser,
+  unlockUser,
+  updateUser,
+  sendPasswordReset,
+  generateResetLink,
+  setPassword,
+} from "../../api/usersApi";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import PasswordField from "../shared/PasswordField.vue";
@@ -286,7 +293,7 @@ export default {
       this.locking = true;
 
       try {
-        const response = await axios.post(`/users/${this.localUser.id}/lock`);
+        const response = await lockUser(this.localUser.id);
         this.alertOrNotifyResponse(response);
         this.$emit("user-updated", response.data.user);
         this.localUser.locked_at = response.data.user.locked_at;
@@ -303,7 +310,7 @@ export default {
       this.unlocking = true;
 
       try {
-        const response = await axios.post(`/users/${this.localUser.id}/unlock`);
+        const response = await unlockUser(this.localUser.id);
         this.alertOrNotifyResponse(response);
         this.$emit("user-updated", response.data.user);
         this.localUser.locked_at = null;
@@ -320,12 +327,10 @@ export default {
       if (!this.localUser) return;
 
       try {
-        const response = await axios.put(`/users/${this.localUser.id}`, {
-          user: {
-            name: this.localUser.name,
-            email: this.localUser.email,
-            admin: this.localUser.admin,
-          },
+        const response = await updateUser(this.localUser.id, {
+          name: this.localUser.name,
+          email: this.localUser.email,
+          admin: this.localUser.admin,
         });
         this.alertOrNotifyResponse(response);
         this.$emit("user-updated", response.data.user);
@@ -339,7 +344,7 @@ export default {
       this.resetSending = true;
 
       try {
-        const response = await axios.post(`/users/${this.localUser.id}/send_password_reset`);
+        const response = await sendPasswordReset(this.localUser.id);
         this.alertOrNotifyResponse(response);
       } catch (error) {
         this.alertOrNotifyResponse(error);
@@ -352,7 +357,7 @@ export default {
       this.resetLinkGenerating = true;
 
       try {
-        const response = await axios.post(`/users/${this.localUser.id}/generate_reset_link`);
+        const response = await generateResetLink(this.localUser.id);
         this.alertOrNotifyResponse(response);
         this.generatedResetUrl = response.data.reset_url;
       } catch (error) {
@@ -367,9 +372,11 @@ export default {
       this.settingPassword = true;
 
       try {
-        const response = await axios.post(`/users/${this.localUser.id}/set_password`, {
-          user: { password: this.directPassword },
-        });
+        const response = await setPassword(
+          this.localUser.id,
+          this.directPassword,
+          this.directPasswordConfirm,
+        );
         this.alertOrNotifyResponse(response);
         this.directPassword = "";
         this.directPasswordConfirm = "";

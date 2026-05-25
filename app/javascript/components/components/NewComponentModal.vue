@@ -177,7 +177,8 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../../api/baseApi";
+import { getSrgs, getProjects, getProject } from "../../api/projectsApi";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import DisplayedComponentMixin from "../../mixins/DisplayedComponentMixin.vue";
@@ -303,7 +304,8 @@ export default {
       this.srgAutoDetected = false;
       let formData = new FormData();
       formData.append("file", file);
-      axios
+      // File upload with custom Content-Type — use baseApi directly
+      api
         .post("/components/detect_srg", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         })
@@ -350,13 +352,13 @@ export default {
       this.admin_name = user.name;
     },
     fetchData: function (_bvModalEvt) {
-      axios.get("/srgs").then((response) => {
+      getSrgs().then((response) => {
         this.srgs = response.data;
         this.srgs.forEach((srg) => {
           srg.displayed = `${srg.title} (${srg.version})`;
         });
       });
-      axios.get("/projects").then((response) => {
+      getProjects().then((response) => {
         this.projects = response.data;
       });
     },
@@ -366,7 +368,7 @@ export default {
         this.selected_component_id = null;
         this.security_requirements_guide_id = null;
         this.security_requirements_guide_displayed = null;
-        axios.get(`/projects/${project.id}`).then((response) => {
+        getProject(project.id).then((response) => {
           this.components = this.addDisplayNameToComponents(response.data.components);
           this.componentKey += 1;
         });
@@ -490,7 +492,8 @@ export default {
         formData.append("component[slack_channel_id]", this.slackChannelId);
       }
 
-      axios
+      // File upload with custom Content-Type — use baseApi directly
+      api
         .post(`/projects/${this.project_id}/components`, formData, {
           headers: {
             "Content-Type": "multipart/form-data",

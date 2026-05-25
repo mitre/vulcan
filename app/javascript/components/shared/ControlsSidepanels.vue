@@ -201,7 +201,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../../api/baseApi";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import { SIDEBAR_TITLES } from "../../constants/terminology";
@@ -295,7 +295,7 @@ export default {
   },
   methods: {
     refreshHistories() {
-      axios
+      api
         .get(`/components/${this.component.id}/histories`)
         .then((response) => {
           this.localHistories = response.data;

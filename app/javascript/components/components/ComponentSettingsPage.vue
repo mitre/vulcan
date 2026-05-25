@@ -223,7 +223,8 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../../api/baseApi";
+import { updateComponent } from "../../api/componentsApi";
 import debounce from "lodash/debounce";
 import VueMultiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
@@ -325,7 +326,9 @@ export default {
       }
       this.isPocSearching = true;
       try {
-        const { data } = await axios.get("/api/users/search", {
+        // Passes extra params (membership_type, membership_id, scope) beyond
+        // what searchUsers() accepts — use baseApi directly.
+        const { data } = await api.get("/api/users/search", {
           params: {
             q: query,
             membership_type: "Component",
@@ -375,7 +378,7 @@ export default {
         payload.component[key] = this.form[key];
       });
       try {
-        const response = await axios.put(`/components/${this.component.id}`, payload);
+        const response = await updateComponent(this.component.id, payload);
         this.alertOrNotifyResponse(response);
       } catch (error) {
         this.alertOrNotifyResponse(error);

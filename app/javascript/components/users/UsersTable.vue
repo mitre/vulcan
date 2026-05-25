@@ -96,7 +96,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import { deleteUser } from "../../api/usersApi";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import ConfirmDeleteModal from "../shared/ConfirmDeleteModal.vue";
@@ -182,7 +182,7 @@ export default {
     },
     async handleDelete() {
       const { success, error } = await this.confirmDeleteAction(async (user) => {
-        const response = await axios.delete(`/users/${user.id}`);
+        const response = await deleteUser(user.id);
         this.alertOrNotifyResponse(response);
         this.$emit("user-deleted", user);
       });

@@ -111,7 +111,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../../api/baseApi";
 
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
@@ -198,7 +198,7 @@ export default {
         fields: this.selectedRevertFields,
         audit_comment: comment,
       };
-      axios
+      api
         .post(`/rules/${this.rule.id}/revert`, payload)
         .then(this.revertSuccess)
         .catch(this.alertOrNotifyResponse);

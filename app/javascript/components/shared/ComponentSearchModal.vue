@@ -106,7 +106,8 @@
 
 <script>
 import _ from "lodash";
-import axios from "axios";
+import { globalSearch } from "../../api/searchApi";
+import { getComments } from "../../api/componentsApi";
 import Highlighter from "vue-highlight-words";
 
 export default {
@@ -201,14 +202,14 @@ export default {
       }
     },
     async searchRules(q) {
-      const response = await axios.get("/api/search/global", {
-        params: { q, limit: 20, component_id: this.componentId },
-      });
+      const response = await globalSearch({ q, limit: 20, component_id: this.componentId });
       this.results = response.data.rules || [];
     },
     async searchComments(q) {
-      const response = await axios.get(`/components/${this.componentId}/comments`, {
-        params: { q, triage_status: "all", per_page: 20 },
+      const response = await getComments(this.componentId, {
+        q,
+        triage_status: "all",
+        per_page: 20,
       });
       this.results = (response.data.rows || []).map((row) => ({
         id: row.id,

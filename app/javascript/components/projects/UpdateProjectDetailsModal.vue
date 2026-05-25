@@ -38,7 +38,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../../api/baseApi";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 
@@ -84,7 +84,7 @@ export default {
     updateProjectDetails: function () {
       this.$refs["updateProjectDetailsModal"].hide();
       let payload = { project: { name: this["name"], description: this["description"] } };
-      axios
+      api
         .put(`/projects/${this.project.id}`, payload)
         .then(this.editProjectSuccess)
         .catch(this.alertOrNotifyResponse);

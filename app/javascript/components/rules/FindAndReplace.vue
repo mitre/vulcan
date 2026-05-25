@@ -117,7 +117,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../../api/baseApi";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FindAndReplaceMixinVue from "../../mixins/FindAndReplaceMixin.vue";
 import CommentModal from "../shared/CommentModal.vue";
@@ -218,7 +218,7 @@ export default {
     find: function () {
       this.loading = true;
       this.find_text = this.fr.find;
-      axios
+      api
         .post(`/components/${this.componentId}/find`, { find: this.find_text })
         .then((response) => {
           this.find_results = this.groupFindResults(
@@ -258,7 +258,7 @@ export default {
           audit_comment: comment,
         },
       };
-      return axios
+      return api
         .put(`/rules/${rule_id}`, payload)
         .then((response) => {
           this.saveRuleSuccess(response, rule_id);
@@ -284,7 +284,7 @@ export default {
           },
         };
         promises.push(
-          axios
+          api
             .put(`/rules/${rule_id}`, payload)
             .then((response) => {
               self.saveRuleSuccess(response, rule_id);

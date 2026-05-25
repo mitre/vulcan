@@ -128,7 +128,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import { getUserComments } from "../../api/reviewsApi";
 import { buildStatusFilterOptions } from "../../constants/triageVocabulary";
 import { triageBgClass } from "../../utils/triageBgClass";
 import AlertMixin from "../../mixins/AlertMixin.vue";
@@ -216,14 +216,9 @@ export default {
         if (this.filterStatus && this.filterStatus !== "all") {
           params.triage_status = this.filterStatus;
         }
-        // Explicit Accept header — the user_comments pack has its own
-        // axios singleton (esbuild bundle isolation) and doesn't pull in
-        // FormMixin's defaults setup, so without this Rails serves the
-        // HTML view of the same /users/:id/comments route.
-        const { data } = await axios.get(`/users/${this.userId}/comments`, {
-          params,
-          headers: { Accept: "application/json" },
-        });
+        // baseApi sets Accept: application/json by default, so Rails serves
+        // JSON without an explicit header override.
+        const { data } = await getUserComments(this.userId, params);
         this.rows = data.rows;
         this.total = data.pagination.total;
       } catch (error) {

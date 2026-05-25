@@ -38,8 +38,7 @@
 </template>
 
 <script>
-import axios from "axios";
-// Needed for axios headers and authenticity token on SRG upload.
+import api from "../../api/baseApi";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 
@@ -81,7 +80,7 @@ export default {
       let formData = new FormData();
       formData.append("file", this.file);
       const path = this.post_path ? this.post_path : "/srgs";
-      axios
+      api
         .post(path, formData, {
           headers: {
             "Content-Type": "multipart/form-data",

@@ -63,7 +63,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import { createProject } from "../../api/projectsApi";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 
@@ -108,9 +108,7 @@ export default {
       if (event) event.preventDefault();
 
       try {
-        const response = await axios.post("/projects", {
-          project: this.form,
-        });
+        const response = await createProject(this.form);
         this.alertOrNotifyResponse(response);
         this.$emit("project-created");
         this.$emit("update:visible", false);

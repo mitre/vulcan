@@ -92,7 +92,7 @@
 
 <script>
 import _ from "lodash";
-import axios from "axios";
+import api from "../../api/baseApi";
 import MonacoEditor from "vue-monaco";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
@@ -245,7 +245,7 @@ export default {
     updateCompareList: function () {
       this.ruleDeselected();
       if (this.baseComponent) {
-        axios
+        api
           .get(`/components/${this.baseComponent.id}/search/based_on_same_srg`)
           .then((response) => {
             this.compareList = response.data;
@@ -260,7 +260,7 @@ export default {
         this.diffComponent &&
         this.baseComponent.id !== this.diffComponent.id
       ) {
-        axios
+        api
           .get(`/components/${this.baseComponent.id}/compare/${this.diffComponent.id}`)
           .then((response) => {
             this.ruleDiffs = response.data;

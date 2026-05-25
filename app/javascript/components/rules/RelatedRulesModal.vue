@@ -262,7 +262,7 @@
   </div>
 </template>
 <script>
-import axios from "axios";
+import { getRelatedRules } from "../../api/searchApi";
 import DOMPurify from "dompurify";
 import VueMultiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
@@ -372,7 +372,7 @@ export default {
   methods: {
     getRelatedRules: async function () {
       this.resetModal();
-      axios.get(`/rules/${this.rule.id}/search/related_rules`).then((response) => {
+      getRelatedRules(this.rule.id).then((response) => {
         this.fields = this.controlFields;
         this.relatedRules = response.data.rules;
         this.relatedRulesParents = response.data.parents;

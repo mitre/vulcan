@@ -152,7 +152,8 @@
 
 <script>
 import _ from "lodash";
-import axios from "axios";
+import api from "../../api/baseApi";
+import { getProject } from "../../api/projectsApi";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
@@ -288,7 +289,7 @@ export default {
       return this.sortedComponents().filter((e) => e.component_id == null);
     },
     refreshProject: function () {
-      axios.get(`/projects/${this.project.id}`).then((response) => {
+      getProject(this.project.id).then((response) => {
         this.project = response.data;
         this.visible = this.project.visibility === "discoverable";
       });
@@ -300,7 +301,8 @@ export default {
     updateVisibility: function () {
       this.showVisibilityModal = false;
       let payload = { project: { visibility: this.pendingVisibility ? "discoverable" : "hidden" } };
-      axios
+      // Visibility update uses a project-specific payload — no dedicated API function
+      api
         .put(`/projects/${this.project.id}`, payload)
         .then((response) => {
           this.alertOrNotifyResponse(response);
@@ -382,7 +384,8 @@ export default {
     // disappear almost immediately because the component gets
     // destroyed once `refreshProject` executes
     deleteComponent: function (componentId) {
-      axios
+      // Deletes a component (not a project) — no matching API function
+      api
         .delete(`/components/${componentId}`)
         .then((response) => {
           this.alertOrNotifyResponse(response);
@@ -411,7 +414,8 @@ export default {
       if (excludeSatisfiedBy) {
         url += `&exclude_satisfied_by=true`;
       }
-      axios
+      // Export URL with dynamic query params — use baseApi directly
+      api
         .get(url)
         .then((_res) => {
           window.open(url);

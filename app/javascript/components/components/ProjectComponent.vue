@@ -133,7 +133,7 @@
 
 <script>
 import { ref } from "vue";
-import axios from "axios";
+import api from "../../api/baseApi";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
@@ -346,7 +346,7 @@ export default {
         this.refreshComponent();
         return;
       }
-      axios
+      api
         .get(`/rules/${ruleId}`, { headers: { Accept: "application/json" } })
         .then((response) => {
           const idx = this.localRules.findIndex((r) => r.id === ruleId);
@@ -363,7 +363,7 @@ export default {
       globalThis.location.href = `/components/${this.component.id}/triage`;
     },
     refreshComponent() {
-      axios
+      api
         .get(`/components/${this.component.id}.json`)
         .then((response) => {
           Object.assign(this.component, response.data);
@@ -382,7 +382,7 @@ export default {
           advanced_fields: advanced_fields,
         },
       };
-      axios
+      api
         .patch(`/components/${this.component.id}`, payload)
         .then((response) => {
           this.alertOrNotifyResponse(response);
@@ -417,7 +417,7 @@ export default {
       if (includeSrg) url += `&include_srg=true`;
       if (includeMemberships === false) url += `&include_memberships=false`;
       if (excludeSatisfiedBy) url += `&exclude_satisfied_by=true`;
-      axios
+      api
         .get(url)
         .then(() => {
           window.open(url);

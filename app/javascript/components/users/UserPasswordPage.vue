@@ -69,7 +69,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import { updateProfile } from "../../api/usersApi";
 import BaseCommandBar from "../shared/BaseCommandBar.vue";
 import PasswordField from "../shared/PasswordField.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
@@ -104,7 +104,7 @@ export default {
       if (this.saving || this.isProviderManaged) return;
       this.saving = true;
       try {
-        const response = await axios.put("/users", { user: this.form });
+        const response = await updateProfile(this.form);
         this.alertOrNotifyResponse(response);
         this.form.password = "";
         this.form.password_confirmation = "";

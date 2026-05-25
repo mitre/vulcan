@@ -271,7 +271,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import { updateSection } from "../../api/reviewsApi";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import FormMixin from "../../mixins/FormMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
@@ -472,10 +472,11 @@ export default {
     async submitSectionChange() {
       if (!this.review || !this.canSubmitSectionChange) return;
       try {
-        const res = await axios.patch(`/reviews/${this.review.id}/section`, {
-          section: this.newSection,
-          audit_comment: this.sectionAuditComment.trim(),
-        });
+        const res = await updateSection(
+          this.review.id,
+          this.newSection,
+          this.sectionAuditComment.trim(),
+        );
         this.$emit("triaged", res.data.review);
         this.cancelSectionEdit();
         // Hide the modal on success — consistent with the other modal

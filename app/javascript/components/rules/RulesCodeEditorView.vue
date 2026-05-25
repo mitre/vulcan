@@ -254,7 +254,7 @@
 
 <script>
 import { toRef } from "vue";
-import axios from "axios";
+import api from "../../api/baseApi";
 import RuleEditor from "./RuleEditor.vue";
 import RuleNavigator from "./RuleNavigator.vue";
 import RelatedRulesModal from "./RelatedRulesModal.vue";
@@ -618,7 +618,7 @@ export default {
           audit_comment: comment,
         },
       };
-      axios
+      api
         .put(`/rules/${rule.id}`, payload)
         .then((response) => {
           this.alertOrNotifyResponse(response);
@@ -630,7 +630,7 @@ export default {
       if (!comment.trim()) return;
       const rule = this.selectedRule;
       if (!rule) return;
-      axios
+      api
         .post(`/rules/${rule.id}/reviews`, {
           review: {
             action: "comment",
@@ -670,7 +670,7 @@ export default {
       const rule = this.selectedRule;
       if (!rule) return;
       this.sectionLockModal.visible = false;
-      axios
+      api
         .patch(`/rules/${rule.id}/section_locks`, {
           section,
           locked: isLocking,
@@ -692,7 +692,7 @@ export default {
           advanced_fields: advancedFields,
         },
       };
-      axios
+      api
         .patch(`/components/${this.component.id}`, payload)
         .then((response) => {
           this.alertOrNotifyResponse(response);
@@ -704,7 +704,7 @@ export default {
     lockRule(comment) {
       const rule = this.selectedRule;
       if (!rule) return;
-      axios
+      api
         .post(`/rules/${rule.id}/reviews`, {
           review: {
             component_id: rule.component_id,
@@ -721,7 +721,7 @@ export default {
     unlockRule(comment) {
       const rule = this.selectedRule;
       if (!rule) return;
-      axios
+      api
         .post(`/rules/${rule.id}/reviews`, {
           review: {
             component_id: rule.component_id,
@@ -747,7 +747,7 @@ export default {
       this.selectedSatisfiesRuleIds = [];
     },
     refreshComponent() {
-      axios
+      api
         .get(`/components/${this.component.id}.json`)
         .then((response) => {
           // Use $set for each key to ensure Vue 2 reactivity detects changes
