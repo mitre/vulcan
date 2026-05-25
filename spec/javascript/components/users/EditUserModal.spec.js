@@ -205,7 +205,7 @@ describe("EditUserModal", () => {
       await wrapper.vm.setPasswordDirectly();
 
       expect(axios.post).toHaveBeenCalledWith("/users/42/set_password", {
-        user: { password: "N3wSecure!!Pass99" },
+        user: { password: "N3wSecure!!Pass99", password_confirmation: "N3wSecure!!Pass99" },
       });
     });
 

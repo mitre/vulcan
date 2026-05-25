@@ -113,9 +113,7 @@ describe("ReactionButtons", () => {
 
     await w.vm.onPopoverShow();
     expect(axios.get).toHaveBeenCalledTimes(1);
-    expect(axios.get).toHaveBeenCalledWith("/reviews/42/reactions", {
-      headers: { Accept: "application/json" },
-    });
+    expect(axios.get).toHaveBeenCalledWith("/reviews/42/reactions", { params: undefined });
     expect(w.vm.reactors.up.map((r) => r.name)).toEqual(["Alice", "Bob"]);
     expect(w.vm.reactors.down.map((r) => r.name)).toEqual(["Carol"]);
 

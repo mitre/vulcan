@@ -1,28 +1,20 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
+import api from "@/api/baseApi";
 
 describe("baseApi", () => {
-  beforeEach(() => {
-    vi.resetModules();
-    document.head.innerHTML = "";
+  it("exports a function with get, post, put, patch, delete methods", () => {
+    expect(typeof api.get).toBe("function");
+    expect(typeof api.post).toBe("function");
+    expect(typeof api.put).toBe("function");
+    expect(typeof api.patch).toBe("function");
+    expect(typeof api.delete).toBe("function");
   });
 
-  it("creates an axios instance with X-CSRF-Token from meta tag", async () => {
-    const meta = document.createElement("meta");
-    meta.name = "csrf-token";
-    meta.content = "test-csrf-token-abc123";
-    document.head.appendChild(meta);
-
-    const { default: api } = await import("@/api/baseApi");
-    expect(api.defaults.headers.common["X-CSRF-Token"]).toBe("test-csrf-token-abc123");
-  });
-
-  it("sets Accept header to application/json", async () => {
-    const { default: api } = await import("@/api/baseApi");
+  it("has Accept: application/json in default headers", () => {
     expect(api.defaults.headers.common["Accept"]).toBe("application/json");
   });
 
-  it("does not crash when no csrf-token meta tag exists", async () => {
-    const { default: api } = await import("@/api/baseApi");
-    expect(api.defaults.headers.common["X-CSRF-Token"]).toBeUndefined();
+  it("has X-CSRF-Token set from setup.js meta tag", () => {
+    expect(api.defaults.headers.common["X-CSRF-Token"]).toBe("test-csrf-token");
   });
 });

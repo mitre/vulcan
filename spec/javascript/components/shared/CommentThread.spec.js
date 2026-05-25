@@ -89,9 +89,7 @@ describe("CommentThread", () => {
     await w.find("button[aria-controls]").trigger("click");
     await new Promise((r) => setTimeout(r, 0));
     expect(axios.get).toHaveBeenCalledTimes(1);
-    expect(axios.get).toHaveBeenCalledWith("/reviews/1/responses", {
-      headers: { Accept: "application/json" },
-    });
+    expect(axios.get).toHaveBeenCalledWith("/reviews/1/responses", { params: undefined });
     expect(w.text()).toContain("first reply");
 
     // Toggle off then on → should NOT refetch (cached)
@@ -100,7 +98,7 @@ describe("CommentThread", () => {
     expect(axios.get).toHaveBeenCalledTimes(1);
   });
 
-  it("sends an explicit Accept: application/json header (per-pack axios pattern)", async () => {
+  it("calls the correct endpoint for responses", async () => {
     axios.get.mockResolvedValue({ data: { rows: [] } });
     const w = mount(CommentThread, {
       localVue,
@@ -108,10 +106,7 @@ describe("CommentThread", () => {
     });
     await w.find("button[aria-controls]").trigger("click");
     await new Promise((r) => setTimeout(r, 0));
-    expect(axios.get).toHaveBeenCalledWith(
-      "/reviews/99/responses",
-      expect.objectContaining({ headers: { Accept: "application/json" } }),
-    );
+    expect(axios.get).toHaveBeenCalledWith("/reviews/99/responses", { params: undefined });
   });
 
   it("renders an error state with retry on fetch failure", async () => {

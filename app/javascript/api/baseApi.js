@@ -1,16 +1,11 @@
 import axios from "axios";
 
-const api = axios.create({
-  headers: {
-    common: {
-      Accept: "application/json",
-    },
-  },
-});
-
-const csrfMeta = document.querySelector('meta[name="csrf-token"]');
-if (csrfMeta) {
-  api.defaults.headers.common["X-CSRF-Token"] = csrfMeta.content;
+if (axios.defaults?.headers?.common) {
+  const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+  if (csrfMeta) {
+    axios.defaults.headers.common["X-CSRF-Token"] = csrfMeta.content;
+  }
+  axios.defaults.headers.common["Accept"] = "application/json";
 }
 
-export default api;
+export default axios;
