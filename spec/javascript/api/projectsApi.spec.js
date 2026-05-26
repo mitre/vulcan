@@ -42,16 +42,16 @@ describe("projectsApi", () => {
     expect(api.post).toHaveBeenCalledWith("/projects", { project: { name: "Test" } });
   });
 
-  it("deleteProject calls DELETE /projects/:id.json", async () => {
+  it("deleteProject calls DELETE /projects/:id", async () => {
     api.delete.mockResolvedValue({ data: {} });
     await deleteProject(5);
-    expect(api.delete).toHaveBeenCalledWith("/projects/5.json");
+    expect(api.delete).toHaveBeenCalledWith("/projects/5");
   });
 
-  it("updateProject calls PUT /projects/:id", async () => {
+  it("updateProject wraps data in { project: data }", async () => {
     api.put.mockResolvedValue({ data: {} });
     await updateProject(5, { name: "Updated" });
-    expect(api.put).toHaveBeenCalledWith("/projects/5", { name: "Updated" });
+    expect(api.put).toHaveBeenCalledWith("/projects/5", { project: { name: "Updated" } });
   });
 
   it("getSrgs calls GET /srgs", async () => {

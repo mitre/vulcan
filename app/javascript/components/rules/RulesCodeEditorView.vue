@@ -254,7 +254,8 @@
 
 <script>
 import { toRef } from "vue";
-import { updateRule, createReview, updateSectionLocks } from "../../api/rulesApi";
+import { updateRule, updateSectionLocks } from "../../api/rulesApi";
+import { createRuleReview } from "../../api/reviewsApi";
 import { getComponent, patchComponent } from "../../api/componentsApi";
 import RuleEditor from "./RuleEditor.vue";
 import RuleNavigator from "./RuleNavigator.vue";
@@ -613,13 +614,7 @@ export default {
       if (!rule) return;
       // Reset autosave timer — manual save takes priority
       this.resetAutosaveTimer();
-      const payload = {
-        rule: {
-          ...rule,
-          audit_comment: comment,
-        },
-      };
-      updateRule(rule.id, payload)
+      updateRule(rule.id, { ...rule, audit_comment: comment })
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.$root.$emit("refresh:rule", rule.id);
@@ -630,7 +625,7 @@ export default {
       if (!comment.trim()) return;
       const rule = this.selectedRule;
       if (!rule) return;
-      createReview(rule.id, { review: { action: "comment", comment: comment } })
+      createRuleReview(rule.id, { action: "comment", comment: comment })
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.$root.$emit("refresh:rule", rule.id, "all");
@@ -680,12 +675,7 @@ export default {
     },
     toggleAdvancedFields(advancedFields) {
       // Confirmation is now handled in RuleEditor component
-      const payload = {
-        component: {
-          advanced_fields: advancedFields,
-        },
-      };
-      patchComponent(this.component.id, payload)
+      patchComponent(this.component.id, { advanced_fields: advancedFields })
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.localAdvancedFields = advancedFields;
@@ -695,12 +685,10 @@ export default {
     lockRule(comment) {
       const rule = this.selectedRule;
       if (!rule) return;
-      createReview(rule.id, {
-        review: {
-          component_id: rule.component_id,
-          action: "lock_control",
-          comment: (comment || "").trim() || "Locked",
-        },
+      createRuleReview(rule.id, {
+        component_id: rule.component_id,
+        action: "lock_control",
+        comment: (comment || "").trim() || "Locked",
       })
         .then((response) => {
           this.alertOrNotifyResponse(response);
@@ -711,12 +699,10 @@ export default {
     unlockRule(comment) {
       const rule = this.selectedRule;
       if (!rule) return;
-      createReview(rule.id, {
-        review: {
-          component_id: rule.component_id,
-          action: "unlock_control",
-          comment: (comment || "").trim() || "Unlocked",
-        },
+      createRuleReview(rule.id, {
+        component_id: rule.component_id,
+        action: "unlock_control",
+        comment: (comment || "").trim() || "Unlocked",
       })
         .then((response) => {
           this.alertOrNotifyResponse(response);

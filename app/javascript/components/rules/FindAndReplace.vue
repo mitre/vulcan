@@ -250,13 +250,7 @@ export default {
       this.loading = true;
       const original_rule = this.rules.find((rule) => rule.id == rule_id);
       this.replaceTextInRule(original_rule, result.field, result.segments, this.fr.replace);
-      const payload = {
-        rule: {
-          ...original_rule,
-          audit_comment: comment,
-        },
-      };
-      return updateRule(rule_id, payload)
+      return updateRule(rule_id, { ...original_rule, audit_comment: comment })
         .then((response) => {
           this.saveRuleSuccess(response, rule_id);
         })
@@ -274,14 +268,8 @@ export default {
         find_results.results.forEach(function (result) {
           self.replaceTextInRule(original_rule, result.field, result.segments, self.fr.replace);
         });
-        const payload = {
-          rule: {
-            ...original_rule,
-            audit_comment: comment,
-          },
-        };
         promises.push(
-          updateRule(rule_id, payload)
+          updateRule(rule_id, { ...original_rule, audit_comment: comment })
             .then((response) => {
               self.saveRuleSuccess(response, rule_id);
             })

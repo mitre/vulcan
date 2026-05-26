@@ -1,11 +1,11 @@
 import api from "./baseApi";
 
 export function getRule(ruleId) {
-  return api.get(`/rules/${ruleId}`, { headers: { Accept: "application/json" } });
+  return api.get(`/rules/${ruleId}`);
 }
 
-export function updateRule(ruleId, payload) {
-  return api.put(`/rules/${ruleId}`, payload);
+export function updateRule(ruleId, data) {
+  return api.put(`/rules/${ruleId}`, { rule: data });
 }
 
 export function deleteRule(ruleId) {
@@ -18,10 +18,6 @@ export function createRuleInComponent(componentId, ruleData) {
 
 export function revertRule(ruleId, payload) {
   return api.post(`/rules/${ruleId}/revert`, payload);
-}
-
-export function createReview(ruleId, reviewData) {
-  return api.post(`/rules/${ruleId}/reviews`, reviewData);
 }
 
 export function updateSectionLocks(ruleId, payload) {
@@ -42,7 +38,7 @@ export function removeSatisfaction(ruleId, satisfiedByRuleId) {
 }
 
 export function getRulesPicker(componentId) {
-  return api.get(`/components/${componentId}/rules_picker.json`);
+  return api.get(`/components/${componentId}/rules_picker`);
 }
 
 export function findInComponent(componentId, findText) {

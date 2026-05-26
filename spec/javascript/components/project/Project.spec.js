@@ -243,9 +243,7 @@ describe("Project", () => {
       wrapper.vm.updateVisibility();
 
       expect(wrapper.vm.showVisibilityModal).toBe(false);
-      expect(updateProject).toHaveBeenCalledWith(1, {
-        project: { visibility: "discoverable" },
-      });
+      expect(updateProject).toHaveBeenCalledWith(1, { visibility: "discoverable" });
     });
 
     it("cancelVisibilityChange closes modal and resets command bar toggle", () => {

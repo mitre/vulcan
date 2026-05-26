@@ -83,8 +83,7 @@ export default {
     },
     updateProjectDetails: function () {
       this.$refs["updateProjectDetailsModal"].hide();
-      let payload = { project: { name: this["name"], description: this["description"] } };
-      updateProject(this.project.id, payload)
+      updateProject(this.project.id, { name: this["name"], description: this["description"] })
         .then(this.editProjectSuccess)
         .catch(this.alertOrNotifyResponse);
     },

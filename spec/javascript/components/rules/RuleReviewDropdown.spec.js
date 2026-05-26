@@ -14,8 +14,8 @@ vi.mock("@/api/baseApi", () => ({
   },
 }));
 
-vi.mock("@/api/rulesApi", () => ({
-  createReview: vi.fn(() => Promise.resolve({ data: {} })),
+vi.mock("@/api/reviewsApi", () => ({
+  createRuleReview: vi.fn(() => Promise.resolve({ data: {} })),
 }));
 
 describe("RuleReviewDropdown", () => {
@@ -37,32 +37,30 @@ describe("RuleReviewDropdown", () => {
   beforeEach(() => vi.resetAllMocks());
   afterEach(() => { if (wrapper) wrapper.destroy(); });
 
-  it("submitReview calls createReview with rule id and review payload", async () => {
-    const { createReview } = await import("@/api/rulesApi");
-    createReview.mockResolvedValueOnce({ data: {} });
+  it("submitReview calls createRuleReview with rule id and review payload", async () => {
+    const { createRuleReview } = await import("@/api/reviewsApi");
+    createRuleReview.mockResolvedValueOnce({ data: {} });
 
     wrapper = createWrapper();
     wrapper.vm.selectedReviewAction = "request_review";
     wrapper.vm.reviewComment = "ready for review";
     wrapper.vm.submitReview();
 
-    expect(createReview).toHaveBeenCalledWith(5, {
-      review: {
-        component_id: 20,
-        action: "request_review",
-        comment: "ready for review",
-      },
+    expect(createRuleReview).toHaveBeenCalledWith(5, {
+      component_id: 20,
+      action: "request_review",
+      comment: "ready for review",
     });
   });
 
-  it("does not call createReview when comment is empty", async () => {
-    const { createReview } = await import("@/api/rulesApi");
+  it("does not call createRuleReview when comment is empty", async () => {
+    const { createRuleReview } = await import("@/api/reviewsApi");
 
     wrapper = createWrapper();
     wrapper.vm.selectedReviewAction = "approve";
     wrapper.vm.reviewComment = "";
     wrapper.vm.submitReview();
 
-    expect(createReview).not.toHaveBeenCalled();
+    expect(createRuleReview).not.toHaveBeenCalled();
   });
 });

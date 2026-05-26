@@ -46,7 +46,7 @@
 </template>
 
 <script>
-import { createReview } from "../../api/rulesApi";
+import { createRuleReview } from "../../api/reviewsApi";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import { buildReviewActions } from "../../utils/reviewActionHelpers";
 
@@ -97,12 +97,10 @@ export default {
         return;
       }
 
-      createReview(this.rule.id, {
-        review: {
-          component_id: this.rule.component_id,
-          action: this.selectedReviewAction,
-          comment: this.reviewComment.trim(),
-        },
+      createRuleReview(this.rule.id, {
+        component_id: this.rule.component_id,
+        action: this.selectedReviewAction,
+        comment: this.reviewComment.trim(),
       })
         .then((response) => {
           this.alertOrNotifyResponse(response);

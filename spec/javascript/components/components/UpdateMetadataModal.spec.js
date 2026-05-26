@@ -48,10 +48,8 @@ describe("UpdateMetadataModal", () => {
     wrapper.vm.updateMetadata();
 
     expect(updateComponent).toHaveBeenCalledWith(7, expect.objectContaining({
-      component: expect.objectContaining({
-        component_metadata_attributes: expect.objectContaining({
-          data: { env: "production" },
-        }),
+      component_metadata_attributes: expect.objectContaining({
+        data: { env: "production" },
       }),
     }));
   });

@@ -119,7 +119,7 @@ describe("FindAndReplace", () => {
       wrapper.vm.replace_one(42, result, "audit comment");
 
       expect(updateRule).toHaveBeenCalledWith(42, expect.objectContaining({
-        rule: expect.objectContaining({ audit_comment: "audit comment" }),
+        audit_comment: "audit comment",
       }));
     });
 
@@ -143,10 +143,10 @@ describe("FindAndReplace", () => {
 
       expect(updateRule).toHaveBeenCalledTimes(2);
       expect(updateRule).toHaveBeenCalledWith("10", expect.objectContaining({
-        rule: expect.objectContaining({ audit_comment: "bulk comment" }),
+        audit_comment: "bulk comment",
       }));
       expect(updateRule).toHaveBeenCalledWith("20", expect.objectContaining({
-        rule: expect.objectContaining({ audit_comment: "bulk comment" }),
+        audit_comment: "bulk comment",
       }));
     });
   });

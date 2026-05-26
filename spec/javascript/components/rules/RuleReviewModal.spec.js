@@ -14,8 +14,8 @@ vi.mock("@/api/baseApi", () => ({
   },
 }));
 
-vi.mock("@/api/rulesApi", () => ({
-  createReview: vi.fn(() => Promise.resolve({ data: {} })),
+vi.mock("@/api/reviewsApi", () => ({
+  createRuleReview: vi.fn(() => Promise.resolve({ data: {} })),
 }));
 
 describe("RuleReviewModal", () => {
@@ -38,43 +38,41 @@ describe("RuleReviewModal", () => {
   beforeEach(() => vi.resetAllMocks());
   afterEach(() => { if (wrapper) wrapper.destroy(); });
 
-  it("submitReview calls createReview with rule id and review payload", async () => {
-    const { createReview } = await import("@/api/rulesApi");
-    createReview.mockResolvedValueOnce({ data: {} });
+  it("submitReview calls createRuleReview with rule id and review payload", async () => {
+    const { createRuleReview } = await import("@/api/reviewsApi");
+    createRuleReview.mockResolvedValueOnce({ data: {} });
 
     wrapper = createWrapper();
     wrapper.vm.selectedReviewAction = "approve";
     wrapper.vm.reviewComment = "looks good";
     wrapper.vm.submitReview();
 
-    expect(createReview).toHaveBeenCalledWith(1, {
-      review: {
-        component_id: 10,
-        action: "approve",
-        comment: "looks good",
-      },
+    expect(createRuleReview).toHaveBeenCalledWith(1, {
+      component_id: 10,
+      action: "approve",
+      comment: "looks good",
     });
   });
 
-  it("does not call createReview when comment is empty", async () => {
-    const { createReview } = await import("@/api/rulesApi");
+  it("does not call createRuleReview when comment is empty", async () => {
+    const { createRuleReview } = await import("@/api/reviewsApi");
 
     wrapper = createWrapper();
     wrapper.vm.selectedReviewAction = "approve";
     wrapper.vm.reviewComment = "   ";
     wrapper.vm.submitReview();
 
-    expect(createReview).not.toHaveBeenCalled();
+    expect(createRuleReview).not.toHaveBeenCalled();
   });
 
-  it("does not call createReview when no action selected", async () => {
-    const { createReview } = await import("@/api/rulesApi");
+  it("does not call createRuleReview when no action selected", async () => {
+    const { createRuleReview } = await import("@/api/reviewsApi");
 
     wrapper = createWrapper();
     wrapper.vm.selectedReviewAction = null;
     wrapper.vm.reviewComment = "some comment";
     wrapper.vm.submitReview();
 
-    expect(createReview).not.toHaveBeenCalled();
+    expect(createRuleReview).not.toHaveBeenCalled();
   });
 });

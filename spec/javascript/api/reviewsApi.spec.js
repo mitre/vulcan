@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import api from "@/api/baseApi";
 import {
-  createReview,
+  createRuleReview,
+  createComponentReview,
   getResponses,
   updateSection,
   reopenReview,
@@ -24,10 +25,20 @@ vi.mock("@/api/baseApi", () => ({
 describe("reviewsApi", () => {
   beforeEach(() => vi.resetAllMocks());
 
-  it("createReview calls POST with provided URL and payload", async () => {
+  it("createRuleReview wraps data in { review: data }", async () => {
     api.post.mockResolvedValue({ data: {} });
-    await createReview("/rules/5/reviews", { review: { action: "comment" } });
-    expect(api.post).toHaveBeenCalledWith("/rules/5/reviews", { review: { action: "comment" } });
+    await createRuleReview(5, { action: "comment", comment: "test" });
+    expect(api.post).toHaveBeenCalledWith("/rules/5/reviews", {
+      review: { action: "comment", comment: "test" },
+    });
+  });
+
+  it("createComponentReview wraps data in { review: data }", async () => {
+    api.post.mockResolvedValue({ data: {} });
+    await createComponentReview(10, { action: "comment", comment: "test" });
+    expect(api.post).toHaveBeenCalledWith("/components/10/reviews", {
+      review: { action: "comment", comment: "test" },
+    });
   });
 
   it("getResponses calls GET /reviews/:id/responses", async () => {

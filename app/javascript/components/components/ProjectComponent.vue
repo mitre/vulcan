@@ -377,12 +377,7 @@ export default {
     },
     toggleAdvancedFields(advanced_fields) {
       // Confirmation is now handled in RuleEditor component
-      const payload = {
-        component: {
-          advanced_fields: advanced_fields,
-        },
-      };
-      patchComponent(this.component.id, payload)
+      patchComponent(this.component.id, { advanced_fields })
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.localAdvancedFields = advanced_fields;

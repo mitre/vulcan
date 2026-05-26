@@ -1,14 +1,22 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
-import axios from "axios";
 import ConfirmComponentReleaseMixin from "@/mixins/ConfirmComponentReleaseMixin.vue";
+import { patchComponent } from "@/api/componentsApi";
 
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
-    patch: vi.fn(),
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
     defaults: { headers: { common: {} } },
   },
+}));
+
+vi.mock("@/api/componentsApi", () => ({
+  patchComponent: vi.fn(() => Promise.resolve({ data: {} })),
 }));
 
 /**
@@ -31,7 +39,7 @@ vi.mock("axios", () => ({
  * - this.$createElement() (Vue built-in, creates VNode for dialog body)
  * - this.alertOrNotifyResponse(response)
  * - this.$emit('projectUpdated')
- * - axios.patch()
+ * - patchComponent()
  */
 
 let wrapper;
@@ -98,7 +106,7 @@ describe("ConfirmComponentReleaseMixin", () => {
 
       wrapper.vm.confirmComponentRelease();
 
-      expect(axios.patch).not.toHaveBeenCalled();
+      expect(patchComponent).not.toHaveBeenCalled();
     });
   });
 
@@ -151,21 +159,19 @@ describe("ConfirmComponentReleaseMixin", () => {
 
     it("sends PATCH request with released: true", async () => {
       const mockResponse = { data: { success: true } };
-      axios.patch.mockResolvedValue(mockResponse);
+      patchComponent.mockResolvedValue(mockResponse);
 
       wrapper = createWrapper({ releasable: true, componentId: 99 });
       wrapper.vm.confirmComponentRelease();
 
-      await vi.waitFor(() => expect(axios.patch).toHaveBeenCalled());
+      await vi.waitFor(() => expect(patchComponent).toHaveBeenCalled());
 
-      expect(axios.patch).toHaveBeenCalledWith("/components/99", {
-        component: { released: true },
-      });
+      expect(patchComponent).toHaveBeenCalledWith(99, { released: true });
     });
 
     it("calls alertOrNotifyResponse with the response on success", async () => {
       const mockResponse = { data: { message: "Released!" } };
-      axios.patch.mockResolvedValue(mockResponse);
+      patchComponent.mockResolvedValue(mockResponse);
 
       wrapper = createWrapper({ releasable: true });
       wrapper.vm.confirmComponentRelease();
@@ -174,7 +180,7 @@ describe("ConfirmComponentReleaseMixin", () => {
     });
 
     it('emits "projectUpdated" event on successful release', async () => {
-      axios.patch.mockResolvedValue({ data: {} });
+      patchComponent.mockResolvedValue({ data: {} });
 
       wrapper = createWrapper({ releasable: true });
       wrapper.vm.confirmComponentRelease();
@@ -193,7 +199,7 @@ describe("ConfirmComponentReleaseMixin", () => {
 
     it("calls alertOrNotifyResponse with the error", async () => {
       const mockError = { response: { status: 500, data: { error: "Server error" } } };
-      axios.patch.mockRejectedValue(mockError);
+      patchComponent.mockRejectedValue(mockError);
 
       wrapper = createWrapper({ releasable: true });
       wrapper.vm.confirmComponentRelease();
@@ -202,7 +208,7 @@ describe("ConfirmComponentReleaseMixin", () => {
     });
 
     it('does not emit "projectUpdated" on failure', async () => {
-      axios.patch.mockRejectedValue(new Error("Network error"));
+      patchComponent.mockRejectedValue(new Error("Network error"));
 
       wrapper = createWrapper({ releasable: true });
       wrapper.vm.confirmComponentRelease();
@@ -227,7 +233,7 @@ describe("ConfirmComponentReleaseMixin", () => {
       // Wait for the promise chain to settle
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(axios.patch).not.toHaveBeenCalled();
+      expect(patchComponent).not.toHaveBeenCalled();
     });
 
     it("does not send PATCH when user clicks away (null)", async () => {
@@ -239,7 +245,7 @@ describe("ConfirmComponentReleaseMixin", () => {
       // Wait for the promise chain to settle
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(axios.patch).not.toHaveBeenCalled();
+      expect(patchComponent).not.toHaveBeenCalled();
     });
 
     it('does not emit "projectUpdated" when cancelled', async () => {

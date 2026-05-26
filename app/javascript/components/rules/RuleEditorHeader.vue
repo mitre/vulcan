@@ -180,7 +180,8 @@
 </template>
 
 <script>
-import { updateRule, createReview } from "../../api/rulesApi";
+import { updateRule } from "../../api/rulesApi";
+import { createRuleReview } from "../../api/reviewsApi";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
@@ -343,13 +344,7 @@ export default {
   },
   methods: {
     saveRule(comment) {
-      const payload = {
-        rule: {
-          ...this.rule,
-          audit_comment: comment,
-        },
-      };
-      updateRule(this.rule.id, payload)
+      updateRule(this.rule.id, { ...this.rule, audit_comment: comment })
         .then(this.saveRuleSuccess)
         .catch(this.alertOrNotifyResponse);
     },
@@ -366,11 +361,9 @@ export default {
         return;
       }
 
-      createReview(this.rule.id, {
-        review: {
-          action: "comment",
-          comment: comment,
-        },
+      createRuleReview(this.rule.id, {
+        action: "comment",
+        comment: comment,
       })
         .then(this.reviewSubmitSuccess)
         .catch(this.alertOrNotifyResponse);
@@ -378,17 +371,14 @@ export default {
     reviewFormSubmitted: function (event) {
       event.preventDefault();
 
-      // guard against invalid comment body
       if (!this.reviewComment.trim() || !this.selectedReviewAction) {
         return;
       }
 
-      createReview(this.rule.id, {
-        review: {
-          component_id: this.rule.component_id,
-          action: this.selectedReviewAction,
-          comment: this.reviewComment.trim(),
-        },
+      createRuleReview(this.rule.id, {
+        component_id: this.rule.component_id,
+        action: this.selectedReviewAction,
+        comment: this.reviewComment.trim(),
       })
         .then(this.reviewSubmitSuccess)
         .catch(this.alertOrNotifyResponse);

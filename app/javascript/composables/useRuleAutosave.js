@@ -66,12 +66,7 @@ export function useRuleAutosave(rule, options = {}) {
     if (r.locked) return;
     if (r.review_requestor_id) return;
 
-    updateRule(r.id, {
-      rule: {
-        ...r,
-        audit_comment: "[Auto-saved]",
-      },
-    })
+    updateRule(r.id, { ...r, audit_comment: "[Auto-saved]" })
       .then(() => {
         isDirty.value = false;
         if (options.onAutoSave) options.onAutoSave(r.id);

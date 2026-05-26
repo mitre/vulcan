@@ -16,7 +16,10 @@ vi.mock("@/api/baseApi", () => ({
 
 vi.mock("@/api/rulesApi", () => ({
   updateRule: vi.fn(() => Promise.resolve({ data: {} })),
-  createReview: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+
+vi.mock("@/api/reviewsApi", () => ({
+  createRuleReview: vi.fn(() => Promise.resolve({ data: {} })),
 }));
 
 describe("RuleEditorHeader", () => {
@@ -177,37 +180,35 @@ describe("RuleEditorHeader", () => {
       wrapper.vm.saveRule("audit comment");
 
       expect(updateRule).toHaveBeenCalledWith(1, expect.objectContaining({
-        rule: expect.objectContaining({ audit_comment: "audit comment" }),
+        audit_comment: "audit comment",
       }));
     });
 
-    it("commentFormSubmitted calls createReview with rule id", async () => {
-      const { createReview } = await import("@/api/rulesApi");
-      createReview.mockResolvedValueOnce({ data: {} });
+    it("commentFormSubmitted calls createRuleReview with rule id", async () => {
+      const { createRuleReview } = await import("@/api/reviewsApi");
+      createRuleReview.mockResolvedValueOnce({ data: {} });
 
       wrapper = createWrapper();
       wrapper.vm.commentFormSubmitted("test comment");
 
-      expect(createReview).toHaveBeenCalledWith(1, {
-        review: { action: "comment", comment: "test comment" },
+      expect(createRuleReview).toHaveBeenCalledWith(1, {
+        action: "comment", comment: "test comment",
       });
     });
 
-    it("reviewFormSubmitted calls createReview with action and comment", async () => {
-      const { createReview } = await import("@/api/rulesApi");
-      createReview.mockResolvedValueOnce({ data: {} });
+    it("reviewFormSubmitted calls createRuleReview with action and comment", async () => {
+      const { createRuleReview } = await import("@/api/reviewsApi");
+      createRuleReview.mockResolvedValueOnce({ data: {} });
 
       wrapper = createWrapper();
       wrapper.vm.selectedReviewAction = "request_review";
       wrapper.vm.reviewComment = "please review";
       wrapper.vm.reviewFormSubmitted({ preventDefault: vi.fn() });
 
-      expect(createReview).toHaveBeenCalledWith(1, {
-        review: {
-          component_id: 10,
-          action: "request_review",
-          comment: "please review",
-        },
+      expect(createRuleReview).toHaveBeenCalledWith(1, {
+        component_id: 10,
+        action: "request_review",
+        comment: "please review",
       });
     });
   });

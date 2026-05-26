@@ -102,12 +102,9 @@ export default {
     },
     updateQuestions: function () {
       this.$refs["addQuestionsToComponentModal"].hide();
-      let payload = {
-        component: {
-          additional_questions_attributes: this.questions.concat(this.deleted_questions),
-        },
-      };
-      updateComponent(this.component.id, payload)
+      updateComponent(this.component.id, {
+        additional_questions_attributes: this.questions.concat(this.deleted_questions),
+      })
         .then(this.updateAdditionalQuestionsSuccess)
         .catch(this.alertOrNotifyResponse);
     },

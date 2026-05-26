@@ -368,12 +368,12 @@ export default {
       }
 
       this.saving = true;
-      const payload = { component: {} };
+      const data = {};
       PAYLOAD_KEYS.forEach((key) => {
-        payload.component[key] = this.form[key];
+        data[key] = this.form[key];
       });
       try {
-        const response = await updateComponent(this.component.id, payload);
+        const response = await updateComponent(this.component.id, data);
         this.alertOrNotifyResponse(response);
       } catch (error) {
         this.alertOrNotifyResponse(error);

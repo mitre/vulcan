@@ -138,9 +138,7 @@ export default {
     },
     lockControls: function () {
       this.loading = true;
-      lockComponent(this.component_id, {
-        review: { action: "lock_control", comment: this.comment },
-      })
+      lockComponent(this.component_id, { action: "lock_control", comment: this.comment })
         .then(this.lockControlsSuccess)
         .catch(this.alertOrNotifyResponse)
         .finally(this.completeLoading);

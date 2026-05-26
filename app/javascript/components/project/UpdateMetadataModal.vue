@@ -69,18 +69,14 @@ export default {
     },
     updateMetadata: function () {
       this.$refs["updateMetadataModal"].hide();
-      let payload = {
-        project: {
-          project_metadata_attributes: {
-            data: this.metadata.reduce((acc, curr) => {
-              acc[curr.key] = curr.value;
-              return acc;
-            }, {}),
-          },
+      updateProject(this.project.id, {
+        project_metadata_attributes: {
+          data: this.metadata.reduce((acc, curr) => {
+            acc[curr.key] = curr.value;
+            return acc;
+          }, {}),
         },
-      };
-
-      updateProject(this.project.id, payload)
+      })
         .then(this.updateMetadataSuccess)
         .catch(this.alertOrNotifyResponse);
     },

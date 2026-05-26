@@ -3,12 +3,19 @@ import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import ProjectsTable from "@/components/projects/ProjectsTable.vue";
 
-// Mock axios
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
     delete: vi.fn(() => Promise.resolve({ data: {} })),
     defaults: { headers: { common: {} } },
   },
+}));
+
+vi.mock("@/api/projectsApi", () => ({
+  deleteProject: vi.fn(() => Promise.resolve({ data: {} })),
 }));
 
 /**
@@ -327,20 +334,20 @@ describe("ProjectsTable", () => {
   // DELETE EXECUTION
   // ==========================================
   describe("delete execution", () => {
-    it("confirmDelete calls axios.delete with correct URL (JSON format)", async () => {
-      const axios = (await import("axios")).default;
+    it("confirmDelete calls deleteProject with project id", async () => {
+      const { deleteProject } = await import("@/api/projectsApi");
       wrapper = createWrapper({ is_vulcan_admin: true });
       wrapper.vm.projectToDelete = sampleProjects[0];
       wrapper.vm.showDeleteModal = true;
 
       await wrapper.vm.confirmDelete();
 
-      expect(axios.delete).toHaveBeenCalledWith("/projects/1.json");
+      expect(deleteProject).toHaveBeenCalledWith(1);
     });
 
     it("confirmDelete sets isDeleting to true during request", async () => {
-      const axios = (await import("axios")).default;
-      axios.delete.mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 100)));
+      const { deleteProject } = await import("@/api/projectsApi");
+      deleteProject.mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 100)));
 
       wrapper = createWrapper({ is_vulcan_admin: true });
       wrapper.vm.projectToDelete = sampleProjects[0];
@@ -352,8 +359,8 @@ describe("ProjectsTable", () => {
     });
 
     it("emits projectUpdated on success", async () => {
-      const axios = (await import("axios")).default;
-      axios.delete.mockResolvedValue({ data: {} });
+      const { deleteProject } = await import("@/api/projectsApi");
+      deleteProject.mockResolvedValue({ data: {} });
 
       wrapper = createWrapper({ is_vulcan_admin: true });
       wrapper.vm.projectToDelete = sampleProjects[0];
@@ -365,8 +372,8 @@ describe("ProjectsTable", () => {
     });
 
     it("closes modal on success", async () => {
-      const axios = (await import("axios")).default;
-      axios.delete.mockResolvedValue({ data: {} });
+      const { deleteProject } = await import("@/api/projectsApi");
+      deleteProject.mockResolvedValue({ data: {} });
 
       wrapper = createWrapper({ is_vulcan_admin: true });
       wrapper.vm.projectToDelete = sampleProjects[0];
@@ -379,8 +386,8 @@ describe("ProjectsTable", () => {
     });
 
     it("resets state on success", async () => {
-      const axios = (await import("axios")).default;
-      axios.delete.mockResolvedValue({ data: {} });
+      const { deleteProject } = await import("@/api/projectsApi");
+      deleteProject.mockResolvedValue({ data: {} });
 
       wrapper = createWrapper({ is_vulcan_admin: true });
       wrapper.vm.projectToDelete = sampleProjects[0];

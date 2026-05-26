@@ -13,7 +13,7 @@ export function createProject(projectData) {
 }
 
 export function deleteProject(projectId) {
-  return api.delete(`/projects/${projectId}.json`);
+  return api.delete(`/projects/${projectId}`);
 }
 
 export function createFromBackup(formData, config = {}) {
@@ -24,8 +24,8 @@ export function getSrgs() {
   return api.get("/srgs");
 }
 
-export function updateProject(projectId, payload) {
-  return api.put(`/projects/${projectId}`, payload);
+export function updateProject(projectId, data) {
+  return api.put(`/projects/${projectId}`, { project: data });
 }
 
 export function restoreBackup(componentId, formData, config = {}) {

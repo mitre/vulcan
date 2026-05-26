@@ -138,7 +138,7 @@ describe("LockControlsModal", () => {
       wrapper.vm.lockControls();
 
       expect(lockComponent).toHaveBeenCalledWith(1, {
-        review: { action: "lock_control", comment: "Locking all" },
+        action: "lock_control", comment: "Locking all",
       });
     });
 

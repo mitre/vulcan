@@ -48,8 +48,6 @@ describe("AddQuestionsModal", () => {
     wrapper = createWrapper();
     wrapper.vm.updateQuestions();
 
-    expect(updateComponent).toHaveBeenCalledWith(5, {
-      component: { additional_questions_attributes: [] },
-    });
+    expect(updateComponent).toHaveBeenCalledWith(5, { additional_questions_attributes: [] });
   });
 });

@@ -1,15 +1,15 @@
 import api from "./baseApi";
 
 export function getComponent(componentId) {
-  return api.get(`/components/${componentId}.json`);
+  return api.get(`/components/${componentId}`);
 }
 
-export function updateComponent(componentId, payload) {
-  return api.put(`/components/${componentId}`, payload);
+export function updateComponent(componentId, data) {
+  return api.put(`/components/${componentId}`, { component: data });
 }
 
-export function patchComponent(componentId, payload) {
-  return api.patch(`/components/${componentId}`, payload);
+export function patchComponent(componentId, data) {
+  return api.patch(`/components/${componentId}`, { component: data });
 }
 
 export function deleteComponent(componentId) {
@@ -24,8 +24,8 @@ export function detectSrg(formData, config = {}) {
   return api.post("/components/detect_srg", formData, config);
 }
 
-export function lockComponent(componentId, payload) {
-  return api.post(`/components/${componentId}/lock`, payload);
+export function lockComponent(componentId, data) {
+  return api.post(`/components/${componentId}/lock`, { review: data });
 }
 
 export function lockSections(componentId, payload) {

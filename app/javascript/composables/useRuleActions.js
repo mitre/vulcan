@@ -1,10 +1,6 @@
 import { ref } from "vue";
-import {
-  createReview,
-  updateRule,
-  deleteRule as deleteRuleApi,
-  duplicateRule,
-} from "../api/rulesApi";
+import { updateRule, deleteRule as deleteRuleApi, duplicateRule } from "../api/rulesApi";
+import { createRuleReview } from "../api/reviewsApi";
 
 /**
  * Composable for rule API actions.
@@ -33,12 +29,10 @@ export function useRuleActions(componentId) {
     lastError.value = null;
 
     try {
-      const response = await createReview(rule.id, {
-        review: {
-          component_id: componentId,
-          action: action,
-          comment: comment.trim(),
-        },
+      const response = await createRuleReview(rule.id, {
+        component_id: componentId,
+        action: action,
+        comment: comment.trim(),
       });
       return response.data;
     } catch (error) {
@@ -110,9 +104,7 @@ export function useRuleActions(componentId) {
     lastError.value = null;
 
     try {
-      const response = await updateRule(rule.id, {
-        rule: ruleData,
-      });
+      const response = await updateRule(rule.id, ruleData);
       return response.data;
     } catch (error) {
       lastError.value = error.message;

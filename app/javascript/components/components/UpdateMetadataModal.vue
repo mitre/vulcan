@@ -69,18 +69,14 @@ export default {
     },
     updateMetadata: function () {
       this.$refs["updateMetadataModal"].hide();
-      let payload = {
-        component: {
-          component_metadata_attributes: {
-            data: this.metadata.reduce((acc, curr) => {
-              acc[curr.key] = curr.value;
-              return acc;
-            }, {}),
-          },
+      updateComponent(this.component.id, {
+        component_metadata_attributes: {
+          data: this.metadata.reduce((acc, curr) => {
+            acc[curr.key] = curr.value;
+            return acc;
+          }, {}),
         },
-      };
-
-      updateComponent(this.component.id, payload)
+      })
         .then(this.updateMetadataSuccess)
         .catch(this.alertOrNotifyResponse);
     },

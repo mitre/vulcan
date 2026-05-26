@@ -300,8 +300,9 @@ export default {
     },
     updateVisibility: function () {
       this.showVisibilityModal = false;
-      let payload = { project: { visibility: this.pendingVisibility ? "discoverable" : "hidden" } };
-      updateProject(this.project.id, payload)
+      updateProject(this.project.id, {
+        visibility: this.pendingVisibility ? "discoverable" : "hidden",
+      })
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.refreshProject();

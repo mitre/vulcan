@@ -181,9 +181,9 @@ describe("ComponentSettingsPage", () => {
       wrapper.vm.form.comment_period_ends_at = "2026-05-14";
       await wrapper.vm.save();
 
-      const [componentId, payload] = updateComponent.mock.calls[0];
+      const [componentId, data] = updateComponent.mock.calls[0];
       expect(componentId).toBe(8);
-      expect(payload.component).toMatchObject({
+      expect(data).toMatchObject({
         name: "Container Platform",
         prefix: "CNTR-01",
         comment_phase: "open",
@@ -226,7 +226,7 @@ describe("ComponentSettingsPage", () => {
       await wrapper.vm.save();
 
       expect(updateComponent).toHaveBeenCalled();
-      expect(updateComponent.mock.calls[0][1].component.comment_phase).toBe("open");
+      expect(updateComponent.mock.calls[0][1].comment_phase).toBe("open");
     });
 
     it("does NOT show the confirmation when the phase is unchanged", async () => {

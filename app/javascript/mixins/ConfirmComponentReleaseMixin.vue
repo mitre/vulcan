@@ -31,12 +31,7 @@ export default {
             return;
           }
 
-          let payload = {
-            component: {
-              released: true,
-            },
-          };
-          patchComponent(this.component.id, payload)
+          patchComponent(this.component.id, { released: true })
             .then((response) => {
               this.alertOrNotifyResponse(response);
               this.$emit("projectUpdated");

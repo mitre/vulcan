@@ -6,7 +6,6 @@ import {
   deleteRule,
   createRuleInComponent,
   revertRule,
-  createReview,
   updateSectionLocks,
   addSatisfaction,
   removeSatisfaction,
@@ -25,12 +24,12 @@ describe("rulesApi", () => {
   it("getRule calls GET /rules/:id", async () => {
     api.get.mockResolvedValue({ data: {} });
     await getRule(5);
-    expect(api.get).toHaveBeenCalledWith("/rules/5", { headers: { Accept: "application/json" } });
+    expect(api.get).toHaveBeenCalledWith("/rules/5");
   });
 
-  it("updateRule calls PUT /rules/:id", async () => {
+  it("updateRule wraps data in { rule: data }", async () => {
     api.put.mockResolvedValue({ data: {} });
-    await updateRule(5, { rule: { status: "Applicable" } });
+    await updateRule(5, { status: "Applicable" });
     expect(api.put).toHaveBeenCalledWith("/rules/5", { rule: { status: "Applicable" } });
   });
 
@@ -50,14 +49,6 @@ describe("rulesApi", () => {
     api.post.mockResolvedValue({ data: {} });
     await revertRule(5, { version: 2 });
     expect(api.post).toHaveBeenCalledWith("/rules/5/revert", { version: 2 });
-  });
-
-  it("createReview calls POST /rules/:id/reviews", async () => {
-    api.post.mockResolvedValue({ data: {} });
-    await createReview(5, { review: { action: "comment", comment: "test" } });
-    expect(api.post).toHaveBeenCalledWith("/rules/5/reviews", {
-      review: { action: "comment", comment: "test" },
-    });
   });
 
   it("updateSectionLocks calls PATCH /rules/:id/section_locks", async () => {
@@ -86,10 +77,10 @@ describe("rulesApi", () => {
     });
   });
 
-  it("getRulesPicker calls GET /components/:id/rules_picker.json", async () => {
+  it("getRulesPicker calls GET /components/:id/rules_picker", async () => {
     api.get.mockResolvedValue({ data: {} });
     await getRulesPicker(10);
-    expect(api.get).toHaveBeenCalledWith("/components/10/rules_picker.json");
+    expect(api.get).toHaveBeenCalledWith("/components/10/rules_picker");
   });
 
   it("findInComponent calls POST /components/:id/find", async () => {

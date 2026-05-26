@@ -69,7 +69,7 @@
 </template>
 
 <script>
-import { createReview } from "../../api/reviewsApi";
+import { createRuleReview, createComponentReview } from "../../api/reviewsApi";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import FormMixin from "../../mixins/FormMixin.vue";
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
@@ -160,23 +160,20 @@ export default {
   },
   methods: {
     async submit() {
-      const payload = {
-        review: {
-          action: "comment",
-          comment: this.commentText.trim(),
-          component_id: this.componentId,
-        },
+      const data = {
+        action: "comment",
+        comment: this.commentText.trim(),
+        component_id: this.componentId,
       };
-      if (this.section && !this.isComponentScoped) payload.review.section = this.section;
+      if (this.section && !this.isComponentScoped) data.section = this.section;
       if (this.currentReplyToId) {
-        payload.review.responding_to_review_id = this.currentReplyToId;
+        data.responding_to_review_id = this.currentReplyToId;
       }
 
-      const url = this.isComponentScoped
-        ? `/components/${this.componentId}/reviews`
-        : `/rules/${this.ruleId}/reviews`;
       try {
-        const res = await createReview(url, payload);
+        const res = this.isComponentScoped
+          ? await createComponentReview(this.componentId, data)
+          : await createRuleReview(this.ruleId, data);
         const toast = res?.data?.toast;
         const msg = toast?.message;
         this.successMessage = Array.isArray(msg) && msg[0] ? msg.join(" ") : "Comment posted.";

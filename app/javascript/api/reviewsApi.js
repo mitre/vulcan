@@ -1,7 +1,11 @@
 import api from "./baseApi";
 
-export function createReview(url, payload) {
-  return api.post(url, payload);
+export function createRuleReview(ruleId, data) {
+  return api.post(`/rules/${ruleId}/reviews`, { review: data });
+}
+
+export function createComponentReview(componentId, data) {
+  return api.post(`/components/${componentId}/reviews`, { review: data });
 }
 
 export function getResponses(reviewId, params) {

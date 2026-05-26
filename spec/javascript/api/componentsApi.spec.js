@@ -25,22 +25,22 @@ vi.mock("@/api/baseApi", () => ({
 describe("componentsApi", () => {
   beforeEach(() => vi.resetAllMocks());
 
-  it("getComponent calls GET /components/:id.json", async () => {
+  it("getComponent calls GET /components/:id", async () => {
     api.get.mockResolvedValue({ data: {} });
     await getComponent(5);
-    expect(api.get).toHaveBeenCalledWith("/components/5.json");
+    expect(api.get).toHaveBeenCalledWith("/components/5");
   });
 
-  it("updateComponent calls PUT /components/:id", async () => {
+  it("updateComponent wraps data in { component: data }", async () => {
     api.put.mockResolvedValue({ data: {} });
     await updateComponent(5, { name: "test" });
-    expect(api.put).toHaveBeenCalledWith("/components/5", { name: "test" });
+    expect(api.put).toHaveBeenCalledWith("/components/5", { component: { name: "test" } });
   });
 
-  it("patchComponent calls PATCH /components/:id", async () => {
+  it("patchComponent wraps data in { component: data }", async () => {
     api.patch.mockResolvedValue({ data: {} });
-    await patchComponent(5, { visibility: "public" });
-    expect(api.patch).toHaveBeenCalledWith("/components/5", { visibility: "public" });
+    await patchComponent(5, { advanced_fields: true });
+    expect(api.patch).toHaveBeenCalledWith("/components/5", { component: { advanced_fields: true } });
   });
 
   it("deleteComponent calls DELETE /components/:id", async () => {
@@ -62,10 +62,12 @@ describe("componentsApi", () => {
     expect(api.post).toHaveBeenCalledWith("/components/detect_srg", fd, {});
   });
 
-  it("lockComponent calls POST /components/:id/lock", async () => {
+  it("lockComponent wraps data in { review: data }", async () => {
     api.post.mockResolvedValue({ data: {} });
-    await lockComponent(5, { locked: true });
-    expect(api.post).toHaveBeenCalledWith("/components/5/lock", { locked: true });
+    await lockComponent(5, { action: "lock_control", comment: "Lock all" });
+    expect(api.post).toHaveBeenCalledWith("/components/5/lock", {
+      review: { action: "lock_control", comment: "Lock all" },
+    });
   });
 
   it("lockSections calls PATCH /components/:id/lock_sections", async () => {
