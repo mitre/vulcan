@@ -43,6 +43,20 @@ RSpec.describe 'base_rules table indexes', type: :model do
                     'querying STIG rules by STI type and severity'
   end
 
+  describe 'component status composite index' do
+    it_behaves_like 'an index with correct columns',
+                    'index_base_rules_on_component_deleted_status',
+                    %w[component_id deleted_at status],
+                    'Component#status_counts: rules.where(deleted_at: nil).group(:status).count'
+  end
+
+  describe 'component locked + review_requestor composite index' do
+    it_behaves_like 'an index with correct columns',
+                    'index_base_rules_on_component_locked_requestor',
+                    %w[component_id locked review_requestor_id],
+                    'Project#details: rules.group(:locked).count and review_requestor CASE'
+  end
+
   describe 'rule_id + component_id unique index' do
     # Prevents duplicate rules within a single component.
     it 'exists with correct columns and is unique' do

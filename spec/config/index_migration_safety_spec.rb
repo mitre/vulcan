@@ -9,6 +9,7 @@ RSpec.describe 'index migration safety' do
 
   let(:trigram_migration) { Rails.root.join('db/migrate/20260201000002_add_trigram_indexes_for_search.rb').read }
   let(:severity_migration) { Rails.root.join('db/migrate/20260209232046_add_severity_count_indexes_to_base_rules.rb').read }
+  let(:perf_composite_migration) { Rails.root.join('db/migrate/20260526042529_add_composite_indexes_for_performance.rb').read }
 
   describe 'trigram GIN index migration' do
     it 'disables DDL transaction' do
@@ -31,6 +32,18 @@ RSpec.describe 'index migration safety' do
     it 'creates indexes concurrently' do
       expect(severity_migration).to match(/algorithm:\s*:concurrently/),
                                     'Composite indexes on large tables must be created CONCURRENTLY'
+    end
+  end
+
+  describe 'performance composite index migration' do
+    it 'disables DDL transaction' do
+      expect(perf_composite_migration).to include('disable_ddl_transaction!'),
+                                          'Performance index migration must use disable_ddl_transaction!'
+    end
+
+    it 'creates indexes concurrently' do
+      expect(perf_composite_migration).to match(/algorithm:\s*:concurrently/),
+                                          'Performance indexes must be created CONCURRENTLY'
     end
   end
 end

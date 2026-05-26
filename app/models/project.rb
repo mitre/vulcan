@@ -265,23 +265,20 @@ class Project < ApplicationRecord
   end
 
   def details
-    status_counts = rules.group(:status).count
-    lock_counts = rules.group(:locked).count
-    review_counts = rules.where(locked: false).group(
-      Arel.sql('CASE WHEN review_requestor_id IS NULL THEN \'nur\' ELSE \'ur\' END')
-    ).count
+    row = rules.pick(
+      Arel.sql("COUNT(*) FILTER (WHERE status = '#{RuleConstants::STATUS_APPLICABLE_CONFIGURABLE}')"),
+      Arel.sql("COUNT(*) FILTER (WHERE status = '#{RuleConstants::STATUS_APPLICABLE_IM}')"),
+      Arel.sql("COUNT(*) FILTER (WHERE status = '#{RuleConstants::STATUS_APPLICABLE_DNM}')"),
+      Arel.sql("COUNT(*) FILTER (WHERE status = '#{RuleConstants::STATUS_NOT_APPLICABLE}')"),
+      Arel.sql("COUNT(*) FILTER (WHERE status = '#{RuleConstants::STATUS_NYD}')"),
+      Arel.sql('COUNT(*) FILTER (WHERE locked = TRUE)'),
+      Arel.sql('COUNT(*) FILTER (WHERE locked = FALSE AND review_requestor_id IS NOT NULL)'),
+      Arel.sql('COUNT(*) FILTER (WHERE locked = FALSE AND review_requestor_id IS NULL)'),
+      Arel.sql('COUNT(*)')
+    )
+    ac, aim, adnm, na, nyd, lck, ur, nur, total = row || Array.new(9, 0)
 
-    {
-      ac: status_counts[RuleConstants::STATUS_APPLICABLE_CONFIGURABLE] || 0,
-      aim: status_counts[RuleConstants::STATUS_APPLICABLE_IM] || 0,
-      adnm: status_counts[RuleConstants::STATUS_APPLICABLE_DNM] || 0,
-      na: status_counts[RuleConstants::STATUS_NOT_APPLICABLE] || 0,
-      nyd: status_counts[RuleConstants::STATUS_NYD] || 0,
-      nur: review_counts['nur'] || 0,
-      ur: review_counts['ur'] || 0,
-      lck: lock_counts[true] || 0,
-      total: status_counts.values.sum
-    }
+    { ac: ac, aim: aim, adnm: adnm, na: na, nyd: nyd, nur: nur, ur: ur, lck: lck, total: total }
   end
 
   ##
