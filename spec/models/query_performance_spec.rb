@@ -70,6 +70,14 @@ RSpec.describe 'Query performance optimizations' do
       end
       expect(query_count).to eq(1), "Expected 1 consolidated query, got #{query_count}"
     end
+
+    it 'does not use string interpolation in Arel.sql' do
+      source = Rails.root.join('app/models/project.rb').read
+      details_method = source[/def details.*?^  end/m]
+      interpolations = details_method.scan(/Arel\.sql\(".*\#\{/)
+      expect(interpolations).to be_empty,
+                                'Project#details uses string interpolation in Arel.sql — use sanitize_sql_array instead'
+    end
   end
 
   # M1: Project#available_members — SQL subtraction

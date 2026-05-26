@@ -266,11 +266,11 @@ class Project < ApplicationRecord
 
   def details
     row = rules.pick(
-      Arel.sql("COUNT(*) FILTER (WHERE status = '#{RuleConstants::STATUS_APPLICABLE_CONFIGURABLE}')"),
-      Arel.sql("COUNT(*) FILTER (WHERE status = '#{RuleConstants::STATUS_APPLICABLE_IM}')"),
-      Arel.sql("COUNT(*) FILTER (WHERE status = '#{RuleConstants::STATUS_APPLICABLE_DNM}')"),
-      Arel.sql("COUNT(*) FILTER (WHERE status = '#{RuleConstants::STATUS_NOT_APPLICABLE}')"),
-      Arel.sql("COUNT(*) FILTER (WHERE status = '#{RuleConstants::STATUS_NYD}')"),
+      Arel.sql(self.class.sanitize_sql_array(['COUNT(*) FILTER (WHERE status = ?)', RuleConstants::STATUS_APPLICABLE_CONFIGURABLE])),
+      Arel.sql(self.class.sanitize_sql_array(['COUNT(*) FILTER (WHERE status = ?)', RuleConstants::STATUS_APPLICABLE_IM])),
+      Arel.sql(self.class.sanitize_sql_array(['COUNT(*) FILTER (WHERE status = ?)', RuleConstants::STATUS_APPLICABLE_DNM])),
+      Arel.sql(self.class.sanitize_sql_array(['COUNT(*) FILTER (WHERE status = ?)', RuleConstants::STATUS_NOT_APPLICABLE])),
+      Arel.sql(self.class.sanitize_sql_array(['COUNT(*) FILTER (WHERE status = ?)', RuleConstants::STATUS_NYD])),
       Arel.sql('COUNT(*) FILTER (WHERE locked = TRUE)'),
       Arel.sql('COUNT(*) FILTER (WHERE locked = FALSE AND review_requestor_id IS NOT NULL)'),
       Arel.sql('COUNT(*) FILTER (WHERE locked = FALSE AND review_requestor_id IS NULL)'),
