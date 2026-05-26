@@ -16,6 +16,7 @@ import {
   moveReviewToRule,
   adminDestroyReview,
   toggleReaction,
+  updateReview,
 } from "@/api/reviewsApi";
 
 vi.mock("@/api/baseApi", () => ({
@@ -136,5 +137,13 @@ describe("reviewsApi", () => {
     api.post.mockResolvedValue({ data: { reactions: {} } });
     await toggleReaction(42, "up");
     expect(api.post).toHaveBeenCalledWith("/reviews/42/reactions", { kind: "up" });
+  });
+
+  it("updateReview wraps data in { review: data }", async () => {
+    api.put.mockResolvedValue({ data: {} });
+    await updateReview(15, { comment: "Updated text" });
+    expect(api.put).toHaveBeenCalledWith("/reviews/15", {
+      review: { comment: "Updated text" },
+    });
   });
 });

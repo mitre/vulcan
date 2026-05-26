@@ -60,3 +60,8 @@ export function exportProjectData(projectId, type, options = {}) {
   if (options.excludeSatisfiedBy) url += `&exclude_satisfied_by=true`;
   return api.get(url).then(() => url);
 }
+
+export function exportBenchmark(type, benchmarkId, exportType) {
+  const url = `/${type}/${benchmarkId}/export/${exportType}`;
+  return api.get(url).then(() => url);
+}

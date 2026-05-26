@@ -48,3 +48,7 @@ export function findInComponent(componentId, findText) {
 export function duplicateRule(ruleId, ruleData) {
   return api.post(`/rules/${ruleId}/duplicate`, { rule: ruleData });
 }
+
+export function bulkSectionLocks(ruleId, data) {
+  return api.patch(`/rules/${ruleId}/bulk_section_locks`, { rule: data });
+}

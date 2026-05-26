@@ -64,3 +64,7 @@ export function adminDestroyReview(reviewId, auditComment) {
 export function toggleReaction(reviewId, kind) {
   return api.post(`/reviews/${reviewId}/reactions`, { kind });
 }
+
+export function updateReview(reviewId, data) {
+  return api.put(`/reviews/${reviewId}`, { review: data });
+}

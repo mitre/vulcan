@@ -59,3 +59,11 @@ export function searchBasedOnSameSrg(componentId) {
 export function compareComponents(baseId, diffId) {
   return api.get(`/components/${baseId}/compare/${diffId}`);
 }
+
+export function getComponents() {
+  return api.get("/components");
+}
+
+export function getComponentRules(componentId) {
+  return api.get(`/components/${componentId}/rules`);
+}

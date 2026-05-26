@@ -16,6 +16,8 @@ import {
   getComponentHistory,
   searchBasedOnSameSrg,
   compareComponents,
+  getComponents,
+  getComponentRules,
 } from "@/api/componentsApi";
 
 vi.mock("@/api/baseApi", () => ({
@@ -118,5 +120,17 @@ describe("componentsApi", () => {
     api.get.mockResolvedValue({ data: {} });
     await compareComponents(5, 10);
     expect(api.get).toHaveBeenCalledWith("/components/5/compare/10");
+  });
+
+  it("getComponents calls GET /components", async () => {
+    api.get.mockResolvedValue({ data: [] });
+    await getComponents();
+    expect(api.get).toHaveBeenCalledWith("/components");
+  });
+
+  it("getComponentRules calls GET /components/:id/rules", async () => {
+    api.get.mockResolvedValue({ data: [] });
+    await getComponentRules(5);
+    expect(api.get).toHaveBeenCalledWith("/components/5/rules");
   });
 });

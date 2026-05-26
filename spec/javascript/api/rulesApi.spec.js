@@ -12,6 +12,7 @@ import {
   getRulesPicker,
   findInComponent,
   duplicateRule,
+  bulkSectionLocks,
 } from "@/api/rulesApi";
 
 vi.mock("@/api/baseApi", () => ({
@@ -93,5 +94,13 @@ describe("rulesApi", () => {
     api.post.mockResolvedValue({ data: {} });
     await duplicateRule(5, { title: "Copy of rule" });
     expect(api.post).toHaveBeenCalledWith("/rules/5/duplicate", { rule: { title: "Copy of rule" } });
+  });
+
+  it("bulkSectionLocks wraps data in { rule: data }", async () => {
+    api.patch.mockResolvedValue({ data: {} });
+    await bulkSectionLocks(5, { sections: ["check_content"], locked: true, comment: "Lock" });
+    expect(api.patch).toHaveBeenCalledWith("/rules/5/bulk_section_locks", {
+      rule: { sections: ["check_content"], locked: true, comment: "Lock" },
+    });
   });
 });

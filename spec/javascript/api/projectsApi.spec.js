@@ -15,6 +15,7 @@ import {
   deleteBenchmark,
   getProjectComments,
   exportProjectData,
+  exportBenchmark,
 } from "@/api/projectsApi";
 
 vi.mock("@/api/baseApi", () => ({
@@ -130,6 +131,22 @@ describe("projectsApi", () => {
 
       expect(api.get).toHaveBeenCalledWith("/projects/5/export/xccdf?component_ids=3");
       expect(url).toBe("/projects/5/export/xccdf?component_ids=3");
+    });
+  });
+
+  describe("exportBenchmark", () => {
+    it("calls GET on SRG export URL and resolves to URL", async () => {
+      api.get.mockResolvedValue({ data: {} });
+      const url = await exportBenchmark("srgs", 3, "xccdf");
+      expect(api.get).toHaveBeenCalledWith("/srgs/3/export/xccdf");
+      expect(url).toBe("/srgs/3/export/xccdf");
+    });
+
+    it("works for STIG exports", async () => {
+      api.get.mockResolvedValue({ data: {} });
+      const url = await exportBenchmark("stigs", 7, "csv");
+      expect(api.get).toHaveBeenCalledWith("/stigs/7/export/csv");
+      expect(url).toBe("/stigs/7/export/csv");
     });
   });
 });
