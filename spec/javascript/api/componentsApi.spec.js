@@ -140,4 +140,24 @@ describe("componentsApi", () => {
       await expect(updateComponent(5, { name: "x" })).rejects.toThrow("403 Forbidden");
     });
   });
+
+  describe("edge cases", () => {
+    it("getComponent sends undefined id in URL without error", async () => {
+      api.get.mockResolvedValue({ data: null });
+      await getComponent(undefined);
+      expect(api.get).toHaveBeenCalledWith("/components/undefined");
+    });
+
+    it("updateComponent wraps empty object in component key", async () => {
+      api.put.mockResolvedValue({ data: {} });
+      await updateComponent(1, {});
+      expect(api.put).toHaveBeenCalledWith("/components/1", { component: {} });
+    });
+
+    it("getComments passes empty params object", async () => {
+      api.get.mockResolvedValue({ data: {} });
+      await getComments(1, {});
+      expect(api.get).toHaveBeenCalledWith("/components/1/comments", { params: {} });
+    });
+  });
 });

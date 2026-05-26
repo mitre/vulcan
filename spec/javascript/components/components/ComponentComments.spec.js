@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import ComponentComments from "@/components/components/ComponentComments.vue";
 import { getComments } from "@/api/componentsApi";
@@ -86,6 +86,10 @@ const mockResponse = {
 };
 
 describe("ComponentComments", () => {
+  afterEach(() => {
+    vi.resetAllMocks();
+  });
+
   beforeEach(() => {
     getComments.mockResolvedValue(mockResponse);
   });
