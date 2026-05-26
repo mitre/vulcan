@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_26_120100) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_26_130300) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -128,6 +128,21 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_26_120100) do
     t.index ["component_id"], name: "by_component_id", unique: true
   end
 
+  create_table "component_sync_events", force: :cascade do |t|
+    t.bigint "component_id", null: false
+    t.uuid "sync_id", null: false
+    t.uuid "parent_sync_id"
+    t.string "source", null: false
+    t.string "direction", null: false
+    t.jsonb "resolution_log_json"
+    t.string "snapshot_path"
+    t.string "archive_hash"
+    t.string "status", default: "pending", null: false
+    t.datetime "created_at", null: false
+    t.index ["component_id"], name: "index_component_sync_events_on_component_id"
+    t.index ["sync_id"], name: "index_component_sync_events_on_sync_id", unique: true
+  end
+
   create_table "components", force: :cascade do |t|
     t.bigint "project_id"
     t.datetime "created_at", null: false
@@ -150,6 +165,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_26_120100) do
     t.datetime "comment_period_starts_at"
     t.datetime "comment_period_ends_at"
     t.string "closed_reason"
+    t.uuid "last_sync_id"
+    t.datetime "last_sync_at"
+    t.string "last_sync_source"
     t.index ["closed_reason"], name: "index_components_on_closed_reason"
     t.index ["comment_period_starts_at", "comment_period_ends_at"], name: "index_components_on_comment_period_dates"
     t.index ["comment_phase"], name: "index_components_on_comment_phase"
@@ -190,6 +208,33 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_26_120100) do
     t.index ["membership_id"], name: "index_memberships_on_membership_id"
     t.index ["user_id", "membership_type", "membership_id"], name: "by_user_and_membership", unique: true
     t.index ["user_id"], name: "index_memberships_on_user_id"
+  end
+
+  create_table "merge_operations", force: :cascade do |t|
+    t.bigint "component_sync_event_id", null: false
+    t.string "entity_type", null: false
+    t.bigint "entity_id", null: false
+    t.string "entity_key", null: false
+    t.string "operation", null: false
+    t.string "field_name"
+    t.text "old_value"
+    t.text "new_value"
+    t.string "source", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["component_sync_event_id"], name: "index_merge_operations_on_component_sync_event_id"
+  end
+
+  create_table "merge_quarantine", force: :cascade do |t|
+    t.bigint "component_sync_event_id", null: false
+    t.string "entity_type", null: false
+    t.string "entity_key", null: false
+    t.string "quarantine_reason", null: false
+    t.jsonb "original_archive_data", null: false
+    t.jsonb "validation_errors"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["component_sync_event_id"], name: "index_merge_quarantine_on_component_sync_event_id"
   end
 
   create_table "project_access_requests", force: :cascade do |t|
@@ -416,8 +461,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_26_120100) do
   add_foreign_key "base_rules", "security_requirements_guides"
   add_foreign_key "base_rules", "stigs"
   add_foreign_key "base_rules", "users", column: "review_requestor_id"
+  add_foreign_key "component_sync_events", "components"
   add_foreign_key "components", "components"
   add_foreign_key "memberships", "users"
+  add_foreign_key "merge_operations", "component_sync_events"
+  add_foreign_key "merge_quarantine", "component_sync_events"
   add_foreign_key "project_access_requests", "projects"
   add_foreign_key "project_access_requests", "users"
   add_foreign_key "reactions", "reviews", on_delete: :cascade

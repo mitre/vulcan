@@ -144,6 +144,15 @@ defaults: &defaults
     # (100 MB) and rubyzip's per-entry validation don't catch zip-bomb
     # geometries where small archives expand to gigabytes. PR-717 .lsj.
     json_archive_size_budget_mb: <%= ENV.fetch('VULCAN_IMPORT_JSON_ARCHIVE_SIZE_BUDGET_MB', '500').to_i %>
+  sync:
+    # Component sync/merge (vulcan-v3.x-480). Snapshots are pre-merge backup
+    # zips written next to the deployment volume (NOT tmp/ — that vanishes on
+    # container restart). Directory is created 0700 by SnapshotManager.
+    snapshot_path: <%= ENV.fetch('VULCAN_SYNC_SNAPSHOT_PATH', Rails.root.join('storage', 'merge_snapshots').to_s) %>
+    # Per-instance identifier embedded in outbound sync events. Honors
+    # VULCAN_SYNC_INSTANCE_ID env var; falls back to Socket.gethostname so
+    # developer-laptop syncs are still attributable.
+    instance_id: <%= ENV.fetch('VULCAN_SYNC_INSTANCE_ID') { require 'socket'; Socket.gethostname } %>
   slack:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_SLACK_COMMS']) || false %>
     api_token: <%= ENV['VULCAN_SLACK_API_TOKEN'] %>

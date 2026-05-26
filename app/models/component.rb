@@ -68,6 +68,11 @@ class Component < ApplicationRecord
 
   has_many :additional_questions, dependent: :destroy
 
+  # vulcan-v3.x-480.7: component sync/merge audit trail. Each merge writes one
+  # ComponentSyncEvent plus N MergeOperation rows reachable through it.
+  has_many :component_sync_events, dependent: :destroy
+  has_many :merge_operations, through: :component_sync_events
+
   accepts_nested_attributes_for :rules, :component_metadata, :additional_questions, allow_destroy: true
 
   after_create :import_srg_rules
