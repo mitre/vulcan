@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # Wrapper for parallel_rspec that sets sane defaults.
-# Caps at 8 processors to prevent CPU contention flaky failures.
+# Caps at 8 processors to prevent CPU contention flaky failures
+# and to match the number of test databases created by parallel:create.
 # See: https://makandracards.com/makandra/495461
+#
+# ALWAYS use bin/parallel_rspec (not bundle exec parallel_rspec directly).
+# The bare gem command auto-detects CPU cores and may exceed the number
+# of test databases, causing NoDatabaseError on workers 9+.
 export PARALLEL_TEST_PROCESSORS="${PARALLEL_TEST_PROCESSORS:-8}"
 exec bundle exec parallel_rspec "$@"

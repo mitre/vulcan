@@ -7,6 +7,11 @@
 # See: https://github.com/grosser/parallel_tests#setup
 
 if defined?(ParallelTests)
+  # Cap parallel test processors to avoid creating more DBs than exist.
+  # Also set in bin/parallel_rspec and .env — belt-and-suspenders so it
+  # works regardless of invocation path.
+  ENV['PARALLEL_TEST_PROCESSORS'] ||= '8'
+
   %w[db:migrate db:reset db:schema:load].each do |task_name|
     Rake::Task[task_name].enhance do
       next unless Rails.env.local?
