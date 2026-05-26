@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_23_175456) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_26_120100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -121,7 +121,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_23_175456) do
   end
 
   create_table "component_metadata", force: :cascade do |t|
-    t.json "data", null: false
+    t.jsonb "data", null: false
     t.bigint "component_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -282,6 +282,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_23_175456) do
     t.bigint "addressed_by_rule_id"
     t.index ["action", "triage_status"], name: "index_reviews_on_action_and_triage_status"
     t.index ["addressed_by_rule_id"], name: "index_reviews_on_addressed_by_rule_id"
+    t.index ["commentable_type", "commentable_id", "action", "triage_status", "responding_to_review_id"], name: "index_reviews_on_commentable_action_triage_responding"
     t.index ["commentable_type", "commentable_id"], name: "index_reviews_on_commentable"
     t.index ["duplicate_of_review_id"], name: "index_reviews_on_duplicate_of_review_id"
     t.index ["responding_to_review_id"], name: "index_reviews_on_responding_to_review_id"

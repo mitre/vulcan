@@ -541,8 +541,9 @@ class Component < ApplicationRecord
     if id.nil?
       rules.collect { |rule| rule.rule_id.to_i }.max
     else
-      Rule.connection.execute("SELECT MAX(TO_NUMBER(rule_id, '999999')) FROM base_rules
-                              WHERE component_id = #{id}")&.values&.flatten&.first.to_i
+      # component_id flows through bind params via .where; only the trusted
+      # TO_NUMBER literal is wrapped in Arel.sql. Fixes vulcan-v3.x-480.6 §18.4.
+      Rule.unscoped.where(component_id: id).maximum(Arel.sql("TO_NUMBER(rule_id, '999999')")).to_i
     end
   end
 

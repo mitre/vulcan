@@ -279,6 +279,54 @@ RSpec.describe Import::JsonArchive::ReviewBuilder do
     end
   end
 
+  # vulcan-v3.x-480.6 §18.4: relink_threaded_refs originally ran one
+  # update_all per review (N+1). Fix consolidates into a single CASE UPDATE
+  # per column, so 2N relink edits become at most 2 UPDATE statements.
+  describe '#build_all relink batching (vulcan-v3.x-480.6)' do
+    it 'relinks parent + duplicate refs with at most 2 SQL UPDATEs (not N)' do
+      data = [
+        review_attrs(external_id: 5001, comment: 'parent on A',     rule_id: rule_a.rule_id),
+        review_attrs(external_id: 5002, comment: 'dup target on A', rule_id: rule_a.rule_id),
+        review_attrs(external_id: 5003, comment: 'reply 1 on A',    rule_id: rule_a.rule_id,
+                     responding_to_external_id: 5001),
+        review_attrs(external_id: 5004, comment: 'reply 2 on A',    rule_id: rule_a.rule_id,
+                     responding_to_external_id: 5001),
+        review_attrs(external_id: 5005, comment: 'dup 1 on A',      rule_id: rule_a.rule_id,
+                     triage_status: 'duplicate',
+                     duplicate_of_external_id: 5002),
+        review_attrs(external_id: 5006, comment: 'dup 2 on A',      rule_id: rule_a.rule_id,
+                     triage_status: 'duplicate',
+                     duplicate_of_external_id: 5002)
+      ]
+
+      relink_updates = []
+      callback = lambda do |_, _, _, _, payload|
+        sql = payload[:sql].to_s
+        relink_updates << sql if sql.match?(/UPDATE\s+["']?reviews/i) &&
+                                 sql.match?(/responding_to_review_id|duplicate_of_review_id/)
+      end
+
+      ActiveSupport::Notifications.subscribed(callback, 'sql.active_record') do
+        described_class.new(data, rule_id_map, result).build_all
+      end
+
+      expect(relink_updates.size).to be <= 2,
+                                     "Expected ≤ 2 batched UPDATEs (one CASE per column), got #{relink_updates.size}:\n#{relink_updates.join("\n")}"
+
+      # Functional correctness: the relinking still works.
+      parent = Review.find_by(comment: 'parent on A')
+      reply1 = Review.find_by(comment: 'reply 1 on A')
+      reply2 = Review.find_by(comment: 'reply 2 on A')
+      target = Review.find_by(comment: 'dup target on A')
+      dup1   = Review.find_by(comment: 'dup 1 on A')
+      dup2   = Review.find_by(comment: 'dup 2 on A')
+      expect(reply1.responding_to_review_id).to eq(parent.id)
+      expect(reply2.responding_to_review_id).to eq(parent.id)
+      expect(dup1.duplicate_of_review_id).to eq(target.id)
+      expect(dup2.duplicate_of_review_id).to eq(target.id)
+    end
+  end
+
   # vulcan-v3.x-480.5 (merge prerequisite): lifecycle_attrs originally ignored
   # addressed_by_rule_id, so importing a review with triage_status='addressed_by'
   # failed the addressed_by_status_requires_rule validation in drop_invalid_reviews.

@@ -243,25 +243,46 @@ module Import
       def relink_threaded_refs(external_to_new_id)
         return if external_to_new_id.empty?
 
+        responding = {}
+        duplicate = {}
         @reviews_data.each do |review_data|
           new_id = external_to_new_id[review_data['external_id']]
           next unless new_id
 
-          updates = {}
-          parent_external = review_data['responding_to_external_id']
-          if parent_external && (mapped = external_to_new_id[parent_external])
-            updates[:responding_to_review_id] = mapped
+          if (parent_external = review_data['responding_to_external_id']) &&
+             (mapped = external_to_new_id[parent_external])
+            responding[new_id] = mapped
           end
 
-          dup_external = review_data['duplicate_of_external_id']
-          if dup_external && (mapped = external_to_new_id[dup_external])
-            updates[:duplicate_of_review_id] = mapped
+          if (dup_external = review_data['duplicate_of_external_id']) &&
+             (mapped = external_to_new_id[dup_external])
+            duplicate[new_id] = mapped
           end
-
-          # rubocop:disable Rails/SkipsModelValidations
-          Review.where(id: new_id).update_all(updates) if updates.any?
-          # rubocop:enable Rails/SkipsModelValidations
         end
+
+        bulk_relink(responding, duplicate)
+      end
+
+      # Single CASE-based UPDATE per affected column (vulcan-v3.x-480.6 §18.4).
+      # Replaces an N+1 of per-review update_all calls. All interpolated values
+      # are Integer()-cast PKs (matches the existing Brakeman-ignored pattern
+      # in Component#duplicate_reviews_and_history).
+      def bulk_relink(responding, duplicate)
+        return if responding.empty? && duplicate.empty?
+
+        ids = (responding.keys + duplicate.keys).uniq.map { |i| Integer(i) }
+        sets = []
+        sets << case_set('responding_to_review_id', responding) if responding.any?
+        sets << case_set('duplicate_of_review_id',  duplicate)  if duplicate.any?
+
+        Review.connection.exec_update(
+          "UPDATE reviews SET #{sets.join(', ')} WHERE id IN (#{ids.join(', ')})"
+        )
+      end
+
+      def case_set(column, mapping)
+        whens = mapping.map { |k, v| "WHEN #{Integer(k)} THEN #{Integer(v)}" }.join(' ')
+        "#{column} = CASE id #{whens} ELSE #{column} END"
       end
 
       def provenance_attrs(review_data)
