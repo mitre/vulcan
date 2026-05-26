@@ -184,9 +184,9 @@ module Export
         all_reviews = rules_collection.flat_map { |rule| rule.reviews.order(:created_at).map { |r| [r, rule] } }
         original_ids = all_reviews.filter_map { |r, _| r.original_commentable_id }.uniq
         @original_rule_id_map = original_ids.any? ? BaseRule.where(id: original_ids).pluck(:id, :rule_id).to_h : {}
-        # Same BaseRule.id → stable rule_id string pattern for addressed_by FK.
         addressed_ids = all_reviews.filter_map { |r, _| r.addressed_by_rule_id }.uniq
         @addressed_by_rule_id_map = addressed_ids.any? ? BaseRule.where(id: addressed_ids).pluck(:id, :rule_id).to_h : {}
+        ActiveRecord::Associations::Preloader.new(records: all_reviews.map(&:first), associations: { reactions: :user }).call
         all_reviews.map { |review, rule| serialize_review(review, rule) }
       end
 
@@ -225,7 +225,7 @@ module Export
       end
 
       def serialize_reactions(review)
-        review.reactions.includes(:user).map do |r|
+        review.reactions.map do |r|
           {
             id: r.id,
             user_email: r.user&.email,

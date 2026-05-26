@@ -209,6 +209,34 @@ RSpec.describe Export::Serializers::BackupSerializer do
         Reaction.create!(review: review, user: down_voter, kind: 'down')
       end
 
+      it 'does not N+1 on reactions across 50 reviews' do
+        rule = component.rules.first
+        50.times do |i|
+          r = create(:review, :comment, user: commenter, rule: rule, comment: "n1test #{i}")
+          Reaction.create!(review: r, user: up_voter, kind: 'up')
+          Reaction.create!(review: r, user: down_voter, kind: 'down')
+        end
+
+        reaction_queries = []
+        counter = proc do |*, payload|
+          sql = payload[:sql]
+          next unless payload[:name] != 'SCHEMA'
+          next unless sql.include?('"reactions"') && sql.exclude?('INSERT')
+
+          reaction_queries << sql
+        end
+
+        ActiveSupport::Notifications.subscribed(counter, 'sql.active_record') do
+          result = described_class.new(component.reload).serialize
+          reacted_reviews = result[:reviews].select { |r| r[:reactions].any? }
+          expect(reacted_reviews.size).to eq(51)
+          expect(reacted_reviews.last[:reactions].size).to eq(2)
+        end
+
+        expect(reaction_queries.size).to be <= 1,
+                                         "Expected ≤1 reaction query for 50+ reviews, got #{reaction_queries.size}"
+      end
+
       it 'includes reactions array with id, user_email, kind, created_at' do
         reacted = data[:reviews].find { |r| r[:comment] == 'reacted' }
         expect(reacted[:reactions].size).to eq(2)
