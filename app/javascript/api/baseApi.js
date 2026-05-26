@@ -1,6 +1,8 @@
 // API convention (gold standard):
-// - ALL mutation functions WRAP in domain key: fn(id, data) → api.put(url, { resource: data })
+// - CRUD mutation functions WRAP in domain key: fn(id, data) → api.put(url, { resource: data })
 // - Callers pass ONLY the data — never the wrapper key (no { component: ... } from callers)
+// - Lifecycle actions (triage, section, adjudicate, withdraw, admin_*) send flat params
+//   because the Rails controllers read params[:triage_status] etc. at top level
 // - Query functions pass params directly: fn(id, params) → api.get(url, { params })
 // - FormData uploads pass formData directly (axios auto-detects Content-Type)
 // - All functions return the axios promise (caller chains .then/.catch)

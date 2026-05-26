@@ -107,6 +107,12 @@ RSpec.describe CommentQueryService do
       expect(subquery1).to equal(subquery2)
     end
 
+    it 'does not use send() to call private methods on other objects' do
+      source = Rails.root.join('app/services/comment_query_service.rb').read
+      expect(source).not_to include('send(:serialize_rule_content'),
+                            'CQS should call serialize_rule_content directly, not via send()'
+    end
+
     it 'uses subquery instead of .ids for RuleSatisfaction lookup' do
       ids_queries = []
       callback = lambda { |_name, _start, _finish, _id, payload|

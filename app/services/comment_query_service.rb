@@ -162,7 +162,7 @@ class CommentQueryService
       }
 
       row[:group_rule_displayed_name] = row[:parent_rule_displayed_name] || row[:rule_displayed_name]
-      row[:rule_content] = @component.send(:serialize_rule_content, r, component_scoped_row) if @include_rule_content
+      row[:rule_content] = @component.serialize_rule_content(r, component_scoped_row) if @include_rule_content
 
       row
     end
