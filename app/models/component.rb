@@ -144,7 +144,13 @@ class Component < ApplicationRecord
   # Returns a hash of rule counts grouped by status.
   # Used by the frontend export modal to warn about NYD-only components.
   def status_counts
-    counts = rules.where(deleted_at: nil).group(:status).count
+    counts = if association_cached?(:rules)
+               # In-memory grouping (vulcan-v3.x-73z.7): set_component already
+               # preloaded rules for the editor; don't re-query base_rules.
+               rules.reject(&:deleted_at).group_by(&:status).transform_values(&:size)
+             else
+               rules.where(deleted_at: nil).group(:status).count
+             end
     {
       not_yet_determined: counts[STATUS_NYD] || 0,
       applicable_configurable: counts[STATUS_APPLICABLE_CONFIGURABLE] || 0,
@@ -296,8 +302,13 @@ class Component < ApplicationRecord
     # If already released, then it cannot be released again
     return false if released_was
 
-    # If all rules are locked, then component may be released
-    rules.where(locked: false).empty?
+    # If all rules are locked, then component may be released. Prefer the
+    # in-memory rules collection when preloaded (vulcan-v3.x-73z.7).
+    if association_cached?(:rules)
+      rules.none? { |r| !r.locked }
+    else
+      rules.where(locked: false).empty?
+    end
   end
 
   # Duplicate this component. The returned component has auditing suppressed
@@ -593,8 +604,23 @@ class Component < ApplicationRecord
   end
 
   def reviews
-    rule_names = rules.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
-    Review.where(rule_id: rule_names.keys).order(created_at: :desc).limit(20).as_json.map do |review|
+    # Prefer in-memory rules + reviews when the editor preloaded both
+    # (vulcan-v3.x-73z.7); fall back to SQL for other call sites.
+    rule_names = if association_cached?(:rules)
+                   rules.each_with_object({}) { |r, h| h[r.id] = "#{prefix}-#{r.rule_id}" }
+                 else
+                   rules.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
+                 end
+
+    review_jsons = if association_cached?(:rules) &&
+                      rules.all? { |r| r.association(:reviews).loaded? }
+                     rules.flat_map(&:reviews).sort_by(&:created_at).last(20).reverse.as_json
+                   else
+                     Review.where(rule_id: rule_names.keys)
+                           .order(created_at: :desc).limit(20).as_json
+                   end
+
+    review_jsons.map do |review|
       review['displayed_rule_name'] = rule_names[review['rule_id'].to_i]
       review
     end
