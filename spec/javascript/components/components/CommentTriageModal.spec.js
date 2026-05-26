@@ -1,10 +1,30 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
-import axios from "axios";
 import CommentTriageModal from "@/components/components/CommentTriageModal.vue";
+import { submitTriage, submitAdjudicate, submitAdminAction } from "@/services/triageService";
+import { updateSection } from "@/api/reviewsApi";
 
-vi.mock("axios");
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/services/triageService", () => ({
+  submitTriage: vi.fn(() => Promise.resolve({ data: {} })),
+  submitAdjudicate: vi.fn(() => Promise.resolve({ data: {} })),
+  submitAdminAction: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+
+vi.mock("@/api/reviewsApi", () => ({
+  updateSection: vi.fn(() => Promise.resolve({ data: {} })),
+}));
 
 const flushPromises = async (wrapper) => {
   await new Promise((resolve) => setTimeout(resolve, 0));
@@ -101,8 +121,8 @@ describe("CommentTriageModal", () => {
     expect(form.vm.canSave).toBe(true);
   });
 
-  it("posts to /reviews/:id/triage when form emits save", async () => {
-    axios.patch.mockResolvedValue({
+  it("calls submitTriage when form emits save", async () => {
+    submitTriage.mockResolvedValue({
       data: { review: { ...sampleReview, triage_status: "concur" } },
     });
     const w = mount(CommentTriageModal, {
@@ -114,23 +134,22 @@ describe("CommentTriageModal", () => {
     await w.vm.doTriage({ triage_status: "concur", response_comment: "thanks" }, false);
     await flushPromises(w);
 
-    expect(axios.patch).toHaveBeenCalledWith(
-      "/reviews/142/triage",
+    expect(submitTriage).toHaveBeenCalledWith(
+      142,
       expect.objectContaining({ triage_status: "concur", response_comment: "thanks" }),
     );
     expect(w.emitted("triaged")).toBeTruthy();
   });
 
   it("'Save & next' fires triage AND adjudicate for non-terminal statuses", async () => {
-    axios.patch
-      .mockResolvedValueOnce({
-        data: { review: { ...sampleReview, triage_status: "concur" } },
-      })
-      .mockResolvedValueOnce({
-        data: {
-          review: { ...sampleReview, triage_status: "concur", adjudicated_at: "2026-04-29T12:00Z" },
-        },
-      });
+    submitTriage.mockResolvedValue({
+      data: { review: { ...sampleReview, triage_status: "concur" } },
+    });
+    submitAdjudicate.mockResolvedValue({
+      data: {
+        review: { ...sampleReview, triage_status: "concur", adjudicated_at: "2026-04-29T12:00Z" },
+      },
+    });
     const w = mount(CommentTriageModal, {
       localVue,
       propsData: { review: sampleReview },
@@ -140,8 +159,8 @@ describe("CommentTriageModal", () => {
     await w.vm.doTriage({ triage_status: "concur", response_comment: "done" }, true);
     await flushPromises(w);
 
-    expect(axios.patch).toHaveBeenCalledTimes(2);
-    expect(axios.patch.mock.calls[1][0]).toBe("/reviews/142/adjudicate");
+    expect(submitTriage).toHaveBeenCalledWith(142, expect.objectContaining({ triage_status: "concur" }));
+    expect(submitAdjudicate).toHaveBeenCalledWith(142);
     expect(w.emitted("adjudicated")).toBeTruthy();
   });
 
@@ -175,7 +194,7 @@ describe("CommentTriageModal", () => {
   });
 
   it("skips the redundant adjudicate call for auto-adjudicating statuses", async () => {
-    axios.patch.mockResolvedValueOnce({
+    submitTriage.mockResolvedValue({
       data: { review: { ...sampleReview, triage_status: "informational" } },
     });
     const w = mount(CommentTriageModal, {
@@ -187,13 +206,13 @@ describe("CommentTriageModal", () => {
     await w.vm.doTriage({ triage_status: "informational" }, true);
     await flushPromises(w);
 
-    expect(axios.patch).toHaveBeenCalledTimes(1);
-    expect(axios.patch.mock.calls[0][0]).toBe("/reviews/142/triage");
+    expect(submitTriage).toHaveBeenCalledTimes(1);
+    expect(submitAdjudicate).not.toHaveBeenCalled();
     expect(w.emitted("adjudicated")).toBeFalsy();
   });
 
   it("surfaces server errors via AlertMixin without crashing", async () => {
-    axios.patch.mockRejectedValueOnce({ response: { status: 422, data: {} } });
+    submitTriage.mockRejectedValueOnce({ response: { status: 422, data: {} } });
     const w = mount(CommentTriageModal, {
       localVue,
       propsData: { review: sampleReview },
@@ -248,8 +267,8 @@ describe("CommentTriageModal", () => {
       expect(w.html()).toContain("Admin actions");
     });
 
-    it("posts to /reviews/:id/admin_withdraw with the audit comment", async () => {
-      axios.patch.mockResolvedValue({
+    it("calls submitAdminAction for force-withdraw", async () => {
+      submitAdminAction.mockResolvedValue({
         data: { review: { ...sampleReview, triage_status: "withdrawn" } },
       });
       const w = mount(CommentTriageModal, {
@@ -263,14 +282,13 @@ describe("CommentTriageModal", () => {
       await w.vm.doSubmitAdminAction();
       await flushPromises(w);
 
-      expect(axios.patch).toHaveBeenCalledWith(
-        "/reviews/142/admin_withdraw",
-        expect.objectContaining({ audit_comment: "spam content removed" }),
+      expect(submitAdminAction).toHaveBeenCalledWith(
+        142, "force-withdraw", { audit_comment: "spam content removed" },
       );
     });
 
-    it("posts to /reviews/:id/admin_restore with the audit comment", async () => {
-      axios.patch.mockResolvedValue({
+    it("calls submitAdminAction for restore", async () => {
+      submitAdminAction.mockResolvedValue({
         data: { review: { ...adjudicatedReview, triage_status: "pending", adjudicated_at: null } },
       });
       const w = mount(CommentTriageModal, {
@@ -284,9 +302,8 @@ describe("CommentTriageModal", () => {
       await w.vm.doSubmitAdminAction();
       await flushPromises(w);
 
-      expect(axios.patch).toHaveBeenCalledWith(
-        "/reviews/142/admin_restore",
-        expect.objectContaining({ audit_comment: "withdrew the wrong one" }),
+      expect(submitAdminAction).toHaveBeenCalledWith(
+        142, "restore", { audit_comment: "withdrew the wrong one" },
       );
     });
 
@@ -349,8 +366,8 @@ describe("CommentTriageModal", () => {
       expect(w.vm.canSubmitAdminAction).toBe(true);
     });
 
-    it("posts DELETE to /reviews/:id/admin_destroy with the audit comment", async () => {
-      axios.delete.mockResolvedValue({ data: { ok: true } });
+    it("calls submitAdminAction for hard-delete", async () => {
+      submitAdminAction.mockResolvedValue({ data: { ok: true } });
       const w = mount(CommentTriageModal, {
         localVue,
         propsData: { review: sampleReview, effectivePermissions: "admin" },
@@ -363,16 +380,13 @@ describe("CommentTriageModal", () => {
       await w.vm.doSubmitAdminAction();
       await flushPromises(w);
 
-      expect(axios.delete).toHaveBeenCalledWith(
-        "/reviews/142/admin_destroy",
-        expect.objectContaining({
-          data: expect.objectContaining({ audit_comment: "PII removed per legal" }),
-        }),
+      expect(submitAdminAction).toHaveBeenCalledWith(
+        142, "hard-delete", { audit_comment: "PII removed per legal" },
       );
     });
 
     it("emits a 'destroyed' event after a successful hard-delete (parent table can remove the row)", async () => {
-      axios.delete.mockResolvedValue({ data: { ok: true } });
+      submitAdminAction.mockResolvedValue({ data: { ok: true } });
       const w = mount(CommentTriageModal, {
         localVue,
         propsData: { review: sampleReview, effectivePermissions: "admin" },
@@ -420,8 +434,8 @@ describe("CommentTriageModal", () => {
       expect(w.vm.canSubmitAdminAction).toBe(true);
     });
 
-    it("posts to /reviews/:id/move_to_rule with rule_id and audit_comment", async () => {
-      axios.patch.mockResolvedValue({
+    it("calls submitAdminAction for move-to-rule", async () => {
+      submitAdminAction.mockResolvedValue({
         data: { review: { ...sampleReview, rule_id: 99 } },
       });
       const w = mount(CommentTriageModal, {
@@ -436,9 +450,8 @@ describe("CommentTriageModal", () => {
       await w.vm.doSubmitAdminAction();
       await flushPromises(w);
 
-      expect(axios.patch).toHaveBeenCalledWith(
-        "/reviews/142/move_to_rule",
-        expect.objectContaining({ audit_comment: "belongs on rule 99", rule_id: 99 }),
+      expect(submitAdminAction).toHaveBeenCalledWith(
+        142, "move-to-rule", { audit_comment: "belongs on rule 99", rule_id: 99 },
       );
     });
   });
@@ -502,8 +515,8 @@ describe("CommentTriageModal", () => {
       expect(w.vm.canSubmitSectionChange).toBe(true);
     });
 
-    it("posts to /reviews/:id/section with section + audit_comment, emits 'triaged', and hides the modal", async () => {
-      axios.patch.mockResolvedValue({
+    it("calls updateSection with section + audit_comment, emits 'triaged', and hides the modal", async () => {
+      updateSection.mockResolvedValue({
         data: { review: { ...sampleReview, section: "fixtext" } },
       });
       const w = mount(CommentTriageModal, {
@@ -519,10 +532,7 @@ describe("CommentTriageModal", () => {
       await w.vm.submitSectionChange();
       await flushPromises(w);
 
-      expect(axios.patch).toHaveBeenCalledWith(
-        "/reviews/142/section",
-        expect.objectContaining({ section: "fixtext", audit_comment: "should have been Fix" }),
-      );
+      expect(updateSection).toHaveBeenCalledWith(142, "fixtext", "should have been Fix");
       expect(w.emitted("triaged")).toBeTruthy();
       expect(hideSpy).toHaveBeenCalledWith("comment-triage-modal");
 
@@ -535,7 +545,7 @@ describe("CommentTriageModal", () => {
     });
 
     it("accepts null to retag back to (general)", async () => {
-      axios.patch.mockResolvedValue({
+      updateSection.mockResolvedValue({
         data: { review: { ...sampleReview, section: null } },
       });
       const w = mount(CommentTriageModal, {
@@ -549,14 +559,11 @@ describe("CommentTriageModal", () => {
       await w.vm.submitSectionChange();
       await flushPromises(w);
 
-      expect(axios.patch).toHaveBeenCalledWith(
-        "/reviews/142/section",
-        expect.objectContaining({ section: null, audit_comment: "general after all" }),
-      );
+      expect(updateSection).toHaveBeenCalledWith(142, null, "general after all");
     });
 
     it("surfaces server errors via AlertMixin without crashing", async () => {
-      axios.patch.mockRejectedValueOnce({ response: { status: 422, data: {} } });
+      updateSection.mockRejectedValueOnce({ response: { status: 422, data: {} } });
       const w = mount(CommentTriageModal, {
         localVue,
         propsData: { review: sampleReview, effectivePermissions: "author" },

@@ -1,10 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
-import axios from "axios";
 import TriageSplitView from "@/components/triage/TriageSplitView.vue";
+import { submitTriage, submitAdjudicate, submitAdminAction } from "@/services/triageService";
 
-vi.mock("axios");
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/services/triageService", () => ({
+  submitTriage: vi.fn(() => Promise.resolve({ data: {} })),
+  submitAdjudicate: vi.fn(() => Promise.resolve({ data: {} })),
+  submitAdminAction: vi.fn(() => Promise.resolve({ data: {} })),
+}));
 
 const flushPromises = async (wrapper) => {
   await new Promise((resolve) => setTimeout(resolve, 0));
@@ -201,23 +216,20 @@ describe("TriageSplitView", () => {
   // ── Save with optimistic locking ───────────────────────────────────
 
   it("sends updated_at with triage PATCH for optimistic locking", async () => {
-    axios.patch.mockResolvedValue({
+    submitTriage.mockResolvedValue({
       data: { review: { ...rows[0], triage_status: "concur" } },
     });
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
     await w.vm.onTriageSave({ triage_status: "concur" });
     await flushPromises(w);
-    expect(axios.patch).toHaveBeenCalledWith(
-      "/reviews/1/triage",
-      expect.objectContaining({
-        triage_status: "concur",
-        expected_updated_at: "2026-05-01T00:00:00Z",
-      }),
-    );
+    expect(submitTriage).toHaveBeenCalledWith(1, expect.objectContaining({
+      triage_status: "concur",
+      expected_updated_at: "2026-05-01T00:00:00Z",
+    }));
   });
 
   it("emits triaged on successful save", async () => {
-    axios.patch.mockResolvedValue({
+    submitTriage.mockResolvedValue({
       data: { review: { ...rows[0], triage_status: "concur" } },
     });
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
@@ -231,7 +243,7 @@ describe("TriageSplitView", () => {
   // ── Save button disabled during request ────────────────────────────
 
   it("sets saving=true during pending request", async () => {
-    axios.patch.mockImplementation(() => new Promise(() => {}));
+    submitTriage.mockImplementation(() => new Promise(() => {}));
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
     w.vm.onTriageSave({ triage_status: "concur" });
     await w.vm.$nextTick();
@@ -241,7 +253,7 @@ describe("TriageSplitView", () => {
   // ── Error handling ─────────────────────────────────────────────────
 
   it("shows conflict message on 409 (optimistic lock failure)", async () => {
-    axios.patch.mockRejectedValue({
+    submitTriage.mockRejectedValue({
       response: { status: 409, data: { error: "Record was modified" } },
     });
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
@@ -252,7 +264,7 @@ describe("TriageSplitView", () => {
   });
 
   it("surfaces 422 errors via AlertMixin", async () => {
-    axios.patch.mockRejectedValue({
+    submitTriage.mockRejectedValue({
       response: { status: 422, data: { error: "Non-concur requires a response" } },
     });
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
@@ -375,7 +387,7 @@ describe("TriageSplitView", () => {
   });
 
   it("posts to admin_withdraw with audit comment", async () => {
-    axios.patch.mockResolvedValue({
+    submitTriage.mockResolvedValue({
       data: { review: { ...rows[0], triage_status: "withdrawn" } },
     });
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
@@ -383,26 +395,22 @@ describe("TriageSplitView", () => {
     w.vm.adminAuditComment = "spam content";
     await w.vm.doSubmitAdminAction();
     await flushPromises(w);
-    expect(axios.patch).toHaveBeenCalledWith(
-      "/reviews/1/admin_withdraw",
-      expect.objectContaining({ audit_comment: "spam content" }),
+    expect(submitAdminAction).toHaveBeenCalledWith(
+      1, "force-withdraw", { audit_comment: "spam content" },
     );
     expect(w.emitted("triaged")).toHaveLength(1);
   });
 
-  it("posts DELETE to admin_destroy with audit comment and typed-id confirmation", async () => {
-    axios.delete.mockResolvedValue({ data: { ok: true } });
+  it("calls submitAdminAction for hard-delete with typed-id confirmation", async () => {
+    submitAdminAction.mockResolvedValue({ data: { ok: true } });
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
     w.vm.adminAction = "hard-delete";
     w.vm.adminAuditComment = "PII removed";
     w.vm.adminConfirmationId = "1";
     await w.vm.doSubmitAdminAction();
     await flushPromises(w);
-    expect(axios.delete).toHaveBeenCalledWith(
-      "/reviews/1/admin_destroy",
-      expect.objectContaining({
-        data: expect.objectContaining({ audit_comment: "PII removed" }),
-      }),
+    expect(submitAdminAction).toHaveBeenCalledWith(
+      1, "hard-delete", { audit_comment: "PII removed" },
     );
     expect(w.emitted("destroyed")).toHaveLength(1);
     expect(w.emitted("destroyed")[0][0]).toBe(1);
@@ -477,7 +485,7 @@ describe("TriageSplitView", () => {
   // ── doSave adjudicate logic ─────────────────────────────────────────
 
   it("doSave with advance=false should NOT call adjudicate endpoint", async () => {
-    axios.patch.mockResolvedValue({
+    submitTriage.mockResolvedValue({
       data: { review: { id: 1, triage_status: "concur" } },
     });
 
@@ -490,19 +498,15 @@ describe("TriageSplitView", () => {
     await w.vm.doSave({ triage_status: "concur" }, false);
     await flushPromises(w);
 
-    const patchCalls = axios.patch.mock.calls;
-    const triageCalls = patchCalls.filter(([url]) => url.includes("/triage"));
-    const adjudicateCalls = patchCalls.filter(([url]) => url.includes("/adjudicate"));
-
-    expect(triageCalls.length).toBe(1);
-    expect(adjudicateCalls.length).toBe(0);
+    expect(submitTriage).toHaveBeenCalledTimes(1);
+    expect(submitAdjudicate).not.toHaveBeenCalled();
   });
 
-  it("doSave with advance=true should call adjudicate endpoint for non-terminal statuses", async () => {
-    axios.patch.mockResolvedValueOnce({
+  it("doSave with advance=true should call adjudicate for non-terminal statuses", async () => {
+    submitTriage.mockResolvedValueOnce({
       data: { review: { id: 1, triage_status: "concur" } },
     });
-    axios.patch.mockResolvedValueOnce({
+    submitAdjudicate.mockResolvedValueOnce({
       data: { review: { id: 1, triage_status: "concur", adjudicated_at: "2026-05-20" } },
     });
 
@@ -515,12 +519,8 @@ describe("TriageSplitView", () => {
     await w.vm.doSave({ triage_status: "concur" }, true);
     await flushPromises(w);
 
-    const patchCalls = axios.patch.mock.calls;
-    const triageCalls = patchCalls.filter(([url]) => url.includes("/triage"));
-    const adjudicateCalls = patchCalls.filter(([url]) => url.includes("/adjudicate"));
-
-    expect(triageCalls.length).toBe(1);
-    expect(adjudicateCalls.length).toBe(1);
+    expect(submitTriage).toHaveBeenCalledTimes(1);
+    expect(submitAdjudicate).toHaveBeenCalledTimes(1);
   });
 
   // ── ARIA landmarks + focus management ──────────────────────────────
@@ -569,10 +569,10 @@ describe("TriageSplitView", () => {
   });
 
   it("refocuses content heading after advanceToNext", async () => {
-    axios.patch.mockResolvedValueOnce({
+    submitTriage.mockResolvedValueOnce({
       data: { review: { id: 1, triage_status: "concur" } },
     });
-    axios.patch.mockResolvedValueOnce({
+    submitTriage.mockResolvedValueOnce({
       data: { review: { id: 1, triage_status: "concur", adjudicated_at: "2026-05-20" } },
     });
     const w = mount(TriageSplitView, {
@@ -587,7 +587,7 @@ describe("TriageSplitView", () => {
   });
 
   it("doSave with advance=true should NOT adjudicate for SINGLE_BUTTON statuses", async () => {
-    axios.patch.mockResolvedValue({
+    submitTriage.mockResolvedValue({
       data: { review: { id: 1, triage_status: "withdrawn" } },
     });
 
@@ -600,7 +600,7 @@ describe("TriageSplitView", () => {
     await w.vm.doSave({ triage_status: "withdrawn" }, true);
     await flushPromises(w);
 
-    const adjudicateCalls = axios.patch.mock.calls.filter(([url]) => url.includes("/adjudicate"));
+    const adjudicateCalls = submitAdjudicate.mock.calls;
     expect(adjudicateCalls.length).toBe(0);
   });
 
@@ -626,20 +626,20 @@ describe("TriageSplitView", () => {
   // ── 05f.28.5: doSave payload variants ────────────────────────────
 
   it("includes response_comment in triage PATCH when provided", async () => {
-    axios.patch.mockResolvedValue({ data: { review: { id: 1, triage_status: "concur" } } });
+    submitTriage.mockResolvedValue({ data: { review: { id: 1, triage_status: "concur" } } });
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
     await w.vm.doSave({ triage_status: "concur", response_comment: "Thanks!" }, false);
     await flushPromises(w);
-    const call = axios.patch.mock.calls.find(([url]) => url.includes("/triage"));
+    const call = submitTriage.mock.calls[submitTriage.mock.calls.length - 1];
     expect(call[1].response_comment).toBe("Thanks!");
   });
 
   it("includes duplicate_of_review_id when status is duplicate", async () => {
-    axios.patch.mockResolvedValue({ data: { review: { id: 1, triage_status: "duplicate" } } });
+    submitTriage.mockResolvedValue({ data: { review: { id: 1, triage_status: "duplicate" } } });
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
     await w.vm.doSave({ triage_status: "duplicate", duplicate_of_review_id: 99 }, false);
     await flushPromises(w);
-    const call = axios.patch.mock.calls.find(([url]) => url.includes("/triage"));
+    const call = submitTriage.mock.calls[submitTriage.mock.calls.length - 1];
     expect(call[1].duplicate_of_review_id).toBe(99);
   });
 
