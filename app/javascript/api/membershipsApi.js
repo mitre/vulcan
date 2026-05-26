@@ -1,9 +1,7 @@
 import api from "./baseApi";
 
-export function createMembership(projectId, userId, role) {
-  return api.post("/memberships.json", {
-    membership: { project_id: projectId, user_id: userId, role },
-  });
+export function createMembership(membershipData) {
+  return api.post("/memberships.json", { membership: membershipData });
 }
 
 export function updateMembership(membershipId, role) {
@@ -14,6 +12,6 @@ export function deleteMembership(membershipId) {
   return api.delete(`/memberships/${membershipId}.json`);
 }
 
-export function deleteAccessRequest(requestId) {
-  return api.delete(`/project_access_requests/${requestId}.json`);
+export function deleteAccessRequest(projectId, requestId) {
+  return api.delete(`/projects/${projectId}/project_access_requests/${requestId}.json`);
 }

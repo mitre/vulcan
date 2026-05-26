@@ -1,7 +1,23 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import FindAndReplace from "@/components/rules/FindAndReplace.vue";
+
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/api/rulesApi", () => ({
+  updateRule: vi.fn(() => Promise.resolve({ data: {} })),
+  findInComponent: vi.fn(() => Promise.resolve({ data: {} })),
+}));
 
 /**
  * FindAndReplace requirements:
@@ -71,6 +87,67 @@ describe("FindAndReplace", () => {
       expect(wrapper.vm.fr.fields).toEqual(wrapper.vm.controlFields);
       expect(wrapper.vm.fr.fields).not.toBeUndefined();
       expect(wrapper.vm.fr.fields.length).toBe(8);
+    });
+  });
+
+  describe("API calls use domain modules", () => {
+    beforeEach(() => vi.resetAllMocks());
+
+    it("find() calls findInComponent with componentId and search text", async () => {
+      const { findInComponent } = await import("@/api/rulesApi");
+      findInComponent.mockResolvedValueOnce({ data: [] });
+
+      wrapper = createWrapper();
+      wrapper.vm.fr.find = "test search";
+      wrapper.vm.find();
+
+      expect(findInComponent).toHaveBeenCalledWith(1, "test search");
+    });
+
+    it("replace_one() calls updateRule with rule id and payload", async () => {
+      const { updateRule, findInComponent } = await import("@/api/rulesApi");
+      updateRule.mockResolvedValueOnce({ data: { toast: { title: "ok", message: [], variant: "success" } } });
+      findInComponent.mockResolvedValueOnce({ data: [] });
+
+      const mockRule = {
+        id: 42,
+        rule_id: "001",
+        status: "Not Yet Determined",
+      };
+      wrapper = createWrapper({ rules: [mockRule] });
+      const result = { field: "fixtext", segments: [{ text: "old", highlighted: true }] };
+      wrapper.vm.replace_one(42, result, "audit comment");
+
+      expect(updateRule).toHaveBeenCalledWith(42, expect.objectContaining({
+        rule: expect.objectContaining({ audit_comment: "audit comment" }),
+      }));
+    });
+
+    it("replace_all() calls updateRule for each rule in results", async () => {
+      const { updateRule, findInComponent } = await import("@/api/rulesApi");
+      updateRule.mockResolvedValue({ data: { toast: { title: "ok", message: [], variant: "success" } } });
+      findInComponent.mockResolvedValue({ data: [] });
+
+      const mockRules = [
+        { id: 10, rule_id: "001", status: "NYD" },
+        { id: 20, rule_id: "002", status: "NYD" },
+      ];
+      wrapper = createWrapper({ rules: mockRules }, {
+        find_results: {
+          "10": { rule_id: "001", results: [{ field: "fixtext", segments: [{ text: "x", highlighted: true }] }] },
+          "20": { rule_id: "002", results: [{ field: "fixtext", segments: [{ text: "x", highlighted: true }] }] },
+        },
+      });
+
+      wrapper.vm.replace_all("bulk comment");
+
+      expect(updateRule).toHaveBeenCalledTimes(2);
+      expect(updateRule).toHaveBeenCalledWith("10", expect.objectContaining({
+        rule: expect.objectContaining({ audit_comment: "bulk comment" }),
+      }));
+      expect(updateRule).toHaveBeenCalledWith("20", expect.objectContaining({
+        rule: expect.objectContaining({ audit_comment: "bulk comment" }),
+      }));
     });
   });
 });

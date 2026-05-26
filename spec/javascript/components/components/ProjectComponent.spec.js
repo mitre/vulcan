@@ -1,15 +1,32 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
-import axios from "axios";
 import ProjectComponent from "@/components/components/ProjectComponent.vue";
+import { getComponent, patchComponent } from "@/api/componentsApi";
+import { getRule } from "@/api/rulesApi";
 
-// Mock axios
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
     get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
     patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
   },
+}));
+
+vi.mock("@/api/componentsApi", () => ({
+  getComponent: vi.fn(() => Promise.resolve({ data: {} })),
+  patchComponent: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+
+vi.mock("@/api/rulesApi", () => ({
+  getRule: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+
+vi.mock("@/api/projectsApi", () => ({
+  exportProjectData: vi.fn(() => Promise.resolve("/projects/1/export/csv?component_ids=41")),
 }));
 
 describe("ProjectComponent", () => {
@@ -303,25 +320,24 @@ describe("ProjectComponent", () => {
     // the component properties in-place for Vue reactivity.
 
     it("fetches component data as JSON", async () => {
-      const axios = (await import("axios")).default;
+
       wrapper = createWrapper();
 
       // Call refreshComponent
       wrapper.vm.refreshComponent();
 
-      // Verify axios.get was called with .json extension
-      expect(axios.get).toHaveBeenCalledWith("/components/41.json");
+      expect(getComponent).toHaveBeenCalledWith(41);
     });
 
     it("updates component properties in-place on successful fetch", async () => {
-      const axios = (await import("axios")).default;
+
       const updatedData = {
         id: 41,
         name: "Updated Component Name",
         title: "Updated Title",
         description: "Updated Description",
       };
-      axios.get.mockResolvedValueOnce({ data: updatedData });
+      getComponent.mockResolvedValueOnce({ data: updatedData });
 
       wrapper = createWrapper();
 
@@ -337,8 +353,8 @@ describe("ProjectComponent", () => {
     });
 
     it("does NOT reload the page", async () => {
-      const axios = (await import("axios")).default;
-      axios.get.mockResolvedValueOnce({ data: { id: 41, name: "Test" } });
+
+      getComponent.mockResolvedValueOnce({ data: { id: 41, name: "Test" } });
 
       // Mock location.reload to track if it's called
       const originalReload = globalThis.location.reload;
@@ -387,18 +403,23 @@ describe("ProjectComponent", () => {
       expect(wrapper.vm.showExportModal).toBe(false);
     });
 
-    it("executeExport hits the project export route with the component_id", () => {
+    it("executeExport calls exportProjectData with project id, type, and options", async () => {
+      const { exportProjectData } = await import("@/api/projectsApi");
+
       wrapper = createWrapper();
-      axios.get.mockClear();
       wrapper.vm.executeExport({
         type: "csv",
         mode: "working_copy",
         componentIds: [41],
       });
-      expect(axios.get).toHaveBeenCalledTimes(1);
-      const calledUrl = axios.get.mock.calls[0][0];
-      expect(calledUrl).toContain("/projects/1/export/csv?component_ids=41");
-      expect(calledUrl).toContain("mode=working_copy");
+
+      expect(exportProjectData).toHaveBeenCalledWith(1, "csv", {
+        componentIds: [41],
+        mode: "working_copy",
+        includeSrg: undefined,
+        includeMemberships: undefined,
+        excludeSatisfiedBy: undefined,
+      });
     });
 
     it("passes the available Working Copy / Vendor Submission / Publish Draft / Backup modes to ExportModal", () => {

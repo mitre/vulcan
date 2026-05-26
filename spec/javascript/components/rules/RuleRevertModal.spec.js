@@ -3,11 +3,19 @@ import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import RuleRevertModal from "@/components/rules/RuleRevertModal.vue";
 
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
     post: vi.fn(() => Promise.resolve({ data: { toast: "Reverted" } })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
     defaults: { headers: { common: {} } },
   },
+}));
+
+vi.mock("@/api/rulesApi", () => ({
+  revertRule: vi.fn(() => Promise.resolve({ data: { toast: "Reverted" } })),
 }));
 
 /**
@@ -141,15 +149,17 @@ describe("RuleRevertModal", () => {
   // REVERT ACTION
   // ==========================================
   describe("revert action", () => {
-    it("sends POST to /rules/:id/revert with selected fields and comment", async () => {
-      const axios = (await import("axios")).default;
+    it("calls revertRule with rule id and payload", async () => {
+      const { revertRule } = await import("@/api/rulesApi");
+      revertRule.mockResolvedValueOnce({ data: { toast: "Reverted" } });
+
       wrapper = createWrapper();
       wrapper.vm.selectedRevertRows = [defaultHistory.audited_changes[0]];
       wrapper.vm.revertComment = "Fixing mistake";
 
       await wrapper.vm.revertHistory("Fixing mistake");
 
-      expect(axios.post).toHaveBeenCalledWith("/rules/1/revert", {
+      expect(revertRule).toHaveBeenCalledWith(1, {
         audit_id: 10,
         fields: ["title"],
         audit_comment: "Fixing mistake",

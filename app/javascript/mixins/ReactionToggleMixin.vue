@@ -1,5 +1,5 @@
 <script>
-import axios from "axios";
+import { toggleReaction } from "../api/reviewsApi";
 
 // Shared optimistic-toggle + POST + revert flow for reaction surfaces.
 // Consumers must also include AlertMixin (provides alertOrNotifyResponse).
@@ -27,11 +27,7 @@ export default {
     async submitReactionToggle({ reviewId, prev, kind, apply }) {
       apply(this.optimisticReactionToggle(prev, kind));
       try {
-        const { data } = await axios.post(
-          `/reviews/${reviewId}/reactions`,
-          { kind },
-          { headers: { Accept: "application/json" } },
-        );
+        const { data } = await toggleReaction(reviewId, kind);
         apply(data.reactions);
       } catch (err) {
         apply(prev);

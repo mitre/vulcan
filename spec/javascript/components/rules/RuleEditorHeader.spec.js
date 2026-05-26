@@ -3,17 +3,20 @@ import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import RuleEditorHeader from "@/components/rules/RuleEditorHeader.vue";
 
-// Mock axios with defaults structure for FormMixin
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
     post: vi.fn(() => Promise.resolve({ data: {} })),
     put: vi.fn(() => Promise.resolve({ data: {} })),
-    defaults: {
-      headers: {
-        common: {},
-      },
-    },
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
   },
+}));
+
+vi.mock("@/api/rulesApi", () => ({
+  updateRule: vi.fn(() => Promise.resolve({ data: {} })),
+  createReview: vi.fn(() => Promise.resolve({ data: {} })),
 }));
 
 describe("RuleEditorHeader", () => {
@@ -161,8 +164,51 @@ describe("RuleEditorHeader", () => {
   describe("readOnly mode", () => {
     it("hides action buttons when readOnly is true", () => {
       wrapper = createWrapper({ readOnly: true });
-      // The entire action section is v-if="!readOnly"
       expect(wrapper.find("b-button-stub[variant='info']").exists()).toBe(false);
+    });
+  });
+
+  describe("API calls use domain modules", () => {
+    it("saveRule calls updateRule with rule id and payload", async () => {
+      const { updateRule } = await import("@/api/rulesApi");
+      updateRule.mockResolvedValueOnce({ data: {} });
+
+      wrapper = createWrapper();
+      wrapper.vm.saveRule("audit comment");
+
+      expect(updateRule).toHaveBeenCalledWith(1, expect.objectContaining({
+        rule: expect.objectContaining({ audit_comment: "audit comment" }),
+      }));
+    });
+
+    it("commentFormSubmitted calls createReview with rule id", async () => {
+      const { createReview } = await import("@/api/rulesApi");
+      createReview.mockResolvedValueOnce({ data: {} });
+
+      wrapper = createWrapper();
+      wrapper.vm.commentFormSubmitted("test comment");
+
+      expect(createReview).toHaveBeenCalledWith(1, {
+        review: { action: "comment", comment: "test comment" },
+      });
+    });
+
+    it("reviewFormSubmitted calls createReview with action and comment", async () => {
+      const { createReview } = await import("@/api/rulesApi");
+      createReview.mockResolvedValueOnce({ data: {} });
+
+      wrapper = createWrapper();
+      wrapper.vm.selectedReviewAction = "request_review";
+      wrapper.vm.reviewComment = "please review";
+      wrapper.vm.reviewFormSubmitted({ preventDefault: vi.fn() });
+
+      expect(createReview).toHaveBeenCalledWith(1, {
+        review: {
+          component_id: 10,
+          action: "request_review",
+          comment: "please review",
+        },
+      });
     });
   });
 });

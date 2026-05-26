@@ -54,7 +54,7 @@
 
 <script>
 import _ from "lodash";
-import api from "../../api/baseApi";
+import { getComponentHistory } from "../../api/componentsApi";
 import MonacoEditor from "vue-monaco";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
@@ -89,11 +89,10 @@ export default {
     fetchRevisionHistory: function () {
       if (this.componentName) {
         this.loading = true;
-        api
-          .post(`/components/history`, {
-            project_id: this.project.id,
-            name: this.componentName,
-          })
+        getComponentHistory({
+          project_id: this.project.id,
+          name: this.componentName,
+        })
           .then((response) => {
             this.revisionHistory = response.data;
           })

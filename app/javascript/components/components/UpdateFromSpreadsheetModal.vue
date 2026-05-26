@@ -190,7 +190,7 @@
 </template>
 
 <script>
-import api from "../../api/baseApi";
+import { previewSpreadsheetUpdate, applySpreadsheetUpdate } from "../../api/componentsApi";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 
 export default {
@@ -363,10 +363,7 @@ export default {
       const formData = new FormData();
       formData.append("file", this.selectedFile);
 
-      return api
-        .post(`/components/${this.component.id}/preview_spreadsheet_update`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        })
+      return previewSpreadsheetUpdate(this.component.id, formData)
         .then((response) => {
           this.previewData = response.data;
           this.step = 2;
@@ -386,10 +383,7 @@ export default {
       const formData = new FormData();
       formData.append("file", this.selectedFile);
 
-      return api
-        .patch(`/components/${this.component.id}/apply_spreadsheet_update`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        })
+      return applySpreadsheetUpdate(this.component.id, formData)
         .then((response) => {
           this.updateResult = {
             success: true,

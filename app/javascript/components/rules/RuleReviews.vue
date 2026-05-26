@@ -96,7 +96,6 @@ import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
 import CommentThread from "../shared/CommentThread.vue";
 import ReactionButtons from "../shared/ReactionButtons.vue";
-import api from "../../api/baseApi";
 import { commentsClosedTooltip } from "../../constants/triageVocabulary";
 
 export default {

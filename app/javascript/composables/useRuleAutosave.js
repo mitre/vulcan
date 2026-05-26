@@ -10,7 +10,7 @@
  * @returns { enabled, isDirty, toggle, markDirty, resetTimer, destroy }
  */
 import { ref } from "vue";
-import axios from "axios";
+import { updateRule } from "../api/rulesApi";
 
 const DEFAULT_DELAY = 5000; // 5 seconds
 
@@ -66,13 +66,12 @@ export function useRuleAutosave(rule, options = {}) {
     if (r.locked) return;
     if (r.review_requestor_id) return;
 
-    axios
-      .put(`/rules/${r.id}`, {
-        rule: {
-          ...r,
-          audit_comment: "[Auto-saved]",
-        },
-      })
+    updateRule(r.id, {
+      rule: {
+        ...r,
+        audit_comment: "[Auto-saved]",
+      },
+    })
       .then(() => {
         isDirty.value = false;
         if (options.onAutoSave) options.onAutoSave(r.id);

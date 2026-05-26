@@ -2,15 +2,28 @@ import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { shallowMount, mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import NewComponentModal from "@/components/components/NewComponentModal.vue";
-import axios from "axios";
+import { detectSrg, createComponentInProject } from "@/api/componentsApi";
 
-// Mock axios (used by fetchData, createComponent, detectSrg)
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
     get: vi.fn(() => Promise.resolve({ data: [] })),
     post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
     defaults: { headers: { common: {} } },
   },
+}));
+
+vi.mock("@/api/componentsApi", () => ({
+  detectSrg: vi.fn(() => Promise.resolve({ data: {} })),
+  createComponentInProject: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+
+vi.mock("@/api/projectsApi", () => ({
+  getSrgs: vi.fn(() => Promise.resolve({ data: [] })),
+  getProjects: vi.fn(() => Promise.resolve({ data: [] })),
+  getProject: vi.fn(() => Promise.resolve({ data: {} })),
 }));
 
 /**
@@ -233,24 +246,20 @@ describe("NewComponentModal", () => {
       const detectResponse = {
         data: { id: 42, srg_id: "SRG-APP-000001", title: "App SRG", version: "V3R3" },
       };
-      axios.post.mockResolvedValueOnce(detectResponse);
+      detectSrg.mockResolvedValueOnce(detectResponse);
 
       wrapper = createMountedWrapper();
       await wrapper.setData({ file: mockFile });
       await vi.dynamicImportSettled();
 
-      expect(axios.post).toHaveBeenCalledWith(
-        "/components/detect_srg",
-        expect.any(FormData),
-        expect.objectContaining({ headers: { "Content-Type": "multipart/form-data" } }),
-      );
+      expect(detectSrg).toHaveBeenCalledWith(expect.any(FormData));
     });
 
     it("auto-populates SRG when detection succeeds", async () => {
       const detectResponse = {
         data: { id: 42, srg_id: "SRG-APP-000001", title: "App SRG", version: "V3R3" },
       };
-      axios.post.mockResolvedValueOnce(detectResponse);
+      detectSrg.mockResolvedValueOnce(detectResponse);
 
       wrapper = createMountedWrapper();
       await wrapper.setData({ file: mockFile });
@@ -263,7 +272,7 @@ describe("NewComponentModal", () => {
     });
 
     it("falls back silently when detection fails", async () => {
-      axios.post.mockRejectedValueOnce(new Error("422"));
+      detectSrg.mockRejectedValueOnce(new Error("422"));
 
       wrapper = createMountedWrapper();
       await wrapper.setData({ file: mockFile });
@@ -276,7 +285,7 @@ describe("NewComponentModal", () => {
 
     it("sets detecting=true while request is in flight", async () => {
       let resolveDetect;
-      axios.post.mockReturnValueOnce(
+      detectSrg.mockReturnValueOnce(
         new Promise((resolve) => {
           resolveDetect = resolve;
         }),
@@ -305,15 +314,11 @@ describe("NewComponentModal", () => {
       await new Promise((r) => setTimeout(r, 10));
 
       // Only the fetchData calls — no detect_srg POST
-      expect(axios.post).not.toHaveBeenCalledWith(
-        "/components/detect_srg",
-        expect.anything(),
-        expect.anything(),
-      );
+      expect(detectSrg).not.toHaveBeenCalled();
     });
 
     it("resets srgAutoDetected when file is cleared", async () => {
-      axios.post.mockResolvedValueOnce({
+      detectSrg.mockResolvedValueOnce({
         data: { id: 42, title: "SRG", version: "V1R1" },
       });
 
@@ -372,6 +377,23 @@ describe("NewComponentModal", () => {
       // preventDefault should NOT be called — modal closes via default @ok
       expect(mockEvent.preventDefault).not.toHaveBeenCalled();
       expect(wrapper.vm.loading).toBe(true);
+    });
+  });
+
+  describe("project_id prop", () => {
+    it("accepts undefined project_id without error", () => {
+      const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+      wrapper = createWrapper({ project_id: undefined });
+      const propWarnings = spy.mock.calls.filter((c) =>
+        c[0]?.toString().includes("project_id"),
+      );
+      expect(propWarnings).toHaveLength(0);
+      spy.mockRestore();
+    });
+
+    it("defaults selected_project_id to null when project_id not provided", () => {
+      wrapper = createWrapper({ project_id: undefined });
+      expect(wrapper.vm.selected_project_id).toBeNull();
     });
   });
 });

@@ -254,7 +254,8 @@
 
 <script>
 import { toRef } from "vue";
-import api from "../../api/baseApi";
+import { updateRule, createReview, updateSectionLocks } from "../../api/rulesApi";
+import { getComponent, patchComponent } from "../../api/componentsApi";
 import RuleEditor from "./RuleEditor.vue";
 import RuleNavigator from "./RuleNavigator.vue";
 import RelatedRulesModal from "./RelatedRulesModal.vue";
@@ -618,8 +619,7 @@ export default {
           audit_comment: comment,
         },
       };
-      api
-        .put(`/rules/${rule.id}`, payload)
+      updateRule(rule.id, payload)
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.$root.$emit("refresh:rule", rule.id);
@@ -630,13 +630,7 @@ export default {
       if (!comment.trim()) return;
       const rule = this.selectedRule;
       if (!rule) return;
-      api
-        .post(`/rules/${rule.id}/reviews`, {
-          review: {
-            action: "comment",
-            comment: comment,
-          },
-        })
+      createReview(rule.id, { review: { action: "comment", comment: comment } })
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.$root.$emit("refresh:rule", rule.id, "all");
@@ -670,12 +664,11 @@ export default {
       const rule = this.selectedRule;
       if (!rule) return;
       this.sectionLockModal.visible = false;
-      api
-        .patch(`/rules/${rule.id}/section_locks`, {
-          section,
-          locked: isLocking,
-          comment: comment.trim() || undefined,
-        })
+      updateSectionLocks(rule.id, {
+        section,
+        locked: isLocking,
+        comment: comment.trim() || undefined,
+      })
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.$root.$emit("refresh:rule", rule.id, "all");
@@ -692,11 +685,9 @@ export default {
           advanced_fields: advancedFields,
         },
       };
-      api
-        .patch(`/components/${this.component.id}`, payload)
+      patchComponent(this.component.id, payload)
         .then((response) => {
           this.alertOrNotifyResponse(response);
-          // Update local data property (not prop) for proper reactivity through slots
           this.localAdvancedFields = advancedFields;
         })
         .catch(this.alertOrNotifyResponse);
@@ -704,14 +695,13 @@ export default {
     lockRule(comment) {
       const rule = this.selectedRule;
       if (!rule) return;
-      api
-        .post(`/rules/${rule.id}/reviews`, {
-          review: {
-            component_id: rule.component_id,
-            action: "lock_control",
-            comment: (comment || "").trim() || "Locked",
-          },
-        })
+      createReview(rule.id, {
+        review: {
+          component_id: rule.component_id,
+          action: "lock_control",
+          comment: (comment || "").trim() || "Locked",
+        },
+      })
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.$root.$emit("refresh:rule", rule.id, "all");
@@ -721,14 +711,13 @@ export default {
     unlockRule(comment) {
       const rule = this.selectedRule;
       if (!rule) return;
-      api
-        .post(`/rules/${rule.id}/reviews`, {
-          review: {
-            component_id: rule.component_id,
-            action: "unlock_control",
-            comment: (comment || "").trim() || "Unlocked",
-          },
-        })
+      createReview(rule.id, {
+        review: {
+          component_id: rule.component_id,
+          action: "unlock_control",
+          comment: (comment || "").trim() || "Unlocked",
+        },
+      })
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.$root.$emit("refresh:rule", rule.id, "all");
@@ -747,11 +736,8 @@ export default {
       this.selectedSatisfiesRuleIds = [];
     },
     refreshComponent() {
-      api
-        .get(`/components/${this.component.id}.json`)
+      getComponent(this.component.id)
         .then((response) => {
-          // Use $set for each key to ensure Vue 2 reactivity detects changes
-          // (Object.assign can miss nested object replacements)
           Object.keys(response.data).forEach((key) => {
             this.$set(this.component, key, response.data[key]);
           });

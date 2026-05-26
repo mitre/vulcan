@@ -32,7 +32,6 @@
 </template>
 
 <script>
-import api from "../../api/baseApi";
 import CommentModal from "../shared/CommentModal.vue";
 
 export default {

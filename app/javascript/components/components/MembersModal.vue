@@ -182,8 +182,8 @@
 </template>
 
 <script>
-import api from "../../api/baseApi";
-import { updateMembership, deleteMembership } from "../../api/membershipsApi";
+import { createMembership, updateMembership, deleteMembership } from "../../api/membershipsApi";
+import { searchUsers } from "../../api/usersApi";
 import debounce from "lodash/debounce";
 import VueMultiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
@@ -281,14 +281,9 @@ export default {
       }
       this.isMemberSearching = true;
       try {
-        // Passes extra params (membership_type, membership_id) beyond what
-        // searchUsers() accepts — use baseApi directly.
-        const { data } = await api.get("/api/users/search", {
-          params: {
-            q: query,
-            membership_type: "Component",
-            membership_id: this.component.id,
-          },
+        const { data } = await searchUsers(query, {
+          membership_type: "Component",
+          membership_id: this.component.id,
         });
         this.memberSearchResults = data.users;
       } catch {
@@ -302,15 +297,11 @@ export default {
       if (!userId) return;
 
       try {
-        // Passes membership_type="Component" — createMembership() is shaped for
-        // project memberships, so use baseApi directly for component memberships.
-        await api.post("/memberships.json", {
-          membership: {
-            user_id: userId,
-            role: this.newMember.role,
-            membership_type: "Component",
-            membership_id: this.component.id,
-          },
+        await createMembership({
+          user_id: userId,
+          role: this.newMember.role,
+          membership_type: "Component",
+          membership_id: this.component.id,
         });
         this.resetAddForm();
         this.$bvModal.hide(this.addMemberModalId);

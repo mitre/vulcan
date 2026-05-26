@@ -3,12 +3,19 @@ import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import Projects from "@/components/projects/Projects.vue";
 
-// Mock axios
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
     get: vi.fn(() => Promise.resolve({ data: [] })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
     defaults: { headers: { common: {} } },
   },
+}));
+
+vi.mock("@/api/projectsApi", () => ({
+  getProjects: vi.fn(() => Promise.resolve({ data: [] })),
 }));
 
 /**

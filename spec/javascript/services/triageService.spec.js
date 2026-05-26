@@ -1,8 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import axios from "axios";
 import { submitTriage, submitAdjudicate, submitAdminAction } from "@/services/triageService";
+import {
+  triageReview,
+  adjudicateReview,
+  adminDestroyReview,
+  moveReviewToRule,
+  adminWithdrawReview,
+  adminRestoreReview,
+} from "@/api/reviewsApi";
 
-vi.mock("axios");
+vi.mock("@/api/reviewsApi", () => ({
+  triageReview: vi.fn(() => Promise.resolve({ data: {} })),
+  adjudicateReview: vi.fn(() => Promise.resolve({ data: {} })),
+  adminDestroyReview: vi.fn(() => Promise.resolve({ data: {} })),
+  moveReviewToRule: vi.fn(() => Promise.resolve({ data: {} })),
+  adminWithdrawReview: vi.fn(() => Promise.resolve({ data: {} })),
+  adminRestoreReview: vi.fn(() => Promise.resolve({ data: {} })),
+}));
 
 describe("triageService", () => {
   beforeEach(() => {
@@ -10,18 +24,18 @@ describe("triageService", () => {
   });
 
   describe("submitTriage", () => {
-    it("patches /reviews/{id}/triage with payload and returns response", async () => {
+    it("delegates to triageReview with reviewId and payload", async () => {
       const mockResponse = { data: { review: { id: 42, triage_status: "concur" } } };
-      axios.patch.mockResolvedValue(mockResponse);
+      triageReview.mockResolvedValue(mockResponse);
 
       const result = await submitTriage(42, { triage_status: "concur" });
 
-      expect(axios.patch).toHaveBeenCalledWith("/reviews/42/triage", { triage_status: "concur" });
+      expect(triageReview).toHaveBeenCalledWith(42, { triage_status: "concur" });
       expect(result).toBe(mockResponse);
     });
 
     it("passes through optional fields like duplicate_of_review_id", async () => {
-      axios.patch.mockResolvedValue({ data: {} });
+      triageReview.mockResolvedValue({ data: {} });
 
       await submitTriage(7, {
         triage_status: "duplicate",
@@ -29,78 +43,69 @@ describe("triageService", () => {
         response_comment: "Dup of #99",
       });
 
-      expect(axios.patch).toHaveBeenCalledWith("/reviews/7/triage", {
+      expect(triageReview).toHaveBeenCalledWith(7, {
         triage_status: "duplicate",
         duplicate_of_review_id: 99,
         response_comment: "Dup of #99",
       });
     });
 
-    it("propagates axios errors to caller", async () => {
+    it("propagates errors to caller", async () => {
       const error = new Error("Network error");
-      axios.patch.mockRejectedValue(error);
+      triageReview.mockRejectedValue(error);
 
       await expect(submitTriage(1, {})).rejects.toThrow("Network error");
     });
   });
 
   describe("submitAdjudicate", () => {
-    it("patches /reviews/{id}/adjudicate with empty payload", async () => {
+    it("delegates to adjudicateReview with reviewId", async () => {
       const mockResponse = { data: { review: { id: 10, adjudicated_at: "2026-05-24" } } };
-      axios.patch.mockResolvedValue(mockResponse);
+      adjudicateReview.mockResolvedValue(mockResponse);
 
       const result = await submitAdjudicate(10);
 
-      expect(axios.patch).toHaveBeenCalledWith("/reviews/10/adjudicate", {});
+      expect(adjudicateReview).toHaveBeenCalledWith(10);
       expect(result).toBe(mockResponse);
     });
   });
 
   describe("submitAdminAction", () => {
-    it("deletes via /reviews/{id}/admin_destroy for hard-delete", async () => {
-      axios.delete.mockResolvedValue({ data: {} });
+    it("delegates to adminDestroyReview for hard-delete", async () => {
+      adminDestroyReview.mockResolvedValue({ data: {} });
 
       await submitAdminAction(5, "hard-delete", { audit_comment: "Removing spam" });
 
-      expect(axios.delete).toHaveBeenCalledWith("/reviews/5/admin_destroy", {
-        data: { audit_comment: "Removing spam" },
-      });
+      expect(adminDestroyReview).toHaveBeenCalledWith(5, "Removing spam");
     });
 
-    it("patches /reviews/{id}/move_to_rule with rule_id for move-to-rule", async () => {
+    it("delegates to moveReviewToRule for move-to-rule", async () => {
       const mockResponse = { data: { review: { id: 5, rule_id: 99 } } };
-      axios.patch.mockResolvedValue(mockResponse);
+      moveReviewToRule.mockResolvedValue(mockResponse);
 
       const result = await submitAdminAction(5, "move-to-rule", {
         rule_id: 99,
         audit_comment: "Moving to correct rule",
       });
 
-      expect(axios.patch).toHaveBeenCalledWith("/reviews/5/move_to_rule", {
-        rule_id: 99,
-        audit_comment: "Moving to correct rule",
-      });
+      expect(moveReviewToRule).toHaveBeenCalledWith(5, 99, "Moving to correct rule");
       expect(result).toBe(mockResponse);
     });
 
-    it("patches admin_withdraw for force-withdraw", async () => {
-      axios.patch.mockResolvedValue({ data: {} });
+    it("delegates to adminWithdrawReview for force-withdraw", async () => {
+      adminWithdrawReview.mockResolvedValue({ data: {} });
 
       await submitAdminAction(3, "force-withdraw", { audit_comment: "Admin override" });
 
-      expect(axios.patch).toHaveBeenCalledWith("/reviews/3/admin_withdraw", {
-        audit_comment: "Admin override",
-      });
+      expect(adminWithdrawReview).toHaveBeenCalledWith(3, "Admin override");
     });
 
-    it("patches admin_restore for restore", async () => {
-      axios.patch.mockResolvedValue({ data: {} });
+    it("delegates to adminRestoreReview for restore", async () => {
+      adminRestoreReview.mockResolvedValue({ data: {} });
 
       await submitAdminAction(3, "restore", { audit_comment: "Restoring comment" });
 
-      expect(axios.patch).toHaveBeenCalledWith("/reviews/3/admin_restore", {
-        audit_comment: "Restoring comment",
-      });
+      expect(adminRestoreReview).toHaveBeenCalledWith(3, "Restoring comment");
     });
 
     it("throws on unknown action", async () => {

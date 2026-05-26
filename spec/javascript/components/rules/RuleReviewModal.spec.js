@@ -1,0 +1,80 @@
+import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
+import { shallowMount } from "@vue/test-utils";
+import { localVue } from "@test/testHelper";
+import RuleReviewModal from "@/components/rules/RuleReviewModal.vue";
+
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/api/rulesApi", () => ({
+  createReview: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+
+describe("RuleReviewModal", () => {
+  let wrapper;
+
+  const createWrapper = (props = {}) => {
+    return shallowMount(RuleReviewModal, {
+      localVue,
+      propsData: {
+        rule: { id: 1, component_id: 10, status: "Not Yet Determined", locked: false, review_requestor_id: null },
+        effectivePermissions: "admin",
+        currentUserId: 1,
+        ...props,
+      },
+      stubs: { BModal: true, BFormGroup: true, BFormSelect: true, BFormTextarea: true, BButton: true },
+      mocks: { $bvModal: { hide: vi.fn() } },
+    });
+  };
+
+  beforeEach(() => vi.resetAllMocks());
+  afterEach(() => { if (wrapper) wrapper.destroy(); });
+
+  it("submitReview calls createReview with rule id and review payload", async () => {
+    const { createReview } = await import("@/api/rulesApi");
+    createReview.mockResolvedValueOnce({ data: {} });
+
+    wrapper = createWrapper();
+    wrapper.vm.selectedReviewAction = "approve";
+    wrapper.vm.reviewComment = "looks good";
+    wrapper.vm.submitReview();
+
+    expect(createReview).toHaveBeenCalledWith(1, {
+      review: {
+        component_id: 10,
+        action: "approve",
+        comment: "looks good",
+      },
+    });
+  });
+
+  it("does not call createReview when comment is empty", async () => {
+    const { createReview } = await import("@/api/rulesApi");
+
+    wrapper = createWrapper();
+    wrapper.vm.selectedReviewAction = "approve";
+    wrapper.vm.reviewComment = "   ";
+    wrapper.vm.submitReview();
+
+    expect(createReview).not.toHaveBeenCalled();
+  });
+
+  it("does not call createReview when no action selected", async () => {
+    const { createReview } = await import("@/api/rulesApi");
+
+    wrapper = createWrapper();
+    wrapper.vm.selectedReviewAction = null;
+    wrapper.vm.reviewComment = "some comment";
+    wrapper.vm.submitReview();
+
+    expect(createReview).not.toHaveBeenCalled();
+  });
+});

@@ -152,8 +152,8 @@
 
 <script>
 import _ from "lodash";
-import api from "../../api/baseApi";
-import { getProject } from "../../api/projectsApi";
+import { getProject, updateProject, exportProjectData } from "../../api/projectsApi";
+import { deleteComponent } from "../../api/componentsApi";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
@@ -301,9 +301,7 @@ export default {
     updateVisibility: function () {
       this.showVisibilityModal = false;
       let payload = { project: { visibility: this.pendingVisibility ? "discoverable" : "hidden" } };
-      // Visibility update uses a project-specific payload — no dedicated API function
-      api
-        .put(`/projects/${this.project.id}`, payload)
+      updateProject(this.project.id, payload)
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.refreshProject();
@@ -384,9 +382,7 @@ export default {
     // disappear almost immediately because the component gets
     // destroyed once `refreshProject` executes
     deleteComponent: function (componentId) {
-      // Deletes a component (not a project) — no matching API function
-      api
-        .delete(`/components/${componentId}`)
+      deleteComponent(componentId)
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.refreshProject();
@@ -401,23 +397,14 @@ export default {
       includeMemberships,
       excludeSatisfiedBy,
     ) {
-      let url = `/projects/${this.project.id}/export/${type}?component_ids=${componentIds.join(",")}`;
-      if (mode) {
-        url += `&mode=${mode}`;
-      }
-      if (includeSrg) {
-        url += `&include_srg=true`;
-      }
-      if (includeMemberships === false) {
-        url += `&include_memberships=false`;
-      }
-      if (excludeSatisfiedBy) {
-        url += `&exclude_satisfied_by=true`;
-      }
-      // Export URL with dynamic query params — use baseApi directly
-      api
-        .get(url)
-        .then((_res) => {
+      exportProjectData(this.project.id, type, {
+        componentIds,
+        mode,
+        includeSrg,
+        includeMemberships,
+        excludeSatisfiedBy,
+      })
+        .then((url) => {
           window.open(url);
         })
         .catch(this.alertOrNotifyResponse);

@@ -1,5 +1,21 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import BenchmarkListPage from "../../../../app/javascript/components/shared/BenchmarkListPage.vue";
+
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: [] })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/api/projectsApi", () => ({
+  getBenchmarkList: vi.fn(() => Promise.resolve({ data: [] })),
+}));
 
 const mockItems = [
   { id: 1, title: "Test SRG", version: 2, release: 4, severity_counts: { high: 5, medium: 10, low: 2 } },
@@ -108,5 +124,18 @@ describe("BenchmarkListPage", () => {
       stubs: ["BaseCommandBar", "BenchmarkTable", "BenchmarkUpload", "ExportModal", "b-breadcrumb", "b-badge"],
     });
     expect(wrapper.vm.config.bulkExport).toBe(true);
+  });
+
+  it("loadItems calls getBenchmarkList with apiPath", async () => {
+    const { getBenchmarkList } = await import("@/api/projectsApi");
+    getBenchmarkList.mockResolvedValueOnce({ data: mockItems });
+
+    const wrapper = mount(BenchmarkListPage, {
+      propsData: { type: "SRG", givenItems: [], isAdmin: false },
+      stubs: ["BaseCommandBar", "BenchmarkTable", "BenchmarkUpload", "ExportModal", "b-breadcrumb", "b-badge"],
+    });
+    wrapper.vm.loadItems();
+
+    expect(getBenchmarkList).toHaveBeenCalledWith("/srgs");
   });
 });

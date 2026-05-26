@@ -129,7 +129,7 @@
 </template>
 
 <script>
-import api from "../../api/baseApi";
+import { searchUsers } from "../../api/usersApi";
 import VueMultiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
 import capitalize from "lodash/capitalize";
@@ -207,14 +207,9 @@ export default {
       }
       this.isSearching = true;
       try {
-        // Passes extra params (membership_type, membership_id) beyond what
-        // searchUsers() accepts — use baseApi directly.
-        const { data } = await api.get("/api/users/search", {
-          params: {
-            q: query,
-            membership_type: this.membership_type,
-            membership_id: this.membership_id,
-          },
+        const { data } = await searchUsers(query, {
+          membership_type: this.membership_type,
+          membership_id: this.membership_id,
         });
         this.searchResults = data.users;
       } catch {

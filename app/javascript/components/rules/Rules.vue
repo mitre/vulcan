@@ -15,7 +15,13 @@
 </template>
 
 <script>
-import api from "../../api/baseApi";
+import {
+  getRule,
+  deleteRule,
+  createRuleInComponent,
+  addSatisfaction,
+  removeSatisfaction,
+} from "../../api/rulesApi";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import RulesCodeEditorView from "./RulesCodeEditorView.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
@@ -111,8 +117,7 @@ export default {
      * Previously called refreshRule() which overwrote local changes with server data.
      */
     addSatisfiedRule: function (rule_id, satisfied_by_rule_id, successCallback = null) {
-      api
-        .post(`/rule_satisfactions`, { rule_id, satisfied_by_rule_id })
+      addSatisfaction(rule_id, satisfied_by_rule_id)
         .then((response) => {
           this.alertOrNotifyResponse(response);
 
@@ -164,8 +169,7 @@ export default {
      * Previously called refreshRule() which overwrote local changes with server data.
      */
     removeSatisfiedRule: function (rule_id, satisfied_by_rule_id, successCallback = null) {
-      api
-        .delete(`/rule_satisfactions/${rule_id}`, { data: { rule_id, satisfied_by_rule_id } })
+      removeSatisfaction(rule_id, satisfied_by_rule_id)
         .then((response) => {
           this.alertOrNotifyResponse(response);
 
@@ -200,8 +204,7 @@ export default {
      * Event handler for @delete:rule
      */
     deleteRule: function (rule_id, successCallback = null) {
-      api
-        .delete(`/rules/${rule_id}`)
+      deleteRule(rule_id)
         .then((response) => {
           this.alertOrNotifyResponse(response);
 
@@ -223,8 +226,7 @@ export default {
      * Event handler for @create:rule
      */
     createRule: function (rule, successCallback = null) {
-      api
-        .post(`/components/${this.reactiveComponent.id}/rules`, { rule: rule })
+      createRuleInComponent(this.reactiveComponent.id, rule)
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.ruleFetchSuccess(response);
@@ -358,8 +360,7 @@ export default {
      * updated: How the rule is expected to have been changed. Expects any of ['all', 'comments']
      */
     refreshRule: function (id, updated = "all") {
-      api
-        .get(`/rules/${id}`)
+      getRule(id)
         .then((response) => this.ruleFetchSuccess(response, updated))
         .catch(this.alertOrNotifyResponse);
     },

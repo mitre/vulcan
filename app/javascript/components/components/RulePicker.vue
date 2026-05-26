@@ -55,7 +55,7 @@
 </template>
 
 <script>
-import api from "../../api/baseApi";
+import { getRulesPicker } from "../../api/rulesApi";
 
 // Picker for the "move to rule" admin action on the triage modal. Scoped
 // to the same component as the source review (server enforces same-component
@@ -113,8 +113,7 @@ export default {
   methods: {
     fetchRules() {
       this.loading = true;
-      api
-        .get(`/components/${this.componentId}/rules_picker.json`)
+      getRulesPicker(this.componentId)
         .then((res) => {
           // ComponentBlueprint :show / :editor view exposes a `rules` array
           // shaped at minimum: { id, rule_id, displayed_name?, title? }

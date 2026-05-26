@@ -1,7 +1,23 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import LockControlsModal from "@/components/components/LockControlsModal.vue";
+
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/api/componentsApi", () => ({
+  lockComponent: vi.fn(() => Promise.resolve({ data: {} })),
+  lockSections: vi.fn(() => Promise.resolve({ data: {} })),
+}));
 
 /**
  * LockControlsModal - Component-level lock controls
@@ -105,9 +121,41 @@ describe("LockControlsModal", () => {
 
     it("has sectionOptions available from ruleFieldConfig", () => {
       wrapper = createWrapper();
-      // sectionOptions should be populated with lockable section names
       expect(Array.isArray(wrapper.vm.sectionOptions)).toBe(true);
       expect(wrapper.vm.sectionOptions.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("API calls use domain modules", () => {
+    beforeEach(() => vi.resetAllMocks());
+
+    it("lockControls calls lockComponent with component_id and payload", async () => {
+      const { lockComponent } = await import("@/api/componentsApi");
+      lockComponent.mockResolvedValueOnce({ data: {} });
+
+      wrapper = createWrapper();
+      wrapper.vm.comment = "Locking all";
+      wrapper.vm.lockControls();
+
+      expect(lockComponent).toHaveBeenCalledWith(1, {
+        review: { action: "lock_control", comment: "Locking all" },
+      });
+    });
+
+    it("lockSections calls lockSections with component_id and payload", async () => {
+      const { lockSections } = await import("@/api/componentsApi");
+      lockSections.mockResolvedValueOnce({ data: {} });
+
+      wrapper = createWrapper();
+      wrapper.vm.comment = "Locking sections";
+      wrapper.vm.selectedSections = ["check_content", "fixtext"];
+      wrapper.vm.lockSections();
+
+      expect(lockSections).toHaveBeenCalledWith(1, {
+        sections: ["check_content", "fixtext"],
+        locked: true,
+        comment: "Locking sections",
+      });
     });
   });
 });

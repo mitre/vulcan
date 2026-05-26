@@ -20,15 +20,23 @@ import UpdateFromSpreadsheetModal from "@/components/components/UpdateFromSpread
  * DOM use attachTo: document.body. Tests for computed/state use vm directly.
  */
 
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
     post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
     patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
     defaults: { headers: { common: {} } },
   },
 }));
 
-import axios from "axios";
+vi.mock("@/api/componentsApi", () => ({
+  previewSpreadsheetUpdate: vi.fn(() => Promise.resolve({ data: {} })),
+  applySpreadsheetUpdate: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+
+import { previewSpreadsheetUpdate, applySpreadsheetUpdate } from "@/api/componentsApi";
 
 describe("UpdateFromSpreadsheetModal", () => {
   let wrapper;
@@ -102,7 +110,7 @@ describe("UpdateFromSpreadsheetModal", () => {
 
   describe("Step 2: Preview (state verification)", () => {
     it("advances to step 2 after successful preview API call", async () => {
-      axios.post.mockResolvedValueOnce(mockPreviewResponse);
+      previewSpreadsheetUpdate.mockResolvedValueOnce(mockPreviewResponse);
       wrapper = createWrapper();
 
       wrapper.vm.selectedFile = new File(["content"], "test.csv");
@@ -116,7 +124,7 @@ describe("UpdateFromSpreadsheetModal", () => {
     });
 
     it("sets correct modal title for preview step", async () => {
-      axios.post.mockResolvedValueOnce(mockPreviewResponse);
+      previewSpreadsheetUpdate.mockResolvedValueOnce(mockPreviewResponse);
       wrapper = createWrapper();
 
       wrapper.vm.selectedFile = new File(["content"], "test.csv");
@@ -126,7 +134,7 @@ describe("UpdateFromSpreadsheetModal", () => {
     });
 
     it("sets modal size to xl for preview step", async () => {
-      axios.post.mockResolvedValueOnce(mockPreviewResponse);
+      previewSpreadsheetUpdate.mockResolvedValueOnce(mockPreviewResponse);
       wrapper = createWrapper();
 
       wrapper.vm.selectedFile = new File(["content"], "test.csv");
@@ -136,7 +144,7 @@ describe("UpdateFromSpreadsheetModal", () => {
     });
 
     it("builds table items from preview data", async () => {
-      axios.post.mockResolvedValueOnce(mockPreviewResponse);
+      previewSpreadsheetUpdate.mockResolvedValueOnce(mockPreviewResponse);
       wrapper = createWrapper();
 
       wrapper.vm.selectedFile = new File(["content"], "test.csv");
@@ -150,7 +158,7 @@ describe("UpdateFromSpreadsheetModal", () => {
 
   describe("Error handling", () => {
     it("stays on step 1 and sets fileError on preview API failure", async () => {
-      axios.post.mockRejectedValueOnce({
+      previewSpreadsheetUpdate.mockRejectedValueOnce({
         response: { data: { error: "Missing required header: SRGID" } },
       });
       wrapper = createWrapper();
@@ -163,7 +171,7 @@ describe("UpdateFromSpreadsheetModal", () => {
     });
 
     it("sets generic error when API response has no error field", async () => {
-      axios.post.mockRejectedValueOnce({ response: { data: {} } });
+      previewSpreadsheetUpdate.mockRejectedValueOnce({ response: { data: {} } });
       wrapper = createWrapper();
 
       wrapper.vm.selectedFile = new File(["content"], "test.csv");
@@ -173,7 +181,7 @@ describe("UpdateFromSpreadsheetModal", () => {
     });
 
     it("sets error result on apply failure", async () => {
-      axios.patch.mockRejectedValueOnce({
+      applySpreadsheetUpdate.mockRejectedValueOnce({
         response: { data: { error: "Could not save rules" } },
       });
       wrapper = createWrapper();
@@ -192,7 +200,7 @@ describe("UpdateFromSpreadsheetModal", () => {
   describe("Step 4: Progress", () => {
     it("sets step to 4 during update", async () => {
       let resolveApply;
-      axios.patch.mockReturnValueOnce(
+      applySpreadsheetUpdate.mockReturnValueOnce(
         new Promise((resolve) => {
           resolveApply = resolve;
         }),
@@ -216,7 +224,7 @@ describe("UpdateFromSpreadsheetModal", () => {
 
   describe("Step 5: Results", () => {
     it("sets success result on completion", async () => {
-      axios.patch.mockResolvedValueOnce({
+      applySpreadsheetUpdate.mockResolvedValueOnce({
         data: { toast: "Successfully updated 2 rules from spreadsheet." },
       });
       wrapper = createWrapper();
@@ -277,27 +285,21 @@ describe("UpdateFromSpreadsheetModal", () => {
       wrapper.vm.fetchPreview();
 
       expect(wrapper.vm.fileError).toBe("Please select a file");
-      expect(axios.post).not.toHaveBeenCalled();
+      expect(previewSpreadsheetUpdate).not.toHaveBeenCalled();
     });
 
     it("calls correct API endpoint for preview", async () => {
-      axios.post.mockResolvedValueOnce(mockPreviewResponse);
+      previewSpreadsheetUpdate.mockResolvedValueOnce(mockPreviewResponse);
       wrapper = createWrapper();
 
       wrapper.vm.selectedFile = new File(["content"], "test.csv");
       await wrapper.vm.fetchPreview();
 
-      expect(axios.post).toHaveBeenCalledWith(
-        "/components/42/preview_spreadsheet_update",
-        expect.any(FormData),
-        expect.objectContaining({
-          headers: { "Content-Type": "multipart/form-data" },
-        }),
-      );
+      expect(previewSpreadsheetUpdate).toHaveBeenCalledWith(42, expect.any(FormData));
     });
 
     it("calls correct API endpoint for apply", async () => {
-      axios.patch.mockResolvedValueOnce({ data: { toast: "Done" } });
+      applySpreadsheetUpdate.mockResolvedValueOnce({ data: { toast: "Done" } });
       wrapper = createWrapper();
 
       wrapper.vm.selectedFile = new File(["content"], "test.csv");
@@ -305,13 +307,7 @@ describe("UpdateFromSpreadsheetModal", () => {
 
       await wrapper.vm.applyChanges();
 
-      expect(axios.patch).toHaveBeenCalledWith(
-        "/components/42/apply_spreadsheet_update",
-        expect.any(FormData),
-        expect.objectContaining({
-          headers: { "Content-Type": "multipart/form-data" },
-        }),
-      );
+      expect(applySpreadsheetUpdate).toHaveBeenCalledWith(42, expect.any(FormData));
     });
   });
 

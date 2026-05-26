@@ -117,7 +117,7 @@
 </template>
 
 <script>
-import api from "../../api/baseApi";
+import { updateRule, findInComponent } from "../../api/rulesApi";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FindAndReplaceMixinVue from "../../mixins/FindAndReplaceMixin.vue";
 import CommentModal from "../shared/CommentModal.vue";
@@ -218,19 +218,17 @@ export default {
     find: function () {
       this.loading = true;
       this.find_text = this.fr.find;
-      api
-        .post(`/components/${this.componentId}/find`, { find: this.find_text })
-        .then((response) => {
-          this.find_results = this.groupFindResults(
-            response.data,
-            this.find_text,
-            this.fr.matchCase,
-            this.fr.fields,
-          );
-          this.find_results_ver += 1;
-          this.countTotalResults();
-          this.loading = false;
-        });
+      findInComponent(this.componentId, this.find_text).then((response) => {
+        this.find_results = this.groupFindResults(
+          response.data,
+          this.find_text,
+          this.fr.matchCase,
+          this.fr.fields,
+        );
+        this.find_results_ver += 1;
+        this.countTotalResults();
+        this.loading = false;
+      });
     },
     countTotalResults: function () {
       const resultValues = Object.values(this.find_results);
@@ -258,8 +256,7 @@ export default {
           audit_comment: comment,
         },
       };
-      return api
-        .put(`/rules/${rule_id}`, payload)
+      return updateRule(rule_id, payload)
         .then((response) => {
           this.saveRuleSuccess(response, rule_id);
         })
@@ -284,8 +281,7 @@ export default {
           },
         };
         promises.push(
-          api
-            .put(`/rules/${rule_id}`, payload)
+          updateRule(rule_id, payload)
             .then((response) => {
               self.saveRuleSuccess(response, rule_id);
             })

@@ -3,14 +3,25 @@ import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import Project from "@/components/project/Project.vue";
 
-// Mock axios - must include defaults.headers.common for FormMixin
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
     get: vi.fn(() => Promise.resolve({ data: {} })),
     put: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
     delete: vi.fn(() => Promise.resolve({ data: {} })),
     defaults: { headers: { common: {} } },
   },
+}));
+
+vi.mock("@/api/projectsApi", () => ({
+  getProject: vi.fn(() => Promise.resolve({ data: {} })),
+  updateProject: vi.fn(() => Promise.resolve({ data: {} })),
+  exportProjectData: vi.fn(() => Promise.resolve("/projects/1/export/csv?component_ids=1")),
+}));
+
+vi.mock("@/api/componentsApi", () => ({
+  deleteComponent: vi.fn(() => Promise.resolve({ data: {} })),
 }));
 
 /**
@@ -220,10 +231,11 @@ describe("Project", () => {
       expect(wrapper.vm.showVisibilityModal).toBe(true);
     });
 
-    it("updateVisibility closes modal and makes API call", async () => {
-      const axios = (await import("axios")).default;
-      // Mock axios.get to return valid project structure for refreshProject
-      axios.get.mockResolvedValue({ data: defaultProps.initialProjectState });
+    it("updateVisibility closes modal and calls updateProject", async () => {
+      const { getProject } = await import("@/api/projectsApi");
+      getProject.mockResolvedValue({ data: defaultProps.initialProjectState });
+      const { updateProject } = await import("@/api/projectsApi");
+
       wrapper = createWrapper();
       wrapper.vm.pendingVisibility = true;
       wrapper.vm.showVisibilityModal = true;
@@ -231,7 +243,7 @@ describe("Project", () => {
       wrapper.vm.updateVisibility();
 
       expect(wrapper.vm.showVisibilityModal).toBe(false);
-      expect(axios.put).toHaveBeenCalledWith("/projects/1", {
+      expect(updateProject).toHaveBeenCalledWith(1, {
         project: { visibility: "discoverable" },
       });
     });
@@ -391,49 +403,18 @@ describe("Project", () => {
       expect(wrapper.vm.showExportModal).toBe(true);
     });
 
-    it("executeExport calls downloadExport with type, componentIds, and mode from event", () => {
+    it("downloadExport calls exportProjectData with project id, type, and options", async () => {
+      const { exportProjectData } = await import("@/api/projectsApi");
+
       wrapper = createWrapper();
-      wrapper.vm.downloadExport = vi.fn();
+      wrapper.vm.downloadExport("csv", [1, 2], "working_copy", true, false, true);
 
-      wrapper.vm.executeExport({
-        type: "excel",
-        mode: "vendor_submission",
-        componentIds: [1, 2, 3],
-      });
-
-      expect(wrapper.vm.downloadExport).toHaveBeenCalledWith(
-        "excel",
-        [1, 2, 3],
-        "vendor_submission",
-        undefined,
-        undefined,
-        undefined,
-      );
-    });
-
-    it("executeExport works for all export types with modes", () => {
-      const cases = [
-        { type: "excel", mode: "working_copy" },
-        { type: "excel", mode: "vendor_submission" },
-        { type: "xccdf", mode: "published_stig" },
-        { type: "inspec", mode: "published_stig" },
-        { type: "xccdf", mode: "backup" },
-      ];
-      cases.forEach(({ type, mode }) => {
-        wrapper = createWrapper();
-        wrapper.vm.downloadExport = vi.fn();
-
-        wrapper.vm.executeExport({ type, mode, componentIds: [1] });
-
-        expect(wrapper.vm.downloadExport).toHaveBeenCalledWith(
-          type,
-          [1],
-          mode,
-          undefined,
-          undefined,
-          undefined,
-        );
-        wrapper.destroy();
+      expect(exportProjectData).toHaveBeenCalledWith(1, "csv", {
+        componentIds: [1, 2],
+        mode: "working_copy",
+        includeSrg: true,
+        includeMemberships: false,
+        excludeSatisfiedBy: true,
       });
     });
 

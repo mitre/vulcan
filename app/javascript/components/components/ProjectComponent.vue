@@ -133,7 +133,9 @@
 
 <script>
 import { ref } from "vue";
-import api from "../../api/baseApi";
+import { getComponent, patchComponent } from "../../api/componentsApi";
+import { getRule } from "../../api/rulesApi";
+import { exportProjectData } from "../../api/projectsApi";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
@@ -346,8 +348,7 @@ export default {
         this.refreshComponent();
         return;
       }
-      api
-        .get(`/rules/${ruleId}`, { headers: { Accept: "application/json" } })
+      getRule(ruleId)
         .then((response) => {
           const idx = this.localRules.findIndex((r) => r.id === ruleId);
           if (idx >= 0) {
@@ -363,8 +364,7 @@ export default {
       globalThis.location.href = `/components/${this.component.id}/triage`;
     },
     refreshComponent() {
-      api
-        .get(`/components/${this.component.id}.json`)
+      getComponent(this.component.id)
         .then((response) => {
           Object.assign(this.component, response.data);
           if (response.data.rules) {
@@ -382,11 +382,9 @@ export default {
           advanced_fields: advanced_fields,
         },
       };
-      api
-        .patch(`/components/${this.component.id}`, payload)
+      patchComponent(this.component.id, payload)
         .then((response) => {
           this.alertOrNotifyResponse(response);
-          // Update local data property (not prop) for proper reactivity through slots
           this.localAdvancedFields = advanced_fields;
         })
         .catch(this.alertOrNotifyResponse);
@@ -412,14 +410,14 @@ export default {
       includeMemberships,
       excludeSatisfiedBy,
     }) {
-      let url = `/projects/${this.project.id}/export/${type}?component_ids=${componentIds.join(",")}`;
-      if (mode) url += `&mode=${mode}`;
-      if (includeSrg) url += `&include_srg=true`;
-      if (includeMemberships === false) url += `&include_memberships=false`;
-      if (excludeSatisfiedBy) url += `&exclude_satisfied_by=true`;
-      api
-        .get(url)
-        .then(() => {
+      exportProjectData(this.project.id, type, {
+        componentIds,
+        mode,
+        includeSrg,
+        includeMemberships,
+        excludeSatisfiedBy,
+      })
+        .then((url) => {
           window.open(url);
         })
         .catch(this.alertOrNotifyResponse);

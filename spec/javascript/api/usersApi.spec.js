@@ -22,10 +22,18 @@ vi.mock("@/api/baseApi", () => ({
 describe("usersApi", () => {
   beforeEach(() => vi.resetAllMocks());
 
-  it("searchUsers calls GET /api/users/search", async () => {
+  it("searchUsers calls GET /api/users/search with query", async () => {
     api.get.mockResolvedValue({ data: [] });
     await searchUsers("alice");
     expect(api.get).toHaveBeenCalledWith("/api/users/search", { params: { q: "alice" } });
+  });
+
+  it("searchUsers passes extra params when provided", async () => {
+    api.get.mockResolvedValue({ data: [] });
+    await searchUsers("bob", { membership_type: "Project", membership_id: 5 });
+    expect(api.get).toHaveBeenCalledWith("/api/users/search", {
+      params: { q: "bob", membership_type: "Project", membership_id: 5 },
+    });
   });
 
   it("createUser calls POST /users/admin_create", async () => {
@@ -60,6 +68,18 @@ describe("usersApi", () => {
     expect(api.post).toHaveBeenCalledWith("/users/3/unlock");
   });
 
+  it("sendPasswordReset calls POST /users/:id/send_password_reset", async () => {
+    api.post.mockResolvedValue({ data: {} });
+    await sendPasswordReset(3);
+    expect(api.post).toHaveBeenCalledWith("/users/3/send_password_reset");
+  });
+
+  it("generateResetLink calls POST /users/:id/generate_reset_link", async () => {
+    api.post.mockResolvedValue({ data: {} });
+    await generateResetLink(3);
+    expect(api.post).toHaveBeenCalledWith("/users/3/generate_reset_link");
+  });
+
   it("setPassword calls POST /users/:id/set_password", async () => {
     api.post.mockResolvedValue({ data: {} });
     await setPassword(3, "new123", "new123");
@@ -80,9 +100,15 @@ describe("usersApi", () => {
     expect(api.delete).toHaveBeenCalledWith("/users");
   });
 
-  it("unlinkIdentity calls POST /users/unlink_identity", async () => {
+  it("unlinkIdentity calls POST /users/unlink_identity with payload", async () => {
     api.post.mockResolvedValue({ data: {} });
-    await unlinkIdentity("github");
+    await unlinkIdentity({ provider: "github" });
     expect(api.post).toHaveBeenCalledWith("/users/unlink_identity", { provider: "github" });
+  });
+
+  it("unlinkIdentity accepts current_password payload", async () => {
+    api.post.mockResolvedValue({ data: {} });
+    await unlinkIdentity({ current_password: "secret123" });
+    expect(api.post).toHaveBeenCalledWith("/users/unlink_identity", { current_password: "secret123" });
   });
 });

@@ -24,6 +24,39 @@ export function getSrgs() {
   return api.get("/srgs");
 }
 
+export function updateProject(projectId, payload) {
+  return api.put(`/projects/${projectId}`, payload);
+}
+
 export function restoreBackup(componentId, formData, config = {}) {
   return api.post(`/components/${componentId}/import`, formData, config);
+}
+
+export function importBackup(projectId, formData, config = {}) {
+  return api.post(`/projects/${projectId}/import_backup`, formData, config);
+}
+
+export function getBenchmarkList(path) {
+  return api.get(path);
+}
+
+export function uploadBenchmark(path, formData, config = {}) {
+  return api.post(path, formData, config);
+}
+
+export function deleteBenchmark(path) {
+  return api.delete(path);
+}
+
+export function getProjectComments(projectId, params) {
+  return api.get(`/projects/${projectId}/comments`, { params });
+}
+
+export function exportProjectData(projectId, type, options = {}) {
+  let url = `/projects/${projectId}/export/${type}?component_ids=${options.componentIds.join(",")}`;
+  if (options.mode) url += `&mode=${options.mode}`;
+  if (options.includeSrg) url += `&include_srg=true`;
+  if (options.includeMemberships === false) url += `&include_memberships=false`;
+  if (options.excludeSatisfiedBy) url += `&exclude_satisfied_by=true`;
+  return api.get(url).then(() => url);
 }

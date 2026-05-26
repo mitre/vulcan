@@ -8,10 +8,28 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
-import axios from "axios";
 import ComponentSettingsPage from "@/components/components/ComponentSettingsPage.vue";
+import { updateComponent } from "@/api/componentsApi";
+import { searchUsers } from "@/api/usersApi";
 
-vi.mock("axios");
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: { toast: "ok" } })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/api/componentsApi", () => ({
+  updateComponent: vi.fn(() => Promise.resolve({ data: { toast: "ok" } })),
+}));
+
+vi.mock("@/api/usersApi", () => ({
+  searchUsers: vi.fn(() => Promise.resolve({ data: { users: [] } })),
+}));
 
 const baseComponent = {
   id: 8,
@@ -46,8 +64,8 @@ describe("ComponentSettingsPage", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    axios.put.mockResolvedValue({ data: { toast: "ok" } });
-    axios.get.mockResolvedValue({ data: { users: [] } });
+    updateComponent.mockResolvedValue({ data: { toast: "ok" } });
+    searchUsers.mockResolvedValue({ data: { users: [] } });
   });
 
   afterEach(() => {
@@ -163,8 +181,8 @@ describe("ComponentSettingsPage", () => {
       wrapper.vm.form.comment_period_ends_at = "2026-05-14";
       await wrapper.vm.save();
 
-      const [url, payload] = axios.put.mock.calls[0];
-      expect(url).toBe("/components/8");
+      const [componentId, payload] = updateComponent.mock.calls[0];
+      expect(componentId).toBe(8);
       expect(payload.component).toMatchObject({
         name: "Container Platform",
         prefix: "CNTR-01",
@@ -197,7 +215,7 @@ describe("ComponentSettingsPage", () => {
       wrapper.vm.form.closed_reason = null;
       await wrapper.vm.save();
 
-      expect(axios.put).not.toHaveBeenCalled();
+      expect(updateComponent).not.toHaveBeenCalled();
     });
 
     it("proceeds with the save when the user confirms", async () => {
@@ -207,8 +225,8 @@ describe("ComponentSettingsPage", () => {
       wrapper.vm.form.closed_reason = null;
       await wrapper.vm.save();
 
-      expect(axios.put).toHaveBeenCalled();
-      expect(axios.put.mock.calls[0][1].component.comment_phase).toBe("open");
+      expect(updateComponent).toHaveBeenCalled();
+      expect(updateComponent.mock.calls[0][1].component.comment_phase).toBe("open");
     });
 
     it("does NOT show the confirmation when the phase is unchanged", async () => {
@@ -218,7 +236,7 @@ describe("ComponentSettingsPage", () => {
       await wrapper.vm.save();
 
       expect(wrapper.vm.$bvModal.msgBoxConfirm).not.toHaveBeenCalled();
-      expect(axios.put).toHaveBeenCalled();
+      expect(updateComponent).toHaveBeenCalled();
     });
 
     it("does NOT show the confirmation moving from closed+adjudicating to open", async () => {
@@ -230,7 +248,7 @@ describe("ComponentSettingsPage", () => {
       await wrapper.vm.save();
 
       expect(wrapper.vm.$bvModal.msgBoxConfirm).not.toHaveBeenCalled();
-      expect(axios.put).toHaveBeenCalled();
+      expect(updateComponent).toHaveBeenCalled();
     });
   });
 });

@@ -53,7 +53,7 @@
 </template>
 
 <script>
-import api from "../../api/baseApi";
+import { getBenchmarkList } from "../../api/projectsApi";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import BaseCommandBar from "./BaseCommandBar.vue";
 import BenchmarkTable from "./BenchmarkTable.vue";
@@ -135,8 +135,7 @@ export default {
       }
     },
     loadItems() {
-      api
-        .get(this.apiPath)
+      getBenchmarkList(this.apiPath)
         .then(({ data }) => {
           this.items = data;
         })

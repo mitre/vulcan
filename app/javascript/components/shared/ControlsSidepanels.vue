@@ -201,7 +201,7 @@
 </template>
 
 <script>
-import api from "../../api/baseApi";
+import { getHistories } from "../../api/componentsApi";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import { SIDEBAR_TITLES } from "../../constants/terminology";
@@ -295,8 +295,7 @@ export default {
   },
   methods: {
     refreshHistories() {
-      api
-        .get(`/components/${this.component.id}/histories`)
+      getHistories(this.component.id)
         .then((response) => {
           this.localHistories = response.data;
         })

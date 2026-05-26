@@ -1,0 +1,120 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import api from "@/api/baseApi";
+import {
+  getComponent,
+  updateComponent,
+  patchComponent,
+  deleteComponent,
+  createComponentInProject,
+  detectSrg,
+  lockComponent,
+  lockSections,
+  previewSpreadsheetUpdate,
+  applySpreadsheetUpdate,
+  getComments,
+  getHistories,
+  getComponentHistory,
+  searchBasedOnSameSrg,
+  compareComponents,
+} from "@/api/componentsApi";
+
+vi.mock("@/api/baseApi", () => ({
+  default: { get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn() },
+}));
+
+describe("componentsApi", () => {
+  beforeEach(() => vi.resetAllMocks());
+
+  it("getComponent calls GET /components/:id.json", async () => {
+    api.get.mockResolvedValue({ data: {} });
+    await getComponent(5);
+    expect(api.get).toHaveBeenCalledWith("/components/5.json");
+  });
+
+  it("updateComponent calls PUT /components/:id", async () => {
+    api.put.mockResolvedValue({ data: {} });
+    await updateComponent(5, { name: "test" });
+    expect(api.put).toHaveBeenCalledWith("/components/5", { name: "test" });
+  });
+
+  it("patchComponent calls PATCH /components/:id", async () => {
+    api.patch.mockResolvedValue({ data: {} });
+    await patchComponent(5, { visibility: "public" });
+    expect(api.patch).toHaveBeenCalledWith("/components/5", { visibility: "public" });
+  });
+
+  it("deleteComponent calls DELETE /components/:id", async () => {
+    api.delete.mockResolvedValue({ data: {} });
+    await deleteComponent(5);
+    expect(api.delete).toHaveBeenCalledWith("/components/5");
+  });
+
+  it("createComponentInProject calls POST /projects/:id/components", async () => {
+    api.post.mockResolvedValue({ data: {} });
+    await createComponentInProject(1, { name: "test" });
+    expect(api.post).toHaveBeenCalledWith("/projects/1/components", { name: "test" }, {});
+  });
+
+  it("detectSrg calls POST /components/detect_srg", async () => {
+    api.post.mockResolvedValue({ data: {} });
+    const fd = new FormData();
+    await detectSrg(fd);
+    expect(api.post).toHaveBeenCalledWith("/components/detect_srg", fd, {});
+  });
+
+  it("lockComponent calls POST /components/:id/lock", async () => {
+    api.post.mockResolvedValue({ data: {} });
+    await lockComponent(5, { locked: true });
+    expect(api.post).toHaveBeenCalledWith("/components/5/lock", { locked: true });
+  });
+
+  it("lockSections calls PATCH /components/:id/lock_sections", async () => {
+    api.patch.mockResolvedValue({ data: {} });
+    await lockSections(5, { sections: ["Check"] });
+    expect(api.patch).toHaveBeenCalledWith("/components/5/lock_sections", { sections: ["Check"] });
+  });
+
+  it("getComments calls GET /components/:id/comments", async () => {
+    api.get.mockResolvedValue({ data: {} });
+    await getComments(5, { page: 1 });
+    expect(api.get).toHaveBeenCalledWith("/components/5/comments", { params: { page: 1 } });
+  });
+
+  it("getHistories calls GET /components/:id/histories", async () => {
+    api.get.mockResolvedValue({ data: {} });
+    await getHistories(5);
+    expect(api.get).toHaveBeenCalledWith("/components/5/histories");
+  });
+
+  it("searchBasedOnSameSrg calls GET /components/:id/search/based_on_same_srg", async () => {
+    api.get.mockResolvedValue({ data: {} });
+    await searchBasedOnSameSrg(5);
+    expect(api.get).toHaveBeenCalledWith("/components/5/search/based_on_same_srg");
+  });
+
+  it("previewSpreadsheetUpdate calls POST /components/:id/preview_spreadsheet_update", async () => {
+    api.post.mockResolvedValue({ data: {} });
+    const fd = new FormData();
+    await previewSpreadsheetUpdate(5, fd);
+    expect(api.post).toHaveBeenCalledWith("/components/5/preview_spreadsheet_update", fd, {});
+  });
+
+  it("applySpreadsheetUpdate calls PATCH /components/:id/apply_spreadsheet_update", async () => {
+    api.patch.mockResolvedValue({ data: {} });
+    const fd = new FormData();
+    await applySpreadsheetUpdate(5, fd);
+    expect(api.patch).toHaveBeenCalledWith("/components/5/apply_spreadsheet_update", fd, {});
+  });
+
+  it("getComponentHistory calls POST /components/history", async () => {
+    api.post.mockResolvedValue({ data: {} });
+    await getComponentHistory({ component_id: 5 });
+    expect(api.post).toHaveBeenCalledWith("/components/history", { component_id: 5 });
+  });
+
+  it("compareComponents calls GET /components/:base/compare/:diff", async () => {
+    api.get.mockResolvedValue({ data: {} });
+    await compareComponents(5, 10);
+    expect(api.get).toHaveBeenCalledWith("/components/5/compare/10");
+  });
+});

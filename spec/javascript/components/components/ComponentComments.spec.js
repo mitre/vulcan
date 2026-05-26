@@ -1,9 +1,32 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
-import axios from "axios";
 import ComponentComments from "@/components/components/ComponentComments.vue";
+import { getComments } from "@/api/componentsApi";
+import { getProjectComments } from "@/api/projectsApi";
+import { reopenReview } from "@/api/reviewsApi";
 
-vi.mock("axios");
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/api/componentsApi", () => ({
+  getComments: vi.fn(() => Promise.resolve({ data: { rows: [], pagination: { total: 0 } } })),
+}));
+
+vi.mock("@/api/projectsApi", () => ({
+  getProjectComments: vi.fn(() => Promise.resolve({ data: { rows: [], pagination: { total: 0 } } })),
+}));
+
+vi.mock("@/api/reviewsApi", () => ({
+  reopenReview: vi.fn(() => Promise.resolve({ data: { review: { id: 99 } } })),
+}));
 
 // Flush both microtasks (axios .then chain) and the next Vue tick so the
 // reactive state from a resolved fetch settles before assertions run.
@@ -64,7 +87,7 @@ const mockResponse = {
 
 describe("ComponentComments", () => {
   beforeEach(() => {
-    axios.get.mockResolvedValue(mockResponse);
+    getComments.mockResolvedValue(mockResponse);
   });
 
   it("fetches with default triage_status=pending on mount", async () => {
@@ -73,12 +96,9 @@ describe("ComponentComments", () => {
       stubs: SHARED_STUBS,
     });
     await flushPromises();
-    expect(axios.get).toHaveBeenCalledWith(
-      "/components/42/comments",
-      expect.objectContaining({
-        params: expect.objectContaining({ triage_status: "pending", page: 1 }),
-      }),
-    );
+    expect(getComments).toHaveBeenCalledWith(42, expect.objectContaining({
+      triage_status: "pending", page: 1,
+    }));
   });
 
   it("does NOT hardcode DISA labels in the rendered template (display goes through TriageStatusBadge)", async () => {
@@ -112,16 +132,13 @@ describe("ComponentComments", () => {
       stubs: SHARED_STUBS,
     });
     await flushPromises();
-    axios.get.mockClear();
+    getComments.mockClear();
     wrapper.vm.filterText = "apple";
     wrapper.vm.onFilterChanged();
     await flushPromises();
-    expect(axios.get).toHaveBeenCalledWith(
-      "/components/42/comments",
-      expect.objectContaining({
-        params: expect.objectContaining({ q: "apple" }),
-      }),
-    );
+    expect(getComments).toHaveBeenCalledWith(42, expect.objectContaining({
+      q: "apple",
+    }));
   });
 
   it("re-fetches when filterStatus changes and resets page to 1", async () => {
@@ -131,17 +148,14 @@ describe("ComponentComments", () => {
     });
     await flushPromises();
     wrapper.vm.page = 5;
-    axios.get.mockClear();
+    getComments.mockClear();
     wrapper.vm.filterStatus = "concur";
     wrapper.vm.onFilterChanged();
     await flushPromises();
     expect(wrapper.vm.page).toBe(1);
-    expect(axios.get).toHaveBeenCalledWith(
-      "/components/42/comments",
-      expect.objectContaining({
-        params: expect.objectContaining({ triage_status: "concur", page: 1 }),
-      }),
-    );
+    expect(getComments).toHaveBeenCalledWith(42, expect.objectContaining({
+      triage_status: "concur", page: 1,
+    }));
   });
 
   it("enters split mode when openTriageFor is called", async () => {
@@ -191,12 +205,9 @@ describe("ComponentComments", () => {
         stubs: SHARED_STUBS,
       });
       await flushPromises();
-      expect(axios.get).toHaveBeenCalledWith(
-        "/projects/9/comments",
-        expect.objectContaining({
-          params: expect.objectContaining({ triage_status: "pending" }),
-        }),
-      );
+      expect(getProjectComments).toHaveBeenCalledWith(9, expect.objectContaining({
+        triage_status: "pending",
+      }));
     });
 
     it("includes the component_name column in the table fields", () => {
@@ -239,7 +250,7 @@ describe("ComponentComments", () => {
     };
 
     it("renders Triage / Edit-Close / Re-open for an author", async () => {
-      axios.get.mockResolvedValueOnce({
+      getComments.mockResolvedValueOnce({
         data: {
           rows: [{ ...adjudicatedRow, triage_status: "pending", adjudicated_at: null }],
           pagination: { page: 1, per_page: 25, total: 1 },
@@ -253,7 +264,7 @@ describe("ComponentComments", () => {
     });
 
     it("hides action buttons for viewers and shows a read-only hint", async () => {
-      axios.get.mockResolvedValueOnce({
+      getComments.mockResolvedValueOnce({
         data: { rows: [adjudicatedRow], pagination: { page: 1, per_page: 25, total: 1 } },
       });
       const wrapper = mount(ComponentComments, {
@@ -289,39 +300,37 @@ describe("ComponentComments", () => {
     };
 
     it("PATCHes /reviews/:id/reopen and re-fetches the table", async () => {
-      axios.patch = vi.fn().mockResolvedValue({ data: { review: { id: 99 } } });
+      reopenReview.mockResolvedValue({ data: { review: { id: 99 } } });
       const wrapper = mount(ComponentComments, {
         propsData: { componentId: 42, effectivePermissions: "author" },
         stubs: SHARED_STUBS,
       });
       await flushPromises();
-      const initialFetchCount = axios.get.mock.calls.length;
+      const initialFetchCount = getComments.mock.calls.length;
 
       await wrapper.vm.openReopen(adjudicatedRow);
       await flushPromises();
 
-      expect(axios.patch).toHaveBeenCalledWith("/reviews/99/reopen");
-      // Re-fetch fires after a successful re-open so the row's new state
-      // is visible without a manual refresh.
-      expect(axios.get.mock.calls.length).toBeGreaterThan(initialFetchCount);
+      expect(reopenReview).toHaveBeenCalledWith(99);
+      expect(getComments.mock.calls.length).toBeGreaterThan(initialFetchCount);
     });
 
     it("surfaces server errors via alertOrNotifyResponse but still re-fetches", async () => {
-      axios.patch = vi.fn().mockRejectedValue({ response: { status: 422, data: {} } });
+      reopenReview.mockRejectedValue({ response: { status: 422, data: {} } });
       const wrapper = mount(ComponentComments, {
         propsData: { componentId: 42, effectivePermissions: "author" },
         stubs: SHARED_STUBS,
       });
       await flushPromises();
       const alertSpy = vi.spyOn(wrapper.vm, "alertOrNotifyResponse").mockImplementation(() => {});
-      const initialFetchCount = axios.get.mock.calls.length;
+      const initialFetchCount = getComments.mock.calls.length;
 
       await wrapper.vm.openReopen(adjudicatedRow);
       await flushPromises();
 
       expect(alertSpy).toHaveBeenCalled();
       // Even on failure we re-fetch to make sure the UI matches server state.
-      expect(axios.get.mock.calls.length).toBeGreaterThan(initialFetchCount);
+      expect(getComments.mock.calls.length).toBeGreaterThan(initialFetchCount);
       alertSpy.mockRestore();
     });
   });
@@ -376,7 +385,7 @@ describe("ComponentComments", () => {
     };
 
     function mountWithRow() {
-      axios.get.mockResolvedValueOnce({
+      getComments.mockResolvedValueOnce({
         data: {
           rows: [initialRow],
           pagination: { page: 1, per_page: 25, total: 1 },
@@ -391,12 +400,12 @@ describe("ComponentComments", () => {
     it("onTriaged updates the matching row's triage_status without re-fetching", async () => {
       const wrapper = mountWithRow();
       await flushPromises();
-      const fetchesAfterMount = axios.get.mock.calls.length;
+      const fetchesAfterMount = getComments.mock.calls.length;
 
       await wrapper.vm.onTriaged(triagedPayload);
       await flushPromises();
 
-      expect(axios.get.mock.calls.length).toBe(fetchesAfterMount); // no extra fetch
+      expect(getComments.mock.calls.length).toBe(fetchesAfterMount); // no extra fetch
       const refreshed = wrapper.vm.rows.find((r) => r.id === 142);
       expect(refreshed.triage_status).toBe("concur");
       expect(refreshed.triager_display_name).toBe("Triager Tee");
@@ -416,7 +425,7 @@ describe("ComponentComments", () => {
     it("onAdjudicated updates the matching row's adjudicated_at without re-fetching", async () => {
       const wrapper = mountWithRow();
       await flushPromises();
-      const fetchesAfterMount = axios.get.mock.calls.length;
+      const fetchesAfterMount = getComments.mock.calls.length;
 
       const adjudicatedPayload = {
         ...triagedPayload,
@@ -426,7 +435,7 @@ describe("ComponentComments", () => {
       await wrapper.vm.onAdjudicated(adjudicatedPayload);
       await flushPromises();
 
-      expect(axios.get.mock.calls.length).toBe(fetchesAfterMount);
+      expect(getComments.mock.calls.length).toBe(fetchesAfterMount);
       const refreshed = wrapper.vm.rows.find((r) => r.id === 142);
       expect(refreshed.adjudicated_at).toBe("2026-04-30T12:00:00Z");
       expect(refreshed.adjudicator_display_name).toBe("Adjudicator Aye");
@@ -435,12 +444,12 @@ describe("ComponentComments", () => {
     it("falls back to fetch when the payload is missing (defensive)", async () => {
       const wrapper = mountWithRow();
       await flushPromises();
-      const fetchesAfterMount = axios.get.mock.calls.length;
+      const fetchesAfterMount = getComments.mock.calls.length;
 
       await wrapper.vm.onTriaged(undefined);
       await flushPromises();
 
-      expect(axios.get.mock.calls.length).toBeGreaterThan(fetchesAfterMount);
+      expect(getComments.mock.calls.length).toBeGreaterThan(fetchesAfterMount);
     });
   });
 
@@ -454,12 +463,12 @@ describe("ComponentComments", () => {
         stubs: SHARED_STUBS,
       });
       await flushPromises();
-      const initialFetchCount = axios.get.mock.calls.length;
+      const initialFetchCount = getComments.mock.calls.length;
 
       await wrapper.vm.fetch();
       await flushPromises();
 
-      expect(axios.get.mock.calls.length).toBeGreaterThan(initialFetchCount);
+      expect(getComments.mock.calls.length).toBeGreaterThan(initialFetchCount);
     });
   });
 
@@ -606,7 +615,7 @@ describe("ComponentComments", () => {
   // to see without opening the modal.
   it("renders full comment text without truncation", async () => {
     const longComment = "A".repeat(200);
-    axios.get.mockResolvedValueOnce({
+    getComments.mockResolvedValueOnce({
       data: {
         rows: [
           {
@@ -655,7 +664,7 @@ describe("ComponentComments", () => {
   });
 
   it("surfaces fetch errors via alertOrNotifyResponse without crashing", async () => {
-    axios.get.mockRejectedValueOnce({ response: { status: 500, data: {} } });
+    getComments.mockRejectedValueOnce({ response: { status: 500, data: {} } });
     const wrapper = mount(ComponentComments, {
       propsData: { componentId: 42 },
       stubs: SHARED_STUBS,
@@ -664,7 +673,7 @@ describe("ComponentComments", () => {
     // definition's methods bag — spy through the wrapper.
     const alertSpy = vi.spyOn(wrapper.vm, "alertOrNotifyResponse").mockImplementation(() => {});
     // Trigger another fetch so the rejection-handling path runs while spy is active
-    axios.get.mockRejectedValueOnce({ response: { status: 500, data: {} } });
+    getComments.mockRejectedValueOnce({ response: { status: 500, data: {} } });
     await wrapper.vm.fetch();
     expect(alertSpy).toHaveBeenCalled();
     alertSpy.mockRestore();
@@ -673,7 +682,7 @@ describe("ComponentComments", () => {
   // ── Filter state (pills are the sole filter control) ─────────────
 
   it("does not render a Show Resolved toggle (pills replace it)", async () => {
-    axios.get.mockResolvedValue({ data: { rows: [], pagination: { total: 0 } } });
+    getComments.mockResolvedValue({ data: { rows: [], pagination: { total: 0 } } });
     const wrapper = mount(ComponentComments, { propsData: { componentId: 42 } });
     await flushPromises(wrapper);
     expect(wrapper.find("[data-testid='show-resolved-toggle']").exists()).toBe(false);
@@ -681,7 +690,7 @@ describe("ComponentComments", () => {
 
   it("defaults filterStatus to 'pending'", async () => {
     localStorage.clear();
-    axios.get.mockResolvedValue({ data: { rows: [], pagination: { total: 0 } } });
+    getComments.mockResolvedValue({ data: { rows: [], pagination: { total: 0 } } });
     const wrapper = mount(ComponentComments, { propsData: { componentId: 42 } });
     await flushPromises(wrapper);
     expect(wrapper.vm.filterStatus).toBe("pending");
@@ -701,7 +710,7 @@ describe("ComponentComments", () => {
   });
 
   it("hides CommentProgressBar when status_counts is empty", async () => {
-    axios.get.mockResolvedValue({
+    getComments.mockResolvedValue({
       data: { rows: [], pagination: { total: 0 }, status_counts: {} },
     });
     const wrapper = mount(ComponentComments, {
@@ -721,7 +730,7 @@ describe("ComponentComments", () => {
     await flushPromises(wrapper);
     expect(wrapper.vm.statusCounts).toEqual({ pending: 1, concur_with_comment: 1 });
 
-    axios.get.mockResolvedValueOnce({
+    getComments.mockResolvedValueOnce({
       data: {
         rows: [],
         pagination: { total: 0 },
@@ -782,7 +791,7 @@ describe("ComponentComments", () => {
 
   describe("commenter email visibility", () => {
     it("stores author_email in row data after fetch", async () => {
-      axios.get.mockResolvedValueOnce({
+      getComments.mockResolvedValueOnce({
         data: {
           rows: [
             {
@@ -813,7 +822,7 @@ describe("ComponentComments", () => {
     });
 
     it("stores imported email when user is not on this instance", async () => {
-      axios.get.mockResolvedValueOnce({
+      getComments.mockResolvedValueOnce({
         data: {
           rows: [
             {
@@ -904,27 +913,27 @@ describe("ComponentComments", () => {
     });
 
     it("sends rule_id param in fetch when filterRuleId is set", async () => {
-      axios.get.mockResolvedValue(mockResponse);
+      getComments.mockResolvedValue(mockResponse);
       const wrapper = mount(ComponentComments, {
         propsData: { componentId: 29, componentPrefix: "CNTR" },
         stubs: SHARED_STUBS,
       });
       wrapper.vm.filterRuleId = 42;
       await wrapper.vm.fetch();
-      const callArgs = axios.get.mock.calls[axios.get.mock.calls.length - 1];
-      expect(callArgs[1].params.rule_id).toBe(42);
+      const callArgs = getComments.mock.calls[getComments.mock.calls.length - 1];
+      expect(callArgs[1].rule_id).toBe(42);
     });
 
     it("does NOT send rule_id param when filterRuleId is null", async () => {
-      axios.get.mockResolvedValue(mockResponse);
+      getComments.mockResolvedValue(mockResponse);
       const wrapper = mount(ComponentComments, {
         propsData: { componentId: 29, componentPrefix: "CNTR" },
         stubs: SHARED_STUBS,
       });
       wrapper.vm.filterRuleId = null;
       await wrapper.vm.fetch();
-      const callArgs = axios.get.mock.calls[axios.get.mock.calls.length - 1];
-      expect(callArgs[1].params.rule_id).toBeUndefined();
+      const callArgs = getComments.mock.calls[getComments.mock.calls.length - 1];
+      expect(callArgs[1].rule_id).toBeUndefined();
     });
   });
 

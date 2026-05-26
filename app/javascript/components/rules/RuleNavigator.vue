@@ -294,7 +294,6 @@
 // <RuleNavigator @ruleSelected="handleRuleSelected($event)" ... />
 //
 import _ from "lodash";
-import api from "../../api/baseApi";
 import FindAndReplace from "./FindAndReplace.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
 import ComponentSearchModal from "../shared/ComponentSearchModal.vue";

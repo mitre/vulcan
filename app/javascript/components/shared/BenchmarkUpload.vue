@@ -38,7 +38,7 @@
 </template>
 
 <script>
-import api from "../../api/baseApi";
+import { uploadBenchmark } from "../../api/projectsApi";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 
@@ -80,12 +80,7 @@ export default {
       let formData = new FormData();
       formData.append("file", this.file);
       const path = this.post_path ? this.post_path : "/srgs";
-      api
-        .post(path, formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        })
+      uploadBenchmark(path, formData)
         .then(this.srgUploadSuccess)
         .catch(this.srgUploadError)
         .finally(this.completeLoading);

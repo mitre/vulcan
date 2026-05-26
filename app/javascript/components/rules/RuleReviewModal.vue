@@ -46,7 +46,7 @@
 </template>
 
 <script>
-import api from "../../api/baseApi";
+import { createReview } from "../../api/rulesApi";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import { buildReviewActions } from "../../utils/reviewActionHelpers";
 
@@ -97,14 +97,13 @@ export default {
         return;
       }
 
-      api
-        .post(`/rules/${this.rule.id}/reviews`, {
-          review: {
-            component_id: this.rule.component_id,
-            action: this.selectedReviewAction,
-            comment: this.reviewComment.trim(),
-          },
-        })
+      createReview(this.rule.id, {
+        review: {
+          component_id: this.rule.component_id,
+          action: this.selectedReviewAction,
+          comment: this.reviewComment.trim(),
+        },
+      })
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.resetForm();

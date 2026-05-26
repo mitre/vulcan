@@ -223,8 +223,8 @@
 </template>
 
 <script>
-import api from "../../api/baseApi";
 import { updateComponent } from "../../api/componentsApi";
+import { searchUsers } from "../../api/usersApi";
 import debounce from "lodash/debounce";
 import VueMultiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
@@ -326,15 +326,10 @@ export default {
       }
       this.isPocSearching = true;
       try {
-        // Passes extra params (membership_type, membership_id, scope) beyond
-        // what searchUsers() accepts — use baseApi directly.
-        const { data } = await api.get("/api/users/search", {
-          params: {
-            q: query,
-            membership_type: "Component",
-            membership_id: this.component.id,
-            scope: "members",
-          },
+        const { data } = await searchUsers(query, {
+          membership_type: "Component",
+          membership_id: this.component.id,
+          scope: "members",
         });
         this.potentialPocs = data.users;
       } catch {

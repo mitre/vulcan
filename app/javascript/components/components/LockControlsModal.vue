@@ -76,7 +76,7 @@
 </template>
 
 <script>
-import api from "../../api/baseApi";
+import { lockComponent, lockSections as lockSectionsApi } from "../../api/componentsApi";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import { MESSAGE_LABELS } from "../../constants/terminology";
@@ -138,22 +138,20 @@ export default {
     },
     lockControls: function () {
       this.loading = true;
-      api
-        .post(`/components/${this.component_id}/lock`, {
-          review: { action: "lock_control", comment: this.comment },
-        })
+      lockComponent(this.component_id, {
+        review: { action: "lock_control", comment: this.comment },
+      })
         .then(this.lockControlsSuccess)
         .catch(this.alertOrNotifyResponse)
         .finally(this.completeLoading);
     },
     lockSections: function () {
       this.loading = true;
-      api
-        .patch(`/components/${this.component_id}/lock_sections`, {
-          sections: this.selectedSections,
-          locked: true,
-          comment: this.comment,
-        })
+      lockSectionsApi(this.component_id, {
+        sections: this.selectedSections,
+        locked: true,
+        comment: this.comment,
+      })
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.$refs["LockControlsModal"].hide();

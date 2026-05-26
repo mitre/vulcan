@@ -33,7 +33,7 @@
 </template>
 
 <script>
-import api from "../../api/baseApi";
+import { updateComponent } from "../../api/componentsApi";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 
@@ -80,8 +80,7 @@ export default {
         },
       };
 
-      api
-        .put(`/components/${this.component.id}`, payload)
+      updateComponent(this.component.id, payload)
         .then(this.updateMetadataSuccess)
         .catch(this.alertOrNotifyResponse);
     },

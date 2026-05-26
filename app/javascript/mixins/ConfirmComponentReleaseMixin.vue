@@ -1,5 +1,5 @@
 <script>
-import axios from "axios";
+import { patchComponent } from "../api/componentsApi";
 
 // This mixin is for a modal confirmation asking if a user really wants to release a component
 export default {
@@ -36,8 +36,7 @@ export default {
               released: true,
             },
           };
-          axios
-            .patch(`/components/${this.component.id}`, payload)
+          patchComponent(this.component.id, payload)
             .then((response) => {
               this.alertOrNotifyResponse(response);
               this.$emit("projectUpdated");

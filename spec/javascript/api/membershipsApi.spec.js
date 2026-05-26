@@ -14,11 +14,19 @@ vi.mock("@/api/baseApi", () => ({
 describe("membershipsApi", () => {
   beforeEach(() => vi.resetAllMocks());
 
-  it("createMembership posts to /memberships.json", async () => {
+  it("createMembership posts to /memberships.json with membership data", async () => {
     api.post.mockResolvedValue({ data: {} });
-    await createMembership(1, 2, "viewer");
+    await createMembership({ project_id: 1, user_id: 2, role: "viewer" });
     expect(api.post).toHaveBeenCalledWith("/memberships.json", {
       membership: { project_id: 1, user_id: 2, role: "viewer" },
+    });
+  });
+
+  it("createMembership supports component memberships", async () => {
+    api.post.mockResolvedValue({ data: {} });
+    await createMembership({ user_id: 5, role: "author", membership_type: "Component", membership_id: 10 });
+    expect(api.post).toHaveBeenCalledWith("/memberships.json", {
+      membership: { user_id: 5, role: "author", membership_type: "Component", membership_id: 10 },
     });
   });
 
@@ -36,9 +44,9 @@ describe("membershipsApi", () => {
     expect(api.delete).toHaveBeenCalledWith("/memberships/5.json");
   });
 
-  it("deleteAccessRequest deletes /project_access_requests/:id.json", async () => {
+  it("deleteAccessRequest deletes nested /projects/:projectId/project_access_requests/:id.json", async () => {
     api.delete.mockResolvedValue({ data: {} });
-    await deleteAccessRequest(3);
-    expect(api.delete).toHaveBeenCalledWith("/project_access_requests/3.json");
+    await deleteAccessRequest(10, 3);
+    expect(api.delete).toHaveBeenCalledWith("/projects/10/project_access_requests/3.json");
   });
 });

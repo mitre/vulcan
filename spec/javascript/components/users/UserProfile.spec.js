@@ -3,13 +3,21 @@ import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import UserProfile from "@/components/users/UserProfile.vue";
 
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
     put: vi.fn(() => Promise.resolve({ data: { toast: "Updated" } })),
     post: vi.fn(() => Promise.resolve({ data: { toast: "ok" } })),
     delete: vi.fn(() => Promise.resolve({})),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
     defaults: { headers: { common: {} } },
   },
+}));
+
+vi.mock("@/api/usersApi", () => ({
+  updateProfile: vi.fn(() => Promise.resolve({ data: { toast: "Updated" } })),
+  deleteAccount: vi.fn(() => Promise.resolve({})),
+  unlinkIdentity: vi.fn(() => Promise.resolve({ data: { toast: "ok" } })),
 }));
 
 /**
@@ -114,15 +122,13 @@ describe("UserProfile", () => {
       expect(wrapper.find('[data-test="unlink-identity-button"]').exists()).toBe(false);
     });
 
-    it("submits the unlink request with current password", async () => {
-      const axios = (await import("axios")).default;
+    it("submits the unlink request with current password via unlinkIdentity", async () => {
+      const { unlinkIdentity } = await import("@/api/usersApi");
       wrapper = createWrapper({ user: { ...defaultProps.user, provider: "oidc" } });
       wrapper.vm.unlinkForm.current_password = "mypassword";
       await wrapper.vm.submitUnlink();
 
-      expect(axios.post).toHaveBeenCalledWith("/users/unlink_identity", {
-        current_password: "mypassword",
-      });
+      expect(unlinkIdentity).toHaveBeenCalledWith({ current_password: "mypassword" });
     });
   });
 
@@ -160,15 +166,13 @@ describe("UserProfile", () => {
   });
 
   describe("save profile", () => {
-    it("calls axios.put with form data on save", async () => {
-      const axios = (await import("axios")).default;
+    it("calls updateProfile with form data on save", async () => {
+      const { updateProfile } = await import("@/api/usersApi");
       wrapper = createWrapper();
       wrapper.vm.form.name = "Updated Name";
       await wrapper.vm.saveProfile();
 
-      expect(axios.put).toHaveBeenCalledWith("/users", {
-        user: expect.objectContaining({ name: "Updated Name" }),
-      });
+      expect(updateProfile).toHaveBeenCalledWith(expect.objectContaining({ name: "Updated Name" }));
     });
   });
 
@@ -196,11 +200,11 @@ describe("UserProfile", () => {
       expect(wrapper.vm.showDeleteModal).toBe(true);
     });
 
-    it("confirmDeleteAccount calls axios.delete", async () => {
-      const axios = (await import("axios")).default;
+    it("confirmDeleteAccount calls deleteAccount", async () => {
+      const { deleteAccount } = await import("@/api/usersApi");
       wrapper = createWrapper();
       await wrapper.vm.confirmDeleteAccount();
-      expect(axios.delete).toHaveBeenCalledWith("/users");
+      expect(deleteAccount).toHaveBeenCalled();
     });
   });
 });

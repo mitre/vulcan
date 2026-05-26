@@ -33,7 +33,7 @@
 </template>
 
 <script>
-import api from "../../api/baseApi";
+import { updateProject } from "../../api/projectsApi";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 
@@ -80,8 +80,7 @@ export default {
         },
       };
 
-      api
-        .put(`/projects/${this.project.id}`, payload)
+      updateProject(this.project.id, payload)
         .then(this.updateMetadataSuccess)
         .catch(this.alertOrNotifyResponse);
     },

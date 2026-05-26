@@ -52,7 +52,7 @@ import ProjectsTable from "./ProjectsTable.vue";
 import BaseCommandBar from "../shared/BaseCommandBar.vue";
 import NewProjectModal from "./NewProjectModal.vue";
 import RestoreProjectModal from "./RestoreProjectModal.vue";
-import api from "../../api/baseApi";
+import { getProjects } from "../../api/projectsApi";
 
 export default {
   name: "Projects",
@@ -96,8 +96,7 @@ export default {
       this.refreshProjects();
     },
     refreshProjects: function () {
-      api
-        .get("/projects")
+      getProjects()
         .then((response) => {
           this.projectlist = response.data;
         })

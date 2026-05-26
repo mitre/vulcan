@@ -322,8 +322,9 @@
 </template>
 
 <script>
-import api from "../../api/baseApi";
 import { reopenReview } from "../../api/reviewsApi";
+import { getComments } from "../../api/componentsApi";
+import { getProjectComments } from "../../api/projectsApi";
 import { SECTION_LABELS, buildStatusFilterOptions } from "../../constants/triageVocabulary";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
@@ -617,12 +618,10 @@ export default {
         if (this.filterSection && this.filterSection !== "(general)") {
           params.section = this.filterSection;
         }
-        const url =
+        const { data } =
           this.scope === "project"
-            ? `/projects/${this.projectId}/comments`
-            : `/components/${this.componentId}/comments`;
-        // URL depends on scope (project vs component) — use baseApi directly
-        const { data } = await api.get(url, { params });
+            ? await getProjectComments(this.projectId, params)
+            : await getComments(this.componentId, params);
         this.rows = data.rows;
         this.total = data.pagination.total;
         if (data.status_counts) this.statusCounts = data.status_counts;

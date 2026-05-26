@@ -81,7 +81,7 @@
   </div>
 </template>
 <script>
-import api from "../../api/baseApi";
+import { deleteBenchmark } from "../../api/projectsApi";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import { formatDate as formatDateUtil } from "../../utils/dateFormatter";
@@ -237,8 +237,7 @@ export default {
     },
     async confirmDelete() {
       const { success, error } = await this.confirmDeleteAction(async (item) => {
-        // Dynamic path computed from type (SRG/STIG/Component) — use baseApi directly
-        await api.delete(`/${this.apiBasePath()}/${item.id}.json`);
+        await deleteBenchmark(`/${this.apiBasePath()}/${item.id}.json`);
       });
       if (success) {
         this.$emit("deleted");

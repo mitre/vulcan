@@ -60,7 +60,7 @@
 </template>
 
 <script>
-import api from "../../api/baseApi";
+import { createComponentInProject } from "../../api/componentsApi";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import DisplayedComponentMixin from "../../mixins/DisplayedComponentMixin.vue";
@@ -126,8 +126,7 @@ export default {
         },
       };
 
-      api
-        .post(`/projects/${this.project_id}/components`, payload)
+      createComponentInProject(this.project_id, payload)
         .then(this.addComponentSuccess)
         .catch(this.alertOrNotifyResponse);
     },

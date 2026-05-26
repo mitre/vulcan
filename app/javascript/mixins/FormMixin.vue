@@ -1,5 +1,5 @@
 <script>
-import axios from "axios";
+import api from "../api/baseApi";
 
 export default {
   computed: {
@@ -9,8 +9,8 @@ export default {
     },
   },
   mounted: function () {
-    axios.defaults.headers.common["X-CSRF-Token"] = this.authenticityToken;
-    axios.defaults.headers.common["Accept"] = "application/json";
+    api.defaults.headers.common["X-CSRF-Token"] = this.authenticityToken;
+    api.defaults.headers.common["Accept"] = "application/json";
   },
 };
 </script>

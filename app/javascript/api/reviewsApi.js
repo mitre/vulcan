@@ -23,3 +23,40 @@ export function getReactions(reviewId, params) {
 export function getUserComments(userId, params) {
   return api.get(`/users/${userId}/comments`, { params });
 }
+
+export function triageReview(reviewId, payload) {
+  return api.patch(`/reviews/${reviewId}/triage`, payload);
+}
+
+export function adjudicateReview(reviewId) {
+  return api.patch(`/reviews/${reviewId}/adjudicate`, {});
+}
+
+export function withdrawReview(reviewId) {
+  return api.patch(`/reviews/${reviewId}/withdraw`);
+}
+
+export function adminWithdrawReview(reviewId, auditComment) {
+  return api.patch(`/reviews/${reviewId}/admin_withdraw`, { audit_comment: auditComment });
+}
+
+export function adminRestoreReview(reviewId, auditComment) {
+  return api.patch(`/reviews/${reviewId}/admin_restore`, { audit_comment: auditComment });
+}
+
+export function moveReviewToRule(reviewId, ruleId, auditComment) {
+  return api.patch(`/reviews/${reviewId}/move_to_rule`, {
+    rule_id: ruleId,
+    audit_comment: auditComment,
+  });
+}
+
+export function adminDestroyReview(reviewId, auditComment) {
+  return api.delete(`/reviews/${reviewId}/admin_destroy`, {
+    data: { audit_comment: auditComment },
+  });
+}
+
+export function toggleReaction(reviewId, kind) {
+  return api.post(`/reviews/${reviewId}/reactions`, { kind });
+}

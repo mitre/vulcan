@@ -3,13 +3,26 @@ import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import RulesCodeEditorView from "@/components/rules/RulesCodeEditorView.vue";
 
-// Mock axios
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
     put: vi.fn(() => Promise.resolve({ data: {} })),
     post: vi.fn(() => Promise.resolve({ data: {} })),
     patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
   },
+}));
+
+vi.mock("@/api/rulesApi", () => ({
+  updateRule: vi.fn(() => Promise.resolve({ data: {} })),
+  createReview: vi.fn(() => Promise.resolve({ data: {} })),
+  updateSectionLocks: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+
+vi.mock("@/api/componentsApi", () => ({
+  getComponent: vi.fn(() => Promise.resolve({ data: {} })),
+  patchComponent: vi.fn(() => Promise.resolve({ data: {} })),
 }));
 
 describe("RulesCodeEditorView", () => {
@@ -338,8 +351,8 @@ describe("RulesCodeEditorView", () => {
     });
 
     it("updates localAdvancedFields after successful PATCH", async () => {
-      const axios = (await import("axios")).default;
-      axios.patch.mockResolvedValueOnce({ data: {} });
+      const { patchComponent } = await import("@/api/componentsApi");
+      patchComponent.mockResolvedValueOnce({ data: {} });
 
       wrapper = createWrapper();
       expect(wrapper.vm.localAdvancedFields).toBe(false);
@@ -351,14 +364,13 @@ describe("RulesCodeEditorView", () => {
     });
 
     it("does not update localAdvancedFields on PATCH failure", async () => {
-      const axios = (await import("axios")).default;
-      axios.patch.mockRejectedValueOnce(new Error("Network error"));
+      const { patchComponent } = await import("@/api/componentsApi");
+      patchComponent.mockRejectedValueOnce(new Error("Network error"));
 
       wrapper = createWrapper();
       expect(wrapper.vm.localAdvancedFields).toBe(false);
 
       wrapper.vm.toggleAdvancedFields(true);
-      // Wait for the promise to settle
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(wrapper.vm.localAdvancedFields).toBe(false);
@@ -371,12 +383,10 @@ describe("RulesCodeEditorView", () => {
 
       const ruleEditor = wrapper.findComponent({ name: "RuleEditor" });
       expect(ruleEditor.exists()).toBe(true);
-      // The template binds :advanced_fields="localAdvancedFields"
       expect(ruleEditor.props("advanced_fields")).toBe(false);
 
-      // Simulate successful toggle
-      const axios = (await import("axios")).default;
-      axios.patch.mockResolvedValueOnce({ data: {} });
+      const { patchComponent } = await import("@/api/componentsApi");
+      patchComponent.mockResolvedValueOnce({ data: {} });
       wrapper.vm.toggleAdvancedFields(true);
       await vi.waitFor(() => {
         expect(wrapper.vm.localAdvancedFields).toBe(true);

@@ -10,9 +10,22 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import ControlsSidepanels from "@/components/shared/ControlsSidepanels.vue";
-import axios from "axios";
+import { getHistories } from "@/api/componentsApi";
 
-vi.mock("axios");
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/api/componentsApi", () => ({
+  getHistories: vi.fn(() => Promise.resolve({ data: [] })),
+}));
 
 function createWrapper(props = {}) {
   return shallowMount(ControlsSidepanels, {
@@ -62,7 +75,7 @@ describe("ControlsSidepanels", () => {
           created_at: "2026-03-05T00:00:00Z",
         },
       ];
-      axios.get.mockResolvedValueOnce({ data: mockHistories });
+      getHistories.mockResolvedValueOnce({ data: mockHistories });
 
       wrapper = createWrapper();
       wrapper.vm.$root.$emit("refresh:activity");
@@ -71,7 +84,7 @@ describe("ControlsSidepanels", () => {
       await wrapper.vm.$nextTick();
       await new Promise((resolve) => setTimeout(resolve, 10));
 
-      expect(axios.get).toHaveBeenCalledWith("/components/8/histories");
+      expect(getHistories).toHaveBeenCalledWith(8);
     });
 
     it("updates local histories data after fetch", async () => {
@@ -84,7 +97,7 @@ describe("ControlsSidepanels", () => {
           created_at: "2026-03-05T00:00:00Z",
         },
       ];
-      axios.get.mockResolvedValueOnce({ data: mockHistories });
+      getHistories.mockResolvedValueOnce({ data: mockHistories });
 
       wrapper = createWrapper();
       // Initial histories empty

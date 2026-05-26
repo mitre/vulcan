@@ -170,7 +170,6 @@ export default {
     },
     access_requests: {
       type: Array,
-      default: null,
       default: () => [],
     },
     locked_users: {

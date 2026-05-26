@@ -1,7 +1,7 @@
 import api from "./baseApi";
 
-export function searchUsers(query) {
-  return api.get("/api/users/search", { params: { q: query } });
+export function searchUsers(query, extraParams = {}) {
+  return api.get("/api/users/search", { params: { q: query, ...extraParams } });
 }
 
 export function createUser(userData) {
@@ -46,6 +46,6 @@ export function deleteAccount() {
   return api.delete("/users");
 }
 
-export function unlinkIdentity(provider) {
-  return api.post("/users/unlink_identity", { provider });
+export function unlinkIdentity(payload) {
+  return api.post("/users/unlink_identity", payload);
 }

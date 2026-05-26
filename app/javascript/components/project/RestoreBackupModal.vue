@@ -76,7 +76,7 @@
 </template>
 
 <script>
-import api from "../../api/baseApi";
+import { importBackup } from "../../api/projectsApi";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import BackupPreview from "../shared/BackupPreview.vue";
@@ -144,12 +144,7 @@ export default {
     async submitDryRun() {
       this.loading = true;
       try {
-        // File upload to project import route — no matching API function
-        const response = await api.post(
-          `/projects/${this.project_id}/import_backup`,
-          this.buildFormData(true),
-          { headers: { "Content-Type": "multipart/form-data" } },
-        );
+        const response = await importBackup(this.project_id, this.buildFormData(true));
         this.summary = response.data.summary;
         this.warnings = response.data.warnings || [];
         // Extract existing names from conflicting components
@@ -167,11 +162,7 @@ export default {
     async submitImport() {
       this.loading = true;
       try {
-        const response = await api.post(
-          `/projects/${this.project_id}/import_backup`,
-          this.buildFormData(false),
-          { headers: { "Content-Type": "multipart/form-data" } },
-        );
+        const response = await importBackup(this.project_id, this.buildFormData(false));
         this.alertOrNotifyResponse(response);
         this.$emit("projectUpdated");
         this.modalShow = false;

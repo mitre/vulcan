@@ -1,7 +1,28 @@
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import MembersModal from "@/components/components/MembersModal.vue";
+
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: { users: [] } })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/api/usersApi", () => ({
+  searchUsers: vi.fn(() => Promise.resolve({ data: { users: [] } })),
+}));
+
+vi.mock("@/api/membershipsApi", () => ({
+  createMembership: vi.fn(() => Promise.resolve({ data: {} })),
+  updateMembership: vi.fn(() => Promise.resolve({ data: {} })),
+  deleteMembership: vi.fn(() => Promise.resolve({ data: {} })),
+}));
 
 /**
  * MembersModal Requirements:
@@ -264,6 +285,27 @@ describe("MembersModal", () => {
 
       expect(wrapper.vm.memberSearchResults).toEqual([]);
       expect(wrapper.vm.selectedMemberOption).toBeNull();
+    });
+  });
+
+  describe("API calls use domain modules", () => {
+    beforeEach(() => vi.resetAllMocks());
+
+    it("addMember calls createMembership with component membership data", async () => {
+      const { createMembership } = await import("@/api/membershipsApi");
+      createMembership.mockResolvedValueOnce({ data: {} });
+
+      wrapper = createWrapper();
+      wrapper.vm.selectedMemberOption = { id: 99 };
+      wrapper.vm.newMember.role = "author";
+      await wrapper.vm.addMember();
+
+      expect(createMembership).toHaveBeenCalledWith({
+        user_id: 99,
+        role: "author",
+        membership_type: "Component",
+        membership_id: 41,
+      });
     });
   });
 });

@@ -111,7 +111,7 @@
 </template>
 
 <script>
-import api from "../../api/baseApi";
+import { revertRule } from "../../api/rulesApi";
 
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
@@ -198,10 +198,7 @@ export default {
         fields: this.selectedRevertFields,
         audit_comment: comment,
       };
-      api
-        .post(`/rules/${this.rule.id}/revert`, payload)
-        .then(this.revertSuccess)
-        .catch(this.alertOrNotifyResponse);
+      revertRule(this.rule.id, payload).then(this.revertSuccess).catch(this.alertOrNotifyResponse);
     },
     revertSuccess: function (response) {
       this.alertOrNotifyResponse(response);

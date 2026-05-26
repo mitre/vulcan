@@ -177,8 +177,8 @@
 </template>
 
 <script>
-import api from "../../api/baseApi";
 import { getSrgs, getProjects, getProject } from "../../api/projectsApi";
+import { detectSrg, createComponentInProject } from "../../api/componentsApi";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import DisplayedComponentMixin from "../../mixins/DisplayedComponentMixin.vue";
@@ -206,7 +206,7 @@ export default {
     },
     project_id: {
       type: Number,
-      required: true,
+      default: null,
     },
     project: {
       type: Object,
@@ -304,11 +304,7 @@ export default {
       this.srgAutoDetected = false;
       let formData = new FormData();
       formData.append("file", file);
-      // File upload with custom Content-Type — use baseApi directly
-      api
-        .post("/components/detect_srg", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        })
+      detectSrg(formData)
         .then((response) => {
           const detected = response.data;
           this.security_requirements_guide_id = detected.id;
@@ -492,13 +488,7 @@ export default {
         formData.append("component[slack_channel_id]", this.slackChannelId);
       }
 
-      // File upload with custom Content-Type — use baseApi directly
-      api
-        .post(`/projects/${this.project_id}/components`, formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        })
+      createComponentInProject(this.project_id, formData)
         .then(this.addComponentSuccess)
         .catch(this.alertOrNotifyResponse)
         .finally(this.completeLoading);

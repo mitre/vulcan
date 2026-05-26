@@ -2,9 +2,22 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import RulePicker from "@/components/components/RulePicker.vue";
-import axios from "axios";
+import { getRulesPicker } from "@/api/rulesApi";
 
-vi.mock("axios");
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/api/rulesApi", () => ({
+  getRulesPicker: vi.fn(() => Promise.resolve({ data: { rules: [] } })),
+}));
 
 const flushPromises = async (wrapper) => {
   await new Promise((resolve) => setTimeout(resolve, 0));
@@ -60,7 +73,7 @@ function baseProps(overrides = {}) {
 describe("RulePicker", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    axios.get.mockResolvedValue({ data: rulesPayload });
+    getRulesPicker.mockResolvedValue({ data: rulesPayload });
   });
 
   it("fetches rules on mount and excludes the source rule", async () => {

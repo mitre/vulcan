@@ -148,8 +148,7 @@
 </template>
 
 <script>
-import api from "../../api/baseApi";
-import { updateMembership, deleteMembership } from "../../api/membershipsApi";
+import { updateMembership, deleteMembership, deleteAccessRequest } from "../../api/membershipsApi";
 import FormMixinVue from "../../mixins/FormMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
@@ -285,11 +284,7 @@ export default {
       this.rejectingId = requestId;
 
       try {
-        // Nested route — deleteAccessRequest() doesn't match this URL structure,
-        // so use baseApi directly.
-        const response = await api.delete(
-          `/projects/${this.membership_id}/project_access_requests/${requestId}.json`,
-        );
+        const response = await deleteAccessRequest(this.membership_id, requestId);
         this.alertOrNotifyResponse(response);
         this.localAccessRequests = this.localAccessRequests.filter((r) => r.id !== requestId);
         dispatch(EVENTS.ACCESS_REQUEST_CHANGED, { action: "resolved", id: requestId });
