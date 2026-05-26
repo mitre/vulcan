@@ -565,11 +565,27 @@ class ComponentsController < ApplicationController
   # banner (CommentPeriodBanner) and any per-rule callouts have the
   # accurate count. Without this, the blueprint defaults to zero.
   def blueprint_render_options
-    review_ids = @component ? Review.joins(:rule).merge(Rule.where(component_id: @component.id)).pluck(:id) : []
+    review_ids = if @component&.association(:rules)&.loaded?
+                   @component.rules.flat_map { |r| r.association(:reviews).loaded? ? r.reviews.map(&:id) : [] }
+                 elsif @component
+                   Review.joins(:rule).merge(Rule.where(component_id: @component.id)).pluck(:id)
+                 else
+                   []
+                 end
     {
       pending_comment_counts: Component.pending_comment_counts([@component.id]),
-      reactions_summary: Reaction.summary(review_ids, current_user&.id)
+      reactions_summary: Reaction.summary(review_ids, current_user&.id),
+      comment_summaries: precompute_comment_summaries
     }
+  end
+
+  def precompute_comment_summaries
+    return {} unless @component&.association(:rules)&.loaded?
+
+    @component.rules.to_h do |rule|
+      reviews = rule.association(:reviews).loaded? ? rule.reviews.to_a : []
+      [rule.id, Review.comment_summary_for(reviews)]
+    end
   end
 
   def create_or_duplicate

@@ -26,28 +26,13 @@ class RuleBlueprint < Blueprinter::Base
   # those open parents — replies are comments. Once a parent is
   # adjudicated (adjudicated_at set), it and its replies leave the
   # `open` count.
-  field :comment_summary do |rule, _options|
-    comments = rule.reviews.select { |r| r.action == 'comment' }
-    top_level = comments.select { |r| r.responding_to_review_id.nil? }
-    open_root_ids = top_level.reject { |r| r.adjudicated_at.present? }.map(&:id)
-
-    children_by_parent = comments.reject { |r| r.responding_to_review_id.nil? }
-                                 .group_by(&:responding_to_review_id)
-    open_count = open_root_ids.size
-    queue = open_root_ids.dup
-    visited = Set.new(open_root_ids)
-    until queue.empty?
-      current = queue.shift
-      (children_by_parent[current] || []).each do |child|
-        next if visited.include?(child.id)
-
-        visited << child.id
-        queue << child.id
-        open_count += 1
-      end
+  field :comment_summary do |rule, options|
+    precomputed = options[:comment_summaries]
+    if precomputed&.key?(rule.id)
+      precomputed[rule.id]
+    else
+      Review.comment_summary_for(rule.reviews.to_a)
     end
-
-    { open: open_count, total: comments.size }
   end
 
   # === Navigator view: sidebar list ===

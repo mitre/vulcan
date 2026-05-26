@@ -182,6 +182,21 @@ RSpec.describe 'RuleBlueprint' do
       json = RuleBlueprint.render_as_hash(rule.reload, view: :editor)
       expect(json[:comment_summary]).to include(open: 0, total: 2)
     end
+
+    it 'uses precomputed data from options[:comment_summaries] when provided' do
+      create(:review, :comment, user: commenter, rule: rule, comment: 'ignored by precompute')
+      precomputed = { rule.id => { open: 42, total: 99 } }
+      json = RuleBlueprint.render_as_hash(rule.reload, view: :editor, comment_summaries: precomputed)
+      expect(json[:comment_summary]).to eq(open: 42, total: 99)
+    end
+
+    it 'falls back to in-memory BFS when options[:comment_summaries] is absent' do
+      parent = create(:review, :comment, user: commenter, rule: rule, comment: 'parent')
+      create(:review, :comment, user: commenter, rule: rule, comment: 'reply',
+                                responding_to_review_id: parent.id)
+      json = RuleBlueprint.render_as_hash(rule.reload, view: :editor)
+      expect(json[:comment_summary]).to eq(open: 2, total: 2)
+    end
   end
 
   describe 'collection rendering' do

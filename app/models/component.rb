@@ -139,7 +139,11 @@ class Component < ApplicationRecord
   # Returns a hash of rule counts grouped by status.
   # Used by the frontend export modal to warn about NYD-only components.
   def status_counts
-    counts = rules.where(deleted_at: nil).group(:status).count
+    counts = if association(:rules).loaded?
+               rules.reject(&:deleted_at).group_by(&:status).transform_values(&:size)
+             else
+               rules.where(deleted_at: nil).group(:status).count
+             end
     {
       not_yet_determined: counts[STATUS_NYD] || 0,
       applicable_configurable: counts[STATUS_APPLICABLE_CONFIGURABLE] || 0,
@@ -288,11 +292,13 @@ class Component < ApplicationRecord
   end
 
   def releasable
-    # If already released, then it cannot be released again
     return false if released_was
 
-    # If all rules are locked, then component may be released
-    rules.where(locked: false).empty?
+    if association(:rules).loaded?
+      rules.none? { |r| !r.locked }
+    else
+      rules.where(locked: false).empty?
+    end
   end
 
   # Duplicate this component. The returned component has auditing suppressed
@@ -588,10 +594,18 @@ class Component < ApplicationRecord
   end
 
   def reviews
-    rule_names = rules.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
-    Review.where(rule_id: rule_names.keys).order(created_at: :desc).limit(20).as_json.map do |review|
-      review['displayed_rule_name'] = rule_names[review['rule_id'].to_i]
-      review
+    if association(:rules).loaded?
+      rule_names = rules.to_h { |r| [r.id, "#{prefix}-#{r.rule_id}"] }
+      all_reviews = rules.flat_map { |r| r.association(:reviews).loaded? ? r.reviews.to_a : [] }
+      all_reviews.sort_by { |r| r.created_at || Time.zone.at(0) }.last(20).reverse.map do |review|
+        review.as_json.merge('displayed_rule_name' => rule_names[review.rule_id])
+      end
+    else
+      rule_names = rules.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
+      Review.where(rule_id: rule_names.keys).order(created_at: :desc).limit(20).as_json.map do |review|
+        review['displayed_rule_name'] = rule_names[review['rule_id'].to_i]
+        review
+      end
     end
   end
 

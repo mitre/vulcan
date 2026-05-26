@@ -22,7 +22,7 @@ class CommentQueryService
     scope = apply_filters(scope)
 
     total = scope.count
-    total_comments = count_total_comments
+    total_comments = build_all_comments_scope.count
     page_records = paginate(scope)
 
     rows = serialize_rows(page_records)
@@ -37,8 +37,11 @@ class CommentQueryService
 
   private
 
+  def rule_id_subquery
+    @rule_id_subquery ||= @component.rules.select(:id)
+  end
+
   def build_base_scope
-    rule_id_subquery = @component.rules.select(:id)
     rule_scoped = Review.top_level_comments
                         .where(commentable_type: 'BaseRule', commentable_id: rule_id_subquery)
     component_scoped = Review.top_level_comments
@@ -56,6 +59,31 @@ class CommentQueryService
                              :commentable
                            end
     scope.preload(:user, :triage_set_by, :adjudicated_by, commentable_preloads)
+  end
+
+  def build_all_comments_scope
+    rule_scoped = Review.where(action: Review::ACTION_COMMENT,
+                               commentable_type: 'BaseRule',
+                               commentable_id: rule_id_subquery)
+    component_scoped = Review.where(action: Review::ACTION_COMMENT,
+                                    commentable_type: 'Component',
+                                    commentable_id: @component.id)
+
+    scope = case @commentable_type.to_s.downcase
+            when 'component' then component_scoped
+            when 'rule'      then rule_scoped
+            else                  rule_scoped.or(component_scoped)
+            end
+
+    scope = scope.where(commentable_type: 'BaseRule', commentable_id: @rule_id) if @rule_id.present?
+    scope = scope.where(section: @section) if @section.present? && @section != 'all'
+
+    if @query.present?
+      escaped = ActiveRecord::Base.sanitize_sql_like(@query.to_s)
+      scope = scope.where('reviews.comment ILIKE ?', "%#{escaped}%")
+    end
+
+    scope
   end
 
   def apply_filters(scope)
@@ -77,32 +105,6 @@ class CommentQueryService
     scope
   end
 
-  def count_total_comments
-    rule_id_subquery = @component.rules.select(:id)
-    rule_replies = Review.where(action: Review::ACTION_COMMENT,
-                                commentable_type: 'BaseRule',
-                                commentable_id: rule_id_subquery)
-    component_replies = Review.where(action: Review::ACTION_COMMENT,
-                                     commentable_type: 'Component',
-                                     commentable_id: @component.id)
-
-    scope = case @commentable_type.to_s.downcase
-            when 'component' then component_replies
-            when 'rule'      then rule_replies
-            else                  rule_replies.or(component_replies)
-            end
-
-    scope = scope.where(commentable_type: 'BaseRule', commentable_id: @rule_id) if @rule_id.present?
-    scope = scope.where(section: @section) if @section.present? && @section != 'all'
-
-    if @query.present?
-      escaped = ActiveRecord::Base.sanitize_sql_like(@query.to_s)
-      scope = scope.where('reviews.comment ILIKE ?', "%#{escaped}%")
-    end
-
-    scope.count
-  end
-
   def paginate(scope)
     scope.order(created_at: :desc)
          .offset((@page - 1) * @per_page)
@@ -115,7 +117,7 @@ class CommentQueryService
                                      .transform_values { |rid| "#{@component.prefix}-#{rid}" }
 
     child_to_parent = RuleSatisfaction
-                      .where(rule_id: @component.rules.ids)
+                      .where(rule_id: rule_id_subquery)
                       .pluck(:rule_id, :satisfied_by_rule_id)
                       .to_h
     parent_id_to_displayed = child_to_parent.values.uniq.index_with { |pid| rule_id_to_displayed[pid] }

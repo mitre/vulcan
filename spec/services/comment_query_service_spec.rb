@@ -81,5 +81,45 @@ RSpec.describe CommentQueryService do
       expect(via_service[:pagination][:total]).to eq(direct[:pagination][:total])
       expect(via_service[:status_counts]).to eq(direct[:status_counts])
     end
+
+    it 'total_comments counts all comments including replies' do
+      create(:review, :comment, rule: rule, user: commenter, comment: 'reply',
+                                responding_to_review_id: comment.id)
+      result = described_class.new(component, {}).call
+      expect(result[:pagination][:total]).to eq(1)
+      expect(result[:pagination][:total_comments]).to eq(2)
+    end
+
+    it 'does not define count_total_comments (merged into build_all_comments_scope)' do
+      service = described_class.new(component, {})
+      expect(service.respond_to?(:count_total_comments, true)).to be(false)
+    end
+
+    it 'reuses rule_id_subquery across base and all-comments scopes' do
+      service = described_class.new(component, {})
+      subquery1 = service.send(:rule_id_subquery)
+      subquery2 = service.send(:rule_id_subquery)
+      expect(subquery1).to equal(subquery2)
+    end
+
+    it 'uses subquery instead of .ids for RuleSatisfaction lookup' do
+      ids_queries = []
+      callback = lambda { |_name, _start, _finish, _id, payload|
+        sql = payload[:sql]
+        next unless payload[:name] != 'SCHEMA'
+        # Catch standalone .ids: starts with SELECT "base_rules"."id" FROM
+        # Subqueries start with SELECT COUNT/SELECT "reviews" and contain the subquery inside IN(...)
+        next unless sql.start_with?('SELECT "base_rules"."id" FROM')
+
+        ids_queries << sql
+      }
+
+      ActiveSupport::Notifications.subscribed(callback, 'sql.active_record') do
+        described_class.new(component, {}).call
+      end
+
+      expect(ids_queries).to be_empty,
+                             "serialize_rows should use subquery for RuleSatisfaction, not .ids:\n#{ids_queries.join("\n")}"
+    end
   end
 end

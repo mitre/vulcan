@@ -91,6 +91,30 @@ class Review < ApplicationRecord
   # read paths (paginated_comments) that filter on commentable would miss them.
   scope :missing_commentable, -> { where(commentable_id: nil).where.not(rule_id: nil) }
 
+  def self.comment_summary_for(reviews)
+    comments = reviews.select { |r| r.action == ACTION_COMMENT }
+    top_level = comments.select { |r| r.responding_to_review_id.nil? }
+    open_root_ids = top_level.reject { |r| r.adjudicated_at.present? }.map(&:id)
+
+    children_by_parent = comments.select(&:responding_to_review_id)
+                                 .group_by(&:responding_to_review_id)
+    open_count = open_root_ids.size
+    queue = open_root_ids.dup
+    visited = Set.new(open_root_ids)
+    until queue.empty?
+      current = queue.shift
+      (children_by_parent[current] || []).each do |child|
+        next if visited.include?(child.id)
+
+        visited << child.id
+        queue << child.id
+        open_count += 1
+      end
+    end
+
+    { open: open_count, total: comments.size }
+  end
+
   # Defensive net for the bulk-insert paths above: backfill commentable from
   # rule_id (mirrors migration 20260508210000). Single UPDATE, idempotent,
   # callback-free. Chainable onto a relation, e.g.

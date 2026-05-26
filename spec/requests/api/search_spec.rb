@@ -711,6 +711,54 @@ RSpec.describe 'Api::Search' do
       end
     end
 
+    context 'N+1 query prevention' do
+      before { sign_in user }
+
+      it 'search_rules batches comment_count instead of querying per rule' do
+        # Create 3 rules that all match the search term — N+1 would fire 3 review queries
+        3.times do |i|
+          rule = component1.rules.where.not(id: component1.rules.first.id).offset(i).first ||
+                 component1.rules.offset(i).first
+          rule.update!(title: "Narwhal Batch N1 Test #{i}")
+          create(:review, rule: rule, action: 'comment', comment: "comment #{i}")
+        end
+
+        review_queries = []
+        callback = lambda { |_name, _start, _finish, _id, payload|
+          sql = payload[:sql]
+          review_queries << sql if sql.include?('"reviews"') && payload[:name] != 'SCHEMA'
+        }
+
+        ActiveSupport::Notifications.subscribed(callback, 'sql.active_record') do
+          get search_path, params: { q: 'Narwhal', limit: 5 }
+        end
+
+        expect(response).to have_http_status(:success)
+        json = response.parsed_body
+        expect(json['rules'].size).to be >= 3
+        expect(review_queries.size).to be <= 2,
+                                       "Expected ≤2 review queries (1 batch count + 1 preload), got #{review_queries.size}:\n#{review_queries.join("\n")}"
+      end
+
+      it 'search_projects batches components_count instead of querying per project' do
+        component_count_queries = []
+        callback = lambda { |_name, _start, _finish, _id, payload|
+          sql = payload[:sql]
+          next unless sql.include?('"components"') && sql.include?('COUNT') && payload[:name] != 'SCHEMA'
+
+          component_count_queries << sql
+        }
+
+        ActiveSupport::Notifications.subscribed(callback, 'sql.active_record') do
+          get search_path, params: { q: 'Security' }
+        end
+
+        expect(response).to have_http_status(:success)
+        expect(component_count_queries.size).to be <= 1,
+                                                "Expected ≤1 batch component count query, got #{component_count_queries.size}:\n#{component_count_queries.join("\n")}"
+      end
+    end
+
     context 'component-scoped search' do
       before { sign_in user }
 

@@ -57,7 +57,7 @@ RSpec.describe 'Query performance optimizations' do
       expect(details[:ur]).to eq(0)
     end
 
-    it 'uses at most 4 queries for rules table' do
+    it 'uses a single consolidated query for rules table' do
       # Warm up association
       project.rules.to_a
 
@@ -68,7 +68,7 @@ RSpec.describe 'Query performance optimizations' do
       ActiveSupport::Notifications.subscribed(counter, 'sql.active_record') do
         project.details
       end
-      expect(query_count).to be <= 4, "Expected at most 4 queries, got #{query_count}"
+      expect(query_count).to eq(1), "Expected 1 consolidated query, got #{query_count}"
     end
   end
 
@@ -160,6 +160,133 @@ RSpec.describe 'Query performance optimizations' do
       query_log.each do |sql|
         expect(sql).not_to match(/SELECT "base_rules"\.\*/), "Expected optimized SELECT, got: #{sql}"
       end
+    end
+  end
+
+  # 73z.7: When rules are eager-loaded (editor page via set_component),
+  # status_counts, releasable, and reviews should use in-memory data
+  # instead of running fresh SQL queries.
+  describe 'Component editor — no re-query when rules are eager-loaded' do
+    let(:component_fresh) { create(:component, :skip_rules, based_on: srg) }
+    let(:eager_component) do
+      Component.eager_load(rules: [:reviews]).find(component_fresh.id)
+    end
+    let(:srg_rule) { srg.srg_rules.first }
+
+    before do
+      create(:rule, component: component_fresh, srg_rule: srg_rule,
+                    status: 'Applicable - Configurable', locked: true)
+      create(:rule, component: component_fresh, srg_rule: srg_rule,
+                    status: 'Not Yet Determined', locked: false)
+    end
+
+    it 'status_counts uses in-memory rules when preloaded' do
+      comp = eager_component # force load before counting
+      queries = []
+      counter = lambda { |*, payload|
+        queries << payload[:sql] if payload[:sql] =~ /SELECT.*"base_rules"/i && payload[:name] != 'SCHEMA'
+      }
+      ActiveSupport::Notifications.subscribed(counter, 'sql.active_record') do
+        result = comp.status_counts
+        expect(result[:applicable_configurable]).to eq(1)
+        expect(result[:not_yet_determined]).to eq(1)
+      end
+      expect(queries).to be_empty,
+                         "status_counts should not query base_rules when rules are preloaded, but ran:\n#{queries.join("\n")}"
+    end
+
+    it 'releasable uses in-memory rules when preloaded' do
+      comp = eager_component
+      queries = []
+      counter = lambda { |*, payload|
+        queries << payload[:sql] if payload[:sql] =~ /SELECT.*"base_rules"/i && payload[:name] != 'SCHEMA'
+      }
+      ActiveSupport::Notifications.subscribed(counter, 'sql.active_record') do
+        result = comp.releasable
+        expect(result).to be(false)
+      end
+      expect(queries).to be_empty,
+                         "releasable should not query base_rules when rules are preloaded, but ran:\n#{queries.join("\n")}"
+    end
+
+    it 'reviews uses in-memory rules when preloaded' do
+      comp = eager_component
+      queries = []
+      counter = lambda { |*, payload|
+        queries << payload[:sql] if payload[:sql] =~ /SELECT.*"base_rules"/i && payload[:name] != 'SCHEMA'
+      }
+      ActiveSupport::Notifications.subscribed(counter, 'sql.active_record') do
+        comp.reviews
+      end
+      expect(queries).to be_empty,
+                         "reviews should not query base_rules when rules are preloaded, but ran:\n#{queries.join("\n")}"
+    end
+
+    it 'reviews returns correct displayed_rule_name from preloaded data' do
+      reviewer = create(:user)
+      rule = component_fresh.rules.find_by(locked: false)
+      create(:review, user: reviewer, rule: rule, action: 'request_review', comment: 'Test')
+      comp = Component.eager_load(rules: [:reviews]).find(component_fresh.id)
+
+      reviews = comp.reviews
+      expect(reviews.size).to eq(1)
+      expect(reviews.first['displayed_rule_name']).to eq("#{comp.prefix}-#{rule.rule_id}")
+    end
+
+    it 'reviews limits to 20 from preloaded data' do
+      reviewer = create(:user)
+      rule = component_fresh.rules.find_by(locked: false)
+      21.times { |i| create(:review, :comment, user: reviewer, rule: rule, comment: "C#{i}") }
+      comp = Component.eager_load(rules: [:reviews]).find(component_fresh.id)
+
+      expect(comp.reviews.size).to eq(20)
+    end
+
+    it 'status_counts still works via SQL when rules are NOT preloaded' do
+      result = component_fresh.status_counts
+      expect(result[:applicable_configurable]).to eq(1)
+      expect(result[:not_yet_determined]).to eq(1)
+    end
+  end
+
+  # 73z.8: blueprint_render_options should use in-memory review IDs from
+  # the eager-loaded association instead of running a fresh JOIN+pluck.
+  describe 'blueprint_render_options — scoped reaction summary', type: :request do
+    include Devise::Test::IntegrationHelpers
+
+    let(:admin) { create(:user, admin: true) }
+    let(:project) { create(:project) }
+    let(:component) { create(:component, :skip_rules, project: project, based_on: srg) }
+    let(:srg_rule) { srg.srg_rules.first }
+    let(:rule) { create(:rule, component: component, srg_rule: srg_rule) }
+
+    before do
+      Rails.application.reload_routes!
+      create(:membership, user: admin, membership: project, membership_type: 'Project', role: 'admin')
+      create(:review, :comment, user: admin, rule: rule, comment: 'test')
+    end
+
+    it 'does not run a separate pluck query on reviews to collect IDs' do
+      sign_in admin
+
+      pluck_queries = []
+      callback = lambda { |_name, _start, _finish, _id, payload|
+        sql = payload[:sql]
+        next unless payload[:name] != 'SCHEMA'
+        # Catch: SELECT "reviews"."id" FROM "reviews" INNER JOIN "base_rules" ...
+        # But NOT the eager_load query (which SELECTs all columns as t0_r0, t1_r0, etc.)
+        next unless sql.match?(/SELECT\s+"reviews"\."id"\s+FROM/i)
+
+        pluck_queries << sql
+      }
+
+      ActiveSupport::Notifications.subscribed(callback, 'sql.active_record') do
+        get "/components/#{component.id}"
+      end
+
+      expect(response).to have_http_status(:success)
+      expect(pluck_queries).to be_empty,
+                               "blueprint_render_options should not pluck review IDs when rules are eager-loaded:\n#{pluck_queries.join("\n")}"
     end
   end
 end
