@@ -679,6 +679,69 @@ RSpec.describe 'Api::Search' do
                              'Search loaded srgs.xml — should use .select() to exclude xml'
     end
 
+    # vulcan-v3.x-73z.9: search_rules ran `rule.reviews.where(...).size` per
+    # result row (N queries for N rules), and search_projects ran
+    # `project.components.count` per row. Replace both with one GROUP BY COUNT
+    # batched lookup per kind.
+    context 'N+1 prevention (vulcan-v3.x-73z.9)' do
+      before { sign_in user }
+
+      let!(:rules_with_comments) do
+        rules = component1.rules.first(3)
+        rules.each_with_index do |rule, i|
+          rule.update!(title: "Wallaby Unique Result #{i}")
+          2.times { |c| create(:review, rule: rule, action: 'comment', comment: "c#{i}-#{c}") }
+        end
+        rules
+      end
+
+      it 'search_rules returns comment_count without N+1' do
+        per_rule_counts = []
+        cb = lambda do |_, _, _, _, payload|
+          sql = payload[:sql].to_s
+          # Per-rule N+1 form is COUNT(*) ... WHERE rule_id = ? AND action = ?
+          # (no GROUP BY, no IN). The batched form uses GROUP BY rule_id with IN.
+          if sql.match?(/COUNT.*FROM\s+["']?reviews/i) &&
+             sql.match?(/rule_id["']?\s*=/i) && !sql.match?(/GROUP\s+BY/i)
+            per_rule_counts << sql
+          end
+        end
+
+        ActiveSupport::Notifications.subscribed(cb, 'sql.active_record') do
+          get search_path, params: { q: 'Wallaby' }
+        end
+
+        expect(per_rule_counts).to be_empty,
+                                   "expected 0 per-rule COUNT queries (batched via GROUP BY); got #{per_rule_counts.size}:\n#{per_rule_counts.join("\n")}"
+
+        # Functional check: counts still correct.
+        json = response.parsed_body
+        rules_with_comments.each do |rule|
+          row = json['rules'].find { |r| r['rule_id'] == rule.rule_id }
+          expect(row['comment_count']).to eq(2)
+        end
+      end
+
+      it 'search_projects returns components_count without N+1' do
+        # Make sure project1 matches by name so it lands in the results.
+        per_project_counts = []
+        cb = lambda do |_, _, _, _, payload|
+          sql = payload[:sql].to_s
+          if sql.match?(/COUNT.*FROM\s+["']?components/i) &&
+             sql.match?(/project_id["']?\s*=/i) && !sql.match?(/GROUP\s+BY/i)
+            per_project_counts << sql
+          end
+        end
+
+        ActiveSupport::Notifications.subscribed(cb, 'sql.active_record') do
+          get search_path, params: { q: 'Security' }
+        end
+
+        expect(per_project_counts).to be_empty,
+                                      "expected 0 per-project COUNT queries (batched via GROUP BY); got #{per_project_counts.size}:\n#{per_project_counts.join("\n")}"
+      end
+    end
+
     context 'result metadata (comment_count + parent_info)' do
       before { sign_in user }
 

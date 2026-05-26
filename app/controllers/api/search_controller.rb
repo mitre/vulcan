@@ -48,15 +48,21 @@ module Api
     def search_projects(limit)
       return [] unless current_user
 
-      current_user.available_projects
-                  .where(*build_ilike_conditions(%w[name description]))
-                  .limit(limit)
-                  .map do |project|
+      projects = current_user.available_projects
+                             .where(*build_ilike_conditions(%w[name description]))
+                             .limit(limit)
+                             .to_a
+
+      # Batch the per-project components_count via one GROUP BY (vulcan-v3.x-73z.9).
+      counts = Component.where(project_id: projects.map(&:id))
+                        .group(:project_id).count
+
+      projects.map do |project|
         {
           id: project.id,
           name: project.name,
           description: project.description,
-          components_count: project.components.count
+          components_count: counts[project.id] || 0
         }
       end
     end
@@ -115,9 +121,15 @@ module Api
                       rules_scope.search_content(search_term)
                     end
 
-      rules_scope.includes(:component, :disa_rule_descriptions, :checks, :satisfied_by)
-                 .limit(limit)
-                 .map do |rule|
+      rules = rules_scope.includes(:component, :disa_rule_descriptions, :checks, :satisfied_by)
+                         .limit(limit)
+                         .to_a
+
+      # Batch the per-rule comment_count via one GROUP BY (vulcan-v3.x-73z.9).
+      comment_counts = Review.where(rule_id: rules.map(&:id), action: Review::ACTION_COMMENT)
+                             .group(:rule_id).count
+
+      rules.map do |rule|
         snippet_data = generate_snippet_with_field(rule, @query[:normalized])
         parent = rule.satisfied_by.first
         {
@@ -129,7 +141,7 @@ module Api
           component_prefix: rule.component&.prefix,
           snippet: snippet_data[:snippet],
           matched_field: snippet_data[:matched_field],
-          comment_count: rule.reviews.where(action: Review::ACTION_COMMENT).size,
+          comment_count: comment_counts[rule.id] || 0,
           parent_rule_id: parent&.id,
           parent_display_name: parent ? "#{rule.component&.prefix}-#{parent.rule_id}" : nil
         }
