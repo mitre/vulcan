@@ -12,6 +12,10 @@ class SecurityRequirementsGuidesController < ApplicationController
   def index
     @srgs = SecurityRequirementsGuide.with_severity_counts.order(:srg_id, :version)
     @srgs_json = SrgBlueprint.render(@srgs, view: :index)
+    respond_to do |format|
+      format.html
+      format.json { render body: @srgs_json, content_type: 'application/json' }
+    end
   end
 
   def show

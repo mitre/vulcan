@@ -12,6 +12,10 @@ class StigsController < ApplicationController
   def index
     @stigs = Stig.with_severity_counts.order(:stig_id, :version)
     @stigs_json = StigBlueprint.render(@stigs, view: :index)
+    respond_to do |format|
+      format.html
+      format.json { render body: @stigs_json, content_type: 'application/json' }
+    end
   end
 
   def show

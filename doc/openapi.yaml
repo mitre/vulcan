@@ -1,0 +1,2270 @@
+---
+openapi: 3.2.0
+info:
+  title: Vulcan API
+  version: 2.3.7
+  description: |
+    REST API for Vulcan — STIG-ready security guidance authoring platform.
+    All endpoints require session-based authentication via cookie unless noted otherwise.
+    Mutation endpoints return a canonical `{toast: {title, message, variant}}` object.
+  contact:
+    name: MITRE SAF Team
+    url: https://github.com/mitre/vulcan
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+servers:
+- url: "/"
+  description: Same-origin (session cookie auth)
+security:
+- cookieAuth: []
+tags:
+- name: Projects
+  description: Project CRUD, export, import, and member management
+- name: Components
+  description: Component CRUD, spreadsheet import, export, and locking
+- name: Rules
+  description: Rule CRUD, revert, section locks, and satisfaction relationships
+- name: Reviews
+  description: Review lifecycle — create, triage, adjudicate, withdraw, admin actions
+- name: Reactions
+  description: Thumbs up/down reactions on comment reviews
+- name: Memberships
+  description: Project and component membership management
+- name: Search
+  description: Global search across projects, components, rules, SRGs, and STIGs
+- name: Users
+  description: User management and admin operations
+- name: Benchmarks
+  description: SRG and STIG upload, listing, export, and deletion
+- name: System
+  description: Version and health check endpoints
+paths:
+  "/api/version":
+    get:
+      operationId: getVersion
+      tags:
+      - System
+      summary: Application version
+      responses:
+        '200':
+          description: Version info
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/VersionResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/api/search/global":
+    get:
+      operationId: globalSearch
+      tags:
+      - Search
+      summary: Search across all resource types
+      parameters:
+      - "$ref": "#/components/parameters/SearchQuery"
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 5
+      - name: component_id
+        in: query
+        description: Scope rule search to a specific component
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Search results grouped by type
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GlobalSearchResponse"
+        '401':
+          "$ref": "#/components/responses/Unauthorized"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/api/users/search":
+    get:
+      operationId: searchUsers
+      tags:
+      - Search
+      summary: Search users by name or email
+      parameters:
+      - "$ref": "#/components/parameters/SearchQuery"
+      responses:
+        '200':
+          description: Matching users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/UserSummary"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/projects":
+    get:
+      operationId: listProjects
+      tags:
+      - Projects
+      summary: List accessible projects
+      responses:
+        '200':
+          description: Projects list (HTML or JSON)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/ProjectSummary"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+    post:
+      operationId: createProject
+      tags:
+      - Projects
+      summary: Create a new project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                project:
+                  "$ref": "#/components/schemas/ProjectInput"
+      responses:
+        '200':
+          description: Project created
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        '422':
+          "$ref": "#/components/responses/UnprocessableEntity"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/projects/{projectId}":
+    parameters:
+    - "$ref": "#/components/parameters/ProjectId"
+    get:
+      operationId: getProject
+      tags:
+      - Projects
+      summary: Project detail with component list and stats
+      responses:
+        '200':
+          description: Project detail
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ProjectSummary"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+    put:
+      operationId: updateProject
+      tags:
+      - Projects
+      summary: Update project attributes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                project:
+                  "$ref": "#/components/schemas/ProjectInput"
+      responses:
+        '200':
+          description: Project updated
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+    delete:
+      operationId: deleteProject
+      tags:
+      - Projects
+      summary: Delete a project and all its components
+      responses:
+        '200':
+          description: Project deleted
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        '403':
+          "$ref": "#/components/responses/Forbidden"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/projects/{projectId}/comments":
+    parameters:
+    - "$ref": "#/components/parameters/ProjectId"
+    get:
+      operationId: getProjectComments
+      tags:
+      - Projects
+      summary: Aggregated comments across all project components
+      parameters:
+      - "$ref": "#/components/parameters/TriageStatusFilter"
+      - "$ref": "#/components/parameters/PageParam"
+      - "$ref": "#/components/parameters/PerPageParam"
+      responses:
+        '200':
+          description: Paginated comment rows with status counts
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/PaginatedComments"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/projects/{projectId}/export/{type}":
+    parameters:
+    - "$ref": "#/components/parameters/ProjectId"
+    - name: type
+      in: path
+      required: true
+      schema:
+        type: string
+        enum:
+        - csv
+        - xccdf
+        - inspec
+        - json_archive
+    get:
+      operationId: exportProject
+      tags:
+      - Projects
+      summary: Export project data in the specified format
+      parameters:
+      - name: component_ids
+        in: query
+        required: true
+        schema:
+          type: string
+        description: Comma-separated component IDs
+      - name: mode
+        in: query
+        schema:
+          type: string
+          enum:
+          - working_copy
+          - vendor_submission
+          - published_stig
+      - name: include_srg
+        in: query
+        schema:
+          type: string
+          enum:
+          - 'true'
+      - name: include_memberships
+        in: query
+        schema:
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+      - name: exclude_satisfied_by
+        in: query
+        schema:
+          type: string
+          enum:
+          - 'true'
+      responses:
+        '200':
+          description: File download
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/projects/create_from_backup":
+    post:
+      operationId: createFromBackup
+      tags:
+      - Projects
+      summary: Create a project from a JSON archive backup
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Project created from backup
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        '422':
+          "$ref": "#/components/responses/UnprocessableEntity"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/projects/{projectId}/import_backup":
+    parameters:
+    - "$ref": "#/components/parameters/ProjectId"
+    post:
+      operationId: importBackup
+      tags:
+      - Projects
+      summary: Import components from a JSON archive into an existing project
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Backup imported
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/projects/{projectId}/histories":
+    parameters:
+    - "$ref": "#/components/parameters/ProjectId"
+    get:
+      operationId: getProjectHistories
+      tags:
+      - Projects
+      summary: Audit history for the project
+      responses:
+        '200':
+          description: History entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/AuditEntry"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/components":
+    get:
+      operationId: listComponents
+      tags:
+      - Components
+      summary: List released components
+      responses:
+        '200':
+          description: Components list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/ComponentSummary"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/projects/{projectId}/components":
+    parameters:
+    - "$ref": "#/components/parameters/ProjectId"
+    post:
+      operationId: createComponent
+      tags:
+      - Components
+      summary: Create or duplicate a component in a project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                component:
+                  "$ref": "#/components/schemas/ComponentInput"
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Component created
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/components/{componentId}":
+    parameters:
+    - "$ref": "#/components/parameters/ComponentId"
+    get:
+      operationId: getComponent
+      tags:
+      - Components
+      summary: Component detail with rules (editor or viewer mode based on membership)
+      responses:
+        '200':
+          description: Component with rules via ComponentBlueprint
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ComponentSummary"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+    put:
+      operationId: updateComponent
+      tags:
+      - Components
+      summary: Update component attributes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                component:
+                  "$ref": "#/components/schemas/ComponentInput"
+      responses:
+        '200':
+          description: Component updated
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+    patch:
+      operationId: patchComponent
+      tags:
+      - Components
+      summary: Partial update of component attributes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                component:
+                  "$ref": "#/components/schemas/ComponentInput"
+      responses:
+        '200':
+          description: Component updated
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+    delete:
+      operationId: deleteComponent
+      tags:
+      - Components
+      summary: Delete a component and all dependent records
+      responses:
+        '200':
+          description: Component deleted
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/components/{componentId}/comments":
+    parameters:
+    - "$ref": "#/components/parameters/ComponentId"
+    get:
+      operationId: getComponentComments
+      tags:
+      - Components
+      summary: Paginated triage table for component comments
+      parameters:
+      - "$ref": "#/components/parameters/TriageStatusFilter"
+      - "$ref": "#/components/parameters/PageParam"
+      - "$ref": "#/components/parameters/PerPageParam"
+      - name: section
+        in: query
+        schema:
+          type: string
+      - name: rule_id
+        in: query
+        schema:
+          type: integer
+      - name: author_id
+        in: query
+        schema:
+          type: integer
+      - name: query
+        in: query
+        schema:
+          type: string
+      - name: resolved
+        in: query
+        schema:
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+          - all
+      - name: commentable_type
+        in: query
+        schema:
+          type: string
+          enum:
+          - rule
+          - component
+      responses:
+        '200':
+          description: Paginated comment rows
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/PaginatedComments"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/components/{componentId}/export/{type}":
+    parameters:
+    - "$ref": "#/components/parameters/ComponentId"
+    - name: type
+      in: path
+      required: true
+      schema:
+        type: string
+        enum:
+        - csv
+        - xccdf
+        - inspec
+        - json_archive
+        - disposition_csv
+    get:
+      operationId: exportComponent
+      tags:
+      - Components
+      summary: Export component in the specified format
+      responses:
+        '200':
+          description: File download
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/components/{componentId}/lock":
+    parameters:
+    - "$ref": "#/components/parameters/ComponentId"
+    post:
+      operationId: lockComponent
+      tags:
+      - Components
+      summary: Lock all unlocked rules in a component
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                review:
+                  type: object
+                  properties:
+                    comment:
+                      type: string
+      responses:
+        '200':
+          description: Controls locked
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/components/{componentId}/lock_sections":
+    parameters:
+    - "$ref": "#/components/parameters/ComponentId"
+    patch:
+      operationId: lockSections
+      tags:
+      - Components
+      summary: Lock specific sections on every unlocked rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                locked_fields:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Sections locked
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/components/{componentId}/histories":
+    parameters:
+    - "$ref": "#/components/parameters/ComponentId"
+    get:
+      operationId: getComponentHistories
+      tags:
+      - Components
+      summary: Audit history for the component
+      responses:
+        '200':
+          description: History entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/AuditEntry"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/components/{componentId}/rules":
+    parameters:
+    - "$ref": "#/components/parameters/ComponentId"
+    get:
+      operationId: listComponentRules
+      tags:
+      - Rules
+      summary: List rules for a component
+      responses:
+        '200':
+          description: HTML page
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+    post:
+      operationId: createRule
+      tags:
+      - Rules
+      summary: Create a new rule in a component
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rule:
+                  "$ref": "#/components/schemas/RuleInput"
+      responses:
+        '200':
+          description: Rule created
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/components/{componentId}/rules_picker":
+    parameters:
+    - "$ref": "#/components/parameters/ComponentId"
+    get:
+      operationId: getRulesPicker
+      tags:
+      - Rules
+      summary: Lightweight rule list for picker UI
+      responses:
+        '200':
+          description: Rules in picker format
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rules:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/RuleSummary"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/components/detect_srg":
+    post:
+      operationId: detectSrg
+      tags:
+      - Components
+      summary: Detect which SRG a spreadsheet belongs to
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Matched SRG info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  srg_id:
+                    type: integer
+                  srg_title:
+                    type: string
+        '422':
+          "$ref": "#/components/responses/UnprocessableEntity"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/components/history":
+    post:
+      operationId: getComponentHistory
+      tags:
+      - Components
+      summary: Compare two component versions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                base_id:
+                  type: integer
+                diff_id:
+                  type: integer
+      responses:
+        '200':
+          description: Diff between two component versions
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/components/{componentId}/search/based_on_same_srg":
+    parameters:
+    - "$ref": "#/components/parameters/ComponentId"
+    get:
+      operationId: searchBasedOnSameSrg
+      tags:
+      - Components
+      summary: Find components sharing the same SRG
+      responses:
+        '200':
+          description: Related components
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/ComponentSummary"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/components/{componentId}/compare/{diffId}":
+    parameters:
+    - "$ref": "#/components/parameters/ComponentId"
+    - name: diffId
+      in: path
+      required: true
+      schema:
+        type: integer
+    get:
+      operationId: compareComponents
+      tags:
+      - Components
+      summary: Side-by-side rule comparison between two components
+      responses:
+        '200':
+          description: Rule-by-rule diff
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/rules/{ruleId}":
+    parameters:
+    - "$ref": "#/components/parameters/RuleId"
+    get:
+      operationId: getRule
+      tags:
+      - Rules
+      summary: Rule detail
+      responses:
+        '200':
+          description: Rule data
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/RuleSummary"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+    put:
+      operationId: updateRule
+      tags:
+      - Rules
+      summary: Update rule attributes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rule:
+                  "$ref": "#/components/schemas/RuleInput"
+      responses:
+        '200':
+          description: Rule updated
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+    delete:
+      operationId: deleteRule
+      tags:
+      - Rules
+      summary: Soft-delete a rule
+      responses:
+        '200':
+          description: Rule deleted
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/rules/{ruleId}/revert":
+    parameters:
+    - "$ref": "#/components/parameters/RuleId"
+    post:
+      operationId: revertRule
+      tags:
+      - Rules
+      summary: Revert a rule to a previous audit version
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                audit_id:
+                  type: integer
+      responses:
+        '200':
+          description: Rule reverted
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/rules/{ruleId}/section_locks":
+    parameters:
+    - "$ref": "#/components/parameters/RuleId"
+    patch:
+      operationId: updateSectionLocks
+      tags:
+      - Rules
+      summary: Update locked sections on a single rule
+      responses:
+        '200':
+          description: Section locks updated
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/rules/{ruleId}/bulk_section_locks":
+    parameters:
+    - "$ref": "#/components/parameters/RuleId"
+    patch:
+      operationId: bulkSectionLocks
+      tags:
+      - Rules
+      summary: Bulk update locked sections
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rule:
+                  type: object
+                  properties:
+                    locked_fields:
+                      type: array
+                      items:
+                        type: string
+      responses:
+        '200':
+          description: Section locks updated
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/rule_satisfactions":
+    post:
+      operationId: addSatisfaction
+      tags:
+      - Rules
+      summary: Create a satisfaction relationship between two rules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rule_id:
+                  type: integer
+                satisfied_by_rule_id:
+                  type: integer
+      responses:
+        '200':
+          description: Satisfaction created
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/rule_satisfactions/{ruleId}":
+    parameters:
+    - "$ref": "#/components/parameters/RuleId"
+    delete:
+      operationId: removeSatisfaction
+      tags:
+      - Rules
+      summary: Remove a satisfaction relationship
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rule_id:
+                  type: integer
+                satisfied_by_rule_id:
+                  type: integer
+      responses:
+        '200':
+          description: Satisfaction removed
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/rules/{ruleId}/reviews":
+    parameters:
+    - "$ref": "#/components/parameters/RuleId"
+    post:
+      operationId: createRuleReview
+      tags:
+      - Reviews
+      summary: Create a review on a rule (comment, request_review, etc.)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                review:
+                  "$ref": "#/components/schemas/ReviewInput"
+      responses:
+        '200':
+          description: Review created
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        '422':
+          "$ref": "#/components/responses/UnprocessableEntity"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/components/{componentId}/reviews":
+    parameters:
+    - "$ref": "#/components/parameters/ComponentId"
+    post:
+      operationId: createComponentReview
+      tags:
+      - Reviews
+      summary: Create a comment-action review on a component
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                review:
+                  "$ref": "#/components/schemas/ReviewInput"
+      responses:
+        '200':
+          description: Review created
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/reviews/{reviewId}":
+    parameters:
+    - "$ref": "#/components/parameters/ReviewId"
+    put:
+      operationId: updateReview
+      tags:
+      - Reviews
+      summary: Update a review comment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                review:
+                  "$ref": "#/components/schemas/ReviewInput"
+      responses:
+        '200':
+          description: Review updated
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/reviews/{reviewId}/triage":
+    parameters:
+    - "$ref": "#/components/parameters/ReviewId"
+    patch:
+      operationId: triageReview
+      tags:
+      - Reviews
+      summary: Set triage status on a comment (concur, non_concur, etc.)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                review:
+                  type: object
+                  properties:
+                    triage_status:
+                      type: string
+                      enum:
+                      - concur
+                      - concur_with_comment
+                      - non_concur
+                      - needs_clarification
+                      - duplicate
+                      - addressed_by
+      responses:
+        '200':
+          description: Triage status set
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/reviews/{reviewId}/adjudicate":
+    parameters:
+    - "$ref": "#/components/parameters/ReviewId"
+    patch:
+      operationId: adjudicateReview
+      tags:
+      - Reviews
+      summary: Adjudicate (close) a triaged comment
+      responses:
+        '200':
+          description: Review adjudicated
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/reviews/{reviewId}/withdraw":
+    parameters:
+    - "$ref": "#/components/parameters/ReviewId"
+    patch:
+      operationId: withdrawReview
+      tags:
+      - Reviews
+      summary: Author withdraws their own comment
+      responses:
+        '200':
+          description: Review withdrawn
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/reviews/{reviewId}/admin_withdraw":
+    parameters:
+    - "$ref": "#/components/parameters/ReviewId"
+    patch:
+      operationId: adminWithdrawReview
+      tags:
+      - Reviews
+      summary: Admin force-withdraws a comment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                audit_comment:
+                  type: string
+      responses:
+        '200':
+          description: Review withdrawn by admin
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/reviews/{reviewId}/admin_restore":
+    parameters:
+    - "$ref": "#/components/parameters/ReviewId"
+    patch:
+      operationId: adminRestoreReview
+      tags:
+      - Reviews
+      summary: Admin restores a withdrawn comment
+      responses:
+        '200':
+          description: Review restored
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/reviews/{reviewId}/move_to_rule":
+    parameters:
+    - "$ref": "#/components/parameters/ReviewId"
+    patch:
+      operationId: moveReviewToRule
+      tags:
+      - Reviews
+      summary: Admin moves a comment thread to a different rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                target_rule_id:
+                  type: integer
+                audit_comment:
+                  type: string
+      responses:
+        '200':
+          description: Review moved
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/reviews/{reviewId}/admin_destroy":
+    parameters:
+    - "$ref": "#/components/parameters/ReviewId"
+    delete:
+      operationId: adminDestroyReview
+      tags:
+      - Reviews
+      summary: Admin permanently deletes a comment (irreversible)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                audit_comment:
+                  type: string
+      responses:
+        '200':
+          description: Review destroyed
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/reviews/{reviewId}/responses":
+    parameters:
+    - "$ref": "#/components/parameters/ReviewId"
+    get:
+      operationId: getReviewResponses
+      tags:
+      - Reviews
+      summary: List replies to a review
+      responses:
+        '200':
+          description: Reply thread
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/ReviewSummary"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/reviews/{reviewId}/reactions":
+    parameters:
+    - "$ref": "#/components/parameters/ReviewId"
+    get:
+      operationId: listReactions
+      tags:
+      - Reactions
+      summary: List reactions on a review
+      responses:
+        '200':
+          description: Reactions list
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ReactionsSummary"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+    post:
+      operationId: createReaction
+      tags:
+      - Reactions
+      summary: Add a reaction (up/down) to a comment review
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reaction:
+                  type: object
+                  properties:
+                    kind:
+                      type: string
+                      enum:
+                      - up
+                      - down
+      responses:
+        '200':
+          description: Reaction created
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ReactionToggleResponse"
+        '422':
+          "$ref": "#/components/responses/UnprocessableEntity"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/memberships":
+    post:
+      operationId: createMembership
+      tags:
+      - Memberships
+      summary: Add a user to a project or component
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                membership:
+                  "$ref": "#/components/schemas/MembershipInput"
+      responses:
+        '200':
+          description: Membership created
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/memberships/{membershipId}":
+    parameters:
+    - name: membershipId
+      in: path
+      required: true
+      schema:
+        type: integer
+    put:
+      operationId: updateMembership
+      tags:
+      - Memberships
+      summary: Update membership role
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                membership:
+                  "$ref": "#/components/schemas/MembershipInput"
+      responses:
+        '200':
+          description: Membership updated
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+    delete:
+      operationId: deleteMembership
+      tags:
+      - Memberships
+      summary: Remove a membership
+      responses:
+        '200':
+          description: Membership removed
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/srgs":
+    get:
+      operationId: listSrgs
+      tags:
+      - Benchmarks
+      summary: List uploaded Security Requirements Guides
+      responses:
+        '200':
+          description: SRGs list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/BenchmarkSummary"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+    post:
+      operationId: uploadSrg
+      tags:
+      - Benchmarks
+      summary: Upload an SRG XCCDF XML file
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: SRG uploaded
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/srgs/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    get:
+      operationId: getSrg
+      tags:
+      - Benchmarks
+      summary: SRG detail with rules
+      responses:
+        '200':
+          description: SRG detail
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/BenchmarkSummary"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+    delete:
+      operationId: deleteSrg
+      tags:
+      - Benchmarks
+      summary: Delete an SRG
+      responses:
+        '200':
+          description: SRG deleted
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/StatusOk"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/srgs/{id}/export/{type}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    - name: type
+      in: path
+      required: true
+      schema:
+        type: string
+        enum:
+        - csv
+        - xccdf
+    get:
+      operationId: exportSrg
+      tags:
+      - Benchmarks
+      summary: Export SRG in specified format
+      responses:
+        '200':
+          description: File download
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/stigs":
+    get:
+      operationId: listStigs
+      tags:
+      - Benchmarks
+      summary: List uploaded STIGs
+      responses:
+        '200':
+          description: STIGs list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/BenchmarkSummary"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+    post:
+      operationId: uploadStig
+      tags:
+      - Benchmarks
+      summary: Upload a STIG XCCDF XML file
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: STIG uploaded
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/stigs/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    get:
+      operationId: getStig
+      tags:
+      - Benchmarks
+      summary: STIG detail with rules
+      responses:
+        '200':
+          description: STIG detail
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/BenchmarkSummary"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+    delete:
+      operationId: deleteStig
+      tags:
+      - Benchmarks
+      summary: Delete a STIG
+      responses:
+        '200':
+          description: STIG deleted
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/StatusOk"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/stigs/{id}/export/{type}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    - name: type
+      in: path
+      required: true
+      schema:
+        type: string
+        enum:
+        - csv
+        - xccdf
+        - inspec
+    get:
+      operationId: exportStig
+      tags:
+      - Benchmarks
+      summary: Export STIG in specified format
+      responses:
+        '200':
+          description: File download
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/users":
+    get:
+      operationId: listUsers
+      tags:
+      - Users
+      summary: List all users (admin only)
+      responses:
+        '200':
+          description: HTML page
+        '403':
+          "$ref": "#/components/responses/Forbidden"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/users/{userId}":
+    parameters:
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+    put:
+      operationId: updateUser
+      tags:
+      - Users
+      summary: Update user attributes (admin only)
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+    delete:
+      operationId: deleteUser
+      tags:
+      - Users
+      summary: Delete a user (admin only)
+      responses:
+        '200':
+          description: User deleted
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/users/{userId}/comments":
+    parameters:
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+    get:
+      operationId: getUserComments
+      tags:
+      - Users
+      summary: My Comments page — user's comments across accessible projects
+      parameters:
+      - "$ref": "#/components/parameters/TriageStatusFilter"
+      - "$ref": "#/components/parameters/PageParam"
+      - "$ref": "#/components/parameters/PerPageParam"
+      responses:
+        '200':
+          description: Paginated user comments
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/PaginatedComments"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+  "/users/unlink_identity":
+    post:
+      operationId: unlinkIdentity
+      tags:
+      - Users
+      summary: Unlink an OAuth provider from the current user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                current_password:
+                  type: string
+                provider:
+                  type: string
+      responses:
+        '200':
+          description: Provider unlinked
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToastResponse"
+        4XX:
+          "$ref": "#/components/responses/ErrorResponse"
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: _vulcan_session
+  parameters:
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      schema:
+        type: integer
+    ComponentId:
+      name: componentId
+      in: path
+      required: true
+      schema:
+        type: integer
+    RuleId:
+      name: ruleId
+      in: path
+      required: true
+      schema:
+        type: integer
+    ReviewId:
+      name: reviewId
+      in: path
+      required: true
+      schema:
+        type: integer
+    SearchQuery:
+      name: q
+      in: query
+      required: true
+      description: Search query (minimum 2 characters)
+      schema:
+        type: string
+        minLength: 2
+    TriageStatusFilter:
+      name: triage_status
+      in: query
+      schema:
+        type: string
+        enum:
+        - all
+        - pending
+        - concur
+        - concur_with_comment
+        - non_concur
+        - needs_clarification
+        - duplicate
+        - addressed_by
+        - withdrawn
+        default: all
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PerPageParam:
+      name: per_page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 1000
+        default: 25
+  schemas:
+    VersionResponse:
+      type: object
+      properties:
+        version:
+          type: string
+          example: 2.3.7
+        rails:
+          type: string
+          example: 8.0.2.1
+        ruby:
+          type: string
+          example: 3.4.9
+    ToastResponse:
+      type: object
+      properties:
+        toast:
+          type: object
+          properties:
+            title:
+              type: string
+            message:
+              type: array
+              items:
+                type: string
+            variant:
+              type: string
+              enum:
+              - success
+              - danger
+              - warning
+              - info
+    ProjectInput:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        visibility:
+          type: string
+          enum:
+          - discoverable
+          - hidden
+    ComponentInput:
+      type: object
+      properties:
+        name:
+          type: string
+        prefix:
+          type: string
+        version:
+          type: string
+        release:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+    RuleInput:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - Not Yet Determined
+          - Applicable - Configurable
+          - Applicable - Inherently Meets
+          - Applicable - Does Not Meet
+          - Not Applicable
+        title:
+          type: string
+        fixtext:
+          type: string
+        vendor_comments:
+          type: string
+        status_justification:
+          type: string
+        artifact_description:
+          type: string
+        locked:
+          type: boolean
+    ReviewInput:
+      type: object
+      properties:
+        action:
+          type: string
+          enum:
+          - comment
+          - request_review
+          - revoke_review_request
+          - approve
+          - lock
+        comment:
+          type: string
+        section:
+          type: string
+        responding_to_review_id:
+          type: integer
+    MembershipInput:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        membership_id:
+          type: integer
+        membership_type:
+          type: string
+          enum:
+          - Project
+          - Component
+        role:
+          type: string
+          enum:
+          - viewer
+          - author
+          - reviewer
+          - admin
+    UserSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type:
+          - string
+          - 'null'
+        email:
+          type: string
+        provider:
+          type:
+          - string
+          - 'null'
+        admin:
+          type: boolean
+        last_sign_in_at:
+          type:
+          - string
+          - 'null'
+        failed_attempts:
+          type: integer
+        locked_at:
+          type:
+          - string
+          - 'null'
+    GlobalSearchResponse:
+      type: object
+      properties:
+        projects:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+              description:
+                type:
+                - string
+                - 'null'
+              components_count:
+                type: integer
+        components:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+              version:
+                type:
+                - integer
+                - 'null'
+              release:
+                type:
+                - integer
+                - 'null'
+              project_id:
+                type: integer
+              project_name:
+                type: string
+        rules:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              rule_id:
+                type: string
+              title:
+                type: string
+              status:
+                type: string
+              component_id:
+                type: integer
+              component_prefix:
+                type: string
+              snippet:
+                type: string
+              matched_field:
+                type: string
+              comment_count:
+                type: integer
+        srgs:
+          type: array
+          items:
+            type: object
+        stigs:
+          type: array
+          items:
+            type: object
+        stig_rules:
+          type: array
+          items:
+            type: object
+        srg_rules:
+          type: array
+          items:
+            type: object
+    PaginatedComments:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            "$ref": "#/components/schemas/CommentRow"
+        pagination:
+          type: object
+          properties:
+            page:
+              type: integer
+            per_page:
+              type: integer
+            total:
+              type: integer
+            total_comments:
+              type: integer
+        status_counts:
+          type: object
+          additionalProperties:
+            type: integer
+    CommentRow:
+      type: object
+      properties:
+        id:
+          type: integer
+        rule_id:
+          type:
+          - integer
+          - 'null'
+        rule_displayed_name:
+          type: string
+        commentable_type:
+          type: string
+          enum:
+          - BaseRule
+          - Component
+        section:
+          type:
+          - string
+          - 'null'
+        author_name:
+          type: string
+        author_email:
+          type: string
+        comment:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        triage_status:
+          type: string
+        triage_set_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        adjudicated_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        responses_count:
+          type: integer
+        reactions:
+          type: object
+          properties:
+            up:
+              type: integer
+            down:
+              type: integer
+    StatusOk:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+    ProjectSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type:
+          - string
+          - 'null'
+        visibility:
+          type:
+          - string
+          - 'null'
+        components_count:
+          type: integer
+        created_at:
+          type:
+          - string
+          - 'null'
+        updated_at:
+          type:
+          - string
+          - 'null'
+    ComponentSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        prefix:
+          type: string
+        version:
+          type:
+          - integer
+          - 'null'
+        release:
+          type:
+          - integer
+          - 'null'
+        title:
+          type:
+          - string
+          - 'null'
+        released:
+          type: boolean
+        project_id:
+          type: integer
+        rules_count:
+          type: integer
+        description:
+          type:
+          - string
+          - 'null'
+    RuleSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        rule_id:
+          type: string
+        status:
+          type:
+          - string
+          - 'null'
+        title:
+          type:
+          - string
+          - 'null'
+        locked:
+          type: boolean
+        component_id:
+          type: integer
+    BenchmarkSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        srg_id:
+          type:
+          - string
+          - 'null'
+        stig_id:
+          type:
+          - string
+          - 'null'
+        name:
+          type:
+          - string
+          - 'null'
+        title:
+          type:
+          - string
+          - 'null'
+        version:
+          type:
+          - string
+          - 'null'
+        release_date:
+          type:
+          - string
+          - 'null'
+        severity_counts:
+          type: object
+    AuditEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        auditable_type:
+          type: string
+        auditable_id:
+          type: integer
+        action:
+          type: string
+        audited_changes:
+          type: object
+        user_id:
+          type:
+          - integer
+          - 'null'
+        created_at:
+          type:
+          - string
+          - 'null'
+    ReactionsSummary:
+      type: object
+      properties:
+        up:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+        down:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+    ReactionToggleResponse:
+      type: object
+      properties:
+        reactions:
+          type: object
+          properties:
+            up:
+              type: integer
+            down:
+              type: integer
+            mine:
+              type:
+              - string
+              - 'null'
+    ReviewSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        action:
+          type: string
+        comment:
+          type: string
+        user_id:
+          type: integer
+        rule_id:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        responding_to_review_id:
+          type:
+          - integer
+          - 'null'
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: You need to sign in or sign up before continuing.
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+    UnprocessableEntity:
+      description: Validation errors
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              toast:
+                type: object
+                properties:
+                  title:
+                    type: string
+                  message:
+                    type: array
+                    items:
+                      type: string
+                  variant:
+                    type: string
+                    example: danger
+    ErrorResponse:
+      description: Error response (401 unauthorized, 403 forbidden, 404 not found,
+        422 validation, or 500 server error)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              toast:
+                type: object
+                properties:
+                  title:
+                    type: string
+                  message:
+                    type: array
+                    items:
+                      type: string
+                  variant:
+                    type: string
