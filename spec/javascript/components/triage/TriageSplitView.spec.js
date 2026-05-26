@@ -401,6 +401,24 @@ describe("TriageSplitView", () => {
     expect(w.emitted("triaged")).toHaveLength(1);
   });
 
+  // vulcan-v3.x-05f.10: admin moves a comment to another rule. The
+  // submitAdminAction payload must carry both audit_comment AND rule_id.
+  it("calls submitAdminAction for move-to-rule with rule_id + audit_comment", async () => {
+    submitAdminAction.mockResolvedValue({
+      data: { review: { ...rows[0], rule_id: 42 } },
+    });
+    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    w.vm.adminAction = "move-to-rule";
+    w.vm.adminAuditComment = "wrong rule";
+    w.vm.adminTargetRuleId = 42;
+    await w.vm.doSubmitAdminAction();
+    await flushPromises(w);
+    expect(submitAdminAction).toHaveBeenCalledWith(
+      1, "move-to-rule", { audit_comment: "wrong rule", rule_id: 42 },
+    );
+    expect(w.emitted("triaged")).toHaveLength(1);
+  });
+
   it("calls submitAdminAction for hard-delete with typed-id confirmation", async () => {
     submitAdminAction.mockResolvedValue({ data: { ok: true } });
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
