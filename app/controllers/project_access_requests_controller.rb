@@ -12,16 +12,34 @@ class ProjectAccessRequestsController < ApplicationController
     @access_request = ProjectAccessRequest.new(user: current_user, project: @project)
 
     if @access_request.save
-      flash.notice = 'Your request for access has been sent.'
       if Settings.smtp.enabled
         safely_notify('request_access') do
           send_smtp_notification(UserMailer, 'request_access', @access_request.user, @access_request.project)
         end
       end
+      respond_to do |format|
+        format.html do
+          flash.notice = 'Your request for access has been sent.'
+          redirect_to root_path
+        end
+        format.json do
+          render_toast(title: 'Access request submitted.',
+                       message: ['Your request for access has been sent.'],
+                       variant: 'success', status: :ok)
+        end
+      end
     else
-      flash.alert = @access_request.errors.full_messages.to_sentence
+      respond_to do |format|
+        format.html do
+          flash.alert = @access_request.errors.full_messages.to_sentence
+          redirect_to root_path
+        end
+        format.json do
+          render_toast(title: 'Could not submit access request.',
+                       message: @access_request.errors.full_messages)
+        end
+      end
     end
-    redirect_to root_path
   end
 
   def destroy

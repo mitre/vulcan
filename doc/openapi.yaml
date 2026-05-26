@@ -647,7 +647,13 @@ paths:
       summary: List rules for a component
       responses:
         '200':
-          description: HTML page
+          description: Rules list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/RuleSummary"
         4XX:
           "$ref": "#/components/responses/ErrorResponse"
     post:
@@ -1568,7 +1574,13 @@ paths:
       summary: List all users (admin only)
       responses:
         '200':
-          description: HTML page
+          description: Users list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/UserSummary"
         '403':
           "$ref": "#/components/responses/Forbidden"
         4XX:
