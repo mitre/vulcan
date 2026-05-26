@@ -281,7 +281,47 @@ class Review < ApplicationRecord
     end
   end
 
+  # Admin action: move this comment to a different rule in the same component.
+  # Records first-move provenance via original_commentable_id, prepends a
+  # "[Moved from …]" marker to the comment, cascades to replies, and attaches
+  # an audit_comment so vulcan_audited's row names the move. vulcan-v3.x-05f.10.
+  def move_to_rule!(target_rule, reason:, moved_by:)
+    raise ArgumentError, 'reason is required' if reason.to_s.strip.blank?
+    raise ArgumentError, 'target rule must be in the same component' \
+      unless rule && target_rule&.component_id == rule.component_id
+
+    transaction do
+      prefix = rule.component&.prefix || 'RULE'
+      audit_msg = "Moved to #{prefix}-#{target_rule.rule_id} by #{moved_by&.email || 'unknown'}: #{reason}"
+      apply_move!(target_rule, "[Moved from #{prefix}-#{rule.rule_id}: #{reason}] ", audit_msg)
+      cascade_replies_to_rule(target_rule, moved_by)
+    end
+    self
+  end
+
   private
+
+  # Internal: apply a single move to this review. Used by move_to_rule! for
+  # both the parent and its cascaded replies.
+  def apply_move!(target_rule, marker, audit_msg)
+    self.original_commentable_id ||= rule_id
+    self.comment = "#{marker}#{comment}" if marker
+    self.rule = target_rule
+    self.commentable = target_rule
+    self.audit_comment = audit_msg
+    save!
+  end
+
+  # Recursively move every descendant reply to the same target rule. Walk
+  # parent-first so responding_to_must_be_same_rule sees the parent already
+  # at the target by the time each child saves.
+  def cascade_replies_to_rule(target_rule, moved_by)
+    responses.find_each do |reply|
+      reply_audit_msg = "Auto-moved with parent review ##{id} by #{moved_by&.email || 'unknown'}"
+      reply.send(:apply_move!, target_rule, nil, reply_audit_msg)
+      reply.send(:cascade_replies_to_rule, target_rule, moved_by)
+    end
+  end
 
   def redirect_to_parent_if_satisfied_by
     return unless rule

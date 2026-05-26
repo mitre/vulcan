@@ -347,7 +347,10 @@ class ReviewsController < ApplicationController
         }
       )
 
-      move_review_subtree!(@review, target_rule.id, @audit_comment)
+      # vulcan-v3.x-05f.10: model-level move records first-move provenance
+      # (original_commentable_id), prepends a "[Moved from …]" marker, and
+      # recurses to depth-N replies in one transaction.
+      @review.move_to_rule!(target_rule, reason: @audit_comment, moved_by: current_user)
     end
     render json: { review: ReviewBlueprint.render_as_hash(@review.reload) }
   end
@@ -617,19 +620,6 @@ class ReviewsController < ApplicationController
     render_toast(title: 'Audit comment too long.',
                  message: "Audit comment for #{label} must be #{AUDIT_COMMENT_MAX_LENGTH} characters or fewer " \
                           "(received #{@audit_comment.length}).")
-  end
-
-  # recursive parent-first walk for move_to_rule.
-  # Updates the review's rule_id with the audit comment captured by the
-  # vulcan_audited gem, then recurses into each child (replies pointing
-  # at this review). Children see the parent already at the target rule
-  # by the time the validator (responding_to_must_be_same_rule) runs.
-  def move_review_subtree!(review, new_rule_id, audit_comment)
-    review.audit_comment = "Admin move-to-rule (rule #{new_rule_id}): #{audit_comment}"
-    review.update!(rule_id: new_rule_id)
-    review.responses.find_each do |child|
-      move_review_subtree!(child, new_rule_id, audit_comment)
-    end
   end
 
   def set_rule
