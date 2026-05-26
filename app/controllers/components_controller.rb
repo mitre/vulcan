@@ -564,8 +564,24 @@ class ComponentsController < ApplicationController
   # pending_comment_count + pending_comment_counts so the page header
   # banner (CommentPeriodBanner) and any per-rule callouts have the
   # accurate count. Without this, the blueprint defaults to zero.
+  #
+  # Reaction summaries are scoped to the most recent REACTION_SUMMARY_LIMIT
+  # reviews (vulcan-v3.x-73z.8). The editor renders at most ~25 visible
+  # reviews per page; 100 gives ample headroom and stops the two
+  # 3000+ row GROUP BYs that used to fire on every editor refresh.
+  # rubocop:disable Lint/UselessConstantScoping -- co-located with sole consumer
+  REACTION_SUMMARY_LIMIT = 100
+  # rubocop:enable Lint/UselessConstantScoping
+
   def blueprint_render_options
-    review_ids = @component ? Review.joins(:rule).merge(Rule.where(component_id: @component.id)).pluck(:id) : []
+    review_ids = if @component
+                   Review.joins(:rule).merge(Rule.where(component_id: @component.id))
+                         .order(created_at: :desc)
+                         .limit(REACTION_SUMMARY_LIMIT)
+                         .pluck(:id)
+                 else
+                   []
+                 end
     {
       pending_comment_counts: Component.pending_comment_counts([@component.id]),
       reactions_summary: Reaction.summary(review_ids, current_user&.id)
