@@ -1,10 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
-import axios from "axios";
 import CommentDedupBanner from "@/components/components/CommentDedupBanner.vue";
+import { getComments } from "@/api/componentsApi";
 
-vi.mock("axios");
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/api/componentsApi", () => ({
+  getComments: vi.fn(() => Promise.resolve({ data: { rows: [], pagination: { total: 0 } } })),
+}));
 
 const flushPromises = async (wrapper) => {
   await new Promise((resolve) => setTimeout(resolve, 0));
@@ -59,7 +72,7 @@ describe("CommentDedupBanner", () => {
   });
 
   const mountWith = async (sectionProp = null, rows = sampleRows) => {
-    axios.get.mockResolvedValue({ data: { rows, pagination: { total: rows.length } } });
+    getComments.mockResolvedValue({ data: { rows, pagination: { total: rows.length } } });
     const w = mount(CommentDedupBanner, {
       localVue,
       propsData: { ...baseProps, section: sectionProp },
@@ -70,7 +83,7 @@ describe("CommentDedupBanner", () => {
 
   it("fetches ALL rule-level comments — no section param sent", async () => {
     await mountWith("check_content");
-    const params = axios.get.mock.calls[0][1].params;
+    const params = getComments.mock.calls[0][1];
     expect(params.rule_id).toBe(2976);
     expect(params.section).toBeUndefined();
   });
@@ -83,7 +96,7 @@ describe("CommentDedupBanner", () => {
   it("shows total comment count (replies included) in the header", async () => {
     // Server reports 3 top-level rows, 7 total comments (3 root + 4 replies).
     // A reply counts as a comment for display purposes.
-    axios.get.mockResolvedValue({
+    getComments.mockResolvedValue({
       data: {
         rows: sampleRows,
         pagination: { total: 3, total_comments: 7 },
@@ -137,18 +150,18 @@ describe("CommentDedupBanner", () => {
 
   it("does NOT re-fetch when only the section prop changes", async () => {
     const w = await mountWith("check_content");
-    axios.get.mockClear();
+    getComments.mockClear();
     await w.setProps({ section: "fixtext" });
     await flushPromises(w);
-    expect(axios.get).not.toHaveBeenCalled();
+    expect(getComments).not.toHaveBeenCalled();
   });
 
   it("does re-fetch when ruleId changes (different rule = different conversation)", async () => {
     const w = await mountWith();
-    axios.get.mockClear();
+    getComments.mockClear();
     await w.setProps({ ruleId: 9999 });
     await flushPromises(w);
-    expect(axios.get).toHaveBeenCalled();
+    expect(getComments).toHaveBeenCalled();
   });
 
   it("recomputes inSection when section prop changes (no refetch)", async () => {

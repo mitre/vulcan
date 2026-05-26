@@ -1,10 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
-import axios from "axios";
 import CanonicalCommentPicker from "@/components/components/CanonicalCommentPicker.vue";
+import { getComments } from "@/api/componentsApi";
 
-vi.mock("axios");
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/api/componentsApi", () => ({
+  getComments: vi.fn(() => Promise.resolve({ data: { rows: [] } })),
+}));
 
 // REQUIREMENT: the canonical comment picker is the
 // search/select widget shown when a triager marks a comment as duplicate.
@@ -22,7 +35,7 @@ describe("CanonicalCommentPicker", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    axios.get.mockResolvedValue({
+    getComments.mockResolvedValue({
       data: {
         rows: [
           {
@@ -47,16 +60,13 @@ describe("CanonicalCommentPicker", () => {
       propsData: { componentId: 8, excludeReviewId: 50 },
     });
     await flushAll(w);
-    expect(axios.get).toHaveBeenCalledWith(
-      "/components/8/comments",
-      expect.objectContaining({
-        params: expect.objectContaining({ triage_status: "all" }),
-      }),
-    );
+    expect(getComments).toHaveBeenCalledWith(8, expect.objectContaining({
+      triage_status: "all",
+    }));
   });
 
   it("excludes the review being marked from the candidate list", async () => {
-    axios.get.mockResolvedValueOnce({
+    getComments.mockResolvedValueOnce({
       data: {
         rows: [
           {
@@ -93,7 +103,7 @@ describe("CanonicalCommentPicker", () => {
   });
 
   it("excludes rows that are themselves duplicates (no chained)", async () => {
-    axios.get.mockResolvedValueOnce({
+    getComments.mockResolvedValueOnce({
       data: {
         rows: [
           {
@@ -147,7 +157,7 @@ describe("CanonicalCommentPicker", () => {
   });
 
   it("widens client-side filter to match author name + rule name", async () => {
-    axios.get.mockResolvedValue({
+    getComments.mockResolvedValue({
       data: {
         rows: [
           {

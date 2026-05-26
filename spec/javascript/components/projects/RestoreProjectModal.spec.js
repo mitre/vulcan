@@ -1,10 +1,23 @@
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
-import axios from "axios";
 import RestoreProjectModal from "@/components/projects/RestoreProjectModal.vue";
+import { createFromBackup } from "@/api/projectsApi";
 
-vi.mock("axios");
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/api/projectsApi", () => ({
+  createFromBackup: vi.fn(() => Promise.resolve({ data: {} })),
+}));
 
 /**
  * RestoreProjectModal - Create new project from backup archive
@@ -146,7 +159,7 @@ describe("RestoreProjectModal", () => {
 
   describe("dry run (preview)", () => {
     it("pre-fills name from archive defaults", async () => {
-      axios.post.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
+      createFromBackup.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
       wrapper = createWrapper();
       wrapper.vm.showModal();
       wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
@@ -157,7 +170,7 @@ describe("RestoreProjectModal", () => {
     });
 
     it("does not overwrite user-entered name", async () => {
-      axios.post.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
+      createFromBackup.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
       wrapper = createWrapper();
       wrapper.vm.showModal();
       wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
@@ -169,7 +182,7 @@ describe("RestoreProjectModal", () => {
     });
 
     it("moves to preview step on success", async () => {
-      axios.post.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
+      createFromBackup.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
       wrapper = createWrapper();
       wrapper.vm.showModal();
       wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
@@ -180,7 +193,7 @@ describe("RestoreProjectModal", () => {
     });
 
     it("shows summary in preview via BackupPreview", async () => {
-      axios.post.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
+      createFromBackup.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
       wrapper = createWrapper();
       wrapper.vm.showModal();
       wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
@@ -192,7 +205,7 @@ describe("RestoreProjectModal", () => {
     });
 
     it("shows component names and rule counts in preview", async () => {
-      axios.post.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
+      createFromBackup.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
       wrapper = createWrapper();
       wrapper.vm.showModal();
       wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
@@ -209,7 +222,7 @@ describe("RestoreProjectModal", () => {
     });
 
     it("shows SRG info per component", async () => {
-      axios.post.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
+      createFromBackup.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
       wrapper = createWrapper();
       wrapper.vm.showModal();
       wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
@@ -222,15 +235,14 @@ describe("RestoreProjectModal", () => {
     });
 
     it("calls correct endpoint", async () => {
-      axios.post.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
+      createFromBackup.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
       wrapper = createWrapper();
       wrapper.vm.showModal();
       wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
 
       await wrapper.vm.submitDryRun();
 
-      expect(axios.post).toHaveBeenCalledWith(
-        "/projects/create_from_backup",
+      expect(createFromBackup).toHaveBeenCalledWith(
         expect.any(FormData),
         expect.objectContaining({
           headers: { "Content-Type": "multipart/form-data" },
@@ -241,7 +253,7 @@ describe("RestoreProjectModal", () => {
 
   describe("create (confirm)", () => {
     it("sends correct params", async () => {
-      axios.post.mockResolvedValue(MOCK_CREATE_RESPONSE);
+      createFromBackup.mockResolvedValue(MOCK_CREATE_RESPONSE);
       wrapper = createWrapper();
       wrapper.vm.showModal();
       wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
@@ -252,14 +264,14 @@ describe("RestoreProjectModal", () => {
 
       await wrapper.vm.submitCreate();
 
-      const formData = axios.post.mock.calls[0][1];
+      const formData = createFromBackup.mock.calls[0][0];
       expect(formData.get("project_name")).toBe("My Project");
       expect(formData.get("project_description")).toBe("Description");
       expect(formData.get("project_visibility")).toBe("hidden");
     });
 
     it("redirects on success", async () => {
-      axios.post.mockResolvedValue(MOCK_CREATE_RESPONSE);
+      createFromBackup.mockResolvedValue(MOCK_CREATE_RESPONSE);
       wrapper = createWrapper();
       wrapper.vm.showModal();
       wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
