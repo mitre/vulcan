@@ -16,8 +16,11 @@ vi.mock("@/api/baseApi", () => ({
 
 vi.mock("@/api/rulesApi", () => ({
   updateRule: vi.fn(() => Promise.resolve({ data: {} })),
-  createReview: vi.fn(() => Promise.resolve({ data: {} })),
   updateSectionLocks: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+
+vi.mock("@/api/reviewsApi", () => ({
+  createRuleReview: vi.fn(() => Promise.resolve({ data: {} })),
 }));
 
 vi.mock("@/api/componentsApi", () => ({
