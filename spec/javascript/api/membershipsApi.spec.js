@@ -49,4 +49,11 @@ describe("membershipsApi", () => {
     await deleteAccessRequest(10, 3);
     expect(api.delete).toHaveBeenCalledWith("/projects/10/project_access_requests/3");
   });
+
+  describe("error propagation", () => {
+    it("createMembership propagates rejected promise", async () => {
+      api.post.mockRejectedValue(new Error("422 Duplicate"));
+      await expect(createMembership({ user_id: 1, role: "viewer" })).rejects.toThrow("422 Duplicate");
+    });
+  });
 });

@@ -1,9 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
-import axios from "axios";
 import UserComments from "@/components/users/UserComments.vue";
+import { getUserComments } from "@/api/reviewsApi";
 
-vi.mock("axios");
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/api/reviewsApi", () => ({
+  getUserComments: vi.fn(() => Promise.resolve({ data: { rows: [], pagination: { total: 0 } } })),
+}));
 
 // REQUIREMENT: My Comments — every commenter (including industry
 // reviewers using only the viewer role) must be able to see the
@@ -75,7 +88,7 @@ const mockResponse = {
 
 describe("UserComments", () => {
   beforeEach(() => {
-    axios.get.mockResolvedValue(mockResponse);
+    getUserComments.mockResolvedValue(mockResponse);
   });
 
   it("fetches /users/:id/comments on mount", async () => {
@@ -84,12 +97,7 @@ describe("UserComments", () => {
       stubs: SHARED_STUBS,
     });
     await flushPromises();
-    expect(axios.get).toHaveBeenCalledWith(
-      "/users/7/comments",
-      expect.objectContaining({
-        params: expect.objectContaining({ page: 1 }),
-      }),
-    );
+    expect(getUserComments).toHaveBeenCalledWith(7, expect.objectContaining({ page: 1 }));
   });
 
   it("renders a row for each comment with rule + project context", async () => {
@@ -106,7 +114,7 @@ describe("UserComments", () => {
   });
 
   it("renders an empty-state message when there are no comments", async () => {
-    axios.get.mockResolvedValueOnce({
+    getUserComments.mockResolvedValueOnce({
       data: { rows: [], pagination: { page: 1, per_page: 25, total: 0 } },
     });
     const wrapper = mount(UserComments, {
@@ -146,26 +154,23 @@ describe("UserComments", () => {
       stubs: SHARED_STUBS,
     });
     await flushPromises();
-    axios.get.mockClear();
+    getUserComments.mockClear();
     wrapper.vm.filterStatus = "pending";
     wrapper.vm.onFilterChanged();
     await flushPromises();
-    expect(axios.get).toHaveBeenCalledWith(
-      "/users/7/comments",
-      expect.objectContaining({
-        params: expect.objectContaining({ triage_status: "pending" }),
-      }),
-    );
+    expect(getUserComments).toHaveBeenCalledWith(7, expect.objectContaining({
+      triage_status: "pending",
+    }));
   });
 
   it("surfaces fetch errors via alertOrNotifyResponse", async () => {
-    axios.get.mockRejectedValueOnce({ response: { status: 500, data: {} } });
+    getUserComments.mockRejectedValueOnce({ response: { status: 500, data: {} } });
     const wrapper = mount(UserComments, {
       propsData: { userId: 7 },
       stubs: SHARED_STUBS,
     });
     const alertSpy = vi.spyOn(wrapper.vm, "alertOrNotifyResponse").mockImplementation(() => {});
-    axios.get.mockRejectedValueOnce({ response: { status: 500, data: {} } });
+    getUserComments.mockRejectedValueOnce({ response: { status: 500, data: {} } });
     await wrapper.vm.fetch();
     expect(alertSpy).toHaveBeenCalled();
     alertSpy.mockRestore();

@@ -111,4 +111,11 @@ describe("usersApi", () => {
     await unlinkIdentity({ current_password: "secret123" });
     expect(api.post).toHaveBeenCalledWith("/users/unlink_identity", { current_password: "secret123" });
   });
+
+  describe("error propagation", () => {
+    it("updateUser propagates rejected promise", async () => {
+      api.put.mockRejectedValue(new Error("404 Not Found"));
+      await expect(updateUser(999, { name: "x" })).rejects.toThrow("404 Not Found");
+    });
+  });
 });

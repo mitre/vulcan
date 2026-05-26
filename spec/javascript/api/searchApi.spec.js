@@ -20,4 +20,11 @@ describe("searchApi", () => {
     await getRelatedRules(5);
     expect(api.get).toHaveBeenCalledWith("/rules/5/search/related_rules");
   });
+
+  describe("error propagation", () => {
+    it("globalSearch propagates rejected promise", async () => {
+      api.get.mockRejectedValue(new Error("503 Service Unavailable"));
+      await expect(globalSearch({ q: "fail" })).rejects.toThrow("503 Service Unavailable");
+    });
+  });
 });

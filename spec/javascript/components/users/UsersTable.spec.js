@@ -1,9 +1,22 @@
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import UsersTable from "@/components/users/UsersTable.vue";
-import axios from "axios";
+import { deleteUser } from "@/api/usersApi";
 
-vi.mock("axios");
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/api/usersApi", () => ({
+  deleteUser: vi.fn(() => Promise.resolve({ data: { toast: "Removed." } })),
+}));
 
 describe("UsersTable", () => {
   let wrapper;
@@ -176,16 +189,16 @@ describe("UsersTable", () => {
     });
 
     it("sends DELETE request on confirm", async () => {
-      axios.delete.mockResolvedValue({ data: { toast: "Removed." } });
+      deleteUser.mockResolvedValue({ data: { toast: "Removed." } });
 
       wrapper.vm.userToDelete = users[1];
       await wrapper.vm.handleDelete();
 
-      expect(axios.delete).toHaveBeenCalledWith("/users/2");
+      expect(deleteUser).toHaveBeenCalledWith(2);
     });
 
     it("emits user-deleted on successful delete", async () => {
-      axios.delete.mockResolvedValue({ data: { toast: "Removed." } });
+      deleteUser.mockResolvedValue({ data: { toast: "Removed." } });
 
       wrapper.vm.userToDelete = users[1];
       await wrapper.vm.handleDelete();

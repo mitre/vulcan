@@ -15,4 +15,11 @@ describe("versionApi", () => {
     expect(api.get).toHaveBeenCalledWith("/api/version");
     expect(result.data.version).toBe("2.3.7");
   });
+
+  describe("error propagation", () => {
+    it("getVersion propagates rejected promise", async () => {
+      api.get.mockRejectedValue(new Error("503 Service Unavailable"));
+      await expect(getVersion()).rejects.toThrow("503 Service Unavailable");
+    });
+  });
 });

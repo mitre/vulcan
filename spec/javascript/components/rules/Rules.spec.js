@@ -2,9 +2,24 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import Rules from "@/components/rules/Rules.vue";
-import axios from "axios";
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
 
-vi.mock("axios");
+vi.mock("@/api/rulesApi", () => ({
+  getRule: vi.fn(() => Promise.resolve({ data: {} })),
+  deleteRule: vi.fn(() => Promise.resolve({ data: {} })),
+  createRuleInComponent: vi.fn(() => Promise.resolve({ data: {} })),
+  addSatisfaction: vi.fn(() => Promise.resolve({ data: {} })),
+  removeSatisfaction: vi.fn(() => Promise.resolve({ data: {} })),
+}));
 
 describe("Rules", () => {
   const createWrapper = (rulesOverrides = []) => {
@@ -74,13 +89,12 @@ describe("Rules", () => {
       // Simulate local status change (user changes status but hasn't saved yet)
       wrapper.vm.reactiveRules[0].status = "Applicable - Configurable";
 
-      // Mock successful satisfaction creation
-      axios.post.mockResolvedValue({
+      const { addSatisfaction, getRule } = await import("@/api/rulesApi");
+      addSatisfaction.mockResolvedValue({
         data: { toast: "Successfully marked as satisfied" },
       });
 
-      // Mock the refresh that returns the OLD server data (status still 'Not Yet Determined')
-      axios.get.mockResolvedValue({
+      getRule.mockResolvedValue({
         data: {
           id: 1,
           component_id: 100,
@@ -140,8 +154,8 @@ describe("Rules", () => {
 
       const wrapper = createWrapper([rule1, rule2]);
 
-      // Mock successful satisfaction creation that returns updated relationship data
-      axios.post.mockResolvedValue({
+      const { addSatisfaction } = await import("@/api/rulesApi");
+      addSatisfaction.mockResolvedValue({
         data: {
           toast: "Successfully marked as satisfied",
           rule: { ...rule1, satisfied_by: [rule2] },
@@ -195,8 +209,8 @@ describe("Rules", () => {
       // Simulate local status change (user changes status but hasn't saved yet)
       wrapper.vm.reactiveRules[0].status = "Not Applicable";
 
-      // Mock successful satisfaction removal
-      axios.delete.mockResolvedValue({
+      const { removeSatisfaction } = await import("@/api/rulesApi");
+      removeSatisfaction.mockResolvedValue({
         data: { toast: "Successfully removed satisfaction" },
       });
 

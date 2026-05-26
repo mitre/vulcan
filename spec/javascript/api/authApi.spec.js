@@ -20,4 +20,11 @@ describe("authApi", () => {
     await acknowledgeConsent();
     expect(api.post).toHaveBeenCalledWith("/consent/acknowledge");
   });
+
+  describe("error propagation", () => {
+    it("signOut propagates rejected promise", async () => {
+      api.delete.mockRejectedValue(new Error("401 Unauthorized"));
+      await expect(signOut("/users/sign_out")).rejects.toThrow("401 Unauthorized");
+    });
+  });
 });

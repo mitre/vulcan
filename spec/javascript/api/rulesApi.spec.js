@@ -103,4 +103,16 @@ describe("rulesApi", () => {
       rule: { sections: ["check_content"], locked: true, comment: "Lock" },
     });
   });
+
+  describe("error propagation", () => {
+    it("updateRule propagates rejected promise to caller", async () => {
+      api.put.mockRejectedValue(new Error("422 Unprocessable"));
+      await expect(updateRule(5, { status: "bad" })).rejects.toThrow("422 Unprocessable");
+    });
+
+    it("deleteRule propagates network errors", async () => {
+      api.delete.mockRejectedValue(new Error("Network Error"));
+      await expect(deleteRule(5)).rejects.toThrow("Network Error");
+    });
+  });
 });

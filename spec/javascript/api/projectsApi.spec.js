@@ -149,4 +149,11 @@ describe("projectsApi", () => {
       expect(url).toBe("/stigs/7/export/csv");
     });
   });
+
+  describe("error propagation", () => {
+    it("createProject propagates rejected promise", async () => {
+      api.post.mockRejectedValue(new Error("500 Internal Server Error"));
+      await expect(createProject({ name: "fail" })).rejects.toThrow("500 Internal Server Error");
+    });
+  });
 });

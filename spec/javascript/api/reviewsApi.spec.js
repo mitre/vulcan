@@ -146,4 +146,11 @@ describe("reviewsApi", () => {
       review: { comment: "Updated text" },
     });
   });
+
+  describe("error propagation", () => {
+    it("triageReview propagates rejected promise", async () => {
+      api.patch.mockRejectedValue(new Error("422 Validation failed"));
+      await expect(triageReview(1, {})).rejects.toThrow("422 Validation failed");
+    });
+  });
 });

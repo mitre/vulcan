@@ -133,4 +133,11 @@ describe("componentsApi", () => {
     await getComponentRules(5);
     expect(api.get).toHaveBeenCalledWith("/components/5/rules");
   });
+
+  describe("error propagation", () => {
+    it("updateComponent propagates rejected promise", async () => {
+      api.put.mockRejectedValue(new Error("403 Forbidden"));
+      await expect(updateComponent(5, { name: "x" })).rejects.toThrow("403 Forbidden");
+    });
+  });
 });
