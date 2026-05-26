@@ -68,6 +68,11 @@ RSpec.describe CommentQueryService do
       expect(result[:pagination][:per_page]).to eq(1)
     end
 
+    it 'clamps per_page to 100 maximum' do
+      result = described_class.new(component, { per_page: 500 }).call
+      expect(result[:pagination][:per_page]).to eq(100)
+    end
+
     it 'returns status_counts from unfiltered base scope' do
       comment.update!(triage_status: 'concur')
       result = described_class.new(component, {}).call

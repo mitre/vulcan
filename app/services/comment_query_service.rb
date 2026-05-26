@@ -10,7 +10,7 @@ class CommentQueryService
     @author_id = params[:author_id]
     @query = params[:query]
     @page = [params.fetch(:page, 1).to_i, 1].max
-    @per_page = params.fetch(:per_page, 25).to_i.clamp(1, 1000)
+    @per_page = params.fetch(:per_page, 25).to_i.clamp(1, 100)
     @resolved = params[:resolved] || 'all'
     @commentable_type = params[:commentable_type]
     @include_rule_content = params[:include_rule_content] || false
