@@ -1,5 +1,6 @@
 import api from "./baseApi";
 
+/** @param {string} query - min 2 chars @param {Object} [extraParams] - additional query params merged into request @returns {Promise} */
 export function searchUsers(query, extraParams = {}) {
   return api.get("/api/users/search", { params: { q: query, ...extraParams } });
 }
@@ -32,6 +33,7 @@ export function generateResetLink(userId) {
   return api.post(`/users/${userId}/generate_reset_link`);
 }
 
+/** @param {number} userId @param {string} password @param {string} passwordConfirmation - must match password @returns {Promise} */
 export function setPassword(userId, password, passwordConfirmation) {
   return api.post(`/users/${userId}/set_password`, {
     user: { password, password_confirmation: passwordConfirmation },
@@ -46,7 +48,7 @@ export function deleteAccount() {
   return api.delete("/users");
 }
 
-// No { user: } wrapping — Rails controller reads params[:current_password] directly
+/** @param {Object} payload - { current_password, provider } — flat, not wrapped @returns {Promise} */
 export function unlinkIdentity(payload) {
   return api.post("/users/unlink_identity", payload);
 }
