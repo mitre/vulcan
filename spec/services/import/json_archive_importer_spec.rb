@@ -375,6 +375,47 @@ RSpec.describe Import::JsonArchiveImporter do
       end
     end
 
+    # ==========================================
+    # ADDRESSED_BY ROUND-TRIP (vulcan-v3.x-480.5)
+    # ==========================================
+    context 'with addressed_by triage status round-trip' do
+      let_it_be(:addressed_proj) { create(:project) }
+      let_it_be(:addressed_component) do
+        create(:component, project: addressed_proj,
+                           comment_phase: 'open',
+                           comment_period_starts_at: 1.day.ago,
+                           comment_period_ends_at: 1.day.from_now)
+      end
+      let_it_be(:addressed_commenter) { create(:user, name: 'Addressed Commenter') }
+      let_it_be(:addressed_triager) { create(:user, name: 'Addressed Triager') }
+
+      let_it_be(:addressed_zip) do
+        Membership.find_or_create_by!(user: addressed_commenter, membership: addressed_proj) { |m| m.role = 'viewer' }
+        Membership.find_or_create_by!(user: addressed_triager, membership: addressed_proj) { |m| m.role = 'author' }
+        rules = addressed_component.rules.order(:rule_id).to_a
+        create(:review, :comment,
+               user: addressed_commenter, rule: rules[0],
+               comment: 'addressed-by round-trip',
+               triage_status: 'addressed_by',
+               addressed_by_rule_id: rules[1].id,
+               triage_set_by: addressed_triager, triage_set_at: 1.hour.ago)
+        Export::Base.new(exportable: addressed_component, mode: :backup, format: :json_archive).call.data
+      end
+
+      let(:addressed_target_project) { create(:project) }
+
+      it 'exports + imports addressed_by_rule_id with the correct cross-instance FK' do
+        result = import_archive(addressed_zip, addressed_target_project, include_reviews: true)
+        expect(result).to be_success
+
+        imported = addressed_target_project.components.find_by(name: addressed_component.name)
+        imported_rules = imported.rules.order(:rule_id).to_a
+        round = Review.where(comment: 'addressed-by round-trip').last
+        expect(round.triage_status).to eq('addressed_by')
+        expect(round.addressed_by_rule_id).to eq(imported_rules[1].id)
+      end
+    end
+
     context 'with missing SRG' do
       it 'fails when required SRG is not in the system' do
         modified_zip = modify_manifest_srg(single_backup_zip, 'NONEXISTENT-SRG-ID-12345')

@@ -184,6 +184,9 @@ module Export
         all_reviews = rules_collection.flat_map { |rule| rule.reviews.order(:created_at).map { |r| [r, rule] } }
         original_ids = all_reviews.filter_map { |r, _| r.original_commentable_id }.uniq
         @original_rule_id_map = original_ids.any? ? BaseRule.where(id: original_ids).pluck(:id, :rule_id).to_h : {}
+        # Same BaseRule.id → stable rule_id string pattern for addressed_by FK.
+        addressed_ids = all_reviews.filter_map { |r, _| r.addressed_by_rule_id }.uniq
+        @addressed_by_rule_id_map = addressed_ids.any? ? BaseRule.where(id: addressed_ids).pluck(:id, :rule_id).to_h : {}
         all_reviews.map { |review, rule| serialize_review(review, rule) }
       end
 
@@ -210,8 +213,26 @@ module Export
           responding_to_external_id: review.responding_to_review_id,
           duplicate_of_external_id: review.duplicate_of_review_id,
           original_rule_id: review.original_commentable_id ? @original_rule_id_map[review.original_commentable_id] : nil,
-          created_at: review.created_at&.iso8601
+          # Stable rule_id string (not the cross-instance-unstable DB id); the
+          # import side remaps via rule_id_map in ReviewBuilder#lifecycle_attrs.
+          addressed_by_rule_id: review.addressed_by_rule_id ? @addressed_by_rule_id_map[review.addressed_by_rule_id] : nil,
+          created_at: review.created_at&.iso8601,
+          # Microsecond precision: merge ordering (vulcan-v3.x-480) needs
+          # sub-second resolution to compare review states across instances.
+          updated_at: review.updated_at&.iso8601(6),
+          reactions: serialize_reactions(review)
         }
+      end
+
+      def serialize_reactions(review)
+        review.reactions.includes(:user).map do |r|
+          {
+            id: r.id,
+            user_email: r.user&.email,
+            kind: r.kind,
+            created_at: r.created_at&.iso8601(6)
+          }
+        end
       end
     end
   end

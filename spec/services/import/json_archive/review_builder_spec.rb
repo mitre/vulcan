@@ -278,4 +278,28 @@ RSpec.describe Import::JsonArchive::ReviewBuilder do
       expect(result.warnings).to include(a_string_matching(/8004.*no commenter attribution/i))
     end
   end
+
+  # vulcan-v3.x-480.5 (merge prerequisite): lifecycle_attrs originally ignored
+  # addressed_by_rule_id, so importing a review with triage_status='addressed_by'
+  # failed the addressed_by_status_requires_rule validation in drop_invalid_reviews.
+  # The archive carries the stable rule_id string; the importer must remap to
+  # the new local BaseRule.id via rule_id_map (same pattern as original_rule_id).
+  describe '#build_all addressed_by support' do
+    it 'imports review with triage_status addressed_by and maps addressed_by_rule_id via rule_id_map' do
+      data = [review_attrs(
+        external_id: 4001,
+        comment: 'addressed by rule B',
+        triage_status: 'addressed_by',
+        addressed_by_rule_id: rule_b.rule_id
+      )]
+      count = described_class.new(data, rule_id_map, result).build_all
+      expect(count).to eq(1)
+      expect(result.warnings).to be_empty
+
+      review = Review.find_by(comment: 'addressed by rule B')
+      expect(review).to be_present
+      expect(review.triage_status).to eq('addressed_by')
+      expect(review.addressed_by_rule_id).to eq(rule_b.id)
+    end
+  end
 end

@@ -148,6 +148,15 @@ module Import
         attrs[:triage_set_at] = parse_time(review_data['triage_set_at']) if review_data['triage_set_at']
         attrs[:adjudicated_at] = parse_time(review_data['adjudicated_at']) if review_data['adjudicated_at']
 
+        # Cross-instance FK remap: archive carries the stable rule_id string;
+        # look up the new local BaseRule.id via rule_id_map. If the addressing
+        # rule isn't in the archive, leave nil — addressed_by_status_requires_rule
+        # will drop the row via drop_invalid_reviews with an actionable warning.
+        if review_data['addressed_by_rule_id'].present?
+          mapped = @rule_id_map[review_data['addressed_by_rule_id']]
+          attrs[:addressed_by_rule_id] = mapped if mapped
+        end
+
         attrs.merge!(attribution_attrs(review_data, 'triage_set_by'))
         attrs.merge!(attribution_attrs(review_data, 'adjudicated_by'))
 
