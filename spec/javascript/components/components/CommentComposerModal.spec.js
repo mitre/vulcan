@@ -1,10 +1,29 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
-import axios from "axios";
 import CommentComposerModal from "@/components/components/CommentComposerModal.vue";
+import { createRuleReview, createComponentReview } from "@/api/reviewsApi";
+import { getComments } from "@/api/componentsApi";
 
-vi.mock("axios");
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/api/reviewsApi", () => ({
+  createRuleReview: vi.fn(() => Promise.resolve({ data: { toast: "ok" } })),
+  createComponentReview: vi.fn(() => Promise.resolve({ data: { toast: "ok" } })),
+}));
+
+vi.mock("@/api/componentsApi", () => ({
+  getComments: vi.fn(() => Promise.resolve({ data: { rows: [], pagination: { total: 0 } } })),
+}));
 
 const flushPromises = async (wrapper) => {
   await new Promise((resolve) => setTimeout(resolve, 0));
@@ -39,7 +58,7 @@ const baseProps = {
 describe("CommentComposerModal", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    axios.get.mockResolvedValue({ data: { rows: [], pagination: { total: 0 } } });
+    getComments.mockResolvedValue({ data: { rows: [], pagination: { total: 0 } } });
   });
 
   it("initializes section from the initialSection prop", () => {
@@ -52,7 +71,7 @@ describe("CommentComposerModal", () => {
   });
 
   it("shows a dedup banner with existing comments on the same rule + section", async () => {
-    axios.get.mockResolvedValue({
+    getComments.mockResolvedValue({
       data: {
         rows: [
           {
@@ -87,10 +106,10 @@ describe("CommentComposerModal", () => {
       stubs: visibleModalStub,
     });
     await flushPromises(w);
-    axios.get.mockClear();
+    getComments.mockClear();
     w.vm.section = "fixtext";
     await flushPromises(w);
-    expect(axios.get).not.toHaveBeenCalled();
+    expect(getComments).not.toHaveBeenCalled();
   });
 
   // Refetches when ruleId changes (different rule = different conversation).
@@ -101,21 +120,16 @@ describe("CommentComposerModal", () => {
       stubs: visibleModalStub,
     });
     await flushPromises(w);
-    axios.get.mockClear();
+    getComments.mockClear();
     await w.setProps({ ruleId: 99 });
     await flushPromises(w);
-    expect(axios.get).toHaveBeenCalledWith(
-      "/components/42/comments",
-      expect.objectContaining({
-        params: expect.objectContaining({
-          rule_id: 99,
-          triage_status: "all",
-        }),
-      }),
-    );
+    expect(getComments).toHaveBeenCalledWith(42, expect.objectContaining({
+      rule_id: 99,
+      triage_status: "all",
+    }));
     // No section param — fetch is rule-scoped, not section-scoped.
-    const call = axios.get.mock.calls.find(([url]) => url === "/components/42/comments");
-    expect(call[1].params.section).toBeUndefined();
+    const call = getComments.mock.calls.find(([id]) => id === 42);
+    expect(call[1].section).toBeUndefined();
   });
 
   // Prop sync: when the parent updates :initial-section after the modal
@@ -225,7 +239,7 @@ describe("CommentComposerModal", () => {
   });
 
   it("submits with responding_to_review_id when in reply mode", async () => {
-    axios.post.mockResolvedValue({ data: { toast: "ok" } });
+    createRuleReview.mockResolvedValue({ data: { toast: "ok" } });
     const w = mount(CommentComposerModal, {
       localVue,
       propsData: baseProps,
@@ -235,19 +249,14 @@ describe("CommentComposerModal", () => {
     w.vm.commentText = "Replying to that";
     await w.vm.$nextTick();
     await w.vm.submit();
-    expect(axios.post).toHaveBeenCalledWith(
-      "/rules/7/reviews",
-      expect.objectContaining({
-        review: expect.objectContaining({
-          comment: "Replying to that",
-          responding_to_review_id: 42,
-        }),
-      }),
-    );
+    expect(createRuleReview).toHaveBeenCalledWith(7, expect.objectContaining({
+      comment: "Replying to that",
+      responding_to_review_id: 42,
+    }));
   });
 
   it("posts to /rules/:id/reviews with section + component_id on submit", async () => {
-    axios.post.mockResolvedValue({ data: { toast: "ok" } });
+    createRuleReview.mockResolvedValue({ data: { toast: "ok" } });
     const w = mount(CommentComposerModal, {
       localVue,
       propsData: baseProps,
@@ -259,17 +268,12 @@ describe("CommentComposerModal", () => {
     await w.vm.submit();
     await flushPromises(w);
 
-    expect(axios.post).toHaveBeenCalledWith(
-      "/rules/7/reviews",
-      expect.objectContaining({
-        review: expect.objectContaining({
-          action: "comment",
-          comment: "my new comment",
-          section: "check_content",
-          component_id: 42,
-        }),
-      }),
-    );
+    expect(createRuleReview).toHaveBeenCalledWith(7, expect.objectContaining({
+      action: "comment",
+      comment: "my new comment",
+      section: "check_content",
+      component_id: 42,
+    }));
     expect(w.emitted("posted")).toBeTruthy();
   });
 
@@ -279,7 +283,7 @@ describe("CommentComposerModal", () => {
         toast: { title: "Comment posted.", message: ["Posted on parent control CNTR-00-000030"], variant: "success" },
       },
     };
-    axios.post.mockResolvedValue(successResponse);
+    createRuleReview.mockResolvedValue(successResponse);
     const w = mount(CommentComposerModal, {
       localVue,
       propsData: baseProps,
@@ -296,7 +300,7 @@ describe("CommentComposerModal", () => {
   });
 
   it("shows default success message when toast has no message", async () => {
-    axios.post.mockResolvedValue({
+    createRuleReview.mockResolvedValue({
       data: { toast: { title: "Comment posted.", message: [""], variant: "success" } },
     });
     const w = mount(CommentComposerModal, {
@@ -314,7 +318,7 @@ describe("CommentComposerModal", () => {
   });
 
   it("posts with responding_to_review_id when in reply mode", async () => {
-    axios.post.mockResolvedValue({ data: { toast: "ok" } });
+    createRuleReview.mockResolvedValue({ data: { toast: "ok" } });
     const w = mount(CommentComposerModal, {
       localVue,
       propsData: { ...baseProps, replyToReviewId: 99 },
@@ -326,7 +330,7 @@ describe("CommentComposerModal", () => {
     await w.vm.submit();
     await flushPromises(w);
 
-    expect(axios.post.mock.calls[0][1].review.responding_to_review_id).toBe(99);
+    expect(createRuleReview.mock.calls[0][1].responding_to_review_id).toBe(99);
   });
 
   it("disables submit when comment text is empty", () => {
@@ -344,7 +348,7 @@ describe("CommentComposerModal", () => {
   });
 
   it("surfaces server errors via AlertMixin without crashing", async () => {
-    axios.post.mockRejectedValueOnce({ response: { status: 422, data: {} } });
+    createRuleReview.mockRejectedValueOnce({ response: { status: 422, data: {} } });
     const w = mount(CommentComposerModal, {
       localVue,
       propsData: baseProps,
