@@ -53,11 +53,13 @@ export function getProjectComments(projectId, params) {
 }
 
 export function exportProjectData(projectId, type, options = {}) {
-  let url = `/projects/${projectId}/export/${type}?component_ids=${options.componentIds.join(",")}`;
-  if (options.mode) url += `&mode=${options.mode}`;
-  if (options.includeSrg) url += `&include_srg=true`;
-  if (options.includeMemberships === false) url += `&include_memberships=false`;
-  if (options.excludeSatisfiedBy) url += `&exclude_satisfied_by=true`;
+  const params = new URLSearchParams();
+  params.set("component_ids", options.componentIds.join(","));
+  if (options.mode) params.set("mode", options.mode);
+  if (options.includeSrg) params.set("include_srg", "true");
+  if (options.includeMemberships === false) params.set("include_memberships", "false");
+  if (options.excludeSatisfiedBy) params.set("exclude_satisfied_by", "true");
+  const url = `/projects/${projectId}/export/${type}?${params.toString()}`;
   return api.get(url).then(() => url);
 }
 

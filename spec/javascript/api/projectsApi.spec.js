@@ -111,7 +111,7 @@ describe("projectsApi", () => {
     it("builds URL with all params, calls GET, and resolves to URL", async () => {
       api.get.mockResolvedValue({ data: {} });
       const expectedUrl =
-        "/projects/1/export/csv?component_ids=10,20&mode=working_copy&include_srg=true&include_memberships=false&exclude_satisfied_by=true";
+        "/projects/1/export/csv?component_ids=10%2C20&mode=working_copy&include_srg=true&include_memberships=false&exclude_satisfied_by=true";
 
       const url = await exportProjectData(1, "csv", {
         componentIds: [10, 20],
@@ -123,6 +123,16 @@ describe("projectsApi", () => {
 
       expect(api.get).toHaveBeenCalledWith(expectedUrl);
       expect(url).toBe(expectedUrl);
+    });
+
+    it("encodes mode parameter to prevent XSS", async () => {
+      api.get.mockResolvedValue({ data: {} });
+      const url = await exportProjectData(1, "csv", {
+        componentIds: [1],
+        mode: "evil&script=<img src=x>",
+      });
+      expect(url).not.toContain("<img");
+      expect(url).toContain("evil%26script%3D%3Cimg+src%3Dx%3E");
     });
 
     it("builds URL with only required params", async () => {

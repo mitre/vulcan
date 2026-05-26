@@ -46,6 +46,7 @@ export function deleteAccount() {
   return api.delete("/users");
 }
 
+// No { user: } wrapping — Rails controller reads params[:current_password] directly
 export function unlinkIdentity(payload) {
   return api.post("/users/unlink_identity", payload);
 }
