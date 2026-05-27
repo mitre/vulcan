@@ -21,6 +21,10 @@ class RulesController < ApplicationController
                                          srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
     @rules_json = RuleBlueprint.render(@rules, view: :editor)
     @component_json = ComponentBlueprint.render(@component, view: :editor)
+    respond_to do |format|
+      format.html
+      format.json { render body: @rules_json, content_type: 'application/json' }
+    end
   end
 
   def search

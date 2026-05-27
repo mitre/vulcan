@@ -140,6 +140,10 @@ group :development, :test do
   gem 'rspec-rails', '~> 6.0'
   # Load environment variables from .env files in development and test
   gem 'dotenv-rails'
+  # OpenAPI 3.2 contract testing (MITRE forks until upstream merges 3.2 support)
+  # Upstream PRs: json_schemer#230, openapi_first#479
+  gem 'json_schemer', github: 'aaronlippold/json_schemer', branch: 'feat/openapi-3.2-support'
+  gem 'openapi_first', github: 'aaronlippold/openapi_first', branch: 'feat/openapi-3.2-support'
 end
 
 # Windows and Mac do not include zoneinfo files, so bundle the tzinfo-data gem

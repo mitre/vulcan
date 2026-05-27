@@ -18,6 +18,10 @@ class UsersController < ApplicationController
                         .order(created_at: :desc)
                         .limit(200)
                         .map(&:format)
+    respond_to do |format|
+      format.html
+      format.json { render json: @users }
+    end
   end
 
   def admin_create
