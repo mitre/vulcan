@@ -36,14 +36,56 @@
         </div>
       </b-col>
       <b-col md="10">
+        <!-- Visual stepper -->
+        <div class="diff-stepper d-flex align-items-center my-3">
+          <div class="text-center">
+            <div
+              class="step-circle rounded-circle d-inline-flex align-items-center justify-content-center"
+              :class="baseComponentId ? 'bg-success text-white' : 'bg-primary text-white'"
+              style="width: 36px; height: 36px; font-weight: 600"
+            >
+              <b-icon v-if="baseComponentId" icon="check-lg" class="bi-check-lg" />
+              <span v-else>1</span>
+            </div>
+            <div
+              class="small mt-1"
+              :class="baseComponentId ? 'text-success' : 'text-primary font-weight-bold'"
+            >
+              Select base
+            </div>
+          </div>
+          <div
+            class="flex-grow-0 mx-2"
+            :class="baseComponentId ? 'bg-success' : 'bg-secondary'"
+            style="width: 80px; height: 2px"
+          />
+          <div class="text-center">
+            <div
+              class="step-circle rounded-circle d-inline-flex align-items-center justify-content-center"
+              :class="baseComponentId ? 'bg-primary text-white' : 'bg-light text-muted border'"
+              style="width: 36px; height: 36px; font-weight: 600"
+            >
+              2
+            </div>
+            <div
+              class="small mt-1"
+              :class="baseComponentId ? 'text-primary font-weight-bold' : 'text-muted'"
+            >
+              Compare
+            </div>
+          </div>
+        </div>
+        <!-- Selection controls -->
         <b-input-group size="sm" class="mb-2">
           <b-input-group-prepend>
             <b-input-group-text class="rounded-0">Base (older)</b-input-group-text>
           </b-input-group-prepend>
           <FilterDropdown
             id="baseComponent"
+            ref="baseDropdown"
             v-model="baseComponentId"
             :options="componentOptions"
+            placeholder="Pick the older version"
             aria-label="Base component for diff"
             @input="updateCompareList"
           />
@@ -52,8 +94,11 @@
           </b-input-group-prepend>
           <FilterDropdown
             id="diffComponent"
+            ref="compareDropdown"
             v-model="diffComponentId"
             :options="compareListOptions"
+            :disabled="!baseComponentId"
+            :placeholder="baseComponentId ? 'Pick the newer version' : 'Select a base first'"
             aria-label="Compare component for diff"
             @input="compareComponents"
           />
