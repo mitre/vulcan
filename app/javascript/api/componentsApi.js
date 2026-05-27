@@ -57,8 +57,11 @@ export function searchBasedOnSameSrg(componentId) {
   return api.get(`/components/${componentId}/related`);
 }
 
+// vulcan-v3.x-oxz: peer-shaped diff endpoint with query params + envelope.
 export function compareComponents(baseId, diffId) {
-  return api.get(`/components/${baseId}/compare/${diffId}`);
+  return api.get("/api/components/compare", {
+    params: { base_id: baseId, diff_id: diffId },
+  });
 }
 
 export function getComponents() {

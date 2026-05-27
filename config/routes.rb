@@ -124,8 +124,8 @@ Rails.application.routes.draw do
   # Export SRG
   get '/srgs/:id/export/:type', to: 'security_requirements_guides#export'
   # /related is defined ABOVE /components/:id/:stig_id (see comment there)
-  # Compare components
-  get '/components/:id/compare/:diff_id', to: 'components#compare'
+  # vulcan-v3.x-oxz: peer-shaped diff endpoint moved to /api/components/compare
+  # (see Api namespace below). The old sub-resource path is removed.
   # Detect SRG from spreadsheet (auto-populate dropdown on import)
   post '/components/detect_srg', to: 'components#detect_srg'
   # Spreadsheet round-trip update
@@ -152,6 +152,10 @@ Rails.application.routes.draw do
     get 'search/global', to: 'search#global'
     get 'users/search', to: 'user_search#index'
     get 'version', to: 'version#show'
+    # vulcan-v3.x-oxz: peer-shaped diff endpoint. Route points at the existing
+    # ComponentsController#compare action (not a new Api::ComponentsController)
+    # to keep blast radius small for one endpoint.
+    get 'components/compare', to: '/components#compare'
   end
 
   # AC-8: Server-side consent acknowledgment

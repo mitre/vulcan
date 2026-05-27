@@ -313,15 +313,30 @@ RSpec.describe 'Components' do
     end
   end
 
-  describe 'GET /components/:id/compare/:diff_id' do
-    it 'returns diff data for two components' do
-      # Create a second component on the same SRG for comparison
+  # vulcan-v3.x-oxz: compare moved from sub-resource path
+  # (/components/:id/compare/:diff_id, which implied parent-child) to peer
+  # query params with an envelope response.
+  describe 'GET /api/components/compare' do
+    it 'returns diff with metadata envelope' do
       other_component = create(:component, project: project)
-
-      get "/components/#{component.id}/compare/#{other_component.id}",
+      get '/api/components/compare',
+          params: { base_id: component.id, diff_id: other_component.id },
           headers: { 'Accept' => application_json }
 
       expect(response).to have_http_status(:success)
+      json = response.parsed_body
+      expect(json).to have_key('data')
+      expect(json).to have_key('meta')
+      expect(json['meta']['base_id']).to eq(component.id)
+      expect(json['meta']['diff_id']).to eq(other_component.id)
+      expect(json['meta']).to have_key('rules_count')
+    end
+
+    it 'returns 404 when either component does not exist' do
+      get '/api/components/compare',
+          params: { base_id: component.id, diff_id: 999_999 },
+          headers: { 'Accept' => application_json }
+      expect(response).to have_http_status(:not_found)
     end
   end
 

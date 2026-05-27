@@ -397,15 +397,23 @@ class ComponentsController < ApplicationController
     }
   end
 
+  # vulcan-v3.x-oxz: reads peer ids from query params and returns an envelope
+  # with data + meta (base_id/diff_id/rules_count). Wired at GET
+  # /api/components/compare?base_id=&diff_id=.
   def compare
-    base_component = Component.find_by(id: params[:id])
+    base_component = Component.find_by(id: params[:base_id])
     diff_component = Component.find_by(id: params[:diff_id])
     return head :not_found unless base_component && diff_component
 
     base = base_component.rules.pluck(:rule_id, :inspec_control_file).to_h
     diff = diff_component.rules.pluck(:rule_id, :inspec_control_file).to_h
-    render json: base.keys.union(diff.keys).sort.index_with { |rule_id|
+    rule_ids = base.keys.union(diff.keys).sort
+    data = rule_ids.index_with do |rule_id|
       { base: base[rule_id], diff: diff[rule_id], changed: base[rule_id] != diff[rule_id] }
+    end
+    render json: {
+      data: data,
+      meta: { base_id: base_component.id, diff_id: diff_component.id, rules_count: rule_ids.size }
     }
   end
 
@@ -736,7 +744,9 @@ class ComponentsController < ApplicationController
 
   # Authorize access to both components in a compare operation
   def authorize_compare_access
-    base = Component.find_by(id: params[:id])
+    # vulcan-v3.x-oxz: peer params (base_id/diff_id) instead of the old
+    # sub-resource :id/:diff_id.
+    base = Component.find_by(id: params[:base_id])
     diff = Component.find_by(id: params[:diff_id])
 
     [base, diff].each do |component|

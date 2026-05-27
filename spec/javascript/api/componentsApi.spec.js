@@ -118,10 +118,12 @@ describe("componentsApi", () => {
     expect(api.post).toHaveBeenCalledWith("/components/history", { component_id: 5 });
   });
 
-  it("compareComponents calls GET /components/:base/compare/:diff", async () => {
+  it("compareComponents calls GET /api/components/compare with query params (vulcan-v3.x-oxz)", async () => {
     api.get.mockResolvedValue({ data: {} });
     await compareComponents(5, 10);
-    expect(api.get).toHaveBeenCalledWith("/components/5/compare/10");
+    expect(api.get).toHaveBeenCalledWith("/api/components/compare", {
+      params: { base_id: 5, diff_id: 10 },
+    });
   });
 
   it("getComponents calls GET /components", async () => {
