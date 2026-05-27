@@ -97,6 +97,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_26_130300) do
     t.string "legacy_ids"
     t.jsonb "locked_fields", default: {}
     t.index ["component_id", "deleted_at", "rule_severity"], name: "index_base_rules_on_component_deleted_severity"
+    t.index ["component_id", "deleted_at", "status"], name: "index_base_rules_on_component_deleted_status"
+    t.index ["component_id", "locked", "review_requestor_id"], name: "index_base_rules_on_component_locked_requestor"
     t.index ["component_id"], name: "index_base_rules_on_component_id"
     t.index ["deleted_at"], name: "index_base_rules_on_deleted_at"
     t.index ["review_requestor_id"], name: "index_base_rules_on_review_requestor_id"

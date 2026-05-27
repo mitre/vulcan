@@ -44,6 +44,35 @@ bundle exec rspec -e "should validate presence"
 > `rake spec:parallel` task and `bin/parallel_rspec` binstub cap at 8, leaving
 > headroom for the database and OS.
 
+### Runtime-Balanced Distribution
+
+Parallel tests distribute spec files across workers. Without timing data, files are
+split by filesize — which often puts several heavy specs on one worker while others
+finish early and sit idle.
+
+**How it works:**
+
+1. `.rspec_parallel` configures `ParallelTests::RSpec::RuntimeLogger` to write
+   per-file timings to `tmp/parallel_runtime_rspec.log` after each run.
+2. On subsequent runs, `parallel_tests` reads the log and groups files so each
+   worker gets roughly equal total runtime.
+3. The first run (no log yet) falls back to filesize-based distribution.
+
+**Files involved:**
+
+| File | Purpose |
+|------|---------|
+| `.rspec_parallel` | RSpec options for parallel runs (runtime logger config) |
+| `bin/parallel_rspec` | Wrapper that caps processors at 8 |
+| `tmp/parallel_runtime_rspec.log` | Auto-generated timing data (gitignored, machine-specific) |
+| `lib/tasks/parallel_sync.rake` | Auto-syncs test DB schema after migrations |
+
+**If tests seem slow or unbalanced:** Delete `tmp/parallel_runtime_rspec.log` and
+run the suite once to regenerate it. The log becomes stale when spec files are
+added, removed, or significantly change in runtime.
+
+See the [parallel_tests README](https://github.com/grosser/parallel_tests#even-test-group-runtimes) for details.
+
 ### Test Types
 
 ```bash
