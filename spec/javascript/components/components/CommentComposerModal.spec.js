@@ -123,10 +123,13 @@ describe("CommentComposerModal", () => {
     getComments.mockClear();
     await w.setProps({ ruleId: 99 });
     await flushPromises(w);
-    expect(getComments).toHaveBeenCalledWith(42, expect.objectContaining({
-      rule_id: 99,
-      triage_status: "all",
-    }));
+    expect(getComments).toHaveBeenCalledWith(
+      42,
+      expect.objectContaining({
+        rule_id: 99,
+        triage_status: "all",
+      }),
+    );
     // No section param — fetch is rule-scoped, not section-scoped.
     const call = getComments.mock.calls.find(([id]) => id === 42);
     expect(call[1].section).toBeUndefined();
@@ -249,10 +252,13 @@ describe("CommentComposerModal", () => {
     w.vm.commentText = "Replying to that";
     await w.vm.$nextTick();
     await w.vm.submit();
-    expect(createRuleReview).toHaveBeenCalledWith(7, expect.objectContaining({
-      comment: "Replying to that",
-      responding_to_review_id: 42,
-    }));
+    expect(createRuleReview).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({
+        comment: "Replying to that",
+        responding_to_review_id: 42,
+      }),
+    );
   });
 
   it("posts to /rules/:id/reviews with section + component_id on submit", async () => {
@@ -268,19 +274,26 @@ describe("CommentComposerModal", () => {
     await w.vm.submit();
     await flushPromises(w);
 
-    expect(createRuleReview).toHaveBeenCalledWith(7, expect.objectContaining({
-      action: "comment",
-      comment: "my new comment",
-      section: "check_content",
-      component_id: 42,
-    }));
+    expect(createRuleReview).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({
+        action: "comment",
+        comment: "my new comment",
+        section: "check_content",
+        component_id: 42,
+      }),
+    );
     expect(w.emitted("posted")).toBeTruthy();
   });
 
   it("shows inline success message on a successful post", async () => {
     const successResponse = {
       data: {
-        toast: { title: "Comment posted.", message: ["Posted on parent control CNTR-00-000030"], variant: "success" },
+        toast: {
+          title: "Comment posted.",
+          message: ["Posted on parent control CNTR-00-000030"],
+          variant: "success",
+        },
       },
     };
     createRuleReview.mockResolvedValue(successResponse);
@@ -315,6 +328,27 @@ describe("CommentComposerModal", () => {
     await flushPromises(w);
 
     expect(w.vm.successMessage).toBe("Comment posted.");
+  });
+
+  // vulcan-v3.x-05f.6: when the composer was opened for a child rule
+  // (parentRuleId set), the soft-redirect fallback message should name the
+  // parent control so the user knows where their comment landed.
+  it("falls back to 'posted on parent control …' when parentRuleId is set", async () => {
+    createRuleReview.mockResolvedValue({
+      data: { toast: { title: "Comment posted.", message: [""], variant: "success" } },
+    });
+    const w = mount(CommentComposerModal, {
+      localVue,
+      propsData: { ...baseProps, parentRuleId: 99, parentRuleName: "CNTR-00-000030" },
+      stubs: visibleModalStub,
+    });
+    vi.spyOn(w.vm.$bvModal, "hide").mockImplementation(() => {});
+
+    w.vm.commentText = "test";
+    await w.vm.submit();
+    await flushPromises(w);
+
+    expect(w.vm.successMessage).toBe("Comment posted on parent control CNTR-00-000030.");
   });
 
   it("posts with responding_to_review_id when in reply mode", async () => {
