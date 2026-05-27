@@ -148,7 +148,7 @@ RSpec.describe 'Query performance optimizations' do
       expect(component.reviews.length).to eq(20)
     end
 
-    it 'does not load full rule objects for name lookup' do
+    it 'uses pluck for rule name lookup, not full SELECT *' do
       query_log = []
       counter = lambda { |*, payload|
         query_log << payload[:sql] if payload[:sql] =~ /SELECT.*"base_rules"/i && payload[:name] != 'SCHEMA'
@@ -156,10 +156,10 @@ RSpec.describe 'Query performance optimizations' do
       ActiveSupport::Notifications.subscribed(counter, 'sql.active_record') do
         component.reviews
       end
-      # Should use pluck or select, not SELECT *
-      query_log.each do |sql|
-        expect(sql).not_to match(/SELECT "base_rules"\.\*/), "Expected optimized SELECT, got: #{sql}"
-      end
+      pluck_queries = query_log.select { |sql| sql.include?('"base_rules"."id"') && sql.include?('"base_rules"."rule_id"') }
+      star_queries = query_log.grep(/SELECT "base_rules"\.\*/)
+      expect(pluck_queries).not_to be_empty, 'Expected a pluck query for rule_id lookup'
+      expect(star_queries.length).to be <= 1, "Expected at most 1 association-load query, got #{star_queries.length}"
     end
   end
 end

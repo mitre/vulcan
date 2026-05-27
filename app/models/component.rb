@@ -994,4 +994,5 @@ class Component < ApplicationRecord
       rule_updated_at: rule&.updated_at&.iso8601
     }
   end
+  public :serialize_rule_content
 end
