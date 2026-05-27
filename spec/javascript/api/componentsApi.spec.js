@@ -112,10 +112,10 @@ describe("componentsApi", () => {
     expect(api.patch).toHaveBeenCalledWith("/components/5/apply_spreadsheet_update", fd, {});
   });
 
-  it("getComponentHistory calls POST /components/history", async () => {
-    api.post.mockResolvedValue({ data: {} });
+  it("getComponentHistory calls GET /components/history with query params (vulcan-v3.x-dyd)", async () => {
+    api.get.mockResolvedValue({ data: {} });
     await getComponentHistory({ component_id: 5 });
-    expect(api.post).toHaveBeenCalledWith("/components/history", { component_id: 5 });
+    expect(api.get).toHaveBeenCalledWith("/components/history", { params: { component_id: 5 } });
   });
 
   it("compareComponents calls GET /api/components/compare with query params (vulcan-v3.x-oxz)", async () => {

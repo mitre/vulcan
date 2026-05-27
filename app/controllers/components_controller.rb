@@ -449,8 +449,8 @@ class ComponentsController < ApplicationController
         end
 
         history << {
-          baseComponent: prev_component,
-          diffComponent: component,
+          base_component: prev_component,
+          diff_component: component,
           changes: changes
         }
       end

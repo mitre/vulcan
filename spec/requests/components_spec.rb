@@ -340,6 +340,32 @@ RSpec.describe 'Components' do
     end
   end
 
+  # vulcan-v3.x-dyd: revision history was POST (read-only query, wrong method)
+  # with mixed camelCase/snake_case keys. Now GET with all-snake_case keys.
+  describe 'GET /components/history' do
+    let!(:versioned_initial) do
+      create(:component, project: project, name: 'Versioned Comp', version: 1, release: 1)
+    end
+    let!(:versioned_revision) do
+      create(:component, project: project, name: 'Versioned Comp', version: 1, release: 2)
+    end
+
+    it 'returns snake_case keys (base_component, diff_component)' do
+      get '/components/history',
+          params: { project_id: project.id, name: 'Versioned Comp' },
+          headers: { 'Accept' => application_json }
+
+      expect(response).to have_http_status(:success)
+      json = response.parsed_body
+      expect(json).to be_an(Array)
+      diff_entry = json.find { |e| e.key?('base_component') }
+      expect(diff_entry).to be_present, "expected a diff entry with base_component key; got #{json.inspect}"
+      expect(diff_entry).to have_key('diff_component')
+      expect(diff_entry).not_to have_key('baseComponent')
+      expect(diff_entry).not_to have_key('diffComponent')
+    end
+  end
+
   # REQUIREMENT: Activity panel (B5) needs a dedicated histories endpoint
   # so the frontend can re-fetch after rule saves without full page reload.
   describe 'GET /components/:id/histories' do

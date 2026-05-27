@@ -49,7 +49,7 @@ export function getHistories(componentId) {
 }
 
 export function getComponentHistory(payload) {
-  return api.post("/components/history", payload);
+  return api.get("/components/history", { params: payload });
 }
 
 // vulcan-v3.x-aik: renamed from /search/based_on_same_srg for clarity.
