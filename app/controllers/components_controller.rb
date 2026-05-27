@@ -377,6 +377,7 @@ class ComponentsController < ApplicationController
 
     srg_title = @component.based_on.title
     accessible_project_ids = current_user.available_projects.ids
+    allowed_keys = %w[id name version prefix release project_id project_name]
     render json: Component.where(based_on: SecurityRequirementsGuide.where(title: srg_title))
                           .where.not(id: params[:id])
                           .where(project_id: accessible_project_ids)
@@ -388,7 +389,7 @@ class ComponentsController < ApplicationController
                           .joins(:project)
                           .select('components.id, components.name, components.version, components.prefix, ' \
                                   'components.release, components.project_id, projects.name AS project_name')
-                          .map(&:attributes)
+                          .map { |c| c.attributes.slice(*allowed_keys) }
   end
 
   def compare
@@ -435,8 +436,8 @@ class ComponentsController < ApplicationController
         end
 
         history << {
-          baseComponent: prev_component,
-          diffComponent: component,
+          base_component: prev_component,
+          diff_component: component,
           changes: changes
         }
       end

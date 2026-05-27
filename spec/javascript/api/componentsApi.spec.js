@@ -110,10 +110,12 @@ describe("componentsApi", () => {
     expect(api.patch).toHaveBeenCalledWith("/components/5/apply_spreadsheet_update", fd, {});
   });
 
-  it("getComponentHistory calls POST /components/history", async () => {
-    api.post.mockResolvedValue({ data: {} });
-    await getComponentHistory({ component_id: 5 });
-    expect(api.post).toHaveBeenCalledWith("/components/history", { component_id: 5 });
+  it("getComponentHistory calls GET /components/history with query params", async () => {
+    api.get.mockResolvedValue({ data: {} });
+    await getComponentHistory({ project_id: 1, name: "TestComp" });
+    expect(api.get).toHaveBeenCalledWith("/components/history", {
+      params: { project_id: 1, name: "TestComp" },
+    });
   });
 
   it("compareComponents calls GET /components/:base/compare/:diff", async () => {

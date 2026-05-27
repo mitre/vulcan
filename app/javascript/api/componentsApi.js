@@ -60,9 +60,9 @@ export function getHistories(componentId) {
   return api.get(`/components/${componentId}/histories`);
 }
 
-/** @param {Object} data - { base_id, diff_id } @returns {Promise} */
-export function getComponentHistory(data) {
-  return api.post("/components/history", data);
+/** @param {Object} params - { project_id, name } @returns {Promise} */
+export function getComponentHistory(params) {
+  return api.get("/components/history", { params });
 }
 
 /** @param {number} componentId @returns {Promise} */

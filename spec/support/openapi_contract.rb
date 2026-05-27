@@ -13,4 +13,15 @@ OpenapiFirst::Test.setup do |test|
   end
 
   test.ignore_unknown_response_status = true
+
+  # Observe all requests through the Rails app so every request spec
+  # automatically contributes to API coverage tracking. Validation errors
+  # are logged (not raised) — the explicit contract tests in
+  # spec/contracts/ are where schema mismatches should hard-fail.
+  test.observe(Rails.application, api: :vulcan)
+  test.response_raise_error = false
+
+  # Warn on incomplete coverage instead of hard-failing (exit 2).
+  # Coverage grows incrementally as contract tests expand.
+  test.report_coverage = :warn
 end

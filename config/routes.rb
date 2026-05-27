@@ -50,6 +50,11 @@ Rails.application.routes.draw do
   resources :stigs, only: %i[index show create destroy]
 
   resources :memberships, only: %i[create update destroy]
+
+  # Revision history — must precede resources :components so /components/history
+  # is not captured by the shallow GET /components/:id show route
+  get '/components/history', to: 'components#history'
+
   resources :projects, except: %i[new edit] do
     resources :components, only: %i[show create update destroy], shallow: true do
       post 'lock', to: 'reviews#lock_controls'
@@ -111,8 +116,6 @@ Rails.application.routes.draw do
 
   # Make components#index not a child of project
   get '/components', to: 'components#index'
-  # Revision history between components
-  post '/components/history', to: 'components#history'
   # Export component
   get '/components/:id/export/:type', to: 'components#export'
   # Export STIG

@@ -288,14 +288,54 @@ RSpec.describe 'Components' do
 
   # REQUIREMENT: Diff viewer needs to find other components based on the same SRG.
   # The query uses DISTINCT + ORDER BY, which requires ORDER BY columns in SELECT list.
+  # NOTE: Component#based_on has a select(:srg_id, :title, :version) scope that omits :id,
+  # so passing `based_on: component.based_on` to create() would set a nil FK.
+  # Use the FK directly via security_requirements_guide_id.
   describe 'GET /components/:id/search/based_on_same_srg' do
-    it 'returns components based on the same SRG without 500 error' do
+    let!(:peer_component) do
+      create(:component, project: project,
+                         security_requirements_guide_id: component.security_requirements_guide_id,
+                         name: 'Peer SameSRG')
+    end
+
+    it 'returns components based on the same SRG' do
       get "/components/#{component.id}/search/based_on_same_srg",
           headers: { 'Accept' => application_json }
 
-      expect(response).to have_http_status(:success).or have_http_status(:not_found)
-      # Should never be a 500
-      expect(response).not_to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:success)
+      json = response.parsed_body
+      expect(json).to be_an(Array)
+      expect(json.pluck('id')).to include(peer_component.id)
+    end
+
+    it 'returns ONLY allowed fields — no AR timestamps or internal columns' do
+      get "/components/#{component.id}/search/based_on_same_srg",
+          headers: { 'Accept' => application_json }
+
+      json = response.parsed_body
+      expect(json).not_to be_empty, 'Expected at least one related component'
+
+      allowed_keys = %w[id name version prefix release project_id project_name]
+      json.each do |entry|
+        expect(entry.keys.sort).to eq(allowed_keys.sort),
+                                   "Expected only #{allowed_keys.sort}, got #{entry.keys.sort}"
+      end
+    end
+
+    it 'does NOT leak created_at, updated_at, or security_requirements_guide_id' do
+      get "/components/#{component.id}/search/based_on_same_srg",
+          headers: { 'Accept' => application_json }
+
+      json = response.parsed_body
+      expect(json).not_to be_empty
+
+      leaked_keys = %w[created_at updated_at security_requirements_guide_id
+                       component_id locked admin_name admin_email]
+      json.each do |entry|
+        leaked_keys.each do |key|
+          expect(entry).not_to have_key(key), "Leaked field: #{key}"
+        end
+      end
     end
   end
 
@@ -455,6 +495,49 @@ RSpec.describe 'Components' do
     it 'returns matching rules for normal search' do
       post "/components/#{component.id}/find", params: { find: rule.title.first(8) }, as: :json
       expect(response).to have_http_status(:ok)
+    end
+  end
+
+  describe 'GET /components/history' do
+    let_it_be(:comp_v1) do
+      create(:component, project: project, name: 'HistComp', version: 1, release: 1)
+    end
+    let_it_be(:comp_v2) do
+      create(:component, project: project, name: 'HistComp', version: 1, release: 2)
+    end
+
+    it 'responds to GET (not POST)' do
+      get '/components/history', params: { project_id: project.id, name: 'HistComp' },
+                                 headers: { 'Accept' => application_json }
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'rejects POST' do
+      post '/components/history', params: { project_id: project.id, name: 'HistComp' },
+                                  headers: { 'Accept' => application_json }
+      expect(response).to have_http_status(:not_found)
+        .or have_http_status(:method_not_allowed)
+    end
+
+    it 'returns snake_case keys in comparison entries' do
+      get '/components/history', params: { project_id: project.id, name: 'HistComp' },
+                                 headers: { 'Accept' => application_json }
+      json = response.parsed_body
+      comparison_entry = json.find { |e| e.is_a?(Hash) && e.key?('changes') }
+      skip('No comparison entry — only one version') unless comparison_entry
+
+      expect(comparison_entry).to have_key('base_component')
+      expect(comparison_entry).to have_key('diff_component')
+      expect(comparison_entry).not_to have_key('baseComponent')
+      expect(comparison_entry).not_to have_key('diffComponent')
+    end
+
+    it 'requires authentication' do
+      sign_out user
+      get '/components/history', params: { project_id: project.id, name: 'HistComp' },
+                                 headers: { 'Accept' => application_json }
+      expect(response).to have_http_status(:unauthorized)
+        .or redirect_to(new_user_session_path)
     end
   end
 end

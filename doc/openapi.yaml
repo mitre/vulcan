@@ -734,30 +734,52 @@ paths:
         4XX:
           "$ref": "#/components/responses/ErrorResponse"
   "/components/history":
-    post:
+    get:
       operationId: getComponentHistory
       tags:
       - Components
-      summary: Compare two component versions
-      requestBody:
+      summary: Revision history for a named component across versions
+      parameters:
+      - name: project_id
+        in: query
         required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                base_id:
-                  type: integer
-                diff_id:
-                  type: integer
+        schema:
+          type: integer
+        description: Project containing the component versions
+      - name: name
+        in: query
+        required: true
+        schema:
+          type: string
+        description: Component name to trace across versions
       responses:
         '200':
-          description: Diff between two component versions
+          description: Ordered revision history with per-version diffs
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                type: array
+                items:
+                  type: object
+                  properties:
+                    component:
+                      "$ref": "#/components/schemas/ComponentSummary"
+                    base_component:
+                      "$ref": "#/components/schemas/ComponentSummary"
+                    diff_component:
+                      "$ref": "#/components/schemas/ComponentSummary"
+                    changes:
+                      type: object
+                      additionalProperties:
+                        type: object
+                        properties:
+                          change:
+                            type: string
+                            enum: [added, removed, updated]
+                          base:
+                            type: object
+                          diff:
+                            type: object
         4XX:
           "$ref": "#/components/responses/ErrorResponse"
   "/components/{componentId}/search/based_on_same_srg":
@@ -2160,7 +2182,10 @@ components:
         action:
           type: string
         audited_changes:
-          type: object
+          oneOf:
+          - type: object
+          - type: string
+          - type: 'null'
         user_id:
           type:
           - integer

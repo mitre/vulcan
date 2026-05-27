@@ -37,13 +37,13 @@
             class="ml-3"
           >
             <p v-if="history.changes[rule_id].change === 'added'" class="mb-1">
-              {{ history.diffComponent.prefix }}-{{ rule_id }} was added
+              {{ history.diff_component.prefix }}-{{ rule_id }} was added
             </p>
             <p v-if="history.changes[rule_id].change === 'removed'" class="mb-1">
-              {{ history.baseComponent.prefix }}-{{ rule_id }} was removed
+              {{ history.base_component.prefix }}-{{ rule_id }} was removed
             </p>
             <p v-if="history.changes[rule_id].change === 'updated'" class="mb-1">
-              {{ history.baseComponent.prefix }}-{{ rule_id }} was updated
+              {{ history.base_component.prefix }}-{{ rule_id }} was updated
             </p>
           </div>
         </div>
