@@ -52,8 +52,9 @@ export function getComponentHistory(payload) {
   return api.post("/components/history", payload);
 }
 
+// vulcan-v3.x-aik: renamed from /search/based_on_same_srg for clarity.
 export function searchBasedOnSameSrg(componentId) {
-  return api.get(`/components/${componentId}/search/based_on_same_srg`);
+  return api.get(`/components/${componentId}/related`);
 }
 
 export function compareComponents(baseId, diffId) {

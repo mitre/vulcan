@@ -42,7 +42,9 @@ describe("componentsApi", () => {
   it("patchComponent wraps data in { component: data }", async () => {
     api.patch.mockResolvedValue({ data: {} });
     await patchComponent(5, { advanced_fields: true });
-    expect(api.patch).toHaveBeenCalledWith("/components/5", { component: { advanced_fields: true } });
+    expect(api.patch).toHaveBeenCalledWith("/components/5", {
+      component: { advanced_fields: true },
+    });
   });
 
   it("deleteComponent calls DELETE /components/:id", async () => {
@@ -90,10 +92,10 @@ describe("componentsApi", () => {
     expect(api.get).toHaveBeenCalledWith("/components/5/histories");
   });
 
-  it("searchBasedOnSameSrg calls GET /components/:id/search/based_on_same_srg", async () => {
+  it("searchBasedOnSameSrg calls GET /components/:id/related (vulcan-v3.x-aik)", async () => {
     api.get.mockResolvedValue({ data: {} });
     await searchBasedOnSameSrg(5);
-    expect(api.get).toHaveBeenCalledWith("/components/5/search/based_on_same_srg");
+    expect(api.get).toHaveBeenCalledWith("/components/5/related");
   });
 
   it("previewSpreadsheetUpdate calls POST /components/:id/preview_spreadsheet_update", async () => {

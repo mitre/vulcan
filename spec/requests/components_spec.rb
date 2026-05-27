@@ -286,16 +286,30 @@ RSpec.describe 'Components' do
     end
   end
 
-  # REQUIREMENT: Diff viewer needs to find other components based on the same SRG.
-  # The query uses DISTINCT + ORDER BY, which requires ORDER BY columns in SELECT list.
-  describe 'GET /components/:id/search/based_on_same_srg' do
+  # vulcan-v3.x-aik: renamed from /components/:id/search/based_on_same_srg to
+  # /components/:id/related for clarity; response is now an explicit field
+  # allowlist (no AR timestamps / internal FKs leaked).
+  describe 'GET /components/:id/related' do
     it 'returns components based on the same SRG without 500 error' do
-      get "/components/#{component.id}/search/based_on_same_srg",
-          headers: { 'Accept' => application_json }
+      get "/components/#{component.id}/related", headers: { 'Accept' => application_json }
 
       expect(response).to have_http_status(:success).or have_http_status(:not_found)
-      # Should never be a 500
       expect(response).not_to have_http_status(:internal_server_error)
+    end
+
+    it 'response does not leak AR timestamps or internal FKs' do
+      create(:component, project: project, name: 'Same-SRG Sibling',
+                         based_on: component.based_on)
+      get "/components/#{component.id}/related", headers: { 'Accept' => application_json }
+
+      expect(response).to have_http_status(:success)
+      json = response.parsed_body
+      expect(json).to be_an(Array)
+      next if json.empty? # tolerate empty result if visibility rules exclude the sibling
+
+      keys = json.first.keys
+      expect(keys).to include('id', 'name', 'version', 'prefix', 'release', 'project_id', 'project_name')
+      expect(keys).not_to include('created_at', 'updated_at', 'component_id', 'security_requirements_guide_id')
     end
   end
 

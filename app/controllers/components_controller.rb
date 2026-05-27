@@ -377,7 +377,7 @@ class ComponentsController < ApplicationController
 
     srg_title = @component.based_on.title
     accessible_project_ids = current_user.available_projects.ids
-    render json: Component.where(based_on: SecurityRequirementsGuide.where(title: srg_title))
+    components = Component.where(based_on: SecurityRequirementsGuide.where(title: srg_title))
                           .where.not(id: params[:id])
                           .where(project_id: accessible_project_ids)
                           .or(Component.where(based_on: SecurityRequirementsGuide.where(title: srg_title))
@@ -388,7 +388,13 @@ class ComponentsController < ApplicationController
                           .joins(:project)
                           .select('components.id, components.name, components.version, components.prefix, ' \
                                   'components.release, components.project_id, projects.name AS project_name')
-                          .map(&:attributes)
+    # Explicit allowlist — `.map(&:attributes)` leaked all AR columns
+    # (timestamps, internal FKs) for any consumer that bypassed the SELECT.
+    # vulcan-v3.x-aik.
+    render json: components.map { |c|
+      { id: c.id, name: c.name, version: c.version, prefix: c.prefix,
+        release: c.release, project_id: c.project_id, project_name: c.project_name }
+    }
   end
 
   def compare

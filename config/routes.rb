@@ -107,6 +107,10 @@ Rails.application.routes.draw do
     resources :reactions, only: %i[index create]
   end
   # Add deep linking to specific rule (stig_id of format XXXX-XX-000000)
+  # vulcan-v3.x-aik: keep specific named routes ABOVE the :stig_id catch-all,
+  # otherwise /components/:id/<anything> binds to components#show with
+  # :stig_id="<anything>" and rule-context filters 404 on a missing rule_id.
+  get '/components/:id/related', to: 'components#based_on_same_srg'
   get '/components/:id/:stig_id', to: 'components#show'
 
   # Make components#index not a child of project
@@ -119,8 +123,7 @@ Rails.application.routes.draw do
   get '/stigs/:id/export/:type', to: 'stigs#export'
   # Export SRG
   get '/srgs/:id/export/:type', to: 'security_requirements_guides#export'
-  # Components based on same srg
-  get '/components/:id/search/based_on_same_srg', to: 'components#based_on_same_srg'
+  # /related is defined ABOVE /components/:id/:stig_id (see comment there)
   # Compare components
   get '/components/:id/compare/:diff_id', to: 'components#compare'
   # Detect SRG from spreadsheet (auto-populate dropdown on import)
