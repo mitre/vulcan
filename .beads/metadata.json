@@ -1,7 +1,7 @@
 {
   "database": "dolt",
   "backend": "dolt",
-  "dolt_mode": "embedded",
-  "dolt_database": "vulcan",
+  "dolt_mode": "server",
+  "dolt_database": "vulcan_v2",
   "project_id": "cb49a1de-7945-4a6b-9c30-2cca1bdbe6dc"
 }
