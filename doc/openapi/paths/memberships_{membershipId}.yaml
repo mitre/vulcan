@@ -1,0 +1,43 @@
+parameters:
+  - name: membershipId
+    in: path
+    required: true
+    schema:
+      type: integer
+put:
+  operationId: updateMembership
+  tags:
+    - Memberships
+  summary: Update membership role
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            membership:
+              $ref: ../components/schemas/MembershipInput.yaml
+  responses:
+    '200':
+      description: Membership updated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+delete:
+  operationId: deleteMembership
+  tags:
+    - Memberships
+  summary: Remove a membership
+  responses:
+    '200':
+      description: Membership removed
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

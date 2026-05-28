@@ -1,0 +1,20 @@
+parameters:
+  - name: userId
+    in: path
+    required: true
+    schema:
+      type: integer
+post:
+  operationId: unlockUser
+  tags:
+    - Users
+  summary: Unlock a locked user account (admin only)
+  responses:
+    '200':
+      description: Account unlocked
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/UserToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

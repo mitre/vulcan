@@ -1,0 +1,26 @@
+parameters:
+  - $ref: ../components/parameters/ProjectId.yaml
+post:
+  operationId: importBackup
+  tags:
+    - Projects
+  summary: Import components from a JSON archive into an existing project
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          properties:
+            file:
+              type: string
+              format: binary
+  responses:
+    '200':
+      description: Backup imported
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

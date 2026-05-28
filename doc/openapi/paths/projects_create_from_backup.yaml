@@ -1,0 +1,28 @@
+post:
+  operationId: createFromBackup
+  tags:
+    - Projects
+  summary: Create a project from a JSON archive backup
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          properties:
+            file:
+              type: string
+              format: binary
+            name:
+              type: string
+  responses:
+    '200':
+      description: Project created from backup
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    '422':
+      $ref: ../components/responses/UnprocessableEntity.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

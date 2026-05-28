@@ -1,0 +1,41 @@
+post:
+  operationId: adminCreateUser
+  tags:
+    - Users
+  summary: Create a new user (admin only)
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            user:
+              type: object
+              required:
+                - email
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                admin:
+                  type: boolean
+                password:
+                  type: string
+  responses:
+    '200':
+      description: User created
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminCreateResponse.yaml
+    '422':
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

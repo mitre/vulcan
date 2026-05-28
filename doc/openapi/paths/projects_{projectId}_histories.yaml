@@ -1,0 +1,18 @@
+parameters:
+  - $ref: ../components/parameters/ProjectId.yaml
+get:
+  operationId: getProjectHistories
+  tags:
+    - Projects
+  summary: Audit history for the project
+  responses:
+    '200':
+      description: History entries
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/AuditEntry.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

@@ -1,0 +1,16 @@
+get:
+  operationId: listComponents
+  tags:
+    - Components
+  summary: List released components
+  responses:
+    '200':
+      description: Components list
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/ComponentSummary.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

@@ -1,0 +1,18 @@
+get:
+  operationId: listUsers
+  tags:
+    - Users
+  summary: List all users (admin only)
+  responses:
+    '200':
+      description: Users list
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/UserSummary.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

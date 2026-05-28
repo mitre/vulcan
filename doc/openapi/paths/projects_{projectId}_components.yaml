@@ -1,0 +1,32 @@
+parameters:
+  - $ref: ../components/parameters/ProjectId.yaml
+post:
+  operationId: createComponent
+  tags:
+    - Components
+  summary: Create or duplicate a component in a project
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            component:
+              $ref: ../components/schemas/ComponentInput.yaml
+      multipart/form-data:
+        schema:
+          type: object
+          properties:
+            file:
+              type: string
+              format: binary
+  responses:
+    '200':
+      description: Component created
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

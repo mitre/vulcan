@@ -1,0 +1,30 @@
+parameters:
+  - $ref: ../components/parameters/RuleId.yaml
+patch:
+  operationId: bulkSectionLocks
+  tags:
+    - Rules
+  summary: Bulk update locked sections
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            rule:
+              type: object
+              properties:
+                locked_fields:
+                  type: array
+                  items:
+                    type: string
+  responses:
+    '200':
+      description: Section locks updated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

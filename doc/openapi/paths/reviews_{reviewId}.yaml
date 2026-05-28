@@ -1,0 +1,25 @@
+parameters:
+  - $ref: ../components/parameters/ReviewId.yaml
+put:
+  operationId: updateReview
+  tags:
+    - Reviews
+  summary: Update a review comment
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            review:
+              $ref: ../components/schemas/ReviewInput.yaml
+  responses:
+    '200':
+      description: Review updated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

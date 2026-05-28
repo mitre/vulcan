@@ -1,0 +1,21 @@
+get:
+  operationId: searchUsers
+  tags:
+    - Search
+  summary: Search users by name or email
+  parameters:
+    - $ref: ../components/parameters/SearchQuery.yaml
+  responses:
+    '200':
+      description: Matching users
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              users:
+                type: array
+                items:
+                  $ref: ../components/schemas/UserSummary.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

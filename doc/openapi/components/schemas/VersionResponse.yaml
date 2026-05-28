@@ -1,0 +1,11 @@
+type: object
+properties:
+  version:
+    type: string
+    example: 2.3.7
+  rails:
+    type: string
+    example: 8.0.2.1
+  ruby:
+    type: string
+    example: 3.4.9

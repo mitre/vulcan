@@ -1,0 +1,18 @@
+parameters:
+  - $ref: ../components/parameters/ReviewId.yaml
+get:
+  operationId: getReviewResponses
+  tags:
+    - Reviews
+  summary: List replies to a review
+  responses:
+    '200':
+      description: Reply thread
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/ReviewSummary.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

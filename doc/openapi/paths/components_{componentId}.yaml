@@ -1,0 +1,76 @@
+parameters:
+  - $ref: ../components/parameters/ComponentId.yaml
+get:
+  operationId: getComponent
+  tags:
+    - Components
+  summary: Component detail with rules (editor or viewer mode based on membership)
+  responses:
+    '200':
+      description: Component with rules via ComponentBlueprint
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ComponentSummary.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+put:
+  operationId: updateComponent
+  tags:
+    - Components
+  summary: Update component attributes
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            component:
+              $ref: ../components/schemas/ComponentInput.yaml
+  responses:
+    '200':
+      description: Component updated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+patch:
+  operationId: patchComponent
+  tags:
+    - Components
+  summary: Partial update of component attributes
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            component:
+              $ref: ../components/schemas/ComponentInput.yaml
+  responses:
+    '200':
+      description: Component updated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+delete:
+  operationId: deleteComponent
+  tags:
+    - Components
+  summary: Delete a component and all dependent records
+  responses:
+    '200':
+      description: Component deleted
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

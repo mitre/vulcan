@@ -1,0 +1,35 @@
+parameters:
+  - $ref: ../components/parameters/ReviewId.yaml
+patch:
+  operationId: triageReview
+  tags:
+    - Reviews
+  summary: Set triage status on a comment (concur, non_concur, etc.)
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            review:
+              type: object
+              properties:
+                triage_status:
+                  type: string
+                  enum:
+                    - concur
+                    - concur_with_comment
+                    - non_concur
+                    - needs_clarification
+                    - duplicate
+                    - addressed_by
+  responses:
+    '200':
+      description: Triage status set
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

@@ -1,0 +1,49 @@
+type: object
+properties:
+  id:
+    type: integer
+  rule_id:
+    type:
+      - integer
+      - 'null'
+  rule_displayed_name:
+    type: string
+  commentable_type:
+    type: string
+    enum:
+      - BaseRule
+      - Component
+  section:
+    type:
+      - string
+      - 'null'
+  author_name:
+    type: string
+  author_email:
+    type: string
+  comment:
+    type: string
+  created_at:
+    type: string
+    format: date-time
+  triage_status:
+    type: string
+  triage_set_at:
+    type:
+      - string
+      - 'null'
+    format: date-time
+  adjudicated_at:
+    type:
+      - string
+      - 'null'
+    format: date-time
+  responses_count:
+    type: integer
+  reactions:
+    type: object
+    properties:
+      up:
+        type: integer
+      down:
+        type: integer

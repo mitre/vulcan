@@ -1,0 +1,30 @@
+type: object
+properties:
+  id:
+    type: integer
+  name:
+    type: string
+  prefix:
+    type: string
+  version:
+    type:
+      - integer
+      - 'null'
+  release:
+    type:
+      - integer
+      - 'null'
+  title:
+    type:
+      - string
+      - 'null'
+  released:
+    type: boolean
+  project_id:
+    type: integer
+  rules_count:
+    type: integer
+  description:
+    type:
+      - string
+      - 'null'

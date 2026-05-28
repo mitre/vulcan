@@ -1,0 +1,23 @@
+parameters:
+  - $ref: ../components/parameters/ComponentId.yaml
+  - name: type
+    in: path
+    required: true
+    schema:
+      type: string
+      enum:
+        - csv
+        - xccdf
+        - inspec
+        - json_archive
+        - disposition_csv
+get:
+  operationId: exportComponent
+  tags:
+    - Components
+  summary: Export component in the specified format
+  responses:
+    '200':
+      description: File download
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

@@ -1,0 +1,16 @@
+parameters:
+  - $ref: ../components/parameters/ReviewId.yaml
+patch:
+  operationId: withdrawReview
+  tags:
+    - Reviews
+  summary: Author withdraws their own comment
+  responses:
+    '200':
+      description: Review withdrawn
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

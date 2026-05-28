@@ -1,0 +1,53 @@
+parameters:
+  - $ref: ../components/parameters/RuleId.yaml
+get:
+  operationId: getRule
+  tags:
+    - Rules
+  summary: Rule detail
+  responses:
+    '200':
+      description: Rule data
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/RuleSummary.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+put:
+  operationId: updateRule
+  tags:
+    - Rules
+  summary: Update rule attributes
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            rule:
+              $ref: ../components/schemas/RuleInput.yaml
+  responses:
+    '200':
+      description: Rule updated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+delete:
+  operationId: deleteRule
+  tags:
+    - Rules
+  summary: Soft-delete a rule
+  responses:
+    '200':
+      description: Rule deleted
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

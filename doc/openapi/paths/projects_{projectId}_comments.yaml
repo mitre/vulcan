@@ -1,0 +1,20 @@
+parameters:
+  - $ref: ../components/parameters/ProjectId.yaml
+get:
+  operationId: getProjectComments
+  tags:
+    - Projects
+  summary: Aggregated comments across all project components
+  parameters:
+    - $ref: ../components/parameters/TriageStatusFilter.yaml
+    - $ref: ../components/parameters/PageParam.yaml
+    - $ref: ../components/parameters/PerPageParam.yaml
+  responses:
+    '200':
+      description: Paginated comment rows with status counts
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/PaginatedComments.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

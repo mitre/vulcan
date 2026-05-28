@@ -1,0 +1,25 @@
+post:
+  operationId: unlinkIdentity
+  tags:
+    - Users
+  summary: Unlink an OAuth provider from the current user
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            current_password:
+              type: string
+            provider:
+              type: string
+  responses:
+    '200':
+      description: Provider unlinked
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

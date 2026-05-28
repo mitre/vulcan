@@ -1,0 +1,24 @@
+type: object
+properties:
+  id:
+    type: integer
+  name:
+    type: string
+  description:
+    type:
+      - string
+      - 'null'
+  visibility:
+    type:
+      - string
+      - 'null'
+  components_count:
+    type: integer
+  created_at:
+    type:
+      - string
+      - 'null'
+  updated_at:
+    type:
+      - string
+      - 'null'

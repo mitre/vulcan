@@ -1,0 +1,16 @@
+parameters:
+  - $ref: ../components/parameters/ReviewId.yaml
+patch:
+  operationId: adminRestoreReview
+  tags:
+    - Reviews
+  summary: Admin restores a withdrawn comment
+  responses:
+    '200':
+      description: Review restored
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

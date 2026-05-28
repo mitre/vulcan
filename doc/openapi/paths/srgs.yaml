@@ -1,0 +1,40 @@
+get:
+  operationId: listSrgs
+  tags:
+    - Benchmarks
+  summary: List uploaded Security Requirements Guides
+  responses:
+    '200':
+      description: SRGs list
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/BenchmarkSummary.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+post:
+  operationId: uploadSrg
+  tags:
+    - Benchmarks
+  summary: Upload an SRG XCCDF XML file
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          properties:
+            file:
+              type: string
+              format: binary
+  responses:
+    '200':
+      description: SRG uploaded
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

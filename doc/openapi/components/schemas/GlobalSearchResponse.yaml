@@ -1,0 +1,77 @@
+type: object
+properties:
+  projects:
+    type: array
+    items:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type:
+            - string
+            - 'null'
+        components_count:
+          type: integer
+  components:
+    type: array
+    items:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        version:
+          type:
+            - integer
+            - 'null'
+        release:
+          type:
+            - integer
+            - 'null'
+        project_id:
+          type: integer
+        project_name:
+          type: string
+  rules:
+    type: array
+    items:
+      type: object
+      properties:
+        id:
+          type: integer
+        rule_id:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+        component_id:
+          type: integer
+        component_prefix:
+          type: string
+        snippet:
+          type: string
+        matched_field:
+          type: string
+        comment_count:
+          type: integer
+  srgs:
+    type: array
+    items:
+      type: object
+  stigs:
+    type: array
+    items:
+      type: object
+  stig_rules:
+    type: array
+    items:
+      type: object
+  srg_rules:
+    type: array
+    items:
+      type: object

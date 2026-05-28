@@ -1,0 +1,27 @@
+parameters:
+  - $ref: ../components/parameters/ComponentId.yaml
+post:
+  operationId: lockComponent
+  tags:
+    - Components
+  summary: Lock all unlocked rules in a component
+  requestBody:
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            review:
+              type: object
+              properties:
+                comment:
+                  type: string
+  responses:
+    '200':
+      description: Controls locked
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

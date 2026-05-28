@@ -1,0 +1,5 @@
+name: ruleId
+in: path
+required: true
+schema:
+  type: integer

@@ -1,0 +1,27 @@
+parameters:
+  - $ref: ../components/parameters/ReviewId.yaml
+patch:
+  operationId: moveReviewToRule
+  tags:
+    - Reviews
+  summary: Admin moves a comment thread to a different rule
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            target_rule_id:
+              type: integer
+            audit_comment:
+              type: string
+  responses:
+    '200':
+      description: Review moved
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

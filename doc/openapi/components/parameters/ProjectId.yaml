@@ -1,0 +1,5 @@
+name: projectId
+in: path
+required: true
+schema:
+  type: integer

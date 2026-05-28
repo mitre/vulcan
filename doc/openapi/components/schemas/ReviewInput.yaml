@@ -1,0 +1,16 @@
+type: object
+properties:
+  action:
+    type: string
+    enum:
+      - comment
+      - request_review
+      - revoke_review_request
+      - approve
+      - lock
+  comment:
+    type: string
+  section:
+    type: string
+  responding_to_review_id:
+    type: integer

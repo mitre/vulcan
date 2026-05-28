@@ -1,0 +1,23 @@
+post:
+  operationId: createMembership
+  tags:
+    - Memberships
+  summary: Add a user to a project or component
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            membership:
+              $ref: ../components/schemas/MembershipInput.yaml
+  responses:
+    '200':
+      description: Membership created
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

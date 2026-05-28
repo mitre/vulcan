@@ -1,0 +1,26 @@
+parameters:
+  - name: userId
+    in: path
+    required: true
+    schema:
+      type: integer
+post:
+  operationId: lockUser
+  tags:
+    - Users
+  summary: Lock a user account (admin only)
+  responses:
+    '200':
+      description: Account locked
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/UserToastResponse.yaml
+    '422':
+      description: Cannot lock own account
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

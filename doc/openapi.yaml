@@ -1,4 +1,5 @@
----
+# GENERATED FILE — do not edit directly.
+# Edit the multi-file source in doc/openapi/ and run: yarn openapi:bundle
 openapi: 3.2.0
 info:
   title: Vulcan API
@@ -14,37 +15,37 @@ info:
     name: Apache-2.0
     url: https://www.apache.org/licenses/LICENSE-2.0
 servers:
-- url: "/"
-  description: Same-origin (session cookie auth)
+  - url: /
+    description: Same-origin (session cookie auth)
 security:
-- cookieAuth: []
+  - cookieAuth: []
 tags:
-- name: Projects
-  description: Project CRUD, export, import, and member management
-- name: Components
-  description: Component CRUD, spreadsheet import, export, and locking
-- name: Rules
-  description: Rule CRUD, revert, section locks, and satisfaction relationships
-- name: Reviews
-  description: Review lifecycle — create, triage, adjudicate, withdraw, admin actions
-- name: Reactions
-  description: Thumbs up/down reactions on comment reviews
-- name: Memberships
-  description: Project and component membership management
-- name: Search
-  description: Global search across projects, components, rules, SRGs, and STIGs
-- name: Users
-  description: User management and admin operations
-- name: Benchmarks
-  description: SRG and STIG upload, listing, export, and deletion
-- name: System
-  description: Version and health check endpoints
+  - name: Projects
+    description: Project CRUD, export, import, and member management
+  - name: Components
+    description: Component CRUD, spreadsheet import, export, and locking
+  - name: Rules
+    description: Rule CRUD, revert, section locks, and satisfaction relationships
+  - name: Reviews
+    description: Review lifecycle — create, triage, adjudicate, withdraw, admin actions
+  - name: Reactions
+    description: Thumbs up/down reactions on comment reviews
+  - name: Memberships
+    description: Project and component membership management
+  - name: Search
+    description: Global search across projects, components, rules, SRGs, and STIGs
+  - name: Users
+    description: User management and admin operations
+  - name: Benchmarks
+    description: SRG and STIG upload, listing, export, and deletion
+  - name: System
+    description: Version and health check endpoints
 paths:
-  "/api/version":
+  /api/version:
     get:
       operationId: getVersion
       tags:
-      - System
+        - System
       summary: Application version
       responses:
         '200':
@@ -52,48 +53,48 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/VersionResponse"
+                $ref: '#/components/schemas/VersionResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/api/search/global":
+          $ref: '#/components/responses/ErrorResponse'
+  /api/search/global:
     get:
       operationId: globalSearch
       tags:
-      - Search
+        - Search
       summary: Search across all resource types
       parameters:
-      - "$ref": "#/components/parameters/SearchQuery"
-      - name: limit
-        in: query
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 20
-          default: 5
-      - name: component_id
-        in: query
-        description: Scope rule search to a specific component
-        schema:
-          type: integer
+        - $ref: '#/components/parameters/SearchQuery'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 5
+        - name: component_id
+          in: query
+          description: Scope rule search to a specific component
+          schema:
+            type: integer
       responses:
         '200':
           description: Search results grouped by type
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/GlobalSearchResponse"
+                $ref: '#/components/schemas/GlobalSearchResponse'
         '401':
-          "$ref": "#/components/responses/Unauthorized"
+          $ref: '#/components/responses/Unauthorized'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/api/users/search":
+          $ref: '#/components/responses/ErrorResponse'
+  /api/users/search:
     get:
       operationId: searchUsers
       tags:
-      - Search
+        - Search
       summary: Search users by name or email
       parameters:
-      - "$ref": "#/components/parameters/SearchQuery"
+        - $ref: '#/components/parameters/SearchQuery'
       responses:
         '200':
           description: Matching users
@@ -105,14 +106,14 @@ paths:
                   users:
                     type: array
                     items:
-                      "$ref": "#/components/schemas/UserSummary"
+                      $ref: '#/components/schemas/UserSummary'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/projects":
+          $ref: '#/components/responses/ErrorResponse'
+  /projects:
     get:
       operationId: listProjects
       tags:
-      - Projects
+        - Projects
       summary: List accessible projects
       responses:
         '200':
@@ -122,13 +123,13 @@ paths:
               schema:
                 type: array
                 items:
-                  "$ref": "#/components/schemas/ProjectSummary"
+                  $ref: '#/components/schemas/ProjectSummary'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
+          $ref: '#/components/responses/ErrorResponse'
     post:
       operationId: createProject
       tags:
-      - Projects
+        - Projects
       summary: Create a new project
       requestBody:
         required: true
@@ -138,25 +139,25 @@ paths:
               type: object
               properties:
                 project:
-                  "$ref": "#/components/schemas/ProjectInput"
+                  $ref: '#/components/schemas/ProjectInput'
       responses:
         '200':
           description: Project created
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         '422':
-          "$ref": "#/components/responses/UnprocessableEntity"
+          $ref: '#/components/responses/UnprocessableEntity'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/projects/{projectId}":
+          $ref: '#/components/responses/ErrorResponse'
+  /projects/{projectId}:
     parameters:
-    - "$ref": "#/components/parameters/ProjectId"
+      - $ref: '#/components/parameters/ProjectId'
     get:
       operationId: getProject
       tags:
-      - Projects
+        - Projects
       summary: Project detail with component list and stats
       responses:
         '200':
@@ -164,13 +165,13 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ProjectSummary"
+                $ref: '#/components/schemas/ProjectSummary'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
+          $ref: '#/components/responses/ErrorResponse'
     put:
       operationId: updateProject
       tags:
-      - Projects
+        - Projects
       summary: Update project attributes
       requestBody:
         required: true
@@ -180,20 +181,20 @@ paths:
               type: object
               properties:
                 project:
-                  "$ref": "#/components/schemas/ProjectInput"
+                  $ref: '#/components/schemas/ProjectInput'
       responses:
         '200':
           description: Project updated
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
+          $ref: '#/components/responses/ErrorResponse'
     delete:
       operationId: deleteProject
       tags:
-      - Projects
+        - Projects
       summary: Delete a project and all its components
       responses:
         '200':
@@ -201,94 +202,94 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         '403':
-          "$ref": "#/components/responses/Forbidden"
+          $ref: '#/components/responses/Forbidden'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/projects/{projectId}/comments":
+          $ref: '#/components/responses/ErrorResponse'
+  /projects/{projectId}/comments:
     parameters:
-    - "$ref": "#/components/parameters/ProjectId"
+      - $ref: '#/components/parameters/ProjectId'
     get:
       operationId: getProjectComments
       tags:
-      - Projects
+        - Projects
       summary: Aggregated comments across all project components
       parameters:
-      - "$ref": "#/components/parameters/TriageStatusFilter"
-      - "$ref": "#/components/parameters/PageParam"
-      - "$ref": "#/components/parameters/PerPageParam"
+        - $ref: '#/components/parameters/TriageStatusFilter'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
       responses:
         '200':
           description: Paginated comment rows with status counts
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/PaginatedComments"
+                $ref: '#/components/schemas/PaginatedComments'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/projects/{projectId}/export/{type}":
+          $ref: '#/components/responses/ErrorResponse'
+  /projects/{projectId}/export/{type}:
     parameters:
-    - "$ref": "#/components/parameters/ProjectId"
-    - name: type
-      in: path
-      required: true
-      schema:
-        type: string
-        enum:
-        - csv
-        - xccdf
-        - inspec
-        - json_archive
-    get:
-      operationId: exportProject
-      tags:
-      - Projects
-      summary: Export project data in the specified format
-      parameters:
-      - name: component_ids
-        in: query
+      - $ref: '#/components/parameters/ProjectId'
+      - name: type
+        in: path
         required: true
         schema:
           type: string
-        description: Comma-separated component IDs
-      - name: mode
-        in: query
-        schema:
-          type: string
           enum:
-          - working_copy
-          - vendor_submission
-          - published_stig
-      - name: include_srg
-        in: query
-        schema:
-          type: string
-          enum:
-          - 'true'
-      - name: include_memberships
-        in: query
-        schema:
-          type: string
-          enum:
-          - 'true'
-          - 'false'
-      - name: exclude_satisfied_by
-        in: query
-        schema:
-          type: string
-          enum:
-          - 'true'
+            - csv
+            - xccdf
+            - inspec
+            - json_archive
+    get:
+      operationId: exportProject
+      tags:
+        - Projects
+      summary: Export project data in the specified format
+      parameters:
+        - name: component_ids
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Comma-separated component IDs
+        - name: mode
+          in: query
+          schema:
+            type: string
+            enum:
+              - working_copy
+              - vendor_submission
+              - published_stig
+        - name: include_srg
+          in: query
+          schema:
+            type: string
+            enum:
+              - 'true'
+        - name: include_memberships
+          in: query
+          schema:
+            type: string
+            enum:
+              - 'true'
+              - 'false'
+        - name: exclude_satisfied_by
+          in: query
+          schema:
+            type: string
+            enum:
+              - 'true'
       responses:
         '200':
           description: File download
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/projects/create_from_backup":
+          $ref: '#/components/responses/ErrorResponse'
+  /projects/create_from_backup:
     post:
       operationId: createFromBackup
       tags:
-      - Projects
+        - Projects
       summary: Create a project from a JSON archive backup
       requestBody:
         required: true
@@ -308,18 +309,18 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         '422':
-          "$ref": "#/components/responses/UnprocessableEntity"
+          $ref: '#/components/responses/UnprocessableEntity'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/projects/{projectId}/import_backup":
+          $ref: '#/components/responses/ErrorResponse'
+  /projects/{projectId}/import_backup:
     parameters:
-    - "$ref": "#/components/parameters/ProjectId"
+      - $ref: '#/components/parameters/ProjectId'
     post:
       operationId: importBackup
       tags:
-      - Projects
+        - Projects
       summary: Import components from a JSON archive into an existing project
       requestBody:
         required: true
@@ -337,16 +338,16 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/projects/{projectId}/histories":
+          $ref: '#/components/responses/ErrorResponse'
+  /projects/{projectId}/histories:
     parameters:
-    - "$ref": "#/components/parameters/ProjectId"
+      - $ref: '#/components/parameters/ProjectId'
     get:
       operationId: getProjectHistories
       tags:
-      - Projects
+        - Projects
       summary: Audit history for the project
       responses:
         '200':
@@ -356,14 +357,14 @@ paths:
               schema:
                 type: array
                 items:
-                  "$ref": "#/components/schemas/AuditEntry"
+                  $ref: '#/components/schemas/AuditEntry'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/components":
+          $ref: '#/components/responses/ErrorResponse'
+  /components:
     get:
       operationId: listComponents
       tags:
-      - Components
+        - Components
       summary: List released components
       responses:
         '200':
@@ -373,16 +374,16 @@ paths:
               schema:
                 type: array
                 items:
-                  "$ref": "#/components/schemas/ComponentSummary"
+                  $ref: '#/components/schemas/ComponentSummary'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/projects/{projectId}/components":
+          $ref: '#/components/responses/ErrorResponse'
+  /projects/{projectId}/components:
     parameters:
-    - "$ref": "#/components/parameters/ProjectId"
+      - $ref: '#/components/parameters/ProjectId'
     post:
       operationId: createComponent
       tags:
-      - Components
+        - Components
       summary: Create or duplicate a component in a project
       requestBody:
         required: true
@@ -392,7 +393,7 @@ paths:
               type: object
               properties:
                 component:
-                  "$ref": "#/components/schemas/ComponentInput"
+                  $ref: '#/components/schemas/ComponentInput'
           multipart/form-data:
             schema:
               type: object
@@ -406,16 +407,16 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/components/{componentId}":
+          $ref: '#/components/responses/ErrorResponse'
+  /components/{componentId}:
     parameters:
-    - "$ref": "#/components/parameters/ComponentId"
+      - $ref: '#/components/parameters/ComponentId'
     get:
       operationId: getComponent
       tags:
-      - Components
+        - Components
       summary: Component detail with rules (editor or viewer mode based on membership)
       responses:
         '200':
@@ -423,13 +424,13 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ComponentSummary"
+                $ref: '#/components/schemas/ComponentSummary'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
+          $ref: '#/components/responses/ErrorResponse'
     put:
       operationId: updateComponent
       tags:
-      - Components
+        - Components
       summary: Update component attributes
       requestBody:
         required: true
@@ -439,20 +440,20 @@ paths:
               type: object
               properties:
                 component:
-                  "$ref": "#/components/schemas/ComponentInput"
+                  $ref: '#/components/schemas/ComponentInput'
       responses:
         '200':
           description: Component updated
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
+          $ref: '#/components/responses/ErrorResponse'
     patch:
       operationId: patchComponent
       tags:
-      - Components
+        - Components
       summary: Partial update of component attributes
       requestBody:
         required: true
@@ -462,20 +463,20 @@ paths:
               type: object
               properties:
                 component:
-                  "$ref": "#/components/schemas/ComponentInput"
+                  $ref: '#/components/schemas/ComponentInput'
       responses:
         '200':
           description: Component updated
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
+          $ref: '#/components/responses/ErrorResponse'
     delete:
       operationId: deleteComponent
       tags:
-      - Components
+        - Components
       summary: Delete a component and all dependent records
       responses:
         '200':
@@ -483,92 +484,92 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/components/{componentId}/comments":
+          $ref: '#/components/responses/ErrorResponse'
+  /components/{componentId}/comments:
     parameters:
-    - "$ref": "#/components/parameters/ComponentId"
+      - $ref: '#/components/parameters/ComponentId'
     get:
       operationId: getComponentComments
       tags:
-      - Components
+        - Components
       summary: Paginated triage table for component comments
       parameters:
-      - "$ref": "#/components/parameters/TriageStatusFilter"
-      - "$ref": "#/components/parameters/PageParam"
-      - "$ref": "#/components/parameters/PerPageParam"
-      - name: section
-        in: query
-        schema:
-          type: string
-      - name: rule_id
-        in: query
-        schema:
-          type: integer
-      - name: author_id
-        in: query
-        schema:
-          type: integer
-      - name: query
-        in: query
-        schema:
-          type: string
-      - name: resolved
-        in: query
-        schema:
-          type: string
-          enum:
-          - 'true'
-          - 'false'
-          - all
-      - name: commentable_type
-        in: query
-        schema:
-          type: string
-          enum:
-          - rule
-          - component
+        - $ref: '#/components/parameters/TriageStatusFilter'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - name: section
+          in: query
+          schema:
+            type: string
+        - name: rule_id
+          in: query
+          schema:
+            type: integer
+        - name: author_id
+          in: query
+          schema:
+            type: integer
+        - name: query
+          in: query
+          schema:
+            type: string
+        - name: resolved
+          in: query
+          schema:
+            type: string
+            enum:
+              - 'true'
+              - 'false'
+              - all
+        - name: commentable_type
+          in: query
+          schema:
+            type: string
+            enum:
+              - rule
+              - component
       responses:
         '200':
           description: Paginated comment rows
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/PaginatedComments"
+                $ref: '#/components/schemas/PaginatedComments'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/components/{componentId}/export/{type}":
+          $ref: '#/components/responses/ErrorResponse'
+  /components/{componentId}/export/{type}:
     parameters:
-    - "$ref": "#/components/parameters/ComponentId"
-    - name: type
-      in: path
-      required: true
-      schema:
-        type: string
-        enum:
-        - csv
-        - xccdf
-        - inspec
-        - json_archive
-        - disposition_csv
+      - $ref: '#/components/parameters/ComponentId'
+      - name: type
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+            - csv
+            - xccdf
+            - inspec
+            - json_archive
+            - disposition_csv
     get:
       operationId: exportComponent
       tags:
-      - Components
+        - Components
       summary: Export component in the specified format
       responses:
         '200':
           description: File download
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/components/{componentId}/lock":
+          $ref: '#/components/responses/ErrorResponse'
+  /components/{componentId}/lock:
     parameters:
-    - "$ref": "#/components/parameters/ComponentId"
+      - $ref: '#/components/parameters/ComponentId'
     post:
       operationId: lockComponent
       tags:
-      - Components
+        - Components
       summary: Lock all unlocked rules in a component
       requestBody:
         content:
@@ -587,16 +588,16 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/components/{componentId}/lock_sections":
+          $ref: '#/components/responses/ErrorResponse'
+  /components/{componentId}/lock_sections:
     parameters:
-    - "$ref": "#/components/parameters/ComponentId"
+      - $ref: '#/components/parameters/ComponentId'
     patch:
       operationId: lockSections
       tags:
-      - Components
+        - Components
       summary: Lock specific sections on every unlocked rule
       requestBody:
         required: true
@@ -615,16 +616,16 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/components/{componentId}/histories":
+          $ref: '#/components/responses/ErrorResponse'
+  /components/{componentId}/histories:
     parameters:
-    - "$ref": "#/components/parameters/ComponentId"
+      - $ref: '#/components/parameters/ComponentId'
     get:
       operationId: getComponentHistories
       tags:
-      - Components
+        - Components
       summary: Audit history for the component
       responses:
         '200':
@@ -634,16 +635,16 @@ paths:
               schema:
                 type: array
                 items:
-                  "$ref": "#/components/schemas/AuditEntry"
+                  $ref: '#/components/schemas/AuditEntry'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/components/{componentId}/rules":
+          $ref: '#/components/responses/ErrorResponse'
+  /components/{componentId}/rules:
     parameters:
-    - "$ref": "#/components/parameters/ComponentId"
+      - $ref: '#/components/parameters/ComponentId'
     get:
       operationId: listComponentRules
       tags:
-      - Rules
+        - Rules
       summary: List rules for a component
       responses:
         '200':
@@ -653,13 +654,13 @@ paths:
               schema:
                 type: array
                 items:
-                  "$ref": "#/components/schemas/RuleSummary"
+                  $ref: '#/components/schemas/RuleSummary'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
+          $ref: '#/components/responses/ErrorResponse'
     post:
       operationId: createRule
       tags:
-      - Rules
+        - Rules
       summary: Create a new rule in a component
       requestBody:
         required: true
@@ -669,23 +670,23 @@ paths:
               type: object
               properties:
                 rule:
-                  "$ref": "#/components/schemas/RuleInput"
+                  $ref: '#/components/schemas/RuleInput'
       responses:
         '200':
           description: Rule created
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/components/{componentId}/rules_picker":
+          $ref: '#/components/responses/ErrorResponse'
+  /components/{componentId}/rules_picker:
     parameters:
-    - "$ref": "#/components/parameters/ComponentId"
+      - $ref: '#/components/parameters/ComponentId'
     get:
       operationId: getRulesPicker
       tags:
-      - Rules
+        - Rules
       summary: Lightweight rule list for picker UI
       responses:
         '200':
@@ -698,14 +699,14 @@ paths:
                   rules:
                     type: array
                     items:
-                      "$ref": "#/components/schemas/RuleSummary"
+                      $ref: '#/components/schemas/RuleSummary'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/components/detect_srg":
+          $ref: '#/components/responses/ErrorResponse'
+  /components/detect_srg:
     post:
       operationId: detectSrg
       tags:
-      - Components
+        - Components
       summary: Detect which SRG a spreadsheet belongs to
       requestBody:
         required: true
@@ -730,28 +731,28 @@ paths:
                   srg_title:
                     type: string
         '422':
-          "$ref": "#/components/responses/UnprocessableEntity"
+          $ref: '#/components/responses/UnprocessableEntity'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/components/history":
+          $ref: '#/components/responses/ErrorResponse'
+  /components/history:
     get:
       operationId: getComponentHistory
       tags:
-      - Components
+        - Components
       summary: Revision history for a named component across versions
       parameters:
-      - name: project_id
-        in: query
-        required: true
-        schema:
-          type: integer
-        description: Project containing the component versions
-      - name: name
-        in: query
-        required: true
-        schema:
-          type: string
-        description: Component name to trace across versions
+        - name: project_id
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: Project containing the component versions
+        - name: name
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Component name to trace across versions
       responses:
         '200':
           description: Ordered revision history with per-version diffs
@@ -763,11 +764,11 @@ paths:
                   type: object
                   properties:
                     component:
-                      "$ref": "#/components/schemas/ComponentSummary"
+                      $ref: '#/components/schemas/ComponentSummary'
                     base_component:
-                      "$ref": "#/components/schemas/ComponentSummary"
+                      $ref: '#/components/schemas/ComponentSummary'
                     diff_component:
-                      "$ref": "#/components/schemas/ComponentSummary"
+                      $ref: '#/components/schemas/ComponentSummary'
                     changes:
                       type: object
                       additionalProperties:
@@ -775,20 +776,23 @@ paths:
                         properties:
                           change:
                             type: string
-                            enum: [added, removed, updated]
+                            enum:
+                              - added
+                              - removed
+                              - updated
                           base:
                             type: object
                           diff:
                             type: object
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/components/{componentId}/related":
+          $ref: '#/components/responses/ErrorResponse'
+  /components/{componentId}/related:
     parameters:
-    - "$ref": "#/components/parameters/ComponentId"
+      - $ref: '#/components/parameters/ComponentId'
     get:
       operationId: searchRelatedComponents
       tags:
-      - Components
+        - Components
       summary: Find components sharing the same SRG
       responses:
         '200':
@@ -798,28 +802,28 @@ paths:
               schema:
                 type: array
                 items:
-                  "$ref": "#/components/schemas/ComponentSummary"
+                  $ref: '#/components/schemas/ComponentSummary'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/api/components/compare":
+          $ref: '#/components/responses/ErrorResponse'
+  /api/components/compare:
     get:
       operationId: compareComponents
       tags:
-      - Components
+        - Components
       summary: Side-by-side rule comparison between two peer components
       parameters:
-      - name: base_id
-        in: query
-        required: true
-        schema:
-          type: integer
-        description: ID of the base (older) component
-      - name: diff_id
-        in: query
-        required: true
-        schema:
-          type: integer
-        description: ID of the diff (newer) component
+        - name: base_id
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: ID of the base (older) component
+        - name: diff_id
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: ID of the diff (newer) component
       responses:
         '200':
           description: Rule-by-rule diff with metadata envelope
@@ -835,12 +839,12 @@ paths:
                       properties:
                         base:
                           type:
-                          - string
-                          - 'null'
+                            - string
+                            - 'null'
                         diff:
                           type:
-                          - string
-                          - 'null'
+                            - string
+                            - 'null'
                         changed:
                           type: boolean
                   meta:
@@ -853,14 +857,14 @@ paths:
                       rules_count:
                         type: integer
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/rules/{ruleId}":
+          $ref: '#/components/responses/ErrorResponse'
+  /rules/{ruleId}:
     parameters:
-    - "$ref": "#/components/parameters/RuleId"
+      - $ref: '#/components/parameters/RuleId'
     get:
       operationId: getRule
       tags:
-      - Rules
+        - Rules
       summary: Rule detail
       responses:
         '200':
@@ -868,13 +872,13 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/RuleSummary"
+                $ref: '#/components/schemas/RuleSummary'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
+          $ref: '#/components/responses/ErrorResponse'
     put:
       operationId: updateRule
       tags:
-      - Rules
+        - Rules
       summary: Update rule attributes
       requestBody:
         required: true
@@ -884,20 +888,20 @@ paths:
               type: object
               properties:
                 rule:
-                  "$ref": "#/components/schemas/RuleInput"
+                  $ref: '#/components/schemas/RuleInput'
       responses:
         '200':
           description: Rule updated
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
+          $ref: '#/components/responses/ErrorResponse'
     delete:
       operationId: deleteRule
       tags:
-      - Rules
+        - Rules
       summary: Soft-delete a rule
       responses:
         '200':
@@ -905,16 +909,16 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/rules/{ruleId}/revert":
+          $ref: '#/components/responses/ErrorResponse'
+  /rules/{ruleId}/revert:
     parameters:
-    - "$ref": "#/components/parameters/RuleId"
+      - $ref: '#/components/parameters/RuleId'
     post:
       operationId: revertRule
       tags:
-      - Rules
+        - Rules
       summary: Revert a rule to a previous audit version
       requestBody:
         required: true
@@ -931,16 +935,16 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/rules/{ruleId}/section_locks":
+          $ref: '#/components/responses/ErrorResponse'
+  /rules/{ruleId}/section_locks:
     parameters:
-    - "$ref": "#/components/parameters/RuleId"
+      - $ref: '#/components/parameters/RuleId'
     patch:
       operationId: updateSectionLocks
       tags:
-      - Rules
+        - Rules
       summary: Update locked sections on a single rule
       responses:
         '200':
@@ -948,16 +952,16 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/rules/{ruleId}/bulk_section_locks":
+          $ref: '#/components/responses/ErrorResponse'
+  /rules/{ruleId}/bulk_section_locks:
     parameters:
-    - "$ref": "#/components/parameters/RuleId"
+      - $ref: '#/components/parameters/RuleId'
     patch:
       operationId: bulkSectionLocks
       tags:
-      - Rules
+        - Rules
       summary: Bulk update locked sections
       requestBody:
         required: true
@@ -979,14 +983,14 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/rule_satisfactions":
+          $ref: '#/components/responses/ErrorResponse'
+  /rule_satisfactions:
     post:
       operationId: addSatisfaction
       tags:
-      - Rules
+        - Rules
       summary: Create a satisfaction relationship between two rules
       requestBody:
         required: true
@@ -1005,16 +1009,16 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/rule_satisfactions/{ruleId}":
+          $ref: '#/components/responses/ErrorResponse'
+  /rule_satisfactions/{ruleId}:
     parameters:
-    - "$ref": "#/components/parameters/RuleId"
+      - $ref: '#/components/parameters/RuleId'
     delete:
       operationId: removeSatisfaction
       tags:
-      - Rules
+        - Rules
       summary: Remove a satisfaction relationship
       requestBody:
         content:
@@ -1032,16 +1036,16 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/rules/{ruleId}/reviews":
+          $ref: '#/components/responses/ErrorResponse'
+  /rules/{ruleId}/reviews:
     parameters:
-    - "$ref": "#/components/parameters/RuleId"
+      - $ref: '#/components/parameters/RuleId'
     post:
       operationId: createRuleReview
       tags:
-      - Reviews
+        - Reviews
       summary: Create a review on a rule (comment, request_review, etc.)
       requestBody:
         required: true
@@ -1051,25 +1055,25 @@ paths:
               type: object
               properties:
                 review:
-                  "$ref": "#/components/schemas/ReviewInput"
+                  $ref: '#/components/schemas/ReviewInput'
       responses:
         '200':
           description: Review created
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         '422':
-          "$ref": "#/components/responses/UnprocessableEntity"
+          $ref: '#/components/responses/UnprocessableEntity'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/components/{componentId}/reviews":
+          $ref: '#/components/responses/ErrorResponse'
+  /components/{componentId}/reviews:
     parameters:
-    - "$ref": "#/components/parameters/ComponentId"
+      - $ref: '#/components/parameters/ComponentId'
     post:
       operationId: createComponentReview
       tags:
-      - Reviews
+        - Reviews
       summary: Create a comment-action review on a component
       requestBody:
         required: true
@@ -1079,23 +1083,23 @@ paths:
               type: object
               properties:
                 review:
-                  "$ref": "#/components/schemas/ReviewInput"
+                  $ref: '#/components/schemas/ReviewInput'
       responses:
         '200':
           description: Review created
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/reviews/{reviewId}":
+          $ref: '#/components/responses/ErrorResponse'
+  /reviews/{reviewId}:
     parameters:
-    - "$ref": "#/components/parameters/ReviewId"
+      - $ref: '#/components/parameters/ReviewId'
     put:
       operationId: updateReview
       tags:
-      - Reviews
+        - Reviews
       summary: Update a review comment
       requestBody:
         required: true
@@ -1105,23 +1109,23 @@ paths:
               type: object
               properties:
                 review:
-                  "$ref": "#/components/schemas/ReviewInput"
+                  $ref: '#/components/schemas/ReviewInput'
       responses:
         '200':
           description: Review updated
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/reviews/{reviewId}/triage":
+          $ref: '#/components/responses/ErrorResponse'
+  /reviews/{reviewId}/triage:
     parameters:
-    - "$ref": "#/components/parameters/ReviewId"
+      - $ref: '#/components/parameters/ReviewId'
     patch:
       operationId: triageReview
       tags:
-      - Reviews
+        - Reviews
       summary: Set triage status on a comment (concur, non_concur, etc.)
       requestBody:
         required: true
@@ -1136,28 +1140,28 @@ paths:
                     triage_status:
                       type: string
                       enum:
-                      - concur
-                      - concur_with_comment
-                      - non_concur
-                      - needs_clarification
-                      - duplicate
-                      - addressed_by
+                        - concur
+                        - concur_with_comment
+                        - non_concur
+                        - needs_clarification
+                        - duplicate
+                        - addressed_by
       responses:
         '200':
           description: Triage status set
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/reviews/{reviewId}/adjudicate":
+          $ref: '#/components/responses/ErrorResponse'
+  /reviews/{reviewId}/adjudicate:
     parameters:
-    - "$ref": "#/components/parameters/ReviewId"
+      - $ref: '#/components/parameters/ReviewId'
     patch:
       operationId: adjudicateReview
       tags:
-      - Reviews
+        - Reviews
       summary: Adjudicate (close) a triaged comment
       responses:
         '200':
@@ -1165,16 +1169,16 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/reviews/{reviewId}/withdraw":
+          $ref: '#/components/responses/ErrorResponse'
+  /reviews/{reviewId}/withdraw:
     parameters:
-    - "$ref": "#/components/parameters/ReviewId"
+      - $ref: '#/components/parameters/ReviewId'
     patch:
       operationId: withdrawReview
       tags:
-      - Reviews
+        - Reviews
       summary: Author withdraws their own comment
       responses:
         '200':
@@ -1182,16 +1186,16 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/reviews/{reviewId}/admin_withdraw":
+          $ref: '#/components/responses/ErrorResponse'
+  /reviews/{reviewId}/admin_withdraw:
     parameters:
-    - "$ref": "#/components/parameters/ReviewId"
+      - $ref: '#/components/parameters/ReviewId'
     patch:
       operationId: adminWithdrawReview
       tags:
-      - Reviews
+        - Reviews
       summary: Admin force-withdraws a comment
       requestBody:
         content:
@@ -1207,16 +1211,16 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/reviews/{reviewId}/admin_restore":
+          $ref: '#/components/responses/ErrorResponse'
+  /reviews/{reviewId}/admin_restore:
     parameters:
-    - "$ref": "#/components/parameters/ReviewId"
+      - $ref: '#/components/parameters/ReviewId'
     patch:
       operationId: adminRestoreReview
       tags:
-      - Reviews
+        - Reviews
       summary: Admin restores a withdrawn comment
       responses:
         '200':
@@ -1224,16 +1228,16 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/reviews/{reviewId}/move_to_rule":
+          $ref: '#/components/responses/ErrorResponse'
+  /reviews/{reviewId}/move_to_rule:
     parameters:
-    - "$ref": "#/components/parameters/ReviewId"
+      - $ref: '#/components/parameters/ReviewId'
     patch:
       operationId: moveReviewToRule
       tags:
-      - Reviews
+        - Reviews
       summary: Admin moves a comment thread to a different rule
       requestBody:
         required: true
@@ -1252,16 +1256,16 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/reviews/{reviewId}/admin_destroy":
+          $ref: '#/components/responses/ErrorResponse'
+  /reviews/{reviewId}/admin_destroy:
     parameters:
-    - "$ref": "#/components/parameters/ReviewId"
+      - $ref: '#/components/parameters/ReviewId'
     delete:
       operationId: adminDestroyReview
       tags:
-      - Reviews
+        - Reviews
       summary: Admin permanently deletes a comment (irreversible)
       requestBody:
         content:
@@ -1277,16 +1281,16 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/reviews/{reviewId}/responses":
+          $ref: '#/components/responses/ErrorResponse'
+  /reviews/{reviewId}/responses:
     parameters:
-    - "$ref": "#/components/parameters/ReviewId"
+      - $ref: '#/components/parameters/ReviewId'
     get:
       operationId: getReviewResponses
       tags:
-      - Reviews
+        - Reviews
       summary: List replies to a review
       responses:
         '200':
@@ -1296,16 +1300,16 @@ paths:
               schema:
                 type: array
                 items:
-                  "$ref": "#/components/schemas/ReviewSummary"
+                  $ref: '#/components/schemas/ReviewSummary'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/reviews/{reviewId}/reactions":
+          $ref: '#/components/responses/ErrorResponse'
+  /reviews/{reviewId}/reactions:
     parameters:
-    - "$ref": "#/components/parameters/ReviewId"
+      - $ref: '#/components/parameters/ReviewId'
     get:
       operationId: listReactions
       tags:
-      - Reactions
+        - Reactions
       summary: List reactions on a review
       responses:
         '200':
@@ -1313,13 +1317,13 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ReactionsSummary"
+                $ref: '#/components/schemas/ReactionsSummary'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
+          $ref: '#/components/responses/ErrorResponse'
     post:
       operationId: createReaction
       tags:
-      - Reactions
+        - Reactions
       summary: Add a reaction (up/down) to a comment review
       requestBody:
         required: true
@@ -1334,24 +1338,24 @@ paths:
                     kind:
                       type: string
                       enum:
-                      - up
-                      - down
+                        - up
+                        - down
       responses:
         '200':
           description: Reaction created
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ReactionToggleResponse"
+                $ref: '#/components/schemas/ReactionToggleResponse'
         '422':
-          "$ref": "#/components/responses/UnprocessableEntity"
+          $ref: '#/components/responses/UnprocessableEntity'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/memberships":
+          $ref: '#/components/responses/ErrorResponse'
+  /memberships:
     post:
       operationId: createMembership
       tags:
-      - Memberships
+        - Memberships
       summary: Add a user to a project or component
       requestBody:
         required: true
@@ -1361,27 +1365,27 @@ paths:
               type: object
               properties:
                 membership:
-                  "$ref": "#/components/schemas/MembershipInput"
+                  $ref: '#/components/schemas/MembershipInput'
       responses:
         '200':
           description: Membership created
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/memberships/{membershipId}":
+          $ref: '#/components/responses/ErrorResponse'
+  /memberships/{membershipId}:
     parameters:
-    - name: membershipId
-      in: path
-      required: true
-      schema:
-        type: integer
+      - name: membershipId
+        in: path
+        required: true
+        schema:
+          type: integer
     put:
       operationId: updateMembership
       tags:
-      - Memberships
+        - Memberships
       summary: Update membership role
       requestBody:
         required: true
@@ -1391,20 +1395,20 @@ paths:
               type: object
               properties:
                 membership:
-                  "$ref": "#/components/schemas/MembershipInput"
+                  $ref: '#/components/schemas/MembershipInput'
       responses:
         '200':
           description: Membership updated
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
+          $ref: '#/components/responses/ErrorResponse'
     delete:
       operationId: deleteMembership
       tags:
-      - Memberships
+        - Memberships
       summary: Remove a membership
       responses:
         '200':
@@ -1412,14 +1416,14 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/srgs":
+          $ref: '#/components/responses/ErrorResponse'
+  /srgs:
     get:
       operationId: listSrgs
       tags:
-      - Benchmarks
+        - Benchmarks
       summary: List uploaded Security Requirements Guides
       responses:
         '200':
@@ -1429,13 +1433,13 @@ paths:
               schema:
                 type: array
                 items:
-                  "$ref": "#/components/schemas/BenchmarkSummary"
+                  $ref: '#/components/schemas/BenchmarkSummary'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
+          $ref: '#/components/responses/ErrorResponse'
     post:
       operationId: uploadSrg
       tags:
-      - Benchmarks
+        - Benchmarks
       summary: Upload an SRG XCCDF XML file
       requestBody:
         required: true
@@ -1453,20 +1457,20 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/srgs/{id}":
+          $ref: '#/components/responses/ErrorResponse'
+  /srgs/{id}:
     parameters:
-    - name: id
-      in: path
-      required: true
-      schema:
-        type: integer
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
     get:
       operationId: getSrg
       tags:
-      - Benchmarks
+        - Benchmarks
       summary: SRG detail with rules
       responses:
         '200':
@@ -1474,13 +1478,13 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/BenchmarkSummary"
+                $ref: '#/components/schemas/BenchmarkSummary'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
+          $ref: '#/components/responses/ErrorResponse'
     delete:
       operationId: deleteSrg
       tags:
-      - Benchmarks
+        - Benchmarks
       summary: Delete an SRG
       responses:
         '200':
@@ -1488,39 +1492,39 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/StatusOk"
+                $ref: '#/components/schemas/StatusOk'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/srgs/{id}/export/{type}":
+          $ref: '#/components/responses/ErrorResponse'
+  /srgs/{id}/export/{type}:
     parameters:
-    - name: id
-      in: path
-      required: true
-      schema:
-        type: integer
-    - name: type
-      in: path
-      required: true
-      schema:
-        type: string
-        enum:
-        - csv
-        - xccdf
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: type
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+            - csv
+            - xccdf
     get:
       operationId: exportSrg
       tags:
-      - Benchmarks
+        - Benchmarks
       summary: Export SRG in specified format
       responses:
         '200':
           description: File download
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/stigs":
+          $ref: '#/components/responses/ErrorResponse'
+  /stigs:
     get:
       operationId: listStigs
       tags:
-      - Benchmarks
+        - Benchmarks
       summary: List uploaded STIGs
       responses:
         '200':
@@ -1530,13 +1534,13 @@ paths:
               schema:
                 type: array
                 items:
-                  "$ref": "#/components/schemas/BenchmarkSummary"
+                  $ref: '#/components/schemas/BenchmarkSummary'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
+          $ref: '#/components/responses/ErrorResponse'
     post:
       operationId: uploadStig
       tags:
-      - Benchmarks
+        - Benchmarks
       summary: Upload a STIG XCCDF XML file
       requestBody:
         required: true
@@ -1554,20 +1558,20 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/stigs/{id}":
+          $ref: '#/components/responses/ErrorResponse'
+  /stigs/{id}:
     parameters:
-    - name: id
-      in: path
-      required: true
-      schema:
-        type: integer
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
     get:
       operationId: getStig
       tags:
-      - Benchmarks
+        - Benchmarks
       summary: STIG detail with rules
       responses:
         '200':
@@ -1575,13 +1579,13 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/BenchmarkSummary"
+                $ref: '#/components/schemas/BenchmarkSummary'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
+          $ref: '#/components/responses/ErrorResponse'
     delete:
       operationId: deleteStig
       tags:
-      - Benchmarks
+        - Benchmarks
       summary: Delete a STIG
       responses:
         '200':
@@ -1589,40 +1593,40 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/StatusOk"
+                $ref: '#/components/schemas/StatusOk'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/stigs/{id}/export/{type}":
+          $ref: '#/components/responses/ErrorResponse'
+  /stigs/{id}/export/{type}:
     parameters:
-    - name: id
-      in: path
-      required: true
-      schema:
-        type: integer
-    - name: type
-      in: path
-      required: true
-      schema:
-        type: string
-        enum:
-        - csv
-        - xccdf
-        - inspec
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: type
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+            - csv
+            - xccdf
+            - inspec
     get:
       operationId: exportStig
       tags:
-      - Benchmarks
+        - Benchmarks
       summary: Export STIG in specified format
       responses:
         '200':
           description: File download
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/users":
+          $ref: '#/components/responses/ErrorResponse'
+  /users:
     get:
       operationId: listUsers
       tags:
-      - Users
+        - Users
       summary: List all users (admin only)
       responses:
         '200':
@@ -1632,22 +1636,22 @@ paths:
               schema:
                 type: array
                 items:
-                  "$ref": "#/components/schemas/UserSummary"
+                  $ref: '#/components/schemas/UserSummary'
         '403':
-          "$ref": "#/components/responses/Forbidden"
+          $ref: '#/components/responses/Forbidden'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/users/{userId}":
+          $ref: '#/components/responses/ErrorResponse'
+  /users/{userId}:
     parameters:
-    - name: userId
-      in: path
-      required: true
-      schema:
-        type: integer
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
     put:
       operationId: updateUser
       tags:
-      - Users
+        - Users
       summary: Update user attributes (admin only)
       responses:
         '200':
@@ -1655,13 +1659,13 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
+          $ref: '#/components/responses/ErrorResponse'
     delete:
       operationId: deleteUser
       tags:
-      - Users
+        - Users
       summary: Delete a user (admin only)
       responses:
         '200':
@@ -1669,39 +1673,39 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/users/{userId}/comments":
+          $ref: '#/components/responses/ErrorResponse'
+  /users/{userId}/comments:
     parameters:
-    - name: userId
-      in: path
-      required: true
-      schema:
-        type: integer
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
     get:
       operationId: getUserComments
       tags:
-      - Users
+        - Users
       summary: My Comments page — user's comments across accessible projects
       parameters:
-      - "$ref": "#/components/parameters/TriageStatusFilter"
-      - "$ref": "#/components/parameters/PageParam"
-      - "$ref": "#/components/parameters/PerPageParam"
+        - $ref: '#/components/parameters/TriageStatusFilter'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
       responses:
         '200':
           description: Paginated user comments
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/PaginatedComments"
+                $ref: '#/components/schemas/PaginatedComments'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
-  "/users/unlink_identity":
+          $ref: '#/components/responses/ErrorResponse'
+  /users/unlink_identity:
     post:
       operationId: unlinkIdentity
       tags:
-      - Users
+        - Users
       summary: Unlink an OAuth provider from the current user
       requestBody:
         required: true
@@ -1720,79 +1724,206 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ToastResponse"
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
-          "$ref": "#/components/responses/ErrorResponse"
+          $ref: '#/components/responses/ErrorResponse'
+  /users/admin_create:
+    post:
+      operationId: adminCreateUser
+      tags:
+        - Users
+      summary: Create a new user (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  required:
+                    - email
+                  properties:
+                    name:
+                      type: string
+                    email:
+                      type: string
+                      format: email
+                    admin:
+                      type: boolean
+                    password:
+                      type: string
+      responses:
+        '200':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCreateResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
+  /users/{userId}/send_password_reset:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+    post:
+      operationId: sendPasswordReset
+      tags:
+        - Users
+      summary: Send Devise password reset email (admin only, requires SMTP)
+      responses:
+        '200':
+          description: Reset email sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+        '422':
+          description: SMTP not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+        '500':
+          description: Email delivery failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
+  /users/{userId}/generate_reset_link:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+    post:
+      operationId: generateResetLink
+      tags:
+        - Users
+      summary: Generate a password reset URL without sending email (admin only)
+      responses:
+        '200':
+          description: Reset link generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResetLinkResponse'
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
+  /users/{userId}/set_password:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+    post:
+      operationId: setPassword
+      tags:
+        - Users
+      summary: Directly set a user's password (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  required:
+                    - password
+                  properties:
+                    password:
+                      type: string
+      responses:
+        '200':
+          description: Password updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+        '422':
+          description: Blank password or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
+  /users/{userId}/lock:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+    post:
+      operationId: lockUser
+      tags:
+        - Users
+      summary: Lock a user account (admin only)
+      responses:
+        '200':
+          description: Account locked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserToastResponse'
+        '422':
+          description: Cannot lock own account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
+  /users/{userId}/unlock:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+    post:
+      operationId: unlockUser
+      tags:
+        - Users
+      summary: Unlock a locked user account (admin only)
+      responses:
+        '200':
+          description: Account unlocked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserToastResponse'
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
 components:
   securitySchemes:
     cookieAuth:
       type: apiKey
       in: cookie
       name: _vulcan_session
-  parameters:
-    ProjectId:
-      name: projectId
-      in: path
-      required: true
-      schema:
-        type: integer
-    ComponentId:
-      name: componentId
-      in: path
-      required: true
-      schema:
-        type: integer
-    RuleId:
-      name: ruleId
-      in: path
-      required: true
-      schema:
-        type: integer
-    ReviewId:
-      name: reviewId
-      in: path
-      required: true
-      schema:
-        type: integer
-    SearchQuery:
-      name: q
-      in: query
-      required: true
-      description: Search query (minimum 2 characters)
-      schema:
-        type: string
-        minLength: 2
-    TriageStatusFilter:
-      name: triage_status
-      in: query
-      schema:
-        type: string
-        enum:
-        - all
-        - pending
-        - concur
-        - concur_with_comment
-        - non_concur
-        - needs_clarification
-        - duplicate
-        - addressed_by
-        - withdrawn
-        default: all
-    PageParam:
-      name: page
-      in: query
-      schema:
-        type: integer
-        minimum: 1
-        default: 1
-    PerPageParam:
-      name: per_page
-      in: query
-      schema:
-        type: integer
-        minimum: 1
-        maximum: 1000
-        default: 25
   schemas:
     VersionResponse:
       type: object
@@ -1806,138 +1937,6 @@ components:
         ruby:
           type: string
           example: 3.4.9
-    ToastResponse:
-      type: object
-      properties:
-        toast:
-          type: object
-          properties:
-            title:
-              type: string
-            message:
-              type: array
-              items:
-                type: string
-            variant:
-              type: string
-              enum:
-              - success
-              - danger
-              - warning
-              - info
-    ProjectInput:
-      type: object
-      properties:
-        name:
-          type: string
-        description:
-          type: string
-        visibility:
-          type: string
-          enum:
-          - discoverable
-          - hidden
-    ComponentInput:
-      type: object
-      properties:
-        name:
-          type: string
-        prefix:
-          type: string
-        version:
-          type: string
-        release:
-          type: string
-        title:
-          type: string
-        description:
-          type: string
-    RuleInput:
-      type: object
-      properties:
-        status:
-          type: string
-          enum:
-          - Not Yet Determined
-          - Applicable - Configurable
-          - Applicable - Inherently Meets
-          - Applicable - Does Not Meet
-          - Not Applicable
-        title:
-          type: string
-        fixtext:
-          type: string
-        vendor_comments:
-          type: string
-        status_justification:
-          type: string
-        artifact_description:
-          type: string
-        locked:
-          type: boolean
-    ReviewInput:
-      type: object
-      properties:
-        action:
-          type: string
-          enum:
-          - comment
-          - request_review
-          - revoke_review_request
-          - approve
-          - lock
-        comment:
-          type: string
-        section:
-          type: string
-        responding_to_review_id:
-          type: integer
-    MembershipInput:
-      type: object
-      properties:
-        user_id:
-          type: integer
-        membership_id:
-          type: integer
-        membership_type:
-          type: string
-          enum:
-          - Project
-          - Component
-        role:
-          type: string
-          enum:
-          - viewer
-          - author
-          - reviewer
-          - admin
-    UserSummary:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type:
-          - string
-          - 'null'
-        email:
-          type: string
-        provider:
-          type:
-          - string
-          - 'null'
-        admin:
-          type: boolean
-        last_sign_in_at:
-          type:
-          - string
-          - 'null'
-        failed_attempts:
-          type: integer
-        locked_at:
-          type:
-          - string
-          - 'null'
     GlobalSearchResponse:
       type: object
       properties:
@@ -1952,8 +1951,8 @@ components:
                 type: string
               description:
                 type:
-                - string
-                - 'null'
+                  - string
+                  - 'null'
               components_count:
                 type: integer
         components:
@@ -1967,12 +1966,12 @@ components:
                 type: string
               version:
                 type:
-                - integer
-                - 'null'
+                  - integer
+                  - 'null'
               release:
                 type:
-                - integer
-                - 'null'
+                  - integer
+                  - 'null'
               project_id:
                 type: integer
               project_name:
@@ -2016,13 +2015,146 @@ components:
           type: array
           items:
             type: object
+    UserSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type:
+            - string
+            - 'null'
+        email:
+          type: string
+        provider:
+          type:
+            - string
+            - 'null'
+        admin:
+          type: boolean
+        last_sign_in_at:
+          type:
+            - string
+            - 'null'
+        failed_attempts:
+          type: integer
+        locked_at:
+          type:
+            - string
+            - 'null'
+    ProjectSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type:
+            - string
+            - 'null'
+        visibility:
+          type:
+            - string
+            - 'null'
+        components_count:
+          type: integer
+        created_at:
+          type:
+            - string
+            - 'null'
+        updated_at:
+          type:
+            - string
+            - 'null'
+    ProjectInput:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        visibility:
+          type: string
+          enum:
+            - discoverable
+            - hidden
+    ToastResponse:
+      type: object
+      properties:
+        toast:
+          type: object
+          properties:
+            title:
+              type: string
+            message:
+              type: array
+              items:
+                type: string
+            variant:
+              type: string
+              enum:
+                - success
+                - danger
+                - warning
+                - info
+    CommentRow:
+      type: object
+      properties:
+        id:
+          type: integer
+        rule_id:
+          type:
+            - integer
+            - 'null'
+        rule_displayed_name:
+          type: string
+        commentable_type:
+          type: string
+          enum:
+            - BaseRule
+            - Component
+        section:
+          type:
+            - string
+            - 'null'
+        author_name:
+          type: string
+        author_email:
+          type: string
+        comment:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        triage_status:
+          type: string
+        triage_set_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        adjudicated_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        responses_count:
+          type: integer
+        reactions:
+          type: object
+          properties:
+            up:
+              type: integer
+            down:
+              type: integer
     PaginatedComments:
       type: object
       properties:
         rows:
           type: array
           items:
-            "$ref": "#/components/schemas/CommentRow"
+            $ref: '#/components/schemas/CommentRow'
         pagination:
           type: object
           properties:
@@ -2038,168 +2170,6 @@ components:
           type: object
           additionalProperties:
             type: integer
-    CommentRow:
-      type: object
-      properties:
-        id:
-          type: integer
-        rule_id:
-          type:
-          - integer
-          - 'null'
-        rule_displayed_name:
-          type: string
-        commentable_type:
-          type: string
-          enum:
-          - BaseRule
-          - Component
-        section:
-          type:
-          - string
-          - 'null'
-        author_name:
-          type: string
-        author_email:
-          type: string
-        comment:
-          type: string
-        created_at:
-          type: string
-          format: date-time
-        triage_status:
-          type: string
-        triage_set_at:
-          type:
-          - string
-          - 'null'
-          format: date-time
-        adjudicated_at:
-          type:
-          - string
-          - 'null'
-          format: date-time
-        responses_count:
-          type: integer
-        reactions:
-          type: object
-          properties:
-            up:
-              type: integer
-            down:
-              type: integer
-    StatusOk:
-      type: object
-      properties:
-        status:
-          type: string
-          example: ok
-    ProjectSummary:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        description:
-          type:
-          - string
-          - 'null'
-        visibility:
-          type:
-          - string
-          - 'null'
-        components_count:
-          type: integer
-        created_at:
-          type:
-          - string
-          - 'null'
-        updated_at:
-          type:
-          - string
-          - 'null'
-    ComponentSummary:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        prefix:
-          type: string
-        version:
-          type:
-          - integer
-          - 'null'
-        release:
-          type:
-          - integer
-          - 'null'
-        title:
-          type:
-          - string
-          - 'null'
-        released:
-          type: boolean
-        project_id:
-          type: integer
-        rules_count:
-          type: integer
-        description:
-          type:
-          - string
-          - 'null'
-    RuleSummary:
-      type: object
-      properties:
-        id:
-          type: integer
-        rule_id:
-          type: string
-        status:
-          type:
-          - string
-          - 'null'
-        title:
-          type:
-          - string
-          - 'null'
-        locked:
-          type: boolean
-        component_id:
-          type: integer
-    BenchmarkSummary:
-      type: object
-      properties:
-        id:
-          type: integer
-        srg_id:
-          type:
-          - string
-          - 'null'
-        stig_id:
-          type:
-          - string
-          - 'null'
-        name:
-          type:
-          - string
-          - 'null'
-        title:
-          type:
-          - string
-          - 'null'
-        version:
-          type:
-          - string
-          - 'null'
-        release_date:
-          type:
-          - string
-          - 'null'
-        severity_counts:
-          type: object
     AuditEntry:
       type: object
       properties:
@@ -2213,17 +2183,142 @@ components:
           type: string
         audited_changes:
           oneOf:
-          - type: object
-          - type: string
-          - type: 'null'
+            - type: object
+            - type: string
+            - type: 'null'
         user_id:
           type:
-          - integer
-          - 'null'
+            - integer
+            - 'null'
         created_at:
           type:
-          - string
-          - 'null'
+            - string
+            - 'null'
+    ComponentSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        prefix:
+          type: string
+        version:
+          type:
+            - integer
+            - 'null'
+        release:
+          type:
+            - integer
+            - 'null'
+        title:
+          type:
+            - string
+            - 'null'
+        released:
+          type: boolean
+        project_id:
+          type: integer
+        rules_count:
+          type: integer
+        description:
+          type:
+            - string
+            - 'null'
+    ComponentInput:
+      type: object
+      properties:
+        name:
+          type: string
+        prefix:
+          type: string
+        version:
+          type: string
+        release:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+    RuleSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        rule_id:
+          type: string
+        status:
+          type:
+            - string
+            - 'null'
+        title:
+          type:
+            - string
+            - 'null'
+        locked:
+          type: boolean
+        component_id:
+          type: integer
+    RuleInput:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - Not Yet Determined
+            - Applicable - Configurable
+            - Applicable - Inherently Meets
+            - Applicable - Does Not Meet
+            - Not Applicable
+        title:
+          type: string
+        fixtext:
+          type: string
+        vendor_comments:
+          type: string
+        status_justification:
+          type: string
+        artifact_description:
+          type: string
+        locked:
+          type: boolean
+    ReviewInput:
+      type: object
+      properties:
+        action:
+          type: string
+          enum:
+            - comment
+            - request_review
+            - revoke_review_request
+            - approve
+            - lock
+        comment:
+          type: string
+        section:
+          type: string
+        responding_to_review_id:
+          type: integer
+    ReviewSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        action:
+          type: string
+        comment:
+          type: string
+        user_id:
+          type: integer
+        rule_id:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        responding_to_review_id:
+          type:
+            - integer
+            - 'null'
     ReactionsSummary:
       type: object
       properties:
@@ -2253,29 +2348,139 @@ components:
               type: integer
             mine:
               type:
-              - string
-              - 'null'
-    ReviewSummary:
+                - string
+                - 'null'
+    MembershipInput:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        membership_id:
+          type: integer
+        membership_type:
+          type: string
+          enum:
+            - Project
+            - Component
+        role:
+          type: string
+          enum:
+            - viewer
+            - author
+            - reviewer
+            - admin
+    BenchmarkSummary:
       type: object
       properties:
         id:
           type: integer
-        action:
-          type: string
-        comment:
-          type: string
-        user_id:
-          type: integer
-        rule_id:
-          type: integer
-        created_at:
-          type: string
-          format: date-time
-        responding_to_review_id:
+        srg_id:
           type:
-          - integer
-          - 'null'
+            - string
+            - 'null'
+        stig_id:
+          type:
+            - string
+            - 'null'
+        name:
+          type:
+            - string
+            - 'null'
+        title:
+          type:
+            - string
+            - 'null'
+        version:
+          type:
+            - string
+            - 'null'
+        release_date:
+          type:
+            - string
+            - 'null'
+        severity_counts:
+          type: object
+    StatusOk:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+    AdminCreateResponse:
+      type: object
+      properties:
+        toast:
+          type:
+            - string
+            - object
+          properties:
+            title:
+              type: string
+            message:
+              type:
+                - array
+                - string
+              items:
+                type: string
+            variant:
+              type: string
+        user:
+          $ref: '#/components/schemas/UserSummary'
+        reset_url:
+          type: string
+    ResetLinkResponse:
+      type: object
+      properties:
+        toast:
+          type: object
+          properties:
+            title:
+              type: string
+            message:
+              type: array
+              items:
+                type: string
+            variant:
+              type: string
+        reset_url:
+          type: string
+    UserToastResponse:
+      type: object
+      properties:
+        toast:
+          type: object
+          properties:
+            title:
+              type: string
+            message:
+              type: array
+              items:
+                type: string
+            variant:
+              type: string
+        user:
+          $ref: '#/components/schemas/UserSummary'
   responses:
+    ErrorResponse:
+      description: Error response (401 unauthorized, 403 forbidden, 404 not found, 422 validation, or 500 server error)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              toast:
+                type: object
+                properties:
+                  title:
+                    type: string
+                  message:
+                    type: array
+                    items:
+                      type: string
+                  variant:
+                    type: string
     Unauthorized:
       description: Authentication required
       content:
@@ -2286,15 +2491,6 @@ components:
               error:
                 type: string
                 example: You need to sign in or sign up before continuing.
-    Forbidden:
-      description: Insufficient permissions
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
     UnprocessableEntity:
       description: Validation errors
       content:
@@ -2314,9 +2510,8 @@ components:
                   variant:
                     type: string
                     example: danger
-    ErrorResponse:
-      description: Error response (401 unauthorized, 403 forbidden, 404 not found,
-        422 validation, or 500 server error)
+    Forbidden:
+      description: Insufficient permissions
       content:
         application/json:
           schema:
@@ -2324,14 +2519,67 @@ components:
             properties:
               error:
                 type: string
-              toast:
-                type: object
-                properties:
-                  title:
-                    type: string
-                  message:
-                    type: array
-                    items:
-                      type: string
-                  variant:
-                    type: string
+  parameters:
+    SearchQuery:
+      name: q
+      in: query
+      required: true
+      description: Search query (minimum 2 characters)
+      schema:
+        type: string
+        minLength: 2
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      schema:
+        type: integer
+    TriageStatusFilter:
+      name: triage_status
+      in: query
+      schema:
+        type: string
+        enum:
+          - all
+          - pending
+          - concur
+          - concur_with_comment
+          - non_concur
+          - needs_clarification
+          - duplicate
+          - addressed_by
+          - withdrawn
+        default: all
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PerPageParam:
+      name: per_page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 1000
+        default: 25
+    ComponentId:
+      name: componentId
+      in: path
+      required: true
+      schema:
+        type: integer
+    RuleId:
+      name: ruleId
+      in: path
+      required: true
+      schema:
+        type: integer
+    ReviewId:
+      name: reviewId
+      in: path
+      required: true
+      schema:
+        type: integer

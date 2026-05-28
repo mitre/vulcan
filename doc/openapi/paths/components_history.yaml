@@ -1,0 +1,51 @@
+get:
+  operationId: getComponentHistory
+  tags:
+    - Components
+  summary: Revision history for a named component across versions
+  parameters:
+    - name: project_id
+      in: query
+      required: true
+      schema:
+        type: integer
+      description: Project containing the component versions
+    - name: name
+      in: query
+      required: true
+      schema:
+        type: string
+      description: Component name to trace across versions
+  responses:
+    '200':
+      description: Ordered revision history with per-version diffs
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                component:
+                  $ref: ../components/schemas/ComponentSummary.yaml
+                base_component:
+                  $ref: ../components/schemas/ComponentSummary.yaml
+                diff_component:
+                  $ref: ../components/schemas/ComponentSummary.yaml
+                changes:
+                  type: object
+                  additionalProperties:
+                    type: object
+                    properties:
+                      change:
+                        type: string
+                        enum:
+                          - added
+                          - removed
+                          - updated
+                      base:
+                        type: object
+                      diff:
+                        type: object
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

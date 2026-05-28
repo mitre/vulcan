@@ -1,0 +1,14 @@
+type: object
+properties:
+  name:
+    type: string
+  prefix:
+    type: string
+  version:
+    type: string
+  release:
+    type: string
+  title:
+    type: string
+  description:
+    type: string

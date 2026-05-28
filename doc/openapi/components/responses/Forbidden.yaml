@@ -1,0 +1,8 @@
+description: Insufficient permissions
+content:
+  application/json:
+    schema:
+      type: object
+      properties:
+        error:
+          type: string

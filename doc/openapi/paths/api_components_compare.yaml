@@ -1,0 +1,52 @@
+get:
+  operationId: compareComponents
+  tags:
+    - Components
+  summary: Side-by-side rule comparison between two peer components
+  parameters:
+    - name: base_id
+      in: query
+      required: true
+      schema:
+        type: integer
+      description: ID of the base (older) component
+    - name: diff_id
+      in: query
+      required: true
+      schema:
+        type: integer
+      description: ID of the diff (newer) component
+  responses:
+    '200':
+      description: Rule-by-rule diff with metadata envelope
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+                additionalProperties:
+                  type: object
+                  properties:
+                    base:
+                      type:
+                        - string
+                        - 'null'
+                    diff:
+                      type:
+                        - string
+                        - 'null'
+                    changed:
+                      type: boolean
+              meta:
+                type: object
+                properties:
+                  base_id:
+                    type: integer
+                  diff_id:
+                    type: integer
+                  rules_count:
+                    type: integer
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

@@ -1,0 +1,41 @@
+parameters:
+  - $ref: ../components/parameters/ComponentId.yaml
+get:
+  operationId: listComponentRules
+  tags:
+    - Rules
+  summary: List rules for a component
+  responses:
+    '200':
+      description: Rules list
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/RuleSummary.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+post:
+  operationId: createRule
+  tags:
+    - Rules
+  summary: Create a new rule in a component
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            rule:
+              $ref: ../components/schemas/RuleInput.yaml
+  responses:
+    '200':
+      description: Rule created
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

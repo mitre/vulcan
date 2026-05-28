@@ -1,0 +1,26 @@
+type: object
+properties:
+  id:
+    type: integer
+  name:
+    type:
+      - string
+      - 'null'
+  email:
+    type: string
+  provider:
+    type:
+      - string
+      - 'null'
+  admin:
+    type: boolean
+  last_sign_in_at:
+    type:
+      - string
+      - 'null'
+  failed_attempts:
+    type: integer
+  locked_at:
+    type:
+      - string
+      - 'null'

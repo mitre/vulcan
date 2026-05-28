@@ -1,0 +1,18 @@
+type: object
+properties:
+  user_id:
+    type: integer
+  membership_id:
+    type: integer
+  membership_type:
+    type: string
+    enum:
+      - Project
+      - Component
+  role:
+    type: string
+    enum:
+      - viewer
+      - author
+      - reviewer
+      - admin

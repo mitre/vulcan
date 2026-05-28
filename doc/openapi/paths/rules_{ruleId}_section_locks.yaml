@@ -1,0 +1,16 @@
+parameters:
+  - $ref: ../components/parameters/RuleId.yaml
+patch:
+  operationId: updateSectionLocks
+  tags:
+    - Rules
+  summary: Update locked sections on a single rule
+  responses:
+    '200':
+      description: Section locks updated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

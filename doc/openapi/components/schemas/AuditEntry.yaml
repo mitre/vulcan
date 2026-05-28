@@ -1,0 +1,23 @@
+type: object
+properties:
+  id:
+    type: integer
+  auditable_type:
+    type: string
+  auditable_id:
+    type: integer
+  action:
+    type: string
+  audited_changes:
+    oneOf:
+      - type: object
+      - type: string
+      - type: 'null'
+  user_id:
+    type:
+      - integer
+      - 'null'
+  created_at:
+    type:
+      - string
+      - 'null'

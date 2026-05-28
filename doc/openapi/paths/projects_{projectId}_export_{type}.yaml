@@ -1,0 +1,56 @@
+parameters:
+  - $ref: ../components/parameters/ProjectId.yaml
+  - name: type
+    in: path
+    required: true
+    schema:
+      type: string
+      enum:
+        - csv
+        - xccdf
+        - inspec
+        - json_archive
+get:
+  operationId: exportProject
+  tags:
+    - Projects
+  summary: Export project data in the specified format
+  parameters:
+    - name: component_ids
+      in: query
+      required: true
+      schema:
+        type: string
+      description: Comma-separated component IDs
+    - name: mode
+      in: query
+      schema:
+        type: string
+        enum:
+          - working_copy
+          - vendor_submission
+          - published_stig
+    - name: include_srg
+      in: query
+      schema:
+        type: string
+        enum:
+          - 'true'
+    - name: include_memberships
+      in: query
+      schema:
+        type: string
+        enum:
+          - 'true'
+          - 'false'
+    - name: exclude_satisfied_by
+      in: query
+      schema:
+        type: string
+        enum:
+          - 'true'
+  responses:
+    '200':
+      description: File download
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

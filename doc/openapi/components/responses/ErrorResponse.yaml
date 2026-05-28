@@ -1,0 +1,21 @@
+description: >-
+  Error response (401 unauthorized, 403 forbidden, 404 not found, 422
+  validation, or 500 server error)
+content:
+  application/json:
+    schema:
+      type: object
+      properties:
+        error:
+          type: string
+        toast:
+          type: object
+          properties:
+            title:
+              type: string
+            message:
+              type: array
+              items:
+                type: string
+            variant:
+              type: string

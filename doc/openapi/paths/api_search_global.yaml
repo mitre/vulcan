@@ -1,0 +1,30 @@
+get:
+  operationId: globalSearch
+  tags:
+    - Search
+  summary: Search across all resource types
+  parameters:
+    - $ref: ../components/parameters/SearchQuery.yaml
+    - name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 20
+        default: 5
+    - name: component_id
+      in: query
+      description: Scope rule search to a specific component
+      schema:
+        type: integer
+  responses:
+    '200':
+      description: Search results grouped by type
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/GlobalSearchResponse.yaml
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

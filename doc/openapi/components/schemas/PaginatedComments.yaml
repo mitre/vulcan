@@ -1,0 +1,21 @@
+type: object
+properties:
+  rows:
+    type: array
+    items:
+      $ref: ./CommentRow.yaml
+  pagination:
+    type: object
+    properties:
+      page:
+        type: integer
+      per_page:
+        type: integer
+      total:
+        type: integer
+      total_comments:
+        type: integer
+  status_counts:
+    type: object
+    additionalProperties:
+      type: integer

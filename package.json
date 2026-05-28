@@ -33,6 +33,7 @@
   "version": "2.3.7",
   "devDependencies": {
     "@eslint/js": "^9.33.0",
+    "@redocly/cli": "^2.31.5",
     "@vitejs/plugin-vue2": "^2.3.4",
     "@vitest/coverage-v8": "^4.0.18",
     "@vue/test-utils": "1",
@@ -61,6 +62,8 @@
     "build:css": "sass ./app/javascript/application.scss:./app/assets/builds/application.css --load-path=node_modules",
     "build:watch": "chokidar 'app/javascript/**/*' -c 'yarn build'",
     "dev": "concurrently \"rails server\" \"yarn build:watch\"",
+    "openapi:bundle": "redocly bundle doc/openapi/openapi.yaml -o doc/openapi.yaml",
+    "openapi:lint": "redocly lint doc/openapi/openapi.yaml",
     "docs:dev": "cd docs && yarn dev",
     "docs:build": "cd docs && yarn build",
     "docs:preview": "cd docs && yarn preview"

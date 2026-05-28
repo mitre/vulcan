@@ -1,0 +1,19 @@
+type: object
+properties:
+  id:
+    type: integer
+  action:
+    type: string
+  comment:
+    type: string
+  user_id:
+    type: integer
+  rule_id:
+    type: integer
+  created_at:
+    type: string
+    format: date-time
+  responding_to_review_id:
+    type:
+      - integer
+      - 'null'

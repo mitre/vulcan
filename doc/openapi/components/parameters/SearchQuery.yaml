@@ -1,0 +1,7 @@
+name: q
+in: query
+required: true
+description: Search query (minimum 2 characters)
+schema:
+  type: string
+  minLength: 2

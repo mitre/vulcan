@@ -1,0 +1,41 @@
+get:
+  operationId: listProjects
+  tags:
+    - Projects
+  summary: List accessible projects
+  responses:
+    '200':
+      description: Projects list (HTML or JSON)
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/ProjectSummary.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+post:
+  operationId: createProject
+  tags:
+    - Projects
+  summary: Create a new project
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            project:
+              $ref: ../components/schemas/ProjectInput.yaml
+  responses:
+    '200':
+      description: Project created
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    '422':
+      $ref: ../components/responses/UnprocessableEntity.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

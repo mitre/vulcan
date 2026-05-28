@@ -1,0 +1,18 @@
+type: object
+properties:
+  id:
+    type: integer
+  rule_id:
+    type: string
+  status:
+    type:
+      - string
+      - 'null'
+  title:
+    type:
+      - string
+      - 'null'
+  locked:
+    type: boolean
+  component_id:
+    type: integer

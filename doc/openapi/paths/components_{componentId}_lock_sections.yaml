@@ -1,0 +1,27 @@
+parameters:
+  - $ref: ../components/parameters/ComponentId.yaml
+patch:
+  operationId: lockSections
+  tags:
+    - Components
+  summary: Lock specific sections on every unlocked rule
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            locked_fields:
+              type: array
+              items:
+                type: string
+  responses:
+    '200':
+      description: Sections locked
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

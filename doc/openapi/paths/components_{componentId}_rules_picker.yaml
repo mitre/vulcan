@@ -1,0 +1,21 @@
+parameters:
+  - $ref: ../components/parameters/ComponentId.yaml
+get:
+  operationId: getRulesPicker
+  tags:
+    - Rules
+  summary: Lightweight rule list for picker UI
+  responses:
+    '200':
+      description: Rules in picker format
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              rules:
+                type: array
+                items:
+                  $ref: ../components/schemas/RuleSummary.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

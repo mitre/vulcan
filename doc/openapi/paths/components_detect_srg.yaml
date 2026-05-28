@@ -1,0 +1,31 @@
+post:
+  operationId: detectSrg
+  tags:
+    - Components
+  summary: Detect which SRG a spreadsheet belongs to
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          properties:
+            file:
+              type: string
+              format: binary
+  responses:
+    '200':
+      description: Matched SRG info
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              srg_id:
+                type: integer
+              srg_title:
+                type: string
+    '422':
+      $ref: ../components/responses/UnprocessableEntity.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

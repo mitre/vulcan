@@ -1,0 +1,25 @@
+parameters:
+  - $ref: ../components/parameters/RuleId.yaml
+post:
+  operationId: revertRule
+  tags:
+    - Rules
+  summary: Revert a rule to a previous audit version
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            audit_id:
+              type: integer
+  responses:
+    '200':
+      description: Rule reverted
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

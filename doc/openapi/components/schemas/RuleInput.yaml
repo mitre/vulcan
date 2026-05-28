@@ -1,0 +1,22 @@
+type: object
+properties:
+  status:
+    type: string
+    enum:
+      - Not Yet Determined
+      - Applicable - Configurable
+      - Applicable - Inherently Meets
+      - Applicable - Does Not Meet
+      - Not Applicable
+  title:
+    type: string
+  fixtext:
+    type: string
+  vendor_comments:
+    type: string
+  status_justification:
+    type: string
+  artifact_description:
+    type: string
+  locked:
+    type: boolean

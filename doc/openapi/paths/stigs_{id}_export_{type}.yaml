@@ -1,0 +1,25 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    schema:
+      type: integer
+  - name: type
+    in: path
+    required: true
+    schema:
+      type: string
+      enum:
+        - csv
+        - xccdf
+        - inspec
+get:
+  operationId: exportStig
+  tags:
+    - Benchmarks
+  summary: Export STIG in specified format
+  responses:
+    '200':
+      description: File download
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

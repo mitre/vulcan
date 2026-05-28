@@ -1,0 +1,30 @@
+type: object
+properties:
+  id:
+    type: integer
+  srg_id:
+    type:
+      - string
+      - 'null'
+  stig_id:
+    type:
+      - string
+      - 'null'
+  name:
+    type:
+      - string
+      - 'null'
+  title:
+    type:
+      - string
+      - 'null'
+  version:
+    type:
+      - string
+      - 'null'
+  release_date:
+    type:
+      - string
+      - 'null'
+  severity_counts:
+    type: object

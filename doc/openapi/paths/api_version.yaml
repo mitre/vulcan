@@ -1,0 +1,14 @@
+get:
+  operationId: getVersion
+  tags:
+    - System
+  summary: Application version
+  responses:
+    '200':
+      description: Version info
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/VersionResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

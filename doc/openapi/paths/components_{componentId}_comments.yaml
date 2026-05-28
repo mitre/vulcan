@@ -1,0 +1,51 @@
+parameters:
+  - $ref: ../components/parameters/ComponentId.yaml
+get:
+  operationId: getComponentComments
+  tags:
+    - Components
+  summary: Paginated triage table for component comments
+  parameters:
+    - $ref: ../components/parameters/TriageStatusFilter.yaml
+    - $ref: ../components/parameters/PageParam.yaml
+    - $ref: ../components/parameters/PerPageParam.yaml
+    - name: section
+      in: query
+      schema:
+        type: string
+    - name: rule_id
+      in: query
+      schema:
+        type: integer
+    - name: author_id
+      in: query
+      schema:
+        type: integer
+    - name: query
+      in: query
+      schema:
+        type: string
+    - name: resolved
+      in: query
+      schema:
+        type: string
+        enum:
+          - 'true'
+          - 'false'
+          - all
+    - name: commentable_type
+      in: query
+      schema:
+        type: string
+        enum:
+          - rule
+          - component
+  responses:
+    '200':
+      description: Paginated comment rows
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/PaginatedComments.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

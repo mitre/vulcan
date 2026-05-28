@@ -1,0 +1,15 @@
+name: triage_status
+in: query
+schema:
+  type: string
+  enum:
+    - all
+    - pending
+    - concur
+    - concur_with_comment
+    - non_concur
+    - needs_clarification
+    - duplicate
+    - addressed_by
+    - withdrawn
+  default: all

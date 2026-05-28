@@ -1,0 +1,20 @@
+parameters:
+  - name: userId
+    in: path
+    required: true
+    schema:
+      type: integer
+post:
+  operationId: generateResetLink
+  tags:
+    - Users
+  summary: Generate a password reset URL without sending email (admin only)
+  responses:
+    '200':
+      description: Reset link generated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ResetLinkResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

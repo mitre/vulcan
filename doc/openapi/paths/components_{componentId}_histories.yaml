@@ -1,0 +1,18 @@
+parameters:
+  - $ref: ../components/parameters/ComponentId.yaml
+get:
+  operationId: getComponentHistories
+  tags:
+    - Components
+  summary: Audit history for the component
+  responses:
+    '200':
+      description: History entries
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/AuditEntry.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

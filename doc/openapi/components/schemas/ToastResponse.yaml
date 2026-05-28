@@ -1,0 +1,18 @@
+type: object
+properties:
+  toast:
+    type: object
+    properties:
+      title:
+        type: string
+      message:
+        type: array
+        items:
+          type: string
+      variant:
+        type: string
+        enum:
+          - success
+          - danger
+          - warning
+          - info

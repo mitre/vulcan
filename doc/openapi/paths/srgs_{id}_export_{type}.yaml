@@ -1,0 +1,24 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    schema:
+      type: integer
+  - name: type
+    in: path
+    required: true
+    schema:
+      type: string
+      enum:
+        - csv
+        - xccdf
+get:
+  operationId: exportSrg
+  tags:
+    - Benchmarks
+  summary: Export SRG in specified format
+  responses:
+    '200':
+      description: File download
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

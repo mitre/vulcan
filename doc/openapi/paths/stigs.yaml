@@ -1,0 +1,40 @@
+get:
+  operationId: listStigs
+  tags:
+    - Benchmarks
+  summary: List uploaded STIGs
+  responses:
+    '200':
+      description: STIGs list
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/BenchmarkSummary.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+post:
+  operationId: uploadStig
+  tags:
+    - Benchmarks
+  summary: Upload a STIG XCCDF XML file
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          properties:
+            file:
+              type: string
+              format: binary
+  responses:
+    '200':
+      description: STIG uploaded
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

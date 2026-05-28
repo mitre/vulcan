@@ -1,0 +1,24 @@
+parameters:
+  - name: userId
+    in: path
+    required: true
+    schema:
+      type: integer
+get:
+  operationId: getUserComments
+  tags:
+    - Users
+  summary: My Comments page — user's comments across accessible projects
+  parameters:
+    - $ref: ../components/parameters/TriageStatusFilter.yaml
+    - $ref: ../components/parameters/PageParam.yaml
+    - $ref: ../components/parameters/PerPageParam.yaml
+  responses:
+    '200':
+      description: Paginated user comments
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/PaginatedComments.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

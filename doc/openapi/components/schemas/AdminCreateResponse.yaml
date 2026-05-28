@@ -1,0 +1,21 @@
+type: object
+properties:
+  toast:
+    type:
+      - string
+      - object
+    properties:
+      title:
+        type: string
+      message:
+        type:
+          - array
+          - string
+        items:
+          type: string
+      variant:
+        type: string
+  user:
+    $ref: ./UserSummary.yaml
+  reset_url:
+    type: string

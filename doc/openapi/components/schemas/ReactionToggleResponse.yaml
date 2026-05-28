@@ -1,0 +1,13 @@
+type: object
+properties:
+  reactions:
+    type: object
+    properties:
+      up:
+        type: integer
+      down:
+        type: integer
+      mine:
+        type:
+          - string
+          - 'null'

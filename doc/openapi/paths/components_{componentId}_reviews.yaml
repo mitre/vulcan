@@ -1,0 +1,25 @@
+parameters:
+  - $ref: ../components/parameters/ComponentId.yaml
+post:
+  operationId: createComponentReview
+  tags:
+    - Reviews
+  summary: Create a comment-action review on a component
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            review:
+              $ref: ../components/schemas/ReviewInput.yaml
+  responses:
+    '200':
+      description: Review created
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
