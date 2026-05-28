@@ -101,6 +101,31 @@ class Review < ApplicationRecord
     # rubocop:enable Rails/SkipsModelValidations
   end
 
+  # Applies one triage decision (and an optional response, copied per-comment)
+  # to many top-level comments in a single transaction. Each comment gets its
+  # own response Review so threads stay self-contained. The per-row audits
+  # share the request's request_uuid, so the bulk action is recoverable as one
+  # correlated group. Raises if the selection spans more than one component.
+  def self.bulk_triage(reviews:, triage_status:, user:, response_comment: nil)
+    reviews = Array(reviews)
+    raise ArgumentError, 'No comments selected.' if reviews.empty?
+    raise ArgumentError, 'Bulk triage cannot span multiple components.' if reviews.map { |r| r.component&.id }.uniq.size > 1
+
+    responses = []
+    transaction do
+      reviews.each do |review|
+        review.audit_comment = "Bulk triage: #{triage_status}"
+        review.update!(triage_status: triage_status, triage_set_by_id: user.id, triage_set_at: Time.current)
+
+        next if response_comment.blank?
+
+        responses << create!(action: ACTION_COMMENT, comment: response_comment, user: user,
+                             rule: review.rule, responding_to_review_id: review.id, section: review.section)
+      end
+    end
+    { reviews: reviews, response_reviews: responses }
+  end
+
   # recursive subtree fetch via
   # Postgres WITH RECURSIVE CTE. Returns root + every descendant via
   # responding_to_review_id chain in one query, ordered so the root

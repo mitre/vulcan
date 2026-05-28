@@ -1,5 +1,6 @@
 import {
   triageReview,
+  bulkTriageReviews,
   adjudicateReview,
   adminDestroyReview,
   moveReviewToRule,
@@ -9,6 +10,10 @@ import {
 
 export function submitTriage(reviewId, payload) {
   return triageReview(reviewId, payload);
+}
+
+export function submitBulkTriage(reviewIds, payload) {
+  return bulkTriageReviews(reviewIds, payload);
 }
 
 export function submitAdjudicate(reviewId) {

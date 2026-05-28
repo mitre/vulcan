@@ -93,6 +93,8 @@ Rails.application.routes.draw do
   # Public-comment-review lifecycle endpoints (PR #717): triage / adjudicate /
   # reopen / withdraw / update operate on a Review by id. See ReviewsController.
   # Task 33: reply-chain reader. Auth via parent component's released-vs-member gate.
+  # Bulk triage — declared before /reviews/:id/* so the literal segment wins.
+  patch '/reviews/bulk_triage',         to: 'reviews#bulk_triage'
   get   '/reviews/:id/responses',       to: 'reviews#responses'
   patch '/reviews/:id/triage',          to: 'reviews#triage'
   patch '/reviews/:id/adjudicate',      to: 'reviews#adjudicate'

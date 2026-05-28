@@ -13,11 +13,14 @@ class ReviewsController < ApplicationController
   # their own pending comments. The comment itself stays put (project record
   # stability); the actor just loses the ability to alter it after leaving.
   before_action :set_project_from_review, only: %i[triage adjudicate reopen withdraw update admin_withdraw admin_restore admin_destroy move_to_rule section responses]
+  # Bulk triage operates on many reviews; load+validate them and derive
+  # @component/@project here so the standard authorize_*_project filters apply.
+  before_action :set_bulk_reviews, only: %i[bulk_triage]
   before_action :set_project
   before_action :authorize_viewer_project, only: %i[create withdraw update]
   before_action :authorize_admin_component, only: %i[lock_controls]
   before_action :authorize_review_component, only: %i[lock_sections]
-  before_action :authorize_author_project, only: %i[triage adjudicate reopen section]
+  before_action :authorize_author_project, only: %i[triage adjudicate reopen section bulk_triage]
   before_action :authorize_review_owner, only: %i[withdraw update]
   # admin override actions are gated to project admins.
   # Authorization runs from set_project_from_review, so @project is set.
@@ -31,7 +34,7 @@ class ReviewsController < ApplicationController
   # the whole point and must work even after the comment window closes
   # (e.g., remove PII discovered post-final).
   before_action :reject_if_comments_closed, only: %i[create]
-  before_action :reject_if_frozen_for_writes, only: %i[triage adjudicate reopen withdraw update section]
+  before_action :reject_if_frozen_for_writes, only: %i[triage adjudicate reopen withdraw update section bulk_triage]
   # single audit-comment gate. Each
   # mutating endpoint that requires an operator-supplied reason was
   # open-coding the same blank-check + 422 toast (5 sites, ~8 lines each).
@@ -164,6 +167,30 @@ class ReviewsController < ApplicationController
       review: ReviewBlueprint.render_as_hash(@review),
       response_review: response_review ? ReviewBlueprint.render_as_hash(response_review) : nil
     }
+  end
+
+  # PATCH /reviews/bulk_triage — author+ applies one triage decision (and an
+  # optional response, copied per-comment) to many selected comments at once.
+  # Component-scoped: @reviews is loaded + same-component-validated in
+  # set_bulk_reviews. Per-comment audits share the request's request_uuid.
+  def bulk_triage
+    if (validation_error = validate_triage_params)
+      return render_toast(title: 'Could not save triage.', message: validation_error)
+    end
+
+    result = Review.bulk_triage(
+      reviews: @reviews,
+      triage_status: params[:triage_status],
+      response_comment: params[:response_comment],
+      user: current_user
+    )
+
+    render json: {
+      reviews: result[:reviews].map { |r| ReviewBlueprint.render_as_hash(r) },
+      response_reviews: result[:response_reviews].map { |r| ReviewBlueprint.render_as_hash(r) }
+    }
+  rescue ArgumentError => e
+    render_toast(title: 'Could not save triage.', message: e.message)
   end
 
   # PATCH /reviews/:id/adjudicate — author+ marks a triaged comment as
@@ -641,6 +668,26 @@ class ReviewsController < ApplicationController
     @review = Review.find(params[:id])
   end
 
+  # Loads the bulk-triage selection and enforces the component-scope invariant
+  # before authorization runs, deriving @component/@project for the standard
+  # authorize_*_project filters. Renders a 422 toast on empty or cross-component
+  # selections (the anti-pattern guard for cross-component bulk triage).
+  def set_bulk_reviews
+    ids = Array(params[:review_ids]).map(&:to_i).uniq.reject(&:zero?)
+    @reviews = Review.where(id: ids).to_a
+
+    return render_toast(title: 'Could not save triage.', message: 'No comments selected.') if @reviews.empty?
+
+    components = @reviews.filter_map(&:component).uniq
+    if components.size != 1
+      return render_toast(title: 'Could not save triage.',
+                          message: 'Bulk triage cannot span multiple components.')
+    end
+
+    @component = components.first
+    @project = @component.project
+  end
+
   # Derives @project from @review's rule chain so the standard
   # authorize_*_project filters work without modification. This is the
   # IDOR guard for cross-project Review access — pairing set_review with
@@ -750,7 +797,7 @@ class ReviewsController < ApplicationController
   # withdrawals, or self-edits can be applied to its Reviews. The
   # disposition matrix is published; the trail is immutable.
   def reject_if_frozen_for_writes
-    component = @review&.component
+    component = @review&.component || @component
     return unless component&.frozen_for_writes?
 
     render_toast(title: 'Cannot modify review.',
