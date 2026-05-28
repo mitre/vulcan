@@ -20,7 +20,7 @@ class UsersController < ApplicationController
                         .map(&:format)
     respond_to do |format|
       format.html
-      format.json { render json: @users }
+      format.json { render json: @users.as_json(only: USER_JSON_FIELDS + [:last_sign_in_at]) }
     end
   end
 

@@ -13,6 +13,21 @@ RSpec.describe 'Users' do
   let(:regular_user) { create(:user, admin: false) }
   let(:target_user) { create(:user, admin: false) }
 
+  describe 'GET /users JSON format' do
+    before { sign_in admin_user }
+
+    it 'includes locked_at, failed_attempts, and last_sign_in_at in response' do
+      get '/users', headers: { 'Accept' => 'application/json' }
+      expect(response).to have_http_status(:ok)
+
+      body = response.parsed_body
+      user_keys = body.first.keys
+      expect(user_keys).to include('locked_at')
+      expect(user_keys).to include('failed_attempts')
+      expect(user_keys).to include('last_sign_in_at')
+    end
+  end
+
   describe 'PUT /users/:id HTML format with admin user' do
     before { sign_in admin_user }
 
