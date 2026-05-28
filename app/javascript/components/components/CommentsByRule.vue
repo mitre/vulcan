@@ -40,10 +40,13 @@
             :class="triageBgClass(comment.triage_status)"
           >
             <div class="d-flex justify-content-between align-items-baseline">
-              <div>
-                <strong>{{ comment.author_name }}</strong>
-                <small class="text-muted ml-2">{{ friendlyDateTime(comment.created_at) }}</small>
-              </div>
+              <CommentAuthorLine
+                :name="comment.author_name"
+                :commenter-display-name="comment.commenter_display_name"
+                :email="comment.author_email"
+                :date="comment.created_at"
+                layout="inline"
+              />
               <TriageStatusBadge
                 v-if="comment.triage_status"
                 :status="comment.triage_status"
@@ -99,11 +102,11 @@
 </template>
 
 <script>
-import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
 import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import ReactionButtons from "../shared/ReactionButtons.vue";
 import CommentThread from "../shared/CommentThread.vue";
+import CommentAuthorLine from "../shared/CommentAuthorLine.vue";
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
 import { triageBgClass as getTriageBgClass } from "../../utils/triageBgClass";
 import { sectionIndex } from "../../utils/sectionSortOrder";
@@ -111,8 +114,8 @@ import { groupCommentsByRule } from "../../utils/groupCommentsByRule";
 
 export default {
   name: "CommentsByRule",
-  components: { TriageStatusBadge, ReactionButtons, CommentThread },
-  mixins: [DateFormatMixin, ReactionToggleMixin],
+  components: { TriageStatusBadge, ReactionButtons, CommentThread, CommentAuthorLine },
+  mixins: [ReactionToggleMixin],
   props: {
     rows: { type: Array, required: true },
     allExpanded: { type: Boolean, default: false },

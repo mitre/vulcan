@@ -69,24 +69,22 @@
             />
           </p>
           <div class="mb-1">
-            <p class="mb-0 text-muted small">
-              <strong>{{ activeComment.author_name || "—" }}</strong>
-              <span v-if="activeComment.author_email" data-testid="author-email">
-                ({{ activeComment.author_email }})
-              </span>
-            </p>
-            <p class="mb-0 text-muted small">
-              posted {{ friendlyDateTime(activeComment.created_at) }}
-              <b-badge
-                v-if="isContentStale"
-                variant="warning"
-                pill
-                class="ml-2"
-                data-testid="staleness-badge"
-              >
-                Section updated since this comment
-              </b-badge>
-            </p>
+            <CommentAuthorLine
+              :name="activeComment.author_name"
+              :commenter-display-name="activeComment.commenter_display_name"
+              :email="activeComment.author_email"
+              :date="activeComment.created_at"
+              layout="block"
+            />
+            <b-badge
+              v-if="isContentStale"
+              variant="warning"
+              pill
+              class="ml-0 mt-1"
+              data-testid="staleness-badge"
+            >
+              Section updated since this comment
+            </b-badge>
           </div>
           <hr class="mt-1 mb-2" data-testid="comment-divider" />
           <blockquote
@@ -246,6 +244,7 @@ import RuleContextPanel from "./RuleContextPanel.vue";
 import CommentTriageForm from "./CommentTriageForm.vue";
 import RulePicker from "../components/RulePicker.vue";
 import ReactionButtons from "../shared/ReactionButtons.vue";
+import CommentAuthorLine from "../shared/CommentAuthorLine.vue";
 import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
 import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
 import { triageBgClass } from "../../utils/triageBgClass";
@@ -262,6 +261,7 @@ export default {
     SectionLabel,
     RulePicker,
     ReactionButtons,
+    CommentAuthorLine,
   },
   mixins: [AlertMixin, FormMixin, RoleComparisonMixin, ReactionToggleMixin, DateFormatMixin],
   props: {

@@ -201,10 +201,12 @@
         <SectionLabel :section="value" :commentable-type="item.commentable_type" />
       </template>
       <template #cell(author_name)="{ item }">
-        <div class="author-cell">
-          <div>{{ item.author_name || item.commenter_display_name || "—" }}</div>
-          <small v-if="item.author_email" class="text-muted">{{ item.author_email }}</small>
-        </div>
+        <CommentAuthorLine
+          :name="item.author_name"
+          :commenter-display-name="item.commenter_display_name"
+          :email="item.author_email"
+          layout="cell"
+        />
       </template>
       <template #cell(comment)="{ item, value }">
         <div class="comment-cell">
@@ -339,6 +341,7 @@ import CommentComposerModal from "./CommentComposerModal.vue";
 import CommentsByRule from "./CommentsByRule.vue";
 import InfoTooltip from "../shared/InfoTooltip.vue";
 import CommentProgressBar from "../triage/CommentProgressBar.vue";
+import CommentAuthorLine from "../shared/CommentAuthorLine.vue";
 import ComponentSearchModal from "../shared/ComponentSearchModal.vue";
 import Highlighter from "vue-highlight-words";
 import ReplyComposerMixin from "../../mixins/ReplyComposerMixin.vue";
@@ -356,6 +359,7 @@ export default {
     CommentsByRule,
     InfoTooltip,
     CommentProgressBar,
+    CommentAuthorLine,
     ComponentSearchModal,
     Highlighter,
   },
