@@ -4,15 +4,33 @@ get:
   operationId: searchRelatedComponents
   tags:
     - Components
-  summary: Find components sharing the same SRG
+  summary: Find components sharing the same SRG baseline
+  description: >-
+    Returns other components that are based on the same SRG as this component.
+    Used by the DiffViewer to find peer components for side-by-side comparison.
+    Scoped to components the current user can access. Requires authentication.
   responses:
     '200':
-      description: Related components
+      description: Related components sharing the same SRG
       content:
         application/json:
           schema:
             type: array
             items:
               $ref: ../components/schemas/ComponentSummary.yaml
+          examples:
+            related:
+              summary: Two peer components
+              value:
+                - id: 30
+                  name: Container SRG v2
+                  prefix: CNTR
+                  version: "2"
+                  release: "1"
+                - id: 31
+                  name: Container SRG (Training)
+                  prefix: CNTR
+                  version: "1"
+                  release: "1"
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

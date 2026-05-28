@@ -4,14 +4,28 @@ get:
   operationId: getComponent
   tags:
     - Components
-  summary: Component detail with rules (editor or viewer mode based on membership)
+  summary: Component detail with rules
+  description: >-
+    Returns full component details including all rules with their content
+    fields. The view (editor vs viewer) depends on the user's membership
+    role. Requires project membership or admin role.
   responses:
     '200':
-      description: Component with rules via ComponentBlueprint
+      description: Component with rules
       content:
         application/json:
           schema:
             $ref: ../components/schemas/ComponentSummary.yaml
+          examples:
+            component:
+              summary: Container SRG component
+              value:
+                id: 29
+                name: Container SRG
+                prefix: CNTR
+                version: "1"
+                release: "1"
+                released: false
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
 put:
@@ -19,6 +33,10 @@ put:
   tags:
     - Components
   summary: Update component attributes
+  description: >-
+    Updates component metadata (name, prefix, version, release, description).
+    Requires admin role on the parent project. Does not modify rules — use
+    the rule endpoints for rule content changes.
   requestBody:
     required: true
     content:
@@ -28,6 +46,13 @@ put:
           properties:
             component:
               $ref: ../components/schemas/ComponentInput.yaml
+        examples:
+          update:
+            summary: Update version and release
+            value:
+              component:
+                version: "2"
+                release: "1"
   responses:
     '200':
       description: Component updated
@@ -35,6 +60,15 @@ put:
         application/json:
           schema:
             $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            updated:
+              summary: Component updated
+              value:
+                toast:
+                  title: Component updated.
+                  message:
+                    - Successfully updated component.
+                  variant: success
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
 patch:
@@ -42,6 +76,9 @@ patch:
   tags:
     - Components
   summary: Partial update of component attributes
+  description: >-
+    Partial update — same behavior as PUT but only supplied fields are changed.
+    Requires admin role on the parent project.
   requestBody:
     required: true
     content:
@@ -64,7 +101,11 @@ delete:
   operationId: deleteComponent
   tags:
     - Components
-  summary: Delete a component and all dependent records
+  summary: Delete a component and all its rules
+  description: >-
+    Permanently deletes the component, all its rules, reviews, and associated
+    data. Requires admin role on the parent project. This action cannot be
+    undone.
   responses:
     '200':
       description: Component deleted
@@ -72,5 +113,14 @@ delete:
         application/json:
           schema:
             $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            deleted:
+              summary: Component deleted
+              value:
+                toast:
+                  title: Component deleted.
+                  message:
+                    - Successfully deleted component.
+                  variant: success
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

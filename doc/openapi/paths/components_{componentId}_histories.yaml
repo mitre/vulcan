@@ -5,14 +5,27 @@ get:
   tags:
     - Components
   summary: Audit history for the component
+  description: >-
+    Returns the 50 most recent audit trail entries for the component,
+    including rule changes, review actions, and metadata updates. Used by
+    the component history sidebar. Requires project membership.
   responses:
     '200':
-      description: History entries
+      description: Recent audit entries
       content:
         application/json:
           schema:
             type: array
             items:
               $ref: ../components/schemas/AuditEntry.yaml
+          examples:
+            history:
+              summary: Recent component changes
+              value:
+                - id: 600
+                  auditable_type: Rule
+                  action: update
+                  user_name: Demo Admin
+                  created_at: "2026-05-28T15:00:00Z"
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

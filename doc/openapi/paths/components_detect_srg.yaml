@@ -3,28 +3,48 @@ post:
   tags:
     - Components
   summary: Detect which SRG a spreadsheet belongs to
+  description: >-
+    Analyzes an uploaded spreadsheet (CSV/XLSX) to determine which SRG its
+    rule IDs match. Used by the component creation flow to auto-select the
+    correct SRG when importing from a spreadsheet. Requires authentication.
   requestBody:
     required: true
     content:
       multipart/form-data:
         schema:
           type: object
+          required:
+            - file
           properties:
             file:
               type: string
               format: binary
+              description: CSV or XLSX spreadsheet containing rule IDs.
   responses:
     '200':
-      description: Matched SRG info
+      description: Matched SRG
       content:
         application/json:
           schema:
             type: object
+            required:
+              - srg_id
+              - srg_title
             properties:
               srg_id:
                 type: integer
+                description: ID of the matched SRG.
+                example: 1
               srg_title:
                 type: string
+                description: Title of the matched SRG.
+                example: "Container Platform Security Requirements Guide"
+          examples:
+            detected:
+              summary: SRG detected from spreadsheet
+              value:
+                srg_id: 1
+                srg_title: "Container Platform Security Requirements Guide"
     '422':
       $ref: ../components/responses/UnprocessableEntity.yaml
     4XX:

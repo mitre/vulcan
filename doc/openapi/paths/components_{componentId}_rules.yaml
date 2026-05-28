@@ -4,16 +4,32 @@ get:
   operationId: listComponentRules
   tags:
     - Rules
-  summary: List rules for a component
+  summary: List all rules for a component
+  description: >-
+    Returns all rules in the component with full content fields (title, fixtext,
+    check_content, vuln_discussion, etc.). Used by the component editor to
+    populate the rule list. Requires project membership.
   responses:
     '200':
-      description: Rules list
+      description: All component rules
       content:
         application/json:
           schema:
             type: array
             items:
               $ref: ../components/schemas/RuleSummary.yaml
+          examples:
+            rules:
+              summary: Two rules
+              value:
+                - id: 100
+                  rule_id: "CNTR-00-000050"
+                  title: "Container images must be signed"
+                  status: "Applicable - Configurable"
+                - id: 101
+                  rule_id: "CNTR-00-000051"
+                  title: "Container images must come from approved registries"
+                  status: "Applicable - Configurable"
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
 post:
@@ -21,6 +37,10 @@ post:
   tags:
     - Rules
   summary: Create a new rule in a component
+  description: >-
+    Creates a new rule with the specified content fields. The rule_id must
+    follow the component's prefix pattern. Requires author role or higher
+    on the parent project.
   requestBody:
     required: true
     content:
@@ -30,6 +50,14 @@ post:
           properties:
             rule:
               $ref: ../components/schemas/RuleInput.yaml
+        examples:
+          create:
+            summary: Create a rule
+            value:
+              rule:
+                title: "New container security requirement"
+                status: "Applicable - Configurable"
+                severity: medium
   responses:
     '200':
       description: Rule created
@@ -37,5 +65,14 @@ post:
         application/json:
           schema:
             $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            created:
+              summary: Rule created
+              value:
+                toast:
+                  title: Rule created.
+                  message:
+                    - Successfully created rule.
+                  variant: success
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

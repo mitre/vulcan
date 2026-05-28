@@ -3,19 +3,26 @@ get:
   tags:
     - Components
   summary: Revision history for a named component across versions
+  description: >-
+    Traces the version history of a component by name within a project.
+    Returns an ordered list of versions with rule-level diffs between
+    consecutive releases. Used by the component history/DiffViewer feature.
+    Requires project membership.
   parameters:
     - name: project_id
       in: query
       required: true
+      description: ID of the project containing the component versions.
       schema:
         type: integer
-      description: Project containing the component versions
+      example: 4
     - name: name
       in: query
       required: true
+      description: Component name to trace across versions.
       schema:
         type: string
-      description: Component name to trace across versions
+      example: "Container SRG"
   responses:
     '200':
       description: Ordered revision history with per-version diffs
@@ -34,6 +41,7 @@ get:
                   $ref: ../components/schemas/ComponentSummary.yaml
                 changes:
                   type: object
+                  description: Rule-level changes keyed by rule_id.
                   additionalProperties:
                     type: object
                     properties:
@@ -47,5 +55,31 @@ get:
                         type: object
                       diff:
                         type: object
+          examples:
+            history:
+              summary: Two versions with one rule change
+              value:
+                - component:
+                    id: 30
+                    name: Container SRG
+                    version: "2"
+                    release: "1"
+                  base_component:
+                    id: 29
+                    name: Container SRG
+                    version: "1"
+                    release: "1"
+                  diff_component:
+                    id: 30
+                    name: Container SRG
+                    version: "2"
+                    release: "1"
+                  changes:
+                    CNTR-00-000050:
+                      change: updated
+                      base:
+                        fixtext: "Original fix..."
+                      diff:
+                        fixtext: "Updated fix..."
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

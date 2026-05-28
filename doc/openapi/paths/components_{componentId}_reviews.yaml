@@ -4,7 +4,12 @@ post:
   operationId: createComponentReview
   tags:
     - Reviews
-  summary: Create a comment-action review on a component
+  summary: Post a public comment on a component
+  description: >-
+    Creates a new comment-action review on the component (component-level
+    comment) or on a specific rule within it. The component must have an
+    open comment period (accepting_new_comments? check). Requires project
+    membership with at least viewer role.
   requestBody:
     required: true
     content:
@@ -14,12 +19,37 @@ post:
           properties:
             review:
               $ref: ../components/schemas/ReviewInput.yaml
+        examples:
+          component_comment:
+            summary: Post a component-level comment
+            value:
+              review:
+                action: comment
+                comment: "The overall approach to container isolation is sound."
+                section: null
+          rule_comment:
+            summary: Comment on a specific rule's fix text
+            value:
+              review:
+                action: comment
+                comment: "The fix text should reference the vendor's hardening guide."
+                rule_id: 100
+                section: fixtext
   responses:
     '200':
-      description: Review created
+      description: Comment created
       content:
         application/json:
           schema:
             $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            created:
+              summary: Comment posted
+              value:
+                toast:
+                  title: Comment posted.
+                  message:
+                    - Your comment has been submitted for review.
+                  variant: success
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

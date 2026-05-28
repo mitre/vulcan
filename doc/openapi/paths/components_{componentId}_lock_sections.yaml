@@ -5,23 +5,56 @@ patch:
   tags:
     - Components
   summary: Lock specific sections on every unlocked rule
+  description: >-
+    Locks the specified content sections (e.g., fixtext, check_content) across
+    all unlocked rules in the component. Locked sections cannot be edited until
+    unlocked. Requires admin role on the parent project.
   requestBody:
     required: true
     content:
       application/json:
         schema:
           type: object
+          required:
+            - locked_fields
           properties:
             locked_fields:
               type: array
+              description: Section field names to lock.
               items:
                 type: string
+                enum:
+                  - title
+                  - fixtext
+                  - check_content
+                  - vuln_discussion
+                  - severity
+                  - status
+              example:
+                - fixtext
+                - check_content
+        examples:
+          lock_fix_check:
+            summary: Lock fix text and check content
+            value:
+              locked_fields:
+                - fixtext
+                - check_content
   responses:
     '200':
-      description: Sections locked
+      description: Sections locked across all unlocked rules
       content:
         application/json:
           schema:
             $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            locked:
+              summary: Sections locked
+              value:
+                toast:
+                  title: Sections locked.
+                  message:
+                    - "fixtext and check_content locked on 264 rules."
+                  variant: success
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

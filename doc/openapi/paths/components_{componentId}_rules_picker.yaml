@@ -5,17 +5,34 @@ get:
   tags:
     - Rules
   summary: Lightweight rule list for picker UI
+  description: >-
+    Returns a compact list of rules for dropdown/picker selection (e.g.,
+    the move-to-rule admin action or duplicate-of picker). Lighter than
+    the full rules list — omits content fields. Requires project membership.
   responses:
     '200':
-      description: Rules in picker format
+      description: Rules for picker selection
       content:
         application/json:
           schema:
             type: object
+            required:
+              - rules
             properties:
               rules:
                 type: array
                 items:
                   $ref: ../components/schemas/RuleSummary.yaml
+          examples:
+            picker:
+              summary: Rules for dropdown
+              value:
+                rules:
+                  - id: 100
+                    rule_id: "CNTR-00-000050"
+                    title: "Container images must be signed"
+                  - id: 101
+                    rule_id: "CNTR-00-000051"
+                    title: "Container images must come from approved registries"
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

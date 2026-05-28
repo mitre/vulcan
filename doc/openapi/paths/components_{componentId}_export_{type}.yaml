@@ -3,6 +3,7 @@ parameters:
   - name: type
     in: path
     required: true
+    description: Export format.
     schema:
       type: string
       enum:
@@ -11,13 +12,49 @@ parameters:
         - inspec
         - json_archive
         - disposition_csv
+    example: xccdf
 get:
   operationId: exportComponent
   tags:
     - Components
   summary: Export component in the specified format
+  description: >-
+    Downloads the component as CSV, XCCDF XML, InSpec profile, JSON archive,
+    or disposition CSV. Supports mode selection (working_copy, vendor_submission,
+    published_stig) via query param. disposition_csv is for DISA comment
+    triage matrix export. Requires project membership.
+  parameters:
+    - name: mode
+      in: query
+      description: Export mode controlling which fields are included.
+      schema:
+        type: string
+        enum:
+          - working_copy
+          - vendor_submission
+          - published_stig
+      example: working_copy
+    - name: triage_status
+      in: query
+      description: Filter disposition CSV by triage status.
+      schema:
+        type: string
+      example: pending
   responses:
     '200':
-      description: File download
+      description: Binary file download
+      content:
+        text/csv:
+          schema:
+            type: string
+            format: binary
+        application/xml:
+          schema:
+            type: string
+            format: binary
+        application/zip:
+          schema:
+            type: string
+            format: binary
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

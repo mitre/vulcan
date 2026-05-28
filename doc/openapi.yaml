@@ -555,15 +555,32 @@ paths:
       tags:
         - Components
       summary: List released components
+      description: Returns all released (published) components visible to the current user. Released components are read-only snapshots that have been through the DISA review process. Requires authentication.
       responses:
         '200':
-          description: Components list
+          description: Released components
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/ComponentSummary'
+              examples:
+                components:
+                  summary: Two released components
+                  value:
+                    - id: 29
+                      name: Container SRG
+                      prefix: CNTR
+                      version: '1'
+                      release: '1'
+                      released: true
+                    - id: 30
+                      name: Photon OS 3
+                      prefix: PHOS-03
+                      version: '1'
+                      release: '1'
+                      released: true
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /projects/{projectId}/components:
@@ -627,14 +644,25 @@ paths:
       operationId: getComponent
       tags:
         - Components
-      summary: Component detail with rules (editor or viewer mode based on membership)
+      summary: Component detail with rules
+      description: Returns full component details including all rules with their content fields. The view (editor vs viewer) depends on the user's membership role. Requires project membership or admin role.
       responses:
         '200':
-          description: Component with rules via ComponentBlueprint
+          description: Component with rules
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ComponentSummary'
+              examples:
+                component:
+                  summary: Container SRG component
+                  value:
+                    id: 29
+                    name: Container SRG
+                    prefix: CNTR
+                    version: '1'
+                    release: '1'
+                    released: false
         4XX:
           $ref: '#/components/responses/ErrorResponse'
     put:
@@ -642,6 +670,7 @@ paths:
       tags:
         - Components
       summary: Update component attributes
+      description: Updates component metadata (name, prefix, version, release, description). Requires admin role on the parent project. Does not modify rules — use the rule endpoints for rule content changes.
       requestBody:
         required: true
         content:
@@ -651,6 +680,13 @@ paths:
               properties:
                 component:
                   $ref: '#/components/schemas/ComponentInput'
+            examples:
+              update:
+                summary: Update version and release
+                value:
+                  component:
+                    version: '2'
+                    release: '1'
       responses:
         '200':
           description: Component updated
@@ -658,6 +694,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                updated:
+                  summary: Component updated
+                  value:
+                    toast:
+                      title: Component updated.
+                      message:
+                        - Successfully updated component.
+                      variant: success
         4XX:
           $ref: '#/components/responses/ErrorResponse'
     patch:
@@ -665,6 +710,7 @@ paths:
       tags:
         - Components
       summary: Partial update of component attributes
+      description: Partial update — same behavior as PUT but only supplied fields are changed. Requires admin role on the parent project.
       requestBody:
         required: true
         content:
@@ -687,7 +733,8 @@ paths:
       operationId: deleteComponent
       tags:
         - Components
-      summary: Delete a component and all dependent records
+      summary: Delete a component and all its rules
+      description: Permanently deletes the component, all its rules, reviews, and associated data. Requires admin role on the parent project. This action cannot be undone.
       responses:
         '200':
           description: Component deleted
@@ -695,6 +742,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                deleted:
+                  summary: Component deleted
+                  value:
+                    toast:
+                      title: Component deleted.
+                      message:
+                        - Successfully deleted component.
+                      variant: success
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /components/{componentId}/comments:
@@ -705,48 +761,69 @@ paths:
       tags:
         - Components
       summary: Paginated triage table for component comments
+      description: Returns paginated public comments on this component's rules, with triage status counts and filtering. Powers the triage page table and split-pane views. Supports filtering by status, section, rule, author, text search, and resolution state. Requires project membership.
       parameters:
         - $ref: '#/components/parameters/TriageStatusFilter'
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PerPageParam'
         - name: section
           in: query
+          description: Filter by requirement section (fixtext, check_content, etc.).
           schema:
             type: string
+          example: fixtext
         - name: rule_id
           in: query
+          description: Filter to comments on a specific rule.
           schema:
             type: integer
+          example: 100
         - name: author_id
           in: query
+          description: Filter to comments by a specific author.
           schema:
             type: integer
-        - name: query
+          example: 42
+        - name: q
           in: query
+          description: Full-text search across comment content.
           schema:
             type: string
-        - name: resolved
+          example: container image
+        - name: include_rule_content
           in: query
+          description: Include rule content fields for split-pane triage view.
           schema:
             type: string
             enum:
               - 'true'
-              - 'false'
-              - all
-        - name: commentable_type
-          in: query
-          schema:
-            type: string
-            enum:
-              - rule
-              - component
       responses:
         '200':
-          description: Paginated comment rows
+          description: Paginated comment rows with status counts
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedComments'
+              examples:
+                comments:
+                  summary: Pending comments on Container SRG
+                  value:
+                    rows:
+                      - id: 44
+                        rule_displayed_name: CNTR-00-000050
+                        section: fixtext
+                        author_name: John Osborne
+                        author_email: josborne@example.org
+                        comment: This requirement needs clarification...
+                        triage_status: pending
+                        created_at: '2026-05-19T16:15:00Z'
+                    pagination:
+                      page: 1
+                      per_page: 25
+                      total: 10
+                    status_counts:
+                      pending: 10
+                      concur: 2
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /components/{componentId}/export/{type}:
@@ -755,6 +832,7 @@ paths:
       - name: type
         in: path
         required: true
+        description: Export format.
         schema:
           type: string
           enum:
@@ -763,14 +841,46 @@ paths:
             - inspec
             - json_archive
             - disposition_csv
+        example: xccdf
     get:
       operationId: exportComponent
       tags:
         - Components
       summary: Export component in the specified format
+      description: Downloads the component as CSV, XCCDF XML, InSpec profile, JSON archive, or disposition CSV. Supports mode selection (working_copy, vendor_submission, published_stig) via query param. disposition_csv is for DISA comment triage matrix export. Requires project membership.
+      parameters:
+        - name: mode
+          in: query
+          description: Export mode controlling which fields are included.
+          schema:
+            type: string
+            enum:
+              - working_copy
+              - vendor_submission
+              - published_stig
+          example: working_copy
+        - name: triage_status
+          in: query
+          description: Filter disposition CSV by triage status.
+          schema:
+            type: string
+          example: pending
       responses:
         '200':
-          description: File download
+          description: Binary file download
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/xml:
+              schema:
+                type: string
+                format: binary
+            application/zip:
+              schema:
+                type: string
+                format: binary
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /components/{componentId}/lock:
@@ -781,6 +891,7 @@ paths:
       tags:
         - Components
       summary: Lock all unlocked rules in a component
+      description: Locks every currently-unlocked rule in the component, preventing further edits. Optionally accepts a comment for the audit trail. Requires admin role on the parent project. Already-locked rules are unaffected.
       requestBody:
         content:
           application/json:
@@ -792,13 +903,30 @@ paths:
                   properties:
                     comment:
                       type: string
+                      description: Audit trail comment explaining why the component was locked.
+                      example: Locking for DISA submission review.
+            examples:
+              lock:
+                summary: Lock with audit comment
+                value:
+                  review:
+                    comment: Locking for DISA submission review.
       responses:
         '200':
-          description: Controls locked
+          description: All rules locked
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                locked:
+                  summary: Component locked
+                  value:
+                    toast:
+                      title: Controls locked.
+                      message:
+                        - 264 rules locked.
+                      variant: success
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /components/{componentId}/lock_sections:
@@ -809,24 +937,54 @@ paths:
       tags:
         - Components
       summary: Lock specific sections on every unlocked rule
+      description: Locks the specified content sections (e.g., fixtext, check_content) across all unlocked rules in the component. Locked sections cannot be edited until unlocked. Requires admin role on the parent project.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - locked_fields
               properties:
                 locked_fields:
                   type: array
+                  description: Section field names to lock.
                   items:
                     type: string
+                    enum:
+                      - title
+                      - fixtext
+                      - check_content
+                      - vuln_discussion
+                      - severity
+                      - status
+                  example:
+                    - fixtext
+                    - check_content
+            examples:
+              lock_fix_check:
+                summary: Lock fix text and check content
+                value:
+                  locked_fields:
+                    - fixtext
+                    - check_content
       responses:
         '200':
-          description: Sections locked
+          description: Sections locked across all unlocked rules
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                locked:
+                  summary: Sections locked
+                  value:
+                    toast:
+                      title: Sections locked.
+                      message:
+                        - fixtext and check_content locked on 264 rules.
+                      variant: success
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /components/{componentId}/histories:
@@ -837,15 +995,25 @@ paths:
       tags:
         - Components
       summary: Audit history for the component
+      description: Returns the 50 most recent audit trail entries for the component, including rule changes, review actions, and metadata updates. Used by the component history sidebar. Requires project membership.
       responses:
         '200':
-          description: History entries
+          description: Recent audit entries
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/AuditEntry'
+              examples:
+                history:
+                  summary: Recent component changes
+                  value:
+                    - id: 600
+                      auditable_type: Rule
+                      action: update
+                      user_name: Demo Admin
+                      created_at: '2026-05-28T15:00:00Z'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /components/{componentId}/rules:
@@ -855,16 +1023,29 @@ paths:
       operationId: listComponentRules
       tags:
         - Rules
-      summary: List rules for a component
+      summary: List all rules for a component
+      description: Returns all rules in the component with full content fields (title, fixtext, check_content, vuln_discussion, etc.). Used by the component editor to populate the rule list. Requires project membership.
       responses:
         '200':
-          description: Rules list
+          description: All component rules
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/RuleSummary'
+              examples:
+                rules:
+                  summary: Two rules
+                  value:
+                    - id: 100
+                      rule_id: CNTR-00-000050
+                      title: Container images must be signed
+                      status: Applicable - Configurable
+                    - id: 101
+                      rule_id: CNTR-00-000051
+                      title: Container images must come from approved registries
+                      status: Applicable - Configurable
         4XX:
           $ref: '#/components/responses/ErrorResponse'
     post:
@@ -872,6 +1053,7 @@ paths:
       tags:
         - Rules
       summary: Create a new rule in a component
+      description: Creates a new rule with the specified content fields. The rule_id must follow the component's prefix pattern. Requires author role or higher on the parent project.
       requestBody:
         required: true
         content:
@@ -881,6 +1063,14 @@ paths:
               properties:
                 rule:
                   $ref: '#/components/schemas/RuleInput'
+            examples:
+              create:
+                summary: Create a rule
+                value:
+                  rule:
+                    title: New container security requirement
+                    status: Applicable - Configurable
+                    severity: medium
       responses:
         '200':
           description: Rule created
@@ -888,6 +1078,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                created:
+                  summary: Rule created
+                  value:
+                    toast:
+                      title: Rule created.
+                      message:
+                        - Successfully created rule.
+                      variant: success
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /components/{componentId}/rules_picker:
@@ -898,18 +1097,32 @@ paths:
       tags:
         - Rules
       summary: Lightweight rule list for picker UI
+      description: Returns a compact list of rules for dropdown/picker selection (e.g., the move-to-rule admin action or duplicate-of picker). Lighter than the full rules list — omits content fields. Requires project membership.
       responses:
         '200':
-          description: Rules in picker format
+          description: Rules for picker selection
           content:
             application/json:
               schema:
                 type: object
+                required:
+                  - rules
                 properties:
                   rules:
                     type: array
                     items:
                       $ref: '#/components/schemas/RuleSummary'
+              examples:
+                picker:
+                  summary: Rules for dropdown
+                  value:
+                    rules:
+                      - id: 100
+                        rule_id: CNTR-00-000050
+                        title: Container images must be signed
+                      - id: 101
+                        rule_id: CNTR-00-000051
+                        title: Container images must come from approved registries
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /components/detect_srg:
@@ -918,28 +1131,45 @@ paths:
       tags:
         - Components
       summary: Detect which SRG a spreadsheet belongs to
+      description: Analyzes an uploaded spreadsheet (CSV/XLSX) to determine which SRG its rule IDs match. Used by the component creation flow to auto-select the correct SRG when importing from a spreadsheet. Requires authentication.
       requestBody:
         required: true
         content:
           multipart/form-data:
             schema:
               type: object
+              required:
+                - file
               properties:
                 file:
                   type: string
                   format: binary
+                  description: CSV or XLSX spreadsheet containing rule IDs.
       responses:
         '200':
-          description: Matched SRG info
+          description: Matched SRG
           content:
             application/json:
               schema:
                 type: object
+                required:
+                  - srg_id
+                  - srg_title
                 properties:
                   srg_id:
                     type: integer
+                    description: ID of the matched SRG.
+                    example: 1
                   srg_title:
                     type: string
+                    description: Title of the matched SRG.
+                    example: Container Platform Security Requirements Guide
+              examples:
+                detected:
+                  summary: SRG detected from spreadsheet
+                  value:
+                    srg_id: 1
+                    srg_title: Container Platform Security Requirements Guide
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
         4XX:
@@ -950,19 +1180,22 @@ paths:
       tags:
         - Components
       summary: Revision history for a named component across versions
+      description: Traces the version history of a component by name within a project. Returns an ordered list of versions with rule-level diffs between consecutive releases. Used by the component history/DiffViewer feature. Requires project membership.
       parameters:
         - name: project_id
           in: query
           required: true
+          description: ID of the project containing the component versions.
           schema:
             type: integer
-          description: Project containing the component versions
+          example: 4
         - name: name
           in: query
           required: true
+          description: Component name to trace across versions.
           schema:
             type: string
-          description: Component name to trace across versions
+          example: Container SRG
       responses:
         '200':
           description: Ordered revision history with per-version diffs
@@ -981,6 +1214,7 @@ paths:
                       $ref: '#/components/schemas/ComponentSummary'
                     changes:
                       type: object
+                      description: Rule-level changes keyed by rule_id.
                       additionalProperties:
                         type: object
                         properties:
@@ -994,6 +1228,32 @@ paths:
                             type: object
                           diff:
                             type: object
+              examples:
+                history:
+                  summary: Two versions with one rule change
+                  value:
+                    - component:
+                        id: 30
+                        name: Container SRG
+                        version: '2'
+                        release: '1'
+                      base_component:
+                        id: 29
+                        name: Container SRG
+                        version: '1'
+                        release: '1'
+                      diff_component:
+                        id: 30
+                        name: Container SRG
+                        version: '2'
+                        release: '1'
+                      changes:
+                        CNTR-00-000050:
+                          change: updated
+                          base:
+                            fixtext: Original fix...
+                          diff:
+                            fixtext: Updated fix...
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /components/{componentId}/related:
@@ -1003,16 +1263,31 @@ paths:
       operationId: searchRelatedComponents
       tags:
         - Components
-      summary: Find components sharing the same SRG
+      summary: Find components sharing the same SRG baseline
+      description: Returns other components that are based on the same SRG as this component. Used by the DiffViewer to find peer components for side-by-side comparison. Scoped to components the current user can access. Requires authentication.
       responses:
         '200':
-          description: Related components
+          description: Related components sharing the same SRG
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/ComponentSummary'
+              examples:
+                related:
+                  summary: Two peer components
+                  value:
+                    - id: 30
+                      name: Container SRG v2
+                      prefix: CNTR
+                      version: '2'
+                      release: '1'
+                    - id: 31
+                      name: Container SRG (Training)
+                      prefix: CNTR
+                      version: '1'
+                      release: '1'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /components/{componentId}/find:
@@ -1606,7 +1881,8 @@ paths:
       operationId: createComponentReview
       tags:
         - Reviews
-      summary: Create a comment-action review on a component
+      summary: Post a public comment on a component
+      description: Creates a new comment-action review on the component (component-level comment) or on a specific rule within it. The component must have an open comment period (accepting_new_comments? check). Requires project membership with at least viewer role.
       requestBody:
         required: true
         content:
@@ -1616,13 +1892,38 @@ paths:
               properties:
                 review:
                   $ref: '#/components/schemas/ReviewInput'
+            examples:
+              component_comment:
+                summary: Post a component-level comment
+                value:
+                  review:
+                    action: comment
+                    comment: The overall approach to container isolation is sound.
+                    section: null
+              rule_comment:
+                summary: Comment on a specific rule's fix text
+                value:
+                  review:
+                    action: comment
+                    comment: The fix text should reference the vendor's hardening guide.
+                    rule_id: 100
+                    section: fixtext
       responses:
         '200':
-          description: Review created
+          description: Comment created
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                created:
+                  summary: Comment posted
+                  value:
+                    toast:
+                      title: Comment posted.
+                      message:
+                        - Your comment has been submitted for review.
+                      variant: success
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /reviews/{reviewId}:
