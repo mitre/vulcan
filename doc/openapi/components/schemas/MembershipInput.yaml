@@ -1,18 +1,30 @@
+description: Input fields for creating or updating a project or component membership.
 type: object
+required:
+  - user_id
+  - role
 properties:
   user_id:
     type: integer
+    description: ID of the user to add or update membership for.
+    example: 42
   membership_id:
     type: integer
+    description: ID of the existing membership record to update. Omit when creating a new membership.
+    example: 15
   membership_type:
     type: string
+    description: Whether this membership is for a project or a component.
     enum:
       - Project
       - Component
+    example: Project
   role:
     type: string
+    description: Access role granted to the user (viewer < author < reviewer < admin).
     enum:
       - viewer
       - author
       - reviewer
       - admin
+    example: author

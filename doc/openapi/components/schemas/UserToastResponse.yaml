@@ -1,15 +1,31 @@
+description: Combined response containing a toast notification and the updated user summary.
 type: object
+required:
+  - toast
+  - user
 properties:
   toast:
     type: object
+    description: Toast notification describing the result of the user operation.
+    required:
+      - title
+      - message
+      - variant
     properties:
       title:
         type: string
+        description: Short human-readable summary of the outcome.
+        example: Account locked.
       message:
         type: array
+        description: Detail lines providing additional context.
         items:
           type: string
+        example:
+          - "Account jane.doe@example.gov locked."
       variant:
         type: string
+        description: Bootstrap alert variant controlling toast styling.
+        example: success
   user:
     $ref: ./UserSummary.yaml

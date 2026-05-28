@@ -1,5 +1,6 @@
 name: triage_status
 in: query
+description: Filter comments by triage disposition. Use "all" to return comments in any status.
 schema:
   type: string
   enum:
@@ -13,3 +14,4 @@ schema:
     - addressed_by
     - withdrawn
   default: all
+example: pending

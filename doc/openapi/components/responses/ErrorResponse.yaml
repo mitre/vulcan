@@ -1,6 +1,6 @@
 description: >-
   Error response (401 unauthorized, 403 forbidden, 404 not found, 422
-  validation, or 500 server error)
+  validation, or 500 server error).
 content:
   application/json:
     schema:
@@ -8,14 +8,38 @@ content:
       properties:
         error:
           type: string
+          description: Human-readable error message.
+          example: Not authorized.
         toast:
           type: object
+          description: Optional toast notification with structured error details.
           properties:
             title:
               type: string
+              description: Short error summary.
+              example: Validation failed.
             message:
               type: array
+              description: Detail lines describing what went wrong.
               items:
                 type: string
+              example:
+                - "Name can't be blank."
+                - "Prefix is too short (minimum is 2 characters)."
             variant:
               type: string
+              description: Bootstrap alert variant (always danger for errors).
+              example: danger
+    examples:
+      validation_error:
+        summary: Validation failure
+        value:
+          toast:
+            title: Validation failed.
+            message:
+              - "Name can't be blank."
+            variant: danger
+      not_found:
+        summary: Resource not found
+        value:
+          error: Not found.

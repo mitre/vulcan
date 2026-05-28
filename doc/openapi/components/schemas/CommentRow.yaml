@@ -1,49 +1,93 @@
+description: A single comment (review) row in the triage comment listing.
 type: object
+required:
+  - id
+  - rule_displayed_name
+  - commentable_type
+  - author_name
+  - author_email
+  - comment
+  - created_at
+  - triage_status
+  - responses_count
+  - reactions
 properties:
   id:
     type: integer
+    description: Unique review/comment identifier.
+    example: 44
   rule_id:
     type:
       - integer
       - 'null'
+    description: ID of the rule this comment is attached to. Null for component-level comments.
+    example: 100
   rule_displayed_name:
     type: string
+    description: Human-readable rule identifier shown in the UI (e.g. PREFIX-rule_id).
+    example: CNTR-00-000050
   commentable_type:
     type: string
+    description: Polymorphic type indicating whether the comment targets a rule or a component.
     enum:
       - BaseRule
       - Component
+    example: BaseRule
   section:
     type:
       - string
       - 'null'
+    description: Rule section the comment applies to (e.g. fixtext, check_content, vuln_discussion). Null for general comments.
+    example: fixtext
   author_name:
     type: string
+    description: Display name of the user who authored the comment.
+    example: Jane Doe
   author_email:
     type: string
+    format: email
+    description: Email address of the comment author.
+    example: jane.doe@example.gov
   comment:
     type: string
+    description: The comment text content.
+    example: The fix text should reference the container runtime configuration file.
   created_at:
     type: string
     format: date-time
+    description: Timestamp when the comment was created.
+    example: "2026-05-28T15:00:00Z"
   triage_status:
     type: string
+    description: Current triage disposition of the comment.
+    example: pending
   triage_set_at:
     type:
       - string
       - 'null'
     format: date-time
+    description: Timestamp when the triage status was last changed. Null if still pending.
+    example: null
   adjudicated_at:
     type:
       - string
       - 'null'
     format: date-time
+    description: Timestamp when the comment reached a terminal triage state. Null if not yet adjudicated.
+    example: null
   responses_count:
     type: integer
+    description: Number of threaded replies to this comment.
+    example: 2
   reactions:
     type: object
+    description: Aggregate reaction counts for this comment.
     properties:
       up:
         type: integer
+        description: Number of upvote reactions.
+        example: 3
       down:
         type: integer
+        description: Number of downvote reactions.
+        example: 0

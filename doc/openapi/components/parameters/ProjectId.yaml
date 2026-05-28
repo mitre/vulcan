@@ -1,5 +1,7 @@
 name: projectId
 in: path
 required: true
+description: Numeric ID of the target project.
 schema:
   type: integer
+example: 7

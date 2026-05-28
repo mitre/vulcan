@@ -1,4 +1,4 @@
-description: Insufficient permissions
+description: Insufficient permissions to perform the requested action.
 content:
   application/json:
     schema:
@@ -6,3 +6,10 @@ content:
       properties:
         error:
           type: string
+          description: Human-readable authorization error message.
+          example: You are not authorized to perform this action.
+    examples:
+      forbidden:
+        summary: Non-admin attempting admin action
+        value:
+          error: You are not authorized to perform this action.

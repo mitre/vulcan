@@ -1,16 +1,28 @@
+description: Input fields for creating a review action (comment, approval, review request, or lock) on a rule.
 type: object
+required:
+  - action
+  - comment
 properties:
   action:
     type: string
+    description: The type of review action to perform.
     enum:
       - comment
       - request_review
       - revoke_review_request
       - approve
       - lock
+    example: comment
   comment:
     type: string
+    description: The comment text accompanying this review action.
+    example: The fix text should reference the container runtime configuration file.
   section:
     type: string
+    description: Rule section this comment applies to (e.g. fixtext, check_content, vuln_discussion).
+    example: fixtext
   responding_to_review_id:
     type: integer
+    description: ID of the parent review when creating a threaded reply.
+    example: 43

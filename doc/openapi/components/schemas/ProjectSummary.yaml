@@ -1,24 +1,45 @@
+description: Summary of a Vulcan project containing one or more STIG components.
 type: object
+required:
+  - id
+  - name
 properties:
   id:
     type: integer
+    description: Unique project identifier.
+    example: 7
   name:
     type: string
+    description: Human-readable project name.
+    example: Container Platform
   description:
     type:
       - string
       - 'null'
+    description: Optional longer description of the project purpose and scope.
+    example: STIG for container orchestration platforms.
   visibility:
     type:
       - string
       - 'null'
+    description: Project visibility setting controlling discoverability by non-members.
+    enum:
+      - discoverable
+      - hidden
+    example: discoverable
   components_count:
     type: integer
+    description: Number of STIG components belonging to this project.
+    example: 3
   created_at:
     type:
       - string
       - 'null'
+    description: Timestamp when the project was created.
+    example: "2026-01-15T09:30:00.000Z"
   updated_at:
     type:
       - string
       - 'null'
+    description: Timestamp when the project was last modified.
+    example: "2026-05-28T15:00:00.000Z"

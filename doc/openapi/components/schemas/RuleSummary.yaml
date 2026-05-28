@@ -1,18 +1,36 @@
+description: Summary of a security rule within a component.
 type: object
+required:
+  - id
+  - rule_id
+  - locked
+  - component_id
 properties:
   id:
     type: integer
+    description: Unique rule identifier.
+    example: 100
   rule_id:
     type: string
+    description: Six-digit zero-padded rule number combined with the component prefix to form the displayed ID (e.g. CNTR-00-000050).
+    example: "000050"
   status:
     type:
       - string
       - 'null'
+    description: Current applicability status of the rule. Null if not yet determined.
+    example: Applicable - Configurable
   title:
     type:
       - string
       - 'null'
+    description: Title of the security control. Null if not yet authored.
+    example: The container platform must enforce approved authorizations for access.
   locked:
     type: boolean
+    description: Whether the rule is locked from further edits pending review.
+    example: false
   component_id:
     type: integer
+    description: ID of the component this rule belongs to.
+    example: 29

@@ -1,16 +1,30 @@
+description: Detailed reaction lists showing which users reacted with each type.
 type: object
+required:
+  - up
+  - down
 properties:
   up:
     type: array
+    description: Users who upvoted.
     items:
       type: object
+      required:
+        - name
       properties:
         name:
           type: string
+          description: Display name of the user who upvoted.
+          example: Jane Doe
   down:
     type: array
+    description: Users who downvoted.
     items:
       type: object
+      required:
+        - name
       properties:
         name:
           type: string
+          description: Display name of the user who downvoted.
+          example: John Smith

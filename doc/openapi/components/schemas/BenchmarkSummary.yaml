@@ -1,30 +1,54 @@
+description: Summary of an SRG or STIG benchmark imported into Vulcan.
 type: object
+required:
+  - id
+  - severity_counts
 properties:
   id:
     type: integer
+    description: Unique benchmark identifier.
+    example: 5
   srg_id:
     type:
       - string
       - 'null'
+    description: DISA SRG identifier (e.g. SRG-APP-000001). Null for STIG benchmarks.
+    example: SRG-APP-000001
   stig_id:
     type:
       - string
       - 'null'
+    description: DISA STIG identifier. Null for SRG benchmarks.
+    example: null
   name:
     type:
       - string
       - 'null'
+    description: Short name of the benchmark.
+    example: Container Platform SRG
   title:
     type:
       - string
       - 'null'
+    description: Full official title of the benchmark.
+    example: Container Platform Security Requirements Guide
   version:
     type:
       - string
       - 'null'
+    description: Version string of the benchmark (e.g. V1R1).
+    example: V1R1
   release_date:
     type:
       - string
       - 'null'
+    format: date
+    description: Date the benchmark was published by DISA.
+    example: "2026-03-15"
   severity_counts:
     type: object
+    description: Count of rules at each severity level within this benchmark.
+    example:
+      high: 12
+      medium: 85
+      low: 23

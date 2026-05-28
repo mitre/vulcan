@@ -1,11 +1,19 @@
+description: Application version information including Vulcan, Rails, and Ruby versions.
 type: object
+required:
+  - version
+  - rails
+  - ruby
 properties:
   version:
     type: string
+    description: Current Vulcan application version.
     example: 2.3.7
   rails:
     type: string
+    description: Rails framework version running the application.
     example: 8.0.2.1
   ruby:
     type: string
+    description: Ruby interpreter version running the application.
     example: 3.4.9

@@ -1,30 +1,58 @@
+description: Summary of a STIG component belonging to a project.
 type: object
+required:
+  - id
+  - name
+  - prefix
+  - released
+  - project_id
+  - rules_count
 properties:
   id:
     type: integer
+    description: Unique component identifier.
+    example: 29
   name:
     type: string
+    description: Human-readable component name.
+    example: Container SRG
   prefix:
     type: string
+    description: Short alphanumeric prefix used to construct rule IDs (e.g. CNTR in CNTR-00-000050).
+    example: CNTR
   version:
     type:
       - integer
       - 'null'
+    description: Version number of the component. Null if not yet set.
+    example: 1
   release:
     type:
       - integer
       - 'null'
+    description: Release number of the component. Null if not yet set.
+    example: 1
   title:
     type:
       - string
       - 'null'
+    description: Full official title of the component.
+    example: Container Platform Security Technical Implementation Guide
   released:
     type: boolean
+    description: Whether this component has been marked as released (finalized).
+    example: false
   project_id:
     type: integer
+    description: ID of the project this component belongs to.
+    example: 7
   rules_count:
     type: integer
+    description: Number of rules (security controls) in this component.
+    example: 120
   description:
     type:
       - string
       - 'null'
+    description: Optional longer description of the component scope and purpose.
+    example: STIG guidance for container orchestration platform deployments.

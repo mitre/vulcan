@@ -1,19 +1,40 @@
+description: Summary of a review action recorded on a rule.
 type: object
+required:
+  - id
+  - action
+  - comment
+  - rule_id
+  - created_at
 properties:
   id:
     type: integer
+    description: Unique review identifier.
+    example: 44
   action:
     type: string
+    description: The type of review action that was performed.
+    example: comment
   comment:
     type: string
+    description: The comment text accompanying this review action.
+    example: The fix text should reference the container runtime configuration file.
   user_id:
     type: integer
+    description: ID of the user who created this review.
+    example: 42
   rule_id:
     type: integer
+    description: ID of the rule this review is attached to.
+    example: 100
   created_at:
     type: string
     format: date-time
+    description: Timestamp when the review was created.
+    example: "2026-05-28T15:00:00Z"
   responding_to_review_id:
     type:
       - integer
       - 'null'
+    description: ID of the parent review if this is a threaded reply. Null for top-level reviews.
+    example: null

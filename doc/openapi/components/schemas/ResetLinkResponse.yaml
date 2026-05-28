@@ -1,15 +1,34 @@
+description: Response containing a toast notification and a one-time password reset URL for admin-generated resets.
 type: object
+required:
+  - toast
+  - reset_url
 properties:
   toast:
     type: object
+    description: Toast notification confirming the reset link was generated.
+    required:
+      - title
+      - message
+      - variant
     properties:
       title:
         type: string
+        description: Short human-readable summary of the outcome.
+        example: Reset link generated.
       message:
         type: array
+        description: Detail lines providing additional context.
         items:
           type: string
+        example:
+          - "Copy and share this link with the user."
       variant:
         type: string
+        description: Bootstrap alert variant controlling toast styling.
+        example: success
   reset_url:
     type: string
+    format: uri
+    description: One-time password reset URL to share with the user.
+    example: "https://vulcan.example.gov/users/password/edit?reset_password_token=abc123def456"

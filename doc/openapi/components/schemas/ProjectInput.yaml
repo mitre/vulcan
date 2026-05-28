@@ -1,11 +1,20 @@
+description: Input fields for creating or updating a Vulcan project.
 type: object
+required:
+  - name
 properties:
   name:
     type: string
+    description: Human-readable project name.
+    example: Container Platform
   description:
     type: string
+    description: Optional longer description of the project purpose and scope.
+    example: STIG for container orchestration platforms.
   visibility:
     type: string
+    description: Project visibility setting controlling discoverability by non-members.
     enum:
       - discoverable
       - hidden
+    example: discoverable

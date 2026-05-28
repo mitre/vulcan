@@ -1,18 +1,32 @@
+description: Canonical mutation response returned by all POST/PUT/PATCH/DELETE endpoints.
 type: object
+required:
+  - toast
 properties:
   toast:
     type: object
+    required:
+      - title
+      - message
+      - variant
     properties:
       title:
         type: string
+        description: Short human-readable summary of the outcome.
+        example: Component created.
       message:
         type: array
+        description: Detail lines providing additional context about the operation result.
         items:
           type: string
+        example:
+          - Container SRG has been added to Container Platform.
       variant:
         type: string
+        description: Bootstrap alert variant controlling how the toast is styled in the UI.
         enum:
           - success
           - danger
           - warning
           - info
+        example: success

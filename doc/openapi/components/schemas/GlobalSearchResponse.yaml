@@ -1,77 +1,131 @@
+description: Results from a global search across projects, components, rules, SRGs, STIGs, and their rules.
 type: object
+required:
+  - projects
+  - components
+  - rules
+  - srgs
+  - stigs
+  - stig_rules
+  - srg_rules
 properties:
   projects:
     type: array
+    description: Projects matching the search query.
     items:
       type: object
       properties:
         id:
           type: integer
+          description: Unique project identifier.
+          example: 7
         name:
           type: string
+          description: Project name.
+          example: Container Platform
         description:
           type:
             - string
             - 'null'
+          description: Project description.
+          example: STIG for container orchestration platforms.
         components_count:
           type: integer
+          description: Number of components in the project.
+          example: 3
   components:
     type: array
+    description: Components matching the search query.
     items:
       type: object
       properties:
         id:
           type: integer
+          description: Unique component identifier.
+          example: 29
         name:
           type: string
+          description: Component name.
+          example: Container SRG
         version:
           type:
             - integer
             - 'null'
+          description: Component version number.
+          example: 1
         release:
           type:
             - integer
             - 'null'
+          description: Component release number.
+          example: 1
         project_id:
           type: integer
+          description: ID of the parent project.
+          example: 7
         project_name:
           type: string
+          description: Name of the parent project.
+          example: Container Platform
   rules:
     type: array
+    description: Rules matching the search query.
     items:
       type: object
       properties:
         id:
           type: integer
+          description: Unique rule identifier.
+          example: 100
         rule_id:
           type: string
+          description: STIG rule identifier (six-digit zero-padded number).
+          example: "000050"
         title:
           type: string
+          description: Title of the security control.
+          example: The container platform must enforce approved authorizations for access.
         status:
           type: string
+          description: Current applicability status of the rule.
+          example: Applicable - Configurable
         component_id:
           type: integer
+          description: ID of the component this rule belongs to.
+          example: 29
         component_prefix:
           type: string
+          description: Prefix of the parent component, used to form the displayed rule ID.
+          example: CNTR
         snippet:
           type: string
+          description: Text excerpt from the matched field showing the search hit in context.
+          example: "...enforce approved authorizations for logical access..."
         matched_field:
           type: string
+          description: Name of the field where the search term was found.
+          example: vuln_discussion
         comment_count:
           type: integer
+          description: Number of comments on this rule.
+          example: 5
   srgs:
     type: array
+    description: Security Requirements Guides matching the search query.
     items:
       type: object
   stigs:
     type: array
+    description: Published STIGs matching the search query.
     items:
       type: object
   stig_rules:
     type: array
+    description: Individual rules from published STIGs matching the search query.
     items:
       type: object
   srg_rules:
     type: array
+    description: Individual rules from SRGs matching the search query.
     items:
       type: object

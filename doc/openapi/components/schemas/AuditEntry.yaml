@@ -1,23 +1,51 @@
+description: A single audit trail entry recording a change to an auditable record.
 type: object
+required:
+  - id
+  - auditable_type
+  - auditable_id
+  - action
 properties:
   id:
     type: integer
+    description: Unique audit entry identifier.
+    example: 1024
   auditable_type:
     type: string
+    description: Rails model class name of the audited record (e.g. Rule, Review, Component).
+    example: Rule
   auditable_id:
     type: integer
+    description: Primary key of the audited record.
+    example: 100
   action:
     type: string
+    description: Type of change that was made.
+    enum:
+      - create
+      - update
+      - destroy
+    example: update
   audited_changes:
     oneOf:
       - type: object
       - type: string
       - type: 'null'
+    description: Hash of changed attributes with before/after values, a serialized string, or null for destroy actions.
+    example:
+      status:
+        - Not Yet Determined
+        - Applicable - Configurable
   user_id:
     type:
       - integer
       - 'null'
+    description: ID of the user who made the change. Null for system-initiated changes.
+    example: 42
   created_at:
     type:
       - string
       - 'null'
+    format: date-time
+    description: Timestamp when the audit entry was recorded.
+    example: "2026-05-28T15:00:00Z"

@@ -1,21 +1,36 @@
+description: Response from admin user creation, including a toast notification, the created user, and an optional password reset URL.
 type: object
+required:
+  - toast
+  - user
 properties:
   toast:
     type:
       - string
       - object
+    description: Toast notification or redirect path string depending on the response context.
     properties:
       title:
         type: string
+        description: Short human-readable summary of the outcome.
+        example: User created.
       message:
         type:
           - array
           - string
+        description: Detail lines or a single message string.
         items:
           type: string
+        example:
+          - "Account jane.doe@example.gov created successfully."
       variant:
         type: string
+        description: Bootstrap alert variant controlling toast styling.
+        example: success
   user:
     $ref: ./UserSummary.yaml
   reset_url:
     type: string
+    format: uri
+    description: One-time password reset URL generated for the new user when SMTP is unavailable. Absent when SMTP delivers the reset email directly.
+    example: "https://vulcan.example.gov/users/password/edit?reset_password_token=abc123def456"

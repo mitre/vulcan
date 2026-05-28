@@ -1,5 +1,3 @@
-# GENERATED FILE — do not edit directly.
-# Edit the multi-file source in doc/openapi/ and run: yarn openapi:bundle
 openapi: 3.2.0
 info:
   title: Vulcan API
@@ -1926,543 +1924,1000 @@ components:
       name: _vulcan_session
   schemas:
     VersionResponse:
+      description: Application version information including Vulcan, Rails, and Ruby versions.
       type: object
+      required:
+        - version
+        - rails
+        - ruby
       properties:
         version:
           type: string
+          description: Current Vulcan application version.
           example: 2.3.7
         rails:
           type: string
+          description: Rails framework version running the application.
           example: 8.0.2.1
         ruby:
           type: string
+          description: Ruby interpreter version running the application.
           example: 3.4.9
     GlobalSearchResponse:
+      description: Results from a global search across projects, components, rules, SRGs, STIGs, and their rules.
       type: object
+      required:
+        - projects
+        - components
+        - rules
+        - srgs
+        - stigs
+        - stig_rules
+        - srg_rules
       properties:
         projects:
           type: array
+          description: Projects matching the search query.
           items:
             type: object
             properties:
               id:
                 type: integer
+                description: Unique project identifier.
+                example: 7
               name:
                 type: string
+                description: Project name.
+                example: Container Platform
               description:
                 type:
                   - string
                   - 'null'
+                description: Project description.
+                example: STIG for container orchestration platforms.
               components_count:
                 type: integer
+                description: Number of components in the project.
+                example: 3
         components:
           type: array
+          description: Components matching the search query.
           items:
             type: object
             properties:
               id:
                 type: integer
+                description: Unique component identifier.
+                example: 29
               name:
                 type: string
+                description: Component name.
+                example: Container SRG
               version:
                 type:
                   - integer
                   - 'null'
+                description: Component version number.
+                example: 1
               release:
                 type:
                   - integer
                   - 'null'
+                description: Component release number.
+                example: 1
               project_id:
                 type: integer
+                description: ID of the parent project.
+                example: 7
               project_name:
                 type: string
+                description: Name of the parent project.
+                example: Container Platform
         rules:
           type: array
+          description: Rules matching the search query.
           items:
             type: object
             properties:
               id:
                 type: integer
+                description: Unique rule identifier.
+                example: 100
               rule_id:
                 type: string
+                description: STIG rule identifier (six-digit zero-padded number).
+                example: '000050'
               title:
                 type: string
+                description: Title of the security control.
+                example: The container platform must enforce approved authorizations for access.
               status:
                 type: string
+                description: Current applicability status of the rule.
+                example: Applicable - Configurable
               component_id:
                 type: integer
+                description: ID of the component this rule belongs to.
+                example: 29
               component_prefix:
                 type: string
+                description: Prefix of the parent component, used to form the displayed rule ID.
+                example: CNTR
               snippet:
                 type: string
+                description: Text excerpt from the matched field showing the search hit in context.
+                example: ...enforce approved authorizations for logical access...
               matched_field:
                 type: string
+                description: Name of the field where the search term was found.
+                example: vuln_discussion
               comment_count:
                 type: integer
+                description: Number of comments on this rule.
+                example: 5
         srgs:
           type: array
+          description: Security Requirements Guides matching the search query.
           items:
             type: object
         stigs:
           type: array
+          description: Published STIGs matching the search query.
           items:
             type: object
         stig_rules:
           type: array
+          description: Individual rules from published STIGs matching the search query.
           items:
             type: object
         srg_rules:
           type: array
+          description: Individual rules from SRGs matching the search query.
           items:
             type: object
     UserSummary:
+      description: Summary of a user account for admin management views.
       type: object
+      required:
+        - id
+        - email
+        - admin
       properties:
         id:
           type: integer
+          description: Unique user identifier.
+          example: 42
         name:
           type:
             - string
             - 'null'
+          description: Display name chosen by the user. Null if not yet set.
+          example: Jane Doe
         email:
           type: string
+          format: email
+          description: Login email address.
+          example: jane.doe@example.gov
         provider:
           type:
             - string
             - 'null'
+          description: Authentication provider used for this account (local, github, ldap, or oidc). Null for local accounts.
+          example: local
         admin:
           type: boolean
+          description: Whether the user has administrator privileges.
+          example: false
         last_sign_in_at:
           type:
             - string
             - 'null'
+          format: date-time
+          description: Timestamp of the most recent successful sign-in. Null if the user has never signed in.
+          example: '2026-05-28T15:00:00Z'
         failed_attempts:
           type: integer
+          description: Number of consecutive failed login attempts since last successful sign-in.
+          example: 0
         locked_at:
           type:
             - string
             - 'null'
+          format: date-time
+          description: Timestamp when the account was locked due to excessive failed attempts. Null if not locked.
+          example: null
     ProjectSummary:
+      description: Summary of a Vulcan project containing one or more STIG components.
       type: object
+      required:
+        - id
+        - name
       properties:
         id:
           type: integer
+          description: Unique project identifier.
+          example: 7
         name:
           type: string
+          description: Human-readable project name.
+          example: Container Platform
         description:
           type:
             - string
             - 'null'
+          description: Optional longer description of the project purpose and scope.
+          example: STIG for container orchestration platforms.
         visibility:
           type:
             - string
             - 'null'
+          description: Project visibility setting controlling discoverability by non-members.
+          enum:
+            - discoverable
+            - hidden
+          example: discoverable
         components_count:
           type: integer
+          description: Number of STIG components belonging to this project.
+          example: 3
         created_at:
           type:
             - string
             - 'null'
+          description: Timestamp when the project was created.
+          example: '2026-01-15T09:30:00.000Z'
         updated_at:
           type:
             - string
             - 'null'
+          description: Timestamp when the project was last modified.
+          example: '2026-05-28T15:00:00.000Z'
     ProjectInput:
+      description: Input fields for creating or updating a Vulcan project.
       type: object
+      required:
+        - name
       properties:
         name:
           type: string
+          description: Human-readable project name.
+          example: Container Platform
         description:
           type: string
+          description: Optional longer description of the project purpose and scope.
+          example: STIG for container orchestration platforms.
         visibility:
           type: string
+          description: Project visibility setting controlling discoverability by non-members.
           enum:
             - discoverable
             - hidden
+          example: discoverable
     ToastResponse:
+      description: Canonical mutation response returned by all POST/PUT/PATCH/DELETE endpoints.
       type: object
+      required:
+        - toast
       properties:
         toast:
           type: object
+          required:
+            - title
+            - message
+            - variant
           properties:
             title:
               type: string
+              description: Short human-readable summary of the outcome.
+              example: Component created.
             message:
               type: array
+              description: Detail lines providing additional context about the operation result.
               items:
                 type: string
+              example:
+                - Container SRG has been added to Container Platform.
             variant:
               type: string
+              description: Bootstrap alert variant controlling how the toast is styled in the UI.
               enum:
                 - success
                 - danger
                 - warning
                 - info
+              example: success
     CommentRow:
+      description: A single comment (review) row in the triage comment listing.
       type: object
+      required:
+        - id
+        - rule_displayed_name
+        - commentable_type
+        - author_name
+        - author_email
+        - comment
+        - created_at
+        - triage_status
+        - responses_count
+        - reactions
       properties:
         id:
           type: integer
+          description: Unique review/comment identifier.
+          example: 44
         rule_id:
           type:
             - integer
             - 'null'
+          description: ID of the rule this comment is attached to. Null for component-level comments.
+          example: 100
         rule_displayed_name:
           type: string
+          description: Human-readable rule identifier shown in the UI (e.g. PREFIX-rule_id).
+          example: CNTR-00-000050
         commentable_type:
           type: string
+          description: Polymorphic type indicating whether the comment targets a rule or a component.
           enum:
             - BaseRule
             - Component
+          example: BaseRule
         section:
           type:
             - string
             - 'null'
+          description: Rule section the comment applies to (e.g. fixtext, check_content, vuln_discussion). Null for general comments.
+          example: fixtext
         author_name:
           type: string
+          description: Display name of the user who authored the comment.
+          example: Jane Doe
         author_email:
           type: string
+          format: email
+          description: Email address of the comment author.
+          example: jane.doe@example.gov
         comment:
           type: string
+          description: The comment text content.
+          example: The fix text should reference the container runtime configuration file.
         created_at:
           type: string
           format: date-time
+          description: Timestamp when the comment was created.
+          example: '2026-05-28T15:00:00Z'
         triage_status:
           type: string
+          description: Current triage disposition of the comment.
+          example: pending
         triage_set_at:
           type:
             - string
             - 'null'
           format: date-time
+          description: Timestamp when the triage status was last changed. Null if still pending.
+          example: null
         adjudicated_at:
           type:
             - string
             - 'null'
           format: date-time
+          description: Timestamp when the comment reached a terminal triage state. Null if not yet adjudicated.
+          example: null
         responses_count:
           type: integer
+          description: Number of threaded replies to this comment.
+          example: 2
         reactions:
           type: object
+          description: Aggregate reaction counts for this comment.
           properties:
             up:
               type: integer
+              description: Number of upvote reactions.
+              example: 3
             down:
               type: integer
+              description: Number of downvote reactions.
+              example: 0
     PaginatedComments:
+      description: Paginated list of comments with pagination metadata and triage status counts.
       type: object
+      required:
+        - rows
+        - pagination
+        - status_counts
       properties:
         rows:
           type: array
+          description: Comment rows for the current page.
           items:
             $ref: '#/components/schemas/CommentRow'
         pagination:
           type: object
+          description: Pagination metadata for the comment listing.
+          required:
+            - page
+            - per_page
+            - total
+            - total_comments
           properties:
             page:
               type: integer
+              description: Current page number (1-based).
+              example: 1
             per_page:
               type: integer
+              description: Number of comments per page.
+              example: 25
             total:
               type: integer
+              description: Total number of pages available.
+              example: 4
             total_comments:
               type: integer
+              description: Total number of comments across all pages.
+              example: 87
         status_counts:
           type: object
+          description: Count of comments grouped by triage status.
           additionalProperties:
             type: integer
+          example:
+            pending: 12
+            concur: 45
+            non_concur: 8
+            withdrawn: 3
     AuditEntry:
+      description: A single audit trail entry recording a change to an auditable record.
       type: object
+      required:
+        - id
+        - auditable_type
+        - auditable_id
+        - action
       properties:
         id:
           type: integer
+          description: Unique audit entry identifier.
+          example: 1024
         auditable_type:
           type: string
+          description: Rails model class name of the audited record (e.g. Rule, Review, Component).
+          example: Rule
         auditable_id:
           type: integer
+          description: Primary key of the audited record.
+          example: 100
         action:
           type: string
+          description: Type of change that was made.
+          enum:
+            - create
+            - update
+            - destroy
+          example: update
         audited_changes:
           oneOf:
             - type: object
             - type: string
             - type: 'null'
+          description: Hash of changed attributes with before/after values, a serialized string, or null for destroy actions.
+          example:
+            status:
+              - Not Yet Determined
+              - Applicable - Configurable
         user_id:
           type:
             - integer
             - 'null'
+          description: ID of the user who made the change. Null for system-initiated changes.
+          example: 42
         created_at:
           type:
             - string
             - 'null'
+          format: date-time
+          description: Timestamp when the audit entry was recorded.
+          example: '2026-05-28T15:00:00Z'
     ComponentSummary:
+      description: Summary of a STIG component belonging to a project.
       type: object
+      required:
+        - id
+        - name
+        - prefix
+        - released
+        - project_id
+        - rules_count
       properties:
         id:
           type: integer
+          description: Unique component identifier.
+          example: 29
         name:
           type: string
+          description: Human-readable component name.
+          example: Container SRG
         prefix:
           type: string
+          description: Short alphanumeric prefix used to construct rule IDs (e.g. CNTR in CNTR-00-000050).
+          example: CNTR
         version:
           type:
             - integer
             - 'null'
+          description: Version number of the component. Null if not yet set.
+          example: 1
         release:
           type:
             - integer
             - 'null'
+          description: Release number of the component. Null if not yet set.
+          example: 1
         title:
           type:
             - string
             - 'null'
+          description: Full official title of the component.
+          example: Container Platform Security Technical Implementation Guide
         released:
           type: boolean
+          description: Whether this component has been marked as released (finalized).
+          example: false
         project_id:
           type: integer
+          description: ID of the project this component belongs to.
+          example: 7
         rules_count:
           type: integer
+          description: Number of rules (security controls) in this component.
+          example: 120
         description:
           type:
             - string
             - 'null'
+          description: Optional longer description of the component scope and purpose.
+          example: STIG guidance for container orchestration platform deployments.
     ComponentInput:
+      description: Input fields for creating or updating a STIG component within a project.
       type: object
+      required:
+        - name
+        - prefix
+        - title
       properties:
         name:
           type: string
+          description: Human-readable component name.
+          example: Container SRG
         prefix:
           type: string
+          description: Short alphanumeric prefix used to construct rule IDs (e.g. CNTR in CNTR-00-000050).
+          example: CNTR
         version:
           type: string
+          description: Version number of the component.
+          example: '1'
         release:
           type: string
+          description: Release number of the component.
+          example: '1'
         title:
           type: string
+          description: Full official title of the component.
+          example: Container Platform Security Technical Implementation Guide
         description:
           type: string
+          description: Optional longer description of the component scope and purpose.
+          example: STIG guidance for container orchestration platform deployments.
     RuleSummary:
+      description: Summary of a security rule within a component.
       type: object
+      required:
+        - id
+        - rule_id
+        - locked
+        - component_id
       properties:
         id:
           type: integer
+          description: Unique rule identifier.
+          example: 100
         rule_id:
           type: string
+          description: Six-digit zero-padded rule number combined with the component prefix to form the displayed ID (e.g. CNTR-00-000050).
+          example: '000050'
         status:
           type:
             - string
             - 'null'
+          description: Current applicability status of the rule. Null if not yet determined.
+          example: Applicable - Configurable
         title:
           type:
             - string
             - 'null'
+          description: Title of the security control. Null if not yet authored.
+          example: The container platform must enforce approved authorizations for access.
         locked:
           type: boolean
+          description: Whether the rule is locked from further edits pending review.
+          example: false
         component_id:
           type: integer
+          description: ID of the component this rule belongs to.
+          example: 29
     RuleInput:
+      description: Input fields for updating a security rule within a component.
       type: object
       properties:
         status:
           type: string
+          description: Applicability status of the rule indicating whether and how it applies to the technology.
           enum:
             - Not Yet Determined
             - Applicable - Configurable
             - Applicable - Inherently Meets
             - Applicable - Does Not Meet
             - Not Applicable
+          example: Applicable - Configurable
         title:
           type: string
+          description: Title of the security control.
+          example: The container platform must enforce approved authorizations for access.
         fixtext:
           type: string
+          description: Remediation instructions describing how to fix a non-compliant finding.
+          example: Configure the container platform to enforce approved authorizations for logical access.
         vendor_comments:
           type: string
+          description: Vendor-provided comments or implementation notes for this rule.
+          example: This requirement is met by default when using the recommended container runtime configuration.
         status_justification:
           type: string
+          description: Justification text required when setting status to Not Applicable or Does Not Meet.
+          example: The container platform inherently meets this requirement through its architecture.
         artifact_description:
           type: string
+          description: Description of artifacts or evidence supporting the rule implementation.
+          example: Screenshot of the container platform access control configuration panel.
         locked:
           type: boolean
+          description: Whether the rule is locked from further edits pending review.
+          example: false
     ReviewInput:
+      description: Input fields for creating a review action (comment, approval, review request, or lock) on a rule.
       type: object
+      required:
+        - action
+        - comment
       properties:
         action:
           type: string
+          description: The type of review action to perform.
           enum:
             - comment
             - request_review
             - revoke_review_request
             - approve
             - lock
+          example: comment
         comment:
           type: string
+          description: The comment text accompanying this review action.
+          example: The fix text should reference the container runtime configuration file.
         section:
           type: string
+          description: Rule section this comment applies to (e.g. fixtext, check_content, vuln_discussion).
+          example: fixtext
         responding_to_review_id:
           type: integer
+          description: ID of the parent review when creating a threaded reply.
+          example: 43
     ReviewSummary:
+      description: Summary of a review action recorded on a rule.
       type: object
+      required:
+        - id
+        - action
+        - comment
+        - rule_id
+        - created_at
       properties:
         id:
           type: integer
+          description: Unique review identifier.
+          example: 44
         action:
           type: string
+          description: The type of review action that was performed.
+          example: comment
         comment:
           type: string
+          description: The comment text accompanying this review action.
+          example: The fix text should reference the container runtime configuration file.
         user_id:
           type: integer
+          description: ID of the user who created this review.
+          example: 42
         rule_id:
           type: integer
+          description: ID of the rule this review is attached to.
+          example: 100
         created_at:
           type: string
           format: date-time
+          description: Timestamp when the review was created.
+          example: '2026-05-28T15:00:00Z'
         responding_to_review_id:
           type:
             - integer
             - 'null'
+          description: ID of the parent review if this is a threaded reply. Null for top-level reviews.
+          example: null
     ReactionsSummary:
+      description: Detailed reaction lists showing which users reacted with each type.
       type: object
+      required:
+        - up
+        - down
       properties:
         up:
           type: array
+          description: Users who upvoted.
           items:
             type: object
+            required:
+              - name
             properties:
               name:
                 type: string
+                description: Display name of the user who upvoted.
+                example: Jane Doe
         down:
           type: array
+          description: Users who downvoted.
           items:
             type: object
+            required:
+              - name
             properties:
               name:
                 type: string
+                description: Display name of the user who downvoted.
+                example: John Smith
     ReactionToggleResponse:
+      description: Response after toggling a reaction on a comment, returning updated aggregate counts and the current user's reaction.
       type: object
+      required:
+        - reactions
       properties:
         reactions:
           type: object
+          description: Updated reaction state for the comment.
+          required:
+            - up
+            - down
+            - mine
           properties:
             up:
               type: integer
+              description: Total number of upvote reactions.
+              example: 4
             down:
               type: integer
+              description: Total number of downvote reactions.
+              example: 1
             mine:
               type:
                 - string
                 - 'null'
+              description: The current user's reaction type (up or down). Null if the user has no active reaction.
+              example: up
     MembershipInput:
+      description: Input fields for creating or updating a project or component membership.
       type: object
+      required:
+        - user_id
+        - role
       properties:
         user_id:
           type: integer
+          description: ID of the user to add or update membership for.
+          example: 42
         membership_id:
           type: integer
+          description: ID of the existing membership record to update. Omit when creating a new membership.
+          example: 15
         membership_type:
           type: string
+          description: Whether this membership is for a project or a component.
           enum:
             - Project
             - Component
+          example: Project
         role:
           type: string
+          description: Access role granted to the user (viewer < author < reviewer < admin).
           enum:
             - viewer
             - author
             - reviewer
             - admin
+          example: author
     BenchmarkSummary:
+      description: Summary of an SRG or STIG benchmark imported into Vulcan.
       type: object
+      required:
+        - id
+        - severity_counts
       properties:
         id:
           type: integer
+          description: Unique benchmark identifier.
+          example: 5
         srg_id:
           type:
             - string
             - 'null'
+          description: DISA SRG identifier (e.g. SRG-APP-000001). Null for STIG benchmarks.
+          example: SRG-APP-000001
         stig_id:
           type:
             - string
             - 'null'
+          description: DISA STIG identifier. Null for SRG benchmarks.
+          example: null
         name:
           type:
             - string
             - 'null'
+          description: Short name of the benchmark.
+          example: Container Platform SRG
         title:
           type:
             - string
             - 'null'
+          description: Full official title of the benchmark.
+          example: Container Platform Security Requirements Guide
         version:
           type:
             - string
             - 'null'
+          description: Version string of the benchmark (e.g. V1R1).
+          example: V1R1
         release_date:
           type:
             - string
             - 'null'
+          format: date
+          description: Date the benchmark was published by DISA.
+          example: '2026-03-15'
         severity_counts:
           type: object
+          description: Count of rules at each severity level within this benchmark.
+          example:
+            high: 12
+            medium: 85
+            low: 23
     StatusOk:
+      description: Simple health check response indicating the service is running.
       type: object
+      required:
+        - status
       properties:
         status:
           type: string
+          description: Service health status.
           example: ok
     AdminCreateResponse:
+      description: Response from admin user creation, including a toast notification, the created user, and an optional password reset URL.
       type: object
+      required:
+        - toast
+        - user
       properties:
         toast:
           type:
             - string
             - object
+          description: Toast notification or redirect path string depending on the response context.
           properties:
             title:
               type: string
+              description: Short human-readable summary of the outcome.
+              example: User created.
             message:
               type:
                 - array
                 - string
+              description: Detail lines or a single message string.
               items:
                 type: string
+              example:
+                - Account jane.doe@example.gov created successfully.
             variant:
               type: string
+              description: Bootstrap alert variant controlling toast styling.
+              example: success
         user:
           $ref: '#/components/schemas/UserSummary'
         reset_url:
           type: string
+          format: uri
+          description: One-time password reset URL generated for the new user when SMTP is unavailable. Absent when SMTP delivers the reset email directly.
+          example: https://vulcan.example.gov/users/password/edit?reset_password_token=abc123def456
     ResetLinkResponse:
+      description: Response containing a toast notification and a one-time password reset URL for admin-generated resets.
       type: object
+      required:
+        - toast
+        - reset_url
       properties:
         toast:
           type: object
+          description: Toast notification confirming the reset link was generated.
+          required:
+            - title
+            - message
+            - variant
           properties:
             title:
               type: string
+              description: Short human-readable summary of the outcome.
+              example: Reset link generated.
             message:
               type: array
+              description: Detail lines providing additional context.
               items:
                 type: string
+              example:
+                - Copy and share this link with the user.
             variant:
               type: string
+              description: Bootstrap alert variant controlling toast styling.
+              example: success
         reset_url:
           type: string
+          format: uri
+          description: One-time password reset URL to share with the user.
+          example: https://vulcan.example.gov/users/password/edit?reset_password_token=abc123def456
     UserToastResponse:
+      description: Combined response containing a toast notification and the updated user summary.
       type: object
+      required:
+        - toast
+        - user
       properties:
         toast:
           type: object
+          description: Toast notification describing the result of the user operation.
+          required:
+            - title
+            - message
+            - variant
           properties:
             title:
               type: string
+              description: Short human-readable summary of the outcome.
+              example: Account locked.
             message:
               type: array
+              description: Detail lines providing additional context.
               items:
                 type: string
+              example:
+                - Account jane.doe@example.gov locked.
             variant:
               type: string
+              description: Bootstrap alert variant controlling toast styling.
+              example: success
         user:
           $ref: '#/components/schemas/UserSummary'
   responses:
     ErrorResponse:
-      description: Error response (401 unauthorized, 403 forbidden, 404 not found, 422 validation, or 500 server error)
+      description: Error response (401 unauthorized, 403 forbidden, 404 not found, 422 validation, or 500 server error).
       content:
         application/json:
           schema:
@@ -2470,48 +2925,43 @@ components:
             properties:
               error:
                 type: string
+                description: Human-readable error message.
+                example: Not authorized.
               toast:
                 type: object
+                description: Optional toast notification with structured error details.
                 properties:
                   title:
                     type: string
+                    description: Short error summary.
+                    example: Validation failed.
                   message:
                     type: array
+                    description: Detail lines describing what went wrong.
                     items:
                       type: string
+                    example:
+                      - Name can't be blank.
+                      - Prefix is too short (minimum is 2 characters).
                   variant:
                     type: string
-    Unauthorized:
-      description: Authentication required
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: You need to sign in or sign up before continuing.
-    UnprocessableEntity:
-      description: Validation errors
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              toast:
-                type: object
-                properties:
-                  title:
-                    type: string
-                  message:
-                    type: array
-                    items:
-                      type: string
-                  variant:
-                    type: string
+                    description: Bootstrap alert variant (always danger for errors).
                     example: danger
-    Forbidden:
-      description: Insufficient permissions
+          examples:
+            validation_error:
+              summary: Validation failure
+              value:
+                toast:
+                  title: Validation failed.
+                  message:
+                    - Name can't be blank.
+                  variant: danger
+            not_found:
+              summary: Resource not found
+              value:
+                error: Not found.
+    Unauthorized:
+      description: Authentication required. The request lacks valid session credentials.
       content:
         application/json:
           schema:
@@ -2519,24 +2969,88 @@ components:
             properties:
               error:
                 type: string
+                description: Human-readable authentication error message.
+                example: You need to sign in or sign up before continuing.
+          examples:
+            not_signed_in:
+              summary: No active session
+              value:
+                error: You need to sign in or sign up before continuing.
+    UnprocessableEntity:
+      description: Validation errors prevented the request from being processed.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              toast:
+                type: object
+                description: Toast notification containing validation error details.
+                properties:
+                  title:
+                    type: string
+                    description: Short error summary.
+                    example: Unable to save changes.
+                  message:
+                    type: array
+                    description: Specific validation error messages.
+                    items:
+                      type: string
+                    example:
+                      - Name can't be blank.
+                      - Prefix format is invalid.
+                  variant:
+                    type: string
+                    description: Bootstrap alert variant (always danger for validation errors).
+                    example: danger
+          examples:
+            validation_failure:
+              summary: Component creation with missing fields
+              value:
+                toast:
+                  title: Unable to save changes.
+                  message:
+                    - Name can't be blank.
+                    - Prefix format is invalid.
+                  variant: danger
+    Forbidden:
+      description: Insufficient permissions to perform the requested action.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                description: Human-readable authorization error message.
+                example: You are not authorized to perform this action.
+          examples:
+            forbidden:
+              summary: Non-admin attempting admin action
+              value:
+                error: You are not authorized to perform this action.
   parameters:
     SearchQuery:
       name: q
       in: query
       required: true
-      description: Search query (minimum 2 characters)
+      description: Search query string (minimum 2 characters).
       schema:
         type: string
         minLength: 2
+      example: container platform
     ProjectId:
       name: projectId
       in: path
       required: true
+      description: Numeric ID of the target project.
       schema:
         type: integer
+      example: 7
     TriageStatusFilter:
       name: triage_status
       in: query
+      description: Filter comments by triage disposition. Use "all" to return comments in any status.
       schema:
         type: string
         enum:
@@ -2550,36 +3064,47 @@ components:
           - addressed_by
           - withdrawn
         default: all
+      example: pending
     PageParam:
       name: page
       in: query
+      description: Page number for paginated results (1-based).
       schema:
         type: integer
         minimum: 1
         default: 1
+      example: 1
     PerPageParam:
       name: per_page
       in: query
+      description: Number of items to return per page.
       schema:
         type: integer
         minimum: 1
         maximum: 1000
         default: 25
+      example: 25
     ComponentId:
       name: componentId
       in: path
       required: true
+      description: Numeric ID of the target component.
       schema:
         type: integer
+      example: 29
     RuleId:
       name: ruleId
       in: path
       required: true
+      description: Numeric ID of the target rule.
       schema:
         type: integer
+      example: 100
     ReviewId:
       name: reviewId
       in: path
       required: true
+      description: Numeric ID of the target review.
       schema:
         type: integer
+      example: 44
