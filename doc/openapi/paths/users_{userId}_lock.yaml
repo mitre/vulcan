@@ -2,25 +2,55 @@ parameters:
   - name: userId
     in: path
     required: true
+    description: Numeric ID of the user to lock.
     schema:
       type: integer
+    example: 42
 post:
   operationId: lockUser
   tags:
     - Users
   summary: Lock a user account (admin only)
+  description: >-
+    Prevents the user from signing in. Requires admin role. Returns 422 if
+    the admin attempts to lock their own account. Creates an audit trail
+    entry recording who locked the account and when.
   responses:
     '200':
-      description: Account locked
+      description: Account locked successfully
       content:
         application/json:
           schema:
             $ref: ../components/schemas/UserToastResponse.yaml
+          examples:
+            locked:
+              summary: Account locked
+              value:
+                toast:
+                  title: Account locked.
+                  message:
+                    - "Account jane.doe@example.org locked."
+                  variant: success
+                user:
+                  id: 42
+                  name: Jane Doe
+                  email: jane.doe@example.org
+                  admin: false
+                  locked_at: "2026-05-28T15:00:00Z"
     '422':
       description: Cannot lock own account
       content:
         application/json:
           schema:
             $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            self_lock:
+              summary: Admin tried to lock themselves
+              value:
+                toast:
+                  title: Cannot lock yourself.
+                  message:
+                    - You cannot lock your own account.
+                  variant: danger
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

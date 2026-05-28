@@ -2,23 +2,48 @@ parameters:
   - name: userId
     in: path
     required: true
+    description: Numeric ID of the user whose comments to retrieve.
     schema:
       type: integer
+    example: 42
 get:
   operationId: getUserComments
   tags:
     - Users
   summary: My Comments page — user's comments across accessible projects
+  description: >-
+    Returns paginated comments authored by the specified user across all
+    projects the requesting user can access. Scoped by project visibility,
+    not identity — this is a filtered view, not a privacy boundary. Supports
+    triage status filtering and pagination.
   parameters:
     - $ref: ../components/parameters/TriageStatusFilter.yaml
     - $ref: ../components/parameters/PageParam.yaml
     - $ref: ../components/parameters/PerPageParam.yaml
   responses:
     '200':
-      description: Paginated user comments
+      description: Paginated user comments with status counts
       content:
         application/json:
           schema:
             $ref: ../components/schemas/PaginatedComments.yaml
+          examples:
+            comments:
+              summary: User's pending comments
+              value:
+                rows:
+                  - id: 44
+                    rule_displayed_name: "CNTR-00-000050"
+                    section: fixtext
+                    comment: "This requirement needs clarification."
+                    triage_status: pending
+                    created_at: "2026-05-19T16:15:00Z"
+                pagination:
+                  page: 1
+                  per_page: 25
+                  total: 3
+                status_counts:
+                  pending: 2
+                  concur: 1
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

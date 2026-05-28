@@ -3,19 +3,26 @@ get:
   tags:
     - Components
   summary: Side-by-side rule comparison between two peer components
+  description: >-
+    Compares rules between a base (older) and diff (newer) component sharing
+    the same SRG. Returns a rule-by-rule diff keyed by field name, with
+    metadata about both components. Used by the DiffViewer stepper in the
+    component editor. Requires authentication and access to both components.
   parameters:
     - name: base_id
       in: query
       required: true
+      description: ID of the base (older) component to compare from.
       schema:
         type: integer
-      description: ID of the base (older) component
+      example: 29
     - name: diff_id
       in: query
       required: true
+      description: ID of the diff (newer) component to compare against.
       schema:
         type: integer
-      description: ID of the diff (newer) component
+      example: 30
   responses:
     '200':
       description: Rule-by-rule diff with metadata envelope
@@ -23,9 +30,13 @@ get:
         application/json:
           schema:
             type: object
+            required:
+              - data
+              - meta
             properties:
               data:
                 type: object
+                description: Diff keyed by rule_id, each containing field-level base/diff/changed.
                 additionalProperties:
                   type: object
                   properties:
@@ -41,12 +52,34 @@ get:
                       type: boolean
               meta:
                 type: object
+                description: Metadata about the compared components.
                 properties:
                   base_id:
                     type: integer
+                    example: 29
                   diff_id:
                     type: integer
+                    example: 30
                   rules_count:
                     type: integer
+                    example: 264
+          examples:
+            diff:
+              summary: Two rules compared
+              value:
+                data:
+                  CNTR-00-000050:
+                    fixtext:
+                      base: "Original fix text..."
+                      diff: "Updated fix text..."
+                      changed: true
+                    check_content:
+                      base: "Same check"
+                      diff: "Same check"
+                      changed: false
+                meta:
+                  base_id: 29
+                  diff_id: 30
+                  rules_count: 264
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

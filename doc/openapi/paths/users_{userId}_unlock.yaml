@@ -2,13 +2,19 @@ parameters:
   - name: userId
     in: path
     required: true
+    description: Numeric ID of the user to unlock.
     schema:
       type: integer
+    example: 42
 post:
   operationId: unlockUser
   tags:
     - Users
   summary: Unlock a locked user account (admin only)
+  description: >-
+    Restores sign-in access for a locked user account. Requires admin role.
+    Clears failed_attempts counter and locked_at timestamp. Creates an
+    audit trail entry recording who unlocked the account.
   responses:
     '200':
       description: Account unlocked
@@ -16,5 +22,20 @@ post:
         application/json:
           schema:
             $ref: ../components/schemas/UserToastResponse.yaml
+          examples:
+            unlocked:
+              summary: Account unlocked
+              value:
+                toast:
+                  title: Account unlocked.
+                  message:
+                    - "Account jane.doe@example.org unlocked."
+                  variant: success
+                user:
+                  id: 42
+                  name: Jane Doe
+                  email: jane.doe@example.org
+                  admin: false
+                  locked_at: null
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

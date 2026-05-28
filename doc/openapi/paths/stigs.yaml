@@ -3,15 +3,33 @@ get:
   tags:
     - Benchmarks
   summary: List uploaded STIGs
+  description: >-
+    Returns all uploaded STIGs sorted by title. Requires authentication.
+    STIGs are published security guidance that can be used as reference
+    when authoring Components.
   responses:
     '200':
-      description: STIGs list
+      description: All STIGs
       content:
         application/json:
           schema:
             type: array
             items:
               $ref: ../components/schemas/BenchmarkSummary.yaml
+          examples:
+            stigs:
+              summary: Two STIGs
+              value:
+                - id: 10
+                  title: VMware vSphere 7.0 STIG
+                  version: V1R3
+                  release_date: "2025-09-15"
+                  benchmark_type: stig
+                - id: 11
+                  title: Red Hat Enterprise Linux 9 STIG
+                  version: V2R1
+                  release_date: "2025-11-20"
+                  benchmark_type: stig
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
 post:
@@ -19,22 +37,38 @@ post:
   tags:
     - Benchmarks
   summary: Upload a STIG XCCDF XML file
+  description: >-
+    Parses and imports a published STIG from an XCCDF XML file. Requires
+    admin role. Extracts all rules, CCIs, and metadata. Duplicate STIGs
+    (same title + version) are rejected.
   requestBody:
     required: true
     content:
       multipart/form-data:
         schema:
           type: object
+          required:
+            - file
           properties:
             file:
               type: string
               format: binary
+              description: DISA XCCDF XML file (.xml) containing the STIG.
   responses:
     '200':
-      description: STIG uploaded
+      description: STIG uploaded and parsed
       content:
         application/json:
           schema:
             $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            uploaded:
+              summary: STIG imported
+              value:
+                toast:
+                  title: STIG uploaded.
+                  message:
+                    - Successfully imported VMware vSphere 7.0 STIG V1R3.
+                  variant: success
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

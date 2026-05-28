@@ -44,14 +44,24 @@ paths:
       operationId: getVersion
       tags:
         - System
-      summary: Application version
+      summary: Application version and metadata
+      description: Returns the application name, version, Rails version, Ruby version, and environment. No authentication required — used by monitoring tools, deployment verification scripts, and the frontend health check.
       responses:
         '200':
-          description: Version info
+          description: Version and runtime metadata
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/VersionResponse'
+              examples:
+                production:
+                  summary: Typical production response
+                  value:
+                    name: Vulcan
+                    version: 2.3.7
+                    rails: 8.0.5
+                    ruby: 3.4.9
+                    environment: production
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /api/search/global:
@@ -60,20 +70,24 @@ paths:
       tags:
         - Search
       summary: Search across all resource types
+      description: Searches projects, components, rules, SRGs, and STIGs by name or title. Results are grouped by type and limited per group. Rules can be scoped to a specific component via the component_id parameter. Requires authentication — returns 401 if not signed in.
       parameters:
         - $ref: '#/components/parameters/SearchQuery'
         - name: limit
           in: query
+          description: Maximum results per resource type.
           schema:
             type: integer
             minimum: 1
             maximum: 20
             default: 5
+          example: 5
         - name: component_id
           in: query
-          description: Scope rule search to a specific component
+          description: Scope rule search to a specific component.
           schema:
             type: integer
+          example: 29
       responses:
         '200':
           description: Search results grouped by type
@@ -81,6 +95,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GlobalSearchResponse'
+              examples:
+                results:
+                  summary: Search for "container"
+                  value:
+                    projects:
+                      - id: 4
+                        name: Container Platform
+                    components:
+                      - id: 29
+                        name: Container SRG
+                    rules: []
+                    srgs:
+                      - id: 1
+                        title: Container Platform Security Requirements Guide
+                    stigs: []
         '401':
           $ref: '#/components/responses/Unauthorized'
         4XX:
@@ -91,6 +120,7 @@ paths:
       tags:
         - Search
       summary: Search users by name or email
+      description: Searches user accounts by name or email address. Used by the membership assignment UI to find users to add to projects. Requires authentication.
       parameters:
         - $ref: '#/components/parameters/SearchQuery'
       responses:
@@ -100,11 +130,23 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                  - users
                 properties:
                   users:
                     type: array
                     items:
                       $ref: '#/components/schemas/UserSummary'
+              examples:
+                results:
+                  summary: Search for "jane"
+                  value:
+                    users:
+                      - id: 42
+                        name: Jane Doe
+                        email: jane.doe@example.org
+                        provider: local
+                        admin: false
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /projects:
@@ -1042,19 +1084,22 @@ paths:
       tags:
         - Components
       summary: Side-by-side rule comparison between two peer components
+      description: Compares rules between a base (older) and diff (newer) component sharing the same SRG. Returns a rule-by-rule diff keyed by field name, with metadata about both components. Used by the DiffViewer stepper in the component editor. Requires authentication and access to both components.
       parameters:
         - name: base_id
           in: query
           required: true
+          description: ID of the base (older) component to compare from.
           schema:
             type: integer
-          description: ID of the base (older) component
+          example: 29
         - name: diff_id
           in: query
           required: true
+          description: ID of the diff (newer) component to compare against.
           schema:
             type: integer
-          description: ID of the diff (newer) component
+          example: 30
       responses:
         '200':
           description: Rule-by-rule diff with metadata envelope
@@ -1062,9 +1107,13 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                  - data
+                  - meta
                 properties:
                   data:
                     type: object
+                    description: Diff keyed by rule_id, each containing field-level base/diff/changed.
                     additionalProperties:
                       type: object
                       properties:
@@ -1080,13 +1129,35 @@ paths:
                           type: boolean
                   meta:
                     type: object
+                    description: Metadata about the compared components.
                     properties:
                       base_id:
                         type: integer
+                        example: 29
                       diff_id:
                         type: integer
+                        example: 30
                       rules_count:
                         type: integer
+                        example: 264
+              examples:
+                diff:
+                  summary: Two rules compared
+                  value:
+                    data:
+                      CNTR-00-000050:
+                        fixtext:
+                          base: Original fix text...
+                          diff: Updated fix text...
+                          changed: true
+                        check_content:
+                          base: Same check
+                          diff: Same check
+                          changed: false
+                    meta:
+                      base_id: 29
+                      diff_id: 30
+                      rules_count: 264
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /rules/{ruleId}:
@@ -1847,15 +1918,30 @@ paths:
       tags:
         - Benchmarks
       summary: List uploaded Security Requirements Guides
+      description: Returns all uploaded SRGs sorted by title. Requires authentication. SRGs are the DISA baseline requirement documents that Components implement. Each SRG contains the rules that Component authors map their controls to.
       responses:
         '200':
-          description: SRGs list
+          description: All SRGs
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/BenchmarkSummary'
+              examples:
+                srgs:
+                  summary: Two SRGs
+                  value:
+                    - id: 1
+                      title: Container Platform Security Requirements Guide
+                      version: V2R4
+                      release_date: '2025-10-28'
+                      benchmark_type: srg
+                    - id: 2
+                      title: General Purpose Operating System SRG
+                      version: V3R1
+                      release_date: '2025-06-15'
+                      benchmark_type: srg
         4XX:
           $ref: '#/components/responses/ErrorResponse'
     post:
@@ -1863,23 +1949,36 @@ paths:
       tags:
         - Benchmarks
       summary: Upload an SRG XCCDF XML file
+      description: Parses and imports a DISA SRG from an XCCDF XML file. Requires admin role. Extracts all rules, CCIs, and metadata from the XML. Duplicate SRGs (same title + version) are rejected.
       requestBody:
         required: true
         content:
           multipart/form-data:
             schema:
               type: object
+              required:
+                - file
               properties:
                 file:
                   type: string
                   format: binary
+                  description: DISA XCCDF XML file (.xml) containing the SRG.
       responses:
         '200':
-          description: SRG uploaded
+          description: SRG uploaded and parsed
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                uploaded:
+                  summary: SRG imported
+                  value:
+                    toast:
+                      title: SRG uploaded.
+                      message:
+                        - Successfully imported Container Platform SRG V2R4.
+                      variant: success
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /srgs/{id}:
@@ -1887,13 +1986,16 @@ paths:
       - name: id
         in: path
         required: true
+        description: Numeric ID of the SRG.
         schema:
           type: integer
+        example: 1
     get:
       operationId: getSrg
       tags:
         - Benchmarks
-      summary: SRG detail with rules
+      summary: SRG detail with rules and metadata
+      description: Returns full SRG details including title, version, release date, and all embedded rules. Requires authentication. Used by the SRG detail page to display the baseline requirements.
       responses:
         '200':
           description: SRG detail
@@ -1901,13 +2003,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BenchmarkSummary'
+              examples:
+                srg:
+                  summary: Container Platform SRG
+                  value:
+                    id: 1
+                    title: Container Platform Security Requirements Guide
+                    version: V2R4
+                    release_date: '2025-10-28'
+                    benchmark_type: srg
         4XX:
           $ref: '#/components/responses/ErrorResponse'
     delete:
       operationId: deleteSrg
       tags:
         - Benchmarks
-      summary: Delete an SRG
+      summary: Delete an uploaded SRG (admin only)
+      description: Permanently deletes an SRG and all its embedded rules. Requires admin role. Components based on this SRG will lose their baseline reference. This action cannot be undone.
       responses:
         '200':
           description: SRG deleted
@@ -1915,6 +2027,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StatusOk'
+              examples:
+                deleted:
+                  summary: SRG removed
+                  value:
+                    status: ok
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /srgs/{id}/export/{type}:
@@ -1922,24 +2039,38 @@ paths:
       - name: id
         in: path
         required: true
+        description: Numeric ID of the SRG to export.
         schema:
           type: integer
+        example: 1
       - name: type
         in: path
         required: true
+        description: Export format.
         schema:
           type: string
           enum:
             - csv
             - xccdf
+        example: xccdf
     get:
       operationId: exportSrg
       tags:
         - Benchmarks
-      summary: Export SRG in specified format
+      summary: Export SRG in the specified format
+      description: Downloads the SRG as a CSV spreadsheet or XCCDF XML file. Requires authentication. CSV exports all rules in a flat table. XCCDF exports the original DISA XML format.
       responses:
         '200':
-          description: File download
+          description: Binary file download
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/xml:
+              schema:
+                type: string
+                format: binary
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /stigs:
@@ -1948,15 +2079,30 @@ paths:
       tags:
         - Benchmarks
       summary: List uploaded STIGs
+      description: Returns all uploaded STIGs sorted by title. Requires authentication. STIGs are published security guidance that can be used as reference when authoring Components.
       responses:
         '200':
-          description: STIGs list
+          description: All STIGs
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/BenchmarkSummary'
+              examples:
+                stigs:
+                  summary: Two STIGs
+                  value:
+                    - id: 10
+                      title: VMware vSphere 7.0 STIG
+                      version: V1R3
+                      release_date: '2025-09-15'
+                      benchmark_type: stig
+                    - id: 11
+                      title: Red Hat Enterprise Linux 9 STIG
+                      version: V2R1
+                      release_date: '2025-11-20'
+                      benchmark_type: stig
         4XX:
           $ref: '#/components/responses/ErrorResponse'
     post:
@@ -1964,23 +2110,36 @@ paths:
       tags:
         - Benchmarks
       summary: Upload a STIG XCCDF XML file
+      description: Parses and imports a published STIG from an XCCDF XML file. Requires admin role. Extracts all rules, CCIs, and metadata. Duplicate STIGs (same title + version) are rejected.
       requestBody:
         required: true
         content:
           multipart/form-data:
             schema:
               type: object
+              required:
+                - file
               properties:
                 file:
                   type: string
                   format: binary
+                  description: DISA XCCDF XML file (.xml) containing the STIG.
       responses:
         '200':
-          description: STIG uploaded
+          description: STIG uploaded and parsed
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                uploaded:
+                  summary: STIG imported
+                  value:
+                    toast:
+                      title: STIG uploaded.
+                      message:
+                        - Successfully imported VMware vSphere 7.0 STIG V1R3.
+                      variant: success
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /stigs/{id}:
@@ -1988,13 +2147,16 @@ paths:
       - name: id
         in: path
         required: true
+        description: Numeric ID of the STIG.
         schema:
           type: integer
+        example: 10
     get:
       operationId: getStig
       tags:
         - Benchmarks
-      summary: STIG detail with rules
+      summary: STIG detail with rules and metadata
+      description: Returns full STIG details including title, version, release date, and all embedded rules. Requires authentication. Used by the STIG detail page for reference when authoring Components.
       responses:
         '200':
           description: STIG detail
@@ -2002,13 +2164,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BenchmarkSummary'
+              examples:
+                stig:
+                  summary: VMware vSphere 7.0 STIG
+                  value:
+                    id: 10
+                    title: VMware vSphere 7.0 STIG
+                    version: V1R3
+                    release_date: '2025-09-15'
+                    benchmark_type: stig
         4XX:
           $ref: '#/components/responses/ErrorResponse'
     delete:
       operationId: deleteStig
       tags:
         - Benchmarks
-      summary: Delete a STIG
+      summary: Delete an uploaded STIG (admin only)
+      description: Permanently deletes a STIG and all its embedded rules. Requires admin role. This action cannot be undone.
       responses:
         '200':
           description: STIG deleted
@@ -2016,6 +2188,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StatusOk'
+              examples:
+                deleted:
+                  summary: STIG removed
+                  value:
+                    status: ok
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /stigs/{id}/export/{type}:
@@ -2023,25 +2200,43 @@ paths:
       - name: id
         in: path
         required: true
+        description: Numeric ID of the STIG to export.
         schema:
           type: integer
+        example: 10
       - name: type
         in: path
         required: true
+        description: Export format.
         schema:
           type: string
           enum:
             - csv
             - xccdf
             - inspec
+        example: xccdf
     get:
       operationId: exportStig
       tags:
         - Benchmarks
-      summary: Export STIG in specified format
+      summary: Export STIG in the specified format
+      description: Downloads the STIG as CSV, XCCDF XML, or InSpec profile. Requires authentication. CSV exports all rules in a flat table. XCCDF exports the DISA XML format. InSpec generates a Ruby compliance profile.
       responses:
         '200':
-          description: File download
+          description: Binary file download
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/xml:
+              schema:
+                type: string
+                format: binary
+            application/zip:
+              schema:
+                type: string
+                format: binary
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /users:
@@ -2050,15 +2245,36 @@ paths:
       tags:
         - Users
       summary: List all users (admin only)
+      description: Returns all user accounts sorted alphabetically. Includes login tracking fields (last_sign_in_at, failed_attempts, locked_at) for admin monitoring. Requires admin role — returns 403 for non-admin users.
       responses:
         '200':
-          description: Users list
+          description: All user accounts
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/UserSummary'
+              examples:
+                users:
+                  summary: Two users
+                  value:
+                    - id: 1
+                      name: Demo Admin
+                      email: admin@example.com
+                      provider: null
+                      admin: true
+                      last_sign_in_at: '2026-05-28T15:00:00Z'
+                      failed_attempts: 0
+                      locked_at: null
+                    - id: 5
+                      name: Bernice Deckow
+                      email: bernice.deckow@example.com
+                      provider: null
+                      admin: false
+                      last_sign_in_at: null
+                      failed_attempts: 0
+                      locked_at: null
         '403':
           $ref: '#/components/responses/Forbidden'
         4XX:
@@ -2068,20 +2284,75 @@ paths:
       - name: userId
         in: path
         required: true
+        description: Numeric ID of the target user.
         schema:
           type: integer
+        example: 42
     put:
       operationId: updateUser
       tags:
         - Users
       summary: Update user attributes (admin only)
+      description: Updates a user's name, email, or admin status. Requires admin role. Prevents the last admin from demoting themselves. Sends a Slack notification when admin status changes (if Slack is configured). Returns both a toast and the updated user object.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    email:
+                      type: string
+                      format: email
+                    admin:
+                      type: boolean
+            examples:
+              promote:
+                summary: Promote user to admin
+                value:
+                  user:
+                    admin: true
       responses:
         '200':
           description: User updated
           content:
             application/json:
               schema:
+                $ref: '#/components/schemas/UserToastResponse'
+              examples:
+                updated:
+                  summary: User promoted to admin
+                  value:
+                    toast:
+                      title: User updated.
+                      message:
+                        - Successfully updated user.
+                      variant: success
+                    user:
+                      id: 42
+                      name: Jane Doe
+                      email: jane.doe@example.org
+                      admin: true
+        '422':
+          description: Cannot remove last admin
+          content:
+            application/json:
+              schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                last_admin:
+                  summary: Cannot demote last admin
+                  value:
+                    toast:
+                      title: Cannot remove admin.
+                      message:
+                        - You are the only admin. Promote another user first.
+                      variant: danger
         4XX:
           $ref: '#/components/responses/ErrorResponse'
     delete:
@@ -2089,6 +2360,7 @@ paths:
       tags:
         - Users
       summary: Delete a user (admin only)
+      description: Permanently deletes a user account. Requires admin role. Cannot delete the last remaining admin. All project memberships and associated data are cleaned up via dependent destroy.
       responses:
         '200':
           description: User deleted
@@ -2096,6 +2368,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                deleted:
+                  summary: User deleted
+                  value:
+                    toast:
+                      title: User deleted.
+                      message:
+                        - Successfully deleted user.
+                      variant: success
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /users/{userId}/comments:
@@ -2103,24 +2384,45 @@ paths:
       - name: userId
         in: path
         required: true
+        description: Numeric ID of the user whose comments to retrieve.
         schema:
           type: integer
+        example: 42
     get:
       operationId: getUserComments
       tags:
         - Users
       summary: My Comments page — user's comments across accessible projects
+      description: Returns paginated comments authored by the specified user across all projects the requesting user can access. Scoped by project visibility, not identity — this is a filtered view, not a privacy boundary. Supports triage status filtering and pagination.
       parameters:
         - $ref: '#/components/parameters/TriageStatusFilter'
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PerPageParam'
       responses:
         '200':
-          description: Paginated user comments
+          description: Paginated user comments with status counts
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedComments'
+              examples:
+                comments:
+                  summary: User's pending comments
+                  value:
+                    rows:
+                      - id: 44
+                        rule_displayed_name: CNTR-00-000050
+                        section: fixtext
+                        comment: This requirement needs clarification.
+                        triage_status: pending
+                        created_at: '2026-05-19T16:15:00Z'
+                    pagination:
+                      page: 1
+                      per_page: 25
+                      total: 3
+                    status_counts:
+                      pending: 2
+                      concur: 1
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /users/unlink_identity:
@@ -2129,17 +2431,35 @@ paths:
       tags:
         - Users
       summary: Unlink an OAuth provider from the current user
+      description: Removes an OAuth provider link (GitHub, LDAP, OIDC) from the current user's account. Requires the user's current password to confirm. The user must have local login credentials before unlinking to avoid being locked out. Available from the user profile page.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - current_password
+                - provider
               properties:
                 current_password:
                   type: string
+                  description: Current password to confirm the action.
+                  example: MyCurrentP@ssw0rd!
                 provider:
                   type: string
+                  description: OAuth provider to unlink.
+                  enum:
+                    - github
+                    - ldap
+                    - oidc
+                  example: github
+            examples:
+              unlink_github:
+                summary: Unlink GitHub provider
+                value:
+                  current_password: MyCurrentP@ssw0rd!
+                  provider: github
       responses:
         '200':
           description: Provider unlinked
@@ -2147,6 +2467,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                unlinked:
+                  summary: GitHub unlinked
+                  value:
+                    toast:
+                      title: Provider unlinked.
+                      message:
+                        - GitHub identity removed from your account.
+                      variant: success
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /users/admin_create:
@@ -2155,6 +2484,7 @@ paths:
       tags:
         - Users
       summary: Create a new user (admin only)
+      description: 'Creates a new user account. Requires admin role. Three modes based on password and SMTP config: (1) password provided — user can sign in immediately, (2) no password + SMTP enabled — sends setup email via Devise, (3) no password + no SMTP — returns a reset URL the admin delivers manually. Skips email confirmation.'
       requestBody:
         required: true
         content:
@@ -2169,26 +2499,78 @@ paths:
                   properties:
                     name:
                       type: string
+                      description: Display name for the new user.
+                      example: Jane Doe
                     email:
                       type: string
                       format: email
+                      description: Login email address. Must be unique.
+                      example: jane.doe@example.org
                     admin:
                       type: boolean
+                      description: Whether to grant admin privileges.
+                      example: false
                     password:
                       type: string
+                      description: Initial password. If omitted, a reset link is generated.
+                      example: SecureP@ssw0rd2026!
+            examples:
+              with_password:
+                summary: Create with explicit password
+                value:
+                  user:
+                    name: Jane Doe
+                    email: jane.doe@example.org
+                    admin: false
+                    password: SecureP@ssw0rd2026!
+              without_password:
+                summary: Create without password (reset link generated)
+                value:
+                  user:
+                    name: Jane Doe
+                    email: jane.doe@example.org
       responses:
         '200':
-          description: User created
+          description: User created (response varies by mode)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminCreateResponse'
+              examples:
+                with_password:
+                  summary: Created with provided password
+                  value:
+                    toast: User jane.doe@example.org created with the provided password.
+                    user:
+                      id: 42
+                      name: Jane Doe
+                      email: jane.doe@example.org
+                      admin: false
+                no_smtp:
+                  summary: Created without SMTP — reset URL returned
+                  value:
+                    toast: User jane.doe@example.org created. Deliver the reset link to the user.
+                    user:
+                      id: 42
+                      name: Jane Doe
+                      email: jane.doe@example.org
+                      admin: false
+                    reset_url: http://localhost:3000/users/password/edit?reset_password_token=abc123
         '422':
-          description: Validation error
+          description: Validation error (duplicate email, invalid fields)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                duplicate:
+                  summary: Email already taken
+                  value:
+                    toast:
+                      title: Could not create user.
+                      message:
+                        - Email has already been taken
+                      variant: danger
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /users/{userId}/send_password_reset:
@@ -2196,26 +2578,47 @@ paths:
       - name: userId
         in: path
         required: true
+        description: Numeric ID of the user to send the reset email to.
         schema:
           type: integer
+        example: 42
     post:
       operationId: sendPasswordReset
       tags:
         - Users
-      summary: Send Devise password reset email (admin only, requires SMTP)
+      summary: Send Devise password reset email (admin only)
+      description: Triggers a Devise password reset email to the specified user. Requires admin role and SMTP to be configured. Returns 422 if SMTP is disabled — use the generate_reset_link endpoint instead. Returns 500 if email delivery fails.
       responses:
         '200':
-          description: Reset email sent
+          description: Reset email sent successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                sent:
+                  summary: Email delivered
+                  value:
+                    toast:
+                      title: Reset email sent.
+                      message:
+                        - Password reset email sent to jane.doe@example.org.
+                      variant: success
         '422':
           description: SMTP not configured
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                no_smtp:
+                  summary: SMTP disabled
+                  value:
+                    toast:
+                      title: SMTP not configured.
+                      message:
+                        - Email delivery is not available. Use "Generate Reset Link" instead.
+                      variant: danger
         '500':
           description: Email delivery failed
           content:
@@ -2229,13 +2632,16 @@ paths:
       - name: userId
         in: path
         required: true
+        description: Numeric ID of the user to generate a reset link for.
         schema:
           type: integer
+        example: 42
     post:
       operationId: generateResetLink
       tags:
         - Users
       summary: Generate a password reset URL without sending email (admin only)
+      description: Generates a Devise reset token and returns the full reset URL. Does not send email — the admin copies the link and delivers it to the user through a secure channel. Requires admin role. Works regardless of SMTP config.
       responses:
         '200':
           description: Reset link generated
@@ -2243,6 +2649,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResetLinkResponse'
+              examples:
+                link:
+                  summary: Reset link generated
+                  value:
+                    toast:
+                      title: Reset link generated.
+                      message:
+                        - Reset link generated. Copy it and deliver to the user.
+                      variant: success
+                    reset_url: http://localhost:3000/users/password/edit?reset_password_token=abc123def456
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /users/{userId}/set_password:
@@ -2250,13 +2666,16 @@ paths:
       - name: userId
         in: path
         required: true
+        description: Numeric ID of the user whose password to set.
         schema:
           type: integer
+        example: 42
     post:
       operationId: setPassword
       tags:
         - Users
       summary: Directly set a user's password (admin only)
+      description: Sets the password for a user account without requiring the old password. Requires admin role. The password must meet the configured minimum length (default 15 characters). Does not send any email notification. Used for urgent password resets when SMTP is unavailable.
       requestBody:
         required: true
         content:
@@ -2271,6 +2690,14 @@ paths:
                   properties:
                     password:
                       type: string
+                      description: New password (must meet minimum length requirement).
+                      example: SecureP@ssw0rd2026!
+            examples:
+              set:
+                summary: Set a new password
+                value:
+                  user:
+                    password: SecureP@ssw0rd2026!
       responses:
         '200':
           description: Password updated
@@ -2278,14 +2705,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                success:
+                  summary: Password set successfully
+                  value:
+                    toast:
+                      title: Password updated.
+                      message:
+                        - Password updated for jane.doe@example.org.
+                      variant: success
         '422':
-          description: Blank password or validation error
+          description: Blank password or Devise validation error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                blank:
+                  summary: Empty password
+                  value:
+                    toast:
+                      title: Password required.
+                      message:
+                        - Password cannot be blank.
+                      variant: danger
+                too_short:
+                  summary: Password too short
+                  value:
+                    toast:
+                      title: Could not set password.
+                      message:
+                        - Password is too short (minimum is 15 characters)
+                      variant: danger
         '500':
-          description: Internal error
+          description: Internal error during password update
           content:
             application/json:
               schema:
@@ -2297,26 +2750,53 @@ paths:
       - name: userId
         in: path
         required: true
+        description: Numeric ID of the user to lock.
         schema:
           type: integer
+        example: 42
     post:
       operationId: lockUser
       tags:
         - Users
       summary: Lock a user account (admin only)
+      description: Prevents the user from signing in. Requires admin role. Returns 422 if the admin attempts to lock their own account. Creates an audit trail entry recording who locked the account and when.
       responses:
         '200':
-          description: Account locked
+          description: Account locked successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserToastResponse'
+              examples:
+                locked:
+                  summary: Account locked
+                  value:
+                    toast:
+                      title: Account locked.
+                      message:
+                        - Account jane.doe@example.org locked.
+                      variant: success
+                    user:
+                      id: 42
+                      name: Jane Doe
+                      email: jane.doe@example.org
+                      admin: false
+                      locked_at: '2026-05-28T15:00:00Z'
         '422':
           description: Cannot lock own account
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                self_lock:
+                  summary: Admin tried to lock themselves
+                  value:
+                    toast:
+                      title: Cannot lock yourself.
+                      message:
+                        - You cannot lock your own account.
+                      variant: danger
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /users/{userId}/unlock:
@@ -2324,13 +2804,16 @@ paths:
       - name: userId
         in: path
         required: true
+        description: Numeric ID of the user to unlock.
         schema:
           type: integer
+        example: 42
     post:
       operationId: unlockUser
       tags:
         - Users
       summary: Unlock a locked user account (admin only)
+      description: Restores sign-in access for a locked user account. Requires admin role. Clears failed_attempts counter and locked_at timestamp. Creates an audit trail entry recording who unlocked the account.
       responses:
         '200':
           description: Account unlocked
@@ -2338,6 +2821,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserToastResponse'
+              examples:
+                unlocked:
+                  summary: Account unlocked
+                  value:
+                    toast:
+                      title: Account unlocked.
+                      message:
+                        - Account jane.doe@example.org unlocked.
+                      variant: success
+                    user:
+                      id: 42
+                      name: Jane Doe
+                      email: jane.doe@example.org
+                      admin: false
+                      locked_at: null
         4XX:
           $ref: '#/components/responses/ErrorResponse'
 components:
@@ -2521,7 +3019,7 @@ components:
           type: string
           format: email
           description: Login email address.
-          example: jane.doe@example.gov
+          example: jane.doe@example.org
         provider:
           type:
             - string
@@ -2700,7 +3198,7 @@ components:
           type: string
           format: email
           description: Email address of the comment author.
-          example: jane.doe@example.gov
+          example: jane.doe@example.org
         comment:
           type: string
           description: The comment text content.
@@ -3235,6 +3733,38 @@ components:
           type: string
           description: Service health status.
           example: ok
+    UserToastResponse:
+      description: Combined response containing a toast notification and the updated user summary.
+      type: object
+      required:
+        - toast
+        - user
+      properties:
+        toast:
+          type: object
+          description: Toast notification describing the result of the user operation.
+          required:
+            - title
+            - message
+            - variant
+          properties:
+            title:
+              type: string
+              description: Short human-readable summary of the outcome.
+              example: Account locked.
+            message:
+              type: array
+              description: Detail lines providing additional context.
+              items:
+                type: string
+              example:
+                - Account jane.doe@example.org locked.
+            variant:
+              type: string
+              description: Bootstrap alert variant controlling toast styling.
+              example: success
+        user:
+          $ref: '#/components/schemas/UserSummary'
     AdminCreateResponse:
       description: Response from admin user creation, including a toast notification, the created user, and an optional password reset URL.
       type: object
@@ -3260,7 +3790,7 @@ components:
               items:
                 type: string
               example:
-                - Account jane.doe@example.gov created successfully.
+                - Account jane.doe@example.org created successfully.
             variant:
               type: string
               description: Bootstrap alert variant controlling toast styling.
@@ -3271,7 +3801,7 @@ components:
           type: string
           format: uri
           description: One-time password reset URL generated for the new user when SMTP is unavailable. Absent when SMTP delivers the reset email directly.
-          example: https://vulcan.example.gov/users/password/edit?reset_password_token=abc123def456
+          example: https://vulcan.example.org/users/password/edit?reset_password_token=abc123def456
     ResetLinkResponse:
       description: Response containing a toast notification and a one-time password reset URL for admin-generated resets.
       type: object
@@ -3306,39 +3836,7 @@ components:
           type: string
           format: uri
           description: One-time password reset URL to share with the user.
-          example: https://vulcan.example.gov/users/password/edit?reset_password_token=abc123def456
-    UserToastResponse:
-      description: Combined response containing a toast notification and the updated user summary.
-      type: object
-      required:
-        - toast
-        - user
-      properties:
-        toast:
-          type: object
-          description: Toast notification describing the result of the user operation.
-          required:
-            - title
-            - message
-            - variant
-          properties:
-            title:
-              type: string
-              description: Short human-readable summary of the outcome.
-              example: Account locked.
-            message:
-              type: array
-              description: Detail lines providing additional context.
-              items:
-                type: string
-              example:
-                - Account jane.doe@example.gov locked.
-            variant:
-              type: string
-              description: Bootstrap alert variant controlling toast styling.
-              example: success
-        user:
-          $ref: '#/components/schemas/UserSummary'
+          example: https://vulcan.example.org/users/password/edit?reset_password_token=abc123def456
   responses:
     ErrorResponse:
       description: Error response (401 unauthorized, 403 forbidden, 404 not found, 422 validation, or 500 server error).

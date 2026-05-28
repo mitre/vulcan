@@ -3,6 +3,9 @@ get:
   tags:
     - Search
   summary: Search users by name or email
+  description: >-
+    Searches user accounts by name or email address. Used by the membership
+    assignment UI to find users to add to projects. Requires authentication.
   parameters:
     - $ref: ../components/parameters/SearchQuery.yaml
   responses:
@@ -12,10 +15,22 @@ get:
         application/json:
           schema:
             type: object
+            required:
+              - users
             properties:
               users:
                 type: array
                 items:
                   $ref: ../components/schemas/UserSummary.yaml
+          examples:
+            results:
+              summary: Search for "jane"
+              value:
+                users:
+                  - id: 42
+                    name: Jane Doe
+                    email: jane.doe@example.org
+                    provider: local
+                    admin: false
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

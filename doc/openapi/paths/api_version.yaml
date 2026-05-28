@@ -2,13 +2,26 @@ get:
   operationId: getVersion
   tags:
     - System
-  summary: Application version
+  summary: Application version and metadata
+  description: >-
+    Returns the application name, version, Rails version, Ruby version, and
+    environment. No authentication required — used by monitoring tools,
+    deployment verification scripts, and the frontend health check.
   responses:
     '200':
-      description: Version info
+      description: Version and runtime metadata
       content:
         application/json:
           schema:
             $ref: ../components/schemas/VersionResponse.yaml
+          examples:
+            production:
+              summary: Typical production response
+              value:
+                name: Vulcan
+                version: "2.3.7"
+                rails: "8.0.5"
+                ruby: "3.4.9"
+                environment: production
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

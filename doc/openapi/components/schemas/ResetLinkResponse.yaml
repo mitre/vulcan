@@ -31,4 +31,4 @@ properties:
     type: string
     format: uri
     description: One-time password reset URL to share with the user.
-    example: "https://vulcan.example.gov/users/password/edit?reset_password_token=abc123def456"
+    example: "https://vulcan.example.org/users/password/edit?reset_password_token=abc123def456"

@@ -2,20 +2,79 @@ parameters:
   - name: userId
     in: path
     required: true
+    description: Numeric ID of the target user.
     schema:
       type: integer
+    example: 42
 put:
   operationId: updateUser
   tags:
     - Users
   summary: Update user attributes (admin only)
+  description: >-
+    Updates a user's name, email, or admin status. Requires admin role.
+    Prevents the last admin from demoting themselves. Sends a Slack
+    notification when admin status changes (if Slack is configured).
+    Returns both a toast and the updated user object.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            user:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                admin:
+                  type: boolean
+        examples:
+          promote:
+            summary: Promote user to admin
+            value:
+              user:
+                admin: true
   responses:
     '200':
       description: User updated
       content:
         application/json:
           schema:
+            $ref: ../components/schemas/UserToastResponse.yaml
+          examples:
+            updated:
+              summary: User promoted to admin
+              value:
+                toast:
+                  title: User updated.
+                  message:
+                    - Successfully updated user.
+                  variant: success
+                user:
+                  id: 42
+                  name: Jane Doe
+                  email: jane.doe@example.org
+                  admin: true
+    '422':
+      description: Cannot remove last admin
+      content:
+        application/json:
+          schema:
             $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            last_admin:
+              summary: Cannot demote last admin
+              value:
+                toast:
+                  title: Cannot remove admin.
+                  message:
+                    - You are the only admin. Promote another user first.
+                  variant: danger
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
 delete:
@@ -23,6 +82,10 @@ delete:
   tags:
     - Users
   summary: Delete a user (admin only)
+  description: >-
+    Permanently deletes a user account. Requires admin role. Cannot delete
+    the last remaining admin. All project memberships and associated data
+    are cleaned up via dependent destroy.
   responses:
     '200':
       description: User deleted
@@ -30,5 +93,14 @@ delete:
         application/json:
           schema:
             $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            deleted:
+              summary: User deleted
+              value:
+                toast:
+                  title: User deleted.
+                  message:
+                    - Successfully deleted user.
+                  variant: success
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

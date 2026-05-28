@@ -2,24 +2,45 @@ parameters:
   - name: id
     in: path
     required: true
+    description: Numeric ID of the STIG to export.
     schema:
       type: integer
+    example: 10
   - name: type
     in: path
     required: true
+    description: Export format.
     schema:
       type: string
       enum:
         - csv
         - xccdf
         - inspec
+    example: xccdf
 get:
   operationId: exportStig
   tags:
     - Benchmarks
-  summary: Export STIG in specified format
+  summary: Export STIG in the specified format
+  description: >-
+    Downloads the STIG as CSV, XCCDF XML, or InSpec profile. Requires
+    authentication. CSV exports all rules in a flat table. XCCDF exports
+    the DISA XML format. InSpec generates a Ruby compliance profile.
   responses:
     '200':
-      description: File download
+      description: Binary file download
+      content:
+        text/csv:
+          schema:
+            type: string
+            format: binary
+        application/xml:
+          schema:
+            type: string
+            format: binary
+        application/zip:
+          schema:
+            type: string
+            format: binary
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

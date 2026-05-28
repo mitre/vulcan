@@ -19,7 +19,7 @@ properties:
     type: string
     format: email
     description: Login email address.
-    example: jane.doe@example.gov
+    example: jane.doe@example.org
   provider:
     type:
       - string

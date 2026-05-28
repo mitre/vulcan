@@ -22,7 +22,7 @@ properties:
         items:
           type: string
         example:
-          - "Account jane.doe@example.gov locked."
+          - "Account jane.doe@example.org locked."
       variant:
         type: string
         description: Bootstrap alert variant controlling toast styling.

@@ -2,13 +2,19 @@ parameters:
   - name: userId
     in: path
     required: true
+    description: Numeric ID of the user to generate a reset link for.
     schema:
       type: integer
+    example: 42
 post:
   operationId: generateResetLink
   tags:
     - Users
   summary: Generate a password reset URL without sending email (admin only)
+  description: >-
+    Generates a Devise reset token and returns the full reset URL. Does not
+    send email — the admin copies the link and delivers it to the user through
+    a secure channel. Requires admin role. Works regardless of SMTP config.
   responses:
     '200':
       description: Reset link generated
@@ -16,5 +22,15 @@ post:
         application/json:
           schema:
             $ref: ../components/schemas/ResetLinkResponse.yaml
+          examples:
+            link:
+              summary: Reset link generated
+              value:
+                toast:
+                  title: Reset link generated.
+                  message:
+                    - Reset link generated. Copy it and deliver to the user.
+                  variant: success
+                reset_url: "http://localhost:3000/users/password/edit?reset_password_token=abc123def456"
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

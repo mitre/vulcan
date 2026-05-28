@@ -3,15 +3,33 @@ get:
   tags:
     - Benchmarks
   summary: List uploaded Security Requirements Guides
+  description: >-
+    Returns all uploaded SRGs sorted by title. Requires authentication. SRGs
+    are the DISA baseline requirement documents that Components implement.
+    Each SRG contains the rules that Component authors map their controls to.
   responses:
     '200':
-      description: SRGs list
+      description: All SRGs
       content:
         application/json:
           schema:
             type: array
             items:
               $ref: ../components/schemas/BenchmarkSummary.yaml
+          examples:
+            srgs:
+              summary: Two SRGs
+              value:
+                - id: 1
+                  title: Container Platform Security Requirements Guide
+                  version: V2R4
+                  release_date: "2025-10-28"
+                  benchmark_type: srg
+                - id: 2
+                  title: General Purpose Operating System SRG
+                  version: V3R1
+                  release_date: "2025-06-15"
+                  benchmark_type: srg
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
 post:
@@ -19,22 +37,38 @@ post:
   tags:
     - Benchmarks
   summary: Upload an SRG XCCDF XML file
+  description: >-
+    Parses and imports a DISA SRG from an XCCDF XML file. Requires admin role.
+    Extracts all rules, CCIs, and metadata from the XML. Duplicate SRGs
+    (same title + version) are rejected.
   requestBody:
     required: true
     content:
       multipart/form-data:
         schema:
           type: object
+          required:
+            - file
           properties:
             file:
               type: string
               format: binary
+              description: DISA XCCDF XML file (.xml) containing the SRG.
   responses:
     '200':
-      description: SRG uploaded
+      description: SRG uploaded and parsed
       content:
         application/json:
           schema:
             $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            uploaded:
+              summary: SRG imported
+              value:
+                toast:
+                  title: SRG uploaded.
+                  message:
+                    - Successfully imported Container Platform SRG V2R4.
+                  variant: success
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

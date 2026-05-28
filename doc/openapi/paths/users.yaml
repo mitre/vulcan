@@ -3,15 +3,39 @@ get:
   tags:
     - Users
   summary: List all users (admin only)
+  description: >-
+    Returns all user accounts sorted alphabetically. Includes login tracking
+    fields (last_sign_in_at, failed_attempts, locked_at) for admin monitoring.
+    Requires admin role — returns 403 for non-admin users.
   responses:
     '200':
-      description: Users list
+      description: All user accounts
       content:
         application/json:
           schema:
             type: array
             items:
               $ref: ../components/schemas/UserSummary.yaml
+          examples:
+            users:
+              summary: Two users
+              value:
+                - id: 1
+                  name: Demo Admin
+                  email: admin@example.com
+                  provider: null
+                  admin: true
+                  last_sign_in_at: "2026-05-28T15:00:00Z"
+                  failed_attempts: 0
+                  locked_at: null
+                - id: 5
+                  name: Bernice Deckow
+                  email: bernice.deckow@example.com
+                  provider: null
+                  admin: false
+                  last_sign_in_at: null
+                  failed_attempts: 0
+                  locked_at: null
     '403':
       $ref: ../components/responses/Forbidden.yaml
     4XX:

@@ -22,7 +22,7 @@ properties:
         items:
           type: string
         example:
-          - "Account jane.doe@example.gov created successfully."
+          - "Account jane.doe@example.org created successfully."
       variant:
         type: string
         description: Bootstrap alert variant controlling toast styling.
@@ -33,4 +33,4 @@ properties:
     type: string
     format: uri
     description: One-time password reset URL generated for the new user when SMTP is unavailable. Absent when SMTP delivers the reset email directly.
-    example: "https://vulcan.example.gov/users/password/edit?reset_password_token=abc123def456"
+    example: "https://vulcan.example.org/users/password/edit?reset_password_token=abc123def456"

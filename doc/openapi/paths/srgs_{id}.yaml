@@ -2,13 +2,19 @@ parameters:
   - name: id
     in: path
     required: true
+    description: Numeric ID of the SRG.
     schema:
       type: integer
+    example: 1
 get:
   operationId: getSrg
   tags:
     - Benchmarks
-  summary: SRG detail with rules
+  summary: SRG detail with rules and metadata
+  description: >-
+    Returns full SRG details including title, version, release date, and
+    all embedded rules. Requires authentication. Used by the SRG detail
+    page to display the baseline requirements.
   responses:
     '200':
       description: SRG detail
@@ -16,13 +22,26 @@ get:
         application/json:
           schema:
             $ref: ../components/schemas/BenchmarkSummary.yaml
+          examples:
+            srg:
+              summary: Container Platform SRG
+              value:
+                id: 1
+                title: Container Platform Security Requirements Guide
+                version: V2R4
+                release_date: "2025-10-28"
+                benchmark_type: srg
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
 delete:
   operationId: deleteSrg
   tags:
     - Benchmarks
-  summary: Delete an SRG
+  summary: Delete an uploaded SRG (admin only)
+  description: >-
+    Permanently deletes an SRG and all its embedded rules. Requires admin
+    role. Components based on this SRG will lose their baseline reference.
+    This action cannot be undone.
   responses:
     '200':
       description: SRG deleted
@@ -30,5 +49,10 @@ delete:
         application/json:
           schema:
             $ref: ../components/schemas/StatusOk.yaml
+          examples:
+            deleted:
+              summary: SRG removed
+              value:
+                status: ok
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

@@ -2,23 +2,40 @@ parameters:
   - name: id
     in: path
     required: true
+    description: Numeric ID of the SRG to export.
     schema:
       type: integer
+    example: 1
   - name: type
     in: path
     required: true
+    description: Export format.
     schema:
       type: string
       enum:
         - csv
         - xccdf
+    example: xccdf
 get:
   operationId: exportSrg
   tags:
     - Benchmarks
-  summary: Export SRG in specified format
+  summary: Export SRG in the specified format
+  description: >-
+    Downloads the SRG as a CSV spreadsheet or XCCDF XML file. Requires
+    authentication. CSV exports all rules in a flat table. XCCDF exports
+    the original DISA XML format.
   responses:
     '200':
-      description: File download
+      description: Binary file download
+      content:
+        text/csv:
+          schema:
+            type: string
+            format: binary
+        application/xml:
+          schema:
+            type: string
+            format: binary
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
