@@ -25,6 +25,7 @@ import "../../styles/shiki-preview.css";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import { highlightCode } from "../../utilities/syntaxHighlighter";
+import { normalizeListFences } from "../../utilities/markdownPreprocessor";
 
 // Configure marked with custom code block renderer for syntax highlighting
 const renderer = new marked.Renderer();
@@ -96,7 +97,7 @@ export default {
       // The module-level renderer's highlightCode() auto-detects the
       // theme from data-bs-theme at call time — no duplicate renderer.
       void this.currentTheme;
-      const html = marked.parse(this.value, { breaks: false, renderer });
+      const html = marked.parse(normalizeListFences(this.value), { breaks: false, renderer });
       return DOMPurify.sanitize(html);
     },
     previewStyle() {
@@ -198,7 +199,7 @@ export default {
           sideBySideFullscreen: false,
           // Use our custom renderer with Shiki highlighting
           previewRender: function (plainText) {
-            const html = marked.parse(plainText, { breaks: false, renderer });
+            const html = marked.parse(normalizeListFences(plainText), { breaks: false, renderer });
             return DOMPurify.sanitize(html);
           },
           renderingConfig: {
