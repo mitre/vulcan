@@ -1,0 +1,67 @@
+parameters:
+  - $ref: ../components/parameters/ComponentId.yaml
+post:
+  operationId: previewSpreadsheetUpdate
+  tags:
+    - Components
+  summary: Preview changes from a spreadsheet import
+  description: >-
+    Parses an uploaded spreadsheet (CSV/XLSX) and returns a diff of what
+    would change if applied, without modifying any data. Requires admin
+    role on the component. Use the apply endpoint to commit the changes.
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          required:
+            - file
+          properties:
+            file:
+              type: string
+              format: binary
+              description: CSV or XLSX spreadsheet file containing rule updates.
+  responses:
+    '200':
+      description: Preview of changes that would be applied
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              changes:
+                type: array
+                description: List of rule changes detected in the spreadsheet.
+                items:
+                  type: object
+          examples:
+            preview:
+              summary: Two rules would be updated
+              value:
+                changes:
+                  - rule_id: "CNTR-00-000050"
+                    field: fixtext
+                    old_value: "Old fix text..."
+                    new_value: "Updated fix text..."
+                  - rule_id: "CNTR-00-000051"
+                    field: check_content
+                    old_value: "Old check..."
+                    new_value: "Updated check..."
+    '422':
+      description: No file provided or parse error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                description: Error message describing the problem.
+          examples:
+            no_file:
+              summary: No file uploaded
+              value:
+                error: No file was provided. Please upload a CSV or XLSX file.
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

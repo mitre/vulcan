@@ -1,0 +1,63 @@
+parameters:
+  - $ref: ../components/parameters/RuleId.yaml
+get:
+  operationId: getRelatedRules
+  tags:
+    - Rules
+  summary: Find rules sharing the same SRG requirement
+  description: >-
+    Returns rules from other components and published STIGs that implement the
+    same SRG requirement (matched by version/srg_id). Results are scoped to
+    components the current user can access unless the user is an admin.
+    Includes parent containers (components and STIGs) for grouping in the UI.
+  responses:
+    '200':
+      description: Related rules with parent containers
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - rules
+              - parents
+            properties:
+              rules:
+                type: array
+                description: Rules from other components and STIGs sharing the same SRG requirement.
+                items:
+                  $ref: ../components/schemas/RuleSummary.yaml
+              parents:
+                type: array
+                description: Parent containers (components and STIGs) for grouping.
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+                    type:
+                      type: string
+                      description: Container type — component or stig.
+          examples:
+            related:
+              summary: Rules from another component and a published STIG
+              value:
+                rules:
+                  - id: 200
+                    rule_id: "CNTR-00-000050"
+                    title: "Container images must be signed"
+                    status: "Applicable - Configurable"
+                  - id: 300
+                    rule_id: "CNTR-00-000050"
+                    title: "Container images must be signed"
+                    status: "Applicable - Configurable"
+                parents:
+                  - id: 30
+                    name: "Container Platform v2"
+                    type: component
+                  - id: 5
+                    name: "Container Platform SRG V2R4"
+                    type: stig
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

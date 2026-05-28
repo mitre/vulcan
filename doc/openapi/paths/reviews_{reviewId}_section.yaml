@@ -1,0 +1,80 @@
+parameters:
+  - $ref: ../components/parameters/ReviewId.yaml
+patch:
+  operationId: updateReviewSection
+  tags:
+    - Reviews
+  summary: Update the section field on a review
+  description: >-
+    Changes which requirement section (fixtext, check_content, vuln_discussion,
+    etc.) a comment addresses. Idempotent — re-saving the same section returns
+    the review with an `idempotent: true` flag. Requires author role or higher.
+    An audit trail entry is created for non-idempotent changes.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            section:
+              type:
+                - string
+                - 'null'
+              description: Target section key from Review::SECTION_KEYS. Null for overall requirement.
+              enum:
+                - title
+                - severity
+                - status
+                - fixtext
+                - check_content
+                - vuln_discussion
+                - disa_metadata
+                - vendor_comments
+                - artifact_description
+                - xccdf_metadata
+                - null
+              example: fixtext
+            audit_comment:
+              type: string
+              description: Reason for the section change (audit trail).
+              example: "Commenter clarified this applies to the fix text."
+        examples:
+          change_section:
+            summary: Move comment to vuln_discussion
+            value:
+              section: vuln_discussion
+              audit_comment: "Re-categorized after author clarification."
+  responses:
+    '200':
+      description: Section updated (or idempotent no-op)
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - review
+            properties:
+              review:
+                $ref: ../components/schemas/ReviewSummary.yaml
+              idempotent:
+                type: boolean
+                description: Present and true when the section was already the requested value.
+          examples:
+            changed:
+              summary: Section updated
+              value:
+                review:
+                  id: 44
+                  section: vuln_discussion
+                  triage_status: pending
+            idempotent:
+              summary: No change — same section
+              value:
+                review:
+                  id: 44
+                  section: fixtext
+                  triage_status: pending
+                idempotent: true
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

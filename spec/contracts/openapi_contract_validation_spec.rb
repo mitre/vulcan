@@ -21,6 +21,12 @@ RSpec.describe 'OpenAPI contract validation', type: :request do
     end
   end
 
+  let_it_be(:rule) { component.rules.first || create(:rule, component: component) }
+  let_it_be(:review) do
+    create(:review, user: admin, rule: rule, action: 'comment', comment: 'Contract test comment',
+                    triage_status: 'concur', adjudicated_at: Time.current, adjudicated_by_id: admin.id)
+  end
+
   let(:vulcan_api) { OpenapiFirst::Test.definitions[:vulcan] }
 
   def validate_response!(req, resp)
@@ -144,6 +150,59 @@ RSpec.describe 'OpenAPI contract validation', type: :request do
 
       body = response.parsed_body
       expect(body.dig('toast', 'title')).to be_a(String)
+    end
+  end
+
+  describe 'PATCH /reviews/:id/reopen' do
+    it 'matches schema on success' do
+      patch "/reviews/#{review.id}/reopen", headers: { 'Accept' => 'application/json' }, as: :json
+      expect(response).to have_http_status(:ok)
+      validate_response!(request, response)
+
+      body = response.parsed_body
+      expect(body).to have_key('review')
+      expect(body['review']['id']).to eq(review.id)
+    end
+  end
+
+  describe 'PATCH /reviews/:id/section' do
+    it 'matches schema on section change' do
+      patch "/reviews/#{review.id}/section",
+            params: { section: 'vuln_discussion', audit_comment: 'Contract test re-categorization' },
+            headers: { 'Accept' => 'application/json' }, as: :json
+      expect(response).to have_http_status(:ok)
+      validate_response!(request, response)
+
+      body = response.parsed_body
+      expect(body).to have_key('review')
+      expect(body['review']['section']).to eq('vuln_discussion')
+    end
+  end
+
+  describe 'GET /rules/:id/search/related_rules' do
+    it 'matches schema with rules and parents arrays' do
+      get "/rules/#{rule.id}/search/related_rules", headers: { 'Accept' => 'application/json' }
+      expect(response).to have_http_status(:ok)
+      validate_response!(request, response)
+
+      body = response.parsed_body
+      expect(body).to have_key('rules')
+      expect(body).to have_key('parents')
+      expect(body['rules']).to be_an(Array)
+      expect(body['parents']).to be_an(Array)
+    end
+  end
+
+  describe 'POST /components/:id/find' do
+    it 'matches schema returning rule array' do
+      post "/components/#{component.id}/find",
+           params: { find: 'test' },
+           headers: { 'Accept' => 'application/json' }, as: :json
+      expect(response).to have_http_status(:ok)
+      validate_response!(request, response)
+
+      body = response.parsed_body
+      expect(body).to be_an(Array)
     end
   end
 end

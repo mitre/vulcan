@@ -89,6 +89,14 @@ paths:
     $ref: paths/components_history.yaml
   /components/{componentId}/related:
     $ref: paths/components_{componentId}_related.yaml
+  /components/{componentId}/find:
+    $ref: paths/components_{componentId}_find.yaml
+  /components/{componentId}/preview_spreadsheet_update:
+    $ref: paths/components_{componentId}_preview_spreadsheet_update.yaml
+  /components/{componentId}/apply_spreadsheet_update:
+    $ref: paths/components_{componentId}_apply_spreadsheet_update.yaml
+  /components/bulk_export/{type}:
+    $ref: paths/components_bulk_export_{type}.yaml
   /api/components/compare:
     $ref: paths/api_components_compare.yaml
   /rules/{ruleId}:
@@ -99,6 +107,8 @@ paths:
     $ref: paths/rules_{ruleId}_section_locks.yaml
   /rules/{ruleId}/bulk_section_locks:
     $ref: paths/rules_{ruleId}_bulk_section_locks.yaml
+  /rules/{ruleId}/search/related_rules:
+    $ref: paths/rules_{ruleId}_related_rules.yaml
   /rule_satisfactions:
     $ref: paths/rule_satisfactions.yaml
   /rule_satisfactions/{ruleId}:
@@ -127,6 +137,10 @@ paths:
     $ref: paths/reviews_{reviewId}_responses.yaml
   /reviews/{reviewId}/reactions:
     $ref: paths/reviews_{reviewId}_reactions.yaml
+  /reviews/{reviewId}/reopen:
+    $ref: paths/reviews_{reviewId}_reopen.yaml
+  /reviews/{reviewId}/section:
+    $ref: paths/reviews_{reviewId}_section.yaml
   /memberships:
     $ref: paths/memberships.yaml
   /memberships/{membershipId}:

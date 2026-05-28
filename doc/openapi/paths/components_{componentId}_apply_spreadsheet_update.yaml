@@ -1,0 +1,57 @@
+parameters:
+  - $ref: ../components/parameters/ComponentId.yaml
+patch:
+  operationId: applySpreadsheetUpdate
+  tags:
+    - Components
+  summary: Apply changes from a spreadsheet import
+  description: >-
+    Applies rule updates from an uploaded spreadsheet (CSV/XLSX) to the
+    component. Requires admin role on the component. Use the preview endpoint
+    first to review changes before applying. Creates audit trail entries for
+    each modified rule.
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          required:
+            - file
+          properties:
+            file:
+              type: string
+              format: binary
+              description: CSV or XLSX spreadsheet file containing rule updates.
+  responses:
+    '200':
+      description: Spreadsheet changes applied successfully
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            success:
+              summary: Rules updated from spreadsheet
+              value:
+                toast:
+                  title: Spreadsheet applied.
+                  message:
+                    - Successfully updated 12 rules from spreadsheet.
+                  variant: success
+    '422':
+      description: No file provided or application error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+          examples:
+            no_file:
+              summary: No file uploaded
+              value:
+                error: No file was provided. Please upload a CSV or XLSX file.
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

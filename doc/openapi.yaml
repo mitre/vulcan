@@ -803,6 +803,239 @@ paths:
                   $ref: '#/components/schemas/ComponentSummary'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
+  /components/{componentId}/find:
+    parameters:
+      - $ref: '#/components/parameters/ComponentId'
+    post:
+      operationId: findRulesInComponent
+      tags:
+        - Components
+      summary: Search rules within a component by text
+      description: Full-text search across rule titles, fix text, vendor comments, status justification, artifact description, vulnerability discussion, mitigations, and check content within a single component. Returns matching rules in rule_id order. Used by the in-component search feature.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - find
+              properties:
+                find:
+                  type: string
+                  description: Case-insensitive search term matched against all rule text fields.
+                  example: container image
+            examples:
+              search:
+                summary: Search for container image references
+                value:
+                  find: container image
+      responses:
+        '200':
+          description: Matching rules in rule_id order
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RuleSummary'
+              examples:
+                results:
+                  summary: Two matching rules
+                  value:
+                    - id: 100
+                      rule_id: CNTR-00-000050
+                      title: Container images must be signed
+                      status: Applicable - Configurable
+                    - id: 101
+                      rule_id: CNTR-00-000051
+                      title: Container images must come from approved registries
+                      status: Applicable - Configurable
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
+  /components/{componentId}/preview_spreadsheet_update:
+    parameters:
+      - $ref: '#/components/parameters/ComponentId'
+    post:
+      operationId: previewSpreadsheetUpdate
+      tags:
+        - Components
+      summary: Preview changes from a spreadsheet import
+      description: Parses an uploaded spreadsheet (CSV/XLSX) and returns a diff of what would change if applied, without modifying any data. Requires admin role on the component. Use the apply endpoint to commit the changes.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV or XLSX spreadsheet file containing rule updates.
+      responses:
+        '200':
+          description: Preview of changes that would be applied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  changes:
+                    type: array
+                    description: List of rule changes detected in the spreadsheet.
+                    items:
+                      type: object
+              examples:
+                preview:
+                  summary: Two rules would be updated
+                  value:
+                    changes:
+                      - rule_id: CNTR-00-000050
+                        field: fixtext
+                        old_value: Old fix text...
+                        new_value: Updated fix text...
+                      - rule_id: CNTR-00-000051
+                        field: check_content
+                        old_value: Old check...
+                        new_value: Updated check...
+        '422':
+          description: No file provided or parse error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message describing the problem.
+              examples:
+                no_file:
+                  summary: No file uploaded
+                  value:
+                    error: No file was provided. Please upload a CSV or XLSX file.
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
+  /components/{componentId}/apply_spreadsheet_update:
+    parameters:
+      - $ref: '#/components/parameters/ComponentId'
+    patch:
+      operationId: applySpreadsheetUpdate
+      tags:
+        - Components
+      summary: Apply changes from a spreadsheet import
+      description: Applies rule updates from an uploaded spreadsheet (CSV/XLSX) to the component. Requires admin role on the component. Use the preview endpoint first to review changes before applying. Creates audit trail entries for each modified rule.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV or XLSX spreadsheet file containing rule updates.
+      responses:
+        '200':
+          description: Spreadsheet changes applied successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+              examples:
+                success:
+                  summary: Rules updated from spreadsheet
+                  value:
+                    toast:
+                      title: Spreadsheet applied.
+                      message:
+                        - Successfully updated 12 rules from spreadsheet.
+                      variant: success
+        '422':
+          description: No file provided or application error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                no_file:
+                  summary: No file uploaded
+                  value:
+                    error: No file was provided. Please upload a CSV or XLSX file.
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
+  /components/bulk_export/{type}:
+    parameters:
+      - name: type
+        in: path
+        required: true
+        description: Export format for the bulk download.
+        schema:
+          type: string
+          enum:
+            - csv
+            - xccdf
+            - inspec
+        example: csv
+    get:
+      operationId: bulkExportComponents
+      tags:
+        - Components
+      summary: Bulk export multiple released components
+      description: Exports multiple released components as a single download in the specified format. Component IDs are passed as a comma-separated query parameter. Returns a binary file (zip for multiple components). Returns a JSON error toast if the export type is unsupported or no component IDs are provided.
+      parameters:
+        - name: component_ids
+          in: query
+          required: true
+          description: Comma-separated list of released component IDs to export.
+          schema:
+            type: string
+          example: 29,30,31
+      responses:
+        '200':
+          description: Binary file download
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+            application/xml:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Invalid export type or no components selected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+              examples:
+                bad_type:
+                  summary: Unsupported export type
+                  value:
+                    toast:
+                      title: Export error.
+                      message:
+                        - 'Unsupported export type: pdf'
+                      variant: danger
+                no_components:
+                  summary: No components selected
+                  value:
+                    toast:
+                      title: Export error.
+                      message:
+                        - No components selected for export.
+                      variant: danger
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
   /api/components/compare:
     get:
       operationId: compareComponents
@@ -982,6 +1215,66 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
+  /rules/{ruleId}/search/related_rules:
+    parameters:
+      - $ref: '#/components/parameters/RuleId'
+    get:
+      operationId: getRelatedRules
+      tags:
+        - Rules
+      summary: Find rules sharing the same SRG requirement
+      description: Returns rules from other components and published STIGs that implement the same SRG requirement (matched by version/srg_id). Results are scoped to components the current user can access unless the user is an admin. Includes parent containers (components and STIGs) for grouping in the UI.
+      responses:
+        '200':
+          description: Related rules with parent containers
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - rules
+                  - parents
+                properties:
+                  rules:
+                    type: array
+                    description: Rules from other components and STIGs sharing the same SRG requirement.
+                    items:
+                      $ref: '#/components/schemas/RuleSummary'
+                  parents:
+                    type: array
+                    description: Parent containers (components and STIGs) for grouping.
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        type:
+                          type: string
+                          description: Container type — component or stig.
+              examples:
+                related:
+                  summary: Rules from another component and a published STIG
+                  value:
+                    rules:
+                      - id: 200
+                        rule_id: CNTR-00-000050
+                        title: Container images must be signed
+                        status: Applicable - Configurable
+                      - id: 300
+                        rule_id: CNTR-00-000050
+                        title: Container images must be signed
+                        status: Applicable - Configurable
+                    parents:
+                      - id: 30
+                        name: Container Platform v2
+                        type: component
+                      - id: 5
+                        name: Container Platform SRG V2R4
+                        type: stig
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /rule_satisfactions:
@@ -1347,6 +1640,137 @@ paths:
                 $ref: '#/components/schemas/ReactionToggleResponse'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
+  /reviews/{reviewId}/reopen:
+    parameters:
+      - $ref: '#/components/parameters/ReviewId'
+    patch:
+      operationId: reopenReview
+      tags:
+        - Reviews
+      summary: Re-open an adjudicated review
+      description: Reverts the adjudication on a closed review, clearing adjudicated_at and adjudicated_by_id so the triage decision can be revised. Requires author role or higher on the parent project. Returns a warning toast (200) if the review has not been adjudicated or was withdrawn by the commenter.
+      responses:
+        '200':
+          description: Review re-opened, or warning toast if not eligible
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  review:
+                    $ref: '#/components/schemas/ReviewSummary'
+                  toast:
+                    type: object
+                    properties:
+                      title:
+                        type: string
+                      message:
+                        type:
+                          - array
+                          - string
+                        items:
+                          type: string
+                      variant:
+                        type: string
+              examples:
+                reopened:
+                  summary: Successfully re-opened
+                  value:
+                    review:
+                      id: 44
+                      action: comment
+                      comment: This requirement needs clarification.
+                      triage_status: concur
+                      adjudicated_at: null
+                      rule_id: 100
+                      section: fixtext
+                not_adjudicated:
+                  summary: Review was never adjudicated
+                  value:
+                    toast:
+                      title: Cannot re-open.
+                      message:
+                        - This comment has not been adjudicated.
+                      variant: warning
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
+  /reviews/{reviewId}/section:
+    parameters:
+      - $ref: '#/components/parameters/ReviewId'
+    patch:
+      operationId: updateReviewSection
+      tags:
+        - Reviews
+      summary: Update the section field on a review
+      description: 'Changes which requirement section (fixtext, check_content, vuln_discussion, etc.) a comment addresses. Idempotent — re-saving the same section returns the review with an `idempotent: true` flag. Requires author role or higher. An audit trail entry is created for non-idempotent changes.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                section:
+                  type:
+                    - string
+                    - 'null'
+                  description: Target section key from Review::SECTION_KEYS. Null for overall requirement.
+                  enum:
+                    - title
+                    - severity
+                    - status
+                    - fixtext
+                    - check_content
+                    - vuln_discussion
+                    - disa_metadata
+                    - vendor_comments
+                    - artifact_description
+                    - xccdf_metadata
+                    - null
+                  example: fixtext
+                audit_comment:
+                  type: string
+                  description: Reason for the section change (audit trail).
+                  example: Commenter clarified this applies to the fix text.
+            examples:
+              change_section:
+                summary: Move comment to vuln_discussion
+                value:
+                  section: vuln_discussion
+                  audit_comment: Re-categorized after author clarification.
+      responses:
+        '200':
+          description: Section updated (or idempotent no-op)
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - review
+                properties:
+                  review:
+                    $ref: '#/components/schemas/ReviewSummary'
+                  idempotent:
+                    type: boolean
+                    description: Present and true when the section was already the requested value.
+              examples:
+                changed:
+                  summary: Section updated
+                  value:
+                    review:
+                      id: 44
+                      section: vuln_discussion
+                      triage_status: pending
+                idempotent:
+                  summary: No change — same section
+                  value:
+                    review:
+                      id: 44
+                      section: fixtext
+                      triage_status: pending
+                    idempotent: true
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /memberships:
