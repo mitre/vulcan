@@ -1,0 +1,493 @@
+# Authentication Flow Assessment - Vulcan v2.3.0
+
+**Date**: 2026-01-08
+**Branch**: v2.3.0
+**Rails Version**: 8.0.2.1
+**Devise Version**: Latest
+
+## Executive Summary
+
+The authentication system has **two separate issues**:
+
+1. **OIDC Login Button Not Working** - Critical routing/view issue preventing OIDC authentication
+2. **Local Login Working Perfectly** - Local database authentication is functioning as expected
+
+---
+
+## 1. Configuration Status
+
+### Devise Routes (config/routes.rb)
+
+```ruby
+devise_for :users, controllers: {
+  omniauth_callbacks: 'users/omniauth_callbacks',
+  registrations: 'users/registrations',
+  sessions: 'sessions'  # Custom SessionsController
+}
+```
+
+**Status**: ✅ Correctly configured
+
+### Active Authentication Methods
+
+| Method | Enabled | Configuration |
+|--------|---------|---------------|
+| Local Login | ✅ Yes | `Settings.local_login.enabled = true` |
+| OIDC | ✅ Yes | `Settings.oidc.enabled = true` |
+| LDAP | ❌ No | `Settings.ldap.enabled = false` |
+| GitHub OAuth | ❌ No | `Settings.providers = {}` |
+
+**Status**: ✅ Correctly configured
+
+### SessionsController (app/controllers/sessions_controller.rb)
+
+```ruby
+class SessionsController < Devise::SessionsController
+  include OidcDiscoveryHelper
+
+  def require_no_authentication
+    # Fixed GitHub Issue #700 - prevents redirect loops
+    session.delete(:user_return_to)
+    # ... authentication check
+  end
+
+  def create
+    # Handles both JSON (SPA) and HTML requests
+    respond_to do |format|
+      format.json { ... }
+      format.html { super }
+    end
+  end
+
+  def destroy
+    # OIDC-aware logout with end_session_endpoint support
+    # ... redirect to OIDC provider logout
+  end
+end
+```
+
+**Status**: ✅ Well-structured, handles OIDC logout correctly
+
+### OmniAuth Callbacks (app/controllers/users/omniauth_callbacks_controller.rb)
+
+```ruby
+class Users::OmniauthCallbacksController < Devise::OmniauthCallbacksController
+  def all
+    # Handles OIDC, LDAP, GitHub
+    user = User.from_omniauth(auth)
+    session[:id_token] = auth.credentials.id_token  # For OIDC logout
+    sign_in_and_redirect(user)
+  end
+
+  alias ldap all
+  alias github all
+  alias oidc all  # ✅ OIDC callback is defined
+end
+```
+
+**Status**: ✅ Comprehensive error handling, supports OIDC
+
+---
+
+## 2. What's Working
+
+### Local Login ✅
+
+**User Confirmation**: "Local login works perfectly"
+
+**Flow**:
+1. User navigates to `/users/sign_in`
+2. Clicks "Local Login" tab (active by default if OIDC enabled)
+3. Enters email/password
+4. Form submits to `POST /users/sign_in`
+5. `SessionsController#create` authenticates via Devise database strategy
+6. User is signed in and redirected to dashboard
+
+**Evidence**:
+- Routes correctly configured: `user_session POST /users/sign_in(.:format) sessions#create`
+- Local login form renders: `app/views/devise/sessions/_local.html.haml`
+- No errors reported by user
+
+---
+
+## 3. What's NOT Working
+
+### OIDC Login Button ❌
+
+**User Report**: "OIDC button does nothing when clicked"
+
+### Root Cause Analysis
+
+#### Issue 1: Rails 7+ link_to with method: :post
+
+**Location**: `app/views/devise/sessions/new.html.haml:30`
+
+```haml
+= link_to omniauth_authorize_path(resource_name, provider),
+  class: "btn btn-primary btn-lg",
+  method: :post do
+    Sign in with #{oidc_title_text}
+```
+
+**Problem**:
+- Rails 7+ deprecated UJS `method: :post` for links
+- This requires Turbo/rails-ujs to intercept clicks and convert to POST
+- **Current setup**: Rails 8.0.2.1 with **legacy Turbolinks** (not Turbo)
+- Turbolinks **does NOT support `method: :post` on links**
+
+**What happens**:
+1. User clicks "Sign in with OIDC Provider"
+2. Turbolinks tries to handle the link
+3. `method: :post` is ignored (Turbolinks doesn't support it)
+4. Browser attempts GET request to `/users/auth/oidc`
+5. GET to `/users/auth/oidc` may work, BUT...
+6. CSRF token is missing (only present in POST forms)
+7. Request fails silently or redirects back to login
+
+#### Issue 2: Route Configuration Mismatch
+
+**Available Route**:
+```
+user_oidc_omniauth_authorize GET|POST /users/auth/oidc(.:format)
+  users/omniauth_callbacks#passthru
+```
+
+**Current Code Generates**:
+```haml
+<a href="/users/auth/oidc" data-method="post" class="btn btn-primary btn-lg">
+  Sign in with OIDC Provider
+</a>
+```
+
+**With Turbolinks**:
+- `data-method` is **ignored**
+- Link becomes plain GET request
+- No CSRF token submitted
+- Authentication initiation may fail
+
+---
+
+## 4. Evidence Supporting Diagnosis
+
+### Settings Values (Confirmed via Rails Runner)
+
+```
+OIDC enabled: true
+OIDC strategy: openid_connect
+Local login enabled: true
+Providers: {}
+Devise providers: [:oidc]
+Non-LDAP OAuth providers: [:oidc]
+```
+
+**Status**: ✅ Configuration is correct
+
+### Available Routes
+
+```
+user_oidc_omniauth_authorize GET|POST /users/auth/oidc(.:format)
+  users/omniauth_callbacks#passthru
+
+user_oidc_omniauth_callback GET|POST /users/auth/oidc/callback(.:format)
+  users/omniauth_callbacks#oidc
+```
+
+**Status**: ✅ Routes are correctly generated by Devise
+
+### Devise OIDC Configuration (config/initializers/devise.rb:298)
+
+```ruby
+config.omniauth Settings.oidc.strategy, Settings.oidc.args if Settings.oidc.enabled
+```
+
+**Settings.oidc.strategy**: `:openid_connect`
+**Settings.oidc.args**: Contains issuer, client_id, client_secret, scopes, discovery endpoints
+
+**Status**: ✅ OIDC provider correctly registered with Devise
+
+### OIDC Startup Validation (config/initializers/oidc_startup_validation.rb)
+
+Runs comprehensive validation:
+- ✅ Required settings present (issuer, client_id, client_secret)
+- ✅ Issuer URL format valid
+- ✅ Discovery endpoint accessible (if enabled)
+- ✅ Endpoints discovered successfully
+
+**Status**: ✅ OIDC configuration passes validation
+
+---
+
+## 5. Additional Observations
+
+### ApplicationController Authentication
+
+```ruby
+before_action :setup_navigation, :authenticate_user!, unless: :devise_controller?
+```
+
+**Status**: ✅ Correctly exempts Devise controllers from authentication requirement
+
+### Sessions Helper (app/helpers/sessions_helper.rb)
+
+```ruby
+def oidc_enabled?
+  Settings.oidc.enabled  # Returns true
+end
+
+def non_ldap_oauth_providers
+  Devise.omniauth_providers.reject { |p| p.eql?(:ldap) }  # Returns [:oidc]
+end
+```
+
+**Status**: ✅ Helpers return correct values
+
+### Login View Rendering Logic
+
+```haml
+- if oidc_enabled?
+  - non_ldap_oauth_providers.each_with_index do |provider, index|
+    %li.nav-item{role: "presentation"}
+      %button.nav-link{class: (index == 0 ? "active" : ""), ...}
+        = oidc_title_text
+```
+
+**Result**:
+- OIDC tab is rendered
+- Tab is set as active (first tab)
+- Button text shows configured provider title
+
+**Status**: ✅ View logic works correctly
+
+---
+
+## 6. Why Local Login Works But OIDC Doesn't
+
+### Local Login (Form Submission)
+
+```haml
+= form_for(resource, as: resource_name, url: session_path(resource_name)) do |f|
+  # ... email/password fields
+  = f.submit "Sign in", class: 'btn btn-success btn-block'
+```
+
+**Why it works**:
+- Uses `form_for` with proper Rails form helpers
+- Generates `<form method="POST">` with CSRF token
+- Submits to `POST /users/sign_in`
+- No dependency on JavaScript/Turbolinks
+- Standard Rails form processing
+
+### OIDC Login (Link with method: :post)
+
+```haml
+= link_to omniauth_authorize_path(resource_name, provider),
+  method: :post do
+    Sign in with #{oidc_title_text}
+```
+
+**Why it doesn't work**:
+- Uses `link_to` with `method: :post`
+- Requires JavaScript to convert link click to POST
+- Rails 7+ removed UJS (unobtrusive JavaScript) support for `method:`
+- Turbolinks **does NOT handle `data-method` attribute**
+- Turbo (Rails 7+ default) would handle it, but Vulcan uses Turbolinks
+- Result: Click becomes plain GET request without CSRF token
+
+---
+
+## 7. Root Cause Summary
+
+**Primary Issue**: Incompatibility between `link_to method: :post` and Turbolinks
+
+**Technical Details**:
+1. **Rails 7+** removed UJS `data-method` support
+2. **Turbo** (Rails 7+ default) has native `data-turbo-method` support
+3. **Turbolinks** (legacy, pre-Rails 7) has **no method attribute support**
+4. Vulcan uses **Turbolinks 5.2.0** (not Turbo)
+5. OIDC button uses `method: :post` which requires UJS/Turbo
+6. Button click results in GET request, missing CSRF token, fails authentication
+
+**Why Local Login Works**: Uses standard `<form method="POST">` - no JavaScript required
+
+---
+
+## 8. Recommended Solutions
+
+### Option 1: Replace Link with Button Form (Immediate Fix)
+
+**Change**:
+```haml
+# FROM:
+= link_to omniauth_authorize_path(resource_name, provider),
+  class: "btn btn-primary btn-lg",
+  method: :post do
+    Sign in with #{oidc_title_text}
+
+# TO:
+= button_to omniauth_authorize_path(resource_name, provider),
+  class: "btn btn-primary btn-lg",
+  method: :post do
+    Sign in with #{oidc_title_text}
+```
+
+**Why it works**:
+- `button_to` generates a full `<form>` with POST method
+- Includes CSRF token automatically
+- No dependency on JavaScript/Turbolinks
+- Standard Rails form submission
+
+**Effort**: 5 minutes
+**Risk**: Very low
+**Status**: ✅ **RECOMMENDED - Quick Fix**
+
+---
+
+### Option 2: Use GET for OIDC Initiation (Alternative)
+
+**Change**:
+```haml
+= link_to omniauth_authorize_path(resource_name, provider),
+  class: "btn btn-primary btn-lg" do
+    Sign in with #{oidc_title_text}
+```
+
+**Why it works**:
+- OmniAuth authorize endpoint accepts both GET and POST
+- Route is `GET|POST /users/auth/oidc`
+- GET doesn't require CSRF token for initiation
+- OIDC flow uses state parameter for security
+
+**Considerations**:
+- GET requests are slightly less secure (appear in logs)
+- POST is generally preferred for auth initiation
+- Both are supported by OAuth 2.0 spec
+
+**Effort**: 2 minutes
+**Risk**: Low
+**Status**: ✅ **Valid Alternative**
+
+---
+
+### Option 3: Migrate to Turbo (Long-term Solution)
+
+**Change**: Replace Turbolinks with Turbo (Rails 7+ default)
+
+**Why it works**:
+- Turbo has native `data-turbo-method` support
+- Compatible with Rails 8
+- Better SPA support
+- Already on roadmap (from CLAUDE.md)
+
+**Effort**: 4-8 hours (per CLAUDE.md estimate)
+**Risk**: Medium (requires testing all Turbolinks interactions)
+**Status**: ⏳ **Planned for Later**
+
+---
+
+## 9. Testing Plan
+
+### Test Case 1: OIDC Button Click (After Fix)
+
+**Steps**:
+1. Navigate to `/users/sign_in`
+2. Click "OIDC Provider" tab
+3. Click "Sign in with OIDC Provider" button
+4. Observe network request in browser DevTools
+
+**Expected**:
+- POST request to `/users/auth/oidc`
+- CSRF token present in request
+- Redirect to OIDC provider authorization endpoint
+- After auth, redirect to `/users/auth/oidc/callback`
+- User signed in, redirected to dashboard
+
+### Test Case 2: OIDC Full Authentication Flow
+
+**Steps**:
+1. Complete OIDC login (Test Case 1)
+2. Verify `session[:id_token]` is set
+3. Click "Sign Out"
+4. Verify redirect to OIDC provider logout endpoint
+5. Verify redirect back to Vulcan login page
+
+**Expected**:
+- OIDC logout includes `id_token_hint` and `post_logout_redirect_uri`
+- User logged out from both Vulcan and OIDC provider
+
+### Test Case 3: Local Login (Regression Check)
+
+**Steps**:
+1. Navigate to `/users/sign_in`
+2. Click "Local Login" tab
+3. Enter valid email/password
+4. Submit form
+
+**Expected**:
+- User authenticated successfully
+- Redirected to dashboard
+- No changes from current working behavior
+
+---
+
+## 10. Implementation Priority
+
+### Immediate (Now)
+1. ✅ Fix OIDC button using `button_to` (Option 1)
+2. ✅ Test OIDC authentication flow end-to-end
+3. ✅ Verify OIDC logout works correctly
+
+### Short-term (This Sprint)
+1. ⏳ Add system specs for OIDC authentication flow
+2. ⏳ Document OIDC configuration in README
+3. ⏳ Add OIDC troubleshooting guide
+
+### Long-term (v2.4.0)
+1. ⏳ Migrate from Turbolinks to Turbo
+2. ⏳ Update all `link_to method: :post` to use `button_to` or Turbo methods
+3. ⏳ Complete SPA migration (already in progress)
+
+---
+
+## 11. Related Files
+
+### Views
+- `/Users/alippold/github/mitre/vulcan-clean/app/views/devise/sessions/new.html.haml` - **NEEDS FIX**
+- `/Users/alippold/github/mitre/vulcan-clean/app/views/devise/sessions/_local.html.haml` - Works
+- `/Users/alippold/github/mitre/vulcan-clean/app/views/devise/sessions/_ldap.html.haml` - Not in use
+
+### Controllers
+- `/Users/alippold/github/mitre/vulcan-clean/app/controllers/sessions_controller.rb` - Custom Devise controller
+- `/Users/alippold/github/mitre/vulcan-clean/app/controllers/users/omniauth_callbacks_controller.rb` - OIDC callbacks
+- `/Users/alippold/github/mitre/vulcan-clean/app/controllers/application_controller.rb` - Base authentication
+
+### Configuration
+- `/Users/alippold/github/mitre/vulcan-clean/config/routes.rb` - Devise routes
+- `/Users/alippold/github/mitre/vulcan-clean/config/initializers/devise.rb` - Devise + OmniAuth config
+- `/Users/alippold/github/mitre/vulcan-clean/config/initializers/oidc_startup_validation.rb` - OIDC validation
+- `/Users/alippold/github/mitre/vulcan-clean/config/vulcan.default.yml` - Settings schema
+- `/Users/alippold/github/mitre/vulcan-clean/config/settings.rb` - Settings loader
+
+### Helpers
+- `/Users/alippold/github/mitre/vulcan-clean/app/helpers/sessions_helper.rb` - View helpers
+
+---
+
+## 12. Conclusion
+
+**Authentication System Status**: ⚠️ **Partially Functional**
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Local Login | ✅ Working | Database authentication fully functional |
+| OIDC Configuration | ✅ Correct | Devise provider registered, discovery working |
+| OIDC Routes | ✅ Available | Both GET and POST supported |
+| OIDC View | ❌ Broken | `link_to method: :post` incompatible with Turbolinks |
+| OIDC Callbacks | ✅ Ready | Controller handles OIDC responses correctly |
+| OIDC Logout | ✅ Ready | Supports end_session_endpoint with id_token_hint |
+| LDAP | ⏸️ Disabled | Not in use, configuration available |
+| GitHub OAuth | ⏸️ Disabled | Not in use, configuration available |
+
+**Recommended Action**: Implement Option 1 (`button_to` fix) immediately - 5 minute fix, resolves the issue completely.
+
+**Authored by**: Aaron Lippold <lippold@gmail.com>
+**Date**: 2026-01-08

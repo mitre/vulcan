@@ -1,0 +1,2813 @@
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type="text/xsl" href="STIG_unclass.xsl"?>
+<Benchmark xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:cpe="http://cpe.mitre.org/language/2.0" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#" xsi:schemaLocation="http://checklists.nist.gov/xccdf/1.1 http://nvd.nist.gov/schema/xccdf-1.1.4.xsdhttp://cpe.mitre.org/dictionary/2.0 http://cpe.mitre.org/files/cpe-dictionary_2.1.xsd" id="test2" xml:lang="en" xmlns="http://checklists.nist.gov/xccdf/1.1">
+  <status date="2025-11-26">draft</status>
+  <title>test</title>
+  <description>test</description>
+  <notice id="terms-of-use" xml:lang="en"/>
+  <front-matter xml:lang="en"/>
+  <rear-matter xml:lang="en"/>
+  <reference href="">
+    <dc:publisher/>
+    <dc:source/>
+  </reference>
+  <plain-text id="release-info">Release: 1 Benchmark Date: 26 Nov 2025</plain-text>
+  <plain-text id="generator">3.2.2.36079</plain-text>
+  <plain-text id="conventionsVersion">1.10.0</plain-text>
+  <version>1</version>
+  <Group id="V-CNTR-00-000020">
+    <title>SRG-OS-000001</title>
+    <Rule id="SV-CNTR-00-000020" severity="medium" weight="10.0">
+      <version>CNTR-00-000020</version>
+      <title>Containers must operate with the least possible runtime privileges, least possible runtime capabilities, and must not allow runtime changes to user context or privilege escalation.</title>
+      <description>&lt;VulnDiscussion&gt;This requirement enforces defense-in-depth by constraining container execution to minimal necessary privileges before runtime begins. It addresses privilege escalation, lateral movement, and "living off the land" attack techniques.
+
+**Non-root Execution**: Container images must be built to execute as a non-privileged user (UID &gt; 0). Privileged entrypoints that switch users at runtime are not acceptable in application containers, as they create an exploitable attack surface during the transition period. The USER directive in Containerfiles must specify a non-root user before the final CMD/ENTRYPOINT.
+
+**Minimal Runtime Capabilities**: Containers must not request additional Linux capabilities beyond the minimal default set. Runtime configurations must not include: privileged mode, CAP_ADD directives (unless explicitly justified), host namespace sharing (PID, IPC, network, UTS), or device mounts (unless required for hardware access and documented).
+
+**No Runtime User Changes**: Tools that enable user switching (e.g., sudo, su) must not be installed in containers. While 'su' may be inseparable from base system utilities, 'sudo' must be explicitly removed. This prevents attackers from escalating privileges even if they compromise the container process.
+
+**Exception: Init Containers**: Ephemeral init containers in Kubernetes may require elevated privileges to configure the pod environment (e.g., setting sysctl values, loading data). These exceptions require:
+- Documentation justifying the privileged requirement
+- Isolation from application containers
+- Minimal lifetime (init containers terminate before app containers start)
+- Security review and approval
+
+**Runtime Enforcement**: The container platform must enforce these restrictions through:
+- Pod Security Standards/Policies (Kubernetes)
+- SecurityContext enforcement
+- Admission controllers that reject non-compliant configurations
+
+This requirement aligns with NSA/CISA Kubernetes Hardening Guidance: "Build container applications to execute as a non-root user" and CIS Docker Benchmark controls for runtime privilege restriction.
+
+Satisfies: SRG-OS-000002, SRG-OS-000003, SRG-OS-000004, SRG-OS-000104, SRG-OS-000123, SRG-OS-000132, SRG-OS-000134, SRG-OS-000138, SRG-OS-000175, SRG-OS-000239, SRG-OS-000240, SRG-OS-000241, SRG-OS-000274, SRG-OS-000275, SRG-OS-000276, SRG-OS-000277, SRG-OS-000299, SRG-OS-000300, SRG-OS-000303, SRG-OS-000304, SRG-OS-000312, SRG-OS-000324, SRG-OS-000326, SRG-OS-000327, SRG-OS-000378, SRG-OS-000391, SRG-OS-000397, SRG-OS-000417, SRG-OS-000755, SRG-OS-000760&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://cyber.mil/cci">CCI-000015</ident>
+      <fixtext fixref="F-CNTR-00-000020_fix">**Configure containers for least privilege execution:**
+
+1. **Containerfile - Set non-root USER**:
+
+```Containerfile
+# Bad - runs as root (UID 0)
+FROM alpine:3.19
+COPY app /app
+CMD ["/app"]
+
+# Good - creates and uses non-root user
+FROM alpine:3.19
+RUN addgroup -g 10001 appgroup &amp;&amp; \
+    adduser -D -u 10001 -G appgroup appuser
+COPY --chown=appuser:appgroup app /app
+USER appuser
+CMD ["/app"]
+
+# Better - use distroless with predefined nonroot user
+FROM gcr.io/distroless/static-debian12:nonroot
+COPY app /app
+USER nonroot:nonroot
+CMD ["/app"]
+```
+
+2. **Kubernetes Deployment - Enforce SecurityContext**:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+spec:
+  template:
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: app
+        image: myapp:v1.0
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          capabilities:
+            drop: ["ALL"]
+          # Only add specific caps if absolutely required
+          # capabilities:
+          #   add: ["NET_BIND_SERVICE"]  # Must be justified
+```
+
+3. **Remove privilege escalation tools**:
+
+```Containerfile
+# Remove sudo (if present in base image)
+RUN apk del sudo || apt-get remove -y sudo || yum remove -y sudo
+
+# Verify no setuid binaries (where possible)
+RUN find / -perm /6000 -type f 2&gt;/dev/null || true
+```
+
+4. **Policy Enforcement** (OPA/Kyverno):
+
+```yaml
+# Kyverno policy example
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-non-root
+spec:
+  validationFailureAction: enforce
+  rules:
+  - name: check-runAsNonRoot
+    match:
+      resources:
+        kinds: [Pod]
+    validate:
+      message: "Containers must run as non-root"
+      pattern:
+        spec:
+          securityContext:
+            runAsNonRoot: true
+          containers:
+          - securityContext:
+              allowPrivilegeEscalation: false
+```
+
+**Reference**: NSA/CISA Kubernetes Hardening Guidance recommends "build container applications to execute as a non-root user"</fixtext>
+      <check system="N/A">
+        <check-content>**Build-Time Check** (Containerfile/Image Analysis):
+
+1. **Verify non-root USER directive**:
+```bash
+# Check Containerfile has USER directive (not root)
+grep "^USER" Containerfile | grep -v "USER root"
+
+# Verify final user in built image
+docker inspect &lt;image&gt; | jq '.[].Config.User'  # Should not be empty or "root"
+
+# Alternative: Check with Trivy
+trivy config Containerfile --severity HIGH,CRITICAL
+```
+
+2. **Verify no privilege escalation in entrypoint/cmd**:
+```bash
+# Check for sudo, su, privilege escalation commands
+docker history --no-trunc &lt;image&gt; | grep -E "sudo|su |gosu|setuid"
+
+# Verify no sudo installed
+docker run --rm &lt;image&gt; which sudo  # Should exit non-zero
+```
+
+**Configuration Check** (Kubernetes/Deployment):
+
+3. **Verify SecurityContext enforces non-root**:
+```yaml
+# Check deployment manifest
+kubectl get deployment &lt;name&gt; -o yaml | grep -A5 securityContext
+
+# Required settings:
+securityContext:
+  runAsNonRoot: true
+  runAsUser: &lt;UID &gt; 0&gt;
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: ["ALL"]
+```
+
+**Runtime Check**:
+
+4. **Verify actual runtime user** (exec into running container):
+```bash
+kubectl exec &lt;pod&gt; -- id
+# uid should be &gt; 0, not root
+
+kubectl exec &lt;pod&gt; -- whoami
+# Should not return "root"
+```
+
+5. **Verify no added capabilities**:
+```bash
+kubectl get pod &lt;pod&gt; -o json | jq '.spec.containers[].securityContext'
+# Should not have capAdd, should have capDrop: ["ALL"]
+```
+
+**Finding**: If container runs as root (UID 0) or has unnecessary capabilities, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="V-CNTR-00-000030">
+    <title>SRG-OS-000021</title>
+    <Rule id="SV-CNTR-00-000030" severity="medium" weight="10.0">
+      <version>CNTR-00-000030</version>
+      <title>Containers must not provide direct login or terminal access mechanisms. All access to containers must occur exclusively through the container platform management interface. test</title>
+      <description>&lt;VulnDiscussion&gt;The container platform implements access controls in accordance with the OS Core SRG and Container Platform SRG requirements. Delegating all access management to the platform ensures consistent authentication, authorization, and audit logging.
+
+**No Interactive Login Services**: Containers must not include services that provide direct login capability:
+- No SSH daemon (sshd)
+- No Telnet daemon
+- No remote desktop services
+- No getty/login processes
+
+**No User Account Infrastructure**: Containers must not implement user account management:
+- No /etc/passwd with loginable accounts
+- No PAM configuration for authentication
+- No password authentication mechanisms
+- Final USER in Dockerfile should map to /bin/false or /bin/nologin (note: this prevents traditional login but does not prevent platform-managed exec)
+
+**Platform-Based Access Only**: Authorized access to containers occurs through platform management APIs:
+- kubectl exec (Kubernetes) - logged and audited by platform
+- docker exec (Docker) - subject to platform access controls
+- Platform-provided debugging tools
+- Ephemeral debug containers (Kubernetes 1.23+)
+
+**Security Benefits**:
+1. **Centralized Authentication**: Platform handles all user authentication (not duplicated in each container)
+2. **Audit Trail**: All exec/attach operations logged by platform
+3. **Access Control**: RBAC enforced by platform, not per-container
+4. **Reduced Attack Surface**: No authentication daemons to exploit in container
+5. **Simplified Compliance**: User management requirements satisfied at platform level
+
+**Distroless Advantage**: Distroless containers naturally satisfy this requirement by excluding shells and login infrastructure entirely.
+
+This requirement addresses OWASP Kubernetes K06 (Broken Authentication) by centralizing all authentication at the platform layer and preventing per-container authentication bypass.
+
+Satisfies: SRG-OS-000032, SRG-OS-000033, SRG-OS-000066, SRG-OS-000067, SRG-OS-000068, SRG-OS-000079, SRG-OS-000080, SRG-OS-000105, SRG-OS-000106, SRG-OS-000109, SRG-OS-000110, SRG-OS-000111, SRG-OS-000112, SRG-OS-000113, SRG-OS-000118, SRG-OS-000121, SRG-OS-000125, SRG-OS-000128, SRG-OS-000203, SRG-OS-000250, SRG-OS-000267, SRG-OS-000279, SRG-OS-000280, SRG-OS-000281, SRG-OS-000297, SRG-OS-000298, SRG-OS-000329, SRG-OS-000364, SRG-OS-000375, SRG-OS-000376, SRG-OS-000377, SRG-OS-000379, SRG-OS-000392, SRG-OS-000393, SRG-OS-000394, SRG-OS-000395, SRG-OS-000495, SRG-OS-000505, SRG-OS-000515, SRG-OS-000525, SRG-OS-000530, SRG-OS-000535, SRG-OS-000540, SRG-OS-000555, SRG-OS-000580, SRG-OS-000705, SRG-OS-000765&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://cyber.mil/cci">CCI-000044</ident>
+      <fixtext fixref="F-CNTR-00-000030_fix">**Remove all direct login mechanisms from containers:**
+
+TesT
+
+1. **Use distroless base images** (no shell, no SSH):
+
+```Containerfile
+# Distroless - no shell or login capability
+FROM gcr.io/distroless/static-debian12:nonroot
+COPY myapp /app
+USER nonroot:nonroot
+CMD ["/app"]
+```
+
+2. **If using traditional base image, remove access tools**:
+
+```Containerfile
+FROM alpine:3.19
+
+# Remove SSH if present
+RUN apk del openssh-server openssh-client || true
+
+# Create non-root user with nologin shell
+RUN addgroup -g 10001 appgroup &amp;&amp; \
+    adduser -D -u 10001 -G appgroup -s /sbin/nologin appuser
+
+COPY --chown=appuser:appgroup app /app
+USER appuser
+CMD ["/app"]
+```
+
+3. **Platform-based access configuration** (Kubernetes):
+
+```yaml
+# Access via kubectl exec only (platform-managed, audited)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myapp
+spec:
+  containers:
+  - name: app
+    image: myapp:v1.0
+    # No need for SSH - use kubectl exec for debugging
+
+---
+# RBAC to control who can exec into pods
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pod-exec
+rules:
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create"]
+```
+
+4. **For debugging, use ephemeral debug containers** (Kubernetes 1.23+):
+
+```bash
+# Instead of SSH, use debug containers
+kubectl debug &lt;pod&gt; -it --image=busybox --target=&lt;container&gt;
+
+# Temporary, audited, doesn't require SSH in app container
+```
+
+**What NOT to do**:
+- Install SSH server in container
+- Expose port 22
+- Add login shells to USER accounts
+- Include getty, telnetd, or other terminal services
+
+**Reference**: Container Platform SRG enforces access control (Platform manages all access to containers)</fixtext>
+      <check system="N/A">
+        <check-content>**Build-Time Check** (Containerfile/Image):
+
+1. **Verify no SSH/telnet/login services**:
+```bash
+# Check image for SSH daemon
+docker run --rm &lt;image&gt; which sshd  # Should fail/not found
+docker run --rm &lt;image&gt; which telnetd  # Should fail/not found
+
+# Check for SSH packages
+trivy image &lt;image&gt; --format json | jq '.Results[].Packages[] | select(.Name | contains("ssh"))'
+
+# Alternative: Use Syft to list all packages
+syft &lt;image&gt; -o table | grep -i "ssh\|telnet"
+```
+
+2. **Verify USER shell is non-interactive** (distroless best practice):
+```bash
+# Check final USER in Containerfile
+grep "^USER" Containerfile
+
+# For distroless: No shell exists at all
+docker run --rm &lt;image&gt; sh 2&gt;&amp;1  # Should fail: executable not found
+```
+
+3. **Check /etc/passwd for login shells** (if passwd exists):
+```bash
+docker run --rm &lt;image&gt; cat /etc/passwd 2&gt;/dev/null | grep -v "nologin\|false"
+# Should only show non-login shells
+```
+
+**Configuration Check**:
+
+4. **Verify platform logging of exec/attach commands**:
+```bash
+# Kubernetes - verify audit logging enabled for exec
+kubectl get --raw /api/v1 | jq '.resources[] | select(.name=="pods/exec")'
+
+# Check audit policy includes exec/attach
+cat /etc/kubernetes/audit-policy.yaml | grep -A5 "pods/exec\|pods/attach"
+```
+
+**Runtime Validation**:
+
+5. **Verify no login services running**:
+```bash
+# Check no SSH listening
+kubectl exec &lt;pod&gt; -- netstat -tulpn 2&gt;/dev/null | grep ":22"  # Should be empty
+
+# Verify platform is only access method
+# Review platform audit logs for exec/attach events
+kubectl logs -n kube-system &lt;audit-pod&gt; | grep "pods/exec"
+```
+
+**Finding**: If container includes SSH, telnet, or other direct login mechanisms, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="V-CNTR-00-000010">
+    <title>SRG-OS-000023</title>
+    <Rule id="SV-CNTR-00-000010" severity="medium" weight="10.0">
+      <version>CNTR-00-000010</version>
+      <title>Containers must operate on container platforms that fully comply with all Container Platform SRG requirements.</title>
+      <description>&lt;VulnDiscussion&gt;Running containers on container platforms that meet all requirements outlined in the Container Platform SRG is the foundational prerequisite that enables the majority of the security requirements to be satisfied at the platform level rather than within individual containers.
+
+This requirement establishes the security baseline by delegating platform-level concerns (authentication, authorization, networking, registry security, orchestration) to the Container Platform SRG (185 requirements). Many OS Core SRG requirements (e.g., user account management, session controls, audit logging aggregation) are satisfied by platform capabilities rather than container-level implementation.
+
+This delegation model is intentional: containers are designed to be minimal, stateless, and short-lived. Complex security functions (centralized authentication, network policies, access controls, audit log aggregation) are more effectively implemented at the platform layer.
+
+Key platform capabilities this requirement depends on include:
+- DoD Warning Banner display (platform and application login)
+- Centralized time synchronization (inherited from platform/host)
+- Audit log aggregation (platform collects container STDOUT/STDERR)
+- Access control and RBAC (platform manages who can deploy/exec into containers)
+- Network segmentation and policies (platform enforces, containers declare)
+
+By requiring platform compliance, containers can focus on their unique security concerns (minimal attack surface, no embedded secrets, immutable design) while leveraging platform infrastructure for enterprise security controls.
+
+Satisfies: SRG-OS-000024, SRG-OS-000027, SRG-OS-000028, SRG-OS-000029, SRG-OS-000031, SRG-OS-000037, SRG-OS-000038, SRG-OS-000039, SRG-OS-000040, SRG-OS-000041, SRG-OS-000042, SRG-OS-000046, SRG-OS-000051, SRG-OS-000054, SRG-OS-000055, SRG-OS-000057, SRG-OS-000058, SRG-OS-000059, SRG-OS-000061, SRG-OS-000062, SRG-OS-000063, SRG-OS-000064, SRG-OS-000114, SRG-OS-000163, SRG-OS-000184, SRG-OS-000200, SRG-OS-000205, SRG-OS-000206, SRG-OS-000215, SRG-OS-000216, SRG-OS-000228, SRG-OS-000294, SRG-OS-000295, SRG-OS-000296, SRG-OS-000302, SRG-OS-000337, SRG-OS-000341, SRG-OS-000342, SRG-OS-000343, SRG-OS-000344, SRG-OS-000346, SRG-OS-000347, SRG-OS-000348, SRG-OS-000349, SRG-OS-000350, SRG-OS-000351, SRG-OS-000352, SRG-OS-000353, SRG-OS-000355, SRG-OS-000356, SRG-OS-000358, SRG-OS-000359, SRG-OS-000360, SRG-OS-000363, SRG-OS-000365, SRG-OS-000373, SRG-OS-000383, SRG-OS-000384, SRG-OS-000385, SRG-OS-000386, SRG-OS-000387, SRG-OS-000388, SRG-OS-000403, SRG-OS-000408, SRG-OS-000423, SRG-OS-000424, SRG-OS-000425, SRG-OS-000426, SRG-OS-000432, SRG-OS-000433, SRG-OS-000445, SRG-OS-000446, SRG-OS-000447, SRG-OS-000448, SRG-OS-000449, SRG-OS-000450, SRG-OS-000478, SRG-OS-000479, SRG-OS-000480, SRG-OS-000481, SRG-OS-000490, SRG-OS-000550, SRG-OS-000585, SRG-OS-000590, SRG-OS-000595, SRG-OS-000600, SRG-OS-000605, SRG-OS-000610, SRG-OS-000615, SRG-OS-000620, SRG-OS-000625, SRG-OS-000630, SRG-OS-000635, SRG-OS-000640, SRG-OS-000645, SRG-OS-000650, SRG-OS-000655, SRG-OS-000660, SRG-OS-000665, SRG-OS-000680, SRG-OS-000745, SRG-OS-000780, SRG-OS-000785&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://cyber.mil/cci">CCI-000048</ident>
+      <fixtext fixref="F-CNTR-00-000010_fix">**Deploy containers only on compliant platforms:**
+
+1. **Select a Container Platform SRG-compliant platform**:
+   - Red Hat OpenShift (with Platform SRG assessment)
+   - Rancher Government Solutions
+   - VMware Tanzu (DoD validated)
+   - Platform One (DoD standard)
+   - Kubernetes with hardening (assessed against Platform SRG)
+
+2. **Verify platform compliance before deployment**:
+   - Obtain platform ATO documentation
+   - Review platform STIG checklist (if available)
+   - Confirm Platform SRG V2R3 assessment complete
+   - Verify assessment is current (within 1 year)
+
+3. **Example deployment on compliant platform** (Kubernetes):
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: myapp
+  labels:
+    platform-compliance: "verified"
+    platform-srg-version: "V2R3"
+    assessment-date: "2024-11-01"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+  namespace: myapp
+spec:
+  template:
+    spec:
+      # Platform enforces security via Platform SRG:
+      # - Pod Security Standards
+      # - Network Policies  
+      # - RBAC
+      # - Audit logging
+      containers:
+      - name: app
+        image: myregistry/myapp:v1.0
+```
+
+4. **Do NOT deploy on non-compliant platforms**:
+   - Unapproved Kubernetes distributions
+   - Docker standalone without enterprise security
+   - Platforms without current Platform SRG assessment
+   - Platforms missing required security controls
+
+**Reference**: Container Platform Security Requirements Guide, Version 2 Release 3, DISA, available at https://public.cyber.mil/stigs/downloads/</fixtext>
+      <check system="N/A">
+        <check-content>**Configuration Check** (Deployment Manifests):
+
+Review Kubernetes manifests, Helm charts, Docker Compose files, or other deployment configurations to verify the container platform meets Container Platform SRG V2R3 requirements.
+
+**Method**:
+1. Identify the container platform type (Kubernetes, OpenShift, Docker Enterprise, etc.)
+2. Verify platform version is supported and patched
+3. Confirm platform has been assessed against Container Platform SRG V2R3 (185 requirements)
+4. Validate platform assessment documentation is current (within 1 year)
+
+**Example Commands**:
+```bash
+# Kubernetes - verify platform version
+kubectl version --short
+
+# Check for platform compliance documentation
+# Review platform ATO package, STIG checklist, or compliance reports
+
+# Verify platform security controls (examples):
+kubectl get psp,podsecuritypolicy,networkpolicy -A  # Security policies exist
+kubectl api-resources | grep policy  # Policy APIs available
+```
+
+**Evidence Required**:
+- Platform assessment documentation (ATO, compliance scan results)
+- Platform version within vendor support window
+- Platform security configuration documentation
+- Confirmation platform meets all 185 Container Platform SRG requirements
+
+**Note**: This check does NOT require adding components to the container. Platform compliance is verified via platform configuration and documentation review only.
+
+**Finding**: If the container platform does not meet all Container Platform SRG V2R3 requirements, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="V-CNTR-00-000040">
+    <title>SRG-OS-000069</title>
+    <Rule id="SV-CNTR-00-000040" severity="medium" weight="10.0">
+      <version>CNTR-00-000040</version>
+      <title>Containers must not include embedded secrets, credentials, private keys, tokens, or passwords in image layers, environment variables, or configuration files.</title>
+      <description>&lt;VulnDiscussion&gt;Embedding secrets in container images represents a critical security anti-pattern that can lead to credential theft, unauthorized access, and platform compromise if images or source code are exposed.
+
+**Prohibited Secret Types**:
+- API tokens and access keys
+- Database passwords and connection strings
+- Private key material (SSH keys, TLS private keys, signing keys)
+- Service account credentials
+- OAuth tokens and refresh tokens
+- Encryption keys
+- Certificate private keys
+- Third-party service credentials
+
+**Prohibited Storage Locations**:
+- Image layers (Dockerfile COPY, ADD of secret files)
+- Environment variables set in Dockerfile (ENV directives containing secrets)
+- Configuration files baked into image
+- Application source code with hardcoded credentials
+- .env files included in image
+
+**Secrets Management Approach**:
+Secrets must be provided to containers at runtime via platform-managed secret stores:
+- Kubernetes Secrets (mounted as volumes or environment variables at runtime)
+- Docker Swarm Secrets
+- HashiCorp Vault integration
+- Cloud provider secret managers (AWS Secrets Manager, Azure Key Vault, GCP Secret Manager)
+- External secret operators (External Secrets Operator, Sealed Secrets)
+
+**Build-Time Considerations**:
+- Dummy/placeholder certificates may be included for build-time testing and image scanning purposes, but must:
+  - Be clearly labeled as non-production test certificates
+  - Not contain real private key material
+  - Be replaced by runtime-injected certificates from platform secret management
+
+**Detection and Prevention**:
+- Automated secret scanning during CI/CD (TruffleHog, GitLeaks, git-secrets)
+- Image vulnerability scanners with secret detection (Trivy, Grype, Clair)
+- Git pre-commit hooks preventing secret commits
+- .gitignore patterns excluding secret file types
+
+**Compliance Impact**:
+Since the container platform manages access control (Requirement #3) and containers have no user accounts, setting passwords serves no legitimate purpose and only increases attack surface. Passwords enable potential unauthorized access if container images are exposed through registry compromise or image export.
+
+This requirement directly addresses NIST SP 800-190's "embedded secrets" risk in container images and OWASP Kubernetes K08 (Secrets Management Failures).
+
+Satisfies: SRG-OS-000070, SRG-OS-000071, SRG-OS-000072, SRG-OS-000073, SRG-OS-000075, SRG-OS-000076, SRG-OS-000077, SRG-OS-000078, SRG-OS-000120, SRG-OS-000266, SRG-OS-000520, SRG-OS-000710, SRG-OS-000720, SRG-OS-000725, SRG-OS-000730, SRG-OS-000735&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://cyber.mil/cci">CCI-004066</ident>
+      <fixtext fixref="F-CNTR-00-000040_fix">**Externalize all secrets using platform secret management:**
+
+1. **Use Kubernetes Secrets** (mounted as files or env vars):
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secrets
+type: Opaque
+stringData:
+  database-password: "actual-secret-here"
+  api-token: "actual-token-here"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+spec:
+  template:
+    spec:
+      containers:
+      - name: app
+        image: myapp:v1.0
+        env:
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: database-password
+        # Or mount as files:
+        volumeMounts:
+        - name: secrets
+          mountPath: /run/secrets
+          readOnly: true
+      volumes:
+      - name: secrets
+        secret:
+          secretName: app-secrets
+```
+
+2. **For build-time testing, use placeholder secrets**:
+
+```Containerfile
+# Include dummy cert for scanning (clearly labeled)
+COPY test-cert.pem /etc/ssl/certs/placeholder.pem
+# Label file: "PLACEHOLDER - Replace at runtime"
+
+# Runtime replaces with real secret from platform
+```
+
+3. **CI/CD - Block secrets in images**:
+
+```yaml
+# GitLab CI example
+secret_scan:
+  script:
+    - trivy image --scanners secret --exit-code 1 $IMAGE
+    - trufflehog filesystem ./ --fail
+    - gitleaks detect --source . --exit-code 1
+```
+
+4. **Use external secret operators** (for cloud integration):
+- External Secrets Operator (ESO)
+- Sealed Secrets
+- HashiCorp Vault integration
+- Cloud provider secret managers (AWS Secrets Manager, Azure Key Vault, GCP Secret Manager)
+
+**What NOT to do**:
+- ENV with passwords in Containerfile
+- COPY secret files into image
+- Hardcode credentials in source code
+- Commit .env files to git
+
+**Reference**: NIST SP 800-190 identifies "embedded secrets" as critical container image risk</fixtext>
+      <check system="N/A">
+        <check-content>**Build-Time Check** (Secret Detection):
+
+1. **Scan for embedded secrets**:
+```bash
+# Scan image for secrets
+trivy image --scanners secret &lt;image&gt;
+
+# Scan Containerfile and source code
+trufflehog filesystem ./
+
+# Scan git history
+gitleaks detect --source .
+
+# Scan for high-entropy strings
+detect-secrets scan
+```
+
+2. **Check for hardcoded credentials**:
+```bash
+# Search for common secret patterns
+grep -ri "password\|api_key\|secret\|token\|private_key" .
+
+# Check environment variables in Containerfile
+grep "ENV.*PASSWORD\|ENV.*SECRET\|ENV.*KEY" Containerfile
+
+# Check image config
+docker inspect &lt;image&gt; | jq '.[].Config.Env' | grep -i "password\|secret\|key"
+```
+
+3. **Verify secrets are externalized**:
+```bash
+# Check Kubernetes deployment uses Secrets (not embedded)
+kubectl get deployment &lt;name&gt; -o yaml | grep -A10 "env:\|envFrom:"
+# Should reference secretKeyRef or configMapKeyRef, not literal values
+```
+
+**Runtime Check**:
+
+4. **Verify no secrets in running container**:
+```bash
+# Check environment variables don't contain secrets
+kubectl exec &lt;pod&gt; -- env | grep -i "password\|secret\|key"
+# Should show references like "file:/run/secrets/..." not actual secrets
+```
+
+**Finding**: If secrets, passwords, tokens, or private keys are embedded in image layers, environment variables, or config files, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="V-CNTR-00-000050">
+    <title>SRG-OS-000095</title>
+    <Rule id="SV-CNTR-00-000050" severity="medium" weight="10.0">
+      <version>CNTR-00-000050</version>
+      <title>Containers must not include components, packages, libraries, or utilities that do not directly support the execution of the container's single-purpose application.</title>
+      <description>&lt;VulnDiscussion&gt;Every component included in a container image represents code that may contain vulnerabilities, increasing the attack surface without providing value. This requirement enforces the principle of minimal attack surface through restrictive build practices.
+
+**Additive Build Techniques**:
+1. **Distroless Base Images**: Use Google Distroless, RapidFort, or similar minimal base images as final stage. These images contain only:
+   - Application runtime (e.g., Python interpreter, JRE)
+   - Minimal system libraries required by the runtime
+   - No package managers (apt, yum, apk)
+   - No shells (bash, sh)
+   - No common utilities (curl, wget, netcat)
+
+2. **Multi-Stage Builds**: Build dependencies isolated in builder stages, only runtime artifacts copied to final stage:
+   ```Containerfile
+   FROM golang:1.21 AS builder
+   WORKDIR /build
+   COPY . .
+   RUN go build -o app
+
+   FROM gcr.io/distroless/base-debian12
+   COPY --from=builder /build/app /app
+   CMD ["/app"]
+   ```
+
+3. **Dependency Minimization**: Use language-specific tools to identify and remove unused dependencies:
+   - Python: pipdeptree, pip-audit
+   - Node.js: npm prune --production
+   - Go: go mod tidy
+
+**Components to Exclude**:
+- **Debugging tools**: gdb, strace, tcpdump (use ephemeral debug containers instead)
+- **Shells**: bash, sh, zsh (breaks shell-based attacks)
+- **Editors**: vi, vim, nano (prevents file tampering)
+- **Package managers**: apt, yum, apk (prevents runtime package installation)
+- **Network utilities**: curl, wget, netcat, telnet (reduces exfiltration options)
+- **Compilers**: gcc, make (prevents runtime code compilation)
+- **System utilities**: ps, top, systemctl (no system management in containers)
+
+**Why Components Should Not Be Added**:
+1. **Attack Surface**: Each additional binary is a potential exploitation target
+2. **Vulnerability Management**: More components = more CVEs to track and patch
+3. **"Living Off the Land"**: Attackers use built-in tools (curl, bash) for post-compromise activities
+4. **Compliance Verification**: Runtime security checks must NOT require adding components to containers (violates this requirement)
+
+**Immutability Preference**:
+- Read-only root filesystem (securityContext.readOnlyRootFilesystem: true)
+- Volume mounts for writable paths (logs, temp, data)
+- No runtime file modifications
+
+**Build-Time vs. Runtime**:
+All components must be determined and included at build time. Dynamic loading at runtime (downloading packages, pulling dependencies) is prohibited as it bypasses vulnerability scanning and integrity verification.
+
+This requirement aligns with NIST SP 800-190 image misconfiguration prevention, NSA/CISA attack surface reduction guidance, and SLSA hermetic build principles.
+
+Satisfies: SRG-OS-000096, SRG-OS-000180, SRG-OS-000181, SRG-OS-000182, SRG-OS-000183, SRG-OS-000259, SRG-OS-000268, SRG-OS-000362, SRG-OS-000366, SRG-OS-000368, SRG-OS-000437, SRG-OS-000438, SRG-OS-000453, SRG-OS-000510, SRG-OS-000670, SRG-OS-000690, SRG-OS-000775&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://cyber.mil/cci">CCI-000381</ident>
+      <fixtext fixref="F-CNTR-00-000050_fix">**Use minimal/distroless base images and multi-stage builds:**
+
+1. **Distroless base images** (Google, RapidFort):
+
+```Containerfile
+# Multi-stage build with distroless final stage
+FROM golang:1.21 AS builder
+WORKDIR /build
+COPY . .
+RUN CGO_ENABLED=0 go build -o app
+
+FROM gcr.io/distroless/static-debian12:nonroot
+COPY --from=builder /build/app /app
+USER nonroot:nonroot
+CMD ["/app"]
+# Result: No shell, no package manager, minimal attack surface
+```
+
+2. **Alpine minimal** (if distroless not feasible):
+
+```Containerfile
+FROM alpine:3.19 AS builder
+# Build stage with build tools
+RUN apk add --no-cache build-base
+COPY . .
+RUN make build
+
+FROM alpine:3.19
+# Final stage - install ONLY runtime dependencies
+RUN apk add --no-cache ca-certificates tzdata &amp;&amp; \
+    apk del apk-tools  # Remove package manager
+COPY --from=builder /build/app /app
+USER 10001:10001
+CMD ["/app"]
+```
+
+3. **UBI Micro** (Red Hat minimal):
+
+```Containerfile
+FROM registry.access.redhat.com/ubi9/ubi:latest AS builder
+RUN dnf install -y golang &amp;&amp; dnf clean all
+COPY . .
+RUN go build -o app
+
+FROM registry.access.redhat.com/ubi9/ubi-micro:latest
+COPY --from=builder /app /app
+USER 1001
+CMD ["/app"]
+# ubi-micro: ~25MB, no package manager, minimal userspace
+```
+
+4. **RapidFort hardened images** (automated minimization):
+
+```Containerfile
+# Use RapidFort-optimized images (pre-minimized, hardened)
+FROM rapidfort/python3.11-minimal
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY app /app
+USER 10001
+CMD ["python", "/app/main.py"]
+# RapidFort: Automated attack surface reduction, optimized layers
+```
+
+5. **Remove unnecessary components**:
+
+```Containerfile
+# If starting from larger base
+FROM ubuntu:22.04-minimal
+
+# Remove unnecessary packages
+RUN apt-get update &amp;&amp; \
+    apt-get remove -y --purge \
+        wget curl netcat-openbsd \
+        vim nano \
+        sudo &amp;&amp; \
+    apt-get autoremove -y &amp;&amp; \
+    apt-get clean &amp;&amp; \
+    rm -rf /var/lib/apt/lists/*
+```
+
+**Tools to minimize images**:
+- `docker-slim` - Auto-minimize (use with caution, test thoroughly)
+- `dive` - Analyze and identify waste
+- `hadolint` - Containerfile linter flags unnecessary RUN commands
+- **RapidFort** - Automated hardening and minimization platform
+
+**Reference**: Google Distroless, RapidFort Hardened Images, Red Hat UBI-micro for minimal base images</fixtext>
+      <check system="N/A">
+        <check-content>**Build-Time Check** (Image Analysis):
+
+1. **Verify minimal/distroless base image**:
+```bash
+# Check base image in Containerfile
+grep "^FROM" Containerfile
+# Preferred: distroless, alpine, scratch, ubi-minimal, ubi-micro
+
+# Check image size (smaller = fewer components)
+docker images &lt;image&gt; --format "{{.Size}}"
+# Distroless: 10-50MB, Minimal: 30-100MB, Full OS: 200MB+ is excessive
+
+# Count packages
+syft &lt;image&gt; -o table | wc -l
+# Distroless: 10-30 packages, Minimal: 50-100, Full: 300+ is excessive
+```
+
+2. **Verify no unnecessary tools** (shell, package managers, utilities):
+```bash
+# Check for shells
+docker run --rm &lt;image&gt; which bash sh zsh  # Should not exist (distroless)
+
+# Check for package managers
+docker run --rm &lt;image&gt; which apt yum dnf apk  # Should not exist
+
+# Check for network tools
+docker run --rm &lt;image&gt; which curl wget netcat nc  # Should not exist
+
+# Check for compilers/debuggers
+docker run --rm &lt;image&gt; which gcc gdb strace  # Should not exist
+```
+
+3. **Scan for unnecessary packages**:
+```bash
+# List all packages
+syft &lt;image&gt; -o json | jq '.artifacts[] | .name'
+
+# Use dive to analyze layers
+dive &lt;image&gt;
+# Look for unnecessary packages, analyze wasted space
+```
+
+4. **Policy validation**:
+```bash
+# Conftest policy to enforce minimal images
+conftest test Containerfile --policy ./policies/
+# Policy should check: base image from approved list, no shells, no package managers
+```
+
+**Finding**: If container includes shells, package managers, debuggers, or other non-essential components, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="V-CNTR-00-000051">
+    <title>SRG-OS-000095</title>
+    <Rule id="SV-CNTR-00-000051" severity="medium" weight="10.0">
+      <version>CNTR-00-000051</version>
+      <title>Containers must include all components, libraries, and dependencies except for embedded secrets, credentials, private keys, tokens, or passwords (see requirement 4) required to securely execute the container's application at build time, with full transparency for security scanning.</title>
+      <description>&lt;VulnDiscussion&gt;This requirement ensures container images are complete, scannable, and verifiable before deployment. It prohibits dynamic dependency loading that bypasses security controls.
+
+**Build-Time Completeness**:
+All application dependencies must be:
+- Declared in build manifests (requirements.txt, package.json, go.mod, Gemfile)
+- Downloaded and installed during image build
+- Present in final image layers for vulnerability scanning
+- Statically linked or bundled where possible
+
+**No Runtime Dependency Loading**:
+Prohibited patterns:
+- Downloading packages at container startup (pip install, npm install in entrypoint)
+- Dynamic library loading from external sources
+- Plugin systems that fetch code from internet at runtime
+- Runtime code generation from external templates
+
+**Mounted Components Restrictions**:
+If components are mounted from volumes (not built into image):
+- **Code and executables**: Prohibited (bypasses image scanning)
+- **Configuration files**: Allowed if representative samples are built into image for scanning purposes
+- **Data files**: Allowed, must include malware scanning
+- **Shared libraries**: Prohibited unless identical copy scanned in image
+
+**Dummy Secrets for Scanning**:
+Placeholder credentials may be included in image for completeness:
+- Dummy TLS certificates (clearly labeled as test/placeholder)
+- Example configuration files with placeholder values
+- These MUST be replaced at runtime by platform secret injection
+- Documentation must clearly identify placeholder files
+
+**Software Bill of Materials (SBOM)**:
+Container images should generate and include SBOM metadata:
+- SPDX or CycloneDX format
+- Generated during CI/CD build process
+- Includes all direct and transitive dependencies
+- Enables supply chain verification and vulnerability tracking
+
+**Scanning Requirements**:
+Complete build-time inclusion enables:
+- Static vulnerability scanning (Trivy, Grype, Clair)
+- License compliance verification
+- Secret detection scanning
+- Malware scanning
+- Supply chain verification (sigstore, SLSA provenance)
+
+**Relationship to Requirement #5a**:
+- Requirement #5a: Remove everything NOT needed (minimal)
+- Requirement #5b: Include everything that IS needed (complete)
+- Together: Hermetic, minimal, complete, scannable images
+
+**Security Rationale**:
+1. **Vulnerability Visibility**: Cannot scan what isn't in the image
+2. **Supply Chain Integrity**: Dynamic loading introduces unverified code
+3. **Reproducibility**: Same image always contains same components
+4. **Compliance**: Audit trail of all components present in deployed containers
+
+This requirement aligns with SLSA supply chain framework (hermetic builds, build provenance), OWASP K02 (supply chain vulnerabilities), and supports NIST SP 800-190 image vulnerability management.
+
+Satisfies: SRG-OS-000096, SRG-OS-000180, SRG-OS-000181, SRG-OS-000182, SRG-OS-000183, SRG-OS-000259, SRG-OS-000268, SRG-OS-000362, SRG-OS-000366, SRG-OS-000368, SRG-OS-000437, SRG-OS-000438, SRG-OS-000453, SRG-OS-000510, SRG-OS-000670, SRG-OS-000690, SRG-OS-000775&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://cyber.mil/cci">CCI-000381</ident>
+      <fixtext fixref="F-CNTR-00-000051_fix">**Include all components at build time with SBOM generation:**
+
+1. **Complete build with all dependencies**:
+
+```Containerfile
+FROM python:3.11-slim AS builder
+WORKDIR /app
+COPY requirements.txt .
+# Install ALL dependencies at build time
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+
+FROM gcr.io/distroless/python3-debian12:nonroot
+COPY --from=builder /app /app
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+USER nonroot
+CMD ["python", "/app/main.py"]
+# All dependencies included, scannable, no runtime downloads
+```
+
+2. **Generate SBOM in CI/CD**:
+
+```yaml
+# GitLab CI example
+build:
+  script:
+    - docker build -t $IMAGE .
+    - syft $IMAGE -o spdx-json &gt; sbom.json
+    - syft $IMAGE -o cyclonedx-json &gt; sbom-cyclonedx.json
+  artifacts:
+    paths:
+      - sbom*.json
+```
+
+3. **For testing, include dummy secrets (clearly labeled)**:
+
+```Containerfile
+# Include placeholder cert for completeness
+COPY test-cert.pem /etc/ssl/certs/PLACEHOLDER-cert.pem
+# File contains comment: "PLACEHOLDER - Replace at runtime"
+# Allows vulnerability scanning of TLS config
+```
+
+4. **Static compilation** (Go, Rust):
+
+```Containerfile
+FROM golang:1.21 AS builder
+WORKDIR /build
+COPY . .
+# Static build - everything compiled in
+RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o app
+
+FROM scratch
+COPY --from=builder /build/app /app
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+CMD ["/app"]
+# Completely self-contained, no runtime dependencies
+```
+
+**What NOT to do**:
+- Do not use pip install in ENTRYPOINT
+- Do not use npm install at runtime
+- Do not download plugins or modules at startup
+- Do not mount /lib or /app directories from volumes
+
+**Reference**: SLSA framework hermetic builds, SBOM generation for supply chain security</fixtext>
+      <check system="N/A">
+        <check-content>**Build-Time Check** (SBOM &amp; Dependency Verification):
+
+1. **Generate and verify SBOM**:
+```bash
+# Generate SBOM during build
+syft &lt;image&gt; -o spdx-json &gt; sbom.json
+syft &lt;image&gt; -o cyclonedx-json &gt; sbom-cyclonedx.json
+
+# Verify all dependencies are in SBOM
+cat sbom.json | jq '.packages[] | .name' | sort
+
+# Check for external downloads at runtime (should be none)
+docker inspect &lt;image&gt; | jq '.[].Config.Cmd' | grep -i "curl\|wget\|pip install\|npm install"
+# Should not find runtime download commands
+```
+
+2. **Verify static linking/bundling** (for compiled languages):
+```bash
+# Check binary is statically linked
+docker run --rm &lt;image&gt; ldd /app
+# Should say "not a dynamic executable" or show minimal deps
+
+# Verify all shared libraries included
+docker run --rm &lt;image&gt; find /lib /usr/lib -name "*.so*"
+# All required .so files present
+```
+
+3. **Check no runtime dependency loading**:
+```bash
+# Review entrypoint/cmd for package installation
+grep -i "pip install\|npm install\|go get\|cargo install" Containerfile
+# Should only be in builder stages, not final CMD/ENTRYPOINT
+```
+
+4. **Validate mounted components** (if any):
+```yaml
+# Check deployment for code/library mounts (prohibited)
+kubectl get deployment &lt;name&gt; -o yaml | grep -A10 "volumeMounts:"
+# Should NOT mount /app, /lib, or executable paths
+# OK to mount /config, /data
+```
+
+**Finding**: If components are downloaded at runtime or code/executables are mounted from volumes, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="V-CNTR-00-000060">
+    <title>SRG-OS-000122</title>
+    <Rule id="SV-CNTR-00-000060" severity="medium" weight="10.0">
+      <version>CNTR-00-000060</version>
+      <title>Containers must emit all logs to the platform for persistence and aggregation. Containers must not implement internal log rotation, storage, or shipping mechanisms except for those that comprise a logging or visibility service.</title>
+      <description>&lt;VulnDiscussion&gt;This requirement enables the container platform to satisfy audit logging and monitoring requirements through centralized log aggregation from container output streams.
+
+**Logging Model**:
+Containers follow the twelve-factor app logging principle:
+- Write all log events to STDOUT (standard output)
+- Write all error events to STDERR (standard error)
+- No concern for log storage, routing, or retention (platform responsibility)
+
+**Container Platform Aggregation**:
+The platform captures container output streams and provides:
+- Centralized log storage (Elasticsearch, Splunk, CloudWatch)
+- Log retention and rotation policies
+- Search and analysis capabilities
+- Correlation across multiple containers/pods
+- Integration with SIEM systems
+- Compliance and audit capabilities
+
+**Prohibited Logging Patterns**:
+Containers must NOT implement:
+- Internal log files (/var/log/app.log)
+- Log rotation (logrotate)
+- Direct log shipping (fluentd, logstash agents in container)
+- Syslog daemons
+- Application-specific log aggregators
+
+**Why This Approach**:
+1. **Simplicity**: Containers remain stateless and simple
+2. **Platform Independence**: Same container works across different platforms
+3. **Audit Compliance**: Platform handles OS Core SRG audit requirements
+4. **Performance**: No log I/O overhead within container
+5. **Debugging**: Platform provides consistent log access (kubectl logs, docker logs)
+
+**What to Log**:
+Containers should log:
+- Application startup and shutdown events
+- Request/response activity (with appropriate PII protections)
+- Error conditions and exceptions
+- Security-relevant events (authentication attempts, authorization failures)
+- Performance metrics (if not using separate metrics endpoint)
+
+**Structured Logging**:
+JSON-formatted logs to STDOUT enable:
+- Easier parsing by platform log collectors
+- Consistent field extraction
+- Better search and filtering
+- Integration with log analysis tools
+
+**Platform Capabilities This Enables**:
+- Container Platform SRG audit requirements (54 mapped SV requirements)
+- Centralized monitoring and alerting
+- Security event correlation
+- Incident response and forensics
+- Compliance reporting
+
+**Example Configuration**:
+Most application frameworks support STDOUT logging:
+- Python: logging.StreamHandler(sys.stdout)
+- Java: Logback/Log4j console appender
+- Node.js: console.log() (default)
+- Go: log.Println() (default)
+
+This requirement addresses OWASP K05 (Inadequate Logging/Monitoring), supports NSA/CISA audit logging guidance, and enables Container Platform SRG audit requirements (SV-233039, SV-233052, SV-233142-146, etc.).
+
+Satisfies: SRG-OS-000177, SRG-OS-000178, SRG-OS-000254, SRG-OS-000255, SRG-OS-000256, SRG-OS-000257, SRG-OS-000258, SRG-OS-000278, SRG-OS-000458, SRG-OS-000460, SRG-OS-000461, SRG-OS-000462, SRG-OS-000463, SRG-OS-000464, SRG-OS-000465, SRG-OS-000466, SRG-OS-000467, SRG-OS-000468, SRG-OS-000469, SRG-OS-000470, SRG-OS-000471, SRG-OS-000472, SRG-OS-000473, SRG-OS-000474, SRG-OS-000475, SRG-OS-000476, SRG-OS-000477&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://cyber.mil/cci">CCI-001876</ident>
+      <fixtext fixref="F-CNTR-00-000060_fix">**Configure application to log to STDOUT/STDERR:**
+
+1. **Python - StreamHandler to stdout**:
+
+```python
+import logging
+import sys
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+
+logger = logging.getLogger(__name__)
+logger.info("Application started")
+```
+
+2. **Node.js - console.log** (default):
+
+```javascript
+// Default behavior logs to stdout
+console.log("Info message");
+console.error("Error message");  // Goes to stderr
+
+// For structured logging
+const winston = require('winston');
+const logger = winston.createLogger({
+  transports: [
+    new winston.transports.Console()
+  ]
+});
+```
+
+3. **Java - Logback console appender**:
+
+```xml
+&lt;!-- logback.xml --&gt;
+&lt;configuration&gt;
+  &lt;appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender"&gt;
+    &lt;encoder&gt;
+      &lt;pattern&gt;%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n&lt;/pattern&gt;
+    &lt;/encoder&gt;
+  &lt;/appender&gt;
+  
+  &lt;root level="info"&gt;
+    &lt;appender-ref ref="STDOUT" /&gt;
+  &lt;/root&gt;
+&lt;/configuration&gt;
+```
+
+4. **Kubernetes - Platform captures logs automatically**:
+
+```yaml
+# No special configuration needed in pod
+# Platform automatically captures STDOUT/STDERR
+
+# Optional: Structured JSON logging for better parsing
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myapp
+spec:
+  containers:
+  - name: app
+    image: myapp:v1.0
+    # App logs to stdout in JSON format
+    # Platform log collector parses JSON
+```
+
+5. **Read-only filesystem** (prevents file-based logging):
+
+```yaml
+securityContext:
+  readOnlyRootFilesystem: true
+# Forces app to use stdout (cannot write to /var/log)
+```
+
+**Reference**: Twelve-Factor App methodology (Logs factor) - treat logs as event streams to stdout</fixtext>
+      <check system="N/A">
+        <check-content>**Configuration Check** (Application Logging):
+
+1. **Verify application logs to STDOUT/STDERR**:
+```bash
+# Check application code/config logs to stdout
+# Python: logging.StreamHandler(sys.stdout)
+# Node: console.log() (default)
+# Java: Logback console appender
+# Go: log.Println() (default)
+
+# Check no file-based logging in config
+docker run --rm &lt;image&gt; find /var/log /app/logs -type f 2&gt;/dev/null
+# Should be empty or not exist
+```
+
+2. **Verify no log rotation in container**:
+```bash
+# Check for logrotate
+docker run --rm &lt;image&gt; which logrotate  # Should not exist
+
+# Check for logging daemons
+docker run --rm &lt;image&gt; which rsyslog syslog-ng  # Should not exist
+```
+
+**Runtime Check**:
+
+3. **Verify logs are captured by platform**:
+```bash
+# Kubernetes - view container logs
+kubectl logs &lt;pod&gt; -c &lt;container&gt;
+# Should show application output
+
+# Verify platform log aggregation working
+kubectl logs &lt;pod&gt; --tail=100 | wc -l  # Should have logs
+```
+
+4. **Check platform log forwarding** (if configured):
+```bash
+# Verify fluentd/fluent-bit collecting logs
+kubectl get pods -n logging
+kubectl logs -n logging &lt;fluentd-pod&gt; | grep &lt;pod-name&gt;
+```
+
+**Finding**: If container writes logs to files instead of STDOUT/STDERR, or includes log rotation/shipping tools, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="V-CNTR-00-000070">
+    <title>SRG-OS-000141</title>
+    <Rule id="SV-CNTR-00-000070" severity="medium" weight="10.0">
+      <version>CNTR-00-000070</version>
+      <title>Containers must operate within defined resource constraints which must include CPU and memory in addition to storage and other relevant resources where possible.</title>
+      <description>&lt;VulnDiscussion&gt;This requirement limits the impact of attacks, misconfigurations, software bugs, and malicious code that could lead to resource exhaustion and denial of service (DoS) affecting other workloads.
+
+**Resource Types to Constrain**:
+
+1. **CPU Limits**:
+   - Requests: Guaranteed CPU allocation for scheduling
+   - Limits: Maximum CPU burst allowed
+   - Prevents CPU starvation of other containers
+
+2. **Memory Limits**:
+   - Requests: Guaranteed memory for scheduling
+   - Limits: Maximum memory before OOMKill
+   - Prevents memory exhaustion attacks
+
+3. **Ephemeral Storage** (Kubernetes):
+   - Limits temporary disk usage
+   - Prevents filling up node disk
+   - Protects node stability
+
+4. **Process/Thread Limits** (if supported):
+   - Prevents fork bombs
+   - Limits concurrent connections
+
+**Security Benefits**:
+
+1. **Denial of Service Prevention**:
+   - Malicious code cannot exhaust shared resources
+   - Bugs causing resource leaks are contained
+   - Limits blast radius of compromised containers
+
+2. **Anomaly Detection**:
+   - Unusual resource consumption triggers alerts
+   - May indicate compromise (cryptomining, DDoS participation)
+   - Resource pressure triggers pod eviction and restart
+
+3. **Noisy Neighbor Isolation**:
+   - One container cannot starve others
+   - QoS guarantees maintained
+   - Platform stability protected
+
+**Implementation**:
+
+Kubernetes example:
+```yaml
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "100m"
+    ephemeral-storage: "1Gi"
+  limits:
+    memory: "256Mi"
+    cpu: "200m"
+    ephemeral-storage: "2Gi"
+```
+
+Docker example:
+```bash
+docker run --memory="256m" --cpus="0.5" --pids-limit=100 app:latest
+```
+
+**Right-Sizing Considerations**:
+- Start with measured resource usage from non-production
+- Add headroom for bursts (limits &gt; requests)
+- Monitor actual usage and adjust
+- Document rationale for limit values
+
+**Attack Scenario Mitigation**:
+
+1. **Cryptomining**: CPU limits prevent profitable mining
+2. **Memory Leak**: OOMKill and restart before node impact
+3. **Log Flooding**: Storage limits prevent disk exhaustion
+4. **Fork Bomb**: Process limits prevent proliferation
+5. **DDoS Amplification**: Connection limits reduce amplification factor
+
+**Secondary Security Benefit**:
+While not always practicable, strict resource constraints may reduce an adversary's ability to persist and pivot:
+- High resource usage triggers pod replacement
+- Generates log events for investigation
+- Temporarily evicts attacker
+- Identifies compromised container for forensics
+
+**Platform Enforcement**:
+The container platform enforces these limits:
+- Kubernetes: Resource Quotas and Limit Ranges
+- Docker: cgroups limits
+- Orchestrators throttle or kill containers exceeding limits
+
+This requirement addresses NIST SP 800-190 container runtime controls, OWASP K01 (insecure workload configurations), and aligns with NSA/CISA resource limit recommendations.
+
+Satisfies: SRG-OS-000142, SRG-OS-000420&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://cyber.mil/cci">CCI-001094</ident>
+      <fixtext fixref="F-CNTR-00-000070_fix">**Define resource limits for all containers:**
+
+1. **Kubernetes Deployment with resource limits**:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+spec:
+  template:
+    spec:
+      containers:
+      - name: app
+        image: myapp:v1.0
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+            ephemeral-storage: "1Gi"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+            ephemeral-storage: "2Gi"
+```
+
+2. **Set namespace-wide defaults** (LimitRange):
+
+```yaml
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limits
+  namespace: myapp
+spec:
+  limits:
+  - default:
+      cpu: "500m"
+      memory: "512Mi"
+    defaultRequest:
+      cpu: "100m"
+      memory: "128Mi"
+    type: Container
+```
+
+3. **Enforce with policy** (Kyverno):
+
+```yaml
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-resources
+spec:
+  validationFailureAction: enforce
+  rules:
+  - name: check-resource-limits
+    match:
+      resources:
+        kinds: [Pod]
+    validate:
+      message: "Resource limits required"
+      pattern:
+        spec:
+          containers:
+          - resources:
+              limits:
+                memory: "?*"
+                cpu: "?*"
+```
+
+4. **Docker run example**:
+
+```bash
+docker run -d \
+  --memory="512m" \
+  --cpus="0.5" \
+  --pids-limit=100 \
+  myapp:v1.0
+```
+
+**Right-sizing guidance**:
+- Start with observed usage + 50% headroom
+- Monitor actual usage, adjust limits
+- Requests &lt; Limits (allow bursting)
+
+**Reference**: NSA/CISA Kubernetes Hardening - Resource limits prevent DoS</fixtext>
+      <check system="N/A">
+        <check-content>**Configuration Check** (Deployment Manifests):
+
+1. **Verify resource limits defined**:
+```bash
+# Check Kubernetes deployment has limits
+kubectl get deployment &lt;name&gt; -o yaml | grep -A5 "resources:"
+
+# Required: Both requests and limits for CPU and memory
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "100m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
+```
+
+2. **Verify limits are enforced**:
+```bash
+# Check LimitRange exists in namespace
+kubectl get limitrange -n &lt;namespace&gt;
+
+# Check ResourceQuota if applicable
+kubectl get resourcequota -n &lt;namespace&gt;
+```
+
+**Runtime Check**:
+
+3. **Verify actual resource usage within limits**:
+```bash
+# Check current resource usage
+kubectl top pod &lt;pod&gt;
+
+# View resource limits in effect
+kubectl describe pod &lt;pod&gt; | grep -A10 "Limits:\|Requests:"
+```
+
+4. **Test limit enforcement** (optional):
+```bash
+# Trigger high resource usage and verify pod is terminated/throttled
+# Memory: OOMKill should occur at limit
+# CPU: Should be throttled at limit
+```
+
+**Finding**: If containers do not have resource limits defined, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="V-CNTR-00-000080">
+    <title>SRG-OS-000185</title>
+    <Rule id="SV-CNTR-00-000080" severity="medium" weight="10.0">
+      <version>CNTR-00-000080</version>
+      <title>Containers must persist data externally using platform-provided secured, controlled, and managed storage services.</title>
+      <description>&lt;VulnDiscussion&gt;This requirement enforces stateless container design, enabling ephemeral deployment models, rapid failure recovery, and secure data-at-rest protection through platform mechanisms.
+
+**External Data Persistence**:
+Containers must not store persistent data in container filesystem:
+- Use volume mounts for persistent data
+- Use object storage services (S3, Azure Blob, GCS)
+- Use databases for structured data
+- Use message queues for inter-container communication
+
+**Platform-Provided Storage**:
+- Kubernetes: PersistentVolumeClaims, ConfigMaps (non-sensitive config)
+- Docker: Named volumes, bind mounts (controlled)
+- Cloud providers: EBS, Azure Disk, Persistent Disk
+- Distributed storage: Ceph, GlusterFS, NFS
+
+**Data-at-Rest Protection**:
+Platform and host OS provide FIPS-validated encryption:
+- Encrypted volumes (LUKS, dm-crypt)
+- Cloud-provider volume encryption (EBS encryption, Azure Disk Encryption)
+- Storage class encryption policies
+- No need for container-level encryption (delegated to platform)
+
+**Stateless Design Benefits**:
+
+1. **Pod Bounce Capability**:
+   - Containers can be killed and recreated without data loss
+   - Enables blue/green deployments
+   - Supports automatic scaling
+   - Facilitates security patching (Requirement #11)
+
+2. **Failure Recovery**:
+   - Failed containers restart without data recovery complexity
+   - No state synchronization needed
+   - Simplified disaster recovery
+
+3. **Horizontal Scaling**:
+   - Multiple identical containers share external data
+   - No sticky sessions required
+   - Load balancing simplified
+
+4. **Security Benefits**:
+   - Ephemeral filesystem limits attacker persistence
+   - Container restart evicts attacker artifacts
+   - No sensitive data in container layers to leak
+
+**No Environment-Specific Dependencies**:
+Containers must not embed:
+- Environment-specific secrets (see Requirement #4)
+- Environment-specific configuration (URLs, endpoints)
+- Environment-specific data files
+
+Instead, use:
+- Platform-provided secrets (Kubernetes Secrets)
+- ConfigMaps or environment variables for config
+- Service discovery for endpoint resolution
+- External configuration services (Consul, etcd)
+
+**Read-Only Root Filesystem**:
+Best practice enabler:
+```yaml
+securityContext:
+  readOnlyRootFilesystem: true
+volumes:
+  - name: tmp
+    emptyDir: {}
+  - name: data
+    persistentVolumeClaim:
+      claimName: app-data
+volumeMounts:
+  - name: tmp
+    mountPath: /tmp
+  - name: data
+    mountPath: /var/data
+```
+
+**Temporary Data**:
+For ephemeral working data:
+- emptyDir volumes (Kubernetes)
+- tmpfs mounts (memory-backed)
+- Deleted when container stops
+
+**Relationship to Other Requirements**:
+- Supports Requirement #8 (External Data)
+- Enables Requirement #11 (Continuous Patching - can replace containers)
+- Reinforces Requirement #5a (Minimal - no data storage infrastructure needed)
+
+This requirement aligns with NSA/CISA immutable filesystem guidance, twelve-factor app backing services principle, and NIST SP 800-190 data protection controls.
+
+Satisfies: SRG-OS-000269, SRG-OS-000404, SRG-OS-000405&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://cyber.mil/cci">CCI-001199</ident>
+      <fixtext fixref="F-CNTR-00-000080_fix">**Configure stateless containers with external data persistence:**
+
+1. **Use PersistentVolumes for data**:
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: app-data
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+spec:
+  template:
+    spec:
+      securityContext:
+        fsGroup: 10001
+      containers:
+      - name: app
+        image: myapp:v1.0
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        - name: tmp
+          mountPath: /tmp
+        securityContext:
+          readOnlyRootFilesystem: true
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: app-data
+      - name: tmp
+        emptyDir: {}
+```
+
+2. **Externalize configuration** (ConfigMap):
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  app.conf: |
+    database_url: postgresql://db:5432/mydb
+    cache_url: redis://cache:6379
+---
+# Reference in deployment
+volumes:
+- name: config
+  configMap:
+    name: app-config
+volumeMounts:
+- name: config
+  mountPath: /etc/app/config
+  readOnly: true
+```
+
+3. **Stateless design patterns**:
+- Session data in Redis/Memcached
+- File uploads to S3/object storage
+- Database for persistent state
+- No local file writes except /tmp (emptyDir)
+
+**Reference**: Twelve-Factor App (Backing Services, Processes) - stateless, disposable</fixtext>
+      <check system="N/A">
+        <check-content>**Configuration Check**:
+
+1. **Verify external volume for persistent data**:
+```bash
+# Check deployment uses PersistentVolumeClaim
+kubectl get deployment &lt;name&gt; -o yaml | grep -A5 "volumes:"
+
+# Should have PVC for persistent data
+volumes:
+- name: data
+  persistentVolumeClaim:
+    claimName: app-data
+```
+
+2. **Verify read-only root filesystem** (best practice):
+```bash
+# Check securityContext
+kubectl get pod &lt;pod&gt; -o yaml | grep "readOnlyRootFilesystem"
+# Should be true
+
+securityContext:
+  readOnlyRootFilesystem: true
+```
+
+3. **Check no embedded environment-specific data**:
+```bash
+# Verify config externalized
+kubectl get deployment &lt;name&gt; -o yaml | grep -A5 "env:\|envFrom:"
+# Should use ConfigMap or Secrets, not hardcoded values
+
+# Check image doesn't have env-specific files
+docker run --rm &lt;image&gt; find /app -name "prod.env" -o -name "dev.config"
+# Should not find environment-specific files
+```
+
+**Runtime Check**:
+
+4. **Verify filesystem changes are ephemeral**:
+```bash
+# Check container filesystem changes
+docker diff &lt;container&gt;
+# Should show minimal changes (temp files only)
+
+# Verify data written to volumes
+kubectl exec &lt;pod&gt; -- ls /data  # Persistent volume
+kubectl exec &lt;pod&gt; -- ls /app   # Should be read-only
+```
+
+**Finding**: If container stores persistent data in container filesystem or embeds environment-specific configuration, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="V-CNTR-00-000090">
+    <title>SRG-OS-000221</title>
+    <Rule id="SV-CNTR-00-000090" severity="medium" weight="10.0">
+      <version>CNTR-00-000090</version>
+      <title>Containers must declare all exposed network ports, protocols, and information flows required for their application. Network exposure must be limited to the minimum necessary for the container's single purpose.</title>
+      <description>&lt;VulnDiscussion&gt;This requirement enforces explicit network boundaries, enabling the container platform to implement network segmentation policies and reducing the attack surface through minimal network exposure.
+
+**Explicit Port Declaration**:
+Containers must declare network requirements in:
+- Containerfile EXPOSE directive (documentation)
+- Container runtime configuration (actual binding)
+- Kubernetes Service/Pod specifications
+- Network policy allowlist rules
+
+**Minimal Exposure Principle**:
+Only expose ports required for:
+- Primary application service (e.g., web server on 8080)
+- Health check endpoints (if different from main service)
+- Metrics collection (if using separate port)
+
+Do NOT expose:
+- Debugging ports in production (pprof, JMX, debug endpoints)
+- Administrative interfaces unless explicitly required
+- Database ports (use service-to-service communication)
+- Unnecessary protocol handlers
+
+**Platform Network Policy Enforcement**:
+The container platform enforces network boundaries:
+- Kubernetes NetworkPolicies (allowlist ingress/egress)
+- Service mesh policies (Istio, Linkerd)
+- Cloud provider security groups
+- Container firewall rules
+
+**Information Flow Control**:
+Define and document:
+- Ingress: What services/users can connect to this container
+- Egress: What external services this container needs to access
+- Protocol: TCP, UDP, SCTP (be specific)
+- Port ranges: Avoid ranges, specify exact ports
+
+**Example Declaration**:
+
+Containerfile:
+```Containerfile
+# Document expected ports
+EXPOSE 8080/tcp
+EXPOSE 9090/tcp  # metrics
+```
+
+Kubernetes Service:
+```yaml
+spec:
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: metrics
+```
+
+Kubernetes NetworkPolicy:
+```yaml
+spec:
+  podSelector:
+    matchLabels:
+      app: myapp
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          role: frontend
+    ports:
+    - protocol: TCP
+      port: 8080
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          role: database
+    ports:
+    - protocol: TCP
+      port: 5432
+```
+
+**Security Benefits**:
+
+1. **Attack Surface Reduction**:
+   - Closed ports cannot be exploited
+   - Limits reconnaissance information
+   - Reduces vulnerability exposure
+
+2. **Lateral Movement Prevention**:
+   - NetworkPolicies prevent container-to-container attacks
+   - Limits blast radius of compromised containers
+   - Enforces zero-trust networking
+
+3. **Compliance and Audit**:
+   - Documented network requirements
+   - Policy violations detectable
+   - Change control for network modifications
+
+**Service Mesh Integration**:
+Modern platforms use service meshes for:
+- mTLS between containers
+- Traffic management and routing
+- Observability and tracing
+- Policy enforcement
+
+**No Dynamic Port Allocation**:
+Avoid ephemeral port ranges; use fixed, declared ports for:
+- Predictable firewall rules
+- Consistent monitoring
+- Clear documentation
+
+**Relationship to Platform Requirements**:
+This requirement works with Container Platform SRG requirements for:
+- Network segmentation (SV-233029, SV-233030)
+- Information flow control (SV-233073, SV-233128)
+- Policy enforcement (SV-233190, SV-233208)
+
+This addresses OWASP K07 (Missing Network Segmentation), NIST SP 800-190 orchestrator network security, and NSA/CISA network policy guidance.
+
+Satisfies: SRG-OS-000242&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://cyber.mil/cci">CCI-001368</ident>
+      <fixtext fixref="F-CNTR-00-000090_fix">**Declare all network ports and implement network policies:**
+
+1. **Containerfile - Explicit EXPOSE**:
+
+```Containerfile
+FROM gcr.io/distroless/java17-debian12:nonroot
+COPY app.jar /app/app.jar
+# Explicitly declare ports
+EXPOSE 8080/tcp
+EXPOSE 9090/tcp
+USER nonroot
+CMD ["java", "-jar", "/app/app.jar"]
+```
+
+2. **Kubernetes Service - Named ports**:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp
+spec:
+  selector:
+    app: myapp
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+    protocol: TCP
+```
+
+3. **NetworkPolicy - Allowlist ingress/egress**:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: myapp-netpol
+spec:
+  podSelector:
+    matchLabels:
+      app: myapp
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          role: frontend
+    ports:
+    - protocol: TCP
+      port: 8080
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: database
+    ports:
+    - protocol: TCP
+      port: 5432
+  - to:  # DNS
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+```
+
+**Reference**: NSA/CISA Kubernetes Hardening - Use NetworkPolicies for network segmentation</fixtext>
+      <check system="N/A">
+        <check-content>**Build-Time/Configuration Check**:
+
+1. **Verify EXPOSE directive in Containerfile**:
+```bash
+grep "^EXPOSE" Containerfile
+# Should explicitly list ports
+
+EXPOSE 8080/tcp
+EXPOSE 9090/tcp  # metrics
+```
+
+2. **Check Service/Pod port declarations** (Kubernetes):
+```bash
+kubectl get svc &lt;service&gt; -o yaml | grep -A10 "ports:"
+
+# Required: Explicit port, protocol, targetPort
+ports:
+- port: 80
+  targetPort: 8080
+  protocol: TCP
+  name: http
+```
+
+3. **Verify NetworkPolicy exists**:
+```bash
+kubectl get networkpolicy -n &lt;namespace&gt;
+
+# NetworkPolicy should define:
+# - Allowed ingress sources
+# - Allowed egress destinations
+# - Specific ports and protocols
+```
+
+4. **Check for wildcard/range exposure**:
+```bash
+# Should NOT expose port ranges
+grep "EXPOSE.*-" Containerfile  # Should not find ranges like "8000-9000"
+
+# Check service doesn't use NodePort unnecessarily
+kubectl get svc | grep NodePort
+# NodePort should be justified/documented
+```
+
+**Finding**: If ports are not explicitly declared or NetworkPolicy is missing, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="V-CNTR-00-000100">
+    <title>SRG-OS-000370</title>
+    <Rule id="SV-CNTR-00-000100" severity="medium" weight="10.0">
+      <version>CNTR-00-000100</version>
+      <title>Containers must have a single, well-defined purpose with a blocking foreground process. Each container must serve one primary function or service.</title>
+      <description>&lt;VulnDiscussion&gt;This requirement enforces the microservices principle of single responsibility, reducing complexity, limiting attack surface, and enabling fine-grained security controls.
+
+**Single Purpose Definition**:
+One container should run:
+- One application service (web server, API, worker)
+- One primary process (not multiple daemons)
+- One blocking command that keeps container running
+
+Examples of single-purpose containers:
+- NGINX web server
+- PostgreSQL database
+- Redis cache
+- Application API server
+- Background job worker
+- Metrics exporter
+
+**Blocking Command Requirement**:
+The container's primary process must run in foreground:
+- Does not daemonize (fork to background)
+- Blocks on main thread
+- Exits when complete (batch jobs) or on signal (services)
+- Example: `CMD ["nginx", "-g", "daemon off;"]`
+
+**Anti-Patterns (Violations)**:
+Multiple services in one container:
+- Web server + database + cache
+- Application + SSH daemon + cron
+- Multiple applications in one image
+
+Process supervisors running multiple daemons:
+- systemd in containers
+- supervisord managing multiple services
+- init systems launching multiple processes
+
+Shell scripts that background multiple processes
+
+**Why Single Purpose**:
+
+1. **Security Isolation**:
+   - Compromise of one service doesn't expose others
+   - Each container has minimal necessary privileges
+   - Clear security boundaries
+
+2. **Attack Surface Reduction**:
+   - Fewer services = fewer vulnerabilities
+   - Smaller codebase to secure
+   - Supports Requirement #5a (minimal components)
+
+3. **Operational Benefits**:
+   - Independent scaling (scale web tier separately from database)
+   - Targeted updates (patch one service without affecting others)
+   - Clear logs (one service's logs per container)
+   - Simplified health checks
+
+4. **Failure Isolation**:
+   - One service crash doesn't affect others
+   - Faster failure detection
+   - Targeted restart policies
+
+**Sidecar Pattern Exception**:
+Kubernetes allows sidecar containers in a pod:
+- Each sidecar still has single purpose
+- Main app container + logging sidecar
+- Main app container + security proxy
+- Sidecars are additional containers, not multiple services in one container
+
+**Process Model**:
+Container runtime expects:
+- PID 1 is the main application
+- Child processes are application threads/workers
+- No orphaned processes
+- Clean shutdown on SIGTERM
+
+**Relationship to Other Requirements**:
+- Supports Requirement #5a (Minimal) - single purpose needs fewer components
+- Supports Requirement #7 (Resource Constraints) - easier to size resources
+- Supports Requirement #9 (Network Boundaries) - clear port requirements
+
+**Examples**:
+
+Good: Web Server Container
+```Containerfile
+FROM nginx:alpine
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY html /usr/share/nginx/html
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+Bad: Kitchen Sink Container
+```Containerfile
+FROM ubuntu
+RUN apt-get install nginx postgresql redis-server
+COPY start-all.sh /
+CMD ["/start-all.sh"]  # Starts multiple services
+```
+
+This requirement aligns with microservices architecture principles, OWASP K01 (insecure workload configurations), and general container best practices from Docker, Kubernetes, and cloud-native communities.&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://cyber.mil/cci">CCI-001774</ident>
+      <fixtext fixref="F-CNTR-00-000100_fix">**Design containers for single purpose:**
+
+1. **One service per container** (correct pattern):
+
+```Containerfile
+# Good - Web server only
+FROM nginx:alpine
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY html /usr/share/nginx/html
+USER nginx
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+2. **Separate multiple services into multiple containers**:
+
+```yaml
+# Instead of web+db+cache in one container:
+# Create separate containers in same pod
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myapp
+spec:
+  containers:
+  - name: web
+    image: myapp-web:v1.0
+  - name: cache
+    image: redis:7-alpine
+    # Each container has single purpose
+```
+
+3. **Foreground/blocking command** (not daemonized):
+
+```Containerfile
+# Good - process runs in foreground
+CMD ["./app"]
+
+# Good - explicit foreground mode
+CMD ["nginx", "-g", "daemon off;"]
+CMD ["redis-server", "--daemonize no"]
+
+# Bad - backgrounds process
+CMD ["./start.sh &amp;"]  # Don't do this
+```
+
+4. **Avoid process supervisors**:
+
+```Containerfile
+# Bad - supervisord managing multiple services
+FROM ubuntu
+RUN apt-get install -y supervisor nginx postgresql
+COPY supervisord.conf /etc/supervisor/conf.d/
+CMD ["/usr/bin/supervisord"]
+
+# Good - separate containers
+# Container 1: nginx only
+# Container 2: postgresql only
+```
+
+**Sidecar pattern** (when auxiliary services needed):
+
+```yaml
+# Main app + logging sidecar (both single-purpose)
+spec:
+  containers:
+  - name: app
+    image: myapp:v1.0
+  - name: log-forwarder
+    image: fluent-bit:latest
+    # Each container still has single purpose
+```
+
+**Reference**: Microservices architecture - one service per container</fixtext>
+      <check system="N/A">
+        <check-content>**Build-Time Check**:
+
+1. **Verify single CMD/ENTRYPOINT**:
+```bash
+# Check Containerfile has one main command
+grep -E "^CMD|^ENTRYPOINT" Containerfile | wc -l
+# Should be 1
+
+# Check for process supervisors (anti-pattern)
+docker run --rm &lt;image&gt; which supervisord systemd  # Should not exist
+```
+
+2. **Verify single purpose** (code review):
+```bash
+# Containerfile should NOT have multiple services
+grep -i "nginx.*postgres\|apache.*mysql\|multiple.*service" Containerfile
+# Should not find multi-service indicators
+```
+
+**Runtime Check**:
+
+3. **Verify single main process**:
+```bash
+# Check process count in running container
+kubectl exec &lt;pod&gt; -- ps aux | wc -l
+# Should be minimal (PID 1 + any child workers, not multiple daemons)
+
+docker exec &lt;container&gt; ps aux
+# Should see one main process, not multiple services
+```
+
+4. **Check for shell scripts launching multiple services** (anti-pattern):
+```bash
+# Review entrypoint script if exists
+docker inspect &lt;image&gt; | jq '.[].Config.Entrypoint'
+# Should not be shell script that backgrounds multiple processes
+```
+
+**Finding**: If container runs multiple services or uses process supervisor (systemd, supervisord), this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="V-CNTR-00-000110">
+    <title>SRG-OS-000398</title>
+    <Rule id="SV-CNTR-00-000110" severity="medium" weight="10.0">
+      <version>CNTR-00-000110</version>
+      <title>Container lifecycle must leverage automation to enable security currency in a continuous manner.</title>
+      <description>&lt;VulnDiscussion&gt;This requirement enforces proactive vulnerability management through automation, preventing exploitation of known vulnerabilities (1-day exploits) where both proof-of-concept attacks and patches are publicly available.
+
+**Continuous Security Pipeline**:
+Automated DevSecOps process must include:
+
+1. **Automated Scanning**:
+   - Base image vulnerability scanning (Trivy, Grype, Clair)
+   - Application dependency scanning (Snyk, Dependabot, Renovate)
+   - Secret detection (TruffleHog, GitLeaks, git-secrets)
+   - License compliance scanning
+   - SBOM generation and verification
+
+2. **Continuous Patching**:
+   - Automated base image updates when patches available
+   - Dependency updates via automated PRs
+   - Security-only updates prioritized over feature updates
+   - Automated testing of patched images
+
+3. **Automated Rebuild**:
+   - Triggered by security advisories
+   - Scheduled rebuilds (weekly/monthly)
+   - Rebuild on base image updates
+   - Rebuild on dependency updates
+
+4. **Automated Deployment**:
+   - Continuous deployment to non-production environments
+   - Automated testing (unit, integration, security tests)
+   - Canary/blue-green deployment to production
+   - Automated rollback on failure
+
+**Currency Principle**:
+"Currency" means:
+- Images based on latest patched base images
+- Dependencies updated to secure versions
+- No known critical/high vulnerabilities in production
+- Patch lag time minimized (hours/days, not weeks/months)
+
+**Why This Prevents 1-Day Exploits**:
+1. Public vulnerability announcement (CVE published)
+2. Proof-of-concept exploit released (attackers have code)
+3. Vendor patch available (defenders have fix)
+4. **Most systems remain unpatched** (manual processes too slow)
+5. Automation closes the gap between patch availability and deployment
+
+**CI/CD Integration**:
+
+```yaml
+# Example pipeline stages
+stages:
+  - build
+  - scan
+  - test
+  - deploy
+
+scan_image:
+  stage: scan
+  script:
+    - trivy image --severity HIGH,CRITICAL --exit-code 1 $IMAGE
+    - grype $IMAGE --fail-on high
+    - syft $IMAGE -o spdx-json &gt; sbom.json
+
+deploy_production:
+  stage: deploy
+  script:
+    - kubectl set image deployment/app app=$IMAGE
+    - kubectl rollout status deployment/app
+  only:
+    - main
+  when: on_success
+```
+
+**Feedback Loop**:
+Continuous deployment provides continuous feedback:
+- Deployment metrics (success/failure rates)
+- Runtime performance (latency, errors)
+- Security posture (vulnerability counts over time)
+- Compliance status (policy violations)
+
+**Immutable Infrastructure**:
+This requirement enforces immutable infrastructure:
+- Never patch running containers (violates immutability)
+- Always replace containers with patched images
+- No runtime package updates (violates Requirement #5a)
+- Image-based updates only
+
+**Scanning Requirements**:
+
+Must scan for:
+- **CVEs**: Known vulnerabilities in OS packages and app dependencies
+- **Misconfigurations**: Containerfile best practice violations
+- **Secrets**: Hardcoded credentials (Requirement #4)
+- **Malware**: Malicious code injection
+- **License issues**: Compliance with open-source licenses
+
+**Automated Response**:
+Security findings trigger:
+- High/Critical: Block deployment, create incident ticket
+- Medium: Allow deployment, create ticket for remediation
+- Low: Log for review, allow deployment
+
+**Supply Chain Security**:
+This requirement supports:
+- SLSA Build Provenance (track what was built and how)
+- Sigstore image signing (verify image integrity)
+- SBOM tracking (know what's in images)
+- Dependency tracking (monitor for new CVEs)
+
+**Platform Integration**:
+Works with platform capabilities:
+- Admission controllers (validate images before deployment)
+- Image pull policies (ensure latest images)
+- Deployment strategies (progressive rollouts)
+- Monitoring and alerting (detect anomalies)
+
+**Exceptions and Risk Acceptance**:
+Some vulnerabilities may require:
+- Risk acceptance (no patch available)
+- Compensating controls (WAF, network isolation)
+- Vendor exceptions (false positives)
+- Documented in security plan
+
+**Relationship to Other Requirements**:
+- Enables Requirement #8 (External Data) - stateless design allows replacement
+- Implements Requirement #5b (Complete Components) - scanning needs complete visibility
+- Supports platform compliance (Requirement #1) - platform provides scanning infrastructure
+
+This requirement addresses:
+- NIST SP 800-190: Image vulnerability management
+- NSA/CISA: Vulnerability scanning and updates
+- OWASP K02: Supply chain vulnerabilities
+- OWASP K10: Outdated/vulnerable components
+- SLSA: Supply chain integrity
+
+**The Critical Security Principle**: Automated patching prevents the easiest category of attacks where attackers have working exploits and defenders have available patches, but systems remain vulnerable due to slow manual update processes.
+
+Satisfies: SRG-OS-000440&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://cyber.mil/cci">CCI-002455</ident>
+      <fixtext fixref="F-CNTR-00-000110_fix">**Implement automated scanning and patching pipeline:**
+
+1. **GitLab CI/CD Pipeline Example**:
+
+```yaml
+stages:
+  - build
+  - scan
+  - sign
+  - deploy
+
+build:
+  stage: build
+  script:
+    - docker build -t $IMAGE .
+  
+scan:
+  stage: scan
+  script:
+    # Vulnerability scanning
+    - trivy image --severity CRITICAL,HIGH --exit-code 1 $IMAGE
+    - grype $IMAGE --fail-on high
+    
+    # Secret scanning
+    - trivy image --scanners secret --exit-code 1 $IMAGE
+    
+    # Generate SBOM
+    - syft $IMAGE -o spdx-json &gt; sbom.json
+    - syft $IMAGE -o cyclonedx-json &gt; sbom-cyclonedx.json
+  artifacts:
+    paths:
+      - sbom*.json
+
+sign:
+  stage: sign
+  script:
+    # Sign image with Cosign
+    - cosign sign $IMAGE
+    
+    # Attach SBOM attestation
+    - cosign attest --predicate sbom.json --type spdx $IMAGE
+
+deploy:
+  stage: deploy
+  script:
+    - kubectl set image deployment/app app=$IMAGE
+    - kubectl rollout status deployment/app
+  only:
+    - main
+```
+
+2. **Automated dependency updates** (Renovate):
+
+```json
+{
+  "extends": ["config:base"],
+  "Containerfile": {
+    "enabled": true
+  },
+  "vulnerabilityAlerts": {
+    "enabled": true
+  },
+  "schedule": ["before 5am on monday"]
+}
+```
+
+3. **Admission controller to enforce scanning**:
+
+```yaml
+# Use OPA/Gatekeeper or similar
+# Block images without recent scan
+apiVersion: v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: image-scan-enforcer
+# Validates image has:
+# - Scan timestamp &lt; 30 days
+# - No CRITICAL/HIGH vulnerabilities
+# - Valid signature
+```
+
+4. **Continuous monitoring and rebuild**:
+```bash
+# Scheduled pipeline runs
+# Rebuilds even if no code changes (for base image updates)
+# Weekly or on security advisory
+
+# Example: GitHub Actions schedule
+on:
+  schedule:
+    - cron: '0 2 * * 1'  # Every Monday 2 AM
+  workflow_dispatch:  # Manual trigger
+```
+
+**Tools**:
+- Scanning: Trivy, Grype, Anchore, Snyk
+- Updates: Renovate, Dependabot
+- Signing: Cosign, Notation
+- Enforcement: OPA, Kyverno, admission controllers
+
+**Reference**: DoD DevSecOps Container Hardening Guide, SLSA framework</fixtext>
+      <check system="N/A">
+        <check-content>**Build-Time Check** (CI/CD Pipeline):
+
+1. **Verify automated vulnerability scanning**:
+```bash
+# CI/CD should include scanning
+# Check .gitlab-ci.yml, Jenkinsfile, GitHub Actions, etc.
+
+# Example scan command that should be in pipeline:
+trivy image --severity CRITICAL,HIGH --exit-code 1 &lt;image&gt;
+grype &lt;image&gt; --fail-on high
+```
+
+2. **Verify SBOM generation**:
+```bash
+# SBOM should be generated and stored
+syft &lt;image&gt; -o spdx-json &gt; sbom.json
+
+# Check SBOM exists in artifact storage
+ls -la sbom*.json
+```
+
+3. **Check for automated rebuild triggers**:
+```bash
+# Verify CI/CD configured for:
+# - Base image updates (automated patching)
+# - Dependency updates (Renovate, Dependabot)
+# - Security advisory triggers
+# - Scheduled rebuilds (weekly/monthly)
+```
+
+4. **Verify admission control gates**:
+```bash
+# Check platform blocks vulnerable images
+kubectl get validatingwebhook | grep -i "image\|scan"
+
+# Test: Try to deploy image with known CVE (should be blocked)
+```
+
+**Configuration Check**:
+
+5. **Verify image pull policy and automated deployment**:
+```yaml
+# Should pull latest scanned images
+imagePullPolicy: Always  # Or IfNotPresent with digest pinning
+
+# Deployment strategy for automated rollouts
+spec:
+  strategy:
+    type: RollingUpdate
+```
+
+6. **Check image is signed** (optional but recommended):
+```bash
+# Verify signature exists
+cosign verify &lt;image&gt;
+
+# Check for SLSA provenance
+cosign verify-attestation --type slsaprovenance &lt;image&gt;
+```
+
+**Finding**: If images are not continuously scanned, patched (rebuilt), published, and automatically redeployed, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+  <Group id="V-CNTR-00-000120">
+    <title>SRG-OS-000439</title>
+    <Rule id="SV-CNTR-00-000120" severity="high" weight="10.0">
+      <version>CNTR-00-000120</version>
+      <title>Containers providing an interface including applications, services, and databases must comply with all applicable application-specific security requirements and controls.test</title>
+      <description>&lt;VulnDiscussion&gt;This requirement establishes that container security is layered and cumulative. The Container SRG secures the container infrastructure (image, runtime, lifecycle), while application-specific security guidance secures the software running inside containers. Both must be satisfied for comprehensive security.
+
+**Layered Security Model - All Layers Apply**:
+
+```
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚ Application STIG + Vendor Best Practices                â”‚ â† THIS REQUIREMENT
+â”‚ Examples: PostgreSQL STIG, NGINX Hardening Guide        â”‚
+â”‚ Requirement Count: 50-150+ per application              â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚ Container SRG (Requirements #1-11)                      â”‚ â† Base container security
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚ Container Platform SRG (Req #1 delegates here)          â”‚ â† Kubernetes/platform
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚ Operating System SRG (Req #1 delegates here)            â”‚ â† Host OS security
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+```
+
+**Scope Clarification**:
+- **Container SRG (Requirements #1-11)**: Secures the BASE container (image, runtime config, lifecycle)
+- **Requirement #12 (this requirement)**: Ensures APPLICATION security is not forgotten
+- **Combined**: Complete security posture for containerized applications
+
+**What Must Be Applied**:
+
+1. **Application-Specific STIGs** (when available):
+   - PostgreSQL STIG (~120 requirements)
+   - Apache HTTP Server STIG (~80 requirements)
+   - NGINX STIG (~70 requirements)
+   - MySQL/MariaDB STIG (~100 requirements)
+   - MongoDB STIG (~90 requirements)
+   - Redis STIG (~50 requirements)
+   - And any other DISA-published application STIGs
+
+2. **Application SRGs** (when STIG doesn't exist yet):
+   - Database SRG
+   - Web Server SRG
+   - DNS SRG
+   - Application Server SRG
+
+3. **Vendor Security Hardening Guides**:
+   - PostgreSQL Security Documentation
+   - NGINX Security Controls
+   - Apache Security Tips
+   - MongoDB Security Checklist
+   - Elasticsearch Security Guide
+   - Kafka Security Documentation
+
+4. **Industry Best Practices**:
+   - CIS Benchmarks for applications (CIS PostgreSQL, CIS Apache)
+   - OWASP Application Security Verification Standard (ASVS)
+   - Framework-specific guides (Django Security, Spring Security)
+   - Language-specific guides (Python Security, Java Security)
+
+**Real-World Example - PostgreSQL in Container**:
+
+A container running PostgreSQL must comply with:
+
+**Container SRG (12 requirements)**:
+- #1: Run on compliant platform (Kubernetes with Platform SRG)
+- #2: Run as non-root user (postgres user, not root)
+- #3: No SSH access (access via kubectl exec only)
+- #4: No embedded database passwords (use Kubernetes Secrets)
+- #5a: Minimal base image (postgres:alpine or distroless)
+- #5b: Complete at build time (all extensions included)
+- #6: Logs to STDOUT/STDERR (configure PostgreSQL logging)
+- #7: Resource limits (CPU, memory for PostgreSQL)
+- #8: Data on PersistentVolume (not in container filesystem)
+- #9: Only port 5432 exposed (no unnecessary ports)
+- #10: Single purpose (PostgreSQL only, not PostgreSQL + web server)
+- #11: Automated scanning and patching (container image updates)
+
+**PostgreSQL STIG (~120 requirements)**:
+- Password complexity enforcement
+- SSL/TLS for connections (pg_hba.conf)
+- Audit logging configuration (pgaudit extension)
+- Role-based access control (GRANT/REVOKE)
+- Encryption at rest (PostgreSQL TDE or platform-level)
+- Secure default configurations
+- (100+ additional database-specific controls)
+
+**Total**: ~132 security requirements for containerized PostgreSQL
+
+**Why Both Are Needed**:
+
+Without Container SRG:
+- PostgreSQL runs as root (vulnerable to container escape)
+- SSH daemon in container (unnecessary attack surface)
+- Passwords hardcoded in image (credentials leak)
+
+Without PostgreSQL STIG:
+- Weak database passwords allowed (application compromise)
+- No encryption for database connections (data interception)
+- Insufficient audit logging (cannot detect intrusions)
+
+**Container-Specific Modifications to Application STIGs**:
+
+Some application STIG requirements need interpretation for containers:
+
+| Traditional STIG Requirement | Container Context Interpretation |
+|------------------------------|----------------------------------|
+| "Log to /var/log/app.log" | â†’ Log to STDOUT/STDERR (Container Req #6) |
+| "Install security patches via yum/apt" | â†’ Rebuild container image (Container Req #11) |
+| "Run as dedicated service account" | â†’ USER directive in Containerfile (Container Req #2) |
+| "Restrict file permissions" | â†’ Set at build time, read-only FS (Container Req #5b, #8) |
+| "Configure firewall rules" | â†’ NetworkPolicy in Kubernetes (Container Req #9) |
+
+**Vendor Best Practices Are Mandatory Too**:
+
+Even without a STIG, vendor security guidance applies:
+- PostgreSQL Security Best Practices
+- NGINX Security Controls
+- Redis Security Recommendations
+- Elasticsearch Security Guide
+
+**Why**: Vendors know their software's vulnerabilities and attack vectors better than anyone.
+
+**Testing and Validation**:
+
+Security testing must validate:
+1. **Container SRG Compliance**:
+   - Image scanning (Trivy, Grype)
+   - Privilege checks (non-root, capabilities)
+   - Secret detection (TruffleHog)
+   - Configuration validation (Conftest, OPA)
+
+2. **Application STIG Compliance**:
+   - InSpec profiles for application
+   - Configuration scanning (database settings, web server config)
+   - Functional security tests (authentication, authorization)
+
+3. **Integration Testing**:
+   - Application works within container constraints
+   - Logging properly configured
+   - Performance acceptable with resource limits
+
+**Documentation Requirements**:
+
+For each containerized application, maintain:
+1. **Compliance Matrix**:
+   - Container SRG: 12 requirements with evidence
+   - Application STIG/SRG: All applicable requirements with evidence
+   - Vendor best practices: Key controls implemented
+
+2. **Deviation Documentation**:
+   - Any STIG requirements interpreted for containers
+   - Rationale for interpretations
+   - Compensating controls if needed
+
+3. **Test Evidence**:
+   - InSpec scan results (container + application)
+   - Vulnerability scan results (image + dependencies)
+   - Configuration validation results
+
+**The Critical Principle**:
+
+&gt; "Containers do not exempt applications from security requirements. Container security (this SRG) and application security (App STIGs) are complementary, not substitutionary."
+
+**Example Applications Requiring Additional STIGs**:
+
+| Application Type | Applicable STIG/Guide | Additional Reqs |
+|------------------|----------------------|-----------------|
+| Web Server | Apache/NGINX STIG | ~70-80 |
+| Database | PostgreSQL/MySQL/MongoDB STIG | ~90-120 |
+| Cache | Redis STIG | ~50 |
+| Message Queue | RabbitMQ/Kafka vendor guides | ~40-60 |
+| API Gateway | Kong/Envoy security guides | ~30-50 |
+| Monitoring | Prometheus/Grafana guides | ~20-30 |
+| Service Mesh | Istio/Linkerd security docs | ~40-60 |
+
+**Enforcement**:
+
+Container admission controllers can validate:
+- Container SRG compliance (via image scanning, policy checks)
+- Basic application configuration (via ConfigMap/manifest validation)
+
+Application STIG compliance requires:
+- Runtime configuration validation (InSpec running against deployed app)
+- Functional security testing (authentication, authorization tests)
+- Continuous compliance monitoring
+
+**Relationship to Other Requirements**:
+
+- Requirement #1 (Platform Compliance) - Platform provides infrastructure for app security
+- Requirement #5a (Minimal) - Don't remove components needed for app STIG compliance
+- Requirement #6 (Logging) - Must support application audit logging requirements
+- Requirement #11 (Continuous Patching) - Includes application vulnerability patching
+
+This requirement addresses defense-in-depth and prevents the dangerous misconception that "putting an application in a container" somehow eliminates the need for application-specific security hardening. Container security and application security are both mandatory for comprehensive protection.
+
+Satisfies: SRG-OS-000399, SRG-OS-000400, SRG-OS-000401, SRG-OS-000402&lt;/VulnDiscussion&gt;&lt;FalsePositives&gt;&lt;/FalsePositives&gt;&lt;FalseNegatives&gt;&lt;/FalseNegatives&gt;&lt;Documentable&gt;false&lt;/Documentable&gt;&lt;Mitigations&gt;&lt;/Mitigations&gt;&lt;SecurityOverrideGuidance&gt;&lt;/SecurityOverrideGuidance&gt;&lt;PotentialImpacts&gt;&lt;/PotentialImpacts&gt;&lt;ThirdPartyTools&gt;&lt;/ThirdPartyTools&gt;&lt;MitigationControl&gt;&lt;/MitigationControl&gt;&lt;Responsibility&gt;&lt;/Responsibility&gt;&lt;IAControls&gt;&lt;/IAControls&gt;</description>
+      <ident system="http://cyber.mil/cci">CCI-002605</ident>
+      <fixtext fixref="F-CNTR-00-000120_fix">**Apply application-specific security requirements:**
+
+1. **Identify all applicable STIGs/SRGs**:
+
+```yaml
+# Document in deployment annotations
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-app
+  annotations:
+    security.compliance/container-srg: "V1R0"
+    security.compliance/postgres-stig: "V2R1"
+    security.compliance/app-dev-srg: "V4R4"
+spec:
+  template:
+    metadata:
+      annotations:
+        compliance.requirements: "Container SRG + PostgreSQL STIG"
+```
+
+2. **Example: PostgreSQL in Container**:
+
+```Containerfile
+# Base: Container SRG requirements
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest AS builder
+RUN microdnf install -y postgresql15-server &amp;&amp; microdnf clean all
+
+FROM registry.access.redhat.com/ubi9/ubi-micro:latest
+COPY --from=builder /usr/bin/postgres /usr/bin/postgres
+COPY --from=builder /usr/lib64/libpq.so* /usr/lib64/
+
+# Container SRG compliance
+USER 26  # postgres user, non-root
+EXPOSE 5432/tcp
+
+# PostgreSQL STIG requirements applied via config
+COPY postgresql.conf /var/lib/pgsql/data/postgresql.conf
+# Config includes:
+# - SSL required
+# - Password complexity
+# - Audit logging enabled
+# - Etc. (120+ PostgreSQL STIG requirements)
+
+CMD ["postgres"]
+```
+
+3. **Testing compliance** (both Container + App):
+
+```bash
+# Container SRG scan
+trivy image postgres-app:v1.0
+conftest test deployment.yaml --policy container-srg-policies/
+
+# PostgreSQL STIG scan
+inspec exec postgres-stig-baseline \
+  --target docker://postgres-app \
+  --reporter cli json:postgres-compliance.json
+```
+
+4. **Compliance matrix documentation**:
+
+```markdown
+# Compliance Matrix for postgres-app:v1.0
+
+## Container SRG (12 requirements)
+- [x] #1 Platform Compliance: Kubernetes 1.28 on RHEL 9
+- [x] #2 Least Privilege: Runs as UID 26 (postgres)
+- [x] #3 No Terminal Access: No SSH, distroless base
+[... all 12 checked]
+
+## PostgreSQL STIG V2R1 (120 requirements)
+- [x] V-233xxx: SSL/TLS enabled
+- [x] V-233xxx: Password complexity enforced
+[... all 120 checked]
+
+## Application Security &amp; Development SRG
+- [x] Secure coding practices
+- [x] Input validation
+[... applicable requirements]
+
+Total Requirements Met: 12 + 120 + X = ~150+
+```
+
+5. **Reference documentation**:
+- Container SRG (this document)
+- Application STIGs: https://public.cyber.mil/stigs/downloads/
+- Vendor security guides:
+  - PostgreSQL: https://www.postgresql.org/docs/security
+  - NGINX: https://docs.nginx.com/nginx/admin-guide/security-controls/
+  - Apache: https://httpd.apache.org/docs/trunk/misc/security_tips.html
+
+**Key Principle**: Container SRG + Application STIG = Complete Security</fixtext>
+      <check system="N/A">
+        <check-content>**Configuration Check** (Application-Specific):
+
+1. **Identify application type in container**:
+```bash
+# Determine what application is running
+docker inspect &lt;image&gt; | jq '.[].Config.Cmd'
+
+# Common applications requiring additional STIGs:
+# - Web servers (Apache, NGINX)
+# - Databases (PostgreSQL, MySQL, MongoDB, Redis)
+# - Application servers (Tomcat, JBoss)
+# - Message queues (RabbitMQ, Kafka)
+```
+
+2. **Verify applicable STIG is identified**:
+```bash
+# Documentation should specify:
+# - Application name and version
+# - Applicable STIG (e.g., "PostgreSQL 15 STIG V1R1")
+# - Compliance checklist/InSpec profile
+
+# Check for InSpec profile
+ls -la inspec/postgres-stig-profile/
+```
+
+3. **Run application-specific compliance scan**:
+```bash
+# Example: PostgreSQL STIG validation
+inspec exec postgres-stig-baseline \
+  --target docker://&lt;container&gt; \
+  --reporter cli json:postgres-results.json
+
+# Example: Web server checks
+inspec exec nginx-stig-baseline --target docker://&lt;container&gt;
+```
+
+4. **Verify vendor security hardening applied**:
+```bash
+# Check application follows vendor security guide
+# PostgreSQL: https://www.postgresql.org/docs/current/security.html
+# NGINX: https://nginx.org/en/docs/http/hardening.html
+
+# Review application configuration against vendor guide
+```
+
+5. **Validate CIS Benchmark compliance** (if no STIG):
+```bash
+# Use CIS Benchmark if DISA STIG not available
+docker-bench-security --include &lt;application&gt;
+
+# Example: CIS MongoDB Benchmark
+inspec exec mongodb-cis-baseline --target docker://&lt;container&gt;
+```
+
+**Finding**: If container runs an application without applying the applicable application STIG/SRG or vendor security hardening, this is a finding.</check-content>
+      </check>
+    </Rule>
+  </Group>
+</Benchmark>

@@ -1,0 +1,53 @@
+# Vulcan Caddyfile — Caddy reverse proxy configuration
+#
+# Usage:
+#   cp Caddyfile.example Caddyfile
+#   Edit the domain below, then:
+#   docker compose -f docker-compose.prod.yml --profile caddy up -d
+#
+# Domain options:
+#   vulcan.localhost  — Local dev, browsers auto-trust *.localhost certs
+#   vulcan.example.com — Production, Caddy auto-provisions Let's Encrypt
+#   :443              — Any hostname, uses tls internal (self-signed)
+
+# --- Local development (no cert setup needed) ---
+vulcan.localhost {
+	encode gzip
+
+	reverse_proxy web:3000 {
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+	}
+}
+
+# --- Production with real domain (auto Let's Encrypt) ---
+# Uncomment and replace with your domain. Remove the vulcan.localhost block above.
+#
+# vulcan.example.com {
+# 	encode gzip
+#
+# 	reverse_proxy web:3000 {
+# 		header_up X-Real-IP {remote_host}
+# 		header_up X-Forwarded-For {remote_host}
+# 		header_up X-Forwarded-Proto {scheme}
+# 	}
+# }
+
+# --- Custom hostname with internal TLS (e.g., vulcan.internal) ---
+# Add hostname to /etc/hosts first: 127.0.0.1 vulcan.internal
+# After first start, trust Caddy's CA:
+#   docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt /tmp/caddy-root.crt
+#   macOS: sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain /tmp/caddy-root.crt
+#   Linux: sudo cp /tmp/caddy-root.crt /usr/local/share/ca-certificates/ && sudo update-ca-certificates
+#
+# vulcan.internal {
+# 	tls internal
+# 	encode gzip
+#
+# 	reverse_proxy web:3000 {
+# 		header_up X-Real-IP {remote_host}
+# 		header_up X-Forwarded-For {remote_host}
+# 		header_up X-Forwarded-Proto {scheme}
+# 	}
+# }

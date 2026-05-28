@@ -1,0 +1,19 @@
+{
+  "name": "bvn-toast-playground",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 3001"
+  },
+  "dependencies": {
+    "vue": "^3.5.13",
+    "bootstrap": "^5.3.3",
+    "bootstrap-vue-next": "0.40.8"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "vite": "^6.0.3",
+    "typescript": "^5.7.2"
+  }
+}

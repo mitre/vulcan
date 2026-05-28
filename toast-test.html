@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Toast Test</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script type="module">
+    // Import from CDN
+    import { createApp, h, ref } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
+    import * as BVN from 'https://unpkg.com/bootstrap-vue-next@0.40.8/dist/bootstrap-vue-next.mjs'
+
+    const App = {
+      setup() {
+        const toast = BVN.useToast()
+
+        function showToast() {
+          console.log('Showing toast...')
+          console.log('Store before:', toast.store.value.length)
+          toast.create({
+            title: 'Hello',
+            body: 'This is a test toast!',
+            variant: 'success',
+            pos: 'top-end',
+            modelValue: 5000
+          })
+          console.log('Store after:', toast.store.value.length)
+        }
+
+        return { showToast }
+      },
+      template: `
+        <BVN.BApp>
+          <div class="container mt-5">
+            <h1>Toast Test</h1>
+            <button class="btn btn-primary" @click="showToast">Show Toast</button>
+          </div>
+        </BVN.BApp>
+      `
+    }
+
+    const app = createApp(App)
+    app.use(BVN.createBootstrap())
+    app.mount('#app')
+  </script>
+</body>
+</html>
