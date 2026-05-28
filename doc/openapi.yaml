@@ -155,15 +155,26 @@ paths:
       tags:
         - Projects
       summary: List accessible projects
+      description: Returns all projects the current user can access, including owned projects, member projects, and discoverable projects. Includes membership counts and pending comment counts per project. Requires authentication.
       responses:
         '200':
-          description: Projects list (HTML or JSON)
+          description: Projects list
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/ProjectSummary'
+              examples:
+                projects:
+                  summary: Two accessible projects
+                  value:
+                    - id: 4
+                      name: Container Platform
+                      memberships_count: 14
+                    - id: 1
+                      name: Photon 3
+                      memberships_count: 14
         4XX:
           $ref: '#/components/responses/ErrorResponse'
     post:
@@ -171,6 +182,7 @@ paths:
       tags:
         - Projects
       summary: Create a new project
+      description: Creates a new project with the given name and description. The creating user is automatically added as an admin member. Requires authentication.
       requestBody:
         required: true
         content:
@@ -180,6 +192,13 @@ paths:
               properties:
                 project:
                   $ref: '#/components/schemas/ProjectInput'
+            examples:
+              create:
+                summary: Create a new project
+                value:
+                  project:
+                    name: Red Hat Enterprise Linux 9
+                    description: STIG development for RHEL 9
       responses:
         '200':
           description: Project created
@@ -187,6 +206,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                created:
+                  summary: Project created
+                  value:
+                    toast:
+                      title: Project created.
+                      message:
+                        - Successfully created project Red Hat Enterprise Linux 9.
+                      variant: success
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
         4XX:
@@ -199,13 +227,22 @@ paths:
       tags:
         - Projects
       summary: Project detail with component list and stats
+      description: Returns full project details including components, membership count, comment counts, and project metadata. Requires membership in the project or admin role.
       responses:
         '200':
-          description: Project detail
+          description: Project detail with components
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProjectSummary'
+              examples:
+                project:
+                  summary: Container Platform project
+                  value:
+                    id: 4
+                    name: Container Platform
+                    description: STIG for container orchestration platforms
+                    memberships_count: 14
         4XX:
           $ref: '#/components/responses/ErrorResponse'
     put:
@@ -213,6 +250,7 @@ paths:
       tags:
         - Projects
       summary: Update project attributes
+      description: Updates the project name, description, or visibility. Requires admin role on the project. Returns a canonical toast response.
       requestBody:
         required: true
         content:
@@ -222,6 +260,12 @@ paths:
               properties:
                 project:
                   $ref: '#/components/schemas/ProjectInput'
+            examples:
+              rename:
+                summary: Rename a project
+                value:
+                  project:
+                    name: Container Platform v2
       responses:
         '200':
           description: Project updated
@@ -229,6 +273,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                updated:
+                  summary: Project renamed
+                  value:
+                    toast:
+                      title: Project updated.
+                      message:
+                        - Successfully updated project.
+                      variant: success
         4XX:
           $ref: '#/components/responses/ErrorResponse'
     delete:
@@ -236,6 +289,7 @@ paths:
       tags:
         - Projects
       summary: Delete a project and all its components
+      description: Permanently deletes the project, all its components, rules, reviews, and memberships. Requires admin role on the project. This action cannot be undone. Returns 403 for non-admin users.
       responses:
         '200':
           description: Project deleted
@@ -243,6 +297,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                deleted:
+                  summary: Project deleted
+                  value:
+                    toast:
+                      title: Project deleted.
+                      message:
+                        - Successfully deleted project.
+                      variant: success
         '403':
           $ref: '#/components/responses/Forbidden'
         4XX:
@@ -255,6 +318,7 @@ paths:
       tags:
         - Projects
       summary: Aggregated comments across all project components
+      description: Returns paginated comments from all components in the project, with triage status counts. Used by the project-level triage page to show a unified comment queue across components. Supports status filtering and pagination.
       parameters:
         - $ref: '#/components/parameters/TriageStatusFilter'
         - $ref: '#/components/parameters/PageParam'
@@ -266,6 +330,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedComments'
+              examples:
+                comments:
+                  summary: Project-wide comment queue
+                  value:
+                    rows:
+                      - id: 44
+                        rule_displayed_name: CNTR-00-000050
+                        component_name: Container SRG
+                        section: fixtext
+                        author_name: John Osborne
+                        comment: This requirement needs clarification...
+                        triage_status: pending
+                        created_at: '2026-05-19T16:15:00Z'
+                    pagination:
+                      page: 1
+                      per_page: 25
+                      total: 108
+                    status_counts:
+                      pending: 10
+                      concur: 2
+                      duplicate: 4
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /projects/{projectId}/export/{type}:
@@ -274,6 +359,7 @@ paths:
       - name: type
         in: path
         required: true
+        description: Export format.
         schema:
           type: string
           enum:
@@ -281,34 +367,41 @@ paths:
             - xccdf
             - inspec
             - json_archive
+        example: xccdf
     get:
       operationId: exportProject
       tags:
         - Projects
       summary: Export project data in the specified format
+      description: Exports selected components from the project as CSV, XCCDF XML, InSpec profile, or JSON archive. Supports mode selection (working copy, vendor submission, published STIG) and optional SRG/membership inclusion. Returns a binary file download. Requires project membership.
       parameters:
         - name: component_ids
           in: query
           required: true
+          description: Comma-separated IDs of components to include in the export.
           schema:
             type: string
-          description: Comma-separated component IDs
+          example: 29,30
         - name: mode
           in: query
+          description: Export mode controlling which fields and rules are included.
           schema:
             type: string
             enum:
               - working_copy
               - vendor_submission
               - published_stig
+          example: working_copy
         - name: include_srg
           in: query
+          description: Include the source SRG in the export package.
           schema:
             type: string
             enum:
               - 'true'
         - name: include_memberships
           in: query
+          description: Include project membership data in the export.
           schema:
             type: string
             enum:
@@ -316,13 +409,31 @@ paths:
               - 'false'
         - name: exclude_satisfied_by
           in: query
+          description: Exclude rules that are satisfied by another rule.
           schema:
             type: string
             enum:
               - 'true'
       responses:
         '200':
-          description: File download
+          description: Binary file download (CSV, XML, ZIP, or JSON)
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/xml:
+              schema:
+                type: string
+                format: binary
+            application/zip:
+              schema:
+                type: string
+                format: binary
+            application/json:
+              schema:
+                type: string
+                format: binary
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /projects/create_from_backup:
@@ -330,19 +441,25 @@ paths:
       operationId: createFromBackup
       tags:
         - Projects
-      summary: Create a project from a JSON archive backup
+      summary: Create a new project from a JSON archive backup
+      description: Creates a new project by restoring from a JSON archive (.zip). The archive must have been created by the json_archive export. Optionally override the project name. The creating user becomes the project admin. Requires authentication.
       requestBody:
         required: true
         content:
           multipart/form-data:
             schema:
               type: object
+              required:
+                - file
               properties:
                 file:
                   type: string
                   format: binary
+                  description: JSON archive .zip file from a previous export.
                 name:
                   type: string
+                  description: Override project name. Uses the archived name if omitted.
+                  example: Restored Container Platform
       responses:
         '200':
           description: Project created from backup
@@ -350,6 +467,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                created:
+                  summary: Project restored from archive
+                  value:
+                    toast:
+                      title: Project restored.
+                      message:
+                        - Successfully restored project Restored Container Platform.
+                      variant: success
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
         4XX:
@@ -361,17 +487,21 @@ paths:
       operationId: importBackup
       tags:
         - Projects
-      summary: Import components from a JSON archive into an existing project
+      summary: Import components from a JSON archive backup
+      description: Imports components, rules, reviews, and memberships from a JSON archive (.zip) into an existing project. Requires admin role on the project. The archive must have been created by the json_archive export format. Merges imported data with existing project content.
       requestBody:
         required: true
         content:
           multipart/form-data:
             schema:
               type: object
+              required:
+                - file
               properties:
                 file:
                   type: string
                   format: binary
+                  description: JSON archive .zip file from a previous export.
       responses:
         '200':
           description: Backup imported
@@ -379,6 +509,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                imported:
+                  summary: Archive imported
+                  value:
+                    toast:
+                      title: Import complete.
+                      message:
+                        - Successfully imported 2 components with 264 rules.
+                      variant: success
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /projects/{projectId}/histories:
@@ -389,15 +528,25 @@ paths:
       tags:
         - Projects
       summary: Audit history for the project
+      description: Returns the 50 most recent audit trail entries for the project, including component and rule changes. Used by the project history sidebar. Requires project membership.
       responses:
         '200':
-          description: History entries
+          description: Recent audit entries
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/AuditEntry'
+              examples:
+                history:
+                  summary: Recent project changes
+                  value:
+                    - id: 500
+                      auditable_type: Component
+                      action: update
+                      user_name: Demo Admin
+                      created_at: '2026-05-28T15:00:00Z'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /components:
@@ -425,6 +574,7 @@ paths:
       tags:
         - Components
       summary: Create or duplicate a component in a project
+      description: Creates a new component in the project from an SRG, duplicates an existing component, or imports from an uploaded XCCDF/CSV file. Requires admin role on the project. The component is initialized with all rules from the selected SRG baseline.
       requestBody:
         required: true
         content:
@@ -434,6 +584,16 @@ paths:
               properties:
                 component:
                   $ref: '#/components/schemas/ComponentInput'
+            examples:
+              from_srg:
+                summary: Create from an SRG baseline
+                value:
+                  component:
+                    name: Container SRG
+                    prefix: CNTR
+                    version: 1
+                    release: 1
+                    based_on_id: 1
           multipart/form-data:
             schema:
               type: object
@@ -441,6 +601,7 @@ paths:
                 file:
                   type: string
                   format: binary
+                  description: XCCDF XML or CSV file to import as a component.
       responses:
         '200':
           description: Component created
@@ -448,6 +609,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                created:
+                  summary: Component created from SRG
+                  value:
+                    toast:
+                      title: Component created.
+                      message:
+                        - Successfully created component Container SRG.
+                      variant: success
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /components/{componentId}:
@@ -1850,6 +2020,7 @@ paths:
       tags:
         - Memberships
       summary: Add a user to a project or component
+      description: Creates a membership linking a user to a project or component with the specified role (viewer, author, reviewer, admin). Requires admin role on the target project. Duplicate memberships are rejected.
       requestBody:
         required: true
         content:
@@ -1859,6 +2030,15 @@ paths:
               properties:
                 membership:
                   $ref: '#/components/schemas/MembershipInput'
+            examples:
+              add_author:
+                summary: Add a user as author
+                value:
+                  membership:
+                    user_id: 42
+                    membership_id: 4
+                    membership_type: Project
+                    role: author
       responses:
         '200':
           description: Membership created
@@ -1866,6 +2046,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                added:
+                  summary: User added to project
+                  value:
+                    toast:
+                      title: Member added.
+                      message:
+                        - Jane Doe added as author.
+                      variant: success
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /memberships/{membershipId}:
@@ -1873,13 +2062,16 @@ paths:
       - name: membershipId
         in: path
         required: true
+        description: Numeric ID of the membership record to update or delete.
         schema:
           type: integer
+        example: 15
     put:
       operationId: updateMembership
       tags:
         - Memberships
       summary: Update membership role
+      description: Changes the role (viewer, author, reviewer, admin) for an existing membership. Requires admin role on the parent project. Cannot demote the last admin on a project.
       requestBody:
         required: true
         content:
@@ -1889,6 +2081,12 @@ paths:
               properties:
                 membership:
                   $ref: '#/components/schemas/MembershipInput'
+            examples:
+              promote:
+                summary: Promote to reviewer
+                value:
+                  membership:
+                    role: reviewer
       responses:
         '200':
           description: Membership updated
@@ -1896,13 +2094,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                promoted:
+                  summary: Role changed
+                  value:
+                    toast:
+                      title: Role updated.
+                      message:
+                        - Jane Doe is now a reviewer.
+                      variant: success
         4XX:
           $ref: '#/components/responses/ErrorResponse'
     delete:
       operationId: deleteMembership
       tags:
         - Memberships
-      summary: Remove a membership
+      summary: Remove a user from a project or component
+      description: Deletes the membership, revoking the user's access. Requires admin role on the parent project. Removed users lose authority over all project-scoped resources including their own pending comments.
       responses:
         '200':
           description: Membership removed
@@ -1910,6 +2118,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
+              examples:
+                removed:
+                  summary: User removed from project
+                  value:
+                    toast:
+                      title: Member removed.
+                      message:
+                        - Jane Doe removed from project.
+                      variant: success
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /srgs:

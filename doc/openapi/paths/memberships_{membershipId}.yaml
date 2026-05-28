@@ -2,13 +2,19 @@ parameters:
   - name: membershipId
     in: path
     required: true
+    description: Numeric ID of the membership record to update or delete.
     schema:
       type: integer
+    example: 15
 put:
   operationId: updateMembership
   tags:
     - Memberships
   summary: Update membership role
+  description: >-
+    Changes the role (viewer, author, reviewer, admin) for an existing
+    membership. Requires admin role on the parent project. Cannot demote
+    the last admin on a project.
   requestBody:
     required: true
     content:
@@ -18,6 +24,12 @@ put:
           properties:
             membership:
               $ref: ../components/schemas/MembershipInput.yaml
+        examples:
+          promote:
+            summary: Promote to reviewer
+            value:
+              membership:
+                role: reviewer
   responses:
     '200':
       description: Membership updated
@@ -25,13 +37,26 @@ put:
         application/json:
           schema:
             $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            promoted:
+              summary: Role changed
+              value:
+                toast:
+                  title: Role updated.
+                  message:
+                    - "Jane Doe is now a reviewer."
+                  variant: success
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
 delete:
   operationId: deleteMembership
   tags:
     - Memberships
-  summary: Remove a membership
+  summary: Remove a user from a project or component
+  description: >-
+    Deletes the membership, revoking the user's access. Requires admin role
+    on the parent project. Removed users lose authority over all project-scoped
+    resources including their own pending comments.
   responses:
     '200':
       description: Membership removed
@@ -39,5 +64,14 @@ delete:
         application/json:
           schema:
             $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            removed:
+              summary: User removed from project
+              value:
+                toast:
+                  title: Member removed.
+                  message:
+                    - "Jane Doe removed from project."
+                  variant: success
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

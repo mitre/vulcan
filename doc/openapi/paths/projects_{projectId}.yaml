@@ -5,13 +5,25 @@ get:
   tags:
     - Projects
   summary: Project detail with component list and stats
+  description: >-
+    Returns full project details including components, membership count,
+    comment counts, and project metadata. Requires membership in the project
+    or admin role.
   responses:
     '200':
-      description: Project detail
+      description: Project detail with components
       content:
         application/json:
           schema:
             $ref: ../components/schemas/ProjectSummary.yaml
+          examples:
+            project:
+              summary: Container Platform project
+              value:
+                id: 4
+                name: Container Platform
+                description: "STIG for container orchestration platforms"
+                memberships_count: 14
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
 put:
@@ -19,6 +31,9 @@ put:
   tags:
     - Projects
   summary: Update project attributes
+  description: >-
+    Updates the project name, description, or visibility. Requires admin role
+    on the project. Returns a canonical toast response.
   requestBody:
     required: true
     content:
@@ -28,6 +43,12 @@ put:
           properties:
             project:
               $ref: ../components/schemas/ProjectInput.yaml
+        examples:
+          rename:
+            summary: Rename a project
+            value:
+              project:
+                name: Container Platform v2
   responses:
     '200':
       description: Project updated
@@ -35,6 +56,15 @@ put:
         application/json:
           schema:
             $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            updated:
+              summary: Project renamed
+              value:
+                toast:
+                  title: Project updated.
+                  message:
+                    - Successfully updated project.
+                  variant: success
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
 delete:
@@ -42,6 +72,10 @@ delete:
   tags:
     - Projects
   summary: Delete a project and all its components
+  description: >-
+    Permanently deletes the project, all its components, rules, reviews,
+    and memberships. Requires admin role on the project. This action cannot
+    be undone. Returns 403 for non-admin users.
   responses:
     '200':
       description: Project deleted
@@ -49,6 +83,15 @@ delete:
         application/json:
           schema:
             $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            deleted:
+              summary: Project deleted
+              value:
+                toast:
+                  title: Project deleted.
+                  message:
+                    - Successfully deleted project.
+                  variant: success
     '403':
       $ref: ../components/responses/Forbidden.yaml
     4XX:

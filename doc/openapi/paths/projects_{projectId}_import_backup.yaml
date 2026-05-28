@@ -4,17 +4,25 @@ post:
   operationId: importBackup
   tags:
     - Projects
-  summary: Import components from a JSON archive into an existing project
+  summary: Import components from a JSON archive backup
+  description: >-
+    Imports components, rules, reviews, and memberships from a JSON archive
+    (.zip) into an existing project. Requires admin role on the project.
+    The archive must have been created by the json_archive export format.
+    Merges imported data with existing project content.
   requestBody:
     required: true
     content:
       multipart/form-data:
         schema:
           type: object
+          required:
+            - file
           properties:
             file:
               type: string
               format: binary
+              description: JSON archive .zip file from a previous export.
   responses:
     '200':
       description: Backup imported
@@ -22,5 +30,14 @@ post:
         application/json:
           schema:
             $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            imported:
+              summary: Archive imported
+              value:
+                toast:
+                  title: Import complete.
+                  message:
+                    - "Successfully imported 2 components with 264 rules."
+                  variant: success
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

@@ -3,15 +3,29 @@ get:
   tags:
     - Projects
   summary: List accessible projects
+  description: >-
+    Returns all projects the current user can access, including owned projects,
+    member projects, and discoverable projects. Includes membership counts and
+    pending comment counts per project. Requires authentication.
   responses:
     '200':
-      description: Projects list (HTML or JSON)
+      description: Projects list
       content:
         application/json:
           schema:
             type: array
             items:
               $ref: ../components/schemas/ProjectSummary.yaml
+          examples:
+            projects:
+              summary: Two accessible projects
+              value:
+                - id: 4
+                  name: Container Platform
+                  memberships_count: 14
+                - id: 1
+                  name: Photon 3
+                  memberships_count: 14
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
 post:
@@ -19,6 +33,9 @@ post:
   tags:
     - Projects
   summary: Create a new project
+  description: >-
+    Creates a new project with the given name and description. The creating
+    user is automatically added as an admin member. Requires authentication.
   requestBody:
     required: true
     content:
@@ -28,6 +45,13 @@ post:
           properties:
             project:
               $ref: ../components/schemas/ProjectInput.yaml
+        examples:
+          create:
+            summary: Create a new project
+            value:
+              project:
+                name: Red Hat Enterprise Linux 9
+                description: STIG development for RHEL 9
   responses:
     '200':
       description: Project created
@@ -35,6 +59,15 @@ post:
         application/json:
           schema:
             $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            created:
+              summary: Project created
+              value:
+                toast:
+                  title: Project created.
+                  message:
+                    - "Successfully created project Red Hat Enterprise Linux 9."
+                  variant: success
     '422':
       $ref: ../components/responses/UnprocessableEntity.yaml
     4XX:

@@ -2,19 +2,29 @@ post:
   operationId: createFromBackup
   tags:
     - Projects
-  summary: Create a project from a JSON archive backup
+  summary: Create a new project from a JSON archive backup
+  description: >-
+    Creates a new project by restoring from a JSON archive (.zip). The archive
+    must have been created by the json_archive export. Optionally override the
+    project name. The creating user becomes the project admin. Requires
+    authentication.
   requestBody:
     required: true
     content:
       multipart/form-data:
         schema:
           type: object
+          required:
+            - file
           properties:
             file:
               type: string
               format: binary
+              description: JSON archive .zip file from a previous export.
             name:
               type: string
+              description: Override project name. Uses the archived name if omitted.
+              example: "Restored Container Platform"
   responses:
     '200':
       description: Project created from backup
@@ -22,6 +32,15 @@ post:
         application/json:
           schema:
             $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            created:
+              summary: Project restored from archive
+              value:
+                toast:
+                  title: Project restored.
+                  message:
+                    - "Successfully restored project Restored Container Platform."
+                  variant: success
     '422':
       $ref: ../components/responses/UnprocessableEntity.yaml
     4XX:
