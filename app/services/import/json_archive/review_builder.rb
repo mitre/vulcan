@@ -145,6 +145,14 @@ module Import
         attrs = {}
         attrs[:section] = review_data['section'] if review_data.key?('section')
         attrs[:triage_status] = review_data['triage_status'] if review_data['triage_status'].present?
+        # insert! bypasses Review#default_triage_status_for_new_top_level_comment,
+        # so apply the same default here: an untriaged top-level comment is
+        # 'pending'. Replies (responding_to_external_id present) must stay NULL.
+        if attrs[:triage_status].blank? &&
+           review_data['action'] == Review::ACTION_COMMENT &&
+           review_data['responding_to_external_id'].blank?
+          attrs[:triage_status] = 'pending'
+        end
         attrs[:triage_set_at] = parse_time(review_data['triage_set_at']) if review_data['triage_set_at']
         attrs[:adjudicated_at] = parse_time(review_data['adjudicated_at']) if review_data['adjudicated_at']
 

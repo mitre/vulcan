@@ -350,4 +350,30 @@ RSpec.describe Import::JsonArchive::ReviewBuilder do
       expect(review.addressed_by_rule_id).to eq(rule_b.id)
     end
   end
+
+  # Bulk Review.insert! bypasses default_triage_status_for_new_top_level_comment,
+  # so the builder must apply the same default — otherwise an untriaged
+  # top-level comment imports as NULL and falls out of every status bucket.
+  describe 'triage_status defaulting for imported comments' do
+    it 'defaults an untriaged top-level comment to pending' do
+      data = [review_attrs(external_id: 7001, comment: 'untriaged top-level')]
+      described_class.new(data, rule_id_map, result).build_all
+      expect(Review.find_by(comment: 'untriaged top-level').triage_status).to eq('pending')
+    end
+
+    it 'preserves an explicit triage_status from the archive' do
+      data = [review_attrs(external_id: 7002, comment: 'already triaged', triage_status: 'informational')]
+      described_class.new(data, rule_id_map, result).build_all
+      expect(Review.find_by(comment: 'already triaged').triage_status).to eq('informational')
+    end
+
+    it 'leaves replies with a NULL triage_status' do
+      data = [
+        review_attrs(external_id: 7003, comment: 'parent comment'),
+        review_attrs(external_id: 7004, comment: 'a reply', responding_to_external_id: 7003)
+      ]
+      described_class.new(data, rule_id_map, result).build_all
+      expect(Review.find_by(comment: 'a reply').triage_status).to be_nil
+    end
+  end
 end
