@@ -4,6 +4,7 @@ import ComponentComments from "@/components/components/ComponentComments.vue";
 import { getComments } from "@/api/componentsApi";
 import { getProjectComments } from "@/api/projectsApi";
 import { reopenReview } from "@/api/reviewsApi";
+import { submitBulkTriage } from "@/services/triageService";
 
 vi.mock("@/api/baseApi", () => ({
   default: {
@@ -21,11 +22,17 @@ vi.mock("@/api/componentsApi", () => ({
 }));
 
 vi.mock("@/api/projectsApi", () => ({
-  getProjectComments: vi.fn(() => Promise.resolve({ data: { rows: [], pagination: { total: 0 } } })),
+  getProjectComments: vi.fn(() =>
+    Promise.resolve({ data: { rows: [], pagination: { total: 0 } } }),
+  ),
 }));
 
 vi.mock("@/api/reviewsApi", () => ({
   reopenReview: vi.fn(() => Promise.resolve({ data: { review: { id: 99 } } })),
+}));
+
+vi.mock("@/services/triageService", () => ({
+  submitBulkTriage: vi.fn(() => Promise.resolve({ data: {} })),
 }));
 
 // Flush both microtasks (axios .then chain) and the next Vue tick so the
@@ -96,9 +103,13 @@ describe("ComponentComments", () => {
       stubs: SHARED_STUBS,
     });
     await flushPromises();
-    expect(getComments).toHaveBeenCalledWith(42, expect.objectContaining({
-      triage_status: "pending", page: 1,
-    }));
+    expect(getComments).toHaveBeenCalledWith(
+      42,
+      expect.objectContaining({
+        triage_status: "pending",
+        page: 1,
+      }),
+    );
   });
 
   it("does NOT hardcode DISA labels in the rendered template (display goes through TriageStatusBadge)", async () => {
@@ -136,9 +147,12 @@ describe("ComponentComments", () => {
     wrapper.vm.filterText = "apple";
     wrapper.vm.onFilterChanged();
     await flushPromises();
-    expect(getComments).toHaveBeenCalledWith(42, expect.objectContaining({
-      q: "apple",
-    }));
+    expect(getComments).toHaveBeenCalledWith(
+      42,
+      expect.objectContaining({
+        q: "apple",
+      }),
+    );
   });
 
   it("re-fetches when filterStatus changes and resets page to 1", async () => {
@@ -153,9 +167,13 @@ describe("ComponentComments", () => {
     wrapper.vm.onFilterChanged();
     await flushPromises();
     expect(wrapper.vm.page).toBe(1);
-    expect(getComments).toHaveBeenCalledWith(42, expect.objectContaining({
-      triage_status: "concur", page: 1,
-    }));
+    expect(getComments).toHaveBeenCalledWith(
+      42,
+      expect.objectContaining({
+        triage_status: "concur",
+        page: 1,
+      }),
+    );
   });
 
   it("enters split mode when openTriageFor is called", async () => {
@@ -205,9 +223,12 @@ describe("ComponentComments", () => {
         stubs: SHARED_STUBS,
       });
       await flushPromises();
-      expect(getProjectComments).toHaveBeenCalledWith(9, expect.objectContaining({
-        triage_status: "pending",
-      }));
+      expect(getProjectComments).toHaveBeenCalledWith(
+        9,
+        expect.objectContaining({
+          triage_status: "pending",
+        }),
+      );
     });
 
     it("includes the component_name column in the table fields", () => {
@@ -887,7 +908,11 @@ describe("ComponentComments", () => {
         propsData: { componentId: 29, componentPrefix: "CNTR" },
         stubs: SHARED_STUBS,
       });
-      wrapper.vm.onCommentSearchResultSelected({ searchQuery: "runc", rule_id: 42, rule_displayed_name: "CNTR-000050" });
+      wrapper.vm.onCommentSearchResultSelected({
+        searchQuery: "runc",
+        rule_id: 42,
+        rule_displayed_name: "CNTR-000050",
+      });
       expect(wrapper.vm.filterText).toBe("runc");
     });
 
@@ -1043,6 +1068,57 @@ describe("ComponentComments", () => {
       window.location = { href: "" };
       wrapper.vm.openTriageFor(row);
       expect(window.location.href).toContain("/components/29/triage?comment=42");
+    });
+  });
+
+  describe("bulk triage selection", () => {
+    const mountAuthor = () =>
+      mount(ComponentComments, {
+        propsData: { componentId: 42, effectivePermissions: "author" },
+        stubs: SHARED_STUBS,
+      });
+
+    beforeEach(() => {
+      submitBulkTriage.mockClear();
+      submitBulkTriage.mockResolvedValue({ data: {} });
+    });
+
+    it("select-all toggles only non-adjudicated visible rows", async () => {
+      const wrapper = mountAuthor();
+      await flushPromises();
+      wrapper.vm.rows = [
+        { id: 1, adjudicated_at: null },
+        { id: 2, adjudicated_at: "2026-05-01T00:00:00Z" },
+        { id: 3, adjudicated_at: null },
+      ];
+      wrapper.vm.toggleSelectAllVisible(true);
+      expect(wrapper.vm.selectedIds).toEqual([1, 3]);
+
+      wrapper.vm.toggleSelectAllVisible(false);
+      expect(wrapper.vm.selectedIds).toEqual([]);
+    });
+
+    it("onToggleSelect adds then removes an id", async () => {
+      const wrapper = mountAuthor();
+      await flushPromises();
+      wrapper.vm.onToggleSelect(7);
+      expect(wrapper.vm.selectedIds).toEqual([7]);
+      wrapper.vm.onToggleSelect(7);
+      expect(wrapper.vm.selectedIds).toEqual([]);
+    });
+
+    it("applyBulkTriage sends the selection + payload, then clears it", async () => {
+      const wrapper = mountAuthor();
+      await flushPromises();
+      wrapper.vm.selectedIds = [4, 5];
+
+      await wrapper.vm.applyBulkTriage({ triage_status: "informational", response_comment: null });
+
+      expect(submitBulkTriage).toHaveBeenCalledWith([4, 5], {
+        triage_status: "informational",
+        response_comment: null,
+      });
+      expect(wrapper.vm.selectedIds).toEqual([]);
     });
   });
 });

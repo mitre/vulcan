@@ -156,8 +156,11 @@
       v-else-if="viewMode === 'by-rule'"
       :rows="rows"
       :all-expanded="allExpanded"
+      :selectable="canTriage"
+      :selected-ids="selectedIds"
       @reaction-updated="updateRowInPlace"
       @triage="openTriageFor($event)"
+      @toggle-select="onToggleSelect"
     />
 
     <!-- Table -->
@@ -178,6 +181,22 @@
       role="table"
       aria-label="Component comments table"
     >
+      <template #head(select)>
+        <b-form-checkbox
+          :checked="allVisibleSelected"
+          :disabled="selectableRowIds.length === 0"
+          aria-label="Select all comments on this page"
+          @change="toggleSelectAllVisible"
+        />
+      </template>
+      <template #cell(select)="{ item }">
+        <b-form-checkbox
+          v-if="!item.adjudicated_at"
+          v-model="selectedIds"
+          :value="item.id"
+          :aria-label="`Select comment ${item.id}`"
+        />
+      </template>
       <template #cell(rule_displayed_name)="{ item }">
         <!-- data-turbolinks="false" forces a full page load. Without it,
              turbolinks navigates to the rule editor but the project_component
@@ -291,6 +310,13 @@
       </template>
     </b-table>
 
+    <BulkTriageBar
+      v-if="canTriage && selectedIds.length"
+      :count="selectedIds.length"
+      @apply="applyBulkTriage"
+      @clear="clearSelection"
+    />
+
     <!-- Pagination (hidden in by-rule view — all comments loaded for grouping) -->
     <div
       v-if="total > perPage && viewMode === 'table' && !splitMode"
@@ -325,6 +351,7 @@
 
 <script>
 import { reopenReview } from "../../api/reviewsApi";
+import { submitBulkTriage } from "../../services/triageService";
 import { getComments } from "../../api/componentsApi";
 import { getProjectComments } from "../../api/projectsApi";
 import { SECTION_LABELS, buildStatusFilterOptions } from "../../constants/triageVocabulary";
@@ -343,6 +370,7 @@ import InfoTooltip from "../shared/InfoTooltip.vue";
 import CommentProgressBar from "../triage/CommentProgressBar.vue";
 import CommentAuthorLine from "../shared/CommentAuthorLine.vue";
 import ComponentSearchModal from "../shared/ComponentSearchModal.vue";
+import BulkTriageBar from "../triage/BulkTriageBar.vue";
 import Highlighter from "vue-highlight-words";
 import ReplyComposerMixin from "../../mixins/ReplyComposerMixin.vue";
 import { triageBgClass } from "../../utils/triageBgClass";
@@ -361,6 +389,7 @@ export default {
     CommentProgressBar,
     CommentAuthorLine,
     ComponentSearchModal,
+    BulkTriageBar,
     Highlighter,
   },
   // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because
@@ -407,8 +436,12 @@ export default {
       { key: "triage_status", label: "Status", sortable: true },
       { key: "actions", label: "Action", sortable: false, tdClass: "text-nowrap" },
     );
+    if (this.role_gte_to(this.effectivePermissions, "author")) {
+      fields.unshift({ key: "select", label: "", sortable: false, thStyle: { width: "2.5rem" } });
+    }
     return {
       rows: [],
+      selectedIds: [],
       total: 0,
       page: 1,
       perPage: 25,
@@ -478,6 +511,17 @@ export default {
           : `/components/${this.componentId}/export/disposition_csv`;
       if (!this.filterStatus || this.filterStatus === "all") return base;
       return `${base}?triage_status=${encodeURIComponent(this.filterStatus)}`;
+    },
+    // Top-level comments still open to triage (not yet adjudicated) — the
+    // rows that bear a selection checkbox.
+    selectableRowIds() {
+      return this.rows.filter((r) => !r.adjudicated_at).map((r) => r.id);
+    },
+    allVisibleSelected() {
+      return (
+        this.selectableRowIds.length > 0 &&
+        this.selectableRowIds.every((id) => this.selectedIds.includes(id))
+      );
     },
     statusOptions() {
       return buildStatusFilterOptions();
@@ -609,6 +653,7 @@ export default {
     },
     async fetch() {
       this.loading = true;
+      this.selectedIds = [];
       try {
         const loadAll = this.viewMode === "by-rule" || this.splitMode;
         const params = {
@@ -712,6 +757,37 @@ export default {
     },
     onTriaged(payload) {
       this.updateRowInPlace(payload);
+    },
+    toggleSelectAllVisible(checked) {
+      this.selectedIds = checked ? [...this.selectableRowIds] : [];
+    },
+    onToggleSelect(id) {
+      const idx = this.selectedIds.indexOf(id);
+      if (idx >= 0) this.selectedIds.splice(idx, 1);
+      else this.selectedIds.push(id);
+    },
+    clearSelection() {
+      this.selectedIds = [];
+    },
+    async applyBulkTriage(payload) {
+      const ids = [...this.selectedIds];
+      if (ids.length === 0) return;
+      try {
+        await submitBulkTriage(ids, payload);
+        this.clearSelection();
+        await this.fetch();
+        this.alertOrNotifyResponse({
+          data: {
+            toast: {
+              title: "Bulk triage applied",
+              message: `Triaged ${ids.length} comment${ids.length === 1 ? "" : "s"}.`,
+              variant: "success",
+            },
+          },
+        });
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     onAdjudicated(payload) {
       this.updateRowInPlace(payload);

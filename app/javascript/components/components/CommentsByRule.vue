@@ -40,13 +40,22 @@
             :class="triageBgClass(comment.triage_status)"
           >
             <div class="d-flex justify-content-between align-items-baseline">
-              <CommentAuthorLine
-                :name="comment.author_name"
-                :commenter-display-name="comment.commenter_display_name"
-                :email="comment.author_email"
-                :date="comment.created_at"
-                layout="inline"
-              />
+              <div class="d-flex align-items-baseline">
+                <b-form-checkbox
+                  v-if="selectable && !comment.adjudicated_at"
+                  :checked="selectedIds.includes(comment.id)"
+                  class="mr-2"
+                  :aria-label="`Select comment ${comment.id}`"
+                  @change="$emit('toggle-select', comment.id)"
+                />
+                <CommentAuthorLine
+                  :name="comment.author_name"
+                  :commenter-display-name="comment.commenter_display_name"
+                  :email="comment.author_email"
+                  :date="comment.created_at"
+                  layout="inline"
+                />
+              </div>
               <TriageStatusBadge
                 v-if="comment.triage_status"
                 :status="comment.triage_status"
@@ -119,6 +128,8 @@ export default {
   props: {
     rows: { type: Array, required: true },
     allExpanded: { type: Boolean, default: false },
+    selectable: { type: Boolean, default: false },
+    selectedIds: { type: Array, default: () => [] },
   },
   data() {
     return {
