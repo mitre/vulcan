@@ -146,6 +146,11 @@ module SeedHelpers # rubocop:disable Style/Documentation
       errors << "Missing triage status '#{s}' in seed data" unless statuses.include?(s)
     end
 
+    errors << "No AdditionalQuestions (expected >= 1, got #{AdditionalQuestion.count})" unless AdditionalQuestion.count >= 1
+    errors << "No AdditionalAnswers (expected >= 1, got #{AdditionalAnswer.count})" unless AdditionalAnswer.count >= 1
+    errors << "No RuleDescriptions (expected >= 1, got #{RuleDescription.count})" unless RuleDescription.count >= 1
+    errors << "No ProjectAccessRequests (expected >= 1, got #{ProjectAccessRequest.count})" unless ProjectAccessRequest.count >= 1
+
     errors
   end
 end
