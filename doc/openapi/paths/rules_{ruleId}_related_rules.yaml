@@ -9,7 +9,9 @@ get:
     Returns rules from other components and published STIGs that implement the
     same SRG requirement (matched by version/srg_id). Results are scoped to
     components the current user can access unless the user is an admin.
-    Includes parent containers (components and STIGs) for grouping in the UI.
+    The rules array is a mix of RuleEditorResponse (component rules) and
+    StigRuleSummary (published STIG rules). The parents array is a mix of
+    ComponentBlueprint :related and StigBlueprint :index for grouping.
   responses:
     '200':
       description: Related rules with parent containers
@@ -23,41 +25,41 @@ get:
             properties:
               rules:
                 type: array
-                description: Rules from other components and STIGs sharing the same SRG requirement.
-                items:
-                  $ref: ../components/schemas/RuleSummary.yaml
+                description: >-
+                  Mixed array of component rules (RuleEditorResponse, 38 fields)
+                  and published STIG rules (StigRuleSummary, 16 fields).
+                items: {}
               parents:
                 type: array
-                description: Parent containers (components and STIGs) for grouping.
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: integer
-                    name:
-                      type: string
-                    type:
-                      type: string
-                      description: Container type — component or stig.
+                description: >-
+                  Mixed array of parent containers: ComponentBlueprint :related
+                  (with nested project) and StigBlueprint :index (with severity_counts).
+                items: {}
           examples:
             related:
               summary: Rules from another component and a published STIG
               value:
                 rules:
                   - id: 200
-                    rule_id: "CNTR-00-000050"
-                    title: "Container images must be signed"
-                    status: "Applicable - Configurable"
-                  - id: 300
-                    rule_id: "CNTR-00-000050"
-                    title: "Container images must be signed"
-                    status: "Applicable - Configurable"
+                    rule_id: "SV-222387r960735_rule"
+                    title: "The application must limit logon sessions"
+                    version: "APSC-DV-000010"
+                    rule_severity: medium
+                  - id: 1800
+                    rule_id: "000001"
+                    title: "The operating system must provide automated mechanisms"
+                    status: "Not Yet Determined"
+                    component_id: 1
                 parents:
-                  - id: 30
-                    name: "Container Platform v2"
-                    type: component
-                  - id: 5
-                    name: "Container Platform SRG V2R4"
-                    type: stig
+                  - id: 1
+                    stig_id: "Application_Security_Development_STIG"
+                    name: "Application Security Development STIG - Ver 6, Rel 4"
+                    title: "Application Security and Development STIG"
+                  - id: 1
+                    name: "Photon OS 3"
+                    prefix: "PHOS-03"
+                    project:
+                      id: 1
+                      name: "Photon 3"
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

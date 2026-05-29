@@ -36,7 +36,9 @@ get:
             properties:
               data:
                 type: object
-                description: Diff keyed by rule_id, each containing field-level base/diff/changed.
+                description: >-
+                  Diff keyed by rule_id. Each entry compares the inspec_control_file
+                  content between the base and diff components for that rule.
                 additionalProperties:
                   type: object
                   properties:
@@ -44,12 +46,15 @@ get:
                       type:
                         - string
                         - 'null'
+                      description: InSpec control file content from the base component. Null if rule not present.
                     diff:
                       type:
                         - string
                         - 'null'
+                      description: InSpec control file content from the diff component. Null if rule not present.
                     changed:
                       type: boolean
+                      description: Whether the InSpec content differs between versions.
               meta:
                 type: object
                 description: Metadata about the compared components.

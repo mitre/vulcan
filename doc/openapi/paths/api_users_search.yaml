@@ -8,6 +8,43 @@ get:
     assignment UI to find users to add to projects. Requires authentication.
   parameters:
     - $ref: ../components/parameters/SearchQuery.yaml
+    - name: membership_type
+      in: query
+      required: true
+      description: Type of resource to search members for.
+      schema:
+        type: string
+        enum:
+          - Project
+          - Component
+      example: Project
+    - name: membership_id
+      in: query
+      required: true
+      description: ID of the project or component to search members for.
+      schema:
+        type: integer
+      example: 1
+    - name: scope
+      in: query
+      required: false
+      description: >-
+        Search scope. Default searches non-members (for "add member" flow, admin only).
+        "members" searches existing members (for PoC selection, any member).
+      schema:
+        type: string
+        enum:
+          - members
+      example: members
+    - name: limit
+      in: query
+      required: false
+      description: Maximum number of results (1-25, default 10).
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 25
+      example: 10
   responses:
     '200':
       description: Matching users
@@ -17,11 +54,34 @@ get:
             type: object
             required:
               - users
+            additionalProperties: false
             properties:
               users:
                 type: array
+                description: Matching users (id, name, email only — minimal shape for dropdowns).
                 items:
-                  $ref: ../components/schemas/UserSummary.yaml
+                  type: object
+                  additionalProperties: false
+                  required:
+                    - id
+                    - name
+                    - email
+                  properties:
+                    id:
+                      type: integer
+                      description: User ID.
+                      example: 42
+                    name:
+                      type:
+                        - string
+                        - 'null'
+                      description: Display name.
+                      example: Jane Doe
+                    email:
+                      type: string
+                      format: email
+                      description: Email address.
+                      example: jane.doe@example.org
           examples:
             results:
               summary: Search for "jane"
@@ -30,7 +90,5 @@ get:
                   - id: 42
                     name: Jane Doe
                     email: jane.doe@example.org
-                    provider: local
-                    admin: false
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

@@ -17,7 +17,7 @@ get:
           schema:
             type: array
             items:
-              $ref: ../components/schemas/RuleSummary.yaml
+              $ref: ../components/schemas/RuleEditorResponse.yaml
           examples:
             rules:
               summary: Two rules
@@ -64,15 +64,20 @@ post:
       content:
         application/json:
           schema:
-            $ref: ../components/schemas/ToastResponse.yaml
+            $ref: ../components/schemas/RuleCreateResponse.yaml
           examples:
             created:
-              summary: Rule created
+              summary: Control created
               value:
                 toast:
-                  title: Rule created.
+                  title: Control created.
                   message:
-                    - Successfully created rule.
+                    - Successfully created control.
                   variant: success
+                data:
+                  id: 5000
+                  rule_id: "000204"
+                  title: "New container security requirement"
+                  status: "Not Yet Determined"
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

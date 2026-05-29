@@ -1,11 +1,5 @@
 parameters:
-  - name: id
-    in: path
-    required: true
-    description: Numeric ID of the SRG to export.
-    schema:
-      type: integer
-    example: 1
+  - $ref: ../components/parameters/SrgId.yaml
   - name: type
     in: path
     required: true

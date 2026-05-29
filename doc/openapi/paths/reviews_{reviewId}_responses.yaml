@@ -5,14 +5,66 @@ get:
   tags:
     - Reviews
   summary: List replies to a review
+  description: >-
+    Returns threaded replies to a parent review, ordered by creation time.
+    Each reply includes commenter attribution and reaction counts with the
+    current user's reaction. Hand-built hashes (NOT ReviewBlueprint).
   responses:
     '200':
       description: Reply thread
       content:
         application/json:
           schema:
-            type: array
-            items:
-              $ref: ../components/schemas/ReviewSummary.yaml
+            type: object
+            required:
+              - rows
+            additionalProperties: false
+            properties:
+              rows:
+                type: array
+                description: Reply rows ordered by created_at.
+                items:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    id:
+                      type: integer
+                      example: 45
+                    responding_to_review_id:
+                      type: integer
+                      example: 44
+                    section:
+                      type:
+                        - string
+                        - 'null'
+                      example: fixtext
+                    comment:
+                      type: string
+                      example: "Good point — we will add the CLI command."
+                    created_at:
+                      type: string
+                      example: "2026-05-19 14:08:17 UTC"
+                    commenter_display_name:
+                      type:
+                        - string
+                        - 'null'
+                      example: Demo Author
+                    commenter_imported:
+                      type: boolean
+                      example: false
+                    reactions:
+                      type: object
+                      properties:
+                        up:
+                          type: integer
+                          example: 0
+                        down:
+                          type: integer
+                          example: 0
+                        mine:
+                          type:
+                            - string
+                            - 'null'
+                          example: null
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

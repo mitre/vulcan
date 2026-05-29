@@ -1,11 +1,5 @@
 parameters:
-  - name: userId
-    in: path
-    required: true
-    description: Numeric ID of the user to lock.
-    schema:
-      type: integer
-    example: 42
+  - $ref: ../components/parameters/UserId.yaml
 post:
   operationId: lockUser
   tags:

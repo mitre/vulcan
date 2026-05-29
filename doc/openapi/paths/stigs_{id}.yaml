@@ -1,36 +1,43 @@
 parameters:
-  - name: id
-    in: path
-    required: true
-    description: Numeric ID of the STIG.
-    schema:
-      type: integer
-    example: 10
+  - $ref: ../components/parameters/StigId.yaml
 get:
   operationId: getStig
   tags:
     - Benchmarks
   summary: STIG detail with rules and metadata
   description: >-
-    Returns full STIG details including title, version, release date, and
-    all embedded rules. Requires authentication. Used by the STIG detail
-    page for reference when authoring Components.
+    Returns full STIG details including title, version, benchmark date,
+    description, severity counts, and all embedded rules with DISA metadata
+    and check content. Requires authentication. Used by the STIG detail
+    page (BenchmarkViewer).
   responses:
     '200':
-      description: STIG detail
+      description: STIG detail with nested rules
       content:
         application/json:
           schema:
-            $ref: ../components/schemas/BenchmarkSummary.yaml
+            $ref: ../components/schemas/StigDetailResponse.yaml
           examples:
             stig:
-              summary: VMware vSphere 7.0 STIG
+              summary: Application Security Development STIG
               value:
-                id: 10
-                title: VMware vSphere 7.0 STIG
-                version: V1R3
-                release_date: "2025-09-15"
-                benchmark_type: stig
+                id: 1
+                stig_id: Application_Security_Development_STIG
+                name: "Application Security Development STIG - Ver 6, Rel 4"
+                title: Application Security and Development Security Technical Implementation Guide
+                version: V6R4
+                benchmark_date: "2025-10-01"
+                severity_counts:
+                  high: 34
+                  medium: 230
+                  low: 22
+                description: "This Security Technical Implementation Guide is published..."
+                stig_rules:
+                  - id: 660
+                    rule_id: "SV-222387r960735_rule"
+                    title: "The application must limit logon sessions..."
+                    version: "APSC-DV-000010"
+                    rule_severity: medium
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
 delete:
@@ -43,15 +50,19 @@ delete:
     role. This action cannot be undone.
   responses:
     '200':
-      description: STIG deleted
+      description: STIG removed
       content:
         application/json:
           schema:
-            $ref: ../components/schemas/StatusOk.yaml
+            $ref: ../components/schemas/ToastResponse.yaml
           examples:
-            deleted:
+            removed:
               summary: STIG removed
               value:
-                status: ok
+                toast:
+                  title: STIG removed.
+                  message:
+                    - "Successfully removed Application Security and Development Security Technical Implementation Guide."
+                  variant: success
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

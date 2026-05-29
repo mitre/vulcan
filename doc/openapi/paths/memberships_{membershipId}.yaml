@@ -1,11 +1,5 @@
 parameters:
-  - name: membershipId
-    in: path
-    required: true
-    description: Numeric ID of the membership record to update or delete.
-    schema:
-      type: integer
-    example: 15
+  - $ref: ../components/parameters/MembershipId.yaml
 put:
   operationId: updateMembership
   tags:

@@ -15,7 +15,7 @@ get:
           schema:
             type: array
             items:
-              $ref: ../components/schemas/ComponentSummary.yaml
+              $ref: ../components/schemas/ComponentIndexResponse.yaml
           examples:
             components:
               summary: Two released components

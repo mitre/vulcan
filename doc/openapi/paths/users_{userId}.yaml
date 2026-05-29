@@ -1,11 +1,5 @@
 parameters:
-  - name: userId
-    in: path
-    required: true
-    description: Numeric ID of the target user.
-    schema:
-      type: integer
-    example: 42
+  - $ref: ../components/parameters/UserId.yaml
 put:
   operationId: updateUser
   tags:
@@ -88,19 +82,19 @@ delete:
     are cleaned up via dependent destroy.
   responses:
     '200':
-      description: User deleted
+      description: User removed
       content:
         application/json:
           schema:
             $ref: ../components/schemas/ToastResponse.yaml
           examples:
-            deleted:
-              summary: User deleted
+            removed:
+              summary: User removed
               value:
                 toast:
-                  title: User deleted.
+                  title: User removed.
                   message:
-                    - Successfully deleted user.
+                    - Successfully removed user.
                   variant: success
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

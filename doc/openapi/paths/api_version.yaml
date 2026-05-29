@@ -2,6 +2,7 @@ get:
   operationId: getVersion
   tags:
     - System
+  security: []
   summary: Application version and metadata
   description: >-
     Returns the application name, version, Rails version, Ruby version, and

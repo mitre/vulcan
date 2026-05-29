@@ -11,7 +11,7 @@ get:
       content:
         application/json:
           schema:
-            $ref: ../components/schemas/RuleSummary.yaml
+            $ref: ../components/schemas/RuleEditorResponse.yaml
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
 put:

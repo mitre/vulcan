@@ -64,7 +64,11 @@ post:
             with_password:
               summary: Created with provided password
               value:
-                toast: "User jane.doe@example.org created with the provided password."
+                toast:
+                  title: User created.
+                  message:
+                    - "User jane.doe@example.org created with the provided password."
+                  variant: success
                 user:
                   id: 42
                   name: Jane Doe
@@ -73,13 +77,17 @@ post:
             no_smtp:
               summary: Created without SMTP — reset URL returned
               value:
-                toast: "User jane.doe@example.org created. Deliver the reset link to the user."
+                toast:
+                  title: User created.
+                  message:
+                    - "User jane.doe@example.org created. Deliver the reset link to the user."
+                  variant: success
                 user:
                   id: 42
                   name: Jane Doe
                   email: jane.doe@example.org
                   admin: false
-                reset_url: "http://localhost:3000/users/password/edit?reset_password_token=abc123"
+                reset_url: "https://vulcan.example.org/users/password/edit?reset_password_token=abc123"
     '422':
       description: Validation error (duplicate email, invalid fields)
       content:

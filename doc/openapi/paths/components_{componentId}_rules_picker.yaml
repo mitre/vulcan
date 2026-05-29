@@ -22,7 +22,7 @@ get:
               rules:
                 type: array
                 items:
-                  $ref: ../components/schemas/RuleSummary.yaml
+                  $ref: ../components/schemas/RulePickerResponse.yaml
           examples:
             picker:
               summary: Rules for dropdown

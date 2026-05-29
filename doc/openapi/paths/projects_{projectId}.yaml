@@ -15,15 +15,18 @@ get:
       content:
         application/json:
           schema:
-            $ref: ../components/schemas/ProjectSummary.yaml
+            $ref: ../components/schemas/ProjectShowResponse.yaml
           examples:
             project:
-              summary: Container Platform project
+              summary: Photon 3 project detail
               value:
-                id: 4
-                name: Container Platform
-                description: "STIG for container orchestration platforms"
-                memberships_count: 14
+                id: 1
+                name: Photon 3
+                memberships_count: 16
+                pending_comment_count: 1
+                components:
+                  - id: 1
+                    name: Photon OS 3
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
 put:

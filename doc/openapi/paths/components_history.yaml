@@ -5,9 +5,11 @@ get:
   summary: Revision history for a named component across versions
   description: >-
     Traces the version history of a component by name within a project.
-    Returns an ordered list of versions with rule-level diffs between
-    consecutive releases. Used by the component history/DiffViewer feature.
-    Requires project membership.
+    Returns an ordered array alternating between milestone entries (marking
+    a version point) and diff entries (showing rule-level changes between
+    consecutive releases). Used by the DiffViewer feature.
+    Requires project membership. Component objects use ComponentBlueprint
+    default view (9 fields).
   parameters:
     - name: project_id
       in: query
@@ -15,71 +17,85 @@ get:
       description: ID of the project containing the component versions.
       schema:
         type: integer
-      example: 4
+      example: 1
     - name: name
       in: query
       required: true
       description: Component name to trace across versions.
       schema:
         type: string
-      example: "Container SRG"
+      example: "Photon OS 3"
   responses:
     '200':
-      description: Ordered revision history with per-version diffs
+      description: >-
+        Ordered revision history. The array alternates between two entry types:
+        1. Milestone entries: { component: ComponentSummary } — marks a version point
+        2. Diff entries: { base_component: ComponentSummary, diff_component: ComponentSummary, changes: { rule_id: HistoryChangeEntry } }
       content:
         application/json:
           schema:
             type: array
+            description: >-
+              Mixed array of milestone and diff entries. Milestones have a
+              'component' key. Diff entries have 'base_component',
+              'diff_component', and 'changes' keys.
             items:
               type: object
               properties:
                 component:
+                  description: Milestone entry — marks this version in the timeline.
                   $ref: ../components/schemas/ComponentSummary.yaml
                 base_component:
+                  description: Previous version in a diff pair.
                   $ref: ../components/schemas/ComponentSummary.yaml
                 diff_component:
+                  description: Current version in a diff pair.
                   $ref: ../components/schemas/ComponentSummary.yaml
                 changes:
                   type: object
-                  description: Rule-level changes keyed by rule_id.
+                  description: >-
+                    Rule-level changes keyed by rule_id. Each value describes
+                    what changed between the base and diff versions.
                   additionalProperties:
-                    type: object
-                    properties:
-                      change:
-                        type: string
-                        enum:
-                          - added
-                          - removed
-                          - updated
-                      base:
-                        type: object
-                      diff:
-                        type: object
+                    $ref: ../components/schemas/HistoryChangeEntry.yaml
           examples:
-            history:
-              summary: Two versions with one rule change
+            two_versions:
+              summary: Two versions of Photon OS 3 with milestone + diff
               value:
                 - component:
-                    id: 30
-                    name: Container SRG
-                    version: "2"
-                    release: "1"
-                  base_component:
-                    id: 29
-                    name: Container SRG
-                    version: "1"
-                    release: "1"
+                    id: 1
+                    name: Photon OS 3
+                    prefix: PHOS-03
+                    version: 1
+                    release: 1
+                - base_component:
+                    id: 1
+                    name: Photon OS 3
+                    prefix: PHOS-03
+                    version: 1
+                    release: 1
                   diff_component:
-                    id: 30
-                    name: Container SRG
-                    version: "2"
-                    release: "1"
+                    id: 2
+                    name: Photon OS 3
+                    prefix: PHOS-03
+                    version: 1
+                    release: 2
                   changes:
-                    CNTR-00-000050:
+                    "000050":
                       change: updated
                       base:
-                        fixtext: "Original fix..."
+                        rule_id: "000050"
+                        title: "Original title"
+                        fix: "Original fix text"
                       diff:
-                        fixtext: "Updated fix..."
+                        rule_id: "000050"
+                        title: "Updated title"
+                        fix: "Updated fix text"
+                - component:
+                    id: 2
+                    name: Photon OS 3
+                    prefix: PHOS-03
+                    version: 1
+                    release: 2
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

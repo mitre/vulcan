@@ -7,40 +7,172 @@ get:
   summary: Aggregated comments across all project components
   description: >-
     Returns paginated comments from all components in the project, with
-    triage status counts. Used by the project-level triage page to show
-    a unified comment queue across components. Supports status filtering
-    and pagination.
+    triage status counts. Different row shape from component comments —
+    includes component_id/component_name but omits some triage attribution
+    fields. Uses Project#paginated_comments (NOT CommentQueryService).
   parameters:
     - $ref: ../components/parameters/TriageStatusFilter.yaml
     - $ref: ../components/parameters/PageParam.yaml
     - $ref: ../components/parameters/PerPageParam.yaml
+    - name: component_id
+      in: query
+      required: false
+      description: Filter to a specific component within the project.
+      schema:
+        type: integer
+    - name: author_id
+      in: query
+      required: false
+      description: Filter by comment author.
+      schema:
+        type: integer
+    - name: q
+      in: query
+      required: false
+      description: Text search within comment content.
+      schema:
+        type: string
+    - name: resolved
+      in: query
+      required: false
+      description: Filter by resolved state (true/false/all).
+      schema:
+        type: string
+        enum:
+          - 'true'
+          - 'false'
+          - all
   responses:
     '200':
-      description: Paginated comment rows with status counts
+      description: Paginated project comment rows with status counts
       content:
         application/json:
           schema:
-            $ref: ../components/schemas/PaginatedComments.yaml
+            type: object
+            required:
+              - rows
+              - pagination
+              - status_counts
+            properties:
+              rows:
+                type: array
+                description: Comment rows with component context.
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    rule_id:
+                      type:
+                        - integer
+                        - 'null'
+                    rule_displayed_name:
+                      type:
+                        - string
+                        - 'null'
+                    commentable_type:
+                      type: string
+                    component_id:
+                      type:
+                        - integer
+                        - 'null'
+                    component_name:
+                      type:
+                        - string
+                        - 'null'
+                    section:
+                      type:
+                        - string
+                        - 'null'
+                    author_name:
+                      type:
+                        - string
+                        - 'null'
+                    comment:
+                      type: string
+                    created_at:
+                      type: string
+                    triage_status:
+                      type:
+                        - string
+                        - 'null'
+                    triage_set_at:
+                      type:
+                        - string
+                        - 'null'
+                    adjudicated_at:
+                      type:
+                        - string
+                        - 'null'
+                    duplicate_of_review_id:
+                      type:
+                        - integer
+                        - 'null'
+                    triager_display_name:
+                      type:
+                        - string
+                        - 'null'
+                    triager_imported:
+                      type: boolean
+                    adjudicator_display_name:
+                      type:
+                        - string
+                        - 'null'
+                    adjudicator_imported:
+                      type: boolean
+                    responses_count:
+                      type: integer
+                    reactions:
+                      type: object
+                      properties:
+                        up:
+                          type: integer
+                        down:
+                          type: integer
+                        mine:
+                          type:
+                            - string
+                            - 'null'
+              pagination:
+                type: object
+                required:
+                  - page
+                  - per_page
+                  - total
+                properties:
+                  page:
+                    type: integer
+                  per_page:
+                    type: integer
+                  total:
+                    type: integer
+              status_counts:
+                type: object
+                additionalProperties:
+                  type: integer
           examples:
             comments:
               summary: Project-wide comment queue
               value:
                 rows:
-                  - id: 44
-                    rule_displayed_name: "CNTR-00-000050"
-                    component_name: Container SRG
-                    section: fixtext
-                    author_name: John Osborne
-                    comment: "This requirement needs clarification..."
+                  - id: 26
+                    rule_displayed_name: PHOS-03-000038
+                    component_id: 1
+                    component_name: Photon OS 3
                     triage_status: pending
-                    created_at: "2026-05-19T16:15:00Z"
+                    comment: "This requirement needs clarification."
+                    responses_count: 0
+                    reactions:
+                      up: 0
+                      down: 0
+                      mine: null
                 pagination:
                   page: 1
                   per_page: 25
-                  total: 108
+                  total: 3
                 status_counts:
-                  pending: 10
-                  concur: 2
-                  duplicate: 4
+                  pending: 1
+                  concur: 1
+                  informational: 1
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

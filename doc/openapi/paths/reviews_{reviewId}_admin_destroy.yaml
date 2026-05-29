@@ -19,6 +19,6 @@ delete:
       content:
         application/json:
           schema:
-            $ref: ../components/schemas/ToastResponse.yaml
+            $ref: ../components/schemas/AdminDestroyResponse.yaml
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

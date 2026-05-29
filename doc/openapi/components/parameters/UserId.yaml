@@ -1,0 +1,7 @@
+name: userId
+in: path
+required: true
+description: Numeric ID of the target user.
+schema:
+  type: integer
+example: 42

@@ -1,0 +1,42 @@
+get:
+  operationId: searchProjectsLegacy
+  tags:
+    - Search
+  summary: Legacy project search by SRG ID
+  description: >-
+    Searches projects that have components based on a given SRG. Returns
+    compact tuples [id, name]. This is a legacy search endpoint — prefer
+    /api/search/global for new integrations.
+  parameters:
+    - name: q
+      in: query
+      required: true
+      description: SRG identifier to search for.
+      schema:
+        type: string
+      example: "Container_Platform_SRG"
+  responses:
+    '200':
+      description: Matching projects as compact tuples
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - projects
+            additionalProperties: false
+            properties:
+              projects:
+                type: array
+                description: Each item is a tuple [id, name].
+                items:
+                  type: array
+                  items: {}
+          examples:
+            results:
+              summary: Projects with matching SRG components
+              value:
+                projects:
+                  - [4, "Container Platform"]
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

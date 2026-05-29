@@ -36,7 +36,7 @@ post:
           schema:
             type: array
             items:
-              $ref: ../components/schemas/RuleSummary.yaml
+              $ref: ../components/schemas/RuleEditorResponse.yaml
           examples:
             results:
               summary: Two matching rules

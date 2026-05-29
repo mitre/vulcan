@@ -1,0 +1,7 @@
+name: id
+in: path
+required: true
+description: Numeric ID of the target Security Technical Implementation Guide (STIG).
+schema:
+  type: integer
+example: 1

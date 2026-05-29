@@ -6,7 +6,9 @@ post:
   description: >-
     Analyzes an uploaded spreadsheet (CSV/XLSX) to determine which SRG its
     rule IDs match. Used by the component creation flow to auto-select the
-    correct SRG when importing from a spreadsheet. Requires authentication.
+    correct SRG when importing from a spreadsheet. Returns the matched SRG's
+    id, srg_id, title, and version. Returns 422 if no file provided, no
+    SRG IDs found, no matching SRG exists, or IDs map to multiple SRGs.
   requestBody:
     required: true
     content:
@@ -28,24 +30,45 @@ post:
           schema:
             type: object
             required:
+              - id
               - srg_id
-              - srg_title
+              - title
+              - version
+            additionalProperties: false
             properties:
-              srg_id:
+              id:
                 type: integer
-                description: ID of the matched SRG.
+                description: Database ID of the matched SRG.
                 example: 1
-              srg_title:
+              srg_id:
                 type: string
-                description: Title of the matched SRG.
+                description: DISA SRG identifier string.
+                example: "Container_Platform_SRG"
+              title:
+                type: string
+                description: Full title of the matched SRG.
                 example: "Container Platform Security Requirements Guide"
+              version:
+                type: string
+                description: Version string (e.g. V2R4).
+                example: "V2R4"
           examples:
             detected:
               summary: SRG detected from spreadsheet
               value:
-                srg_id: 1
-                srg_title: "Container Platform Security Requirements Guide"
+                id: 1
+                srg_id: "Container_Platform_SRG"
+                title: "Container Platform Security Requirements Guide"
+                version: "V2R4"
     '422':
-      $ref: ../components/responses/UnprocessableEntity.yaml
+      description: No file, no SRG IDs found, no match, or ambiguous match
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "No SRG IDs found in spreadsheet"
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

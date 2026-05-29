@@ -15,21 +15,31 @@ get:
           schema:
             type: array
             items:
-              $ref: ../components/schemas/BenchmarkSummary.yaml
+              $ref: ../components/schemas/StigSummary.yaml
           examples:
             stigs:
               summary: Two STIGs
               value:
-                - id: 10
-                  title: VMware vSphere 7.0 STIG
-                  version: V1R3
-                  release_date: "2025-09-15"
-                  benchmark_type: stig
-                - id: 11
-                  title: Red Hat Enterprise Linux 9 STIG
-                  version: V2R1
-                  release_date: "2025-11-20"
-                  benchmark_type: stig
+                - id: 1
+                  stig_id: Application_Security_Development_STIG
+                  name: "Application Security Development STIG - Ver 6, Rel 4"
+                  title: Application Security and Development Security Technical Implementation Guide
+                  version: V6R4
+                  benchmark_date: "2025-10-01"
+                  severity_counts:
+                    high: 34
+                    medium: 230
+                    low: 22
+                - id: 2
+                  stig_id: Crunchy_Data_PostgreSQL_STIG
+                  name: "Crunchy Data PostgreSQL STIG - Ver 3, Rel 1"
+                  title: Crunchy Data PostgreSQL Security Technical Implementation Guide
+                  version: V3R1
+                  benchmark_date: "2025-09-15"
+                  severity_counts:
+                    high: 10
+                    medium: 85
+                    low: 5
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
 post:
@@ -62,13 +72,13 @@ post:
           schema:
             $ref: ../components/schemas/ToastResponse.yaml
           examples:
-            uploaded:
+            added:
               summary: STIG imported
               value:
                 toast:
-                  title: STIG uploaded.
+                  title: STIG added.
                   message:
-                    - Successfully imported VMware vSphere 7.0 STIG V1R3.
+                    - "Successfully added Application Security and Development Security Technical Implementation Guide."
                   variant: success
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

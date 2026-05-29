@@ -8,31 +8,15 @@ patch:
   description: >-
     Reverts the adjudication on a closed review, clearing adjudicated_at and
     adjudicated_by_id so the triage decision can be revised. Requires author
-    role or higher on the parent project. Returns a warning toast (200) if the
+    role or higher on the parent project. Returns 422 warning toast if the
     review has not been adjudicated or was withdrawn by the commenter.
   responses:
     '200':
-      description: Review re-opened, or warning toast if not eligible
+      description: Review re-opened
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              review:
-                $ref: ../components/schemas/ReviewSummary.yaml
-              toast:
-                type: object
-                properties:
-                  title:
-                    type: string
-                  message:
-                    type:
-                      - array
-                      - string
-                    items:
-                      type: string
-                  variant:
-                    type: string
+            $ref: ../components/schemas/ReviewWrapper.yaml
           examples:
             reopened:
               summary: Successfully re-opened
@@ -41,17 +25,13 @@ patch:
                   id: 44
                   action: comment
                   comment: "This requirement needs clarification."
-                  triage_status: concur
+                  triage_status: pending
                   adjudicated_at: null
-                  rule_id: 100
-                  section: fixtext
-            not_adjudicated:
-              summary: Review was never adjudicated
-              value:
-                toast:
-                  title: Cannot re-open.
-                  message:
-                    - This comment has not been adjudicated.
-                  variant: warning
+    '422':
+      description: Cannot re-open (not adjudicated or withdrawn)
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

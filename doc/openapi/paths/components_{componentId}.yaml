@@ -15,14 +15,17 @@ get:
       content:
         application/json:
           schema:
-            $ref: ../components/schemas/ComponentSummary.yaml
+            $ref: ../components/schemas/ComponentEditorResponse.yaml
           examples:
             component:
-              summary: Container SRG component
+              summary: Component editor view (project member)
               value:
-                id: 29
-                name: Container SRG
-                prefix: CNTR
+                id: 1
+                name: Photon OS 3
+                prefix: PHOS-03
+                title: "Photon OS 3 STIG Readiness Guide"
+                rules_count: 203
+                comment_phase: open
                 version: "1"
                 release: "1"
                 released: false

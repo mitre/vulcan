@@ -15,21 +15,31 @@ get:
           schema:
             type: array
             items:
-              $ref: ../components/schemas/BenchmarkSummary.yaml
+              $ref: ../components/schemas/SrgSummary.yaml
           examples:
             srgs:
               summary: Two SRGs
               value:
                 - id: 1
+                  srg_id: Container_Platform_SRG
+                  name: "Container Platform SRG - Ver 2, Rel 4"
                   title: Container Platform Security Requirements Guide
                   version: V2R4
                   release_date: "2025-10-28"
-                  benchmark_type: srg
+                  severity_counts:
+                    high: 8
+                    medium: 177
+                    low: 3
                 - id: 2
+                  srg_id: General_Purpose_Operating_System_SRG
+                  name: "General Purpose Operating System - Ver 3, Rel 3"
                   title: General Purpose Operating System SRG
-                  version: V3R1
+                  version: V3R3
                   release_date: "2025-06-15"
-                  benchmark_type: srg
+                  severity_counts:
+                    high: 15
+                    medium: 150
+                    low: 8
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
 post:
@@ -62,13 +72,13 @@ post:
           schema:
             $ref: ../components/schemas/ToastResponse.yaml
           examples:
-            uploaded:
+            created:
               summary: SRG imported
               value:
                 toast:
-                  title: SRG uploaded.
+                  title: SRG created.
                   message:
-                    - Successfully imported Container Platform SRG V2R4.
+                    - Successfully created SRG.
                   variant: success
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

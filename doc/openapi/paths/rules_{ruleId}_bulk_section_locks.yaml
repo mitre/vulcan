@@ -5,26 +5,43 @@ patch:
   tags:
     - Rules
   summary: Bulk update locked sections
+  description: >-
+    Locks or unlocks multiple sections at once on a rule. Requires reviewer
+    role or higher on the parent component. Creates an audit trail entry.
   requestBody:
     required: true
     content:
       application/json:
         schema:
           type: object
+          required:
+            - sections
+            - locked
           properties:
-            rule:
-              type: object
-              properties:
-                locked_fields:
-                  type: array
-                  items:
-                    type: string
+            sections:
+              type: array
+              description: Section names to lock or unlock.
+              items:
+                type: string
+              example:
+                - fixtext
+                - check_content
+            locked:
+              type: boolean
+              description: Whether to lock (true) or unlock (false) the sections.
+              example: true
+            comment:
+              type: string
+              description: Optional audit comment explaining the lock change.
+              example: "Locking fixtext and check_content for review"
   responses:
     '200':
-      description: Section locks updated
+      description: Section locks updated, returns updated rule + toast
       content:
         application/json:
           schema:
-            $ref: ../components/schemas/ToastResponse.yaml
+            $ref: ../components/schemas/RuleSectionLockResponse.yaml
+    '422':
+      description: Invalid section names
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

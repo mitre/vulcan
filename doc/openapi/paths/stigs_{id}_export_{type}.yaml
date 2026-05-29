@@ -1,21 +1,14 @@
 parameters:
-  - name: id
-    in: path
-    required: true
-    description: Numeric ID of the STIG to export.
-    schema:
-      type: integer
-    example: 10
+  - $ref: ../components/parameters/StigId.yaml
   - name: type
     in: path
     required: true
-    description: Export format.
+    description: Export format. STIGs support CSV and XCCDF only (InSpec export is Components-only).
     schema:
       type: string
       enum:
         - csv
         - xccdf
-        - inspec
     example: xccdf
 get:
   operationId: exportStig
@@ -23,9 +16,9 @@ get:
     - Benchmarks
   summary: Export STIG in the specified format
   description: >-
-    Downloads the STIG as CSV, XCCDF XML, or InSpec profile. Requires
-    authentication. CSV exports all rules in a flat table. XCCDF exports
-    the DISA XML format. InSpec generates a Ruby compliance profile.
+    Downloads the STIG as CSV or XCCDF XML. Requires authentication.
+    CSV exports all rules in a flat table. XCCDF exports the original
+    DISA XML format.
   responses:
     '200':
       description: Binary file download
@@ -38,9 +31,11 @@ get:
           schema:
             type: string
             format: binary
-        application/zip:
+    '400':
+      description: Unsupported export type
+      content:
+        application/json:
           schema:
-            type: string
-            format: binary
+            $ref: ../components/schemas/ToastResponse.yaml
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

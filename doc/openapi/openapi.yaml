@@ -49,6 +49,12 @@ paths:
     $ref: paths/api_search_global.yaml
   /api/users/search:
     $ref: paths/api_users_search.yaml
+  /search/rules:
+    $ref: paths/search_rules.yaml
+  /search/components:
+    $ref: paths/search_components.yaml
+  /search/projects:
+    $ref: paths/search_projects.yaml
   /projects:
     $ref: paths/projects.yaml
   /projects/{projectId}:

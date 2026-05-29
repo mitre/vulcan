@@ -15,7 +15,7 @@ get:
           schema:
             type: array
             items:
-              $ref: ../components/schemas/ProjectSummary.yaml
+              $ref: ../components/schemas/ProjectIndexResponse.yaml
           examples:
             projects:
               summary: Two accessible projects
@@ -58,7 +58,7 @@ post:
       content:
         application/json:
           schema:
-            $ref: ../components/schemas/ToastResponse.yaml
+            $ref: ../components/schemas/ProjectCreateResponse.yaml
           examples:
             created:
               summary: Project created
@@ -68,6 +68,7 @@ post:
                   message:
                     - "Successfully created project Red Hat Enterprise Linux 9."
                   variant: success
+                redirect_url: /projects/5
     '422':
       $ref: ../components/responses/UnprocessableEntity.yaml
     4XX:

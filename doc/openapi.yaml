@@ -44,6 +44,7 @@ paths:
       operationId: getVersion
       tags:
         - System
+      security: []
       summary: Application version and metadata
       description: Returns the application name, version, Rails version, Ruby version, and environment. No authentication required — used by monitoring tools, deployment verification scripts, and the frontend health check.
       responses:
@@ -123,6 +124,41 @@ paths:
       description: Searches user accounts by name or email address. Used by the membership assignment UI to find users to add to projects. Requires authentication.
       parameters:
         - $ref: '#/components/parameters/SearchQuery'
+        - name: membership_type
+          in: query
+          required: true
+          description: Type of resource to search members for.
+          schema:
+            type: string
+            enum:
+              - Project
+              - Component
+          example: Project
+        - name: membership_id
+          in: query
+          required: true
+          description: ID of the project or component to search members for.
+          schema:
+            type: integer
+          example: 1
+        - name: scope
+          in: query
+          required: false
+          description: Search scope. Default searches non-members (for "add member" flow, admin only). "members" searches existing members (for PoC selection, any member).
+          schema:
+            type: string
+            enum:
+              - members
+          example: members
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of results (1-25, default 10).
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 25
+          example: 10
       responses:
         '200':
           description: Matching users
@@ -132,11 +168,34 @@ paths:
                 type: object
                 required:
                   - users
+                additionalProperties: false
                 properties:
                   users:
                     type: array
+                    description: Matching users (id, name, email only — minimal shape for dropdowns).
                     items:
-                      $ref: '#/components/schemas/UserSummary'
+                      type: object
+                      additionalProperties: false
+                      required:
+                        - id
+                        - name
+                        - email
+                      properties:
+                        id:
+                          type: integer
+                          description: User ID.
+                          example: 42
+                        name:
+                          type:
+                            - string
+                            - 'null'
+                          description: Display name.
+                          example: Jane Doe
+                        email:
+                          type: string
+                          format: email
+                          description: Email address.
+                          example: jane.doe@example.org
               examples:
                 results:
                   summary: Search for "jane"
@@ -145,8 +204,136 @@ paths:
                       - id: 42
                         name: Jane Doe
                         email: jane.doe@example.org
-                        provider: local
-                        admin: false
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
+  /search/rules:
+    get:
+      operationId: searchRulesLegacy
+      tags:
+        - Search
+      summary: Legacy rule search by SRG version
+      description: Searches rules by SRG version identifier across all components the user can access. Returns compact tuples [id, rule_id, component_id, prefix] for the rule picker and related-rules UI. Requires authentication. This is a legacy search endpoint — prefer /api/search/global for new integrations.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: SRG version identifier to search for.
+          schema:
+            type: string
+          example: SRG-OS-000001-GPOS-00001
+      responses:
+        '200':
+          description: Matching rules as compact tuples
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - rules
+                properties:
+                  rules:
+                    type: array
+                    description: Each item is a tuple [rule_id, rule_id_string, component_id, prefix].
+                    items:
+                      type: array
+                      items: {}
+              examples:
+                results:
+                  summary: Rules matching SRG version
+                  value:
+                    rules:
+                      - - 1786
+                        - '000001'
+                        - 1
+                        - PHOS-03
+                      - - 2500
+                        - '000001'
+                        - 5
+                        - CNTR-01
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
+  /search/components:
+    get:
+      operationId: searchComponentsLegacy
+      tags:
+        - Search
+      summary: Legacy component search by SRG ID
+      description: Searches components by SRG identifier across accessible projects. Returns compact tuples [id, name]. This is a legacy search endpoint — prefer /api/search/global for new integrations.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: SRG identifier to search for.
+          schema:
+            type: string
+          example: Container_Platform_SRG
+      responses:
+        '200':
+          description: Matching components as compact tuples
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - components
+                additionalProperties: false
+                properties:
+                  components:
+                    type: array
+                    description: Each item is a tuple [id, name].
+                    items:
+                      type: array
+                      items: {}
+              examples:
+                results:
+                  summary: Components matching SRG
+                  value:
+                    components:
+                      - - 1
+                        - Photon OS 3
+                      - - 8
+                        - Container Platform
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
+  /search/projects:
+    get:
+      operationId: searchProjectsLegacy
+      tags:
+        - Search
+      summary: Legacy project search by SRG ID
+      description: Searches projects that have components based on a given SRG. Returns compact tuples [id, name]. This is a legacy search endpoint — prefer /api/search/global for new integrations.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: SRG identifier to search for.
+          schema:
+            type: string
+          example: Container_Platform_SRG
+      responses:
+        '200':
+          description: Matching projects as compact tuples
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - projects
+                additionalProperties: false
+                properties:
+                  projects:
+                    type: array
+                    description: Each item is a tuple [id, name].
+                    items:
+                      type: array
+                      items: {}
+              examples:
+                results:
+                  summary: Projects with matching SRG components
+                  value:
+                    projects:
+                      - - 4
+                        - Container Platform
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /projects:
@@ -164,7 +351,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ProjectSummary'
+                  $ref: '#/components/schemas/ProjectIndexResponse'
               examples:
                 projects:
                   summary: Two accessible projects
@@ -205,7 +392,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ToastResponse'
+                $ref: '#/components/schemas/ProjectCreateResponse'
               examples:
                 created:
                   summary: Project created
@@ -215,6 +402,7 @@ paths:
                       message:
                         - Successfully created project Red Hat Enterprise Linux 9.
                       variant: success
+                    redirect_url: /projects/5
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
         4XX:
@@ -234,15 +422,18 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProjectSummary'
+                $ref: '#/components/schemas/ProjectShowResponse'
               examples:
                 project:
-                  summary: Container Platform project
+                  summary: Photon 3 project detail
                   value:
-                    id: 4
-                    name: Container Platform
-                    description: STIG for container orchestration platforms
-                    memberships_count: 14
+                    id: 1
+                    name: Photon 3
+                    memberships_count: 16
+                    pending_comment_count: 1
+                    components:
+                      - id: 1
+                        name: Photon OS 3
         4XX:
           $ref: '#/components/responses/ErrorResponse'
     put:
@@ -318,39 +509,171 @@ paths:
       tags:
         - Projects
       summary: Aggregated comments across all project components
-      description: Returns paginated comments from all components in the project, with triage status counts. Used by the project-level triage page to show a unified comment queue across components. Supports status filtering and pagination.
+      description: Returns paginated comments from all components in the project, with triage status counts. Different row shape from component comments — includes component_id/component_name but omits some triage attribution fields. Uses Project#paginated_comments (NOT CommentQueryService).
       parameters:
         - $ref: '#/components/parameters/TriageStatusFilter'
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PerPageParam'
+        - name: component_id
+          in: query
+          required: false
+          description: Filter to a specific component within the project.
+          schema:
+            type: integer
+        - name: author_id
+          in: query
+          required: false
+          description: Filter by comment author.
+          schema:
+            type: integer
+        - name: q
+          in: query
+          required: false
+          description: Text search within comment content.
+          schema:
+            type: string
+        - name: resolved
+          in: query
+          required: false
+          description: Filter by resolved state (true/false/all).
+          schema:
+            type: string
+            enum:
+              - 'true'
+              - 'false'
+              - all
       responses:
         '200':
-          description: Paginated comment rows with status counts
+          description: Paginated project comment rows with status counts
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedComments'
+                type: object
+                required:
+                  - rows
+                  - pagination
+                  - status_counts
+                properties:
+                  rows:
+                    type: array
+                    description: Comment rows with component context.
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        rule_id:
+                          type:
+                            - integer
+                            - 'null'
+                        rule_displayed_name:
+                          type:
+                            - string
+                            - 'null'
+                        commentable_type:
+                          type: string
+                        component_id:
+                          type:
+                            - integer
+                            - 'null'
+                        component_name:
+                          type:
+                            - string
+                            - 'null'
+                        section:
+                          type:
+                            - string
+                            - 'null'
+                        author_name:
+                          type:
+                            - string
+                            - 'null'
+                        comment:
+                          type: string
+                        created_at:
+                          type: string
+                        triage_status:
+                          type:
+                            - string
+                            - 'null'
+                        triage_set_at:
+                          type:
+                            - string
+                            - 'null'
+                        adjudicated_at:
+                          type:
+                            - string
+                            - 'null'
+                        duplicate_of_review_id:
+                          type:
+                            - integer
+                            - 'null'
+                        triager_display_name:
+                          type:
+                            - string
+                            - 'null'
+                        triager_imported:
+                          type: boolean
+                        adjudicator_display_name:
+                          type:
+                            - string
+                            - 'null'
+                        adjudicator_imported:
+                          type: boolean
+                        responses_count:
+                          type: integer
+                        reactions:
+                          type: object
+                          properties:
+                            up:
+                              type: integer
+                            down:
+                              type: integer
+                            mine:
+                              type:
+                                - string
+                                - 'null'
+                  pagination:
+                    type: object
+                    required:
+                      - page
+                      - per_page
+                      - total
+                    properties:
+                      page:
+                        type: integer
+                      per_page:
+                        type: integer
+                      total:
+                        type: integer
+                  status_counts:
+                    type: object
+                    additionalProperties:
+                      type: integer
               examples:
                 comments:
                   summary: Project-wide comment queue
                   value:
                     rows:
-                      - id: 44
-                        rule_displayed_name: CNTR-00-000050
-                        component_name: Container SRG
-                        section: fixtext
-                        author_name: John Osborne
-                        comment: This requirement needs clarification...
+                      - id: 26
+                        rule_displayed_name: PHOS-03-000038
+                        component_id: 1
+                        component_name: Photon OS 3
                         triage_status: pending
-                        created_at: '2026-05-19T16:15:00Z'
+                        comment: This requirement needs clarification.
+                        responses_count: 0
+                        reactions:
+                          up: 0
+                          down: 0
+                          mine: null
                     pagination:
                       page: 1
                       per_page: 25
-                      total: 108
+                      total: 3
                     status_counts:
-                      pending: 10
-                      concur: 2
-                      duplicate: 4
+                      pending: 1
+                      concur: 1
+                      informational: 1
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /projects/{projectId}/export/{type}:
@@ -564,7 +887,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ComponentSummary'
+                  $ref: '#/components/schemas/ComponentIndexResponse'
               examples:
                 components:
                   summary: Two released components
@@ -652,14 +975,17 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ComponentSummary'
+                $ref: '#/components/schemas/ComponentEditorResponse'
               examples:
                 component:
-                  summary: Container SRG component
+                  summary: Component editor view (project member)
                   value:
-                    id: 29
-                    name: Container SRG
-                    prefix: CNTR
+                    id: 1
+                    name: Photon OS 3
+                    prefix: PHOS-03
+                    title: Photon OS 3 STIG Readiness Guide
+                    rules_count: 203
+                    comment_phase: open
                     version: '1'
                     release: '1'
                     released: false
@@ -1033,7 +1359,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/RuleSummary'
+                  $ref: '#/components/schemas/RuleEditorResponse'
               examples:
                 rules:
                   summary: Two rules
@@ -1077,16 +1403,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ToastResponse'
+                $ref: '#/components/schemas/RuleCreateResponse'
               examples:
                 created:
-                  summary: Rule created
+                  summary: Control created
                   value:
                     toast:
-                      title: Rule created.
+                      title: Control created.
                       message:
-                        - Successfully created rule.
+                        - Successfully created control.
                       variant: success
+                    data:
+                      id: 5000
+                      rule_id: '000204'
+                      title: New container security requirement
+                      status: Not Yet Determined
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /components/{componentId}/rules_picker:
@@ -1111,7 +1442,7 @@ paths:
                   rules:
                     type: array
                     items:
-                      $ref: '#/components/schemas/RuleSummary'
+                      $ref: '#/components/schemas/RulePickerResponse'
               examples:
                 picker:
                   summary: Rules for dropdown
@@ -1131,7 +1462,7 @@ paths:
       tags:
         - Components
       summary: Detect which SRG a spreadsheet belongs to
-      description: Analyzes an uploaded spreadsheet (CSV/XLSX) to determine which SRG its rule IDs match. Used by the component creation flow to auto-select the correct SRG when importing from a spreadsheet. Requires authentication.
+      description: Analyzes an uploaded spreadsheet (CSV/XLSX) to determine which SRG its rule IDs match. Used by the component creation flow to auto-select the correct SRG when importing from a spreadsheet. Returns the matched SRG's id, srg_id, title, and version. Returns 422 if no file provided, no SRG IDs found, no matching SRG exists, or IDs map to multiple SRGs.
       requestBody:
         required: true
         content:
@@ -1153,25 +1484,46 @@ paths:
               schema:
                 type: object
                 required:
+                  - id
                   - srg_id
-                  - srg_title
+                  - title
+                  - version
+                additionalProperties: false
                 properties:
-                  srg_id:
+                  id:
                     type: integer
-                    description: ID of the matched SRG.
+                    description: Database ID of the matched SRG.
                     example: 1
-                  srg_title:
+                  srg_id:
                     type: string
-                    description: Title of the matched SRG.
+                    description: DISA SRG identifier string.
+                    example: Container_Platform_SRG
+                  title:
+                    type: string
+                    description: Full title of the matched SRG.
                     example: Container Platform Security Requirements Guide
+                  version:
+                    type: string
+                    description: Version string (e.g. V2R4).
+                    example: V2R4
               examples:
                 detected:
                   summary: SRG detected from spreadsheet
                   value:
-                    srg_id: 1
-                    srg_title: Container Platform Security Requirements Guide
+                    id: 1
+                    srg_id: Container_Platform_SRG
+                    title: Container Platform Security Requirements Guide
+                    version: V2R4
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          description: No file, no SRG IDs found, no match, or ambiguous match
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: No SRG IDs found in spreadsheet
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /components/history:
@@ -1180,7 +1532,7 @@ paths:
       tags:
         - Components
       summary: Revision history for a named component across versions
-      description: Traces the version history of a component by name within a project. Returns an ordered list of versions with rule-level diffs between consecutive releases. Used by the component history/DiffViewer feature. Requires project membership.
+      description: Traces the version history of a component by name within a project. Returns an ordered array alternating between milestone entries (marking a version point) and diff entries (showing rule-level changes between consecutive releases). Used by the DiffViewer feature. Requires project membership. Component objects use ComponentBlueprint default view (9 fields).
       parameters:
         - name: project_id
           in: query
@@ -1188,72 +1540,78 @@ paths:
           description: ID of the project containing the component versions.
           schema:
             type: integer
-          example: 4
+          example: 1
         - name: name
           in: query
           required: true
           description: Component name to trace across versions.
           schema:
             type: string
-          example: Container SRG
+          example: Photon OS 3
       responses:
         '200':
-          description: Ordered revision history with per-version diffs
+          description: 'Ordered revision history. The array alternates between two entry types: 1. Milestone entries: { component: ComponentSummary } — marks a version point 2. Diff entries: { base_component: ComponentSummary, diff_component: ComponentSummary, changes: { rule_id: HistoryChangeEntry } }'
           content:
             application/json:
               schema:
                 type: array
+                description: Mixed array of milestone and diff entries. Milestones have a 'component' key. Diff entries have 'base_component', 'diff_component', and 'changes' keys.
                 items:
                   type: object
                   properties:
                     component:
+                      description: Milestone entry — marks this version in the timeline.
                       $ref: '#/components/schemas/ComponentSummary'
                     base_component:
+                      description: Previous version in a diff pair.
                       $ref: '#/components/schemas/ComponentSummary'
                     diff_component:
+                      description: Current version in a diff pair.
                       $ref: '#/components/schemas/ComponentSummary'
                     changes:
                       type: object
-                      description: Rule-level changes keyed by rule_id.
+                      description: Rule-level changes keyed by rule_id. Each value describes what changed between the base and diff versions.
                       additionalProperties:
-                        type: object
-                        properties:
-                          change:
-                            type: string
-                            enum:
-                              - added
-                              - removed
-                              - updated
-                          base:
-                            type: object
-                          diff:
-                            type: object
+                        $ref: '#/components/schemas/HistoryChangeEntry'
               examples:
-                history:
-                  summary: Two versions with one rule change
+                two_versions:
+                  summary: Two versions of Photon OS 3 with milestone + diff
                   value:
                     - component:
-                        id: 30
-                        name: Container SRG
-                        version: '2'
-                        release: '1'
-                      base_component:
-                        id: 29
-                        name: Container SRG
-                        version: '1'
-                        release: '1'
+                        id: 1
+                        name: Photon OS 3
+                        prefix: PHOS-03
+                        version: 1
+                        release: 1
+                    - base_component:
+                        id: 1
+                        name: Photon OS 3
+                        prefix: PHOS-03
+                        version: 1
+                        release: 1
                       diff_component:
-                        id: 30
-                        name: Container SRG
-                        version: '2'
-                        release: '1'
+                        id: 2
+                        name: Photon OS 3
+                        prefix: PHOS-03
+                        version: 1
+                        release: 2
                       changes:
-                        CNTR-00-000050:
+                        '000050':
                           change: updated
                           base:
-                            fixtext: Original fix...
+                            rule_id: '000050'
+                            title: Original title
+                            fix: Original fix text
                           diff:
-                            fixtext: Updated fix...
+                            rule_id: '000050'
+                            title: Updated title
+                            fix: Updated fix text
+                    - component:
+                        id: 2
+                        name: Photon OS 3
+                        prefix: PHOS-03
+                        version: 1
+                        release: 2
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /components/{componentId}/related:
@@ -1264,7 +1622,7 @@ paths:
       tags:
         - Components
       summary: Find components sharing the same SRG baseline
-      description: Returns other components that are based on the same SRG as this component. Used by the DiffViewer to find peer components for side-by-side comparison. Scoped to components the current user can access. Requires authentication.
+      description: Returns other components that are based on the same SRG as this component. Used by the DiffViewer to find peer components for side-by-side comparison. Scoped to components the current user can access plus released components. Returns a hand-built hash (NOT ComponentBlueprint).
       responses:
         '200':
           description: Related components sharing the same SRG
@@ -1273,21 +1631,44 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ComponentSummary'
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 4
+                    name:
+                      type: string
+                      example: Photon OS 3
+                    version:
+                      type:
+                        - integer
+                        - 'null'
+                      example: 1
+                    prefix:
+                      type: string
+                      example: PHOS-03
+                    release:
+                      type:
+                        - integer
+                        - 'null'
+                      example: 1
+                    project_id:
+                      type: integer
+                      example: 3
+                    project_name:
+                      type: string
+                      example: vSphere 7.0
               examples:
                 related:
-                  summary: Two peer components
+                  summary: Two peer components from different projects
                   value:
-                    - id: 30
-                      name: Container SRG v2
-                      prefix: CNTR
-                      version: '2'
-                      release: '1'
-                    - id: 31
-                      name: Container SRG (Training)
-                      prefix: CNTR
-                      version: '1'
-                      release: '1'
+                    - id: 4
+                      name: Photon OS 3
+                      version: 1
+                      prefix: PHOS-03
+                      release: 1
+                      project_id: 3
+                      project_name: vSphere 7.0
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /components/{componentId}/find:
@@ -1325,7 +1706,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/RuleSummary'
+                  $ref: '#/components/schemas/RuleEditorResponse'
               examples:
                 results:
                   summary: Two matching rules
@@ -1348,7 +1729,7 @@ paths:
       tags:
         - Components
       summary: Preview changes from a spreadsheet import
-      description: Parses an uploaded spreadsheet (CSV/XLSX) and returns a diff of what would change if applied, without modifying any data. Requires admin role on the component. Use the apply endpoint to commit the changes.
+      description: 'Parses an uploaded spreadsheet (CSV/XLSX) and returns a diff of what would change if applied, without modifying any data. Returns four arrays: updated (rules with changes), unchanged (no diff), skipped_locked (locked rules or inherited rules), and warnings (SRG IDs not found). Requires author role on the component.'
       requestBody:
         required: true
         content:
@@ -1364,30 +1745,103 @@ paths:
                   description: CSV or XLSX spreadsheet file containing rule updates.
       responses:
         '200':
-          description: Preview of changes that would be applied
+          description: Preview of changes grouped by outcome
           content:
             application/json:
               schema:
                 type: object
+                required:
+                  - updated
+                  - unchanged
+                  - skipped_locked
+                  - warnings
                 properties:
-                  changes:
+                  updated:
                     type: array
-                    description: List of rule changes detected in the spreadsheet.
+                    description: Rules with detected changes.
                     items:
                       type: object
+                      properties:
+                        rule_id:
+                          type: string
+                          example: '000050'
+                        srg_id:
+                          type:
+                            - string
+                            - 'null'
+                          example: SRG-APP-000014-CTR-000035
+                        changes:
+                          type: object
+                          description: Changed fields with [old_value, new_value] pairs.
+                          additionalProperties:
+                            type: array
+                            items: {}
+                  unchanged:
+                    type: array
+                    description: Rules with no differences from spreadsheet.
+                    items:
+                      type: object
+                      properties:
+                        rule_id:
+                          type: string
+                        srg_id:
+                          type:
+                            - string
+                            - 'null'
+                        reason:
+                          type: string
+                          example: no changes
+                  skipped_locked:
+                    type: array
+                    description: Rules skipped because they are locked or inherited.
+                    items:
+                      type: object
+                      properties:
+                        rule_id:
+                          type: string
+                        srg_id:
+                          type:
+                            - string
+                            - 'null'
+                        reason:
+                          type: string
+                          enum:
+                            - locked
+                            - inherited
+                            - section locked
+                          example: locked
+                        skipped_fields:
+                          type: array
+                          description: Fields that were locked (present only for section-locked skips).
+                          items:
+                            type: string
+                  warnings:
+                    type: array
+                    description: SRG IDs from the spreadsheet that were not found in the component.
+                    items:
+                      type: string
+                    example:
+                      - SRG ID SRG-APP-999999 not found in component
               examples:
                 preview:
-                  summary: Two rules would be updated
+                  summary: Mixed preview with updates, unchanged, and skipped rules
                   value:
-                    changes:
-                      - rule_id: CNTR-00-000050
-                        field: fixtext
-                        old_value: Old fix text...
-                        new_value: Updated fix text...
-                      - rule_id: CNTR-00-000051
-                        field: check_content
-                        old_value: Old check...
-                        new_value: Updated check...
+                    updated:
+                      - rule_id: '000050'
+                        srg_id: SRG-APP-000014-CTR-000035
+                        changes:
+                          fixtext:
+                            - Old fix text
+                            - Updated fix text
+                    unchanged:
+                      - rule_id: '000051'
+                        srg_id: SRG-APP-000023-CTR-000040
+                        reason: no changes
+                    skipped_locked:
+                      - rule_id: '000001'
+                        srg_id: SRG-APP-000001-CTR-000001
+                        reason: locked
+                    warnings: []
         '422':
           description: No file provided or parse error
           content:
@@ -1397,7 +1851,7 @@ paths:
                 properties:
                   error:
                     type: string
-                    description: Error message describing the problem.
+                    description: Error message.
               examples:
                 no_file:
                   summary: No file uploaded
@@ -1558,7 +2012,7 @@ paths:
                 properties:
                   data:
                     type: object
-                    description: Diff keyed by rule_id, each containing field-level base/diff/changed.
+                    description: Diff keyed by rule_id. Each entry compares the inspec_control_file content between the base and diff components for that rule.
                     additionalProperties:
                       type: object
                       properties:
@@ -1566,12 +2020,15 @@ paths:
                           type:
                             - string
                             - 'null'
+                          description: InSpec control file content from the base component. Null if rule not present.
                         diff:
                           type:
                             - string
                             - 'null'
+                          description: InSpec control file content from the diff component. Null if rule not present.
                         changed:
                           type: boolean
+                          description: Whether the InSpec content differs between versions.
                   meta:
                     type: object
                     description: Metadata about the compared components.
@@ -1619,7 +2076,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RuleSummary'
+                $ref: '#/components/schemas/RuleEditorResponse'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
     put:
@@ -1692,14 +2149,37 @@ paths:
       operationId: updateSectionLocks
       tags:
         - Rules
-      summary: Update locked sections on a single rule
+      summary: Lock or unlock a single section on a rule
+      description: Locks or unlocks a single section (e.g., fixtext, check_content) on a rule. Requires reviewer role or higher on the parent component. Creates an audit entry.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - section
+                - locked
+              properties:
+                section:
+                  type: string
+                  description: Section name to lock or unlock.
+                  example: fixtext
+                locked:
+                  type: boolean
+                  description: Whether to lock (true) or unlock (false).
+                  example: true
+                comment:
+                  type: string
+                  description: Optional audit comment.
+                  example: Locking fixtext for final review
       responses:
         '200':
           description: Section locks updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ToastResponse'
+                $ref: '#/components/schemas/RuleSectionLockResponse'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /rules/{ruleId}/bulk_section_locks:
@@ -1710,27 +2190,42 @@ paths:
       tags:
         - Rules
       summary: Bulk update locked sections
+      description: Locks or unlocks multiple sections at once on a rule. Requires reviewer role or higher on the parent component. Creates an audit trail entry.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - sections
+                - locked
               properties:
-                rule:
-                  type: object
-                  properties:
-                    locked_fields:
-                      type: array
-                      items:
-                        type: string
+                sections:
+                  type: array
+                  description: Section names to lock or unlock.
+                  items:
+                    type: string
+                  example:
+                    - fixtext
+                    - check_content
+                locked:
+                  type: boolean
+                  description: Whether to lock (true) or unlock (false) the sections.
+                  example: true
+                comment:
+                  type: string
+                  description: Optional audit comment explaining the lock change.
+                  example: Locking fixtext and check_content for review
       responses:
         '200':
-          description: Section locks updated
+          description: Section locks updated, returns updated rule + toast
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ToastResponse'
+                $ref: '#/components/schemas/RuleSectionLockResponse'
+        '422':
+          description: Invalid section names
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /rules/{ruleId}/search/related_rules:
@@ -1741,7 +2236,7 @@ paths:
       tags:
         - Rules
       summary: Find rules sharing the same SRG requirement
-      description: Returns rules from other components and published STIGs that implement the same SRG requirement (matched by version/srg_id). Results are scoped to components the current user can access unless the user is an admin. Includes parent containers (components and STIGs) for grouping in the UI.
+      description: Returns rules from other components and published STIGs that implement the same SRG requirement (matched by version/srg_id). Results are scoped to components the current user can access unless the user is an admin. The rules array is a mix of RuleEditorResponse (component rules) and StigRuleSummary (published STIG rules). The parents array is a mix of ComponentBlueprint :related and StigBlueprint :index for grouping.
       responses:
         '200':
           description: Related rules with parent containers
@@ -1755,42 +2250,38 @@ paths:
                 properties:
                   rules:
                     type: array
-                    description: Rules from other components and STIGs sharing the same SRG requirement.
-                    items:
-                      $ref: '#/components/schemas/RuleSummary'
+                    description: Mixed array of component rules (RuleEditorResponse, 38 fields) and published STIG rules (StigRuleSummary, 16 fields).
+                    items: {}
                   parents:
                     type: array
-                    description: Parent containers (components and STIGs) for grouping.
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: integer
-                        name:
-                          type: string
-                        type:
-                          type: string
-                          description: Container type — component or stig.
+                    description: 'Mixed array of parent containers: ComponentBlueprint :related (with nested project) and StigBlueprint :index (with severity_counts).'
+                    items: {}
               examples:
                 related:
                   summary: Rules from another component and a published STIG
                   value:
                     rules:
                       - id: 200
-                        rule_id: CNTR-00-000050
-                        title: Container images must be signed
-                        status: Applicable - Configurable
-                      - id: 300
-                        rule_id: CNTR-00-000050
-                        title: Container images must be signed
-                        status: Applicable - Configurable
+                        rule_id: SV-222387r960735_rule
+                        title: The application must limit logon sessions
+                        version: APSC-DV-000010
+                        rule_severity: medium
+                      - id: 1800
+                        rule_id: '000001'
+                        title: The operating system must provide automated mechanisms
+                        status: Not Yet Determined
+                        component_id: 1
                     parents:
-                      - id: 30
-                        name: Container Platform v2
-                        type: component
-                      - id: 5
-                        name: Container Platform SRG V2R4
-                        type: stig
+                      - id: 1
+                        stig_id: Application_Security_Development_STIG
+                        name: Application Security Development STIG - Ver 6, Rel 4
+                        title: Application Security and Development STIG
+                      - id: 1
+                        name: Photon OS 3
+                        prefix: PHOS-03
+                        project:
+                          id: 1
+                          name: Photon 3
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /rule_satisfactions:
@@ -1949,7 +2440,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ToastResponse'
+                $ref: '#/components/schemas/ReviewWrapper'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /reviews/{reviewId}/triage:
@@ -1985,7 +2476,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ToastResponse'
+                $ref: '#/components/schemas/TriageResponse'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /reviews/{reviewId}/adjudicate:
@@ -2002,7 +2493,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ToastResponse'
+                $ref: '#/components/schemas/TriageResponse'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /reviews/{reviewId}/withdraw:
@@ -2019,7 +2510,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ToastResponse'
+                $ref: '#/components/schemas/ReviewWrapper'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /reviews/{reviewId}/admin_withdraw:
@@ -2044,7 +2535,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ToastResponse'
+                $ref: '#/components/schemas/ReviewWrapper'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /reviews/{reviewId}/admin_restore:
@@ -2061,7 +2552,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ToastResponse'
+                $ref: '#/components/schemas/ReviewWrapper'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /reviews/{reviewId}/move_to_rule:
@@ -2089,7 +2580,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ToastResponse'
+                $ref: '#/components/schemas/ReviewWrapper'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /reviews/{reviewId}/admin_destroy:
@@ -2114,7 +2605,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ToastResponse'
+                $ref: '#/components/schemas/AdminDestroyResponse'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /reviews/{reviewId}/responses:
@@ -2125,15 +2616,64 @@ paths:
       tags:
         - Reviews
       summary: List replies to a review
+      description: Returns threaded replies to a parent review, ordered by creation time. Each reply includes commenter attribution and reaction counts with the current user's reaction. Hand-built hashes (NOT ReviewBlueprint).
       responses:
         '200':
           description: Reply thread
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ReviewSummary'
+                type: object
+                required:
+                  - rows
+                additionalProperties: false
+                properties:
+                  rows:
+                    type: array
+                    description: Reply rows ordered by created_at.
+                    items:
+                      type: object
+                      additionalProperties: false
+                      properties:
+                        id:
+                          type: integer
+                          example: 45
+                        responding_to_review_id:
+                          type: integer
+                          example: 44
+                        section:
+                          type:
+                            - string
+                            - 'null'
+                          example: fixtext
+                        comment:
+                          type: string
+                          example: Good point — we will add the CLI command.
+                        created_at:
+                          type: string
+                          example: 2026-05-19 14:08:17 UTC
+                        commenter_display_name:
+                          type:
+                            - string
+                            - 'null'
+                          example: Demo Author
+                        commenter_imported:
+                          type: boolean
+                          example: false
+                        reactions:
+                          type: object
+                          properties:
+                            up:
+                              type: integer
+                              example: 0
+                            down:
+                              type: integer
+                              example: 0
+                            mine:
+                              type:
+                                - string
+                                - 'null'
+                              example: null
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /reviews/{reviewId}/reactions:
@@ -2192,30 +2732,14 @@ paths:
       tags:
         - Reviews
       summary: Re-open an adjudicated review
-      description: Reverts the adjudication on a closed review, clearing adjudicated_at and adjudicated_by_id so the triage decision can be revised. Requires author role or higher on the parent project. Returns a warning toast (200) if the review has not been adjudicated or was withdrawn by the commenter.
+      description: Reverts the adjudication on a closed review, clearing adjudicated_at and adjudicated_by_id so the triage decision can be revised. Requires author role or higher on the parent project. Returns 422 warning toast if the review has not been adjudicated or was withdrawn by the commenter.
       responses:
         '200':
-          description: Review re-opened, or warning toast if not eligible
+          description: Review re-opened
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  review:
-                    $ref: '#/components/schemas/ReviewSummary'
-                  toast:
-                    type: object
-                    properties:
-                      title:
-                        type: string
-                      message:
-                        type:
-                          - array
-                          - string
-                        items:
-                          type: string
-                      variant:
-                        type: string
+                $ref: '#/components/schemas/ReviewWrapper'
               examples:
                 reopened:
                   summary: Successfully re-opened
@@ -2224,18 +2748,14 @@ paths:
                       id: 44
                       action: comment
                       comment: This requirement needs clarification.
-                      triage_status: concur
+                      triage_status: pending
                       adjudicated_at: null
-                      rule_id: 100
-                      section: fixtext
-                not_adjudicated:
-                  summary: Review was never adjudicated
-                  value:
-                    toast:
-                      title: Cannot re-open.
-                      message:
-                        - This comment has not been adjudicated.
-                      variant: warning
+        '422':
+          description: Cannot re-open (not adjudicated or withdrawn)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /reviews/{reviewId}/section:
@@ -2360,13 +2880,7 @@ paths:
           $ref: '#/components/responses/ErrorResponse'
   /memberships/{membershipId}:
     parameters:
-      - name: membershipId
-        in: path
-        required: true
-        description: Numeric ID of the membership record to update or delete.
-        schema:
-          type: integer
-        example: 15
+      - $ref: '#/components/parameters/MembershipId'
     put:
       operationId: updateMembership
       tags:
@@ -2445,21 +2959,31 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/BenchmarkSummary'
+                  $ref: '#/components/schemas/SrgSummary'
               examples:
                 srgs:
                   summary: Two SRGs
                   value:
                     - id: 1
+                      srg_id: Container_Platform_SRG
+                      name: Container Platform SRG - Ver 2, Rel 4
                       title: Container Platform Security Requirements Guide
                       version: V2R4
                       release_date: '2025-10-28'
-                      benchmark_type: srg
+                      severity_counts:
+                        high: 8
+                        medium: 177
+                        low: 3
                     - id: 2
+                      srg_id: General_Purpose_Operating_System_SRG
+                      name: General Purpose Operating System - Ver 3, Rel 3
                       title: General Purpose Operating System SRG
-                      version: V3R1
+                      version: V3R3
                       release_date: '2025-06-15'
-                      benchmark_type: srg
+                      severity_counts:
+                        high: 15
+                        medium: 150
+                        low: 8
         4XX:
           $ref: '#/components/responses/ErrorResponse'
     post:
@@ -2489,47 +3013,52 @@ paths:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
               examples:
-                uploaded:
+                created:
                   summary: SRG imported
                   value:
                     toast:
-                      title: SRG uploaded.
+                      title: SRG created.
                       message:
-                        - Successfully imported Container Platform SRG V2R4.
+                        - Successfully created SRG.
                       variant: success
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /srgs/{id}:
     parameters:
-      - name: id
-        in: path
-        required: true
-        description: Numeric ID of the SRG.
-        schema:
-          type: integer
-        example: 1
+      - $ref: '#/components/parameters/SrgId'
     get:
       operationId: getSrg
       tags:
         - Benchmarks
       summary: SRG detail with rules and metadata
-      description: Returns full SRG details including title, version, release date, and all embedded rules. Requires authentication. Used by the SRG detail page to display the baseline requirements.
+      description: Returns full SRG details including title, version, release date, severity counts, and all embedded rules with DISA metadata and check content. Requires authentication. Used by the SRG detail page (BenchmarkViewer).
       responses:
         '200':
-          description: SRG detail
+          description: SRG detail with nested rules
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BenchmarkSummary'
+                $ref: '#/components/schemas/SrgDetailResponse'
               examples:
                 srg:
                   summary: Container Platform SRG
                   value:
                     id: 1
+                    srg_id: Container_Platform_SRG
+                    name: Container Platform SRG - Ver 2, Rel 4
                     title: Container Platform Security Requirements Guide
                     version: V2R4
                     release_date: '2025-10-28'
-                    benchmark_type: srg
+                    severity_counts:
+                      high: 8
+                      medium: 177
+                      low: 3
+                    srg_rules:
+                      - id: 1
+                        rule_id: SV-233015r960759_rule
+                        title: The container platform must use TLS 1.2 or greater...
+                        version: SRG-APP-000014-CTR-000035
+                        rule_severity: medium
         4XX:
           $ref: '#/components/responses/ErrorResponse'
     delete:
@@ -2540,27 +3069,25 @@ paths:
       description: Permanently deletes an SRG and all its embedded rules. Requires admin role. Components based on this SRG will lose their baseline reference. This action cannot be undone.
       responses:
         '200':
-          description: SRG deleted
+          description: SRG removed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StatusOk'
+                $ref: '#/components/schemas/ToastResponse'
               examples:
-                deleted:
+                removed:
                   summary: SRG removed
                   value:
-                    status: ok
+                    toast:
+                      title: SRG removed.
+                      message:
+                        - Successfully removed SRG.
+                      variant: success
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /srgs/{id}/export/{type}:
     parameters:
-      - name: id
-        in: path
-        required: true
-        description: Numeric ID of the SRG to export.
-        schema:
-          type: integer
-        example: 1
+      - $ref: '#/components/parameters/SrgId'
       - name: type
         in: path
         required: true
@@ -2606,21 +3133,31 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/BenchmarkSummary'
+                  $ref: '#/components/schemas/StigSummary'
               examples:
                 stigs:
                   summary: Two STIGs
                   value:
-                    - id: 10
-                      title: VMware vSphere 7.0 STIG
-                      version: V1R3
-                      release_date: '2025-09-15'
-                      benchmark_type: stig
-                    - id: 11
-                      title: Red Hat Enterprise Linux 9 STIG
-                      version: V2R1
-                      release_date: '2025-11-20'
-                      benchmark_type: stig
+                    - id: 1
+                      stig_id: Application_Security_Development_STIG
+                      name: Application Security Development STIG - Ver 6, Rel 4
+                      title: Application Security and Development Security Technical Implementation Guide
+                      version: V6R4
+                      benchmark_date: '2025-10-01'
+                      severity_counts:
+                        high: 34
+                        medium: 230
+                        low: 22
+                    - id: 2
+                      stig_id: Crunchy_Data_PostgreSQL_STIG
+                      name: Crunchy Data PostgreSQL STIG - Ver 3, Rel 1
+                      title: Crunchy Data PostgreSQL Security Technical Implementation Guide
+                      version: V3R1
+                      benchmark_date: '2025-09-15'
+                      severity_counts:
+                        high: 10
+                        medium: 85
+                        low: 5
         4XX:
           $ref: '#/components/responses/ErrorResponse'
     post:
@@ -2650,47 +3187,53 @@ paths:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
               examples:
-                uploaded:
+                added:
                   summary: STIG imported
                   value:
                     toast:
-                      title: STIG uploaded.
+                      title: STIG added.
                       message:
-                        - Successfully imported VMware vSphere 7.0 STIG V1R3.
+                        - Successfully added Application Security and Development Security Technical Implementation Guide.
                       variant: success
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /stigs/{id}:
     parameters:
-      - name: id
-        in: path
-        required: true
-        description: Numeric ID of the STIG.
-        schema:
-          type: integer
-        example: 10
+      - $ref: '#/components/parameters/StigId'
     get:
       operationId: getStig
       tags:
         - Benchmarks
       summary: STIG detail with rules and metadata
-      description: Returns full STIG details including title, version, release date, and all embedded rules. Requires authentication. Used by the STIG detail page for reference when authoring Components.
+      description: Returns full STIG details including title, version, benchmark date, description, severity counts, and all embedded rules with DISA metadata and check content. Requires authentication. Used by the STIG detail page (BenchmarkViewer).
       responses:
         '200':
-          description: STIG detail
+          description: STIG detail with nested rules
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BenchmarkSummary'
+                $ref: '#/components/schemas/StigDetailResponse'
               examples:
                 stig:
-                  summary: VMware vSphere 7.0 STIG
+                  summary: Application Security Development STIG
                   value:
-                    id: 10
-                    title: VMware vSphere 7.0 STIG
-                    version: V1R3
-                    release_date: '2025-09-15'
-                    benchmark_type: stig
+                    id: 1
+                    stig_id: Application_Security_Development_STIG
+                    name: Application Security Development STIG - Ver 6, Rel 4
+                    title: Application Security and Development Security Technical Implementation Guide
+                    version: V6R4
+                    benchmark_date: '2025-10-01'
+                    severity_counts:
+                      high: 34
+                      medium: 230
+                      low: 22
+                    description: This Security Technical Implementation Guide is published...
+                    stig_rules:
+                      - id: 660
+                        rule_id: SV-222387r960735_rule
+                        title: The application must limit logon sessions...
+                        version: APSC-DV-000010
+                        rule_severity: medium
         4XX:
           $ref: '#/components/responses/ErrorResponse'
     delete:
@@ -2701,44 +3244,41 @@ paths:
       description: Permanently deletes a STIG and all its embedded rules. Requires admin role. This action cannot be undone.
       responses:
         '200':
-          description: STIG deleted
+          description: STIG removed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StatusOk'
+                $ref: '#/components/schemas/ToastResponse'
               examples:
-                deleted:
+                removed:
                   summary: STIG removed
                   value:
-                    status: ok
+                    toast:
+                      title: STIG removed.
+                      message:
+                        - Successfully removed Application Security and Development Security Technical Implementation Guide.
+                      variant: success
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /stigs/{id}/export/{type}:
     parameters:
-      - name: id
-        in: path
-        required: true
-        description: Numeric ID of the STIG to export.
-        schema:
-          type: integer
-        example: 10
+      - $ref: '#/components/parameters/StigId'
       - name: type
         in: path
         required: true
-        description: Export format.
+        description: Export format. STIGs support CSV and XCCDF only (InSpec export is Components-only).
         schema:
           type: string
           enum:
             - csv
             - xccdf
-            - inspec
         example: xccdf
     get:
       operationId: exportStig
       tags:
         - Benchmarks
       summary: Export STIG in the specified format
-      description: Downloads the STIG as CSV, XCCDF XML, or InSpec profile. Requires authentication. CSV exports all rules in a flat table. XCCDF exports the DISA XML format. InSpec generates a Ruby compliance profile.
+      description: Downloads the STIG as CSV or XCCDF XML. Requires authentication. CSV exports all rules in a flat table. XCCDF exports the original DISA XML format.
       responses:
         '200':
           description: Binary file download
@@ -2751,10 +3291,12 @@ paths:
               schema:
                 type: string
                 format: binary
-            application/zip:
+        '400':
+          description: Unsupported export type
+          content:
+            application/json:
               schema:
-                type: string
-                format: binary
+                $ref: '#/components/schemas/ToastResponse'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /users:
@@ -2799,13 +3341,7 @@ paths:
           $ref: '#/components/responses/ErrorResponse'
   /users/{userId}:
     parameters:
-      - name: userId
-        in: path
-        required: true
-        description: Numeric ID of the target user.
-        schema:
-          type: integer
-        example: 42
+      - $ref: '#/components/parameters/UserId'
     put:
       operationId: updateUser
       tags:
@@ -2881,66 +3417,107 @@ paths:
       description: Permanently deletes a user account. Requires admin role. Cannot delete the last remaining admin. All project memberships and associated data are cleaned up via dependent destroy.
       responses:
         '200':
-          description: User deleted
+          description: User removed
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
               examples:
-                deleted:
-                  summary: User deleted
+                removed:
+                  summary: User removed
                   value:
                     toast:
-                      title: User deleted.
+                      title: User removed.
                       message:
-                        - Successfully deleted user.
+                        - Successfully removed user.
                       variant: success
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /users/{userId}/comments:
     parameters:
-      - name: userId
-        in: path
-        required: true
-        description: Numeric ID of the user whose comments to retrieve.
-        schema:
-          type: integer
-        example: 42
+      - $ref: '#/components/parameters/UserId'
     get:
       operationId: getUserComments
       tags:
         - Users
       summary: My Comments page — user's comments across accessible projects
-      description: Returns paginated comments authored by the specified user across all projects the requesting user can access. Scoped by project visibility, not identity — this is a filtered view, not a privacy boundary. Supports triage status filtering and pagination.
+      description: Returns paginated comments authored by the specified user across all projects the requesting user can access. Scoped by project visibility, not identity — this is a filtered view, not a privacy boundary. Supports triage status filtering, project filtering, and pagination.
       parameters:
         - $ref: '#/components/parameters/TriageStatusFilter'
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PerPageParam'
+        - name: project_id
+          in: query
+          required: false
+          description: Filter comments to a specific project.
+          schema:
+            type: integer
+          example: 3
       responses:
         '200':
-          description: Paginated user comments with status counts
+          description: Paginated user comments with project/component context
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedComments'
+                type: object
+                required:
+                  - rows
+                  - pagination
+                additionalProperties: false
+                properties:
+                  rows:
+                    type: array
+                    description: Comment rows for the current page.
+                    items:
+                      $ref: '#/components/schemas/UserCommentRow'
+                  pagination:
+                    type: object
+                    required:
+                      - page
+                      - per_page
+                      - total
+                    additionalProperties: false
+                    properties:
+                      page:
+                        type: integer
+                        description: Current page number (1-based).
+                        example: 1
+                      per_page:
+                        type: integer
+                        description: Number of comments per page.
+                        example: 25
+                      total:
+                        type: integer
+                        description: Total number of matching comments.
+                        example: 12
               examples:
                 comments:
-                  summary: User's pending comments
+                  summary: User's pending comments across projects
                   value:
                     rows:
-                      - id: 44
-                        rule_displayed_name: CNTR-00-000050
+                      - id: 29
+                        project_id: 3
+                        project_name: vSphere 7.0
+                        component_id: 4
+                        component_name: Photon OS 3
+                        rule_id: 2397
+                        rule_displayed_name: PHOS-03-000039
+                        commentable_type: BaseRule
                         section: fixtext
-                        comment: This requirement needs clarification.
+                        comment: 'vSphere 7.0: fix command targets ESXi 6.7 path.'
+                        created_at: 2026-05-19 14:08:18 UTC
                         triage_status: pending
-                        created_at: '2026-05-19T16:15:00Z'
+                        responses_count: 0
+                        reactions:
+                          up: 0
+                          down: 0
+                          mine: null
                     pagination:
                       page: 1
                       per_page: 25
-                      total: 3
-                    status_counts:
-                      pending: 2
-                      concur: 1
+                      total: 12
+        '404':
+          description: User not found
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /users/unlink_identity:
@@ -3058,7 +3635,11 @@ paths:
                 with_password:
                   summary: Created with provided password
                   value:
-                    toast: User jane.doe@example.org created with the provided password.
+                    toast:
+                      title: User created.
+                      message:
+                        - User jane.doe@example.org created with the provided password.
+                      variant: success
                     user:
                       id: 42
                       name: Jane Doe
@@ -3067,13 +3648,17 @@ paths:
                 no_smtp:
                   summary: Created without SMTP — reset URL returned
                   value:
-                    toast: User jane.doe@example.org created. Deliver the reset link to the user.
+                    toast:
+                      title: User created.
+                      message:
+                        - User jane.doe@example.org created. Deliver the reset link to the user.
+                      variant: success
                     user:
                       id: 42
                       name: Jane Doe
                       email: jane.doe@example.org
                       admin: false
-                    reset_url: http://localhost:3000/users/password/edit?reset_password_token=abc123
+                    reset_url: https://vulcan.example.org/users/password/edit?reset_password_token=abc123
         '422':
           description: Validation error (duplicate email, invalid fields)
           content:
@@ -3093,13 +3678,7 @@ paths:
           $ref: '#/components/responses/ErrorResponse'
   /users/{userId}/send_password_reset:
     parameters:
-      - name: userId
-        in: path
-        required: true
-        description: Numeric ID of the user to send the reset email to.
-        schema:
-          type: integer
-        example: 42
+      - $ref: '#/components/parameters/UserId'
     post:
       operationId: sendPasswordReset
       tags:
@@ -3147,13 +3726,7 @@ paths:
           $ref: '#/components/responses/ErrorResponse'
   /users/{userId}/generate_reset_link:
     parameters:
-      - name: userId
-        in: path
-        required: true
-        description: Numeric ID of the user to generate a reset link for.
-        schema:
-          type: integer
-        example: 42
+      - $ref: '#/components/parameters/UserId'
     post:
       operationId: generateResetLink
       tags:
@@ -3181,13 +3754,7 @@ paths:
           $ref: '#/components/responses/ErrorResponse'
   /users/{userId}/set_password:
     parameters:
-      - name: userId
-        in: path
-        required: true
-        description: Numeric ID of the user whose password to set.
-        schema:
-          type: integer
-        example: 42
+      - $ref: '#/components/parameters/UserId'
     post:
       operationId: setPassword
       tags:
@@ -3265,13 +3832,7 @@ paths:
           $ref: '#/components/responses/ErrorResponse'
   /users/{userId}/lock:
     parameters:
-      - name: userId
-        in: path
-        required: true
-        description: Numeric ID of the user to lock.
-        schema:
-          type: integer
-        example: 42
+      - $ref: '#/components/parameters/UserId'
     post:
       operationId: lockUser
       tags:
@@ -3319,13 +3880,7 @@ paths:
           $ref: '#/components/responses/ErrorResponse'
   /users/{userId}/unlock:
     parameters:
-      - name: userId
-        in: path
-        required: true
-        description: Numeric ID of the user to unlock.
-        schema:
-          type: integer
-        example: 42
+      - $ref: '#/components/parameters/UserId'
     post:
       operationId: unlockUser
       tags:
@@ -3364,13 +3919,20 @@ components:
       name: _vulcan_session
   schemas:
     VersionResponse:
-      description: Application version information including Vulcan, Rails, and Ruby versions.
+      description: Application version and runtime information. No authentication required.
       type: object
       required:
+        - name
         - version
         - rails
         - ruby
+        - environment
+      additionalProperties: false
       properties:
+        name:
+          type: string
+          description: Application name.
+          example: Vulcan
         version:
           type: string
           description: Current Vulcan application version.
@@ -3383,8 +3945,16 @@ components:
           type: string
           description: Ruby interpreter version running the application.
           example: 3.4.9
+        environment:
+          type: string
+          description: Current Rails environment.
+          enum:
+            - development
+            - test
+            - production
+          example: development
     GlobalSearchResponse:
-      description: Results from a global search across projects, components, rules, SRGs, STIGs, and their rules.
+      description: Results from a global search across projects, components, rules, SRGs, STIGs, and their rules. Serialized by Api::SearchController#global. Each sub-array uses controller-specific inline hashes, NOT Blueprints.
       type: object
       required:
         - projects
@@ -3397,42 +3967,42 @@ components:
       properties:
         projects:
           type: array
-          description: Projects matching the search query.
+          description: Projects matching the search query (from user's available_projects).
           items:
             type: object
             properties:
               id:
                 type: integer
                 description: Unique project identifier.
-                example: 7
+                example: 1
               name:
                 type: string
                 description: Project name.
-                example: Container Platform
+                example: Photon 3
               description:
                 type:
                   - string
                   - 'null'
                 description: Project description.
-                example: STIG for container orchestration platforms.
+                example: null
               components_count:
                 type: integer
                 description: Number of components in the project.
-                example: 3
+                example: 1
         components:
           type: array
-          description: Components matching the search query.
+          description: Components matching the search query (from user's available projects).
           items:
             type: object
             properties:
               id:
                 type: integer
                 description: Unique component identifier.
-                example: 29
+                example: 1
               name:
                 type: string
                 description: Component name.
-                example: Container SRG
+                example: Photon OS 3
               version:
                 type:
                   - integer
@@ -3448,170 +4018,366 @@ components:
               project_id:
                 type: integer
                 description: ID of the parent project.
-                example: 7
+                example: 1
               project_name:
-                type: string
+                type:
+                  - string
+                  - 'null'
                 description: Name of the parent project.
-                example: Container Platform
+                example: Photon 3
+              metadata:
+                type:
+                  - object
+                  - 'null'
+                description: Component metadata key-value pairs (from component_metadata.data).
+                example: null
         rules:
           type: array
-          description: Rules matching the search query.
+          description: Rules matching the search query (from user's available projects).
           items:
             type: object
             properties:
               id:
                 type: integer
                 description: Unique rule identifier.
-                example: 100
+                example: 1786
               rule_id:
                 type: string
-                description: STIG rule identifier (six-digit zero-padded number).
-                example: '000050'
+                description: Six-digit zero-padded rule number.
+                example: '000001'
               title:
-                type: string
+                type:
+                  - string
+                  - 'null'
                 description: Title of the security control.
-                example: The container platform must enforce approved authorizations for access.
+                example: The operating system must provide automated mechanisms for supporting account management functions.
               status:
-                type: string
+                type:
+                  - string
+                  - 'null'
                 description: Current applicability status of the rule.
-                example: Applicable - Configurable
+                example: Not Yet Determined
               component_id:
                 type: integer
                 description: ID of the component this rule belongs to.
-                example: 29
+                example: 1
               component_prefix:
-                type: string
-                description: Prefix of the parent component, used to form the displayed rule ID.
-                example: CNTR
+                type:
+                  - string
+                  - 'null'
+                description: Prefix of the parent component.
+                example: PHOS-03
               snippet:
-                type: string
+                type:
+                  - string
+                  - 'null'
                 description: Text excerpt from the matched field showing the search hit in context.
-                example: ...enforce approved authorizations for logical access...
+                example: '[Vuln discussion] ...provide automated mechanisms for supporting...'
               matched_field:
-                type: string
+                type:
+                  - string
+                  - 'null'
                 description: Name of the field where the search term was found.
-                example: vuln_discussion
+                example: title
               comment_count:
                 type: integer
                 description: Number of comments on this rule.
-                example: 5
+                example: 0
+              parent_rule_id:
+                type:
+                  - integer
+                  - 'null'
+                description: ID of the parent rule (via satisfies relationship). Null if no parent.
+                example: null
+              parent_display_name:
+                type:
+                  - string
+                  - 'null'
+                description: Display name of the parent rule. Null if no parent.
+                example: null
         srgs:
           type: array
           description: Security Requirements Guides matching the search query.
           items:
             type: object
+            properties:
+              id:
+                type: integer
+                description: Unique SRG identifier.
+                example: 1
+              srg_id:
+                type: string
+                description: DISA SRG identifier.
+                example: Container_Platform_SRG
+              name:
+                type: string
+                description: SRG name.
+                example: Container Platform SRG - Ver 2, Rel 4
+              title:
+                type: string
+                description: Full SRG title.
+                example: Container Platform Security Requirements Guide
+              version:
+                type: string
+                description: Version string.
+                example: V2R4
         stigs:
           type: array
           description: Published STIGs matching the search query.
           items:
             type: object
+            properties:
+              id:
+                type: integer
+                description: Unique STIG identifier.
+                example: 1
+              stig_id:
+                type: string
+                description: DISA STIG identifier.
+                example: Application_Security_Development_STIG
+              name:
+                type: string
+                description: STIG name.
+                example: Application Security Development STIG - Ver 6, Rel 4
+              title:
+                type: string
+                description: Full STIG title.
+                example: Application Security and Development Security Technical Implementation Guide
+              version:
+                type: string
+                description: Version string.
+                example: V6R4
+              description:
+                type:
+                  - string
+                  - 'null'
+                description: STIG description.
+                example: null
         stig_rules:
           type: array
           description: Individual rules from published STIGs matching the search query.
           items:
             type: object
+            properties:
+              id:
+                type: integer
+                description: Unique STIG rule identifier.
+                example: 600
+              rule_id:
+                type: string
+                description: DISA rule identifier.
+                example: SV-222396r857506_rule
+              vuln_id:
+                type:
+                  - string
+                  - 'null'
+                description: Vulnerability identifier (V-number).
+                example: V-222396
+              title:
+                type: string
+                description: Requirement title.
+                example: The application must enforce approved authorizations.
+              fixtext:
+                type:
+                  - string
+                  - 'null'
+                description: Fix text.
+                example: Configure the application to enforce approved authorizations.
+              ident:
+                type:
+                  - string
+                  - 'null'
+                description: CCI identifiers.
+                example: CCI-000213
+              stig_id:
+                type: integer
+                description: ID of the parent STIG.
+                example: 1
+              stig_name:
+                type:
+                  - string
+                  - 'null'
+                description: Name of the parent STIG.
+                example: Application Security Development STIG - Ver 6, Rel 4
         srg_rules:
           type: array
           description: Individual rules from SRGs matching the search query.
           items:
             type: object
-    UserSummary:
-      description: Summary of a user account for admin management views.
+            properties:
+              id:
+                type: integer
+                description: Unique SRG rule identifier.
+                example: 500
+              rule_id:
+                type: string
+                description: DISA rule identifier.
+                example: SV-222396r857506_rule
+              title:
+                type: string
+                description: Requirement title.
+                example: The application must enforce approved authorizations.
+              fixtext:
+                type:
+                  - string
+                  - 'null'
+                description: Fix text.
+                example: Configure the application to enforce approved authorizations.
+              ident:
+                type:
+                  - string
+                  - 'null'
+                description: CCI identifiers.
+                example: CCI-000213
+              srg_id:
+                type: integer
+                description: ID of the parent SRG.
+                example: 1
+              srg_name:
+                type:
+                  - string
+                  - 'null'
+                description: Name of the parent SRG.
+                example: Container Platform SRG - Ver 2, Rel 4
+    MembershipSummary:
+      description: Project or component membership linking a user to a role.
       type: object
       required:
         - id
-        - email
-        - admin
+        - user_id
+        - role
+        - membership_type
+        - membership_id
+      additionalProperties: false
       properties:
         id:
           type: integer
-          description: Unique user identifier.
+          description: Unique membership identifier.
+          example: 15
+        user_id:
+          type: integer
+          description: ID of the member user.
           example: 42
+        role:
+          type: string
+          description: Access level for this membership.
+          enum:
+            - viewer
+            - author
+            - reviewer
+            - admin
+          example: author
+        membership_type:
+          type: string
+          description: Type of resource this membership belongs to.
+          enum:
+            - Project
+            - Component
+          example: Project
+        membership_id:
+          type: integer
+          description: ID of the project or component this membership belongs to.
+          example: 4
         name:
           type:
             - string
             - 'null'
-          description: Display name chosen by the user. Null if not yet set.
+          description: Display name of the member (delegated from User).
           example: Jane Doe
         email:
-          type: string
+          type:
+            - string
+            - 'null'
           format: email
-          description: Login email address.
+          description: Email address of the member (delegated from User).
           example: jane.doe@example.org
-        provider:
-          type:
-            - string
-            - 'null'
-          description: Authentication provider used for this account (local, github, ldap, or oidc). Null for local accounts.
-          example: local
-        admin:
-          type: boolean
-          description: Whether the user has administrator privileges.
-          example: false
-        last_sign_in_at:
-          type:
-            - string
-            - 'null'
-          format: date-time
-          description: Timestamp of the most recent successful sign-in. Null if the user has never signed in.
-          example: '2026-05-28T15:00:00Z'
-        failed_attempts:
-          type: integer
-          description: Number of consecutive failed login attempts since last successful sign-in.
-          example: 0
-        locked_at:
-          type:
-            - string
-            - 'null'
-          format: date-time
-          description: Timestamp when the account was locked due to excessive failed attempts. Null if not locked.
-          example: null
-    ProjectSummary:
-      description: Summary of a Vulcan project containing one or more STIG components.
+    ProjectIndexResponse:
+      description: Project listing entry with per-user computed fields (admin, is_member, access_request_id).
       type: object
       required:
         - id
         - name
+      additionalProperties: false
       properties:
         id:
           type: integer
           description: Unique project identifier.
-          example: 7
+          example: 4
         name:
           type: string
-          description: Human-readable project name.
+          description: Project name.
           example: Container Platform
         description:
           type:
             - string
             - 'null'
-          description: Optional longer description of the project purpose and scope.
-          example: STIG for container orchestration platforms.
+          description: Project description.
+          example: STIG for container orchestration platforms
         visibility:
-          type:
-            - string
-            - 'null'
-          description: Project visibility setting controlling discoverability by non-members.
+          type: string
+          description: Project visibility level.
           enum:
             - discoverable
             - hidden
           example: discoverable
-        components_count:
+        memberships_count:
           type: integer
-          description: Number of STIG components belonging to this project.
-          example: 3
+          description: Number of members in this project.
+          example: 14
+        admin_name:
+          type:
+            - string
+            - 'null'
+          description: Name of the project's point of contact.
+          example: Demo Admin
+        admin_email:
+          type:
+            - string
+            - 'null'
+          format: email
+          description: Email of the project's point of contact.
+          example: admin@example.org
         created_at:
-          type:
-            - string
-            - 'null'
-          description: Timestamp when the project was created.
-          example: '2026-01-15T09:30:00.000Z'
+          type: string
+          description: When the project was created. Format is "YYYY-MM-DD HH:MM:SS UTC" (Blueprinter default).
+          example: 2026-05-19 14:07:37 UTC
         updated_at:
+          type: string
+          description: When the project was last modified. Format is "YYYY-MM-DD HH:MM:SS UTC" (Blueprinter default).
+          example: 2026-05-19 14:08:17 UTC
+        memberships:
+          type: array
+          description: Project members with roles.
+          items:
+            $ref: '#/components/schemas/MembershipSummary'
+        admin:
+          type: boolean
+          description: Whether the current user is an admin on this project.
+          example: true
+        is_member:
+          type: boolean
+          description: Whether the current user is a member of this project.
+          example: true
+        access_request_id:
+          type:
+            - integer
+            - 'null'
+          description: ID of the current user's pending access request, if any.
+          example: null
+        pending_comment_count:
+          type: integer
+          description: Number of pending (untriaged) comments across all components.
+          example: 10
+        total_comment_count:
+          type: integer
+          description: Total comment count across all components.
+          example: 108
+        pending_comment_link:
           type:
             - string
             - 'null'
-          description: Timestamp when the project was last modified.
-          example: '2026-05-28T15:00:00.000Z'
+          description: Deep-link to the triage page for pending comments. Null if no comments exist.
+          example: /components/29/triage
     ProjectInput:
       description: Input fields for creating or updating a Vulcan project.
       type: object
@@ -3633,68 +4399,1318 @@ components:
             - discoverable
             - hidden
           example: discoverable
-    ToastResponse:
-      description: Canonical mutation response returned by all POST/PUT/PATCH/DELETE endpoints.
+    ToastObject:
+      description: 'The inner toast notification object with title, message array, and variant. This is the reusable shape — ToastResponse wraps it as { toast: ToastObject }. Use this via $ref when composing multi-key responses (toast + user, toast + reset_url, etc.).'
+      type: object
+      required:
+        - title
+        - message
+        - variant
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          description: Short human-readable summary of the outcome.
+          example: User updated.
+        message:
+          type: array
+          description: Detail lines providing additional context about the operation result.
+          items:
+            type: string
+          example:
+            - Successfully updated user.
+        variant:
+          type: string
+          description: Bootstrap alert variant controlling how the toast is styled in the UI.
+          enum:
+            - success
+            - danger
+            - warning
+            - info
+          example: success
+    ProjectCreateResponse:
+      description: Response from project creation. Success includes a toast notification and a redirect URL to the new project page. Error includes only the toast (no redirect_url).
       type: object
       required:
         - toast
       properties:
         toast:
-          type: object
-          required:
-            - title
-            - message
-            - variant
-          properties:
-            title:
-              type: string
-              description: Short human-readable summary of the outcome.
-              example: Component created.
-            message:
-              type: array
-              description: Detail lines providing additional context about the operation result.
-              items:
-                type: string
-              example:
-                - Container SRG has been added to Container Platform.
-            variant:
-              type: string
-              description: Bootstrap alert variant controlling how the toast is styled in the UI.
-              enum:
-                - success
-                - danger
-                - warning
-                - info
-              example: success
-    CommentRow:
-      description: A single comment (review) row in the triage comment listing.
+          $ref: '#/components/schemas/ToastObject'
+        redirect_url:
+          type: string
+          description: Relative URL to the newly created project page. Present on success, absent on error.
+          example: /projects/1
+    ProjectSummary:
+      description: Base project fields shared by all views. Serialized by ProjectBlueprint (default view). View-specific schemas (ProjectShowResponse, ProjectIndexResponse) extend this with additional fields.
       type: object
       required:
         - id
-        - rule_displayed_name
+        - name
+      properties:
+        id:
+          type: integer
+          description: Unique project identifier.
+          example: 1
+        name:
+          type: string
+          description: Human-readable project name.
+          example: Photon 3
+        description:
+          type:
+            - string
+            - 'null'
+          description: Optional longer description of the project purpose and scope.
+          example: null
+        visibility:
+          type:
+            - string
+            - 'null'
+          description: Project visibility setting controlling discoverability by non-members.
+          enum:
+            - discoverable
+            - hidden
+            - null
+          example: hidden
+        memberships_count:
+          type: integer
+          description: Number of members in this project.
+          example: 14
+        admin_name:
+          type:
+            - string
+            - 'null'
+          description: Display name of the project's point of contact / admin.
+          example: Demo Admin
+        admin_email:
+          type:
+            - string
+            - 'null'
+          format: email
+          description: Email address of the project's point of contact / admin.
+          example: admin@example.org
+        created_at:
+          type: string
+          description: Timestamp when the project was created. Format is "YYYY-MM-DD HH:MM:SS UTC" (Blueprinter default).
+          example: 2026-05-19 14:07:37 UTC
+        updated_at:
+          type: string
+          description: Timestamp when the project was last modified. Format is "YYYY-MM-DD HH:MM:SS UTC" (Blueprinter default).
+          example: 2026-05-19 14:08:17 UTC
+    ComponentSummary:
+      description: Base component fields shared by all views. Serialized by ComponentBlueprint (default view). View-specific schemas (ComponentEditorResponse, ComponentIndexResponse) extend this with additional fields.
+      type: object
+      required:
+        - id
+        - name
+        - prefix
+      properties:
+        id:
+          type: integer
+          description: Unique component identifier.
+          example: 1
+        name:
+          type: string
+          description: Human-readable component name.
+          example: Photon OS 3
+        prefix:
+          type: string
+          description: Short alphanumeric prefix used to construct rule IDs (e.g. PHOS-03 in PHOS-03-000010).
+          example: PHOS-03
+        version:
+          type:
+            - integer
+            - 'null'
+          description: Version number of the component. Null if not yet set.
+          example: 1
+        release:
+          type:
+            - integer
+            - 'null'
+          description: Release number of the component. Null if not yet set.
+          example: 1
+        based_on_title:
+          type:
+            - string
+            - 'null'
+          description: Title of the SRG this component is based on. Null if the SRG has no title or component has no SRG.
+          example: VMware vSphere 7.0 STIG Readiness Guide
+        based_on_version:
+          type:
+            - string
+            - 'null'
+          description: Version of the SRG this component is based on. Null if no SRG.
+          example: '1'
+        severity_counts:
+          type: object
+          description: Count of rules at each severity level within this component.
+          properties:
+            high:
+              type: integer
+              example: 20
+            medium:
+              type: integer
+              example: 173
+            low:
+              type: integer
+              example: 10
+          example:
+            high: 20
+            medium: 173
+            low: 10
+        pending_comment_count:
+          type: integer
+          description: Number of pending (untriaged) top-level comments on this component. Pre-batched via Component.pending_comment_counts.
+          example: 3
+    ComponentIndexResponse:
+      description: Component listing entry for project pages. Serialized by ComponentBlueprint :index view. Extends ComponentSummary (default fields) with index-specific fields.
+      allOf:
+        - $ref: '#/components/schemas/ComponentSummary'
+        - type: object
+          properties:
+            updated_at:
+              type: string
+              description: Timestamp when the component was last modified. Format is "YYYY-MM-DD HH:MM:SS UTC" (Blueprinter default).
+              example: 2026-05-29 15:36:06 UTC
+            released:
+              type: boolean
+              description: Whether this component has been marked as released (finalized).
+              example: true
+            rules_count:
+              type: integer
+              description: Number of rules (security controls) in this component.
+              example: 203
+            component_id:
+              type:
+                - integer
+                - 'null'
+              description: ID of the source component if this is an overlay. Null for original components.
+              example: null
+    ProjectShowResponse:
+      description: Full project detail for the project show page. Serialized by ProjectBlueprint :show view. 18 total fields including nested components, memberships, users, access_requests.
+      allOf:
+        - $ref: '#/components/schemas/ProjectSummary'
+        - type: object
+          properties:
+            pending_comment_count:
+              type: integer
+              description: Aggregate pending comment count across all components.
+              example: 1
+            details:
+              type:
+                - object
+                - 'null'
+              description: Project detail statistics (component counts, rule counts, etc.).
+            histories:
+              type: array
+              description: Recent audit trail entries (last 50).
+              items:
+                type: object
+            metadata:
+              type:
+                - object
+                - 'null'
+              description: Project metadata key-value pairs.
+              example: null
+            memberships:
+              type: array
+              description: Project members with roles.
+              items:
+                $ref: '#/components/schemas/MembershipSummary'
+            components:
+              type: array
+              description: Components in this project (ComponentBlueprint :index view).
+              items:
+                $ref: '#/components/schemas/ComponentIndexResponse'
+            available_components:
+              type: array
+              description: Components available to add (from other projects the user can access).
+              items:
+                $ref: '#/components/schemas/ComponentIndexResponse'
+            users:
+              type: array
+              description: All users associated with this project.
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type:
+                      - string
+                      - 'null'
+                  email:
+                    type: string
+                    format: email
+            access_requests:
+              type: array
+              description: Pending access requests from non-member users.
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: Access request ID.
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type:
+                          - string
+                          - 'null'
+                      email:
+                        type: string
+                        format: email
+                  project_id:
+                    type: integer
+    ToastResponse:
+      description: Canonical mutation response returned by all POST/PUT/PATCH/DELETE endpoints that return only a toast notification (no additional data).
+      type: object
+      required:
+        - toast
+      additionalProperties: false
+      properties:
+        toast:
+          $ref: '#/components/schemas/ToastObject'
+    AuditEntry:
+      description: 'A single audit trail entry recording a change to an auditable record. Serialized by VulcanAudit#format. Note: the field is "name" (username), NOT "user_id" — VulcanAudit#format does not expose user IDs.'
+      type: object
+      required:
+        - id
+        - action
+        - auditable_type
+        - auditable_id
+        - created_at
+        - audited_changes
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          description: Unique audit entry identifier.
+          example: 224
+        action:
+          type: string
+          description: Type of change that was made.
+          enum:
+            - create
+            - update
+            - destroy
+          example: update
+        auditable_type:
+          type: string
+          description: Rails model class name of the audited record.
+          example: Component
+        auditable_id:
+          type: integer
+          description: Primary key of the audited record.
+          example: 1
+        name:
+          type:
+            - string
+            - 'null'
+          description: Display name of the user who made the change. Null for system-initiated changes or seed data.
+          example: Demo Admin
+        audited_name:
+          type:
+            - string
+            - 'null'
+          description: Display name of the audited record's owner. Null when not applicable.
+          example: null
+        comment:
+          type:
+            - string
+            - 'null'
+          description: Audit comment text (e.g. reason for admin action). Null for most changes.
+          example: null
+        created_at:
+          type: string
+          description: Timestamp when the audit entry was recorded.
+          example: 2026-05-19 14:07:49 UTC
+        audited_changes:
+          type: array
+          description: Array of changed attributes with before/after values. Each entry has a field name, previous value, and new value.
+          items:
+            type: object
+            required:
+              - field
+            properties:
+              field:
+                type: string
+                description: Name of the changed attribute. For AdditionalAnswer changes, this is the question name rather than the column name.
+                example: released
+              prev_value:
+                description: Previous value before the change. Null for create actions.
+                example: false
+              new_value:
+                description: New value after the change.
+                example: true
+    ComponentInput:
+      description: Input fields for creating or updating a STIG component within a project.
+      type: object
+      required:
+        - name
+        - prefix
+        - title
+      properties:
+        name:
+          type: string
+          description: Human-readable component name.
+          example: Container SRG
+        prefix:
+          type: string
+          description: Short alphanumeric prefix used to construct rule IDs (e.g. CNTR in CNTR-00-000050).
+          example: CNTR
+        version:
+          type: string
+          description: Version number of the component.
+          example: '1'
+        release:
+          type: string
+          description: Release number of the component.
+          example: '1'
+        title:
+          type: string
+          description: Full official title of the component.
+          example: Container Platform Security Technical Implementation Guide
+        description:
+          type: string
+          description: Optional longer description of the component scope and purpose.
+          example: STIG guidance for container orchestration platform deployments.
+    RuleSummary:
+      description: Base rule fields shared by all views. Serialized by RuleBlueprint (default view / navigator). View-specific schemas (RuleEditorResponse, RulePickerResponse) extend this with additional fields.
+      type: object
+      required:
+        - id
+        - rule_id
+        - locked
+      properties:
+        id:
+          type: integer
+          description: Unique rule identifier.
+          example: 1786
+        rule_id:
+          type: string
+          description: Six-digit zero-padded rule number combined with the component prefix to form the displayed ID (e.g. PHOS-03-000001).
+          example: '000001'
+        title:
+          type:
+            - string
+            - 'null'
+          description: Title of the security control. Null if not yet authored.
+          example: The operating system must provide automated mechanisms for supporting account management functions.
+        version:
+          type:
+            - string
+            - 'null'
+          description: SRG requirement version identifier mapping this rule to its SRG source.
+          example: SRG-OS-000001-GPOS-00001
+        status:
+          type:
+            - string
+            - 'null'
+          description: Current applicability status of the rule. Null if not yet determined.
+          enum:
+            - Not Yet Determined
+            - Applicable - Configurable
+            - Applicable - Inherently Meets
+            - Applicable - Does Not Meet
+            - Not Applicable
+            - null
+          example: Not Yet Determined
+        rule_severity:
+          type:
+            - string
+            - 'null'
+          description: DISA severity level of the rule.
+          enum:
+            - low
+            - medium
+            - high
+            - null
+          example: medium
+        locked:
+          type: boolean
+          description: Whether the rule is locked from further edits pending review.
+          example: true
+        review_requestor_id:
+          type:
+            - integer
+            - 'null'
+          description: ID of the user who requested review for this rule. Null if no review requested.
+          example: null
+        changes_requested:
+          type: boolean
+          description: Whether changes have been requested on this rule during review.
+          example: false
+        comment_summary:
+          type: object
+          description: Per-rule comment counts. Computed in-memory from eager-loaded reviews.
+          required:
+            - open
+            - total
+          properties:
+            open:
+              type: integer
+              description: Comments not yet adjudicated (pending, triaged, needs_clarification) including replies under open parents.
+              example: 0
+            total:
+              type: integer
+              description: Total comment count across all statuses.
+              example: 0
+    DisaRuleDescription:
+      description: DISA rule description fields — vulnerability discussion, mitigations, and related metadata.
+      type: object
+      required:
+        - id
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          description: Unique description record identifier.
+          example: 300
+        vuln_discussion:
+          type:
+            - string
+            - 'null'
+          description: Vulnerability discussion explaining why this requirement matters.
+          example: Without verification, containers may execute untrusted code...
+        false_positives:
+          type:
+            - string
+            - 'null'
+          description: Known false positive scenarios for this check.
+          example: null
+        false_negatives:
+          type:
+            - string
+            - 'null'
+          description: Known false negative scenarios for this check.
+          example: null
+        documentable:
+          type:
+            - boolean
+            - 'null'
+          description: Whether this requirement is documentable.
+          example: false
+        mitigations:
+          type:
+            - string
+            - 'null'
+          description: Available mitigations if the requirement cannot be met directly.
+          example: null
+        severity_override_guidance:
+          type:
+            - string
+            - 'null'
+          description: Guidance for when severity may be overridden by the assessor.
+          example: null
+        potential_impacts:
+          type:
+            - string
+            - 'null'
+          description: Potential impacts of non-compliance.
+          example: null
+        third_party_tools:
+          type:
+            - string
+            - 'null'
+          description: Third-party tools that can assist with compliance checking.
+          example: null
+        mitigation_control:
+          type:
+            - string
+            - 'null'
+          description: Compensating controls that mitigate the risk.
+          example: null
+        responsibility:
+          type:
+            - string
+            - 'null'
+          description: Who is responsible for implementing this requirement.
+          example: null
+        ia_controls:
+          type:
+            - string
+            - 'null'
+          description: Information assurance controls associated with this requirement.
+          example: null
+        mitigations_available:
+          type:
+            - string
+            - 'null'
+          description: Whether mitigations are available for this requirement.
+          example: null
+        poam_available:
+          type:
+            - string
+            - 'null'
+          description: Whether a Plan of Action and Milestones is available.
+          example: null
+        poam:
+          type:
+            - string
+            - 'null'
+          description: Plan of Action and Milestones content.
+          example: null
+        _destroy:
+          type: boolean
+          description: Nested attributes destroy flag (always false in read responses).
+          example: false
+    CheckSummary:
+      description: STIG check content — how to verify a security requirement is met.
+      type: object
+      required:
+        - id
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          description: Unique check identifier.
+          example: 200
+        system:
+          type:
+            - string
+            - 'null'
+          description: Check system identifier (e.g., C-OVAL for automated checks).
+          example: C-56947r840354_chk
+        content_ref_name:
+          type:
+            - string
+            - 'null'
+          description: Reference name for the check content.
+          example: M
+        content_ref_href:
+          type:
+            - string
+            - 'null'
+          description: URL reference for the check content.
+          example: DPMS_XCCDF-Container_Platform_SRG.xml
+        content:
+          type:
+            - string
+            - 'null'
+          description: The check procedure text — steps to verify compliance.
+          example: Verify the container platform restricts access to container images...
+        _destroy:
+          type: boolean
+          description: Nested attributes destroy flag (always false in read responses).
+          example: false
+    SatisfactionSummary:
+      description: Rule satisfaction relationship — this rule satisfies (implements) an SRG requirement.
+      type: object
+      required:
+        - id
+        - rule_id
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          description: Unique satisfaction record identifier.
+          example: 50
+        rule_id:
+          type: integer
+          description: ID of the rule that is satisfied.
+          example: 100
+        srg_id:
+          type:
+            - string
+            - 'null'
+          description: SRG requirement version identifier (from the SRG rule's version field).
+          example: CNTR-00-000050
+    SatisfiedBySummary:
+      description: Satisfied-by relationship — extends SatisfactionSummary with the parent rule's fix text.
+      type: object
+      required:
+        - id
+        - rule_id
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          description: Unique satisfaction record identifier.
+          example: 50
+        rule_id:
+          type: integer
+          description: ID of the parent rule that satisfies this one.
+          example: 100
+        srg_id:
+          type:
+            - string
+            - 'null'
+          description: SRG requirement version identifier.
+          example: CNTR-00-000050
+        fixtext:
+          type:
+            - string
+            - 'null'
+          description: Fix text from the parent rule (inherited content).
+          example: Configure the container platform to restrict access...
+    RuleDescriptionSummary:
+      description: Rule description record — the HTML/text description block for a rule.
+      type: object
+      required:
+        - id
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          description: Unique description record identifier.
+          example: 400
+        description:
+          type:
+            - string
+            - 'null'
+          description: The rule description text (may contain HTML from XCCDF source).
+          example: <VulnDiscussion>Without verification, containers may execute untrusted code.</VulnDiscussion>
+        _destroy:
+          type: boolean
+          description: Nested attributes destroy flag (always false in read responses).
+          example: false
+    ReviewSummary:
+      description: A review action recorded on a rule. Serialized by ReviewBlueprint (default view). The user_id field is intentionally excluded as a public-comment correlation guard.
+      type: object
+      required:
+        - id
+        - action
+        - comment
+        - rule_id
+        - created_at
+        - triage_status
+        - reactions
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          description: Unique review identifier.
+          example: 1
+        action:
+          type: string
+          description: The type of review action that was performed.
+          enum:
+            - comment
+            - request_review
+            - revoke_review_request
+            - approve
+            - lock
+          example: comment
+        comment:
+          type: string
+          description: The comment text accompanying this review action.
+          example: The check says "verify that TLS 1.2 or greater is being used" but does not specify HOW to verify.
+        created_at:
+          type: string
+          description: Timestamp when the review was created. Format is "YYYY-MM-DD HH:MM:SS UTC" (Blueprinter default).
+          example: 2026-05-19 14:08:17 UTC
+        triage_status:
+          type:
+            - string
+            - 'null'
+          description: Current triage disposition of the comment.
+          enum:
+            - pending
+            - concur
+            - concur_with_comment
+            - non_concur
+            - duplicate
+            - informational
+            - needs_clarification
+            - withdrawn
+            - addressed_by
+            - null
+          example: pending
+        triage_set_at:
+          type:
+            - string
+            - 'null'
+          description: Timestamp when the triage status was last changed. Null if still pending.
+          example: null
+        adjudicated_at:
+          type:
+            - string
+            - 'null'
+          description: Timestamp when the comment reached a terminal triage state. Null if not yet adjudicated.
+          example: null
+        rule_id:
+          type: integer
+          description: ID of the rule this review is attached to.
+          example: 2976
+        section:
+          type:
+            - string
+            - 'null'
+          description: Rule section the comment applies to (e.g. fixtext, check_content, vuln_discussion). Null for general comments.
+          example: check_content
+        responding_to_review_id:
+          type:
+            - integer
+            - 'null'
+          description: ID of the parent review if this is a threaded reply. Null for top-level reviews.
+          example: null
+        duplicate_of_review_id:
+          type:
+            - integer
+            - 'null'
+          description: ID of the review this is marked as a duplicate of. Null if not a duplicate.
+          example: null
+        triage_set_by_id:
+          type:
+            - integer
+            - 'null'
+          description: ID of the user who last changed the triage status. Null if still pending.
+          example: null
+        name:
+          type:
+            - string
+            - 'null'
+          description: Display name of the review author (delegated from User).
+          example: Demo Viewer
+        author_name:
+          type:
+            - string
+            - 'null'
+          description: Display name of the review author (explicit field, same value as name).
+          example: Demo Viewer
+        triager_display_name:
+          type:
+            - string
+            - 'null'
+          description: Display name of the user who triaged this comment. Null if not yet triaged. Uses ImportedAttribution resolution (DB user name → imported name → imported email).
+          example: null
+        triager_imported:
+          type: boolean
+          description: Whether the triager attribution came from an import (no matching DB user).
+          example: false
+        adjudicator_display_name:
+          type:
+            - string
+            - 'null'
+          description: Display name of the user who adjudicated this comment. Null if not yet adjudicated.
+          example: null
+        adjudicator_imported:
+          type: boolean
+          description: Whether the adjudicator attribution came from an import.
+          example: false
+        commenter_display_name:
+          type:
+            - string
+            - 'null'
+          description: Display name of the comment author. Uses ImportedAttribution resolution.
+          example: Demo Viewer
+        commenter_imported:
+          type: boolean
+          description: Whether the commenter attribution came from an import.
+          example: false
+        reactions:
+          type: object
+          description: Aggregate reaction counts and current user's reaction for this review.
+          required:
+            - up
+            - down
+          properties:
+            up:
+              type: integer
+              description: Number of upvote reactions.
+              example: 1
+            down:
+              type: integer
+              description: Number of downvote reactions.
+              example: 0
+            mine:
+              type:
+                - string
+                - 'null'
+              description: The current user's reaction type (up or down). Null if no active reaction.
+              example: null
+    AdditionalAnswerSummary:
+      description: Answer to an additional question on a component rule.
+      type: object
+      required:
+        - id
+        - additional_question_id
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          description: Unique answer identifier.
+          example: 10
+        additional_question_id:
+          type: integer
+          description: ID of the question this answers.
+          example: 3
+        answer:
+          type:
+            - string
+            - 'null'
+          description: The answer text provided by the author.
+          example: Yes, this applies to all container runtime environments.
+    SrgRuleSummary:
+      description: SRG rule — the original SRG requirement that a component rule implements.
+      type: object
+      required:
+        - id
+        - rule_id
+        - title
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          description: Unique SRG rule identifier.
+          example: 500
+        rule_id:
+          type: string
+          description: DISA rule identifier (e.g., SV-222xxx_rule).
+          example: SV-222396r857506_rule
+        title:
+          type: string
+          description: Requirement title.
+          example: The container platform must enforce approved authorizations for access.
+        version:
+          type:
+            - string
+            - 'null'
+          description: SRG version identifier.
+          example: CNTR-00-000050
+        rule_severity:
+          type:
+            - string
+            - 'null'
+          description: Severity level.
+          enum:
+            - low
+            - medium
+            - high
+          example: medium
+        rule_weight:
+          type:
+            - string
+            - 'null'
+          description: Rule weight for scoring.
+          example: '10.0'
+        ident:
+          type:
+            - string
+            - 'null'
+          description: CCI identifiers (comma-separated).
+          example: CCI-000213
+        ident_system:
+          type:
+            - string
+            - 'null'
+          description: Identifier system URI.
+          example: http://cyber.mil/cci
+        fixtext:
+          type:
+            - string
+            - 'null'
+          description: Fix text describing how to remediate.
+          example: Configure the container platform to enforce approved authorizations...
+        fixtext_fixref:
+          type:
+            - string
+            - 'null'
+          description: Fix reference identifier.
+          example: F-25073r857505_fix
+        fix_id:
+          type:
+            - string
+            - 'null'
+          description: Fix identifier.
+          example: F-25073r857505_fix
+        inspec_control_body:
+          type:
+            - string
+            - 'null'
+          description: InSpec control Ruby source code.
+          example: null
+        inspec_control_file:
+          type:
+            - string
+            - 'null'
+          description: InSpec control file path.
+          example: null
+        inspec_control_body_lang:
+          type:
+            - string
+            - 'null'
+          description: Language of the InSpec control body (usually ruby).
+          example: null
+        inspec_control_file_lang:
+          type:
+            - string
+            - 'null'
+          description: Language of the InSpec control file.
+          example: null
+        vuln_id:
+          type:
+            - string
+            - 'null'
+          description: Vulnerability identifier (V-number).
+          example: V-222396
+        legacy_ids:
+          type:
+            - string
+            - 'null'
+          description: Legacy rule identifiers from previous STIG versions (comma-separated string).
+          example: SV-42474, V-32157
+        rule_descriptions_attributes:
+          type: array
+          description: Rule description records.
+          items:
+            $ref: '#/components/schemas/RuleDescriptionSummary'
+        disa_rule_descriptions_attributes:
+          type: array
+          description: DISA rule description records (vuln discussion, mitigations, etc.).
+          items:
+            $ref: '#/components/schemas/DisaRuleDescription'
+        checks_attributes:
+          type: array
+          description: Check content records.
+          items:
+            $ref: '#/components/schemas/CheckSummary'
+    RuleEditorResponse:
+      description: Full rule for the editing form. Serialized by RuleBlueprint :editor view. Includes viewer fields (text content, nested associations) plus editor-only fields (InSpec, reviews, additional answers, SRG source data). 38 total fields. Used by GET /rules/:id, GET /components/:id/rules, and nested inside ComponentEditorResponse.
+      allOf:
+        - $ref: '#/components/schemas/RuleSummary'
+        - type: object
+          properties:
+            rule_weight:
+              type:
+                - string
+                - 'null'
+              description: Rule weight for DISA scoring.
+              example: '10.0'
+            fixtext:
+              type:
+                - string
+                - 'null'
+              description: Remediation instructions.
+              example: Configure the operating system to provide automated mechanisms...
+            fixtext_fixref:
+              type:
+                - string
+                - 'null'
+              description: Fix reference identifier.
+              example: F-3716r557030_fix
+            ident:
+              type:
+                - string
+                - 'null'
+              description: CCI identifiers (comma-separated).
+              example: CCI-000015
+            ident_system:
+              type:
+                - string
+                - 'null'
+              description: Identifier system URI.
+              example: http://cyber.mil/cci
+            vendor_comments:
+              type:
+                - string
+                - 'null'
+              description: Vendor-provided implementation notes.
+              example: null
+            vuln_id:
+              type:
+                - string
+                - 'null'
+              description: Vulnerability identifier (V-number).
+              example: null
+            legacy_ids:
+              type:
+                - string
+                - 'null'
+              description: Legacy rule identifiers (comma-separated string).
+              example: V-56571, SV-70831
+            component_id:
+              type: integer
+              description: ID of the component this rule belongs to.
+              example: 1
+            status_justification:
+              type:
+                - string
+                - 'null'
+              description: Justification text for NA or DNM status.
+              example: null
+            artifact_description:
+              type:
+                - string
+                - 'null'
+              description: Description of compliance evidence artifacts.
+              example: null
+            locked_fields:
+              type: object
+              description: Map of section names to locked state. Empty object means no sections locked.
+              additionalProperties:
+                type: boolean
+              example: {}
+            nist_control_family:
+              type:
+                - string
+                - 'null'
+              description: NIST SP 800-53 control family mapping.
+              example: AC-2 (1)
+            srg_id:
+              type:
+                - string
+                - 'null'
+              description: SRG requirement version this rule implements.
+              example: SRG-OS-000001-GPOS-00001
+            inspec_control_body:
+              type:
+                - string
+                - 'null'
+              description: InSpec control Ruby source code.
+              example: null
+            inspec_control_file:
+              type:
+                - string
+                - 'null'
+              description: InSpec control file path.
+              example: null
+            inspec_control_body_lang:
+              type:
+                - string
+                - 'null'
+              description: Language of the InSpec control body.
+              example: ruby
+            inspec_control_file_lang:
+              type:
+                - string
+                - 'null'
+              description: Language of the InSpec control file.
+              example: ruby
+            fix_id:
+              type:
+                - string
+                - 'null'
+              description: Fix identifier.
+              example: F-3716r557030_fix
+            disa_rule_descriptions_attributes:
+              type: array
+              description: DISA rule description records.
+              items:
+                $ref: '#/components/schemas/DisaRuleDescription'
+            checks_attributes:
+              type: array
+              description: Check content records.
+              items:
+                $ref: '#/components/schemas/CheckSummary'
+            satisfies:
+              type: array
+              description: Rules that this rule satisfies (child-to-parent relationships).
+              items:
+                $ref: '#/components/schemas/SatisfactionSummary'
+            satisfied_by:
+              type: array
+              description: Rules that satisfy this rule (parent-to-child relationships).
+              items:
+                $ref: '#/components/schemas/SatisfiedBySummary'
+            rule_descriptions_attributes:
+              type: array
+              description: Raw rule description records.
+              items:
+                $ref: '#/components/schemas/RuleDescriptionSummary'
+            reviews:
+              type: array
+              description: Review actions on this rule (comments, approvals, etc.).
+              items:
+                $ref: '#/components/schemas/ReviewSummary'
+            additional_answers_attributes:
+              type: array
+              description: Answers to component-level additional questions.
+              items:
+                $ref: '#/components/schemas/AdditionalAnswerSummary'
+            srg_rule_attributes:
+              description: Source SRG rule data (the baseline requirement this rule implements). Null if no SRG rule linked.
+              oneOf:
+                - $ref: '#/components/schemas/SrgRuleSummary'
+                - type: 'null'
+            srg_info:
+              type:
+                - object
+                - 'null'
+              description: SRG version metadata.
+              properties:
+                version:
+                  type:
+                    - string
+                    - 'null'
+                  example: V2R4
+    ComponentEditorResponse:
+      description: Full component for the editing page. Serialized by ComponentBlueprint :editor view. 35 total fields including nested rules, memberships, histories, reviews. Used by GET /components/:id (member), GET /components/:id/rules (via index).
+      allOf:
+        - $ref: '#/components/schemas/ComponentSummary'
+        - type: object
+          properties:
+            title:
+              type:
+                - string
+                - 'null'
+              description: Full official title of the component.
+              example: Photon OS 3 STIG Readiness Guide
+            description:
+              type:
+                - string
+                - 'null'
+              description: Optional longer description.
+              example: null
+            admin_name:
+              type:
+                - string
+                - 'null'
+              description: Point of contact name.
+              example: Photon OS Maintainer
+            admin_email:
+              type:
+                - string
+                - 'null'
+              format: email
+              description: Point of contact email.
+              example: photon-team@example.org
+            released:
+              type: boolean
+              description: Whether finalized.
+              example: true
+            advanced_fields:
+              type: boolean
+              description: Whether advanced DISA fields are shown in the editor.
+              example: false
+            project_id:
+              type: integer
+              description: ID of the parent project.
+              example: 1
+            component_id:
+              type:
+                - integer
+                - 'null'
+              description: ID of the source component if this is an overlay. Null for originals.
+              example: null
+            security_requirements_guide_id:
+              type: integer
+              description: ID of the SRG this component is based on.
+              example: 3
+            memberships_count:
+              type: integer
+              description: Number of direct memberships on this component.
+              example: 0
+            rules_count:
+              type: integer
+              description: Number of rules in this component.
+              example: 203
+            updated_at:
+              type: string
+              description: Last modified timestamp. Blueprinter format.
+              example: 2026-05-29 15:36:06 UTC
+            created_at:
+              type: string
+              description: Creation timestamp. Blueprinter format.
+              example: 2026-05-19 14:07:48 UTC
+            comment_phase:
+              type:
+                - string
+                - 'null'
+              description: Current comment period phase.
+              enum:
+                - draft
+                - open
+                - closed
+                - null
+              example: open
+            closed_reason:
+              type:
+                - string
+                - 'null'
+              description: Reason the comment period was closed.
+              example: null
+            comment_period_starts_at:
+              type:
+                - string
+                - 'null'
+              description: Start of the public comment period.
+              example: null
+            comment_period_ends_at:
+              type:
+                - string
+                - 'null'
+              description: End of the public comment period.
+              example: null
+            releasable:
+              type: boolean
+              description: Whether all rules meet release criteria.
+              example: false
+            status_counts:
+              type: object
+              description: Count of rules by applicability status.
+              example:
+                Not Yet Determined: 200
+                Applicable - Configurable: 2
+                Not Applicable: 1
+            additional_questions:
+              type: array
+              description: Component-level custom questions for rule authors.
+              items:
+                type: object
+            rules:
+              type: array
+              description: All rules via RuleBlueprint :editor view.
+              items:
+                $ref: '#/components/schemas/RuleEditorResponse'
+            reviews:
+              type: array
+              description: Recent reviews (last 20, hand-built hashes with displayed_rule_name).
+              items:
+                type: object
+            histories:
+              type: array
+              description: Audit trail entries (last 50).
+              items:
+                type: object
+            memberships:
+              type: array
+              description: Direct component memberships.
+              items:
+                $ref: '#/components/schemas/MembershipSummary'
+            metadata:
+              type:
+                - object
+                - 'null'
+              description: Component metadata key-value pairs.
+              example: null
+            inherited_memberships:
+              type: array
+              description: Memberships inherited from the parent project.
+              items:
+                $ref: '#/components/schemas/MembershipSummary'
+    CommentRow:
+      description: A single comment row in the triage comment listing. Serialized by CommentQueryService#serialize_rows — NOT by ReviewBlueprint. This is a hand-built hash with triage attribution, grouping, and rule context fields.
+      type: object
+      required:
+        - id
         - commentable_type
-        - author_name
-        - author_email
         - comment
         - created_at
         - triage_status
         - responses_count
         - reactions
+      additionalProperties: false
       properties:
         id:
           type: integer
           description: Unique review/comment identifier.
-          example: 44
+          example: 26
         rule_id:
           type:
             - integer
             - 'null'
           description: ID of the rule this comment is attached to. Null for component-level comments.
-          example: 100
+          example: 1823
         rule_displayed_name:
-          type: string
-          description: Human-readable rule identifier shown in the UI (e.g. PREFIX-rule_id).
-          example: CNTR-00-000050
+          type:
+            - string
+            - 'null'
+          description: Human-readable rule identifier (PREFIX-rule_id). Null or "(component)" for component-level comments.
+          example: PHOS-03-000038
         commentable_type:
           type: string
           description: Polymorphic type indicating whether the comment targets a rule or a component.
@@ -3706,60 +5722,147 @@ components:
           type:
             - string
             - 'null'
-          description: Rule section the comment applies to (e.g. fixtext, check_content, vuln_discussion). Null for general comments.
-          example: fixtext
+          description: Rule section the comment applies to (e.g. fixtext, check_content, vuln_discussion). Null for general or component-level comments.
+          example: null
         author_name:
-          type: string
-          description: Display name of the user who authored the comment.
-          example: Jane Doe
+          type:
+            - string
+            - 'null'
+          description: Display name of the comment author (from commenter_display_name).
+          example: Demo Viewer
         author_email:
-          type: string
+          type:
+            - string
+            - 'null'
           format: email
           description: Email address of the comment author.
-          example: jane.doe@example.org
+          example: viewer@example.org
         comment:
           type: string
           description: The comment text content.
-          example: The fix text should reference the container runtime configuration file.
+          example: FYI we already shipped this in our internal hardening guide.
         created_at:
           type: string
-          format: date-time
           description: Timestamp when the comment was created.
-          example: '2026-05-28T15:00:00Z'
+          example: 2026-05-19 14:08:18 UTC
         triage_status:
-          type: string
+          type:
+            - string
+            - 'null'
           description: Current triage disposition of the comment.
-          example: pending
+          enum:
+            - pending
+            - concur
+            - concur_with_comment
+            - non_concur
+            - duplicate
+            - informational
+            - needs_clarification
+            - withdrawn
+            - addressed_by
+            - null
+          example: informational
         triage_set_at:
           type:
             - string
             - 'null'
-          format: date-time
           description: Timestamp when the triage status was last changed. Null if still pending.
-          example: null
+          example: 2026-05-19 14:08:18 UTC
         adjudicated_at:
           type:
             - string
             - 'null'
-          format: date-time
           description: Timestamp when the comment reached a terminal triage state. Null if not yet adjudicated.
+          example: 2026-05-19 14:08:18 UTC
+        duplicate_of_review_id:
+          type:
+            - integer
+            - 'null'
+          description: ID of the review this is marked as a duplicate of. Null if not a duplicate.
           example: null
+        addressed_by_rule_id:
+          type:
+            - integer
+            - 'null'
+          description: ID of the rule that addresses this comment (for addressed_by triage status). Null otherwise.
+          example: null
+        addressed_by_rule_name:
+          type:
+            - string
+            - 'null'
+          description: Display name of the rule that addresses this comment. Null if not addressed_by.
+          example: null
+        triager_display_name:
+          type:
+            - string
+            - 'null'
+          description: Display name of the user who triaged this comment. Uses ImportedAttribution resolution.
+          example: Demo Author
+        triager_imported:
+          type: boolean
+          description: Whether the triager attribution came from an import (no matching DB user).
+          example: false
+        adjudicator_display_name:
+          type:
+            - string
+            - 'null'
+          description: Display name of the user who adjudicated this comment.
+          example: Demo Author
+        adjudicator_imported:
+          type: boolean
+          description: Whether the adjudicator attribution came from an import.
+          example: false
+        commenter_display_name:
+          type:
+            - string
+            - 'null'
+          description: Display name of the comment author. Uses ImportedAttribution resolution.
+          example: Demo Viewer
+        commenter_imported:
+          type: boolean
+          description: Whether the commenter attribution came from an import.
+          example: false
         responses_count:
           type: integer
           description: Number of threaded replies to this comment.
-          example: 2
+          example: 0
         reactions:
           type: object
-          description: Aggregate reaction counts for this comment.
+          description: Aggregate reaction counts for this comment (no mine field — unlike ReviewSummary).
+          required:
+            - up
+            - down
           properties:
             up:
               type: integer
               description: Number of upvote reactions.
-              example: 3
+              example: 0
             down:
               type: integer
               description: Number of downvote reactions.
               example: 0
+        updated_at:
+          type: string
+          description: Timestamp when the comment was last modified.
+          example: 2026-05-19 14:08:18 UTC
+        rule_status:
+          type:
+            - string
+            - 'null'
+          description: Current applicability status of the rule this comment is on. Null for component-level comments.
+          example: Not Yet Determined
+        parent_rule_displayed_name:
+          type:
+            - string
+            - 'null'
+          description: Display name of the parent rule (if this rule is a child via satisfies relationship). Null if no parent.
+          example: null
+        group_rule_displayed_name:
+          type:
+            - string
+            - 'null'
+          description: Grouping key — parent_rule_displayed_name if present, otherwise rule_displayed_name. Used for by-rule grouping in the triage table.
+          example: PHOS-03-000038
     PaginatedComments:
       description: Paginated list of comments with pagination metadata and triage status counts.
       type: object
@@ -3808,186 +5911,6 @@ components:
             concur: 45
             non_concur: 8
             withdrawn: 3
-    AuditEntry:
-      description: A single audit trail entry recording a change to an auditable record.
-      type: object
-      required:
-        - id
-        - auditable_type
-        - auditable_id
-        - action
-      properties:
-        id:
-          type: integer
-          description: Unique audit entry identifier.
-          example: 1024
-        auditable_type:
-          type: string
-          description: Rails model class name of the audited record (e.g. Rule, Review, Component).
-          example: Rule
-        auditable_id:
-          type: integer
-          description: Primary key of the audited record.
-          example: 100
-        action:
-          type: string
-          description: Type of change that was made.
-          enum:
-            - create
-            - update
-            - destroy
-          example: update
-        audited_changes:
-          oneOf:
-            - type: object
-            - type: string
-            - type: 'null'
-          description: Hash of changed attributes with before/after values, a serialized string, or null for destroy actions.
-          example:
-            status:
-              - Not Yet Determined
-              - Applicable - Configurable
-        user_id:
-          type:
-            - integer
-            - 'null'
-          description: ID of the user who made the change. Null for system-initiated changes.
-          example: 42
-        created_at:
-          type:
-            - string
-            - 'null'
-          format: date-time
-          description: Timestamp when the audit entry was recorded.
-          example: '2026-05-28T15:00:00Z'
-    ComponentSummary:
-      description: Summary of a STIG component belonging to a project.
-      type: object
-      required:
-        - id
-        - name
-        - prefix
-        - released
-        - project_id
-        - rules_count
-      properties:
-        id:
-          type: integer
-          description: Unique component identifier.
-          example: 29
-        name:
-          type: string
-          description: Human-readable component name.
-          example: Container SRG
-        prefix:
-          type: string
-          description: Short alphanumeric prefix used to construct rule IDs (e.g. CNTR in CNTR-00-000050).
-          example: CNTR
-        version:
-          type:
-            - integer
-            - 'null'
-          description: Version number of the component. Null if not yet set.
-          example: 1
-        release:
-          type:
-            - integer
-            - 'null'
-          description: Release number of the component. Null if not yet set.
-          example: 1
-        title:
-          type:
-            - string
-            - 'null'
-          description: Full official title of the component.
-          example: Container Platform Security Technical Implementation Guide
-        released:
-          type: boolean
-          description: Whether this component has been marked as released (finalized).
-          example: false
-        project_id:
-          type: integer
-          description: ID of the project this component belongs to.
-          example: 7
-        rules_count:
-          type: integer
-          description: Number of rules (security controls) in this component.
-          example: 120
-        description:
-          type:
-            - string
-            - 'null'
-          description: Optional longer description of the component scope and purpose.
-          example: STIG guidance for container orchestration platform deployments.
-    ComponentInput:
-      description: Input fields for creating or updating a STIG component within a project.
-      type: object
-      required:
-        - name
-        - prefix
-        - title
-      properties:
-        name:
-          type: string
-          description: Human-readable component name.
-          example: Container SRG
-        prefix:
-          type: string
-          description: Short alphanumeric prefix used to construct rule IDs (e.g. CNTR in CNTR-00-000050).
-          example: CNTR
-        version:
-          type: string
-          description: Version number of the component.
-          example: '1'
-        release:
-          type: string
-          description: Release number of the component.
-          example: '1'
-        title:
-          type: string
-          description: Full official title of the component.
-          example: Container Platform Security Technical Implementation Guide
-        description:
-          type: string
-          description: Optional longer description of the component scope and purpose.
-          example: STIG guidance for container orchestration platform deployments.
-    RuleSummary:
-      description: Summary of a security rule within a component.
-      type: object
-      required:
-        - id
-        - rule_id
-        - locked
-        - component_id
-      properties:
-        id:
-          type: integer
-          description: Unique rule identifier.
-          example: 100
-        rule_id:
-          type: string
-          description: Six-digit zero-padded rule number combined with the component prefix to form the displayed ID (e.g. CNTR-00-000050).
-          example: '000050'
-        status:
-          type:
-            - string
-            - 'null'
-          description: Current applicability status of the rule. Null if not yet determined.
-          example: Applicable - Configurable
-        title:
-          type:
-            - string
-            - 'null'
-          description: Title of the security control. Null if not yet authored.
-          example: The container platform must enforce approved authorizations for access.
-        locked:
-          type: boolean
-          description: Whether the rule is locked from further edits pending review.
-          example: false
-        component_id:
-          type: integer
-          description: ID of the component this rule belongs to.
-          example: 29
     RuleInput:
       description: Input fields for updating a security rule within a component.
       type: object
@@ -4026,6 +5949,104 @@ components:
           type: boolean
           description: Whether the rule is locked from further edits pending review.
           example: false
+    RuleCreateResponse:
+      description: Response from rule creation. Toast notification plus the created rule under the "data" key.
+      type: object
+      required:
+        - toast
+        - data
+      properties:
+        toast:
+          $ref: '#/components/schemas/ToastObject'
+        data:
+          $ref: '#/components/schemas/RuleEditorResponse'
+    RulePickerResponse:
+      description: Lightweight rule for picker dropdowns. Serialized by RuleBlueprint :picker view. Extends RuleSummary defaults with displayed_name and satisfaction relationships. 13 total fields.
+      allOf:
+        - $ref: '#/components/schemas/RuleSummary'
+        - type: object
+          properties:
+            displayed_name:
+              type: string
+              description: Human-readable rule identifier (PREFIX-rule_id).
+              example: PHOS-03-000001
+            satisfies:
+              type: array
+              description: Rules that this rule satisfies.
+              items:
+                $ref: '#/components/schemas/SatisfactionSummary'
+            satisfied_by:
+              type: array
+              description: Rules that satisfy this rule.
+              items:
+                $ref: '#/components/schemas/SatisfiedBySummary'
+    RuleBasicFields:
+      description: Lightweight rule snapshot used for version-to-version diff comparisons. Produced by Rule#basic_fields. Contains only the fields needed to detect content changes between component releases.
+      type: object
+      required:
+        - rule_id
+      additionalProperties: false
+      properties:
+        rule_id:
+          type: string
+          description: Six-digit zero-padded rule number.
+          example: '000001'
+        title:
+          type:
+            - string
+            - 'null'
+          description: Rule title.
+          example: The operating system must provide automated mechanisms for account management.
+        vuln_discussion:
+          type:
+            - string
+            - 'null'
+          description: Vulnerability discussion text (from first DISA rule description).
+          example: Without automated mechanisms, account management becomes error-prone...
+        check:
+          type:
+            - string
+            - 'null'
+          description: Check procedure text (exported format from checks).
+          example: Verify the operating system provides automated mechanisms...
+        fix:
+          type:
+            - string
+            - 'null'
+          description: Fix text (exported format).
+          example: Configure the operating system to provide automated mechanisms...
+    HistoryChangeEntry:
+      description: 'A single rule change between two component versions. Part of the component version history diff. The change type determines which fields are present: ''added'' has only diff, ''removed'' has only base, ''updated'' has both.'
+      type: object
+      required:
+        - change
+      additionalProperties: false
+      properties:
+        change:
+          type: string
+          description: Type of change between versions.
+          enum:
+            - added
+            - removed
+            - updated
+          example: updated
+        base:
+          description: Rule content in the previous version. Present for 'removed' and 'updated' changes.
+          $ref: '#/components/schemas/RuleBasicFields'
+        diff:
+          description: Rule content in the new version. Present for 'added' and 'updated' changes.
+          $ref: '#/components/schemas/RuleBasicFields'
+    RuleSectionLockResponse:
+      description: Response from section lock/unlock. Toast notification plus the updated rule. Used by PATCH /rules/:id/section_locks and PATCH /rules/:id/bulk_section_locks.
+      type: object
+      required:
+        - rule
+        - toast
+      properties:
+        rule:
+          $ref: '#/components/schemas/RuleEditorResponse'
+        toast:
+          $ref: '#/components/schemas/ToastObject'
     ReviewInput:
       description: Input fields for creating a review action (comment, approval, review request, or lock) on a rule.
       type: object
@@ -4055,53 +6076,52 @@ components:
           type: integer
           description: ID of the parent review when creating a threaded reply.
           example: 43
-    ReviewSummary:
-      description: Summary of a review action recorded on a rule.
+    ReviewWrapper:
+      description: 'Standard review mutation response. Wraps a single ReviewSummary in a { review: ... } envelope. Used by update, reopen, withdraw, admin_withdraw, admin_restore, move_to_rule, and section endpoints.'
       type: object
       required:
-        - id
-        - action
-        - comment
-        - rule_id
-        - created_at
+        - review
+      additionalProperties: false
       properties:
-        id:
-          type: integer
-          description: Unique review identifier.
-          example: 44
-        action:
-          type: string
-          description: The type of review action that was performed.
-          example: comment
-        comment:
-          type: string
-          description: The comment text accompanying this review action.
-          example: The fix text should reference the container runtime configuration file.
-        user_id:
-          type: integer
-          description: ID of the user who created this review.
-          example: 42
-        rule_id:
-          type: integer
-          description: ID of the rule this review is attached to.
-          example: 100
-        created_at:
-          type: string
-          format: date-time
-          description: Timestamp when the review was created.
-          example: '2026-05-28T15:00:00Z'
-        responding_to_review_id:
-          type:
-            - integer
-            - 'null'
-          description: ID of the parent review if this is a threaded reply. Null for top-level reviews.
+        review:
+          $ref: '#/components/schemas/ReviewSummary'
+    TriageResponse:
+      description: Response from triage or adjudicate actions. Contains the updated review and an optional response_review (child comment created atomically when the triager provides a response comment alongside the triage decision).
+      type: object
+      required:
+        - review
+      additionalProperties: false
+      properties:
+        review:
+          $ref: '#/components/schemas/ReviewSummary'
+        response_review:
+          description: Child review created as a response to the triage decision. Null if no response comment was provided. Present when the triager includes a response_comment in the triage/adjudicate request.
+          oneOf:
+            - $ref: '#/components/schemas/ReviewSummary'
+            - type: 'null'
+    AdminDestroyResponse:
+      description: Response from admin hard-delete of a review. Returns null for the review (confirming deletion) and the destroyed review's ID for frontend cleanup.
+      type: object
+      required:
+        - review
+        - destroyed_id
+      additionalProperties: false
+      properties:
+        review:
+          type: 'null'
+          description: Always null — confirms the review was destroyed.
           example: null
+        destroyed_id:
+          type: integer
+          description: ID of the destroyed review, for frontend to remove from local state.
+          example: 44
     ReactionsSummary:
       description: Detailed reaction lists showing which users reacted with each type.
       type: object
       required:
         - up
         - down
+      additionalProperties: false
       properties:
         up:
           type: array
@@ -4132,6 +6152,7 @@ components:
       type: object
       required:
         - reactions
+      additionalProperties: false
       properties:
         reactions:
           type: object
@@ -4186,139 +6207,474 @@ components:
             - reviewer
             - admin
           example: author
-    BenchmarkSummary:
-      description: Summary of an SRG or STIG benchmark imported into Vulcan.
+    SrgSummary:
+      description: Security Requirements Guide (SRG) listing entry. Serialized by SrgBlueprint (default/index view). SRGs use release_date (not benchmark_date — that is STIGs).
       type: object
       required:
         - id
+        - srg_id
         - severity_counts
       properties:
         id:
           type: integer
-          description: Unique benchmark identifier.
-          example: 5
+          description: Unique SRG identifier.
+          example: 1
         srg_id:
           type:
             - string
             - 'null'
-          description: DISA SRG identifier (e.g. SRG-APP-000001). Null for STIG benchmarks.
-          example: SRG-APP-000001
-        stig_id:
-          type:
-            - string
-            - 'null'
-          description: DISA STIG identifier. Null for SRG benchmarks.
-          example: null
+          description: DISA SRG identifier string.
+          example: Container_Platform_SRG
         name:
           type:
             - string
             - 'null'
-          description: Short name of the benchmark.
-          example: Container Platform SRG
+          description: Short name including version and release.
+          example: Container Platform SRG - Ver 2, Rel 4
         title:
           type:
             - string
             - 'null'
-          description: Full official title of the benchmark.
+          description: Full official title.
           example: Container Platform Security Requirements Guide
         version:
           type:
             - string
             - 'null'
-          description: Version string of the benchmark (e.g. V1R1).
-          example: V1R1
+          description: Version string (e.g. V2R4).
+          example: V2R4
         release_date:
           type:
             - string
             - 'null'
           format: date
-          description: Date the benchmark was published by DISA.
-          example: '2026-03-15'
+          description: Date the SRG was published by DISA.
+          example: '2025-10-28'
         severity_counts:
           type: object
-          description: Count of rules at each severity level within this benchmark.
-          example:
-            high: 12
-            medium: 85
-            low: 23
-    StatusOk:
-      description: Simple health check response indicating the service is running.
-      type: object
-      required:
-        - status
-      properties:
-        status:
-          type: string
-          description: Service health status.
-          example: ok
-    UserToastResponse:
-      description: Combined response containing a toast notification and the updated user summary.
-      type: object
-      required:
-        - toast
-        - user
-      properties:
-        toast:
-          type: object
-          description: Toast notification describing the result of the user operation.
-          required:
-            - title
-            - message
-            - variant
+          description: Count of rules at each severity level within this SRG.
           properties:
-            title:
-              type: string
-              description: Short human-readable summary of the outcome.
-              example: Account locked.
-            message:
+            high:
+              type: integer
+              example: 8
+            medium:
+              type: integer
+              example: 177
+            low:
+              type: integer
+              example: 3
+    SrgDetailResponse:
+      description: Full SRG detail with nested rules. Serialized by SrgBlueprint :show view. Extends SrgSummary with srg_rules array.
+      allOf:
+        - $ref: '#/components/schemas/SrgSummary'
+        - type: object
+          properties:
+            srg_rules:
               type: array
-              description: Detail lines providing additional context.
+              description: All rules in this SRG, each with full DISA metadata and check content.
               items:
-                type: string
-              example:
-                - Account jane.doe@example.org locked.
-            variant:
-              type: string
-              description: Bootstrap alert variant controlling toast styling.
-              example: success
-        user:
-          $ref: '#/components/schemas/UserSummary'
-    AdminCreateResponse:
-      description: Response from admin user creation, including a toast notification, the created user, and an optional password reset URL.
+                $ref: '#/components/schemas/SrgRuleSummary'
+    StigSummary:
+      description: Security Technical Implementation Guide (STIG) listing entry. Serialized by StigBlueprint (default/index view). STIGs use benchmark_date (not release_date — that is SRGs).
       type: object
       required:
-        - toast
-        - user
+        - id
+        - stig_id
+        - severity_counts
       properties:
-        toast:
+        id:
+          type: integer
+          description: Unique STIG identifier.
+          example: 1
+        stig_id:
           type:
             - string
-            - object
-          description: Toast notification or redirect path string depending on the response context.
+            - 'null'
+          description: DISA STIG identifier string.
+          example: Application_Security_Development_STIG
+        name:
+          type:
+            - string
+            - 'null'
+          description: Short name including version and release.
+          example: Application Security Development STIG - Ver 6, Rel 4
+        title:
+          type:
+            - string
+            - 'null'
+          description: Full official title.
+          example: Application Security and Development Security Technical Implementation Guide
+        version:
+          type:
+            - string
+            - 'null'
+          description: Version string (e.g. V6R4).
+          example: V6R4
+        benchmark_date:
+          type:
+            - string
+            - 'null'
+          format: date
+          description: Date the STIG benchmark was published by DISA.
+          example: '2025-10-01'
+        severity_counts:
+          type: object
+          description: Count of rules at each severity level within this STIG.
           properties:
-            title:
-              type: string
-              description: Short human-readable summary of the outcome.
-              example: User created.
-            message:
+            high:
+              type: integer
+              example: 34
+            medium:
+              type: integer
+              example: 230
+            low:
+              type: integer
+              example: 22
+    StigRuleSummary:
+      description: Published STIG rule — a finalized security requirement from a published STIG.
+      type: object
+      required:
+        - id
+        - rule_id
+        - title
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          description: Unique STIG rule identifier.
+          example: 600
+        rule_id:
+          type: string
+          description: DISA rule identifier.
+          example: SV-222396r857506_rule
+        title:
+          type: string
+          description: Requirement title.
+          example: The container platform must enforce approved authorizations for access.
+        version:
+          type:
+            - string
+            - 'null'
+          description: STIG version identifier.
+          example: CNTR-00-000050
+        rule_severity:
+          type:
+            - string
+            - 'null'
+          enum:
+            - low
+            - medium
+            - high
+          example: medium
+        rule_weight:
+          type:
+            - string
+            - 'null'
+          example: '10.0'
+        ident:
+          type:
+            - string
+            - 'null'
+          description: CCI identifiers (comma-separated).
+          example: CCI-000213
+        ident_system:
+          type:
+            - string
+            - 'null'
+          example: http://cyber.mil/cci
+        fixtext:
+          type:
+            - string
+            - 'null'
+          description: Fix text describing how to remediate.
+          example: Configure the container platform to enforce approved authorizations...
+        fixtext_fixref:
+          type:
+            - string
+            - 'null'
+          example: F-25073r857505_fix
+        fix_id:
+          type:
+            - string
+            - 'null'
+          example: F-25073r857505_fix
+        srg_id:
+          type:
+            - string
+            - 'null'
+          description: SRG requirement this STIG rule implements.
+          example: SRG-APP-000033-CTR-000095
+        vuln_id:
+          type:
+            - string
+            - 'null'
+          description: Vulnerability identifier (V-number).
+          example: V-222396
+        legacy_ids:
+          type:
+            - string
+            - 'null'
+          description: Legacy rule identifiers from previous STIG versions (comma-separated string).
+          example: V-69239, SV-83861
+        disa_rule_descriptions_attributes:
+          type: array
+          description: DISA rule description records.
+          items:
+            $ref: '#/components/schemas/DisaRuleDescription'
+        checks_attributes:
+          type: array
+          description: Check content records.
+          items:
+            $ref: '#/components/schemas/CheckSummary'
+    StigDetailResponse:
+      description: Full STIG detail with nested rules. Serialized by StigBlueprint :show view. Extends StigSummary with description and stig_rules array.
+      allOf:
+        - $ref: '#/components/schemas/StigSummary'
+        - type: object
+          properties:
+            description:
               type:
-                - array
                 - string
-              description: Detail lines or a single message string.
+                - 'null'
+              description: Full description of the STIG.
+              example: This Security Technical Implementation Guide is published as a tool to improve the security of Department of Defense information systems.
+            stig_rules:
+              type: array
+              description: All rules in this STIG, each with full DISA metadata and check content.
               items:
-                type: string
-              example:
-                - Account jane.doe@example.org created successfully.
-            variant:
-              type: string
-              description: Bootstrap alert variant controlling toast styling.
-              example: success
+                $ref: '#/components/schemas/StigRuleSummary'
+    UserSummary:
+      description: Summary of a user account for admin management views.
+      type: object
+      required:
+        - id
+        - email
+        - admin
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          description: Unique user identifier.
+          example: 42
+        name:
+          type:
+            - string
+            - 'null'
+          description: Display name chosen by the user. Null if not yet set.
+          example: Jane Doe
+        email:
+          type: string
+          format: email
+          description: Login email address.
+          example: jane.doe@example.org
+        provider:
+          type:
+            - string
+            - 'null'
+          description: Authentication provider used for this account (local, github, ldap, or oidc). Null for local accounts.
+          example: local
+        admin:
+          type: boolean
+          description: Whether the user has administrator privileges.
+          example: false
+        last_sign_in_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+          description: Timestamp of the most recent successful sign-in. Null if the user has never signed in.
+          example: '2026-05-28T15:00:00Z'
+        failed_attempts:
+          type: integer
+          description: Number of consecutive failed login attempts since last successful sign-in.
+          example: 0
+        locked_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+          description: Timestamp when the account was locked due to excessive failed attempts. Null if not locked.
+          example: null
+    UserToastResponse:
+      description: Combined response containing a toast notification and the updated user. Used by PUT /users/:id, POST /users/:id/lock, POST /users/:id/unlock.
+      type: object
+      required:
+        - toast
+        - user
+      additionalProperties: false
+      properties:
+        toast:
+          $ref: '#/components/schemas/ToastObject'
         user:
+          $ref: '#/components/schemas/UserSummary'
+    UserCommentRow:
+      description: A single comment row in the user's My Comments listing. Serialized by UsersController#comment_row_for — different shape from CommentRow (component triage listing). Includes project/component context for cross-project navigation but omits triage attribution fields.
+      type: object
+      required:
+        - id
+        - commentable_type
+        - comment
+        - created_at
+        - triage_status
+        - responses_count
+        - reactions
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          description: Unique review/comment identifier.
+          example: 29
+        project_id:
+          type:
+            - integer
+            - 'null'
+          description: ID of the project containing this comment's rule/component.
+          example: 3
+        project_name:
+          type:
+            - string
+            - 'null'
+          description: Name of the project.
+          example: vSphere 7.0
+        component_id:
+          type:
+            - integer
+            - 'null'
+          description: ID of the component containing the rule.
+          example: 4
+        component_name:
+          type:
+            - string
+            - 'null'
+          description: Name of the component.
+          example: Photon OS 3
+        rule_id:
+          type:
+            - integer
+            - 'null'
+          description: ID of the rule this comment is attached to. Null for component-level comments.
+          example: 2397
+        rule_displayed_name:
+          type:
+            - string
+            - 'null'
+          description: Human-readable rule identifier (PREFIX-rule_id). "(component)" for component-level comments.
+          example: PHOS-03-000039
+        commentable_type:
+          type: string
+          description: Polymorphic type indicating whether the comment targets a rule or a component.
+          enum:
+            - BaseRule
+            - Component
+          example: BaseRule
+        section:
+          type:
+            - string
+            - 'null'
+          description: Rule section the comment applies to.
+          example: fixtext
+        comment:
+          type: string
+          description: The comment text content.
+          example: 'vSphere 7.0: fix command targets ESXi 6.7 path — should reference 7.0 layout.'
+        created_at:
+          type: string
+          description: Timestamp when the comment was created. Blueprinter format.
+          example: 2026-05-19 14:08:18 UTC
+        triage_status:
+          type:
+            - string
+            - 'null'
+          description: Current triage disposition of the comment.
+          enum:
+            - pending
+            - concur
+            - concur_with_comment
+            - non_concur
+            - duplicate
+            - informational
+            - needs_clarification
+            - withdrawn
+            - addressed_by
+            - null
+          example: pending
+        triage_set_at:
+          type:
+            - string
+            - 'null'
+          description: Timestamp when the triage status was last changed.
+          example: null
+        adjudicated_at:
+          type:
+            - string
+            - 'null'
+          description: Timestamp when the comment reached a terminal triage state.
+          example: null
+        duplicate_of_review_id:
+          type:
+            - integer
+            - 'null'
+          description: ID of the review this is marked as a duplicate of.
+          example: null
+        addressed_by_rule_id:
+          type:
+            - integer
+            - 'null'
+          description: ID of the rule that addresses this comment.
+          example: null
+        addressed_by_rule_name:
+          type:
+            - string
+            - 'null'
+          description: Display name of the rule that addresses this comment.
+          example: null
+        latest_activity_at:
+          type:
+            - string
+            - 'null'
+          description: Most recent activity timestamp (triage, adjudication, or reply).
+          example: null
+        responses_count:
+          type: integer
+          description: Number of threaded replies to this comment.
+          example: 0
+        reactions:
+          type: object
+          description: Aggregate reaction counts with current user's reaction.
+          additionalProperties: false
+          required:
+            - up
+            - down
+          properties:
+            up:
+              type: integer
+              description: Number of upvote reactions.
+              example: 0
+            down:
+              type: integer
+              description: Number of downvote reactions.
+              example: 0
+            mine:
+              type:
+                - string
+                - 'null'
+              description: The current user's reaction type. Null if no active reaction.
+              example: null
+    AdminCreateResponse:
+      description: Response from admin user creation. Success includes toast, user, and optional reset_url. Error includes only the toast (no user key).
+      type: object
+      required:
+        - toast
+      properties:
+        toast:
+          $ref: '#/components/schemas/ToastObject'
+        user:
+          description: The created user (present on success, absent on error).
           $ref: '#/components/schemas/UserSummary'
         reset_url:
           type: string
           format: uri
-          description: One-time password reset URL generated for the new user when SMTP is unavailable. Absent when SMTP delivers the reset email directly.
+          description: One-time password reset URL. Present only when SMTP is unavailable and no password was provided — the admin must deliver this link manually.
           example: https://vulcan.example.org/users/password/edit?reset_password_token=abc123def456
     ResetLinkResponse:
       description: Response containing a toast notification and a one-time password reset URL for admin-generated resets.
@@ -4326,30 +6682,10 @@ components:
       required:
         - toast
         - reset_url
+      additionalProperties: false
       properties:
         toast:
-          type: object
-          description: Toast notification confirming the reset link was generated.
-          required:
-            - title
-            - message
-            - variant
-          properties:
-            title:
-              type: string
-              description: Short human-readable summary of the outcome.
-              example: Reset link generated.
-            message:
-              type: array
-              description: Detail lines providing additional context.
-              items:
-                type: string
-              example:
-                - Copy and share this link with the user.
-            variant:
-              type: string
-              description: Bootstrap alert variant controlling toast styling.
-              example: success
+          $ref: '#/components/schemas/ToastObject'
         reset_url:
           type: string
           format: uri
@@ -4548,3 +6884,35 @@ components:
       schema:
         type: integer
       example: 44
+    MembershipId:
+      name: membershipId
+      in: path
+      required: true
+      description: Numeric ID of the target membership record.
+      schema:
+        type: integer
+      example: 15
+    SrgId:
+      name: id
+      in: path
+      required: true
+      description: Numeric ID of the target Security Requirements Guide (SRG).
+      schema:
+        type: integer
+      example: 1
+    StigId:
+      name: id
+      in: path
+      required: true
+      description: Numeric ID of the target Security Technical Implementation Guide (STIG).
+      schema:
+        type: integer
+      example: 1
+    UserId:
+      name: userId
+      in: path
+      required: true
+      description: Numeric ID of the target user.
+      schema:
+        type: integer
+      example: 42

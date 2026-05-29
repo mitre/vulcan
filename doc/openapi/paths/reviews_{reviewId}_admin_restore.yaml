@@ -11,6 +11,6 @@ patch:
       content:
         application/json:
           schema:
-            $ref: ../components/schemas/ToastResponse.yaml
+            $ref: ../components/schemas/ReviewWrapper.yaml
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
