@@ -1,36 +1,82 @@
-description: Summary of a security rule within a component.
+description: >-
+  Base rule fields shared by all views. Serialized by RuleBlueprint (default view / navigator).
+  View-specific schemas (RuleEditorResponse, RulePickerResponse) extend this with additional fields.
 type: object
 required:
   - id
   - rule_id
   - locked
-  - component_id
 properties:
   id:
     type: integer
     description: Unique rule identifier.
-    example: 100
+    example: 1786
   rule_id:
     type: string
-    description: Six-digit zero-padded rule number combined with the component prefix to form the displayed ID (e.g. CNTR-00-000050).
-    example: "000050"
-  status:
-    type:
-      - string
-      - 'null'
-    description: Current applicability status of the rule. Null if not yet determined.
-    example: Applicable - Configurable
+    description: Six-digit zero-padded rule number combined with the component prefix to form the displayed ID (e.g. PHOS-03-000001).
+    example: "000001"
   title:
     type:
       - string
       - 'null'
     description: Title of the security control. Null if not yet authored.
-    example: The container platform must enforce approved authorizations for access.
+    example: The operating system must provide automated mechanisms for supporting account management functions.
+  version:
+    type:
+      - string
+      - 'null'
+    description: SRG requirement version identifier mapping this rule to its SRG source.
+    example: SRG-OS-000001-GPOS-00001
+  status:
+    type:
+      - string
+      - 'null'
+    description: Current applicability status of the rule. Null if not yet determined.
+    enum:
+      - Not Yet Determined
+      - Applicable - Configurable
+      - Applicable - Inherently Meets
+      - Applicable - Does Not Meet
+      - Not Applicable
+      - null
+    example: Not Yet Determined
+  rule_severity:
+    type:
+      - string
+      - 'null'
+    description: DISA severity level of the rule.
+    enum:
+      - low
+      - medium
+      - high
+      - null
+    example: medium
   locked:
     type: boolean
     description: Whether the rule is locked from further edits pending review.
+    example: true
+  review_requestor_id:
+    type:
+      - integer
+      - 'null'
+    description: ID of the user who requested review for this rule. Null if no review requested.
+    example: null
+  changes_requested:
+    type: boolean
+    description: Whether changes have been requested on this rule during review.
     example: false
-  component_id:
-    type: integer
-    description: ID of the component this rule belongs to.
-    example: 29
+  comment_summary:
+    type: object
+    description: Per-rule comment counts. Computed in-memory from eager-loaded reviews.
+    required:
+      - open
+      - total
+    properties:
+      open:
+        type: integer
+        description: Comments not yet adjudicated (pending, triaged, needs_clarification) including replies under open parents.
+        example: 0
+      total:
+        type: integer
+        description: Total comment count across all statuses.
+        example: 0

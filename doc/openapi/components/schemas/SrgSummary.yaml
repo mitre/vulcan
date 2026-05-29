@@ -1,0 +1,57 @@
+description: >-
+  Security Requirements Guide (SRG) listing entry. Serialized by SrgBlueprint (default/index view).
+  SRGs use release_date (not benchmark_date — that is STIGs).
+type: object
+required:
+  - id
+  - srg_id
+  - severity_counts
+properties:
+  id:
+    type: integer
+    description: Unique SRG identifier.
+    example: 1
+  srg_id:
+    type:
+      - string
+      - 'null'
+    description: DISA SRG identifier string.
+    example: Container_Platform_SRG
+  name:
+    type:
+      - string
+      - 'null'
+    description: Short name including version and release.
+    example: "Container Platform SRG - Ver 2, Rel 4"
+  title:
+    type:
+      - string
+      - 'null'
+    description: Full official title.
+    example: Container Platform Security Requirements Guide
+  version:
+    type:
+      - string
+      - 'null'
+    description: Version string (e.g. V2R4).
+    example: V2R4
+  release_date:
+    type:
+      - string
+      - 'null'
+    format: date
+    description: Date the SRG was published by DISA.
+    example: "2025-10-28"
+  severity_counts:
+    type: object
+    description: Count of rules at each severity level within this SRG.
+    properties:
+      high:
+        type: integer
+        example: 8
+      medium:
+        type: integer
+        example: 177
+      low:
+        type: integer
+        example: 3

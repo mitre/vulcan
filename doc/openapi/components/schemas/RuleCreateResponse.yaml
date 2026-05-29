@@ -1,0 +1,11 @@
+description: >-
+  Response from rule creation. Toast notification plus the created rule under the "data" key.
+type: object
+required:
+  - toast
+  - data
+properties:
+  toast:
+    $ref: ./ToastObject.yaml
+  data:
+    $ref: ./RuleEditorResponse.yaml

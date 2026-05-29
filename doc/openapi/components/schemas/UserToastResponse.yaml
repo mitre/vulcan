@@ -1,31 +1,13 @@
-description: Combined response containing a toast notification and the updated user summary.
+description: >-
+  Combined response containing a toast notification and the updated user.
+  Used by PUT /users/:id, POST /users/:id/lock, POST /users/:id/unlock.
 type: object
 required:
   - toast
   - user
+additionalProperties: false
 properties:
   toast:
-    type: object
-    description: Toast notification describing the result of the user operation.
-    required:
-      - title
-      - message
-      - variant
-    properties:
-      title:
-        type: string
-        description: Short human-readable summary of the outcome.
-        example: Account locked.
-      message:
-        type: array
-        description: Detail lines providing additional context.
-        items:
-          type: string
-        example:
-          - "Account jane.doe@example.org locked."
-      variant:
-        type: string
-        description: Bootstrap alert variant controlling toast styling.
-        example: success
+    $ref: ./ToastObject.yaml
   user:
     $ref: ./UserSummary.yaml

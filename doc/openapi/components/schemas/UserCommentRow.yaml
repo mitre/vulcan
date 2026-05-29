@@ -1,0 +1,156 @@
+description: >-
+  A single comment row in the user's My Comments listing. Serialized by
+  UsersController#comment_row_for — different shape from CommentRow
+  (component triage listing). Includes project/component context for
+  cross-project navigation but omits triage attribution fields.
+type: object
+required:
+  - id
+  - commentable_type
+  - comment
+  - created_at
+  - triage_status
+  - responses_count
+  - reactions
+additionalProperties: false
+properties:
+  id:
+    type: integer
+    description: Unique review/comment identifier.
+    example: 29
+  project_id:
+    type:
+      - integer
+      - 'null'
+    description: ID of the project containing this comment's rule/component.
+    example: 3
+  project_name:
+    type:
+      - string
+      - 'null'
+    description: Name of the project.
+    example: vSphere 7.0
+  component_id:
+    type:
+      - integer
+      - 'null'
+    description: ID of the component containing the rule.
+    example: 4
+  component_name:
+    type:
+      - string
+      - 'null'
+    description: Name of the component.
+    example: Photon OS 3
+  rule_id:
+    type:
+      - integer
+      - 'null'
+    description: ID of the rule this comment is attached to. Null for component-level comments.
+    example: 2397
+  rule_displayed_name:
+    type:
+      - string
+      - 'null'
+    description: Human-readable rule identifier (PREFIX-rule_id). "(component)" for component-level comments.
+    example: PHOS-03-000039
+  commentable_type:
+    type: string
+    description: Polymorphic type indicating whether the comment targets a rule or a component.
+    enum:
+      - BaseRule
+      - Component
+    example: BaseRule
+  section:
+    type:
+      - string
+      - 'null'
+    description: Rule section the comment applies to.
+    example: fixtext
+  comment:
+    type: string
+    description: The comment text content.
+    example: "vSphere 7.0: fix command targets ESXi 6.7 path — should reference 7.0 layout."
+  created_at:
+    type: string
+    description: Timestamp when the comment was created. Blueprinter format.
+    example: "2026-05-19 14:08:18 UTC"
+  triage_status:
+    type:
+      - string
+      - 'null'
+    description: Current triage disposition of the comment.
+    enum:
+      - pending
+      - concur
+      - concur_with_comment
+      - non_concur
+      - duplicate
+      - informational
+      - needs_clarification
+      - withdrawn
+      - addressed_by
+      - null
+    example: pending
+  triage_set_at:
+    type:
+      - string
+      - 'null'
+    description: Timestamp when the triage status was last changed.
+    example: null
+  adjudicated_at:
+    type:
+      - string
+      - 'null'
+    description: Timestamp when the comment reached a terminal triage state.
+    example: null
+  duplicate_of_review_id:
+    type:
+      - integer
+      - 'null'
+    description: ID of the review this is marked as a duplicate of.
+    example: null
+  addressed_by_rule_id:
+    type:
+      - integer
+      - 'null'
+    description: ID of the rule that addresses this comment.
+    example: null
+  addressed_by_rule_name:
+    type:
+      - string
+      - 'null'
+    description: Display name of the rule that addresses this comment.
+    example: null
+  latest_activity_at:
+    type:
+      - string
+      - 'null'
+    description: Most recent activity timestamp (triage, adjudication, or reply).
+    example: null
+  responses_count:
+    type: integer
+    description: Number of threaded replies to this comment.
+    example: 0
+  reactions:
+    type: object
+    description: Aggregate reaction counts with current user's reaction.
+    additionalProperties: false
+    required:
+      - up
+      - down
+    properties:
+      up:
+        type: integer
+        description: Number of upvote reactions.
+        example: 0
+      down:
+        type: integer
+        description: Number of downvote reactions.
+        example: 0
+      mine:
+        type:
+          - string
+          - 'null'
+        description: The current user's reaction type. Null if no active reaction.
+        example: null

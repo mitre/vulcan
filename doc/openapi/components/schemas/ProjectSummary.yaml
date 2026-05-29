@@ -1,4 +1,6 @@
-description: Summary of a Vulcan project containing one or more STIG components.
+description: >-
+  Base project fields shared by all views. Serialized by ProjectBlueprint (default view).
+  View-specific schemas (ProjectShowResponse, ProjectIndexResponse) extend this with additional fields.
 type: object
 required:
   - id
@@ -7,17 +9,17 @@ properties:
   id:
     type: integer
     description: Unique project identifier.
-    example: 7
+    example: 1
   name:
     type: string
     description: Human-readable project name.
-    example: Container Platform
+    example: Photon 3
   description:
     type:
       - string
       - 'null'
     description: Optional longer description of the project purpose and scope.
-    example: STIG for container orchestration platforms.
+    example: null
   visibility:
     type:
       - string
@@ -26,20 +28,30 @@ properties:
     enum:
       - discoverable
       - hidden
-    example: discoverable
-  components_count:
+      - null
+    example: hidden
+  memberships_count:
     type: integer
-    description: Number of STIG components belonging to this project.
-    example: 3
+    description: Number of members in this project.
+    example: 14
+  admin_name:
+    type:
+      - string
+      - 'null'
+    description: Display name of the project's point of contact / admin.
+    example: Demo Admin
+  admin_email:
+    type:
+      - string
+      - 'null'
+    format: email
+    description: Email address of the project's point of contact / admin.
+    example: admin@example.org
   created_at:
-    type:
-      - string
-      - 'null'
-    description: Timestamp when the project was created.
-    example: "2026-01-15T09:30:00.000Z"
+    type: string
+    description: Timestamp when the project was created. Format is "YYYY-MM-DD HH:MM:SS UTC" (Blueprinter default).
+    example: "2026-05-19 14:07:37 UTC"
   updated_at:
-    type:
-      - string
-      - 'null'
-    description: Timestamp when the project was last modified.
-    example: "2026-05-28T15:00:00.000Z"
+    type: string
+    description: Timestamp when the project was last modified. Format is "YYYY-MM-DD HH:MM:SS UTC" (Blueprinter default).
+    example: "2026-05-19 14:08:17 UTC"

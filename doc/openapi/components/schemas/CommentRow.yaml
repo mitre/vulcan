@@ -1,31 +1,34 @@
-description: A single comment (review) row in the triage comment listing.
+description: >-
+  A single comment row in the triage comment listing. Serialized by
+  CommentQueryService#serialize_rows — NOT by ReviewBlueprint. This is a
+  hand-built hash with triage attribution, grouping, and rule context fields.
 type: object
 required:
   - id
-  - rule_displayed_name
   - commentable_type
-  - author_name
-  - author_email
   - comment
   - created_at
   - triage_status
   - responses_count
   - reactions
+additionalProperties: false
 properties:
   id:
     type: integer
     description: Unique review/comment identifier.
-    example: 44
+    example: 26
   rule_id:
     type:
       - integer
       - 'null'
     description: ID of the rule this comment is attached to. Null for component-level comments.
-    example: 100
+    example: 1823
   rule_displayed_name:
-    type: string
-    description: Human-readable rule identifier shown in the UI (e.g. PREFIX-rule_id).
-    example: CNTR-00-000050
+    type:
+      - string
+      - 'null'
+    description: Human-readable rule identifier (PREFIX-rule_id). Null or "(component)" for component-level comments.
+    example: PHOS-03-000038
   commentable_type:
     type: string
     description: Polymorphic type indicating whether the comment targets a rule or a component.
@@ -37,57 +40,144 @@ properties:
     type:
       - string
       - 'null'
-    description: Rule section the comment applies to (e.g. fixtext, check_content, vuln_discussion). Null for general comments.
-    example: fixtext
+    description: Rule section the comment applies to (e.g. fixtext, check_content, vuln_discussion). Null for general or component-level comments.
+    example: null
   author_name:
-    type: string
-    description: Display name of the user who authored the comment.
-    example: Jane Doe
+    type:
+      - string
+      - 'null'
+    description: Display name of the comment author (from commenter_display_name).
+    example: Demo Viewer
   author_email:
-    type: string
+    type:
+      - string
+      - 'null'
     format: email
     description: Email address of the comment author.
-    example: jane.doe@example.org
+    example: viewer@example.org
   comment:
     type: string
     description: The comment text content.
-    example: The fix text should reference the container runtime configuration file.
+    example: FYI we already shipped this in our internal hardening guide.
   created_at:
     type: string
-    format: date-time
     description: Timestamp when the comment was created.
-    example: "2026-05-28T15:00:00Z"
+    example: "2026-05-19 14:08:18 UTC"
   triage_status:
-    type: string
+    type:
+      - string
+      - 'null'
     description: Current triage disposition of the comment.
-    example: pending
+    enum:
+      - pending
+      - concur
+      - concur_with_comment
+      - non_concur
+      - duplicate
+      - informational
+      - needs_clarification
+      - withdrawn
+      - addressed_by
+      - null
+    example: informational
   triage_set_at:
     type:
       - string
       - 'null'
-    format: date-time
     description: Timestamp when the triage status was last changed. Null if still pending.
-    example: null
+    example: "2026-05-19 14:08:18 UTC"
   adjudicated_at:
     type:
       - string
       - 'null'
-    format: date-time
     description: Timestamp when the comment reached a terminal triage state. Null if not yet adjudicated.
+    example: "2026-05-19 14:08:18 UTC"
+  duplicate_of_review_id:
+    type:
+      - integer
+      - 'null'
+    description: ID of the review this is marked as a duplicate of. Null if not a duplicate.
     example: null
+  addressed_by_rule_id:
+    type:
+      - integer
+      - 'null'
+    description: ID of the rule that addresses this comment (for addressed_by triage status). Null otherwise.
+    example: null
+  addressed_by_rule_name:
+    type:
+      - string
+      - 'null'
+    description: Display name of the rule that addresses this comment. Null if not addressed_by.
+    example: null
+  triager_display_name:
+    type:
+      - string
+      - 'null'
+    description: Display name of the user who triaged this comment. Uses ImportedAttribution resolution.
+    example: Demo Author
+  triager_imported:
+    type: boolean
+    description: Whether the triager attribution came from an import (no matching DB user).
+    example: false
+  adjudicator_display_name:
+    type:
+      - string
+      - 'null'
+    description: Display name of the user who adjudicated this comment.
+    example: Demo Author
+  adjudicator_imported:
+    type: boolean
+    description: Whether the adjudicator attribution came from an import.
+    example: false
+  commenter_display_name:
+    type:
+      - string
+      - 'null'
+    description: Display name of the comment author. Uses ImportedAttribution resolution.
+    example: Demo Viewer
+  commenter_imported:
+    type: boolean
+    description: Whether the commenter attribution came from an import.
+    example: false
   responses_count:
     type: integer
     description: Number of threaded replies to this comment.
-    example: 2
+    example: 0
   reactions:
     type: object
-    description: Aggregate reaction counts for this comment.
+    description: Aggregate reaction counts for this comment (no mine field — unlike ReviewSummary).
+    required:
+      - up
+      - down
     properties:
       up:
         type: integer
         description: Number of upvote reactions.
-        example: 3
+        example: 0
       down:
         type: integer
         description: Number of downvote reactions.
         example: 0
+  updated_at:
+    type: string
+    description: Timestamp when the comment was last modified.
+    example: "2026-05-19 14:08:18 UTC"
+  rule_status:
+    type:
+      - string
+      - 'null'
+    description: Current applicability status of the rule this comment is on. Null for component-level comments.
+    example: Not Yet Determined
+  parent_rule_displayed_name:
+    type:
+      - string
+      - 'null'
+    description: Display name of the parent rule (if this rule is a child via satisfies relationship). Null if no parent.
+    example: null
+  group_rule_displayed_name:
+    type:
+      - string
+      - 'null'
+    description: Grouping key — parent_rule_displayed_name if present, otherwise rule_displayed_name. Used for by-rule grouping in the triage table.
+    example: PHOS-03-000038

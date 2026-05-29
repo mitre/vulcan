@@ -1,4 +1,7 @@
-description: Results from a global search across projects, components, rules, SRGs, STIGs, and their rules.
+description: >-
+  Results from a global search across projects, components, rules, SRGs, STIGs, and their rules.
+  Serialized by Api::SearchController#global. Each sub-array uses controller-specific inline hashes,
+  NOT Blueprints.
 type: object
 required:
   - projects
@@ -11,42 +14,42 @@ required:
 properties:
   projects:
     type: array
-    description: Projects matching the search query.
+    description: Projects matching the search query (from user's available_projects).
     items:
       type: object
       properties:
         id:
           type: integer
           description: Unique project identifier.
-          example: 7
+          example: 1
         name:
           type: string
           description: Project name.
-          example: Container Platform
+          example: Photon 3
         description:
           type:
             - string
             - 'null'
           description: Project description.
-          example: STIG for container orchestration platforms.
+          example: null
         components_count:
           type: integer
           description: Number of components in the project.
-          example: 3
+          example: 1
   components:
     type: array
-    description: Components matching the search query.
+    description: Components matching the search query (from user's available projects).
     items:
       type: object
       properties:
         id:
           type: integer
           description: Unique component identifier.
-          example: 29
+          example: 1
         name:
           type: string
           description: Component name.
-          example: Container SRG
+          example: Photon OS 3
         version:
           type:
             - integer
@@ -62,70 +65,224 @@ properties:
         project_id:
           type: integer
           description: ID of the parent project.
-          example: 7
+          example: 1
         project_name:
-          type: string
+          type:
+            - string
+            - 'null'
           description: Name of the parent project.
-          example: Container Platform
+          example: Photon 3
+        metadata:
+          type:
+            - object
+            - 'null'
+          description: Component metadata key-value pairs (from component_metadata.data).
+          example: null
   rules:
     type: array
-    description: Rules matching the search query.
+    description: Rules matching the search query (from user's available projects).
     items:
       type: object
       properties:
         id:
           type: integer
           description: Unique rule identifier.
-          example: 100
+          example: 1786
         rule_id:
           type: string
-          description: STIG rule identifier (six-digit zero-padded number).
-          example: "000050"
+          description: Six-digit zero-padded rule number.
+          example: "000001"
         title:
-          type: string
+          type:
+            - string
+            - 'null'
           description: Title of the security control.
-          example: The container platform must enforce approved authorizations for access.
+          example: The operating system must provide automated mechanisms for supporting account management functions.
         status:
-          type: string
+          type:
+            - string
+            - 'null'
           description: Current applicability status of the rule.
-          example: Applicable - Configurable
+          example: Not Yet Determined
         component_id:
           type: integer
           description: ID of the component this rule belongs to.
-          example: 29
+          example: 1
         component_prefix:
-          type: string
-          description: Prefix of the parent component, used to form the displayed rule ID.
-          example: CNTR
+          type:
+            - string
+            - 'null'
+          description: Prefix of the parent component.
+          example: PHOS-03
         snippet:
-          type: string
+          type:
+            - string
+            - 'null'
           description: Text excerpt from the matched field showing the search hit in context.
-          example: "...enforce approved authorizations for logical access..."
+          example: "[Vuln discussion] ...provide automated mechanisms for supporting..."
         matched_field:
-          type: string
+          type:
+            - string
+            - 'null'
           description: Name of the field where the search term was found.
-          example: vuln_discussion
+          example: title
         comment_count:
           type: integer
           description: Number of comments on this rule.
-          example: 5
+          example: 0
+        parent_rule_id:
+          type:
+            - integer
+            - 'null'
+          description: ID of the parent rule (via satisfies relationship). Null if no parent.
+          example: null
+        parent_display_name:
+          type:
+            - string
+            - 'null'
+          description: Display name of the parent rule. Null if no parent.
+          example: null
   srgs:
     type: array
     description: Security Requirements Guides matching the search query.
     items:
       type: object
+      properties:
+        id:
+          type: integer
+          description: Unique SRG identifier.
+          example: 1
+        srg_id:
+          type: string
+          description: DISA SRG identifier.
+          example: Container_Platform_SRG
+        name:
+          type: string
+          description: SRG name.
+          example: "Container Platform SRG - Ver 2, Rel 4"
+        title:
+          type: string
+          description: Full SRG title.
+          example: Container Platform Security Requirements Guide
+        version:
+          type: string
+          description: Version string.
+          example: V2R4
   stigs:
     type: array
     description: Published STIGs matching the search query.
     items:
       type: object
+      properties:
+        id:
+          type: integer
+          description: Unique STIG identifier.
+          example: 1
+        stig_id:
+          type: string
+          description: DISA STIG identifier.
+          example: Application_Security_Development_STIG
+        name:
+          type: string
+          description: STIG name.
+          example: "Application Security Development STIG - Ver 6, Rel 4"
+        title:
+          type: string
+          description: Full STIG title.
+          example: Application Security and Development Security Technical Implementation Guide
+        version:
+          type: string
+          description: Version string.
+          example: V6R4
+        description:
+          type:
+            - string
+            - 'null'
+          description: STIG description.
+          example: null
   stig_rules:
     type: array
     description: Individual rules from published STIGs matching the search query.
     items:
       type: object
+      properties:
+        id:
+          type: integer
+          description: Unique STIG rule identifier.
+          example: 600
+        rule_id:
+          type: string
+          description: DISA rule identifier.
+          example: "SV-222396r857506_rule"
+        vuln_id:
+          type:
+            - string
+            - 'null'
+          description: Vulnerability identifier (V-number).
+          example: "V-222396"
+        title:
+          type: string
+          description: Requirement title.
+          example: The application must enforce approved authorizations.
+        fixtext:
+          type:
+            - string
+            - 'null'
+          description: Fix text.
+          example: Configure the application to enforce approved authorizations.
+        ident:
+          type:
+            - string
+            - 'null'
+          description: CCI identifiers.
+          example: "CCI-000213"
+        stig_id:
+          type: integer
+          description: ID of the parent STIG.
+          example: 1
+        stig_name:
+          type:
+            - string
+            - 'null'
+          description: Name of the parent STIG.
+          example: "Application Security Development STIG - Ver 6, Rel 4"
   srg_rules:
     type: array
     description: Individual rules from SRGs matching the search query.
     items:
       type: object
+      properties:
+        id:
+          type: integer
+          description: Unique SRG rule identifier.
+          example: 500
+        rule_id:
+          type: string
+          description: DISA rule identifier.
+          example: "SV-222396r857506_rule"
+        title:
+          type: string
+          description: Requirement title.
+          example: The application must enforce approved authorizations.
+        fixtext:
+          type:
+            - string
+            - 'null'
+          description: Fix text.
+          example: Configure the application to enforce approved authorizations.
+        ident:
+          type:
+            - string
+            - 'null'
+          description: CCI identifiers.
+          example: "CCI-000213"
+        srg_id:
+          type: integer
+          description: ID of the parent SRG.
+          example: 1
+        srg_name:
+          type:
+            - string
+            - 'null'
+          description: Name of the parent SRG.
+          example: "Container Platform SRG - Ver 2, Rel 4"

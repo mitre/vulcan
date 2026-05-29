@@ -1,0 +1,95 @@
+description: Published STIG rule — a finalized security requirement from a published STIG.
+type: object
+required:
+  - id
+  - rule_id
+  - title
+additionalProperties: false
+properties:
+  id:
+    type: integer
+    description: Unique STIG rule identifier.
+    example: 600
+  rule_id:
+    type: string
+    description: DISA rule identifier.
+    example: "SV-222396r857506_rule"
+  title:
+    type: string
+    description: Requirement title.
+    example: "The container platform must enforce approved authorizations for access."
+  version:
+    type:
+      - string
+      - 'null'
+    description: STIG version identifier.
+    example: "CNTR-00-000050"
+  rule_severity:
+    type:
+      - string
+      - 'null'
+    enum:
+      - low
+      - medium
+      - high
+    example: medium
+  rule_weight:
+    type:
+      - string
+      - 'null'
+    example: "10.0"
+  ident:
+    type:
+      - string
+      - 'null'
+    description: CCI identifiers (comma-separated).
+    example: "CCI-000213"
+  ident_system:
+    type:
+      - string
+      - 'null'
+    example: "http://cyber.mil/cci"
+  fixtext:
+    type:
+      - string
+      - 'null'
+    description: Fix text describing how to remediate.
+    example: "Configure the container platform to enforce approved authorizations..."
+  fixtext_fixref:
+    type:
+      - string
+      - 'null'
+    example: "F-25073r857505_fix"
+  fix_id:
+    type:
+      - string
+      - 'null'
+    example: "F-25073r857505_fix"
+  srg_id:
+    type:
+      - string
+      - 'null'
+    description: SRG requirement this STIG rule implements.
+    example: "SRG-APP-000033-CTR-000095"
+  vuln_id:
+    type:
+      - string
+      - 'null'
+    description: Vulnerability identifier (V-number).
+    example: "V-222396"
+  legacy_ids:
+    type:
+      - string
+      - 'null'
+    description: Legacy rule identifiers from previous STIG versions (comma-separated string).
+    example: "V-69239, SV-83861"
+  disa_rule_descriptions_attributes:
+    type: array
+    description: DISA rule description records.
+    items:
+      $ref: ./DisaRuleDescription.yaml
+  checks_attributes:
+    type: array
+    description: Check content records.
+    items:
+      $ref: ./CheckSummary.yaml

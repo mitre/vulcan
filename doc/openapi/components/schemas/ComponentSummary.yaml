@@ -1,25 +1,24 @@
-description: Summary of a STIG component belonging to a project.
+description: >-
+  Base component fields shared by all views. Serialized by ComponentBlueprint (default view).
+  View-specific schemas (ComponentEditorResponse, ComponentIndexResponse) extend this with additional fields.
 type: object
 required:
   - id
   - name
   - prefix
-  - released
-  - project_id
-  - rules_count
 properties:
   id:
     type: integer
     description: Unique component identifier.
-    example: 29
+    example: 1
   name:
     type: string
     description: Human-readable component name.
-    example: Container SRG
+    example: Photon OS 3
   prefix:
     type: string
-    description: Short alphanumeric prefix used to construct rule IDs (e.g. CNTR in CNTR-00-000050).
-    example: CNTR
+    description: Short alphanumeric prefix used to construct rule IDs (e.g. PHOS-03 in PHOS-03-000010).
+    example: PHOS-03
   version:
     type:
       - integer
@@ -32,27 +31,36 @@ properties:
       - 'null'
     description: Release number of the component. Null if not yet set.
     example: 1
-  title:
+  based_on_title:
     type:
       - string
       - 'null'
-    description: Full official title of the component.
-    example: Container Platform Security Technical Implementation Guide
-  released:
-    type: boolean
-    description: Whether this component has been marked as released (finalized).
-    example: false
-  project_id:
-    type: integer
-    description: ID of the project this component belongs to.
-    example: 7
-  rules_count:
-    type: integer
-    description: Number of rules (security controls) in this component.
-    example: 120
-  description:
+    description: Title of the SRG this component is based on. Null if the SRG has no title or component has no SRG.
+    example: VMware vSphere 7.0 STIG Readiness Guide
+  based_on_version:
     type:
       - string
       - 'null'
-    description: Optional longer description of the component scope and purpose.
-    example: STIG guidance for container orchestration platform deployments.
+    description: Version of the SRG this component is based on. Null if no SRG.
+    example: "1"
+  severity_counts:
+    type: object
+    description: Count of rules at each severity level within this component.
+    properties:
+      high:
+        type: integer
+        example: 20
+      medium:
+        type: integer
+        example: 173
+      low:
+        type: integer
+        example: 10
+    example:
+      high: 20
+      medium: 173
+      low: 10
+  pending_comment_count:
+    type: integer
+    description: Number of pending (untriaged) top-level comments on this component. Pre-batched via Component.pending_comment_counts.
+    example: 3

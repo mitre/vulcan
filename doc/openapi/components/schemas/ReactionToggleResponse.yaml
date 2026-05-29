@@ -2,6 +2,7 @@ description: Response after toggling a reaction on a comment, returning updated 
 type: object
 required:
   - reactions
+additionalProperties: false
 properties:
   reactions:
     type: object

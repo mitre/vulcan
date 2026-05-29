@@ -1,4 +1,7 @@
-description: Summary of an SRG or STIG benchmark imported into Vulcan.
+description: >-
+  DEPRECATED — this schema conflated SRG and STIG which have different date field names.
+  Use SrgSummary.yaml for SRGs (release_date) and StigSummary.yaml for STIGs (benchmark_date).
+  Kept for backwards compatibility with any existing $refs during migration.
 type: object
 required:
   - id
@@ -7,25 +10,13 @@ properties:
   id:
     type: integer
     description: Unique benchmark identifier.
-    example: 5
-  srg_id:
-    type:
-      - string
-      - 'null'
-    description: DISA SRG identifier (e.g. SRG-APP-000001). Null for STIG benchmarks.
-    example: SRG-APP-000001
-  stig_id:
-    type:
-      - string
-      - 'null'
-    description: DISA STIG identifier. Null for SRG benchmarks.
-    example: null
+    example: 1
   name:
     type:
       - string
       - 'null'
     description: Short name of the benchmark.
-    example: Container Platform SRG
+    example: Container Platform SRG - Ver 2, Rel 4
   title:
     type:
       - string
@@ -36,19 +27,18 @@ properties:
     type:
       - string
       - 'null'
-    description: Version string of the benchmark (e.g. V1R1).
-    example: V1R1
-  release_date:
-    type:
-      - string
-      - 'null'
-    format: date
-    description: Date the benchmark was published by DISA.
-    example: "2026-03-15"
+    description: Version string (e.g. V2R4).
+    example: V2R4
   severity_counts:
     type: object
-    description: Count of rules at each severity level within this benchmark.
-    example:
-      high: 12
-      medium: 85
-      low: 23
+    description: Count of rules at each severity level.
+    properties:
+      high:
+        type: integer
+        example: 8
+      medium:
+        type: integer
+        example: 177
+      low:
+        type: integer
+        example: 3

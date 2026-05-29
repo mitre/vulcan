@@ -4,6 +4,7 @@ required:
   - id
   - email
   - admin
+additionalProperties: false
 properties:
   id:
     type: integer

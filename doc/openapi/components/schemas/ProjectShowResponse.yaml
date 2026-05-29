@@ -1,0 +1,80 @@
+description: >-
+  Full project detail for the project show page. Serialized by ProjectBlueprint :show view.
+  18 total fields including nested components, memberships, users, access_requests.
+allOf:
+  - $ref: ./ProjectSummary.yaml
+  - type: object
+    properties:
+      pending_comment_count:
+        type: integer
+        description: Aggregate pending comment count across all components.
+        example: 1
+      details:
+        type:
+          - object
+          - 'null'
+        description: Project detail statistics (component counts, rule counts, etc.).
+      histories:
+        type: array
+        description: Recent audit trail entries (last 50).
+        items:
+          type: object
+      metadata:
+        type:
+          - object
+          - 'null'
+        description: Project metadata key-value pairs.
+        example: null
+      memberships:
+        type: array
+        description: Project members with roles.
+        items:
+          $ref: ./MembershipSummary.yaml
+      components:
+        type: array
+        description: Components in this project (ComponentBlueprint :index view).
+        items:
+          $ref: ./ComponentIndexResponse.yaml
+      available_components:
+        type: array
+        description: Components available to add (from other projects the user can access).
+        items:
+          $ref: ./ComponentIndexResponse.yaml
+      users:
+        type: array
+        description: All users associated with this project.
+        items:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type:
+                - string
+                - 'null'
+            email:
+              type: string
+              format: email
+      access_requests:
+        type: array
+        description: Pending access requests from non-member users.
+        items:
+          type: object
+          properties:
+            id:
+              type: integer
+              description: Access request ID.
+            user:
+              type: object
+              properties:
+                id:
+                  type: integer
+                name:
+                  type:
+                    - string
+                    - 'null'
+                email:
+                  type: string
+                  format: email
+            project_id:
+              type: integer

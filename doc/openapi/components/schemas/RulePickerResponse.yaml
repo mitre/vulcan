@@ -1,0 +1,22 @@
+description: >-
+  Lightweight rule for picker dropdowns. Serialized by RuleBlueprint :picker view.
+  Extends RuleSummary defaults with displayed_name and satisfaction relationships.
+  13 total fields.
+allOf:
+  - $ref: ./RuleSummary.yaml
+  - type: object
+    properties:
+      displayed_name:
+        type: string
+        description: Human-readable rule identifier (PREFIX-rule_id).
+        example: "PHOS-03-000001"
+      satisfies:
+        type: array
+        description: Rules that this rule satisfies.
+        items:
+          $ref: ./SatisfactionSummary.yaml
+      satisfied_by:
+        type: array
+        description: Rules that satisfy this rule.
+        items:
+          $ref: ./SatisfiedBySummary.yaml

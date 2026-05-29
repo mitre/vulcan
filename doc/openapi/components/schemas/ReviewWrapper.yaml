@@ -1,0 +1,11 @@
+description: >-
+  Standard review mutation response. Wraps a single ReviewSummary in a
+  { review: ... } envelope. Used by update, reopen, withdraw, admin_withdraw,
+  admin_restore, move_to_rule, and section endpoints.
+type: object
+required:
+  - review
+additionalProperties: false
+properties:
+  review:
+    $ref: ./ReviewSummary.yaml

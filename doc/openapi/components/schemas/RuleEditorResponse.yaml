@@ -1,0 +1,173 @@
+description: >-
+  Full rule for the editing form. Serialized by RuleBlueprint :editor view.
+  Includes viewer fields (text content, nested associations) plus editor-only
+  fields (InSpec, reviews, additional answers, SRG source data).
+  38 total fields. Used by GET /rules/:id, GET /components/:id/rules,
+  and nested inside ComponentEditorResponse.
+allOf:
+  - $ref: ./RuleSummary.yaml
+  - type: object
+    properties:
+      rule_weight:
+        type:
+          - string
+          - 'null'
+        description: Rule weight for DISA scoring.
+        example: "10.0"
+      fixtext:
+        type:
+          - string
+          - 'null'
+        description: Remediation instructions.
+        example: "Configure the operating system to provide automated mechanisms..."
+      fixtext_fixref:
+        type:
+          - string
+          - 'null'
+        description: Fix reference identifier.
+        example: "F-3716r557030_fix"
+      ident:
+        type:
+          - string
+          - 'null'
+        description: CCI identifiers (comma-separated).
+        example: "CCI-000015"
+      ident_system:
+        type:
+          - string
+          - 'null'
+        description: Identifier system URI.
+        example: "http://cyber.mil/cci"
+      vendor_comments:
+        type:
+          - string
+          - 'null'
+        description: Vendor-provided implementation notes.
+        example: null
+      vuln_id:
+        type:
+          - string
+          - 'null'
+        description: Vulnerability identifier (V-number).
+        example: null
+      legacy_ids:
+        type:
+          - string
+          - 'null'
+        description: Legacy rule identifiers (comma-separated string).
+        example: "V-56571, SV-70831"
+      component_id:
+        type: integer
+        description: ID of the component this rule belongs to.
+        example: 1
+      status_justification:
+        type:
+          - string
+          - 'null'
+        description: Justification text for NA or DNM status.
+        example: null
+      artifact_description:
+        type:
+          - string
+          - 'null'
+        description: Description of compliance evidence artifacts.
+        example: null
+      locked_fields:
+        type: object
+        description: Map of section names to locked state. Empty object means no sections locked.
+        additionalProperties:
+          type: boolean
+        example: {}
+      nist_control_family:
+        type:
+          - string
+          - 'null'
+        description: NIST SP 800-53 control family mapping.
+        example: "AC-2 (1)"
+      srg_id:
+        type:
+          - string
+          - 'null'
+        description: SRG requirement version this rule implements.
+        example: "SRG-OS-000001-GPOS-00001"
+      inspec_control_body:
+        type:
+          - string
+          - 'null'
+        description: InSpec control Ruby source code.
+        example: null
+      inspec_control_file:
+        type:
+          - string
+          - 'null'
+        description: InSpec control file path.
+        example: null
+      inspec_control_body_lang:
+        type:
+          - string
+          - 'null'
+        description: Language of the InSpec control body.
+        example: "ruby"
+      inspec_control_file_lang:
+        type:
+          - string
+          - 'null'
+        description: Language of the InSpec control file.
+        example: "ruby"
+      fix_id:
+        type:
+          - string
+          - 'null'
+        description: Fix identifier.
+        example: "F-3716r557030_fix"
+      disa_rule_descriptions_attributes:
+        type: array
+        description: DISA rule description records.
+        items:
+          $ref: ./DisaRuleDescription.yaml
+      checks_attributes:
+        type: array
+        description: Check content records.
+        items:
+          $ref: ./CheckSummary.yaml
+      satisfies:
+        type: array
+        description: Rules that this rule satisfies (child-to-parent relationships).
+        items:
+          $ref: ./SatisfactionSummary.yaml
+      satisfied_by:
+        type: array
+        description: Rules that satisfy this rule (parent-to-child relationships).
+        items:
+          $ref: ./SatisfiedBySummary.yaml
+      rule_descriptions_attributes:
+        type: array
+        description: Raw rule description records.
+        items:
+          $ref: ./RuleDescriptionSummary.yaml
+      reviews:
+        type: array
+        description: Review actions on this rule (comments, approvals, etc.).
+        items:
+          $ref: ./ReviewSummary.yaml
+      additional_answers_attributes:
+        type: array
+        description: Answers to component-level additional questions.
+        items:
+          $ref: ./AdditionalAnswerSummary.yaml
+      srg_rule_attributes:
+        description: Source SRG rule data (the baseline requirement this rule implements). Null if no SRG rule linked.
+        oneOf:
+          - $ref: ./SrgRuleSummary.yaml
+          - type: 'null'
+      srg_info:
+        type:
+          - object
+          - 'null'
+        description: SRG version metadata.
+        properties:
+          version:
+            type:
+              - string
+              - 'null'
+            example: "V2R4"
