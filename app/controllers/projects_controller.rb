@@ -329,7 +329,7 @@ class ProjectsController < ApplicationController
     file = params[:file]
     unless file
       render json: {
-        toast: { title: IMPORT_ERROR_TITLE, message: 'No file provided', variant: 'danger' }
+        toast: { title: IMPORT_ERROR_TITLE, message: ['No file provided.'], variant: 'danger' }
       }, status: :bad_request
       return
     end
@@ -342,7 +342,7 @@ class ProjectsController < ApplicationController
       begin
         component_filter = JSON.parse(params[:component_filter])
       rescue JSON::ParserError
-        render json: { toast: { title: 'Invalid request', message: 'component_filter must be valid JSON', variant: 'danger' } },
+        render json: { toast: { title: 'Invalid request.', message: ['component_filter must be valid JSON.'], variant: 'danger' } },
                status: :bad_request
         return
       end
@@ -358,16 +358,17 @@ class ProjectsController < ApplicationController
     ).call
 
     if result.success?
+      message = dry_run ? 'Dry run complete. No records were created.' : 'Backup restored successfully.'
       render json: {
-        toast: dry_run ? 'Dry run complete. No records were created.' : 'Backup restored successfully.',
+        toast: { title: dry_run ? 'Dry run complete.' : 'Backup restored.', message: [message], variant: 'success' },
         summary: result.summary,
         warnings: result.warnings
       }
     else
       render json: {
         toast: {
-          title: 'Import failed',
-          message: result.errors.join('; '),
+          title: 'Import failed.',
+          message: result.errors,
           variant: 'danger'
         },
         warnings: result.warnings
@@ -379,7 +380,7 @@ class ProjectsController < ApplicationController
     file = params[:file]
     unless file
       render json: {
-        toast: { title: IMPORT_ERROR_TITLE, message: 'No file provided', variant: 'danger' }
+        toast: { title: IMPORT_ERROR_TITLE, message: ['No file provided.'], variant: 'danger' }
       }, status: :bad_request
       return
     end
@@ -425,7 +426,7 @@ class ProjectsController < ApplicationController
       render json: {
         toast: {
           title: 'Preview failed',
-          message: result.errors.join('; '),
+          message: result.errors,
           variant: 'danger'
         },
         warnings: result.warnings,
@@ -438,7 +439,7 @@ class ProjectsController < ApplicationController
                                  project_name, project_description, project_visibility)
     unless project_name
       render json: {
-        toast: { title: IMPORT_ERROR_TITLE, message: 'Project name is required', variant: 'danger' }
+        toast: { title: IMPORT_ERROR_TITLE, message: ['Project name is required.'], variant: 'danger' }
       }, status: :unprocessable_entity
       return
     end
@@ -478,8 +479,8 @@ class ProjectsController < ApplicationController
     else
       render json: {
         toast: {
-          title: 'Import failed',
-          message: result&.errors&.join('; ') || 'Unknown error',
+          title: 'Import failed.',
+          message: result&.errors || ['Unknown error'],
           variant: 'danger'
         },
         warnings: result&.warnings || []

@@ -32,9 +32,10 @@ class ComponentsController < ApplicationController
                           .eager_load(:based_on)
                           .where(released: true)
 
+    @components_json = ComponentBlueprint.render(components, view: :index)
     respond_to do |format|
-      format.html { @components_json = ComponentBlueprint.render(components, view: :index) }
-      format.json { @components_json = components } # Jbuilder uses the relation
+      format.html
+      format.json { render body: @components_json, content_type: 'application/json' }
     end
   end
 
@@ -65,16 +66,9 @@ class ComponentsController < ApplicationController
         @project_json = @component.project.to_json
       end
       format.json do
-        if @effective_permissions
-          # Editor refresh: use blueprint directly so the refreshComponent() response
-          # shape exactly matches the initial render and nothing drifts (e.g.,
-          # memberships losing their MembershipBlueprint name/email decoration).
-          render json: ComponentBlueprint.render(@component, view: :editor, **blueprint_render_options)
-        else
-          # Non-member: jbuilder produces a BenchmarkViewer-specific lightweight
-          # rule shape that the :show blueprint view does not.
-          render :show
-        end
+        view = @effective_permissions ? :editor : :show
+        render body: ComponentBlueprint.render(@component, view: view, **blueprint_render_options),
+               content_type: 'application/json'
       end
     end
   end
@@ -449,13 +443,13 @@ class ComponentsController < ApplicationController
         end
 
         history << {
-          base_component: prev_component,
-          diff_component: component,
+          base_component: ComponentBlueprint.render_as_hash(prev_component),
+          diff_component: ComponentBlueprint.render_as_hash(component),
           changes: changes
         }
       end
 
-      history << { component: component }
+      history << { component: ComponentBlueprint.render_as_hash(component) }
     end
 
     render json: history

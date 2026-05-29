@@ -12,14 +12,20 @@ class SecurityRequirementsGuidesController < ApplicationController
   def index
     @srgs = SecurityRequirementsGuide.with_severity_counts.order(:srg_id, :version)
     @srgs_json = SrgBlueprint.render(@srgs, view: :index)
+
+    respond_to do |format|
+      format.html
+      format.json { render body: @srgs_json, content_type: 'application/json' }
+    end
   end
 
   def show
-    @srg = SecurityRequirementsGuide.includes(srg_rules: %i[disa_rule_descriptions checks]).find(params[:id])
+    @srg = SecurityRequirementsGuide.includes(srg_rules: %i[disa_rule_descriptions rule_descriptions checks]).find(params[:id])
+    @srg_json = SrgBlueprint.render(@srg, view: :show)
 
     respond_to do |format|
-      format.html { @srg_json = SrgBlueprint.render(@srg, view: :show) }
-      format.json # Uses show.json.jbuilder
+      format.html
+      format.json { render body: @srg_json, content_type: 'application/json' }
     end
   end
 

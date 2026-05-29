@@ -4,7 +4,7 @@
 # Controller for application users.
 #
 class UsersController < ApplicationController
-  USER_JSON_FIELDS = %i[id name email provider admin failed_attempts locked_at].freeze
+  USER_JSON_FIELDS = %i[id name email provider admin last_sign_in_at failed_attempts locked_at].freeze
 
   before_action :authorize_admin, except: %i[comments]
   before_action :authorize_logged_in, only: %i[comments]
@@ -20,7 +20,7 @@ class UsersController < ApplicationController
                         .map(&:format)
     respond_to do |format|
       format.html
-      format.json { render json: @users.as_json(only: USER_JSON_FIELDS + [:last_sign_in_at]) }
+      format.json { render json: @users.as_json(only: USER_JSON_FIELDS) }
     end
   end
 
@@ -36,14 +36,13 @@ class UsersController < ApplicationController
       result = { user: user.as_json(only: USER_JSON_FIELDS) }
 
       if password_params[:password].present?
-        result[:toast] = "User #{user.email} created with the provided password."
+        result[:toast] = { title: 'User created.', message: ["User #{user.email} created with the provided password."], variant: 'success' }
       elsif Settings.smtp.enabled
         user.send_reset_password_instructions
-        result[:toast] = "User #{user.email} created. Setup email sent."
+        result[:toast] = { title: 'User created.', message: ["User #{user.email} created. Setup email sent."], variant: 'success' }
       else
-        # No SMTP + no password provided — generate a reset link for the admin to deliver
         reset_url = generate_reset_url(user)
-        result[:toast] = "User #{user.email} created. Deliver the reset link to the user."
+        result[:toast] = { title: 'User created.', message: ["User #{user.email} created. Deliver the reset link to the user."], variant: 'success' }
         result[:reset_url] = reset_url
       end
 

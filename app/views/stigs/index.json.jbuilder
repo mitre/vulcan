@@ -6,6 +6,7 @@
 json.array! @stigs, cached: true do |stig|
   json.id stig.id
   json.stig_id stig.stig_id
+  json.name stig.name
   json.title stig.title
   json.version stig.version
   json.benchmark_date stig.benchmark_date

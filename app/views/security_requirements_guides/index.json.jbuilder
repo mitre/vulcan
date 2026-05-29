@@ -6,6 +6,7 @@
 json.array! @srgs, cached: true do |srg|
   json.id srg.id
   json.srg_id srg.srg_id
+  json.name srg.name
   json.title srg.title
   json.version srg.version
   json.release_date srg.release_date
