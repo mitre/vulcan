@@ -8,7 +8,7 @@ module Users
     # Devise's stock `authenticate_scope!` only guards :edit / :update /
     # :destroy. The settings-shell sub-pages we add (#edit_password,
     # #edit_activity) need the same protection.
-    prepend_before_action :authenticate_scope!, only: %i[edit_password edit_activity]
+    prepend_before_action :authenticate_scope!, only: %i[edit_password edit_activity edit_tokens]
 
     def edit
       super
@@ -26,6 +26,10 @@ module Users
     # requires filtering on BOTH user_id AND user_type to avoid matching
     # non-User actors that share a numeric id, e.g. 'System' background
     # job entries).
+    def edit_tokens
+      self.resource = current_user
+    end
+
     def edit_activity
       self.resource = current_user
       @histories = Audited.audit_class.includes(:user)
@@ -72,11 +76,11 @@ module Users
           end
           format.json do
             render json: {
-              toast: {
+              toast: Toast.new(
                 title: 'Could not update profile.',
                 message: resource.errors.full_messages,
                 variant: 'danger'
-              }
+              )
             }, status: :unprocessable_entity
           end
         end
@@ -167,7 +171,7 @@ module Users
           redirect_to edit_user_registration_path
         end
         format.json do
-          render json: { toast: { title: 'Cannot unlink', message: [message], variant: 'danger' } },
+          render json: { toast: Toast.new(title: 'Cannot unlink', message: [message], variant: 'danger') },
                  status: status
         end
       end

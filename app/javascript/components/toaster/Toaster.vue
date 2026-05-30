@@ -23,7 +23,11 @@ export default {
     if (this.notice) {
       this.alertOrNotifyResponse({
         data: {
-          toast: this.notice,
+          toast: {
+            title: "Notice",
+            variant: "success",
+            message: [this.notice],
+          },
         },
       });
     }
@@ -34,7 +38,7 @@ export default {
           toast: {
             title: "Error",
             variant: "danger",
-            message: this.alert,
+            message: [this.alert],
           },
         },
       });

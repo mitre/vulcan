@@ -338,7 +338,7 @@ class ReviewsController < ApplicationController
     end
 
     target_rule = Rule.find_by(id: target_rule_id)
-    return head :not_found unless target_rule
+    return render_not_found unless target_rule
 
     unless target_rule.component_id == @review.rule.component_id
       return render_toast(title: 'Cannot move.',
@@ -723,7 +723,7 @@ class ReviewsController < ApplicationController
   # authorize_viewer_component delegate.
   def authorize_review_visibility
     @component = @review&.component
-    return head :not_found unless @component
+    return render_not_found unless @component
 
     if @component.released
       authorize_logged_in

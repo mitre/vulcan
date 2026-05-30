@@ -49,7 +49,7 @@ class UsersController < ApplicationController
       render json: result
     else
       render json: {
-        toast: { title: 'Could not create user.', message: user.errors.full_messages, variant: 'danger' }
+        toast: Toast.new(title: 'Could not create user.', message: user.errors.full_messages, variant: 'danger')
       }, status: :unprocessable_entity
     end
   end
@@ -64,7 +64,7 @@ class UsersController < ApplicationController
         end
         format.json do
           render json: {
-            toast: { title: 'Cannot remove admin.', message: ['You are the only admin. Promote another user first.'], variant: 'danger' }
+            toast: Toast.new(title: 'Cannot remove admin.', message: ['You are the only admin. Promote another user first.'], variant: 'danger')
           }, status: :unprocessable_entity
         end
       end
@@ -91,7 +91,7 @@ class UsersController < ApplicationController
         # doesn't support piggybacking extra response keys.
         format.json do
           render json: {
-            toast: { title: 'User updated.', message: ['Successfully updated user.'], variant: 'success' },
+            toast: Toast.new(title: 'User updated.', message: ['Successfully updated user.'], variant: 'success'),
             user: @user.as_json(only: USER_JSON_FIELDS)
           }
         end
@@ -104,11 +104,11 @@ class UsersController < ApplicationController
         end
         format.json do
           render json: {
-            toast: {
+            toast: Toast.new(
               title: 'Could not update user.',
               message: @user.errors.full_messages,
               variant: 'danger'
-            }
+            )
           }, status: :unprocessable_entity
         end
       end
@@ -125,7 +125,7 @@ class UsersController < ApplicationController
         end
         format.json do
           render json: {
-            toast: { title: 'Cannot delete user.', message: ['This is the only admin. Promote another user first.'], variant: 'danger' }
+            toast: Toast.new(title: 'Cannot delete user.', message: ['This is the only admin. Promote another user first.'], variant: 'danger')
           }, status: :unprocessable_entity
         end
       end
@@ -151,11 +151,11 @@ class UsersController < ApplicationController
         end
         format.json do
           render json: {
-            toast: {
+            toast: Toast.new(
               title: 'Could not remove user.',
               message: @user.errors.full_messages,
               variant: 'danger'
-            }
+            )
           }, status: :unprocessable_entity
         end
       end
@@ -166,7 +166,7 @@ class UsersController < ApplicationController
   def send_password_reset
     unless Settings.smtp.enabled
       return render json: {
-        toast: { title: 'SMTP not configured.', message: ['Email delivery is not available. Use "Generate Reset Link" instead.'], variant: 'danger' }
+        toast: Toast.new(title: 'SMTP not configured.', message: ['Email delivery is not available. Use "Generate Reset Link" instead.'], variant: 'danger')
       }, status: :unprocessable_entity
     end
 
@@ -177,7 +177,7 @@ class UsersController < ApplicationController
   rescue StandardError => e
     Rails.logger.error "send_password_reset failed for user #{@user.id}: #{e.class}: #{e.message}\n#{e.backtrace&.first(5)&.join("\n")}"
     render json: {
-      toast: { title: 'Could not send password reset.', message: ['An internal error occurred. Please try again or contact an administrator.'], variant: 'danger' }
+      toast: Toast.new(title: 'Could not send password reset.', message: ['An internal error occurred. Please try again or contact an administrator.'], variant: 'danger')
     }, status: :internal_server_error
   end
 
@@ -188,9 +188,9 @@ class UsersController < ApplicationController
     # Inline the canonical toast object since render_toast doesn't piggyback
     # extra response keys.
     render json: {
-      toast: { title: 'Reset link generated.',
-               message: ['Reset link generated. Copy it and deliver to the user.'],
-               variant: 'success' },
+      toast: Toast.new(title: 'Reset link generated.',
+                       message: ['Reset link generated. Copy it and deliver to the user.'],
+                       variant: 'success'),
       reset_url: reset_url
     }
   end
@@ -199,7 +199,7 @@ class UsersController < ApplicationController
   def lock
     if @user == current_user
       return render json: {
-        toast: { title: 'Cannot lock yourself.', message: ['You cannot lock your own account.'], variant: 'danger' }
+        toast: Toast.new(title: 'Cannot lock yourself.', message: ['You cannot lock your own account.'], variant: 'danger')
       }, status: :unprocessable_entity
     end
 
@@ -208,9 +208,9 @@ class UsersController < ApplicationController
                          user: current_user, comment: "Account locked by #{current_user.name}")
     # multi-key response (toast + user).
     render json: {
-      toast: { title: 'Account locked.',
-               message: ["Account #{@user.email} locked."],
-               variant: 'success' },
+      toast: Toast.new(title: 'Account locked.',
+                       message: ["Account #{@user.email} locked."],
+                       variant: 'success'),
       user: @user.as_json(only: USER_JSON_FIELDS)
     }
   end
@@ -223,9 +223,9 @@ class UsersController < ApplicationController
                          user: current_user, comment: "Account unlocked by #{current_user.name}")
     # multi-key response (toast + user).
     render json: {
-      toast: { title: 'Account unlocked.',
-               message: ["Account #{@user.email} unlocked."],
-               variant: 'success' },
+      toast: Toast.new(title: 'Account unlocked.',
+                       message: ["Account #{@user.email} unlocked."],
+                       variant: 'success'),
       user: @user.as_json(only: USER_JSON_FIELDS)
     }
   end
@@ -234,7 +234,7 @@ class UsersController < ApplicationController
   def set_password
     if password_params[:password].blank?
       return render json: {
-        toast: { title: 'Password required.', message: ['Password cannot be blank.'], variant: 'danger' }
+        toast: Toast.new(title: 'Password required.', message: ['Password cannot be blank.'], variant: 'danger')
       }, status: :unprocessable_entity
     end
 
@@ -245,13 +245,13 @@ class UsersController < ApplicationController
                    variant: 'success', status: :ok)
     else
       render json: {
-        toast: { title: 'Could not set password.', message: @user.errors.full_messages, variant: 'danger' }
+        toast: Toast.new(title: 'Could not set password.', message: @user.errors.full_messages, variant: 'danger')
       }, status: :unprocessable_entity
     end
   rescue StandardError => e
     Rails.logger.error "set_password failed for user #{@user.id}: #{e.class}: #{e.message}\n#{e.backtrace&.first(5)&.join("\n")}"
     render json: {
-      toast: { title: 'Could not set password.', message: ['An internal error occurred. Please try again or contact an administrator.'], variant: 'danger' }
+      toast: Toast.new(title: 'Could not set password.', message: ['An internal error occurred. Please try again or contact an administrator.'], variant: 'danger')
     }, status: :internal_server_error
   end
 
@@ -269,7 +269,7 @@ class UsersController < ApplicationController
   # frontend translates via triageVocabulary.js.
   def comments
     @target_user = User.find_by(id: params[:id])
-    return head :not_found unless @target_user
+    return render_not_found unless @target_user
 
     respond_to do |format|
       format.html

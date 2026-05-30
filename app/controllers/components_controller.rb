@@ -101,11 +101,11 @@ class ComponentsController < ApplicationController
                      variant: 'success', status: :ok)
       else
         render json: {
-          toast: {
+          toast: Toast.new(
             title: 'Could not add component to project.',
             message: component.errors.full_messages,
             variant: 'danger'
-          }
+          )
         }, status: :unprocessable_entity
       end
     }
@@ -123,11 +123,11 @@ class ComponentsController < ApplicationController
                    variant: 'success', status: :ok)
     else
       render json: {
-        toast: {
+        toast: Toast.new(
           title: 'Could not update component.',
           message: @component.errors.full_messages,
           variant: 'danger'
-        }
+        )
       }, status: :unprocessable_entity
     end
   end
@@ -162,11 +162,11 @@ class ComponentsController < ApplicationController
   rescue ActiveRecord::StatementInvalid, ActiveRecord::RecordNotDestroyed => e
     Rails.logger.error("[ComponentsController#destroy] Failed to remove component #{@component.id}: #{e.class} — #{e.message}")
     render json: {
-      toast: {
+      toast: Toast.new(
         title: 'Error',
         message: ["Could not remove component: #{e.message.truncate(200)}"],
         variant: 'danger'
-      }
+      )
     }, status: :unprocessable_entity
   end
 
@@ -176,11 +176,11 @@ class ComponentsController < ApplicationController
     # Other export types will be included in the future
     unless %i[csv inspec xccdf json_archive disposition_csv].include?(export_type)
       render json: {
-        toast: {
+        toast: Toast.new(
           title: EXPORT_ERROR_TITLE,
           message: "Unsupported export type: #{export_type}",
           variant: 'danger'
-        }
+        )
       }, status: :bad_request
       return
     end
@@ -189,7 +189,7 @@ class ComponentsController < ApplicationController
     # Task 29). Viewers must NOT be able to export PII-adjacent data even
     # though they can read it in the in-app triage table.
     if export_type == :disposition_csv && !current_user.can_author_project?(@component.project)
-      head :forbidden
+      render json: { error: 'Forbidden' }, status: :forbidden
       return
     end
 
@@ -235,11 +235,11 @@ class ComponentsController < ApplicationController
 
     unless %i[csv xccdf inspec].include?(export_type)
       render json: {
-        toast: {
+        toast: Toast.new(
           title: EXPORT_ERROR_TITLE,
           message: "Unsupported export type: #{export_type}",
           variant: 'danger'
-        }
+        )
       }, status: :bad_request
       return
     end
@@ -247,11 +247,11 @@ class ComponentsController < ApplicationController
     component_ids = params[:component_ids]&.split(',')&.map(&:to_i)
     if component_ids.blank?
       render json: {
-        toast: {
+        toast: Toast.new(
           title: EXPORT_ERROR_TITLE,
           message: 'No components selected for export.',
           variant: 'danger'
-        }
+        )
       }, status: :bad_request
       return
     end
@@ -277,7 +277,7 @@ class ComponentsController < ApplicationController
             zip_filename: 'components_inspec.zip'
           )
         else
-          head :unprocessable_entity
+          render json: { error: 'Unprocessable entity' }, status: :unprocessable_entity
         end
       end
       format.json { render json: { status: :ok } }
@@ -285,7 +285,7 @@ class ComponentsController < ApplicationController
   end
 
   def histories
-    return head :not_found unless @component
+    return render_not_found unless @component
 
     render json: @component.histories(50)
   end
@@ -334,14 +334,14 @@ class ComponentsController < ApplicationController
   # Sets Cache-Control: no-store so concurrent triagers cannot get a stale
   # snapshot from a browser/proxy cache during a public-comment window.
   def rules_picker
-    return head :not_found unless @component
+    return render_not_found unless @component
 
     rules = @component.rules.includes(:satisfied_by, :satisfies)
     render json: { rules: RuleBlueprint.render_as_hash(rules, view: :picker) }
   end
 
   def comments
-    return head :not_found unless @component
+    return render_not_found unless @component
 
     respond_to do |format|
       format.html { redirect_to "/components/#{@component.id}/triage" }
@@ -367,7 +367,7 @@ class ComponentsController < ApplicationController
   end
 
   def based_on_same_srg
-    return head :not_found unless @component&.based_on
+    return render_not_found unless @component&.based_on
 
     srg_title = @component.based_on.title
     accessible_project_ids = current_user.available_projects.ids
@@ -397,7 +397,7 @@ class ComponentsController < ApplicationController
   def compare
     base_component = Component.find_by(id: params[:base_id])
     diff_component = Component.find_by(id: params[:diff_id])
-    return head :not_found unless base_component && diff_component
+    return render_not_found unless base_component && diff_component
 
     base = base_component.rules.pluck(:rule_id, :inspec_control_file).to_h
     diff = diff_component.rules.pluck(:rule_id, :inspec_control_file).to_h
@@ -645,11 +645,11 @@ class ComponentsController < ApplicationController
       # Return a JSON response with a toast message if request formt is JSON.
       format.json do
         render json: {
-          toast: {
+          toast: Toast.new(
             title: CONTROL_NOT_FOUND_TITLE,
             message: message,
             variant: 'danger'
-          }
+          )
         }, status: :not_found
       end
     end
@@ -684,11 +684,11 @@ class ComponentsController < ApplicationController
           # Render a json response in a toast message format
           # as well as setting status code of the response to not_found (404)
           render json: {
-            toast: {
+            toast: Toast.new(
               title: CONTROL_NOT_FOUND_TITLE,
               message: message,
               variant: 'danger'
-            }
+            )
           }, status: :not_found
         end
       end
@@ -712,7 +712,7 @@ class ComponentsController < ApplicationController
       end
       format.json do
         render json: {
-          toast: { title: CONTROL_NOT_FOUND_TITLE, message: message, variant: 'danger' }
+          toast: Toast.new(title: CONTROL_NOT_FOUND_TITLE, message: message, variant: 'danger')
         }, status: :not_found
       end
     end

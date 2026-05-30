@@ -57,11 +57,11 @@ class RuleSatisfactionsController < ApplicationController
 
   def render_satisfaction_failure(verb, message)
     render json: {
-      toast: {
+      toast: Toast.new(
         title: "Could not #{verb} #{@rule.version} as satisfied by #{@satisfied_by_rule.version}.",
         message: message,
         variant: 'danger'
-      }
+      )
     }, status: :unprocessable_entity
   end
 

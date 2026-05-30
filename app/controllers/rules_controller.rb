@@ -77,16 +77,16 @@ class RulesController < ApplicationController
       # data). Inline the canonical toast object since render_toast
       # doesn't support piggybacking extra response keys.
       render json: {
-        toast: { title: 'Control created.', message: ['Successfully created control.'], variant: 'success' },
+        toast: Toast.new(title: 'Control created.', message: ['Successfully created control.'], variant: 'success'),
         data: RuleBlueprint.render_as_hash(rule, view: :editor)
       }
     else
       render json: {
-        toast: {
+        toast: Toast.new(
           title: 'Could not create control.',
           message: rule.errors.full_messages,
           variant: 'danger'
-        }
+        )
       }, status: :unprocessable_entity
     end
   end
@@ -98,11 +98,11 @@ class RulesController < ApplicationController
                    variant: 'success', status: :ok)
     else
       render json: {
-        toast: {
+        toast: Toast.new(
           title: 'Could not update control.',
           message: @rule.errors.full_messages,
           variant: 'danger'
-        }
+        )
       }, status: :unprocessable_entity
     end
   end
@@ -136,11 +136,11 @@ class RulesController < ApplicationController
   rescue ActiveRecord::RecordInvalid, ActiveRecord::StatementInvalid => e
     Rails.logger.error("Rule destroy failed for rule_id=#{@rule.id} user=#{current_user.id}: #{e.message}")
     render json: {
-      toast: {
+      toast: Toast.new(
         title: 'Could not delete control.',
         message: 'A database error prevented the delete from completing. The control was not modified.',
         variant: 'danger'
-      }
+      )
     }, status: :unprocessable_entity
   end
 
@@ -153,11 +153,11 @@ class RulesController < ApplicationController
                  variant: 'success', status: :ok)
   rescue RuleRevertError => e
     render json: {
-      toast: {
+      toast: Toast.new(
         title: 'Could not revert history.',
         message: e.message,
         variant: 'danger'
-      }
+      )
     }, status: :unprocessable_entity
   end
 
@@ -181,9 +181,9 @@ class RulesController < ApplicationController
     # multi-key response (rule + toast).
     render json: {
       rule: RuleBlueprint.render_as_hash(@rule, view: :editor),
-      toast: { title: locked ? 'Section locked.' : 'Section unlocked.',
-               message: ["#{section} #{locked ? 'locked' : 'unlocked'}"],
-               variant: 'success' }
+      toast: Toast.new(title: locked ? 'Section locked.' : 'Section unlocked.',
+                       message: ["#{section} #{locked ? 'locked' : 'unlocked'}"],
+                       variant: 'success')
     }
   end
 
@@ -211,9 +211,9 @@ class RulesController < ApplicationController
     # multi-key response (rule + toast).
     render json: {
       rule: RuleBlueprint.render_as_hash(@rule, view: :editor),
-      toast: { title: "Sections #{action_word.downcase}.",
-               message: ["#{action_word} #{sections.size} sections"],
-               variant: 'success' }
+      toast: Toast.new(title: "Sections #{action_word.downcase}.",
+                       message: ["#{action_word} #{sections.size} sections"],
+                       variant: 'success')
     }
   end
 

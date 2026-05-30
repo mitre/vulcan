@@ -45,7 +45,7 @@ class ProjectAccessRequestsController < ApplicationController
         # multi-key response (toast + id).
         format.json do
           render json: {
-            toast: { title: 'Access request submitted.', message: [toast], variant: 'success' },
+            toast: Toast.new(title: 'Access request submitted.', message: [toast], variant: 'success'),
             id: @access_request.id
           }
         end

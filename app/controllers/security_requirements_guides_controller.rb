@@ -43,11 +43,11 @@ class SecurityRequirementsGuidesController < ApplicationController
                    variant: 'success', status: :ok)
     else
       render(json: {
-               toast: {
+               toast: Toast.new(
                  title: 'Could not create SRG.',
                  message: srg.errors.full_messages,
                  variant: 'danger'
-               },
+               ),
                status: :unprocessable_entity
              })
     end
@@ -58,11 +58,11 @@ class SecurityRequirementsGuidesController < ApplicationController
 
     unless %i[xccdf csv].include?(export_type)
       render json: {
-        toast: {
+        toast: Toast.new(
           title: 'Export error',
           message: "Unsupported export type: #{export_type}. SRGs can be exported as XCCDF or CSV.",
           variant: 'danger'
-        }
+        )
       }, status: :bad_request
       return
     end
@@ -109,11 +109,11 @@ class SecurityRequirementsGuidesController < ApplicationController
         end
         format.json do
           render json: {
-            toast: {
+            toast: Toast.new(
               title: 'Could not remove SRG.',
               message: @srg.errors.full_messages,
               variant: 'danger'
-            }
+            )
           }, status: :unprocessable_entity
         end
       end

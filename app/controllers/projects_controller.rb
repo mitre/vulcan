@@ -81,7 +81,7 @@ class ProjectsController < ApplicationController
   end
 
   def histories
-    return head :not_found unless @project
+    return render_not_found unless @project
 
     render json: @project.histories(50)
   end
@@ -111,7 +111,7 @@ class ProjectsController < ApplicationController
   # Sets Cache-Control: no-store so concurrent triagers cannot get a
   # stale snapshot from a browser/proxy cache.
   def comments
-    return head :not_found unless @project
+    return render_not_found unless @project
 
     respond_to do |format|
       format.html { redirect_to "/projects/#{@project.id}/triage" }
@@ -153,7 +153,7 @@ class ProjectsController < ApplicationController
           # redirect_url). Inline the canonical toast object since
           # render_toast doesn't support piggybacking extra response keys.
           render json: {
-            toast: { title: 'Project created.', message: ['Successfully created project.'], variant: 'success' },
+            toast: Toast.new(title: 'Project created.', message: ['Successfully created project.'], variant: 'success'),
             redirect_url: project_path(project)
           }
         end
@@ -166,11 +166,11 @@ class ProjectsController < ApplicationController
         end
         format.json do
           render json: {
-            toast: {
+            toast: Toast.new(
               title: 'Could not create project.',
               message: project.errors.full_messages,
               variant: 'danger'
-            }
+            )
           }, status: :unprocessable_entity
         end
       end
@@ -193,11 +193,11 @@ class ProjectsController < ApplicationController
                    variant: 'success', status: :ok)
     else
       render json: {
-        toast: {
+        toast: Toast.new(
           title: 'Could not update project.',
           message: @project.errors.full_messages,
           variant: 'danger'
-        }
+        )
       }, status: :unprocessable_entity
     end
   end
@@ -224,11 +224,11 @@ class ProjectsController < ApplicationController
         end
         format.json do
           render json: {
-            toast: {
+            toast: Toast.new(
               title: 'Could not remove project.',
               message: @project.errors.full_messages,
               variant: 'danger'
-            }
+            )
           }, status: :unprocessable_entity
         end
       end
@@ -252,18 +252,18 @@ class ProjectsController < ApplicationController
 
     unless %i[csv excel xccdf inspec json_archive disposition_csv].include?(export_type)
       render json: {
-        toast: {
+        toast: Toast.new(
           title: 'Export error',
           message: "Unsupported export type: #{export_type}",
           variant: 'danger'
-        }
+        )
       }, status: :bad_request
       return
     end
 
     # disposition_csv: author-tier+ only (PII-adjacent data; mirrors per-component endpoint).
     if export_type == :disposition_csv && !current_user.can_author_project?(@project)
-      head :forbidden
+      render json: { error: 'Forbidden' }, status: :forbidden
       return
     end
 
@@ -329,7 +329,7 @@ class ProjectsController < ApplicationController
     file = params[:file]
     unless file
       render json: {
-        toast: { title: IMPORT_ERROR_TITLE, message: ['No file provided.'], variant: 'danger' }
+        toast: Toast.new(title: IMPORT_ERROR_TITLE, message: ['No file provided.'], variant: 'danger')
       }, status: :bad_request
       return
     end
@@ -342,7 +342,7 @@ class ProjectsController < ApplicationController
       begin
         component_filter = JSON.parse(params[:component_filter])
       rescue JSON::ParserError
-        render json: { toast: { title: 'Invalid request.', message: ['component_filter must be valid JSON.'], variant: 'danger' } },
+        render json: { toast: Toast.new(title: 'Invalid request.', message: ['component_filter must be valid JSON.'], variant: 'danger') },
                status: :bad_request
         return
       end
@@ -360,17 +360,17 @@ class ProjectsController < ApplicationController
     if result.success?
       message = dry_run ? 'Dry run complete. No records were created.' : 'Backup restored successfully.'
       render json: {
-        toast: { title: dry_run ? 'Dry run complete.' : 'Backup restored.', message: [message], variant: 'success' },
+        toast: Toast.new(title: dry_run ? 'Dry run complete.' : 'Backup restored.', message: [message], variant: 'success'),
         summary: result.summary,
         warnings: result.warnings
       }
     else
       render json: {
-        toast: {
+        toast: Toast.new(
           title: 'Import failed.',
           message: result.errors,
           variant: 'danger'
-        },
+        ),
         warnings: result.warnings
       }, status: :unprocessable_entity
     end
@@ -380,7 +380,7 @@ class ProjectsController < ApplicationController
     file = params[:file]
     unless file
       render json: {
-        toast: { title: IMPORT_ERROR_TITLE, message: ['No file provided.'], variant: 'danger' }
+        toast: Toast.new(title: IMPORT_ERROR_TITLE, message: ['No file provided.'], variant: 'danger')
       }, status: :bad_request
       return
     end
@@ -424,11 +424,11 @@ class ProjectsController < ApplicationController
       }
     else
       render json: {
-        toast: {
+        toast: Toast.new(
           title: 'Preview failed',
           message: result.errors,
           variant: 'danger'
-        },
+        ),
         warnings: result.warnings,
         project_defaults: project_defaults
       }, status: :unprocessable_entity
@@ -439,7 +439,7 @@ class ProjectsController < ApplicationController
                                  project_name, project_description, project_visibility)
     unless project_name
       render json: {
-        toast: { title: IMPORT_ERROR_TITLE, message: ['Project name is required.'], variant: 'danger' }
+        toast: Toast.new(title: IMPORT_ERROR_TITLE, message: ['Project name is required.'], variant: 'danger')
       }, status: :unprocessable_entity
       return
     end
@@ -472,17 +472,17 @@ class ProjectsController < ApplicationController
       render json: {
         redirect_url: project_path(project),
         summary: result.summary,
-        toast: { title: 'Project imported.',
-                 message: ['Project created from backup successfully.'],
-                 variant: 'success' }
+        toast: Toast.new(title: 'Project imported.',
+                         message: ['Project created from backup successfully.'],
+                         variant: 'success')
       }
     else
       render json: {
-        toast: {
+        toast: Toast.new(
           title: 'Import failed.',
           message: result&.errors || ['Unknown error'],
           variant: 'danger'
-        },
+        ),
         warnings: result&.warnings || []
       }, status: :unprocessable_entity
     end

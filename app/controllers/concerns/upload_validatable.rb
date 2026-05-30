@@ -25,11 +25,11 @@ module UploadValidatable
     return true if file.size <= max_size
 
     render json: {
-      toast: {
+      toast: Toast.new(
         title: 'Upload rejected',
         message: "File exceeds maximum size of #{ActiveSupport::NumberHelper.number_to_human_size(max_size)}.",
         variant: 'danger'
-      }
+      )
     }, status: :unprocessable_entity
     false
   end
@@ -41,11 +41,11 @@ module UploadValidatable
     return true if allowed_types.include?(ext)
 
     render json: {
-      toast: {
+      toast: Toast.new(
         title: 'Upload rejected',
         message: "Invalid file type '#{ext}'. Allowed: #{allowed_types.join(', ')}.",
         variant: 'danger'
-      }
+      )
     }, status: :unprocessable_entity
     false
   end

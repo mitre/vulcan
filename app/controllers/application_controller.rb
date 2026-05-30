@@ -5,6 +5,7 @@
 class ApplicationController < ActionController::Base
   helper :all
   include SlackNotificationsHelper
+  include ApiTokenAuthenticatable
 
   before_action :setup_navigation, :authenticate_user!
   before_action :check_access_request_notifications
@@ -38,9 +39,9 @@ class ApplicationController < ActionController::Base
 
   rescue_from ActiveRecord::RecordNotFound do |_e|
     respond_to do |format|
-      format.json { head :not_found }
+      format.json { render json: { error: 'Not found' }, status: :not_found }
       format.html { render plain: 'Not Found', status: :not_found }
-      format.any  { head :not_found }
+      format.any  { render json: { error: 'Not found' }, status: :not_found }
     end
   end
 
@@ -63,14 +64,9 @@ class ApplicationController < ActionController::Base
   # `status` defaults to :unprocessable_entity (matches the most common
   # caller — a validation rejection). Caller overrides for 200 success
   # toasts (e.g. idempotent reopen returning the current state).
-  def render_toast(title:, message:, variant: 'danger', status: :unprocessable_entity)
-    render json: {
-      toast: {
-        title: title,
-        message: Array(message),
-        variant: variant
-      }
-    }, status: status
+  def render_toast(title:, message:, variant: 'danger', status: :unprocessable_entity, **extra)
+    render json: { toast: Toast.new(title: title, message: message, variant: variant), **extra },
+           status: status
   end
 
   # generic RecordInvalid handler. Each
@@ -103,6 +99,10 @@ class ApplicationController < ActionController::Base
 
   def self.record_invalid_titles(map)
     self.record_invalid_titles_map = map.transform_keys(&:to_sym).freeze
+  end
+
+  def render_not_found
+    render json: { error: 'Not found' }, status: :not_found
   end
 
   def set_project_permissions
@@ -317,11 +317,11 @@ class ApplicationController < ActionController::Base
       end
       format.json do
         render json: {
-          toast: {
+          toast: Toast.new(
             title: 'An error occurred processing your request.',
             message: message,
             variant: 'danger'
-          }
+          )
         }, status: :internal_server_error
       end
     end
@@ -364,11 +364,11 @@ class ApplicationController < ActionController::Base
       error: 'permission_denied',
       message: exception.message,
       admins: admins,
-      toast: {
+      toast: Toast.new(
         title: 'Not Authorized.',
         message: exception.message,
         variant: 'danger'
-      }
+      )
     }
   end
 

@@ -41,11 +41,11 @@ class StigsController < ApplicationController
                    variant: 'success', status: :ok)
     else
       render(json: {
-               toast: {
+               toast: Toast.new(
                  title: 'Could not add STIG.',
                  message: stig.errors.full_messages,
                  variant: 'danger'
-               },
+               ),
                status: :unprocessable_entity
              })
     end
@@ -56,11 +56,11 @@ class StigsController < ApplicationController
 
     unless %i[xccdf csv].include?(export_type)
       render json: {
-        toast: {
+        toast: Toast.new(
           title: 'Export error',
           message: "Unsupported export type: #{export_type}. STIGs can be exported as XCCDF or CSV.",
           variant: 'danger'
-        }
+        )
       }, status: :bad_request
       return
     end
@@ -105,11 +105,11 @@ class StigsController < ApplicationController
         end
         format.json do
           render json: {
-            toast: {
+            toast: Toast.new(
               title: 'Could not remove STIG.',
               message: @stig.errors.full_messages,
               variant: 'danger'
-            }
+            )
           }, status: :unprocessable_entity
         end
       end
@@ -120,10 +120,15 @@ class StigsController < ApplicationController
 
   def set_stig
     @stig = Stig.find_by(id: params[:id])
-    return unless @stig.nil?
+    return if @stig
 
-    flash[:alert] = 'STIG not found'
-    redirect_to stigs_path
+    respond_to do |format|
+      format.json { render_not_found }
+      format.html do
+        flash[:alert] = 'STIG not found'
+        redirect_to stigs_path
+      end
+    end
   end
 
   def parse_csv_columns(columns_param)

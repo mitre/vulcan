@@ -75,9 +75,9 @@ class ReactionsController < ApplicationController
       error: 'permission_denied',
       message: "The requested comment isn't available.",
       admins: [],
-      toast: { title: 'Not available.',
-               message: "The requested comment isn't available.",
-               variant: 'danger' }
+      toast: Toast.new(title: 'Not available.',
+                       message: ["The requested comment isn't available."],
+                       variant: 'danger')
     }, status: :forbidden
   end
 
