@@ -144,6 +144,11 @@ defaults: &defaults
     # (100 MB) and rubyzip's per-entry validation don't catch zip-bomb
     # geometries where small archives expand to gigabytes. PR-717 .lsj.
     json_archive_size_budget_mb: <%= ENV.fetch('VULCAN_IMPORT_JSON_ARCHIVE_SIZE_BUDGET_MB', '500').to_i %>
+  api_tokens:
+    enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV.fetch('VULCAN_API_TOKENS_ENABLED', 'true')) != false %>
+    max_tokens_per_user: <%= ENV.fetch('VULCAN_API_TOKENS_MAX_PER_USER', '20').to_i %>
+    max_lifetime_days: <%= ENV.fetch('VULCAN_API_TOKENS_MAX_LIFETIME_DAYS', '365').to_i %>
+    auto_revoke_idle_days: <%= ENV.fetch('VULCAN_API_TOKENS_AUTO_REVOKE_IDLE_DAYS', '90').to_i %>
   sync:
     # Component sync/merge (vulcan-v3.x-480). Snapshots are pre-merge backup
     # zips written next to the deployment volume (NOT tmp/ — that vanishes on

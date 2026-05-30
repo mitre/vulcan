@@ -208,6 +208,26 @@ VULCAN_OIDC_REDIRECT_URI=https://vulcan.example.com/users/auth/oidc/callback
 | `VULCAN_SMTP_TLS` | Use TLS for SMTP | - | `true` or `false` |
 | `VULCAN_SMTP_ENABLE_STARTTLS_AUTO` | Enable STARTTLS auto | - | `true` or `false` |
 
+## API Tokens (Personal Access Tokens)
+
+Personal access tokens enable programmatic API access via `Authorization: Token vulcan_xxx` header. Tokens are SHA-256 hashed (never stored in plaintext), support scoped permissions (read/write/admin), IP allowlisting, and automatic idle revocation.
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `VULCAN_API_TOKENS_ENABLED` | Enable/disable the PAT feature entirely | `true` | `false` |
+| `VULCAN_API_TOKENS_MAX_PER_USER` | Maximum active tokens per user | `20` | `10` |
+| `VULCAN_API_TOKENS_MAX_LIFETIME_DAYS` | Maximum token lifetime in days | `365` | `90` |
+| `VULCAN_API_TOKENS_AUTO_REVOKE_IDLE_DAYS` | Auto-revoke tokens unused for this many days | `90` | `30` |
+
+**Maintenance tasks** (recommended via cron):
+```bash
+# Revoke idle tokens (unused for configured days)
+bundle exec rake api_tokens:revoke_idle
+
+# Revoke expired tokens (past expires_at date)
+bundle exec rake api_tokens:revoke_expired
+```
+
 ## Slack Integration
 
 | Variable | Description | Default | Example |

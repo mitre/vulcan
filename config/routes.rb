@@ -28,6 +28,7 @@ Rails.application.routes.draw do
     # Profile Information section.
     get '/users/edit/password', to: 'users/registrations#edit_password', as: :edit_user_password_form
     get '/users/edit/activity', to: 'users/registrations#edit_activity', as: :edit_user_activity
+    get '/users/edit/tokens', to: 'users/registrations#edit_tokens', as: :edit_user_tokens
   end
 
   resources :users, only: %i[index update destroy] do
@@ -46,6 +47,12 @@ Rails.application.routes.draw do
       get :comments, to: 'users#comments'
     end
   end
+  resources :personal_access_tokens, only: %i[index create destroy] do
+    member do
+      delete :admin_revoke
+    end
+  end
+
   resources :srgs, only: %i[index show create destroy], controller: 'security_requirements_guides'
   resources :stigs, only: %i[index show create destroy]
 

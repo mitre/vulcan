@@ -81,12 +81,17 @@ module Rack
       reactions_user.call(req) if req.get?
     end
 
+    ### Throttle API token requests ###
+    throttle('api_token/ip', limit: 300, period: 60.seconds) do |req|
+      req.ip if req.env['HTTP_AUTHORIZATION']&.start_with?('Token ')
+    end
+
     ### Custom throttle response ###
     self.throttled_responder = lambda do |_req|
       [
         429,
         { 'Content-Type' => 'application/json' },
-        [{ toast: { title: 'Rate limited', message: 'Too many requests. Please wait and try again.',
+        [{ toast: { title: 'Rate limited', message: ['Too many requests. Please wait and try again.'],
                     variant: 'danger' } }.to_json]
       ]
     end

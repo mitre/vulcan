@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_28_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_30_010000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -237,6 +237,23 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_28_120000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["component_sync_event_id"], name: "index_merge_quarantine_on_component_sync_event_id"
+  end
+
+  create_table "personal_access_tokens", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "name", null: false
+    t.string "token_digest", null: false
+    t.string "token_prefix", limit: 12
+    t.text "scopes", default: "[]", null: false
+    t.date "expires_at"
+    t.datetime "last_used_at"
+    t.datetime "revoked_at"
+    t.text "allowed_ips"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["token_digest"], name: "index_personal_access_tokens_on_token_digest", unique: true
+    t.index ["user_id", "revoked_at"], name: "index_pats_on_user_id_and_active"
+    t.index ["user_id"], name: "index_personal_access_tokens_on_user_id"
   end
 
   create_table "project_access_requests", force: :cascade do |t|
@@ -468,6 +485,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_28_120000) do
   add_foreign_key "memberships", "users"
   add_foreign_key "merge_operations", "component_sync_events"
   add_foreign_key "merge_quarantine", "component_sync_events"
+  add_foreign_key "personal_access_tokens", "users"
   add_foreign_key "project_access_requests", "projects"
   add_foreign_key "project_access_requests", "users"
   add_foreign_key "reactions", "reviews", on_delete: :cascade

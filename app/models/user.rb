@@ -52,6 +52,7 @@ class User < ApplicationRecord
   has_many :projects, through: :memberships, source: :membership, source_type: 'Project'
   has_many :components, through: :memberships, source: :membership, source_type: 'Component'
   has_many :access_requests, class_name: 'ProjectAccessRequest', dependent: :destroy
+  has_many :personal_access_tokens, dependent: :destroy
 
   # preserve commenter
   # attribution on the user's reviews before the FK gets nullified.
