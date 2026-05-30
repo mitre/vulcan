@@ -56,6 +56,13 @@
         <b-badge v-if="lockoutEnabled && data.item.locked_at" variant="warning" class="ml-1">
           Locked
         </b-badge>
+        <b-badge
+          v-if="apiTokensEnabled && data.item.active_token_count > 0"
+          variant="info"
+          class="ml-1"
+        >
+          <b-icon icon="key" scale="0.8" /> {{ data.item.active_token_count }}
+        </b-badge>
       </template>
 
       <!-- Column template for Last Sign In -->
@@ -114,6 +121,10 @@ export default {
       required: true,
     },
     lockoutEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    apiTokensEnabled: {
       type: Boolean,
       default: false,
     },
