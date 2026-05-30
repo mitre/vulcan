@@ -36,11 +36,11 @@ RSpec.describe 'api_tokens rake tasks' do
 
     it 'revokes tokens past their expiration date' do
       expired = create(:personal_access_token, user: user, name: 'Expired',
-                       expires_at: 1.day.ago.to_date)
+                                               expires_at: 1.day.ago.to_date)
       active = create(:personal_access_token, user: user, name: 'Active',
-                      expires_at: 30.days.from_now.to_date)
+                                              expires_at: 30.days.from_now.to_date)
       no_expiry = create(:personal_access_token, user: user, name: 'No expiry',
-                         expires_at: nil)
+                                                 expires_at: nil)
 
       expect { Rake::Task['api_tokens:revoke_expired'].invoke }
         .to output(/Revoked 1 expired token/).to_stdout

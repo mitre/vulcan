@@ -39,7 +39,7 @@ RSpec.describe 'API Token Authentication', type: :request do
 
     it 'rejects requests with an expired token' do
       expired = create(:personal_access_token, user: user, scopes: %w[read],
-                       expires_at: 1.day.ago.to_date)
+                                               expires_at: 1.day.ago.to_date)
       get '/srgs', headers: token_headers(expired.raw_token).merge('Accept' => 'application/json')
       expect(response).to have_http_status(:unauthorized)
     end
@@ -74,7 +74,7 @@ RSpec.describe 'API Token Authentication', type: :request do
       write_token = create(:personal_access_token, user: user, scopes: %w[write])
       # POST to an endpoint that will process (may fail on params, but should not be 401/403)
       post '/projects', headers: token_headers(write_token.raw_token)
-                                   .merge('Accept' => 'application/json', 'Content-Type' => 'application/json'),
+        .merge('Accept' => 'application/json', 'Content-Type' => 'application/json'),
                         params: { project: { name: 'Token Test Project' } }.to_json
       # Accept any non-auth-failure status (the endpoint may return 422 for missing params, but NOT 401/403)
       expect(response.status).not_to eq(401)
@@ -91,7 +91,7 @@ RSpec.describe 'API Token Authentication', type: :request do
   describe 'IP allowlist enforcement' do
     it 'allows request from allowed IP' do
       ip_token = create(:personal_access_token, user: user, scopes: %w[read],
-                        allowed_ips: ['127.0.0.0/8'])
+                                                allowed_ips: ['127.0.0.0/8'])
 
       get '/srgs', headers: token_headers(ip_token.raw_token).merge('Accept' => 'application/json')
       expect(response).to have_http_status(:ok)
@@ -99,7 +99,7 @@ RSpec.describe 'API Token Authentication', type: :request do
 
     it 'rejects request from disallowed IP' do
       ip_token = create(:personal_access_token, user: user, scopes: %w[read],
-                        allowed_ips: ['10.0.0.0/8'])
+                                                allowed_ips: ['10.0.0.0/8'])
 
       get '/srgs', headers: token_headers(ip_token.raw_token).merge('Accept' => 'application/json')
       expect(response).to have_http_status(:forbidden)
@@ -112,7 +112,7 @@ RSpec.describe 'API Token Authentication', type: :request do
       write_token = create(:personal_access_token, user: user, scopes: %w[write])
 
       post '/projects', headers: token_headers(write_token.raw_token)
-                                   .merge('Accept' => 'application/json', 'Content-Type' => 'application/json'),
+        .merge('Accept' => 'application/json', 'Content-Type' => 'application/json'),
                         params: { project: { name: 'No CSRF Project' } }.to_json
 
       # Should NOT get 422 ActionController::InvalidAuthenticityToken

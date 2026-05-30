@@ -81,7 +81,7 @@ RSpec.describe PersonalAccessToken, type: :model do
 
     it 'enforces max 365-day lifetime' do
       token = build(:personal_access_token, user: user,
-                    expires_at: 366.days.from_now.to_date)
+                                            expires_at: 366.days.from_now.to_date)
       expect(token).not_to be_valid
       expect(token.errors[:expires_at].first).to include('365')
     end
@@ -102,14 +102,14 @@ RSpec.describe PersonalAccessToken, type: :model do
 
     it 'validates IP allowlist entries are valid CIDRs' do
       token = build(:personal_access_token, user: user,
-                    allowed_ips: ['not-a-cidr'])
+                                            allowed_ips: ['not-a-cidr'])
       expect(token).not_to be_valid
       expect(token.errors[:allowed_ips].first).to include('invalid')
     end
 
     it 'accepts valid CIDR entries' do
       token = build(:personal_access_token, user: user,
-                    allowed_ips: ['10.0.0.0/8', '192.168.1.0/24', '2001:db8::/32'])
+                                            allowed_ips: ['10.0.0.0/8', '192.168.1.0/24', '2001:db8::/32'])
       expect(token).to be_valid
     end
 
@@ -124,7 +124,7 @@ RSpec.describe PersonalAccessToken, type: :model do
       active = create(:personal_access_token, user: user)
       _revoked = create(:personal_access_token, user: user, name: 'Revoked').tap(&:revoke!)
       _expired = create(:personal_access_token, user: user, name: 'Expired',
-                        expires_at: 1.day.ago.to_date)
+                                                expires_at: 1.day.ago.to_date)
 
       expect(described_class.active).to contain_exactly(active)
     end
@@ -155,7 +155,7 @@ RSpec.describe PersonalAccessToken, type: :model do
 
     it 'returns false for expired token' do
       token = create(:personal_access_token, user: user,
-                     expires_at: 1.day.ago.to_date)
+                                             expires_at: 1.day.ago.to_date)
       expect(token.active?).to be false
     end
   end
@@ -173,13 +173,13 @@ RSpec.describe PersonalAccessToken, type: :model do
 
     it 'returns true when IP is within an allowed CIDR' do
       token = create(:personal_access_token, user: user,
-                     allowed_ips: ['10.0.0.0/8'])
+                                             allowed_ips: ['10.0.0.0/8'])
       expect(token.ip_allowed?('10.1.2.3')).to be true
     end
 
     it 'returns false when IP is outside all allowed CIDRs' do
       token = create(:personal_access_token, user: user,
-                     allowed_ips: ['10.0.0.0/8'])
+                                             allowed_ips: ['10.0.0.0/8'])
       expect(token.ip_allowed?('192.168.1.1')).to be false
     end
   end
@@ -201,9 +201,9 @@ RSpec.describe PersonalAccessToken, type: :model do
 
   describe 'audit trail' do
     it 'creates an audit record on token creation' do
-      expect {
+      expect do
         create(:personal_access_token, user: user, name: 'Audit Test')
-      }.to change(Audited::Audit, :count)
+      end.to change(Audited::Audit, :count)
 
       audit = Audited::Audit.where(auditable_type: 'PersonalAccessToken').last
       expect(audit.action).to eq('create')

@@ -39,10 +39,10 @@ RSpec.describe Toast do
     it 'returns the canonical toast hash' do
       toast = described_class.new(title: 'Created.', message: 'User saved.', variant: 'success')
       expect(toast.as_json).to eq({
-        'title' => 'Created.',
-        'message' => ['User saved.'],
-        'variant' => 'success'
-      })
+                                    'title' => 'Created.',
+                                    'message' => ['User saved.'],
+                                    'variant' => 'success'
+                                  })
     end
   end
 

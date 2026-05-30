@@ -138,7 +138,7 @@ end
 #   bundle exec rake "seed_backup:audit[/path/to/backup-dir]"
 namespace :seed_backup do
   desc 'Inspect + PII-audit a JSON Archive backup (arg: path to backup dir)'
-  task :audit, [:path] do |_t, args|
+  task :audit, [:path] => :environment do |_t, args|
     path = args[:path] or abort 'Usage: rake "seed_backup:audit[/path/to/backup-dir]"'
     abort "Not a directory: #{path}" unless File.directory?(path)
 

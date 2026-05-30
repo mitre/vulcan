@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# Serializes PersonalAccessToken for the management UI. Default view is the
+# token owner's own view; :admin view adds user attribution for admin screens.
 class PersonalAccessTokenBlueprint < Blueprinter::Base
   identifier :id
 

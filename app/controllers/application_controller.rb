@@ -7,6 +7,13 @@ class ApplicationController < ActionController::Base
   include SlackNotificationsHelper
   include ApiTokenAuthenticatable
 
+  # Explicit CSRF protection. Rails 8 (load_defaults 8.0) enables this by
+  # default, but declaring it explicitly makes the security posture auditable
+  # and documents that ApiTokenAuthenticatable#handle_unverified_request
+  # intentionally exempts token-authenticated (stateless) requests while
+  # session requests stay protected. Verified by api_token_auth_spec.
+  protect_from_forgery with: :exception
+
   before_action :setup_navigation, :authenticate_user!
   before_action :check_access_request_notifications
   before_action :check_locked_user_notifications

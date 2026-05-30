@@ -2,7 +2,7 @@
 
 namespace :openapi do
   desc 'Smoke test: validate every GET endpoint returns spec-conformant responses (read-only, no side effects)'
-  task :smoke do
+  task smoke: :environment do
     token = create_smoke_token
     run_schemathesis(
       token: token,
@@ -14,12 +14,11 @@ namespace :openapi do
   end
 
   desc 'Full CRUD test: disposable Docker environment, all methods, all endpoints (bin/schemathesis-full)'
-  task :test do
+  task test: :environment do
     exec 'bin/schemathesis-full'
   end
 
   def create_smoke_token
-    require_relative '../../config/environment'
     admin = User.find_by!(email: 'admin@example.com')
     pat = admin.personal_access_tokens.create!(
       name: "schemathesis-#{Time.current.to_i}",
@@ -29,7 +28,9 @@ namespace :openapi do
     at_exit do
       pat.revoke! if pat.persisted? && pat.revoked_at.nil?
       admin.unlock_access! if admin.access_locked?
+      # rubocop:disable Rails/SkipsModelValidations -- test cleanup: reset lockout counter directly
       admin.update_columns(failed_attempts: 0) if admin.failed_attempts.positive?
+      # rubocop:enable Rails/SkipsModelValidations
       PersonalAccessToken.where('name LIKE ?', 'schemathesis-%').find_each(&:revoke!)
     end
     pat.raw_token
@@ -39,9 +40,7 @@ namespace :openapi do
     base_url = ENV.fetch('BASE_URL', 'http://localhost:3000')
     spec = File.expand_path('doc/openapi.yaml', Rails.root)
 
-    unless File.exist?(spec)
-      abort "ERROR: #{spec} not found. Run: yarn openapi:bundle"
-    end
+    abort "ERROR: #{spec} not found. Run: yarn openapi:bundle" unless File.exist?(spec)
 
     cmd = [
       'uvx', 'schemathesis', 'run', spec,
