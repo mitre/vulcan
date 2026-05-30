@@ -1,0 +1,63 @@
+# Disposable environment for Schemathesis full-CRUD API testing.
+#
+# Usage:
+#   bin/schemathesis-full          # One command: builds, seeds, tests, tears down
+#
+# Or manually:
+#   docker compose -f docker-compose.schemathesis.yml up -d --build --wait
+#   uvx schemathesis run doc/openapi.yaml --url http://localhost:3001 ...
+#   docker compose -f docker-compose.schemathesis.yml down
+#
+# The database has NO persistent volumes — all data is destroyed on `down`.
+# This is intentional: Schemathesis creates/modifies/deletes resources freely.
+#
+# CRITICAL: explicit project name isolates this stack from the dev `vulcan`
+# project (docker-compose.dev.yml also uses name: vulcan). Without this,
+# `compose down` here would tear down the dev db container.
+name: vulcan-schemathesis
+
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: schemathesis
+      POSTGRES_DB: vulcan_schemathesis
+    expose:
+      - "5432"
+    # NO volumes — ephemeral database
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    environment:
+      RAILS_ENV: production
+      DATABASE_URL: postgres://postgres:schemathesis@db/vulcan_schemathesis
+      SECRET_KEY_BASE: schemathesis-test-only-not-for-production-use-deadbeef1234567890
+      CIPHER_PASSWORD: schemathesis-cipher-not-for-production
+      CIPHER_SALT: schemathesis-salt-not-for-production
+      RAILS_FORCE_SSL: "false"
+      RAILS_LOG_TO_STDOUT: "true"
+      VULCAN_FIRST_USER_ADMIN: "true"
+      VULCAN_ENABLE_LOCAL_LOGIN: "true"
+      VULCAN_API_TOKENS_ENABLED: "true"
+      VULCAN_LOCKOUT_ENABLED: "false"
+      VULCAN_SESSION_TIMEOUT: "3600"
+    ports:
+      - "3001:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/up || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 90s

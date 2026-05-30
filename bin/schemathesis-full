@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# Full-CRUD Schemathesis test against a disposable Docker environment.
+#
+# Spins up an ephemeral app + database, seeds data, creates a PAT,
+# runs Schemathesis with all HTTP methods, then tears everything down.
+# No side effects on your dev database.
+#
+# Usage:
+#   bin/schemathesis-full                    # Default: coverage phase, 5 examples/endpoint
+#   bin/schemathesis-full --max-examples 50  # More thorough
+#   bin/schemathesis-full --phases fuzzing   # Fuzz mode
+set -euo pipefail
+
+COMPOSE_FILE="docker-compose.schemathesis.yml"
+BASE_URL="http://localhost:3001"
+MAX_EXAMPLES="${1:-5}"
+
+echo "═══ Schemathesis Full-CRUD Test ═══"
+echo ""
+
+# ── Step 1: Build and start disposable environment ──
+echo "Step 1: Starting disposable Docker environment..."
+docker compose -f "$COMPOSE_FILE" up -d --build --wait 2>&1 | tail -5
+
+echo "  Waiting for health check..."
+until curl -sf "$BASE_URL/up" >/dev/null 2>&1; do
+  sleep 2
+  printf "."
+done
+echo " Ready."
+
+# ── Step 2: Seed the database ──
+echo ""
+echo "Step 2: Seeding database..."
+docker compose -f "$COMPOSE_FILE" exec -T web bundle exec rails db:seed 2>&1 | tail -5
+
+# ── Step 3: Create PAT for authentication ──
+echo ""
+echo "Step 3: Creating API token..."
+TOKEN=$(docker compose -f "$COMPOSE_FILE" exec -T web bundle exec rails runner "
+user = User.find_by(email: 'admin@example.com')
+abort 'No admin user — seed failed' unless user
+t = PersonalAccessToken.create!(user: user, name: 'schemathesis-full', scopes: %w[read write admin], expires_at: 1.day.from_now.to_date)
+print t.raw_token
+" 2>/dev/null)
+
+if [ -z "$TOKEN" ]; then
+  echo "  FATAL: Could not create token. Check seed output above."
+  docker compose -f "$COMPOSE_FILE" down
+  exit 1
+fi
+echo "  Token: ${TOKEN:0:15}..."
+
+# ── Step 4: Run Schemathesis ──
+echo ""
+echo "Step 4: Running Schemathesis (all methods, all endpoints)..."
+echo "  Base URL: $BASE_URL"
+echo "  Max examples: $MAX_EXAMPLES"
+echo ""
+
+RESULT=0
+uvx schemathesis run doc/openapi.yaml \
+  --url "$BASE_URL" \
+  --header "Authorization: Token $TOKEN" \
+  --header "Accept: application/json" \
+  --checks not_a_server_error,status_code_conformance,content_type_conformance,response_schema_conformance \
+  --exclude-checks negative_data_rejection,ignored_auth \
+  --phases examples,coverage \
+  --max-examples "$MAX_EXAMPLES" \
+  --rate-limit "10/s" \
+  --exclude-path-regex '.*/personal_access_tokens.*' \
+  --exclude-path-regex '.*/(detect_srg|preview_spreadsheet|apply_spreadsheet).*' \
+  --exclude-deprecated \
+  --report junit \
+  --report-junit-path tmp/schemathesis-full.xml \
+  --suppress-health-check too_slow,large_base_example \
+  --workers 1 \
+  || RESULT=$?
+
+# ── Step 5: Tear down ──
+echo ""
+echo "Step 5: Tearing down disposable environment..."
+docker compose -f "$COMPOSE_FILE" down 2>&1 | tail -3
+
+echo ""
+echo "═══ Complete ═══"
+if [ "$RESULT" -eq 0 ]; then
+  echo "  All checks passed."
+else
+  echo "  $RESULT failure(s) detected. See output above."
+fi
+echo "  JUnit report: tmp/schemathesis-full.xml"
+echo "  Dev database: untouched."
+
+exit "$RESULT"
