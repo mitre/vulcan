@@ -183,9 +183,23 @@ paths:
     $ref: paths/users_{userId}_lock.yaml
   /users/{userId}/unlock:
     $ref: paths/users_{userId}_unlock.yaml
+  /personal_access_tokens:
+    $ref: paths/personal_access_tokens.yaml
+  /personal_access_tokens/{tokenId}:
+    $ref: paths/personal_access_tokens_{tokenId}.yaml
+  /personal_access_tokens/{tokenId}/admin_revoke:
+    $ref: paths/personal_access_tokens_{tokenId}_admin_revoke.yaml
 components:
   securitySchemes:
     cookieAuth:
       type: apiKey
       in: cookie
       name: _vulcan_session
+    tokenAuth:
+      type: http
+      scheme: token
+      description: >-
+        Personal access token authentication. Send via Authorization header:
+        `Authorization: Token vulcan_xxx`. Tokens are SHA-256 hashed server-side
+        (never stored in plaintext). Scopes: read (GET), write (mutations),
+        admin (everything). Create tokens via Settings → API Tokens in the web UI.

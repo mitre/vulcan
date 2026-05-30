@@ -1,0 +1,54 @@
+type: object
+required:
+  - id
+  - name
+  - token_prefix
+  - scopes
+  - created_at
+additionalProperties: false
+properties:
+  id:
+    type: integer
+    example: 1
+  name:
+    type: string
+    example: CI Pipeline
+  token_prefix:
+    type: string
+    example: vulcan_a
+    description: First 8 characters of the token for identification. The full token is never stored or returned after creation.
+  scopes:
+    type: array
+    items:
+      type: string
+      enum: [read, write, admin]
+    example: [read, write]
+  expires_at:
+    type:
+      - string
+      - 'null'
+    example: '2026-08-30'
+    description: ISO 8601 date. Maximum 365 days from creation. Null means no expiry (warned in UI).
+  last_used_at:
+    type:
+      - string
+      - 'null'
+    example: '2026-05-30 14:22:01 UTC'
+    description: Timestamp of last API request using this token. Updated at most once per minute.
+  revoked_at:
+    type:
+      - string
+      - 'null'
+    example: null
+    description: Null when active. Timestamp when revoked (soft-delete preserves audit trail).
+  allowed_ips:
+    type:
+      - array
+      - 'null'
+    items:
+      type: string
+    example: ['10.0.0.0/8', '192.168.1.0/24']
+    description: CIDR allowlist. Null or empty means any IP allowed.
+  created_at:
+    type: string
+    example: '2026-05-30 10:00:00 UTC'

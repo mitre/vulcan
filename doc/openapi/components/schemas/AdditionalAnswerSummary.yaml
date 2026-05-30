@@ -1,0 +1,21 @@
+description: Answer to an additional question on a component rule.
+type: object
+required:
+  - id
+  - additional_question_id
+additionalProperties: false
+properties:
+  id:
+    type: integer
+    description: Unique answer identifier.
+    example: 10
+  additional_question_id:
+    type: integer
+    description: ID of the question this answers.
+    example: 3
+  answer:
+    type:
+      - string
+      - 'null'
+    description: The answer text provided by the author.
+    example: "Yes, this applies to all container runtime environments."

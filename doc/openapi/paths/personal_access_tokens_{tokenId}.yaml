@@ -1,0 +1,30 @@
+parameters:
+  - name: tokenId
+    in: path
+    required: true
+    description: Numeric ID of the personal access token.
+    schema:
+      type: integer
+    example: 1
+delete:
+  operationId: revokePersonalAccessToken
+  tags:
+    - Personal Access Tokens
+  summary: Revoke an API token
+  description: >-
+    Soft-deletes the token by setting revoked_at. The token immediately
+    stops working for API authentication. Audit trail is preserved.
+    Session auth only — users can only revoke their own tokens.
+  security:
+    - cookieAuth: []
+  responses:
+    '200':
+      description: Token revoked
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    '404':
+      description: Token not found or belongs to another user
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

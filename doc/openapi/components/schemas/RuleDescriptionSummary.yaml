@@ -1,0 +1,20 @@
+description: Rule description record — the HTML/text description block for a rule.
+type: object
+required:
+  - id
+additionalProperties: false
+properties:
+  id:
+    type: integer
+    description: Unique description record identifier.
+    example: 400
+  description:
+    type:
+      - string
+      - 'null'
+    description: The rule description text (may contain HTML from XCCDF source).
+    example: "<VulnDiscussion>Without verification, containers may execute untrusted code.</VulnDiscussion>"
+  _destroy:
+    type: boolean
+    description: Nested attributes destroy flag (always false in read responses).
+    example: false
