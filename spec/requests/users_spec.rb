@@ -281,7 +281,7 @@ RSpec.describe 'Users' do
 
         expect(response).to have_http_status(:ok)
         json = response.parsed_body
-        expect(json['toast']).to include('newuser@example.com')
+        expect(json['toast']['message']).to include(a_string_including('newuser@example.com'))
         expect(json['user']['email']).to eq('newuser@example.com')
         expect(json['user']['name']).to eq('New User')
       end

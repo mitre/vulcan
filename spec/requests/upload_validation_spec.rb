@@ -39,14 +39,14 @@ RSpec.describe 'Upload validation' do
       file = oversized_file(51.megabytes)
       post '/stigs', params: { file: file }, headers: { 'Accept' => 'application/json' }
       expect(response).to have_http_status(:unprocessable_content)
-      expect(response.parsed_body.dig('toast', 'message')).to include('exceeds maximum size')
+      expect(response.parsed_body.dig('toast', 'message')).to include(a_string_including('exceeds maximum size'))
     end
 
     it 'rejects non-XML files' do
       file = small_file(filename: 'stig.pdf', content_type: 'application/pdf')
       post '/stigs', params: { file: file }, headers: { 'Accept' => 'application/json' }
       expect(response).to have_http_status(:unprocessable_content)
-      expect(response.parsed_body.dig('toast', 'message')).to include('Invalid file type')
+      expect(response.parsed_body.dig('toast', 'message')).to include(a_string_including('Invalid file type'))
     end
   end
 
@@ -55,14 +55,14 @@ RSpec.describe 'Upload validation' do
       file = oversized_file(51.megabytes)
       post '/srgs', params: { file: file }, headers: { 'Accept' => 'application/json' }
       expect(response).to have_http_status(:unprocessable_content)
-      expect(response.parsed_body.dig('toast', 'message')).to include('exceeds maximum size')
+      expect(response.parsed_body.dig('toast', 'message')).to include(a_string_including('exceeds maximum size'))
     end
 
     it 'rejects non-XML files' do
       file = small_file(filename: 'srg.csv', content_type: 'text/csv')
       post '/srgs', params: { file: file }, headers: { 'Accept' => 'application/json' }
       expect(response).to have_http_status(:unprocessable_content)
-      expect(response.parsed_body.dig('toast', 'message')).to include('Invalid file type')
+      expect(response.parsed_body.dig('toast', 'message')).to include(a_string_including('Invalid file type'))
     end
   end
 
@@ -78,7 +78,7 @@ RSpec.describe 'Upload validation' do
       post "/projects/#{project.id}/import_backup", params: { file: file },
                                                     headers: { 'Accept' => 'application/json' }
       expect(response).to have_http_status(:unprocessable_content)
-      expect(response.parsed_body.dig('toast', 'message')).to include('exceeds maximum size')
+      expect(response.parsed_body.dig('toast', 'message')).to include(a_string_including('exceeds maximum size'))
     end
 
     it 'rejects non-ZIP files' do
@@ -86,7 +86,7 @@ RSpec.describe 'Upload validation' do
       post "/projects/#{project.id}/import_backup", params: { file: file },
                                                     headers: { 'Accept' => 'application/json' }
       expect(response).to have_http_status(:unprocessable_content)
-      expect(response.parsed_body.dig('toast', 'message')).to include('Invalid file type')
+      expect(response.parsed_body.dig('toast', 'message')).to include(a_string_including('Invalid file type'))
     end
   end
 
@@ -96,7 +96,7 @@ RSpec.describe 'Upload validation' do
       post '/projects/create_from_backup', params: { file: file },
                                            headers: { 'Accept' => 'application/json' }
       expect(response).to have_http_status(:unprocessable_content)
-      expect(response.parsed_body.dig('toast', 'message')).to include('exceeds maximum size')
+      expect(response.parsed_body.dig('toast', 'message')).to include(a_string_including('exceeds maximum size'))
     end
 
     it 'rejects non-ZIP files' do
@@ -104,7 +104,7 @@ RSpec.describe 'Upload validation' do
       post '/projects/create_from_backup', params: { file: file },
                                            headers: { 'Accept' => 'application/json' }
       expect(response).to have_http_status(:unprocessable_content)
-      expect(response.parsed_body.dig('toast', 'message')).to include('Invalid file type')
+      expect(response.parsed_body.dig('toast', 'message')).to include(a_string_including('Invalid file type'))
     end
   end
 
@@ -124,7 +124,7 @@ RSpec.describe 'Upload validation' do
                                   security_requirements_guide_id: srg.id } },
            headers: { 'Accept' => 'application/json' }
       expect(response).to have_http_status(:unprocessable_content)
-      expect(response.parsed_body.dig('toast', 'message')).to include('exceeds maximum size')
+      expect(response.parsed_body.dig('toast', 'message')).to include(a_string_including('exceeds maximum size'))
     end
 
     it 'rejects non-spreadsheet files' do
@@ -134,7 +134,7 @@ RSpec.describe 'Upload validation' do
                                   security_requirements_guide_id: srg.id } },
            headers: { 'Accept' => 'application/json' }
       expect(response).to have_http_status(:unprocessable_content)
-      expect(response.parsed_body.dig('toast', 'message')).to include('Invalid file type')
+      expect(response.parsed_body.dig('toast', 'message')).to include(a_string_including('Invalid file type'))
     end
   end
 end

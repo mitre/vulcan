@@ -67,7 +67,14 @@ AUTHENTICATE_ONLY_ACTIONS = {
   # UserSearchController uses custom authorization in authorize_search before_action:
   # admin-only for non-member searches; any member for scope=members (PoC selection).
   'api/user_search#index' => 'Custom authorization in before_action: admin-only for non-member ' \
-                             'searches; any member for scope=members'
+                             'searches; any member for scope=members',
+  # PersonalAccessTokensController is session-only (require_session_auth rejects token auth).
+  # Ownership-scoped: index/create/destroy operate on current_user.personal_access_tokens.
+  # admin_revoke checks current_user.admin? in-action (raises NotAuthorizedError otherwise).
+  'personal_access_tokens#index' => 'Ownership-scoped: current_user tokens only; session-only via require_session_auth',
+  'personal_access_tokens#create' => 'Ownership-scoped: builds on current_user; password re-entry required; session-only',
+  'personal_access_tokens#destroy' => 'Ownership-scoped: finds via current_user.personal_access_tokens; session-only',
+  'personal_access_tokens#admin_revoke' => 'Admin-gated in action body (current_user.admin? else NotAuthorizedError); session-only'
 }.freeze
 
 RSpec.describe 'Authorization coverage' do

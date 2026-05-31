@@ -92,7 +92,7 @@ RSpec.describe 'Reactions' do
       it 'returns the soft 403 for a nonexistent review id' do
         post '/reviews/9999999/reactions', params: { kind: 'up' }, as: :json
         expect(response).to have_http_status(:forbidden)
-        expect(response.parsed_body.dig('toast', 'message')).to match(/isn't available/i)
+        expect(response.parsed_body.dig('toast', 'message')).to include(a_string_matching(/isn't available/i))
       end
 
       it 'rejects when the component is closed (comment_phase=closed)' do

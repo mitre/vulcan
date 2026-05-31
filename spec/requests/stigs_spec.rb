@@ -46,7 +46,7 @@ RSpec.describe 'Stigs' do
 
       expect(response).to have_http_status(:bad_request)
       json = response.parsed_body
-      expect(json['toast']['message']).to include('Unsupported')
+      expect(json['toast']['message']).to include(a_string_including('Unsupported'))
     end
 
     it 'exports CSV for logged-in user' do

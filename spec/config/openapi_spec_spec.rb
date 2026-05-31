@@ -72,7 +72,7 @@ RSpec.describe 'OpenAPI specification (doc/openapi.yaml)' do
   end
 
   describe 'response schema completeness' do
-    let(:export_paths) { %w[/export/] }
+    let(:export_paths) { %w[/export/ /bulk_export/] }
 
     it 'every non-export JSON operation has a response schema with content' do
       missing = []
