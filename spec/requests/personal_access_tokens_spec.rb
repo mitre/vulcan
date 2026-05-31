@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'PersonalAccessTokens management', type: :request do
+RSpec.describe 'PersonalAccessTokens management' do
   include Devise::Test::IntegrationHelpers
 
   before { Rails.application.reload_routes! }
@@ -110,7 +110,7 @@ RSpec.describe 'PersonalAccessTokens management', type: :request do
       expect(response).to have_http_status(:ok)
       body = response.parsed_body
       expect(body['personal_access_tokens'].length).to eq(2)
-      names = body['personal_access_tokens'].map { |t| t['name'] }
+      names = body['personal_access_tokens'].pluck('name')
       expect(names).to contain_exactly('Token A', 'Token B')
 
       body['personal_access_tokens'].each do |t|
@@ -128,7 +128,7 @@ RSpec.describe 'PersonalAccessTokens management', type: :request do
       get '/personal_access_tokens', headers: { 'Accept' => 'application/json' }
 
       expect(response).to have_http_status(:ok)
-      names = response.parsed_body['personal_access_tokens'].map { |t| t['name'] }
+      names = response.parsed_body['personal_access_tokens'].pluck('name')
       expect(names).not_to include('Admin Token')
     end
   end

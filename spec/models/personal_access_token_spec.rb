@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe PersonalAccessToken, type: :model do
+RSpec.describe PersonalAccessToken do
   before { Rails.application.reload_routes! }
 
   let_it_be(:user) { create(:user, admin: true) }

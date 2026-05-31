@@ -8,12 +8,13 @@ RSpec.describe 'Users endpoint contracts', type: :request do
   include Devise::Test::IntegrationHelpers
   include OpenAPIContractHelpers
 
-  before { Rails.application.reload_routes! }
-
   let_it_be(:admin) { create(:user, admin: true) }
   let_it_be(:target_user) { create(:user, name: 'Contract Target', email: "target-#{SecureRandom.hex(4)}@example.com") }
 
-  before { sign_in admin }
+  before do
+    Rails.application.reload_routes!
+    sign_in admin
+  end
 
   # ── GET /users ──
 
@@ -30,7 +31,7 @@ RSpec.describe 'Users endpoint contracts', type: :request do
       assert_fields_present admin_row, :id, :name, :email, :provider, :admin,
                             :last_sign_in_at, :failed_attempts, :locked_at
       expect(admin_row['email']).to eq(admin.email)
-      expect(admin_row['admin']).to eq(true)
+      expect(admin_row['admin']).to be(true)
     end
   end
 
@@ -104,7 +105,7 @@ RSpec.describe 'Users endpoint contracts', type: :request do
     let_it_be(:rule) { component.rules.first || create(:rule, component: component) }
     let_it_be(:user_comment) do
       create(:review, user: admin, rule: rule, action: 'comment',
-             comment: 'User comments contract test', section: 'fixtext')
+                      comment: 'User comments contract test', section: 'fixtext')
     end
 
     it 'returns paginated user comments with project/component context' do

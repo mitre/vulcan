@@ -8,13 +8,14 @@ RSpec.describe 'Benchmarks endpoint contracts (SRGs + STIGs)', type: :request do
   include Devise::Test::IntegrationHelpers
   include OpenAPIContractHelpers
 
-  before { Rails.application.reload_routes! }
-
   let_it_be(:admin) { create(:user, admin: true) }
   let_it_be(:srg) { SecurityRequirementsGuide.first || create(:security_requirements_guide) }
   let_it_be(:stig) { Stig.first || create(:stig) }
 
-  before { sign_in admin }
+  before do
+    Rails.application.reload_routes!
+    sign_in admin
+  end
 
   # ── GET /srgs ──
 
@@ -134,7 +135,7 @@ RSpec.describe 'Benchmarks endpoint contracts (SRGs + STIGs)', type: :request do
         name: 'Deletable Test STIG',
         title: 'Deletable Test STIG',
         version: 'V1R1',
-        benchmark_date: Date.today,
+        benchmark_date: Time.zone.today,
         xml: stig.xml
       )
       new_stig.save!

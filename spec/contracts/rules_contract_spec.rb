@@ -8,8 +8,6 @@ RSpec.describe 'Rules endpoint contracts', type: :request do
   include Devise::Test::IntegrationHelpers
   include OpenAPIContractHelpers
 
-  before { Rails.application.reload_routes! }
-
   let_it_be(:admin) { create(:user, admin: true) }
   let_it_be(:srg) { SecurityRequirementsGuide.first || create(:security_requirements_guide) }
   let_it_be(:project) { create(:project, name: 'Rules Contract Project') }
@@ -23,7 +21,10 @@ RSpec.describe 'Rules endpoint contracts', type: :request do
   end
   let_it_be(:rule) { component.rules.first || create(:rule, component: component) }
 
-  before { sign_in admin }
+  before do
+    Rails.application.reload_routes!
+    sign_in admin
+  end
 
   # ── GET /rules/:id ──
 
@@ -217,7 +218,7 @@ RSpec.describe 'Rules endpoint contracts', type: :request do
       assert_fields_present body, :rule, :toast
       expect(body['rule']['id']).to eq(rule.id)
       expect(body['rule']['locked_fields']).to be_a(Hash)
-      expect(body['rule']['locked_fields']['Fix']).to eq(true)
+      expect(body['rule']['locked_fields']['Fix']).to be(true)
       expect(body.dig('toast', 'variant')).to eq('success')
     end
   end
@@ -227,7 +228,7 @@ RSpec.describe 'Rules endpoint contracts', type: :request do
   describe 'PATCH /rules/:id/bulk_section_locks (JSON)' do
     it 'returns RuleSectionLockResponse with rule + toast' do
       patch "/rules/#{rule.id}/bulk_section_locks",
-            params: { sections: ['Fix', 'Check'], locked: false, comment: 'Contract bulk unlock' },
+            params: { sections: %w[Fix Check], locked: false, comment: 'Contract bulk unlock' },
             headers: json_headers, as: :json
       body = validate_and_parse!
 

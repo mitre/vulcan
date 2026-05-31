@@ -8,11 +8,12 @@ RSpec.describe 'Personal Access Tokens endpoint contracts', type: :request do
   include Devise::Test::IntegrationHelpers
   include OpenAPIContractHelpers
 
-  before { Rails.application.reload_routes! }
-
   let_it_be(:admin) { create(:user, admin: true, password: 'ADMin99!!testpw') }
 
-  before { sign_in admin }
+  before do
+    Rails.application.reload_routes!
+    sign_in admin
+  end
 
   # ── GET /personal_access_tokens ──
 

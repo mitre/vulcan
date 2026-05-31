@@ -2,14 +2,15 @@
 
 require 'rails_helper'
 
-RSpec.describe 'JSON error responses', type: :request do
+RSpec.describe 'JSON error responses' do
   include Devise::Test::IntegrationHelpers
-
-  before { Rails.application.reload_routes! }
 
   let_it_be(:admin) { create(:user, admin: true) }
 
-  before { sign_in admin }
+  before do
+    Rails.application.reload_routes!
+    sign_in admin
+  end
 
   describe '404 Not Found' do
     it 'returns JSON body for missing project' do

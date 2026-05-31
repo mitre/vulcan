@@ -8,16 +8,14 @@ RSpec.describe 'Components endpoint contracts', type: :request do
   include Devise::Test::IntegrationHelpers
   include OpenAPIContractHelpers
 
-  before { Rails.application.reload_routes! }
-
   let_it_be(:admin) { create(:user, admin: true) }
   let_it_be(:srg) { SecurityRequirementsGuide.first || create(:security_requirements_guide) }
   let_it_be(:project) { create(:project, name: 'Components Contract Project') }
   let_it_be(:component) do
     create(:component, project: project, based_on: srg, name: 'Comp Contract Test',
-           prefix: 'CCTT-01', title: 'Components Contract Test Guide',
-           comment_phase: 'open', comment_period_starts_at: 1.day.ago,
-           comment_period_ends_at: 14.days.from_now)
+                       prefix: 'CCTT-01', title: 'Components Contract Test Guide',
+                       comment_phase: 'open', comment_period_starts_at: 1.day.ago,
+                       comment_period_ends_at: 14.days.from_now)
   end
   let_it_be(:membership) do
     Membership.find_or_create_by!(user: admin, membership: project, membership_type: 'Project') do |m|
@@ -26,14 +24,17 @@ RSpec.describe 'Components endpoint contracts', type: :request do
   end
   let_it_be(:rule) { component.rules.first || create(:rule, component: component) }
 
-  before { sign_in admin }
+  before do
+    Rails.application.reload_routes!
+    sign_in admin
+  end
 
   # ── GET /components (index) ──
 
   describe 'GET /components (JSON)' do
     let_it_be(:released_component) do
       c = create(:component, project: project, based_on: srg, name: 'Released For Index',
-                 prefix: 'RELI-01', title: 'Released Index Test')
+                             prefix: 'RELI-01', title: 'Released Index Test')
       c.rules.update_all(locked: true)
       c.update!(released: true)
       c
@@ -51,7 +52,7 @@ RSpec.describe 'Components endpoint contracts', type: :request do
       assert_fields_present found, :id, :name, :prefix, :version, :release,
                             :based_on_title, :based_on_version, :severity_counts,
                             :pending_comment_count, :updated_at, :released, :rules_count, :component_id
-      expect(found['released']).to eq(true)
+      expect(found['released']).to be(true)
       expect(found['id']).to eq(released_component.id)
     end
   end
@@ -89,7 +90,7 @@ RSpec.describe 'Components endpoint contracts', type: :request do
     it 'returns ToastResponse on successful component creation' do
       post "/projects/#{project.id}/components",
            params: { component: { name: 'New Contract Comp', prefix: 'NCON-01',
-                                   title: 'New Contract Component', security_requirements_guide_id: srg.id } },
+                                  title: 'New Contract Component', security_requirements_guide_id: srg.id } },
            headers: json_headers, as: :json
       body = validate_and_parse!
 
@@ -123,7 +124,7 @@ RSpec.describe 'Components endpoint contracts', type: :request do
   describe 'GET /components/:id/comments (JSON)' do
     let_it_be(:comment) do
       create(:review, user: admin, rule: rule, action: 'comment',
-             comment: 'Component comments contract test', section: 'fixtext')
+                      comment: 'Component comments contract test', section: 'fixtext')
     end
 
     it 'returns PaginatedComments with CommentRow items' do
@@ -218,7 +219,7 @@ RSpec.describe 'Components endpoint contracts', type: :request do
     let_it_be(:other_component) do
       Component.where(based_on: srg).where.not(id: component.id).first ||
         create(:component, project: project, based_on: srg, name: 'Compare Target',
-               prefix: 'CMPR-01', title: 'Compare Target')
+                           prefix: 'CMPR-01', title: 'Compare Target')
     end
 
     it 'returns { data: rule_diffs, meta: comparison_info }' do
@@ -250,7 +251,7 @@ RSpec.describe 'Components endpoint contracts', type: :request do
   describe 'DELETE /components/:id (JSON)' do
     let!(:deletable_component) do
       create(:component, project: project, based_on: srg, name: 'Deletable',
-             prefix: 'DELE-01', title: 'Deletable Component')
+                         prefix: 'DELE-01', title: 'Deletable Component')
     end
 
     it 'returns ToastResponse on success' do

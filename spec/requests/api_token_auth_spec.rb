@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'API Token Authentication', type: :request do
+RSpec.describe 'API Token Authentication' do
   before { Rails.application.reload_routes! }
 
   let_it_be(:user) { create(:user, admin: true) }
@@ -77,8 +77,8 @@ RSpec.describe 'API Token Authentication', type: :request do
         .merge('Accept' => 'application/json', 'Content-Type' => 'application/json'),
                         params: { project: { name: 'Token Test Project' } }.to_json
       # Accept any non-auth-failure status (the endpoint may return 422 for missing params, but NOT 401/403)
-      expect(response.status).not_to eq(401)
-      expect(response.status).not_to eq(403)
+      expect(response).not_to have_http_status(:unauthorized)
+      expect(response).not_to have_http_status(:forbidden)
     end
 
     it 'allows everything with admin scope' do
@@ -116,7 +116,7 @@ RSpec.describe 'API Token Authentication', type: :request do
                         params: { project: { name: 'No CSRF Project' } }.to_json
 
       # Should NOT get 422 ActionController::InvalidAuthenticityToken
-      expect(response.status).not_to eq(422)
+      expect(response).not_to have_http_status(:unprocessable_content)
     end
   end
 

@@ -8,14 +8,12 @@ RSpec.describe 'Projects endpoint contracts', type: :request do
   include Devise::Test::IntegrationHelpers
   include OpenAPIContractHelpers
 
-  before { Rails.application.reload_routes! }
-
   let_it_be(:admin) { create(:user, admin: true) }
   let_it_be(:srg) { SecurityRequirementsGuide.first || create(:security_requirements_guide) }
   let_it_be(:project) { create(:project, name: 'Projects Contract Test') }
   let_it_be(:component) do
     create(:component, project: project, based_on: srg, name: 'Proj Contract Comp',
-           prefix: 'PJCT-01', title: 'Projects Contract Component')
+                       prefix: 'PJCT-01', title: 'Projects Contract Component')
   end
   let_it_be(:membership) do
     Membership.find_or_create_by!(user: admin, membership: project, membership_type: 'Project') do |m|
@@ -23,7 +21,10 @@ RSpec.describe 'Projects endpoint contracts', type: :request do
     end
   end
 
-  before { sign_in admin }
+  before do
+    Rails.application.reload_routes!
+    sign_in admin
+  end
 
   # ── GET /projects ──
 
@@ -42,8 +43,8 @@ RSpec.describe 'Projects endpoint contracts', type: :request do
                             :memberships, :admin, :is_member, :access_request_id,
                             :pending_comment_count, :total_comment_count, :pending_comment_link
       expect(found['id']).to eq(project.id)
-      expect(found['admin']).to eq(true)
-      expect(found['is_member']).to eq(true)
+      expect(found['admin']).to be(true)
+      expect(found['is_member']).to be(true)
       expect(found['memberships']).to be_an(Array)
     end
   end
@@ -131,7 +132,7 @@ RSpec.describe 'Projects endpoint contracts', type: :request do
     let_it_be(:rule) { component.rules.first || create(:rule, component: component) }
     let_it_be(:comment) do
       create(:review, user: admin, rule: rule, action: 'comment',
-             comment: 'Project comments contract test', section: 'fixtext')
+                      comment: 'Project comments contract test', section: 'fixtext')
     end
 
     it 'returns project paginated comments with component context and status_counts' do

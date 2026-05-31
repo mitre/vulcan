@@ -8,16 +8,14 @@ RSpec.describe 'Reviews + Reactions + Satisfactions endpoint contracts', type: :
   include Devise::Test::IntegrationHelpers
   include OpenAPIContractHelpers
 
-  before { Rails.application.reload_routes! }
-
   let_it_be(:admin) { create(:user, admin: true) }
   let_it_be(:srg) { SecurityRequirementsGuide.first || create(:security_requirements_guide) }
   let_it_be(:project) { create(:project, name: 'Reviews Contract Project') }
   let_it_be(:component) do
     create(:component, project: project, based_on: srg, name: 'Reviews Contract Comp',
-           prefix: 'RVCN-01', title: 'Reviews Contract Component',
-           comment_phase: 'open', comment_period_starts_at: 1.day.ago,
-           comment_period_ends_at: 14.days.from_now)
+                       prefix: 'RVCN-01', title: 'Reviews Contract Component',
+                       comment_phase: 'open', comment_period_starts_at: 1.day.ago,
+                       comment_period_ends_at: 14.days.from_now)
   end
   let_it_be(:membership) do
     Membership.find_or_create_by!(user: admin, membership: project, membership_type: 'Project') do |m|
@@ -27,11 +25,14 @@ RSpec.describe 'Reviews + Reactions + Satisfactions endpoint contracts', type: :
   let_it_be(:rule) { component.rules.first || create(:rule, component: component) }
   let_it_be(:review) do
     create(:review, user: admin, rule: rule, action: 'comment',
-           comment: 'Reviews contract test comment', section: 'fixtext',
-           triage_status: 'pending')
+                    comment: 'Reviews contract test comment', section: 'fixtext',
+                    triage_status: 'pending')
   end
 
-  before { sign_in admin }
+  before do
+    Rails.application.reload_routes!
+    sign_in admin
+  end
 
   # ── SECURITY HELPER: every review response must NOT have user_id ──
 
@@ -101,7 +102,7 @@ RSpec.describe 'Reviews + Reactions + Satisfactions endpoint contracts', type: :
   describe 'PATCH /reviews/:id/withdraw (JSON)' do
     let_it_be(:withdrawable) do
       create(:review, user: admin, rule: rule, action: 'comment',
-             comment: 'Withdrawable comment', triage_status: 'pending')
+                      comment: 'Withdrawable comment', triage_status: 'pending')
     end
 
     it 'returns ReviewWrapper with withdrawn review and NO user_id' do
@@ -136,7 +137,7 @@ RSpec.describe 'Reviews + Reactions + Satisfactions endpoint contracts', type: :
   describe 'PATCH /reviews/:id/admin_withdraw (JSON)' do
     let_it_be(:admin_withdrawable) do
       create(:review, user: admin, rule: rule, action: 'comment',
-             comment: 'Admin withdrawable', triage_status: 'pending')
+                      comment: 'Admin withdrawable', triage_status: 'pending')
     end
 
     it 'returns ReviewWrapper with admin-withdrawn review and NO user_id' do
@@ -157,7 +158,7 @@ RSpec.describe 'Reviews + Reactions + Satisfactions endpoint contracts', type: :
   describe 'PATCH /reviews/:id/admin_restore (JSON)' do
     let_it_be(:restorable) do
       r = create(:review, user: admin, rule: rule, action: 'comment',
-                 comment: 'Restorable comment', triage_status: 'withdrawn')
+                          comment: 'Restorable comment', triage_status: 'withdrawn')
       r.update_columns(adjudicated_at: Time.current, adjudicated_by_id: admin.id)
       r
     end
@@ -179,7 +180,7 @@ RSpec.describe 'Reviews + Reactions + Satisfactions endpoint contracts', type: :
   describe 'DELETE /reviews/:id/admin_destroy (JSON)' do
     let!(:destroyable) do
       create(:review, user: admin, rule: rule, action: 'comment',
-             comment: 'Destroyable comment', triage_status: 'pending')
+                      comment: 'Destroyable comment', triage_status: 'pending')
     end
 
     it 'returns AdminDestroyResponse with null review + destroyed_id and NO user_id' do
@@ -200,7 +201,7 @@ RSpec.describe 'Reviews + Reactions + Satisfactions endpoint contracts', type: :
   describe 'PATCH /reviews/:id/move_to_rule (JSON)' do
     let_it_be(:movable) do
       create(:review, user: admin, rule: rule, action: 'comment',
-             comment: 'Movable comment', triage_status: 'pending')
+                      comment: 'Movable comment', triage_status: 'pending')
     end
     let_it_be(:target_rule) do
       component.rules.where.not(id: rule.id).first ||
@@ -227,8 +228,8 @@ RSpec.describe 'Reviews + Reactions + Satisfactions endpoint contracts', type: :
   describe 'GET /reviews/:id/responses (JSON)' do
     let_it_be(:reply) do
       create(:review, user: admin, rule: rule, action: 'comment',
-             comment: 'Reply to contract test', responding_to_review_id: review.id,
-             section: review.section)
+                      comment: 'Reply to contract test', responding_to_review_id: review.id,
+                      section: review.section)
     end
 
     it 'returns { rows } with reply fields and reactions.mine' do
