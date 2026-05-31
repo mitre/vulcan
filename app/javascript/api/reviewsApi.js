@@ -36,6 +36,10 @@ export function bulkTriageReviews(reviewIds, payload) {
   return api.patch("/reviews/bulk_triage", { review_ids: reviewIds, ...payload });
 }
 
+export function mergeReviews(reviewIds, survivorId) {
+  return api.patch("/reviews/merge", { review_ids: reviewIds, survivor_id: survivorId });
+}
+
 export function adjudicateReview(reviewId) {
   return api.patch(`/reviews/${reviewId}/adjudicate`, {});
 }

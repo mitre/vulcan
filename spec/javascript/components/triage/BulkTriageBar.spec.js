@@ -66,4 +66,25 @@ describe("BulkTriageBar", () => {
     expect(wrapper.vm.triageStatus).toBeNull();
     expect(wrapper.vm.response).toBe("");
   });
+
+  describe("merge button", () => {
+    it("hides Merge when the user is not an admin", () => {
+      const wrapper = factory({ count: 3 });
+      expect(wrapper.find('[data-testid="bulk-merge"]').exists()).toBe(false);
+    });
+
+    it("shows Merge for admins and emits merge on click", async () => {
+      const wrapper = factory({ count: 3, canMerge: true });
+      const btn = wrapper.find('[data-testid="bulk-merge"]');
+      expect(btn.exists()).toBe(true);
+      expect(btn.attributes("disabled")).toBeUndefined();
+      await btn.trigger("click");
+      expect(wrapper.emitted("merge")).toBeTruthy();
+    });
+
+    it("disables Merge when fewer than 2 comments are selected", () => {
+      const wrapper = factory({ count: 1, canMerge: true });
+      expect(wrapper.find('[data-testid="bulk-merge"]').attributes("disabled")).toBeDefined();
+    });
+  });
 });

@@ -102,6 +102,7 @@ Rails.application.routes.draw do
   # Task 33: reply-chain reader. Auth via parent component's released-vs-member gate.
   # Bulk triage — declared before /reviews/:id/* so the literal segment wins.
   patch '/reviews/bulk_triage',         to: 'reviews#bulk_triage'
+  patch '/reviews/merge',               to: 'reviews#merge'
   get   '/reviews/:id/responses',       to: 'reviews#responses'
   patch '/reviews/:id/triage',          to: 'reviews#triage'
   patch '/reviews/:id/adjudicate',      to: 'reviews#adjudicate'

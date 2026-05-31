@@ -126,6 +126,33 @@ class Review < ApplicationRecord
     { reviews: reviews, response_reviews: responses }
   end
 
+  # Merges N same-author comments within one component into a designated
+  # survivor: secondaries get triage_status='duplicate' pointing at the
+  # survivor (auto-adjudicated via auto_set_adjudicated_for_terminal_statuses),
+  # the survivor's comment is prepended with a marker naming the originating
+  # rule labels. Per-row audits share the request's request_uuid so the
+  # operation is recoverable as one correlated group.
+  def self.merge_comments!(survivor:, duplicates:, merged_by:)
+    duplicates = Array(duplicates).reject { |r| r.id == survivor.id }
+    raise ArgumentError, 'At least one duplicate required.' if duplicates.empty?
+    raise ArgumentError, 'All comments must be from the same commenter.' if duplicates.any? { |r| r.user_id != survivor.user_id }
+    raise ArgumentError, 'Merge cannot span multiple components.' unless duplicates.all? { |r| r.component&.id == survivor.component&.id }
+
+    transaction do
+      labels = duplicates.map { |r| "#{r.component.prefix}-#{r.rule.rule_id}" }.uniq
+      marker = "[Merged: originally posted on #{labels.join(', ')}]"
+      survivor.audit_comment = "Merge survivor (#{duplicates.size} duplicates)"
+      survivor.update!(comment: "#{marker}\n\n#{survivor.comment}")
+
+      duplicates.each do |dup|
+        dup.audit_comment = "Merged into ##{survivor.id}"
+        dup.update!(triage_status: 'duplicate', duplicate_of_review_id: survivor.id,
+                    triage_set_by_id: merged_by.id, triage_set_at: Time.current)
+      end
+    end
+    { survivor: survivor, duplicates: duplicates }
+  end
+
   # recursive subtree fetch via
   # Postgres WITH RECURSIVE CTE. Returns root + every descendant via
   # responding_to_review_id chain in one query, ordered so the root

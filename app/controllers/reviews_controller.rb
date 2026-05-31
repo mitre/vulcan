@@ -16,6 +16,7 @@ class ReviewsController < ApplicationController
   # Bulk triage operates on many reviews; load+validate them and derive
   # @component/@project here so the standard authorize_*_project filters apply.
   before_action :set_bulk_reviews, only: %i[bulk_triage]
+  before_action :set_merge_reviews, only: %i[merge]
   before_action :set_project
   before_action :authorize_viewer_project, only: %i[create withdraw update]
   before_action :authorize_admin_component, only: %i[lock_controls]
@@ -24,7 +25,7 @@ class ReviewsController < ApplicationController
   before_action :authorize_review_owner, only: %i[withdraw update]
   # admin override actions are gated to project admins.
   # Authorization runs from set_project_from_review, so @project is set.
-  before_action :authorize_admin_project, only: %i[admin_withdraw admin_restore admin_destroy move_to_rule]
+  before_action :authorize_admin_project, only: %i[admin_withdraw admin_restore admin_destroy move_to_rule merge]
   # Reply chain visibility mirrors the parent component's read auth:
   # released → any logged-in user; unreleased → project member.
   before_action :authorize_review_visibility, only: %i[responses]
@@ -34,7 +35,7 @@ class ReviewsController < ApplicationController
   # the whole point and must work even after the comment window closes
   # (e.g., remove PII discovered post-final).
   before_action :reject_if_comments_closed, only: %i[create]
-  before_action :reject_if_frozen_for_writes, only: %i[triage adjudicate reopen withdraw update section bulk_triage]
+  before_action :reject_if_frozen_for_writes, only: %i[triage adjudicate reopen withdraw update section bulk_triage merge]
   # single audit-comment gate. Each
   # mutating endpoint that requires an operator-supplied reason was
   # open-coding the same blank-check + 422 toast (5 sites, ~8 lines each).
@@ -69,7 +70,8 @@ class ReviewsController < ApplicationController
     move_to_rule: 'Could not move.',
     admin_destroy: 'Could not hard-delete.',
     section: 'Could not save section.',
-    update: 'Could not save edit.'
+    update: 'Could not save edit.',
+    merge: 'Could not merge comments.'
   )
 
   def create
@@ -191,6 +193,23 @@ class ReviewsController < ApplicationController
     }
   rescue ArgumentError => e
     render_toast(title: 'Could not save triage.', message: e.message)
+  end
+
+  # PATCH /reviews/merge — admin merges N same-author comments within one
+  # component into a designated survivor. set_merge_reviews has already
+  # loaded + validated the selection and derived @component/@project.
+  def merge
+    result = Review.merge_comments!(
+      survivor: @survivor,
+      duplicates: @duplicates_to_merge,
+      merged_by: current_user
+    )
+    render json: {
+      survivor: ReviewBlueprint.render_as_hash(result[:survivor].reload),
+      duplicates: result[:duplicates].map { |r| ReviewBlueprint.render_as_hash(r.reload) }
+    }
+  rescue ArgumentError => e
+    render_toast(title: 'Could not merge comments.', message: e.message)
   end
 
   # PATCH /reviews/:id/adjudicate — author+ marks a triaged comment as
@@ -682,6 +701,38 @@ class ReviewsController < ApplicationController
     if components.size != 1
       return render_toast(title: 'Could not save triage.',
                           message: 'Bulk triage cannot span multiple components.')
+    end
+
+    @component = components.first
+    @project = @component.project
+  end
+
+  # Loads the merge selection: review_ids must include the survivor_id, and
+  # all selections must belong to one component. Sets @survivor /
+  # @duplicates_to_merge / @component / @project for the action + authorize_*.
+  def set_merge_reviews
+    survivor_id = params[:survivor_id].to_i
+    ids = Array(params[:review_ids]).map(&:to_i).uniq.reject(&:zero?)
+    selected = Review.where(id: ids).to_a
+
+    return render_toast(title: 'Could not merge comments.', message: 'No comments selected.') if selected.empty?
+
+    @survivor = selected.find { |r| r.id == survivor_id }
+    if @survivor.nil?
+      return render_toast(title: 'Could not merge comments.',
+                          message: 'Survivor must be one of the selected comments.')
+    end
+
+    @duplicates_to_merge = selected.reject { |r| r.id == @survivor.id }
+    if @duplicates_to_merge.empty?
+      return render_toast(title: 'Could not merge comments.',
+                          message: 'Select at least one duplicate to merge into the survivor.')
+    end
+
+    components = selected.filter_map(&:component).uniq
+    if components.size != 1
+      return render_toast(title: 'Could not merge comments.',
+                          message: 'Merge cannot span multiple components.')
     end
 
     @component = components.first

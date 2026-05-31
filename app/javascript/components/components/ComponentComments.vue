@@ -313,8 +313,16 @@
     <BulkTriageBar
       v-if="canTriage && selectedIds.length"
       :count="selectedIds.length"
+      :can-merge="canMerge"
       @apply="applyBulkTriage"
+      @merge="openMergeModal"
       @clear="clearSelection"
+    />
+
+    <MergeCommentsModal
+      v-if="canMerge"
+      :selected-reviews="selectedMergeReviews"
+      @submit="applyMerge"
     />
 
     <!-- Pagination (hidden in by-rule view — all comments loaded for grouping) -->
@@ -351,7 +359,7 @@
 
 <script>
 import { reopenReview } from "../../api/reviewsApi";
-import { submitBulkTriage } from "../../services/triageService";
+import { submitBulkTriage, submitMerge } from "../../services/triageService";
 import { getComments } from "../../api/componentsApi";
 import { getProjectComments } from "../../api/projectsApi";
 import { SECTION_LABELS, buildStatusFilterOptions } from "../../constants/triageVocabulary";
@@ -371,6 +379,7 @@ import CommentProgressBar from "../triage/CommentProgressBar.vue";
 import CommentAuthorLine from "../shared/CommentAuthorLine.vue";
 import ComponentSearchModal from "../shared/ComponentSearchModal.vue";
 import BulkTriageBar from "../triage/BulkTriageBar.vue";
+import MergeCommentsModal from "../triage/MergeCommentsModal.vue";
 import Highlighter from "vue-highlight-words";
 import ReplyComposerMixin from "../../mixins/ReplyComposerMixin.vue";
 import { triageBgClass } from "../../utils/triageBgClass";
@@ -390,6 +399,7 @@ export default {
     CommentAuthorLine,
     ComponentSearchModal,
     BulkTriageBar,
+    MergeCommentsModal,
     Highlighter,
   },
   // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because
@@ -442,6 +452,10 @@ export default {
     return {
       rows: [],
       selectedIds: [],
+      // Snapshot of full review objects fed into MergeCommentsModal — taken
+      // at "Merge…" click time so a background reload doesn't drop the
+      // selection mid-modal.
+      selectedMergeReviews: [],
       total: 0,
       page: 1,
       perPage: 25,
@@ -481,6 +495,9 @@ export default {
     },
     canTriage() {
       return this.role_gte_to(this.effectivePermissions, "author");
+    },
+    canMerge() {
+      return this.role_gte_to(this.effectivePermissions, "admin");
     },
     splitModeFilterVisible() {
       return !this.splitMode;
@@ -781,6 +798,30 @@ export default {
             toast: {
               title: "Bulk triage applied",
               message: `Triaged ${ids.length} comment${ids.length === 1 ? "" : "s"}.`,
+              variant: "success",
+            },
+          },
+        });
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
+    },
+    openMergeModal() {
+      const selected = new Set(this.selectedIds);
+      this.selectedMergeReviews = this.rows.filter((r) => selected.has(r.id));
+      this.$bvModal.show("merge-comments-modal");
+    },
+    async applyMerge(payload) {
+      try {
+        await submitMerge(payload.review_ids, payload.survivor_id);
+        this.clearSelection();
+        this.selectedMergeReviews = [];
+        await this.fetch();
+        this.alertOrNotifyResponse({
+          data: {
+            toast: {
+              title: "Comments merged",
+              message: `Merged ${payload.review_ids.length - 1} duplicate${payload.review_ids.length === 2 ? "" : "s"} into the survivor.`,
               variant: "success",
             },
           },

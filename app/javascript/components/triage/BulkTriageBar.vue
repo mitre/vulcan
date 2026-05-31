@@ -37,6 +37,18 @@
       Apply to {{ count }}
     </b-button>
 
+    <b-button
+      v-if="canMerge"
+      variant="outline-primary"
+      size="sm"
+      :disabled="count < 2"
+      data-testid="bulk-merge"
+      title="Merge selected duplicates into one survivor (admin)"
+      @click="$emit('merge')"
+    >
+      Merge…
+    </b-button>
+
     <b-button variant="outline-secondary" size="sm" data-testid="bulk-clear" @click="onClear">
       Clear
     </b-button>
@@ -64,6 +76,10 @@ export default {
     count: {
       type: Number,
       default: 0,
+    },
+    canMerge: {
+      type: Boolean,
+      default: false,
     },
   },
   data() {

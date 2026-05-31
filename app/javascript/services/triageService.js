@@ -1,6 +1,7 @@
 import {
   triageReview,
   bulkTriageReviews,
+  mergeReviews,
   adjudicateReview,
   adminDestroyReview,
   moveReviewToRule,
@@ -14,6 +15,10 @@ export function submitTriage(reviewId, payload) {
 
 export function submitBulkTriage(reviewIds, payload) {
   return bulkTriageReviews(reviewIds, payload);
+}
+
+export function submitMerge(reviewIds, survivorId) {
+  return mergeReviews(reviewIds, survivorId);
 }
 
 export function submitAdjudicate(reviewId) {
