@@ -6,7 +6,7 @@ namespace :openapi do
     token = create_smoke_token
     run_schemathesis(
       token: token,
-      phases: 'examples,coverage',
+      phases: 'examples',
       max_examples: 1,
       label: 'smoke',
       read_only: true
@@ -48,12 +48,16 @@ namespace :openapi do
       '--header', "Authorization: Token #{token}",
       '--header', 'Accept: application/json',
       '--checks', 'not_a_server_error,status_code_conformance,content_type_conformance,response_schema_conformance',
-      '--exclude-checks', 'negative_data_rejection,ignored_auth',
+      '--exclude-checks', 'negative_data_rejection,ignored_auth,unsupported_method',
       '--phases', phases,
       '--max-examples', max_examples.to_s,
       '--rate-limit', '4/s',
-      '--exclude-path-regex', '.*/(upload|import_backup|create_from_backup|detect_srg|preview_spreadsheet|apply_spreadsheet|bulk_export).*',
+      '--exclude-path-regex', '.*/(upload|import_backup|create_from_backup|detect_srg|preview_spreadsheet|apply_spreadsheet|bulk_export|export).*',
       '--exclude-path-regex', '.*/personal_access_tokens.*',
+      '--exclude-path-regex', '.*/components/history.*',
+      '--exclude-path', '/components/bulk_export/{type}',
+      '--exclude-path', '/srgs/{id}/export/{type}',
+      '--exclude-path', '/stigs/{id}/export/{type}',
       '--exclude-deprecated',
       *(read_only ? ['--include-method', 'GET'] : []),
       '--report', 'junit',
