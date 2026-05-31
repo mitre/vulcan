@@ -114,6 +114,7 @@
           />
           <CommentThread
             :parent-review-id="activeComment.id"
+            :parent-triage-status="activeComment.triage_status"
             :responses-count="activeComment.responses_count || 0"
             :can-reply="true"
             class="mb-3"

@@ -181,4 +181,55 @@ describe("CommentThread", () => {
     expect(w.text()).toContain("(imported commenter)");
     expect(w.text()).toContain("imported");
   });
+
+  // Reply cards must visually match the parent's triage-status tint so an
+  // adjudicated comment + its replies read as one unit (found during in-app
+  // verification of the bulk-triage UI).
+  describe("parent triage-status background", () => {
+    const oneReply = {
+      data: {
+        rows: [
+          {
+            id: 7,
+            comment: "a reply",
+            commenter_display_name: "User",
+            created_at: "2026-05-04T00:00:00Z",
+          },
+        ],
+      },
+    };
+
+    it("applies the parent's triage-bg class to each reply when parentTriageStatus is set", async () => {
+      axios.get.mockResolvedValue(oneReply);
+      const w = mount(CommentThread, {
+        localVue,
+        propsData: { parentReviewId: 1, responsesCount: 1, parentTriageStatus: "concur" },
+      });
+      await w.find("button[aria-controls]").trigger("click");
+      await new Promise((r) => setTimeout(r, 0));
+      expect(w.html()).toContain("triage-bg--concur");
+    });
+
+    it("renders no triage-bg class when the parent is pending", async () => {
+      axios.get.mockResolvedValue(oneReply);
+      const w = mount(CommentThread, {
+        localVue,
+        propsData: { parentReviewId: 1, responsesCount: 1, parentTriageStatus: "pending" },
+      });
+      await w.find("button[aria-controls]").trigger("click");
+      await new Promise((r) => setTimeout(r, 0));
+      expect(w.html()).not.toMatch(/triage-bg--/);
+    });
+
+    it("renders no triage-bg class when parentTriageStatus is omitted (default null)", async () => {
+      axios.get.mockResolvedValue(oneReply);
+      const w = mount(CommentThread, {
+        localVue,
+        propsData: { parentReviewId: 1, responsesCount: 1 },
+      });
+      await w.find("button[aria-controls]").trigger("click");
+      await new Promise((r) => setTimeout(r, 0));
+      expect(w.html()).not.toMatch(/triage-bg--/);
+    });
+  });
 });

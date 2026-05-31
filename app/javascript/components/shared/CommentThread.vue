@@ -37,6 +37,7 @@
         v-else
         :key="reply.id"
         class="ml-3 mt-2 pl-3 border-left border-info"
+        :class="parentTriageBgClass"
       >
         <p class="mb-0 d-flex flex-wrap align-items-center">
           <strong>{{ reply.commenter_display_name || "—" }}</strong>
@@ -71,6 +72,7 @@
 
 <script>
 import { getResponses } from "../../api/reviewsApi";
+import { triageBgClass } from "../../utils/triageBgClass";
 import ReactionButtons from "./ReactionButtons.vue";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
@@ -91,6 +93,13 @@ export default {
       type: String,
       default: "Reactions are closed for this component.",
     },
+    // Parent comment's triage_status. When set to a non-pending status the
+    // reply cards inherit the same triage-bg-- tint so the whole thread reads
+    // as one adjudicated unit. Default null leaves replies untinted.
+    parentTriageStatus: {
+      type: String,
+      default: null,
+    },
   },
   data() {
     return {
@@ -110,6 +119,9 @@ export default {
       const n = this.responsesCount;
       if (this.expanded) return `Hide ${n} ${n === 1 ? "reply" : "replies"}`;
       return `${n} ${n === 1 ? "reply" : "replies"}`;
+    },
+    parentTriageBgClass() {
+      return triageBgClass(this.parentTriageStatus);
     },
   },
   watch: {

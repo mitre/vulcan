@@ -44,6 +44,7 @@
         />
         <CommentThread
           :parent-review-id="row.id"
+          :parent-triage-status="row.triage_status"
           :responses-count="row.responses_count || 0"
           :can-reply="true"
           @reply="$emit('reply', $event)"
