@@ -6616,6 +6616,12 @@ components:
             - 'null'
           description: Legacy rule identifiers from previous STIG versions (comma-separated string).
           example: V-69239, SV-83861
+        vendor_comments:
+          type:
+            - string
+            - 'null'
+          description: Vendor-provided implementation guidance or additional context.
+          example: This is addressed by the vendor's default configuration.
         disa_rule_descriptions_attributes:
           type: array
           description: DISA rule description records.

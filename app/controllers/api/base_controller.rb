@@ -18,8 +18,11 @@ module Api
     skip_before_action :check_access_request_notifications
 
     def authenticate_user!(*)
-      super
-      render(json: { error: 'Unauthorized' }, status: :unauthorized) unless user_signed_in? || performed?
+      if api_token_request? || user_signed_in?
+        super
+      else
+        render json: { error: 'Unauthorized' }, status: :unauthorized
+      end
     end
 
     # Standardized JSON error responses with correct HTTP semantics
