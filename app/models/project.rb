@@ -295,6 +295,7 @@ class Project < ApplicationRecord
     Component.where(released: true).where.not(id: reject_component_ids)
              .select(:id, :name, :prefix, :version, :release, :project_id,
                      :security_requirements_guide_id, :released, :updated_at,
-                     :rules_count, :component_id)
+                     :rules_count, :component_id, :admin_name, :admin_email,
+                     :description)
   end
 end

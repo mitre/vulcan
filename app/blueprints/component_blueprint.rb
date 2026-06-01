@@ -37,12 +37,17 @@ class ComponentBlueprint < Blueprinter::Base
     counts[component.id] || 0
   end
 
-  # === Index view: listing page ===
-  # rules_count drives ComponentCard's controls badge; component_id
-  # drives the (Overlaid) tag. Without these the card silently hides
-  # the badges (the "Not Configured" bug Aaron flagged).
+  # === Index view: listing page (ComponentCard) ===
+  # Every field ComponentCard.vue reads must be present here or it
+  # silently renders as undefined. Verified against grep of
+  # component.X property access in ComponentCard.vue.
   view :index do
-    fields :updated_at, :released, :rules_count, :component_id
+    fields :updated_at, :released, :rules_count, :component_id, :project_id,
+           :security_requirements_guide_id, :admin_name, :admin_email, :description
+
+    field :releasable do |component, _options|
+      component.releasable
+    end
   end
 
   # === Related view: related_rules parents (includes project for display name) ===

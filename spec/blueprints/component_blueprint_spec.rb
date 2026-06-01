@@ -26,31 +26,17 @@ RSpec.describe 'ComponentBlueprint' do
   describe ':index view' do
     let(:json) { ComponentBlueprint.render_as_hash(component, view: :index) }
 
-    it 'includes listing fields' do
-      %i[id name prefix version release based_on_title based_on_version].each do |f|
-        expect(json).to have_key(f), "Missing :index field: #{f}"
+    it 'includes every field ComponentCard.vue reads' do
+      %i[id name prefix version release based_on_title based_on_version
+         severity_counts rules_count component_id project_id
+         security_requirements_guide_id admin_name admin_email
+         description releasable pending_comment_count].each do |f|
+        expect(json).to have_key(f), "Missing :index field: #{f} — ComponentCard.vue needs it"
       end
     end
 
-    it 'includes severity_counts' do
-      expect(json).to have_key(:severity_counts)
-    end
-
-    # REQUIREMENT: ComponentCard.vue renders a "{N} controls" pill that
-    # depends on rules_count from the JSON payload. Without this field
-    # the Vue side evaluates `component.rules_count > 0` against
-    # undefined and hides the badge — leading to the "Not Configured"
-    # bug Aaron flagged in live testing on the project-detail page.
-    it 'includes rules_count so the card can render the controls badge' do
-      expect(json).to have_key(:rules_count)
+    it 'rules_count is an integer (controls badge)' do
       expect(json[:rules_count]).to be_a(Integer)
-    end
-
-    # Overlaid components are surfaced via component_id on the card —
-    # the same blueprint must expose it for ComponentCard.vue's
-    # `(Overlaid)` tag to render.
-    it 'includes component_id so the (Overlaid) tag can render' do
-      expect(json).to have_key(:component_id)
     end
 
     it 'excludes heavy fields' do
