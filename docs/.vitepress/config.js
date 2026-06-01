@@ -172,6 +172,13 @@ export default defineConfig({
           ],
         },
         {
+          text: "Comment Triage",
+          items: [
+            { text: "Bulk Triage", link: "/user-guide/bulk-triage" },
+            { text: "Merge Comments", link: "/user-guide/merge-comments" },
+          ],
+        },
+        {
           text: "Data Management",
           items: [
             { text: "Overview", link: "/user-guide/data-management/" },
