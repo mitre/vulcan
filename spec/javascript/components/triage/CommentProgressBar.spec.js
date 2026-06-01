@@ -62,7 +62,9 @@ describe("CommentProgressBar", () => {
       propsData: baseProps({ statusCounts: { concur: 2, concur_with_comment: 3 } }),
     });
     const pills = w.findAll("[data-testid='status-pill']");
-    const classes = pills.wrappers.map((p) => p.classes().find((c) => c.startsWith("progress-pill--")));
+    const classes = pills.wrappers.map((p) =>
+      p.classes().find((c) => c.startsWith("progress-pill--")),
+    );
     expect(classes).toContain("progress-pill--concur");
     expect(classes).toContain("progress-pill--concur_with_comment");
     expect(classes[0]).not.toBe(classes[1]);
@@ -204,5 +206,35 @@ describe("CommentProgressBar", () => {
     const summary = w.find("[data-testid='progress-summary']");
     expect(summary.text()).toContain("7 of 7 resolved");
     expect(summary.text()).toContain("100%");
+  });
+
+  // Defensive: segment widths must sum to 100% even if statusCounts contains
+  // a key that doesn't map to a bucket — otherwise the unfilled remainder
+  // exposes the track background and reads as a mystery dark-gray segment.
+  it("normalizes segment widths to 100% even with unrecognized status keys", () => {
+    const w = mount(CommentProgressBar, {
+      localVue,
+      propsData: {
+        statusCounts: {
+          pending: 87,
+          concur: 1,
+          concur_with_comment: 19,
+          duplicate: 4,
+          informational: 1,
+          _ghost: 1,
+        },
+      },
+    });
+    const segments = w.findAll("[data-testid='progress-segment']");
+    const sum = segments.wrappers.reduce((s, seg) => s + parseFloat(seg.element.style.width), 0);
+    expect(sum).toBeCloseTo(100, 0);
+  });
+
+  it("preserves the pending data-triage marker (drives the legibility stripe)", () => {
+    const w = mount(CommentProgressBar, { localVue, propsData: baseProps() });
+    const pending = w
+      .findAll("[data-testid='progress-segment']")
+      .wrappers.find((s) => s.attributes("data-triage") === "pending");
+    expect(pending).toBeTruthy();
   });
 });

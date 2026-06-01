@@ -128,7 +128,7 @@ export default {
       const unboosted = entries.filter((e) => e.rawPercent >= MIN_SEGMENT_PERCENT);
       const unboostedTotal = unboosted.reduce((sum, e) => sum + e.rawPercent, 0);
 
-      return entries.map((e) => {
+      const computed = entries.map((e) => {
         let displayPercent;
         if (e.rawPercent < MIN_SEGMENT_PERCENT) {
           displayPercent = MIN_SEGMENT_PERCENT;
@@ -137,11 +137,25 @@ export default {
         } else {
           displayPercent = e.rawPercent;
         }
-        return {
-          ...e,
-          displayWidth: displayPercent.toFixed(1) + "%",
-        };
+        return { ...e, displayPercent };
       });
+
+      // Defensive: absorb any remainder into the last segment so widths
+      // always sum to 100% and the track background never shows through.
+      // If statusCounts ever drifts from total (e.g. an unrecognized status
+      // key that doesn't get a bucket), the bug stays invisible.
+      if (computed.length) {
+        const sumOthers = computed.slice(0, -1).reduce((s, e) => s + e.displayPercent, 0);
+        computed[computed.length - 1].displayPercent = Math.max(0, 100 - sumOthers);
+      }
+
+      return computed.map((e) => ({
+        status: e.status,
+        label: e.label,
+        count: e.count,
+        rawPercent: e.rawPercent,
+        displayWidth: e.displayPercent.toFixed(1) + "%",
+      }));
     },
   },
   methods: {
@@ -213,5 +227,19 @@ export default {
 /* ── Bar segment colors — ONE rule via intermediate variable ── */
 .progress-segment[data-triage] {
   background-color: var(--status-color);
+}
+
+/* Pending is intentionally a neutral gray to read as "unresolved", but the
+ * solid gray was easily confused with the track background when looked at
+ * cold. A subtle diagonal stripe overlay distinguishes it without changing
+ * the color or hurting contrast (title="Pending: N" still surfaces on hover). */
+.progress-segment[data-triage="pending"] {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 4px,
+    rgba(0, 0, 0, 0.08) 4px,
+    rgba(0, 0, 0, 0.08) 8px
+  );
 }
 </style>
