@@ -174,6 +174,9 @@ export default defineConfig({
         {
           text: "Comment Triage",
           items: [
+            { text: "Soft Redirect", link: "/user-guide/soft-redirect" },
+            { text: "Comment Provenance", link: "/user-guide/comment-provenance" },
+            { text: "Move Comment", link: "/user-guide/move-comment" },
             { text: "Bulk Triage", link: "/user-guide/bulk-triage" },
             { text: "Merge Comments", link: "/user-guide/merge-comments" },
           ],
