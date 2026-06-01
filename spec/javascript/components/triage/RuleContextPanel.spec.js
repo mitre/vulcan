@@ -107,7 +107,9 @@ describe("RuleContextPanel", () => {
       localVue,
       propsData: props({ focusedSection: "check_content" }),
     });
-    expect(w.find('[data-section="fixtext"] .section-header .bi-chevron-right').exists()).toBe(true);
+    expect(w.find('[data-section="fixtext"] .section-header .bi-chevron-right').exists()).toBe(
+      true,
+    );
   });
 
   // ── Manual toggle ──────────────────────────────────────────────────
@@ -295,8 +297,20 @@ describe("RuleContextPanel", () => {
 
   it("does NOT render inline comment stubs under section headers", () => {
     const sectionComments = [
-      { id: 1, section: "check_content", author_name: "Viewer", comment: "First", triage_status: "pending" },
-      { id: 2, section: "check_content", author_name: "Reviewer", comment: "Second", triage_status: "concur" },
+      {
+        id: 1,
+        section: "check_content",
+        author_name: "Viewer",
+        comment: "First",
+        triage_status: "pending",
+      },
+      {
+        id: 2,
+        section: "check_content",
+        author_name: "Reviewer",
+        comment: "Second",
+        triage_status: "concur",
+      },
     ];
     const w = mount(RuleContextPanel, {
       localVue,
@@ -521,6 +535,28 @@ describe("RuleContextPanel", () => {
         propsData: props(),
       });
       expect(w.find("[data-testid='locked-indicator']").exists()).toBe(false);
+    });
+  });
+
+  // Overall (null section) comments need a focus indicator equivalent to
+  // section-body--focused so the triager knows the whole requirement is the
+  // target — without competing with the per-section focus tint.
+  describe("overall-section focus indicator", () => {
+    it("applies overall-focused class to the title when focusedSection is null", () => {
+      const w = mount(RuleContextPanel, { localVue, propsData: props({ focusedSection: null }) });
+      const title = w.find("[data-testid='rule-title']");
+      expect(title.exists()).toBe(true);
+      expect(title.classes()).toContain("rule-title--overall-focused");
+    });
+
+    it("does NOT apply overall-focused class when a section is focused", () => {
+      const w = mount(RuleContextPanel, {
+        localVue,
+        propsData: props({ focusedSection: "check_content" }),
+      });
+      const title = w.find("[data-testid='rule-title']");
+      expect(title.exists()).toBe(true);
+      expect(title.classes()).not.toContain("rule-title--overall-focused");
     });
   });
 });

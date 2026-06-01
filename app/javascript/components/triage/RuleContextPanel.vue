@@ -69,7 +69,12 @@
         </b-button>
       </div>
       <hr class="rule-context-divider mt-4 mb-2" />
-      <p v-if="ruleContent.title" class="text-muted mb-2">
+      <p
+        v-if="ruleContent.title"
+        data-testid="rule-title"
+        class="text-muted mb-2"
+        :class="{ 'rule-title--overall-focused': focusedSection === null }"
+      >
         {{ ruleContent.title }}
       </p>
 
@@ -324,6 +329,17 @@ export default {
   padding-left: calc(2rem - 3px);
   background-color: var(--vulcan-focus-tint);
   border-radius: 0 0.25rem 0.25rem 0;
+}
+
+/* Overall-focused indicator on the rule title — fires when the active
+ * comment targets the whole requirement (section=null). Intentionally
+ * lighter than section-body--focused (no left border, no padding shift)
+ * so the two indicators don't compete when both are visible. */
+.rule-title--overall-focused {
+  background-color: var(--vulcan-focus-tint);
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.25rem;
+  border-left: 2px solid var(--info, #17a2b8);
 }
 
 .section-preview {
