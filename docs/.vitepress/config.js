@@ -167,6 +167,7 @@ export default defineConfig({
           items: [
             { text: "Overview", link: "/user-guide/overview" },
             { text: "Authoring Rules", link: "/user-guide/authoring-rules" },
+            { text: "Sidebar — Nested Requirements", link: "/user-guide/sidebar-collapse" },
             { text: "User Management", link: "/user-guide/user-management" },
             { text: "Section Locks", link: "/user-guide/section-locks" },
           ],
@@ -179,6 +180,7 @@ export default defineConfig({
             { text: "Move Comment", link: "/user-guide/move-comment" },
             { text: "Bulk Triage", link: "/user-guide/bulk-triage" },
             { text: "Merge Comments", link: "/user-guide/merge-comments" },
+            { text: "Commenter Email", link: "/user-guide/commenter-email" },
           ],
         },
         {
