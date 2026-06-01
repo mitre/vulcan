@@ -284,7 +284,7 @@ Issues:
 
 ## Real API Verification Status
 
-**NOT YET DONE.** Need to start the dev server and hit real endpoints with `DATABASE_PORT=5433 bundle exec rails runner` to compare actual responses against schemas.
+**NOT YET DONE.** Need to start the dev server and hit real endpoints with `DATABASE_PORT=5435 bundle exec rails runner` to compare actual responses against schemas.
 
 ---
 
