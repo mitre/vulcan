@@ -90,10 +90,12 @@ describe("rulesApi", () => {
     expect(api.post).toHaveBeenCalledWith("/components/10/find", { find: "search text" });
   });
 
-  it("duplicateRule calls POST /rules/:id/duplicate with rule data", async () => {
+  it("duplicateRule calls POST /components/:componentId/rules with duplicate flag", async () => {
     api.post.mockResolvedValue({ data: {} });
-    await duplicateRule(5, { title: "Copy of rule" });
-    expect(api.post).toHaveBeenCalledWith("/rules/5/duplicate", { rule: { title: "Copy of rule" } });
+    await duplicateRule(10, 5);
+    expect(api.post).toHaveBeenCalledWith("/components/10/rules", {
+      rule: { duplicate: true, id: 5 },
+    });
   });
 
   it("bulkSectionLocks wraps data in { rule: data }", async () => {

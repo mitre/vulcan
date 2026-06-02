@@ -50,3 +50,7 @@ export function deleteAccount() {
 export function unlinkIdentity(payload) {
   return api.post("/users/unlink_identity", payload);
 }
+
+export function getUserComments(userId, params) {
+  return api.get(`/users/${userId}/comments`, { params });
+}

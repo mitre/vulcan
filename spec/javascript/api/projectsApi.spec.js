@@ -75,11 +75,15 @@ describe("projectsApi", () => {
     expect(api.post).toHaveBeenCalledWith("/projects/create_from_backup", fd, {});
   });
 
-  it("restoreBackup calls POST /components/:id/import", async () => {
+  it("restoreBackup is an alias for importBackup (same function reference)", () => {
+    expect(restoreBackup).toBe(importBackup);
+  });
+
+  it("importBackup calls POST /projects/:id/import_backup", async () => {
     api.post.mockResolvedValue({ data: {} });
     const fd = new FormData();
-    await restoreBackup(5, fd);
-    expect(api.post).toHaveBeenCalledWith("/components/5/import", fd, {});
+    await importBackup(5, fd);
+    expect(api.post).toHaveBeenCalledWith("/projects/5/import_backup", fd, {});
   });
 
   it("uploadBenchmark calls POST with provided path and formData", async () => {

@@ -272,7 +272,7 @@
 </template>
 
 <script>
-import { updateSection } from "../../api/reviewsApi";
+import { updateReviewSection } from "../../api/reviewsApi";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import FormMixin from "../../mixins/FormMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
@@ -473,7 +473,7 @@ export default {
     async submitSectionChange() {
       if (!this.review || !this.canSubmitSectionChange) return;
       try {
-        const res = await updateSection(
+        const res = await updateReviewSection(
           this.review.id,
           this.newSection,
           this.sectionAuditComment.trim(),

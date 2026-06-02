@@ -28,13 +28,14 @@ export function updateProject(projectId, data) {
   return api.put(`/projects/${projectId}`, { project: data });
 }
 
-export function restoreBackup(componentId, formData, config = {}) {
-  return api.post(`/components/${componentId}/import`, formData, config);
-}
-
 export function importBackup(projectId, formData, config = {}) {
   return api.post(`/projects/${projectId}/import_backup`, formData, config);
 }
+
+// Alias — restoreBackup and importBackup are the same operation.
+// Both names are kept for semantic clarity at call sites:
+// restoreBackup (restore a component from archive) vs importBackup (import into project).
+export const restoreBackup = importBackup;
 
 export function getBenchmarkList(path) {
   return api.get(path);

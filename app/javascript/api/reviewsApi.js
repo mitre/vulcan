@@ -8,11 +8,11 @@ export function createComponentReview(componentId, data) {
   return api.post(`/components/${componentId}/reviews`, { review: data });
 }
 
-export function getResponses(reviewId, params) {
+export function getReviewResponses(reviewId, params) {
   return api.get(`/reviews/${reviewId}/responses`, { params });
 }
 
-export function updateSection(reviewId, section, auditComment) {
+export function updateReviewSection(reviewId, section, auditComment) {
   return api.patch(`/reviews/${reviewId}/section`, { section, audit_comment: auditComment });
 }
 
@@ -20,12 +20,8 @@ export function reopenReview(reviewId) {
   return api.patch(`/reviews/${reviewId}/reopen`);
 }
 
-export function getReactions(reviewId, params) {
+export function getReviewReactions(reviewId, params) {
   return api.get(`/reviews/${reviewId}/reactions`, { params });
-}
-
-export function getUserComments(userId, params) {
-  return api.get(`/users/${userId}/comments`, { params });
 }
 
 export function triageReview(reviewId, payload) {
