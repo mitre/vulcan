@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-# vulcan-v3.x-480.7 §17.3: one row per field-write during a merge so
+# one row per field-write during a merge so
 # surgical undo can revert merge B's changes without touching A or C.
 RSpec.describe MergeOperation do
   let_it_be(:project) { create(:project) }

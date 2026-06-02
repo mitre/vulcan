@@ -286,7 +286,7 @@ RSpec.describe 'Components' do
     end
   end
 
-  # vulcan-v3.x-aik: renamed from /components/:id/search/based_on_same_srg to
+  # renamed from /components/:id/search/based_on_same_srg to
   # /components/:id/related for clarity; response is now an explicit field
   # allowlist (no AR timestamps / internal FKs leaked).
   describe 'GET /components/:id/related' do
@@ -313,7 +313,7 @@ RSpec.describe 'Components' do
     end
   end
 
-  # vulcan-v3.x-oxz: compare moved from sub-resource path
+  # compare moved from sub-resource path
   # (/components/:id/compare/:diff_id, which implied parent-child) to peer
   # query params with an envelope response.
   describe 'GET /api/components/compare' do
@@ -340,7 +340,7 @@ RSpec.describe 'Components' do
     end
   end
 
-  # vulcan-v3.x-dyd: revision history was POST (read-only query, wrong method)
+  # revision history was POST (read-only query, wrong method)
   # with mixed camelCase/snake_case keys. Now GET with all-snake_case keys.
   describe 'GET /components/history' do
     let!(:versioned_initial) do
@@ -496,10 +496,10 @@ RSpec.describe 'Components' do
     end
   end
 
-  # vulcan-v3.x-73z.8: blueprint_render_options plucked ALL review IDs for a
+  # blueprint_render_options plucked ALL review IDs for a
   # component (3000+) and passed them to Reaction.summary, generating two
   # massive GROUP BY queries on every editor refresh. Scope to ≤100 review IDs.
-  describe 'GET /components/:id (vulcan-v3.x-73z.8 reaction scoping)' do
+  describe 'GET /components/:id (reaction scoping)' do
     it 'show does not load reactions for non-displayed reviews' do
       rule = component.rules.first
       # Seed >100 reviews to trigger the over-fetch the card targets.

@@ -384,14 +384,13 @@ class ComponentsController < ApplicationController
                                   'components.release, components.project_id, projects.name AS project_name')
     # Explicit allowlist — `.map(&:attributes)` leaked all AR columns
     # (timestamps, internal FKs) for any consumer that bypassed the SELECT.
-    # vulcan-v3.x-aik.
     render json: components.map { |c|
       { id: c.id, name: c.name, version: c.version, prefix: c.prefix,
         release: c.release, project_id: c.project_id, project_name: c.project_name }
     }
   end
 
-  # vulcan-v3.x-oxz: reads peer ids from query params and returns an envelope
+  # reads peer ids from query params and returns an envelope
   # with data + meta (base_id/diff_id/rules_count). Wired at GET
   # /api/components/compare?base_id=&diff_id=.
   def compare
@@ -574,7 +573,7 @@ class ComponentsController < ApplicationController
   # accurate count. Without this, the blueprint defaults to zero.
   #
   # Reaction summaries are scoped to the most recent REACTION_SUMMARY_LIMIT
-  # reviews (vulcan-v3.x-73z.8). The editor renders at most ~25 visible
+  # reviews. The editor renders at most ~25 visible
   # reviews per page; 100 gives ample headroom and stops the two
   # 3000+ row GROUP BYs that used to fire on every editor refresh.
   # rubocop:disable Lint/UselessConstantScoping -- co-located with sole consumer
@@ -738,7 +737,7 @@ class ComponentsController < ApplicationController
 
   # Authorize access to both components in a compare operation
   def authorize_compare_access
-    # vulcan-v3.x-oxz: peer params (base_id/diff_id) instead of the old
+    # peer params (base_id/diff_id) instead of the old
     # sub-resource :id/:diff_id.
     base = Component.find_by(id: params[:base_id])
     diff = Component.find_by(id: params[:diff_id])

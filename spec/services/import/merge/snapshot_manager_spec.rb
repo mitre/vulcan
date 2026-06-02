@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-# vulcan-v3.x-480.7 §16.2: pre-merge snapshot lifecycle. Each merge writes
+# pre-merge snapshot lifecycle. Each merge writes
 # a full component backup zip with a SHA-256 checksum alongside; recovery
 # (Phase 2d) verifies the checksum before restore.
 RSpec.describe Import::JsonArchive::Merge::SnapshotManager do

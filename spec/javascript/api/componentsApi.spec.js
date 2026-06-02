@@ -92,7 +92,7 @@ describe("componentsApi", () => {
     expect(api.get).toHaveBeenCalledWith("/components/5/histories");
   });
 
-  it("searchBasedOnSameSrg calls GET /components/:id/related (vulcan-v3.x-aik)", async () => {
+  it("searchBasedOnSameSrg calls GET /components/:id/related", async () => {
     api.get.mockResolvedValue({ data: {} });
     await searchBasedOnSameSrg(5);
     expect(api.get).toHaveBeenCalledWith("/components/5/related");
@@ -112,13 +112,13 @@ describe("componentsApi", () => {
     expect(api.patch).toHaveBeenCalledWith("/components/5/apply_spreadsheet_update", fd, {});
   });
 
-  it("getComponentHistory calls GET /components/history with query params (vulcan-v3.x-dyd)", async () => {
+  it("getComponentHistory calls GET /components/history with query params", async () => {
     api.get.mockResolvedValue({ data: {} });
     await getComponentHistory({ component_id: 5 });
     expect(api.get).toHaveBeenCalledWith("/components/history", { params: { component_id: 5 } });
   });
 
-  it("compareComponents calls GET /api/components/compare with query params (vulcan-v3.x-oxz)", async () => {
+  it("compareComponents calls GET /api/components/compare with query params", async () => {
     api.get.mockResolvedValue({ data: {} });
     await compareComponents(5, 10);
     expect(api.get).toHaveBeenCalledWith("/api/components/compare", {

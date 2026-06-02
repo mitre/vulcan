@@ -306,7 +306,7 @@ export default {
       ) {
         compareComponents(this.baseComponent.id, this.diffComponent.id)
           .then((response) => {
-            // vulcan-v3.x-oxz: response is { data: {…}, meta: {…} }; unwrap.
+            // Response is { data: {…}, meta: {…} }; unwrap.
             this.ruleDiffs = response.data.data;
           })
           .catch(this.alertOrNotifyResponse);

@@ -679,11 +679,11 @@ RSpec.describe 'Api::Search' do
                              'Search loaded srgs.xml — should use .select() to exclude xml'
     end
 
-    # vulcan-v3.x-73z.9: search_rules ran `rule.reviews.where(...).size` per
+    # search_rules ran `rule.reviews.where(...).size` per
     # result row (N queries for N rules), and search_projects ran
     # `project.components.count` per row. Replace both with one GROUP BY COUNT
     # batched lookup per kind.
-    context 'N+1 prevention (vulcan-v3.x-73z.9)' do
+    context 'N+1 prevention' do
       before { sign_in user }
 
       let!(:rules_with_comments) do

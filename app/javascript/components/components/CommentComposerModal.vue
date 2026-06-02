@@ -176,9 +176,9 @@ export default {
           : await createRuleReview(this.ruleId, data);
         const toast = res?.data?.toast;
         const msg = toast?.message;
-        // vulcan-v3.x-05f.6: when the composer was set up for a child rule
-        // (parentRuleId present), the server soft-redirects the comment to
-        // the parent. Name the destination in the success message so the
+        // When the composer was set up for a child rule (parentRuleId
+        // present), the server soft-redirects the comment to the parent.
+        // Name the destination in the success message so the
         // user understands where the comment landed.
         const fallback = this.parentRuleId
           ? `Comment posted on parent control ${this.parentRuleName}.`

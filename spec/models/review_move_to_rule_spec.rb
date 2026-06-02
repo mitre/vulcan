@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-# vulcan-v3.x-05f.10: admin-moves a comment from one rule to another inside
+# admin-moves a comment from one rule to another inside
 # the same component. Sets original_commentable_id (first-move only),
 # prepends a "[Moved from …]" marker, cascades to replies, writes an audit
 # row via vulcan_audited.

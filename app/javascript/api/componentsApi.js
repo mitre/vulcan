@@ -52,12 +52,10 @@ export function getComponentHistory(payload) {
   return api.get("/components/history", { params: payload });
 }
 
-// vulcan-v3.x-aik: renamed from /search/based_on_same_srg for clarity.
 export function searchBasedOnSameSrg(componentId) {
   return api.get(`/components/${componentId}/related`);
 }
 
-// vulcan-v3.x-oxz: peer-shaped diff endpoint with query params + envelope.
 export function compareComponents(baseId, diffId) {
   return api.get("/api/components/compare", {
     params: { base_id: baseId, diff_id: diffId },

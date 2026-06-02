@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-# vulcan-v3.x-480.7 (Phase 2a): ComponentSyncEvent is the per-merge audit
+# (Phase 2a): ComponentSyncEvent is the per-merge audit
 # row that anchors snapshot_path, archive_hash, resolution_log, and
 # downstream merge_operations + merge_quarantine entries. Two-direction FK:
 # every event belongs to a Component, and sync_id is the natural key that

@@ -217,7 +217,7 @@ module Export
           # import side remaps via rule_id_map in ReviewBuilder#lifecycle_attrs.
           addressed_by_rule_id: review.addressed_by_rule_id ? @addressed_by_rule_id_map[review.addressed_by_rule_id] : nil,
           created_at: review.created_at&.iso8601,
-          # Microsecond precision: merge ordering (vulcan-v3.x-480) needs
+          # Microsecond precision: merge ordering needs
           # sub-second resolution to compare review states across instances.
           updated_at: review.updated_at&.iso8601(6),
           reactions: serialize_reactions(review)

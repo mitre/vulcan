@@ -53,7 +53,7 @@ module Api
                              .limit(limit)
                              .to_a
 
-      # Batch the per-project components_count via one GROUP BY (vulcan-v3.x-73z.9).
+      # Batch the per-project components_count via one GROUP BY.
       counts = Component.where(project_id: projects.map(&:id))
                         .group(:project_id).count
 
@@ -125,7 +125,7 @@ module Api
                          .limit(limit)
                          .to_a
 
-      # Batch the per-rule comment_count via one GROUP BY (vulcan-v3.x-73z.9).
+      # Batch the per-rule comment_count via one GROUP BY.
       comment_counts = Review.where(rule_id: rules.map(&:id), action: Review::ACTION_COMMENT)
                              .group(:rule_id).count
 

@@ -393,7 +393,7 @@ class ReviewsController < ApplicationController
         }
       )
 
-      # vulcan-v3.x-05f.10: model-level move records first-move provenance
+      # model-level move records first-move provenance
       # (original_commentable_id), prepends a "[Moved from …]" marker, and
       # recurses to depth-N replies in one transaction.
       @review.move_to_rule!(target_rule, reason: @audit_comment, moved_by: current_user)
