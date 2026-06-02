@@ -23,7 +23,7 @@ createuser -s postgres
 
 Or use your system username:
 ```bash
-DATABASE_URL=postgres://$(whoami)@localhost/vulcan_vue_development
+DATABASE_URL=postgres://$(whoami)@localhost/vulcan_development
 ```
 
 ### Database connection refused

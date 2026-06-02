@@ -414,12 +414,10 @@ end
 # config/database.yml
 test:
   <<: *default
-  database: vulcan_vue_test<%= ENV['DB_SUFFIX'] %><%= ENV['TEST_ENV_NUMBER'] %>
+  database: <%= ENV.fetch('DATABASE_NAME', 'vulcan_test') %><%= ENV['TEST_ENV_NUMBER'] %>
 ```
 
-`TEST_ENV_NUMBER` is set automatically by `parallel_tests` — each worker gets a suffix (blank, 2, 3, ..., N) creating databases `vulcan_vue_test`, `vulcan_vue_test2`, etc.
-
-`DB_SUFFIX` is optional, used for worktree isolation (e.g., `_v2` → `vulcan_vue_test_v2`).
+`TEST_ENV_NUMBER` is set automatically by `parallel_tests` — each worker gets a suffix (blank, 2, 3, ..., N) creating databases `vulcan_test`, `vulcan_test2`, etc.
 
 ### Initial Setup (One-Time)
 
@@ -607,6 +605,8 @@ jobs:
       
       - name: Setup database
         env:
+          # CI uses default port 5432 (isolated runner, no multi-project conflict).
+          # Local dev uses DATABASE_PORT from .env — see docs/development/port-registry.md.
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/test
         run: |
           bundle exec rails db:create
