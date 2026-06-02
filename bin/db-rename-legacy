@@ -1,0 +1,29 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Rename legacy Vulcan database names to standardized convention.
+# Called by bin/docker-entrypoint BEFORE Rails boots.
+#
+# Uses the PG gem directly (no ActiveRecord, no Rails).
+# Reads rename pairs from config/upgrade_path.yml.
+#
+# Safe: ALTER DATABASE RENAME is instant (metadata-only, no data copy).
+# Idempotent: skips if old name doesn't exist or new name already exists.
+
+require_relative '../lib/upgrade/legacy_db_renamer'
+
+result = Upgrade::LegacyDbRenamer.from_env.call
+
+result.applied.each do |pair|
+  puts "  Renamed database: #{pair[:from]} → #{pair[:to]}"
+end
+
+result.skipped.each do |pair|
+  puts "  Skipped #{pair[:from]} → #{pair[:to]}: #{pair[:reason]}"
+end
+
+result.errors.each do |pair|
+  warn "  ERROR renaming #{pair[:from]} → #{pair[:to]}: #{pair[:error]}"
+end
+
+exit 1 if result.errors.any?
