@@ -3,18 +3,22 @@ import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import CommentThread from "@/components/shared/CommentThread.vue";
 
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
     get: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
     defaults: { headers: { common: {} } },
   },
 }));
 
-import axios from "axios";
+import api from "@/api/baseApi";
 
 describe("CommentThread", () => {
   beforeEach(() => {
-    axios.get.mockReset();
+    api.get.mockReset();
   });
 
   it("does not render the toggle when responses_count is 0", () => {
@@ -66,7 +70,7 @@ describe("CommentThread", () => {
   });
 
   it("lazy-loads replies on first toggle and caches them", async () => {
-    axios.get.mockResolvedValue({
+    api.get.mockResolvedValue({
       data: {
         rows: [
           {
@@ -88,29 +92,29 @@ describe("CommentThread", () => {
     // First click → fetch
     await w.find("button[aria-controls]").trigger("click");
     await new Promise((r) => setTimeout(r, 0));
-    expect(axios.get).toHaveBeenCalledTimes(1);
-    expect(axios.get).toHaveBeenCalledWith("/reviews/1/responses", { params: undefined });
+    expect(api.get).toHaveBeenCalledTimes(1);
+    expect(api.get).toHaveBeenCalledWith("/reviews/1/responses", { params: undefined });
     expect(w.text()).toContain("first reply");
 
     // Toggle off then on → should NOT refetch (cached)
     await w.find("button[aria-controls]").trigger("click");
     await w.find("button[aria-controls]").trigger("click");
-    expect(axios.get).toHaveBeenCalledTimes(1);
+    expect(api.get).toHaveBeenCalledTimes(1);
   });
 
   it("calls the correct endpoint for responses", async () => {
-    axios.get.mockResolvedValue({ data: { rows: [] } });
+    api.get.mockResolvedValue({ data: { rows: [] } });
     const w = mount(CommentThread, {
       localVue,
       propsData: { parentReviewId: 99, responsesCount: 1 },
     });
     await w.find("button[aria-controls]").trigger("click");
     await new Promise((r) => setTimeout(r, 0));
-    expect(axios.get).toHaveBeenCalledWith("/reviews/99/responses", { params: undefined });
+    expect(api.get).toHaveBeenCalledWith("/reviews/99/responses", { params: undefined });
   });
 
   it("renders an error state with retry on fetch failure", async () => {
-    axios.get.mockRejectedValueOnce(new Error("boom"));
+    api.get.mockRejectedValueOnce(new Error("boom"));
     const w = mount(CommentThread, {
       localVue,
       propsData: { parentReviewId: 1, responsesCount: 1 },
@@ -121,7 +125,7 @@ describe("CommentThread", () => {
   });
 
   it("invalidates cache + refetches when responsesCount changes while expanded", async () => {
-    axios.get.mockResolvedValue({
+    api.get.mockResolvedValue({
       data: {
         rows: [
           {
@@ -140,12 +144,12 @@ describe("CommentThread", () => {
     });
     await w.find("button[aria-controls]").trigger("click");
     await new Promise((r) => setTimeout(r, 0));
-    expect(axios.get).toHaveBeenCalledTimes(1);
+    expect(api.get).toHaveBeenCalledTimes(1);
 
     // Host's parent re-fetched and the count went up — refetch the thread.
     await w.setProps({ responsesCount: 2 });
     await new Promise((r) => setTimeout(r, 0));
-    expect(axios.get).toHaveBeenCalledTimes(2);
+    expect(api.get).toHaveBeenCalledTimes(2);
   });
 
   it("does not refetch on responsesCount change when collapsed (cache cleared lazily)", async () => {
@@ -155,11 +159,11 @@ describe("CommentThread", () => {
     });
     await w.setProps({ responsesCount: 2 });
     await new Promise((r) => setTimeout(r, 0));
-    expect(axios.get).not.toHaveBeenCalled();
+    expect(api.get).not.toHaveBeenCalled();
   });
 
   it("redacts PII fallback names from the server payload (display token only)", async () => {
-    axios.get.mockResolvedValue({
+    api.get.mockResolvedValue({
       data: {
         rows: [
           {
@@ -200,7 +204,7 @@ describe("CommentThread", () => {
     };
 
     it("applies the parent's triage-bg class to each reply when parentTriageStatus is set", async () => {
-      axios.get.mockResolvedValue(oneReply);
+      api.get.mockResolvedValue(oneReply);
       const w = mount(CommentThread, {
         localVue,
         propsData: { parentReviewId: 1, responsesCount: 1, parentTriageStatus: "concur" },
@@ -211,7 +215,7 @@ describe("CommentThread", () => {
     });
 
     it("renders no triage-bg class when the parent is pending", async () => {
-      axios.get.mockResolvedValue(oneReply);
+      api.get.mockResolvedValue(oneReply);
       const w = mount(CommentThread, {
         localVue,
         propsData: { parentReviewId: 1, responsesCount: 1, parentTriageStatus: "pending" },
@@ -222,7 +226,7 @@ describe("CommentThread", () => {
     });
 
     it("renders no triage-bg class when parentTriageStatus is omitted (default null)", async () => {
-      axios.get.mockResolvedValue(oneReply);
+      api.get.mockResolvedValue(oneReply);
       const w = mount(CommentThread, {
         localVue,
         propsData: { parentReviewId: 1, responsesCount: 1 },

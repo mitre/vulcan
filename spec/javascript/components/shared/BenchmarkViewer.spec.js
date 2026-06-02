@@ -2,12 +2,17 @@ import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import BenchmarkViewer from "@/components/shared/BenchmarkViewer.vue";
-import axios from "axios";
+import api from "@/api/baseApi";
 
-// Mock axios module
-vi.mock("axios", () => ({
+// Mock baseApi module
+vi.mock("@/api/baseApi", () => ({
   default: {
     get: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
+    defaults: { headers: { common: {} } },
   },
 }));
 
@@ -181,8 +186,8 @@ describe("BenchmarkViewer", () => {
     beforeEach(() => {
       // Clear axios mock before each test
       vi.clearAllMocks();
-      // Mock axios.get to return resolved promise
-      axios.get.mockResolvedValue({});
+      // Mock api.get to return resolved promise
+      api.get.mockResolvedValue({});
     });
 
     it("does not make axios request when exporting (only uses window.open)", () => {
@@ -199,8 +204,8 @@ describe("BenchmarkViewer", () => {
       // Restore window.open
       window.open = originalWindowOpen;
 
-      // Should NOT call axios.get (redundant request - browser makes it via window.open)
-      expect(axios.get).not.toHaveBeenCalled();
+      // Should NOT call api.get (redundant request - browser makes it via window.open)
+      expect(api.get).not.toHaveBeenCalled();
 
       // Should ONLY call window.open (browser handles download)
       expect(mockWindowOpen).toHaveBeenCalledWith("/stigs/1/export/xccdf");

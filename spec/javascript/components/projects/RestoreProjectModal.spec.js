@@ -244,9 +244,6 @@ describe("RestoreProjectModal", () => {
 
       expect(createFromBackup).toHaveBeenCalledWith(
         expect.any(FormData),
-        expect.objectContaining({
-          headers: { "Content-Type": "multipart/form-data" },
-        }),
       );
     });
   });

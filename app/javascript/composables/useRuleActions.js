@@ -148,7 +148,7 @@ export function useRuleActions(componentId) {
     lastError.value = null;
 
     try {
-      const response = await duplicateRule(rule.id, cloneData);
+      const response = await duplicateRule(componentId, rule.id);
       return response.data;
     } catch (error) {
       lastError.value = error.message;

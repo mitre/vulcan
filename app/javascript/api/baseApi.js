@@ -2,21 +2,88 @@
 // - ALL mutation functions WRAP in domain key: fn(id, data) → api.put(url, { resource: data })
 // - Callers pass ONLY the data — never the wrapper key (no { component: ... } from callers)
 // - Query functions pass params directly: fn(id, params) → api.get(url, { params })
-// - FormData uploads pass formData directly (axios auto-detects Content-Type)
-// - All functions return the axios promise (caller chains .then/.catch)
+// - FormData uploads pass formData directly (ky auto-detects Content-Type)
+// - All functions return a promise resolving to { data, status }
+// - Errors throw with error.response = { data, status, headers } (axios-compatible shape)
 //
-// Intentionally NOT covered by this API layer:
-// - HTML page routes (settings, triage, disa-guide) — full-page navigation, not JSON
-// - Individual search routes (GET /search/components|projects|rules) — globalSearch aggregates all
-// - Devise auth routes (sign_in, register, confirm, password) — form POST, not JSON API
-import axios from "axios";
+// This module exports an abstraction over the HTTP client. Domain modules
+// (reviewsApi, projectsApi, etc.) call api.get/post/put/patch/delete without
+// knowing the underlying library. Migrated from axios to ky (2026-06-02)
+// for supply chain safety. See: https://github.com/sindresorhus/ky
+import ky from "ky";
 
-if (axios.defaults?.headers?.common) {
-  const csrfMeta = document.querySelector('meta[name="csrf-token"]');
-  if (csrfMeta) {
-    axios.defaults.headers.common["X-CSRF-Token"] = csrfMeta.content;
-  }
-  axios.defaults.headers.common["Accept"] = "application/json";
+function getCsrfToken() {
+  if (typeof document === "undefined") return null;
+  return document.querySelector('meta[name="csrf-token"]')?.content;
 }
 
-export default axios;
+const client = ky.create({
+  credentials: "same-origin",
+  headers: { Accept: "application/json" },
+  hooks: {
+    beforeRequest: [
+      ({ request }) => {
+        const token = getCsrfToken();
+        if (token) request.headers.set("X-CSRF-Token", token);
+      },
+    ],
+    afterResponse: [
+      ({ response }) => {
+        if (response.status === 401 && !window.location.pathname.startsWith("/users/sign_in")) {
+          window.location.href = "/users/sign_in";
+          return new Response(null, { status: 401 });
+        }
+      },
+    ],
+  },
+});
+
+async function parseBody(response) {
+  return response.headers.get("content-type")?.includes("application/json")
+    ? response.json()
+    : response.text();
+}
+
+async function normalizeResponse(promise) {
+  try {
+    const response = await promise;
+    return { data: await parseBody(response), status: response.status };
+  } catch (error) {
+    if (error.name === "HTTPError") {
+      const data = await parseBody(error.response).catch(() => null);
+      const normalized = new Error(error.message);
+      normalized.response = { data, status: error.response.status, headers: error.response.headers };
+      throw normalized;
+    }
+    throw error;
+  }
+}
+
+function mutationOpts(body, config = {}) {
+  if (body instanceof FormData) return { body, ...config };
+  if (body === undefined) return { ...config };
+  return { json: body, ...config };
+}
+
+// Legacy bridge — test mocks reference api.defaults.headers.common.
+const defaults = {
+  headers: { common: { "X-CSRF-Token": getCsrfToken(), Accept: "application/json" } },
+};
+
+const api = {
+  get: (url, config = {}) =>
+    normalizeResponse(client.get(url, config.params ? { searchParams: config.params } : {})),
+
+  post: (url, body, config) => normalizeResponse(client.post(url, mutationOpts(body, config))),
+  put: (url, body, config) => normalizeResponse(client.put(url, mutationOpts(body, config))),
+  patch: (url, body, config) => normalizeResponse(client.patch(url, mutationOpts(body, config))),
+
+  delete: (url, config = {}) =>
+    normalizeResponse(client.delete(url, config.data ? { json: config.data } : {})),
+
+  setHeader: (name, value) => { defaults.headers.common[name] = value; },
+  defaults,
+  _client: "ky",
+};
+
+export default api;

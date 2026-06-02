@@ -1,6 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
+
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: [] })),
+    post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn(),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
 import CommentTriageForm from "@/components/triage/CommentTriageForm.vue";
 
 const sampleReview = {

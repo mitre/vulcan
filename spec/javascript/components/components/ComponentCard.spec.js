@@ -3,9 +3,9 @@ import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import ComponentCard from "@/components/components/ComponentCard.vue";
 
-// Mock axios
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
+    get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn(),
     defaults: { headers: { common: {} } },
   },
 }));

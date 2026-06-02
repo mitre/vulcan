@@ -160,9 +160,7 @@ export default {
         formData.append("include_reviews", String(this.includeReviews));
         formData.append("include_memberships", String(this.includeMemberships));
 
-        const response = await createFromBackup(formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        const response = await createFromBackup(formData);
 
         this.summary = response.data.summary;
         this.warnings = response.data.warnings || [];
@@ -197,9 +195,7 @@ export default {
         formData.append("include_reviews", String(this.includeReviews));
         formData.append("include_memberships", String(this.includeMemberships));
 
-        const response = await createFromBackup(formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        const response = await createFromBackup(formData);
 
         if (response.data.redirect_url) {
           globalThis.location = response.data.redirect_url;
