@@ -180,6 +180,7 @@ export default defineConfig({
             { text: "Move Comment", link: "/user-guide/move-comment" },
             { text: "Bulk Triage", link: "/user-guide/bulk-triage" },
             { text: "Merge Comments", link: "/user-guide/merge-comments" },
+            { text: "Response Templates", link: "/user-guide/response-templates" },
             { text: "Commenter Email", link: "/user-guide/commenter-email" },
           ],
         },
