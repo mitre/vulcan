@@ -300,6 +300,6 @@ export default {
   font-size: 0.6em;
 }
 .right-container {
-  gap: 32px;
+  gap: 2rem;
 }
 </style>

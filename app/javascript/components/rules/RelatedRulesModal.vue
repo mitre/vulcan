@@ -529,10 +529,10 @@ export default {
 <style scoped>
 .keyword-bubble {
   display: inline-block;
-  padding: 10px;
+  padding: 0.625rem;
   border: 1px solid var(--vulcan-border-color, #ccc);
-  border-radius: 10px;
-  margin: 5px;
+  border-radius: 0.625rem;
+  margin: 0.3125rem;
   width: 50px;
   height: 5px;
   font-size: xx-small;

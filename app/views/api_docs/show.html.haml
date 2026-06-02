@@ -1,0 +1,19 @@
+- content_for :title, 'API Documentation'
+
+%div#scalar-docs
+
+%script{ src: 'https://cdn.jsdelivr.net/npm/@scalar/api-reference' }
+
+:javascript
+  Scalar.createApiReference('#scalar-docs', {
+    url: '/doc/openapi.yaml',
+    theme: 'kepler',
+    darkMode: true,
+    layout: 'modern',
+    showSidebar: true,
+    searchHotKey: 'k',
+    hideTestRequestButton: false,
+    authentication: {
+      preferredSecurityScheme: 'cookieAuth'
+    }
+  })

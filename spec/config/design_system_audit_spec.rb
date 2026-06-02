@@ -66,4 +66,42 @@ RSpec.describe 'Vulcan Design System audit' do
            "Replace with --vulcan-* or --triage-* CSS variables from application.scss."
     end
   end
+
+  # Spacing: no arbitrary px values above 4px for margin/padding/gap in scoped styles.
+  # Sub-pixel adjustments (1-4px) are acceptable for micro-alignment.
+  # Larger values should use rem or Bootstrap spacing utilities.
+  LARGE_PX_PATTERN = /(?:margin|padding|gap)\s*:\s*[^;]*\b([5-9]|\d{2,})px/
+
+  def find_large_px_spacing(file_path)
+    content = File.read(file_path)
+    style_blocks = extract_style_blocks(content)
+    violations = []
+
+    style_blocks.each do |block|
+      block.lines.each_with_index do |line, idx|
+        stripped = line.strip
+        next if stripped.start_with?('//', '*', '/*')
+
+        next unless stripped.match?(LARGE_PX_PATTERN)
+
+        violations << {
+          file: file_path.to_s.sub("#{Rails.root}/", ''),
+          line: idx + 1,
+          content: stripped
+        }
+      end
+    end
+    violations
+  end
+
+  it 'no Vue scoped styles use arbitrary px > 4 for margin/padding/gap' do
+    vue_files = Dir.glob(JS_DIR.join('components/**/*.vue'))
+    all_violations = vue_files.flat_map { |f| find_large_px_spacing(f) }
+
+    if all_violations.any?
+      report = all_violations.map { |v| "  #{v[:file]}:#{v[:line]} — #{v[:content]}" }.join("\n")
+      fail "Found #{all_violations.size} arbitrary px spacing value(s) > 4px:\n#{report}\n\n" \
+           "Use rem values or Bootstrap spacing utilities (p-1, m-2, gap-3, etc.)."
+    end
+  end
 end

@@ -161,6 +161,8 @@ Rails.application.routes.draw do
   get '/search/rules', to: 'rules#search'
   get '/rules/:id/search/related_rules', to: 'rules#related_rules'
 
+  get 'api/docs', to: 'api_docs#show'
+
   # API namespace for JSON endpoints
   namespace :api do
     get 'search/global', to: 'search#global'

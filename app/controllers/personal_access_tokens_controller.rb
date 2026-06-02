@@ -7,7 +7,8 @@ class PersonalAccessTokensController < ApplicationController
   before_action :set_token, only: [:destroy]
 
   def index
-    tokens = target_user.personal_access_tokens.order(created_at: :desc)
+    tokens = target_user.personal_access_tokens
+                        .order(Arel.sql('revoked_at IS NOT NULL'), created_at: :desc)
     view = current_user.admin? && params[:user_id].present? ? :admin : :default
     render body: PersonalAccessTokenBlueprint.render(tokens, view: view, root: :personal_access_tokens),
            content_type: 'application/json'
