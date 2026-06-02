@@ -46,6 +46,7 @@
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-prettier": "5.2.1",
     "eslint-plugin-prettier-vue": "^3.1.0",
+    "eslint-plugin-rulesdir": "^0.2.2",
     "eslint-plugin-vue": "^9.6.0",
     "jsdom": "^27.4.0",
     "prettier": "3.6.2",
@@ -64,9 +65,9 @@
     "dev": "concurrently \"rails server\" \"yarn build:watch\"",
     "openapi:bundle": "redocly bundle doc/openapi/openapi.yaml -o doc/openapi.yaml",
     "openapi:lint": "redocly lint doc/openapi/openapi.yaml",
-    "docs:dev": "cd docs && yarn dev",
-    "docs:build": "cd docs && yarn build",
-    "docs:preview": "cd docs && yarn preview"
+    "docs:dev": "cd docs && yarn install --frozen-lockfile --silent && yarn dev",
+    "docs:build": "cd docs && yarn install --frozen-lockfile --silent && yarn build",
+    "docs:preview": "cd docs && yarn install --frozen-lockfile --silent && yarn preview"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
   "resolutions": {

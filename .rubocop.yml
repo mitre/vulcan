@@ -1,3 +1,6 @@
+require:
+  - ./lib/rubocop/cop/vulcan/comment_tracker
+
 plugins:
   - rubocop-rails
   - rubocop-performance
