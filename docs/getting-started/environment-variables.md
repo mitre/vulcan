@@ -17,28 +17,18 @@ This document lists all environment variables that can be used to configure Vulc
 | `DATABASE_PORT` | PostgreSQL client connection port (used by database.yml) | `5432` | `5435` |
 | `DATABASE_HOST` | PostgreSQL host (used by database.yml) | `127.0.0.1` | `localhost` |
 | `DATABASE_GSSENCMODE` | GSSAPI encryption mode (set to `disable` on macOS with Kerberos) | `prefer` | `disable` |
-| `DB_SUFFIX` | Database name suffix for worktree isolation (development only) | - | `_v2`, `_v3` |
+| `DATABASE_NAME` | Override database name (dev + production only; test is hardcoded) | `vulcan_development` / `vulcan_production` | `vulcan_staging` |
 | `POSTGRES_PORT` | Docker host-side port mapping (should match DATABASE_PORT) | `5432` | `5435` |
 | `POSTGRES_USER` | PostgreSQL username (Docker init + database.yml) | `postgres` | `vulcan_user` |
 | `POSTGRES_PASSWORD` | PostgreSQL password (Docker init + database.yml) | `postgres` | `secure_password` |
-| `POSTGRES_DB` | PostgreSQL database name (Docker init + production database.yml) | `vulcan_postgres_production` | `vulcan_prod` |
+| `POSTGRES_DB` | PostgreSQL database name (Docker container init only, not used by database.yml) | `vulcan_production` | `vulcan_prod` |
 | `PORT` | Application server (Puma) listen port | `3000` | `3001` |
 
 **Note:** `DATABASE_URL` takes precedence when set (recommended for Heroku, Kubernetes). Individual variables (`POSTGRES_USER`, `POSTGRES_PASSWORD`, etc.) are used as fallback.
 
 **Multi-Project Development**: See [port-registry](/development/port-registry) for recommended port assignments when running multiple projects simultaneously.
 
-**Worktree Isolation**: When developing with multiple git worktrees (e.g., v2.x and v3.x), set `DB_SUFFIX` in each worktree's `.env` to give each branch its own database. This prevents migration conflicts when branches have diverging schemas. Not needed in production — each deployment has its own database.
-
-```bash
-# v2.x worktree .env
-DB_SUFFIX=_v2    # → vulcan_vue_development_v2, vulcan_vue_test_v2
-
-# v3.x worktree .env
-DB_SUFFIX=_v3    # → vulcan_vue_development_v3, vulcan_vue_test_v3
-```
-
-**Deprecated:** `VULCAN_VUE_DATABASE_PASSWORD` is deprecated. Use `POSTGRES_PASSWORD` instead.
+**Deprecated:** `VULCAN_VUE_DATABASE_PASSWORD` and `DB_SUFFIX` are removed. Use `POSTGRES_PASSWORD` and `DATABASE_NAME` respectively. `POSTGRES_DB` is no longer read by database.yml — use `DATABASE_NAME` for all environments. Test database name (`vulcan_test`) is hardcoded to prevent collision with development.
 
 ## General Application Settings
 
@@ -240,7 +230,7 @@ Display a colored banner at the top and bottom of every page, commonly used for 
 
 ## Consent / Terms of Use Modal
 
-Display a blocking consent modal that users must acknowledge before accessing the application. Acknowledgment is stored in the browser's localStorage per version — incrementing the version re-prompts all users.
+Display a blocking consent modal that users must acknowledge before accessing the application. Acknowledgment is tracked server-side in the Rails session (AC-8 compliant) — incrementing the version re-prompts all users.
 
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
@@ -270,6 +260,24 @@ Lock accounts after consecutive failed login attempts. Enabled by default.
 - `both` — either method works (recommended, ensures unlock even without SMTP)
 
 Administrators can also manually unlock accounts from the Users page (`/users`).
+
+## API Tokens (Personal Access Tokens)
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `VULCAN_API_TOKENS_ENABLED` | Enable/disable the PAT feature entirely | `true` | `false` |
+| `VULCAN_API_TOKENS_MAX_PER_USER` | Maximum active tokens per user | `20` | `10` |
+| `VULCAN_API_TOKENS_MAX_LIFETIME_DAYS` | Maximum token lifetime in days | `365` | `90` |
+| `VULCAN_API_TOKENS_AUTO_REVOKE_IDLE_DAYS` | Auto-revoke tokens unused for this many days | `90` | `30` |
+
+**Maintenance rake tasks:**
+
+```bash
+bundle exec rake api_tokens:revoke_idle      # Revoke tokens unused for AUTO_REVOKE_IDLE_DAYS
+bundle exec rake api_tokens:revoke_expired   # Revoke tokens past their expiration date
+```
+
+See [API Authentication](/api/authentication) for usage details.
 
 ## Password Policy
 
@@ -324,8 +332,11 @@ complete field-to-setting mapping.
 For local development, create a `.env` file in the project root with your settings:
 
 ```bash
-# Database
-DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/vulcan_vue_development
+# Database (see docs/development/port-registry.md for multi-project ports)
+DATABASE_PORT=5435
+POSTGRES_PORT=5435
+DATABASE_HOST=127.0.0.1
+DATABASE_GSSENCMODE=disable
 
 # Enable OIDC (example for Okta)
 VULCAN_ENABLE_OIDC=true

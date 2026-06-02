@@ -24,7 +24,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-vulcan_vue_development}
+      POSTGRES_DB: ${POSTGRES_DB:-vulcan_development}
       # Trust auth for local dev. Corporate VPNs (GlobalProtect, etc.) interfere
       # with scram-sha-256 challenge-response handshakes through container runtime
       # port forwarding proxies (OrbStack, Docker Desktop). This is a known issue
@@ -50,7 +50,7 @@ services:
       DATABASE_PORT: "5432"
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-vulcan_vue_development}
+      POSTGRES_DB: ${POSTGRES_DB:-vulcan_development}
       RAILS_ENV: development
       VULCAN_FIRST_USER_ADMIN: "true"
       VULCAN_ENABLE_LOCAL_LOGIN: "true"

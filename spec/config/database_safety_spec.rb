@@ -41,6 +41,20 @@ RSpec.describe 'Database deployment safety', type: :request do
                                      'docker-entrypoint must not call db:schema:load directly. ' \
                                      'Use db:prepare instead.'
     end
+
+    it 'does NOT suppress upgrade:auto exit codes' do
+      upgrade_lines = entrypoint_code.lines.select { |l| l.include?('upgrade:auto') }
+      upgrade_lines.each do |line|
+        expect(line).not_to(
+          match(/\|\|\s*true/),
+          'upgrade:auto must NOT be followed by || true — blockers and errors must halt boot'
+        )
+        expect(line).not_to(
+          include('2>/dev/null'),
+          'upgrade:auto must NOT redirect stderr — errors must be visible in container logs'
+        )
+      end
+    end
   end
 
   describe 'Procfile' do
