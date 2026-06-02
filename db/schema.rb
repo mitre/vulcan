@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_30_010000) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_01_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -438,6 +438,18 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_30_010000) do
     t.index ["title"], name: "index_stigs_on_title_trigram", opclass: :gin_trgm_ops, using: :gin
   end
 
+  create_table "triage_response_templates", force: :cascade do |t|
+    t.bigint "project_id", null: false
+    t.bigint "created_by_id", null: false
+    t.string "name", limit: 200, null: false
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_by_id"], name: "index_triage_response_templates_on_created_by_id"
+    t.index ["project_id", "name"], name: "idx_triage_templates_unique_name_per_project", unique: true
+    t.index ["project_id"], name: "index_triage_response_templates_on_project_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
@@ -498,4 +510,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_30_010000) do
   add_foreign_key "reviews", "users", column: "triage_set_by_id", on_delete: :nullify
   add_foreign_key "reviews", "users", on_delete: :nullify
   add_foreign_key "search_abbreviations", "users", column: "created_by_id"
+  add_foreign_key "triage_response_templates", "projects"
+  add_foreign_key "triage_response_templates", "users", column: "created_by_id"
 end

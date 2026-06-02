@@ -125,6 +125,7 @@
           v-if="canTriage"
           :review="activeComment"
           :component-id="componentId"
+          :project-id="projectId"
           :loading="saving"
           @save="onTriageSave"
           @save-and-next="onTriageSaveAndNext"
@@ -269,6 +270,7 @@ export default {
     rows: { type: Array, required: true },
     initialCommentId: { type: [Number, String], required: true },
     componentId: { type: [Number, String], required: true },
+    projectId: { type: [Number, String], default: null },
     effectivePermissions: { type: String, default: null },
     adminPanelOpen: { type: Boolean, default: false },
     contextMode: { type: String, default: "commented" },

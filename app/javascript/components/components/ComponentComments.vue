@@ -137,6 +137,7 @@
       :rows="rows"
       :initial-comment-id="splitCommentId"
       :component-id="componentId"
+      :project-id="projectId"
       :effective-permissions="effectivePermissions"
       :admin-panel-open="adminPanelOpen"
       :context-mode="contextMode"

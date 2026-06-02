@@ -44,6 +44,7 @@
       label="Response to commenter (visible in their thread + 'My Comments' page)"
       :description="nonConcurHint"
     >
+      <ResponseTemplateDropdown v-if="projectId" :project-id="projectId" @insert="insertTemplate" />
       <b-form-textarea
         v-model="responseComment"
         rows="3"
@@ -98,13 +99,15 @@
 import { SINGLE_BUTTON_STATUSES } from "../../constants/triageVocabulary";
 import CanonicalCommentPicker from "../components/CanonicalCommentPicker.vue";
 import RulePicker from "../components/RulePicker.vue";
+import ResponseTemplateDropdown from "./ResponseTemplateDropdown.vue";
 
 export default {
   name: "CommentTriageForm",
-  components: { CanonicalCommentPicker, RulePicker },
+  components: { CanonicalCommentPicker, RulePicker, ResponseTemplateDropdown },
   props: {
     review: { type: Object, required: true },
     componentId: { type: [Number, String], default: null },
+    projectId: { type: [Number, String], default: null },
     loading: { type: Boolean, default: false },
   },
   data() {
@@ -184,6 +187,13 @@ export default {
     },
   },
   methods: {
+    insertTemplate(body) {
+      // Append below existing draft so the triager doesn't lose typed text;
+      // empty textarea replaces (clean insert). Whitespace-only is treated
+      // as empty so we don't carry orphan newlines from a cleared field.
+      const current = (this.responseComment || "").trimEnd();
+      this.responseComment = current ? `${current}\n\n${body}` : body;
+    },
     buildDecision() {
       const decision = {
         triage_status: this.triageStatus,

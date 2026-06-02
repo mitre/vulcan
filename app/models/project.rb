@@ -16,6 +16,7 @@ class Project < ApplicationRecord
   has_many :components, dependent: :destroy
   has_many :rules, through: :components
   has_many :access_requests, class_name: 'ProjectAccessRequest', dependent: :destroy
+  has_many :triage_response_templates, dependent: :destroy
   has_one :project_metadata, dependent: :destroy
   accepts_nested_attributes_for :project_metadata, :memberships
 

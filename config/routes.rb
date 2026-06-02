@@ -76,6 +76,7 @@ Rails.application.routes.draw do
       end
     end
     resources :project_access_requests, only: %i[create destroy]
+    resources :triage_response_templates, only: %i[index create update destroy]
   end
   resources :rule_satisfactions, only: %i[create destroy]
   # Edit controls for a component (rules#index with editor view)

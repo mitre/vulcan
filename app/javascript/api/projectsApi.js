@@ -4,6 +4,10 @@ export function getProjects() {
   return api.get("/projects");
 }
 
+export function getTriageResponseTemplates(projectId) {
+  return api.get(`/projects/${projectId}/triage_response_templates`);
+}
+
 export function getProject(projectId) {
   return api.get(`/projects/${projectId}`);
 }
