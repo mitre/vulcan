@@ -5,6 +5,7 @@ patch:
   tags:
     - Reviews
   summary: Adjudicate (close) a triaged comment
+  description: Marks the comment as adjudicated, finalizing the triage decision. Requires author or admin role.
   responses:
     '200':
       description: Review adjudicated

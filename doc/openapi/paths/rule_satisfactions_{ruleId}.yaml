@@ -5,6 +5,7 @@ delete:
   tags:
     - Rules
   summary: Remove a satisfaction relationship
+  description: Removes the parent-child satisfaction link and reverts ADNM status on the child rule.
   requestBody:
     content:
       application/json:

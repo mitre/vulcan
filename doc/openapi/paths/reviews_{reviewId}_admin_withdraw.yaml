@@ -5,6 +5,7 @@ patch:
   tags:
     - Reviews
   summary: Admin force-withdraws a comment
+  description: Admin-only force withdrawal that bypasses the frozen-for-writes check. Requires an audit comment explaining the action.
   requestBody:
     content:
       application/json:

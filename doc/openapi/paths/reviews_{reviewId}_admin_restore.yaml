@@ -5,6 +5,7 @@ patch:
   tags:
     - Reviews
   summary: Admin restores a withdrawn comment
+  description: Reverses a withdrawal, resetting the comment to pending status. Requires admin role on the project.
   responses:
     '200':
       description: Review restored

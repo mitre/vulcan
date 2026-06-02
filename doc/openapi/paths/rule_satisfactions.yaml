@@ -3,6 +3,7 @@ post:
   tags:
     - Rules
   summary: Create a satisfaction relationship between two rules
+  description: Links a child rule to a parent rule that satisfies it. Triggers ADNM status automation on the child.
   requestBody:
     required: true
     content:

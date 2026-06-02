@@ -5,6 +5,7 @@ patch:
   tags:
     - Reviews
   summary: Author withdraws their own comment
+  description: Allows the comment author to retract their comment. Sets triage_status to withdrawn and auto-adjudicates.
   responses:
     '200':
       description: Review withdrawn

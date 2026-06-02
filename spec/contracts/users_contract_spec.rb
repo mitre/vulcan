@@ -121,9 +121,10 @@ RSpec.describe 'Users endpoint contracts', type: :request do
         row = body['rows'].first
         assert_fields_present row, :id, :project_id, :project_name, :component_id,
                               :component_name, :rule_displayed_name, :commentable_type,
-                              :comment, :created_at, :triage_status, :responses_count, :reactions
+                              :comment, :created_at, :triage_status, :responses_count,
+                              :reactions, :author_name
         assert_fields_present row['reactions'], :up, :down, :mine
-        assert_fields_absent row, :author_name, :author_email, :triager_display_name,
+        assert_fields_absent row, :author_email, :triager_display_name,
                              :rule_status, :group_rule_displayed_name
       end
     end

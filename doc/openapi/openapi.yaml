@@ -21,6 +21,7 @@ servers:
     description: Same-origin (session cookie auth)
 security:
   - cookieAuth: []
+  - tokenAuth: []
 tags:
   - name: Projects
     description: Project CRUD, export, import, and member management

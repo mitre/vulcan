@@ -5,6 +5,7 @@ get:
   tags:
     - Rules
   summary: Rule detail
+  description: Returns the full rule editor payload including checks, descriptions, satisfactions, and review history.
   responses:
     '200':
       description: Rule data
@@ -19,6 +20,7 @@ put:
   tags:
     - Rules
   summary: Update rule attributes
+  description: Updates one or more rule fields. Requires author or admin role on the component.
   requestBody:
     required: true
     content:
@@ -42,6 +44,7 @@ delete:
   tags:
     - Rules
   summary: Soft-delete a rule
+  description: Marks the rule as deleted. Requires admin role on the component.
   responses:
     '200':
       description: Rule deleted

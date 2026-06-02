@@ -42,6 +42,12 @@ properties:
       - 'null'
     description: Name of the component.
     example: Photon OS 3
+  author_name:
+    type:
+      - string
+      - 'null'
+    description: Display name of the comment author.
+    example: Jane Doe
   rule_id:
     type:
       - integer

@@ -5,6 +5,7 @@ post:
   tags:
     - Reviews
   summary: Create a review on a rule (comment, request_review, etc.)
+  description: Posts a new comment or review action on the specified rule. Requires viewer role or above on the component.
   requestBody:
     required: true
     content:

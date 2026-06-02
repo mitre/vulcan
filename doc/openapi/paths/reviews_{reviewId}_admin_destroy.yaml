@@ -5,6 +5,7 @@ delete:
   tags:
     - Reviews
   summary: Admin permanently deletes a comment (irreversible)
+  description: Hard-deletes a comment and all its replies. Requires typed-ID confirmation and an audit comment. This action cannot be undone.
   requestBody:
     content:
       application/json:

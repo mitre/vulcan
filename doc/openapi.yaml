@@ -17,6 +17,7 @@ servers:
     description: Same-origin (session cookie auth)
 security:
   - cookieAuth: []
+  - tokenAuth: []
 tags:
   - name: Projects
     description: Project CRUD, export, import, and member management
@@ -2070,6 +2071,7 @@ paths:
       tags:
         - Rules
       summary: Rule detail
+      description: Returns the full rule editor payload including checks, descriptions, satisfactions, and review history.
       responses:
         '200':
           description: Rule data
@@ -2084,6 +2086,7 @@ paths:
       tags:
         - Rules
       summary: Update rule attributes
+      description: Updates one or more rule fields. Requires author or admin role on the component.
       requestBody:
         required: true
         content:
@@ -2107,6 +2110,7 @@ paths:
       tags:
         - Rules
       summary: Soft-delete a rule
+      description: Marks the rule as deleted. Requires admin role on the component.
       responses:
         '200':
           description: Rule deleted
@@ -2124,6 +2128,7 @@ paths:
       tags:
         - Rules
       summary: Revert a rule to a previous audit version
+      description: Restores all audited fields to their values at the specified audit entry. Requires author or admin role.
       requestBody:
         required: true
         content:
@@ -2290,6 +2295,7 @@ paths:
       tags:
         - Rules
       summary: Create a satisfaction relationship between two rules
+      description: Links a child rule to a parent rule that satisfies it. Triggers ADNM status automation on the child.
       requestBody:
         required: true
         content:
@@ -2318,6 +2324,7 @@ paths:
       tags:
         - Rules
       summary: Remove a satisfaction relationship
+      description: Removes the parent-child satisfaction link and reverts ADNM status on the child rule.
       requestBody:
         content:
           application/json:
@@ -2345,6 +2352,7 @@ paths:
       tags:
         - Reviews
       summary: Create a review on a rule (comment, request_review, etc.)
+      description: Posts a new comment or review action on the specified rule. Requires viewer role or above on the component.
       requestBody:
         required: true
         content:
@@ -2425,6 +2433,7 @@ paths:
       tags:
         - Reviews
       summary: Update a review comment
+      description: Edits the comment text of an existing review. Only the original author or an admin can update.
       requestBody:
         required: true
         content:
@@ -2451,6 +2460,7 @@ paths:
       tags:
         - Reviews
       summary: Set triage status on a comment (concur, non_concur, etc.)
+      description: Assigns a triage decision to the comment. Terminal statuses auto-adjudicate. Requires author or admin role.
       requestBody:
         required: true
         content:
@@ -2487,6 +2497,7 @@ paths:
       tags:
         - Reviews
       summary: Adjudicate (close) a triaged comment
+      description: Marks the comment as adjudicated, finalizing the triage decision. Requires author or admin role.
       responses:
         '200':
           description: Review adjudicated
@@ -2504,6 +2515,7 @@ paths:
       tags:
         - Reviews
       summary: Author withdraws their own comment
+      description: Allows the comment author to retract their comment. Sets triage_status to withdrawn and auto-adjudicates.
       responses:
         '200':
           description: Review withdrawn
@@ -2521,6 +2533,7 @@ paths:
       tags:
         - Reviews
       summary: Admin force-withdraws a comment
+      description: Admin-only force withdrawal that bypasses the frozen-for-writes check. Requires an audit comment explaining the action.
       requestBody:
         content:
           application/json:
@@ -2546,6 +2559,7 @@ paths:
       tags:
         - Reviews
       summary: Admin restores a withdrawn comment
+      description: Reverses a withdrawal, resetting the comment to pending status. Requires admin role on the project.
       responses:
         '200':
           description: Review restored
@@ -2563,6 +2577,7 @@ paths:
       tags:
         - Reviews
       summary: Admin moves a comment thread to a different rule
+      description: Reassigns the comment and all its replies to a different rule. Walks parent-first to satisfy validators. Requires admin role.
       requestBody:
         required: true
         content:
@@ -2591,6 +2606,7 @@ paths:
       tags:
         - Reviews
       summary: Admin permanently deletes a comment (irreversible)
+      description: Hard-deletes a comment and all its replies. Requires typed-ID confirmation and an audit comment. This action cannot be undone.
       requestBody:
         content:
           application/json:
@@ -2684,6 +2700,7 @@ paths:
       tags:
         - Reactions
       summary: List reactions on a review
+      description: Returns aggregate reaction counts and the current user's reaction for the specified review.
       responses:
         '200':
           description: Reactions list
@@ -2698,6 +2715,7 @@ paths:
       tags:
         - Reactions
       summary: Add a reaction (up/down) to a comment review
+      description: Toggles a thumbs-up or thumbs-down reaction. If the user already reacted with the same kind, the reaction is removed.
       requestBody:
         required: true
         content:
@@ -6754,6 +6772,12 @@ components:
             - 'null'
           description: Name of the component.
           example: Photon OS 3
+        author_name:
+          type:
+            - string
+            - 'null'
+          description: Display name of the comment author.
+          example: Jane Doe
         rule_id:
           type:
             - integer

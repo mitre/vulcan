@@ -5,6 +5,7 @@ put:
   tags:
     - Reviews
   summary: Update a review comment
+  description: Edits the comment text of an existing review. Only the original author or an admin can update.
   requestBody:
     required: true
     content:
