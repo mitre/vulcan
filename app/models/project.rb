@@ -179,40 +179,20 @@ class Project < ApplicationRecord
                                    .count
     reaction_counts = Reaction.where(review_id: page_review_ids).group(:review_id, :kind).count
 
-    rows = page_reviews.map do |r|
-      component_scoped_row = r.commentable_type == 'Component'
-      rule_meta = component_scoped_row ? {} : (rule_lookup[r.rule_id] || {})
-      cid = component_scoped_row ? r.commentable_id : rule_meta[:component_id]
-      {
-        id: r.id,
-        rule_id: component_scoped_row ? nil : r.rule_id,
-        rule_displayed_name: if component_scoped_row
-                               '(component)'
-                             else
-                               (rule_meta[:prefix] ? "#{rule_meta[:prefix]}-#{rule_meta[:rule_id]}" : nil)
-                             end,
-        commentable_type: r.commentable_type,
-        component_id: cid,
-        component_name: component_lookup[cid]&.name,
-        section: r.section,
-        author_name: r.user&.name,
-        # author_email intentionally omitted — see Component#paginated_comments
-        # for rationale (PII scraping during public review windows).
-        comment: r.comment,
-        created_at: r.created_at,
-        triage_status: r.triage_status,
-        triage_set_at: r.triage_set_at,
-        adjudicated_at: r.adjudicated_at,
-        duplicate_of_review_id: r.duplicate_of_review_id,
-        triager_display_name: r.triager_display_name,
-        triager_imported: r.triager_imported?,
-        adjudicator_display_name: r.adjudicator_display_name,
-        adjudicator_imported: r.adjudicator_imported?,
-        responses_count: responses_count_lookup[r.id] || 0,
-        reactions: { up: reaction_counts[[r.id, 'up']] || 0,
-                     down: reaction_counts[[r.id, 'down']] || 0 }
-      }
-    end
+    rule_display_map = rule_lookup.transform_values { |m| m[:prefix] ? "#{m[:prefix]}-#{m[:rule_id]}" : nil }
+    rule_component_map = rule_lookup.transform_values { |m| m[:component_id] }
+    component_name_map = component_lookup.transform_values(&:name)
+
+    blueprint_options = {
+      view: :project,
+      rule_display_map: rule_display_map,
+      rule_component_map: rule_component_map,
+      component_name_map: component_name_map,
+      responses_counts: responses_count_lookup,
+      reaction_counts: reaction_counts
+    }
+
+    rows = page_reviews.map { |r| CommentRowBlueprint.render_as_hash(r, **blueprint_options) }
 
     status_counts = base_scope_for_counts.group(:triage_status).count
 

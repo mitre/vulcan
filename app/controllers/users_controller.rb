@@ -307,49 +307,28 @@ class UsersController < ApplicationController
     responses_count = response_aggregates.to_h { |id, _max_at, count| [id, count] }
     reaction_counts = Reaction.where(review_id: page_review_ids).group(:review_id, :kind).count
 
-    rows = page_records.map do |r|
-      comment_row_for(r, latest_response_at[r.id], responses_count[r.id] || 0, reaction_counts)
+    rule_display_map = page_records.each_with_object({}) do |r, map|
+      next if r.commentable_type == 'Component'
+
+      rule = r.rule || r.commentable
+      next unless rule
+
+      component = rule.respond_to?(:component) ? rule.component : nil
+      map[r.rule_id] = "#{component&.prefix}-#{rule.rule_id}" if component
     end
+
+    blueprint_options = {
+      view: :user,
+      rule_display_map: rule_display_map,
+      responses_counts: responses_count,
+      reaction_counts: reaction_counts,
+      latest_response_at: latest_response_at
+    }
+
+    rows = page_records.map { |r| CommentRowBlueprint.render_as_hash(r, **blueprint_options) }
     inject_reactions_mine!(rows)
 
     { rows: rows, pagination: { page: page, per_page: per_page, total: total } }
-  end
-
-  def comment_row_for(review, latest_response, responses_count, reaction_counts)
-    component_scoped = review.commentable_type == 'Component'
-    rule      = component_scoped ? nil : (review.rule || review.commentable)
-    component = component_scoped ? review.commentable : rule&.component
-    project   = component&.project
-    {
-      id: review.id,
-      project_id: project&.id,
-      project_name: project&.name,
-      component_id: component&.id,
-      component_name: component&.name,
-      rule_id: rule&.id,
-      rule_displayed_name: rule ? "#{component&.prefix}-#{rule.rule_id}" : '(component)',
-      commentable_type: review.commentable_type,
-      section: review.section,
-      comment: review.comment,
-      created_at: review.created_at,
-      triage_status: review.triage_status,
-      triage_set_at: review.triage_set_at,
-      adjudicated_at: review.adjudicated_at,
-      duplicate_of_review_id: review.duplicate_of_review_id,
-      addressed_by_rule_id: review.addressed_by_rule_id,
-      addressed_by_rule_name: review.addressed_by_rule_id ? addressed_by_rule_name(review) : nil,
-      latest_activity_at: [review.triage_set_at, review.adjudicated_at, latest_response].compact.max,
-      responses_count: responses_count,
-      reactions: { up: reaction_counts[[review.id, 'up']] || 0,
-                   down: reaction_counts[[review.id, 'down']] || 0 }
-    }
-  end
-
-  def addressed_by_rule_name(review)
-    addressed_rule = review.addressed_by_rule
-    return nil unless addressed_rule
-
-    "#{addressed_rule.component&.prefix}-#{addressed_rule.rule_id}"
   end
 
   def set_user
