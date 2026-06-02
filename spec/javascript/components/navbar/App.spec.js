@@ -53,7 +53,7 @@ describe("Navbar locked user notifications", () => {
       propsData: {
         ...baseProps,
         access_requests: [
-          { project_id: 1, user: { name: "Requester" }, project: { name: "Proj" } },
+          { user: { name: "Requester" }, project: { id: 1, name: "Proj" } },
         ],
         locked_users: [{ id: 1, name: "Locked", email: "locked@example.com" }],
       },
@@ -171,10 +171,28 @@ describe("Navbar profile dropdown", () => {
   });
 });
 
+describe("Navbar access request link", () => {
+  it("links access request notification to /projects/:id using project.id", () => {
+    const wrapper = mount(App, {
+      localVue,
+      propsData: {
+        ...baseProps,
+        access_requests: [
+          { id: 10, user: { name: "Jane Doe" }, project: { id: 42, name: "Container Platform" } },
+        ],
+      },
+    });
+    const items = wrapper.findAll(".dropdown-item");
+    const arItem = items.wrappers.find((w) => w.text().includes("Jane Doe"));
+    expect(arItem).toBeTruthy();
+    expect(arItem.attributes("href")).toBe("/projects/42?members=1");
+  });
+});
+
 describe("Navbar access request reactivity", () => {
   it("initializes localAccessRequests from prop", () => {
     const requests = [
-      { id: 10, project_id: 1, user: { name: "Requester" }, project: { name: "Proj" } },
+      { id: 10, user: { name: "Requester" }, project: { id: 1, name: "Proj" } },
     ];
     const wrapper = mount(App, {
       localVue,
@@ -186,8 +204,8 @@ describe("Navbar access request reactivity", () => {
 
   it("removes access request on ACCESS_REQUEST_CHANGED (resolved)", async () => {
     const requests = [
-      { id: 10, project_id: 1, user: { name: "Requester" }, project: { name: "Proj" } },
-      { id: 11, project_id: 2, user: { name: "Other" }, project: { name: "Proj2" } },
+      { id: 10, user: { name: "Requester" }, project: { id: 1, name: "Proj" } },
+      { id: 11, user: { name: "Other" }, project: { id: 2, name: "Proj2" } },
     ];
     const wrapper = mount(App, {
       localVue,
@@ -205,7 +223,7 @@ describe("Navbar access request reactivity", () => {
 
   it("decrements badge count when access request resolved", async () => {
     const requests = [
-      { id: 10, project_id: 1, user: { name: "Requester" }, project: { name: "Proj" } },
+      { id: 10, user: { name: "Requester" }, project: { id: 1, name: "Proj" } },
     ];
     const wrapper = mount(App, {
       localVue,

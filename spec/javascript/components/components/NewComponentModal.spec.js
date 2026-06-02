@@ -51,7 +51,7 @@ describe("NewComponentModal", () => {
 
   const defaultProps = {
     project_id: 1,
-    project: { id: 1, name: "Test Project" },
+    project: { id: 1, name: "Test Project", components: [], users: [] },
   };
 
   const createWrapper = (props = {}) => {
@@ -365,11 +365,10 @@ describe("NewComponentModal", () => {
     });
 
     it("does NOT call preventDefault when validation passes (modal closes naturally)", async () => {
-      wrapper = createWrapper();
+      wrapper = createWrapper({ component_to_duplicate: 1 });
       wrapper.vm.name = "Test Component";
       wrapper.vm.prefix = "TST-01";
       wrapper.vm.security_requirements_guide_id = 1;
-      wrapper.vm.component_to_duplicate = 1;
 
       const mockEvent = { preventDefault: vi.fn() };
       wrapper.vm.createComponent(mockEvent);

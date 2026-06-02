@@ -273,6 +273,12 @@ export default {
         localStorage.removeItem(`projectTabIndex-${this.project.id}`);
       }
     }
+
+    // Auto-open members modal when linked from access request notification
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("members")) {
+      this.$nextTick(() => this.openMembersModal());
+    }
   },
   methods: {
     sortedComponents: function () {

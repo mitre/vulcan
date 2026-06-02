@@ -57,7 +57,7 @@
               <b-dropdown-item
                 v-for="(access_request, index) in localAccessRequests"
                 :key="'ar-' + index"
-                :href="`/projects/${access_request.project_id}`"
+                :href="`/projects/${access_request.project.id}?members=1`"
               >
                 {{
                   `${access_request.user.name} has requested access to project ${access_request.project.name}`

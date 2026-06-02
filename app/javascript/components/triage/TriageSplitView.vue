@@ -267,7 +267,7 @@ export default {
   mixins: [AlertMixin, FormMixin, RoleComparisonMixin, ReactionToggleMixin, DateFormatMixin],
   props: {
     rows: { type: Array, required: true },
-    initialCommentId: { type: [Number, String], required: true },
+    initialCommentId: { type: [Number, String], default: null },
     componentId: { type: [Number, String], required: true },
     effectivePermissions: { type: String, default: null },
     adminPanelOpen: { type: Boolean, default: false },
@@ -275,7 +275,7 @@ export default {
   },
   data() {
     return {
-      activeCommentId: Number(this.initialCommentId),
+      activeCommentId: this.initialCommentId != null ? Number(this.initialCommentId) : null,
       isDirty: false,
       saving: false,
       conflictAlert: null,
