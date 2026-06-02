@@ -56,7 +56,7 @@ class ProjectAccessRequestsController < ApplicationController
           flash.alert = @access_request.errors.full_messages.to_sentence
           redirect_back(fallback_location: root_path)
         end
-        format.json { render json: { error: @access_request.errors.full_messages.to_sentence }, status: :unprocessable_entity }
+        format.json { render json: { error: @access_request.errors.full_messages.to_sentence }, status: :unprocessable_content }
       end
     end
   end

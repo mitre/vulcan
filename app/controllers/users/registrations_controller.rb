@@ -81,7 +81,7 @@ module Users
                 message: resource.errors.full_messages,
                 variant: 'danger'
               )
-            }, status: :unprocessable_entity
+            }, status: :unprocessable_content
           end
         end
       end
@@ -112,20 +112,20 @@ module Users
     def unlink_identity
       user = current_user
 
-      return respond_with_error('Nothing to unlink — this account has no linked identity.', :unprocessable_entity) if user.provider.blank?
+      return respond_with_error('Nothing to unlink — this account has no linked identity.', :unprocessable_content) if user.provider.blank?
 
       unless Settings.local_login.enabled
         return respond_with_error(
           'Cannot unlink: local login is disabled on this instance. ' \
           'Unlinking would lock you out of your account.',
-          :unprocessable_entity
+          :unprocessable_content
         )
       end
 
       # NOTE: valid_password? has a hidden side-effect — if the user's password is stored
       # with bcrypt (legacy), Devise transparently rehashes it to PBKDF2 on successful
       # verification. This is intentional (transparent migration) but worth knowing.
-      return respond_with_error('Incorrect password. Please enter your current password to unlink.', :unprocessable_entity) unless user.valid_password?(params[:current_password].to_s)
+      return respond_with_error('Incorrect password. Please enter your current password to unlink.', :unprocessable_content) unless user.valid_password?(params[:current_password].to_s)
 
       previous_provider = user.provider
       # Atomic update: both fields must be cleared together to satisfy the

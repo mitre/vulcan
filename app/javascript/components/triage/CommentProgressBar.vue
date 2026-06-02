@@ -238,8 +238,8 @@ export default {
     45deg,
     transparent,
     transparent 4px,
-    rgba(0, 0, 0, 0.08) 4px,
-    rgba(0, 0, 0, 0.08) 8px
+    var(--vulcan-overlay-light) 4px,
+    var(--vulcan-overlay-light) 8px
   );
 }
 </style>

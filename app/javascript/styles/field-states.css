@@ -10,21 +10,21 @@
  */
 
 .field-state--section-locked {
-  border-left: 3px solid #ffc107;
+  border-left: 3px solid var(--vulcan-warning);
   padding-left: 0.75rem;
   border-radius: 0.25rem;
-  background-color: rgba(255, 193, 7, 0.04);
+  background-color: var(--vulcan-warning-tint);
 }
 
 .field-state--under-review {
-  border-left: 3px solid #17a2b8;
+  border-left: 3px solid var(--vulcan-info);
   padding-left: 0.75rem;
   border-radius: 0.25rem;
-  background-color: rgba(23, 162, 184, 0.04);
+  background-color: var(--vulcan-info-tint);
 }
 
 .field-state--whole-locked {
-  border-left: 3px solid #6c757d;
+  border-left: 3px solid var(--vulcan-secondary);
   padding-left: 0.75rem;
   border-radius: 0.25rem;
   /* No background — Bootstrap :disabled styling is sufficient */

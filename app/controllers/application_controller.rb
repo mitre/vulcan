@@ -58,7 +58,7 @@ class ApplicationController < ActionController::Base
   # alertOrNotifyResponse mixin reads `{ toast: { title, message, variant } }`
   # from JSON responses and renders a Bootstrap-Vue toast. Pre-fix the JSON
   # shape was hand-written at ~45 sites in reviews_controller alone — typos
-  # in `variant:` (e.g. 'unprocessable_entity' instead of 'warning') shipped
+  # in `variant:` (e.g. 'unprocessable_content' instead of 'warning') shipped
   # silently and broke the toast styling. This single helper centralizes
   # the contract.
   #
@@ -68,10 +68,10 @@ class ApplicationController < ActionController::Base
   # `variant` defaults to 'danger' (the most common case). Caller can
   # override to 'warning' / 'success' / 'info'.
   #
-  # `status` defaults to :unprocessable_entity (matches the most common
+  # `status` defaults to :unprocessable_content (matches the most common
   # caller — a validation rejection). Caller overrides for 200 success
   # toasts (e.g. idempotent reopen returning the current state).
-  def render_toast(title:, message:, variant: 'danger', status: :unprocessable_entity, **extra)
+  def render_toast(title:, message:, variant: 'danger', status: :unprocessable_content, **extra)
     render json: { toast: Toast.new(title: title, message: message, variant: variant), **extra },
            status: status
   end

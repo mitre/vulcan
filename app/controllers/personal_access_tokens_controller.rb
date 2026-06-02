@@ -28,7 +28,7 @@ class PersonalAccessTokensController < ApplicationController
       }, status: :created
     else
       render_toast(title: 'Could not create token.', message: token.errors.full_messages,
-                   status: :unprocessable_entity)
+                   status: :unprocessable_content)
     end
   end
 

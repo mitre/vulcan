@@ -106,7 +106,7 @@ class ComponentsController < ApplicationController
             message: component.errors.full_messages,
             variant: 'danger'
           )
-        }, status: :unprocessable_entity
+        }, status: :unprocessable_content
       end
     }
     if is_duplicate
@@ -128,7 +128,7 @@ class ComponentsController < ApplicationController
           message: @component.errors.full_messages,
           variant: 'danger'
         )
-      }, status: :unprocessable_entity
+      }, status: :unprocessable_content
     end
   end
 
@@ -167,7 +167,7 @@ class ComponentsController < ApplicationController
         message: ["Could not remove component: #{e.message.truncate(200)}"],
         variant: 'danger'
       )
-    }, status: :unprocessable_entity
+    }, status: :unprocessable_content
   end
 
   def export
@@ -277,7 +277,7 @@ class ComponentsController < ApplicationController
             zip_filename: 'components_inspec.zip'
           )
         else
-          render json: { error: 'Unprocessable entity' }, status: :unprocessable_entity
+          render json: { error: 'Unprocessable entity' }, status: :unprocessable_content
         end
       end
       format.json { render json: { status: :ok } }
@@ -457,13 +457,13 @@ class ComponentsController < ApplicationController
   def detect_srg
     file = params[:file]
     unless file
-      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_entity
+      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_content
       return
     end
 
     srg_ids = SpreadsheetParser.peek_srg_ids(file)
     if srg_ids.empty?
-      render json: { error: 'No SRG IDs found in spreadsheet' }, status: :unprocessable_entity
+      render json: { error: 'No SRG IDs found in spreadsheet' }, status: :unprocessable_content
       return
     end
 
@@ -473,11 +473,11 @@ class ComponentsController < ApplicationController
 
     if srgs.empty?
       render json: { error: 'Could not identify a matching SRG for the IDs in this spreadsheet' },
-             status: :unprocessable_entity
+             status: :unprocessable_content
     elsif srgs.size > 1
       names = srgs.map { |s| "#{s.title} (#{s.version})" }.join(', ')
       render json: { error: "SRG IDs map to multiple SRGs: #{names}. Please select manually." },
-             status: :unprocessable_entity
+             status: :unprocessable_content
     else
       srg = srgs.first
       render json: { id: srg.id, srg_id: srg.srg_id, title: srg.title, version: srg.version }
@@ -487,13 +487,13 @@ class ComponentsController < ApplicationController
   def preview_spreadsheet_update
     file = params[:file]
     unless file
-      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_entity
+      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_content
       return
     end
 
     result = @component.update_from_spreadsheet(file)
     if result[:error]
-      render json: { error: result[:error] }, status: :unprocessable_entity
+      render json: { error: result[:error] }, status: :unprocessable_content
     else
       render json: result
     end
@@ -502,7 +502,7 @@ class ComponentsController < ApplicationController
   def apply_spreadsheet_update
     file = params[:file]
     unless file
-      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_entity
+      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_content
       return
     end
 
@@ -512,7 +512,7 @@ class ComponentsController < ApplicationController
                    message: "Successfully updated #{result[:count]} rules from spreadsheet.",
                    variant: 'success', status: :ok)
     elsif result[:error]
-      render json: { error: result[:error] }, status: :unprocessable_entity
+      render json: { error: result[:error] }, status: :unprocessable_content
     end
   end
 

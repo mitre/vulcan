@@ -37,7 +37,7 @@ class MembershipsController < ApplicationController
               message: membership.errors.full_messages,
               variant: 'danger'
             )
-          }, status: :unprocessable_entity
+          }, status: :unprocessable_content
         end
       end
     end
@@ -71,7 +71,7 @@ class MembershipsController < ApplicationController
               message: @membership.errors.full_messages,
               variant: 'danger'
             )
-          }, status: :unprocessable_entity
+          }, status: :unprocessable_content
         end
       end
     end
@@ -105,7 +105,7 @@ class MembershipsController < ApplicationController
               message: @membership.errors.full_messages,
               variant: 'danger'
             )
-          }, status: :unprocessable_entity
+          }, status: :unprocessable_content
         end
       end
     end

@@ -356,11 +356,11 @@ export default {
 }
 
 .ruleRow:hover {
-  background: rgb(0, 0, 0, 0.12);
+  background: var(--vulcan-overlay-medium);
 }
 
 .selectedRuleRow {
-  background: rgba(66, 50, 50, 0.09);
+  background: var(--vulcan-diff-removed-bg);
 }
 
 .diff-icon {

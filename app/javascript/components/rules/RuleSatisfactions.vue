@@ -207,17 +207,17 @@ export default {
 }
 
 .ruleRow:hover {
-  background: rgb(0, 0, 0, 0.12);
+  background: var(--vulcan-overlay-medium);
 }
 
 .selectedRuleRow {
-  background: rgba(66, 50, 50, 0.09);
+  background: var(--vulcan-diff-removed-bg);
 }
 
 .closeRuleButton {
   color: red;
   padding: 0.1em;
-  border: 1px solid rgb(0, 0, 0, 0);
+  border: 1px solid var(--vulcan-border-transparent);
   box-sizing: border-box;
 }
 
