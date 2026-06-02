@@ -11,6 +11,29 @@ module SeedHelpers # rubocop:disable Style/Documentation
     'reviewer@example.com' => { name: 'Demo Reviewer', role: 'reviewer' }
   }.freeze
 
+  COMMUNITY_PERSONAS = {
+    'container-sme@example.org' => { name: 'Container Security SME', role: 'viewer' },
+    'platform-eng@example.org' => { name: 'Platform Engineer', role: 'viewer' },
+    'compliance-analyst@example.org' => { name: 'Compliance Analyst', role: 'viewer' },
+    'stig-author@example.org' => { name: 'STIG Author', role: 'author' },
+    'security-reviewer@example.org' => { name: 'Security Reviewer', role: 'reviewer' },
+    'qa-reviewer@example.org' => { name: 'QA Reviewer', role: 'reviewer' },
+    'infra-eng@example.org' => { name: 'Infrastructure Engineer', role: 'viewer' },
+    'devsecops@example.org' => { name: 'DevSecOps Engineer', role: 'author' }
+  }.freeze
+
+  COMMENTER_POOL = (COMMUNITY_PERSONAS.keys + %w[viewer@example.com author@example.com]).freeze
+  TRIAGE_POOL = %w[
+    stig-author@example.org devsecops@example.org
+    author@example.com reviewer@example.com
+    security-reviewer@example.org qa-reviewer@example.org
+  ].freeze
+  ADJUDICATE_POOL = %w[
+    security-reviewer@example.org qa-reviewer@example.org
+    reviewer@example.com admin@example.com
+  ].freeze
+  REPLY_POOL = %w[stig-author@example.org devsecops@example.org author@example.com].freeze
+
   COMPONENT_POC_PATTERNS = [
     [/Photon OS/i, { admin_name: 'Photon OS Maintainer', admin_email: 'photon-team@example.com' }],
     [/vCenter/i, { admin_name: 'vCenter Maintainer', admin_email: 'vcenter-team@example.com' }],
