@@ -125,10 +125,11 @@ class Project < ApplicationRecord
 
     project_components = components.to_a
     component_ids_in_project = project_components.map(&:id)
-    return { rows: [], pagination: { page: 1, per_page: per_page, total: 0 } } if component_ids_in_project.empty?
+    empty_result = { rows: [], pagination: { page: 1, per_page: per_page, total: 0 }, status_counts: {} }
+    return empty_result if component_ids_in_project.empty?
 
     scope_components = component_id.present? ? [component_id.to_i] & component_ids_in_project : component_ids_in_project
-    return { rows: [], pagination: { page: 1, per_page: per_page, total: 0 } } if scope_components.empty?
+    return empty_result if scope_components.empty?
 
     rule_id_subquery = Rule.where(component_id: scope_components).select(:id)
     rule_scoped = Review.top_level_comments

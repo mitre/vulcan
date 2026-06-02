@@ -65,7 +65,7 @@ uvx schemathesis run doc/openapi.yaml \
   --header "Accept: application/json" \
   --checks not_a_server_error,status_code_conformance,content_type_conformance,response_schema_conformance \
   --exclude-checks negative_data_rejection,ignored_auth \
-  --phases examples,coverage \
+  --phases examples,coverage,stateful \
   --max-examples "$MAX_EXAMPLES" \
   --rate-limit "10/s" \
   --exclude-path-regex '.*/personal_access_tokens.*' \
