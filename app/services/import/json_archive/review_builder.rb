@@ -223,15 +223,8 @@ module Import
         return 0 if external_to_new_id.empty?
 
         new_id_to_external = external_to_new_id.invert
-        removed = 0
+        invalid_ids = []
         Review.where(id: external_to_new_id.values).find_each do |review|
-          # `:import_integrity` is a Rails custom validation context. Per
-          # Rails Guides §7.3, calling valid?(:custom) runs (a) validators
-          # tagged on: :custom AND (b) validators with no on: option;
-          # validators tagged on: %i[create update] are skipped. Review's
-          # user-action permission validators are tagged on: %i[create update]
-          # so the import context runs ONLY data-integrity validators
-          # (cross-rule references, status enums, FK invariants).
           next if review.valid?(:import_integrity)
 
           ext = new_id_to_external[review.id] || review.id
@@ -239,13 +232,35 @@ module Import
             "Review #{ext}: failed validation on import — " \
             "#{review.errors.full_messages.join('; ')}. Removed to preserve DB integrity."
           )
-          # delete (not destroy) to skip after_destroy + audit-on-destroy.
-          # The row was never user-facing on this instance — no audit-trail
-          # value to preserve. FK on_delete: :cascade still removes children.
-          review.delete
-          removed += 1
+          invalid_ids << review.id
         end
-        removed
+
+        return 0 if invalid_ids.empty?
+
+        # Delete children before parents to respect FK RESTRICT on
+        # responding_to_review_id. Collect the full tree of descendants
+        # then delete leaves-first.
+        all_ids_to_delete = Set.new(invalid_ids)
+        queue = invalid_ids.dup
+        until queue.empty?
+          child_ids = Review.where(responding_to_review_id: queue).pluck(:id)
+          new_children = child_ids.reject { |id| all_ids_to_delete.include?(id) }
+          all_ids_to_delete.merge(new_children)
+          queue = new_children
+        end
+
+        # Topological delete: deepest children first
+        remaining = all_ids_to_delete.to_a
+        until remaining.empty?
+          parents_of_remaining = Review.where(responding_to_review_id: remaining)
+                                       .where(id: remaining).pluck(:responding_to_review_id)
+          leaves = remaining.reject { |id| parents_of_remaining.include?(id) }
+          leaves = remaining if leaves.empty?
+          Review.where(id: leaves).delete_all
+          remaining -= leaves
+        end
+
+        all_ids_to_delete.size
       end
 
       def relink_threaded_refs(external_to_new_id)
@@ -271,7 +286,7 @@ module Import
         bulk_relink(responding, duplicate)
       end
 
-      # Single CASE-based UPDATE per affected column (vulcan-v3.x-480.6 §18.4).
+      # Single CASE-based UPDATE per affected column.
       # Replaces an N+1 of per-review update_all calls. All interpolated values
       # are Integer()-cast PKs (matches the existing Brakeman-ignored pattern
       # in Component#duplicate_reviews_and_history).

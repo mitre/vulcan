@@ -117,6 +117,19 @@ RSpec.describe Import::JsonArchive::ReviewBuilder do
       expect(result.warnings.size).to eq(1)
       expect(result.warnings.first).to match(/5002/)
     end
+
+    it 'deletes children before parents when both are invalid (FK RESTRICT safety)' do
+      data = [
+        review_attrs(external_id: 6001, comment: 'invalid parent',
+                     triage_status: 'duplicate', duplicate_of_external_id: nil),
+        review_attrs(external_id: 6002, comment: 'reply to invalid parent',
+                     responding_to_external_id: 6001)
+      ]
+      expect { described_class.new(data, rule_id_map, result).build_all }.not_to raise_error
+      expect(Review.where(comment: 'invalid parent')).to be_empty
+      expect(Review.where(comment: 'reply to invalid parent')).to be_empty
+      expect(result.warnings.size).to be >= 1
+    end
   end
 
   # Component-level audit row records WHICH
@@ -279,10 +292,10 @@ RSpec.describe Import::JsonArchive::ReviewBuilder do
     end
   end
 
-  # vulcan-v3.x-480.6 §18.4: relink_threaded_refs originally ran one
+  # relink_threaded_refs originally ran one
   # update_all per review (N+1). Fix consolidates into a single CASE UPDATE
   # per column, so 2N relink edits become at most 2 UPDATE statements.
-  describe '#build_all relink batching (vulcan-v3.x-480.6)' do
+  describe '#build_all relink batching' do
     it 'relinks parent + duplicate refs with at most 2 SQL UPDATEs (not N)' do
       data = [
         review_attrs(external_id: 5001, comment: 'parent on A',     rule_id: rule_a.rule_id),
@@ -327,7 +340,7 @@ RSpec.describe Import::JsonArchive::ReviewBuilder do
     end
   end
 
-  # vulcan-v3.x-480.5 (merge prerequisite): lifecycle_attrs originally ignored
+  # (merge prerequisite): lifecycle_attrs originally ignored
   # addressed_by_rule_id, so importing a review with triage_status='addressed_by'
   # failed the addressed_by_status_requires_rule validation in drop_invalid_reviews.
   # The archive carries the stable rule_id string; the importer must remap to
