@@ -279,6 +279,63 @@ RSpec.describe 'Reviews + Reactions + Satisfactions endpoint contracts', type: :
     end
   end
 
+  # ── PATCH /reviews/bulk_triage ──
+
+  describe 'PATCH /reviews/bulk_triage (JSON)' do
+    let_it_be(:bulk_review_1) do
+      create(:review, user: admin, rule: rule, action: 'comment',
+                      comment: 'Bulk triage 1', triage_status: 'pending')
+    end
+    let_it_be(:bulk_review_2) do
+      create(:review, user: admin, rule: rule, action: 'comment',
+                      comment: 'Bulk triage 2', triage_status: 'pending')
+    end
+
+    it 'returns BulkTriageResponse with reviews + response_reviews arrays' do
+      patch '/reviews/bulk_triage',
+            params: { review_ids: [bulk_review_1.id, bulk_review_2.id], triage_status: 'concur' },
+            headers: json_headers, as: :json
+      body = validate_and_parse!
+
+      assert_fields_present body, :reviews, :response_reviews
+      expect(body['reviews']).to be_an(Array)
+      expect(body['reviews'].length).to eq(2)
+      expect(body['response_reviews']).to be_an(Array)
+      body['reviews'].each do |r|
+        expect(r['triage_status']).to eq('concur')
+        assert_fields_absent r, :user_id
+      end
+    end
+  end
+
+  # ── PATCH /reviews/merge ──
+
+  describe 'PATCH /reviews/merge (JSON)' do
+    let_it_be(:merge_survivor) do
+      create(:review, user: admin, rule: rule, action: 'comment',
+                      comment: 'Merge survivor', triage_status: 'pending')
+    end
+    let_it_be(:merge_duplicate) do
+      create(:review, user: admin, rule: rule, action: 'comment',
+                      comment: 'Merge duplicate', triage_status: 'pending')
+    end
+
+    it 'returns MergeResponse with survivor + duplicates' do
+      patch '/reviews/merge',
+            params: { review_ids: [merge_survivor.id, merge_duplicate.id], survivor_id: merge_survivor.id },
+            headers: json_headers, as: :json
+      body = validate_and_parse!
+
+      assert_fields_present body, :survivor, :duplicates
+      expect(body['survivor']['id']).to eq(merge_survivor.id)
+      expect(body['duplicates']).to be_an(Array)
+      expect(body['duplicates'].length).to eq(1)
+      expect(body['duplicates'].first['triage_status']).to eq('duplicate')
+      expect(body['duplicates'].first['duplicate_of_review_id']).to eq(merge_survivor.id)
+      assert_fields_absent body['survivor'], :user_id
+    end
+  end
+
   # ── POST /rule_satisfactions ──
 
   describe 'POST /rule_satisfactions (JSON)' do

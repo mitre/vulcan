@@ -1,0 +1,20 @@
+post:
+  operationId: createProjectAccessRequest
+  tags:
+    - Projects
+  summary: Request access to a project
+  description: >-
+    Creates an access request for the current user on the specified project.
+    Project admins are notified via email (if SMTP is enabled). HTML-only
+    response — redirects to root. Not a JSON API endpoint.
+  parameters:
+    - name: projectId
+      in: path
+      required: true
+      description: Numeric ID of the project to request access to.
+      schema:
+        type: integer
+      example: 7
+  responses:
+    '302':
+      description: Redirect to root after creating the access request

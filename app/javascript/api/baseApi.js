@@ -1,17 +1,32 @@
-// API convention (gold standard):
-// - ALL mutation functions WRAP in domain key: fn(id, data) → api.put(url, { resource: data })
-// - Callers pass ONLY the data — never the wrapper key (no { component: ... } from callers)
-// - Query functions pass params directly: fn(id, params) → api.get(url, { params })
-// - FormData uploads pass formData directly (ky auto-detects Content-Type)
-// - All functions return a promise resolving to { data, status }
-// - Errors throw with error.response = { data, status, headers } (axios-compatible shape)
-//
-// This module exports an abstraction over the HTTP client. Domain modules
-// (reviewsApi, projectsApi, etc.) call api.get/post/put/patch/delete without
-// knowing the underlying library. Migrated from axios to ky (2026-06-02)
-// for supply chain safety. See: https://github.com/sindresorhus/ky
+/**
+ * Vulcan API client — thin abstraction over ky (HTTP library).
+ *
+ * Domain modules (reviewsApi, projectsApi, etc.) call the exported
+ * api.get/post/put/patch/delete methods without knowing the underlying
+ * library. Migrated from axios to ky (2026-06) for supply chain safety.
+ *
+ * ## Conventions
+ *
+ * | Pattern | Shape | Example |
+ * |---------|-------|---------|
+ * | CRUD mutation | `fn(id, data)` → wraps in domain key: `{ resource: data }` | `updateRule(id, { title })` → `PUT { rule: { title } }` |
+ * | Lifecycle action | `fn(id, payload)` → flat params, no wrapper | `triageReview(id, { triage_status })` → `PATCH { triage_status }` |
+ * | FormData upload | `fn(id, formData)` → passed directly, ky auto-detects Content-Type | `createFromBackup(fd)` → `POST <multipart>` |
+ * | Query | `fn(id, params)` → `{ params }` becomes `?key=val` | `getComments(id, { page: 2 })` → `GET ?page=2` |
+ *
+ * ## Response shape
+ *
+ * All methods resolve to `{ data, status }`. On HTTP errors (4xx/5xx), ky
+ * throws HTTPError which {@link normalizeResponse} catches and reshapes to
+ * `error.response = { data, status, headers }` — matching the shape that
+ * 38+ `.catch(alertOrNotifyResponse)` callers expect.
+ *
+ * @module baseApi
+ * @see https://github.com/sindresorhus/ky
+ */
 import ky from "ky";
 
+/** @returns {string|null} CSRF token from `<meta name="csrf-token">`, or null in SSR/test. */
 function getCsrfToken() {
   if (typeof document === "undefined") return null;
   return document.querySelector('meta[name="csrf-token"]')?.content;
@@ -38,12 +53,30 @@ const client = ky.create({
   },
 });
 
+/**
+ * Parse response body as JSON or text based on Content-Type header.
+ * @param {Response} response - Fetch API Response object.
+ * @returns {Promise<Object|string>} Parsed JSON object, or raw text for non-JSON responses.
+ */
 async function parseBody(response) {
   return response.headers.get("content-type")?.includes("application/json")
     ? response.json()
     : response.text();
 }
 
+/**
+ * Wrap a ky request promise so that:
+ *   - Success resolves to `{ data, status }` (parsed via {@link parseBody}).
+ *   - ky's HTTPError (4xx/5xx) is caught and reshaped to throw a plain Error
+ *     with `error.response = { data, status, headers }`.
+ *
+ * This keeps the response contract identical to the legacy axios shape that
+ * AlertMixin.alertOrNotifyResponse and 38+ `.catch()` callers rely on.
+ *
+ * @param {Promise<Response>} promise - ky request promise.
+ * @returns {Promise<{data: *, status: number}>}
+ * @throws {Error} With `.response` property on HTTP errors.
+ */
 async function normalizeResponse(promise) {
   try {
     const response = await promise;
@@ -52,13 +85,28 @@ async function normalizeResponse(promise) {
     if (error.name === "HTTPError") {
       const data = await parseBody(error.response).catch(() => null);
       const normalized = new Error(error.message);
-      normalized.response = { data, status: error.response.status, headers: error.response.headers };
+      normalized.response = {
+        data,
+        status: error.response.status,
+        headers: error.response.headers,
+      };
       throw normalized;
     }
     throw error;
   }
 }
 
+/**
+ * Build ky request options for a mutation (POST/PUT/PATCH).
+ *
+ * - **FormData** → `{ body }` (ky auto-sets multipart Content-Type with boundary).
+ * - **undefined** → `{}` (bodyless mutations like `reopenReview(id)`).
+ * - **anything else** → `{ json }` (ky serializes and sets `application/json`).
+ *
+ * @param {FormData|Object|undefined} body - Request payload.
+ * @param {Object} [config={}] - Extra ky options merged into the result.
+ * @returns {Object} ky-compatible request options.
+ */
 function mutationOpts(body, config = {}) {
   if (body instanceof FormData) return { body, ...config };
   if (body === undefined) return { ...config };
@@ -81,7 +129,9 @@ const api = {
   delete: (url, config = {}) =>
     normalizeResponse(client.delete(url, config.data ? { json: config.data } : {})),
 
-  setHeader: (name, value) => { defaults.headers.common[name] = value; },
+  setHeader: (name, value) => {
+    defaults.headers.common[name] = value;
+  },
   defaults,
   _client: "ky",
 };

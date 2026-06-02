@@ -13,5 +13,10 @@ patch:
         application/json:
           schema:
             $ref: ../components/schemas/ReviewWrapper.yaml
+      links:
+        TriageRestoredReview:
+          operationId: triageReview
+          parameters:
+            reviewId: '$response.body#/review/id'
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

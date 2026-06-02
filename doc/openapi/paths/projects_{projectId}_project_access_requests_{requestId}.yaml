@@ -1,0 +1,52 @@
+delete:
+  operationId: destroyProjectAccessRequest
+  tags:
+    - Projects
+  summary: Deny or cancel a project access request
+  description: >-
+    Admins can deny a pending access request; the requesting user can cancel
+    their own request. If SMTP is enabled, a rejection email is sent when an
+    admin denies. Returns JSON with toast and destroyed request ID, or HTML
+    redirect for browser requests.
+  parameters:
+    - name: projectId
+      in: path
+      required: true
+      description: Numeric ID of the project.
+      schema:
+        type: integer
+      example: 7
+    - name: requestId
+      in: path
+      required: true
+      description: Numeric ID of the access request.
+      schema:
+        type: integer
+      example: 42
+  responses:
+    '200':
+      description: Access request destroyed successfully
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AccessRequestDestroyResponse.yaml
+          examples:
+            denied:
+              summary: Admin denied access request
+              value:
+                toast:
+                  title: Access request submitted.
+                  message:
+                    - "Successfully denied Jane Doe's request to access project."
+                  variant: success
+                id: 42
+    '422':
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Request could not be destroyed."

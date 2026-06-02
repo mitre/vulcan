@@ -79,5 +79,21 @@ post:
                   rule_id: "000204"
                   title: "New container security requirement"
                   status: "Not Yet Determined"
+      links:
+        GetCreatedRule:
+          operationId: getRule
+          parameters:
+            ruleId: '$response.body#/data/id'
+          description: Fetch the newly created rule.
+        UpdateCreatedRule:
+          operationId: updateRule
+          parameters:
+            ruleId: '$response.body#/data/id'
+          description: Update the newly created rule.
+        DeleteCreatedRule:
+          operationId: deleteRule
+          parameters:
+            ruleId: '$response.body#/data/id'
+          description: Delete the newly created rule.
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

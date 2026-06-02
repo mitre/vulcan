@@ -157,15 +157,21 @@ properties:
           description: DISA SRG identifier.
           example: Container_Platform_SRG
         name:
-          type: string
+          type:
+            - string
+            - 'null'
           description: SRG name.
           example: "Container Platform SRG - Ver 2, Rel 4"
         title:
-          type: string
+          type:
+            - string
+            - 'null'
           description: Full SRG title.
           example: Container Platform Security Requirements Guide
         version:
-          type: string
+          type:
+            - string
+            - 'null'
           description: Version string.
           example: V2R4
   stigs:
@@ -179,19 +185,27 @@ properties:
           description: Unique STIG identifier.
           example: 1
         stig_id:
-          type: string
+          type:
+            - string
+            - 'null'
           description: DISA STIG identifier.
           example: Application_Security_Development_STIG
         name:
-          type: string
+          type:
+            - string
+            - 'null'
           description: STIG name.
           example: "Application Security Development STIG - Ver 6, Rel 4"
         title:
-          type: string
+          type:
+            - string
+            - 'null'
           description: Full STIG title.
           example: Application Security and Development Security Technical Implementation Guide
         version:
-          type: string
+          type:
+            - string
+            - 'null'
           description: Version string.
           example: V6R4
         description:

@@ -13,6 +13,23 @@ get:
         application/json:
           schema:
             $ref: ../components/schemas/RuleEditorResponse.yaml
+      links:
+        UpdateThisRule:
+          operationId: updateRule
+          parameters:
+            ruleId: '$response.body#/id'
+        DeleteThisRule:
+          operationId: deleteRule
+          parameters:
+            ruleId: '$response.body#/id'
+        RevertThisRule:
+          operationId: revertRule
+          parameters:
+            ruleId: '$response.body#/id'
+        CreateReviewOnRule:
+          operationId: createRuleReview
+          parameters:
+            ruleId: '$response.body#/id'
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
 put:

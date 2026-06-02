@@ -21,5 +21,10 @@ patch:
         application/json:
           schema:
             $ref: ../components/schemas/ReviewWrapper.yaml
+      links:
+        AdminRestoreWithdrawnReview:
+          operationId: adminRestoreReview
+          parameters:
+            reviewId: '$response.body#/review/id'
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

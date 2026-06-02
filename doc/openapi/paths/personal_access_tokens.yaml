@@ -112,6 +112,12 @@ post:
         application/json:
           schema:
             $ref: ../components/schemas/PersonalAccessTokenCreateResponse.yaml
+      links:
+        RevokeCreatedToken:
+          operationId: revokePersonalAccessToken
+          parameters:
+            tokenId: '$response.body#/personal_access_token/id'
+          description: Revoke the newly created token.
     '401':
       description: Incorrect password
     '422':

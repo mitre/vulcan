@@ -1,0 +1,19 @@
+description: >-
+  Response from importing a JSON archive backup into an existing project.
+  Includes the toast notification, import summary, and any warnings.
+type: object
+required:
+  - toast
+  - summary
+  - warnings
+properties:
+  toast:
+    $ref: ./ToastObject.yaml
+  summary:
+    $ref: ./ImportSummary.yaml
+  warnings:
+    type: array
+    description: Non-fatal warnings encountered during import.
+    items:
+      type: string
+    example: []

@@ -1,0 +1,39 @@
+description: >-
+  Response from a dry-run preview of creating a project from backup.
+  Returns import summary, warnings, and extracted project defaults.
+type: object
+required:
+  - summary
+  - warnings
+  - project_defaults
+properties:
+  summary:
+    $ref: ./ImportSummary.yaml
+  warnings:
+    type: array
+    description: Non-fatal warnings found during preview.
+    items:
+      type: string
+    example: []
+  project_defaults:
+    type: object
+    description: Default values extracted from the archive for pre-filling the create form.
+    properties:
+      name:
+        type:
+          - string
+          - 'null'
+        description: Original project name from the archive.
+        example: "My Original Project"
+      description:
+        type:
+          - string
+          - 'null'
+        description: Original project description.
+        example: "A test project"
+      visibility:
+        type:
+          - string
+          - 'null'
+        description: Original project visibility setting.
+        example: "discoverable"

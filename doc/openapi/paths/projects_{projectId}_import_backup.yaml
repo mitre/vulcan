@@ -25,19 +25,47 @@ post:
               description: JSON archive .zip file from a previous export.
   responses:
     '200':
-      description: Backup imported
+      description: Backup imported (or dry-run preview completed)
       content:
         application/json:
           schema:
-            $ref: ../components/schemas/ToastResponse.yaml
+            $ref: ../components/schemas/ImportBackupResponse.yaml
           examples:
             imported:
-              summary: Archive imported
+              summary: Archive imported successfully
               value:
                 toast:
-                  title: Import complete.
+                  title: Backup restored.
                   message:
-                    - "Successfully imported 2 components with 264 rules."
+                    - "Backup restored successfully."
                   variant: success
+                summary:
+                  components_imported: 2
+                  rules_imported: 264
+                  satisfactions_imported: 12
+                  reviews_imported: 48
+                  memberships_imported: 3
+                  srgs_imported: 1
+                  component_details:
+                    - name: "Photon OS 3"
+                      rule_count: 132
+                      srg_title: "General Purpose Operating System SRG"
+                      srg_version: "V3R3"
+                warnings: []
+    '422':
+      description: Import failed (validation errors)
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - toast
+            properties:
+              toast:
+                $ref: ../components/schemas/ToastObject.yaml
+              warnings:
+                type: array
+                items:
+                  type: string
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

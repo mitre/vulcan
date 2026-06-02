@@ -124,6 +124,10 @@ paths:
     $ref: paths/rules_{ruleId}_reviews.yaml
   /components/{componentId}/reviews:
     $ref: paths/components_{componentId}_reviews.yaml
+  /reviews/bulk_triage:
+    $ref: paths/reviews_bulk_triage.yaml
+  /reviews/merge:
+    $ref: paths/reviews_merge.yaml
   /reviews/{reviewId}:
     $ref: paths/reviews_{reviewId}.yaml
   /reviews/{reviewId}/triage:
@@ -184,6 +188,12 @@ paths:
     $ref: paths/users_{userId}_lock.yaml
   /users/{userId}/unlock:
     $ref: paths/users_{userId}_unlock.yaml
+  /consent/acknowledge:
+    $ref: paths/consent_acknowledge.yaml
+  /projects/{projectId}/project_access_requests:
+    $ref: paths/projects_{projectId}_project_access_requests.yaml
+  /projects/{projectId}/project_access_requests/{requestId}:
+    $ref: paths/projects_{projectId}_project_access_requests_{requestId}.yaml
   /personal_access_tokens:
     $ref: paths/personal_access_tokens.yaml
   /personal_access_tokens/{tokenId}:

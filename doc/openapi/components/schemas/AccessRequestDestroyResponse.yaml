@@ -1,0 +1,14 @@
+description: >-
+  Response from deleting a project access request (deny or cancel).
+type: object
+required:
+  - toast
+  - id
+additionalProperties: false
+properties:
+  toast:
+    $ref: ./ToastObject.yaml
+  id:
+    type: integer
+    description: ID of the destroyed access request.
+    example: 42

@@ -32,5 +32,15 @@ patch:
         application/json:
           schema:
             $ref: ../components/schemas/TriageResponse.yaml
+      links:
+        AdjudicateTriagedReview:
+          operationId: adjudicateReview
+          parameters:
+            reviewId: '$response.body#/review/id'
+          description: Close the review after triage is complete.
+        ReopenTriagedReview:
+          operationId: reopenReview
+          parameters:
+            reviewId: '$response.body#/review/id'
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
