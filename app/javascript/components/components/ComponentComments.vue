@@ -623,7 +623,12 @@ export default {
       return `commentTriageFilters-${this.scopeKey()}`;
     },
     loadPersistedFilters() {
-      const fallback = { filterStatus: "pending", filterSection: null, filterText: "" };
+      // Default to "all" so a triager who bulk-updates pending comments
+      // can still see the freshly-decided rows in place (otherwise they
+      // vanish from view the instant the action succeeds — confusing).
+      // Users who previously set a different filter keep their saved
+      // choice; this only changes the first-visit default.
+      const fallback = { filterStatus: "all", filterSection: null, filterText: "" };
       try {
         const raw = localStorage.getItem(this.persistKey());
         if (!raw) return fallback;

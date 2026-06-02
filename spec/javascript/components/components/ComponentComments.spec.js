@@ -97,7 +97,7 @@ describe("ComponentComments", () => {
     getComments.mockResolvedValue(mockResponse);
   });
 
-  it("fetches with default triage_status=pending on mount", async () => {
+  it("fetches with default triage_status=all on mount", async () => {
     mount(ComponentComments, {
       propsData: { componentId: 42 },
       stubs: SHARED_STUBS,
@@ -106,7 +106,7 @@ describe("ComponentComments", () => {
     expect(getComments).toHaveBeenCalledWith(
       42,
       expect.objectContaining({
-        triage_status: "pending",
+        triage_status: "all",
         page: 1,
       }),
     );
@@ -226,7 +226,7 @@ describe("ComponentComments", () => {
       expect(getProjectComments).toHaveBeenCalledWith(
         9,
         expect.objectContaining({
-          triage_status: "pending",
+          triage_status: "all",
         }),
       );
     });
@@ -592,7 +592,7 @@ describe("ComponentComments", () => {
         stubs: SHARED_STUBS,
       });
       // Project scope on id 42 must NOT pick up the component-scope persisted value
-      expect(projectWrapper.vm.filterStatus).toBe("pending");
+      expect(projectWrapper.vm.filterStatus).toBe("all");
     });
 
     it("writes filter state to localStorage when filters change", async () => {
@@ -709,12 +709,12 @@ describe("ComponentComments", () => {
     expect(wrapper.find("[data-testid='show-resolved-toggle']").exists()).toBe(false);
   });
 
-  it("defaults filterStatus to 'pending'", async () => {
+  it("defaults filterStatus to 'all'", async () => {
     localStorage.clear();
     getComments.mockResolvedValue({ data: { rows: [], pagination: { total: 0 } } });
     const wrapper = mount(ComponentComments, { propsData: { componentId: 42 } });
     await flushPromises(wrapper);
-    expect(wrapper.vm.filterStatus).toBe("pending");
+    expect(wrapper.vm.filterStatus).toBe("all");
   });
 
   // ── CommentProgressBar integration ──────────────────────────────────
@@ -781,7 +781,7 @@ describe("ComponentComments", () => {
     });
     await flushPromises(wrapper);
     const bar = wrapper.findComponent({ name: "CommentProgressBar" });
-    expect(bar.props("activeFilter")).toBe("pending");
+    expect(bar.props("activeFilter")).toBe("all");
   });
 
   // ── Pill filter sets filterStatus (no separate indicator needed) ──
