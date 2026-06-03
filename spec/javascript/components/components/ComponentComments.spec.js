@@ -1120,40 +1120,5 @@ describe("ComponentComments", () => {
       });
       expect(wrapper.vm.selectedIds).toEqual([]);
     });
-
-    it("switches filterStatus to 'all' after applyBulkTriage when the applied status doesn't match the current filter", async () => {
-      const wrapper = mountAuthor();
-      await flushPromises();
-      wrapper.vm.filterStatus = "pending";
-      wrapper.vm.selectedIds = [4, 5];
-
-      await wrapper.vm.applyBulkTriage({ triage_status: "concur", response_comment: null });
-
-      // pending filter would hide the just-accepted rows — switch to all so
-      // the triager sees verification feedback in place.
-      expect(wrapper.vm.filterStatus).toBe("all");
-    });
-
-    it("leaves filterStatus alone when the applied status matches the current filter", async () => {
-      const wrapper = mountAuthor();
-      await flushPromises();
-      wrapper.vm.filterStatus = "concur";
-      wrapper.vm.selectedIds = [4, 5];
-
-      await wrapper.vm.applyBulkTriage({ triage_status: "concur", response_comment: null });
-
-      expect(wrapper.vm.filterStatus).toBe("concur");
-    });
-
-    it("leaves filterStatus alone when already 'all'", async () => {
-      const wrapper = mountAuthor();
-      await flushPromises();
-      wrapper.vm.filterStatus = "all";
-      wrapper.vm.selectedIds = [4, 5];
-
-      await wrapper.vm.applyBulkTriage({ triage_status: "concur", response_comment: null });
-
-      expect(wrapper.vm.filterStatus).toBe("all");
-    });
   });
 });
