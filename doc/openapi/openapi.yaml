@@ -194,6 +194,10 @@ paths:
     $ref: paths/projects_{projectId}_project_access_requests.yaml
   /projects/{projectId}/project_access_requests/{requestId}:
     $ref: paths/projects_{projectId}_project_access_requests_{requestId}.yaml
+  /projects/{projectId}/triage_response_templates:
+    $ref: paths/projects_{projectId}_triage_response_templates.yaml
+  /projects/{projectId}/triage_response_templates/{id}:
+    $ref: paths/projects_{projectId}_triage_response_templates_{id}.yaml
   /personal_access_tokens:
     $ref: paths/personal_access_tokens.yaml
   /personal_access_tokens/{tokenId}:

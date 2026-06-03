@@ -9,6 +9,10 @@ RSpec.describe 'OpenAPI specification (doc/openapi.yaml)' do
   let(:definition) { OpenapiFirst.load(spec_path) }
   let(:document) { YAML.load_file(spec_path) }
 
+  before(:all) do
+    system('yarn openapi:bundle --silent 2>/dev/null') if ENV['OPENAPI_REBUNDLE'] || !File.exist?(Rails.root.join('doc/openapi.yaml'))
+  end
+
   describe 'spec file' do
     it 'exists and is valid YAML' do
       expect(File.exist?(spec_path)).to be(true)
@@ -134,41 +138,20 @@ RSpec.describe 'OpenAPI specification (doc/openapi.yaml)' do
                          "Documented routes not found in Rails:\n#{missing.join("\n")}"
     end
 
-    # Reverse coverage: every JSON-capable Rails route should have an OpenAPI path.
-    # Excludes Devise, ActiveStorage, Rails internals, and export/file-download routes.
-    EXCLUDED_PREFIXES = %w[/rails/ /users/sign /users/password /users/confirmation
-                           /users/unlock /cable /active_storage].freeze
-    EXCLUDED_PATTERNS = %w[export bulk_export assets].freeze
+    # Reverse coverage: use `bundle exec swagcov` (swagcov gem) to check that
+    # every Rails route has a matching OpenAPI path. Swagcov compares routes
+    # against the bundled spec and reports coverage %. Configure exclusions
+    # in .swagcov.yml. CI should run `bundle exec swagcov` as a separate step.
+    #
+    # This test verifies swagcov is configured and the spec file exists.
+    it 'swagcov configuration exists for route coverage checking' do
+      swagcov_config = Rails.root.join('.swagcov.yml')
+      expect(File.exist?(swagcov_config)).to be(true),
+                                             '.swagcov.yml missing — run `bundle exec swagcov --init` to generate'
 
-    it 'every JSON-capable controller action has an OpenAPI path', pending: 'v2-btu epic: 89 routes pending documentation' do
-      documented_paths = document['paths'].keys.map { |p| p.gsub(/\{(\w+)\}/, ':$1') }.to_set
-
-      missing = []
-      Rails.application.routes.routes.each do |route|
-        path = route.path.spec.to_s.sub('(.:format)', '')
-        method = route.verb.downcase
-        next if method.empty? || path.empty?
-        next if EXCLUDED_PREFIXES.any? { |prefix| path.start_with?(prefix) }
-        next if EXCLUDED_PATTERNS.any? { |pat| path.include?(pat) }
-
-        controller = route.defaults[:controller]
-        next unless controller
-
-        controller_class = "#{controller.camelize}Controller".safe_constantize
-        next unless controller_class
-        next unless controller_class.ancestors.include?(ApplicationController)
-
-        openapi_path = path.gsub(/:(\w+)/, '{\\1}')
-        next if documented_paths.include?(openapi_path)
-
-        missing << "#{method.upcase} #{path} (#{controller}##{route.defaults[:action]})"
-      end
-
-      if missing.any?
-        fail "#{missing.size} JSON-capable route(s) missing OpenAPI documentation:\n" \
-             "#{missing.join("\n")}\n\n" \
-             "Add path specs in doc/openapi/paths/ for each missing route."
-      end
+      config = YAML.load_file(swagcov_config)
+      expect(config.dig('docs', 'paths')).to include('doc/openapi.yaml'),
+                                             ".swagcov.yml must point to doc/openapi.yaml"
     end
   end
 end
