@@ -8,112 +8,100 @@
           <span class="latest-release">{{ currentVersion }}</span>
         </b-link>
       </b-navbar-brand>
+      <!-- ── Utility controls — OUTSIDE collapse, always visible ── -->
+      <b-navbar-nav v-if="signed_in" class="flex-row align-items-center ml-auto mr-2 order-xl-last">
+        <b-nav-item-dropdown right no-caret class="position-relative">
+          <template #button-content>
+            <b-icon icon="bell" aria-hidden="true" />
+            <b-badge
+              v-if="notificationCount"
+              variant="danger"
+              class="rounded-pill position-absolute"
+              style="top: 0; right: 0"
+            >
+              {{ notificationCount }}
+            </b-badge>
+          </template>
+          <b-dropdown-item
+            v-for="(access_request, index) in localAccessRequests"
+            :key="'ar-' + index"
+            :href="`/projects/${access_request.project.id}?members=1`"
+          >
+            {{
+              `${access_request.user.name} has requested access to project ${access_request.project.name}`
+            }}
+          </b-dropdown-item>
+          <b-dropdown-item
+            v-for="locked_user in localLockedUsers"
+            :key="'lu-' + locked_user.id"
+            :href="`/users?unlock=${locked_user.id}`"
+          >
+            <b-icon icon="lock" class="mr-1 text-warning" />
+            {{ locked_user.name }} ({{ locked_user.email }}) account is locked
+          </b-dropdown-item>
+        </b-nav-item-dropdown>
+
+        <b-nav-item
+          link-classes="text-light px-2"
+          aria-label="Toggle dark mode"
+          @click="toggleColorMode"
+        >
+          <b-icon :icon="isDarkMode ? 'sun' : 'moon'" />
+        </b-nav-item>
+
+        <b-nav-item-dropdown right no-caret>
+          <template #button-content>
+            <UserBadge
+              v-if="current_user"
+              :name="userDisplayName"
+              :email="current_user.email"
+              size="1.25rem"
+            />
+            <b-icon v-else icon="person-circle" aria-hidden="true" />
+          </template>
+          <b-dropdown-text v-if="userDisplayName" class="text-muted small">
+            <div class="font-weight-bold text-body">{{ userDisplayName }}</div>
+            <div v-if="current_user && current_user.email">{{ current_user.email }}</div>
+          </b-dropdown-text>
+          <b-dropdown-divider v-if="userDisplayName" />
+          <b-dropdown-item :href="profile_path" data-turbolinks="false">
+            Profile
+          </b-dropdown-item>
+          <b-dropdown-item v-if="myCommentsPath" :href="myCommentsPath" data-turbolinks="false">
+            My Comments
+          </b-dropdown-item>
+          <b-dropdown-item v-if="users_path" :href="users_path" data-turbolinks="false">
+            Manage Users
+          </b-dropdown-item>
+          <b-dropdown-divider />
+          <b-dropdown-item @click.prevent="signOut">Sign Out</b-dropdown-item>
+        </b-nav-item-dropdown>
+      </b-navbar-nav>
+
+      <!-- Dark mode toggle for non-signed-in users — also outside collapse -->
+      <b-navbar-nav v-if="!signed_in" class="flex-row ml-auto mr-2">
+        <b-nav-item
+          link-classes="text-light px-2"
+          aria-label="Toggle dark mode"
+          @click="toggleColorMode"
+        >
+          <b-icon :icon="isDarkMode ? 'sun' : 'moon'" />
+        </b-nav-item>
+      </b-navbar-nav>
+
       <b-navbar-toggle target="nav-collapse" />
 
+      <!-- ── Collapsible section — nav links + search ── -->
       <b-collapse id="nav-collapse" is-nav>
-        <div class="d-flex w-100 justify-content-xl-center text-xl-center">
-          <b-navbar-nav>
-            <div v-for="item in navigation" :key="item.name">
-              <NavbarItem :icon="item.icon" :link="item.link" :name="item.name" />
-            </div>
-          </b-navbar-nav>
-        </div>
-
-        <!-- Dark mode toggle — always visible, even on login page -->
-        <b-navbar-nav v-if="!signed_in" class="ml-auto">
-          <b-nav-item>
-            <b-button
-              size="sm"
-              variant="link"
-              class="text-light p-0"
-              aria-label="Toggle dark mode"
-              @click="toggleColorMode"
-            >
-              <b-icon :icon="isDarkMode ? 'sun' : 'moon'" />
-            </b-button>
+        <b-navbar-nav class="mr-auto">
+          <b-nav-item v-for="item in navigation" :key="item.name" :href="item.link">
+            <NavbarItem :icon="item.icon" :link="item.link" :name="item.name" />
           </b-nav-item>
         </b-navbar-nav>
 
-        <div
-          v-if="signed_in"
-          class="d-flex flex-column flex-xl-row align-items-xl-center w-100 mt-2 mt-xl-0 right-container"
-        >
+        <b-nav-form v-if="signed_in">
           <GlobalSearch />
-          <!-- Notification Dropdown -->
-          <!-- Right aligned nav items -->
-          <b-navbar-nav class="ml-auto">
-            <b-nav-item-dropdown right no-caret class="position-relative ml-3">
-              <template #button-content>
-                <b-icon icon="bell" aria-hidden="true" />
-                <b-badge
-                  v-if="notificationCount"
-                  variant="danger"
-                  class="rounded-pill position-absolute top-0 start-100 translate-middle"
-                  style="top: 0; right: 0"
-                >
-                  {{ notificationCount }}
-                </b-badge>
-              </template>
-              <b-dropdown-item
-                v-for="(access_request, index) in localAccessRequests"
-                :key="'ar-' + index"
-                :href="`/projects/${access_request.project.id}?members=1`"
-              >
-                {{
-                  `${access_request.user.name} has requested access to project ${access_request.project.name}`
-                }}
-              </b-dropdown-item>
-              <b-dropdown-item
-                v-for="locked_user in localLockedUsers"
-                :key="'lu-' + locked_user.id"
-                :href="`/users?unlock=${locked_user.id}`"
-              >
-                <b-icon icon="lock" class="mr-1 text-warning" />
-                {{ locked_user.name }} ({{ locked_user.email }}) account is locked
-              </b-dropdown-item>
-            </b-nav-item-dropdown>
-            <b-nav-item class="ml-2">
-              <b-button
-                size="sm"
-                variant="link"
-                class="text-light p-0"
-                aria-label="Toggle dark mode"
-                @click="toggleColorMode"
-              >
-                <b-icon :icon="isDarkMode ? 'sun' : 'moon'" />
-              </b-button>
-            </b-nav-item>
-            <b-nav-item-dropdown right>
-              <template #button-content>
-                <b-icon icon="person-circle" aria-hidden="true" />
-                <span v-if="userDisplayName" class="ml-2 d-none d-xl-inline">
-                  {{ userDisplayName }}
-                </span>
-              </template>
-              <b-dropdown-text v-if="userDisplayName" class="text-muted small">
-                <div class="font-weight-bold text-body">{{ userDisplayName }}</div>
-                <div v-if="current_user && current_user.email">{{ current_user.email }}</div>
-              </b-dropdown-text>
-              <b-dropdown-divider v-if="userDisplayName" />
-              <!-- data-turbolinks="false" — each profile sub-page is its
-                   own Vue pack, and Turbolinks-tracked navigation
-                   between packs sometimes lands before the new pack's
-                   turbolinks:load listener registers. Force a full page
-                   load to keep the mount reliable. -->
-              <b-dropdown-item :href="profile_path" data-turbolinks="false">
-                Profile
-              </b-dropdown-item>
-              <b-dropdown-item v-if="myCommentsPath" :href="myCommentsPath" data-turbolinks="false">
-                My Comments
-              </b-dropdown-item>
-              <b-dropdown-item v-if="users_path" :href="users_path" data-turbolinks="false">
-                Manage Users
-              </b-dropdown-item>
-              <b-dropdown-divider />
-              <b-dropdown-item @click.prevent="signOut">Sign Out</b-dropdown-item>
-            </b-nav-item-dropdown>
-          </b-navbar-nav>
-        </div>
+        </b-nav-form>
       </b-collapse>
     </b-navbar>
     <b-alert
@@ -136,12 +124,13 @@ import FormMixinVue from "../../mixins/FormMixin.vue";
 import NavbarItem from "./NavbarItem.vue";
 import GlobalSearch from "./GlobalSearch.vue";
 import ConsentModal from "../shared/ConsentModal.vue";
+import UserBadge from "../shared/UserBadge.vue";
 import { EVENTS, listen } from "../../utils/notificationEvents";
 import { initTheme, toggleTheme } from "../../utils/colorMode";
 
 export default {
   name: "Navbar",
-  components: { NavbarItem, GlobalSearch, ConsentModal },
+  components: { NavbarItem, GlobalSearch, ConsentModal, UserBadge },
   mixins: [FormMixinVue],
   props: {
     navigation: {
@@ -298,8 +287,5 @@ export default {
 
 .latest-release {
   font-size: 0.6em;
-}
-.right-container {
-  gap: 2rem;
 }
 </style>
