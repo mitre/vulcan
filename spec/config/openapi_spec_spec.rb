@@ -133,5 +133,42 @@ RSpec.describe 'OpenAPI specification (doc/openapi.yaml)' do
       expect(missing).to be_empty,
                          "Documented routes not found in Rails:\n#{missing.join("\n")}"
     end
+
+    # Reverse coverage: every JSON-capable Rails route should have an OpenAPI path.
+    # Excludes Devise, ActiveStorage, Rails internals, and export/file-download routes.
+    EXCLUDED_PREFIXES = %w[/rails/ /users/sign /users/password /users/confirmation
+                           /users/unlock /cable /active_storage].freeze
+    EXCLUDED_PATTERNS = %w[export bulk_export assets].freeze
+
+    it 'every JSON-capable controller action has an OpenAPI path', pending: 'v2-btu epic: 89 routes pending documentation' do
+      documented_paths = document['paths'].keys.map { |p| p.gsub(/\{(\w+)\}/, ':$1') }.to_set
+
+      missing = []
+      Rails.application.routes.routes.each do |route|
+        path = route.path.spec.to_s.sub('(.:format)', '')
+        method = route.verb.downcase
+        next if method.empty? || path.empty?
+        next if EXCLUDED_PREFIXES.any? { |prefix| path.start_with?(prefix) }
+        next if EXCLUDED_PATTERNS.any? { |pat| path.include?(pat) }
+
+        controller = route.defaults[:controller]
+        next unless controller
+
+        controller_class = "#{controller.camelize}Controller".safe_constantize
+        next unless controller_class
+        next unless controller_class.ancestors.include?(ApplicationController)
+
+        openapi_path = path.gsub(/:(\w+)/, '{\\1}')
+        next if documented_paths.include?(openapi_path)
+
+        missing << "#{method.upcase} #{path} (#{controller}##{route.defaults[:action]})"
+      end
+
+      if missing.any?
+        fail "#{missing.size} JSON-capable route(s) missing OpenAPI documentation:\n" \
+             "#{missing.join("\n")}\n\n" \
+             "Add path specs in doc/openapi/paths/ for each missing route."
+      end
+    end
   end
 end

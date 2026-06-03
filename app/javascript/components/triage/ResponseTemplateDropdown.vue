@@ -1,47 +1,54 @@
 <template>
   <div v-if="projectId" class="response-template-dropdown mb-2">
-    <b-form-select
-      v-model="picked"
-      :options="options"
+    <b-dropdown
+      :text="loading ? 'Loading…' : templates.length ? 'Insert template…' : 'No templates yet'"
       size="sm"
-      :disabled="loading"
+      variant="outline-secondary"
+      :disabled="loading && !templates.length"
       data-testid="template-picker"
       aria-label="Insert response template"
-      @change="onChange"
+      boundary="viewport"
+    >
+      <b-dropdown-item-button v-for="t in templates" :key="t.id" @click="onSelect(t)">
+        {{ t.name }}
+      </b-dropdown-item-button>
+
+      <template v-if="canManage">
+        <b-dropdown-divider />
+        <b-dropdown-item-button data-testid="manage-templates-btn" @click="showManage = true">
+          <b-icon icon="gear" class="mr-1" />
+          Manage templates…
+        </b-dropdown-item-button>
+      </template>
+    </b-dropdown>
+
+    <ManageTemplatesModal
+      v-if="canManage"
+      :project-id="projectId"
+      :visible="showManage"
+      @update:visible="showManage = $event"
+      @saved="fetch"
     />
   </div>
 </template>
 
 <script>
 import { getTriageResponseTemplates } from "../../api/projectsApi";
+import ManageTemplatesModal from "./ManageTemplatesModal.vue";
 
 export default {
   name: "ResponseTemplateDropdown",
+  components: { ManageTemplatesModal },
   props: {
     projectId: { type: [Number, String], default: null },
+    canManage: { type: Boolean, default: false },
   },
   data() {
     return {
       templates: [],
       loading: false,
-      picked: null,
+      showManage: false,
     };
-  },
-  computed: {
-    options() {
-      const head = this.templates.length
-        ? {
-            value: null,
-            text: this.loading ? "Loading templates…" : "Insert template…",
-            disabled: true,
-          }
-        : {
-            value: null,
-            text: this.loading ? "Loading templates…" : "No templates yet",
-            disabled: true,
-          };
-      return [head, ...this.templates.map((t) => ({ value: t.id, text: t.name }))];
-    },
   },
   watch: {
     projectId: { immediate: true, handler: "fetch" },
@@ -62,14 +69,8 @@ export default {
         this.loading = false;
       }
     },
-    onChange(id) {
-      if (id == null) return;
-      const t = this.templates.find((x) => x.id === id);
-      if (t) this.$emit("insert", t.body);
-      // Reset to the placeholder so re-selecting the same template re-fires.
-      this.$nextTick(() => {
-        this.picked = null;
-      });
+    onSelect(t) {
+      this.$emit("insert", t.body);
     },
   },
 };

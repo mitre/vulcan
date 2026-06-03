@@ -44,7 +44,12 @@
       label="Response to commenter (visible in their thread + 'My Comments' page)"
       :description="nonConcurHint"
     >
-      <ResponseTemplateDropdown v-if="projectId" :project-id="projectId" @insert="insertTemplate" />
+      <ResponseTemplateDropdown
+        v-if="projectId"
+        :project-id="projectId"
+        :can-manage="canManageTemplates"
+        @insert="insertTemplate"
+      />
       <b-form-textarea
         v-model="responseComment"
         rows="3"
@@ -108,6 +113,7 @@ export default {
     review: { type: Object, required: true },
     componentId: { type: [Number, String], default: null },
     projectId: { type: [Number, String], default: null },
+    canManageTemplates: { type: Boolean, default: false },
     loading: { type: Boolean, default: false },
   },
   data() {

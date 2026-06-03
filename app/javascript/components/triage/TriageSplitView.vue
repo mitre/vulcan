@@ -122,6 +122,7 @@
           :review="activeComment"
           :component-id="componentId"
           :project-id="projectId"
+          :can-manage-templates="canAdminAct"
           :loading="saving"
           @save="onTriageSave"
           @save-and-next="onTriageSaveAndNext"

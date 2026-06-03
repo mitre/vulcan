@@ -12,6 +12,22 @@ export function getTriageResponseTemplates(projectId) {
   return api.get(`/projects/${projectId}/triage_response_templates`);
 }
 
+export function createTriageResponseTemplate(projectId, data) {
+  return api.post(`/projects/${projectId}/triage_response_templates`, {
+    triage_response_template: data,
+  });
+}
+
+export function updateTriageResponseTemplate(projectId, templateId, data) {
+  return api.patch(`/projects/${projectId}/triage_response_templates/${templateId}`, {
+    triage_response_template: data,
+  });
+}
+
+export function deleteTriageResponseTemplate(projectId, templateId) {
+  return api.delete(`/projects/${projectId}/triage_response_templates/${templateId}`);
+}
+
 export function getProject(projectId) {
   return api.get(`/projects/${projectId}`);
 }
