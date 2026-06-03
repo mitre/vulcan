@@ -27,9 +27,9 @@ RSpec.describe 'API Docs (Scalar viewer)' do
         expect(response.body).to include('cdn.jsdelivr.net/npm/@scalar/api-reference')
       end
 
-      it 'points at the bundled OpenAPI spec' do
+      it 'includes the api_docs pack for Scalar initialization' do
         get '/api/docs'
-        expect(response.body).to include('openapi.yaml')
+        expect(response.body).to include('api_docs')
       end
     end
   end

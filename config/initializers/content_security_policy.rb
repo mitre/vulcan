@@ -24,12 +24,13 @@ Rails.application.configure do
     end
 
     policy.default_src :self
-    policy.font_src    :self, :data
+    policy.font_src    :self, :data, 'https://fonts.scalar.com'
     policy.img_src     :self, :data
     policy.object_src  :none
-    policy.script_src  :self, :unsafe_eval
-    policy.style_src   :self, :unsafe_inline
-    policy.connect_src :self, 'https://api.github.com', *[oidc_origin].compact
+    policy.script_src  :self, :unsafe_eval, 'https://cdn.jsdelivr.net'
+    policy.style_src   :self, :unsafe_inline, 'https://cdn.jsdelivr.net'
+    policy.connect_src :self, 'https://api.github.com', 'https://cdn.jsdelivr.net',
+                       'https://api.scalar.com', *[oidc_origin].compact
     policy.frame_src   :none
     policy.base_uri    :self
     policy.form_action :self, *[oidc_origin].compact

@@ -162,6 +162,7 @@ Rails.application.routes.draw do
   get '/rules/:id/search/related_rules', to: 'rules#related_rules'
 
   get 'api/docs', to: 'api_docs#show'
+  get 'api/docs/openapi.yaml', to: 'api_docs#spec', as: :api_docs_spec
 
   # API namespace for JSON endpoints
   namespace :api do
