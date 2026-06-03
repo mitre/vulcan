@@ -901,3 +901,14 @@ body.has-classification-banner {
     }
   }
 }
+
+// ── Global: Rule/Benchmark form field spacing ─────────────────────────
+// ALL form fields get the same padding regardless of lock state.
+// Field-state classes add ONLY border + background tint — NOT different
+// padding. This prevents layout shift when lock state changes.
+.rule-form-field {
+  padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+  border-radius: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+

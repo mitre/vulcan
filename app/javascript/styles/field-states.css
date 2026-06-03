@@ -6,26 +6,21 @@
  *   .field-state--under-review    — Rule is under review (blue)
  *   .field-state--whole-locked    — Whole rule locked via review (grey)
  *
- * Applied to b-form-group elements. Left border + subtle background tint.
+ * Applied to b-form-group elements via RuleFormGroup stateClass.
+ * Padding and border-radius are inherited from .rule-form-field (application.scss).
+ * These classes add ONLY the left border accent + background tint.
  */
 
 .field-state--section-locked {
   border-left: 3px solid var(--vulcan-warning);
-  padding-left: 0.75rem;
-  border-radius: 0.25rem;
   background-color: var(--vulcan-warning-tint);
 }
 
 .field-state--under-review {
   border-left: 3px solid var(--vulcan-info);
-  padding-left: 0.75rem;
-  border-radius: 0.25rem;
   background-color: var(--vulcan-info-tint);
 }
 
 .field-state--whole-locked {
   border-left: 3px solid var(--vulcan-secondary);
-  padding-left: 0.75rem;
-  border-radius: 0.25rem;
-  /* No background — Bootstrap :disabled styling is sufficient */
 }

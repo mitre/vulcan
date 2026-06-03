@@ -54,7 +54,7 @@
       </b-form-group>
 
       <!-- FILTER RESULTS BY FIELDS  & SEARCH KEYWORD -->
-      <div class="row">
+      <div class="form-row">
         <div class="col-6">
           <b-form-group>
             <template #label>
