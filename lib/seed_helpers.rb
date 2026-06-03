@@ -42,6 +42,44 @@ module SeedHelpers # rubocop:disable Style/Documentation
   ].freeze
   GENERIC_POC = { admin_name: 'QA Test Maintainer', admin_email: 'qa-team@example.com' }.freeze
 
+  def self.quiet
+    prev_deliveries = ActionMailer::Base.perform_deliveries
+    ActionMailer::Base.perform_deliveries = false
+    yield
+  ensure
+    ActionMailer::Base.perform_deliveries = prev_deliveries
+  end
+
+  SYMBOL_VALUE_KEYS = %i[rule author by].freeze
+
+  def self.load_threads(path = Rails.root.join('db/seeds/data/threads.yml'))
+    raw = YAML.safe_load_file(path, permitted_classes: [Symbol])
+    raw.transform_values do |threads|
+      threads.map { |t| normalize_thread(t) }
+    end
+  end
+
+  def self.normalize_thread(hash)
+    result = hash.transform_keys(&:to_sym)
+    SYMBOL_VALUE_KEYS.each { |k| result[k] = result[k]&.to_sym }
+    result[:triage] = normalize_triage(result[:triage]) if result[:triage]
+    result[:replies] = result[:replies]&.map { |r| normalize_reply(r) }
+    result
+  end
+
+  def self.normalize_triage(hash)
+    t = hash.transform_keys(&:to_sym)
+    t[:by] = t[:by]&.to_sym
+    t
+  end
+
+  def self.normalize_reply(hash)
+    r = hash.transform_keys(&:to_sym)
+    r[:author] = r[:author]&.to_sym
+    r
+  end
+  private_class_method :normalize_thread, :normalize_triage, :normalize_reply
+
   # rubocop:disable Rails/Output
   def self.seed_xccdf(filepath)
     xml = File.read(filepath)

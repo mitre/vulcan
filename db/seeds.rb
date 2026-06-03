@@ -23,9 +23,11 @@ end
 
 require_relative '../lib/seed_helpers'
 
-Rails.root.glob('db/seeds/data/*.rb').each do |seed_file|
-  puts "\n=== #{File.basename(seed_file)} ==="
-  load(seed_file)
+SeedHelpers.quiet do
+  Rails.root.glob('db/seeds/data/*.rb').each do |seed_file|
+    puts "\n=== #{File.basename(seed_file)} ==="
+    load(seed_file)
+  end
 end
 
 puts "\n✅ Seed complete. Run `rails dev:verify` to check data, `rails dev:status` for counts."

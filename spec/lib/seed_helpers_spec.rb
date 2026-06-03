@@ -124,4 +124,59 @@ RSpec.describe SeedHelpers do
       expect(errors).to be_an(Array)
     end
   end
+
+  describe '.quiet' do
+    it 'suppresses Devise mailer deliveries inside the block' do
+      original = ActionMailer::Base.perform_deliveries
+      described_class.quiet do
+        expect(ActionMailer::Base.perform_deliveries).to be false
+      end
+      expect(ActionMailer::Base.perform_deliveries).to eq(original)
+    end
+
+    it 'restores mailer setting even if the block raises' do
+      original = ActionMailer::Base.perform_deliveries
+      begin
+        described_class.quiet { raise 'boom' }
+      rescue RuntimeError
+        nil
+      end
+      expect(ActionMailer::Base.perform_deliveries).to eq(original)
+    end
+  end
+
+  describe '.load_threads' do
+    it 'loads thread definitions from the YAML data file' do
+      threads = described_class.load_threads
+      expect(threads).to be_a(Hash)
+      expect(threads).to have_key('rule_threads')
+      expect(threads).to have_key('component_threads')
+      expect(threads['rule_threads']).to be_an(Array)
+    end
+
+    it 'symbolizes keys and symbol-valued fields for seed_thread compatibility' do
+      threads = described_class.load_threads
+      first = threads['rule_threads'].first
+      expect(first).to have_key(:rule)
+      expect(first).to have_key(:author)
+      expect(first).to have_key(:comment)
+      expect(first[:rule]).to be_a(Symbol)
+      expect(first[:author]).to be_a(Symbol)
+      expect(first[:comment]).to be_a(String)
+    end
+
+    it 'normalizes triage hashes with symbol keys' do
+      threads = described_class.load_threads
+      triaged = threads['rule_threads'].find { |t| t[:triage] }
+      expect(triaged[:triage][:by]).to be_a(Symbol)
+      expect(triaged[:triage][:status]).to be_a(String)
+    end
+
+    it 'normalizes reply author to symbol' do
+      threads = described_class.load_threads
+      with_replies = threads['rule_threads'].find { |t| t[:replies]&.any? }
+      expect(with_replies[:replies].first[:author]).to be_a(Symbol)
+      expect(with_replies[:replies].first[:comment]).to be_a(String)
+    end
+  end
 end
