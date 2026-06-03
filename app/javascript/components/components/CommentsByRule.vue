@@ -90,7 +90,6 @@
               <CommentThread
                 v-if="comment.responses_count > 0"
                 :parent-review-id="comment.id"
-                :parent-triage-status="comment.triage_status"
                 :responses-count="comment.responses_count"
                 :can-reply="false"
                 class="ml-2"

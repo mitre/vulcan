@@ -25,20 +25,14 @@
       </b-button>
     </div>
 
-    <div v-if="expanded" :id="listId" class="thread-replies" :class="parentTriageBgClass">
+    <div v-if="expanded" :id="listId" class="thread-replies">
       <div v-if="loading" class="text-muted small ml-3"><b-spinner small /> Loading replies…</div>
       <div v-else-if="loadError" class="text-danger small ml-3" role="alert">
         Failed to load replies.
         <b-button size="sm" variant="link" class="p-0" @click="fetch">Retry</b-button>
       </div>
       <div v-else-if="replies.length === 0" class="text-muted small ml-3">No replies yet.</div>
-      <b-media
-        v-for="reply in replies"
-        v-else
-        :key="reply.id"
-        class="mt-2 comment-thread__reply"
-        :class="parentTriageBgClass"
-      >
+      <b-media v-for="reply in replies" v-else :key="reply.id" class="mt-2 comment-thread__reply">
         <template #aside>
           <UserBadge :name="reply.commenter_display_name" :email="reply.commenter_email" />
         </template>
@@ -75,7 +69,6 @@
 
 <script>
 import { getReviewResponses } from "../../api/reviewsApi";
-import { triageBgClass } from "../../utils/triageBgClass";
 import ReactionButtons from "./ReactionButtons.vue";
 import UserBadge from "./UserBadge.vue";
 import AlertMixin from "../../mixins/AlertMixin.vue";
@@ -97,13 +90,6 @@ export default {
       type: String,
       default: "Reactions are closed for this component.",
     },
-    // Parent comment's triage_status. When set to a non-pending status the
-    // reply cards inherit the same triage-bg-- tint so the whole thread reads
-    // as one adjudicated unit. Default null leaves replies untinted.
-    parentTriageStatus: {
-      type: String,
-      default: null,
-    },
   },
   data() {
     return {
@@ -123,9 +109,6 @@ export default {
       const n = this.responsesCount;
       if (this.expanded) return `Hide ${n} ${n === 1 ? "reply" : "replies"}`;
       return `${n} ${n === 1 ? "reply" : "replies"}`;
-    },
-    parentTriageBgClass() {
-      return triageBgClass(this.parentTriageStatus);
     },
   },
   watch: {

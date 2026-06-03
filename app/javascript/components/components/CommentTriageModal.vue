@@ -103,7 +103,6 @@
       <div class="mb-3">
         <CommentThread
           :parent-review-id="review.id"
-          :parent-triage-status="review.triage_status"
           :responses-count="review.responses_count || 0"
           :can-reply="true"
           @reply="$emit('open-reply-composer', review)"

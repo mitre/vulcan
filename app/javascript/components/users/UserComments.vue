@@ -68,7 +68,6 @@
           <CommentThread
             :ref="`thread-${item.id}`"
             :parent-review-id="item.id"
-            :parent-triage-status="item.triage_status"
             :responses-count="item.responses_count || 0"
             :can-reply="true"
             class="mt-1"

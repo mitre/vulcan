@@ -54,7 +54,6 @@
         v-if="parent.action === 'comment'"
         :ref="`thread-${parent.id}`"
         :parent-review-id="parent.id"
-        :parent-triage-status="parent.triage_status"
         :responses-count="responsesCountFor(parent.id)"
         :can-reply="canReply"
         :initially-expanded="responsesCountFor(parent.id) > 0"

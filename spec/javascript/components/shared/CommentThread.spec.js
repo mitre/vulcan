@@ -247,10 +247,9 @@ describe("CommentThread", () => {
     });
   });
 
-  // Reply cards must visually match the parent's triage-status tint so an
-  // adjudicated comment + its replies read as one unit (found during in-app
-  // verification of the bulk-triage UI).
-  describe("parent triage-status background", () => {
+  // Replies should NOT inherit the parent's triage-status background.
+  // Each reply is its own comment — neutral bg unless it has its own status.
+  describe("reply triage-status independence", () => {
     const oneReply = {
       data: {
         rows: [
@@ -264,7 +263,7 @@ describe("CommentThread", () => {
       },
     };
 
-    it("applies the parent's triage-bg class to each reply when parentTriageStatus is set", async () => {
+    it("does NOT apply the parent's triage-bg class to replies", async () => {
       api.get.mockResolvedValue(oneReply);
       const w = mount(CommentThread, {
         localVue,
@@ -272,10 +271,11 @@ describe("CommentThread", () => {
       });
       await w.find("button[aria-controls]").trigger("click");
       await new Promise((r) => setTimeout(r, 0));
-      expect(w.html()).toContain("triage-bg--concur");
+      const replyMedia = w.find(".media");
+      expect(replyMedia.classes()).not.toContain("triage-bg--concur");
     });
 
-    it("renders no triage-bg class when the parent is pending", async () => {
+    it("renders no triage-bg class on replies regardless of parent status", async () => {
       api.get.mockResolvedValue(oneReply);
       const w = mount(CommentThread, {
         localVue,
@@ -283,7 +283,7 @@ describe("CommentThread", () => {
       });
       await w.find("button[aria-controls]").trigger("click");
       await new Promise((r) => setTimeout(r, 0));
-      expect(w.html()).not.toMatch(/triage-bg--/);
+      expect(w.find(".media").classes().join(" ")).not.toMatch(/triage-bg--/);
     });
 
     it("renders no triage-bg class when parentTriageStatus is omitted (default null)", async () => {
