@@ -27,7 +27,7 @@
 
     <hr v-if="activeComment" class="mt-1 mb-2" data-testid="nav-separator" />
     <b-row v-if="activeComment" class="triage-columns">
-      <b-col lg="2" class="border-right pr-0 triage-col">
+      <b-col lg="2" class="triage-col triage-panel triage-panel--sidebar">
         <nav aria-label="Comment triage queue" class="h-100">
           <TriageRuleSidebar
             :comments="sortedRows"
@@ -36,7 +36,13 @@
           />
         </nav>
       </b-col>
-      <b-col id="triage-content" lg="5" class="triage-col px-3" role="main" aria-label="Comment details">
+      <b-col
+        id="triage-content"
+        lg="5"
+        class="triage-col triage-panel triage-panel--content"
+        role="main"
+        aria-label="Comment details"
+      >
         <h6 ref="contentHeading" tabindex="-1" class="sr-only" data-testid="content-heading">
           {{ activeComment.rule_displayed_name }} — {{ activeComment.section || "Overall" }}
         </h6>
@@ -55,7 +61,7 @@
       <b-col
         id="triage-form"
         lg="5"
-        class="triage-col triage-form-panel"
+        class="triage-col triage-panel triage-panel--form"
         role="complementary"
         aria-label="Triage decision"
       >
@@ -530,17 +536,26 @@ export default {
   overflow-y: auto;
 }
 
-/* Three-tier dark mode: sidebar = secondary-bg, content = body-bg, form = tertiary-bg */
-.triage-columns ::v-deep > .border-right {
-  border-color: var(--vulcan-border-color) !important;
-  background-color: var(--vulcan-secondary-bg, var(--vulcan-component-bg));
-  padding-left: 0.5rem;
+/* ── Shared panel base ─────────────────────────────────────────────
+   ONE class for padding + overflow on all three panes.
+   Modifiers add border + background per the three-tier hierarchy. */
+.triage-panel {
+  padding: 0.75rem 1rem;
 }
 
-.triage-form-panel {
-  border-left: 1px solid var(--vulcan-border-color);
+.triage-panel--sidebar {
+  background-color: var(--vulcan-secondary-bg, var(--vulcan-component-bg));
+  border-right: 1px solid var(--vulcan-border-color);
+  padding-right: 0.5rem;
+}
+
+.triage-panel--content {
+  /* body-bg — inherited, no override needed */
+}
+
+.triage-panel--form {
   background-color: var(--vulcan-tertiary-bg, var(--vulcan-component-bg-alt));
-  padding-left: 1rem;
+  border-left: 1px solid var(--vulcan-border-color);
 }
 
 @media (min-width: 992px) {
