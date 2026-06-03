@@ -131,7 +131,7 @@ export default {
   padding: 0.5rem 0.75rem;
   background: var(--vulcan-component-bg, #fff);
   border-top: 1px solid var(--vulcan-border, #dee2e6);
-  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--vulcan-shadow-lifted);
 }
 
 .bulk-triage-bar__count {

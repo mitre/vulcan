@@ -106,7 +106,7 @@ class ComponentsController < ApplicationController
             message: component.errors.full_messages,
             variant: 'danger'
           )
-        }, status: :unprocessable_entity
+        }, status: :unprocessable_content
       end
     }
     if is_duplicate
@@ -128,7 +128,7 @@ class ComponentsController < ApplicationController
           message: @component.errors.full_messages,
           variant: 'danger'
         )
-      }, status: :unprocessable_entity
+      }, status: :unprocessable_content
     end
   end
 
@@ -167,7 +167,7 @@ class ComponentsController < ApplicationController
         message: ["Could not remove component: #{e.message.truncate(200)}"],
         variant: 'danger'
       )
-    }, status: :unprocessable_entity
+    }, status: :unprocessable_content
   end
 
   def export
@@ -277,7 +277,7 @@ class ComponentsController < ApplicationController
             zip_filename: 'components_inspec.zip'
           )
         else
-          render json: { error: 'Unprocessable entity' }, status: :unprocessable_entity
+          render json: { error: 'Unprocessable entity' }, status: :unprocessable_content
         end
       end
       format.json { render json: { status: :ok } }
@@ -384,14 +384,13 @@ class ComponentsController < ApplicationController
                                   'components.release, components.project_id, projects.name AS project_name')
     # Explicit allowlist — `.map(&:attributes)` leaked all AR columns
     # (timestamps, internal FKs) for any consumer that bypassed the SELECT.
-    # vulcan-v3.x-aik.
     render json: components.map { |c|
       { id: c.id, name: c.name, version: c.version, prefix: c.prefix,
         release: c.release, project_id: c.project_id, project_name: c.project_name }
     }
   end
 
-  # vulcan-v3.x-oxz: reads peer ids from query params and returns an envelope
+  # reads peer ids from query params and returns an envelope
   # with data + meta (base_id/diff_id/rules_count). Wired at GET
   # /api/components/compare?base_id=&diff_id=.
   def compare
@@ -458,13 +457,13 @@ class ComponentsController < ApplicationController
   def detect_srg
     file = params[:file]
     unless file
-      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_entity
+      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_content
       return
     end
 
     srg_ids = SpreadsheetParser.peek_srg_ids(file)
     if srg_ids.empty?
-      render json: { error: 'No SRG IDs found in spreadsheet' }, status: :unprocessable_entity
+      render json: { error: 'No SRG IDs found in spreadsheet' }, status: :unprocessable_content
       return
     end
 
@@ -474,11 +473,11 @@ class ComponentsController < ApplicationController
 
     if srgs.empty?
       render json: { error: 'Could not identify a matching SRG for the IDs in this spreadsheet' },
-             status: :unprocessable_entity
+             status: :unprocessable_content
     elsif srgs.size > 1
       names = srgs.map { |s| "#{s.title} (#{s.version})" }.join(', ')
       render json: { error: "SRG IDs map to multiple SRGs: #{names}. Please select manually." },
-             status: :unprocessable_entity
+             status: :unprocessable_content
     else
       srg = srgs.first
       render json: { id: srg.id, srg_id: srg.srg_id, title: srg.title, version: srg.version }
@@ -488,13 +487,13 @@ class ComponentsController < ApplicationController
   def preview_spreadsheet_update
     file = params[:file]
     unless file
-      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_entity
+      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_content
       return
     end
 
     result = @component.update_from_spreadsheet(file)
     if result[:error]
-      render json: { error: result[:error] }, status: :unprocessable_entity
+      render json: { error: result[:error] }, status: :unprocessable_content
     else
       render json: result
     end
@@ -503,7 +502,7 @@ class ComponentsController < ApplicationController
   def apply_spreadsheet_update
     file = params[:file]
     unless file
-      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_entity
+      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_content
       return
     end
 
@@ -513,7 +512,7 @@ class ComponentsController < ApplicationController
                    message: "Successfully updated #{result[:count]} rules from spreadsheet.",
                    variant: 'success', status: :ok)
     elsif result[:error]
-      render json: { error: result[:error] }, status: :unprocessable_entity
+      render json: { error: result[:error] }, status: :unprocessable_content
     end
   end
 
@@ -574,7 +573,7 @@ class ComponentsController < ApplicationController
   # accurate count. Without this, the blueprint defaults to zero.
   #
   # Reaction summaries are scoped to the most recent REACTION_SUMMARY_LIMIT
-  # reviews (vulcan-v3.x-73z.8). The editor renders at most ~25 visible
+  # reviews. The editor renders at most ~25 visible
   # reviews per page; 100 gives ample headroom and stops the two
   # 3000+ row GROUP BYs that used to fire on every editor refresh.
   # rubocop:disable Lint/UselessConstantScoping -- co-located with sole consumer
@@ -738,7 +737,7 @@ class ComponentsController < ApplicationController
 
   # Authorize access to both components in a compare operation
   def authorize_compare_access
-    # vulcan-v3.x-oxz: peer params (base_id/diff_id) instead of the old
+    # peer params (base_id/diff_id) instead of the old
     # sub-resource :id/:diff_id.
     base = Component.find_by(id: params[:base_id])
     diff = Component.find_by(id: params[:diff_id])

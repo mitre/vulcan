@@ -71,7 +71,7 @@
 </template>
 
 <script>
-import { getResponses } from "../../api/reviewsApi";
+import { getReviewResponses } from "../../api/reviewsApi";
 import { triageBgClass } from "../../utils/triageBgClass";
 import ReactionButtons from "./ReactionButtons.vue";
 import AlertMixin from "../../mixins/AlertMixin.vue";
@@ -162,7 +162,7 @@ export default {
       this.loadError = false;
       const token = ++this.fetchToken;
       try {
-        const { data } = await getResponses(this.parentReviewId);
+        const { data } = await getReviewResponses(this.parentReviewId);
         if (token !== this.fetchToken) return;
         this.replies = data.rows || [];
         this.loaded = true;

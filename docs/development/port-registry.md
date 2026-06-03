@@ -8,15 +8,11 @@ Every project defaults to PostgreSQL on port 5432 and the app on port 3000. This
 
 ## Port Assignments
 
-| Project | PORT (app) | DATABASE_PORT | Notes |
-|---|---|---|---|
-| vulcan-v2.x | 3000 | 5435 | |
-| vulcan-v3.x | 3001 | 5436 | |
-| vulcan-enterprise | 3002 | 5434 | already using 5434 |
-| heimdall2 | 3010 | 5438 | |
-| heimdall-clean | 3011 | 5439 | |
-| memcord | -- | 5433 | already using 5433 |
-| k8s helm testing | -- | 5440+ | via kubectl port-forward |
+| Project | PORT (app) | DATABASE_PORT |
+|---|---|---|
+| Vulcan | 3000 | 5435 |
+
+If you run other MITRE projects alongside Vulcan, assign them different ports in their own `.env` files to avoid conflicts.
 
 ## Setup
 
@@ -28,7 +24,7 @@ Each project uses the same pattern: env vars with standard defaults.
 4. `docker compose up db -d`
 5. `bin/rails db:prepare` (or equivalent)
 
-### Example `.env` (vulcan-v2.x)
+### Example `.env` (Vulcan)
 
 ```bash
 DATABASE_PORT=5435
@@ -36,7 +32,6 @@ DATABASE_HOST=127.0.0.1
 DATABASE_GSSENCMODE=disable
 POSTGRES_PORT=5435
 PORT=3000
-DB_SUFFIX=_v2
 ```
 
 ## Environment Variable Naming Convention
@@ -54,7 +49,7 @@ All MITRE projects follow `UPPERCASE_WITH_UNDERSCORES` using full descriptive wo
 | `POSTGRES_PASSWORD` | `docker-compose.yml` | Docker PostgreSQL init: password to set |
 | `POSTGRES_DB` | `docker-compose.yml` | Docker PostgreSQL init: database to create |
 | `PORT` | `Procfile.dev` | App server (Puma/Rails) listen port |
-| `DB_SUFFIX` | `database.yml` | Worktree isolation suffix (e.g., `_v2`) |
+| `DATABASE_NAME` | `database.yml` | Override default database name |
 
 **Why two port variables?** `DATABASE_PORT` is what Rails uses to connect. `POSTGRES_PORT` is what Docker uses to map the container's internal port 5432 to the host. Set both to the same value in `.env`.
 

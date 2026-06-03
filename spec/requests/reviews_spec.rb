@@ -1405,7 +1405,7 @@ RSpec.describe 'Reviews' do
         expect(parent_review.reload.rule_id).to eq(rule_a.id)
         # toast variant must be a valid Bootstrap-Vue
         # value (success/warning/danger/info). The original code shipped
-        # 'unprocessable_entity' which renders an unstyled toast.
+        # 'unprocessable_content' which renders an unstyled toast.
         expect(response.parsed_body.dig('toast', 'variant')).to eq('warning')
       end
 

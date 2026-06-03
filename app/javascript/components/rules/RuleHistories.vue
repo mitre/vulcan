@@ -52,8 +52,8 @@ export default {
 
 <style scoped>
 .historyChangeText {
-  background: rgb(0, 0, 0, 0.1);
-  border: 1px solid rgb(0, 0, 0, 0);
+  background: var(--vulcan-overlay-medium);
+  border: 1px solid var(--vulcan-border-transparent);
   border-radius: 0.25em;
 }
 </style>

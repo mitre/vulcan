@@ -71,7 +71,7 @@
   --status-color: var(--triage-pending);
   --status-tint: var(--triage-pending-tint);
   --status-fg: var(--triage-pending-text);
-  --status-pill-fg: #fff;
+  --status-pill-fg: var(--vulcan-component-bg);
 }
 
 [data-triage="concur"] {
@@ -85,14 +85,14 @@
   --status-color: var(--triage-concur-with-comment);
   --status-tint: var(--triage-concur-with-comment-tint);
   --status-fg: var(--triage-concur-with-comment-text);
-  --status-pill-fg: #fff;
+  --status-pill-fg: var(--vulcan-component-bg);
 }
 
 [data-triage="non_concur"] {
   --status-color: var(--triage-non-concur);
   --status-tint: var(--triage-non-concur-tint);
   --status-fg: var(--triage-non-concur-text);
-  --status-pill-fg: #fff;
+  --status-pill-fg: var(--vulcan-component-bg);
 }
 
 [data-triage="informational"],
@@ -107,21 +107,21 @@
   --status-color: var(--triage-withdrawn);
   --status-tint: var(--triage-withdrawn-tint);
   --status-fg: var(--triage-withdrawn-text);
-  --status-pill-fg: #fff;
+  --status-pill-fg: var(--vulcan-component-bg);
 }
 
 [data-triage="duplicate"] {
   --status-color: var(--triage-duplicate);
   --status-tint: var(--triage-duplicate-tint);
   --status-fg: var(--triage-duplicate-text);
-  --status-pill-fg: #fff;
+  --status-pill-fg: var(--vulcan-component-bg);
 }
 
 [data-triage="addressed_by"] {
   --status-color: var(--triage-addressed-by);
   --status-tint: var(--triage-addressed-by-tint);
   --status-fg: var(--triage-addressed-by-text);
-  --status-pill-fg: #fff;
+  --status-pill-fg: var(--vulcan-component-bg);
 }
 
 /* Row background tints — ONE rule reads the intermediate variables.

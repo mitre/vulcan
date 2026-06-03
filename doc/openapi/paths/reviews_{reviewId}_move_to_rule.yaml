@@ -5,6 +5,7 @@ patch:
   tags:
     - Reviews
   summary: Admin moves a comment thread to a different rule
+  description: Reassigns the comment and all its replies to a different rule. Walks parent-first to satisfy validators. Requires admin role.
   requestBody:
     required: true
     content:

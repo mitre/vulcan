@@ -3,11 +3,10 @@ import api from "@/api/baseApi";
 import {
   createRuleReview,
   createComponentReview,
-  getResponses,
-  updateSection,
+  getReviewResponses,
+  updateReviewSection,
   reopenReview,
-  getReactions,
-  getUserComments,
+  getReviewReactions,
   triageReview,
   adjudicateReview,
   withdrawReview,
@@ -17,6 +16,8 @@ import {
   adminDestroyReview,
   toggleReaction,
   updateReview,
+  bulkTriageReviews,
+  mergeReviews,
 } from "@/api/reviewsApi";
 
 vi.mock("@/api/baseApi", () => ({
@@ -42,21 +43,21 @@ describe("reviewsApi", () => {
     });
   });
 
-  it("getResponses calls GET /reviews/:id/responses", async () => {
+  it("getReviewResponses calls GET /reviews/:id/responses", async () => {
     api.get.mockResolvedValue({ data: { rows: [] } });
-    await getResponses(42, { page: 1 });
+    await getReviewResponses(42, { page: 1 });
     expect(api.get).toHaveBeenCalledWith("/reviews/42/responses", { params: { page: 1 } });
   });
 
-  it("getResponses works without params", async () => {
+  it("getReviewResponses works without params", async () => {
     api.get.mockResolvedValue({ data: { rows: [] } });
-    await getResponses(42);
+    await getReviewResponses(42);
     expect(api.get).toHaveBeenCalledWith("/reviews/42/responses", { params: undefined });
   });
 
-  it("updateSection calls PATCH /reviews/:id/section", async () => {
+  it("updateReviewSection calls PATCH /reviews/:id/section", async () => {
     api.patch.mockResolvedValue({ data: {} });
-    await updateSection(10, "check_content", "Fixing section");
+    await updateReviewSection(10, "check_content", "Fixing section");
     expect(api.patch).toHaveBeenCalledWith("/reviews/10/section", {
       section: "check_content",
       audit_comment: "Fixing section",
@@ -69,16 +70,10 @@ describe("reviewsApi", () => {
     expect(api.patch).toHaveBeenCalledWith("/reviews/10/reopen");
   });
 
-  it("getReactions calls GET /reviews/:id/reactions", async () => {
+  it("getReviewReactions calls GET /reviews/:id/reactions", async () => {
     api.get.mockResolvedValue({ data: {} });
-    await getReactions(42, { kind: "up" });
+    await getReviewReactions(42, { kind: "up" });
     expect(api.get).toHaveBeenCalledWith("/reviews/42/reactions", { params: { kind: "up" } });
-  });
-
-  it("getUserComments calls GET /users/:id/comments", async () => {
-    api.get.mockResolvedValue({ data: {} });
-    await getUserComments(7, { page: 2 });
-    expect(api.get).toHaveBeenCalledWith("/users/7/comments", { params: { page: 2 } });
   });
 
   it("triageReview calls PATCH /reviews/:id/triage with payload", async () => {
@@ -144,6 +139,24 @@ describe("reviewsApi", () => {
     await updateReview(15, { comment: "Updated text" });
     expect(api.put).toHaveBeenCalledWith("/reviews/15", {
       review: { comment: "Updated text" },
+    });
+  });
+
+  it("bulkTriageReviews calls PATCH /reviews/bulk_triage with review_ids and payload", async () => {
+    api.patch.mockResolvedValue({ data: {} });
+    await bulkTriageReviews([1, 2, 3], { triage_status: "concur" });
+    expect(api.patch).toHaveBeenCalledWith("/reviews/bulk_triage", {
+      review_ids: [1, 2, 3],
+      triage_status: "concur",
+    });
+  });
+
+  it("mergeReviews calls PATCH /reviews/merge with review_ids and survivor_id", async () => {
+    api.patch.mockResolvedValue({ data: {} });
+    await mergeReviews([10, 11, 12], 10);
+    expect(api.patch).toHaveBeenCalledWith("/reviews/merge", {
+      review_ids: [10, 11, 12],
+      survivor_id: 10,
     });
   });
 

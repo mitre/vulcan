@@ -180,7 +180,7 @@ RSpec.describe Export::Serializers::BackupSerializer do
         expect(data[:reviews].first[:created_at]).to match(TIMESTAMP_PATTERN)
       end
 
-      # vulcan-v3.x-480.5: merge ordering needs sub-second resolution to
+      # merge ordering needs sub-second resolution to
       # compare review states across instances.
       it 'includes updated_at with microsecond precision (iso8601(6))' do
         expect(data[:reviews].first[:updated_at]).to match(/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}/)
@@ -191,7 +191,7 @@ RSpec.describe Export::Serializers::BackupSerializer do
       end
     end
 
-    # vulcan-v3.x-480.5: reactions round-trip — backup must carry the
+    # reactions round-trip — backup must carry the
     # full set of 👍/👎 reactions per comment review so the merge pipeline
     # can reconcile them. Reactions are only valid on comment-action reviews.
     describe 'review reactions serialization' do

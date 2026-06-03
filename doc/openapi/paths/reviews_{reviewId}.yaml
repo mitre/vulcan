@@ -5,6 +5,7 @@ put:
   tags:
     - Reviews
   summary: Update a review comment
+  description: Edits the comment text of an existing review. Only the original author or an admin can update.
   requestBody:
     required: true
     content:
@@ -21,5 +22,18 @@ put:
         application/json:
           schema:
             $ref: ../components/schemas/ReviewWrapper.yaml
+      links:
+        GetReviewResponses:
+          operationId: getReviewResponses
+          parameters:
+            reviewId: '$response.body#/review/id'
+        TriageReview:
+          operationId: triageReview
+          parameters:
+            reviewId: '$response.body#/review/id'
+        WithdrawReview:
+          operationId: withdrawReview
+          parameters:
+            reviewId: '$response.body#/review/id'
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

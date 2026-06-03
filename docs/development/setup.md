@@ -82,7 +82,7 @@ bin/rails db:seed
 `parallel_rspec` uses one database per CPU core. Set them up once after initial database creation:
 
 ```bash
-# 1. Create parallel test databases (vulcan_vue_test, vulcan_vue_test2, ..., vulcan_vue_testN)
+# 1. Create parallel test databases (vulcan_test, vulcan_test2, ..., vulcan_testN)
 bundle exec rake parallel:create
 
 # 2. Migrate the primary test database (loads schema_migrations)
@@ -167,37 +167,9 @@ sudo systemctl start postgresql
 createuser -d vulcan_dev
 ```
 
-#### Database Configuration File
+#### Database Configuration
 
-The project's `config/database.yml` supports `DB_SUFFIX` for worktree isolation:
-
-```yaml
-development:
-  database: vulcan_vue_development<%= ENV['DB_SUFFIX'] %>
-
-test:
-  database: vulcan_vue_test<%= ENV['DB_SUFFIX'] %><%= ENV['TEST_ENV_NUMBER'] %>
-```
-
-#### Worktree Database Isolation
-
-When working with multiple git worktrees (e.g., v2.x and v3.x branches), set `DB_SUFFIX` in each worktree's `.env` to prevent migration conflicts:
-
-```bash
-# v2.x worktree
-DB_SUFFIX=_v2    # → vulcan_vue_development_v2
-
-# v3.x worktree
-DB_SUFFIX=_v3    # → vulcan_vue_development_v3
-```
-
-To set up a new worktree database, clone from the existing one:
-
-```bash
-# Clone the development database for a new worktree
-docker exec <postgres-container> psql -U postgres -c \
-  "CREATE DATABASE vulcan_vue_development_v2 WITH TEMPLATE vulcan_vue_development OWNER postgres;"
-```
+Database names follow Rails convention: `vulcan_development`, `vulcan_test`, `vulcan_production`. All connection settings are configurable via environment variables — see `config/database.yml` and [port registry](port-registry.md).
 
 ### Environment Variables
 
@@ -308,7 +280,7 @@ yarn lint:ci
 #### Run All Tests
 ```bash
 # Ruby tests (use parallel_rspec for full suite — 3-4x faster)
-bundle exec parallel_rspec spec/
+bin/parallel_rspec spec/
 
 # JavaScript tests
 yarn test:unit
@@ -484,7 +456,7 @@ docker compose up --build
 When running multiple MITRE projects simultaneously, assign unique ports to avoid conflicts. See `docs/development/port-registry.md` for port assignments.
 
 ```bash
-# Example .env for vulcan-v2.x alongside other projects
+# Example .env
 DATABASE_PORT=5435
 POSTGRES_PORT=5435
 PORT=3000
@@ -510,7 +482,7 @@ require 'bootsnap/setup'
 
 3. **Parallel Testing**:
 ```bash
-bundle exec parallel_rspec spec/
+bin/parallel_rspec spec/
 ```
 
 ### Database Performance

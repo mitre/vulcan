@@ -17,7 +17,16 @@ patch:
         application/json:
           schema:
             $ref: ../components/schemas/ReviewWrapper.yaml
-          examples:
+      links:
+        TriageReopenedReview:
+          operationId: triageReview
+          parameters:
+            reviewId: '$response.body#/review/id'
+        UpdateReopenedReview:
+          operationId: updateReview
+          parameters:
+            reviewId: '$response.body#/review/id'
+      examples:
             reopened:
               summary: Successfully re-opened
               value:

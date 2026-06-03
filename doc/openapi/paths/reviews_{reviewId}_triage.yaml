@@ -5,6 +5,7 @@ patch:
   tags:
     - Reviews
   summary: Set triage status on a comment (concur, non_concur, etc.)
+  description: Assigns a triage decision to the comment. Terminal statuses auto-adjudicate. Requires author or admin role.
   requestBody:
     required: true
     content:
@@ -31,5 +32,15 @@ patch:
         application/json:
           schema:
             $ref: ../components/schemas/TriageResponse.yaml
+      links:
+        AdjudicateTriagedReview:
+          operationId: adjudicateReview
+          parameters:
+            reviewId: '$response.body#/review/id'
+          description: Close the review after triage is complete.
+        ReopenTriagedReview:
+          operationId: reopenReview
+          parameters:
+            reviewId: '$response.body#/review/id'
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

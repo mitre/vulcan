@@ -146,4 +146,88 @@ namespace :seed_backup do
     report.print_summary
     exit(report.clean? ? 0 : 1)
   end
+
+  desc 'Distribute attribution in source zip across RBAC-aware personas'
+  task :distribute, %i[source output] => :environment do |_t, args|
+    source = args[:source] || Rails.root.join('db/seeds/backups/container_srg_test.source.zip').to_s
+    output = args[:output] || Rails.root.join('db/seeds/backups/container_srg_test.zip').to_s
+    abort "Source zip not found: #{source}" unless File.exist?(source)
+
+    require 'zip'
+    require 'json'
+
+    commenter_pool = SeedHelpers::COMMENTER_POOL
+    triage_pool = SeedHelpers::TRIAGE_POOL
+    adjudicate_pool = SeedHelpers::ADJUDICATE_POOL
+    reply_pool = SeedHelpers::REPLY_POOL
+    persona_names = SeedHelpers::COMMUNITY_PERSONAS.transform_values { |v| v[:name] }
+                                                   .merge(SeedHelpers::DEMO_ROLE_USERS.transform_values { |v| v[:name] })
+                                                   .merge('admin@example.com' => 'Demo Admin')
+
+    Dir.mktmpdir('seed_distribute') do |tmpdir|
+      Zip::File.open(source) do |zip_in|
+        zip_in.each do |entry|
+          dest = File.join(tmpdir, entry.name)
+          FileUtils.mkdir_p(File.dirname(dest))
+          entry.extract(dest) { true }
+        end
+      end
+
+      Dir.glob(File.join(tmpdir, '**/reviews.json')).each do |reviews_path|
+        reviews = JSON.parse(File.read(reviews_path))
+
+        # Load satisfactions to resolve addressed_by_rule_id
+        sats_path = File.join(File.dirname(reviews_path), 'satisfactions.json')
+        child_to_parent = if File.exist?(sats_path)
+                            JSON.parse(File.read(sats_path)).to_h { |s| [s['rule_id'], s['satisfied_by_rule_id']] }
+                          else
+                            {}
+                          end
+
+        by_ext = reviews.index_by { |r| r['external_id'] }
+
+        reviews.each do |r|
+          # Align reply rule_ids with parent
+          parent_ext = r['responding_to_external_id']
+          r['rule_id'] = by_ext[parent_ext]['rule_id'] if parent_ext && by_ext[parent_ext] && r['rule_id'] != by_ext[parent_ext]['rule_id']
+
+          # Populate addressed_by_rule_id from satisfactions
+          r['addressed_by_rule_id'] = child_to_parent[r['rule_id']] if r['triage_status'] == 'addressed_by' && r['addressed_by_rule_id'].nil?
+        end
+
+        reviews.each_with_index do |r, i|
+          is_reply = r['responding_to_external_id'].present?
+
+          email = is_reply ? reply_pool[i % reply_pool.size] : commenter_pool[i % commenter_pool.size]
+          r['user_email'] = email
+          r['user_name'] = persona_names[email] || email.split('@').first
+
+          if r['triage_set_by_email'].present?
+            t_email = triage_pool[i % triage_pool.size]
+            r['triage_set_by_email'] = t_email
+            r['triage_set_by_name'] = persona_names[t_email] || t_email.split('@').first
+          end
+
+          next if r['adjudicated_by_email'].blank?
+
+          a_email = adjudicate_pool[i % adjudicate_pool.size]
+          r['adjudicated_by_email'] = a_email
+          r['adjudicated_by_name'] = persona_names[a_email] || a_email.split('@').first
+        end
+
+        File.write(reviews_path, JSON.pretty_generate(reviews))
+      end
+
+      FileUtils.rm_f(output)
+      Zip::File.open(output, Zip::File::CREATE) do |zip_out|
+        Dir.glob(File.join(tmpdir, '**', '*'), File::FNM_DOTMATCH).each do |file|
+          next if File.directory?(file)
+
+          zip_out.add(file.sub("#{tmpdir}/", ''), file)
+        end
+      end
+    end
+
+    puts "Distributed attribution: #{output}"
+  end
 end

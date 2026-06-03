@@ -330,7 +330,7 @@ describe("CommentComposerModal", () => {
     expect(w.vm.successMessage).toBe("Comment posted.");
   });
 
-  // vulcan-v3.x-05f.6: when the composer was opened for a child rule
+  // when the composer was opened for a child rule
   // (parentRuleId set), the soft-redirect fallback message should name the
   // parent control so the user knows where their comment landed.
   it("falls back to 'posted on parent control …' when parentRuleId is set", async () => {

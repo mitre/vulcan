@@ -3,7 +3,7 @@
 # Per-merge audit row. One ComponentSyncEvent is created at the start of
 # every component sync (inbound or outbound), wired to the snapshot path,
 # archive hash, and downstream merge_operations + merge_quarantine rows.
-# parent_sync_id chains successive syncs. Schema: vulcan-v3.x-480.7.
+# parent_sync_id chains successive syncs.
 class ComponentSyncEvent < ApplicationRecord
   STATUSES   = %w[pending analyzed applied failed undone].freeze
   DIRECTIONS = %w[inbound outbound].freeze

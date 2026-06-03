@@ -17,8 +17,6 @@ the finished system supports once all current work is complete.
 
 ### 1. Vendor Submission (DISA Excel)
 
-**Card:** vulcan-clean-sy4
-
 > As a vendor security engineer, I need to export my completed Component as a
 > strict 17-column DISA spreadsheet so I can submit it to DISA for STIG
 > publication.
@@ -32,8 +30,6 @@ the finished system supports once all current work is complete.
 - Warning if any rules are still NYD (DISA rejects NYD)
 
 ### 2. Working Copy (Excel / CSV)
-
-**Cards:** vulcan-clean-271 (routing), vulcan-clean-yuu (filter toggle)
 
 > As a team lead, I need to export my Component as-is so I can share progress
 > with my team, do offline review, or import into another Vulcan instance.
@@ -66,27 +62,20 @@ the finished system supports once all current work is complete.
 - AC rules only, satisfied-by excluded
 - Maps rule fields to InSpec control structure (title, desc, impact, tags, check/fix)
 
-### 5. Backup XCCDF (Full-Fidelity)
+### 5. Backup (JSON Archive)
 
-**Card:** vulcan-clean-bjy
-
-> As a Vulcan administrator, I need to export a Component as full-fidelity
-> XCCDF XML (all rules, all statuses, all metadata) and re-import it into the
-> same or different Vulcan instance for backup, migration, or disaster recovery.
+> As a Vulcan administrator, I need to export a Component as a full-fidelity
+> JSON archive (all rules, all statuses, all metadata, all reviews) and
+> re-import it into the same or different Vulcan instance for backup,
+> migration, or disaster recovery.
 
 **Acceptance criteria:**
 - ALL rules, ALL statuses, ALL metadata — nothing filtered
 - Includes NYD, NA, AIM, ADNM
-- Preserves satisfaction relationships, vendor comments, InSpec control body
+- Preserves satisfaction relationships, vendor comments, reviews, triage decisions
 - Re-import creates a new Component (or updates existing)
 - Round-trip: export then import produces identical data
 - Works across Vulcan instances
-
-**Why XCCDF over CSV/Excel:**
-- Well-defined NIST schema — less fragile than CSV column ordering
-- Native data format for STIGs/SRGs — mature parsers already exist
-- Preserves hierarchical structure that flat formats lose
-- Schema-validatable — can verify export integrity before import
 
 ---
 
@@ -99,8 +88,8 @@ the finished system supports once all current work is complete.
 > exported.
 
 **Acceptance criteria:**
-- Accepts DISA headers AND benchmark CSV headers (Postel's Law — DONE via header aliases)
-- CSV file format accepted in UI (DONE — vulcan-clean-8et)
+- Accepts DISA headers AND benchmark CSV headers (Postel's Law — done via header aliases)
+- CSV file format accepted in UI
 - InSpec Control Body column imported if present
 - Satisfaction keywords parsed from VulnDiscussion
 
@@ -111,21 +100,18 @@ the finished system supports once all current work is complete.
 
 **Status:** Working. This is the core import path and has been functional.
 
-### 8. Backup XCCDF Import
+### 8. Backup Import (JSON Archive)
 
-**Card:** vulcan-clean-bjy (same as story 5)
-
-> As a Vulcan administrator, I need to re-import a backup XCCDF to restore
-> a Component from a previous export.
+> As a Vulcan administrator, I need to re-import a JSON archive backup to
+> restore a Component from a previous export.
 
 **Acceptance criteria:**
-- Accepts backup XCCDF exported from story 5
+- Accepts backup archive exported from story 5
 - Creates new Component with all fields preserved
 - Works across Vulcan instances (export from A, import to B)
+- Optionally include/exclude reviews and memberships
 
 ### 9. InSpec Profile Import (Future)
-
-**Card:** vulcan-clean-9du
 
 > As a team inheriting an existing InSpec profile, I need to import it into
 > Vulcan so I can manage it alongside our other STIGs.
@@ -145,8 +131,6 @@ structured JSON rather than writing a Ruby DSL parser.
 
 ### 10. Database Backup and Restore
 
-**Card:** vulcan-clean-tnf
-
 > As a Vulcan administrator, I need to backup and restore the entire database
 > so I can recover from failures, migrate between servers, or clone
 > environments.
@@ -164,24 +148,18 @@ structured JSON rather than writing a Ruby DSL parser.
 
 ## Execution Order
 
-The export system has 8 known gaps. Implementation must follow this order:
+### Phase A: Export Implementation (parallel)
+1. Vendor Submission mode (strict DISA 17-column template)
+2. Fix export routing (project CSV + ProjectComponents URL)
+3. Satisfied-by filter toggle for Excel/CSV
 
-### Phase A: Export Implementation (parallel, no deps between them)
-1. **sy4** — Vendor Submission mode (strict DISA 17-column template)
-2. **271** — Fix export routing (project CSV + ProjectComponents URL)
-3. **yuu** — Satisfied-by filter toggle for Excel/CSV
+### Phase B: Round-Trip Testing (after Phase A)
+4. Export/import round-trip fidelity tests
 
-### Phase B: Round-Trip Testing (blocked by ALL of Phase A)
-4. **dzg** — Export/import round-trip fidelity tests
+### Phase C: Documentation (after Phase A)
+5. Sync VitePress docs with finalized export system
 
-### Phase C: Documentation (blocked by Phase A)
-5. **r4d** — Sync VitePress docs with finalized export system
-
-### Independent (no blockers, can be done anytime)
-6. **bjy** — XCCDF backup/restore
-7. **tnf** — Database backup/restore
-8. **9du** — InSpec import (P2, future session)
-
-### Already Complete
-- **8et** — File picker fix (CLOSED)
-- **bru** — CSV header alignment (CLOSED)
+### Independent (no blockers)
+6. JSON archive backup/restore
+7. Database backup/restore
+8. InSpec import (future)

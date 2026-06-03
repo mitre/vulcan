@@ -141,6 +141,38 @@ The first admin account can be created without the Users page:
 
 See [Configuration](/getting-started/configuration) for environment variable details.
 
+## API Tokens (Personal Access Tokens)
+
+Users can create Personal Access Tokens for programmatic API access from the **User Settings > API Tokens** tab.
+
+### Creating a Token
+
+1. Navigate to your **User Settings** page
+2. Select the **API Tokens** tab
+3. Click **Create Token**
+4. Provide a name, select scopes (`read`, `write`, or `admin`), and set an expiration date
+5. Optionally add IP allowlist entries (CIDR notation) to restrict where the token can be used
+6. Enter your current password to confirm
+7. **Copy the token immediately** — it cannot be retrieved again
+
+### Managing Tokens
+
+- View all your active tokens with their last-used date and expiration
+- Revoke any token by clicking the revoke button
+- Tokens start with `vulcan_` for easy identification in secret scanners
+
+### Admin Token Management
+
+Administrators can view other users' token counts in the Users table and revoke any user's tokens from the Edit User modal. Admin revocations require an audit comment explaining the reason.
+
+### Limits
+
+- Maximum 20 tokens per user
+- Maximum lifetime of 365 days
+- Unused tokens are automatically revoked after 90 days
+
+See [API Authentication](/api/authentication) for usage details.
+
 ## Password Policy
 
 Passwords for local accounts are validated against configurable complexity rules. The default follows DoD "2222" standards:

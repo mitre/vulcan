@@ -25,12 +25,12 @@ describe("BenchmarkUpload", () => {
     return shallowMount(BenchmarkUpload, {
       localVue,
       propsData: {
+        value: false,
         post_path: "/srgs",
         ...props,
       },
       stubs: {
         BModal: { template: "<div><slot /><slot name='modal-footer' /></div>", methods: { show: vi.fn(), hide: vi.fn() } },
-        BFormFile: true,
         BButton: true,
         BSpinner: true,
       },

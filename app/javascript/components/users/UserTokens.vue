@@ -34,6 +34,7 @@
           v-if="tokens.length > 0"
           :items="tokens"
           :fields="tableFields"
+          :tbody-tr-class="rowClass"
           striped
           hover
           responsive
@@ -206,6 +207,21 @@ export default {
     isExpired(dateStr) {
       return new Date(dateStr) < new Date();
     },
+    rowClass(item) {
+      return item?.revoked_at ? "token-revoked" : "";
+    },
   },
 };
 </script>
+
+<style scoped>
+::v-deep .token-revoked {
+  opacity: 0.55;
+}
+::v-deep .token-revoked td {
+  text-decoration: line-through;
+}
+::v-deep .token-revoked td:last-child {
+  text-decoration: none;
+}
+</style>

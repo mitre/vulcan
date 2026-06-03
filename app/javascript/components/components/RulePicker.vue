@@ -155,6 +155,6 @@ export default {
 
 .rule-candidate--child {
   border-left: 3px solid var(--vulcan-text-muted, #6c757d) !important;
-  background-color: rgba(108, 117, 125, 0.04);
+  background-color: var(--vulcan-secondary-tint);
 }
 </style>

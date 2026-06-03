@@ -3,11 +3,10 @@ import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import RuleReviews from "@/components/rules/RuleReviews.vue";
 
-// CommentThread lazy-loads replies via axios.get(/reviews/:id/responses).
-// Stub it here so the rendering tests don't depend on a network call.
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
     get: vi.fn(() => Promise.resolve({ data: { rows: [] } })),
+    post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn(),
     defaults: { headers: { common: {} } },
   },
 }));

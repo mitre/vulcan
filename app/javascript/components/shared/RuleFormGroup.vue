@@ -3,7 +3,7 @@
     v-if="shouldDisplay"
     :id="groupId"
     :data-field-name="fieldName"
-    :class="[extraClass, stateClass]"
+    :class="['rule-form-field', extraClass, stateClass]"
   >
     <!-- Label with tooltip + lock icons (skip for checkbox mode) -->
     <label v-if="!checkboxMode" :for="inputId">

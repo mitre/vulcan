@@ -14,9 +14,33 @@ OpenapiFirst::Test.setup do |test|
 
   test.ignore_unknown_response_status = true
 
-  # Disable coverage reporting — each parallel worker only sees a subset
-  # of routes, producing misleading per-worker coverage numbers and
-  # non-zero exit codes that make parallel_tests report "Tests Failed"
-  # even with 0 rspec failures. Run contract tests standalone for coverage.
-  test.report_coverage = false
+  # Coverage off by default — parallel workers only see a subset of routes,
+  # producing misleading per-worker numbers. Enable with OPENAPI_COVERAGE=1
+  # for single-process runs (rake openapi:coverage).
+  if ENV['OPENAPI_COVERAGE'] == '1'
+    test.report_coverage = :warn
+    test.coverage_reporter = OpenapiFirst::Test::Coverage::TerminalReporter
+    test.coverage_reporter_options = { verbose: false }
+  else
+    test.report_coverage = false
+  end
+end
+
+# Auto-validate every JSON request spec response against the OpenAPI schema.
+# Skips: HTML responses, redirect responses, opt-outs via `openapi: false`.
+# Undocumented endpoints are silently skipped (ignore_response_error above).
+RSpec.configure do |config|
+  config.after(:each, type: :request) do |example|
+    next if example.metadata[:openapi] == false
+    next unless response&.status
+    next if response.redirect?
+    next unless response.content_type&.include?('application/json')
+
+    api = OpenapiFirst::Test[:vulcan]
+    validated = api.validate_response(request, response, raise_error: false)
+    next unless validated
+    next if validated.unknown?
+
+    raise validated.error.exception if validated.invalid?
+  end
 end

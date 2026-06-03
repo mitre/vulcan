@@ -123,7 +123,7 @@ Rails.application.routes.draw do
     resources :reactions, only: %i[index create]
   end
   # Add deep linking to specific rule (stig_id of format XXXX-XX-000000)
-  # vulcan-v3.x-aik: keep specific named routes ABOVE the :stig_id catch-all,
+  # keep specific named routes ABOVE the :stig_id catch-all,
   # otherwise /components/:id/<anything> binds to components#show with
   # :stig_id="<anything>" and rule-context filters 404 on a missing rule_id.
   get '/components/:id/related', to: 'components#based_on_same_srg'
@@ -139,7 +139,7 @@ Rails.application.routes.draw do
   # Export SRG
   get '/srgs/:id/export/:type', to: 'security_requirements_guides#export'
   # /related is defined ABOVE /components/:id/:stig_id (see comment there)
-  # vulcan-v3.x-oxz: peer-shaped diff endpoint moved to /api/components/compare
+  # peer-shaped diff endpoint moved to /api/components/compare
   # (see Api namespace below). The old sub-resource path is removed.
   # Detect SRG from spreadsheet (auto-populate dropdown on import)
   post '/components/detect_srg', to: 'components#detect_srg'
@@ -162,12 +162,15 @@ Rails.application.routes.draw do
   get '/search/rules', to: 'rules#search'
   get '/rules/:id/search/related_rules', to: 'rules#related_rules'
 
+  get 'api/docs', to: 'api_docs#show'
+  get 'api/docs/openapi.yaml', to: 'api_docs#spec', as: :api_docs_spec
+
   # API namespace for JSON endpoints
   namespace :api do
     get 'search/global', to: 'search#global'
     get 'users/search', to: 'user_search#index'
     get 'version', to: 'version#show'
-    # vulcan-v3.x-oxz: peer-shaped diff endpoint. Route points at the existing
+    # peer-shaped diff endpoint. Route points at the existing
     # ComponentsController#compare action (not a new Api::ComponentsController)
     # to keep blast radius small for one endpoint.
     get 'components/compare', to: '/components#compare'

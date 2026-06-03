@@ -3,7 +3,7 @@ import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import CommentTriageModal from "@/components/components/CommentTriageModal.vue";
 import { submitTriage, submitAdjudicate, submitAdminAction } from "@/services/triageService";
-import { updateSection } from "@/api/reviewsApi";
+import { updateReviewSection } from "@/api/reviewsApi";
 
 vi.mock("@/api/baseApi", () => ({
   default: {
@@ -23,7 +23,7 @@ vi.mock("@/services/triageService", () => ({
 }));
 
 vi.mock("@/api/reviewsApi", () => ({
-  updateSection: vi.fn(() => Promise.resolve({ data: {} })),
+  updateReviewSection: vi.fn(() => Promise.resolve({ data: {} })),
 }));
 
 const flushPromises = async (wrapper) => {
@@ -515,8 +515,8 @@ describe("CommentTriageModal", () => {
       expect(w.vm.canSubmitSectionChange).toBe(true);
     });
 
-    it("calls updateSection with section + audit_comment, emits 'triaged', and hides the modal", async () => {
-      updateSection.mockResolvedValue({
+    it("calls updateReviewSection with section + audit_comment, emits 'triaged', and hides the modal", async () => {
+      updateReviewSection.mockResolvedValue({
         data: { review: { ...sampleReview, section: "fixtext" } },
       });
       const w = mount(CommentTriageModal, {
@@ -532,7 +532,7 @@ describe("CommentTriageModal", () => {
       await w.vm.submitSectionChange();
       await flushPromises(w);
 
-      expect(updateSection).toHaveBeenCalledWith(142, "fixtext", "should have been Fix");
+      expect(updateReviewSection).toHaveBeenCalledWith(142, "fixtext", "should have been Fix");
       expect(w.emitted("triaged")).toBeTruthy();
       expect(hideSpy).toHaveBeenCalledWith("comment-triage-modal");
 
@@ -545,7 +545,7 @@ describe("CommentTriageModal", () => {
     });
 
     it("accepts null to retag back to (general)", async () => {
-      updateSection.mockResolvedValue({
+      updateReviewSection.mockResolvedValue({
         data: { review: { ...sampleReview, section: null } },
       });
       const w = mount(CommentTriageModal, {
@@ -559,11 +559,11 @@ describe("CommentTriageModal", () => {
       await w.vm.submitSectionChange();
       await flushPromises(w);
 
-      expect(updateSection).toHaveBeenCalledWith(142, null, "general after all");
+      expect(updateReviewSection).toHaveBeenCalledWith(142, null, "general after all");
     });
 
     it("surfaces server errors via AlertMixin without crashing", async () => {
-      updateSection.mockRejectedValueOnce({ response: { status: 422, data: {} } });
+      updateReviewSection.mockRejectedValueOnce({ response: { status: 422, data: {} } });
       const w = mount(CommentTriageModal, {
         localVue,
         propsData: { review: sampleReview, effectivePermissions: "author" },

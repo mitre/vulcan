@@ -142,9 +142,7 @@ describe("TriageSplitView", () => {
     const panel = w.findComponent({ name: "RuleContextPanel" });
     expect(panel.exists()).toBe(true);
     expect(panel.props("ruleContent")).not.toBeNull();
-    expect(panel.props("ruleContent").title).toBe(
-      "The container platform must limit privileges",
-    );
+    expect(panel.props("ruleContent").title).toBe("The container platform must limit privileges");
     expect(panel.props("ruleDisplayedName")).toBe("CNTR-01-000001");
   });
 
@@ -222,10 +220,13 @@ describe("TriageSplitView", () => {
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
     await w.vm.onTriageSave({ triage_status: "concur" });
     await flushPromises(w);
-    expect(submitTriage).toHaveBeenCalledWith(1, expect.objectContaining({
-      triage_status: "concur",
-      expected_updated_at: "2026-05-01T00:00:00Z",
-    }));
+    expect(submitTriage).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        triage_status: "concur",
+        expected_updated_at: "2026-05-01T00:00:00Z",
+      }),
+    );
   });
 
   it("emits triaged on successful save", async () => {
@@ -395,13 +396,13 @@ describe("TriageSplitView", () => {
     w.vm.adminAuditComment = "spam content";
     await w.vm.doSubmitAdminAction();
     await flushPromises(w);
-    expect(submitAdminAction).toHaveBeenCalledWith(
-      1, "force-withdraw", { audit_comment: "spam content" },
-    );
+    expect(submitAdminAction).toHaveBeenCalledWith(1, "force-withdraw", {
+      audit_comment: "spam content",
+    });
     expect(w.emitted("triaged")).toHaveLength(1);
   });
 
-  // vulcan-v3.x-05f.10: admin moves a comment to another rule. The
+  // admin moves a comment to another rule. The
   // submitAdminAction payload must carry both audit_comment AND rule_id.
   it("calls submitAdminAction for move-to-rule with rule_id + audit_comment", async () => {
     submitAdminAction.mockResolvedValue({
@@ -413,9 +414,10 @@ describe("TriageSplitView", () => {
     w.vm.adminTargetRuleId = 42;
     await w.vm.doSubmitAdminAction();
     await flushPromises(w);
-    expect(submitAdminAction).toHaveBeenCalledWith(
-      1, "move-to-rule", { audit_comment: "wrong rule", rule_id: 42 },
-    );
+    expect(submitAdminAction).toHaveBeenCalledWith(1, "move-to-rule", {
+      audit_comment: "wrong rule",
+      rule_id: 42,
+    });
     expect(w.emitted("triaged")).toHaveLength(1);
   });
 
@@ -427,9 +429,9 @@ describe("TriageSplitView", () => {
     w.vm.adminConfirmationId = "1";
     await w.vm.doSubmitAdminAction();
     await flushPromises(w);
-    expect(submitAdminAction).toHaveBeenCalledWith(
-      1, "hard-delete", { audit_comment: "PII removed" },
-    );
+    expect(submitAdminAction).toHaveBeenCalledWith(1, "hard-delete", {
+      audit_comment: "PII removed",
+    });
     expect(w.emitted("destroyed")).toHaveLength(1);
     expect(w.emitted("destroyed")[0][0]).toBe(1);
   });

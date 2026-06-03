@@ -13,6 +13,7 @@ import {
   updateProfile,
   deleteAccount,
   unlinkIdentity,
+  getUserComments,
 } from "@/api/usersApi";
 
 vi.mock("@/api/baseApi", () => ({
@@ -110,6 +111,12 @@ describe("usersApi", () => {
     api.post.mockResolvedValue({ data: {} });
     await unlinkIdentity({ current_password: "secret123" });
     expect(api.post).toHaveBeenCalledWith("/users/unlink_identity", { current_password: "secret123" });
+  });
+
+  it("getUserComments calls GET /users/:id/comments with params", async () => {
+    api.get.mockResolvedValue({ data: {} });
+    await getUserComments(7, { page: 2 });
+    expect(api.get).toHaveBeenCalledWith("/users/7/comments", { params: { page: 2 } });
   });
 
   describe("error propagation", () => {

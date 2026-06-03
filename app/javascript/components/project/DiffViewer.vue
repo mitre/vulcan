@@ -306,7 +306,7 @@ export default {
       ) {
         compareComponents(this.baseComponent.id, this.diffComponent.id)
           .then((response) => {
-            // vulcan-v3.x-oxz: response is { data: {…}, meta: {…} }; unwrap.
+            // Response is { data: {…}, meta: {…} }; unwrap.
             this.ruleDiffs = response.data.data;
           })
           .catch(this.alertOrNotifyResponse);
@@ -356,11 +356,12 @@ export default {
 }
 
 .ruleRow:hover {
-  background: rgb(0, 0, 0, 0.12);
+  background: var(--vulcan-overlay-medium);
 }
 
 .selectedRuleRow {
-  background: rgba(66, 50, 50, 0.09);
+  background: var(--vulcan-active-bg);
+  border-left: 3px solid var(--vulcan-active-border);
 }
 
 .diff-icon {

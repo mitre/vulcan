@@ -1,55 +1,51 @@
 # Documentation System Guide
 
-This guide explains how to work with Vulcan's documentation system.
+How to work with Vulcan's documentation.
 
 ## Overview
 
-Vulcan uses [VitePress](https://vitepress.dev/) for documentation, which provides:
+Vulcan uses [VitePress](https://vitepress.dev/) for documentation:
 - Fast development with hot-reload
 - Vue 3 powered components
 - Markdown-centric with Vue enhancements
 - Static site generation for GitHub Pages
 
-## ⚠️ Important: Separate Dependencies
+## Separate Dependencies (Vue 2/3 Isolation)
 
-**The documentation has its own `package.json` separate from the main application.** This temporary separation exists because:
+The documentation has its own `package.json` in `docs/` — separate from the Rails app. This is intentional:
 
-- **Main Application**: Uses Vue 2.7.16 + Bootstrap 4
-- **Documentation**: Uses VitePress with Vue 3
+- **Rails app**: Vue 2.7.16 + Bootstrap 4 (in root `package.json`)
+- **Documentation**: VitePress with Vue 3 (in `docs/package.json`)
 
-This will be consolidated once the main application migrates to Vue 3.
+The root `package.json` scripts (`yarn docs:dev`, etc.) handle this transparently — they auto-install docs dependencies before running VitePress. You never need to `cd docs` manually.
 
-## Working with Documentation
+## Commands (from project root)
 
-### Starting the Dev Server
-
-From the project root:
 ```bash
-yarn docs:dev
+yarn docs:dev      # Start dev server at http://localhost:5173/vulcan/
+yarn docs:build    # Build static site to docs/.vitepress/dist/
+yarn docs:preview  # Preview the production build locally
 ```
 
-Or work directly in the docs directory:
-```bash
-cd docs
-yarn install  # First time only
-yarn dev
-```
-
-The server runs at `http://localhost:5173/vulcan/`
-
-### Directory Structure
+## Directory Structure
 
 ```
 docs/
-├── .vitepress/          # VitePress configuration
-│   ├── config.js        # Main configuration
-│   └── theme/           # Custom theme components
-│       ├── index.js     # Theme setup
-│       ├── Mermaid.vue  # Mermaid diagram support
-│       └── custom.css   # Custom styles
-├── package.json         # Docs-specific dependencies
-├── yarn.lock           # Dependency lock file
-└── [content folders]    # Documentation content
+├── .vitepress/
+│   ├── config.js        # Sidebar, nav, VitePress settings
+│   └── theme/           # Custom theme (Mermaid, styles)
+├── package.json         # Docs-specific dependencies (Vue 3)
+├── yarn.lock            # Dependency lock file
+├── index.md             # Homepage
+├── about.md             # About page
+├── api/                 # API documentation
+├── deployment/          # Deployment + upgrade guides
+├── development/         # Developer documentation (this file)
+├── disa-process/        # DISA STIG vendor process
+├── getting-started/     # Setup, config, env vars, troubleshooting
+├── release-notes/       # Per-version release notes
+├── security/            # Security controls + compliance
+└── user-guide/          # End-user documentation
 ```
 
 ## Adding Documentation
@@ -68,70 +64,41 @@ docs/
 
 ### Updating Navigation
 
-Edit `.vitepress/config.js` to add pages to navigation:
+Edit `.vitepress/config.js` to add pages to the sidebar:
 
 ```javascript
-nav: [
-  { text: 'New Section', link: '/new-section/' }
-],
-sidebar: {
-  '/new-section/': [
-    {
-      text: 'Section Title',
-      items: [
-        { text: 'Page 1', link: '/new-section/page-1' },
-        { text: 'Page 2', link: '/new-section/page-2' }
-      ]
-    }
-  ]
-}
+{
+  text: "Development",
+  items: [
+    { text: "Setup", link: "/development/setup" },
+    { text: "Your New Page", link: "/development/your-page" },
+  ],
+},
 ```
+
+Both the top-level nav and the path-specific sidebar sections need to be updated — the config has two sidebar definitions (one for the main nav, one for path-specific).
 
 ## Markdown Features
 
-### Standard Markdown
+Standard Markdown plus VitePress extensions:
 
-All standard Markdown syntax is supported:
-- Headers, paragraphs, lists
-- Code blocks with syntax highlighting
-- Tables, blockquotes, horizontal rules
-- Links and images
-
-### VitePress Extensions
-
-#### Custom Containers
+### Custom Containers
 
 ```markdown
 ::: tip
-This is a tip
+Helpful information
 :::
 
 ::: warning
-This is a warning
+Important caveat
 :::
 
 ::: danger
-This is a danger alert
-:::
-
-::: details Click to expand
-Hidden content
+Critical warning
 :::
 ```
 
-#### Code Line Highlighting
-
-````markdown
-```javascript{2,4-5}
-const line1 = 'not highlighted'
-const line2 = 'highlighted'
-const line3 = 'not highlighted'
-const line4 = 'highlighted'
-const line5 = 'highlighted'
-```
-````
-
-#### Mermaid Diagrams
+### Mermaid Diagrams
 
 ````markdown
 ```mermaid
@@ -142,103 +109,82 @@ graph TD
 ```
 ````
 
-## Building Documentation
+## Build Configuration
 
-### Local Build (Currently Limited)
+### Excluded Content
 
-Due to Vue 2/3 conflicts:
-```bash
-cd docs
-yarn build  # ❌ Currently fails locally
+`srcExclude` in `.vitepress/config.js` prevents internal planning docs from being processed:
+
+```javascript
+srcExclude: ['**/superpowers/**', '**/plans/**'],
 ```
 
-**Note:** This is a known issue that will be resolved when the main app migrates to Vue 3.
+These directories contain working documents with raw markdown that Vue's template compiler rejects (embedded YAML, duplicate HTML attributes). They're development artifacts, not published content.
 
-### CI/CD Build
+### Build Verification
 
-GitHub Actions successfully builds and deploys because it:
-1. Only installs docs dependencies
-2. Runs in a clean environment
-3. Deploys to GitHub Pages
+Always build before committing doc changes:
+
+```bash
+yarn docs:build
+```
+
+If the build fails, check for:
+- Raw HTML in markdown that Vue interprets as template syntax
+- Unclosed tags or duplicate attributes
+- Files in excluded directories that should stay excluded
 
 ## Deployment
 
-### Automatic Deployment
+### Automatic (GitHub Actions)
 
-Documentation automatically deploys when:
-- Changes are pushed to `master` branch
-- Files in `docs/` directory are modified
-- GitHub Actions workflow succeeds
+Documentation deploys when changes are pushed to `master` or `main` in the `docs/` directory. The `.github/workflows/docs.yml` workflow builds and deploys to GitHub Pages.
 
-### Manual Deployment
+### Manual
 
-You can manually trigger deployment:
-1. Go to Actions tab in GitHub
-2. Select "Deploy VitePress Documentation"
-3. Click "Run workflow"
+Trigger via GitHub Actions → "Deploy VitePress Documentation" → "Run workflow".
 
-## Best Practices
+## Content Guidelines
 
-### Content Guidelines
-
-1. **Clear Structure**: Use logical hierarchy with proper headings
-2. **Code Examples**: Include practical, runnable examples
-3. **Visual Aids**: Add diagrams for complex concepts
-4. **Cross-References**: Link to related documentation
-5. **Consistency**: Follow established patterns and styles
-
-### File Organization
-
-- `/getting-started/` - New user guides
-- `/deployment/` - Deployment and installation
-- `/development/` - Developer documentation
-- `/api/` - API references
-- `/security/` - Security documentation
+1. **Source verification** — read the source code before documenting it
+2. **Code examples** — include practical, runnable examples from real Vulcan usage
+3. **Cross-references** — link to related pages (use relative links: `[setup](setup)`)
+4. **No fabrication** — don't document features that don't exist
+5. **Keep current** — when code changes, update the docs in the same commit
 
 ### Commit Messages
 
-When updating docs:
 ```bash
-git commit -m "docs: update deployment guide with Kubernetes examples"
-git commit -m "docs: fix broken links in API reference"
-git commit -m "docs: add troubleshooting section"
+git commit -m "docs: add upgrade system developer guide"
+git commit -m "docs: update env vars for port standardization"
 ```
 
 ## Troubleshooting
 
-### Common Issues
+### Port Already in Use
 
-#### Port Already in Use
-VitePress will automatically try the next port:
+VitePress auto-increments:
 ```
-➜  Local:   http://localhost:5174/vulcan/
+➜  Local: http://localhost:5174/vulcan/
 ```
 
-#### Module Not Found Errors
-Clean and reinstall dependencies:
+### Module Not Found
+
 ```bash
-cd docs
-rm -rf node_modules yarn.lock
-yarn install
+yarn docs:build    # Auto-installs deps before building
 ```
 
-#### Build Failures
-Local builds fail due to Vue conflicts. Use the dev server for local work:
+If that fails, manually reinstall:
 ```bash
-yarn dev  # Works for development
+cd docs && rm -rf node_modules && yarn install && cd ..
 ```
 
-## Future Improvements
+### Build Fails on Plan Files
 
-Once Vue 3 migration is complete:
-1. Merge docs dependencies into main `package.json`
-2. Remove separate dependency management
-3. Enable local builds
-4. Simplify development workflow
+Internal planning docs (`superpowers/plans/`) contain markdown that Vue rejects. They're excluded via `srcExclude` in the VitePress config. If you add new internal docs, add their directory to the exclude list.
 
 ## Resources
 
 - [VitePress Guide](https://vitepress.dev/guide/getting-started)
 - [Markdown Reference](https://www.markdownguide.org/)
 - [Mermaid Diagrams](https://mermaid.js.org/)
-- [Vue 3 Documentation](https://vuejs.org/)

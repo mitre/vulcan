@@ -5,6 +5,7 @@ patch:
   tags:
     - Reviews
   summary: Adjudicate (close) a triaged comment
+  description: Marks the comment as adjudicated, finalizing the triage decision. Requires author or admin role.
   responses:
     '200':
       description: Review adjudicated
@@ -12,5 +13,10 @@ patch:
         application/json:
           schema:
             $ref: ../components/schemas/TriageResponse.yaml
+      links:
+        ReopenAdjudicatedReview:
+          operationId: reopenReview
+          parameters:
+            reviewId: '$response.body#/review/id'
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

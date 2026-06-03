@@ -62,7 +62,7 @@
 </template>
 
 <script>
-import { getReactions } from "../../api/reviewsApi";
+import { getReviewReactions } from "../../api/reviewsApi";
 import { REACTION_ICONS } from "../../constants/reactionVocabulary";
 
 export default {
@@ -113,7 +113,7 @@ export default {
       this.loading = true;
       this.loadError = false;
       try {
-        const { data } = await getReactions(this.reviewId);
+        const { data } = await getReviewReactions(this.reviewId);
         this.reactors = data;
         this.loaded = true;
       } catch {

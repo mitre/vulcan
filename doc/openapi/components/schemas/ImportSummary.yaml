@@ -1,0 +1,65 @@
+description: >-
+  Summary of what was imported (or would be imported in dry_run mode)
+  from a JSON archive backup. Returned by JsonArchiveImporter.
+type: object
+properties:
+  dry_run:
+    type: boolean
+    description: Whether this was a preview (true) or real import (false). Only present in dry_run responses.
+    example: true
+  components_imported:
+    type: integer
+    description: Number of components imported.
+    example: 2
+  rules_imported:
+    type: integer
+    description: Total rules imported across all components.
+    example: 264
+  satisfactions_imported:
+    type: integer
+    description: Number of rule satisfaction relationships imported.
+    example: 12
+  reviews_imported:
+    type: integer
+    description: Number of review records imported.
+    example: 48
+  memberships_imported:
+    type: integer
+    description: Number of project memberships imported.
+    example: 3
+  srgs_imported:
+    type: integer
+    description: Number of SRGs auto-imported from the archive.
+    example: 1
+  srg_details:
+    type: array
+    description: Details of SRGs found in the archive (dry_run only).
+    items:
+      type: object
+      properties:
+        title:
+          type: string
+        version:
+          type: string
+  component_details:
+    type: array
+    description: Per-component breakdown of what was imported.
+    items:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Photon OS 3"
+        rule_count:
+          type: integer
+          example: 132
+        srg_title:
+          type:
+            - string
+            - 'null'
+          example: "General Purpose Operating System SRG"
+        srg_version:
+          type:
+            - string
+            - 'null'
+          example: "V3R3"

@@ -8,6 +8,10 @@ export default defineConfig({
   // Use / for GitHub Pages with custom domain (vulcan.mitre.org), /vulcan/ for local dev
   base: process.env.GITHUB_DEPLOY === "true" ? "/" : "/vulcan/",
 
+  // Exclude internal planning docs and non-publishable content from the build.
+  // These contain raw HTML/markdown that Vue's template compiler rejects.
+  srcExclude: ['**/superpowers/**', '**/plans/**'],
+
   // Clean URLs without .html extension
   cleanUrls: true,
 
@@ -47,6 +51,7 @@ export default defineConfig({
             items: [
               { text: "Overview", link: "/user-guide/overview" },
               { text: "Authoring Rules", link: "/user-guide/authoring-rules" },
+              { text: "Public Comment Review", link: "/user-guide/public-comment-review" },
               { text: "User Management", link: "/user-guide/user-management" },
               { text: "Section Locks", link: "/user-guide/section-locks" },
               { text: "Data Management", link: "/user-guide/data-management/" },
@@ -66,6 +71,7 @@ export default defineConfig({
               { text: "Kubernetes", link: "/deployment/kubernetes" },
               { text: "Heroku", link: "/deployment/heroku" },
               { text: "Bare Metal", link: "/deployment/bare-metal" },
+              { text: "Upgrade Guide", link: "/deployment/upgrade-guide" },
             ],
           },
           {
@@ -95,7 +101,12 @@ export default defineConfig({
           { text: "Architecture", link: "/development/architecture" },
           { text: "Authorization", link: "/development/authorization" },
           { text: "Testing", link: "/development/testing" },
+          { text: "Design System", link: "/development/design-system" },
+          { text: "Toast Contract", link: "/development/toast-contract" },
+          { text: "OpenAPI Testing", link: "/development/openapi-testing" },
           { text: "Release Process", link: "/development/release-process" },
+          { text: "Upgrade System", link: "/development/upgrade-system" },
+          { text: "Port Registry", link: "/development/port-registry" },
           { text: "Contributing", link: "/CONTRIBUTING.md" },
         ],
       },
@@ -168,6 +179,7 @@ export default defineConfig({
             { text: "Overview", link: "/user-guide/overview" },
             { text: "Authoring Rules", link: "/user-guide/authoring-rules" },
             { text: "Sidebar — Nested Requirements", link: "/user-guide/sidebar-collapse" },
+            { text: "Public Comment Review", link: "/user-guide/public-comment-review" },
             { text: "User Management", link: "/user-guide/user-management" },
             { text: "Section Locks", link: "/user-guide/section-locks" },
           ],
@@ -202,6 +214,7 @@ export default defineConfig({
             { text: "Bare Metal", link: "/deployment/bare-metal" },
             { text: "Heroku", link: "/deployment/heroku" },
             { text: "Kubernetes", link: "/deployment/kubernetes" },
+            { text: "Upgrade Guide", link: "/deployment/upgrade-guide" },
           ],
         },
         {
@@ -234,7 +247,12 @@ export default defineConfig({
             { text: "Authorization", link: "/development/authorization" },
             { text: "Section Locks", link: "/development/section-locks" },
             { text: "Testing", link: "/development/testing" },
+            { text: "Design System", link: "/development/design-system" },
+            { text: "Toast Contract", link: "/development/toast-contract" },
+            { text: "OpenAPI Testing", link: "/development/openapi-testing" },
             { text: "Release Process", link: "/development/release-process" },
+            { text: "Upgrade System", link: "/development/upgrade-system" },
+            { text: "Port Registry", link: "/development/port-registry" },
           ],
         },
         {
@@ -349,23 +367,19 @@ export default defineConfig({
               name: "preset-default",
               params: {
                 overrides: {
-                  // Clean up IDs
                   cleanupIds: {
                     minify: true,
                   },
-                  // Optimize paths
                   convertPathData: {
                     floatPrecision: 2,
                   },
                 },
               },
             },
-            // Keep viewBox for scaling
             {
               name: "removeViewBox",
               active: false,
             },
-            // Keep title and desc for accessibility
             {
               name: "removeTitle",
               active: false,

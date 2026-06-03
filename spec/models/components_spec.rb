@@ -1210,10 +1210,10 @@ RSpec.describe Component do
     end
   end
 
-  # vulcan-v3.x-73z.7: status_counts / releasable / reviews each ran fresh SQL
+  # status_counts / releasable / reviews each ran fresh SQL
   # despite set_component preloading rules. Use in-memory rules when
   # association_cached?(:rules); fall back to SQL when not preloaded.
-  describe 'eager-load-aware methods (vulcan-v3.x-73z.7)' do
+  describe 'eager-load-aware methods' do
     def capture_base_rules_sql(&)
       sql = []
       cb = ->(_, _, _, _, p) { sql << p[:sql] if p[:sql].to_s.match?(/FROM\s+["']?base_rules/i) }
@@ -1281,12 +1281,12 @@ RSpec.describe Component do
     end
   end
 
-  # vulcan-v3.x-480.6 (§18.4): #largest_rule_id built its TO_NUMBER query via
+  # (§18.4): #largest_rule_id built its TO_NUMBER query via
   # string interpolation of the component id. Brakeman-flagged SQL injection
   # (false positive in practice — id is an AR PK — but a real bug class).
   # The fix routes component_id through bound params; only the trusted
   # TO_NUMBER literal remains in the SQL text.
-  describe '#largest_rule_id SQL parameterization (vulcan-v3.x-480.6)' do
+  describe '#largest_rule_id SQL parameterization' do
     it 'parameterizes component ID in max rule_id SQL query' do
       component = shared_component
       sql_events = []

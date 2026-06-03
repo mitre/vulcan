@@ -1,0 +1,6 @@
+- content_for :title, 'API Documentation'
+
+%div#scalar-docs
+
+%script{ src: 'https://cdn.jsdelivr.net/npm/@scalar/api-reference' }
+= javascript_include_tag 'api_docs', defer: true

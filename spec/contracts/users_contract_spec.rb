@@ -84,7 +84,7 @@ RSpec.describe 'Users endpoint contracts', type: :request do
       # Make sure admin is the only admin
       User.where(admin: true).where.not(id: admin.id).update_all(admin: false)
       delete "/users/#{admin.id}", headers: json_headers, as: :json
-      body = validate_and_parse!(expected_status: :unprocessable_entity)
+      body = validate_and_parse!(expected_status: :unprocessable_content)
 
       expect(body.dig('toast', 'variant')).to eq('danger')
       expect(body.dig('toast', 'title')).to include('Cannot')
@@ -121,9 +121,10 @@ RSpec.describe 'Users endpoint contracts', type: :request do
         row = body['rows'].first
         assert_fields_present row, :id, :project_id, :project_name, :component_id,
                               :component_name, :rule_displayed_name, :commentable_type,
-                              :comment, :created_at, :triage_status, :responses_count, :reactions
+                              :comment, :created_at, :triage_status, :responses_count,
+                              :reactions, :author_name
         assert_fields_present row['reactions'], :up, :down, :mine
-        assert_fields_absent row, :author_name, :author_email, :triager_display_name,
+        assert_fields_absent row, :author_email, :triager_display_name,
                              :rule_status, :group_rule_displayed_name
       end
     end
@@ -170,7 +171,7 @@ RSpec.describe 'Users endpoint contracts', type: :request do
     it 'returns 422 ToastResponse when SMTP is disabled' do
       allow(Settings.smtp).to receive(:enabled).and_return(false)
       post "/users/#{target_user.id}/send_password_reset", headers: json_headers, as: :json
-      body = validate_and_parse!(expected_status: :unprocessable_entity)
+      body = validate_and_parse!(expected_status: :unprocessable_content)
 
       assert_fields_present body, :toast
       expect(body.dig('toast', 'variant')).to eq('danger')
@@ -210,7 +211,7 @@ RSpec.describe 'Users endpoint contracts', type: :request do
       post "/users/#{target_user.id}/set_password",
            params: { user: { password: '' } },
            headers: json_headers, as: :json
-      body = validate_and_parse!(expected_status: :unprocessable_entity)
+      body = validate_and_parse!(expected_status: :unprocessable_content)
 
       expect(body.dig('toast', 'variant')).to eq('danger')
       expect(body.dig('toast', 'title')).to be_a(String)
@@ -236,7 +237,7 @@ RSpec.describe 'Users endpoint contracts', type: :request do
 
     it 'returns 422 with danger toast when locking self' do
       post "/users/#{admin.id}/lock", headers: json_headers, as: :json
-      body = validate_and_parse!(expected_status: :unprocessable_entity)
+      body = validate_and_parse!(expected_status: :unprocessable_content)
 
       expect(body.dig('toast', 'variant')).to eq('danger')
       expect(body.dig('toast', 'title')).to include('Cannot')
@@ -268,7 +269,7 @@ RSpec.describe 'Users endpoint contracts', type: :request do
       post '/users/unlink_identity',
            params: { current_password: 'password123!' },
            headers: json_headers, as: :json
-      body = validate_and_parse!(expected_status: :unprocessable_entity)
+      body = validate_and_parse!(expected_status: :unprocessable_content)
 
       assert_fields_present body, :toast
       expect(body.dig('toast', 'variant')).to eq('danger')

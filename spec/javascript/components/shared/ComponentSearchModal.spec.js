@@ -18,15 +18,19 @@ import ComponentSearchModal from "@/components/shared/ComponentSearchModal.vue";
  * 10. Resets state on close
  */
 
-// Mock axios at module level
-vi.mock("axios", () => ({
+// Mock baseApi at module level
+vi.mock("@/api/baseApi", () => ({
   default: {
     get: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
     defaults: { headers: { common: {} } },
   },
 }));
 
-import axios from "axios";
+import api from "@/api/baseApi";
 
 describe("ComponentSearchModal", () => {
   let wrapper;
@@ -126,20 +130,20 @@ describe("ComponentSearchModal", () => {
     it("does not search when query is less than 2 characters", async () => {
       wrapper = createWrapper();
       await wrapper.vm.performSearch("a");
-      expect(axios.get).not.toHaveBeenCalled();
+      expect(api.get).not.toHaveBeenCalled();
     });
 
     it("calls API with component_id when query is 2+ characters", async () => {
-      axios.get.mockResolvedValue(mockRuleResults);
+      api.get.mockResolvedValue(mockRuleResults);
       wrapper = createWrapper();
       await wrapper.vm.performSearch("container");
-      expect(axios.get).toHaveBeenCalledWith("/api/search/global", {
+      expect(api.get).toHaveBeenCalledWith("/api/search/global", {
         params: { q: "container", limit: 20, component_id: 29 },
       });
     });
 
     it("populates results from API response", async () => {
-      axios.get.mockResolvedValue(mockRuleResults);
+      api.get.mockResolvedValue(mockRuleResults);
       wrapper = createWrapper();
       await wrapper.vm.performSearch("container");
       expect(wrapper.vm.results.length).toBe(2);
@@ -149,7 +153,7 @@ describe("ComponentSearchModal", () => {
 
     it("sets loading true during API call and false after", async () => {
       let resolvePromise;
-      axios.get.mockReturnValue(
+      api.get.mockReturnValue(
         new Promise((resolve) => {
           resolvePromise = resolve;
         }),
@@ -163,7 +167,7 @@ describe("ComponentSearchModal", () => {
     });
 
     it("clears results when query becomes empty", async () => {
-      axios.get.mockResolvedValue(mockRuleResults);
+      api.get.mockResolvedValue(mockRuleResults);
       wrapper = createWrapper();
       await wrapper.vm.performSearch("container");
       expect(wrapper.vm.results.length).toBe(2);
@@ -174,7 +178,7 @@ describe("ComponentSearchModal", () => {
 
   describe("keyboard navigation", () => {
     it("moves highlight down with ArrowDown", async () => {
-      axios.get.mockResolvedValue(mockRuleResults);
+      api.get.mockResolvedValue(mockRuleResults);
       wrapper = createWrapper();
       await wrapper.vm.performSearch("container");
       // First result auto-highlighted on search
@@ -184,7 +188,7 @@ describe("ComponentSearchModal", () => {
     });
 
     it("wraps highlight to top when past last result", async () => {
-      axios.get.mockResolvedValue(mockRuleResults);
+      api.get.mockResolvedValue(mockRuleResults);
       wrapper = createWrapper();
       await wrapper.vm.performSearch("container");
       wrapper.vm.highlightedIndex = 1;
@@ -193,7 +197,7 @@ describe("ComponentSearchModal", () => {
     });
 
     it("moves highlight up with ArrowUp", async () => {
-      axios.get.mockResolvedValue(mockRuleResults);
+      api.get.mockResolvedValue(mockRuleResults);
       wrapper = createWrapper();
       await wrapper.vm.performSearch("container");
       wrapper.vm.highlightedIndex = 1;
@@ -202,7 +206,7 @@ describe("ComponentSearchModal", () => {
     });
 
     it("emits selected on Enter with highlighted result", async () => {
-      axios.get.mockResolvedValue(mockRuleResults);
+      api.get.mockResolvedValue(mockRuleResults);
       wrapper = createWrapper();
       await wrapper.vm.performSearch("container");
       wrapper.vm.highlightedIndex = 0;
@@ -220,7 +224,7 @@ describe("ComponentSearchModal", () => {
 
   describe("result display", () => {
     it("formats result label with project prefix and rule_id", async () => {
-      axios.get.mockResolvedValue(mockRuleResults);
+      api.get.mockResolvedValue(mockRuleResults);
       wrapper = createWrapper();
       await wrapper.vm.performSearch("container");
       const label = wrapper.vm.formatResultLabel(wrapper.vm.results[0]);
@@ -228,14 +232,14 @@ describe("ComponentSearchModal", () => {
     });
 
     it("reports result count", async () => {
-      axios.get.mockResolvedValue(mockRuleResults);
+      api.get.mockResolvedValue(mockRuleResults);
       wrapper = createWrapper();
       await wrapper.vm.performSearch("container");
       expect(wrapper.vm.resultCount).toBe("2 results");
     });
 
     it("reports singular result count", async () => {
-      axios.get.mockResolvedValue({
+      api.get.mockResolvedValue({
         data: { rules: [mockRuleResults.data.rules[0]] },
       });
       wrapper = createWrapper();
@@ -272,17 +276,17 @@ describe("ComponentSearchModal", () => {
     };
 
     it("calls comments endpoint when searchType is comments", async () => {
-      axios.get.mockResolvedValue(mockCommentResults);
+      api.get.mockResolvedValue(mockCommentResults);
       wrapper = createWrapper({ searchType: "comments" });
       await wrapper.vm.performSearch("container");
-      const callArgs = axios.get.mock.calls[axios.get.mock.calls.length - 1];
+      const callArgs = api.get.mock.calls[api.get.mock.calls.length - 1];
       expect(callArgs[0]).toBe("/components/29/comments");
       expect(callArgs[1].params.q).toBe("container");
       expect(callArgs[1].params.triage_status).toBe("all");
     });
 
     it("transforms comment rows into result items", async () => {
-      axios.get.mockResolvedValue(mockCommentResults);
+      api.get.mockResolvedValue(mockCommentResults);
       wrapper = createWrapper({ searchType: "comments" });
       await wrapper.vm.performSearch("container");
       expect(wrapper.vm.results.length).toBe(2);
@@ -292,7 +296,7 @@ describe("ComponentSearchModal", () => {
     });
 
     it("formats comment result label with rule name and author", async () => {
-      axios.get.mockResolvedValue(mockCommentResults);
+      api.get.mockResolvedValue(mockCommentResults);
       wrapper = createWrapper({ searchType: "comments" });
       await wrapper.vm.performSearch("container");
       const label = wrapper.vm.formatResultLabel(wrapper.vm.results[0]);

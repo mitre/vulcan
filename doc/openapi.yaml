@@ -17,6 +17,7 @@ servers:
     description: Same-origin (session cookie auth)
 security:
   - cookieAuth: []
+  - tokenAuth: []
 tags:
   - name: Projects
     description: Project CRUD, export, import, and member management
@@ -785,22 +786,71 @@ paths:
                   example: Restored Container Platform
       responses:
         '200':
-          description: Project created from backup
+          description: Dry-run returns preview (summary + warnings + project_defaults). Real create returns redirect URL + summary + toast.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ToastResponse'
+                oneOf:
+                  - $ref: '#/components/schemas/CreateFromBackupDryRunResponse'
+                  - $ref: '#/components/schemas/CreateFromBackupResponse'
               examples:
-                created:
-                  summary: Project restored from archive
+                dry_run:
+                  summary: Preview of what would be imported
                   value:
+                    summary:
+                      dry_run: true
+                      components_imported: 2
+                      rules_imported: 264
+                      component_details:
+                        - name: Photon OS 3
+                          rule_count: 132
+                    warnings: []
+                    project_defaults:
+                      name: My Original Project
+                      description: A test project
+                      visibility: discoverable
+                created:
+                  summary: Project created from archive
+                  value:
+                    redirect_url: /projects/123
+                    summary:
+                      components_imported: 2
+                      rules_imported: 264
                     toast:
-                      title: Project restored.
+                      title: Project imported.
                       message:
-                        - Successfully restored project Restored Container Platform.
+                        - Project created from backup successfully.
                       variant: success
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          description: Import or preview failed
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - toast
+                properties:
+                  toast:
+                    $ref: '#/components/schemas/ToastObject'
+                  warnings:
+                    type: array
+                    items:
+                      type: string
+                  project_defaults:
+                    type: object
+                    properties:
+                      name:
+                        type:
+                          - string
+                          - 'null'
+                      description:
+                        type:
+                          - string
+                          - 'null'
+                      visibility:
+                        type:
+                          - string
+                          - 'null'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /projects/{projectId}/import_backup:
@@ -827,20 +877,48 @@ paths:
                   description: JSON archive .zip file from a previous export.
       responses:
         '200':
-          description: Backup imported
+          description: Backup imported (or dry-run preview completed)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ToastResponse'
+                $ref: '#/components/schemas/ImportBackupResponse'
               examples:
                 imported:
-                  summary: Archive imported
+                  summary: Archive imported successfully
                   value:
                     toast:
-                      title: Import complete.
+                      title: Backup restored.
                       message:
-                        - Successfully imported 2 components with 264 rules.
+                        - Backup restored successfully.
                       variant: success
+                    summary:
+                      components_imported: 2
+                      rules_imported: 264
+                      satisfactions_imported: 12
+                      reviews_imported: 48
+                      memberships_imported: 3
+                      srgs_imported: 1
+                      component_details:
+                        - name: Photon OS 3
+                          rule_count: 132
+                          srg_title: General Purpose Operating System SRG
+                          srg_version: V3R3
+                    warnings: []
+        '422':
+          description: Import failed (validation errors)
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - toast
+                properties:
+                  toast:
+                    $ref: '#/components/schemas/ToastObject'
+                  warnings:
+                    type: array
+                    items:
+                      type: string
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /projects/{projectId}/histories:
@@ -1418,6 +1496,22 @@ paths:
                       rule_id: '000204'
                       title: New container security requirement
                       status: Not Yet Determined
+          links:
+            GetCreatedRule:
+              operationId: getRule
+              parameters:
+                ruleId: $response.body#/data/id
+              description: Fetch the newly created rule.
+            UpdateCreatedRule:
+              operationId: updateRule
+              parameters:
+                ruleId: $response.body#/data/id
+              description: Update the newly created rule.
+            DeleteCreatedRule:
+              operationId: deleteRule
+              parameters:
+                ruleId: $response.body#/data/id
+              description: Delete the newly created rule.
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /components/{componentId}/rules_picker:
@@ -2070,6 +2164,7 @@ paths:
       tags:
         - Rules
       summary: Rule detail
+      description: Returns the full rule editor payload including checks, descriptions, satisfactions, and review history.
       responses:
         '200':
           description: Rule data
@@ -2077,6 +2172,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RuleEditorResponse'
+          links:
+            UpdateThisRule:
+              operationId: updateRule
+              parameters:
+                ruleId: $response.body#/id
+            DeleteThisRule:
+              operationId: deleteRule
+              parameters:
+                ruleId: $response.body#/id
+            RevertThisRule:
+              operationId: revertRule
+              parameters:
+                ruleId: $response.body#/id
+            CreateReviewOnRule:
+              operationId: createRuleReview
+              parameters:
+                ruleId: $response.body#/id
         4XX:
           $ref: '#/components/responses/ErrorResponse'
     put:
@@ -2084,6 +2196,7 @@ paths:
       tags:
         - Rules
       summary: Update rule attributes
+      description: Updates one or more rule fields. Requires author or admin role on the component.
       requestBody:
         required: true
         content:
@@ -2107,6 +2220,7 @@ paths:
       tags:
         - Rules
       summary: Soft-delete a rule
+      description: Marks the rule as deleted. Requires admin role on the component.
       responses:
         '200':
           description: Rule deleted
@@ -2124,6 +2238,7 @@ paths:
       tags:
         - Rules
       summary: Revert a rule to a previous audit version
+      description: Restores all audited fields to their values at the specified audit entry. Requires author or admin role.
       requestBody:
         required: true
         content:
@@ -2290,6 +2405,7 @@ paths:
       tags:
         - Rules
       summary: Create a satisfaction relationship between two rules
+      description: Links a child rule to a parent rule that satisfies it. Triggers ADNM status automation on the child.
       requestBody:
         required: true
         content:
@@ -2318,6 +2434,7 @@ paths:
       tags:
         - Rules
       summary: Remove a satisfaction relationship
+      description: Removes the parent-child satisfaction link and reverts ADNM status on the child rule.
       requestBody:
         content:
           application/json:
@@ -2345,6 +2462,7 @@ paths:
       tags:
         - Reviews
       summary: Create a review on a rule (comment, request_review, etc.)
+      description: Posts a new comment or review action on the specified rule. Requires viewer role or above on the component.
       requestBody:
         required: true
         content:
@@ -2417,6 +2535,147 @@ paths:
                       variant: success
         4XX:
           $ref: '#/components/responses/ErrorResponse'
+  /reviews/bulk_triage:
+    patch:
+      operationId: bulkTriageReviews
+      tags:
+        - Reviews
+      summary: Triage multiple reviews at once
+      description: Applies the same triage status to all specified reviews in a single request. All reviews must belong to the same component (enforced server-side). Optionally creates a response comment on each triaged review. Requires author+ role on the component's project.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - review_ids
+                - triage_status
+              properties:
+                review_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: IDs of the reviews to triage.
+                  example:
+                    - 10
+                    - 11
+                    - 12
+                triage_status:
+                  type: string
+                  description: The triage status to apply to all selected reviews.
+                  enum:
+                    - concur
+                    - concur_with_comment
+                    - non_concur
+                    - informational
+                    - needs_clarification
+                    - duplicate
+                    - addressed_by
+                  example: concur
+                response_comment:
+                  type: string
+                  description: Optional response comment to attach to each triaged review.
+                  example: Accepted — will update check_content in next release.
+      responses:
+        '200':
+          description: All reviews triaged successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkTriageResponse'
+              examples:
+                triaged:
+                  summary: Three reviews accepted
+                  value:
+                    reviews:
+                      - id: 10
+                        action: comment
+                        comment: Original comment 1
+                        triage_status: concur
+                        rule_id: 100
+                        created_at: 2026-05-19 14:08:17 UTC
+                        reactions:
+                          up: 0
+                          down: 0
+                          mine: null
+                    response_reviews: []
+        '422':
+          description: Validation error (invalid triage status, reviews from different components)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+  /reviews/merge:
+    patch:
+      operationId: mergeReviews
+      tags:
+        - Reviews
+      summary: Merge duplicate reviews into one survivor
+      description: Combines multiple same-author reviews within one component into a designated survivor. Non-survivor reviews are marked as duplicates (triage_status=duplicate, duplicate_of_review_id=survivor). Requires admin role on the component's project.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - review_ids
+                - survivor_id
+              properties:
+                review_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: IDs of all reviews to merge (including the survivor).
+                  example:
+                    - 10
+                    - 11
+                    - 12
+                survivor_id:
+                  type: integer
+                  description: ID of the review that absorbs the others.
+                  example: 10
+      responses:
+        '200':
+          description: Reviews merged successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MergeResponse'
+              examples:
+                merged:
+                  summary: Two duplicates merged into survivor
+                  value:
+                    survivor:
+                      id: 10
+                      action: comment
+                      comment: The original comment
+                      triage_status: pending
+                      rule_id: 100
+                      created_at: 2026-05-19 14:08:17 UTC
+                      reactions:
+                        up: 0
+                        down: 0
+                        mine: null
+                    duplicates:
+                      - id: 11
+                        action: comment
+                        comment: Duplicate of 10
+                        triage_status: duplicate
+                        duplicate_of_review_id: 10
+                        rule_id: 100
+                        created_at: 2026-05-19 14:10:00 UTC
+                        reactions:
+                          up: 0
+                          down: 0
+                          mine: null
+        '422':
+          description: Validation error (reviews from different components, different authors, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
   /reviews/{reviewId}:
     parameters:
       - $ref: '#/components/parameters/ReviewId'
@@ -2425,6 +2684,7 @@ paths:
       tags:
         - Reviews
       summary: Update a review comment
+      description: Edits the comment text of an existing review. Only the original author or an admin can update.
       requestBody:
         required: true
         content:
@@ -2441,6 +2701,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ReviewWrapper'
+          links:
+            GetReviewResponses:
+              operationId: getReviewResponses
+              parameters:
+                reviewId: $response.body#/review/id
+            TriageReview:
+              operationId: triageReview
+              parameters:
+                reviewId: $response.body#/review/id
+            WithdrawReview:
+              operationId: withdrawReview
+              parameters:
+                reviewId: $response.body#/review/id
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /reviews/{reviewId}/triage:
@@ -2451,6 +2724,7 @@ paths:
       tags:
         - Reviews
       summary: Set triage status on a comment (concur, non_concur, etc.)
+      description: Assigns a triage decision to the comment. Terminal statuses auto-adjudicate. Requires author or admin role.
       requestBody:
         required: true
         content:
@@ -2477,6 +2751,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TriageResponse'
+          links:
+            AdjudicateTriagedReview:
+              operationId: adjudicateReview
+              parameters:
+                reviewId: $response.body#/review/id
+              description: Close the review after triage is complete.
+            ReopenTriagedReview:
+              operationId: reopenReview
+              parameters:
+                reviewId: $response.body#/review/id
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /reviews/{reviewId}/adjudicate:
@@ -2487,6 +2771,7 @@ paths:
       tags:
         - Reviews
       summary: Adjudicate (close) a triaged comment
+      description: Marks the comment as adjudicated, finalizing the triage decision. Requires author or admin role.
       responses:
         '200':
           description: Review adjudicated
@@ -2494,6 +2779,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TriageResponse'
+          links:
+            ReopenAdjudicatedReview:
+              operationId: reopenReview
+              parameters:
+                reviewId: $response.body#/review/id
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /reviews/{reviewId}/withdraw:
@@ -2504,6 +2794,7 @@ paths:
       tags:
         - Reviews
       summary: Author withdraws their own comment
+      description: Allows the comment author to retract their comment. Sets triage_status to withdrawn and auto-adjudicates.
       responses:
         '200':
           description: Review withdrawn
@@ -2511,6 +2802,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ReviewWrapper'
+          links:
+            AdminRestoreWithdrawnReview:
+              operationId: adminRestoreReview
+              parameters:
+                reviewId: $response.body#/review/id
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /reviews/{reviewId}/admin_withdraw:
@@ -2521,6 +2817,7 @@ paths:
       tags:
         - Reviews
       summary: Admin force-withdraws a comment
+      description: Admin-only force withdrawal that bypasses the frozen-for-writes check. Requires an audit comment explaining the action.
       requestBody:
         content:
           application/json:
@@ -2536,6 +2833,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ReviewWrapper'
+          links:
+            AdminRestoreWithdrawnReview:
+              operationId: adminRestoreReview
+              parameters:
+                reviewId: $response.body#/review/id
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /reviews/{reviewId}/admin_restore:
@@ -2546,6 +2848,7 @@ paths:
       tags:
         - Reviews
       summary: Admin restores a withdrawn comment
+      description: Reverses a withdrawal, resetting the comment to pending status. Requires admin role on the project.
       responses:
         '200':
           description: Review restored
@@ -2553,6 +2856,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ReviewWrapper'
+          links:
+            TriageRestoredReview:
+              operationId: triageReview
+              parameters:
+                reviewId: $response.body#/review/id
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /reviews/{reviewId}/move_to_rule:
@@ -2563,6 +2871,7 @@ paths:
       tags:
         - Reviews
       summary: Admin moves a comment thread to a different rule
+      description: Reassigns the comment and all its replies to a different rule. Walks parent-first to satisfy validators. Requires admin role.
       requestBody:
         required: true
         content:
@@ -2591,6 +2900,7 @@ paths:
       tags:
         - Reviews
       summary: Admin permanently deletes a comment (irreversible)
+      description: Hard-deletes a comment and all its replies. Requires typed-ID confirmation and an audit comment. This action cannot be undone.
       requestBody:
         content:
           application/json:
@@ -2684,6 +2994,7 @@ paths:
       tags:
         - Reactions
       summary: List reactions on a review
+      description: Returns aggregate reaction counts and the current user's reaction for the specified review.
       responses:
         '200':
           description: Reactions list
@@ -2698,6 +3009,7 @@ paths:
       tags:
         - Reactions
       summary: Add a reaction (up/down) to a comment review
+      description: Toggles a thumbs-up or thumbs-down reaction. If the user already reacted with the same kind, the reaction is removed.
       requestBody:
         required: true
         content:
@@ -2740,16 +3052,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ReviewWrapper'
-              examples:
-                reopened:
-                  summary: Successfully re-opened
-                  value:
-                    review:
-                      id: 44
-                      action: comment
-                      comment: This requirement needs clarification.
-                      triage_status: pending
-                      adjudicated_at: null
+          links:
+            TriageReopenedReview:
+              operationId: triageReview
+              parameters:
+                reviewId: $response.body#/review/id
+            UpdateReopenedReview:
+              operationId: updateReview
+              parameters:
+                reviewId: $response.body#/review/id
+          examples:
+            reopened:
+              summary: Successfully re-opened
+              value:
+                review:
+                  id: 44
+                  action: comment
+                  comment: This requirement needs clarification.
+                  triage_status: pending
+                  adjudicated_at: null
         '422':
           description: Cannot re-open (not adjudicated or withdrawn)
           content:
@@ -3911,6 +4232,84 @@ paths:
                       locked_at: null
         4XX:
           $ref: '#/components/responses/ErrorResponse'
+  /consent/acknowledge:
+    post:
+      operationId: acknowledgeConsent
+      tags:
+        - System
+      summary: Acknowledge consent banner (AC-8)
+      description: Records the user's acknowledgment of the system consent banner in the Rails session. Required by NIST AC-8 before interacting with the application. Does not require authentication — the consent modal appears before login.
+      security: []
+      responses:
+        '200':
+          description: Consent acknowledged (timestamp stored in session)
+  /projects/{projectId}/project_access_requests:
+    post:
+      operationId: createProjectAccessRequest
+      tags:
+        - Projects
+      summary: Request access to a project
+      description: Creates an access request for the current user on the specified project. Project admins are notified via email (if SMTP is enabled). HTML-only response — redirects to root. Not a JSON API endpoint.
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: Numeric ID of the project to request access to.
+          schema:
+            type: integer
+          example: 7
+      responses:
+        '302':
+          description: Redirect to root after creating the access request
+  /projects/{projectId}/project_access_requests/{requestId}:
+    delete:
+      operationId: destroyProjectAccessRequest
+      tags:
+        - Projects
+      summary: Deny or cancel a project access request
+      description: Admins can deny a pending access request; the requesting user can cancel their own request. If SMTP is enabled, a rejection email is sent when an admin denies. Returns JSON with toast and destroyed request ID, or HTML redirect for browser requests.
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: Numeric ID of the project.
+          schema:
+            type: integer
+          example: 7
+        - name: requestId
+          in: path
+          required: true
+          description: Numeric ID of the access request.
+          schema:
+            type: integer
+          example: 42
+      responses:
+        '200':
+          description: Access request destroyed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessRequestDestroyResponse'
+              examples:
+                denied:
+                  summary: Admin denied access request
+                  value:
+                    toast:
+                      title: Access request submitted.
+                      message:
+                        - Successfully denied Jane Doe's request to access project.
+                      variant: success
+                    id: 42
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Request could not be destroyed.
   /personal_access_tokens:
     get:
       operationId: listPersonalAccessTokens
@@ -4026,6 +4425,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PersonalAccessTokenCreateResponse'
+          links:
+            RevokeCreatedToken:
+              operationId: revokePersonalAccessToken
+              parameters:
+                tokenId: $response.body#/personal_access_token/id
+              description: Revoke the newly created token.
         '401':
           description: Incorrect password
         '422':
@@ -4310,15 +4715,21 @@ components:
                 description: DISA SRG identifier.
                 example: Container_Platform_SRG
               name:
-                type: string
+                type:
+                  - string
+                  - 'null'
                 description: SRG name.
                 example: Container Platform SRG - Ver 2, Rel 4
               title:
-                type: string
+                type:
+                  - string
+                  - 'null'
                 description: Full SRG title.
                 example: Container Platform Security Requirements Guide
               version:
-                type: string
+                type:
+                  - string
+                  - 'null'
                 description: Version string.
                 example: V2R4
         stigs:
@@ -4332,19 +4743,27 @@ components:
                 description: Unique STIG identifier.
                 example: 1
               stig_id:
-                type: string
+                type:
+                  - string
+                  - 'null'
                 description: DISA STIG identifier.
                 example: Application_Security_Development_STIG
               name:
-                type: string
+                type:
+                  - string
+                  - 'null'
                 description: STIG name.
                 example: Application Security Development STIG - Ver 6, Rel 4
               title:
-                type: string
+                type:
+                  - string
+                  - 'null'
                 description: Full STIG title.
                 example: Application Security and Development Security Technical Implementation Guide
               version:
-                type: string
+                type:
+                  - string
+                  - 'null'
                 description: Version string.
                 example: V6R4
               description:
@@ -4873,6 +5292,142 @@ components:
       properties:
         toast:
           $ref: '#/components/schemas/ToastObject'
+    ImportSummary:
+      description: Summary of what was imported (or would be imported in dry_run mode) from a JSON archive backup. Returned by JsonArchiveImporter.
+      type: object
+      properties:
+        dry_run:
+          type: boolean
+          description: Whether this was a preview (true) or real import (false). Only present in dry_run responses.
+          example: true
+        components_imported:
+          type: integer
+          description: Number of components imported.
+          example: 2
+        rules_imported:
+          type: integer
+          description: Total rules imported across all components.
+          example: 264
+        satisfactions_imported:
+          type: integer
+          description: Number of rule satisfaction relationships imported.
+          example: 12
+        reviews_imported:
+          type: integer
+          description: Number of review records imported.
+          example: 48
+        memberships_imported:
+          type: integer
+          description: Number of project memberships imported.
+          example: 3
+        srgs_imported:
+          type: integer
+          description: Number of SRGs auto-imported from the archive.
+          example: 1
+        srg_details:
+          type: array
+          description: Details of SRGs found in the archive (dry_run only).
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+              version:
+                type: string
+        component_details:
+          type: array
+          description: Per-component breakdown of what was imported.
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                example: Photon OS 3
+              rule_count:
+                type: integer
+                example: 132
+              srg_title:
+                type:
+                  - string
+                  - 'null'
+                example: General Purpose Operating System SRG
+              srg_version:
+                type:
+                  - string
+                  - 'null'
+                example: V3R3
+    CreateFromBackupDryRunResponse:
+      description: Response from a dry-run preview of creating a project from backup. Returns import summary, warnings, and extracted project defaults.
+      type: object
+      required:
+        - summary
+        - warnings
+        - project_defaults
+      properties:
+        summary:
+          $ref: '#/components/schemas/ImportSummary'
+        warnings:
+          type: array
+          description: Non-fatal warnings found during preview.
+          items:
+            type: string
+          example: []
+        project_defaults:
+          type: object
+          description: Default values extracted from the archive for pre-filling the create form.
+          properties:
+            name:
+              type:
+                - string
+                - 'null'
+              description: Original project name from the archive.
+              example: My Original Project
+            description:
+              type:
+                - string
+                - 'null'
+              description: Original project description.
+              example: A test project
+            visibility:
+              type:
+                - string
+                - 'null'
+              description: Original project visibility setting.
+              example: discoverable
+    CreateFromBackupResponse:
+      description: Response from actually creating a project from a backup archive. Returns redirect URL, import summary, and toast notification.
+      type: object
+      required:
+        - redirect_url
+        - summary
+        - toast
+      properties:
+        redirect_url:
+          type: string
+          description: URL to redirect to after successful project creation.
+          example: /projects/123
+        summary:
+          $ref: '#/components/schemas/ImportSummary'
+        toast:
+          $ref: '#/components/schemas/ToastObject'
+    ImportBackupResponse:
+      description: Response from importing a JSON archive backup into an existing project. Includes the toast notification, import summary, and any warnings.
+      type: object
+      required:
+        - toast
+        - summary
+        - warnings
+      properties:
+        toast:
+          $ref: '#/components/schemas/ToastObject'
+        summary:
+          $ref: '#/components/schemas/ImportSummary'
+        warnings:
+          type: array
+          description: Non-fatal warnings encountered during import.
+          items:
+            type: string
+          example: []
     AuditEntry:
       description: 'A single audit trail entry recording a change to an auditable record. Serialized by VulcanAudit#format. Note: the field is "name" (username), NOT "user_id" — VulcanAudit#format does not expose user IDs.'
       type: object
@@ -6276,6 +6831,40 @@ components:
           type: integer
           description: ID of the parent review when creating a threaded reply.
           example: 43
+    BulkTriageResponse:
+      description: Response from bulk-triaging multiple reviews at once. Returns the updated reviews and any auto-created response reviews (one per triaged comment if a response_comment was provided).
+      type: object
+      required:
+        - reviews
+        - response_reviews
+      additionalProperties: false
+      properties:
+        reviews:
+          type: array
+          description: The triaged reviews with updated triage_status.
+          items:
+            $ref: '#/components/schemas/ReviewSummary'
+        response_reviews:
+          type: array
+          description: Auto-created response reviews (one per triaged comment when response_comment is provided). Empty array if no response_comment.
+          items:
+            $ref: '#/components/schemas/ReviewSummary'
+    MergeResponse:
+      description: Response from merging duplicate reviews into a single survivor. The survivor absorbs the merged content. Duplicates are marked triage_status=duplicate with duplicate_of_review_id pointing to the survivor.
+      type: object
+      required:
+        - survivor
+        - duplicates
+      additionalProperties: false
+      properties:
+        survivor:
+          description: The surviving review that absorbed the duplicates.
+          $ref: '#/components/schemas/ReviewSummary'
+        duplicates:
+          type: array
+          description: The merged reviews, now marked as duplicates of the survivor.
+          items:
+            $ref: '#/components/schemas/ReviewSummary'
     ReviewWrapper:
       description: 'Standard review mutation response. Wraps a single ReviewSummary in a { review: ... } envelope. Used by update, reopen, withdraw, admin_withdraw, admin_restore, move_to_rule, and section endpoints.'
       type: object
@@ -6754,6 +7343,12 @@ components:
             - 'null'
           description: Name of the component.
           example: Photon OS 3
+        author_name:
+          type:
+            - string
+            - 'null'
+          description: Display name of the comment author.
+          example: Jane Doe
         rule_id:
           type:
             - integer
@@ -6897,6 +7492,20 @@ components:
           format: uri
           description: One-time password reset URL to share with the user.
           example: https://vulcan.example.org/users/password/edit?reset_password_token=abc123def456
+    AccessRequestDestroyResponse:
+      description: Response from deleting a project access request (deny or cancel).
+      type: object
+      required:
+        - toast
+        - id
+      additionalProperties: false
+      properties:
+        toast:
+          $ref: '#/components/schemas/ToastObject'
+        id:
+          type: integer
+          description: ID of the destroyed access request.
+          example: 42
     PersonalAccessTokenSummary:
       type: object
       required:

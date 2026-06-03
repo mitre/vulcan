@@ -1,0 +1,18 @@
+description: >-
+  Response from merging duplicate reviews into a single survivor. The survivor
+  absorbs the merged content. Duplicates are marked triage_status=duplicate
+  with duplicate_of_review_id pointing to the survivor.
+type: object
+required:
+  - survivor
+  - duplicates
+additionalProperties: false
+properties:
+  survivor:
+    description: The surviving review that absorbed the duplicates.
+    $ref: ./ReviewSummary.yaml
+  duplicates:
+    type: array
+    description: The merged reviews, now marked as duplicates of the survivor.
+    items:
+      $ref: ./ReviewSummary.yaml

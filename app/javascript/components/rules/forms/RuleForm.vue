@@ -7,7 +7,7 @@
       <!-- ============================================================ -->
       <div
         v-if="fields.displayed.includes('status') || fields.displayed.includes('rule_severity')"
-        class="row"
+        class="form-row"
       >
         <!-- status -->
         <RuleFormGroup
@@ -15,7 +15,7 @@
           field-name="status"
           label="Status"
           :tooltip="tooltips['status']"
-          extra-class="col-md-8"
+          extra-class="col-md-6"
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
           @open-composer="bubbleOpenComposer"
         >
@@ -37,7 +37,7 @@
           field-name="rule_severity"
           label="Severity"
           :tooltip="tooltips['rule_severity']"
-          extra-class="col-md-4"
+          extra-class="col-md-6"
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
           @open-composer="bubbleOpenComposer"
         >
@@ -93,7 +93,11 @@
       <!-- SECTION 2: Reference Context (read-only SRG info)            -->
       <!-- User reads the SRG requirement context before writing        -->
       <!-- ============================================================ -->
-      <div v-if="rule.nist_control_family || rule.ident" class="row" data-testid="ia-control-cci">
+      <div
+        v-if="rule.nist_control_family || rule.ident"
+        class="form-row"
+        data-testid="ia-control-cci"
+      >
         <RuleFormGroup
           v-bind="formGroupProps"
           field-name="nist_control_family"
@@ -320,7 +324,7 @@
         </template>
       </RuleFormGroup>
 
-      <div class="row">
+      <div class="form-row">
         <!-- fix_id -->
         <RuleFormGroup
           v-bind="formGroupProps"
@@ -364,7 +368,7 @@
         </RuleFormGroup>
       </div>
 
-      <div class="row">
+      <div class="form-row">
         <!-- rule_weight -->
         <RuleFormGroup
           v-bind="formGroupProps"
@@ -387,7 +391,7 @@
         </RuleFormGroup>
       </div>
 
-      <div class="row">
+      <div class="form-row">
         <!-- ident -->
         <RuleFormGroup
           v-bind="formGroupProps"

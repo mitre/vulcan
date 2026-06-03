@@ -69,17 +69,24 @@
   --vulcan-gray-800: #{$gray-800};
   --vulcan-gray-900: #{$gray-900};
 
-  // Body-level semantic tokens (Bootstrap 5 pattern)
+  // Body-level semantic tokens — Bootstrap 5.3 three-tier bg hierarchy
   --vulcan-body-bg: #{$body-bg};
   --vulcan-body-color: #{$body-color};
   --vulcan-text: #{$body-color};
+  --vulcan-secondary-bg: #{$gray-100};       // elevated surfaces (cards, sidebars)
+  --vulcan-tertiary-bg: #{$gray-200};        // inset/recessed areas
   --vulcan-bg-light: #{$gray-100};
   --vulcan-border-light: #{$gray-200};
   --vulcan-border-color: #{$gray-300};
+  --vulcan-border-subtle: #{$gray-200};      // subtle borders (dividers, table lines)
   --vulcan-link-color: #{$link-color};
-  --vulcan-component-bg: #fff;
+  --vulcan-component-bg: #fff;               // alias for backwards compat
   --vulcan-component-bg-alt: #{$gray-100};
   --vulcan-emphasis-color: #{$gray-900};
+
+  // Active state — selection indicator
+  --vulcan-active-bg: #{rgba($primary, 0.10)};
+  --vulcan-active-border: #{$primary};
 
   // Semantic highlight colors for diffs, search results, validation
   --vulcan-highlight-selected: #cce5ff;
@@ -94,6 +101,18 @@
   --vulcan-primary-dark: #0056b3;
   --vulcan-active-tint-hover: rgba(0, 123, 255, 0.15);
   --vulcan-focus-tint: rgba(0, 123, 255, 0.04);
+
+  // Shadows and overlays — bridged from Bootstrap 4 $box-shadow-* variables
+  --vulcan-shadow-sm: #{$box-shadow-sm};
+  --vulcan-shadow: #{$box-shadow};
+  --vulcan-shadow-lg: #{$box-shadow-lg};
+  --vulcan-shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --vulcan-shadow-lifted: 0 -2px 6px rgba(0, 0, 0, 0.08);
+  --vulcan-overlay-light: rgba(0, 0, 0, 0.08);
+  --vulcan-overlay-medium: rgba(0, 0, 0, 0.12);
+  --vulcan-diff-removed-bg: rgba(66, 50, 50, 0.09);
+  --vulcan-border-transparent: rgba(0, 0, 0, 0);
+  --vulcan-focus-ring-warning: 0 0 0 3px rgba(255, 193, 7, 0.8);
 }
 
 // ── Dark mode: Override Layer 1 variables ──────────────────────────────
@@ -114,14 +133,21 @@
   $teal-dark: mix(white, $teal, 30%);
   $indigo-dark: mix(white, $indigo, 30%);
 
-  // Body
-  --vulcan-body-bg: #{$gray-900};
-  --vulcan-body-color: #{$gray-300};
-  --vulcan-border-color: #{$gray-700};
+  // Body — Bootstrap 5.3 three-tier background hierarchy
+  --vulcan-body-bg: #{$gray-900};            // page background (#212529)
+  --vulcan-body-color: #{$gray-300};         // body text (#dee2e6)
+  --vulcan-secondary-bg: #{$gray-800};       // elevated surfaces: cards, sidebars (#343a40)
+  --vulcan-tertiary-bg: #2b3035;             // inset/recessed areas (BS 5.3 value)
+  --vulcan-border-color: #{$gray-600};       // visible borders (#6c757d — brighter than gray-700)
+  --vulcan-border-subtle: #{$gray-700};      // subtle borders (dividers, table lines)
   --vulcan-link-color: #{$primary-dark};
-  --vulcan-component-bg: #{$gray-800};
+  --vulcan-component-bg: #{$gray-800};       // alias for secondary-bg (backwards compat)
   --vulcan-component-bg-alt: #{$gray-700};
   --vulcan-emphasis-color: #{$white};
+
+  // Active state — clear selection indicator
+  --vulcan-active-bg: #{rgba($primary-dark, 0.20)};
+  --vulcan-active-border: #{$primary-dark};
 
   --vulcan-primary: #{$primary-dark};
   --vulcan-primary-tint: #{rgba($primary-dark, 0.15)};
@@ -426,7 +452,9 @@
     }
 
     thead th {
-      border-color: var(--vulcan-border-color);
+      background-color: var(--vulcan-tertiary-bg);
+      border-color: var(--vulcan-border-subtle);
+      border-bottom: 2px solid var(--vulcan-border-color);
       color: var(--vulcan-emphasis-color);
     }
   }
@@ -873,3 +901,14 @@ body.has-classification-banner {
     }
   }
 }
+
+// ── Global: Rule/Benchmark form field spacing ─────────────────────────
+// ALL form fields get the same padding regardless of lock state.
+// Field-state classes add ONLY border + background tint — NOT different
+// padding. This prevents layout shift when lock state changes.
+.rule-form-field {
+  padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+  border-radius: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+

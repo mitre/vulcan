@@ -5,6 +5,7 @@ post:
   tags:
     - Rules
   summary: Revert a rule to a previous audit version
+  description: Restores all audited fields to their values at the specified audit entry. Requires author or admin role.
   requestBody:
     required: true
     content:

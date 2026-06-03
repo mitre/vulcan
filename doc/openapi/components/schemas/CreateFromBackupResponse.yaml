@@ -1,0 +1,17 @@
+description: >-
+  Response from actually creating a project from a backup archive.
+  Returns redirect URL, import summary, and toast notification.
+type: object
+required:
+  - redirect_url
+  - summary
+  - toast
+properties:
+  redirect_url:
+    type: string
+    description: URL to redirect to after successful project creation.
+    example: "/projects/123"
+  summary:
+    $ref: ./ImportSummary.yaml
+  toast:
+    $ref: ./ToastObject.yaml

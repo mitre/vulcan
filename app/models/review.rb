@@ -336,7 +336,7 @@ class Review < ApplicationRecord
   # Admin action: move this comment to a different rule in the same component.
   # Records first-move provenance via original_commentable_id, prepends a
   # "[Moved from …]" marker to the comment, cascades to replies, and attaches
-  # an audit_comment so vulcan_audited's row names the move. vulcan-v3.x-05f.10.
+  # an audit_comment so vulcan_audited's row names the move.
   def move_to_rule!(target_rule, reason:, moved_by:)
     raise ArgumentError, 'reason is required' if reason.to_s.strip.blank?
     raise ArgumentError, 'target rule must be in the same component' \

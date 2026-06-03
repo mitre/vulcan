@@ -13,7 +13,7 @@
     <!-- Two-Column Layout -->
     <div class="row">
       <!-- Left Sidebar -->
-      <div :class="['left-sidebar-column', 'pr-0', sidebarColumnClass]">
+      <div :class="['left-sidebar-column', 'pr-0', 'sidebar-border-right', sidebarColumnClass]">
         <slot name="left-sidebar" />
       </div>
 
@@ -86,8 +86,12 @@ export default {
   /* Container for the entire controls page */
 }
 
-/* Ensure left sidebar has no right padding for flush edges */
+/* Sidebar: flush right edge with visible divider border */
 .left-sidebar-column {
   padding-right: 0;
+}
+
+.sidebar-border-right {
+  border-right: 1px solid var(--vulcan-border-subtle, #dee2e6);
 }
 </style>

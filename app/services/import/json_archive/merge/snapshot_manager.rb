@@ -9,7 +9,7 @@ module Import
       # Pre-merge backup of a component (full JSON archive zip) written to a
       # configurable on-disk path, with a SHA-256 checksum file alongside for
       # corruption detection at restore time. Phase 2a infrastructure
-      # (vulcan-v3.x-480.7); MergeApplier (Phase 2b) writes a snapshot before
+      # MergeApplier writes a snapshot before
       # any destructive merge, and disaster-recovery rake tasks (Phase 2d)
       # restore from it.
       #

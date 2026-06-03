@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-# vulcan-v3.x-480.7 §17.1: archive records that failed merge validation
+# archive records that failed merge validation
 # land here with original_archive_data intact so they can be retried after
 # the underlying issue is fixed. Table name is 'merge_quarantine'
 # (collective); each row is a quarantined record.

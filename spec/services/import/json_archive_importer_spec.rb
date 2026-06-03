@@ -376,7 +376,7 @@ RSpec.describe Import::JsonArchiveImporter do
     end
 
     # ==========================================
-    # ADDRESSED_BY ROUND-TRIP (vulcan-v3.x-480.5)
+    # ADDRESSED_BY ROUND-TRIP
     # ==========================================
     context 'with addressed_by triage status round-trip' do
       let_it_be(:addressed_proj) { create(:project) }

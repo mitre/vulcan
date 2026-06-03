@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import UserComments from "@/components/users/UserComments.vue";
-import { getUserComments } from "@/api/reviewsApi";
+import { getUserComments } from "@/api/usersApi";
 
 vi.mock("@/api/baseApi", () => ({
   default: {
@@ -14,7 +14,7 @@ vi.mock("@/api/baseApi", () => ({
   },
 }));
 
-vi.mock("@/api/reviewsApi", () => ({
+vi.mock("@/api/usersApi", () => ({
   getUserComments: vi.fn(() => Promise.resolve({ data: { rows: [], pagination: { total: 0 } } })),
 }));
 

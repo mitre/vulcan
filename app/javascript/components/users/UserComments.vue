@@ -129,7 +129,7 @@
 </template>
 
 <script>
-import { getUserComments } from "../../api/reviewsApi";
+import { getUserComments } from "../../api/usersApi";
 import { buildStatusFilterOptions } from "../../constants/triageVocabulary";
 import { triageBgClass } from "../../utils/triageBgClass";
 import AlertMixin from "../../mixins/AlertMixin.vue";

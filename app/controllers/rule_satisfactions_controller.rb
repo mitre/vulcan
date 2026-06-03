@@ -62,7 +62,7 @@ class RuleSatisfactionsController < ApplicationController
         message: message,
         variant: 'danger'
       )
-    }, status: :unprocessable_entity
+    }, status: :unprocessable_content
   end
 
   def set_component_and_rules

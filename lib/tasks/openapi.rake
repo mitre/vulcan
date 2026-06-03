@@ -18,6 +18,18 @@ namespace :openapi do
     exec 'bin/schemathesis-full'
   end
 
+  desc 'Stateful test: chains create→read→update→delete via OpenAPI Links (dev server, mutations!)'
+  task stateful: :environment do
+    token = create_smoke_token
+    run_schemathesis(
+      token: token,
+      phases: 'stateful',
+      max_examples: 5,
+      label: 'stateful',
+      read_only: false
+    )
+  end
+
   def create_smoke_token
     admin = User.find_by!(email: 'admin@example.com')
     pat = admin.personal_access_tokens.create!(

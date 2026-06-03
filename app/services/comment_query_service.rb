@@ -118,50 +118,24 @@ class CommentQueryService
                       .where(rule_id: @component.rules.ids)
                       .pluck(:rule_id, :satisfied_by_rule_id)
                       .to_h
-    parent_id_to_displayed = child_to_parent.values.uniq.index_with { |pid| rule_id_to_displayed[pid] }
+    parent_rule_map = child_to_parent.transform_values { |pid| rule_id_to_displayed[pid] }
 
     page_review_ids = page_records.map(&:id)
-    responses_count_lookup = Review.where(responding_to_review_id: page_review_ids)
-                                   .group(:responding_to_review_id)
-                                   .count
+    responses_counts = Review.where(responding_to_review_id: page_review_ids)
+                             .group(:responding_to_review_id).count
     reaction_counts = Reaction.where(review_id: page_review_ids).group(:review_id, :kind).count
 
+    blueprint_options = {
+      view: :component,
+      rule_display_map: rule_id_to_displayed,
+      parent_rule_map: parent_rule_map,
+      responses_counts: responses_counts,
+      reaction_counts: reaction_counts
+    }
+
     page_records.map do |r|
-      component_scoped_row = r.commentable_type == 'Component'
-      row = {
-        id: r.id,
-        rule_id: component_scoped_row ? nil : r.rule_id,
-        rule_displayed_name: component_scoped_row ? '(component)' : rule_id_to_displayed[r.rule_id],
-        commentable_type: r.commentable_type,
-        section: r.section,
-        author_name: r.commenter_display_name,
-        author_email: r.user&.email || r.commenter_imported_email,
-        comment: r.comment,
-        created_at: r.created_at,
-        triage_status: r.triage_status,
-        triage_set_at: r.triage_set_at,
-        adjudicated_at: r.adjudicated_at,
-        duplicate_of_review_id: r.duplicate_of_review_id,
-        addressed_by_rule_id: r.addressed_by_rule_id,
-        addressed_by_rule_name: r.addressed_by_rule_id ? rule_id_to_displayed[r.addressed_by_rule_id] : nil,
-        triager_display_name: r.triager_display_name,
-        triager_imported: r.triager_imported?,
-        adjudicator_display_name: r.adjudicator_display_name,
-        adjudicator_imported: r.adjudicator_imported?,
-        commenter_display_name: r.commenter_display_name,
-        commenter_imported: r.commenter_imported?,
-        responses_count: responses_count_lookup[r.id] || 0,
-        reactions: { up: reaction_counts[[r.id, 'up']] || 0,
-                     down: reaction_counts[[r.id, 'down']] || 0 },
-        updated_at: r.updated_at,
-        rule_status: component_scoped_row ? nil : r.commentable&.status,
-        parent_rule_displayed_name: component_scoped_row ? nil : parent_id_to_displayed[child_to_parent[r.rule_id]],
-        group_rule_displayed_name: nil
-      }
-
-      row[:group_rule_displayed_name] = row[:parent_rule_displayed_name] || row[:rule_displayed_name]
-      row[:rule_content] = @component.serialize_rule_content(r, component_scoped_row) if @include_rule_content
-
+      row = CommentRowBlueprint.render_as_hash(r, **blueprint_options)
+      row[:rule_content] = @component.serialize_rule_content(r, r.commentable_type == 'Component') if @include_rule_content
       row
     end
   end

@@ -795,17 +795,18 @@ export default {
 }
 
 .ruleRow:hover {
-  background: rgb(0, 0, 0, 0.12);
+  background: var(--vulcan-overlay-medium);
 }
 
 .selectedRuleRow {
-  background: rgba(66, 50, 50, 0.09);
+  background: var(--vulcan-active-bg);
+  border-left: 3px solid var(--vulcan-active-border);
 }
 
 .closeRuleButton {
   color: red;
   padding: 0.1em;
-  border: 1px solid rgb(0, 0, 0, 0);
+  border: 1px solid var(--vulcan-border-transparent);
   box-sizing: border-box;
 }
 
@@ -895,7 +896,7 @@ export default {
 }
 @keyframes field-highlight-ring {
   0% {
-    box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.8);
+    box-shadow: var(--vulcan-focus-ring-warning);
     border-radius: 4px;
   }
   100% {

@@ -46,7 +46,7 @@ class StigsController < ApplicationController
                  message: stig.errors.full_messages,
                  variant: 'danger'
                ),
-               status: :unprocessable_entity
+               status: :unprocessable_content
              })
     end
   end
@@ -110,7 +110,7 @@ class StigsController < ApplicationController
               message: @stig.errors.full_messages,
               variant: 'danger'
             )
-          }, status: :unprocessable_entity
+          }, status: :unprocessable_content
         end
       end
     end

@@ -6,76 +6,72 @@
       <b-icon v-if="!showSrgInformation" icon="chevron-up" />
     </div>
     <b-collapse v-model="showSrgInformation">
-      <div class="row">
-        <div class="col-4">
-          <!-- nist_control (aka IA Control) -->
-          <strong>IA Control</strong>
+      <b-form-group label-cols-md="3" label-align-md="right" class="mb-2">
+        <template #label>
+          IA Control
           <InfoTooltip v-if="tooltips['nist_control']" :text="tooltips['nist_control']" />
-        </div>
-        <div class="col-8">
-          {{ nist_control_family }}
-        </div>
-      </div>
-      <div class="row">
-        <div class="col-4">
-          <!-- cci -->
-          <strong>CCI</strong>
+        </template>
+        {{ nist_control_family }}
+      </b-form-group>
+
+      <b-form-group label-cols-md="3" label-align-md="right" class="mb-2">
+        <template #label>
+          CCI
           <InfoTooltip v-if="tooltips['cci']" :text="tooltips['cci']" />
-        </div>
-        <div class="col-8">
-          {{ cci }}
-        </div>
-      </div>
-      <div class="row">
-        <div class="col-4">
-          <!-- srg_requirement -->
-          <strong>SRG Requirement</strong>
+        </template>
+        {{ cci }}
+      </b-form-group>
+
+      <b-form-group label-cols-md="3" label-align-md="right" class="mb-2">
+        <template #label>
+          SRG Requirement
           <InfoTooltip v-if="tooltips['srg_requirement']" :text="tooltips['srg_requirement']" />
-        </div>
-        <div class="col-8">{{ srg_rule.title }}</div>
-      </div>
-      <div class="row">
-        <div class="col-4">
-          <!-- srg_vuln_discussion -->
-          <strong>SRG Vulnerability Discussion</strong>
+        </template>
+        {{ srg_rule.title }}
+      </b-form-group>
+
+      <b-form-group label-cols-md="3" label-align-md="right" class="mb-2">
+        <template #label>
+          SRG Vulnerability Discussion
           <InfoTooltip
             v-if="tooltips['srg_vuln_discussion']"
             :text="tooltips['srg_vuln_discussion']"
           />
-        </div>
-        <div class="col-8">{{ srg_rule.disa_rule_descriptions_attributes[0].vuln_discussion }}</div>
-      </div>
-      <div class="row">
-        <div class="col-4">
-          <!-- srg_check_text -->
-          <strong>SRG Check Text</strong>
+        </template>
+        {{ srg_rule.disa_rule_descriptions_attributes[0].vuln_discussion }}
+      </b-form-group>
+
+      <b-form-group label-cols-md="3" label-align-md="right" class="mb-2">
+        <template #label>
+          SRG Check Text
           <InfoTooltip v-if="tooltips['srg_check_text']" :text="tooltips['srg_check_text']" />
-        </div>
-        <div class="col-8">{{ srg_rule.checks_attributes[0].content }}</div>
-      </div>
-      <div class="row">
-        <div class="col-4">
-          <!-- srg_fix_text -->
-          <strong>SRG Fix Text</strong>
+        </template>
+        {{ srg_rule.checks_attributes[0].content }}
+      </b-form-group>
+
+      <b-form-group label-cols-md="3" label-align-md="right" class="mb-2">
+        <template #label>
+          SRG Fix Text
           <InfoTooltip v-if="tooltips['srg_fix_text']" :text="tooltips['srg_fix_text']" />
-        </div>
-        <div class="col-8">{{ srg_rule.fixtext }}</div>
-      </div>
-      <div class="row">
-        <div class="col-4">
-          <!-- srg_version aka ID -->
-          <strong>SRG ID</strong>
+        </template>
+        {{ srg_rule.fixtext }}
+      </b-form-group>
+
+      <b-form-group label-cols-md="3" label-align-md="right" class="mb-2">
+        <template #label>
+          SRG ID
           <InfoTooltip v-if="tooltips['srg_id']" :text="tooltips['srg_id']" />
-        </div>
-        <div class="col-8">{{ srg_rule.version }}</div>
-      </div>
-      <div class="row">
-        <div class="col-4">
-          <strong>SRG Version</strong>
+        </template>
+        {{ srg_rule.version }}
+      </b-form-group>
+
+      <b-form-group label-cols-md="3" label-align-md="right" class="mb-2">
+        <template #label>
+          SRG Version
           <InfoTooltip v-if="tooltips['srg_version']" :text="tooltips['srg_version']" />
-        </div>
-        <div class="col-8">{{ srg_info.version }}</div>
-      </div>
+        </template>
+        {{ srg_info.version }}
+      </b-form-group>
     </b-collapse>
   </div>
 </template>
@@ -126,4 +122,3 @@ export default {
   },
 };
 </script>
-<style scoped></style>

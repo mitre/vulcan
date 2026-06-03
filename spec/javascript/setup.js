@@ -4,7 +4,6 @@ process.env.BOOTSTRAP_VUE_NO_WARN = "true";
 
 import Vue from "vue";
 import { BootstrapVue, IconsPlugin } from "bootstrap-vue";
-import axios from "axios";
 import { Wormhole } from "portal-vue";
 
 Vue.use(BootstrapVue);
@@ -25,9 +24,8 @@ if (typeof document !== "undefined") {
   document.head.appendChild(meta);
 }
 
-// Initialize axios defaults for FormMixin
-axios.defaults.headers = axios.defaults.headers || {};
-axios.defaults.headers.common = axios.defaults.headers.common || {};
+// baseApi.js reads the CSRF meta tag above via getCsrfToken().
+// No axios.defaults initialization needed — ofetch handles CSRF per-request.
 
 // Fix localStorage for Node 22+ (native localStorage shadows jsdom's).
 // Node 22+ provides globalThis.localStorage via --localstorage-file, but without

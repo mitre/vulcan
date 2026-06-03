@@ -27,6 +27,21 @@ SeedHelpers::DEMO_ROLE_USERS.each do |email, attrs|
   end
 end
 
+# Community SME personas for Container SRG Test dataset (stable, deterministic)
+puts 'Creating community SME personas...'
+SeedHelpers::COMMUNITY_PERSONAS.each do |email, attrs|
+  user = User.find_or_initialize_by(email: email)
+  if user.new_record?
+    user.name = attrs[:name]
+    user.password = SeedHelpers::DEMO_PASSWORD
+    user.skip_confirmation!
+    user.save!
+    puts "  Created #{email} (#{attrs[:role]} tier)"
+  else
+    puts "  Already exists: #{email}"
+  end
+end
+
 # Filler users with random names for realistic project list
 demo_emails = SeedHelpers::DEMO_EMAILS
 non_demo_count = User.where.not(email: demo_emails).count

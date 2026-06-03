@@ -8,6 +8,12 @@ FactoryBot.define do
     confirmed_at { Time.zone.now }
     confirmation_token { nil }
 
+    # Suppress audit INSERTs during factory creation to prevent deadlocks
+    # in parallel tests (audits + users cross-table lock contention with
+    # the advisory lock in promote_first_user_to_admin).
+    before(:create) { |_user| User.auditing_enabled = false }
+    after(:create) { |_user| User.auditing_enabled = true }
+
     transient do
       project_role { 'viewer' }
       project { nil }

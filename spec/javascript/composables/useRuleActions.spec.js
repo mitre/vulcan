@@ -2,17 +2,18 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref } from 'vue'
 import { useRuleActions } from '@/composables/useRuleActions'
 
-// Mock axios
-vi.mock('axios', () => ({
+vi.mock('@/api/baseApi', () => ({
   default: {
+    get: vi.fn(() => Promise.resolve({ data: { success: true } })),
     post: vi.fn(() => Promise.resolve({ data: { success: true } })),
     put: vi.fn(() => Promise.resolve({ data: { success: true } })),
+    patch: vi.fn(() => Promise.resolve({ data: { success: true } })),
     delete: vi.fn(() => Promise.resolve({ data: { success: true } })),
     defaults: { headers: { common: {} } }
   }
 }))
 
-import axios from 'axios'
+import api from '@/api/baseApi'
 
 describe('useRuleActions', () => {
   const mockRule = ref({
@@ -34,7 +35,7 @@ describe('useRuleActions', () => {
       const { lockRule } = useRuleActions(componentId)
       await lockRule(mockRule.value, 'Locking for review')
 
-      expect(axios.post).toHaveBeenCalledWith(
+      expect(api.post).toHaveBeenCalledWith(
         '/rules/1/reviews',
         {
           review: {
@@ -68,7 +69,7 @@ describe('useRuleActions', () => {
       const { unlockRule } = useRuleActions(componentId)
       await unlockRule(mockRule.value, 'Unlocking after review')
 
-      expect(axios.post).toHaveBeenCalledWith(
+      expect(api.post).toHaveBeenCalledWith(
         '/rules/1/reviews',
         {
           review: {
@@ -86,7 +87,7 @@ describe('useRuleActions', () => {
       const { requestReview } = useRuleActions(componentId)
       await requestReview(mockRule.value, 'Please review this control')
 
-      expect(axios.post).toHaveBeenCalledWith(
+      expect(api.post).toHaveBeenCalledWith(
         '/rules/1/reviews',
         {
           review: {
@@ -104,7 +105,7 @@ describe('useRuleActions', () => {
       const { approveReview } = useRuleActions(componentId)
       await approveReview(mockRule.value, 'Looks good')
 
-      expect(axios.post).toHaveBeenCalledWith(
+      expect(api.post).toHaveBeenCalledWith(
         '/rules/1/reviews',
         {
           review: {
@@ -122,7 +123,7 @@ describe('useRuleActions', () => {
       const { requestChanges } = useRuleActions(componentId)
       await requestChanges(mockRule.value, 'Needs more detail')
 
-      expect(axios.post).toHaveBeenCalledWith(
+      expect(api.post).toHaveBeenCalledWith(
         '/rules/1/reviews',
         {
           review: {
@@ -140,7 +141,7 @@ describe('useRuleActions', () => {
       const { revokeReview } = useRuleActions(componentId)
       await revokeReview(mockRule.value, 'Withdrawing review request')
 
-      expect(axios.post).toHaveBeenCalledWith(
+      expect(api.post).toHaveBeenCalledWith(
         '/rules/1/reviews',
         {
           review: {
@@ -158,7 +159,7 @@ describe('useRuleActions', () => {
       const { addComment } = useRuleActions(componentId)
       await addComment(mockRule.value, 'This is a comment')
 
-      expect(axios.post).toHaveBeenCalledWith(
+      expect(api.post).toHaveBeenCalledWith(
         '/rules/1/reviews',
         {
           review: {
@@ -177,7 +178,7 @@ describe('useRuleActions', () => {
       const ruleData = { title: 'Updated title' }
       await saveRule(mockRule.value, ruleData)
 
-      expect(axios.put).toHaveBeenCalledWith(
+      expect(api.put).toHaveBeenCalledWith(
         '/rules/1',
         { rule: ruleData }
       )
@@ -189,19 +190,18 @@ describe('useRuleActions', () => {
       const { deleteRule } = useRuleActions(componentId)
       await deleteRule(mockRule.value)
 
-      expect(axios.delete).toHaveBeenCalledWith('/rules/1')
+      expect(api.delete).toHaveBeenCalledWith('/rules/1')
     })
   })
 
   describe('cloneRule', () => {
-    it('posts to the clone endpoint', async () => {
+    it('posts to the component rules endpoint with duplicate flag', async () => {
       const { cloneRule } = useRuleActions(componentId)
-      const cloneData = { rule_id: 'CNTR-00-000011' }
-      await cloneRule(mockRule.value, cloneData)
+      await cloneRule(mockRule.value)
 
-      expect(axios.post).toHaveBeenCalledWith(
-        '/rules/1/duplicate',
-        { rule: cloneData }
+      expect(api.post).toHaveBeenCalledWith(
+        `/components/${componentId}/rules`,
+        { rule: { duplicate: true, id: mockRule.value.id } }
       )
     })
   })
@@ -215,7 +215,7 @@ describe('useRuleActions', () => {
     it('sets isLoading to true during API call', async () => {
       // Use a delayed promise to verify loading state
       let resolvePromise
-      axios.post.mockImplementationOnce(() => new Promise(resolve => {
+      api.post.mockImplementationOnce(() => new Promise(resolve => {
         resolvePromise = () => resolve({ data: { success: true } })
       }))
 
@@ -236,7 +236,7 @@ describe('useRuleActions', () => {
     })
 
     it('sets isLoading to false after API error', async () => {
-      axios.post.mockRejectedValueOnce(new Error('Network error'))
+      api.post.mockRejectedValueOnce(new Error('Network error'))
       const { isLoading, lockRule } = useRuleActions(componentId)
 
       try {
@@ -249,7 +249,7 @@ describe('useRuleActions', () => {
 
   describe('error handling', () => {
     it('captures errors from API calls', async () => {
-      axios.post.mockRejectedValueOnce(new Error('Network error'))
+      api.post.mockRejectedValueOnce(new Error('Network error'))
       const { lockRule, lastError } = useRuleActions(componentId)
 
       await expect(lockRule(mockRule.value, 'Test')).rejects.toThrow('Network error')
@@ -260,12 +260,12 @@ describe('useRuleActions', () => {
       const { lockRule, lastError } = useRuleActions(componentId)
 
       // First call fails
-      axios.post.mockRejectedValueOnce(new Error('Network error'))
+      api.post.mockRejectedValueOnce(new Error('Network error'))
       try { await lockRule(mockRule.value, 'Test') } catch {}
       expect(lastError.value).toBe('Network error')
 
       // Second call succeeds
-      axios.post.mockResolvedValueOnce({ data: { success: true } })
+      api.post.mockResolvedValueOnce({ data: { success: true } })
       await lockRule(mockRule.value, 'Test')
       expect(lastError.value).toBeNull()
     })

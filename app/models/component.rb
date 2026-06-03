@@ -68,7 +68,7 @@ class Component < ApplicationRecord
 
   has_many :additional_questions, dependent: :destroy
 
-  # vulcan-v3.x-480.7: component sync/merge audit trail. Each merge writes one
+  # component sync/merge audit trail. Each merge writes one
   # ComponentSyncEvent plus N MergeOperation rows reachable through it.
   has_many :component_sync_events, dependent: :destroy
   has_many :merge_operations, through: :component_sync_events
@@ -145,7 +145,7 @@ class Component < ApplicationRecord
   # Used by the frontend export modal to warn about NYD-only components.
   def status_counts
     counts = if association_cached?(:rules)
-               # In-memory grouping (vulcan-v3.x-73z.7): set_component already
+               # In-memory grouping: set_component already
                # preloaded rules for the editor; don't re-query base_rules.
                rules.reject(&:deleted_at).group_by(&:status).transform_values(&:size)
              else
@@ -303,7 +303,7 @@ class Component < ApplicationRecord
     return false if released_was
 
     # If all rules are locked, then component may be released. Prefer the
-    # in-memory rules collection when preloaded (vulcan-v3.x-73z.7).
+    # in-memory rules collection when preloaded.
     if association_cached?(:rules)
       rules.none? { |r| !r.locked }
     else
@@ -558,7 +558,7 @@ class Component < ApplicationRecord
       rules.collect { |rule| rule.rule_id.to_i }.max
     else
       # component_id flows through bind params via .where; only the trusted
-      # TO_NUMBER literal is wrapped in Arel.sql. Fixes vulcan-v3.x-480.6 §18.4.
+      # TO_NUMBER literal is wrapped in Arel.sql for safe integer sorting.
       Rule.unscoped.where(component_id: id).maximum(Arel.sql("TO_NUMBER(rule_id, '999999')")).to_i
     end
   end
@@ -605,7 +605,7 @@ class Component < ApplicationRecord
 
   def reviews
     # Prefer in-memory rules + reviews when the editor preloaded both
-    # (vulcan-v3.x-73z.7); fall back to SQL for other call sites.
+    # Fall back to SQL for other call sites.
     rule_names = if association_cached?(:rules)
                    rules.each_with_object({}) { |r, h| h[r.id] = "#{prefix}-#{r.rule_id}" }
                  else

@@ -5,4 +5,7 @@ apis:
 
 rules:
   no-unresolved-refs: error
-  no-unused-components: warn
+  no-unused-components: error
+  operation-description: error
+  parameter-description: error
+  tag-description: error

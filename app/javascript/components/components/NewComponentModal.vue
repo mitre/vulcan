@@ -245,7 +245,7 @@ export default {
       slackChannelId: "",
       projects: [],
       components: this.copy_component
-        ? this.addDisplayNameToComponents(this.project.components)
+        ? this.addDisplayNameToComponents(this.project?.components || [])
         : [],
       srgs: [],
       displayedSrgs: [],
@@ -253,7 +253,7 @@ export default {
       detecting: false,
       srgAutoDetected: false,
       componentKey: 0,
-      potentialPocs: this.project ? this.project.users : [],
+      potentialPocs: this.project?.users || [],
       admin_name: "",
       admin_email: "",
       selectedProjectObj: null,

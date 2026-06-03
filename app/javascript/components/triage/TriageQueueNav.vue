@@ -291,7 +291,7 @@ export default {
         this.browseFocusIndex = this.browseIndexMap[this.normalizedCurrentId] ?? -1;
         this.$nextTick(() => {
           const active = this.$refs.browseList?.querySelector(".browse-item.active");
-          if (active) active.scrollIntoView({ block: "nearest" });
+          if (active?.scrollIntoView) active.scrollIntoView({ block: "nearest" });
         });
       }
     },
@@ -320,7 +320,7 @@ export default {
           const el = this.$refs.browseList?.querySelectorAll("[data-testid='browse-item']")[
             this.browseFocusIndex
           ];
-          if (el) el.scrollIntoView({ block: "nearest" });
+          if (el?.scrollIntoView) el.scrollIntoView({ block: "nearest" });
         });
       } else if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
