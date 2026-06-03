@@ -259,7 +259,7 @@ export default {
 
 .sidebar-rule--active {
   background-color: var(--vulcan-active-tint);
-  border-left: 3px solid var(--primary);
+  border-left: 3px solid var(--vulcan-active-border);
 }
 
 .sidebar-rule--active:hover,
@@ -280,8 +280,8 @@ export default {
 }
 
 .sidebar-comment--active {
-  background-color: var(--primary) !important;
-  color: white !important;
+  background-color: var(--vulcan-primary) !important;
+  color: var(--vulcan-emphasis-color) !important;
 }
 
 .sidebar-comment--active .text-muted {

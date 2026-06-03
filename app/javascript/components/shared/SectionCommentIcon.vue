@@ -97,7 +97,7 @@ export default {
 }
 .section-comment-icon .clickable:focus-visible,
 .section-comment-icon .clickable:hover {
-  outline: 2px solid var(--primary, #007bff);
+  outline: 2px solid var(--vulcan-primary);
   outline-offset: 2px;
   border-radius: 2px;
 }

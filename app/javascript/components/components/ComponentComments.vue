@@ -312,14 +312,17 @@
       </template>
     </b-table>
 
-    <BulkTriageBar
-      v-if="canTriage && selectedIds.length"
-      :count="selectedIds.length"
-      :can-merge="canMerge"
-      @apply="applyBulkTriage"
-      @merge="openMergeModal"
-      @clear="clearSelection"
-    />
+    <div v-if="canTriage && selectedIds.length" class="fixed-bottom bulk-triage-wrapper">
+      <b-collapse :visible="selectedIds.length > 0">
+        <BulkTriageBar
+          :count="selectedIds.length"
+          :can-merge="canMerge"
+          @apply="applyBulkTriage"
+          @merge="openMergeModal"
+          @clear="clearSelection"
+        />
+      </b-collapse>
+    </div>
 
     <MergeCommentsModal
       v-if="canMerge"
@@ -897,5 +900,13 @@ export default {
   padding: 0 2px;
   border-radius: 2px;
   font-weight: 600;
+}
+
+.bulk-triage-wrapper {
+  z-index: 1020;
+}
+
+body.has-classification-banner .bulk-triage-wrapper {
+  bottom: 20px;
 }
 </style>

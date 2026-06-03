@@ -189,5 +189,41 @@ RSpec.describe 'Vulcan Design System audit' do
                                 'BTable config missing striped: true'
     end
   end
+
+  describe 'no raw Bootstrap CSS variables in scoped styles' do
+    BOOTSTRAP_RAW_VARS = /var\(--(?:primary|secondary|success|danger|warning|info|light|dark)\b[^-]/.freeze
+
+    def find_bootstrap_vars_in_vue(file_path)
+      content = File.read(file_path)
+      style_blocks = extract_style_blocks(content)
+      violations = []
+
+      style_blocks.each do |block|
+        block.lines.each_with_index do |line, idx|
+          stripped = line.strip
+          next if stripped.start_with?('//', '*', '/*')
+          next unless stripped.match?(BOOTSTRAP_RAW_VARS)
+
+          violations << {
+            file: file_path.to_s.sub(Rails.root.join.to_s, ''),
+            line: idx + 1,
+            content: stripped
+          }
+        end
+      end
+      violations
+    end
+
+    it 'scoped styles use --vulcan-* not raw Bootstrap --primary/--info/etc' do
+      vue_files = Dir.glob(JS_DIR.join('components/**/*.vue'))
+      all_violations = vue_files.flat_map { |f| find_bootstrap_vars_in_vue(f) }
+
+      if all_violations.any?
+        report = all_violations.map { |v| "  #{v[:file]}:#{v[:line]} — #{v[:content]}" }.join("\n")
+        fail "Found #{all_violations.size} raw Bootstrap CSS variable(s) in scoped styles:\n#{report}\n\n" \
+             'Use --vulcan-* design system variables instead of raw Bootstrap --primary, --info, etc.'
+      end
+    end
+  end
 end
 # rubocop:enable Lint/ConstantDefinitionInBlock, RSpec/NoExpectationExample

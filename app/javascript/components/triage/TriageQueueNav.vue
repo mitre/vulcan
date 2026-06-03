@@ -357,8 +357,8 @@ export default {
 }
 
 .browse-item.active {
-  background-color: var(--primary) !important;
-  color: white !important;
+  background-color: var(--vulcan-primary) !important;
+  color: var(--vulcan-emphasis-color) !important;
 }
 
 .browse-item.active .text-muted {

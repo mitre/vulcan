@@ -325,7 +325,7 @@ export default {
 }
 
 .section-body--focused {
-  border-left: 3px solid var(--primary);
+  border-left: 3px solid var(--vulcan-active-border);
   padding-left: calc(2rem - 3px);
   background-color: var(--vulcan-focus-tint);
   border-radius: 0 0.25rem 0.25rem 0;
@@ -339,7 +339,7 @@ export default {
   background-color: var(--vulcan-focus-tint);
   padding: 0.35rem 0.5rem;
   border-radius: 0.25rem;
-  border-left: 2px solid var(--info, #17a2b8);
+  border-left: 2px solid var(--vulcan-info);
 }
 
 .section-preview {

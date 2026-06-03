@@ -1,26 +1,27 @@
 <template>
   <div class="bulk-triage-bar" role="region" aria-label="Bulk triage">
-    <span class="bulk-triage-bar__count" data-testid="bulk-count"> {{ count }} selected </span>
+    <span class="bulk-triage-bar__count" data-testid="bulk-count">
+      <b-icon icon="check2-square" class="mr-1" />
+      {{ count }} selected
+    </span>
 
-    <b-form-select
-      v-model="triageStatus"
+    <FilterDropdown
+      :value="triageStatus"
       :options="statusOptions"
       size="sm"
-      class="bulk-triage-bar__status"
-      data-testid="bulk-status"
+      variant="outline-secondary"
+      placeholder="Triage status…"
       aria-label="Triage status"
+      data-testid="bulk-status"
+      @input="triageStatus = $event"
     />
 
     <b-form-textarea
       v-model="response"
-      :placeholder="
-        responseRequired
-          ? 'Response required for Declined…'
-          : 'Optional response (copied to each comment)'
-      "
+      :placeholder="responseRequired ? 'Response required…' : 'Optional response'"
       :state="responseRequired && !response.trim() ? false : null"
       rows="1"
-      max-rows="4"
+      max-rows="3"
       size="sm"
       class="bulk-triage-bar__response"
       data-testid="bulk-response"
@@ -28,13 +29,14 @@
     />
 
     <b-button
-      variant="primary"
+      variant="outline-primary"
       size="sm"
+      class="ml-auto"
       :disabled="!canApply"
       data-testid="bulk-apply"
       @click="onApply"
     >
-      Apply to {{ count }}
+      Apply
     </b-button>
 
     <b-button
@@ -46,10 +48,10 @@
       title="Merge selected duplicates into one survivor (admin)"
       @click="$emit('merge')"
     >
-      Merge…
+      Merge
     </b-button>
 
-    <b-button variant="outline-secondary" size="sm" data-testid="bulk-clear" @click="onClear">
+    <b-button variant="outline-primary" size="sm" data-testid="bulk-clear" @click="onClear">
       Clear
     </b-button>
   </div>
@@ -57,6 +59,7 @@
 
 <script>
 import { TRIAGE_LABELS } from "../../constants/triageVocabulary";
+import FilterDropdown from "../shared/FilterDropdown.vue";
 
 // Statuses that make sense applied uniformly to many comments. Excludes
 // `pending` (the initial state), `withdrawn` (commenter-only), and
@@ -72,6 +75,7 @@ const BULK_TRIAGE_STATUSES = [
 
 export default {
   name: "BulkTriageBar",
+  components: { FilterDropdown },
   props: {
     count: {
       type: Number,
@@ -90,10 +94,7 @@ export default {
   },
   computed: {
     statusOptions() {
-      return [
-        { value: null, text: "Triage status…", disabled: true },
-        ...BULK_TRIAGE_STATUSES.map((value) => ({ value, text: TRIAGE_LABELS[value] })),
-      ];
+      return BULK_TRIAGE_STATUSES.map((value) => ({ value, text: TRIAGE_LABELS[value] }));
     },
     responseRequired() {
       return this.triageStatus === "non_concur";
@@ -122,15 +123,12 @@ export default {
 
 <style scoped>
 .bulk-triage-bar {
-  position: sticky;
-  bottom: 0;
-  z-index: 1020;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  background: var(--vulcan-component-bg, #fff);
-  border-top: 1px solid var(--vulcan-border, #dee2e6);
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: var(--vulcan-component-bg);
+  border-top: 1px solid var(--vulcan-border-color);
   box-shadow: var(--vulcan-shadow-lifted);
 }
 
@@ -139,12 +137,9 @@ export default {
   white-space: nowrap;
 }
 
-.bulk-triage-bar__status {
-  width: auto;
-  min-width: 12rem;
-}
-
 .bulk-triage-bar__response {
-  flex: 1 1 auto;
+  flex: 1 1 0;
+  min-width: 8rem;
+  background-color: var(--vulcan-tertiary-bg) !important;
 }
 </style>

@@ -36,7 +36,7 @@
         v-for="reply in replies"
         v-else
         :key="reply.id"
-        class="ml-3 mt-2 pl-3 border-left border-info"
+        class="ml-3 mt-2 pl-3 comment-thread__reply"
         :class="parentTriageBgClass"
       >
         <p class="mb-0 d-flex flex-wrap align-items-center">
@@ -196,5 +196,9 @@ export default {
 <style scoped>
 .white-space-pre-wrap {
   white-space: pre-wrap;
+}
+
+.comment-thread__reply {
+  border-left: 2px solid var(--vulcan-info);
 }
 </style>
