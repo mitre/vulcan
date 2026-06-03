@@ -278,13 +278,13 @@ describe("MembershipsTable", () => {
       expect(wrapper.find("#project-members-table").exists()).toBe(true);
     });
 
-    it("shows name and email for each member in the table", () => {
+    it("shows UserBadge with name and email for each member", () => {
       wrapper = createWrapper();
-      const text = wrapper.text();
-      expect(text).toContain("Alice Admin");
-      expect(text).toContain("alice@example.com");
-      expect(text).toContain("Bob Author");
-      expect(text).toContain("bob@example.com");
+      const badges = wrapper.findAllComponents({ name: "UserBadge" });
+      expect(badges.length).toBeGreaterThanOrEqual(3);
+      const props = badges.wrappers.map((b) => ({ name: b.props("name"), email: b.props("email") }));
+      expect(props).toContainEqual({ name: "Alice Admin", email: "alice@example.com" });
+      expect(props).toContainEqual({ name: "Bob Author", email: "bob@example.com" });
     });
 
     it("shows remove button when editable", () => {

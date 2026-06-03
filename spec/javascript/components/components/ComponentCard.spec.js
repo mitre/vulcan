@@ -111,10 +111,12 @@ describe("ComponentCard", () => {
       expect(wrapper.text()).toContain("Test description");
     });
 
-    it("displays PoC information", () => {
+    it("displays PoC information via UserBadge", () => {
       wrapper = createWrapper();
       expect(wrapper.text()).toContain("Test Admin");
-      expect(wrapper.text()).toContain("admin@test.com");
+      const badge = wrapper.findComponent({ name: "UserBadge" });
+      expect(badge.exists()).toBe(true);
+      expect(badge.props("email")).toBe("admin@test.com");
     });
 
     it('shows "No Component Admin" when admin not set', () => {

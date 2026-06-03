@@ -38,9 +38,7 @@
     >
       <!-- Column template for Name -->
       <template #cell(name)="data">
-        {{ data.item.name }}
-        <br />
-        <small>{{ data.item.email }}</small>
+        <UserBadge :name="data.item.name" :email="data.item.email" :show-name="true" />
       </template>
 
       <!-- Column template for Type -->
@@ -108,12 +106,13 @@ import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import ConfirmDeleteModal from "../shared/ConfirmDeleteModal.vue";
 import TableActionButtons from "../shared/TableActionButtons.vue";
+import UserBadge from "../shared/UserBadge.vue";
 import { useDeleteConfirmation } from "../../composables/useDeleteConfirmation";
 import { useTableSearch } from "../../composables/useTableSearch";
 
 export default {
   name: "UsersTable",
-  components: { ConfirmDeleteModal, TableActionButtons },
+  components: { ConfirmDeleteModal, TableActionButtons, UserBadge },
   mixins: [FormMixinVue, AlertMixinVue],
   props: {
     users: {

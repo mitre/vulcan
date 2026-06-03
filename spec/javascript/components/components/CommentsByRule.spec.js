@@ -94,7 +94,7 @@ describe("CommentsByRule", () => {
     const firstGroup = wrapper.find("[data-testid='rule-group-content']");
     const comments = firstGroup.findAll("[data-testid='comment-entry']");
     expect(comments.length).toBe(3);
-    expect(comments.at(0).text()).toContain("Demo Viewer");
+    expect(comments.at(0).text()).toContain("DV");
     expect(comments.at(0).text()).toContain("Check needs CLI example");
   });
 

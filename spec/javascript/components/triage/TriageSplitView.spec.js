@@ -626,13 +626,14 @@ describe("TriageSplitView", () => {
 
   // ── Author email + divider in triage form ─────────────────────────
 
-  it("shows author email inline with the author name", () => {
+  it("passes author email to UserBadge for popover display", () => {
     const w = mount(TriageSplitView, {
       localVue,
       propsData: baseProps(),
     });
-    expect(w.find("[data-testid='author-email']").exists()).toBe(true);
-    expect(w.find("[data-testid='author-email']").text()).toContain("viewer@example.com");
+    const badge = w.findComponent({ name: "UserBadge" });
+    expect(badge.exists()).toBe(true);
+    expect(badge.props("email")).toBe("viewer@example.com");
   });
 
   it("renders a divider between author info and comment blockquote", () => {

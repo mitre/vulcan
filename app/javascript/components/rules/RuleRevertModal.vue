@@ -15,7 +15,7 @@
     >
       <!-- History Metadata -->
       <p class="mb-0">
-        <strong>{{ history.name }}</strong>
+        <UserBadge :name="history.name" :show-name="true" />
       </p>
       <p class="mb-0">
         <small>{{ friendlyDateTime(history.created_at) }}</small>
@@ -118,10 +118,11 @@ import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import HumanizedTypesMixInVue from "../../mixins/HumanizedTypesMixIn.vue";
 import { MESSAGE_LABELS } from "../../constants/terminology";
 import InfoTooltip from "../shared/InfoTooltip.vue";
+import UserBadge from "../shared/UserBadge.vue";
 
 export default {
   name: "RuleRevertModal",
-  components: { InfoTooltip },
+  components: { InfoTooltip, UserBadge },
   mixins: [AlertMixinVue, DateFormatMixinVue, HumanizedTypesMixInVue],
   props: {
     rule: {

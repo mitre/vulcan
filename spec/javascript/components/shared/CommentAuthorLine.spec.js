@@ -1,4 +1,5 @@
 import { mount } from "@vue/test-utils";
+import { localVue } from "@test/testHelper";
 import CommentAuthorLine from "@/components/shared/CommentAuthorLine.vue";
 
 const baseProps = {
@@ -9,70 +10,76 @@ const baseProps = {
 
 describe("CommentAuthorLine", () => {
   describe("inline layout", () => {
-    it("renders name, email, and date on one line", () => {
+    it("renders avatar initials and date", () => {
       const wrapper = mount(CommentAuthorLine, {
+        localVue,
         propsData: { ...baseProps, layout: "inline" },
       });
-      expect(wrapper.find("[data-testid='author-name']").text()).toBe("John Osborne");
-      expect(wrapper.find("[data-testid='author-email']").text()).toContain("josborne@chainguard.dev");
+      expect(wrapper.find(".b-avatar-text span").text()).toBe("JO");
       expect(wrapper.find("[data-testid='author-date']").exists()).toBe(true);
     });
 
-    it("shows email in parentheses", () => {
+    it("renders a UserBadge with name and email", () => {
       const wrapper = mount(CommentAuthorLine, {
+        localVue,
         propsData: { ...baseProps, layout: "inline" },
       });
-      expect(wrapper.find("[data-testid='author-email']").text()).toBe("(josborne@chainguard.dev)");
+      const badge = wrapper.findComponent({ name: "UserBadge" });
+      expect(badge.exists()).toBe(true);
+      expect(badge.props("name")).toBe("John Osborne");
+      expect(badge.props("email")).toBe("josborne@chainguard.dev");
     });
 
-    it("hides email when not provided", () => {
+    it("renders initials in the avatar", () => {
       const wrapper = mount(CommentAuthorLine, {
-        propsData: { name: "John", email: null, date: baseProps.date, layout: "inline" },
+        localVue,
+        propsData: { ...baseProps, layout: "inline" },
       });
-      expect(wrapper.find("[data-testid='author-email']").exists()).toBe(false);
+      expect(wrapper.find(".b-avatar-text span").text()).toBe("JO");
     });
   });
 
   describe("block layout", () => {
-    it("renders name and email on first line, date on second", () => {
+    it("renders name with showName and date on second line", () => {
       const wrapper = mount(CommentAuthorLine, {
+        localVue,
         propsData: { ...baseProps, layout: "block" },
       });
-      expect(wrapper.find("[data-testid='author-name']").text()).toBe("John Osborne");
-      expect(wrapper.find("[data-testid='author-email']").text()).toBe("(josborne@chainguard.dev)");
+      const badge = wrapper.findComponent({ name: "UserBadge" });
+      expect(badge.exists()).toBe(true);
+      expect(badge.props("showName")).toBe(true);
+      expect(wrapper.text()).toContain("John Osborne");
       expect(wrapper.find("[data-testid='author-date']").text()).toContain("posted");
     });
   });
 
   describe("cell layout", () => {
-    it("renders name and email stacked, no date", () => {
+    it("renders name with showName, no date", () => {
       const wrapper = mount(CommentAuthorLine, {
+        localVue,
         propsData: { ...baseProps, layout: "cell" },
       });
-      expect(wrapper.find("[data-testid='author-name']").text()).toBe("John Osborne");
-      expect(wrapper.find("[data-testid='author-email']").text()).toBe("josborne@chainguard.dev");
+      const badge = wrapper.findComponent({ name: "UserBadge" });
+      expect(badge.exists()).toBe(true);
+      expect(badge.props("showName")).toBe(true);
+      expect(wrapper.text()).toContain("John Osborne");
       expect(wrapper.find("[data-testid='author-date']").exists()).toBe(false);
-    });
-
-    it("renders email without parentheses in cell layout", () => {
-      const wrapper = mount(CommentAuthorLine, {
-        propsData: { ...baseProps, layout: "cell" },
-      });
-      const emailText = wrapper.find("[data-testid='author-email']").text();
-      expect(emailText).not.toContain("(");
     });
   });
 
   describe("name fallback chain", () => {
     it("uses name prop directly when provided", () => {
       const wrapper = mount(CommentAuthorLine, {
+        localVue,
         propsData: { name: "Alice", email: null, date: null, layout: "inline" },
       });
-      expect(wrapper.find("[data-testid='author-name']").text()).toBe("Alice");
+      const badge = wrapper.findComponent({ name: "UserBadge" });
+      expect(badge.props("name")).toBe("Alice");
     });
 
     it("falls back to commenterDisplayName when name is null", () => {
       const wrapper = mount(CommentAuthorLine, {
+        localVue,
         propsData: {
           name: null,
           commenterDisplayName: "Imported User",
@@ -81,24 +88,28 @@ describe("CommentAuthorLine", () => {
           layout: "inline",
         },
       });
-      expect(wrapper.find("[data-testid='author-name']").text()).toBe("Imported User");
+      const badge = wrapper.findComponent({ name: "UserBadge" });
+      expect(badge.props("name")).toBe("Imported User");
     });
 
     it("falls back to em-dash when both name and commenterDisplayName are null", () => {
       const wrapper = mount(CommentAuthorLine, {
+        localVue,
         propsData: { name: null, commenterDisplayName: null, email: null, date: null, layout: "inline" },
       });
-      expect(wrapper.find("[data-testid='author-name']").text()).toBe("—");
+      const badge = wrapper.findComponent({ name: "UserBadge" });
+      expect(badge.props("name")).toBe("—");
     });
   });
 
   describe("defaults", () => {
     it("defaults to inline layout when no layout prop", () => {
       const wrapper = mount(CommentAuthorLine, {
+        localVue,
         propsData: { name: "Test", email: "t@t.com", date: "2026-01-01T00:00:00Z" },
       });
       expect(wrapper.find("[data-testid='author-date']").exists()).toBe(true);
-      expect(wrapper.find("[data-testid='author-email']").text()).toBe("(t@t.com)");
+      expect(wrapper.classes()).toContain("comment-author-line--inline");
     });
   });
 });

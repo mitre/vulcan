@@ -19,7 +19,7 @@
 
     <div v-for="parent in topLevelFilteredVisible" :key="parent.id" class="mb-3">
       <p class="mb-0 d-flex flex-wrap align-items-center">
-        <strong>{{ parent.name }}</strong>
+        <UserBadge :name="parent.name" :email="parent.email" :show-name="true" />
         <small class="text-muted ml-2">{{ actionDescriptions[parent.action] }}</small>
         <SectionLabel
           v-if="parent.action === 'comment'"
@@ -96,12 +96,13 @@ import SectionLabel from "../shared/SectionLabel.vue";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
 import CommentThread from "../shared/CommentThread.vue";
+import UserBadge from "../shared/UserBadge.vue";
 import ReactionButtons from "../shared/ReactionButtons.vue";
 import { commentsClosedTooltip } from "../../constants/triageVocabulary";
 
 export default {
   name: "RuleReviews",
-  components: { SectionLabel, TriageStatusBadge, FilterDropdown, CommentThread, ReactionButtons },
+  components: { SectionLabel, TriageStatusBadge, FilterDropdown, CommentThread, ReactionButtons, UserBadge },
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue, ReactionToggleMixin],
   props: {
     effectivePermissions: {

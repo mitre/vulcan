@@ -13,9 +13,7 @@
     >
       <!-- Column template for Name -->
       <template #cell(name)="data">
-        {{ data.item.name }}
-        <br />
-        <small>{{ data.item.email }}</small>
+        <UserBadge :name="data.item.name" :email="data.item.email" :role="data.item.role" :show-name="true" />
       </template>
 
       <!-- Column template for Actions -->
@@ -100,9 +98,7 @@
     >
       <!-- Column template for Name -->
       <template #cell(name)="data">
-        {{ data.item.name }}
-        <br />
-        <small>{{ data.item.email }}</small>
+        <UserBadge :name="data.item.name" :email="data.item.email" :role="data.item.role" :show-name="true" />
       </template>
 
       <!-- Column template for Role -->
@@ -153,11 +149,12 @@ import FormMixinVue from "../../mixins/FormMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import NewMembership from "./NewMembership.vue";
+import UserBadge from "../shared/UserBadge.vue";
 import { EVENTS, dispatch } from "../../utils/notificationEvents";
 
 export default {
   name: "MembershipsTable",
-  components: { NewMembership },
+  components: { NewMembership, UserBadge },
   mixins: [FormMixinVue, RoleComparisonMixin, AlertMixinVue],
   props: {
     memberships: {

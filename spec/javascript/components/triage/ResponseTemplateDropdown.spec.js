@@ -16,15 +16,15 @@ const flush = async (w) => {
 };
 
 describe("ResponseTemplateDropdown", () => {
+  const templates = [
+    { id: 1, name: "Generalize text", body: "We'll generalize the check and fix text." },
+    { id: 2, name: "No change required", body: "We acknowledge — no change required." },
+  ];
+
   beforeEach(() => {
     getTriageResponseTemplates.mockReset();
     getTriageResponseTemplates.mockResolvedValue({
-      data: {
-        triage_response_templates: [
-          { id: 1, name: "Generalize text", body: "We'll generalize the check and fix text." },
-          { id: 2, name: "No change required", body: "We acknowledge — no change required." },
-        ],
-      },
+      data: { triage_response_templates: templates },
     });
   });
 
@@ -40,12 +40,28 @@ describe("ResponseTemplateDropdown", () => {
     expect(w.vm.templates).toHaveLength(2);
   });
 
-  it("emits insert with the template body when a template is picked", async () => {
+  it("emits insert with the template body when a template is selected", async () => {
     const w = mount(ResponseTemplateDropdown, { localVue, propsData: { projectId: 42 } });
     await flush(w);
-    const target = w.vm.templates.find((t) => t.id === 2);
-    w.vm.onSelect(target);
+    w.vm.onSelect(templates[1]);
     expect(w.emitted("insert")).toBeTruthy();
     expect(w.emitted("insert")[0][0]).toBe("We acknowledge — no change required.");
+  });
+
+  it("emits insert with the first template body", async () => {
+    const w = mount(ResponseTemplateDropdown, { localVue, propsData: { projectId: 42 } });
+    await flush(w);
+    w.vm.onSelect(templates[0]);
+    expect(w.emitted("insert")[0][0]).toBe("We'll generalize the check and fix text.");
+  });
+
+  it("does not emit insert when templates are empty", async () => {
+    getTriageResponseTemplates.mockResolvedValue({
+      data: { triage_response_templates: [] },
+    });
+    const w = mount(ResponseTemplateDropdown, { localVue, propsData: { projectId: 42 } });
+    await flush(w);
+    expect(w.vm.templates).toHaveLength(0);
+    expect(w.emitted("insert")).toBeFalsy();
   });
 });

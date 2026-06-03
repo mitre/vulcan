@@ -32,13 +32,16 @@
         <b-button size="sm" variant="link" class="p-0" @click="fetch">Retry</b-button>
       </div>
       <div v-else-if="replies.length === 0" class="text-muted small ml-3">No replies yet.</div>
-      <div
+      <b-media
         v-for="reply in replies"
         v-else
         :key="reply.id"
-        class="ml-3 mt-2 pl-3 comment-thread__reply"
+        class="mt-2 comment-thread__reply"
         :class="parentTriageBgClass"
       >
+        <template #aside>
+          <UserBadge :name="reply.commenter_display_name" :email="reply.commenter_email" />
+        </template>
         <p class="mb-0 d-flex flex-wrap align-items-center">
           <strong>{{ reply.commenter_display_name || "—" }}</strong>
           <b-badge v-if="reply.commenter_imported" variant="warning" class="ml-1">
@@ -65,7 +68,7 @@
           :closed-message="closedMessage"
           @toggle="(kind) => toggleReaction(reply, kind)"
         />
-      </div>
+      </b-media>
     </div>
   </div>
 </template>
@@ -74,13 +77,14 @@
 import { getReviewResponses } from "../../api/reviewsApi";
 import { triageBgClass } from "../../utils/triageBgClass";
 import ReactionButtons from "./ReactionButtons.vue";
+import UserBadge from "./UserBadge.vue";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
 import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
 
 export default {
   name: "CommentThread",
-  components: { ReactionButtons },
+  components: { ReactionButtons, UserBadge },
   mixins: [AlertMixin, ReactionToggleMixin, DateFormatMixin],
   props: {
     parentReviewId: { type: [Number, String], required: true },
@@ -198,7 +202,24 @@ export default {
   white-space: pre-wrap;
 }
 
+.thread-replies {
+  margin-left: 1rem;
+}
+
+@media (min-width: 768px) {
+  .thread-replies {
+    margin-left: 2.5rem;
+  }
+}
+
 .comment-thread__reply {
   border-left: 2px solid var(--vulcan-info);
+  padding-left: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .comment-thread__reply {
+    padding-left: 0.75rem;
+  }
 }
 </style>

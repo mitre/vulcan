@@ -186,6 +186,67 @@ describe("CommentThread", () => {
     expect(w.text()).toContain("imported");
   });
 
+  describe("b-media structure", () => {
+    const twoReplies = {
+      data: {
+        rows: [
+          {
+            id: 7,
+            comment: "first reply",
+            commenter_display_name: "Alice",
+            commenter_imported: false,
+            created_at: "2026-05-04T00:00:00Z",
+          },
+          {
+            id: 8,
+            comment: "second reply",
+            commenter_display_name: "Bob",
+            commenter_imported: false,
+            created_at: "2026-05-04T01:00:00Z",
+          },
+        ],
+      },
+    };
+
+    it("wraps each reply in a b-media component", async () => {
+      api.get.mockResolvedValue(twoReplies);
+      const w = mount(CommentThread, {
+        localVue,
+        propsData: { parentReviewId: 1, responsesCount: 2 },
+      });
+      await w.find("button[aria-controls]").trigger("click");
+      await new Promise((r) => setTimeout(r, 0));
+      const mediaComponents = w.findAll(".media");
+      expect(mediaComponents.length).toBe(2);
+    });
+
+    it("renders reply content inside b-media-body", async () => {
+      api.get.mockResolvedValue(twoReplies);
+      const w = mount(CommentThread, {
+        localVue,
+        propsData: { parentReviewId: 1, responsesCount: 2 },
+      });
+      await w.find("button[aria-controls]").trigger("click");
+      await new Promise((r) => setTimeout(r, 0));
+      const bodies = w.findAll(".media-body");
+      expect(bodies.length).toBe(2);
+      expect(bodies.at(0).text()).toContain("first reply");
+      expect(bodies.at(1).text()).toContain("second reply");
+    });
+
+    it("renders an aside placeholder for future avatar", async () => {
+      api.get.mockResolvedValue(twoReplies);
+      const w = mount(CommentThread, {
+        localVue,
+        propsData: { parentReviewId: 1, responsesCount: 2 },
+      });
+      await w.find("button[aria-controls]").trigger("click");
+      await new Promise((r) => setTimeout(r, 0));
+      const asides = w.findAll(".media-aside");
+      expect(asides.length).toBe(2);
+    });
+  });
+
   // Reply cards must visually match the parent's triage-status tint so an
   // adjudicated comment + its replies read as one unit (found during in-app
   // verification of the bulk-triage UI).

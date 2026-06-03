@@ -76,8 +76,7 @@
 
       <p class="mt-4">
         <span v-if="component.admin_name">
-          PoC: {{ component.admin_name }}
-          {{ component.admin_email ? `(${component.admin_email})` : "" }}
+          PoC: <UserBadge :name="component.admin_name" :email="component.admin_email" :show-name="true" />
         </span>
         <em v-else>No Component Admin</em>
       </p>
@@ -190,6 +189,7 @@ import ConfirmComponentReleaseMixin from "../../mixins/ConfirmComponentReleaseMi
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import LockControlsModal from "../components/LockControlsModal.vue";
 import NewComponentModal from "../components/NewComponentModal.vue";
+import UserBadge from "../shared/UserBadge.vue";
 import { ruleCountLabel } from "../../constants/terminology";
 
 export default {
@@ -197,6 +197,7 @@ export default {
   components: {
     LockControlsModal,
     NewComponentModal,
+    UserBadge,
   },
   mixins: [AlertMixinVue, FormMixinVue, ConfirmComponentReleaseMixin, RoleComparisonMixin],
   props: {
