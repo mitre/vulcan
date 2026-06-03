@@ -20,7 +20,7 @@
         v-for="row in rows"
         :key="row.id"
         class="mb-2 rounded px-2 py-1"
-        :class="triageBgClass(row.triage_status)"
+        :class="[triageBgClass(row.triage_status), { 'dedup-dimmed': isDimmed(row) }]"
       >
         <div class="text-break">
           <strong>{{ row.author_name }}</strong>
@@ -44,7 +44,6 @@
         />
         <CommentThread
           :parent-review-id="row.id"
-          :parent-triage-status="row.triage_status"
           :responses-count="row.responses_count || 0"
           :can-reply="true"
           @reply="$emit('reply', $event)"
@@ -107,6 +106,10 @@ export default {
   },
   methods: {
     triageBgClass,
+    isDimmed(row) {
+      if (!this.section || this.componentScoped) return false;
+      return row.section !== this.section;
+    },
     async fetch() {
       try {
         // Fetch all comments at the current scope (rule-level or
@@ -145,3 +148,14 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.dedup-dimmed {
+  opacity: 0.45;
+  transition: opacity 0.15s ease;
+}
+
+.dedup-dimmed:hover {
+  opacity: 0.85;
+}
+</style>

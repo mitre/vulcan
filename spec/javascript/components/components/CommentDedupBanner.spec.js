@@ -164,6 +164,36 @@ describe("CommentDedupBanner", () => {
     expect(getComments).toHaveBeenCalled();
   });
 
+  describe("section-matching visual highlight", () => {
+    it("dims comments that do not match the selected section", async () => {
+      const w = await mountWith("check_content");
+      await w.find("button").trigger("click");
+      const items = w.findAll("li");
+      expect(items.at(0).classes()).not.toContain("dedup-dimmed"); // check_content matches
+      expect(items.at(1).classes()).toContain("dedup-dimmed"); // fixtext does not match
+      expect(items.at(2).classes()).toContain("dedup-dimmed"); // null does not match
+    });
+
+    it("does not dim any comments when no section is selected", async () => {
+      const w = await mountWith(null);
+      await w.find("button").trigger("click");
+      const dimmed = w.findAll(".dedup-dimmed");
+      expect(dimmed.length).toBe(0);
+    });
+
+    it("updates dimming when section prop changes", async () => {
+      const w = await mountWith("check_content");
+      await w.find("button").trigger("click");
+      expect(w.findAll(".dedup-dimmed").length).toBe(2); // fixtext + null dimmed
+
+      await w.setProps({ section: "fixtext" });
+      expect(w.findAll(".dedup-dimmed").length).toBe(2); // check_content + null dimmed
+
+      await w.setProps({ section: null });
+      expect(w.findAll(".dedup-dimmed").length).toBe(0); // nothing dimmed
+    });
+  });
+
   it("recomputes inSection when section prop changes (no refetch)", async () => {
     const w = await mountWith("check_content");
     expect(w.vm.inSection).toBe(1); // 1 row in check_content
