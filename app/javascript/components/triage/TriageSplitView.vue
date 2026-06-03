@@ -84,7 +84,7 @@
           </div>
           <hr class="mt-1 mb-2" data-testid="comment-divider" />
           <blockquote
-            class="border-left pl-3 py-2 mb-2 bg-light"
+            class="border-left pl-3 py-2 mb-2"
             :class="triageBgClass(activeComment.triage_status)"
           >
             <template v-if="activeComment.comment && activeComment.comment.length > 200">
