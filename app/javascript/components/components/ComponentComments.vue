@@ -799,6 +799,14 @@ export default {
       try {
         await submitBulkTriage(ids, payload);
         this.clearSelection();
+        // If the bulk-applied status would hide the just-triaged rows from
+        // the current filter (e.g. filter=pending, applied=concur), drop
+        // the filter to 'all' so the triager can verify the action took
+        // effect in place rather than the rows silently vanishing.
+        if (this.filterStatus !== "all" && this.filterStatus !== payload.triage_status) {
+          this.filterStatus = "all";
+          this.page = 1;
+        }
         await this.fetch();
         this.alertOrNotifyResponse({
           data: {
@@ -823,6 +831,13 @@ export default {
         await submitMerge(payload.review_ids, payload.survivor_id);
         this.clearSelection();
         this.selectedMergeReviews = [];
+        // Merge produces two statuses on the affected rows (secondaries =
+        // 'duplicate', survivor keeps its current status) — to keep both
+        // visible for verification, drop any narrow filter to 'all'.
+        if (this.filterStatus !== "all") {
+          this.filterStatus = "all";
+          this.page = 1;
+        }
         await this.fetch();
         this.alertOrNotifyResponse({
           data: {

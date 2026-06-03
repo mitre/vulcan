@@ -35,6 +35,7 @@
         ref="comments"
         scope="component"
         :component-id="component.id"
+        :project-id="project.id"
         :component-displayed-name="component.name"
         :component-prefix="component.prefix"
         :effective-permissions="effectivePermissions"

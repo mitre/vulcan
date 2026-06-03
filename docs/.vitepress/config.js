@@ -51,10 +51,23 @@ export default defineConfig({
             items: [
               { text: "Overview", link: "/user-guide/overview" },
               { text: "Authoring Rules", link: "/user-guide/authoring-rules" },
+              { text: "Sidebar — Nested Requirements", link: "/user-guide/sidebar-collapse" },
               { text: "Public Comment Review", link: "/user-guide/public-comment-review" },
               { text: "User Management", link: "/user-guide/user-management" },
               { text: "Section Locks", link: "/user-guide/section-locks" },
               { text: "Data Management", link: "/user-guide/data-management/" },
+            ],
+          },
+          {
+            text: "Comment Triage",
+            items: [
+              { text: "Soft Redirect", link: "/user-guide/soft-redirect" },
+              { text: "Comment Provenance", link: "/user-guide/comment-provenance" },
+              { text: "Move Comment", link: "/user-guide/move-comment" },
+              { text: "Bulk Triage", link: "/user-guide/bulk-triage" },
+              { text: "Merge Comments", link: "/user-guide/merge-comments" },
+              { text: "Response Templates", link: "/user-guide/response-templates" },
+              { text: "Commenter Email", link: "/user-guide/commenter-email" },
             ],
           },
           { text: "SAF Training", link: "https://mitre.github.io/saf-training/courses/guidance/" },
@@ -158,9 +171,12 @@ export default defineConfig({
       },
     ],
 
-    // Sidebar navigation
-    sidebar: {
-      "/getting-started/": [
+    // Sidebar navigation. Getting Started + User Guide + Comment Triage +
+    // Data Management share one block so navigating between any of those
+    // paths shows the full sidebar (not a section-only stub). Deployment
+    // and API/Development keep their own sidebars below.
+    sidebar: (() => {
+      const userGuideShared = [
         {
           text: "Getting Started",
           items: [
@@ -171,8 +187,6 @@ export default defineConfig({
             { text: "Troubleshooting", link: "/getting-started/troubleshooting" },
           ],
         },
-      ],
-      "/user-guide/": [
         {
           text: "User Guide",
           items: [
@@ -204,8 +218,11 @@ export default defineConfig({
             { text: "Backup & Restore", link: "/user-guide/data-management/backup-restore" },
           ],
         },
-      ],
-      "/deployment/": [
+      ];
+      return {
+        "/getting-started/": userGuideShared,
+        "/user-guide/": userGuideShared,
+        "/deployment/": [
         {
           text: "Deployment Options",
           items: [
@@ -315,7 +332,8 @@ export default defineConfig({
           ],
         },
       ],
-    },
+      };
+    })(),
 
     // Social links
     socialLinks: [
