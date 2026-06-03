@@ -211,7 +211,8 @@ export default {
 }
 
 .selectedRuleRow {
-  background: var(--vulcan-diff-removed-bg);
+  background: var(--vulcan-active-bg);
+  border-left: 3px solid var(--vulcan-active-border);
 }
 
 .closeRuleButton {
