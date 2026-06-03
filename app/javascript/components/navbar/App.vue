@@ -10,7 +10,7 @@
       </b-navbar-brand>
       <!-- ── Utility controls — OUTSIDE collapse, always visible ── -->
       <b-navbar-nav v-if="signed_in" class="flex-row align-items-center ml-auto mr-2 order-xl-last">
-        <b-nav-item-dropdown right no-caret class="position-relative">
+        <b-nav-item-dropdown right no-caret boundary="viewport" class="position-relative">
           <template #button-content>
             <b-icon icon="bell" aria-hidden="true" />
             <b-badge
@@ -49,7 +49,7 @@
           <b-icon :icon="isDarkMode ? 'sun' : 'moon'" />
         </b-nav-item>
 
-        <b-nav-item-dropdown right no-caret>
+        <b-nav-item-dropdown right no-caret boundary="viewport">
           <template #button-content>
             <UserBadge
               v-if="current_user"
@@ -77,7 +77,10 @@
       </b-navbar-nav>
 
       <!-- Dark mode toggle for non-signed-in users — also outside collapse -->
-      <b-navbar-nav v-if="!signed_in" class="flex-row ml-auto mr-2">
+      <b-navbar-nav
+        v-if="!signed_in"
+        class="flex-row align-items-center ml-auto mr-2 order-xl-last"
+      >
         <b-nav-item
           link-classes="text-light px-2"
           aria-label="Toggle dark mode"

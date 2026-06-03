@@ -238,3 +238,48 @@ describe("Navbar access request reactivity", () => {
     expect(wrapper.find(".badge-danger").exists()).toBe(false);
   });
 });
+
+describe("Navbar non-signed-in (login page)", () => {
+  const loginProps = { ...baseProps, signed_in: false };
+
+  it("renders the dark mode toggle when not signed in", () => {
+    const w = mount(App, { localVue, propsData: loginProps });
+    const toggleNav = w.findAll(".navbar-nav").wrappers.find(
+      (nav) => nav.find("[aria-label='Toggle dark mode']").exists(),
+    );
+    expect(toggleNav).toBeTruthy();
+  });
+
+  it("right-aligns the dark mode toggle with order-xl-last", () => {
+    const w = mount(App, { localVue, propsData: loginProps });
+    const toggleNav = w.findAll(".navbar-nav").wrappers.find(
+      (nav) => nav.find("[aria-label='Toggle dark mode']").exists(),
+    );
+    expect(toggleNav.classes()).toContain("ml-auto");
+    expect(toggleNav.classes()).toContain("order-xl-last");
+  });
+});
+
+describe("Navbar dropdown viewport boundary", () => {
+  it("sets boundary=viewport on the notification dropdown", () => {
+    const w = mount(App, {
+      localVue,
+      propsData: {
+        ...baseProps,
+        access_requests: [
+          { user: { name: "Req" }, project: { id: 1, name: "P" } },
+        ],
+      },
+    });
+    const dropdowns = w.findAllComponents({ name: "BNavItemDropdown" });
+    const bellDropdown = dropdowns.at(0);
+    expect(bellDropdown.props("boundary")).toBe("viewport");
+  });
+
+  it("sets boundary=viewport on the user dropdown", () => {
+    const w = mount(App, { localVue, propsData: baseProps });
+    const dropdowns = w.findAllComponents({ name: "BNavItemDropdown" });
+    const userDropdown = dropdowns.at(1);
+    expect(userDropdown.props("boundary")).toBe("viewport");
+  });
+});
