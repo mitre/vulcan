@@ -6,32 +6,42 @@ Vulcan's seed system follows the [GitLab/ThoughtBot two-concern pattern](https:/
 
 ```
 db/
-├── seeds.rb                     # Thin loader — loads db/seeds/data/*.rb in order
+├── seeds.rb                     # Loader — wraps all files in SeedHelpers.quiet
 └── seeds/
     └── data/
-        ├── 00_users.rb          # Admin + role-tier + filler users
+        ├── 00_users.rb          # Admin + role-tier + community SME users
         ├── 01_projects.rb       # Demo projects
         ├── 02_srgs.rb           # SRG XCCDF XML imports
         ├── 03_stigs.rb          # STIG XCCDF XML imports
         ├── 04_components.rb     # Named + overlay + dummy components
-        ├── 05_memberships.rb    # User → Project RBAC wiring
+        ├── 05_memberships.rb    # ALL memberships — demo + community personas
         ├── 06_rule_statuses.rb  # Varied statuses for demo coverage
-        ├── 10_comments.rb       # Container Platform comments (FactoryBot)
-        └── 11_cross_project.rb  # Cross-project comments (FactoryBot)
-    └── srgs/                    # DISA SRG XCCDF XML files (4)
-    └── stigs/                   # DISA STIG XCCDF XML files (4)
+        ├── 07_additional_questions.rb  # AdditionalQuestion + AdditionalAnswer
+        ├── 08_rule_descriptions.rb     # RuleDescription records
+        ├── 09_access_requests.rb       # ProjectAccessRequest records
+        ├── 10_comments.rb       # YAML-driven comment threads via SeedContext
+        ├── 11_cross_project.rb  # Cross-project comments
+        ├── 12_personal_access_tokens.rb  # PAT records
+        ├── 13_container_srg_test.rb      # Container SRG Test dataset
+        └── threads.yml          # Declarative thread definitions (Chatwoot pattern)
+    └── srgs/                    # DISA SRG XCCDF XML files
+    └── stigs/                   # DISA STIG XCCDF XML files
 
 lib/
 ├── seed_helpers.rb              # Shared helpers (SeedHelpers module)
+├── seed_context.rb              # SeedContext — centralized lookups
 └── tasks/
     └── dev.rake                 # User-facing rake tasks
 ```
 
 ### Design Decisions
 
-- **No seed management gem.** We evaluated seed-fu (unmaintained since 2018), seedbank (2017), and others. The complexity of XCCDF parsing, polymorphic comments, and triage state machines means 80%+ of seeds need custom Ruby. Modular numbered files give the same benefits with zero dependencies.
-- **FactoryBot for demo data only.** FactoryBot is used in comment/review seeds (files 10+) and the `dev:prime` rake task. Production seeds (SRGs, admin bootstrap) use plain ActiveRecord — per ThoughtBot's own recommendation.
+- **No seed management gem.** We evaluated seed-fu, seedbank, and others. The complexity of XCCDF parsing, polymorphic comments, and triage state machines means 80%+ of seeds need custom Ruby. Modular numbered files give the same benefits with zero dependencies.
+- **YAML data + Ruby infrastructure.** Comment thread definitions live in `threads.yml` (Chatwoot pattern) — data as YAML, not inline Ruby constants. The `SeedHelpers.load_threads` method normalizes YAML to the symbol-keyed format `seed_thread` expects.
+- **SeedContext for centralized lookups.** `SeedContext` pre-loads all users (indexed by email), projects (by name), and components (by name) in one pass. Seed files receive the context instead of doing scattered `User.find_by` calls.
+- **Quiet infrastructure wrapper.** `SeedHelpers.quiet` suppresses Devise mailer deliveries and audit logging during seeding (GitLab pattern). All seed files run inside this wrapper via `seeds.rb`.
 - **Every seed file is idempotent.** Uses `find_or_create_by`, `find_or_initialize_by`, or `SeedHelpers.find_or_seed_review`. Running `rails db:seed` twice produces identical data.
+- **Membership creation centralized.** ALL membership wiring (demo users + community personas) lives in `05_memberships.rb` only. Comment seeds do NOT create memberships.
 
 ## Commands
 
@@ -83,9 +93,51 @@ Set triage status on a review. Skips if already at the target status. Auto-sets 
 
 Returns a Hash of model counts: `{ users: N, projects: N, srgs: N, ... }`.
 
+### `SeedHelpers.quiet { ... }`
+
+Suppresses `ActionMailer::Base.perform_deliveries` during the block. Prevents Devise from sending confirmation/unlock emails during seeding. Restores the original setting even if the block raises.
+
+### `SeedHelpers.load_threads(path = 'db/seeds/data/threads.yml')`
+
+Loads thread definitions from YAML and normalizes keys/values for `seed_thread` compatibility. Keys become symbols, `rule`/`author`/`by` values become symbols, `comment`/`section`/`status` stay strings.
+
+### `SeedHelpers.cleanup_orphaned_reviews!`
+
+Deletes Review records whose `commentable_id` references a Component that no longer exists. Returns the count of deleted records.
+
 ### `SeedHelpers.verify!`
 
 Returns an Array of error strings. Empty array means all checks pass. Checks: admin user exists, project count, SRG count, component count, RBAC coverage on demo projects, comment count, triage status coverage.
+
+## SeedContext
+
+`SeedContext` (`lib/seed_context.rb`) pre-loads all users, projects, and components into indexed hashes for O(1) lookups. Used by `10_comments.rb` to resolve users by symbol key (`:viewer`, `:stig_author`) without repeated database queries.
+
+```ruby
+ctx = SeedContext.new
+ctx.user(:viewer)                    # User with email viewer@example.com
+ctx.user('admin@example.com')        # User by email string
+ctx.project('Container Platform')    # Project by name
+ctx.component('Container Platform')  # Component by name
+ctx.rules_for(component)             # { rule_a: Rule, rule_b: Rule, ... }
+```
+
+## threads.yml
+
+Comment thread definitions as YAML data (Chatwoot-inspired pattern). Each thread specifies: `rule` (symbol key), `section`, `author` (symbol key), `comment` text, optional `triage` action, optional `replies` array.
+
+```yaml
+rule_threads:
+  - rule: rule_a
+    section: check_content
+    author: viewer
+    comment: >-
+      The check says "verify TLS 1.2 or greater..."
+    replies:
+      - author: author
+        comment: >-
+          We will add an example using openssl s_client...
+```
 
 ## Adding a New Seed File
 
@@ -106,6 +158,21 @@ All demo users share the password from `VULCAN_SEED_ADMIN_PASSWORD` (default: `1
 | `viewer@example.com` | Viewer | Can comment, cannot triage |
 | `author@example.com` | Author | Can comment + triage |
 | `reviewer@example.com` | Reviewer | Can comment + triage + review |
+
+### Community SME Personas
+
+Seeded by `00_users.rb` from `SeedHelpers::COMMUNITY_PERSONAS`. All share the same password. Memberships assigned in `05_memberships.rb`.
+
+| Email | Name | Role |
+|-------|------|------|
+| `container-sme@example.org` | Container Security SME | Viewer |
+| `platform-eng@example.org` | Platform Engineer | Viewer |
+| `compliance-analyst@example.org` | Compliance Analyst | Viewer |
+| `stig-author@example.org` | STIG Author | Author |
+| `security-reviewer@example.org` | Security Reviewer | Reviewer |
+| `qa-reviewer@example.org` | QA Reviewer | Reviewer |
+| `infra-eng@example.org` | Infrastructure Engineer | Viewer |
+| `devsecops@example.org` | DevSecOps Engineer | Author |
 
 ## Updating SRG/STIG Seed Data
 
