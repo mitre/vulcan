@@ -2,7 +2,7 @@
 
 namespace :openapi do
   desc 'Run request + contract specs with OpenAPI coverage reporting (single-process only)'
-  task :coverage do
+  task coverage: :environment do
     puts '═══ OpenAPI Coverage Report ═══'
     puts ''
     puts 'Running request + contract specs in single-process mode with coverage tracking...'

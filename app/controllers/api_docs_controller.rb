@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# Serves the browsable Scalar API docs page (show) and the OpenAPI spec
+# (spec). Routed via GET /api-docs and /api-docs/openapi.yaml.
 class ApiDocsController < ApplicationController
   def show; end
 

@@ -282,18 +282,18 @@ RSpec.describe 'Reviews + Reactions + Satisfactions endpoint contracts', type: :
   # ── PATCH /reviews/bulk_triage ──
 
   describe 'PATCH /reviews/bulk_triage (JSON)' do
-    let_it_be(:bulk_review_1) do
+    let_it_be(:bulk_review1) do
       create(:review, user: admin, rule: rule, action: 'comment',
                       comment: 'Bulk triage 1', triage_status: 'pending')
     end
-    let_it_be(:bulk_review_2) do
+    let_it_be(:bulk_review2) do
       create(:review, user: admin, rule: rule, action: 'comment',
                       comment: 'Bulk triage 2', triage_status: 'pending')
     end
 
     it 'returns BulkTriageResponse with reviews + response_reviews arrays' do
       patch '/reviews/bulk_triage',
-            params: { review_ids: [bulk_review_1.id, bulk_review_2.id], triage_status: 'concur' },
+            params: { review_ids: [bulk_review1.id, bulk_review2.id], triage_status: 'concur' },
             headers: json_headers, as: :json
       body = validate_and_parse!
 

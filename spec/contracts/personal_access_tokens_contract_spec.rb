@@ -36,14 +36,14 @@ RSpec.describe 'Personal Access Tokens endpoint contracts', type: :request do
 
   describe 'GET /personal_access_tokens sort order' do
     it 'returns active tokens before revoked tokens' do
-      active = create(:personal_access_token, user: admin, name: 'Active Token')
+      create(:personal_access_token, user: admin, name: 'Active Token')
       revoked = create(:personal_access_token, user: admin, name: 'Revoked Token')
       revoked.revoke!
 
       get '/personal_access_tokens', headers: json_headers
       body = validate_and_parse!
 
-      names = body['personal_access_tokens'].map { |t| t['name'] }
+      names = body['personal_access_tokens'].pluck('name')
       active_idx = names.index('Active Token')
       revoked_idx = names.index('Revoked Token')
       expect(active_idx).to be < revoked_idx

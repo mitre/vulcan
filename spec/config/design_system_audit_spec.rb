@@ -2,6 +2,11 @@
 
 require 'rails_helper'
 
+# rubocop:disable Lint/ConstantDefinitionInBlock, RSpec/NoExpectationExample
+# Pattern constants are module-level audit config; defining them at file
+# scope would make them visible to other specs unnecessarily. The `it`
+# blocks rely on `raise` to surface violations with a formatted report —
+# the absence of a raised exception IS the passing assertion.
 RSpec.describe 'Vulcan Design System audit' do
   JS_DIR = Rails.root.join('app/javascript')
 
@@ -26,7 +31,7 @@ RSpec.describe 'Vulcan Design System audit' do
       next unless has_color
 
       violations << {
-        file: file_path.to_s.sub("#{Rails.root}/", ''),
+        file: file_path.to_s.sub(Rails.root.join.to_s, ''),
         line: idx + 1,
         content: stripped
       }
@@ -51,8 +56,8 @@ RSpec.describe 'Vulcan Design System audit' do
 
     if all_violations.any?
       report = all_violations.map { |v| "  #{v[:file]}:#{v[:line]} — #{v[:content]}" }.join("\n")
-      fail "Found #{all_violations.size} hardcoded color(s) in Vue scoped styles:\n#{report}\n\n" \
-           "Replace with --vulcan-* or --triage-* CSS variables from application.scss."
+      raise "Found #{all_violations.size} hardcoded color(s) in Vue scoped styles:\n#{report}\n\n" \
+            'Replace with --vulcan-* or --triage-* CSS variables from application.scss.'
     end
   end
 
@@ -62,8 +67,8 @@ RSpec.describe 'Vulcan Design System audit' do
 
     if all_violations.any?
       report = all_violations.map { |v| "  #{v[:file]}:#{v[:line]} — #{v[:content]}" }.join("\n")
-      fail "Found #{all_violations.size} hardcoded color(s) in CSS files:\n#{report}\n\n" \
-           "Replace with --vulcan-* or --triage-* CSS variables from application.scss."
+      raise "Found #{all_violations.size} hardcoded color(s) in CSS files:\n#{report}\n\n" \
+            'Replace with --vulcan-* or --triage-* CSS variables from application.scss.'
     end
   end
 
@@ -85,7 +90,7 @@ RSpec.describe 'Vulcan Design System audit' do
         next unless stripped.match?(LARGE_PX_PATTERN)
 
         violations << {
-          file: file_path.to_s.sub("#{Rails.root}/", ''),
+          file: file_path.to_s.sub(Rails.root.join.to_s, ''),
           line: idx + 1,
           content: stripped
         }
@@ -100,8 +105,9 @@ RSpec.describe 'Vulcan Design System audit' do
 
     if all_violations.any?
       report = all_violations.map { |v| "  #{v[:file]}:#{v[:line]} — #{v[:content]}" }.join("\n")
-      fail "Found #{all_violations.size} arbitrary px spacing value(s) > 4px:\n#{report}\n\n" \
-           "Use rem values or Bootstrap spacing utilities (p-1, m-2, gap-3, etc.)."
+      raise "Found #{all_violations.size} arbitrary px spacing value(s) > 4px:\n#{report}\n\n" \
+            'Use rem values or Bootstrap spacing utilities (p-1, m-2, gap-3, etc.).'
     end
   end
 end
+# rubocop:enable Lint/ConstantDefinitionInBlock, RSpec/NoExpectationExample
