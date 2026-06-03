@@ -37,6 +37,7 @@
       @click="onApply"
     >
       Apply
+      <InfoTooltip text="Set the chosen triage status on all selected comments at once" />
     </b-button>
 
     <b-button
@@ -45,10 +46,12 @@
       size="sm"
       :disabled="count < 2"
       data-testid="bulk-merge"
-      title="Merge selected duplicates into one survivor (admin)"
       @click="$emit('merge')"
     >
       Merge
+      <InfoTooltip
+        text="Combine selected duplicate comments into a single survivor — all attributions preserved, originals withdrawn"
+      />
     </b-button>
 
     <b-button variant="outline-primary" size="sm" data-testid="bulk-clear" @click="onClear">
@@ -60,6 +63,7 @@
 <script>
 import { TRIAGE_LABELS } from "../../constants/triageVocabulary";
 import FilterDropdown from "../shared/FilterDropdown.vue";
+import InfoTooltip from "../shared/InfoTooltip.vue";
 
 // Statuses that make sense applied uniformly to many comments. Excludes
 // `pending` (the initial state), `withdrawn` (commenter-only), and
@@ -75,7 +79,7 @@ const BULK_TRIAGE_STATUSES = [
 
 export default {
   name: "BulkTriageBar",
-  components: { FilterDropdown },
+  components: { FilterDropdown, InfoTooltip },
   props: {
     count: {
       type: Number,
