@@ -218,10 +218,10 @@ export default {
     },
     rowClass(rule, index) {
       if (this.selectedRule && this.selectedRule.id === rule.id) {
-        return "bg-secondary text-white";
+        return "rule-list-item--active";
       }
       if (index === this.focusedIndex) {
-        return "bg-light";
+        return "rule-list-item--focused";
       }
       return "";
     },
@@ -272,3 +272,15 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.rule-list-item--active {
+  background-color: var(--vulcan-active-bg);
+  border-left: 3px solid var(--vulcan-active-border);
+  color: var(--vulcan-emphasis-color);
+}
+
+.rule-list-item--focused {
+  background-color: var(--vulcan-hover-bg);
+}
+</style>

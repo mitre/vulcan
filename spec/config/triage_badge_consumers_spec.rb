@@ -28,17 +28,17 @@ RSpec.describe 'Triage badge standardization' do
     end
   end
 
-  describe 'User comments row includes addressed_by fields' do
-    let(:controller_source) { Rails.root.join('app/controllers/users_controller.rb').read }
+  describe 'CommentRowBlueprint includes addressed_by fields' do
+    let(:blueprint_source) { Rails.root.join('app/blueprints/comment_row_blueprint.rb').read }
 
-    it 'comment_row_for includes addressed_by_rule_id' do
-      expect(controller_source).to include('addressed_by_rule_id'),
-                                   'users_controller comment_row_for missing addressed_by_rule_id'
+    it 'includes addressed_by_rule_id' do
+      expect(blueprint_source).to include('addressed_by_rule_id'),
+                                  'CommentRowBlueprint missing addressed_by_rule_id field'
     end
 
-    it 'comment_row_for includes duplicate_of_review_id' do
-      expect(controller_source).to include('duplicate_of_review_id'),
-                                   'users_controller comment_row_for missing duplicate_of_review_id'
+    it 'includes duplicate_of_review_id' do
+      expect(blueprint_source).to include('duplicate_of_review_id'),
+                                  'CommentRowBlueprint missing duplicate_of_review_id field'
     end
   end
 end

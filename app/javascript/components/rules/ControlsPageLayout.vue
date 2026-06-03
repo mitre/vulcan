@@ -10,29 +10,21 @@
       <slot name="filter-bar" />
     </div>
 
-    <!-- Two-Column Layout -->
-    <div class="row">
-      <!-- Left Sidebar -->
-      <div :class="['left-sidebar-column', 'pr-0', 'sidebar-border-right', sidebarColumnClass]">
+    <!-- Two-Column Layout via PanelLayout -->
+    <PanelLayout :panels="layoutPanels">
+      <template #left>
         <slot name="left-sidebar" />
-      </div>
+      </template>
 
-      <!-- Main Content -->
-      <template v-if="hasSelectedRule">
-        <div :class="['main-content-column', 'mb-5', mainColumnClass]">
+      <template #center>
+        <template v-if="hasSelectedRule">
           <slot name="main-content" />
-        </div>
+        </template>
+        <p v-else class="text-center text-muted mt-4">
+          No control currently selected. {{ emptyStateMessage }}
+        </p>
       </template>
-
-      <!-- Empty State -->
-      <template v-else>
-        <div :class="['main-content-column', mainColumnClass]">
-          <p class="text-center text-muted mt-4">
-            No control currently selected. {{ emptyStateMessage }}
-          </p>
-        </div>
-      </template>
-    </div>
+    </PanelLayout>
 
     <!-- Modals - Always rendered -->
     <slot name="modals" />
@@ -43,8 +35,11 @@
 </template>
 
 <script>
+import PanelLayout from "../shared/PanelLayout.vue";
+
 export default {
   name: "ControlsPageLayout",
+  components: { PanelLayout },
   props: {
     hasSelectedRule: {
       type: Boolean,
@@ -69,13 +64,11 @@ export default {
     },
   },
   computed: {
-    sidebarColumnClass() {
-      // Mobile: full width, Desktop: configured width
-      return `col-12 col-md-${this.sidebarWidth}`;
-    },
-    mainColumnClass() {
-      // Mobile: full width, Desktop: remaining width
-      return `col-12 col-md-${12 - this.sidebarWidth}`;
+    layoutPanels() {
+      return [
+        { name: "left", cols: this.sidebarWidth, bgTier: "secondary" },
+        { name: "center", cols: 12 - this.sidebarWidth, bgTier: "body" },
+      ];
     },
   },
 };
@@ -84,14 +77,5 @@ export default {
 <style scoped>
 .controls-page-layout {
   /* Container for the entire controls page */
-}
-
-/* Sidebar: flush right edge with visible divider border */
-.left-sidebar-column {
-  padding-right: 0;
-}
-
-.sidebar-border-right {
-  border-right: 1px solid var(--vulcan-border-subtle, #dee2e6);
 }
 </style>

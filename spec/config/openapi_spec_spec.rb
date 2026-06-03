@@ -83,9 +83,19 @@ RSpec.describe 'OpenAPI specification (doc/openapi.yaml)' do
           next if %w[parameters summary description].include?(method)
 
           responses = op['responses'] || {}
-          ok_response = responses['200'] || responses['201'] || {}
-          next if ok_response.dig('content', 'application/json', 'schema')
-          next if ok_response['$ref']
+          success_codes = responses.keys.select { |c| c.match?(/\A2\d\d\z/) }
+          next if success_codes.empty?
+
+          has_json_schema = success_codes.any? do |code|
+            responses[code].dig('content', 'application/json', 'schema') ||
+              responses[code]['$ref']
+          end
+          has_redirect_only = success_codes.empty? && responses.keys.any? { |c| c.match?(/\A3\d\d\z/) }
+          next if has_json_schema
+          next if has_redirect_only
+
+          has_no_content_body = success_codes.all? { |c| responses[c]['content'].nil? }
+          next if has_no_content_body
 
           missing << "#{method.upcase} #{path}"
         end

@@ -473,17 +473,17 @@ describe("RuleList", () => {
   // ==========================================
   // ROW STYLING
   // ==========================================
-  describe("row styling", () => {
-    it("selected rule gets bg-secondary text-white", () => {
+  describe("row styling uses design system variables", () => {
+    it("selected rule gets active-bg class with left border", () => {
       wrapper = createWrapper();
       wrapper.vm.selectedRule = stigRules[0];
-      expect(wrapper.vm.rowClass(stigRules[0], 0)).toBe("bg-secondary text-white");
+      expect(wrapper.vm.rowClass(stigRules[0], 0)).toBe("rule-list-item--active");
     });
 
-    it("focused but unselected row gets bg-light", () => {
+    it("focused but unselected row gets hover-bg class", () => {
       wrapper = createWrapper();
       wrapper.vm.focusedIndex = 1;
-      expect(wrapper.vm.rowClass(stigRules[1], 1)).toBe("bg-light");
+      expect(wrapper.vm.rowClass(stigRules[1], 1)).toBe("rule-list-item--focused");
     });
 
     it("unfocused unselected row gets empty string", () => {
