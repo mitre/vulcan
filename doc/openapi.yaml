@@ -3030,6 +3030,13 @@ paths:
                             - string
                             - 'null'
                           example: Demo Author
+                        commenter_email:
+                          type:
+                            - string
+                            - 'null'
+                          format: email
+                          description: Email of the reply author for UserBadge popover display.
+                          example: author@example.com
                         commenter_imported:
                           type: boolean
                           example: false

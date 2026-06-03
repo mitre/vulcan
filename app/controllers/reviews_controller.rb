@@ -514,6 +514,7 @@ class ReviewsController < ApplicationController
         comment: r.comment,
         created_at: r.created_at,
         commenter_display_name: r.commenter_display_name,
+        commenter_email: r.user&.email,
         commenter_imported: r.commenter_imported?,
         reactions: { up: reaction_counts[[r.id, 'up']] || 0,
                      down: reaction_counts[[r.id, 'down']] || 0 }

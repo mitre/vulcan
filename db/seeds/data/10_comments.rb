@@ -3,6 +3,7 @@
 # rubocop:disable Rails/Output
 puts 'Seeding demo comments for public-comment-review workflow...'
 
+# ── Resolve project + component via scoped lookups ──
 container_platform = Project.find_by(name: 'Container Platform')
 container_component = container_platform&.components&.find_by(name: 'Container Platform')
 
@@ -11,169 +12,258 @@ if container_component.nil?
   return
 end
 
-if container_component.rules.count < 4
-  puts "  Not enough rules on Container Platform (#{container_component.rules.count}) — skipping"
+rules_list = container_component.rules.order(:rule_id).limit(6).to_a
+if rules_list.size < 4
+  puts "  Not enough rules on Container Platform (#{rules_list.size}) — skipping"
   return
 end
 
-# ── Resolve demo users ──
-demo_admin = User.find_by(admin: true)
-viewer_user = User.find_by(email: 'viewer@example.com') || demo_admin
-author_user = User.find_by(email: 'author@example.com') || demo_admin
-reviewer_user = User.find_by(email: 'reviewer@example.com') || demo_admin
-other_voice = User.where.not(id: [viewer_user&.id, author_user&.id, demo_admin&.id].compact)
-                  .where(admin: [false, nil]).first || viewer_user
+# ── Cleanup orphaned reviews from deleted components ──
+orphaned = SeedHelpers.cleanup_orphaned_reviews!
+puts "  Cleaned up #{orphaned} orphaned review(s)" if orphaned > 0
 
-# ── Ensure memberships ──
-{ viewer_user => 'viewer', author_user => 'author',
-  reviewer_user => 'reviewer', other_voice => 'viewer' }.each do |user, role|
+# ── Centralized user pool — resolve once, fallback to admin ──
+demo_admin = User.find_by(admin: true)
+USERS = {
+  admin: demo_admin,
+  viewer: User.find_by(email: 'viewer@example.com') || demo_admin,
+  author: User.find_by(email: 'author@example.com') || demo_admin,
+  reviewer: User.find_by(email: 'reviewer@example.com') || demo_admin,
+  container_sme: User.find_by(email: 'container-sme@example.org') || demo_admin,
+  platform_eng: User.find_by(email: 'platform-eng@example.org') || demo_admin,
+  compliance_analyst: User.find_by(email: 'compliance-analyst@example.org') || demo_admin,
+  stig_author: User.find_by(email: 'stig-author@example.org') || demo_admin,
+  devsecops: User.find_by(email: 'devsecops@example.org') || demo_admin,
+  infra_eng: User.find_by(email: 'infra-eng@example.org') || demo_admin,
+  qa_reviewer: User.find_by(email: 'qa-reviewer@example.org') || demo_admin,
+  security_reviewer: User.find_by(email: 'security-reviewer@example.org') || demo_admin
+}.freeze
+
+# ── Ensure memberships for all users ──
+USERS.each do |_key, user|
+  next if user == demo_admin
+
+  role = case user.email
+         when /stig-author|devsecops|author/ then 'author'
+         when /reviewer|qa-reviewer|security-reviewer/ then 'reviewer'
+         else 'viewer'
+         end
   Membership.find_or_create_by!(user: user, membership: container_platform) { |m| m.role = role }
 end
 admin_mem = Membership.find_or_create_by!(user: demo_admin, membership: container_platform) { |m| m.role = 'admin' }
 admin_mem.update!(role: 'admin') if admin_mem.role != 'admin'
 
-rules = container_component.rules.order(:rule_id).limit(6).to_a
-rule_a, rule_b, rule_c, rule_d, rule_e, rule_f = rules
+# ── Rules by index (scoped to component, not hardcoded IDs) ──
+RULES = {
+  rule_a: rules_list[0],
+  rule_b: rules_list[1],
+  rule_c: rules_list[2],
+  rule_d: rules_list[3],
+  rule_e: rules_list[4],
+  rule_f: rules_list[5]
+}.freeze
 
-# ── Rule A (NYD): TLS 1.2 for container image transport ──
-c1 = SeedHelpers.find_or_seed_review(
-  rule: rule_a, user: viewer_user, section: 'check_content',
-  comment: 'The check says "verify that TLS 1.2 or greater is being used for secure container image transport" but does not specify HOW to verify — should it reference openssl s_client or a specific container runtime CLI flag?'
-)
+# ═══════════════════════════════════════════════════════════════════════
+# THREAD DEFINITIONS — declarative conversation patterns
+# Each thread is { rule:, section:, author:, comment:, triage:, replies: }
+# The seed_thread processor handles idempotent creation + scoped lookups.
+# ═══════════════════════════════════════════════════════════════════════
 
-c2 = SeedHelpers.find_or_seed_review(
-  rule: rule_a, user: reviewer_user, section: 'check_content',
-  comment: 'Agree with the previous comment — the check procedure needs a concrete verification command. Also, "from trusted sources" is vague; should we enumerate what constitutes a trusted registry?'
-)
+RULE_THREADS = [
+  # ── Rule A: TLS check too vague (2 viewers, 1 author — multiple perspectives) ──
+  {
+    rule: :rule_a, section: 'check_content', author: :viewer,
+    comment: 'The check says "verify that TLS 1.2 or greater is being used for secure container image transport" but does not specify HOW to verify — should it reference openssl s_client or a specific container runtime CLI flag?',
+    replies: [
+      { author: :author, comment: 'Good point about the missing verification command. We will add an example using "openssl s_client -connect registry:443" and a note about checking containerd mirror config.' }
+    ]
+  },
+  {
+    rule: :rule_a, section: 'check_content', author: :reviewer,
+    comment: 'Agree with the previous comment — the check procedure needs a concrete verification command. Also, "from trusted sources" is vague; should we enumerate what constitutes a trusted registry?',
+    replies: [
+      { author: :author, comment: 'We will add "trusted sources" definition: registries listed in the platform allowlist config (e.g., /etc/containerd/certs.d/).' }
+    ]
+  },
+  {
+    rule: :rule_a, section: 'check_content', author: :author,
+    comment: 'This appears to duplicate the first comment about the check verification method — same concern about missing CLI commands.'
+  },
+  {
+    rule: :rule_a, section: 'fixtext', author: :viewer,
+    comment: 'The fix text says "Configure the container platform to use TLS 1.2 or greater when components communicate internally or externally" — this is too broad. It should specify which configuration files to modify (e.g., /etc/containerd/config.toml, registry mirror config).',
+    replies: [
+      { author: :reviewer, comment: 'Agree — the fix should distinguish between registry pull config and inter-node communication config. They are different settings.' }
+    ]
+  },
+  {
+    rule: :rule_a, section: 'vuln_discussion', author: :reviewer,
+    comment: 'The vulnerability discussion references "the overall security posture" but does not mention the specific risk of image tampering via MITM on unencrypted registries. Consider adding a sentence about supply chain integrity.'
+  },
+  {
+    rule: :rule_a, section: 'disa_metadata', author: :reviewer,
+    comment: 'The DISA metadata fields (documentable, mitigations) are empty. Per the Vendor STIG Process Guide §4.1, documentable should be set to "false" for container-platform requirements that rely on external tooling for evidence collection.'
+  },
+  {
+    rule: :rule_a, section: nil, author: :viewer,
+    comment: 'Never mind — I see that the TLS 1.2 requirement is already covered by the CCI mapping to CCI-001453. Retracting this comment.',
+    triage: { status: 'withdrawn', by: :viewer }
+  },
 
-SeedHelpers.find_or_seed_review(
-  rule: rule_a, user: author_user, section: 'check_content',
-  comment: 'This appears to duplicate the first comment about the check verification method — same concern about missing CLI commands.'
-)
+  # ── Rule B: TLS for node communication ──
+  {
+    rule: :rule_b, section: 'fixtext', author: :viewer,
+    comment: 'Fix text says "for node and component communication" — should clarify whether this includes etcd peer communication and kubelet-to-API-server, or just external-facing endpoints.'
+  },
+  {
+    rule: :rule_b, section: nil, author: :reviewer,
+    comment: 'This rule overlaps significantly with rule 000001 (both require TLS 1.2). Consider whether they should be consolidated or cross-referenced to avoid duplicate compliance checks.',
+    triage: { status: 'non_concur', by: :author },
+    replies: [
+      { author: :author, comment: 'We considered consolidating but they address different trust boundaries: image transport (registry pull) vs. node-to-node (cluster internal). Keeping separate for auditability.' }
+    ]
+  },
 
-SeedHelpers.find_or_seed_reply(parent: c1, user: author_user,
-                               comment: 'Good point about the missing verification command. We will add an example using "openssl s_client -connect registry:443" and a note about checking containerd mirror config.')
+  # ── Rule C: Centralized user management ──
+  {
+    rule: :rule_c, section: nil, author: :reviewer,
+    comment: 'The check says to verify "a centralized user management system" — LDAP and OIDC are both valid. Suggest adding examples (LDAP, SAML, OIDC) to the check procedure for clarity.'
+  },
+  {
+    rule: :rule_c, section: nil, author: :reviewer,
+    comment: 'FYI — our v1.2 baseline already ships this same requirement with identical wording from the SRG. No changes needed.',
+    triage: { status: 'informational', by: :author }
+  },
 
-SeedHelpers.find_or_seed_reply(parent: c2, user: author_user,
-                               comment: 'We will add "trusted sources" definition: registries listed in the platform allowlist config (e.g., /etc/containerd/certs.d/).')
+  # ── Rule D: Temp accounts disabled after 72h ──
+  {
+    rule: :rule_d, section: 'check_content', author: :viewer,
+    comment: 'The check says to verify temp accounts are "automatically removed or disabled after 72 hours" — most platforms handle this via RBAC token expiry, not account deletion. Should the check mention token TTL as an acceptable mechanism?',
+    triage: { status: 'concur_with_comment', by: :author },
+    replies: [
+      { author: :author, comment: 'Good observation. We will add token TTL as an acceptable implementation alongside account disablement.' }
+    ]
+  },
 
-c4 = SeedHelpers.find_or_seed_review(
-  rule: rule_a, user: viewer_user, section: 'fixtext',
-  comment: 'The fix text says "Configure the container platform to use TLS 1.2 or greater when components communicate internally or externally" — this is too broad. It should specify which configuration files to modify (e.g., /etc/containerd/config.toml, registry mirror config).'
-)
+  # ── Rule E: Disable inactive accounts after 35 days ──
+  {
+    rule: :rule_e, section: 'check_content', author: :viewer,
+    comment: 'The check says "Determine if the container platform automatically disables accounts after a 35-day period of account inactivity" — clear and actionable. No changes needed.'
+  },
+  {
+    rule: :rule_e, section: 'fixtext', author: :reviewer,
+    comment: 'Fix text says "Configure the container platform to automatically disable accounts after a 35-day period" — this is the SRG default. Should specify which platform-specific setting controls inactivity timeout (e.g., for OIDC providers, this is configured at the IdP level).'
+  },
+  {
+    rule: :rule_e, section: 'severity', author: :reviewer,
+    comment: 'Medium severity is appropriate for account inactivity. Concur.',
+    triage: { status: 'concur', by: :author }
+  },
 
-SeedHelpers.find_or_seed_reply(parent: c4, user: reviewer_user,
-                               comment: 'Agree — the fix should distinguish between registry pull config and inter-node communication config. They are different settings.')
+  # ── Rule F: Audit account creation ──
+  {
+    rule: :rule_f, section: 'status', author: :viewer,
+    comment: 'Agree this is Not Applicable — container platforms delegate account creation to external identity providers (LDAP/OIDC). The platform itself does not create accounts; it only maps external identities to RBAC roles.'
+  },
 
-SeedHelpers.find_or_seed_review(
-  rule: rule_a, user: reviewer_user, section: 'vuln_discussion',
-  comment: 'The vulnerability discussion references "the overall security posture" but does not mention the specific risk of image tampering via MITM on unencrypted registries. Consider adding a sentence about supply chain integrity.'
-)
+  # ── Admin comments (so My Comments page has data) ──
+  {
+    rule: :rule_a, section: 'check_content', author: :admin,
+    comment: 'As the STIG author, I want to note that the check procedure intentionally uses generic language here because the specific CLI commands vary by container runtime (containerd vs CRI-O vs Docker). We should add a table mapping runtimes to their verification commands.'
+  },
+  {
+    rule: :rule_b, section: 'fixtext', author: :admin,
+    comment: 'The fix text references "node and component communication" but we should be more precise about which communication channels require TLS — etcd peer, kubelet-to-API, and external ingress all have different configuration paths.'
+  },
+  {
+    rule: :rule_d, section: 'vuln_discussion', author: :admin,
+    comment: 'Good catch on the account inactivity timeout. For Kubernetes environments, this is typically handled at the IdP level (OIDC/LDAP), not the platform itself. We should document that distinction in the vendor comments.'
+  },
 
-# ── Rule B (NYD): TLS 1.2 for node communication ──
-SeedHelpers.find_or_seed_review(
-  rule: rule_b, user: viewer_user, section: 'fixtext',
-  comment: 'Fix text says "for node and component communication" — should clarify whether this includes etcd peer communication and kubelet-to-API-server, or just external-facing endpoints.'
-)
+  # ═══════════════════════════════════════════════════════════════════
+  # MULTI-PATTERN THREADS — diverse conversation shapes for visual testing
+  # ═══════════════════════════════════════════════════════════════════
 
-c7 = SeedHelpers.find_or_seed_review(
-  rule: rule_b, user: reviewer_user, section: nil,
-  comment: 'This rule overlaps significantly with rule 000001 (both require TLS 1.2). Consider whether they should be consolidated or cross-referenced to avoid duplicate compliance checks.'
-)
-SeedHelpers.seed_triage(c7, user: author_user, status: 'non_concur')
+  # Pattern 1: Multi-reply back-and-forth (4 users, 5 replies)
+  {
+    rule: :rule_a, section: 'check_content', author: :infra_eng,
+    comment: 'The Container SRG groups RapidFort alongside providers of minimal Linux base images such as Google Distroless and Red Hat UBI. This grouping is misleading. RapidFort is a paid commercial software platform that optimizes container images — it is not a minimal base image provider. Suggest separating commercial optimization tools from open-source minimal image projects.',
+    triage: { status: 'concur_with_comment', by: :stig_author },
+    replies: [
+      { author: :stig_author, comment: 'We will be removing all vendor details and references from the check text per DISA editorial guidance. The requirement will focus on the capability (using minimal images) rather than naming specific products.' },
+      { author: :devsecops, comment: 'Good point — we will generalize the check and fix text and save current information to provide applicable STIG content for vendors that want to build compliant hardening guides.' },
+      { author: :container_sme, comment: 'Agree with the generalization approach. One additional concern: the check references "scratch" images but these have no shell, so the verification command in the check procedure will fail. Need an alternative verification path for scratch-based containers.' },
+      { author: :stig_author, comment: 'Good catch on scratch images. We will add a note: "For images built FROM scratch, verify the Dockerfile directly rather than executing shell commands inside the container. Inspect the build manifest for unnecessary packages."' },
+      { author: :infra_eng, comment: 'That addresses my concern. The distinction between runtime inspection and build-time inspection is important for assessors who may not have access to the build pipeline. Thanks for the thorough response.' }
+    ]
+  },
 
-SeedHelpers.find_or_seed_reply(parent: c7, user: author_user,
-                               comment: 'We considered consolidating but they address different trust boundaries: image transport (registry pull) vs. node-to-node (cluster internal). Keeping separate for auditability.')
+  # Pattern 2: Rapid-fire exchange (2 users, 4 replies)
+  {
+    rule: :rule_b, section: 'check_content', author: :platform_eng,
+    comment: 'The check procedure says to "verify etcd communication uses TLS" but does not distinguish between etcd client-to-server and peer-to-peer communication. These use different certificate configurations (--cert-file vs --peer-cert-file).',
+    triage: { status: 'concur', by: :stig_author },
+    replies: [
+      { author: :stig_author, comment: 'Should we split this into two checks — one for client certs and one for peer certs?' },
+      { author: :platform_eng, comment: 'No — keep as one check but list both certificate paths. Assessors check them together anyway. Just add the --peer-cert-file and --peer-key-file to the existing verification command.' },
+      { author: :stig_author, comment: 'Makes sense. Updated the check to include both. Also adding --peer-trusted-ca-file for completeness.' },
+      { author: :platform_eng, comment: 'Perfect. One more thing — for managed Kubernetes (EKS, AKS, GKE), etcd is not directly accessible. Should we add an NA condition for managed platforms?' }
+    ]
+  },
 
-# ── Rule C (NYD): Centralized user management ──
-SeedHelpers.find_or_seed_review(
-  rule: rule_c, user: reviewer_user, section: nil,
-  comment: 'The check says to verify "a centralized user management system" — LDAP and OIDC are both valid. Suggest adding examples (LDAP, SAML, OIDC) to the check procedure for clarity.'
-)
+  # Pattern 3: Mixed-status thread (parent concur, dissenting reply)
+  {
+    rule: :rule_c, section: 'vuln_discussion', author: :compliance_analyst,
+    comment: 'The vulnerability discussion is accurate and well-written. The mapping to AC-2 is correct. No changes needed.',
+    triage: { status: 'concur', by: :stig_author },
+    replies: [
+      { author: :qa_reviewer, comment: 'Actually, I disagree — the vuln discussion should mention that container platforms often use service accounts (non-human identities) that also need lifecycle management under AC-2. The current text only addresses human user accounts.' },
+      { author: :compliance_analyst, comment: 'Fair point about service accounts. However, AC-2 explicitly covers "information system accounts" which includes both human and non-human. The SRG interpretation guide §3.2 clarifies this. I still think the current text is adequate.' },
+      { author: :stig_author, comment: 'We will add a sentence about service account lifecycle management to the vuln discussion. Better to be explicit than rely on the assessor knowing the SRG interpretation guide.' }
+    ]
+  },
 
-c9 = SeedHelpers.find_or_seed_review(
-  rule: rule_c, user: reviewer_user, section: nil,
-  comment: 'FYI — our v1.2 baseline already ships this same requirement with identical wording from the SRG. No changes needed.'
-)
-SeedHelpers.seed_triage(c9, user: author_user, status: 'informational')
+  # Pattern 4: Long-form reply (tests text wrapping with avatar indent)
+  {
+    rule: :rule_d, section: 'fixtext', author: :container_sme,
+    comment: 'The fix text is too vague — "configure temporary accounts to be disabled after 72 hours" needs platform-specific implementation guidance.',
+    replies: [
+      { author: :devsecops, comment: "For Kubernetes environments, temporary access is typically managed through one of three mechanisms, depending on the platform architecture:\n\n1. **OIDC Token TTL**: Configure the identity provider (Keycloak, Okta, Azure AD) to issue access tokens with a maximum lifetime of 72 hours. The kube-apiserver --oidc-* flags control token validation. When the token expires, kubectl commands fail with 401 Unauthorized.\n\n2. **RBAC ClusterRoleBinding with TTL**: Use a CronJob or controller (like kube-janitor) that watches for ClusterRoleBindings annotated with an expiry timestamp and deletes them after 72 hours. This is the most common pattern for temporary elevated access.\n\n3. **Namespace-scoped ServiceAccount rotation**: For CI/CD pipelines that need temporary cluster access, create a ServiceAccount with a projected token volume (Kubernetes 1.20+) configured with expirationSeconds: 259200 (72 hours). The kubelet automatically rotates the token.\n\nSuggest adding all three patterns as acceptable implementations in the fix text, with a note that the organization should document which pattern they use in their SSP." }
+    ]
+  }
+].freeze
 
-# ── Rule D (NYD): Temp accounts disabled after 72h ──
-c10 = SeedHelpers.find_or_seed_review(
-  rule: rule_d, user: viewer_user, section: 'check_content',
-  comment: 'The check says to verify temp accounts are "automatically removed or disabled after 72 hours" — most platforms handle this via RBAC token expiry, not account deletion. Should the check mention token TTL as an acceptable mechanism?'
-)
-SeedHelpers.seed_triage(c10, user: author_user, status: 'concur_with_comment')
+COMPONENT_THREADS = [
+  {
+    author: :viewer,
+    comment: 'Overall the STIG draft is well-structured and the SRG mappings are accurate. Suggest cross-referencing the CIS Container Benchmark for implementations that address multiple SRG requirements with a single control.',
+    replies: [
+      { author: :stig_author, comment: 'Thank you for the CIS Benchmark cross-reference suggestion. We have added a mapping table in Appendix B of the STIG overview document that shows which CIS controls correspond to each SRG requirement.' },
+      { author: :compliance_analyst, comment: 'The CIS mapping is helpful but note that CIS Benchmark levels (1 and 2) do not directly map to DISA severity categories (CAT I/II/III). Recommend adding a caveat about this in the appendix.' },
+      { author: :stig_author, comment: 'Good point — added the caveat. The mapping is for reference only, not a compliance equivalence statement.' }
+    ]
+  },
+  {
+    author: :reviewer,
+    comment: 'Consider noting in the overview which requirements are inherited from the host OS STIG vs. those that are container-platform-specific. This helps implementers scope their compliance work.'
+  }
+].freeze
 
-SeedHelpers.find_or_seed_reply(parent: c10, user: author_user,
-                               comment: 'Good observation. We will add token TTL as an acceptable implementation alongside account disablement.')
-
-# ── Rule E (AC): Disable inactive accounts after 35 days ──
-SeedHelpers.find_or_seed_review(
-  rule: rule_e, user: viewer_user, section: 'check_content',
-  comment: 'The check says "Determine if the container platform automatically disables accounts after a 35-day period of account inactivity" — clear and actionable. No changes needed.'
-)
-
-SeedHelpers.find_or_seed_review(
-  rule: rule_e, user: reviewer_user, section: 'fixtext',
-  comment: 'Fix text says "Configure the container platform to automatically disable accounts after a 35-day period" — this is the SRG default. Should specify which platform-specific setting controls inactivity timeout (e.g., for OIDC providers, this is configured at the IdP level).'
-)
-
-c13 = SeedHelpers.find_or_seed_review(
-  rule: rule_e, user: reviewer_user, section: 'severity',
-  comment: 'Medium severity is appropriate for account inactivity. Concur.'
-)
-SeedHelpers.seed_triage(c13, user: author_user, status: 'concur')
-
-# ── Rule F (NA): Audit account creation ──
-SeedHelpers.find_or_seed_review(
-  rule: rule_f, user: viewer_user, section: 'status',
-  comment: 'Agree this is Not Applicable — container platforms delegate account creation to external identity providers (LDAP/OIDC). The platform itself does not create accounts; it only maps external identities to RBAC roles.'
-)
-
-# ── Rule A: disa_metadata section (advanced fields) ──
-SeedHelpers.find_or_seed_review(
-  rule: rule_a, user: reviewer_user, section: 'disa_metadata',
-  comment: 'The DISA metadata fields (documentable, mitigations) are empty. Per the Vendor STIG Process Guide §4.1, documentable should be set to "false" for container-platform requirements that rely on external tooling for evidence collection.'
-)
-
-# ── Rule A: withdrawn comment ──
-c_withdrawn = SeedHelpers.find_or_seed_review(
-  rule: rule_a, user: viewer_user, section: nil,
-  comment: 'Never mind — I see that the TLS 1.2 requirement is already covered by the CCI mapping to CCI-001453. Retracting this comment.'
-)
-SeedHelpers.seed_triage(c_withdrawn, user: viewer_user, status: 'withdrawn')
-
-# ── Demo Admin comments (so My Comments page has data when logged in as admin) ──
-admin_comment_texts = [
-  { rule: rules[0], section: 'check_content',
-    comment: 'As the STIG author, I want to note that the check procedure intentionally uses generic language here because the specific CLI commands vary by container runtime (containerd vs CRI-O vs Docker). We should add a table mapping runtimes to their verification commands.' },
-  { rule: rules[1], section: 'fixtext',
-    comment: 'The fix text references "node and component communication" but we should be more precise about which communication channels require TLS — etcd peer, kubelet-to-API, and external ingress all have different configuration paths.' },
-  { rule: rules[3], section: 'vuln_discussion',
-    comment: 'Good catch on the account inactivity timeout. For Kubernetes environments, this is typically handled at the IdP level (OIDC/LDAP), not the platform itself. We should document that distinction in the vendor comments.' }
-]
-
-admin_comment_texts.each do |entry|
-  SeedHelpers.find_or_seed_review(
-    rule: entry[:rule], user: demo_admin, section: entry[:section],
-    comment: entry[:comment]
-  )
+# ── Seed all rule-scoped threads ──
+RULE_THREADS.each do |thread|
+  SeedHelpers.seed_thread(thread, rules: RULES, users: USERS, component: container_component)
 end
 
-# ── Component-scoped (no rule) ──
-comp_text_one = 'Overall the STIG draft is well-structured and the SRG mappings are accurate. Suggest cross-referencing the CIS Container Benchmark for implementations that address multiple SRG requirements with a single control.'
-unless Review.exists?(action: 'comment', comment: comp_text_one)
-  Review.create!(user: viewer_user, commentable: container_component, action: 'comment',
-                 section: nil, comment: comp_text_one)
+# ── Seed component-scoped threads ──
+COMPONENT_THREADS.each do |thread|
+  thread_with_nil_rule = thread.merge(rule: nil)
+  SeedHelpers.seed_thread(thread_with_nil_rule, rules: RULES, users: USERS, component: container_component)
 end
 
-comp_text_two = 'Consider noting in the overview which requirements are inherited from the host OS STIG vs. those that are container-platform-specific. This helps implementers scope their compliance work.'
-unless Review.exists?(action: 'comment', comment: comp_text_two)
-  Review.create!(user: reviewer_user, commentable: container_component, action: 'comment',
-                 section: nil, comment: comp_text_two)
-end
-
+# ── Report ──
 top_level = Review.where(action: 'comment', responding_to_review_id: nil).count
 replies = Review.where(action: 'comment').where.not(responding_to_review_id: nil).count
-puts "  Container Platform: #{top_level} top-level + #{replies} replies"
+deep_threads = Review.where(action: 'comment').where.not(responding_to_review_id: nil)
+                     .group(:responding_to_review_id).having('count(*) >= 3').count.size
+puts "  Container Platform: #{top_level} top-level + #{replies} replies (#{deep_threads} threads with 3+ replies)"
 # rubocop:enable Rails/Output

@@ -113,11 +113,58 @@ module SeedHelpers # rubocop:disable Style/Documentation
     existing = Review.find_by(responding_to_review_id: parent.id, comment: comment)
     return existing if existing
 
-    Review.create!(
-      user: user, rule: parent.rule, action: 'comment',
+    attrs = {
+      user: user, action: 'comment',
       section: parent.section, comment: comment,
       responding_to_review_id: parent.id
-    )
+    }
+    if parent.rule.present?
+      attrs[:rule] = parent.rule
+    else
+      attrs[:commentable] = parent.commentable
+    end
+    Review.create!(attrs)
+  end
+
+  def self.seed_thread(thread, rules:, users:, component:)
+    rule = thread[:rule] ? rules[thread[:rule]] : nil
+    author = users[thread[:author]]
+    return unless author && (rule || component)
+
+    parent = if rule
+               find_or_seed_review(rule: rule, user: author, section: thread[:section], comment: thread[:comment])
+             else
+               find_or_seed_component_comment(component: component, user: author, comment: thread[:comment])
+             end
+
+    if thread[:triage]
+      triage_user = users[thread[:triage][:by]]
+      seed_triage(parent, user: triage_user, status: thread[:triage][:status]) if triage_user
+    end
+
+    (thread[:replies] || []).each do |reply_def|
+      reply_user = users[reply_def[:author]]
+      next unless reply_user
+
+      find_or_seed_reply(parent: parent, user: reply_user, comment: reply_def[:comment])
+    end
+
+    parent
+  end
+
+  def self.find_or_seed_component_comment(component:, user:, comment:)
+    existing = Review.find_by(action: 'comment', comment: comment, commentable: component)
+    return existing if existing
+
+    Review.create!(user: user, commentable: component, action: 'comment', section: nil, comment: comment)
+  end
+
+  def self.cleanup_orphaned_reviews!
+    orphaned = Review.where(commentable_type: 'Component')
+                     .where.not(commentable_id: Component.select(:id))
+    count = orphaned.count
+    orphaned.destroy_all if count > 0
+    count
   end
 
   def self.seed_triage(review, user:, status:)

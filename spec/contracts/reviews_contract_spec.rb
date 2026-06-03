@@ -244,7 +244,7 @@ RSpec.describe 'Reviews + Reactions + Satisfactions endpoint contracts', type: :
       first_reply = body['rows'].first
       assert_fields_present first_reply, :id, :responding_to_review_id, :section,
                             :comment, :created_at, :commenter_display_name,
-                            :commenter_imported, :reactions
+                            :commenter_email, :commenter_imported, :reactions
       assert_fields_present first_reply['reactions'], :up, :down, :mine
       assert_fields_absent first_reply, :user_id, :rule_id, :triage_status
     end
