@@ -6,4 +6,5 @@ export const bvConfig = {
   BDropdown: { size: "sm" },
   BInputGroup: { size: "sm" },
   BPagination: { size: "sm" },
+  BTable: { striped: true },
 };

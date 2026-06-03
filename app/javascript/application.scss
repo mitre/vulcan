@@ -97,6 +97,30 @@
   --vulcan-input-focus-border: #80bdff;
   --vulcan-disabled-bg: #{$gray-200};
 
+  // Interaction states — hover/focus tints (ported from Bootstrap 5.3 pattern)
+  --vulcan-hover-bg: #{rgba($gray-600, 0.08)};
+  --vulcan-hover-bg-light: #{rgba($gray-600, 0.04)};
+  --vulcan-active-tint: #{rgba($primary, 0.10)};
+
+  // Text tiers — Bootstrap 5.3 three-tier text hierarchy
+  --vulcan-secondary-color: #{rgba($body-color, 0.75)};
+  --vulcan-tertiary-color: #{rgba($body-color, 0.5)};
+  --vulcan-text-muted: #{$gray-600};
+
+  // Border aliases — normalize naming across components
+  --vulcan-divider: #{$gray-200};
+  --vulcan-border-color-translucent: #{rgba(black, 0.175)};
+
+  // Form controls — Bootstrap 5.3 wires these to global vars so forms auto-adapt
+  --vulcan-input-bg: var(--vulcan-body-bg);
+  --vulcan-input-color: var(--vulcan-body-color);
+  --vulcan-input-border-color: var(--vulcan-border-color);
+  --vulcan-input-placeholder-color: var(--vulcan-secondary-color);
+  --vulcan-input-disabled-bg: var(--vulcan-secondary-bg);
+
+  // Link colors
+  --vulcan-link-hover-color: #{darken($link-color, 15%)};
+
   // Triage-specific interaction colors (moved from triage-tints.css)
   --vulcan-primary-dark: #0056b3;
   --vulcan-active-tint-hover: rgba(0, 123, 255, 0.15);
@@ -150,21 +174,25 @@
   --vulcan-active-border: #{$primary-dark};
 
   --vulcan-primary: #{$primary-dark};
-  --vulcan-primary-tint: #{rgba($primary-dark, 0.15)};
+  --vulcan-primary-tint: #{rgba($primary-dark, 0.22)};
   --vulcan-success: #{$success-dark};
-  --vulcan-success-tint: #{rgba($success-dark, 0.15)};
+  --vulcan-success-tint: #{rgba($success-dark, 0.22)};
   --vulcan-danger: #{$danger-dark};
-  --vulcan-danger-tint: #{rgba($danger-dark, 0.15)};
+  --vulcan-danger-tint: #{rgba($danger-dark, 0.22)};
   --vulcan-warning: #{$warning-dark};
-  --vulcan-warning-tint: #{rgba($warning-dark, 0.12)};
+  --vulcan-warning-tint: #{rgba($warning-dark, 0.18)};
   --vulcan-info: #{$info-dark};
+  --vulcan-info-tint: #{rgba($info-dark, 0.22)};
   --vulcan-secondary: #{$gray-500};
-  --vulcan-secondary-tint: #{rgba($gray-500, 0.12)};
+  --vulcan-secondary-tint: #{rgba($gray-500, 0.18)};
 
-  // Extended palette — lighter
+  // Extended palette — lighter + tints for triage row tints
   --vulcan-purple: #{$purple-dark};
+  --vulcan-purple-tint: #{rgba($purple-dark, 0.22)};
   --vulcan-teal: #{$teal-dark};
+  --vulcan-teal-tint: #{rgba($teal-dark, 0.22)};
   --vulcan-indigo: #{$indigo-dark};
+  --vulcan-indigo-tint: #{rgba($indigo-dark, 0.22)};
 
   // Gray scale inverts
   --vulcan-gray-100: #{$gray-900};
@@ -182,11 +210,30 @@
   --vulcan-text-muted: #{$gray-500};
   --vulcan-dark: #{$gray-200};
   --vulcan-bg-light: #{$gray-800};
-  --vulcan-hover-bg: rgba(255, 255, 255, 0.06);
-  --vulcan-hover-bg-light: rgba(255, 255, 255, 0.04);
-  --vulcan-divider: rgba(255, 255, 255, 0.1);
-  --vulcan-active-tint: #{rgba($primary-dark, 0.12)};
   --vulcan-border-light: #{$gray-700};
+
+  // Interaction states — dark mode
+  --vulcan-hover-bg: #{rgba($gray-400, 0.12)};
+  --vulcan-hover-bg-light: #{rgba($gray-400, 0.06)};
+  --vulcan-active-tint: #{rgba($primary-dark, 0.12)};
+
+  // Text tiers — dark mode (Bootstrap 5.3 values)
+  --vulcan-secondary-color: #{rgba($gray-300, 0.75)};
+  --vulcan-tertiary-color: #{rgba($gray-300, 0.5)};
+
+  // Border aliases — dark mode
+  --vulcan-divider: #{$gray-700};
+  --vulcan-border-color-translucent: #{rgba(white, 0.15)};
+
+  // Form controls — auto-adapt via global vars (same references, different resolved values)
+  --vulcan-input-bg: var(--vulcan-body-bg);
+  --vulcan-input-color: var(--vulcan-body-color);
+  --vulcan-input-border-color: var(--vulcan-border-color);
+  --vulcan-input-placeholder-color: var(--vulcan-secondary-color);
+  --vulcan-input-disabled-bg: var(--vulcan-secondary-bg);
+
+  // Link colors — Bootstrap 5.3 lightens links in dark mode
+  --vulcan-link-hover-color: #{mix(white, $primary, 60%)};
 
   // Semantic highlights — desaturated for dark bg per Material Design
   --vulcan-highlight-selected: #{rgba($primary-dark, 0.25)};
@@ -712,21 +759,9 @@
     --status-tint: rgba(var(--status-color), 0.18);
   }
 
-  // Triage split-pane panels
-  .comment-triage-form {
-    background-color: var(--vulcan-component-bg);
-  }
-
-  // Browse panel (already has bg-white utility, handled by fad.2)
-  // Rule context panel
-  .rule-context-panel {
-    background-color: var(--vulcan-component-bg);
-  }
-
-  // Comment thread backgrounds
-  .comment-thread {
-    background-color: var(--vulcan-component-bg);
-  }
+  // Triage split-pane panels — backgrounds now inherited from PanelLayout's
+  // bgTier system. Do NOT set explicit bg on these components or the
+  // three-tier hierarchy (body/secondary/tertiary) becomes invisible.
 
   // Markdown preview in dark
   .markdown-preview {
@@ -909,6 +944,11 @@ body.has-classification-banner {
 .rule-form-field {
   padding: 0.5rem 0.5rem 0.5rem 0.75rem;
   border-radius: 0.25rem;
-  margin-bottom: 0.5rem;
+}
+
+// Bootstrap 4 lacks this utility. Required for flex-column + overflow-auto
+// to work on nested flex children (flex items default to min-height: auto).
+.min-height-0 {
+  min-height: 0 !important;
 }
 
