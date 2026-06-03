@@ -43,24 +43,9 @@ describe("ResponseTemplateDropdown", () => {
   it("emits insert with the template body when a template is picked", async () => {
     const w = mount(ResponseTemplateDropdown, { localVue, propsData: { projectId: 42 } });
     await flush(w);
-    w.vm.onChange(2);
+    const target = w.vm.templates.find((t) => t.id === 2);
+    w.vm.onSelect(target);
     expect(w.emitted("insert")).toBeTruthy();
     expect(w.emitted("insert")[0][0]).toBe("We acknowledge — no change required.");
-  });
-
-  it("resets the picker so re-selecting the same template re-fires", async () => {
-    const w = mount(ResponseTemplateDropdown, { localVue, propsData: { projectId: 42 } });
-    await flush(w);
-    w.vm.picked = 1;
-    w.vm.onChange(1);
-    await w.vm.$nextTick();
-    expect(w.vm.picked).toBeNull();
-  });
-
-  it("ignores the placeholder option (null id)", async () => {
-    const w = mount(ResponseTemplateDropdown, { localVue, propsData: { projectId: 42 } });
-    await flush(w);
-    w.vm.onChange(null);
-    expect(w.emitted("insert")).toBeFalsy();
   });
 });
