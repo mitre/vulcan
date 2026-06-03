@@ -444,4 +444,35 @@ describe("CommentComposerModal", () => {
       expect(banner.props("ruleId")).toBe(7);
     });
   });
+
+  // ── v2-6gq.4: b-alert migration ─────────────────────────────────────
+
+  describe("success message uses b-alert", () => {
+    it("renders a b-alert with variant=success (not a raw div.alert) after posting", async () => {
+      createRuleReview.mockResolvedValue({
+        data: {
+          toast: {
+            title: "Comment posted.",
+            message: ["Comment posted successfully."],
+            variant: "success",
+          },
+        },
+      });
+      const w = mount(CommentComposerModal, {
+        localVue,
+        propsData: baseProps,
+        stubs: visibleModalStub,
+      });
+      vi.spyOn(w.vm.$bvModal, "hide").mockImplementation(() => {});
+
+      w.vm.commentText = "test comment";
+      await w.vm.submit();
+      await flushPromises(w);
+
+      const alert = w.findComponent({ name: "BAlert" });
+      expect(alert.exists()).toBe(true);
+      expect(alert.props("variant")).toBe("success");
+      expect(alert.props("show")).toBe(true);
+    });
+  });
 });

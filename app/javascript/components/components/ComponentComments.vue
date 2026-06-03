@@ -119,7 +119,7 @@
         Showing: {{ filterRuleDisplayName }}
         <b-icon icon="x-circle" class="ml-1 clickable" @click="clearRuleFilter" />
       </b-badge>
-      <div v-if="filterParentRuleId && rows.length === 0" class="alert alert-info py-2 mt-2">
+      <b-alert v-if="filterParentRuleId && rows.length === 0" show variant="info" class="py-2 mt-2">
         <b-icon icon="info-circle" class="mr-1" />
         This rule is satisfied by
         <strong>{{ filterParentDisplayName }}</strong
@@ -127,7 +127,7 @@
         <a href="#" class="alert-link" @click.prevent="viewParentComments">
           View parent comments
         </a>
-      </div>
+      </b-alert>
     </div>
 
     <!-- Split-pane triage view. Replaces table+modal with side-by-side

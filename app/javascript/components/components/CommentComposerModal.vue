@@ -43,10 +43,10 @@
       @reply="onReplyClicked"
     />
 
-    <div v-if="successMessage" class="alert alert-success py-2 mb-2">
+    <b-alert v-if="successMessage" show variant="success" class="py-2 mb-2">
       <b-icon icon="check-circle" class="mr-1" />
       {{ successMessage }}
-    </div>
+    </b-alert>
 
     <b-form-group v-if="!successMessage" :description="charCount" class="mb-0">
       <b-form-textarea

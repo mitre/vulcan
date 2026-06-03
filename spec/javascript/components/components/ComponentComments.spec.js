@@ -1121,4 +1121,26 @@ describe("ComponentComments", () => {
       expect(wrapper.vm.selectedIds).toEqual([]);
     });
   });
+
+  // ── v2-6gq.4: b-alert migration ─────────────────────────────────────
+
+  describe("satisfied-by-parent notice uses b-alert", () => {
+    it("renders a b-alert (not a raw div.alert) for the parent redirect notice", async () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 42 },
+        stubs: SHARED_STUBS,
+      });
+      await flushPromises(wrapper);
+      wrapper.vm.filterRuleId = 100;
+      wrapper.vm.filterParentRuleId = 200;
+      wrapper.vm.filterParentDisplayName = "PARENT-001";
+      wrapper.vm.rows = [];
+      await wrapper.vm.$nextTick();
+
+      const alert = wrapper.findComponent({ name: "BAlert" });
+      expect(alert.exists()).toBe(true);
+      expect(alert.props("variant")).toBe("info");
+      expect(alert.props("show")).toBe(true);
+    });
+  });
 });
