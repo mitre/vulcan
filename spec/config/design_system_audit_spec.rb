@@ -191,7 +191,7 @@ RSpec.describe 'Vulcan Design System audit' do
   end
 
   describe 'no raw Bootstrap CSS variables in scoped styles' do
-    BOOTSTRAP_RAW_VARS = /var\(--(?:primary|secondary|success|danger|warning|info|light|dark)\b[^-]/.freeze
+    BOOTSTRAP_RAW_VARS = /var\(--(?:primary|secondary|success|danger|warning|info|light|dark)\b[^-]/
 
     def find_bootstrap_vars_in_vue(file_path)
       content = File.read(file_path)
@@ -220,8 +220,8 @@ RSpec.describe 'Vulcan Design System audit' do
 
       if all_violations.any?
         report = all_violations.map { |v| "  #{v[:file]}:#{v[:line]} — #{v[:content]}" }.join("\n")
-        fail "Found #{all_violations.size} raw Bootstrap CSS variable(s) in scoped styles:\n#{report}\n\n" \
-             'Use --vulcan-* design system variables instead of raw Bootstrap --primary, --info, etc.'
+        raise "Found #{all_violations.size} raw Bootstrap CSS variable(s) in scoped styles:\n#{report}\n\n" \
+              'Use --vulcan-* design system variables instead of raw Bootstrap --primary, --info, etc.'
       end
     end
   end

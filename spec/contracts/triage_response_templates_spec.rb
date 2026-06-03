@@ -8,14 +8,15 @@ RSpec.describe 'Triage Response Templates API', type: :request do
   include Devise::Test::IntegrationHelpers
   include OpenAPIContractHelpers
 
-  before { Rails.application.reload_routes! }
-
   let!(:admin) { create(:user, admin: true) }
   let!(:project) { create(:project) }
   let!(:membership) { create(:membership, user: admin, membership: project, role: 'admin') }
   let(:json_headers) { { 'Content-Type' => 'application/json', 'Accept' => 'application/json' } }
 
-  before { sign_in admin }
+  before do
+    Rails.application.reload_routes!
+    sign_in admin
+  end
 
   describe 'GET /projects/:project_id/triage_response_templates' do
     let!(:template) do

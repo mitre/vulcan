@@ -10,7 +10,7 @@ RSpec.describe 'OpenAPI specification (doc/openapi.yaml)' do
   let(:document) { YAML.load_file(spec_path) }
 
   before(:all) do
-    system('yarn openapi:bundle --silent 2>/dev/null') if ENV['OPENAPI_REBUNDLE'] || !File.exist?(Rails.root.join('doc/openapi.yaml'))
+    system('yarn openapi:bundle --silent 2>/dev/null') if ENV['OPENAPI_REBUNDLE'] || !Rails.root.join('doc/openapi.yaml').exist?
   end
 
   describe 'spec file' do
@@ -151,7 +151,7 @@ RSpec.describe 'OpenAPI specification (doc/openapi.yaml)' do
 
       config = YAML.load_file(swagcov_config)
       expect(config.dig('docs', 'paths')).to include('doc/openapi.yaml'),
-                                             ".swagcov.yml must point to doc/openapi.yaml"
+                                             '.swagcov.yml must point to doc/openapi.yaml'
     end
   end
 end
