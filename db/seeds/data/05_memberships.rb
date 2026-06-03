@@ -13,13 +13,10 @@ demo_projects.each do |project|
 end
 puts '  All users added to demo projects'
 
-# Upgrade role-tier users to their assigned roles
+# Upgrade role-tier users and community personas to their assigned roles
 puts 'Setting demo role tiers on projects...'
-role_map = {
-  'viewer@example.com' => 'viewer',
-  'author@example.com' => 'author',
-  'reviewer@example.com' => 'reviewer'
-}
+role_map = SeedHelpers::DEMO_ROLE_USERS.transform_values { |v| v[:role] }
+                                       .merge(SeedHelpers::COMMUNITY_PERSONAS.transform_values { |v| v[:role] })
 
 role_map.each do |email, role|
   user = User.find_by(email: email)
