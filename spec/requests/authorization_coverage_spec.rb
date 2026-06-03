@@ -74,7 +74,11 @@ AUTHENTICATE_ONLY_ACTIONS = {
   'personal_access_tokens#index' => 'Ownership-scoped: current_user tokens only; session-only via require_session_auth',
   'personal_access_tokens#create' => 'Ownership-scoped: builds on current_user; password re-entry required; session-only',
   'personal_access_tokens#destroy' => 'Ownership-scoped: finds via current_user.personal_access_tokens; session-only',
-  'personal_access_tokens#admin_revoke' => 'Admin-gated in action body (current_user.admin? else NotAuthorizedError); session-only'
+  'personal_access_tokens#admin_revoke' => 'Admin-gated in action body (current_user.admin? else NotAuthorizedError); session-only',
+  # ApiDocsController serves the Scalar API docs browser and the OpenAPI spec YAML.
+  # Static documentation — any authenticated user can view.
+  'api_docs#show' => 'Static API docs page — any authenticated user',
+  'api_docs#spec' => 'Static OpenAPI spec file — any authenticated user'
 }.freeze
 
 RSpec.describe 'Authorization coverage' do

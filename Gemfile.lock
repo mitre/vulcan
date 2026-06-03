@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/aaronlippold/json_schemer.git
-  revision: 7a4271e532196b2e4c448b268d70aab0eea8715c
+  revision: 30d5776ecdd33bd438437e007c3be2d5756248c9
   branch: feat/openapi-3.2-support
   specs:
     json_schemer (2.5.0)
@@ -11,15 +11,23 @@ GIT
 
 GIT
   remote: https://github.com/aaronlippold/openapi_first.git
-  revision: d3b5a4dde4e4ab11cae7c8001a026ceffd4c2162
+  revision: 67e7da3f34b4f9ca5b5c88485aeba9e2b182750d
   branch: feat/openapi-3.2-support
   specs:
-    openapi_first (3.4.2)
+    openapi_first (3.4.3)
       drb (~> 2.0)
       hana (~> 1.3)
       json_schemer (>= 2.1, < 3.0)
       openapi_parameters (>= 0.12.0, < 2.0)
       rack (>= 2.2, < 4.0)
+
+GIT
+  remote: https://github.com/aaronlippold/swagcov.git
+  revision: 0ebc5e1124bfccf435ce3ed010283cf81d6743a4
+  branch: fix/optional-route-segments
+  specs:
+    swagcov (1.2.1)
+      railties (>= 4.2)
 
 GIT
   remote: https://github.com/mitre/devise-security.git
@@ -475,7 +483,7 @@ GEM
     pry (0.15.2)
       coderay (~> 1.1)
       method_source (~> 1.0)
-    psych (5.3.1)
+    psych (5.4.0)
       date
       stringio
     public_suffix (7.0.5)
@@ -542,7 +550,7 @@ GEM
       erb
       psych (>= 4.0.0)
       tsort
-    regexp_parser (2.11.2)
+    regexp_parser (2.12.0)
     reline (0.6.3)
       io-console (~> 0.5)
     responders (3.2.0)
@@ -657,8 +665,6 @@ GEM
       unicode-display_width (>= 1.5, < 3.0)
       unicode_utils (~> 1.4)
     strings-ansi (0.2.0)
-    swagcov (1.2.1)
-      railties (>= 4.2)
     swd (1.3.0)
       activesupport (>= 3)
       attr_required (>= 0.0.5)
@@ -738,7 +744,7 @@ GEM
       zeitwerk (>= 2.6)
     xpath (3.2.0)
       nokogiri (~> 1.8)
-    zeitwerk (2.8.1)
+    zeitwerk (2.8.2)
 
 PLATFORMS
   aarch64-linux
@@ -816,7 +822,7 @@ DEPENDENCIES
   simplecov
   slack-ruby-client (= 1.0.0)
   slack_block_kit (= 0.3.3)
-  swagcov
+  swagcov!
   test-prof (~> 1.5)
   turbolinks (~> 5)
   tzinfo-data
