@@ -36,7 +36,7 @@
           />
         </nav>
       </b-col>
-      <b-col id="triage-content" lg="5" class="triage-col" role="main" aria-label="Comment details">
+      <b-col id="triage-content" lg="5" class="triage-col px-3" role="main" aria-label="Comment details">
         <h6 ref="contentHeading" tabindex="-1" class="sr-only" data-testid="content-heading">
           {{ activeComment.rule_displayed_name }} — {{ activeComment.section || "Overall" }}
         </h6>
@@ -55,7 +55,7 @@
       <b-col
         id="triage-form"
         lg="5"
-        class="triage-col"
+        class="triage-col triage-form-panel"
         role="complementary"
         aria-label="Triage decision"
       >
@@ -528,6 +528,19 @@ export default {
 <style scoped>
 .triage-col {
   overflow-y: auto;
+}
+
+/* Three-tier dark mode: sidebar = secondary-bg, content = body-bg, form = tertiary-bg */
+.triage-columns ::v-deep > .border-right {
+  border-color: var(--vulcan-border-color) !important;
+  background-color: var(--vulcan-secondary-bg, var(--vulcan-component-bg));
+  padding-left: 0.5rem;
+}
+
+.triage-form-panel {
+  border-left: 1px solid var(--vulcan-border-color);
+  background-color: var(--vulcan-tertiary-bg, var(--vulcan-component-bg-alt));
+  padding-left: 1rem;
 }
 
 @media (min-width: 992px) {
