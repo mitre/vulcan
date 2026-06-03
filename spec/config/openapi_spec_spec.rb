@@ -83,7 +83,7 @@ RSpec.describe 'OpenAPI specification (doc/openapi.yaml)' do
           next if %w[parameters summary description].include?(method)
 
           responses = op['responses'] || {}
-          success_codes = responses.keys.select { |c| c.match?(/\A2\d\d\z/) }
+          success_codes = responses.keys.grep(/\A2\d\d\z/)
           next if success_codes.empty?
 
           has_json_schema = success_codes.any? do |code|

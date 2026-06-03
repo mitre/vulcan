@@ -137,10 +137,10 @@ RSpec.describe 'Vulcan Design System audit' do
       missing = REQUIRED_LIGHT_MODE_VARS.reject { |var| root_block.include?(var) }
 
       if missing.any?
-        fail "#{missing.size} CSS variable(s) missing from :root in application.scss:\n" \
-             "  #{missing.join("\n  ")}\n\n" \
-             "Variables defined only in [data-bs-theme=\"dark\"] have no value in light mode.\n" \
-             "Add them to the :root block with appropriate light-mode values."
+        raise "#{missing.size} CSS variable(s) missing from :root in application.scss:\n  " \
+              "#{missing.join("\n  ")}\n\n" \
+              "Variables defined only in [data-bs-theme=\"dark\"] have no value in light mode.\n" \
+              'Add them to the :root block with appropriate light-mode values.'
       end
     end
   end
@@ -152,7 +152,7 @@ RSpec.describe 'Vulcan Design System audit' do
       rule_form_field_block = scss_content.match(/\.rule-form-field\s*\{([^}]+)\}/m)&.captures&.first || ''
       expect(rule_form_field_block).not_to include('margin-bottom'),
                                            ".rule-form-field sets margin-bottom, which overrides Bootstrap's " \
-                                           ".form-group margin-bottom: 1rem. Remove it — let .form-group own spacing."
+                                           '.form-group margin-bottom: 1rem. Remove it — let .form-group own spacing.'
     end
   end
 
@@ -172,9 +172,9 @@ RSpec.describe 'Vulcan Design System audit' do
       missing = REQUIRED_DARK_TINTS.reject { |var| dark_block.include?(var) }
 
       if missing.any?
-        fail "#{missing.size} tint variable(s) missing from dark mode block:\n" \
-             "  #{missing.join("\n  ")}\n\n" \
-             "Without dark mode tints, withdrawn/duplicate/addressed-by row tints are invisible."
+        raise "#{missing.size} tint variable(s) missing from dark mode block:\n  " \
+              "#{missing.join("\n  ")}\n\n" \
+              'Without dark mode tints, withdrawn/duplicate/addressed-by row tints are invisible.'
       end
     end
   end
