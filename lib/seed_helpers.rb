@@ -163,7 +163,7 @@ module SeedHelpers # rubocop:disable Style/Documentation
     orphaned = Review.where(commentable_type: 'Component')
                      .where.not(commentable_id: Component.select(:id))
     count = orphaned.count
-    orphaned.destroy_all if count > 0
+    orphaned.destroy_all if count.positive?
     count
   end
 

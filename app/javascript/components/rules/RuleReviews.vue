@@ -102,7 +102,14 @@ import { commentsClosedTooltip } from "../../constants/triageVocabulary";
 
 export default {
   name: "RuleReviews",
-  components: { SectionLabel, TriageStatusBadge, FilterDropdown, CommentThread, ReactionButtons, UserBadge },
+  components: {
+    SectionLabel,
+    TriageStatusBadge,
+    FilterDropdown,
+    CommentThread,
+    ReactionButtons,
+    UserBadge,
+  },
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue, ReactionToggleMixin],
   props: {
     effectivePermissions: {

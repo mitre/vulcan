@@ -20,7 +20,7 @@ end
 
 # ── Cleanup orphaned reviews from deleted components ──
 orphaned = SeedHelpers.cleanup_orphaned_reviews!
-puts "  Cleaned up #{orphaned} orphaned review(s)" if orphaned > 0
+puts "  Cleaned up #{orphaned} orphaned review(s)" if orphaned.positive?
 
 # ── Centralized user pool — resolve once, fallback to admin ──
 demo_admin = User.find_by(admin: true)
@@ -40,7 +40,7 @@ USERS = {
 }.freeze
 
 # ── Ensure memberships for all users ──
-USERS.each do |_key, user|
+USERS.each_value do |user|
   next if user == demo_admin
 
   role = case user.email

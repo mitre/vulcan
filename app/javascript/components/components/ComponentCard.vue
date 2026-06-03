@@ -76,7 +76,12 @@
 
       <p class="mt-4">
         <span v-if="component.admin_name">
-          PoC: <UserBadge :name="component.admin_name" :email="component.admin_email" :show-name="true" />
+          PoC:
+          <UserBadge
+            :name="component.admin_name"
+            :email="component.admin_email"
+            :show-name="true"
+          />
         </span>
         <em v-else>No Component Admin</em>
       </p>

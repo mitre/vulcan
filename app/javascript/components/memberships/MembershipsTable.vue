@@ -13,7 +13,12 @@
     >
       <!-- Column template for Name -->
       <template #cell(name)="data">
-        <UserBadge :name="data.item.name" :email="data.item.email" :role="data.item.role" :show-name="true" />
+        <UserBadge
+          :name="data.item.name"
+          :email="data.item.email"
+          :role="data.item.role"
+          :show-name="true"
+        />
       </template>
 
       <!-- Column template for Actions -->
@@ -98,7 +103,12 @@
     >
       <!-- Column template for Name -->
       <template #cell(name)="data">
-        <UserBadge :name="data.item.name" :email="data.item.email" :role="data.item.role" :show-name="true" />
+        <UserBadge
+          :name="data.item.name"
+          :email="data.item.email"
+          :role="data.item.role"
+          :show-name="true"
+        />
       </template>
 
       <!-- Column template for Role -->

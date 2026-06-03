@@ -64,9 +64,7 @@
             <div v-if="current_user && current_user.email">{{ current_user.email }}</div>
           </b-dropdown-text>
           <b-dropdown-divider v-if="userDisplayName" />
-          <b-dropdown-item :href="profile_path" data-turbolinks="false">
-            Profile
-          </b-dropdown-item>
+          <b-dropdown-item :href="profile_path" data-turbolinks="false"> Profile </b-dropdown-item>
           <b-dropdown-item v-if="myCommentsPath" :href="myCommentsPath" data-turbolinks="false">
             My Comments
           </b-dropdown-item>
