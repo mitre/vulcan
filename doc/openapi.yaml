@@ -437,12 +437,51 @@ paths:
                         name: Photon OS 3
         4XX:
           $ref: '#/components/responses/ErrorResponse'
+    patch:
+      operationId: patchProject
+      tags:
+        - Projects
+      summary: Partial update of project attributes
+      description: Partial update — send only changed fields. Updates the project name, description, or visibility. Requires admin role on the project. Returns a canonical toast response.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                project:
+                  $ref: '#/components/schemas/ProjectInput'
+            examples:
+              rename:
+                summary: Rename a project
+                value:
+                  project:
+                    name: Container Platform v2
+      responses:
+        '200':
+          description: Project updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+              examples:
+                updated:
+                  summary: Project renamed
+                  value:
+                    toast:
+                      title: Project updated.
+                      message:
+                        - Successfully updated project.
+                      variant: success
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
     put:
       operationId: updateProject
       tags:
         - Projects
-      summary: Update project attributes
-      description: Updates the project name, description, or visibility. Requires admin role on the project. Returns a canonical toast response.
+      summary: Full replacement of project attributes
+      description: Full replacement — all fields required. Updates the project name, description, or visibility. Requires admin role on the project. Returns a canonical toast response.
       requestBody:
         required: true
         content:
@@ -2191,12 +2230,36 @@ paths:
                 ruleId: $response.body#/id
         4XX:
           $ref: '#/components/responses/ErrorResponse'
+    patch:
+      operationId: patchRule
+      tags:
+        - Rules
+      summary: Partial update of rule attributes
+      description: Partial update — send only changed fields. Updates one or more rule fields. Requires author or admin role on the component.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rule:
+                  $ref: '#/components/schemas/RuleInput'
+      responses:
+        '200':
+          description: Rule updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
     put:
       operationId: updateRule
       tags:
         - Rules
-      summary: Update rule attributes
-      description: Updates one or more rule fields. Requires author or admin role on the component.
+      summary: Full replacement of rule attributes
+      description: Full replacement — all fields required. Updates rule fields. Requires author or admin role on the component.
       requestBody:
         required: true
         content:
@@ -3202,12 +3265,51 @@ paths:
   /memberships/{membershipId}:
     parameters:
       - $ref: '#/components/parameters/MembershipId'
+    patch:
+      operationId: patchMembership
+      tags:
+        - Memberships
+      summary: Partial update of membership role
+      description: Partial update — send only the fields to change. Changes the role (viewer, author, reviewer, admin) for an existing membership. Requires admin role on the parent project. Cannot demote the last admin on a project.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                membership:
+                  $ref: '#/components/schemas/MembershipInput'
+            examples:
+              promote:
+                summary: Promote to reviewer
+                value:
+                  membership:
+                    role: reviewer
+      responses:
+        '200':
+          description: Membership updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+              examples:
+                promoted:
+                  summary: Role changed
+                  value:
+                    toast:
+                      title: Role updated.
+                      message:
+                        - Jane Doe is now a reviewer.
+                      variant: success
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
     put:
       operationId: updateMembership
       tags:
         - Memberships
-      summary: Update membership role
-      description: Changes the role (viewer, author, reviewer, admin) for an existing membership. Requires admin role on the parent project. Cannot demote the last admin on a project.
+      summary: Full replacement of membership role
+      description: Full replacement — all fields required. Changes the role (viewer, author, reviewer, admin) for an existing membership. Requires admin role on the parent project. Cannot demote the last admin on a project.
       requestBody:
         required: true
         content:
@@ -3663,12 +3765,79 @@ paths:
   /users/{userId}:
     parameters:
       - $ref: '#/components/parameters/UserId'
+    patch:
+      operationId: patchUser
+      tags:
+        - Users
+      summary: Partial update of user attributes (admin only)
+      description: Partial update — send only changed fields. Updates a user's name, email, or admin status. Requires admin role. Prevents the last admin from demoting themselves. Sends a Slack notification when admin status changes (if Slack is configured). Returns both a toast and the updated user object.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    email:
+                      type: string
+                      format: email
+                    admin:
+                      type: boolean
+            examples:
+              promote:
+                summary: Promote user to admin
+                value:
+                  user:
+                    admin: true
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserToastResponse'
+              examples:
+                updated:
+                  summary: User promoted to admin
+                  value:
+                    toast:
+                      title: User updated.
+                      message:
+                        - Successfully updated user.
+                      variant: success
+                    user:
+                      id: 42
+                      name: Jane Doe
+                      email: jane.doe@example.org
+                      admin: true
+        '422':
+          description: Cannot remove last admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+              examples:
+                last_admin:
+                  summary: Cannot demote last admin
+                  value:
+                    toast:
+                      title: Cannot remove admin.
+                      message:
+                        - You are the only admin. Promote another user first.
+                      variant: danger
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
     put:
       operationId: updateUser
       tags:
         - Users
-      summary: Update user attributes (admin only)
-      description: Updates a user's name, email, or admin status. Requires admin role. Prevents the last admin from demoting themselves. Sends a Slack notification when admin status changes (if Slack is configured). Returns both a toast and the updated user object.
+      summary: Full replacement of user attributes (admin only)
+      description: Full replacement — all fields required. Updates a user's name, email, or admin status. Requires admin role. Prevents the last admin from demoting themselves. Sends a Slack notification when admin status changes (if Slack is configured). Returns both a toast and the updated user object.
       requestBody:
         required: true
         content:

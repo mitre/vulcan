@@ -1,13 +1,57 @@
 parameters:
   - $ref: ../components/parameters/MembershipId.yaml
+patch:
+  operationId: patchMembership
+  tags:
+    - Memberships
+  summary: Partial update of membership role
+  description: >-
+    Partial update — send only the fields to change. Changes the role
+    (viewer, author, reviewer, admin) for an existing membership.
+    Requires admin role on the parent project. Cannot demote the last
+    admin on a project.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            membership:
+              $ref: ../components/schemas/MembershipInput.yaml
+        examples:
+          promote:
+            summary: Promote to reviewer
+            value:
+              membership:
+                role: reviewer
+  responses:
+    '200':
+      description: Membership updated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            promoted:
+              summary: Role changed
+              value:
+                toast:
+                  title: Role updated.
+                  message:
+                    - "Jane Doe is now a reviewer."
+                  variant: success
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
 put:
   operationId: updateMembership
   tags:
     - Memberships
-  summary: Update membership role
+  summary: Full replacement of membership role
   description: >-
-    Changes the role (viewer, author, reviewer, admin) for an existing
-    membership. Requires admin role on the parent project. Cannot demote
+    Full replacement — all fields required. Changes the role
+    (viewer, author, reviewer, admin) for an existing membership.
+    Requires admin role on the parent project. Cannot demote
     the last admin on a project.
   requestBody:
     required: true

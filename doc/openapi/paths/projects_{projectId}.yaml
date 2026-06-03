@@ -29,14 +29,57 @@ get:
                     name: Photon OS 3
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
+patch:
+  operationId: patchProject
+  tags:
+    - Projects
+  summary: Partial update of project attributes
+  description: >-
+    Partial update — send only changed fields. Updates the project name,
+    description, or visibility. Requires admin role on the project.
+    Returns a canonical toast response.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            project:
+              $ref: ../components/schemas/ProjectInput.yaml
+        examples:
+          rename:
+            summary: Rename a project
+            value:
+              project:
+                name: Container Platform v2
+  responses:
+    '200':
+      description: Project updated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            updated:
+              summary: Project renamed
+              value:
+                toast:
+                  title: Project updated.
+                  message:
+                    - Successfully updated project.
+                  variant: success
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
 put:
   operationId: updateProject
   tags:
     - Projects
-  summary: Update project attributes
+  summary: Full replacement of project attributes
   description: >-
-    Updates the project name, description, or visibility. Requires admin role
-    on the project. Returns a canonical toast response.
+    Full replacement — all fields required. Updates the project name,
+    description, or visibility. Requires admin role on the project.
+    Returns a canonical toast response.
   requestBody:
     required: true
     content:

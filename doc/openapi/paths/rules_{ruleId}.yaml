@@ -32,12 +32,40 @@ get:
             ruleId: '$response.body#/id'
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
+patch:
+  operationId: patchRule
+  tags:
+    - Rules
+  summary: Partial update of rule attributes
+  description: >-
+    Partial update — send only changed fields. Updates one or more rule
+    fields. Requires author or admin role on the component.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            rule:
+              $ref: ../components/schemas/RuleInput.yaml
+  responses:
+    '200':
+      description: Rule updated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
 put:
   operationId: updateRule
   tags:
     - Rules
-  summary: Update rule attributes
-  description: Updates one or more rule fields. Requires author or admin role on the component.
+  summary: Full replacement of rule attributes
+  description: >-
+    Full replacement — all fields required. Updates rule fields.
+    Requires author or admin role on the component.
   requestBody:
     required: true
     content:
