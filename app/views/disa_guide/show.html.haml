@@ -14,8 +14,19 @@
     %main.disa-guide-main
       .disa-guide-main__header
         %h5.mb-0= @page_title
-        %button.btn.btn-sm.btn-outline-secondary.ml-auto.disa-guide-theme-toggle#disa-theme-toggle{"aria-label" => "Toggle dark mode"}
+        %button.btn.btn-sm.btn-outline-secondary.ml-auto#disa-theme-toggle{"aria-label" => "Toggle dark mode"}
           %i.bi
+      .disa-guide-content
+        = @html_content.html_safe
+
+    - if @toc.present?
+      %aside.disa-guide-toc-panel
+        .disa-guide-toc-panel__header
+          %small.font-weight-bold On this page
+        %nav.disa-guide-toc{"aria-label" => "On this page"}
+          - @toc.each do |entry|
+            %a.disa-guide-toc__link{href: "##{entry[:id]}", class: "toc-level-#{entry[:level]}", "data-turbolinks" => "false"}
+              = entry[:text]
 
 :javascript
   (function() {
@@ -35,14 +46,3 @@
     }
     updateIcon();
   })();
-      .disa-guide-content
-        = @html_content.html_safe
-
-    - if @toc.present?
-      %aside.disa-guide-toc-panel
-        .disa-guide-toc-panel__header
-          %small.font-weight-bold On this page
-        %nav.disa-guide-toc{"aria-label" => "On this page"}
-          - @toc.each do |entry|
-            %a.disa-guide-toc__link{href: "##{entry[:id]}", class: "toc-level-#{entry[:level]}", "data-turbolinks" => "false"}
-              = entry[:text]
