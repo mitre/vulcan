@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import { setActivePinia, createPinia } from "pinia";
-import CommentList from "@/components/shared/CommentList.vue";
+import CommentList from "@/components/containers/CommentList.vue";
 import { useCommentsStore } from "@/stores/comments";
 import { getComments } from "@/api/componentsApi";
 

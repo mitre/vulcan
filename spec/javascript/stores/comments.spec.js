@@ -201,56 +201,166 @@ describe("useCommentsStore", () => {
   });
 
   describe("normalizeComment", () => {
-    it("maps API response fields to stable shape", () => {
+    it("maps ALL API response fields to stable camelCase shape", () => {
+      const store = useCommentsStore();
+      const raw = {
+        ...mockCommentsResponse.data.rows[0],
+        duplicate_of_review_id: 99,
+        addressed_by_rule_id: 200,
+        addressed_by_rule_name: "CNTR-01-000050",
+        adjudicated_at: "2026-05-01T10:00:00Z",
+        commentable_type: "Rule",
+        rule_displayed_name: "CNTR-01-000001",
+        rule_content: { check: "verify TLS" },
+        responding_to_review_id: 50,
+        group_rule_displayed_name: "CNTR-01-000001",
+        parent_rule_displayed_name: "CNTR-01-000000",
+      };
+
+      const n = store.normalizeComment(raw);
+
+      expect(n.id).toBe(142);
+      expect(n.authorName).toBe("John Doe");
+      expect(n.authorEmail).toBe("john@example.com");
+      expect(n.text).toBe("Check text is vague");
+      expect(n.section).toBe("check_content");
+      expect(n.triageStatus).toBe("pending");
+      expect(n.responsesCount).toBe(2);
+      expect(n.isImported).toBe(false);
+      expect(n.duplicateOfReviewId).toBe(99);
+      expect(n.addressedByRuleId).toBe(200);
+      expect(n.addressedByRuleName).toBe("CNTR-01-000050");
+      expect(n.adjudicatedAt).toBe("2026-05-01T10:00:00Z");
+      expect(n.commentableType).toBe("Rule");
+      expect(n.ruleDisplayedName).toBe("CNTR-01-000001");
+      expect(n.ruleContent).toEqual({ check: "verify TLS" });
+      expect(n.respondingToReviewId).toBe(50);
+      expect(n.groupRuleDisplayedName).toBe("CNTR-01-000001");
+      expect(n.parentRuleDisplayedName).toBe("CNTR-01-000000");
+    });
+
+    it("falls back to commenter_display_name when author_name is null", () => {
+      const store = useCommentsStore();
+      const raw = {
+        id: 1,
+        author_name: null,
+        commenter_display_name: "Fallback Name",
+        comment: "test",
+      };
+      const n = store.normalizeComment(raw);
+      expect(n.authorName).toBe("Fallback Name");
+    });
+
+    it("defaults to empty string when both author fields are null", () => {
+      const store = useCommentsStore();
+      const raw = { id: 1, author_name: null, commenter_display_name: null };
+      const n = store.normalizeComment(raw);
+      expect(n.authorName).toBe("");
+    });
+
+    it("defaults null fields safely (no undefined)", () => {
+      const store = useCommentsStore();
+      const raw = { id: 1 };
+      const n = store.normalizeComment(raw);
+      expect(n.text).toBe("");
+      expect(n.reactions).toEqual({});
+      expect(n.responsesCount).toBe(0);
+      expect(n.section).toBeNull();
+      expect(n.triageStatus).toBeNull();
+    });
+  });
+
+  describe("commentCount", () => {
+    it("sums row counts across all cached entries", async () => {
       getComments.mockResolvedValue(mockCommentsResponse);
       const store = useCommentsStore();
 
-      const normalized = store.normalizeComment(mockCommentsResponse.data.rows[0]);
+      await store.fetchComments(38, {});
+      expect(Object.keys(store.cache)).toHaveLength(1);
+      expect(store.commentCount).toBe(1);
 
-      expect(normalized.id).toBe(142);
-      expect(normalized.authorName).toBe("John Doe");
-      expect(normalized.authorEmail).toBe("john@example.com");
-      expect(normalized.text).toBe("Check text is vague");
-      expect(normalized.section).toBe("check_content");
-      expect(normalized.triageStatus).toBe("pending");
-      expect(normalized.responsesCount).toBe(2);
-      expect(normalized.isImported).toBe(false);
+      getComments.mockResolvedValue({
+        data: {
+          rows: [
+            { id: 200, comment: "second" },
+            { id: 201, comment: "third" },
+          ],
+          pagination: { total: 2 },
+        },
+      });
+      await store.fetchComments(99, {});
+      expect(Object.keys(store.cache)).toHaveLength(2);
+      expect(store.commentCount).toBe(3);
+    });
+
+    it("returns 0 when cache is empty", () => {
+      const store = useCommentsStore();
+      expect(store.commentCount).toBe(0);
     });
   });
 
   describe("fetchReplies", () => {
-    it("calls getReviewResponses and returns rows", async () => {
+    it("calls getReviewResponses and returns normalized rows", async () => {
       const mockReplies = {
         data: { rows: [{ id: 7, comment: "reply text" }] },
       };
       getReviewResponses.mockResolvedValue(mockReplies);
       const store = useCommentsStore();
 
-      const result = await store.fetchReplies(42);
+      const result = await store.fetchReplies(38, 42);
 
       expect(getReviewResponses).toHaveBeenCalledWith(42);
       expect(result.rows).toHaveLength(1);
       expect(result.rows[0].id).toBe(7);
     });
 
-    it("caches replies by parentReviewId", async () => {
+    it("caches replies scoped by componentId + parentReviewId", async () => {
       getReviewResponses.mockResolvedValue({
         data: { rows: [{ id: 7 }] },
       });
       const store = useCommentsStore();
 
-      await store.fetchReplies(42);
-      await store.fetchReplies(42);
+      await store.fetchReplies(38, 42);
+      await store.fetchReplies(38, 42);
 
       expect(getReviewResponses).toHaveBeenCalledTimes(1);
+    });
+
+    it("invalidateCache clears reply caches for the component", async () => {
+      getReviewResponses.mockResolvedValue({
+        data: { rows: [{ id: 7 }] },
+      });
+      getComments.mockResolvedValue(mockCommentsResponse);
+      const store = useCommentsStore();
+
+      await store.fetchComments(38, {});
+      await store.fetchReplies(38, 42);
+      expect(Object.keys(store.cache)).toHaveLength(2);
+
+      store.invalidateCache(38);
+      expect(Object.keys(store.cache)).toHaveLength(0);
+    });
+
+    it("invalidateCache does not clear replies for other components", async () => {
+      getReviewResponses.mockResolvedValue({
+        data: { rows: [{ id: 7 }] },
+      });
+      const store = useCommentsStore();
+
+      await store.fetchReplies(38, 42);
+      await store.fetchReplies(99, 50);
+
+      store.invalidateCache(38);
+      expect(Object.keys(store.cache)).toHaveLength(1);
+      expect(Object.keys(store.cache)[0]).toMatch(/^99:/);
     });
 
     it("sets error on failure", async () => {
       getReviewResponses.mockRejectedValue(new Error("fail"));
       const store = useCommentsStore();
 
-      await expect(store.fetchReplies(42)).rejects.toThrow("fail");
-      expect(store.error).toBeTruthy();
+      await expect(store.fetchReplies(38, 42)).rejects.toThrow("fail");
+      expect(store.error).toBeInstanceOf(Error);
     });
   });
 
@@ -288,7 +398,7 @@ describe("useCommentsStore", () => {
         store.postComment(38, 100, { comment: "test" }),
       ).rejects.toThrow("403");
       expect(Object.keys(store.cache)).toHaveLength(1);
-      expect(store.error).toBeTruthy();
+      expect(store.error).toBeInstanceOf(Error);
     });
   });
 
@@ -319,7 +429,7 @@ describe("useCommentsStore", () => {
       const store = useCommentsStore();
 
       await store.fetchComments(38, {});
-      const result = await store.triageComment(142, { triage_status: "concur" }, 38);
+      const result = await store.triageComment(38, 142, { triage_status: "concur" });
 
       expect(triageReview).toHaveBeenCalledWith(142, {
         triage_status: "concur",
@@ -335,7 +445,7 @@ describe("useCommentsStore", () => {
 
       await store.fetchComments(38, {});
       await expect(
-        store.triageComment(142, { triage_status: "concur" }, 38),
+        store.triageComment(38, 142, { triage_status: "concur" }),
       ).rejects.toThrow("409");
       expect(Object.keys(store.cache)).toHaveLength(1);
     });
@@ -350,7 +460,7 @@ describe("useCommentsStore", () => {
       const store = useCommentsStore();
 
       await store.fetchComments(38, {});
-      await store.bulkTriage([1, 2, 3], { triage_status: "concur" }, 38);
+      await store.bulkTriage(38, [1, 2, 3], { triage_status: "concur" });
 
       expect(bulkTriageReviews).toHaveBeenCalledWith([1, 2, 3], {
         triage_status: "concur",
@@ -359,22 +469,20 @@ describe("useCommentsStore", () => {
     });
   });
 
-  describe("cacheKey (exposed for composables)", () => {
-    it("returns componentId:JSON key", () => {
+  describe("cacheKey (private, tested via cache behavior)", () => {
+    it("cacheKey is NOT exposed as public store API", () => {
       const store = useCommentsStore();
-      expect(store.cacheKey(38, { status: "all" })).toBe(
-        '38:{"status":"all"}',
-      );
+      expect(store.cacheKey).toBeUndefined();
     });
 
-    it("handles empty params", () => {
+    it("produces same cache hit for differently-ordered params", async () => {
+      getComments.mockResolvedValue(mockCommentsResponse);
       const store = useCommentsStore();
-      expect(store.cacheKey(38, {})).toBe("38:{}");
-    });
 
-    it("handles null params", () => {
-      const store = useCommentsStore();
-      expect(store.cacheKey(38, null)).toBe("38:{}");
+      await store.fetchComments(38, { status: "all", section: "check" });
+      await store.fetchComments(38, { section: "check", status: "all" });
+
+      expect(getComments).toHaveBeenCalledTimes(1);
     });
   });
 });

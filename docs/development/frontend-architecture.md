@@ -19,8 +19,8 @@ This architecture is designed to survive three major transitions without rewrite
 │  3. CONTAINER / PAGE                            │
 │     Orchestration — connects stores to UI.       │
 │     The ONLY layer that touches stores.          │
+│     app/javascript/components/containers/        │
 │     app/javascript/components/*/Page.vue         │
-│     app/javascript/components/*/Container.vue    │
 ├─────────────────────────────────────────────────┤
 │  2. STATE + LOGIC                               │
 │     Pinia stores — centralized state + cache.    │
@@ -187,6 +187,12 @@ export default {
 - NO imports from `stores/` or `api/`
 - NO `useStore()` calls
 - Lives in `components/shared/` when reusable, or alongside its container
+
+**Hybrid exception:** `CommentThread` lives in `shared/` because it is reusable
+across 7 consumers, but uses composables (`useCommentThread`, `useCommentReactions`)
+in `setup()`. This is permitted because the composables are the Layer 2 abstraction —
+the component does NOT import the store directly. Components that DO import stores
+directly (like `CommentList`) belong in `components/containers/`, not `shared/`.
 
 **Example — CommentItem is purely presentational:**
 ```vue

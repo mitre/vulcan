@@ -11,6 +11,14 @@ Vue.use(IconsPlugin);
 
 const sharedPinia = createPinia();
 
+document.addEventListener("turbolinks:before-visit", () => {
+  sharedPinia._s.forEach((store) => {
+    if (typeof store.$reset === "function") {
+      store.$reset();
+    }
+  });
+});
+
 export { sharedPinia };
 
 export function createVulcanApp({ el, componentName, component, directives }) {

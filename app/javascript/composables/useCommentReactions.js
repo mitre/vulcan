@@ -3,6 +3,7 @@ import { toggleReaction } from "../api/reviewsApi";
 
 export function useCommentReactions() {
   const pending = ref(new Set());
+  const error = ref(null);
 
   function optimisticUpdate(prev, kind) {
     const next = { up: prev.up, down: prev.down, mine: null };
@@ -26,17 +27,21 @@ export function useCommentReactions() {
     pending.value.add(key);
 
     const prev = { ...currentReactions };
+    error.value = null;
     apply(optimisticUpdate(prev, kind));
 
     try {
       const { data } = await toggleReaction(reviewId, kind);
       apply(data.reactions);
-    } catch {
+    } catch (err) {
       apply(prev);
+      error.value = err;
+      // eslint-disable-next-line no-console
+      console.error("[useCommentReactions] Toggle failed:", err);
     } finally {
       pending.value.delete(key);
     }
   }
 
-  return { toggle, optimisticUpdate, pending };
+  return { toggle, optimisticUpdate, pending, error };
 }

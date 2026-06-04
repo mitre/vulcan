@@ -33,7 +33,7 @@ describe("useCommentThread", () => {
   });
 
   it("returns reactive state and methods", () => {
-    const thread = useCommentThread(42);
+    const thread = useCommentThread(38, 42);
     expect(thread.expanded.value).toBe(false);
     expect(thread.replies.value).toEqual([]);
     expect(thread.loaded.value).toBe(false);
@@ -49,7 +49,7 @@ describe("useCommentThread", () => {
       data: { rows: [{ id: 7, comment: "reply" }] },
     });
 
-    const thread = useCommentThread(42);
+    const thread = useCommentThread(38, 42);
     await thread.toggle();
 
     expect(thread.expanded.value).toBe(true);
@@ -63,7 +63,7 @@ describe("useCommentThread", () => {
       data: { rows: [{ id: 7, comment: "reply" }] },
     });
 
-    const thread = useCommentThread(42);
+    const thread = useCommentThread(38, 42);
     await thread.toggle();
     expect(thread.expanded.value).toBe(true);
 
@@ -77,7 +77,7 @@ describe("useCommentThread", () => {
       data: { rows: [{ id: 7, comment: "reply" }] },
     });
 
-    const thread = useCommentThread(42);
+    const thread = useCommentThread(38, 42);
     await thread.toggle();
     expect(getReviewResponses).toHaveBeenCalledTimes(1);
 
@@ -88,7 +88,7 @@ describe("useCommentThread", () => {
   it("sets loadError on fetch failure", async () => {
     getReviewResponses.mockRejectedValue(new Error("boom"));
 
-    const thread = useCommentThread(42);
+    const thread = useCommentThread(38, 42);
     await thread.fetch();
 
     expect(thread.loadError.value).toBe(true);

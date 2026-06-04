@@ -407,9 +407,12 @@ vi.mock("@/composables/useCommentReactions", () => ({
 | Use `stubActions: true` when component awaits actions | Use `stubActions: false` or mock return values |
 | Share Pinia instance across tests | Fresh `createPinia()` in `beforeEach` |
 | Test composable by mounting a component | Test composable directly (or use `withSetup`) |
-| Assert `toBeTruthy()` on store state | Assert specific values (`toBe`, `toEqual`) |
+| Assert `toBeTruthy()` on store state | Assert specific values (`toBe`, `toEqual`, `toBeInstanceOf`) |
+| Test only some normalized fields | Assert ALL fields in normalizer — untested fields have zero coverage |
 | Test implementation details (internal refs) | Test public interface (return values, side effects) |
 | Mount with `global.plugins` (Vue 3 syntax) | Use `pinia` mount option (Vue 2 syntax) |
+| Use `cache.value[key] = data` in store | Use `setCacheEntry()` helper — Vue 2 reactivity needs object replacement |
+| Use `delete cache.value[key]` in store | Use `removeCacheEntry()` or `invalidateReplies()` — same reactivity reason |
 
 ---
 

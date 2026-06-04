@@ -51,8 +51,23 @@ export const useCommentsStore = defineStore("comments", () => {
     };
   }
 
+  function setCacheEntry(key, value) {
+    cache.value = { ...cache.value, [key]: value };
+  }
+
+  function removeCacheEntry(key) {
+    const { [key]: _, ...rest } = cache.value;
+    cache.value = rest;
+  }
+
   function cacheKey(componentId, params) {
-    return `${componentId}:${JSON.stringify(params || {})}`;
+    const sorted = Object.keys(params || {})
+      .sort()
+      .reduce((acc, k) => {
+        acc[k] = params[k];
+        return acc;
+      }, {});
+    return `${componentId}:${JSON.stringify(sorted)}`;
   }
 
   async function fetchComments(componentId, params) {
@@ -64,7 +79,7 @@ export const useCommentsStore = defineStore("comments", () => {
     try {
       const { data } = await getComments(componentId, params);
       const normalized = normalizeRows(data);
-      cache.value[key] = normalized;
+      setCacheEntry(key, normalized);
       return normalized;
     } catch (err) {
       error.value = err;
@@ -74,8 +89,8 @@ export const useCommentsStore = defineStore("comments", () => {
     }
   }
 
-  async function fetchReplies(parentReviewId) {
-    const key = `replies:${parentReviewId}`;
+  async function fetchReplies(componentId, parentReviewId) {
+    const key = `${componentId}:replies:${parentReviewId}`;
     if (cache.value[key]) return cache.value[key];
 
     loading.value = true;
@@ -83,7 +98,7 @@ export const useCommentsStore = defineStore("comments", () => {
     try {
       const { data } = await getReviewResponses(parentReviewId);
       const normalized = normalizeRows(data);
-      cache.value[key] = normalized;
+      setCacheEntry(key, normalized);
       return normalized;
     } catch (err) {
       error.value = err;
@@ -117,7 +132,7 @@ export const useCommentsStore = defineStore("comments", () => {
     }
   }
 
-  async function triageComment(reviewId, payload, componentId) {
+  async function triageComment(componentId, reviewId, payload) {
     error.value = null;
     try {
       const { data: result } = await triageReview(reviewId, payload);
@@ -129,7 +144,7 @@ export const useCommentsStore = defineStore("comments", () => {
     }
   }
 
-  async function bulkTriage(reviewIds, payload, componentId) {
+  async function bulkTriage(componentId, reviewIds, payload) {
     error.value = null;
     try {
       const { data: result } = await bulkTriageReviews(reviewIds, payload);
@@ -142,9 +157,16 @@ export const useCommentsStore = defineStore("comments", () => {
   }
 
   function invalidateCache(componentId) {
-    Object.keys(cache.value)
-      .filter((k) => k.startsWith(`${componentId}:`))
-      .forEach((k) => delete cache.value[k]);
+    const prefix = `${componentId}:`;
+    const remaining = {};
+    Object.keys(cache.value).forEach((k) => {
+      if (!k.startsWith(prefix)) remaining[k] = cache.value[k];
+    });
+    cache.value = remaining;
+  }
+
+  function invalidateReplies(componentId, parentReviewId) {
+    removeCacheEntry(`${componentId}:replies:${parentReviewId}`);
   }
 
   function $reset() {
@@ -159,7 +181,6 @@ export const useCommentsStore = defineStore("comments", () => {
     error,
     commentCount,
     normalizeComment,
-    cacheKey,
     fetchComments,
     fetchReplies,
     postComment,
@@ -167,6 +188,7 @@ export const useCommentsStore = defineStore("comments", () => {
     triageComment,
     bulkTriage,
     invalidateCache,
+    invalidateReplies,
     $reset,
   };
 });

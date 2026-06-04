@@ -388,3 +388,30 @@ mock return values when the component `await`s the action.
 - Do NOT remove mixins until composable is proven (run both briefly during migration)
 - Do NOT invalidate cache on failed mutations — use `$onAction.after()` pattern
 - Do NOT batch all consumer migrations — one at a time, test between each
+
+## Expert Review Resolution (2026-06-04)
+
+6-agent expert review completed. All 16 findings resolved:
+
+| # | Finding | Resolution | Card |
+|---|---------|-----------|------|
+| 1 | Normalizer opt-in, not mandatory | normalizeRows on ingest | .5.6 |
+| 2 | Store/composable double-wrapping | Composables delegate to store | .5.7 |
+| 3 | invalidateCache misses replies | Reply keys scoped by componentId | .5.8 |
+| 4 | Stale pinia across Turbolinks | $reset on turbolinks:before-visit | .5.9 |
+| 5 | this.$set breaks Vue 3 | Direct array assignment | .5.8 |
+| 6 | $scopedSlots + render(h) | Vue 2.7 limitation — documented migration debt | .5.10 |
+| 7 | normalizeComment missing fields | 4 new fields added (ruleContent etc.) | .5.6 |
+| 8 | Containers in shared/ | CommentList → containers/, CommentThread hybrid documented | .5.11 |
+| 9 | Duplicate normalizeRow | Deleted, uses store normalizer | .5.6 |
+| 10 | cacheKey key ordering fragile | Sort keys before stringify | .5.12 |
+| 11 | useCommentReactions silent catch | Added error ref + console.error | .5.13 |
+| 12 | cacheKey exposed publicly | Made private (closure-scoped) | .5.12 |
+| 13 | toBeTruthy weak assertions | Replaced with toBeInstanceOf(Error) | .5.14 |
+| 14 | Missing test coverage | All 16 normalized fields, commentCount, fallbacks tested | .5.14 |
+| 15 | Inconsistent componentId position | Standardized as first param | .5.12 |
+| 16 | storeToRefs never used | Documented as MANDATORY in state-management.md | .5.15 |
+
+**Bonus fix:** Vue 2 reactivity bug — `cache.value[key] = data` doesn't trigger
+computed properties. Fixed with `setCacheEntry`/`removeCacheEntry` helpers that
+replace the entire ref value via spread.

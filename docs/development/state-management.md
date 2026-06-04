@@ -19,7 +19,7 @@ This guide covers store patterns, composables, testing, plugins, and integration
 
 ## Architecture: 22 Vue Instances
 
-Vulcan has 22 separate Vue instances (one per page/pack file). Each gets its own `createPinia()` via `createVulcanApp()`. Stores are isolated per-page — Turbolinks navigations destroy and recreate Vue instances, so no cross-page state survives.
+Vulcan has 22 separate Vue instances (one per page/pack file). All share ONE `createPinia()` instance via `createVulcanApp()` (Pinia creator's documented pattern for multi-app). On `turbolinks:before-visit`, all stores are reset via `$reset()` to prevent stale cache from the previous page.
 
 ```
 Pack file  ──→  createVulcanApp()  ──→  new Vue({ pinia: createPinia() })
@@ -122,9 +122,9 @@ if (import.meta.hot) {
 
 ## Using Stores in Components
 
-### Composition API (`setup()` function)
+### Composition API (`setup()` function) — MANDATORY: use `storeToRefs`
 
-Best for new components or components being refactored:
+**`storeToRefs()` is REQUIRED when destructuring state/getters from a store in `setup()`.** Without it, destructured values silently lose reactivity — the component renders stale data with no error. This is the #1 Pinia gotcha.
 
 ```javascript
 import { useCommentsStore } from "../../stores/comments";
@@ -219,13 +219,18 @@ export const useTriageStore = defineStore("triage", () => {
 
 Composables are functions that encapsulate reusable Composition API logic. They replace Vue 2 mixins with explicit imports and testable pure functions.
 
-### When to Use Composables vs Stores
+### When to Use Composables vs Stores vs Utils
 
-| Use a Composable | Use a Store |
-|---|---|
-| Logic shared across components (formatting, validation) | Centralized state shared across components |
-| No persistent state needed | Cache, loading, error state |
-| Component-scoped lifecycle (mount/unmount) | App-scoped lifecycle (survives component changes) |
+| Use a Composable | Use a Store | Use a plain util (`lib/`) |
+|---|---|---|
+| Shared **stateful** logic (reactive refs, lifecycle hooks) | Centralized state shared across components | Pure functions with no state or reactivity |
+| Component-scoped instances (each caller gets own state) | Singleton per pinia instance | Stateless — same output for same input |
+| Example: `useCommentReactions` (pending ref) | Example: `useCommentsStore` (cache) | Example: `dateFormat.js` (string in, string out) |
+
+**Rule of thumb:** If it uses `ref()`, `computed()`, or lifecycle hooks → composable.
+If it's a pure function with no Vue reactivity → `lib/` utility, not a composable.
+`useDateFormat` is technically a util wrapped in a composable factory — acceptable
+during the mixin→composable migration, but pure utils should live in `lib/`.
 
 ### Composable Pattern
 

@@ -68,7 +68,6 @@
 <script>
 import ReactionButtons from "./ReactionButtons.vue";
 import UserBadge from "./UserBadge.vue";
-import AlertMixin from "../../mixins/AlertMixin.vue";
 import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
 import { useCommentReactions } from "../../composables/useCommentReactions";
 import { useCommentThread } from "../../composables/useCommentThread";
@@ -76,8 +75,9 @@ import { useCommentThread } from "../../composables/useCommentThread";
 export default {
   name: "CommentThread",
   components: { ReactionButtons, UserBadge },
-  mixins: [AlertMixin, DateFormatMixin],
+  mixins: [DateFormatMixin],
   props: {
+    componentId: { type: [Number, String], default: null },
     parentReviewId: { type: [Number, String], required: true },
     responsesCount: { type: Number, default: 0 },
     canReply: { type: Boolean, default: true },
@@ -90,7 +90,7 @@ export default {
     },
   },
   setup(props) {
-    const thread = useCommentThread(props.parentReviewId);
+    const thread = useCommentThread(props.componentId, props.parentReviewId);
     const { toggle: toggleReactionApi } = useCommentReactions();
     return { ...thread, toggleReactionApi };
   },
@@ -138,7 +138,7 @@ export default {
       if (idx < 0) return;
       const prev = { ...reply.reactions };
       const apply = (reactions) => {
-        this.$set(this.replies, idx, { ...this.replies[idx], reactions });
+        this.replies[idx] = { ...this.replies[idx], reactions };
       };
       this.toggleReactionApi(reply.id, kind, prev, apply);
     },

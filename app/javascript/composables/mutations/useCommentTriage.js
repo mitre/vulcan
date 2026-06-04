@@ -9,7 +9,7 @@ export function useCommentTriage() {
     submitting.value = true;
     submitError.value = null;
     try {
-      return await useCommentsStore().triageComment(reviewId, payload, componentId);
+      return await useCommentsStore().triageComment(componentId, reviewId, payload);
     } catch (err) {
       submitError.value = err;
       throw err;
@@ -22,7 +22,7 @@ export function useCommentTriage() {
     submitting.value = true;
     submitError.value = null;
     try {
-      return await useCommentsStore().bulkTriage(reviewIds, payload, componentId);
+      return await useCommentsStore().bulkTriage(componentId, reviewIds, payload);
     } catch (err) {
       submitError.value = err;
       throw err;

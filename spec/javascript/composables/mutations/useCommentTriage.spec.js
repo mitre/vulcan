@@ -51,9 +51,9 @@ describe("useCommentTriage", () => {
       const result = await triage.triage(142, { triage_status: "concur" }, 38);
 
       expect(store.triageComment).toHaveBeenCalledWith(
+        38,
         142,
         { triage_status: "concur" },
-        38,
       );
       expect(triageReview).not.toHaveBeenCalled();
       expect(result).toEqual(storeResult);
@@ -82,9 +82,9 @@ describe("useCommentTriage", () => {
       await triage.bulkTriage([1, 2, 3], { triage_status: "concur" }, 38);
 
       expect(store.bulkTriage).toHaveBeenCalledWith(
+        38,
         [1, 2, 3],
         { triage_status: "concur" },
-        38,
       );
       expect(bulkTriageReviews).not.toHaveBeenCalled();
     });

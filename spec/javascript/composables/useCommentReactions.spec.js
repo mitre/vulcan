@@ -92,6 +92,36 @@ describe("useCommentReactions", () => {
       expect(apply).toHaveBeenLastCalledWith(prev);
     });
 
+    it("sets error ref on API failure", async () => {
+      const apiError = new Error("403 Forbidden");
+      toggleReaction.mockRejectedValue(apiError);
+
+      const { toggle, error } = useCommentReactions();
+      const apply = vi.fn();
+      const prev = { up: 0, down: 0, mine: null };
+
+      await toggle(42, "up", prev, apply);
+
+      expect(error.value).toBe(apiError);
+    });
+
+    it("clears error ref on successful toggle", async () => {
+      toggleReaction.mockRejectedValueOnce(new Error("500"));
+      toggleReaction.mockResolvedValueOnce({
+        data: { reactions: { up: 1, down: 0, mine: "up" } },
+      });
+
+      const { toggle, error } = useCommentReactions();
+      const apply = vi.fn();
+      const prev = { up: 0, down: 0, mine: null };
+
+      await toggle(42, "up", prev, apply);
+      expect(error.value).toBeInstanceOf(Error);
+
+      await toggle(42, "up", prev, apply);
+      expect(error.value).toBeNull();
+    });
+
     it("prevents duplicate toggles while pending", async () => {
       let resolvePromise;
       toggleReaction.mockReturnValue(
