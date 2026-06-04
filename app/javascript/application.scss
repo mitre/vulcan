@@ -1167,6 +1167,10 @@ body.has-classification-banner {
     color: var(--vulcan-body-color);
     margin-top: 1.25rem;
     margin-bottom: 0.5rem;
+    padding: 0.35rem 0.6rem;
+    background-color: var(--vulcan-secondary-bg);
+    border-radius: 0.25rem;
+    border-left: 2px solid var(--vulcan-border-color);
   }
 
   h5 {

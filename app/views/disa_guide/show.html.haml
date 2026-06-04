@@ -14,6 +14,27 @@
     %main.disa-guide-main
       .disa-guide-main__header
         %h5.mb-0= @page_title
+        %button.btn.btn-sm.btn-outline-secondary.ml-auto.disa-guide-theme-toggle#disa-theme-toggle{"aria-label" => "Toggle dark mode"}
+          %i.bi
+
+:javascript
+  (function() {
+    function updateIcon() {
+      var icon = document.querySelector('#disa-theme-toggle .bi');
+      if (!icon) return;
+      var dark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+      icon.className = 'bi ' + (dark ? 'bi-sun' : 'bi-moon');
+    }
+    document.addEventListener('turbolinks:load', updateIcon);
+    var btn = document.getElementById('disa-theme-toggle');
+    if (btn) {
+      btn.addEventListener('click', function() {
+        if (window.vulcanToggleTheme) window.vulcanToggleTheme();
+        updateIcon();
+      });
+    }
+    updateIcon();
+  })();
       .disa-guide-content
         = @html_content.html_safe
 
