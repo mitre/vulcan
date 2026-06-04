@@ -111,7 +111,7 @@
 </template>
 
 <script>
-import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
+import { useCommentReactions } from "../../composables/useCommentReactions";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import ReactionButtons from "../shared/ReactionButtons.vue";
 import CommentThread from "../shared/CommentThread.vue";
@@ -124,12 +124,15 @@ import { groupCommentsByRule } from "../../utils/groupCommentsByRule";
 export default {
   name: "CommentsByRule",
   components: { TriageStatusBadge, ReactionButtons, CommentThread, CommentAuthorLine },
-  mixins: [ReactionToggleMixin],
   props: {
     rows: { type: Array, required: true },
     allExpanded: { type: Boolean, default: false },
     selectable: { type: Boolean, default: false },
     selectedIds: { type: Array, default: () => [] },
+  },
+  setup() {
+    const { toggle: toggleReactionApi } = useCommentReactions();
+    return { toggleReactionApi };
   },
   data() {
     return {
@@ -195,13 +198,8 @@ export default {
     },
     toggleCommentReaction(comment, kind) {
       const prev = { ...comment.reactions };
-      this.submitReactionToggle({
-        reviewId: comment.id,
-        prev,
-        kind,
-        apply: (reactions) => {
-          this.$emit("reaction-updated", { id: comment.id, reactions });
-        },
+      this.toggleReactionApi(comment.id, kind, prev, (reactions) => {
+        this.$emit("reaction-updated", { id: comment.id, reactions });
       });
     },
   },

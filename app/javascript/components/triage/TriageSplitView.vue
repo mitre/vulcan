@@ -244,7 +244,7 @@ import RulePicker from "../components/RulePicker.vue";
 import ReactionButtons from "../shared/ReactionButtons.vue";
 import CommentAuthorLine from "../shared/CommentAuthorLine.vue";
 import PanelLayout from "../shared/PanelLayout.vue";
-import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
+import { useCommentReactions } from "../../composables/useCommentReactions";
 import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
 import { triageBgClass } from "../../utils/triageBgClass";
 import { compareBySectionOrder } from "../../utils/sectionSortOrder";
@@ -263,7 +263,7 @@ export default {
     CommentAuthorLine,
     PanelLayout,
   },
-  mixins: [AlertMixin, FormMixin, RoleComparisonMixin, ReactionToggleMixin, DateFormatMixin],
+  mixins: [AlertMixin, FormMixin, RoleComparisonMixin, DateFormatMixin],
   props: {
     rows: { type: Array, required: true },
     initialCommentId: { type: [Number, String], default: null },
@@ -272,6 +272,10 @@ export default {
     effectivePermissions: { type: String, default: null },
     adminPanelOpen: { type: Boolean, default: false },
     contextMode: { type: String, default: "commented" },
+  },
+  setup() {
+    const { toggle: toggleReactionApi } = useCommentReactions();
+    return { toggleReactionApi };
   },
   data() {
     return {
@@ -496,7 +500,7 @@ export default {
       const apply = (reactions) => {
         this.$emit("reaction-updated", { id: reviewId, reactions });
       };
-      this.submitReactionToggle({ reviewId, prev, kind, apply });
+      this.toggleReactionApi(reviewId, kind, prev, apply);
     },
     onTargetRuleSelected(ruleId) {
       this.adminTargetRuleId = ruleId;
