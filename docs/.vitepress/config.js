@@ -52,7 +52,6 @@ export default defineConfig({
               { text: "Overview", link: "/user-guide/overview" },
               { text: "Authoring Rules", link: "/user-guide/authoring-rules" },
               { text: "Sidebar — Nested Requirements", link: "/user-guide/sidebar-collapse" },
-              { text: "Public Comment Review", link: "/user-guide/public-comment-review" },
               { text: "User Management", link: "/user-guide/user-management" },
               { text: "Section Locks", link: "/user-guide/section-locks" },
               { text: "Data Management", link: "/user-guide/data-management/" },
@@ -61,8 +60,9 @@ export default defineConfig({
           {
             text: "Comment Triage",
             items: [
-              { text: "Soft Redirect", link: "/user-guide/soft-redirect" },
+              { text: "Public Comment Review", link: "/user-guide/public-comment-review" },
               { text: "Comment Provenance", link: "/user-guide/comment-provenance" },
+              { text: "Soft Redirect", link: "/user-guide/soft-redirect" },
               { text: "Move Comment", link: "/user-guide/move-comment" },
               { text: "Bulk Triage", link: "/user-guide/bulk-triage" },
               { text: "Merge Comments", link: "/user-guide/merge-comments" },
@@ -193,7 +193,6 @@ export default defineConfig({
             { text: "Overview", link: "/user-guide/overview" },
             { text: "Authoring Rules", link: "/user-guide/authoring-rules" },
             { text: "Sidebar — Nested Requirements", link: "/user-guide/sidebar-collapse" },
-            { text: "Public Comment Review", link: "/user-guide/public-comment-review" },
             { text: "User Management", link: "/user-guide/user-management" },
             { text: "Section Locks", link: "/user-guide/section-locks" },
           ],
@@ -201,8 +200,9 @@ export default defineConfig({
         {
           text: "Comment Triage",
           items: [
-            { text: "Soft Redirect", link: "/user-guide/soft-redirect" },
+            { text: "Public Comment Review", link: "/user-guide/public-comment-review" },
             { text: "Comment Provenance", link: "/user-guide/comment-provenance" },
+            { text: "Soft Redirect", link: "/user-guide/soft-redirect" },
             { text: "Move Comment", link: "/user-guide/move-comment" },
             { text: "Bulk Triage", link: "/user-guide/bulk-triage" },
             { text: "Merge Comments", link: "/user-guide/merge-comments" },

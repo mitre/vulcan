@@ -19,17 +19,35 @@ project, not user-private. Two consequences:
 
 ## Managing templates (admin)
 
-Project admins can create, edit, and delete templates through the
-`/projects/:id/triage_response_templates` API endpoints (a UI page is
-not part of this release — initial template seeding goes through
-direct API calls or rails console). Each template has:
+Project admins manage templates from inside the split-pane triage
+view. Open the **Insert template…** dropdown above the response
+textarea — admins see a **⚙ Manage templates…** entry at the bottom of
+the dropdown that opens the **Response Templates** modal.
+
+Inside the modal:
+
+- **Create** — fill in a name and body (markdown supported, rendered
+  via the EasyMDE editor) and click **Save Template**. The new
+  template appears immediately in the dropdown for all project
+  members.
+- **Edit** — click the pencil icon next to any existing template to
+  edit its name and body inline. Click **Save** to commit.
+- **Delete** — click the trash icon to remove a template. Existing
+  responses that were inserted from a template are not affected
+  (templates are starting points, not live references).
+
+Each template has:
 
 - **Name** — short label shown in the dropdown (max 200 chars,
   unique within the project, case-insensitive).
-- **Body** — the response text inserted into the response field.
+- **Body** — the response text inserted into the response field
+  (markdown supported).
 
 Viewers and authors on the project can read the template list (to
-populate the dropdown); only admins can mutate.
+populate the dropdown); only admins see the **Manage templates…**
+entry and can mutate. The REST API at
+`/projects/:id/triage_response_templates` is also available for
+programmatic seeding (admin-write, viewer-read).
 
 ## Using a template (any triager)
 
