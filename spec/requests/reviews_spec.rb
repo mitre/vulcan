@@ -575,6 +575,40 @@ RSpec.describe 'Reviews' do
         expect(comment.triage_status).to eq('concur') # decision retained for revision
       end
 
+      it 'clears adjudicated_at for terminal status "duplicate" (does not re-adjudicate)' do
+        survivor = create(:review, :comment, comment: 'survivor', section: nil,
+                                             user: reopen_commenter, rule: rule)
+        comment = adjudicated_comment(triage_status: 'concur')
+        comment.update!(triage_status: 'duplicate', duplicate_of_review_id: survivor.id)
+        patch "/reviews/#{comment.id}/reopen", as: :json
+
+        expect(response).to have_http_status(:ok)
+        comment.reload
+        expect(comment.adjudicated_at).to be_nil
+        expect(comment.triage_status).to eq('duplicate')
+      end
+
+      it 'clears adjudicated_at for terminal status "informational" (does not re-adjudicate)' do
+        comment = adjudicated_comment(triage_status: 'informational')
+        patch "/reviews/#{comment.id}/reopen", as: :json
+
+        expect(response).to have_http_status(:ok)
+        comment.reload
+        expect(comment.adjudicated_at).to be_nil
+        expect(comment.triage_status).to eq('informational')
+      end
+
+      it 'clears adjudicated_at for terminal status "addressed_by" (does not re-adjudicate)' do
+        comment = adjudicated_comment(triage_status: 'concur')
+        comment.update!(triage_status: 'addressed_by', addressed_by_rule_id: rule.id)
+        patch "/reviews/#{comment.id}/reopen", as: :json
+
+        expect(response).to have_http_status(:ok)
+        comment.reload
+        expect(comment.adjudicated_at).to be_nil
+        expect(comment.triage_status).to eq('addressed_by')
+      end
+
       it 'rejects re-opening a non-adjudicated comment (nothing to revert)' do
         pending_comment = create(:review, :comment, comment: 'still pending', section: nil,
                                                     user: reopen_commenter, rule: rule)

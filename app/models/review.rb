@@ -631,6 +631,7 @@ class Review < ApplicationRecord
   end
 
   def auto_set_adjudicated_for_terminal_statuses
+    return if @skip_auto_adjudicate
     return unless TERMINAL_AUTO_ADJUDICATE_STATUSES.include?(triage_status)
     return if adjudicated_at.present?
 

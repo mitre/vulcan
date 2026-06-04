@@ -274,6 +274,7 @@ class ReviewsController < ApplicationController
                           variant: 'warning')
     end
 
+    @review.instance_variable_set(:@skip_auto_adjudicate, true)
     @review.update!(adjudicated_at: nil, adjudicated_by_id: nil)
     render json: { review: ReviewBlueprint.render_as_hash(@review) }
   end
