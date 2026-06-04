@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
+import { setActivePinia, createPinia } from "pinia";
 import { localVue } from "@test/testHelper";
 import CommentThread from "@/components/shared/CommentThread.vue";
+import { getReviewResponses } from "@/api/reviewsApi";
 
 vi.mock("@/api/baseApi", () => ({
   default: {
@@ -14,11 +16,23 @@ vi.mock("@/api/baseApi", () => ({
   },
 }));
 
-import api from "@/api/baseApi";
+vi.mock("@/api/componentsApi", () => ({
+  getComments: vi.fn(),
+}));
+
+vi.mock("@/api/reviewsApi", () => ({
+  getReviewResponses: vi.fn(),
+  createRuleReview: vi.fn(),
+  createComponentReview: vi.fn(),
+  triageReview: vi.fn(),
+  bulkTriageReviews: vi.fn(),
+  toggleReaction: vi.fn(),
+}));
 
 describe("CommentThread", () => {
   beforeEach(() => {
-    api.get.mockReset();
+    setActivePinia(createPinia());
+    getReviewResponses.mockReset();
   });
 
   it("does not render the toggle when responses_count is 0", () => {
@@ -70,7 +84,7 @@ describe("CommentThread", () => {
   });
 
   it("lazy-loads replies on first toggle and caches them", async () => {
-    api.get.mockResolvedValue({
+    getReviewResponses.mockResolvedValue({
       data: {
         rows: [
           {
@@ -92,29 +106,29 @@ describe("CommentThread", () => {
     // First click → fetch
     await w.find("button[aria-controls]").trigger("click");
     await new Promise((r) => setTimeout(r, 0));
-    expect(api.get).toHaveBeenCalledTimes(1);
-    expect(api.get).toHaveBeenCalledWith("/reviews/1/responses", { params: undefined });
+    expect(getReviewResponses).toHaveBeenCalledTimes(1);
+    expect(getReviewResponses).toHaveBeenCalledWith(1);
     expect(w.text()).toContain("first reply");
 
     // Toggle off then on → should NOT refetch (cached)
     await w.find("button[aria-controls]").trigger("click");
     await w.find("button[aria-controls]").trigger("click");
-    expect(api.get).toHaveBeenCalledTimes(1);
+    expect(getReviewResponses).toHaveBeenCalledTimes(1);
   });
 
   it("calls the correct endpoint for responses", async () => {
-    api.get.mockResolvedValue({ data: { rows: [] } });
+    getReviewResponses.mockResolvedValue({ data: { rows: [] } });
     const w = mount(CommentThread, {
       localVue,
       propsData: { parentReviewId: 99, responsesCount: 1 },
     });
     await w.find("button[aria-controls]").trigger("click");
     await new Promise((r) => setTimeout(r, 0));
-    expect(api.get).toHaveBeenCalledWith("/reviews/99/responses", { params: undefined });
+    expect(getReviewResponses).toHaveBeenCalledWith(99);
   });
 
   it("renders an error state with retry on fetch failure", async () => {
-    api.get.mockRejectedValueOnce(new Error("boom"));
+    getReviewResponses.mockRejectedValueOnce(new Error("boom"));
     const w = mount(CommentThread, {
       localVue,
       propsData: { parentReviewId: 1, responsesCount: 1 },
@@ -125,7 +139,7 @@ describe("CommentThread", () => {
   });
 
   it("invalidates cache + refetches when responsesCount changes while expanded", async () => {
-    api.get.mockResolvedValue({
+    getReviewResponses.mockResolvedValue({
       data: {
         rows: [
           {
@@ -144,12 +158,12 @@ describe("CommentThread", () => {
     });
     await w.find("button[aria-controls]").trigger("click");
     await new Promise((r) => setTimeout(r, 0));
-    expect(api.get).toHaveBeenCalledTimes(1);
+    expect(getReviewResponses).toHaveBeenCalledTimes(1);
 
     // Host's parent re-fetched and the count went up — refetch the thread.
     await w.setProps({ responsesCount: 2 });
     await new Promise((r) => setTimeout(r, 0));
-    expect(api.get).toHaveBeenCalledTimes(2);
+    expect(getReviewResponses).toHaveBeenCalledTimes(2);
   });
 
   it("does not refetch on responsesCount change when collapsed (cache cleared lazily)", async () => {
@@ -159,11 +173,11 @@ describe("CommentThread", () => {
     });
     await w.setProps({ responsesCount: 2 });
     await new Promise((r) => setTimeout(r, 0));
-    expect(api.get).not.toHaveBeenCalled();
+    expect(getReviewResponses).not.toHaveBeenCalled();
   });
 
   it("redacts PII fallback names from the server payload (display token only)", async () => {
-    api.get.mockResolvedValue({
+    getReviewResponses.mockResolvedValue({
       data: {
         rows: [
           {
@@ -209,7 +223,7 @@ describe("CommentThread", () => {
     };
 
     it("wraps each reply in a b-media component", async () => {
-      api.get.mockResolvedValue(twoReplies);
+      getReviewResponses.mockResolvedValue(twoReplies);
       const w = mount(CommentThread, {
         localVue,
         propsData: { parentReviewId: 1, responsesCount: 2 },
@@ -221,7 +235,7 @@ describe("CommentThread", () => {
     });
 
     it("renders reply content inside b-media-body", async () => {
-      api.get.mockResolvedValue(twoReplies);
+      getReviewResponses.mockResolvedValue(twoReplies);
       const w = mount(CommentThread, {
         localVue,
         propsData: { parentReviewId: 1, responsesCount: 2 },
@@ -235,7 +249,7 @@ describe("CommentThread", () => {
     });
 
     it("renders an aside placeholder for future avatar", async () => {
-      api.get.mockResolvedValue(twoReplies);
+      getReviewResponses.mockResolvedValue(twoReplies);
       const w = mount(CommentThread, {
         localVue,
         propsData: { parentReviewId: 1, responsesCount: 2 },
@@ -264,7 +278,7 @@ describe("CommentThread", () => {
     };
 
     it("does NOT apply the parent's triage-bg class to replies", async () => {
-      api.get.mockResolvedValue(oneReply);
+      getReviewResponses.mockResolvedValue(oneReply);
       const w = mount(CommentThread, {
         localVue,
         propsData: { parentReviewId: 1, responsesCount: 1, parentTriageStatus: "concur" },
@@ -276,7 +290,7 @@ describe("CommentThread", () => {
     });
 
     it("renders no triage-bg class on replies regardless of parent status", async () => {
-      api.get.mockResolvedValue(oneReply);
+      getReviewResponses.mockResolvedValue(oneReply);
       const w = mount(CommentThread, {
         localVue,
         propsData: { parentReviewId: 1, responsesCount: 1, parentTriageStatus: "pending" },
@@ -287,7 +301,7 @@ describe("CommentThread", () => {
     });
 
     it("renders no triage-bg class when parentTriageStatus is omitted (default null)", async () => {
-      api.get.mockResolvedValue(oneReply);
+      getReviewResponses.mockResolvedValue(oneReply);
       const w = mount(CommentThread, {
         localVue,
         propsData: { parentReviewId: 1, responsesCount: 1 },

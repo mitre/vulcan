@@ -1,5 +1,4 @@
 import { ref } from "vue";
-import { triageReview, bulkTriageReviews } from "../../api/reviewsApi";
 import { useCommentsStore } from "../../stores/comments";
 
 export function useCommentTriage() {
@@ -10,9 +9,7 @@ export function useCommentTriage() {
     submitting.value = true;
     submitError.value = null;
     try {
-      const { data: result } = await triageReview(reviewId, payload);
-      if (componentId) useCommentsStore().invalidateCache(componentId);
-      return result;
+      return await useCommentsStore().triageComment(reviewId, payload, componentId);
     } catch (err) {
       submitError.value = err;
       throw err;
@@ -25,9 +22,7 @@ export function useCommentTriage() {
     submitting.value = true;
     submitError.value = null;
     try {
-      const { data: result } = await bulkTriageReviews(reviewIds, payload);
-      if (componentId) useCommentsStore().invalidateCache(componentId);
-      return result;
+      return await useCommentsStore().bulkTriage(reviewIds, payload, componentId);
     } catch (err) {
       submitError.value = err;
       throw err;

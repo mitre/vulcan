@@ -1,5 +1,5 @@
 import { ref } from "vue";
-import { getReviewResponses } from "../api/reviewsApi";
+import { useCommentsStore } from "../stores/comments";
 
 export function useCommentThread(parentReviewId) {
   const expanded = ref(false);
@@ -14,7 +14,7 @@ export function useCommentThread(parentReviewId) {
     loadError.value = false;
     const token = ++fetchToken;
     try {
-      const { data } = await getReviewResponses(parentReviewId);
+      const data = await useCommentsStore().fetchReplies(parentReviewId);
       if (token !== fetchToken) return;
       replies.value = data.rows || [];
       loaded.value = true;
@@ -36,6 +36,8 @@ export function useCommentThread(parentReviewId) {
   async function refresh() {
     loaded.value = false;
     replies.value = [];
+    const store = useCommentsStore();
+    delete store.cache[`replies:${parentReviewId}`];
     if (expanded.value) {
       await fetch();
     }

@@ -23,7 +23,7 @@
         :class="{ 'dedup-dimmed': isDimmed(row) }"
       >
         <CommentItem
-          :comment="normalizeRow(row)"
+          :comment="storeNormalize(row)"
           @toggle-reaction="(kind) => toggleReaction(row, kind)"
           @reply="$emit('reply', $event)"
         />
@@ -37,6 +37,7 @@ import { getComments } from "../../api/componentsApi";
 import { sectionLabel } from "../../constants/triageVocabulary";
 import CommentItem from "../shared/CommentItem.vue";
 import { useCommentReactions } from "../../composables/useCommentReactions";
+import { useCommentsStore } from "../../stores/comments";
 import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
 
 export default {
@@ -51,7 +52,8 @@ export default {
   },
   setup() {
     const { toggle: toggleReactionApi } = useCommentReactions();
-    return { toggleReactionApi };
+    const store = useCommentsStore();
+    return { toggleReactionApi, storeNormalize: store.normalizeComment };
   },
   data() {
     return { rows: [], total: 0, totalComments: 0, expanded: false };
@@ -83,24 +85,6 @@ export default {
     componentScoped: "fetch",
   },
   methods: {
-    normalizeRow(row) {
-      return {
-        id: row.id,
-        authorName: row.author_name || row.commenter_display_name,
-        authorEmail: row.commenter_email,
-        text: row.comment,
-        section: row.section,
-        triageStatus: row.triage_status,
-        createdAt: row.created_at,
-        reactions: row.reactions || {},
-        responsesCount: row.responses_count || 0,
-        isImported: row.commenter_imported || false,
-        adjudicatedAt: row.adjudicated_at,
-        duplicateOfReviewId: row.duplicate_of_review_id,
-        addressedByRuleId: row.addressed_by_rule_id,
-        addressedByRuleName: row.addressed_by_rule_name,
-      };
-    },
     isDimmed(row) {
       if (!this.section || this.componentScoped) return false;
       return row.section !== this.section;

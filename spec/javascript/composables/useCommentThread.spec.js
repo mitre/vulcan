@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { setActivePinia, createPinia } from "pinia";
 import { useCommentThread } from "@/composables/useCommentThread";
 import { getReviewResponses } from "@/api/reviewsApi";
 
@@ -13,12 +14,21 @@ vi.mock("@/api/baseApi", () => ({
   },
 }));
 
+vi.mock("@/api/componentsApi", () => ({
+  getComments: vi.fn(),
+}));
+
 vi.mock("@/api/reviewsApi", () => ({
   getReviewResponses: vi.fn(),
+  createRuleReview: vi.fn(),
+  createComponentReview: vi.fn(),
+  triageReview: vi.fn(),
+  bulkTriageReviews: vi.fn(),
 }));
 
 describe("useCommentThread", () => {
   beforeEach(() => {
+    setActivePinia(createPinia());
     vi.clearAllMocks();
   });
 

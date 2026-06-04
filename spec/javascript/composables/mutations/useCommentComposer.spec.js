@@ -43,31 +43,31 @@ describe("useCommentComposer", () => {
   });
 
   describe("postComment", () => {
-    it("calls createRuleReview and invalidates store cache", async () => {
-      const response = { data: { toast: { title: "Posted" } } };
-      createRuleReview.mockResolvedValue(response);
+    it("delegates to store.postComment (not direct API call)", async () => {
+      const storeResult = { toast: { title: "Posted" } };
+      createRuleReview.mockResolvedValue({ data: storeResult });
 
       const composer = useCommentComposer();
       const store = useCommentsStore();
-      vi.spyOn(store, "invalidateCache");
+      vi.spyOn(store, "postComment").mockResolvedValue(storeResult);
 
       const result = await composer.postComment(38, 100, {
         action: "comment",
         comment: "test",
       });
 
-      expect(createRuleReview).toHaveBeenCalledWith(100, {
+      expect(store.postComment).toHaveBeenCalledWith(38, 100, {
         action: "comment",
         comment: "test",
       });
-      expect(store.invalidateCache).toHaveBeenCalledWith(38);
-      expect(result).toEqual(response.data);
+      expect(result).toEqual(storeResult);
       expect(composer.submitting.value).toBe(false);
     });
 
     it("sets submitting=true during request", async () => {
       let resolvePromise;
-      createRuleReview.mockReturnValue(
+      const store = useCommentsStore();
+      vi.spyOn(store, "postComment").mockReturnValue(
         new Promise((r) => {
           resolvePromise = r;
         }),
@@ -78,52 +78,48 @@ describe("useCommentComposer", () => {
 
       expect(composer.submitting.value).toBe(true);
 
-      resolvePromise({ data: {} });
+      resolvePromise({});
       await promise;
       expect(composer.submitting.value).toBe(false);
     });
 
-    it("sets submitError on failure and does NOT invalidate cache", async () => {
-      createRuleReview.mockRejectedValue(new Error("422"));
+    it("sets submitError on failure", async () => {
+      const store = useCommentsStore();
+      vi.spyOn(store, "postComment").mockRejectedValue(new Error("422"));
 
       const composer = useCommentComposer();
-      const store = useCommentsStore();
-      vi.spyOn(store, "invalidateCache");
 
       await expect(
         composer.postComment(38, 100, { comment: "x" }),
       ).rejects.toThrow("422");
 
-      expect(composer.submitError.value).toBeTruthy();
-      expect(store.invalidateCache).not.toHaveBeenCalled();
+      expect(composer.submitError.value).toBeInstanceOf(Error);
     });
   });
 
   describe("postComponentComment", () => {
-    it("calls createComponentReview and invalidates cache", async () => {
-      createComponentReview.mockResolvedValue({ data: { toast: {} } });
+    it("delegates to store.postComponentComment", async () => {
+      const store = useCommentsStore();
+      vi.spyOn(store, "postComponentComment").mockResolvedValue({ toast: {} });
 
       const composer = useCommentComposer();
-      const store = useCommentsStore();
-      vi.spyOn(store, "invalidateCache");
-
       await composer.postComponentComment(38, { comment: "overall" });
 
-      expect(createComponentReview).toHaveBeenCalledWith(38, {
+      expect(store.postComponentComment).toHaveBeenCalledWith(38, {
         comment: "overall",
       });
-      expect(store.invalidateCache).toHaveBeenCalledWith(38);
     });
   });
 
   describe("postReply", () => {
-    it("calls createRuleReview with responding_to_review_id", async () => {
-      createRuleReview.mockResolvedValue({ data: {} });
+    it("delegates to store.postComment with responding_to_review_id", async () => {
+      const store = useCommentsStore();
+      vi.spyOn(store, "postComment").mockResolvedValue({});
 
       const composer = useCommentComposer();
       await composer.postReply(38, 100, 42, "reply text");
 
-      expect(createRuleReview).toHaveBeenCalledWith(100, {
+      expect(store.postComment).toHaveBeenCalledWith(38, 100, {
         action: "comment",
         comment: "reply text",
         responding_to_review_id: 42,

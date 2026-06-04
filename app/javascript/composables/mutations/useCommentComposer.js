@@ -1,5 +1,4 @@
 import { ref } from "vue";
-import { createRuleReview, createComponentReview } from "../../api/reviewsApi";
 import { useCommentsStore } from "../../stores/comments";
 
 export function useCommentComposer() {
@@ -10,9 +9,7 @@ export function useCommentComposer() {
     submitting.value = true;
     submitError.value = null;
     try {
-      const { data: result } = await createRuleReview(ruleId, data);
-      useCommentsStore().invalidateCache(componentId);
-      return result;
+      return await useCommentsStore().postComment(componentId, ruleId, data);
     } catch (err) {
       submitError.value = err;
       throw err;
@@ -25,9 +22,7 @@ export function useCommentComposer() {
     submitting.value = true;
     submitError.value = null;
     try {
-      const { data: result } = await createComponentReview(componentId, data);
-      useCommentsStore().invalidateCache(componentId);
-      return result;
+      return await useCommentsStore().postComponentComment(componentId, data);
     } catch (err) {
       submitError.value = err;
       throw err;

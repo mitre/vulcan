@@ -34,14 +34,12 @@
       <div v-else-if="replies.length === 0" class="text-muted small ml-3">No replies yet.</div>
       <b-media v-for="reply in replies" v-else :key="reply.id" class="mt-2 comment-thread__reply">
         <template #aside>
-          <UserBadge :name="reply.commenter_display_name" :email="reply.commenter_email" />
+          <UserBadge :name="reply.authorName" :email="reply.authorEmail" />
         </template>
         <p class="mb-0 d-flex flex-wrap align-items-center">
-          <strong>{{ reply.commenter_display_name || "—" }}</strong>
-          <b-badge v-if="reply.commenter_imported" variant="warning" class="ml-1">
-            imported
-          </b-badge>
-          <small class="text-muted ml-2">{{ friendlyDateTime(reply.created_at) }}</small>
+          <strong>{{ reply.authorName || "—" }}</strong>
+          <b-badge v-if="reply.isImported" variant="warning" class="ml-1"> imported </b-badge>
+          <small class="text-muted ml-2">{{ friendlyDateTime(reply.createdAt) }}</small>
           <b-button
             v-if="canReply"
             size="sm"
@@ -53,7 +51,7 @@
             <b-icon icon="reply" /> Reply
           </b-button>
         </p>
-        <p class="mb-1 white-space-pre-wrap">{{ reply.comment }}</p>
+        <p class="mb-1 white-space-pre-wrap">{{ reply.text }}</p>
         <ReactionButtons
           v-if="reply.reactions"
           :review-id="reply.id"
@@ -126,8 +124,7 @@ export default {
     // expanded, refetch immediately so the visible thread updates.
     responsesCount(newVal, oldVal) {
       if (newVal === oldVal) return;
-      this.loaded = false;
-      if (this.expanded) this.fetch();
+      this.refresh();
     },
   },
   mounted() {

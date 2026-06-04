@@ -85,7 +85,7 @@ describe("useCommentsStore", () => {
   });
 
   describe("fetchComments", () => {
-    it("calls getComments API and stores normalized result in cache", async () => {
+    it("calls getComments API and stores normalized camelCase rows in cache", async () => {
       getComments.mockResolvedValue(mockCommentsResponse);
       const store = useCommentsStore();
 
@@ -93,7 +93,20 @@ describe("useCommentsStore", () => {
 
       expect(getComments).toHaveBeenCalledWith(38, { triage_status: "all" });
       expect(result.rows).toHaveLength(1);
-      expect(result.rows[0].id).toBe(142);
+
+      const row = result.rows[0];
+      expect(row.id).toBe(142);
+      expect(row.authorName).toBe("John Doe");
+      expect(row.authorEmail).toBe("john@example.com");
+      expect(row.text).toBe("Check text is vague");
+      expect(row.section).toBe("check_content");
+      expect(row.triageStatus).toBe("pending");
+      expect(row.responsesCount).toBe(2);
+      expect(row.isImported).toBe(false);
+
+      expect(row.author_name).toBeUndefined();
+      expect(row.triage_status).toBeUndefined();
+
       expect(store.loading).toBe(false);
       expect(store.error).toBeNull();
     });

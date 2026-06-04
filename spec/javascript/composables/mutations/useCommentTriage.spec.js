@@ -42,57 +42,51 @@ describe("useCommentTriage", () => {
   });
 
   describe("triage", () => {
-    it("calls triageReview and invalidates store cache", async () => {
-      const response = {
-        data: { review: { id: 142, triage_status: "concur" } },
-      };
-      triageReview.mockResolvedValue(response);
+    it("delegates to store.triageComment (not direct API call)", async () => {
+      const storeResult = { review: { id: 142, triage_status: "concur" } };
+      const store = useCommentsStore();
+      vi.spyOn(store, "triageComment").mockResolvedValue(storeResult);
 
       const triage = useCommentTriage();
-      const store = useCommentsStore();
-      vi.spyOn(store, "invalidateCache");
-
       const result = await triage.triage(142, { triage_status: "concur" }, 38);
 
-      expect(triageReview).toHaveBeenCalledWith(142, {
-        triage_status: "concur",
-      });
-      expect(store.invalidateCache).toHaveBeenCalledWith(38);
-      expect(result).toEqual(response.data);
+      expect(store.triageComment).toHaveBeenCalledWith(
+        142,
+        { triage_status: "concur" },
+        38,
+      );
+      expect(triageReview).not.toHaveBeenCalled();
+      expect(result).toEqual(storeResult);
     });
 
-    it("does not invalidate cache on failure", async () => {
-      triageReview.mockRejectedValue(new Error("409"));
+    it("sets submitError on failure", async () => {
+      const store = useCommentsStore();
+      vi.spyOn(store, "triageComment").mockRejectedValue(new Error("409"));
 
       const triage = useCommentTriage();
-      const store = useCommentsStore();
-      vi.spyOn(store, "invalidateCache");
 
       await expect(
         triage.triage(142, { triage_status: "concur" }, 38),
       ).rejects.toThrow("409");
 
-      expect(store.invalidateCache).not.toHaveBeenCalled();
-      expect(triage.submitError.value).toBeTruthy();
+      expect(triage.submitError.value).toBeInstanceOf(Error);
     });
   });
 
   describe("bulkTriage", () => {
-    it("calls bulkTriageReviews and invalidates cache", async () => {
-      bulkTriageReviews.mockResolvedValue({
-        data: { toast: { title: "Triaged 3" } },
-      });
+    it("delegates to store.bulkTriage (not direct API call)", async () => {
+      const store = useCommentsStore();
+      vi.spyOn(store, "bulkTriage").mockResolvedValue({ toast: {} });
 
       const triage = useCommentTriage();
-      const store = useCommentsStore();
-      vi.spyOn(store, "invalidateCache");
-
       await triage.bulkTriage([1, 2, 3], { triage_status: "concur" }, 38);
 
-      expect(bulkTriageReviews).toHaveBeenCalledWith([1, 2, 3], {
-        triage_status: "concur",
-      });
-      expect(store.invalidateCache).toHaveBeenCalledWith(38);
+      expect(store.bulkTriage).toHaveBeenCalledWith(
+        [1, 2, 3],
+        { triage_status: "concur" },
+        38,
+      );
+      expect(bulkTriageReviews).not.toHaveBeenCalled();
     });
   });
 });

@@ -30,10 +30,6 @@ export default {
       }
       return params;
     },
-    normalizedRows() {
-      const store = useCommentsStore();
-      return this.rows.map((row) => store.normalizeComment(row));
-    },
   },
   watch: {
     filterStatus: "fetch",
@@ -79,19 +75,18 @@ export default {
       return h("div", [this.$scopedSlots.error({ error: this.error })]);
     }
 
-    if (!this.loading && this.normalizedRows.length === 0 && this.$scopedSlots.empty) {
+    if (!this.loading && this.rows.length === 0 && this.$scopedSlots.empty) {
       return h("div", [this.$scopedSlots.empty({})]);
     }
 
     const itemSlot = this.$scopedSlots.item;
     if (!itemSlot) return h("div");
 
-    const items = this.normalizedRows.map((comment, index) =>
+    const items = this.rows.map((comment, index) =>
       itemSlot({
         comment,
         index,
         dimmed: this.isDimmed(comment),
-        raw: this.rows[index],
       }),
     );
 

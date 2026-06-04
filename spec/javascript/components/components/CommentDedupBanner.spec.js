@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
+import { setActivePinia, createPinia } from "pinia";
 import { localVue } from "@test/testHelper";
 import CommentDedupBanner from "@/components/components/CommentDedupBanner.vue";
 import { getComments } from "@/api/componentsApi";
@@ -68,6 +69,7 @@ const sampleRows = [
  */
 describe("CommentDedupBanner", () => {
   beforeEach(() => {
+    setActivePinia(createPinia());
     vi.clearAllMocks();
   });
 
