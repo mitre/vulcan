@@ -1,29 +1,5 @@
-.disa-guide-page
-  .disa-guide-layout
-    %aside.disa-guide-sidebar
-      .disa-guide-sidebar__header
-        %h5.mb-0 DISA Process Guide
-      %nav.disa-guide-nav{"aria-label" => "DISA Process Guide"}
-        - @page_sections.each do |section|
-          .disa-guide-nav__section
-            %small.disa-guide-nav__label= section[:label]
-            - section[:pages].each do |slug, title|
-              = link_to disa_guide_path(page: slug), class: "disa-guide-nav__link #{'active' if slug == @current_page}" do
-                = title
+- content_for :assets do
+  = javascript_include_tag 'disa_guide'
 
-    %main.disa-guide-main
-      .disa-guide-main__header
-        %h5.mb-0= @page_title
-        %button.btn.btn-sm.btn-outline-secondary.ml-auto#disa-theme-toggle{"aria-label" => "Toggle dark mode"}
-          %i.bi
-      .disa-guide-content
-        = @html_content.html_safe
-
-    - if @toc.present?
-      %aside.disa-guide-toc-panel
-        .disa-guide-toc-panel__header
-          %small.font-weight-bold On this page
-        %nav.disa-guide-toc{"aria-label" => "On this page"}
-          - @toc.each do |entry|
-            %a.disa-guide-toc__link{href: "##{entry[:id]}", class: "toc-level-#{entry[:level]}", "data-turbolinks" => "false"}
-              = entry[:text]
+#disa-guide
+  %disa-guide-page{ ':html-content' => @html_content.to_json, ':page-title' => @page_title.to_json, ':current-page' => @current_page.to_json, ':page-sections' => @page_sections.to_json, ':toc' => @toc.to_json }

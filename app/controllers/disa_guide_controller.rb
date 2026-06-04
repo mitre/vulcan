@@ -77,7 +77,7 @@ class DisaGuideController < ApplicationController
       return
     end
 
-    send_file file_path, disposition: :attachment
+    send_file file_path, disposition: :attachment, filename: filename
   end
 
   CALLOUT_VARIANTS = {
