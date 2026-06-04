@@ -1,9 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
-import { localVue } from "@test/testHelper";
+import { setActivePinia, createPinia } from "pinia";
+import { localVue, flushPromises } from "@test/testHelper";
 import CommentTriageModal from "@/components/components/CommentTriageModal.vue";
-import { submitTriage, submitAdjudicate, submitAdminAction } from "@/services/triageService";
-import { updateReviewSection } from "@/api/reviewsApi";
+import {
+  updateReviewSection,
+  triageReview,
+  adjudicateReview,
+  adminDestroyReview,
+  moveReviewToRule,
+  adminWithdrawReview,
+  adminRestoreReview,
+} from "@/api/reviewsApi";
 
 vi.mock("@/api/baseApi", () => ({
   default: {
@@ -16,40 +24,21 @@ vi.mock("@/api/baseApi", () => ({
   },
 }));
 
-vi.mock("@/services/triageService", () => ({
-  submitTriage: vi.fn(() => Promise.resolve({ data: {} })),
-  submitAdjudicate: vi.fn(() => Promise.resolve({ data: {} })),
-  submitAdminAction: vi.fn(() => Promise.resolve({ data: {} })),
-}));
-
 vi.mock("@/api/reviewsApi", () => ({
   updateReviewSection: vi.fn(() => Promise.resolve({ data: {} })),
+  triageReview: vi.fn(() => Promise.resolve({ data: {} })),
+  adjudicateReview: vi.fn(() => Promise.resolve({ data: {} })),
+  adminDestroyReview: vi.fn(() => Promise.resolve({ data: {} })),
+  moveReviewToRule: vi.fn(() => Promise.resolve({ data: {} })),
+  adminWithdrawReview: vi.fn(() => Promise.resolve({ data: {} })),
+  adminRestoreReview: vi.fn(() => Promise.resolve({ data: {} })),
 }));
 
-const flushPromises = async (wrapper) => {
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  if (wrapper) await wrapper.vm.$nextTick();
-};
+vi.mock("@/api/componentsApi", () => ({
+  getComments: vi.fn(() => Promise.resolve({ data: { rows: [], pagination: { total: 0 } } })),
+}));
 
-// b-modal in BootstrapVue renders to a portal and stays empty until shown,
-// so for body-content assertions we stub it with a div that always renders
-// its default + modal-footer slots. Same pattern as ConfirmDeleteModal.spec.js.
-// `centered` is exposed so we can assert vertical-centering at the template
-// level (Aaron 2026-04-29 — visual parity with CommentComposerModal).
-const visibleModalStub = {
-  "b-modal": {
-    template: `
-      <div class="modal" :data-centered="String(centered)">
-        <div class="modal-body"><slot></slot></div>
-        <div class="modal-footer"><slot name="modal-footer" :cancel="() => {}"></slot></div>
-      </div>
-    `,
-    props: {
-      title: String,
-      centered: { type: Boolean, default: false },
-    },
-  },
-};
+import { visibleModalStub } from "@test/support/visibleModalStub";
 
 const sampleReview = {
   id: 142,
@@ -66,6 +55,7 @@ const sampleReview = {
 
 describe("CommentTriageModal", () => {
   beforeEach(() => {
+    setActivePinia(createPinia());
     vi.clearAllMocks();
   });
 
@@ -121,8 +111,8 @@ describe("CommentTriageModal", () => {
     expect(form.vm.canSave).toBe(true);
   });
 
-  it("calls submitTriage when form emits save", async () => {
-    submitTriage.mockResolvedValue({
+  it("calls triageReview when form emits save", async () => {
+    triageReview.mockResolvedValue({
       data: { review: { ...sampleReview, triage_status: "concur" } },
     });
     const w = mount(CommentTriageModal, {
@@ -134,7 +124,7 @@ describe("CommentTriageModal", () => {
     await w.vm.doTriage({ triage_status: "concur", response_comment: "thanks" }, false);
     await flushPromises(w);
 
-    expect(submitTriage).toHaveBeenCalledWith(
+    expect(triageReview).toHaveBeenCalledWith(
       142,
       expect.objectContaining({ triage_status: "concur", response_comment: "thanks" }),
     );
@@ -142,10 +132,10 @@ describe("CommentTriageModal", () => {
   });
 
   it("'Save & next' fires triage AND adjudicate for non-terminal statuses", async () => {
-    submitTriage.mockResolvedValue({
+    triageReview.mockResolvedValue({
       data: { review: { ...sampleReview, triage_status: "concur" } },
     });
-    submitAdjudicate.mockResolvedValue({
+    adjudicateReview.mockResolvedValue({
       data: {
         review: { ...sampleReview, triage_status: "concur", adjudicated_at: "2026-04-29T12:00Z" },
       },
@@ -159,8 +149,8 @@ describe("CommentTriageModal", () => {
     await w.vm.doTriage({ triage_status: "concur", response_comment: "done" }, true);
     await flushPromises(w);
 
-    expect(submitTriage).toHaveBeenCalledWith(142, expect.objectContaining({ triage_status: "concur" }));
-    expect(submitAdjudicate).toHaveBeenCalledWith(142);
+    expect(triageReview).toHaveBeenCalledWith(142, expect.objectContaining({ triage_status: "concur" }));
+    expect(adjudicateReview).toHaveBeenCalledWith(142);
     expect(w.emitted("adjudicated")).toBeTruthy();
   });
 
@@ -194,7 +184,7 @@ describe("CommentTriageModal", () => {
   });
 
   it("skips the redundant adjudicate call for auto-adjudicating statuses", async () => {
-    submitTriage.mockResolvedValue({
+    triageReview.mockResolvedValue({
       data: { review: { ...sampleReview, triage_status: "informational" } },
     });
     const w = mount(CommentTriageModal, {
@@ -206,13 +196,13 @@ describe("CommentTriageModal", () => {
     await w.vm.doTriage({ triage_status: "informational" }, true);
     await flushPromises(w);
 
-    expect(submitTriage).toHaveBeenCalledTimes(1);
-    expect(submitAdjudicate).not.toHaveBeenCalled();
+    expect(triageReview).toHaveBeenCalledTimes(1);
+    expect(adjudicateReview).not.toHaveBeenCalled();
     expect(w.emitted("adjudicated")).toBeFalsy();
   });
 
   it("surfaces server errors via AlertMixin without crashing", async () => {
-    submitTriage.mockRejectedValueOnce({ response: { status: 422, data: {} } });
+    triageReview.mockRejectedValueOnce({ response: { status: 422, data: {} } });
     const w = mount(CommentTriageModal, {
       localVue,
       propsData: { review: sampleReview },
@@ -267,8 +257,8 @@ describe("CommentTriageModal", () => {
       expect(w.html()).toContain("Admin actions");
     });
 
-    it("calls submitAdminAction for force-withdraw", async () => {
-      submitAdminAction.mockResolvedValue({
+    it("calls adminWithdrawReview API for force-withdraw", async () => {
+      adminWithdrawReview.mockResolvedValue({
         data: { review: { ...sampleReview, triage_status: "withdrawn" } },
       });
       const w = mount(CommentTriageModal, {
@@ -282,13 +272,11 @@ describe("CommentTriageModal", () => {
       await w.vm.doSubmitAdminAction();
       await flushPromises(w);
 
-      expect(submitAdminAction).toHaveBeenCalledWith(
-        142, "force-withdraw", { audit_comment: "spam content removed" },
-      );
+      expect(adminWithdrawReview).toHaveBeenCalledWith(142, "spam content removed");
     });
 
-    it("calls submitAdminAction for restore", async () => {
-      submitAdminAction.mockResolvedValue({
+    it("calls adminRestoreReview API for restore", async () => {
+      adminRestoreReview.mockResolvedValue({
         data: { review: { ...adjudicatedReview, triage_status: "pending", adjudicated_at: null } },
       });
       const w = mount(CommentTriageModal, {
@@ -302,9 +290,7 @@ describe("CommentTriageModal", () => {
       await w.vm.doSubmitAdminAction();
       await flushPromises(w);
 
-      expect(submitAdminAction).toHaveBeenCalledWith(
-        142, "restore", { audit_comment: "withdrew the wrong one" },
-      );
+      expect(adminRestoreReview).toHaveBeenCalledWith(142, "withdrew the wrong one");
     });
 
     it("canSubmitAdminAction is false until the audit comment is non-blank", () => {
@@ -366,8 +352,8 @@ describe("CommentTriageModal", () => {
       expect(w.vm.canSubmitAdminAction).toBe(true);
     });
 
-    it("calls submitAdminAction for hard-delete", async () => {
-      submitAdminAction.mockResolvedValue({ data: { ok: true } });
+    it("calls adminDestroyReview for hard-delete", async () => {
+      adminDestroyReview.mockResolvedValue({ data: { ok: true } });
       const w = mount(CommentTriageModal, {
         localVue,
         propsData: { review: sampleReview, effectivePermissions: "admin" },
@@ -380,13 +366,11 @@ describe("CommentTriageModal", () => {
       await w.vm.doSubmitAdminAction();
       await flushPromises(w);
 
-      expect(submitAdminAction).toHaveBeenCalledWith(
-        142, "hard-delete", { audit_comment: "PII removed per legal" },
-      );
+      expect(adminDestroyReview).toHaveBeenCalledWith(142, "PII removed per legal");
     });
 
     it("emits a 'destroyed' event after a successful hard-delete (parent table can remove the row)", async () => {
-      submitAdminAction.mockResolvedValue({ data: { ok: true } });
+      adminDestroyReview.mockResolvedValue({ data: { ok: true } });
       const w = mount(CommentTriageModal, {
         localVue,
         propsData: { review: sampleReview, effectivePermissions: "admin" },
@@ -434,8 +418,8 @@ describe("CommentTriageModal", () => {
       expect(w.vm.canSubmitAdminAction).toBe(true);
     });
 
-    it("calls submitAdminAction for move-to-rule", async () => {
-      submitAdminAction.mockResolvedValue({
+    it("calls moveReviewToRule API for move-to-rule", async () => {
+      moveReviewToRule.mockResolvedValue({
         data: { review: { ...sampleReview, rule_id: 99 } },
       });
       const w = mount(CommentTriageModal, {
@@ -450,9 +434,7 @@ describe("CommentTriageModal", () => {
       await w.vm.doSubmitAdminAction();
       await flushPromises(w);
 
-      expect(submitAdminAction).toHaveBeenCalledWith(
-        142, "move-to-rule", { audit_comment: "belongs on rule 99", rule_id: 99 },
-      );
+      expect(moveReviewToRule).toHaveBeenCalledWith(142, 99, "belongs on rule 99");
     });
   });
 

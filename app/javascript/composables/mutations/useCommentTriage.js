@@ -1,35 +1,18 @@
 import { ref } from "vue";
 import { useCommentsStore } from "../../stores/comments";
+import { withSubmitting } from "./withSubmitting";
 
 export function useCommentTriage() {
   const submitting = ref(false);
   const submitError = ref(null);
 
-  async function triage(reviewId, payload, componentId) {
-    submitting.value = true;
-    submitError.value = null;
-    try {
-      return await useCommentsStore().triageComment(componentId, reviewId, payload);
-    } catch (err) {
-      submitError.value = err;
-      throw err;
-    } finally {
-      submitting.value = false;
-    }
-  }
+  const triage = withSubmitting(submitting, submitError, (reviewId, payload, componentId) =>
+    useCommentsStore().triageComment(componentId, reviewId, payload),
+  );
 
-  async function bulkTriage(reviewIds, payload, componentId) {
-    submitting.value = true;
-    submitError.value = null;
-    try {
-      return await useCommentsStore().bulkTriage(componentId, reviewIds, payload);
-    } catch (err) {
-      submitError.value = err;
-      throw err;
-    } finally {
-      submitting.value = false;
-    }
-  }
+  const bulkTriage = withSubmitting(submitting, submitError, (reviewIds, payload, componentId) =>
+    useCommentsStore().bulkTriage(componentId, reviewIds, payload),
+  );
 
   return { triage, bulkTriage, submitting, submitError };
 }

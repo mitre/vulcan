@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
+import { setActivePinia, createPinia } from "pinia";
+import { flushPromises } from "@test/testHelper";
 import ComponentComments from "@/components/components/ComponentComments.vue";
 import { getComments } from "@/api/componentsApi";
 import { getProjectComments } from "@/api/projectsApi";
-import { reopenReview } from "@/api/reviewsApi";
-import { submitBulkTriage } from "@/services/triageService";
+import { reopenReview, bulkTriageReviews } from "@/api/reviewsApi";
 
 vi.mock("@/api/baseApi", () => ({
   default: {
@@ -29,21 +30,14 @@ vi.mock("@/api/projectsApi", () => ({
 
 vi.mock("@/api/reviewsApi", () => ({
   reopenReview: vi.fn(() => Promise.resolve({ data: { review: { id: 99 } } })),
-}));
-
-vi.mock("@/services/triageService", () => ({
-  submitBulkTriage: vi.fn(() => Promise.resolve({ data: {} })),
+  bulkTriageReviews: vi.fn(() => Promise.resolve({ data: {} })),
+  mergeReviews: vi.fn(() => Promise.resolve({ data: {} })),
 }));
 
 // Flush both microtasks (axios .then chain) and the next Vue tick so the
 // reactive state from a resolved fetch settles before assertions run.
 // @vue/test-utils for Vue 2 doesn't export flushPromises, so this is the
 // project-portable equivalent.
-const flushPromises = async (wrapper) => {
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  if (wrapper) await wrapper.vm.$nextTick();
-};
-
 const SHARED_STUBS = [
   "b-table",
   "b-pagination",
@@ -73,6 +67,7 @@ const mockResponse = {
         triage_set_at: null,
         adjudicated_at: null,
         duplicate_of_review_id: null,
+        reactions: { up: 0, down: 0, mine: null },
       },
       {
         id: 141,
@@ -85,6 +80,7 @@ const mockResponse = {
         triage_status: "concur_with_comment",
         triage_set_at: "2026-04-27T11:00:00Z",
         adjudicated_at: null,
+        reactions: { up: 0, down: 0, mine: null },
       },
     ],
     pagination: { page: 1, per_page: 25, total: 2 },
@@ -94,6 +90,7 @@ const mockResponse = {
 
 describe("ComponentComments", () => {
   beforeEach(() => {
+    setActivePinia(createPinia());
     getComments.mockResolvedValue(mockResponse);
   });
 
@@ -333,7 +330,7 @@ describe("ComponentComments", () => {
       await flushPromises();
 
       expect(reopenReview).toHaveBeenCalledWith(99);
-      expect(getComments.mock.calls.length).toBeGreaterThan(initialFetchCount);
+      expect(getComments.mock.calls.length).toBe(initialFetchCount + 1);
     });
 
     it("surfaces server errors via alertOrNotifyResponse but still re-fetches", async () => {
@@ -351,7 +348,7 @@ describe("ComponentComments", () => {
 
       expect(alertSpy).toHaveBeenCalled();
       // Even on failure we re-fetch to make sure the UI matches server state.
-      expect(getComments.mock.calls.length).toBeGreaterThan(initialFetchCount);
+      expect(getComments.mock.calls.length).toBe(initialFetchCount + 1);
       alertSpy.mockRestore();
     });
   });
@@ -432,6 +429,18 @@ describe("ComponentComments", () => {
       expect(refreshed.triager_display_name).toBe("Triager Tee");
     });
 
+    it("normalizes payload in updateRowInPlace — camelCase aliases match fresh values", async () => {
+      const wrapper = mountWithRow();
+      await flushPromises();
+
+      await wrapper.vm.onTriaged(triagedPayload);
+      await flushPromises();
+
+      const refreshed = wrapper.vm.rows.find((r) => r.id === 142);
+      expect(refreshed.triageStatus).toBe("concur");
+      expect(refreshed.triageStatus).toBe(refreshed.triage_status);
+    });
+
     it("preserves rule_displayed_name (computed in paginated_comments, not in blueprint)", async () => {
       const wrapper = mountWithRow();
       await flushPromises();
@@ -470,7 +479,7 @@ describe("ComponentComments", () => {
       await wrapper.vm.onTriaged(undefined);
       await flushPromises();
 
-      expect(getComments.mock.calls.length).toBeGreaterThan(fetchesAfterMount);
+      expect(getComments.mock.calls.length).toBe(fetchesAfterMount + 1);
     });
   });
 
@@ -489,7 +498,7 @@ describe("ComponentComments", () => {
       await wrapper.vm.fetch();
       await flushPromises();
 
-      expect(getComments.mock.calls.length).toBeGreaterThan(initialFetchCount);
+      expect(getComments.mock.calls.length).toBe(initialFetchCount + 1);
     });
   });
 
@@ -1079,8 +1088,8 @@ describe("ComponentComments", () => {
       });
 
     beforeEach(() => {
-      submitBulkTriage.mockClear();
-      submitBulkTriage.mockResolvedValue({ data: {} });
+      bulkTriageReviews.mockClear();
+      bulkTriageReviews.mockResolvedValue({ data: {} });
     });
 
     it("select-all toggles only non-adjudicated visible rows", async () => {
@@ -1114,7 +1123,7 @@ describe("ComponentComments", () => {
 
       await wrapper.vm.applyBulkTriage({ triage_status: "informational", response_comment: null });
 
-      expect(submitBulkTriage).toHaveBeenCalledWith([4, 5], {
+      expect(bulkTriageReviews).toHaveBeenCalledWith([4, 5], {
         triage_status: "informational",
         response_comment: null,
       });

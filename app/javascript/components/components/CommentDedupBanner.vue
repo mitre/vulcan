@@ -23,7 +23,7 @@
         :class="{ 'dedup-dimmed': isDimmed(row) }"
       >
         <CommentItem
-          :comment="storeNormalize(row)"
+          :comment="row"
           @toggle-reaction="(kind) => toggleReaction(row, kind)"
           @reply="$emit('reply', $event)"
         />
@@ -33,17 +33,14 @@
 </template>
 
 <script>
-import { getComments } from "../../api/componentsApi";
 import { sectionLabel } from "../../constants/triageVocabulary";
 import CommentItem from "../shared/CommentItem.vue";
 import { useCommentReactions } from "../../composables/useCommentReactions";
 import { useCommentsStore } from "../../stores/comments";
-import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
 
 export default {
   name: "CommentDedupBanner",
   components: { CommentItem },
-  mixins: [DateFormatMixin],
   props: {
     componentId: { type: [Number, String], required: true },
     ruleId: { type: [Number, String], default: null },
@@ -53,7 +50,7 @@ export default {
   setup() {
     const { toggle: toggleReactionApi } = useCommentReactions();
     const store = useCommentsStore();
-    return { toggleReactionApi, storeNormalize: store.normalizeComment };
+    return { toggleReactionApi, store };
   },
   data() {
     return { rows: [], total: 0, totalComments: 0, expanded: false };
@@ -91,9 +88,6 @@ export default {
     },
     async fetch() {
       try {
-        // Fetch all comments at the current scope (rule-level or
-        // component-level) so the commenter sees prior conversation across
-        // sections. Section-scoped count is computed client-side via inSection.
         const params = { triage_status: "all" };
         if (this.componentScoped) {
           params.commentable_type = "component";
@@ -105,10 +99,10 @@ export default {
           this.totalComments = 0;
           return;
         }
-        const { data } = await getComments(this.componentId, params);
-        this.rows = data.rows.slice(0, 5);
-        this.total = data.pagination.total;
-        this.totalComments = data.pagination.total_comments ?? data.pagination.total;
+        const result = await this.store.fetchComments(this.componentId, params);
+        this.rows = (result.rows ?? []).slice(0, 5);
+        this.total = result.pagination?.total ?? 0;
+        this.totalComments = result.pagination?.total_comments ?? result.pagination?.total ?? 0;
       } catch {
         this.rows = [];
         this.total = 0;

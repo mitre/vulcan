@@ -128,9 +128,9 @@
 </template>
 
 <script>
-import { getUserComments } from "../../api/usersApi";
+import { useCommentsStore } from "../../stores/comments";
 import { buildStatusFilterOptions } from "../../constants/triageVocabulary";
-import { triageBgClass } from "../../utils/triageBgClass";
+import { ruleHref as buildRuleHref, rowTriageClass } from "../../utils/commentTableHelpers";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
@@ -152,6 +152,10 @@ export default {
   mixins: [AlertMixin, DateFormatMixin, ReplyComposerMixin],
   props: {
     userId: { type: [Number, String], required: true },
+  },
+  setup() {
+    const commentsStore = useCommentsStore();
+    return { commentsStore };
   },
   data() {
     return {
@@ -185,14 +189,9 @@ export default {
     this.fetch();
   },
   methods: {
-    rowTriageClass(item) {
-      return triageBgClass(item?.triage_status);
-    },
-    // Deep link to the rule editor with the rule selected. Encode the
-    // rule name segment so unusual characters can't break out of the
-    // path (mirrors ComponentComments#ruleHref).
+    rowTriageClass,
     ruleHref(row) {
-      return `/components/${row.component_id}/${encodeURIComponent(row.rule_displayed_name)}`;
+      return buildRuleHref(row);
     },
     onFilterChanged() {
       this.page = 1;
@@ -216,11 +215,9 @@ export default {
         if (this.filterStatus && this.filterStatus !== "all") {
           params.triage_status = this.filterStatus;
         }
-        // baseApi sets Accept: application/json by default, so Rails serves
-        // JSON without an explicit header override.
-        const { data } = await getUserComments(this.userId, params);
-        this.rows = data.rows;
-        this.total = data.pagination.total;
+        const result = await this.commentsStore.fetchUserComments(this.userId, params);
+        this.rows = result.rows;
+        this.total = result.pagination.total;
       } catch (error) {
         this.alertOrNotifyResponse(error);
       } finally {

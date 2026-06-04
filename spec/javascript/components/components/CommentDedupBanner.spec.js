@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { setActivePinia, createPinia } from "pinia";
-import { localVue } from "@test/testHelper";
+import { localVue, flushPromises } from "@test/testHelper";
 import CommentDedupBanner from "@/components/components/CommentDedupBanner.vue";
+import { useCommentsStore } from "@/stores/comments";
 import { getComments } from "@/api/componentsApi";
 
 vi.mock("@/api/baseApi", () => ({
@@ -20,11 +21,6 @@ vi.mock("@/api/componentsApi", () => ({
   getComments: vi.fn(() => Promise.resolve({ data: { rows: [], pagination: { total: 0 } } })),
 }));
 
-const flushPromises = async (wrapper) => {
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  if (wrapper) await wrapper.vm.$nextTick();
-};
-
 const baseProps = { componentId: 8, ruleId: 2976 };
 
 const sampleRows = [
@@ -34,6 +30,7 @@ const sampleRows = [
     section: "check_content",
     comment: "Check text issue",
     created_at: "2026-04-27T10:00:00Z",
+    reactions: { up: 0, down: 0, mine: null },
   },
   {
     id: 2,
@@ -41,6 +38,7 @@ const sampleRows = [
     section: "fixtext",
     comment: "Fix mention is wrong",
     created_at: "2026-04-26T10:00:00Z",
+    reactions: { up: 0, down: 0, mine: null },
   },
   {
     id: 3,
@@ -48,6 +46,7 @@ const sampleRows = [
     section: null,
     comment: "General concern",
     created_at: "2026-04-25T10:00:00Z",
+    reactions: { up: 0, down: 0, mine: null },
   },
 ];
 
@@ -196,6 +195,18 @@ describe("CommentDedupBanner", () => {
     });
   });
 
+  it("handles missing pagination gracefully (no TypeError)", async () => {
+    getComments.mockResolvedValue({ data: { rows: [], pagination: undefined } });
+    const w = mount(CommentDedupBanner, {
+      localVue,
+      propsData: { ...baseProps, section: null },
+    });
+    await flushPromises(w);
+    expect(w.vm.totalComments).toBe(0);
+    expect(w.vm.total).toBe(0);
+    expect(w.vm.rows).toEqual([]);
+  });
+
   it("recomputes inSection when section prop changes (no refetch)", async () => {
     const w = await mountWith("check_content");
     expect(w.vm.inSection).toBe(1); // 1 row in check_content
@@ -205,7 +216,25 @@ describe("CommentDedupBanner", () => {
     expect(w.vm.inSection).toBe(0); // null section never matches
   });
 
-  // ── v2-05f.62.5: CommentItem migration ──────────────────────────────
+  it("fetches via store.fetchComments, not direct getComments API", async () => {
+    getComments.mockResolvedValue({ data: { rows: sampleRows, pagination: { total: 3 } } });
+    const w = mount(CommentDedupBanner, {
+      localVue,
+      propsData: { ...baseProps, section: null },
+    });
+    await flushPromises(w);
+    const store = useCommentsStore();
+    expect(Object.keys(store.cache).length).toBeGreaterThan(0);
+  });
+
+  it("passes pre-normalized rows to CommentItem (camelCase shape)", async () => {
+    const w = await mountWith("check_content");
+    w.vm.expanded = true;
+    await w.vm.$nextTick();
+    const first = w.findComponent({ name: "CommentItem" });
+    expect(first.props("comment").authorName).toBe("John Doe");
+    expect(first.props("comment").author_name).toBe("John Doe");
+  });
 
   it("renders CommentItem for each comment row", async () => {
     const w = await mountWith("check_content");

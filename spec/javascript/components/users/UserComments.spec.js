@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
+import { setActivePinia, createPinia } from "pinia";
+import { flushPromises } from "@test/testHelper";
 import UserComments from "@/components/users/UserComments.vue";
 import { getUserComments } from "@/api/usersApi";
 
@@ -23,11 +25,6 @@ vi.mock("@/api/usersApi", () => ({
 // status of comments they posted, where they sit in the triage
 // pipeline, and the latest activity. Backed by GET /users/:id/comments
 // (Task 09 — already shipped) and consumed by UserProfile.vue.
-
-const flushPromises = async (wrapper) => {
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  if (wrapper) await wrapper.vm.$nextTick();
-};
 
 const SHARED_STUBS = [
   "b-table",
@@ -88,7 +85,18 @@ const mockResponse = {
 
 describe("UserComments", () => {
   beforeEach(() => {
+    setActivePinia(createPinia());
     getUserComments.mockResolvedValue(mockResponse);
+  });
+
+  it("uses commentsStore for data fetching (store integration)", async () => {
+    const wrapper = mount(UserComments, {
+      propsData: { userId: 7 },
+      stubs: SHARED_STUBS,
+    });
+    await flushPromises();
+    expect(wrapper.vm.commentsStore).toBeDefined();
+    expect(typeof wrapper.vm.commentsStore.fetchUserComments).toBe("function");
   });
 
   it("fetches /users/:id/comments on mount", async () => {

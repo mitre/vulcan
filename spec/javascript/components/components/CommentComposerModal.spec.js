@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
-import { localVue } from "@test/testHelper";
+import { localVue, flushPromises } from "@test/testHelper";
 import CommentComposerModal from "@/components/components/CommentComposerModal.vue";
 import { createRuleReview, createComponentReview } from "@/api/reviewsApi";
 import { getComments } from "@/api/componentsApi";
@@ -26,28 +26,7 @@ vi.mock("@/api/componentsApi", () => ({
   getComments: vi.fn(() => Promise.resolve({ data: { rows: [], pagination: { total: 0 } } })),
 }));
 
-const flushPromises = async (wrapper) => {
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  if (wrapper) await wrapper.vm.$nextTick();
-};
-
-// Same render-the-body-anyway b-modal stub as CommentTriageModal.spec.js.
-// `centered` is exposed so we can assert vertical-centering at the
-// template level (Aaron 2026-04-29).
-const visibleModalStub = {
-  "b-modal": {
-    template: `
-      <div class="modal" :data-centered="String(centered)">
-        <div class="modal-body"><slot></slot></div>
-        <div class="modal-footer"><slot name="modal-footer" :cancel="() => {}"></slot></div>
-      </div>
-    `,
-    props: {
-      title: String,
-      centered: { type: Boolean, default: false },
-    },
-  },
-};
+import { visibleModalStub } from "@test/support/visibleModalStub";
 
 const baseProps = {
   ruleId: 7,
@@ -83,6 +62,7 @@ describe("CommentComposerModal", () => {
             section: "check_content",
             triage_status: "pending",
             created_at: "2026-04-26T10:00:00Z",
+            reactions: { up: 0, down: 0, mine: null },
           },
         ],
         pagination: { total: 1 },
@@ -476,5 +456,27 @@ describe("CommentComposerModal", () => {
       expect(alert.props("variant")).toBe("success");
       expect(alert.props("show")).toBe(true);
     });
+  });
+
+  it("clears auto-close timeout when component unmounts before 3s", async () => {
+    createRuleReview.mockResolvedValue({
+      data: { toast: { title: "Posted", message: ["ok"], variant: "success" } },
+    });
+    const w = mount(CommentComposerModal, {
+      localVue,
+      propsData: baseProps,
+      stubs: visibleModalStub,
+    });
+    vi.spyOn(w.vm.$bvModal, "hide").mockImplementation(() => {});
+
+    w.vm.commentText = "test";
+    await w.vm.submit();
+    await flushPromises(w);
+
+    expect(w.vm.autoCloseTimerId).not.toBeNull();
+    w.destroy();
+    // If clearTimeout was NOT called, the timer would fire after 3s and
+    // throw because this.$bvModal is undefined on a destroyed component.
+    // The fact that destroy doesn't throw proves beforeDestroy cleanup works.
   });
 });

@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { setActivePinia, createPinia } from "pinia";
 import { useCommentsStore } from "@/stores/comments";
 import { getComments } from "@/api/componentsApi";
+import { getProjectComments } from "@/api/projectsApi";
+import { getUserComments } from "@/api/usersApi";
 import {
   triageReview,
   getReviewResponses,
@@ -23,6 +25,14 @@ vi.mock("@/api/baseApi", () => ({
 
 vi.mock("@/api/componentsApi", () => ({
   getComments: vi.fn(),
+}));
+
+vi.mock("@/api/projectsApi", () => ({
+  getProjectComments: vi.fn(),
+}));
+
+vi.mock("@/api/usersApi", () => ({
+  getUserComments: vi.fn(),
 }));
 
 vi.mock("@/api/reviewsApi", () => ({
@@ -104,8 +114,8 @@ describe("useCommentsStore", () => {
       expect(row.responsesCount).toBe(2);
       expect(row.isImported).toBe(false);
 
-      expect(row.author_name).toBeUndefined();
-      expect(row.triage_status).toBeUndefined();
+      expect(row.author_name).toBe("John Doe");
+      expect(row.triage_status).toBe("pending");
 
       expect(store.loading).toBe(false);
       expect(store.error).toBeNull();
@@ -129,6 +139,26 @@ describe("useCommentsStore", () => {
       await store.fetchComments(38, { triage_status: "pending" });
 
       expect(getComments).toHaveBeenCalledTimes(2);
+    });
+
+    it("loading stays true while ANY fetch is in-flight (ref-counted)", async () => {
+      let resolveFirst, resolveSecond;
+      getComments
+        .mockReturnValueOnce(new Promise((r) => { resolveFirst = r; }))
+        .mockReturnValueOnce(new Promise((r) => { resolveSecond = r; }));
+      const store = useCommentsStore();
+
+      const p1 = store.fetchComments(38, { a: 1 });
+      const p2 = store.fetchComments(38, { a: 2 });
+      expect(store.loading).toBe(true);
+
+      resolveFirst(mockCommentsResponse);
+      await p1;
+      expect(store.loading).toBe(true);
+
+      resolveSecond(mockCommentsResponse);
+      await p2;
+      expect(store.loading).toBe(false);
     });
 
     it("sets loading=true during fetch and false after", async () => {
@@ -258,7 +288,27 @@ describe("useCommentsStore", () => {
       expect(n.authorName).toBe("");
     });
 
-    it("defaults null fields safely (no undefined)", () => {
+    it("preserves falsy values — empty string, 0, false are NOT coerced to defaults", () => {
+      const store = useCommentsStore();
+      const raw = {
+        id: 1,
+        section: "",
+        comment: "",
+        responses_count: 0,
+        commenter_imported: false,
+        triage_status: "",
+        addressed_by_rule_id: 0,
+      };
+      const n = store.normalizeComment(raw);
+      expect(n.section).toBe("");
+      expect(n.text).toBe("");
+      expect(n.responsesCount).toBe(0);
+      expect(n.isImported).toBe(false);
+      expect(n.triageStatus).toBe("");
+      expect(n.addressedByRuleId).toBe(0);
+    });
+
+    it("defaults null/undefined fields safely (no undefined)", () => {
       const store = useCommentsStore();
       const raw = { id: 1 };
       const n = store.normalizeComment(raw);
@@ -466,6 +516,208 @@ describe("useCommentsStore", () => {
         triage_status: "concur",
       });
       expect(Object.keys(store.cache)).toHaveLength(0);
+    });
+  });
+
+  describe("fetchProjectComments", () => {
+    it("calls getProjectComments API and returns normalized rows", async () => {
+      getProjectComments.mockResolvedValue(mockCommentsResponse);
+      const store = useCommentsStore();
+
+      const result = await store.fetchProjectComments(5, { triage_status: "all" });
+
+      expect(getProjectComments).toHaveBeenCalledWith(5, { triage_status: "all" });
+      expect(result.rows).toHaveLength(1);
+      expect(result.rows[0].authorName).toBe("John Doe");
+      expect(result.rows[0].author_name).toBe("John Doe");
+    });
+
+    it("does NOT cache — always fetches fresh data", async () => {
+      getProjectComments.mockResolvedValue(mockCommentsResponse);
+      const store = useCommentsStore();
+
+      await store.fetchProjectComments(5, { triage_status: "all" });
+      await store.fetchProjectComments(5, { triage_status: "all" });
+
+      expect(getProjectComments).toHaveBeenCalledTimes(2);
+    });
+
+    it("sets loading during fetch", async () => {
+      let resolvePromise;
+      getProjectComments.mockReturnValue(
+        new Promise((resolve) => {
+          resolvePromise = resolve;
+        }),
+      );
+      const store = useCommentsStore();
+
+      const promise = store.fetchProjectComments(5, {});
+      expect(store.loading).toBe(true);
+
+      resolvePromise(mockCommentsResponse);
+      await promise;
+      expect(store.loading).toBe(false);
+    });
+
+    it("sets error on failure", async () => {
+      getProjectComments.mockRejectedValue(new Error("Forbidden"));
+      const store = useCommentsStore();
+
+      await expect(store.fetchProjectComments(5, {})).rejects.toThrow("Forbidden");
+      expect(store.error).toBeInstanceOf(Error);
+      expect(store.loading).toBe(false);
+    });
+  });
+
+  describe("fetchUserComments", () => {
+    it("calls getUserComments API and returns normalized rows", async () => {
+      getUserComments.mockResolvedValue(mockCommentsResponse);
+      const store = useCommentsStore();
+
+      const result = await store.fetchUserComments(12, { page: 1 });
+
+      expect(getUserComments).toHaveBeenCalledWith(12, { page: 1 });
+      expect(result.rows).toHaveLength(1);
+      expect(result.rows[0].authorName).toBe("John Doe");
+    });
+
+    it("does NOT cache — always fetches fresh data", async () => {
+      getUserComments.mockResolvedValue(mockCommentsResponse);
+      const store = useCommentsStore();
+
+      await store.fetchUserComments(12, {});
+      await store.fetchUserComments(12, {});
+
+      expect(getUserComments).toHaveBeenCalledTimes(2);
+    });
+
+    it("sets error on failure", async () => {
+      getUserComments.mockRejectedValue(new Error("Not found"));
+      const store = useCommentsStore();
+
+      await expect(store.fetchUserComments(12, {})).rejects.toThrow("Not found");
+      expect(store.error).toBeInstanceOf(Error);
+    });
+  });
+
+  describe("normalizeRows pagination", () => {
+    it("adds camelCase aliases for pagination fields alongside originals", async () => {
+      getComments.mockResolvedValue({
+        data: {
+          rows: [{ id: 1 }],
+          pagination: { page: 2, per_page: 25, total: 50, total_comments: 75 },
+          status_counts: { pending: 3, concur: 2 },
+        },
+      });
+      const store = useCommentsStore();
+      const result = await store.fetchComments(1, {});
+
+      expect(result.pagination.page).toBe(2);
+      expect(result.pagination.perPage).toBe(25);
+      expect(result.pagination.totalRows).toBe(50);
+      expect(result.pagination.totalComments).toBe(75);
+      expect(result.pagination.per_page).toBe(25);
+      expect(result.pagination.total).toBe(50);
+      expect(result.statusCounts).toEqual({ pending: 3, concur: 2 });
+      expect(result.status_counts).toEqual({ pending: 3, concur: 2 });
+    });
+
+    it("handles missing pagination gracefully", async () => {
+      getComments.mockResolvedValue({ data: { rows: [] } });
+      const store = useCommentsStore();
+      const result = await store.fetchComments(2, {});
+      expect(result.pagination).toBeUndefined();
+    });
+  });
+
+  describe("end-to-end cache invalidation", () => {
+    it("fetch → post → refetch returns fresh data (not cached)", async () => {
+      const initialResponse = {
+        data: { rows: [{ id: 1, comment: "first" }], pagination: { total: 1 } },
+      };
+      const freshResponse = {
+        data: {
+          rows: [
+            { id: 1, comment: "first" },
+            { id: 2, comment: "just posted" },
+          ],
+          pagination: { total: 2 },
+        },
+      };
+      getComments.mockResolvedValueOnce(initialResponse);
+      createRuleReview.mockResolvedValue({ data: { toast: { title: "Posted" } } });
+      getComments.mockResolvedValueOnce(freshResponse);
+
+      const store = useCommentsStore();
+
+      const first = await store.fetchComments(38, { triage_status: "all" });
+      expect(first.rows).toHaveLength(1);
+      expect(getComments).toHaveBeenCalledTimes(1);
+
+      await store.postComment(38, 100, { comment: "new" });
+
+      const second = await store.fetchComments(38, { triage_status: "all" });
+      expect(second.rows).toHaveLength(2);
+      expect(second.rows[1].text).toBe("just posted");
+      expect(getComments).toHaveBeenCalledTimes(2);
+    });
+
+    it("fetch → triage → refetch returns fresh data", async () => {
+      const initialResponse = {
+        data: { rows: [{ id: 1, triage_status: "pending" }], pagination: { total: 1 } },
+      };
+      const freshResponse = {
+        data: { rows: [{ id: 1, triage_status: "concur" }], pagination: { total: 1 } },
+      };
+      getComments.mockResolvedValueOnce(initialResponse);
+      triageReview.mockResolvedValue({
+        data: { review: { id: 1, triage_status: "concur" } },
+      });
+      getComments.mockResolvedValueOnce(freshResponse);
+
+      const store = useCommentsStore();
+
+      await store.fetchComments(38, {});
+      await store.triageComment(38, 1, { triage_status: "concur" });
+
+      const after = await store.fetchComments(38, {});
+      expect(after.rows[0].triageStatus).toBe("concur");
+      expect(getComments).toHaveBeenCalledTimes(2);
+    });
+
+    it("fetch → bulkTriage → refetch returns fresh data", async () => {
+      getComments.mockResolvedValueOnce(mockCommentsResponse);
+      bulkTriageReviews.mockResolvedValue({ data: { toast: { title: "Done" } } });
+      getComments.mockResolvedValueOnce({
+        data: { rows: [{ id: 142, triage_status: "concur" }], pagination: { total: 1 } },
+      });
+
+      const store = useCommentsStore();
+
+      await store.fetchComments(38, {});
+      await store.bulkTriage(38, [142], { triage_status: "concur" });
+
+      const after = await store.fetchComments(38, {});
+      expect(after.rows[0].triageStatus).toBe("concur");
+      expect(getComments).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe("cache size cap", () => {
+    it("evicts oldest entry when cache exceeds MAX_CACHE_ENTRIES (50)", async () => {
+      getComments.mockResolvedValue(mockCommentsResponse);
+      const store = useCommentsStore();
+
+      for (let i = 0; i < 51; i++) {
+        getComments.mockResolvedValue({
+          data: { rows: [{ id: i, comment: `comment-${i}` }], pagination: { total: 1 } },
+        });
+        await store.fetchComments(i, {});
+      }
+
+      expect(Object.keys(store.cache).length).toBe(50);
+      const firstKey = Object.keys(store.cache)[0];
+      expect(firstKey).toMatch(/^1:/);
     });
   });
 

@@ -363,9 +363,8 @@
 
 <script>
 import { reopenReview } from "../../api/reviewsApi";
-import { submitBulkTriage, submitMerge } from "../../services/triageService";
-import { getComments } from "../../api/componentsApi";
-import { getProjectComments } from "../../api/projectsApi";
+import { useCommentsStore } from "../../stores/comments";
+import { useCommentTriage } from "../../composables/mutations/useCommentTriage";
 import { SECTION_LABELS, buildStatusFilterOptions } from "../../constants/triageVocabulary";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
@@ -386,7 +385,7 @@ import BulkTriageBar from "../triage/BulkTriageBar.vue";
 import MergeCommentsModal from "../triage/MergeCommentsModal.vue";
 import Highlighter from "vue-highlight-words";
 import ReplyComposerMixin from "../../mixins/ReplyComposerMixin.vue";
-import { triageBgClass } from "../../utils/triageBgClass";
+import { ruleHref as buildRuleHref, rowTriageClass } from "../../utils/commentTableHelpers";
 
 export default {
   name: "ComponentComments",
@@ -430,6 +429,11 @@ export default {
     effectivePermissions: { type: String, default: null },
     adminPanelOpen: { type: Boolean, default: false },
     contextMode: { type: String, default: "commented" },
+  },
+  setup() {
+    const commentsStore = useCommentsStore();
+    const triageComposable = useCommentTriage();
+    return { commentsStore, triageComposable };
   },
   data() {
     const persisted = this.loadPersistedFilters();
@@ -538,10 +542,13 @@ export default {
     selectableRowIds() {
       return this.rows.filter((r) => !r.adjudicated_at).map((r) => r.id);
     },
+    selectedIdsSet() {
+      return new Set(this.selectedIds);
+    },
     allVisibleSelected() {
       return (
         this.selectableRowIds.length > 0 &&
-        this.selectableRowIds.every((id) => this.selectedIds.includes(id))
+        this.selectableRowIds.every((id) => this.selectedIdsSet.has(id))
       );
     },
     statusOptions() {
@@ -663,9 +670,7 @@ export default {
         console.warn("ComponentComments: filter persistence failed", e);
       }
     },
-    rowTriageClass(item) {
-      return triageBgClass(item?.triage_status);
-    },
+    rowTriageClass,
     onFilterChanged() {
       this.page = 1;
       if (this.viewMode === "by-rule") this.allExpanded = true;
@@ -693,13 +698,16 @@ export default {
         if (this.filterSection && this.filterSection !== "(general)") {
           params.section = this.filterSection;
         }
-        const { data } =
+        if (this.scope !== "project" && this.componentId) {
+          this.commentsStore.invalidateCache(this.componentId);
+        }
+        const result =
           this.scope === "project"
-            ? await getProjectComments(this.projectId, params)
-            : await getComments(this.componentId, params);
-        this.rows = data.rows;
-        this.total = data.pagination.total;
-        if (data.status_counts) this.statusCounts = data.status_counts;
+            ? await this.commentsStore.fetchProjectComments(this.projectId, params)
+            : await this.commentsStore.fetchComments(this.componentId, params);
+        this.rows = result.rows;
+        this.total = result.pagination.total;
+        if (result.status_counts) this.statusCounts = result.status_counts;
       } catch (error) {
         this.alertOrNotifyResponse(error);
       } finally {
@@ -711,8 +719,7 @@ export default {
     // Encode the rule name segment so that unusual characters can't break
     // out of the path or silently navigate elsewhere.
     ruleHref(row) {
-      const compId = this.scope === "project" ? row.component_id : this.componentId;
-      return `/components/${compId}/${encodeURIComponent(row.rule_displayed_name)}`;
+      return buildRuleHref(row, this.componentId);
     },
     openTriageFor(row) {
       if (this.scope === "project" && row.component_id) {
@@ -779,7 +786,8 @@ export default {
         this.fetch();
         return;
       }
-      this.rows.splice(idx, 1, { ...this.rows[idx], ...updatedReview });
+      const normalized = this.commentsStore.normalizeComment(updatedReview);
+      this.rows.splice(idx, 1, { ...this.rows[idx], ...normalized });
     },
     onTriaged(payload) {
       this.updateRowInPlace(payload);
@@ -799,7 +807,8 @@ export default {
       const ids = [...this.selectedIds];
       if (ids.length === 0) return;
       try {
-        await submitBulkTriage(ids, payload);
+        const componentId = this.scope === "project" ? null : this.componentId;
+        await this.triageComposable.bulkTriage(ids, payload, componentId);
         this.clearSelection();
         await this.fetch();
         this.alertOrNotifyResponse({
@@ -822,7 +831,11 @@ export default {
     },
     async applyMerge(payload) {
       try {
-        await submitMerge(payload.review_ids, payload.survivor_id);
+        await this.commentsStore.mergeComments(
+          this.componentId,
+          payload.review_ids,
+          payload.survivor_id,
+        );
         this.clearSelection();
         this.selectedMergeReviews = [];
         await this.fetch();
@@ -849,9 +862,11 @@ export default {
       const idx = this.rows.findIndex((r) => r.id === parentId);
       if (idx < 0) return;
       const row = this.rows[idx];
+      const newCount = (row.responses_count ?? 0) + 1;
       this.rows.splice(idx, 1, {
         ...row,
-        responses_count: (row.responses_count || 0) + 1,
+        responses_count: newCount,
+        responsesCount: newCount,
       });
     },
     // admin hard-delete destroys the review entirely;

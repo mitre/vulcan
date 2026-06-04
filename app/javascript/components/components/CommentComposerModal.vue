@@ -62,9 +62,9 @@
 </template>
 
 <script>
-import { createRuleReview, createComponentReview } from "../../api/reviewsApi";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import FormMixin from "../../mixins/FormMixin.vue";
+import { useCommentComposer } from "../../composables/mutations/useCommentComposer";
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
 import CommentDedupBanner from "./CommentDedupBanner.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
@@ -91,6 +91,10 @@ export default {
     parentRuleId: { type: [Number, String], default: null },
     parentRuleName: { type: String, default: null },
   },
+  setup() {
+    const composer = useCommentComposer();
+    return { composer };
+  },
   data() {
     return {
       // Mirror the props as internal state so the modal can update them
@@ -102,6 +106,7 @@ export default {
       currentReplyToId: this.replyToReviewId,
       commentText: "",
       successMessage: null,
+      autoCloseTimerId: null,
     };
   },
   computed: {
@@ -151,6 +156,9 @@ export default {
       this.currentReplyToId = newVal;
     },
   },
+  beforeDestroy() {
+    if (this.autoCloseTimerId) clearTimeout(this.autoCloseTimerId);
+  },
   methods: {
     async submit() {
       const data = {
@@ -165,20 +173,17 @@ export default {
 
       try {
         const res = this.isComponentScoped
-          ? await createComponentReview(this.componentId, data)
-          : await createRuleReview(this.ruleId, data);
-        const toast = res?.data?.toast;
+          ? await this.composer.postComponentComment(this.componentId, data)
+          : await this.composer.postComment(this.componentId, this.ruleId, data);
+        const toast = res?.toast;
         const msg = toast?.message;
-        // When the composer was set up for a child rule (parentRuleId
-        // present), the server soft-redirects the comment to the parent.
-        // Name the destination in the success message so the
-        // user understands where the comment landed.
         const fallback = this.parentRuleId
           ? `Comment posted on parent control ${this.parentRuleName}.`
           : "Comment posted.";
         this.successMessage = Array.isArray(msg) && msg[0] ? msg.join(" ") : fallback;
         this.$emit("posted");
-        setTimeout(() => {
+        this.autoCloseTimerId = setTimeout(() => {
+          this.autoCloseTimerId = null;
           this.$bvModal.hide("comment-composer-modal");
           this.commentText = "";
           this.successMessage = null;

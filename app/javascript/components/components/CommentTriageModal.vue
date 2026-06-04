@@ -277,7 +277,8 @@ import FormMixin from "../../mixins/FormMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
 import { useCommentReactions } from "../../composables/useCommentReactions";
-import { submitTriage, submitAdjudicate, submitAdminAction } from "../../services/triageService";
+import { useCommentTriage } from "../../composables/mutations/useCommentTriage";
+import { useCommentsStore } from "../../stores/comments";
 import {
   SECTION_LABELS,
   SINGLE_BUTTON_STATUSES,
@@ -324,7 +325,9 @@ export default {
   },
   setup() {
     const { toggle: toggleReactionApi } = useCommentReactions();
-    return { toggleReactionApi };
+    const triageComposable = useCommentTriage();
+    const commentsStore = useCommentsStore();
+    return { toggleReactionApi, triageComposable, commentsStore };
   },
   data() {
     return {
@@ -483,12 +486,9 @@ export default {
         );
         this.$emit("triaged", res.data.review);
         this.cancelSectionEdit();
-        // Hide the modal on success — consistent with the other modal
-        // actions (saveTriage, submitAdminAction, etc.). The parent's
-        // @triaged handler refetches the table so the row's new section
-        // is visible. Without this hide, the modal's review prop is stale
-        // (selectedRow object hasn't been re-bound) and the section badge
-        // shows the old value until the user closes and re-opens.
+        if (this.pickerComponentId) {
+          this.commentsStore.invalidateCache(this.pickerComponentId);
+        }
         this.$bvModal.hide("comment-triage-modal");
       } catch (error) {
         this.alertOrNotifyResponse(error);
@@ -503,15 +503,20 @@ export default {
       const reviewId = this.review.id;
       const auditComment = this.adminAuditComment.trim();
       try {
-        const params = { audit_comment: auditComment };
-        if (this.adminAction === "move-to-rule") params.rule_id = this.adminTargetRuleId;
+        const actionParams = { audit_comment: auditComment };
+        if (this.adminAction === "move-to-rule") actionParams.rule_id = this.adminTargetRuleId;
 
-        const res = await submitAdminAction(reviewId, this.adminAction, params);
+        const result = await this.commentsStore.adminAction(
+          this.pickerComponentId,
+          reviewId,
+          this.adminAction,
+          actionParams,
+        );
 
         if (this.adminAction === "hard-delete") {
           this.$emit("destroyed", reviewId);
         } else {
-          this.$emit("triaged", res.data.review);
+          this.$emit("triaged", result.review);
         }
         this.cancelAdminAction();
         this.adminActionsOpen = false;
@@ -534,18 +539,25 @@ export default {
           triagePayload.duplicate_of_review_id = decision.duplicate_of_review_id;
         }
 
-        const triageRes = await submitTriage(this.review.id, triagePayload);
-        this.$emit("triaged", triageRes.data.review);
-        if (triageRes.data.response_review) {
+        const triageResult = await this.triageComposable.triage(
+          this.review.id,
+          triagePayload,
+          this.pickerComponentId,
+        );
+        this.$emit("triaged", triageResult.review);
+        if (triageResult.response_review) {
           this.$emit("response-posted", {
             parentId: this.review.id,
-            responseReview: triageRes.data.response_review,
+            responseReview: triageResult.response_review,
           });
         }
 
         if (alsoAdjudicate && !SINGLE_BUTTON_STATUSES.has(decision.triage_status)) {
-          const adjudicateRes = await submitAdjudicate(this.review.id);
-          this.$emit("adjudicated", adjudicateRes.data.review);
+          const adjudicateResult = await this.commentsStore.adjudicateComment(
+            this.pickerComponentId,
+            this.review.id,
+          );
+          this.$emit("adjudicated", adjudicateResult.review);
         }
 
         this.$bvModal.hide("comment-triage-modal");
