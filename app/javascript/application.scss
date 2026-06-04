@@ -430,29 +430,54 @@
     border-color: var(--vulcan-border-color) !important;
   }
 
-  // Alert variants — darken background
-  .alert-warning {
-    background-color: #{rgba(mix(white, $warning, 20%), 0.15)};
-    border-color: #{rgba(mix(white, $warning, 20%), 0.25)};
-    color: #{mix(white, $warning, 40%)};
+  // ── Dark mode variant tints ────────────────────────────────
+  // ONE loop for alerts AND toasts. Bootstrap 5.3 uses subtle-bg/border
+  // variables; we replicate with mix(white, $color, 20%) at low opacity.
+  @each $variant, $color in (success: $success, danger: $danger, warning: $warning, info: $info) {
+    $dark-tint-bg: mix($gray-800, $color, 85%);
+    $dark-tint-border: rgba(mix(white, $color, 20%), 0.25);
+    $dark-tint-color: mix(white, $color, 60%);
+
+    .alert-#{$variant} {
+      background-color: #{$dark-tint-bg};
+      border-color: #{$dark-tint-border};
+      color: #{$dark-tint-color};
+    }
+
+    .b-toast-#{$variant} .toast,
+    .b-toast-#{$variant}.b-toast-solid .toast {
+      background-color: #{$dark-tint-bg};
+      border-color: #{$dark-tint-border};
+
+      .toast-header {
+        background-color: #{mix($gray-900, $color, 80%)};
+        color: #{$dark-tint-color};
+      }
+      .toast-body { color: var(--vulcan-body-color); }
+    }
   }
 
-  .alert-danger {
-    background-color: #{rgba(mix(white, $danger, 20%), 0.15)};
-    border-color: #{rgba(mix(white, $danger, 20%), 0.25)};
-    color: #{mix(white, $danger, 40%)};
+  // Base toast — match BootstrapVue's .b-toast .toast (0,2,0) selector.
+  // [data-bs-theme="dark"] adds (0,1,0) → total (0,3,0), beats BV's (0,2,0).
+  .b-toast .toast {
+    background-color: var(--vulcan-secondary-bg);
+    border-color: var(--vulcan-border-color);
+    color: var(--vulcan-body-color);
   }
 
-  .alert-success {
-    background-color: #{rgba(mix(white, $success, 20%), 0.15)};
-    border-color: #{rgba(mix(white, $success, 20%), 0.25)};
-    color: #{mix(white, $success, 40%)};
+  .b-toast .toast-header {
+    background-color: var(--vulcan-tertiary-bg);
+    border-bottom-color: var(--vulcan-border-color);
+    color: var(--vulcan-emphasis-color);
+
+    .close {
+      color: var(--vulcan-emphasis-color);
+      text-shadow: none;
+    }
   }
 
-  .alert-info {
-    background-color: #{rgba(mix(white, $info, 20%), 0.15)};
-    border-color: #{rgba(mix(white, $info, 20%), 0.25)};
-    color: #{mix(white, $info, 40%)};
+  .b-toast .toast-body {
+    color: var(--vulcan-body-color);
   }
 
   // Links
@@ -1128,6 +1153,7 @@ body.has-classification-banner {
   h1, h2, h3, h4, h5, h6 {
     scroll-margin-top: 1rem;
   }
+
 
   h1 {
     font-size: 1.75rem;
