@@ -14,6 +14,7 @@
     <b-popover
       v-if="hasPopoverContent"
       :target="popoverId"
+      container="body"
       triggers="hover focus"
       placement="top"
       :delay="{ show: 300, hide: 100 }"
@@ -28,7 +29,11 @@
 </template>
 
 <script>
-let badgeUid = 0;
+// Per-pack seed: each esbuild pack loads its own copy of this module and
+// picks its own seed, so popoverIds don't collide when (e.g.) the navbar
+// pack and the project_component pack both render UserBadges on the same
+// page. Combined with this._uid for per-instance uniqueness within a pack.
+const moduleSeed = Math.random().toString(36).slice(2, 8);
 
 export default {
   name: "UserBadge",
@@ -41,12 +46,10 @@ export default {
     size: { type: String, default: null },
     showName: { type: Boolean, default: false },
   },
-  data() {
-    return {
-      popoverId: `user-badge-${++badgeUid}`,
-    };
-  },
   computed: {
+    popoverId() {
+      return `user-badge-${moduleSeed}-${this._uid}`;
+    },
     displayName() {
       return this.name || this.email || null;
     },

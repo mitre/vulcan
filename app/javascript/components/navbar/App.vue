@@ -51,12 +51,7 @@
 
         <b-nav-item-dropdown right no-caret boundary="viewport">
           <template #button-content>
-            <UserBadge
-              v-if="current_user"
-              :name="userDisplayName"
-              :email="current_user.email"
-              size="1.25rem"
-            />
+            <UserBadge v-if="current_user" :name="userDisplayName" :email="current_user.email" />
             <b-icon v-else icon="person-circle" aria-hidden="true" />
           </template>
           <b-dropdown-text v-if="userDisplayName" class="text-muted small">
