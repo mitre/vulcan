@@ -33,6 +33,7 @@ class UsersController < ApplicationController
       (password_params[:password].presence || generate_compliant_password)
 
     if user.save
+      user.reload
       result = { user: user.as_json(only: USER_JSON_FIELDS) }
 
       if password_params[:password].present?

@@ -60,7 +60,9 @@ class Membership < ApplicationRecord
     end
 
     # Delete those memberships that are of equal or lesser permissions
-    component_memberships.each(&:destroy)
+    Membership.transaction do
+      component_memberships.each(&:destroy)
+    end
   end
 
   ##
