@@ -505,6 +505,17 @@ app/javascript/
 
 ---
 
+## Verified Patterns (Do Not Change)
+
+These patterns were verified by an 8-agent expert review (2026-06-04) and confirmed correct:
+
+| Pattern | Why It's Correct | Do Not |
+|---------|-----------------|--------|
+| CSRF via ky `beforeRequest` hook | Reads meta tag per-request. FormMixin is backward-compat only — ky handles CSRF natively. | Remove FormMixin from components that also use direct ky calls (esbuild bundle isolation means each pack needs its own CSRF source) |
+| `$reset()` on `turbolinks:before-visit` | Prevents stale cache leaking across page navigations. Required for all Setup Stores (Pinia does not auto-generate `$reset` for them). | Remove the reset listener or skip `$reset()` implementation |
+| `setCacheEntry` replaces entire cache ref | `cache.value = { ...cache.value, [key]: value }` creates a new top-level object — correct for Vue 2.7 ref reactivity (replacing the value triggers watchers). | Optimize by mutating `cache.value[key]` directly — this breaks Vue 2 reactivity |
+| `normalizeComment` uses `??` (nullish coalescing) | Preserves legitimate falsy values (0, '', false). `||` would coerce them to defaults — data loss bug. | Switch to `||` for "simpler" fallbacks |
+
 ## Anti-Patterns
 
 | Don't | Do Instead |
