@@ -297,4 +297,24 @@ describe("CommentThread", () => {
       expect(w.html()).not.toMatch(/triage-bg--/);
     });
   });
+
+  // ── v2-05f.62.5.2: useCommentThread composable integration ──────────
+
+  describe("composable integration", () => {
+    it("uses useCommentReactions composable (not ReactionToggleMixin)", () => {
+      const w = mount(CommentThread, {
+        localVue,
+        propsData: { parentReviewId: 1, responsesCount: 0 },
+      });
+      expect(w.vm.$options.mixins || []).not.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            methods: expect.objectContaining({
+              submitReactionToggle: expect.any(Function),
+            }),
+          }),
+        ]),
+      );
+    });
+  });
 });

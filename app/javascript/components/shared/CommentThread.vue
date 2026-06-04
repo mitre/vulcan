@@ -68,17 +68,17 @@
 </template>
 
 <script>
-import { getReviewResponses } from "../../api/reviewsApi";
 import ReactionButtons from "./ReactionButtons.vue";
 import UserBadge from "./UserBadge.vue";
 import AlertMixin from "../../mixins/AlertMixin.vue";
-import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
 import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
+import { useCommentReactions } from "../../composables/useCommentReactions";
+import { useCommentThread } from "../../composables/useCommentThread";
 
 export default {
   name: "CommentThread",
   components: { ReactionButtons, UserBadge },
-  mixins: [AlertMixin, ReactionToggleMixin, DateFormatMixin],
+  mixins: [AlertMixin, DateFormatMixin],
   props: {
     parentReviewId: { type: [Number, String], required: true },
     responsesCount: { type: Number, default: 0 },
@@ -91,15 +91,13 @@ export default {
       default: "Reactions are closed for this component.",
     },
   },
+  setup(props) {
+    const thread = useCommentThread(props.parentReviewId);
+    const { toggle: toggleReactionApi } = useCommentReactions();
+    return { ...thread, toggleReactionApi };
+  },
   data() {
-    return {
-      expanded: this.initiallyExpanded,
-      replies: [],
-      loaded: false,
-      loading: false,
-      loadError: false,
-      fetchToken: 0,
-    };
+    return {};
   },
   computed: {
     listId() {
@@ -138,35 +136,6 @@ export default {
     }
   },
   methods: {
-    toggle() {
-      this.expanded = !this.expanded;
-      if (this.expanded && !this.loaded && !this.loading) {
-        this.fetch();
-      }
-    },
-    async fetch() {
-      this.loading = true;
-      this.loadError = false;
-      const token = ++this.fetchToken;
-      try {
-        const { data } = await getReviewResponses(this.parentReviewId);
-        if (token !== this.fetchToken) return;
-        this.replies = data.rows || [];
-        this.loaded = true;
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error("[CommentThread] Failed to load replies:", err);
-        if (token !== this.fetchToken) return;
-        this.loadError = true;
-      } finally {
-        if (token === this.fetchToken) this.loading = false;
-      }
-    },
-    refresh() {
-      this.loaded = false;
-      this.replies = [];
-      if (this.expanded) this.fetch();
-    },
     toggleReaction(reply, kind) {
       const idx = this.replies.findIndex((r) => r.id === reply.id);
       if (idx < 0) return;
@@ -174,7 +143,7 @@ export default {
       const apply = (reactions) => {
         this.$set(this.replies, idx, { ...this.replies[idx], reactions });
       };
-      this.submitReactionToggle({ reviewId: reply.id, prev, kind, apply });
+      this.toggleReactionApi(reply.id, kind, prev, apply);
     },
   },
 };

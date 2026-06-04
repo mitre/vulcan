@@ -2,7 +2,13 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { setActivePinia, createPinia } from "pinia";
 import { useCommentsStore } from "@/stores/comments";
 import { getComments } from "@/api/componentsApi";
-import { triageReview, getReviewResponses } from "@/api/reviewsApi";
+import {
+  triageReview,
+  getReviewResponses,
+  createRuleReview,
+  createComponentReview,
+  bulkTriageReviews,
+} from "@/api/reviewsApi";
 
 vi.mock("@/api/baseApi", () => ({
   default: {
@@ -22,6 +28,9 @@ vi.mock("@/api/componentsApi", () => ({
 vi.mock("@/api/reviewsApi", () => ({
   triageReview: vi.fn(),
   getReviewResponses: vi.fn(),
+  createRuleReview: vi.fn(),
+  createComponentReview: vi.fn(),
+  bulkTriageReviews: vi.fn(),
 }));
 
 const mockCommentsResponse = {
@@ -193,6 +202,166 @@ describe("useCommentsStore", () => {
       expect(normalized.triageStatus).toBe("pending");
       expect(normalized.responsesCount).toBe(2);
       expect(normalized.isImported).toBe(false);
+    });
+  });
+
+  describe("fetchReplies", () => {
+    it("calls getReviewResponses and returns rows", async () => {
+      const mockReplies = {
+        data: { rows: [{ id: 7, comment: "reply text" }] },
+      };
+      getReviewResponses.mockResolvedValue(mockReplies);
+      const store = useCommentsStore();
+
+      const result = await store.fetchReplies(42);
+
+      expect(getReviewResponses).toHaveBeenCalledWith(42);
+      expect(result.rows).toHaveLength(1);
+      expect(result.rows[0].id).toBe(7);
+    });
+
+    it("caches replies by parentReviewId", async () => {
+      getReviewResponses.mockResolvedValue({
+        data: { rows: [{ id: 7 }] },
+      });
+      const store = useCommentsStore();
+
+      await store.fetchReplies(42);
+      await store.fetchReplies(42);
+
+      expect(getReviewResponses).toHaveBeenCalledTimes(1);
+    });
+
+    it("sets error on failure", async () => {
+      getReviewResponses.mockRejectedValue(new Error("fail"));
+      const store = useCommentsStore();
+
+      await expect(store.fetchReplies(42)).rejects.toThrow("fail");
+      expect(store.error).toBeTruthy();
+    });
+  });
+
+  describe("postComment", () => {
+    it("calls createRuleReview and invalidates cache", async () => {
+      const postResponse = {
+        data: { toast: { title: "Posted" } },
+      };
+      createRuleReview.mockResolvedValue(postResponse);
+      getComments.mockResolvedValue(mockCommentsResponse);
+      const store = useCommentsStore();
+
+      await store.fetchComments(38, {});
+      expect(Object.keys(store.cache)).toHaveLength(1);
+
+      const result = await store.postComment(38, 100, {
+        comment: "new comment",
+      });
+
+      expect(createRuleReview).toHaveBeenCalledWith(100, {
+        comment: "new comment",
+      });
+      expect(result).toEqual(postResponse.data);
+      expect(Object.keys(store.cache)).toHaveLength(0);
+    });
+
+    it("sets error on failure and does not invalidate cache", async () => {
+      createRuleReview.mockRejectedValue(new Error("403"));
+      getComments.mockResolvedValue(mockCommentsResponse);
+      const store = useCommentsStore();
+
+      await store.fetchComments(38, {});
+
+      await expect(
+        store.postComment(38, 100, { comment: "test" }),
+      ).rejects.toThrow("403");
+      expect(Object.keys(store.cache)).toHaveLength(1);
+      expect(store.error).toBeTruthy();
+    });
+  });
+
+  describe("postComponentComment", () => {
+    it("calls createComponentReview and invalidates cache", async () => {
+      createComponentReview.mockResolvedValue({
+        data: { toast: { title: "Posted" } },
+      });
+      getComments.mockResolvedValue(mockCommentsResponse);
+      const store = useCommentsStore();
+
+      await store.fetchComments(38, {});
+      await store.postComponentComment(38, { comment: "overall comment" });
+
+      expect(createComponentReview).toHaveBeenCalledWith(38, {
+        comment: "overall comment",
+      });
+      expect(Object.keys(store.cache)).toHaveLength(0);
+    });
+  });
+
+  describe("triageComment", () => {
+    it("calls triageReview and invalidates cache", async () => {
+      triageReview.mockResolvedValue({
+        data: { review: { id: 142, triage_status: "concur" } },
+      });
+      getComments.mockResolvedValue(mockCommentsResponse);
+      const store = useCommentsStore();
+
+      await store.fetchComments(38, {});
+      const result = await store.triageComment(142, { triage_status: "concur" }, 38);
+
+      expect(triageReview).toHaveBeenCalledWith(142, {
+        triage_status: "concur",
+      });
+      expect(result.review.triage_status).toBe("concur");
+      expect(Object.keys(store.cache)).toHaveLength(0);
+    });
+
+    it("does not invalidate cache on triage failure", async () => {
+      triageReview.mockRejectedValue(new Error("409"));
+      getComments.mockResolvedValue(mockCommentsResponse);
+      const store = useCommentsStore();
+
+      await store.fetchComments(38, {});
+      await expect(
+        store.triageComment(142, { triage_status: "concur" }, 38),
+      ).rejects.toThrow("409");
+      expect(Object.keys(store.cache)).toHaveLength(1);
+    });
+  });
+
+  describe("bulkTriage", () => {
+    it("calls bulkTriageReviews and invalidates cache", async () => {
+      bulkTriageReviews.mockResolvedValue({
+        data: { toast: { title: "Triaged 3" } },
+      });
+      getComments.mockResolvedValue(mockCommentsResponse);
+      const store = useCommentsStore();
+
+      await store.fetchComments(38, {});
+      await store.bulkTriage([1, 2, 3], { triage_status: "concur" }, 38);
+
+      expect(bulkTriageReviews).toHaveBeenCalledWith([1, 2, 3], {
+        triage_status: "concur",
+      });
+      expect(Object.keys(store.cache)).toHaveLength(0);
+    });
+  });
+
+  describe("cacheKey (exposed for composables)", () => {
+    it("returns componentId:JSON key", () => {
+      const store = useCommentsStore();
+      expect(store.cacheKey(38, { status: "all" })).toBe(
+        '38:{"status":"all"}',
+      );
+    });
+
+    it("handles empty params", () => {
+      const store = useCommentsStore();
+      expect(store.cacheKey(38, {})).toBe("38:{}");
+    });
+
+    it("handles null params", () => {
+      const store = useCommentsStore();
+      expect(store.cacheKey(38, null)).toBe("38:{}");
     });
   });
 });

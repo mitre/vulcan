@@ -1,6 +1,13 @@
 import { ref, computed } from "vue";
 import { defineStore, acceptHMRUpdate } from "pinia";
 import { getComments } from "../api/componentsApi";
+import {
+  getReviewResponses,
+  createRuleReview,
+  createComponentReview,
+  triageReview,
+  bulkTriageReviews,
+} from "../api/reviewsApi";
 
 export const useCommentsStore = defineStore("comments", () => {
   const cache = ref({});
@@ -55,6 +62,72 @@ export const useCommentsStore = defineStore("comments", () => {
     }
   }
 
+  async function fetchReplies(parentReviewId) {
+    const key = `replies:${parentReviewId}`;
+    if (cache.value[key]) return cache.value[key];
+
+    loading.value = true;
+    error.value = null;
+    try {
+      const { data } = await getReviewResponses(parentReviewId);
+      cache.value[key] = data;
+      return data;
+    } catch (err) {
+      error.value = err;
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function postComment(componentId, ruleId, data) {
+    error.value = null;
+    try {
+      const { data: result } = await createRuleReview(ruleId, data);
+      invalidateCache(componentId);
+      return result;
+    } catch (err) {
+      error.value = err;
+      throw err;
+    }
+  }
+
+  async function postComponentComment(componentId, data) {
+    error.value = null;
+    try {
+      const { data: result } = await createComponentReview(componentId, data);
+      invalidateCache(componentId);
+      return result;
+    } catch (err) {
+      error.value = err;
+      throw err;
+    }
+  }
+
+  async function triageComment(reviewId, payload, componentId) {
+    error.value = null;
+    try {
+      const { data: result } = await triageReview(reviewId, payload);
+      if (componentId) invalidateCache(componentId);
+      return result;
+    } catch (err) {
+      error.value = err;
+      throw err;
+    }
+  }
+
+  async function bulkTriage(reviewIds, payload, componentId) {
+    error.value = null;
+    try {
+      const { data: result } = await bulkTriageReviews(reviewIds, payload);
+      if (componentId) invalidateCache(componentId);
+      return result;
+    } catch (err) {
+      error.value = err;
+      throw err;
+    }
+  }
+
   function invalidateCache(componentId) {
     Object.keys(cache.value)
       .filter((k) => k.startsWith(`${componentId}:`))
@@ -73,7 +146,13 @@ export const useCommentsStore = defineStore("comments", () => {
     error,
     commentCount,
     normalizeComment,
+    cacheKey,
     fetchComments,
+    fetchReplies,
+    postComment,
+    postComponentComment,
+    triageComment,
+    bulkTriage,
     invalidateCache,
     $reset,
   };

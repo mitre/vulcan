@@ -9,6 +9,10 @@ Vue.use(TurbolinksAdapter);
 Vue.use(BootstrapVue, bvConfig);
 Vue.use(IconsPlugin);
 
+const sharedPinia = createPinia();
+
+export { sharedPinia };
+
 export function createVulcanApp({ el, componentName, component, directives }) {
   if (component) {
     Vue.component(componentName, component);
@@ -22,5 +26,5 @@ export function createVulcanApp({ el, componentName, component, directives }) {
   const targetEl = document.querySelector(el);
   if (!targetEl) return null;
 
-  return new Vue({ el, pinia: createPinia() });
+  return new Vue({ el, pinia: sharedPinia });
 }
