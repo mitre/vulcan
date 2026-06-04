@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_01_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_04_185410) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -354,6 +354,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_01_120000) do
     t.index ["rule_id"], name: "index_reviews_on_rule_id"
     t.index ["triage_status", "created_at"], name: "idx_reviews_top_level_triage_recent", where: "(((action)::text = 'comment'::text) AND (responding_to_review_id IS NULL))"
     t.index ["user_id"], name: "index_reviews_on_user_id"
+    t.check_constraint "triage_status::text = 'addressed_by'::text OR addressed_by_rule_id IS NULL", name: "chk_review_addressed_by_fk_consistency"
+    t.check_constraint "triage_status::text = 'duplicate'::text OR duplicate_of_review_id IS NULL", name: "chk_review_duplicate_fk_consistency"
   end
 
   create_table "rule_descriptions", force: :cascade do |t|

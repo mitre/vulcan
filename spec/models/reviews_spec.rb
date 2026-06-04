@@ -2,6 +2,8 @@
 
 require 'rails_helper'
 
+# rubocop:disable Rails/SkipsModelValidations -- test setup deliberately bypasses validations
+# to create specific DB states (stale FKs, nil user_id, imported attribution)
 RSpec.describe Review do
   # Expensive setup: SRG parse + component creation — do once
   let_it_be(:shared_srg) do
@@ -525,11 +527,11 @@ RSpec.describe Review do
     # sense when triage_status='duplicate'. Catches the opposite of
     # duplicate_status_requires_target — a stray cross-link on a non-
     # duplicate triage that would silently corrupt the disposition matrix.
-    it 'rejects a stray duplicate_of_review_id on a non-duplicate triage' do
+    it 'defensive callback clears stray duplicate_of_review_id on a non-duplicate triage' do
       review = Review.new(action: 'comment', comment: 'stray', user: @p_viewer, rule: @p1r1,
                           triage_status: 'concur', duplicate_of_review_id: original.id)
-      expect(review).not_to be_valid
-      expect(review.errors[:duplicate_of_review_id].join).to match(/blank.*not duplicate/i)
+      review.valid?
+      expect(review.duplicate_of_review_id).to be_nil
     end
 
     it 'allows nil duplicate_of_review_id on a non-duplicate triage' do
@@ -559,11 +561,11 @@ RSpec.describe Review do
       expect(review.errors[:addressed_by_rule_id]).to be_empty
     end
 
-    it 'rejects a stray addressed_by_rule_id on a non-addressed_by triage' do
+    it 'defensive callback clears stray addressed_by_rule_id on a non-addressed_by triage' do
       review = Review.new(action: 'comment', comment: 'x', user: @p_viewer, rule: @p1r1,
                           triage_status: 'concur', addressed_by_rule_id: parent_rule.id)
-      expect(review).not_to be_valid
-      expect(review.errors[:addressed_by_rule_id].join).to match(/blank.*not addressed_by/i)
+      review.valid?
+      expect(review.addressed_by_rule_id).to be_nil
     end
 
     it 'allows nil addressed_by_rule_id on a non-addressed_by triage' do
@@ -1195,4 +1197,49 @@ RSpec.describe Review do
       end
     end
   end
+
+  describe 'CHECK constraints — non-bypassable FK consistency' do
+    let_it_be(:chk_user) { create(:user) }
+    let_it_be(:chk_project) { create(:project) }
+    let_it_be(:chk_srg) { create(:security_requirements_guide) }
+    let_it_be(:chk_component) { create(:component, project: chk_project, based_on: chk_srg) }
+    let(:chk_rule) { chk_component.rules.first }
+
+    before_all do
+      Membership.find_or_create_by!(user: chk_user, membership: chk_project) { |m| m.role = 'author' }
+    end
+
+    it 'DB rejects duplicate_of_review_id when triage_status is not duplicate' do
+      review = create(:review, :comment, comment: 'test', section: nil, user: chk_user, rule: chk_rule)
+      expect do
+        review.update_columns(triage_status: 'concur', duplicate_of_review_id: review.id)
+      end.to raise_error(ActiveRecord::StatementInvalid, /chk_review_duplicate_fk_consistency/)
+    end
+
+    it 'DB rejects addressed_by_rule_id when triage_status is not addressed_by' do
+      review = create(:review, :comment, comment: 'test', section: nil, user: chk_user, rule: chk_rule)
+
+      expect do
+        review.update_columns(triage_status: 'concur', addressed_by_rule_id: chk_rule.id)
+      end.to raise_error(ActiveRecord::StatementInvalid, /chk_review_addressed_by_fk_consistency/)
+    end
+
+    it 'DB allows duplicate_of_review_id when triage_status IS duplicate' do
+      survivor = create(:review, :comment, comment: 'survivor', section: nil, user: chk_user, rule: chk_rule)
+      review = create(:review, :comment, comment: 'dup', section: nil, user: chk_user, rule: chk_rule)
+
+      expect do
+        review.update_columns(triage_status: 'duplicate', duplicate_of_review_id: survivor.id)
+      end.not_to raise_error
+    end
+
+    it 'DB allows addressed_by_rule_id when triage_status IS addressed_by' do
+      review = create(:review, :comment, comment: 'ab', section: nil, user: chk_user, rule: chk_rule)
+
+      expect do
+        review.update_columns(triage_status: 'addressed_by', addressed_by_rule_id: chk_rule.id)
+      end.not_to raise_error
+    end
+  end
 end
+# rubocop:enable Rails/SkipsModelValidations
