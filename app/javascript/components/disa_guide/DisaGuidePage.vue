@@ -23,10 +23,16 @@
       <main class="disa-guide-main">
         <div class="disa-guide-main__header">
           <h5 class="mb-0">{{ pageTitle }}</h5>
-          <b-button variant="link" class="ml-auto p-0 text-body" aria-label="Toggle dark mode" @click="toggleColorMode">
+          <b-button
+            variant="link"
+            class="ml-auto p-0 text-body"
+            aria-label="Toggle dark mode"
+            @click="toggleColorMode"
+          >
             <b-icon :icon="isDarkMode ? 'sun' : 'moon'" />
           </b-button>
         </div>
+        <!-- eslint-disable-next-line vue/no-v-html -- sanitized server-side by Rails SafeListSanitizer -->
         <div class="disa-guide-content" v-html="htmlContent" />
       </main>
 
