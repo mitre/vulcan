@@ -53,9 +53,9 @@ class DisaGuideController < ApplicationController
       '[\1](/disa-guide/attachments/\2)'
     )
     rendered_html = Commonmarker.to_html(markdown_content, options: {
-                                          render: { unsafe: true },
-                                          extension: { header_ids: '' }
-                                        })
+                                           render: { unsafe: true },
+                                           extension: { header_ids: '' }
+                                         })
     doc = Nokogiri::HTML.fragment(rendered_html)
     @toc = extract_toc(doc)
     @html_content = ActionController::Base.helpers.sanitize(
@@ -80,14 +80,15 @@ class DisaGuideController < ApplicationController
     send_file file_path, disposition: :attachment
   end
 
-  private
-
   CALLOUT_VARIANTS = {
     'info' => 'info',
     'warning' => 'warning',
     'tip' => 'success',
-    'danger' => 'danger'
+    'danger' => 'danger',
+    'note' => 'secondary'
   }.freeze
+
+  private
 
   def convert_callouts(markdown)
     markdown.gsub(/^::: (\w+)\s*(.*?)\n(.*?)^:::\s*$/m) do
