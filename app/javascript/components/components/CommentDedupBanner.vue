@@ -20,32 +20,11 @@
         v-for="row in rows"
         :key="row.id"
         class="mb-2 rounded px-2 py-1"
-        :class="[triageBgClass(row.triage_status), { 'dedup-dimmed': isDimmed(row) }]"
+        :class="{ 'dedup-dimmed': isDimmed(row) }"
       >
-        <div class="text-break">
-          <strong>{{ row.author_name }}</strong>
-          <SectionLabel v-if="row.section" :section="row.section" class="badge badge-light ml-1" />
-          <TriageStatusBadge
-            v-if="row.triage_status"
-            :status="row.triage_status"
-            :adjudicated-at="row.adjudicated_at"
-            :duplicate-of-id="row.duplicate_of_review_id"
-            :addressed-by-rule-id="row.addressed_by_rule_id"
-            :addressed-by-rule-name="row.addressed_by_rule_name"
-            class="ml-1"
-          />
-          ({{ friendlyDateTime(row.created_at) }}) — &quot;{{ row.comment }}&quot;
-        </div>
-        <ReactionButtons
-          v-if="row.reactions"
-          :review-id="row.id"
-          :reactions="row.reactions"
-          @toggle="(kind) => toggleReaction(row, kind)"
-        />
-        <CommentThread
-          :parent-review-id="row.id"
-          :responses-count="row.responses_count || 0"
-          :can-reply="true"
+        <CommentItem
+          :comment="normalizeRow(row)"
+          @toggle-reaction="(kind) => toggleReaction(row, kind)"
           @reply="$emit('reply', $event)"
         />
       </li>
@@ -56,24 +35,23 @@
 <script>
 import { getComments } from "../../api/componentsApi";
 import { sectionLabel } from "../../constants/triageVocabulary";
-import SectionLabel from "../shared/SectionLabel.vue";
-import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
-import CommentThread from "../shared/CommentThread.vue";
-import ReactionButtons from "../shared/ReactionButtons.vue";
-import AlertMixin from "../../mixins/AlertMixin.vue";
-import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
+import CommentItem from "../shared/CommentItem.vue";
+import { useCommentReactions } from "../../composables/useCommentReactions";
 import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
-import { triageBgClass } from "../../utils/triageBgClass";
 
 export default {
   name: "CommentDedupBanner",
-  components: { SectionLabel, TriageStatusBadge, CommentThread, ReactionButtons },
-  mixins: [AlertMixin, ReactionToggleMixin, DateFormatMixin],
+  components: { CommentItem },
+  mixins: [DateFormatMixin],
   props: {
     componentId: { type: [Number, String], required: true },
     ruleId: { type: [Number, String], default: null },
     section: { type: String, default: null },
     componentScoped: { type: Boolean, default: false },
+  },
+  setup() {
+    const { toggle: toggleReactionApi } = useCommentReactions();
+    return { toggleReactionApi };
   },
   data() {
     return { rows: [], total: 0, totalComments: 0, expanded: false };
@@ -105,7 +83,24 @@ export default {
     componentScoped: "fetch",
   },
   methods: {
-    triageBgClass,
+    normalizeRow(row) {
+      return {
+        id: row.id,
+        authorName: row.author_name || row.commenter_display_name,
+        authorEmail: row.commenter_email,
+        text: row.comment,
+        section: row.section,
+        triageStatus: row.triage_status,
+        createdAt: row.created_at,
+        reactions: row.reactions || {},
+        responsesCount: row.responses_count || 0,
+        isImported: row.commenter_imported || false,
+        adjudicatedAt: row.adjudicated_at,
+        duplicateOfReviewId: row.duplicate_of_review_id,
+        addressedByRuleId: row.addressed_by_rule_id,
+        addressedByRuleName: row.addressed_by_rule_name,
+      };
+    },
     isDimmed(row) {
       if (!this.section || this.componentScoped) return false;
       return row.section !== this.section;
@@ -143,7 +138,7 @@ export default {
       const apply = (reactions) => {
         this.$set(this.rows, idx, { ...this.rows[idx], reactions });
       };
-      this.submitReactionToggle({ reviewId: row.id, prev, kind, apply });
+      this.toggleReactionApi(row.id, kind, prev, apply);
     },
   },
 };

@@ -202,4 +202,23 @@ describe("CommentDedupBanner", () => {
     await w.setProps({ section: null });
     expect(w.vm.inSection).toBe(0); // null section never matches
   });
+
+  // ── v2-05f.62.5: CommentItem migration ──────────────────────────────
+
+  it("renders CommentItem for each comment row", async () => {
+    const w = await mountWith("check_content");
+    w.vm.expanded = true;
+    await w.vm.$nextTick();
+    const items = w.findAllComponents({ name: "CommentItem" });
+    expect(items.length).toBe(3);
+  });
+
+  it("passes normalized comment data to CommentItem", async () => {
+    const w = await mountWith("check_content");
+    w.vm.expanded = true;
+    await w.vm.$nextTick();
+    const first = w.findComponent({ name: "CommentItem" });
+    expect(first.props("comment").id).toBe(1);
+    expect(first.props("comment").authorName).toBe("John Doe");
+  });
 });
