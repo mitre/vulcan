@@ -88,7 +88,7 @@
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import FormMixinVue from "../../mixins/FormMixin.vue";
-import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
+import { useCommentReactions } from "../../composables/useCommentReactions";
 import { ACTION_DESCRIPTIONS } from "../../constants/terminology";
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
 import SectionLabel from "../shared/SectionLabel.vue";
@@ -109,7 +109,7 @@ export default {
     ReactionButtons,
     UserBadge,
   },
-  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue, ReactionToggleMixin],
+  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
   props: {
     effectivePermissions: {
       type: String,
@@ -133,6 +133,10 @@ export default {
       type: String,
       default: null,
     },
+  },
+  setup() {
+    const { toggle: toggleReactionApi } = useCommentReactions();
+    return { toggleReactionApi };
   },
   data() {
     return {
@@ -197,9 +201,9 @@ export default {
     toggleReaction(review, kind) {
       const prev = { ...review.reactions };
       const apply = (reactions) => {
-        this.$set(review, "reactions", reactions);
+        review.reactions = reactions;
       };
-      this.submitReactionToggle({ reviewId: review.id, prev, kind, apply });
+      this.toggleReactionApi(review.id, kind, prev, apply);
     },
   },
 };

@@ -275,8 +275,8 @@ import { updateReviewSection } from "../../api/reviewsApi";
 import AlertMixin from "../../mixins/AlertMixin.vue";
 import FormMixin from "../../mixins/FormMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
-import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
 import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
+import { useCommentReactions } from "../../composables/useCommentReactions";
 import { submitTriage, submitAdjudicate, submitAdminAction } from "../../services/triageService";
 import {
   SECTION_LABELS,
@@ -307,7 +307,7 @@ export default {
   // navbar pack's FormMixin doesn't reach the triage pack.
   // RoleComparisonMixin provides role_gte_to() for the canEditSection gate
   //.
-  mixins: [AlertMixin, FormMixin, RoleComparisonMixin, ReactionToggleMixin, DateFormatMixin],
+  mixins: [AlertMixin, FormMixin, RoleComparisonMixin, DateFormatMixin],
   props: {
     review: { type: Object, default: null },
     // Component the picker is scoped to — defaults to the review's
@@ -321,6 +321,10 @@ export default {
     commentsClosed: { type: Boolean, default: false },
     closedReason: { type: String, default: null },
     currentUserId: { type: Number, default: null },
+  },
+  setup() {
+    const { toggle: toggleReactionApi } = useCommentReactions();
+    return { toggleReactionApi };
   },
   data() {
     return {
@@ -443,7 +447,7 @@ export default {
       const apply = (reactions) => {
         this.$emit("triaged", { ...this.review, reactions });
       };
-      this.submitReactionToggle({ reviewId: this.review.id, prev, kind, apply });
+      this.toggleReactionApi(this.review.id, kind, prev, apply);
     },
     onTargetRuleSelected(ruleId) {
       this.adminTargetRuleId = ruleId;
