@@ -959,18 +959,15 @@ body.has-classification-banner {
   --disa-header-height: 3.25rem;
   --disa-sidebar-width: 14rem;
   --disa-toc-width: 13rem;
-  // Fill viewport below navbar
-  height: calc(100vh - 3.5rem);
-  overflow: hidden;
+  scroll-behavior: smooth;
 }
 
 .disa-guide-layout {
   display: flex;
-  height: calc(100vh - 5rem);
+  min-height: calc(100vh - 5rem);
   border: 1px solid var(--vulcan-border-color);
   border-radius: 0.5rem;
   margin: 0.75rem 1rem;
-  overflow: hidden;
 }
 
 // ── Left sidebar ────────────────────────────────────────────
@@ -979,8 +976,10 @@ body.has-classification-banner {
   flex-shrink: 0;
   background-color: var(--vulcan-secondary-bg);
   border-right: 1px solid var(--vulcan-border-color);
-  display: flex;
-  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
 
   &__header {
     display: flex;
@@ -990,7 +989,10 @@ body.has-classification-banner {
     border-bottom: 1px solid var(--vulcan-border-subtle);
     color: var(--vulcan-emphasis-color);
     font-weight: 700;
-    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    background-color: var(--vulcan-secondary-bg);
+    z-index: 1;
   }
 }
 
@@ -1045,8 +1047,6 @@ body.has-classification-banner {
 .disa-guide-main {
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
   background-color: var(--vulcan-body-bg);
 
   &__header {
@@ -1057,7 +1057,9 @@ body.has-classification-banner {
     border-bottom: 1px solid var(--vulcan-border-subtle);
     background-color: var(--vulcan-secondary-bg);
     color: var(--vulcan-emphasis-color);
-    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 1;
   }
 }
 
@@ -1067,8 +1069,10 @@ body.has-classification-banner {
   flex-shrink: 0;
   background-color: var(--vulcan-secondary-bg);
   border-left: 1px solid var(--vulcan-border-color);
-  display: flex;
-  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
 
   &__header {
     display: flex;
@@ -1080,7 +1084,10 @@ body.has-classification-banner {
     text-transform: uppercase;
     letter-spacing: 0.06em;
     font-size: 0.65rem;
-    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    background-color: var(--vulcan-secondary-bg);
+    z-index: 1;
   }
 }
 
@@ -1114,12 +1121,13 @@ body.has-classification-banner {
 }
 
 .disa-guide-content {
-  flex: 1;
-  overflow-y: auto;
-  scroll-behavior: smooth;
   padding: 1.5rem 2rem;
   color: var(--vulcan-body-color);
   line-height: 1.7;
+
+  h1, h2, h3, h4, h5, h6 {
+    scroll-margin-top: 1rem;
+  }
 
   h1 {
     font-size: 1.75rem;

@@ -108,7 +108,9 @@ class DisaGuideController < ApplicationController
       anchor = heading.at_css('a.anchor[id]')
       next unless anchor
 
-      toc << { level: heading.name[1].to_i, text: heading.text.strip, id: anchor['id'] }
+      heading['id'] = anchor['id']
+      anchor.remove
+      toc << { level: heading.name[1].to_i, text: heading.text.strip, id: heading['id'] }
     end
     toc
   end

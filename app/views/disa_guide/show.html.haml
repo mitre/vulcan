@@ -23,5 +23,5 @@
           %small.font-weight-bold On this page
         %nav.disa-guide-toc{"aria-label" => "On this page"}
           - @toc.each do |entry|
-            %a.disa-guide-toc__link{href: "##{entry[:id]}", class: "toc-level-#{entry[:level]}"}
+            %a.disa-guide-toc__link{href: "##{entry[:id]}", class: "toc-level-#{entry[:level]}", "data-turbolinks" => "false"}
               = entry[:text]
