@@ -23,7 +23,7 @@
           <template v-if="editingId === t.id">
             <div class="flex-grow-1 mr-2">
               <b-form-input v-model="editName" size="sm" class="mb-1" placeholder="Template name" />
-              <MarkdownTextarea v-model="editBody" placeholder="Template body" />
+              <MarkdownTextarea v-model="editBody" rows="6" placeholder="Template body" />
             </div>
             <b-button size="sm" variant="outline-primary" class="mr-1" @click="saveEdit(t.id)">
               Save
@@ -61,28 +61,41 @@
 
       <div class="border rounded p-3" style="background-color: var(--vulcan-tertiary-bg)">
         <h6 class="mb-2">New Template</h6>
-        <b-form-input
-          v-model="newName"
-          size="sm"
-          class="mb-2"
-          placeholder="Template name"
-          data-testid="new-template-name"
-        />
-        <MarkdownTextarea
-          v-model="newBody"
-          class="mb-2"
-          placeholder="Response text (markdown supported)"
-          data-testid="new-template-body"
-        />
-        <b-button
-          variant="outline-primary"
-          size="sm"
-          :disabled="!newName.trim() || !newBody.trim()"
-          data-testid="create-template-btn"
-          @click="onCreate"
-        >
-          Save Template
-        </b-button>
+        <b-form @submit.prevent="onCreate">
+          <b-form-group label="Template name" label-for="new-template-name">
+            <b-form-input
+              id="new-template-name"
+              v-model="newName"
+              size="sm"
+              placeholder="Template name"
+              required
+              autocomplete="off"
+              data-testid="new-template-name"
+            />
+          </b-form-group>
+          <b-form-group
+            label="Template body"
+            label-for="new-template-body"
+            :state="newBodyTouched ? newBodyValid : null"
+            invalid-feedback="Template body is required."
+          >
+            <MarkdownTextarea
+              id="new-template-body"
+              v-model="newBody"
+              rows="8"
+              placeholder="Response text (markdown supported)"
+              data-testid="new-template-body"
+            />
+          </b-form-group>
+          <b-button
+            type="submit"
+            variant="outline-primary"
+            size="sm"
+            data-testid="create-template-btn"
+          >
+            Save Template
+          </b-button>
+        </b-form>
       </div>
     </template>
   </b-modal>
@@ -110,10 +123,16 @@ export default {
       loading: false,
       newName: "",
       newBody: "",
+      newBodyTouched: false,
       editingId: null,
       editName: "",
       editBody: "",
     };
+  },
+  computed: {
+    newBodyValid() {
+      return this.newBody.trim().length > 0;
+    },
   },
   watch: {
     visible: {
@@ -136,6 +155,12 @@ export default {
       }
     },
     async onCreate() {
+      // Name uses native HTML5 required (b-form-input + required attr) so the
+      // browser's "Please fill out this field" tooltip fires before we get
+      // here. Body is a MarkdownTextarea wrapping EasyMDE, which hides the
+      // native textarea — HTML5 can't reach it. Mark touched + bail so the
+      // b-form-group's invalid-feedback renders inline.
+      this.newBodyTouched = true;
       if (!this.newName.trim() || !this.newBody.trim()) return;
       await createTriageResponseTemplate(this.projectId, {
         name: this.newName.trim(),
@@ -143,6 +168,7 @@ export default {
       });
       this.newName = "";
       this.newBody = "";
+      this.newBodyTouched = false;
       await this.fetch();
       this.$emit("saved");
     },
@@ -177,11 +203,5 @@ export default {
 <style scoped>
 .white-space-pre-wrap {
   white-space: pre-wrap;
-}
-</style>
-
-<style>
-.manage-templates-modal .CodeMirror {
-  min-height: 12rem;
 }
 </style>

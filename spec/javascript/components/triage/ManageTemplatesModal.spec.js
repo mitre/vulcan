@@ -79,7 +79,9 @@ describe("ManageTemplatesModal", () => {
     wrapper.vm.newName = "New template";
     wrapper.vm.newBody = "New body";
     await wrapper.vm.$nextTick();
-    await wrapper.find("[data-testid='create-template-btn']").trigger("click");
+    // The Save Template button is type=submit inside a b-form — trigger
+    // the form's submit event so @submit.prevent="onCreate" fires.
+    await wrapper.find("form").trigger("submit");
     await flushPromises();
 
     expect(createTriageResponseTemplate).toHaveBeenCalledWith(42, {
@@ -89,9 +91,18 @@ describe("ManageTemplatesModal", () => {
     expect(wrapper.emitted("saved")).toBeTruthy();
   });
 
-  it("disables create button when name or body is empty", () => {
-    const btn = wrapper.find("[data-testid='create-template-btn']");
-    expect(btn.attributes("disabled")).toBeDefined();
+  it("marks the body field invalid (touched + empty) when submitted with empty body", async () => {
+    const { createTriageResponseTemplate } = await import("@/api/projectsApi");
+
+    wrapper.vm.newName = "Has a name";
+    wrapper.vm.newBody = "";
+    await wrapper.vm.$nextTick();
+    await wrapper.find("form").trigger("submit");
+    await flushPromises();
+
+    expect(wrapper.vm.newBodyTouched).toBe(true);
+    expect(wrapper.vm.newBodyValid).toBe(false);
+    expect(createTriageResponseTemplate).not.toHaveBeenCalled();
   });
 
   it("has edit and delete buttons per template row", () => {
