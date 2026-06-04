@@ -64,7 +64,6 @@ The STIG development process begins with a vendor orientation, which includes a 
 
 - Security Requirements Guides (SRGs) applicable to the technology.
 
-<!-- -->
 
 - Requirements “Cheat Sheet.”
 
@@ -78,7 +77,6 @@ If vendor resources are available and the vendor wishes to continue, the process
 
 - Within two weeks, the vendor returns the STIG template to DISA with 10 requirements completed. This must be a mix of all statuses: Applicable – Configurable, Applicable – Inherently Meets, Applicable – Does Not Meet, and Not Applicable.
 
-<!-- -->
 
 - DISA reviews the requirements and either accepts them and notifies the vendor to move forward with development or asks for updates and resubmission.
 
@@ -86,7 +84,6 @@ If vendor resources are available and the vendor wishes to continue, the process
 
 - Within 30 days after the DISA decision to proceed, the vendor submits the STIG as a work in progress to DISA for review.
 
-<!-- -->
 
 - DISA reviews the STIG and notifies the vendor to move forward with current development or offers feedback on areas for improvement.
 
@@ -94,7 +91,6 @@ If vendor resources are available and the vendor wishes to continue, the process
 
 - Within 60 days after the DISA decision to proceed, the vendor submits the STIG as a work in progress to DISA for review.
 
-<!-- -->
 
 - DISA reviews the STIG and notifies the vendor to move forward with current development or offers feedback on areas for improvement.
 
@@ -118,7 +114,6 @@ The vendor will use the technology-specific STIG template, Vendor STIG Process G
 
 - Requirements Analysis.
 
-<!-- -->
 
 - Vendor populates the Status column of the spreadsheet.
 
@@ -128,11 +123,9 @@ The vendor will use the technology-specific STIG template, Vendor STIG Process G
 
 - Vendor populates the Artifact Description column for “Inherently Meets” requirements.
 
-<!-- -->
 
 - Check and Fix Procedure Development.
 
-<!-- -->
 
 - Vendor identifies configurable settings relevant to the requirement.
 
@@ -206,7 +199,6 @@ The Vulnerability Discussion should not be overly long or detailed, but it shoul
 
 - Discuss how it affects the product.
 
-<!-- -->
 
 - Include a statement that identifies the risk created if the requirement is not met.
 
@@ -223,7 +215,7 @@ This is a required field. Select from a drop-down list that contains the followi
 | Applicable – Does Not Meet | There are no technical means to achieve compliance. |
 | Not Applicable | The requirement addresses a capability or use case that the product does not support. |
 
-: Statuses
+**Table: Statuses**
 
 Use the following additional guidance in determining the status:
 
@@ -233,7 +225,6 @@ Use the following additional guidance in determining the status:
 
 - If the product **DOES NOT** natively meet the SRG requirement and **CANNOT** be reconfigured to meet the SRG requirement, the status is **Applicable – Does Not Meet**.
 
-<!-- -->
 
 - If the product features and functions or overall architecture do not align with the SRG requirement, the status is **Not Applicable**. (For example, if the requirement addresses encryption of removable data storage media but the product does not support removable media, the requirement is Not Applicable.)
 
@@ -245,8 +236,8 @@ The SRG Check content provides a generic approach to assess the SRG requirement.
 
 #### Check
 
-::: warning Critical Rule
-**Complete this cell only for rows where the status is Applicable – Configurable. Leave it blank for all other status types.** Submitting Check content for AIM, ADNM, or NA statuses may cause DISA to reject the submission.
+::: warning Critical Rule — Section 4.1.11
+**"Complete this cell only for rows where the status is Applicable – Configurable. Leave it blank for all other status types."** Submitting Check content for non-AC statuses violates DISA formatting requirements.
 :::
 
 The Check is used to provide specific instruction on how to validate product configuration settings. It must include any information and procedures necessary for validating the configured value.
@@ -283,13 +274,13 @@ Write the Check so the user can easily follow the steps to assess and determine 
 
 - For checks that require a sequence of actions, use numbered steps as shown below:
 
-> 1\. Log on to…
+> 1. Log on to…
 >
-> 2\. Open the…
+> 2. Open the…
 >
-> 3\. Click….
+> 3. Click….
 >
-> 4\. Determine…
+> 4. Determine…
 
 - Include a “finding” statement written as: “If….this is a finding”.
 
@@ -327,8 +318,8 @@ The SRG Fix content provides a generic approach to bringing the product into com
 
 #### Fix
 
-::: warning Critical Rule
-**Complete this cell only for rows where the status is Applicable – Configurable. Leave it blank for all other statuses.** Same rule as Check — non-AC statuses must have blank Fix content.
+::: warning Critical Rule — Section 4.1.13
+**"Complete this cell only for rows where the status is Applicable – Configurable. Leave it blank for all other statuses."** Same rule as Check content above.
 :::
 
 The Fix is used to provide specific instructions on how to configure the product to comply with the requirement.
@@ -349,13 +340,13 @@ When writing the Fix content, the vendor must include all steps needed to config
 
 - For Fix procedures that require a sequence of actions, use numbered steps as shown below:
 
-> 1\. Log on to…
+> 1. Log on to…
 >
-> 2\. Open the…
+> 2. Open the…
 >
-> 3\. Click the….
+> 3. Click the….
 >
-> 4\. Ensure…
+> 4. Ensure…
 
 - Do not include a finding statement in the Fix.
 
@@ -375,7 +366,7 @@ The CAT is a required field selected from a drop-down list that contains the fol
 | CAT II | Any vulnerability, the exploitation of which **has a potential** to result in loss of confidentiality, availability, or integrity. |
 | CAT III | Any vulnerability, the existence of which **degrades measures** to protect against loss of confidentiality, availability, or integrity. |
 
-: Vulnerability Severity Category Code Definitions
+**Table: Vulnerability Severity Category Code Definitions**
 
 ::: warning Severity Rules
 - Requirements evaluated to be **Not Applicable do not require a severity** — leave blank.
@@ -405,8 +396,10 @@ An “Applicable – Does Not Meet” vulnerability may be fully mitigated by th
 ::: tip Cross-STIG Mitigation Examples
 - “This requirement is fully mitigated by the Apache Server 2.4 Windows Server STIG. The Apache Web Server accounts not used by installed features (e.g., tools, utilities, specific services) must not be created and must be deleted when the Apache web server feature is uninstalled. (AS24-W1-000280)”
 - “This requirement is fully mitigated by the underlying operating system. (WN16-SO-000430)”
+:::
 
-In Vulcan, nesting a rule via the Satisfies panel auto-populates this mitigation text.
+::: info Vulcan Feature
+In Vulcan, nesting a rule via the Satisfies panel auto-populates the status (ADNM), status justification, and mitigation text per the DISA template above.
 :::
 
 #### Artifact Description
@@ -425,7 +418,7 @@ This field provides citations to the documentary evidence that describe how each
 
 - Steps to verify the product cannot be configured to be out of compliance with the requirement.
 
-::: warning
+::: warning Insufficient Evidence
 Blogs and email messages are **not sufficient documentation** to support an Applicable – Inherently Meets status. DISA requires published manuals, test reports, or letters of attestation.
 :::
 
@@ -509,7 +502,6 @@ To perform STIG simulation, DISA will require access to the software for which a
 
 - Vendor provides an environment at either its site or another DOD site, and DISA uses that environment for the validation.
 
-<!-- -->
 
 - Vendor provides a solution that allows the SME to access the environment remotely.
 
@@ -543,33 +535,26 @@ The Review and Approval stage is the last milestone in the vendor STIG process. 
 
 - DISA Internal Reviews.
 
-<!-- -->
 
 - Technology SME develops a formal compliance report and a briefing for the DISA Authorizing Official.
 
-<!-- -->
 
 - Style Guide Review.
 
-<!-- -->
 
 - Materials are reviewed internally within DISA.
 
 - Vendor and DISA collaborate on updates if needed.
 
-<!-- -->
 
 - Decision Brief.
 
-<!-- -->
 
 - Materials are presented to the DISA Authorizing Official.
 
-<!-- -->
 
 - DISA AO Approval.
 
-<!-- -->
 
 - DISA Authorizing Official approves the STIG.
 
@@ -577,21 +562,17 @@ The Review and Approval stage is the last milestone in the vendor STIG process. 
 
   - Any restrictions on use may be annotated in the signature memo upon approval of the STIG.
 
-<!-- -->
 
 - Vendor Notification.
 
-<!-- -->
 
 - DISA shares the outcome of the Decision Brief with the vendor.
 
 - Vendor and DISA collaborate on updates if needed.
 
-<!-- -->
 
 - STIG Publication.
 
-<!-- -->
 
 - STIG (Applicable – Configurable requirements), along with a DISA-provided overview document, is sent to the DISA Public Affairs Office for review and approval.
 
@@ -618,7 +599,6 @@ DOD Authorizing Officials have the purview to determine product use/approval in 
 
 - National Institute of Standards and Technology (NIST) Cryptographic Module Validation Program (CMVP) (<https://csrc.nist.gov/groups/STM/cmvp/>) IAW Federal/DOD mandated standards
 
-<!-- -->
 
 - DOD Unified Capabilities (UC) Approved Products List (APL) (<https://www.disa.mil/network-services/ucco>) IAW DoDI 8100.04
 
@@ -646,5 +626,5 @@ The table below identifies fields in the STIG template and defines how they are 
 | Artifact Description | NA |
 | Status Justification | NA |
 
-: Field Name Cross-Reference
+**Table: Field Name Cross-Reference**
   [National Institute of Standards and Technology (NIST) Special Publication (SP) 800-53]: https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final

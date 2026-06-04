@@ -262,7 +262,7 @@ describe("useRuleFormFields", () => {
       expect(ruleFormFields.value.disabled).toEqual([]);
     });
 
-    it("Not Applicable: shows status, rule_severity, status_justification, artifact_description, vendor_comments; disables rule_severity", () => {
+    it("Not Applicable: shows status, rule_severity, status_justification, vendor_comments; disables rule_severity; NO artifact_description (AIM only per §4.1.16)", () => {
       const rule = ref(makeRule({ status: "Not Applicable" }));
       const { ruleFormFields } = useRuleFormFields(rule, advancedMode);
       expect(ruleFormFields.value.displayed).toEqual(
@@ -270,10 +270,10 @@ describe("useRuleFormFields", () => {
           "status",
           "rule_severity",
           "status_justification",
-          "artifact_description",
           "vendor_comments",
         ]),
       );
+      expect(ruleFormFields.value.displayed).not.toContain("artifact_description");
       expect(ruleFormFields.value.disabled).toEqual(expect.arrayContaining(["rule_severity"]));
     });
   });
@@ -340,7 +340,7 @@ describe("useRuleFormFields", () => {
       );
     });
 
-    it("Not Applicable: same as basic in advanced mode", () => {
+    it("Not Applicable: same as basic in advanced mode (no artifact_description per §4.1.16)", () => {
       const rule = ref(makeRule({ status: "Not Applicable" }));
       const { ruleFormFields } = useRuleFormFields(rule, advancedMode);
       expect(ruleFormFields.value.displayed).toEqual(
@@ -348,10 +348,10 @@ describe("useRuleFormFields", () => {
           "status",
           "rule_severity",
           "status_justification",
-          "artifact_description",
           "vendor_comments",
         ]),
       );
+      expect(ruleFormFields.value.displayed).not.toContain("artifact_description");
       expect(ruleFormFields.value.disabled).toEqual(expect.arrayContaining(["rule_severity"]));
     });
   });
@@ -882,7 +882,6 @@ describe("useRuleFormFields", () => {
               "status",
               "rule_severity",
               "status_justification",
-              "artifact_description",
               "vendor_comments",
             ],
             disabled: ["rule_severity"],
@@ -896,7 +895,6 @@ describe("useRuleFormFields", () => {
               "status",
               "rule_severity",
               "status_justification",
-              "artifact_description",
               "vendor_comments",
             ],
             disabled: ["rule_severity"],

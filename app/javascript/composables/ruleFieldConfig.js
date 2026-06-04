@@ -133,13 +133,7 @@ export const STATUS_FIELD_CONFIG = {
 
   "Not Applicable": {
     rule: {
-      displayed: [
-        "status",
-        "rule_severity",
-        "status_justification",
-        "artifact_description",
-        "vendor_comments",
-      ],
+      displayed: ["status", "rule_severity", "status_justification", "vendor_comments"],
       disabled: ["rule_severity"],
       advancedDisplayed: [],
       advancedDisabled: [],
