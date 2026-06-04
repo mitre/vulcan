@@ -25,10 +25,10 @@
       "note": "False positive: search terms sanitized via sanitize_sql_like in build_ilike_conditions"
     },
     {
-      "fingerprint": "d6f5de8057188556c6d5c117546394a482caa88436622c512ceb21a3a1e2e184",
+      "fingerprint": "67a915d17e2ebb4d1a83016b683cdf09d6e1553033eb2bcb4f6fd110051e054d",
       "note": "False positive: File.basename strips path traversal; only serves files from fixed attachments directory"
     }
   ],
-  "updated": "2026-05-26",
+  "updated": "2026-06-04",
   "brakeman_version": "7.1.0"
 }
