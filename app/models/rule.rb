@@ -7,8 +7,6 @@ require 'inspec/objects'
 class Rule < BaseRule
   include PgSearch::Model
 
-  attr_accessor :skip_update_inspec_code
-
   # pg_search scope for full-text search across searchable columns
   # Weighted by importance: title (A), fixtext (B), vendor_comments/status_justification (C), artifact_description (D)
   pg_search_scope :search_content,
@@ -271,9 +269,6 @@ class Rule < BaseRule
   end
 
   def update_inspec_code
-    return if skip_update_inspec_code
-
-    self.skip_update_inspec_code = true
     desc = disa_rule_descriptions.first
     control = Inspec::Object::Control.new
     control.add_header('# -*- encoding : utf-8 -*-')
@@ -299,8 +294,9 @@ class Rule < BaseRule
       end
     end
     control.add_post_body(inspec_control_body) if inspec_control_body.present?
-    self.inspec_control_file = control.to_ruby
-    save
+    # rubocop:disable Rails/SkipsModelValidations -- derived column, bypass callbacks to avoid recursion
+    update_column(:inspec_control_file, control.to_ruby)
+    # rubocop:enable Rails/SkipsModelValidations
   end
 
   def basic_fields

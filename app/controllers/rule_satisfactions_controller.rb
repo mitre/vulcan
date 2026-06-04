@@ -14,7 +14,7 @@ class RuleSatisfactionsController < ApplicationController
 
       @rule.apply_nesting_status!(@satisfied_by_rule)
 
-      @satisfied_by_rule.save!
+      @satisfied_by_rule.update_inspec_code
       success = true
     end
 
@@ -37,7 +37,7 @@ class RuleSatisfactionsController < ApplicationController
 
       @rule.revert_nesting_status!
 
-      @satisfied_by_rule.save!
+      @satisfied_by_rule.update_inspec_code
       success = true
     end
 

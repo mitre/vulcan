@@ -52,7 +52,6 @@ module Import
         srg_rule = resolve_srg_rule(rule_data)
 
         rule = @component.rules.new
-        rule.skip_update_inspec_code = true
 
         assign_direct_columns(rule, rule_data)
         rule.srg_rule_id = srg_rule&.id

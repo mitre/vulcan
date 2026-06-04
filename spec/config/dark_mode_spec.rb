@@ -43,11 +43,13 @@ RSpec.describe 'Dark mode CSS foundation' do
       expect(dark_block).to include('.bg-white')
     end
 
-    it 'overrides alert variants' do
-      %w[alert-warning alert-danger alert-success alert-info].each do |alert|
-        expect(dark_block).to include(".#{alert}"),
-                              "Missing .#{alert} dark mode override"
+    it 'generates alert overrides for all 4 variants via @each loop' do
+      %w[success danger warning info].each do |variant|
+        expect(dark_block).to include("#{variant}:"),
+                              "Missing #{variant} in dark mode @each variant map"
       end
+      expect(dark_block).to include('$dark-tint-bg'),
+                            'Missing $dark-tint-bg variable in dark mode alert @each'
     end
   end
 

@@ -502,4 +502,23 @@ RSpec.describe Review do
       expect(json[:srg_info][:version]).to eq(srg.version)
     end
   end
+
+  describe 'update_inspec_code (after_save callback)' do
+    it 'regenerates inspec_control_file after title change' do
+      @p1r1.update!(title: 'Updated title for InSpec test', audit_comment: 'test')
+      @p1r1.reload
+      expect(@p1r1.inspec_control_file).to include('Updated title for InSpec test')
+    end
+
+    it 'regenerates inspec_control_file after fixtext change' do
+      @p1r1.update!(fixtext: 'New fix text content here', audit_comment: 'test')
+      @p1r1.reload
+      expect(@p1r1.inspec_control_file).to include('New fix text content here')
+    end
+
+    it 'uses update_column — no recursion guard needed' do
+      @p1r1.update!(title: 'No flag test', audit_comment: 'test')
+      expect(@p1r1).not_to respond_to(:skip_update_inspec_code)
+    end
+  end
 end
