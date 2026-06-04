@@ -5,7 +5,9 @@ import moment from "moment";
 export default {
   methods: {
     friendlyDateTime: function (dateTimeString) {
-      return moment(dateTimeString).format("lll");
+      if (!dateTimeString) return "";
+      const normalized = String(dateTimeString).replace(/ UTC$/, "Z").replace(" ", "T");
+      return moment(normalized).format("lll");
     },
   },
 };

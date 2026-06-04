@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
+import { createPinia, setActivePinia } from "pinia";
 import { localVue } from "@test/testHelper";
 import CommentComposerModal from "@/components/components/CommentComposerModal.vue";
 import { createRuleReview, createComponentReview } from "@/api/reviewsApi";
@@ -57,6 +58,7 @@ const baseProps = {
 
 describe("CommentComposerModal", () => {
   beforeEach(() => {
+    setActivePinia(createPinia());
     vi.clearAllMocks();
     getComments.mockResolvedValue({ data: { rows: [], pagination: { total: 0 } } });
   });

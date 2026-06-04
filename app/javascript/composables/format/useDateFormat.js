@@ -1,17 +1,21 @@
+function normalizeTimestamp(raw) {
+  return String(raw).replace(/ UTC$/, "Z").replace(" ", "T");
+}
+
 export function useDateFormat() {
-  function friendlyDateTime(iso) {
-    if (!iso) return "";
-    return new Date(iso).toLocaleString();
+  function friendlyDateTime(raw) {
+    if (!raw) return "";
+    return new Date(normalizeTimestamp(raw)).toLocaleString();
   }
 
-  function friendlyDate(iso) {
-    if (!iso) return "";
-    return new Date(iso).toLocaleDateString();
+  function friendlyDate(raw) {
+    if (!raw) return "";
+    return new Date(normalizeTimestamp(raw)).toLocaleDateString();
   }
 
-  function relativeTime(iso) {
-    if (!iso) return "";
-    const diff = Date.now() - new Date(iso).getTime();
+  function relativeTime(raw) {
+    if (!raw) return "";
+    const diff = Date.now() - new Date(normalizeTimestamp(raw)).getTime();
     const mins = Math.floor(diff / 60000);
     if (mins < 60) return `${mins}m ago`;
     const hours = Math.floor(mins / 60);

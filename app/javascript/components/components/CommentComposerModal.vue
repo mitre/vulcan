@@ -1,12 +1,5 @@
 <template>
-  <b-modal
-    id="comment-composer-modal"
-    :title="modalTitle"
-    size="lg"
-    centered
-    no-close-on-backdrop
-    @hidden="onHidden"
-  >
+  <b-modal id="comment-composer-modal" :title="modalTitle" size="lg" centered @hidden="onHidden">
     <p class="mb-2">
       <strong>{{ scopeLabel }}</strong>
       <template v-if="!currentReplyToId && ruleId">
