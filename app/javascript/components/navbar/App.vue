@@ -90,9 +90,30 @@
       <!-- ── Collapsible section — nav links + search ── -->
       <b-collapse id="nav-collapse" is-nav>
         <b-navbar-nav class="mr-auto">
-          <b-nav-item v-for="item in navigation" :key="item.name" :href="item.link">
-            <NavbarItem :icon="item.icon" :link="item.link" :name="item.name" />
-          </b-nav-item>
+          <template v-for="item in navigation">
+            <b-nav-item-dropdown
+              v-if="item.children"
+              :key="item.name"
+              right
+              no-caret
+              toggle-class="nav-item__link"
+            >
+              <template #button-content>
+                <b-icon :icon="item.icon" aria-hidden="true" class="nav-item__icon" />
+                <span class="nav-item__label">{{ item.name }}</span>
+              </template>
+              <b-dropdown-item v-for="child in item.children" :key="child.name" :href="child.link">
+                <b-icon v-if="child.icon" :icon="child.icon" class="mr-2" />{{ child.name }}
+              </b-dropdown-item>
+            </b-nav-item-dropdown>
+            <NavbarItem
+              v-else
+              :key="item.name"
+              :icon="item.icon"
+              :link="item.link"
+              :name="item.name"
+            />
+          </template>
         </b-navbar-nav>
 
         <b-nav-form v-if="signed_in">

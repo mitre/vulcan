@@ -42,6 +42,7 @@ export default {
     align-items: center;
     text-align: center;
     gap: 0.125rem;
+    padding: 0.5rem 0.75rem;
   }
 
   .nav-item__label {

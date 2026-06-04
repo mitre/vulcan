@@ -1,26 +1,10 @@
-import { useThemeStore } from "../stores/theme";
-import { sharedPinia } from "../lib/createVulcanApp";
-
-function updateIcon(isDark) {
-  const icon = document.querySelector("#disa-theme-toggle .bi");
-  if (!icon) return;
-  icon.className = "bi " + (isDark ? "bi-sun" : "bi-moon");
-}
+import { toggleTheme } from "./colorMode";
 
 function init() {
   const btn = document.getElementById("disa-theme-toggle");
-  if (!btn) return;
-
-  const store = useThemeStore(sharedPinia);
-  updateIcon(store.isDark);
-
-  store.$subscribe((_mutation, state) => {
-    updateIcon(state.isDark);
-  });
-
-  btn.addEventListener("click", function () {
-    store.toggle();
-  });
+  if (!btn || btn.dataset.bound) return;
+  btn.dataset.bound = "true";
+  btn.addEventListener("click", toggleTheme);
 }
 
 document.addEventListener("turbolinks:load", init);

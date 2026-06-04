@@ -11,9 +11,6 @@ require("../channels");
 // Load the base application CSS Styling
 import "../application";
 
-// DISA Guide theme toggle (non-Vue page)
-import "../utils/disaGuideInit";
-
 // Uncomment to copy all static images under ../images to the output folder and reference
 // them with the image_pack_tag helper in views (e.g <%= image_pack_tag 'rails.png' %>)
 // or the `imagePath` JavaScript helper below.
