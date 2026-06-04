@@ -1,21 +1,26 @@
-import { toggleTheme } from "./colorMode";
+import { useThemeStore } from "../stores/theme";
+import { sharedPinia } from "../lib/createVulcanApp";
 
-function updateIcon() {
+function updateIcon(isDark) {
   const icon = document.querySelector("#disa-theme-toggle .bi");
   if (!icon) return;
-  const dark = document.documentElement.getAttribute("data-bs-theme") === "dark";
-  icon.className = "bi " + (dark ? "bi-sun" : "bi-moon");
+  icon.className = "bi " + (isDark ? "bi-sun" : "bi-moon");
 }
 
 function init() {
   const btn = document.getElementById("disa-theme-toggle");
   if (!btn) return;
 
-  btn.addEventListener("click", function () {
-    toggleTheme();
-    updateIcon();
+  const store = useThemeStore(sharedPinia);
+  updateIcon(store.isDark);
+
+  store.$subscribe((_mutation, state) => {
+    updateIcon(state.isDark);
   });
-  updateIcon();
+
+  btn.addEventListener("click", function () {
+    store.toggle();
+  });
 }
 
 document.addEventListener("turbolinks:load", init);

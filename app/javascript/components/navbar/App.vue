@@ -122,7 +122,7 @@ import GlobalSearch from "./GlobalSearch.vue";
 import ConsentModal from "../shared/ConsentModal.vue";
 import UserBadge from "../shared/UserBadge.vue";
 import { EVENTS, listen } from "../../utils/notificationEvents";
-import { initTheme, toggleTheme } from "../../utils/colorMode";
+import { useThemeStore } from "../../stores/theme";
 
 export default {
   name: "Navbar",
@@ -173,6 +173,10 @@ export default {
       default: "0.0.0",
     },
   },
+  setup() {
+    const themeStore = useThemeStore();
+    return { themeStore };
+  },
   data() {
     return {
       latestRelease: "",
@@ -182,10 +186,12 @@ export default {
       localAccessRequests: [...this.access_requests],
       cleanupLockout: null,
       cleanupAccessRequest: null,
-      isDarkMode: false,
     };
   },
   computed: {
+    isDarkMode() {
+      return this.themeStore.isDark;
+    },
     notificationCount() {
       return this.localAccessRequests.length + this.localLockedUsers.length;
     },
@@ -199,8 +205,7 @@ export default {
     },
   },
   mounted() {
-    initTheme();
-    this.isDarkMode = document.documentElement.getAttribute("data-bs-theme") === "dark";
+    this.themeStore.init();
     this.fetchLatestRelease();
     this.cleanupLockout = listen(EVENTS.LOCKOUT_CHANGED, this.onLockoutChanged);
     this.cleanupAccessRequest = listen(EVENTS.ACCESS_REQUEST_CHANGED, this.onAccessRequestChanged);
@@ -211,8 +216,7 @@ export default {
   },
   methods: {
     toggleColorMode() {
-      const newTheme = toggleTheme();
-      this.isDarkMode = newTheme === "dark";
+      this.themeStore.toggle();
     },
     onLockoutChanged(event) {
       const { action, user } = event.detail;
