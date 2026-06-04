@@ -1184,6 +1184,42 @@ RSpec.describe 'Reviews' do
               params: { audit_comment: 'no-op attempt' }, as: :json
         expect(response).to have_http_status(:unprocessable_content)
       end
+
+      it 'restores a review previously triaged as duplicate (clears stale FK)' do
+        survivor = create(:review, :comment, comment: 'survivor', section: nil,
+                                             user: adm_r_commenter, rule: rule)
+        dup_review = create(:review, :comment, comment: 'marked dup', section: nil,
+                                               user: adm_r_commenter, rule: rule)
+        dup_review.update!(triage_status: 'duplicate', duplicate_of_review_id: survivor.id,
+                           triage_set_by_id: adm_r_admin.id, triage_set_at: Time.current,
+                           adjudicated_at: Time.current, adjudicated_by_id: adm_r_admin.id)
+
+        patch "/reviews/#{dup_review.id}/admin_restore",
+              params: { audit_comment: 'undo duplicate decision' }, as: :json
+
+        expect(response).to have_http_status(:ok)
+        dup_review.reload
+        expect(dup_review.triage_status).to eq('pending')
+        expect(dup_review.duplicate_of_review_id).to be_nil
+        expect(dup_review.adjudicated_at).to be_nil
+      end
+
+      it 'restores a review previously triaged as addressed_by (clears stale FK)' do
+        ab_review = create(:review, :comment, comment: 'marked addressed', section: nil,
+                                              user: adm_r_commenter, rule: rule)
+        ab_review.update!(triage_status: 'addressed_by', addressed_by_rule_id: rule.id,
+                          triage_set_by_id: adm_r_admin.id, triage_set_at: Time.current,
+                          adjudicated_at: Time.current, adjudicated_by_id: adm_r_admin.id)
+
+        patch "/reviews/#{ab_review.id}/admin_restore",
+              params: { audit_comment: 'undo addressed_by decision' }, as: :json
+
+        expect(response).to have_http_status(:ok)
+        ab_review.reload
+        expect(ab_review.triage_status).to eq('pending')
+        expect(ab_review.addressed_by_rule_id).to be_nil
+        expect(ab_review.adjudicated_at).to be_nil
+      end
     end
 
     context 'as a non-admin author' do

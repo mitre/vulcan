@@ -255,6 +255,9 @@ class Review < ApplicationRecord
   validate :duplicate_of_must_not_be_a_duplicate
   validate :replies_cannot_have_triage_status, on: %i[create update]
 
+  attr_accessor :save_intent
+
+  before_validation :clear_stale_foreign_keys
   before_save :auto_set_adjudicated_for_terminal_statuses
 
   before_create :take_review_action
@@ -630,8 +633,13 @@ class Review < ApplicationRecord
     errors.add(:triage_status, 'cannot be set on a reply (replies are not adjudicable)')
   end
 
+  def clear_stale_foreign_keys
+    self.duplicate_of_review_id = nil unless triage_status == 'duplicate'
+    self.addressed_by_rule_id = nil unless triage_status == 'addressed_by'
+  end
+
   def auto_set_adjudicated_for_terminal_statuses
-    return if @skip_auto_adjudicate
+    return if save_intent == :reopen
     return unless TERMINAL_AUTO_ADJUDICATE_STATUSES.include?(triage_status)
     return if adjudicated_at.present?
 

@@ -274,7 +274,7 @@ class ReviewsController < ApplicationController
                           variant: 'warning')
     end
 
-    @review.instance_variable_set(:@skip_auto_adjudicate, true)
+    @review.save_intent = :reopen
     @review.update!(adjudicated_at: nil, adjudicated_by_id: nil)
     render json: { review: ReviewBlueprint.render_as_hash(@review) }
   end
@@ -305,6 +305,7 @@ class ReviewsController < ApplicationController
   # component is frozen_for_writes (admin override is the whole point).
   def admin_withdraw
     @review.audit_comment = "Admin force-withdraw: #{@audit_comment}"
+    @review.save_intent = :admin_withdraw
     @review.update!(
       triage_status: 'withdrawn',
       adjudicated_at: Time.current,
