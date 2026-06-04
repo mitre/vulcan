@@ -147,7 +147,6 @@ describe("UnifiedRuleForm", () => {
           "status",
           "rule_severity",
           "status_justification",
-          "artifact_description",
           "vendor_comments",
         ]),
       );

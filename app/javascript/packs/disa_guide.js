@@ -8,7 +8,7 @@ Vue.use(TurbolinksAdapter);
 Vue.use(BootstrapVue, bvConfig);
 Vue.use(IconsPlugin);
 
-Vue.component("disa-guide-page", DisaGuidePage);
+Vue.component("DisaGuidePage", DisaGuidePage);
 
 document.addEventListener("turbolinks:load", () => {
   const el = document.getElementById("disa-guide");

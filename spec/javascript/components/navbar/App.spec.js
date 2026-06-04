@@ -1,5 +1,6 @@
 import { mount } from "@vue/test-utils";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { setActivePinia, createPinia } from "pinia";
 import { localVue } from "@test/testHelper";
 import App from "@/components/navbar/App.vue";
 import { EVENTS, dispatch } from "@/utils/notificationEvents";
@@ -20,6 +21,10 @@ const baseProps = {
 };
 
 describe("Navbar locked user notifications", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
   it("shows locked user count in badge when locked_users present", () => {
     const wrapper = mount(App, {
       localVue,
