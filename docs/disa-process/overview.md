@@ -6,9 +6,13 @@ Overview of the DISA Security Technical Implementation Guide (STIG) development 
 
 The DISA Vendor STIG process follows a defined sequence:
 
-```
-Intent Form → DISA Approval → Questionnaire → SRG Template → Authoring → Review → Publication
-```
+1. **Intent Form** — Vendor declares intent to DISA
+2. **DISA Approval** — DISA reviews and decides to proceed
+3. **Questionnaire** — Determine applicable SRGs
+4. **SRG Template** — DISA provides template (Stage 1, 2 weeks)
+5. **Authoring** — Vendor develops STIG content (Stages 2–4, 90 days)
+6. **Review** — DISA validates Check/Fix, reviews documents
+7. **Publication** — AO approval, public STIG + CUI package
 
 ### Step 0: Intent Form
 

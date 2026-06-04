@@ -952,3 +952,320 @@ body.has-classification-banner {
   min-height: 0 !important;
 }
 
+// ── DISA Guide ──────────────────────────────────────────────
+// Three-panel doc layout: left nav (fixed) | content (scrolls) | right TOC (fixed).
+// Content pane is the ONLY scroll container — sidebars stay in place.
+.disa-guide-page {
+  --disa-header-height: 3.25rem;
+  --disa-sidebar-width: 14rem;
+  --disa-toc-width: 13rem;
+  // Fill viewport below navbar
+  height: calc(100vh - 3.5rem);
+  overflow: hidden;
+}
+
+.disa-guide-layout {
+  display: flex;
+  height: calc(100vh - 5rem);
+  border: 1px solid var(--vulcan-border-color);
+  border-radius: 0.5rem;
+  margin: 0.75rem 1rem;
+  overflow: hidden;
+}
+
+// ── Left sidebar ────────────────────────────────────────────
+.disa-guide-sidebar {
+  width: var(--disa-sidebar-width);
+  flex-shrink: 0;
+  background-color: var(--vulcan-secondary-bg);
+  border-right: 1px solid var(--vulcan-border-color);
+  display: flex;
+  flex-direction: column;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    height: var(--disa-header-height);
+    padding: 0 1.25rem;
+    border-bottom: 1px solid var(--vulcan-border-subtle);
+    color: var(--vulcan-emphasis-color);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+}
+
+.disa-guide-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0 1rem;
+
+  &__section {
+    padding-top: 0.75rem;
+
+    &:first-child {
+      padding-top: 0.25rem;
+    }
+  }
+
+  &__label {
+    display: block;
+    padding: 0.375rem 1.25rem 0.25rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--vulcan-text-muted);
+  }
+
+  &__link {
+    display: block;
+    padding: 0.4rem 1.25rem;
+    font-size: 0.85rem;
+    color: var(--vulcan-body-color);
+    text-decoration: none;
+    border-left: 3px solid transparent;
+    transition: background-color 0.1s ease;
+
+    &:hover:not(.active) {
+      background: var(--vulcan-hover-bg);
+      color: var(--vulcan-emphasis-color);
+      text-decoration: none;
+    }
+
+    &.active {
+      background: var(--vulcan-active-bg);
+      border-left-color: var(--vulcan-active-border);
+      color: var(--vulcan-emphasis-color);
+      font-weight: 600;
+    }
+  }
+}
+
+// ── Center content ──────────────────────────────────────────
+.disa-guide-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--vulcan-body-bg);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    height: var(--disa-header-height);
+    padding: 0 1.5rem;
+    border-bottom: 1px solid var(--vulcan-border-subtle);
+    background-color: var(--vulcan-secondary-bg);
+    color: var(--vulcan-emphasis-color);
+    flex-shrink: 0;
+  }
+}
+
+// ── Right TOC panel ─────────────────────────────────────────
+.disa-guide-toc-panel {
+  width: var(--disa-toc-width);
+  flex-shrink: 0;
+  background-color: var(--vulcan-secondary-bg);
+  border-left: 1px solid var(--vulcan-border-color);
+  display: flex;
+  flex-direction: column;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    height: var(--disa-header-height);
+    padding: 0 1rem;
+    border-bottom: 1px solid var(--vulcan-border-subtle);
+    color: var(--vulcan-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.65rem;
+    flex-shrink: 0;
+  }
+}
+
+.disa-guide-toc {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0 1rem;
+
+  &__link {
+    display: block;
+    padding: 0.35rem 1rem;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--vulcan-secondary-color);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: background-color 0.1s ease;
+
+    &:hover {
+      color: var(--vulcan-emphasis-color);
+      background: var(--vulcan-hover-bg);
+      text-decoration: none;
+      border-left-color: var(--vulcan-border-color);
+    }
+
+    &.toc-level-3 {
+      padding-left: 1.5rem;
+      font-size: 0.75rem;
+    }
+  }
+}
+
+.disa-guide-content {
+  flex: 1;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  padding: 1.5rem 2rem;
+  color: var(--vulcan-body-color);
+  line-height: 1.7;
+
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--vulcan-emphasis-color);
+    margin-top: 0;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--vulcan-primary);
+  }
+
+  h2 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--vulcan-emphasis-color);
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid var(--vulcan-border-color);
+  }
+
+  h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--vulcan-emphasis-color);
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    padding-left: 0.6rem;
+    border-left: 3px solid var(--vulcan-primary);
+  }
+
+  h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--vulcan-body-color);
+    margin-top: 1.25rem;
+    margin-bottom: 0.5rem;
+  }
+
+  h5 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--vulcan-secondary-color);
+    margin-top: 1rem;
+    margin-bottom: 0.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  h6 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--vulcan-text-muted);
+    margin-top: 1rem;
+    margin-bottom: 0.4rem;
+  }
+
+  table {
+    width: 100%;
+    margin-bottom: 1rem;
+    color: var(--vulcan-body-color);
+    border-collapse: collapse;
+
+    th, td {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--vulcan-border-color);
+    }
+
+    th {
+      background-color: var(--vulcan-tertiary-bg);
+      font-weight: 600;
+    }
+
+    tr:nth-child(even) td {
+      background-color: var(--vulcan-secondary-bg);
+    }
+  }
+
+  blockquote {
+    padding: 0.75rem 1rem;
+    margin: 1rem 0;
+    border-left: 4px solid var(--vulcan-primary);
+    background-color: var(--vulcan-tertiary-bg);
+    color: var(--vulcan-secondary-color);
+  }
+
+  code {
+    padding: 0.15em 0.4em;
+    background-color: var(--vulcan-tertiary-bg);
+    border-radius: 0.2rem;
+    font-size: 0.875em;
+  }
+
+  pre {
+    padding: 1rem;
+    background-color: var(--vulcan-tertiary-bg);
+    color: var(--vulcan-body-color);
+    border: 1px solid var(--vulcan-border-color);
+    border-radius: 0.375rem;
+    overflow-x: auto;
+
+    code {
+      padding: 0;
+      background-color: transparent;
+      color: inherit;
+    }
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+    margin: 1rem 0;
+    border-radius: 0.375rem;
+  }
+
+  a {
+    color: var(--vulcan-link-color);
+  }
+
+  .disa-guide-callout {
+    border: 1px solid transparent;
+    border-left-width: 4px;
+    border-radius: 0.375rem;
+    margin: 1.25rem 0;
+    padding: 0.875rem 1.125rem;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+
+    strong {
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    p:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  ul, ol {
+    padding-left: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  li {
+    margin-bottom: 0.25rem;
+  }
+}
+

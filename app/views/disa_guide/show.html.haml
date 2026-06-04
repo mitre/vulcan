@@ -1,16 +1,27 @@
-.container-fluid.py-4
-  .row
-    .col-md-3
-      .card
-        .card-header
-          %h5.mb-0 DISA Process Guide
-        .list-group.list-group-flush
-          - @pages.each do |slug, title|
-            = link_to title, disa_guide_path(page: slug), class: "list-group-item list-group-item-action #{'active' if slug == @current_page}"
+.disa-guide-page
+  .disa-guide-layout
+    %aside.disa-guide-sidebar
+      .disa-guide-sidebar__header
+        %h5.mb-0 DISA Process Guide
+      %nav.disa-guide-nav{"aria-label" => "DISA Process Guide"}
+        - @page_sections.each do |section|
+          .disa-guide-nav__section
+            %small.disa-guide-nav__label= section[:label]
+            - section[:pages].each do |slug, title|
+              = link_to disa_guide_path(page: slug), class: "disa-guide-nav__link #{'active' if slug == @current_page}" do
+                = title
 
-    .col-md-9
-      .card
-        .card-header
-          %h4.mb-0= @page_title
-        .card-body.disa-guide-content
-          = @html_content.html_safe
+    %main.disa-guide-main
+      .disa-guide-main__header
+        %h5.mb-0= @page_title
+      .disa-guide-content
+        = @html_content.html_safe
+
+    - if @toc.present?
+      %aside.disa-guide-toc-panel
+        .disa-guide-toc-panel__header
+          %small.font-weight-bold On this page
+        %nav.disa-guide-toc{"aria-label" => "On this page"}
+          - @toc.each do |entry|
+            %a.disa-guide-toc__link{href: "##{entry[:id]}", class: "toc-level-#{entry[:level]}"}
+              = entry[:text]
