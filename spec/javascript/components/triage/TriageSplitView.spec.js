@@ -1,8 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
-import { localVue } from "@test/testHelper";
+import { setActivePinia, createPinia } from "pinia";
+import { localVue, flushPromises } from "@test/testHelper";
 import TriageSplitView from "@/components/triage/TriageSplitView.vue";
-import { submitTriage, submitAdjudicate, submitAdminAction } from "@/services/triageService";
+import {
+  triageReview,
+  adjudicateReview,
+  adminDestroyReview,
+  moveReviewToRule,
+  adminWithdrawReview,
+  adminRestoreReview,
+} from "@/api/reviewsApi";
 
 vi.mock("@/api/baseApi", () => ({
   default: {
@@ -15,16 +23,18 @@ vi.mock("@/api/baseApi", () => ({
   },
 }));
 
-vi.mock("@/services/triageService", () => ({
-  submitTriage: vi.fn(() => Promise.resolve({ data: {} })),
-  submitAdjudicate: vi.fn(() => Promise.resolve({ data: {} })),
-  submitAdminAction: vi.fn(() => Promise.resolve({ data: {} })),
+vi.mock("@/api/reviewsApi", () => ({
+  triageReview: vi.fn(() => Promise.resolve({ data: {} })),
+  adjudicateReview: vi.fn(() => Promise.resolve({ data: {} })),
+  adminDestroyReview: vi.fn(() => Promise.resolve({ data: {} })),
+  moveReviewToRule: vi.fn(() => Promise.resolve({ data: {} })),
+  adminWithdrawReview: vi.fn(() => Promise.resolve({ data: {} })),
+  adminRestoreReview: vi.fn(() => Promise.resolve({ data: {} })),
 }));
 
-const flushPromises = async (wrapper) => {
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  if (wrapper) await wrapper.vm.$nextTick();
-};
+vi.mock("@/api/componentsApi", () => ({
+  getComments: vi.fn(() => Promise.resolve({ data: { rows: [], pagination: { total: 0 } } })),
+}));
 
 const ruleContent1 = {
   rule_displayed_name: "CNTR-01-000001",
@@ -107,6 +117,7 @@ function baseProps(overrides = {}) {
 
 describe("TriageSplitView", () => {
   beforeEach(() => {
+    setActivePinia(createPinia());
     vi.clearAllMocks();
   });
 
@@ -214,13 +225,13 @@ describe("TriageSplitView", () => {
   // ── Save with optimistic locking ───────────────────────────────────
 
   it("sends updated_at with triage PATCH for optimistic locking", async () => {
-    submitTriage.mockResolvedValue({
+    triageReview.mockResolvedValue({
       data: { review: { ...rows[0], triage_status: "concur" } },
     });
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
     await w.vm.onTriageSave({ triage_status: "concur" });
     await flushPromises(w);
-    expect(submitTriage).toHaveBeenCalledWith(
+    expect(triageReview).toHaveBeenCalledWith(
       1,
       expect.objectContaining({
         triage_status: "concur",
@@ -230,7 +241,7 @@ describe("TriageSplitView", () => {
   });
 
   it("emits triaged on successful save", async () => {
-    submitTriage.mockResolvedValue({
+    triageReview.mockResolvedValue({
       data: { review: { ...rows[0], triage_status: "concur" } },
     });
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
@@ -244,7 +255,7 @@ describe("TriageSplitView", () => {
   // ── Save button disabled during request ────────────────────────────
 
   it("sets saving=true during pending request", async () => {
-    submitTriage.mockImplementation(() => new Promise(() => {}));
+    triageReview.mockImplementation(() => new Promise(() => {}));
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
     w.vm.onTriageSave({ triage_status: "concur" });
     await w.vm.$nextTick();
@@ -254,7 +265,7 @@ describe("TriageSplitView", () => {
   // ── Error handling ─────────────────────────────────────────────────
 
   it("shows conflict message on 409 (optimistic lock failure)", async () => {
-    submitTriage.mockRejectedValue({
+    triageReview.mockRejectedValue({
       response: { status: 409, data: { error: "Record was modified" } },
     });
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
@@ -265,7 +276,7 @@ describe("TriageSplitView", () => {
   });
 
   it("surfaces 422 errors via AlertMixin", async () => {
-    submitTriage.mockRejectedValue({
+    triageReview.mockRejectedValue({
       response: { status: 422, data: { error: "Non-concur requires a response" } },
     });
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
@@ -388,7 +399,7 @@ describe("TriageSplitView", () => {
   });
 
   it("posts to admin_withdraw with audit comment", async () => {
-    submitTriage.mockResolvedValue({
+    adminWithdrawReview.mockResolvedValue({
       data: { review: { ...rows[0], triage_status: "withdrawn" } },
     });
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
@@ -396,16 +407,12 @@ describe("TriageSplitView", () => {
     w.vm.adminAuditComment = "spam content";
     await w.vm.doSubmitAdminAction();
     await flushPromises(w);
-    expect(submitAdminAction).toHaveBeenCalledWith(1, "force-withdraw", {
-      audit_comment: "spam content",
-    });
+    expect(adminWithdrawReview).toHaveBeenCalledWith(1, "spam content");
     expect(w.emitted("triaged")).toHaveLength(1);
   });
 
-  // admin moves a comment to another rule. The
-  // submitAdminAction payload must carry both audit_comment AND rule_id.
-  it("calls submitAdminAction for move-to-rule with rule_id + audit_comment", async () => {
-    submitAdminAction.mockResolvedValue({
+  it("calls moveReviewToRule for move-to-rule with rule_id + audit_comment", async () => {
+    moveReviewToRule.mockResolvedValue({
       data: { review: { ...rows[0], rule_id: 42 } },
     });
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
@@ -414,24 +421,19 @@ describe("TriageSplitView", () => {
     w.vm.adminTargetRuleId = 42;
     await w.vm.doSubmitAdminAction();
     await flushPromises(w);
-    expect(submitAdminAction).toHaveBeenCalledWith(1, "move-to-rule", {
-      audit_comment: "wrong rule",
-      rule_id: 42,
-    });
+    expect(moveReviewToRule).toHaveBeenCalledWith(1, 42, "wrong rule");
     expect(w.emitted("triaged")).toHaveLength(1);
   });
 
-  it("calls submitAdminAction for hard-delete with typed-id confirmation", async () => {
-    submitAdminAction.mockResolvedValue({ data: { ok: true } });
+  it("calls adminDestroyReview for hard-delete with typed-id confirmation", async () => {
+    adminDestroyReview.mockResolvedValue({ data: { ok: true } });
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
     w.vm.adminAction = "hard-delete";
     w.vm.adminAuditComment = "PII removed";
     w.vm.adminConfirmationId = "1";
     await w.vm.doSubmitAdminAction();
     await flushPromises(w);
-    expect(submitAdminAction).toHaveBeenCalledWith(1, "hard-delete", {
-      audit_comment: "PII removed",
-    });
+    expect(adminDestroyReview).toHaveBeenCalledWith(1, "PII removed");
     expect(w.emitted("destroyed")).toHaveLength(1);
     expect(w.emitted("destroyed")[0][0]).toBe(1);
   });
@@ -505,7 +507,7 @@ describe("TriageSplitView", () => {
   // ── doSave adjudicate logic ─────────────────────────────────────────
 
   it("doSave with advance=false should NOT call adjudicate endpoint", async () => {
-    submitTriage.mockResolvedValue({
+    triageReview.mockResolvedValue({
       data: { review: { id: 1, triage_status: "concur" } },
     });
 
@@ -518,15 +520,15 @@ describe("TriageSplitView", () => {
     await w.vm.doSave({ triage_status: "concur" }, false);
     await flushPromises(w);
 
-    expect(submitTriage).toHaveBeenCalledTimes(1);
-    expect(submitAdjudicate).not.toHaveBeenCalled();
+    expect(triageReview).toHaveBeenCalledTimes(1);
+    expect(adjudicateReview).not.toHaveBeenCalled();
   });
 
   it("doSave with advance=true should call adjudicate for non-terminal statuses", async () => {
-    submitTriage.mockResolvedValueOnce({
+    triageReview.mockResolvedValueOnce({
       data: { review: { id: 1, triage_status: "concur" } },
     });
-    submitAdjudicate.mockResolvedValueOnce({
+    adjudicateReview.mockResolvedValueOnce({
       data: { review: { id: 1, triage_status: "concur", adjudicated_at: "2026-05-20" } },
     });
 
@@ -539,8 +541,8 @@ describe("TriageSplitView", () => {
     await w.vm.doSave({ triage_status: "concur" }, true);
     await flushPromises(w);
 
-    expect(submitTriage).toHaveBeenCalledTimes(1);
-    expect(submitAdjudicate).toHaveBeenCalledTimes(1);
+    expect(triageReview).toHaveBeenCalledTimes(1);
+    expect(adjudicateReview).toHaveBeenCalledTimes(1);
   });
 
   // ── ARIA landmarks + focus management ──────────────────────────────
@@ -589,10 +591,10 @@ describe("TriageSplitView", () => {
   });
 
   it("refocuses content heading after advanceToNext", async () => {
-    submitTriage.mockResolvedValueOnce({
+    triageReview.mockResolvedValueOnce({
       data: { review: { id: 1, triage_status: "concur" } },
     });
-    submitTriage.mockResolvedValueOnce({
+    triageReview.mockResolvedValueOnce({
       data: { review: { id: 1, triage_status: "concur", adjudicated_at: "2026-05-20" } },
     });
     const w = mount(TriageSplitView, {
@@ -607,7 +609,7 @@ describe("TriageSplitView", () => {
   });
 
   it("doSave with advance=true should NOT adjudicate for SINGLE_BUTTON statuses", async () => {
-    submitTriage.mockResolvedValue({
+    triageReview.mockResolvedValue({
       data: { review: { id: 1, triage_status: "withdrawn" } },
     });
 
@@ -620,7 +622,7 @@ describe("TriageSplitView", () => {
     await w.vm.doSave({ triage_status: "withdrawn" }, true);
     await flushPromises(w);
 
-    const adjudicateCalls = submitAdjudicate.mock.calls;
+    const adjudicateCalls = adjudicateReview.mock.calls;
     expect(adjudicateCalls.length).toBe(0);
   });
 
@@ -647,20 +649,20 @@ describe("TriageSplitView", () => {
   // ── 05f.28.5: doSave payload variants ────────────────────────────
 
   it("includes response_comment in triage PATCH when provided", async () => {
-    submitTriage.mockResolvedValue({ data: { review: { id: 1, triage_status: "concur" } } });
+    triageReview.mockResolvedValue({ data: { review: { id: 1, triage_status: "concur" } } });
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
     await w.vm.doSave({ triage_status: "concur", response_comment: "Thanks!" }, false);
     await flushPromises(w);
-    const call = submitTriage.mock.calls[submitTriage.mock.calls.length - 1];
+    const call = triageReview.mock.calls[triageReview.mock.calls.length - 1];
     expect(call[1].response_comment).toBe("Thanks!");
   });
 
   it("includes duplicate_of_review_id when status is duplicate", async () => {
-    submitTriage.mockResolvedValue({ data: { review: { id: 1, triage_status: "duplicate" } } });
+    triageReview.mockResolvedValue({ data: { review: { id: 1, triage_status: "duplicate" } } });
     const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
     await w.vm.doSave({ triage_status: "duplicate", duplicate_of_review_id: 99 }, false);
     await flushPromises(w);
-    const call = submitTriage.mock.calls[submitTriage.mock.calls.length - 1];
+    const call = triageReview.mock.calls[triageReview.mock.calls.length - 1];
     expect(call[1].duplicate_of_review_id).toBe(99);
   });
 

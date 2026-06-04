@@ -16,4 +16,9 @@ localVue.use(PiniaVuePlugin);
 localVue.use(BootstrapVue);
 localVue.use(IconsPlugin);
 
-export { localVue };
+async function flushPromises(wrapper) {
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  if (wrapper) await wrapper.vm.$nextTick();
+}
+
+export { localVue, flushPromises };

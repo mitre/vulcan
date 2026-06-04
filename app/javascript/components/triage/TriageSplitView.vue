@@ -233,7 +233,8 @@ import AlertMixin from "../../mixins/AlertMixin.vue";
 import FormMixin from "../../mixins/FormMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import { SINGLE_BUTTON_STATUSES } from "../../constants/triageVocabulary";
-import { submitTriage, submitAdjudicate, submitAdminAction } from "../../services/triageService";
+import { useCommentTriage } from "../../composables/mutations/useCommentTriage";
+import { useCommentsStore } from "../../stores/comments";
 import SectionLabel from "../shared/SectionLabel.vue";
 import CommentThread from "../shared/CommentThread.vue";
 import TriageRuleSidebar from "./TriageRuleSidebar.vue";
@@ -275,7 +276,9 @@ export default {
   },
   setup() {
     const { toggle: toggleReactionApi } = useCommentReactions();
-    return { toggleReactionApi };
+    const triageComposable = useCommentTriage();
+    const commentsStore = useCommentsStore();
+    return { toggleReactionApi, triageComposable, commentsStore };
   },
   data() {
     return {
@@ -453,19 +456,26 @@ export default {
           payload.addressed_by_rule_id = decision.addressed_by_rule_id;
         }
 
-        const triageRes = await submitTriage(this.activeComment.id, payload);
-        this.$emit("triaged", triageRes.data.review);
+        const triageResult = await this.triageComposable.triage(
+          this.activeComment.id,
+          payload,
+          this.componentId,
+        );
+        this.$emit("triaged", triageResult.review);
 
-        if (triageRes.data.response_review) {
+        if (triageResult.response_review) {
           this.$emit("response-posted", {
             parentId: this.activeComment.id,
-            responseReview: triageRes.data.response_review,
+            responseReview: triageResult.response_review,
           });
         }
 
         if (advance && !SINGLE_BUTTON_STATUSES.has(decision.triage_status)) {
-          const adjRes = await submitAdjudicate(this.activeComment.id);
-          this.$emit("adjudicated", adjRes.data.review);
+          const adjResult = await this.commentsStore.adjudicateComment(
+            this.componentId,
+            this.activeComment.id,
+          );
+          this.$emit("adjudicated", adjResult.review);
         }
 
         this.isDirty = false;
@@ -519,12 +529,17 @@ export default {
         const params = { audit_comment: auditComment };
         if (this.adminAction === "move-to-rule") params.rule_id = this.adminTargetRuleId;
 
-        const res = await submitAdminAction(reviewId, this.adminAction, params);
+        const result = await this.commentsStore.adminAction(
+          this.componentId,
+          reviewId,
+          this.adminAction,
+          params,
+        );
 
         if (this.adminAction === "hard-delete") {
           this.$emit("destroyed", reviewId);
         } else {
-          this.$emit("triaged", res.data.review);
+          this.$emit("triaged", result.review);
         }
         this.cancelAdminAction();
         this.$emit("admin-panel-close");

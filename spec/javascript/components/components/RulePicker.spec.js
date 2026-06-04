@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
-import { localVue } from "@test/testHelper";
+import { localVue, flushPromises } from "@test/testHelper";
 import RulePicker from "@/components/components/RulePicker.vue";
 import { getRulesPicker } from "@/api/rulesApi";
 
@@ -18,11 +18,6 @@ vi.mock("@/api/baseApi", () => ({
 vi.mock("@/api/rulesApi", () => ({
   getRulesPicker: vi.fn(() => Promise.resolve({ data: { rules: [] } })),
 }));
-
-const flushPromises = async (wrapper) => {
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  if (wrapper) await wrapper.vm.$nextTick();
-};
 
 const rulesPayload = {
   rules: [
