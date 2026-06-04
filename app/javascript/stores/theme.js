@@ -5,6 +5,10 @@ import { getPreferredTheme, applyTheme, setStoredTheme } from "../utils/colorMod
 export const useThemeStore = defineStore("theme", () => {
   const isDark = ref(document.documentElement.getAttribute("data-bs-theme") === "dark");
 
+  function syncFromDom() {
+    isDark.value = document.documentElement.getAttribute("data-bs-theme") === "dark";
+  }
+
   function toggle() {
     const next = isDark.value ? "light" : "dark";
     applyTheme(next);
@@ -15,7 +19,12 @@ export const useThemeStore = defineStore("theme", () => {
   function init() {
     const theme = getPreferredTheme();
     applyTheme(theme);
-    isDark.value = theme === "dark";
+    syncFromDom();
+    const observer = new MutationObserver(syncFromDom);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-bs-theme"],
+    });
   }
 
   return { isDark, toggle, init };
