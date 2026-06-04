@@ -23,6 +23,7 @@ export function useRuleAutosave(rule, options = {}) {
   const enabled = ref(localStorage.getItem(storageKey) === "true");
   const isDirty = ref(false);
   let timerId = null;
+  let dirtyRuleId = null;
 
   function toggle() {
     enabled.value = !enabled.value;
@@ -34,6 +35,7 @@ export function useRuleAutosave(rule, options = {}) {
 
   function markDirty() {
     isDirty.value = true;
+    dirtyRuleId = rule.value?.id ?? null;
     if (enabled.value) {
       scheduleAutoSave();
     }
@@ -41,6 +43,7 @@ export function useRuleAutosave(rule, options = {}) {
 
   function resetTimer() {
     isDirty.value = false;
+    dirtyRuleId = null;
     cancelTimer();
   }
 
@@ -65,10 +68,16 @@ export function useRuleAutosave(rule, options = {}) {
     if (!isDirty.value) return;
     if (r.locked) return;
     if (r.review_requestor_id) return;
+    if (r.id !== dirtyRuleId) {
+      isDirty.value = false;
+      dirtyRuleId = null;
+      return;
+    }
 
     updateRule(r.id, { ...r, audit_comment: "[Auto-saved]" })
       .then(() => {
         isDirty.value = false;
+        dirtyRuleId = null;
         if (options.onAutoSave) options.onAutoSave(r.id);
       })
       .catch(() => {
