@@ -5,48 +5,43 @@
     :data-field-name="fieldName"
     :class="['rule-form-field', extraClass, stateClass]"
   >
-    <!-- Label with tooltip + lock icons (skip for checkbox mode) -->
-    <label v-if="!checkboxMode" :for="inputId">
-      {{ label }}
-      <InfoTooltip v-if="tooltipText" :text="tooltipText" />
-      <b-icon
-        v-if="showSectionLockIcon && isSectionLocked"
-        v-b-tooltip.hover="
-          canManageSectionLocks
-            ? 'Click to unlock ' + resolvedSection + ' section'
-            : 'Section locked (set status to manage locks)'
-        "
-        icon="lock-fill"
-        :class="['ml-1', canManageSectionLocks ? 'text-warning clickable' : 'text-muted']"
-        :data-testid="'section-lock-' + resolvedSection.replace(/\s+/g, '')"
-        @click="canManageSectionLocks && $emit('toggle-section-lock', resolvedSection)"
-      />
-      <b-icon
-        v-else-if="showSectionLockIcon && !isSectionLocked"
-        v-b-tooltip.hover="
-          canManageSectionLocks
-            ? 'Click to lock ' + resolvedSection + ' section'
-            : 'Set status to manage section locks'
-        "
-        icon="unlock"
-        :class="[
-          'ml-1',
-          canManageSectionLocks ? 'text-success clickable' : 'text-muted opacity-50',
-        ]"
-        :data-testid="'section-lock-' + resolvedSection.replace(/\s+/g, '')"
-        @click="canManageSectionLocks && $emit('toggle-section-lock', resolvedSection)"
-      />
-      <SectionCommentIcon
-        v-if="showCommentIcon && xccdfSection"
-        :section="xccdfSection"
-        :open-count="openCommentCount"
-        :locked="ruleLocked"
-        :comments-closed="commentsClosedInjected"
-        :closed-reason="closedReasonInjected"
-        class="ml-1"
-        @open-composer="$emit('open-composer', xccdfSection)"
-      />
-    </label>
+    <!-- Label + action bar below (skip for checkbox mode) -->
+    <template v-if="!checkboxMode">
+      <label :for="inputId" class="rfg-label mb-0">
+        {{ label }}
+        <InfoTooltip v-if="tooltipText" :text="tooltipText" />
+      </label>
+      <div
+        v-if="showSectionLockIcon || (showCommentIcon && xccdfSection)"
+        class="rfg-action-bar mt-1 mb-2"
+      >
+        <b-button
+          v-if="showSectionLockIcon"
+          data-test="section-lock-btn"
+          size="sm"
+          :variant="lockButtonVariant"
+          :disabled="!canManageSectionLocks"
+          :title="lockButtonTooltip"
+          :data-testid="'section-lock-' + resolvedSection.replace(/\s+/g, '')"
+          class="rfg-action-btn"
+          @click="canManageSectionLocks && $emit('toggle-section-lock', resolvedSection)"
+        >
+          <b-icon :icon="isSectionLocked ? 'lock-fill' : 'unlock'" class="mr-1" />{{
+            lockButtonLabel
+          }}
+        </b-button>
+        <SectionCommentIcon
+          v-if="showCommentIcon && xccdfSection"
+          :section="xccdfSection"
+          :open-count="openCommentCount"
+          :locked="ruleLocked"
+          :comments-closed="commentsClosedInjected"
+          :closed-reason="closedReasonInjected"
+          @open-composer="$emit('open-composer', xccdfSection)"
+          @view-comments="$emit('view-comments', xccdfSection)"
+        />
+      </div>
+    </template>
 
     <!-- Input slot — parent provides the actual input element -->
     <slot :input-id="inputId" :is-disabled="computedDisabled" />
@@ -175,6 +170,26 @@ export default {
       );
       return topLevelOnSection.length + replies.length;
     },
+    lockButtonLabel() {
+      if (!this.canManageSectionLocks) {
+        return this.isSectionLocked ? "Section Locked" : "Section Unlocked";
+      }
+      return this.isSectionLocked ? "Unlock Section" : "Lock Section";
+    },
+    lockButtonVariant() {
+      if (!this.canManageSectionLocks) return "outline-secondary";
+      return this.isSectionLocked ? "outline-warning" : "outline-success";
+    },
+    lockButtonTooltip() {
+      if (!this.canManageSectionLocks) {
+        return this.isSectionLocked
+          ? "Section locked (set status to manage locks)"
+          : "Set status to manage section locks";
+      }
+      return this.isSectionLocked
+        ? `Click to unlock ${this.resolvedSection} section`
+        : `Click to lock ${this.resolvedSection} section`;
+    },
     commentsClosedInjected() {
       return this.isCommentsClosed();
     },
@@ -184,3 +199,21 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.rfg-label {
+  font-size: var(--vulcan-section-label-font-size, 1.05rem);
+  font-weight: 600;
+}
+.rfg-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.rfg-action-btn {
+  font-size: var(--vulcan-action-btn-font-size, 0.75rem);
+  padding: 0.2rem 0.5rem;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+</style>

@@ -214,6 +214,7 @@
           @open-review-modal="$bvModal.show('review-modal')"
           @open-related-modal="$bvModal.show('related-rules-modal')"
           @open-composer="onOpenComposer"
+          @view-comments="onViewComments"
           @toggle-panel="togglePanel"
           @toggle-advanced-fields="toggleAdvancedFields"
           @toggle-section-lock="toggleSectionLock"
@@ -232,6 +233,7 @@
         :effective-permissions="effectivePermissions"
         :current-user-id="currentUserId"
         :statuses="statuses"
+        :reviews-section-filter="reviewsSectionFilter"
         @close-panel="closePanel"
         @component-updated="refreshComponent"
         @rule-selected="handleRuleSelected"
@@ -474,6 +476,7 @@ export default {
       selectedSatisfiesRuleIds: [],
       satisfiesShowRuleId: false,
       showSRGIdChecked: null,
+      reviewsSectionFilter: "all",
     };
   },
   computed: {
@@ -543,6 +546,10 @@ export default {
      * bubbles up RuleFormGroup → RuleForm/CheckForm/DisaRuleDescriptionForm
      * → UnifiedRuleForm → RuleEditor → here.
      */
+    onViewComments(section) {
+      this.reviewsSectionFilter = section || "all";
+      this.togglePanel("rule-reviews");
+    },
     onOpenComposer(section) {
       const rule = this.selectedRule;
       const parent = rule?.satisfied_by?.[0];

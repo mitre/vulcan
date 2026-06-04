@@ -133,6 +133,10 @@ export default {
       type: String,
       default: null,
     },
+    initialSectionFilter: {
+      type: String,
+      default: "all",
+    },
   },
   setup() {
     const { toggle: toggleReactionApi } = useCommentReactions();
@@ -142,7 +146,7 @@ export default {
     return {
       numShownReviews: 2,
       actionDescriptions: ACTION_DESCRIPTIONS,
-      sectionFilter: "all",
+      sectionFilter: this.initialSectionFilter,
     };
   },
   computed: {
@@ -186,6 +190,11 @@ export default {
     },
     closedMessage() {
       return commentsClosedTooltip(this.closedReason);
+    },
+  },
+  watch: {
+    initialSectionFilter(val) {
+      this.sectionFilter = val;
     },
   },
   methods: {

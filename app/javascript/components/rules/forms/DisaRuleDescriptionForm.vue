@@ -9,7 +9,7 @@
       id-prefix="ruleEditor-disa_rule_description"
       :tooltip="tooltips['documentable']"
       @toggle-section-lock="$emit('toggle-section-lock', $event)"
-      @open-composer="bubbleOpenComposer"
+      v-on="commentIconListeners"
     >
       <template #default="{ isDisabled }">
         <b-form-checkbox
@@ -41,7 +41,7 @@
         () => fields.displayed.includes('vuln_discussion') || rule.status == 'Not Yet Determined'
       "
       @toggle-section-lock="$emit('toggle-section-lock', $event)"
-      @open-composer="bubbleOpenComposer"
+      v-on="commentIconListeners"
     >
       <template #default="{ inputId, isDisabled }">
         <MarkdownTextarea
@@ -437,15 +437,16 @@
 </template>
 
 <script>
+import { toRef } from "vue";
 import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
-import CommentIconHostMixin from "../../../mixins/CommentIconHostMixin.vue";
+import { useCommentIconHost } from "../../../composables/useCommentIconHost";
 import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
 import RuleFormGroup from "../../shared/RuleFormGroup.vue";
 import InfoTooltip from "../../shared/InfoTooltip.vue";
 export default {
   name: "DisaRuleDescriptionForm",
   components: { MarkdownTextarea, RuleFormGroup, InfoTooltip },
-  mixins: [FormFeedbackMixinVue, CommentIconHostMixin],
+  mixins: [FormFeedbackMixinVue],
   // `rule` and `index` are necessary if edits are to be made
   props: {
     description: {
@@ -504,7 +505,17 @@ export default {
       },
     },
   },
+  setup(props, { emit }) {
+    const { commentIconListeners, commentIconProps } = useCommentIconHost({
+      rule: toRef(props, "rule"),
+      emit,
+    });
+    return { commentIconListeners, commentIconProps };
+  },
   computed: {
+    formGroupPropsWithCommentIcon() {
+      return { ...this.formGroupProps, ...this.commentIconProps };
+    },
     formGroupProps() {
       return {
         fields: this.fields,

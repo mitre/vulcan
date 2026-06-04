@@ -68,7 +68,7 @@
       :tooltip="tooltips['content']"
       id-prefix="ruleEditor-check"
       @toggle-section-lock="$emit('toggle-section-lock', $event)"
-      @open-composer="bubbleOpenComposer"
+      v-on="commentIconListeners"
     >
       <MarkdownTextarea
         :id="inputId"
@@ -85,15 +85,16 @@
 </template>
 
 <script>
+import { toRef } from "vue";
 import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
-import CommentIconHostMixin from "../../../mixins/CommentIconHostMixin.vue";
+import { useCommentIconHost } from "../../../composables/useCommentIconHost";
 import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
 import RuleFormGroup from "../../shared/RuleFormGroup.vue";
 
 export default {
   name: "CheckForm",
   components: { MarkdownTextarea, RuleFormGroup },
-  mixins: [FormFeedbackMixinVue, CommentIconHostMixin],
+  mixins: [FormFeedbackMixinVue],
   // `rule` and `index` are necessary if edits are to be made
   props: {
     rule: {
@@ -132,6 +133,13 @@ export default {
         };
       },
     },
+  },
+  setup(props, { emit }) {
+    const { commentIconListeners, commentIconProps } = useCommentIconHost({
+      rule: toRef(props, "rule"),
+      emit,
+    });
+    return { commentIconListeners, commentIconProps };
   },
   computed: {
     check: function () {
@@ -177,8 +185,9 @@ export default {
         invalidFeedback: this.invalidFeedback || {},
       };
     },
-    // formGroupPropsWithCommentIcon and bubbleOpenComposer come from
-    // CommentIconHostMixin.
+    formGroupPropsWithCommentIcon() {
+      return { ...this.formGroupProps, ...this.commentIconProps };
+    },
   },
 };
 </script>

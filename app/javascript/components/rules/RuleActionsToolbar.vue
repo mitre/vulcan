@@ -215,7 +215,13 @@ export default {
 .toolbar-btn-group {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 0.25rem;
+  gap: 0.375rem;
+}
+
+.toolbar-btn-group >>> .btn-sm {
+  font-size: var(--vulcan-action-btn-font-size, 0.75rem);
+  padding: 0.2rem 0.5rem;
+  line-height: 1.5;
 }
 
 /* Disabled buttons should be clearly grayed out */

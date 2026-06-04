@@ -78,6 +78,7 @@
         :additional_questions="additional_questions"
         @toggle-section-lock="onToggleSectionLock"
         @open-composer="$emit('open-composer', $event)"
+        @view-comments="$emit('view-comments', $event)"
       />
     </b-form>
 
@@ -172,10 +173,11 @@ export default {
       return this.rule.locked_fields || {};
     },
     showSectionLocks() {
-      if (this.readOnly || this.rule.locked || this.rule.review_requestor_id) return false;
-      return ["admin", "reviewer"].includes(this.effectivePermissions);
+      if (this.rule.locked || this.rule.review_requestor_id) return false;
+      return ["admin", "reviewer"].includes(this.effectivePermissions) || this.readOnly;
     },
     canManageSectionLocks() {
+      if (this.readOnly) return false;
       if (!this.showSectionLocks) return false;
       return true;
     },

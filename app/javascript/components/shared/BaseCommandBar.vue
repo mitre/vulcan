@@ -53,6 +53,17 @@ export default {
 
 <style scoped>
 .command-bar {
-  /* Consistent command bar styling across all pages */
+  border: 1px solid var(--vulcan-gray-300, var(--gray-300));
+  border-radius: 0.375rem;
+}
+
+.command-bar >>> .btn-sm {
+  font-size: var(--vulcan-action-btn-font-size, 0.75rem);
+  padding: 0.2rem 0.5rem;
+  line-height: 1.5;
+}
+
+.command-bar >>> .d-flex {
+  gap: 0.375rem;
 }
 </style>

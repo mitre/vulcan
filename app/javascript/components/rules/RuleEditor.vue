@@ -92,6 +92,7 @@
           :effective-permissions="effectivePermissions"
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
           @open-composer="$emit('open-composer', $event)"
+          @view-comments="$emit('view-comments', $event)"
         />
       </b-tab>
       <b-tab title="Test Script" lazy>

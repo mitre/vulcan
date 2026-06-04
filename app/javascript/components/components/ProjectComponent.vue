@@ -73,6 +73,7 @@
             :additional_questions="component.additional_questions"
             @open-related-modal="$bvModal.show('related-rules-modal')"
             @open-composer="onOpenComposer"
+            @view-comments="onViewComments"
             @toggle-panel="togglePanel"
             @toggle-advanced-fields="toggleAdvancedFields"
           />
@@ -121,6 +122,7 @@
           :current-user-id="current_user_id"
           :statuses="statuses"
           :read-only="true"
+          :reviews-section-filter="reviewsSectionFilter"
           @close-panel="closePanel"
           @component-updated="refreshComponent"
           @rule-selected="handleRuleSelected"
@@ -270,6 +272,7 @@ export default {
       // route scoped to this single component.
       showExportModal: false,
       availableExportModes: ["working_copy", "vendor_submission", "published_stig", "backup"],
+      reviewsSectionFilter: "all",
     };
   },
   computed: {
@@ -319,6 +322,10 @@ export default {
      * Triggered when SectionCommentIcon emits open-composer; the event
      * bubbles up RuleFormGroup → form → UnifiedRuleForm → RuleEditor.
      */
+    onViewComments(section) {
+      this.reviewsSectionFilter = section || "all";
+      this.togglePanel("rule-reviews");
+    },
     onOpenComposer(section) {
       const rule = this.selectedRule;
       const parent = rule?.satisfied_by?.[0];

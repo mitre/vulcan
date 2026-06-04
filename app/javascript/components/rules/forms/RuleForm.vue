@@ -17,7 +17,7 @@
           :tooltip="tooltips['status']"
           extra-class="col-md-6"
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
-          @open-composer="bubbleOpenComposer"
+          v-on="commentIconListeners"
         >
           <template #default="{ inputId, isDisabled }">
             <b-form-select
@@ -39,7 +39,7 @@
           :tooltip="tooltips['rule_severity']"
           extra-class="col-md-6"
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
-          @open-composer="bubbleOpenComposer"
+          v-on="commentIconListeners"
         >
           <template #default="{ inputId, isDisabled }">
             <b-form-select
@@ -144,7 +144,7 @@
         label="Title"
         :tooltip="tooltips['title']"
         @toggle-section-lock="$emit('toggle-section-lock', $event)"
-        @open-composer="bubbleOpenComposer"
+        v-on="commentIconListeners"
       >
         <template #default="{ inputId, isDisabled }">
           <MarkdownTextarea
@@ -174,7 +174,7 @@
           :field-state-class-fn="fieldStateClassFn"
           :fields="disa_fields"
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
-          @open-composer="bubbleOpenComposer"
+          v-on="commentIconListeners"
         />
       </template>
 
@@ -191,7 +191,7 @@
           :show-section-locks="showSectionLocks"
           :field-state-class-fn="fieldStateClassFn"
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
-          @open-composer="bubbleOpenComposer"
+          v-on="commentIconListeners"
         />
       </template>
 
@@ -202,7 +202,7 @@
         label="Fix"
         :tooltip="tooltips['fixtext']"
         @toggle-section-lock="$emit('toggle-section-lock', $event)"
-        @open-composer="bubbleOpenComposer"
+        v-on="commentIconListeners"
       >
         <template #default="{ inputId, isDisabled }">
           <MarkdownTextarea
@@ -252,7 +252,7 @@
         label="Artifact Description"
         :tooltip="tooltips['artifact_description']"
         @toggle-section-lock="$emit('toggle-section-lock', $event)"
-        @open-composer="bubbleOpenComposer"
+        v-on="commentIconListeners"
       >
         <template #default="{ inputId, isDisabled }">
           <MarkdownTextarea
@@ -275,7 +275,7 @@
         label="Vendor Comments"
         :tooltip="tooltips['vendor_comments']"
         @toggle-section-lock="$emit('toggle-section-lock', $event)"
-        @open-composer="bubbleOpenComposer"
+        v-on="commentIconListeners"
       >
         <template #default="{ inputId, isDisabled }">
           <MarkdownTextarea
@@ -310,7 +310,7 @@
         label="Version"
         :tooltip="tooltips['version']"
         @toggle-section-lock="$emit('toggle-section-lock', $event)"
-        @open-composer="bubbleOpenComposer"
+        v-on="commentIconListeners"
       >
         <template #default="{ inputId, isDisabled }">
           <b-form-input
@@ -439,8 +439,9 @@
 </template>
 
 <script>
+import { toRef } from "vue";
 import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
-import CommentIconHostMixin from "../../../mixins/CommentIconHostMixin.vue";
+import { useCommentIconHost } from "../../../composables/useCommentIconHost";
 import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
 import RuleFormGroup from "../../shared/RuleFormGroup.vue";
 import DisaRuleDescriptionForm from "./DisaRuleDescriptionForm";
@@ -457,7 +458,7 @@ export default {
     MarkdownTextarea,
     RuleFormGroup,
   },
-  mixins: [FormFeedbackMixinVue, CommentIconHostMixin],
+  mixins: [FormFeedbackMixinVue],
   props: {
     rule: {
       type: Object,
@@ -525,14 +526,22 @@ export default {
       },
     },
   },
+  setup(props, { emit }) {
+    const { commentIconListeners, commentIconProps } = useCommentIconHost({
+      rule: toRef(props, "rule"),
+      emit,
+    });
+    return { commentIconListeners, commentIconProps };
+  },
   data: function () {
     return {
       mod: Math.floor(Math.random() * 1000),
     };
   },
   computed: {
-    // formGroupPropsWithCommentIcon and bubbleOpenComposer are provided by
-    // CommentIconHostMixin — keep this list focused on RuleForm-specific.
+    formGroupPropsWithCommentIcon() {
+      return { ...this.formGroupProps, ...this.commentIconProps };
+    },
     formGroupProps() {
       return {
         fields: this.fields,

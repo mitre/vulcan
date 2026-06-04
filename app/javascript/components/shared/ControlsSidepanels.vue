@@ -177,6 +177,7 @@
           :effective-permissions="effectivePermissions"
           :current-user-id="currentUserId"
           :comments-closed="commentsClosed"
+          :initial-section-filter="reviewsSectionFilter"
           @open-reply-composer="$emit('open-reply-composer', $event)"
         />
       </div>
@@ -255,6 +256,10 @@ export default {
     readOnly: {
       type: Boolean,
       default: false,
+    },
+    reviewsSectionFilter: {
+      type: String,
+      default: "all",
     },
   },
   data() {
