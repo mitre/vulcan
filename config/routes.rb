@@ -22,6 +22,7 @@ Rails.application.routes.draw do
   # Requires current password. See Users::RegistrationsController#unlink_identity.
   devise_scope :user do
     post '/users/unlink_identity', to: 'users/registrations#unlink_identity', as: :unlink_identity
+    post '/users/initiate_link', to: 'users/registrations#initiate_link', as: :initiate_link
     # Settings shell sub-pages — each section gets its own URL so it's
     # bookmarkable and can be linked to directly from notifications,
     # navbar dropdowns, etc. /users/edit (Devise's default) renders the
@@ -71,7 +72,6 @@ Rails.application.routes.draw do
         post 'revert', on: :member
         patch 'section_locks', on: :member
         patch 'bulk_section_locks', on: :member
-        resources :comments, only: %i[create]
         resources :reviews, only: %i[create]
       end
     end
