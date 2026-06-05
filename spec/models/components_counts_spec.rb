@@ -1,0 +1,250 @@
+# frozen_string_literal: true
+
+require 'rails_helper'
+
+RSpec.describe Component do
+  include_context 'components model base setup'
+
+  context 'severity_counts' do
+    it 'returns aggregated severity counts' do
+      # Component has rules from SRG setup (reload to load imported rules)
+      @p1_c1.reload
+      counts = @p1_c1.severity_counts
+      expect(counts).to be_a(Hash)
+      expect(counts.keys).to contain_exactly(:high, :medium, :low)
+      expect(counts[:high]).to be >= 0
+      expect(counts[:medium]).to be >= 0
+      expect(counts[:low]).to be >= 0
+      expect(counts[:high] + counts[:medium] + counts[:low]).to eq(@p1_c1.rules_count)
+    end
+
+    it 'includes severity_counts in as_json when requested' do
+      json = @p1_c1.as_json(methods: [:severity_counts])
+      expect(json['severity_counts']).to be_a(Hash)
+      expect(json['severity_counts']['high']).to be >= 0
+    end
+
+    it 'counts high severity rules correctly' do
+      # Add a high severity rule
+      @p1_c1.rules.first.update(rule_severity: 'high')
+      counts = @p1_c1.severity_counts
+      expect(counts[:high]).to be >= 1
+    end
+
+    it 'counts medium severity rules correctly' do
+      # Add a medium severity rule
+      @p1_c1.rules.first.update(rule_severity: 'medium')
+      counts = @p1_c1.severity_counts
+      expect(counts[:medium]).to be >= 1
+    end
+
+    it 'counts low severity rules correctly' do
+      # Add a low severity rule
+      @p1_c1.rules.first.update(rule_severity: 'low')
+      counts = @p1_c1.severity_counts
+      expect(counts[:low]).to be >= 1
+    end
+
+    it 'returns zero counts for components with no rules' do
+      empty_component = Component.create!(project: @p1, name: 'Empty Component', title: 'Empty STIG',
+                                          version: 'Empty V1R1', prefix: 'EMPT-00', based_on: @srg,
+                                          skip_import_srg_rules: true)
+      counts = empty_component.severity_counts
+      expect(counts[:high]).to eq(0)
+      expect(counts[:medium]).to eq(0)
+      expect(counts[:low]).to eq(0)
+    end
+  end
+
+  context 'with_severity_counts scope' do
+    it 'adds severity count virtual columns' do
+      @p1_c1.reload
+
+      component = Component.with_severity_counts.find(@p1_c1.id)
+      expect(component).to respond_to(:severity_high_count)
+      expect(component).to respond_to(:severity_medium_count)
+      expect(component).to respond_to(:severity_low_count)
+    end
+
+    it 'returns correct severity counts as virtual columns', :aggregate_failures do
+      @p1_c1.reload
+
+      component = Component.with_severity_counts.find(@p1_c1.id)
+
+      # Verify counts are integers
+      expect(component.severity_high_count).to be_a(Integer)
+      expect(component.severity_medium_count).to be_a(Integer)
+      expect(component.severity_low_count).to be_a(Integer)
+
+      # Verify counts sum to total rules
+      total = component.severity_high_count + component.severity_medium_count + component.severity_low_count
+      expect(total).to eq(@p1_c1.rules_count)
+
+      # Verify counts are non-negative
+      expect(component.severity_high_count).to be >= 0
+      expect(component.severity_medium_count).to be >= 0
+      expect(component.severity_low_count).to be >= 0
+    end
+
+    it 'handles components with no rules' do
+      empty = Component.create!(project: @p1, name: 'Empty Component', title: 'Empty STIG',
+                                version: 'Empty V1R1', prefix: 'EMPT-01', based_on: @srg,
+                                skip_import_srg_rules: true)
+
+      component = Component.with_severity_counts.find(empty.id)
+      expect(component.severity_high_count).to eq(0)
+      expect(component.severity_medium_count).to eq(0)
+      expect(component.severity_low_count).to eq(0)
+    end
+
+    it 'counts match direct rule queries (no off-by-one)', :aggregate_failures do
+      @p1_c1.reload
+
+      # Get counts from scope
+      component = Component.with_severity_counts.find(@p1_c1.id)
+
+      # Get counts from direct queries
+      expected_high = @p1_c1.rules.where(rule_severity: 'high').count
+      expected_medium = @p1_c1.rules.where(rule_severity: 'medium').count
+      expected_low = @p1_c1.rules.where(rule_severity: 'low').count
+
+      # Scope counts should exactly match direct queries
+      expect(component.severity_high_count).to eq(expected_high)
+      expect(component.severity_medium_count).to eq(expected_medium)
+      expect(component.severity_low_count).to eq(expected_low)
+    end
+  end
+
+  describe '#status_counts' do
+    it 'returns counts for each rule status' do
+      counts = @p1_c1.status_counts
+      expect(counts).to have_key(:not_yet_determined)
+      expect(counts).to have_key(:applicable_configurable)
+      expect(counts).to have_key(:applicable_inherently_meets)
+      expect(counts).to have_key(:applicable_does_not_meet)
+      expect(counts).to have_key(:not_applicable)
+
+      # All rules default to NYD
+      total = @p1_c1.rules.where(deleted_at: nil).count
+      expect(counts[:not_yet_determined]).to eq(total)
+    end
+
+    it 'reflects status changes' do
+      rule = @p1_c1.rules.first
+      rule.update!(status: 'Applicable - Configurable')
+
+      counts = @p1_c1.status_counts
+      expect(counts[:applicable_configurable]).to eq(1)
+      expect(counts[:not_yet_determined]).to eq(@p1_c1.rules.where(deleted_at: nil).count - 1)
+    end
+  end
+
+  describe '#as_json' do
+    it 'includes status_counts' do
+      json = @p1_c1.as_json
+      # as_json merge uses symbol keys for custom additions
+      expect(json).to have_key(:status_counts)
+      expect(json[:status_counts]).to have_key(:not_yet_determined)
+    end
+
+    # REQUIREMENT: as_json must not crash when based_on (SRG) is nil.
+    # This can happen with legacy data or components created without an SRG link.
+    it 'handles nil based_on gracefully' do
+      orphan = Component.new(
+        project: @p1_c1.project, name: 'Orphan', title: 'Orphan STIG',
+        version: 99, release: 1, prefix: 'ORPH-01'
+      )
+      # Skip validations to create a component without based_on
+      orphan.save!(validate: false)
+
+      expect { orphan.as_json }.not_to raise_error
+      json = orphan.as_json
+      expect(json[:based_on_title]).to be_nil
+      expect(json[:based_on_version]).to be_nil
+
+      orphan.destroy!
+    end
+  end
+
+  # ─── B8 Regression: Duplicated component rules_count ─────
+  # REQUIREMENT: When a component is duplicated, the new component's
+  # rules_count must equal the actual number of rules, NOT accumulate
+  # from the original's counter_cache value + new rule inserts.
+  describe '#duplicate rules_count (B8 regression)' do
+    it 'duplicated component has correct rules_count after save' do
+      original = shared_component
+      original_count = original.rules.where(deleted_at: nil).count
+      expect(original_count).to be > 0
+
+      dup = original.duplicate(new_version: 99, new_release: 99)
+      dup.save!
+      dup.reload
+
+      # Without counter reset, rules_count may be double the actual count
+      actual_count = dup.rules.where(deleted_at: nil).count
+      expect(dup.rules_count).to eq(actual_count),
+                                 "rules_count (#{dup.rules_count}) should equal actual count (#{actual_count}), " \
+                                 "not #{original_count * 2} (counter_cache accumulation bug)"
+
+      dup.destroy!
+    end
+
+    it 'duplicate_reviews_and_history copies without error' do
+      original = shared_component
+      dup = original.duplicate(new_version: 98, new_release: 98)
+      dup.save!
+
+      # This was raising TypeError (Rails 8 bind params) and
+      # NoMethodError (sanitize_sql_array as instance method)
+      expect { dup.duplicate_reviews_and_history(original.id) }.not_to raise_error
+
+      dup.destroy!
+    end
+
+    # Regression: the raw-SQL copy bypasses sync_commentable_from_rule, so it
+    # must dual-write commentable_*. Without them the copied comment is counted
+    # but never listed in the triage view (paginated_comments filters commentable).
+    it 'duplicate_reviews_and_history dual-writes commentable on copied reviews' do
+      original = shared_component
+      commenter = Membership.find_or_create_by!(user: create(:user), membership: original.project) do |m|
+        m.role = 'viewer'
+      end.user
+      Review.create!(rule: original.rules.first, user: commenter, action: 'comment', comment: 'orig comment')
+
+      dup = original.duplicate(new_version: 96, new_release: 96)
+      dup.save!
+      dup.duplicate_reviews_and_history(original.id)
+
+      copied = Review.where(rule_id: dup.rules.pluck(:id), comment: 'orig comment').first
+      expect(copied).to be_present
+      expect(copied.commentable_type).to eq('BaseRule')
+      expect(copied.commentable_id).to eq(copied.rule_id)
+      expect(dup.paginated_comments[:rows].pluck(:id)).to include(copied.id)
+
+      dup.destroy!
+    end
+
+    it 'auditing can be suppressed during save for performance' do
+      original = shared_component
+      dup = original.duplicate(new_version: 97, new_release: 97)
+
+      # Controller suppresses auditing during dup save — verify the
+      # mechanism works at model level
+      Audited.auditing_enabled = false
+      begin
+        dup.save!
+      ensure
+        Audited.auditing_enabled = true
+      end
+
+      rule_audits = Audited::Audit.where(
+        auditable_type: 'BaseRule',
+        auditable_id: dup.rules.pluck(:id)
+      ).count
+      expect(rule_audits).to eq(0),
+                             "Expected 0 rule audits with auditing disabled, got #{rule_audits}"
+
+      dup.destroy!
+    end
+  end
+end
