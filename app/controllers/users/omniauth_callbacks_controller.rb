@@ -29,6 +29,8 @@ module Users
         Rails.logger.debug { "Full auth hash: #{auth.to_h.inspect}" }
       end
 
+      return handle_identity_link(auth) if session.delete(:link_in_progress) && current_user
+
       user = User.from_omniauth(auth)
 
       # Notify user when their local account was auto-linked to an external provider.
@@ -65,6 +67,31 @@ module Users
     alias ldap all
     alias github all
     alias oidc all
+
+    private
+
+    def handle_identity_link(auth)
+      session.delete(:link_provider)
+      provider = auth.provider.to_s
+      uid = auth.uid.to_s
+
+      existing = User.find_by(provider: provider, uid: uid)
+      if existing && existing.id != current_user.id
+        flash.alert = "This #{provider.upcase} identity is already linked to another account (#{existing.email}). " \
+                      'Please contact an administrator.'
+        redirect_to edit_user_registration_path and return
+      end
+
+      current_user.audit_comment = "Linked #{provider.upcase} identity via profile"
+      current_user.update!(provider: provider, uid: uid)
+      Rails.logger.info "AUDIT: Linked #{provider} identity to #{current_user.email} via profile"
+
+      provider_name = provider == 'oidc' ? (Settings.oidc&.title || 'OIDC') : provider.upcase
+      flash.notice = "Your account has been linked to #{provider_name}."
+      redirect_to edit_user_registration_path
+    end
+
+    public
 
     def oauth_error(exception)
       # Log full details server-side for debugging.

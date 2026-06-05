@@ -76,6 +76,38 @@ RSpec.describe 'Users::RegistrationsController#unlink_identity' do
       end
     end
 
+    context 'with repeated failed password attempts (AC-07 lockout)' do
+      before do
+        allow(Settings.lockout).to receive(:enabled).and_return(true)
+      end
+
+      it 'increments failed_attempts on wrong password' do
+        expect do
+          post '/users/unlink_identity', params: { current_password: 'wrong' }
+        end.to change { user.reload.failed_attempts }.by(1)
+      end
+
+      it 'locks account after maximum_attempts exceeded' do
+        max = Devise.maximum_attempts
+        max.times do
+          post '/users/unlink_identity', params: { current_password: 'wrong' }
+        end
+
+        user.reload
+        expect(user.access_locked?).to be true
+      end
+
+      it 'resets failed_attempts on successful unlink' do
+        user.update_columns(failed_attempts: 2)
+
+        post '/users/unlink_identity', params: { current_password: password }
+
+        user.reload
+        expect(user.failed_attempts).to eq(0)
+        expect(user.provider).to be_nil
+      end
+    end
+
     context 'when local login is disabled globally' do
       before do
         allow(Settings.local_login).to receive(:enabled).and_return(false)
