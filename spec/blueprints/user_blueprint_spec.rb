@@ -49,7 +49,7 @@ RSpec.describe UserBlueprint do
       expect(result[:id]).to eq(user.id)
       expect(result[:name]).to eq(user.name)
       expect(result[:email]).to eq(user.email)
-      expect(result[:admin]).to eq(true)
+      expect(result[:admin]).to be(true)
     end
   end
 end

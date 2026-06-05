@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'Dead routes', type: :routing do
+RSpec.describe 'Dead routes' do
   before do
     Rails.application.reload_routes!
   end
