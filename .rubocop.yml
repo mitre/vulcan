@@ -1,5 +1,6 @@
 require:
   - ./lib/rubocop/cop/vulcan/comment_tracker
+  - ./lib/rubocop/cop/vulcan/let_it_be_refind
 
 plugins:
   - rubocop-rails
@@ -178,10 +179,10 @@ RSpec/LetSetup:
 RSpec/MessageChain:
   Enabled: false
 
-# Repeated examples flagged in components_spec are intentional parametric tests
+# Repeated examples flagged in components satisfaction spec are intentional parametric tests
 RSpec/RepeatedExample:
   Exclude:
-    - spec/models/components_spec.rb
+    - spec/models/components_satisfactions_spec.rb
 
 # Test let statements with numbers in names
 RSpec/IndexedLet:

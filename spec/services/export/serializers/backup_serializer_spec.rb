@@ -12,7 +12,7 @@ TIMESTAMP_PATTERN = /\A\d{4}-\d{2}-\d{2}T/
 
 RSpec.describe Export::Serializers::BackupSerializer do
   let_it_be(:project) { create(:project) }
-  let_it_be(:component, refind: true) { create(:component, project: project) }
+  let_it_be(:component) { create(:component, project: project) }
   let(:serializer) { described_class.new(component) }
 
   describe '#serialize' do

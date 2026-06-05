@@ -82,8 +82,11 @@ RSpec.describe 'RuleBlueprint' do
     end
 
     it 'generates zero N+1 queries when rule is properly eager-loaded' do
-      # Force the rule into memory
-      loaded_rule = rule
+      loaded_rule = Rule.eager_load(
+        :reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
+        :additional_answers, { satisfies: :srg_rule }, { satisfied_by: :srg_rule },
+        { srg_rule: %i[disa_rule_descriptions rule_descriptions checks security_requirements_guide] }
+      ).find(rule.id)
 
       srg_queries = []
       callback = lambda { |_name, _start, _finish, _id, payload|

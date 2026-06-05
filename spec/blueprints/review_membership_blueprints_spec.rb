@@ -16,9 +16,7 @@ RSpec.describe 'Review and Membership Blueprints' do
   describe ReviewBlueprint do
     # `refind: true` so each example gets a fresh AR instance — earlier
     # examples in this block call `update_columns` to set triage/adjudicator
-    # attribution. Savepoint rolls the DB back, but the cached in-memory
-    # object would still carry mutated attributes without refind.
-    let_it_be(:review, refind: true) do
+    let_it_be(:review) do
       create(:review, :comment, user: user, rule: rule, comment: 'Looks good')
     end
 

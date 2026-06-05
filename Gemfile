@@ -161,3 +161,5 @@ gem 'blueprinter', '~> 1.2'
 gem 'blueprinter-activerecord', '~> 1.3'
 
 gem 'oj', '~> 3.16'
+
+gem 'climate_control', '~> 1.2', group: :test

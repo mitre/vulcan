@@ -29,7 +29,7 @@ RSpec.describe Component, '#update_from_spreadsheet / #apply_spreadsheet_update'
     srg
   end
   let_it_be(:shared_project) { Project.create!(name: 'Roundtrip Test Project') }
-  let_it_be(:shared_component, refind: true) do
+  let_it_be(:shared_component) do
     Component.create!(project: shared_project, name: 'Roundtrip Test', title: 'Roundtrip STIG',
                       version: 'V1R1', prefix: 'RNDT-00', based_on: shared_srg)
   end

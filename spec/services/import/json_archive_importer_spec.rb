@@ -675,7 +675,7 @@ RSpec.describe Import::JsonArchiveImporter do
         let_it_be(:orphan_proj) { create(:project) }
         let_it_be(:orphan_component) { create(:component, project: orphan_proj) }
         let_it_be(:orphan_commenter) { create(:user, name: 'Orphan Commenter') }
-        let_it_be(:orphan_triager, refind: true) do
+        let_it_be(:orphan_triager) do
           create(:user, name: 'Orphan Triager', email: 'orphan-triager@example.com')
         end
         let_it_be(:orphan_review) do
