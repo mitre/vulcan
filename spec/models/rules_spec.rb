@@ -571,4 +571,46 @@ RSpec.describe Review do
       expect(@p1r1.updated_at).to eq(saved_updated_at)
     end
   end
+
+  describe 'status getter/setter — no custom override (regression guard)' do
+    let(:parent_rule) { @p1_c1.rules.second }
+    let(:child_rule) { @p1r1 }
+
+    before do
+      child_rule.satisfied_by << parent_rule unless child_rule.satisfied_by.include?(parent_rule)
+    end
+
+    after do
+      child_rule.satisfied_by.delete(parent_rule)
+    end
+
+    it 'status returns the actual DB value for a child with satisfied_by' do
+      expect(child_rule.satisfied_by.size).to be > 0
+
+      child_rule.update!(status: 'Applicable - Does Not Meet', audit_comment: 'regression')
+      child_rule.reload
+
+      expect(child_rule.status).to eq('Applicable - Does Not Meet')
+      expect(child_rule[:status]).to eq(child_rule.status)
+    end
+
+    it 'status= persists on child rules (setter is not a no-op)' do
+      expect(child_rule.satisfied_by.size).to be > 0
+
+      child_rule.status = 'Not Applicable'
+      child_rule.audit_comment = 'regression'
+      child_rule.save!
+      child_rule.reload
+
+      expect(child_rule.status).to eq('Not Applicable')
+    end
+
+    it 'apply_nesting_status! sets ADNM and reads back correctly' do
+      child_rule.apply_nesting_status!(parent_rule)
+      child_rule.reload
+
+      expect(child_rule.status).to eq('Applicable - Does Not Meet')
+      expect(child_rule[:status]).to eq('Applicable - Does Not Meet')
+    end
+  end
 end
