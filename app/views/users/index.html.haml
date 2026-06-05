@@ -1,9 +1,9 @@
 - content_for :assets do
   = javascript_include_tag 'users'
 
-- users_json = @users.as_json(only: %i[id name email provider admin last_sign_in_at failed_attempts locked_at])
+- users_json = UserBlueprint.render_as_hash(@users, view: :admin)
 - if Settings.api_tokens&.enabled != false
   - token_counts = PersonalAccessToken.where(revoked_at: nil).group(:user_id).count
-  - users_json.each { |u| u['active_token_count'] = token_counts[u['id']] || 0 }
+  - users_json.each { |u| u[:active_token_count] = token_counts[u[:id]] || 0 }
 #users
   %Users{ 'v-bind:users' => users_json.to_json, 'v-bind:histories' => @histories.to_json, 'v-bind:smtp-enabled' => Settings.smtp.enabled.to_json, 'v-bind:password-policy' => Settings.password.to_json, 'v-bind:lockout-enabled' => Settings.lockout.enabled.to_json, 'v-bind:api-tokens-enabled' => (Settings.api_tokens&.enabled != false).to_json }

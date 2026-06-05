@@ -4,8 +4,6 @@
 # Controller for application users.
 #
 class UsersController < ApplicationController
-  USER_JSON_FIELDS = %i[id name email provider admin last_sign_in_at failed_attempts locked_at].freeze
-
   before_action :authorize_admin, except: %i[comments]
   before_action :authorize_logged_in, only: %i[comments]
   before_action :set_user, only: %i[update destroy send_password_reset generate_reset_link set_password lock unlock]
@@ -20,7 +18,7 @@ class UsersController < ApplicationController
                         .map(&:format)
     respond_to do |format|
       format.html
-      format.json { render json: @users.as_json(only: USER_JSON_FIELDS) }
+      format.json { render json: UserBlueprint.render(@users, view: :admin) }
     end
   end
 
@@ -34,7 +32,7 @@ class UsersController < ApplicationController
 
     if user.save
       user.reload
-      result = { user: user.as_json(only: USER_JSON_FIELDS) }
+      result = { user: UserBlueprint.render_as_hash(user, view: :admin) }
 
       if password_params[:password].present?
         result[:toast] = { title: 'User created.', message: ["User #{user.email} created with the provided password."], variant: 'success' }
@@ -93,7 +91,7 @@ class UsersController < ApplicationController
         format.json do
           render json: {
             toast: Toast.new(title: 'User updated.', message: ['Successfully updated user.'], variant: 'success'),
-            user: @user.as_json(only: USER_JSON_FIELDS)
+            user: UserBlueprint.render_as_hash(@user, view: :admin)
           }
         end
       end
@@ -212,7 +210,7 @@ class UsersController < ApplicationController
       toast: Toast.new(title: 'Account locked.',
                        message: ["Account #{@user.email} locked."],
                        variant: 'success'),
-      user: @user.as_json(only: USER_JSON_FIELDS)
+      user: UserBlueprint.render_as_hash(@user, view: :admin)
     }
   end
 
@@ -227,7 +225,7 @@ class UsersController < ApplicationController
       toast: Toast.new(title: 'Account unlocked.',
                        message: ["Account #{@user.email} unlocked."],
                        variant: 'success'),
-      user: @user.as_json(only: USER_JSON_FIELDS)
+      user: UserBlueprint.render_as_hash(@user, view: :admin)
     }
   end
 

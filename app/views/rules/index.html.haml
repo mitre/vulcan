@@ -4,7 +4,7 @@
 
 #Rules
   %Rules{                                                                           |
-    'v-bind:project': @project.to_json,                                             |
+    'v-bind:project': ProjectBlueprint.render(@project),                             |
     'v-bind:component': @component_json,                                            |
     'v-bind:rules': @rules_json,                                                    |
     'v-bind:statuses': RuleConstants::STATUSES.to_json,                             |

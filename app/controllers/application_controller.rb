@@ -421,10 +421,9 @@ class ApplicationController < ActionController::Base
     @locked_users = []
     return unless user_signed_in? && current_user.admin? && Settings.lockout&.enabled
 
-    @locked_users = User.where.not(locked_at: nil)
-                        .limit(100)
-                        .select(:id, :name, :email)
-                        .as_json(only: %i[id name email])
+    @locked_users = UserBlueprint.render_as_hash(
+      User.where.not(locked_at: nil).limit(100)
+    )
   end
 
   # Mutates each row hash by adding `mine: 'up' | 'down' | nil` inside

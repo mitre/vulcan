@@ -35,9 +35,8 @@ properties:
     type:
       - string
       - 'null'
-    format: date-time
-    description: Timestamp of the most recent successful sign-in. Null if the user has never signed in.
-    example: "2026-05-28T15:00:00Z"
+    description: Timestamp of the most recent successful sign-in. Null if the user has never signed in. Blueprinter format.
+    example: "2026-05-28 15:00:00 UTC"
   failed_attempts:
     type: integer
     description: Number of consecutive failed login attempts since last successful sign-in.
@@ -46,6 +45,5 @@ properties:
     type:
       - string
       - 'null'
-    format: date-time
-    description: Timestamp when the account was locked due to excessive failed attempts. Null if not locked.
+    description: Timestamp when the account was locked due to excessive failed attempts. Null if not locked. Blueprinter format.
     example: null
