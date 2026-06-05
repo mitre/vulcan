@@ -1,6 +1,9 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
+import { createPinia, setActivePinia } from "pinia";
+import { createTestRouter } from "@test/support/routerTestHelper";
+import { useRuleSelectionStore } from "@/stores/ruleSelection";
 import RuleNavigator from "@/components/rules/RuleNavigator.vue";
 
 /**
@@ -65,9 +68,23 @@ describe("RuleNavigator", () => {
     readOnly: false,
   };
 
+  let pinia;
+  let router;
+
   const createWrapper = (props = {}, filters = {}) => {
+    pinia = createPinia();
+    setActivePinia(pinia);
+    router = createTestRouter([
+      { path: "/", name: "editor-root" },
+      { path: "/rules/:ruleId", name: "rule", props: true },
+    ]);
+    const store = useRuleSelectionStore();
+    store.init(router, props.componentId || defaultProps.componentId);
+
     return shallowMount(RuleNavigator, {
       localVue,
+      pinia,
+      router,
       propsData: {
         ...defaultProps,
         ...props,
@@ -587,12 +604,12 @@ describe("RuleNavigator", () => {
       expect(modal.props("searchType")).toBe("rules");
     });
 
-    it("selects rule when search result is chosen", () => {
+    it("selects rule via store when search result is chosen", () => {
       const rules = [createRule(1, "000001"), createRule(2, "000002")];
       wrapper = createWrapper({ rules });
       wrapper.vm.onSearchResultSelected({ id: 2, rule_id: "000002" });
-      expect(wrapper.emitted("ruleSelected")).toBeTruthy();
-      expect(wrapper.emitted("ruleSelected")[0][0]).toBe(2);
+      const store = useRuleSelectionStore();
+      expect(store.selectedRuleId).toBe(2);
     });
 
     it("calls scrollToField with matched_field and searchQuery", () => {

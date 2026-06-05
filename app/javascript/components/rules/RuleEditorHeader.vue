@@ -40,7 +40,6 @@
           :for-duplicate="true"
           :selected-rule-id="rule.id"
           :selected-rule-text="`${projectPrefix}-${rule.rule_id}`"
-          @ruleSelected="$emit('ruleSelected', $event.id)"
         />
         <b-button v-b-modal.duplicate-rule-modal variant="info">{{ msg.cloneTitle }}</b-button>
 

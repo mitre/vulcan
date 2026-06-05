@@ -21,6 +21,8 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
+import { createPinia } from "pinia";
+import { createTestRouter } from "@test/support/routerTestHelper";
 import RuleForm from "@/components/rules/forms/RuleForm.vue";
 
 // Lightweight stub — exposes disabled state via native <textarea>
@@ -76,6 +78,8 @@ describe("RuleForm", () => {
   const createWrapper = (propsOverrides = {}) => {
     return mount(RuleForm, {
       localVue,
+      pinia: createPinia(),
+      router: createTestRouter(),
       stubs: {
         MarkdownTextarea: MarkdownTextareaStub,
         DisaRuleDescriptionForm: true,

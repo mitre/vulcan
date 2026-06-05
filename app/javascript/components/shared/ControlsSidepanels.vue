@@ -152,10 +152,8 @@
         <RuleSatisfactions
           :component="component"
           :rule="selectedRule"
-          :selected-rule-id="selectedRuleId"
           :project-prefix="component.prefix"
           :read-only="readOnly"
-          @ruleSelected="$emit('rule-selected', $event)"
         />
       </div>
     </b-sidebar>

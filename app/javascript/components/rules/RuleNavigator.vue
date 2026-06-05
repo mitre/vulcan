@@ -56,7 +56,7 @@
       <!-- Currently opened rules -->
       <p class="mt-0 mb-1 d-flex justify-content-between align-items-center spacing-responsive">
         <strong>{{ navLabels.openRules }}</strong>
-        <template v-if="openRuleIds.length > 0">
+        <template v-if="ruleStore.openRuleIds.length > 0">
           <span class="clickable text-primary" @click="rulesDeselected(openRules)">
             <b-icon icon="x" class="clickable" />
             close all
@@ -143,12 +143,7 @@
       </p>
 
       <!-- New rule modal -->
-      <NewRuleModalForm
-        :title="navLabels.createNew"
-        :for-duplicate="false"
-        id-prefix="create"
-        @ruleSelected="ruleSelected($event)"
-      />
+      <NewRuleModalForm :title="navLabels.createNew" :for-duplicate="false" id-prefix="create" />
 
       <!-- All rules list -->
       <div v-for="rule in filteredRules" :key="`rule-${rule.id}`">
@@ -285,14 +280,6 @@
 </template>
 
 <script>
-//
-// Expect component to emit `ruleSelected` event when
-// a rule is selected from the list. This event means that
-// the user wants to edit that specific rule.
-// this.$emit('ruleSelected', rule)
-//
-// <RuleNavigator @ruleSelected="handleRuleSelected($event)" ... />
-//
 import _ from "lodash";
 import FindAndReplace from "./FindAndReplace.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
@@ -300,6 +287,7 @@ import ComponentSearchModal from "../shared/ComponentSearchModal.vue";
 import { getDefaultFilters } from "../../composables/useRuleFilters";
 import { NAVIGATOR_LABELS } from "../../constants/terminology";
 import { truncateId } from "../../utils/idFormatter";
+import { useRuleSelectionStore } from "../../stores/ruleSelection";
 export default {
   name: "RuleNavigator",
   components: { FindAndReplace, NewRuleModalForm, ComponentSearchModal },
@@ -318,7 +306,7 @@ export default {
     },
     selectedRuleId: {
       type: Number,
-      required: false,
+      default: null,
     },
     projectPrefix: {
       type: String,
@@ -326,7 +314,7 @@ export default {
     },
     openRuleIds: {
       type: Array,
-      required: true,
+      default: () => [],
     },
     readOnly: {
       type: Boolean,
@@ -336,6 +324,10 @@ export default {
       type: Object,
       default: null,
     },
+  },
+  setup() {
+    const ruleStore = useRuleSelectionStore();
+    return { ruleStore };
   },
   data: function () {
     return {
@@ -429,7 +421,7 @@ export default {
     },
     // Filters down to open rules that also apply to search & applied filters
     openRules: function () {
-      const openRules = this.rules.filter((rule) => this.openRuleIds.includes(rule.id));
+      const openRules = this.rules.filter((rule) => this.ruleStore.openRuleIds.includes(rule.id));
       return openRules;
     },
   },
@@ -509,14 +501,14 @@ export default {
       if (!rule.histories) {
         this.$root.$emit("refresh:rule", rule.id);
       }
-      this.$emit("ruleSelected", rule.id);
+      this.ruleStore.selectRule(rule.id);
     },
     ruleDeselected: function (rule) {
-      this.$emit("ruleDeselected", rule.id);
+      this.ruleStore.deselectRule(rule.id);
     },
     rulesDeselected: function (rules) {
       rules.forEach((rule) => {
-        this.$emit("ruleDeselected", rule.id);
+        this.ruleStore.deselectRule(rule.id);
       });
     },
     // Dynamically set the class of each rule row
@@ -524,7 +516,7 @@ export default {
       return {
         ruleRow: true,
         clickable: true,
-        selectedRuleRow: this.selectedRuleId == rule.id,
+        selectedRuleRow: this.ruleStore.selectedRuleId == rule.id,
       };
     },
     // Helper to test if a rule's status is a currently selected filter checkboxes

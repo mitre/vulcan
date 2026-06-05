@@ -1,6 +1,16 @@
 <template>
   <div>
     <b-form>
+      <!-- Satisfied-by indicator: shows parent relationship for child rules -->
+      <SatisfiedByIndicator
+        v-if="rule.satisfied_by && rule.satisfied_by.length > 0"
+        :parent-rules="rule.satisfied_by"
+        :component-prefix="rule.component_prefix || ''"
+        @navigate="$emit('navigate-to-rule', $event)"
+      >
+        Content fields are hidden — edit on the parent rule.
+      </SatisfiedByIndicator>
+
       <!-- ============================================================ -->
       <!-- SECTION 1: Policy Decision (Status + Severity)               -->
       <!-- User's first action: decide the status and severity          -->
@@ -456,6 +466,7 @@ import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
 import { useCommentIconHost } from "../../../composables/useCommentIconHost";
 import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
 import RuleFormGroup from "../../shared/RuleFormGroup.vue";
+import SatisfiedByIndicator from "../../shared/SatisfiedByIndicator.vue";
 import DisaRuleDescriptionForm from "./DisaRuleDescriptionForm";
 import AdditionalQuestions from "./AdditionalQuestions";
 import CheckForm from "./CheckForm";
@@ -469,6 +480,7 @@ export default {
     AdditionalQuestions,
     MarkdownTextarea,
     RuleFormGroup,
+    SatisfiedByIndicator,
   },
   mixins: [FormFeedbackMixinVue],
   props: {

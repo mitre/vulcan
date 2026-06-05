@@ -143,15 +143,8 @@
 
 <script>
 import { truncateId } from "../../utils/idFormatter";
+import { useRuleSelectionStore } from "../../stores/ruleSelection";
 
-//
-// Expect component to emit `ruleSelected` event when
-// a rule is selected from the list. This event means that
-// the user wants to edit that specific rule.
-// this.$emit('ruleSelected', rule)
-//
-// <RuleSatisfactions @ruleSelected="handleRuleSelected($event)" ... />
-//
 export default {
   name: "RuleSatisfactions",
   props: {
@@ -165,7 +158,7 @@ export default {
     },
     selectedRuleId: {
       type: Number,
-      required: false,
+      default: null,
     },
     projectPrefix: {
       type: String,
@@ -175,6 +168,10 @@ export default {
       type: Boolean,
       required: false,
     },
+  },
+  setup() {
+    const ruleStore = useRuleSelectionStore();
+    return { ruleStore };
   },
   data: function () {
     return {
@@ -189,12 +186,12 @@ export default {
       if (!rule.histories) {
         this.$root.$emit("refresh:rule", rule.id);
       }
-      this.$emit("ruleSelected", rule.id);
+      this.ruleStore.selectRule(rule.id);
     },
     ruleRowClass: function (rule) {
       return {
         ruleRow: true,
-        selectedRuleRow: this.selectedRuleId == rule.id,
+        selectedRuleRow: this.ruleStore.selectedRuleId == rule.id,
       };
     },
   },

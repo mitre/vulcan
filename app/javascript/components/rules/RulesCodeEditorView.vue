@@ -44,13 +44,9 @@
       <RuleNavigator
         :component-id="component.id"
         :rules="rules"
-        :selected-rule-id="selectedRuleId"
         :project-prefix="component.prefix"
         :effective-permissions="effectivePermissions"
-        :open-rule-ids="openRuleIds"
         :external-filters="filters"
-        @ruleSelected="handleRuleSelected($event)"
-        @ruleDeselected="handleRuleDeselected($event)"
       />
     </template>
 
@@ -63,7 +59,6 @@
           :for-duplicate="true"
           :selected-rule-id="selectedRule.id"
           :selected-rule-text="`${component.prefix}-${selectedRule.rule_id}`"
-          @ruleSelected="handleRuleSelected($event.id)"
         />
 
         <b-modal
@@ -236,7 +231,6 @@
         :reviews-section-filter="reviewsSectionFilter"
         @close-panel="closePanel"
         @component-updated="refreshComponent"
-        @rule-selected="handleRuleSelected"
         @open-reply-composer="onOpenReplyComposer"
       />
 
@@ -255,7 +249,7 @@
 </template>
 
 <script>
-import { toRef } from "vue";
+import { toRef, computed } from "vue";
 import { updateRule, updateSectionLocks } from "../../api/rulesApi";
 import { createRuleReview } from "../../api/reviewsApi";
 import { getComponent, patchComponent } from "../../api/componentsApi";
@@ -269,7 +263,9 @@ import ControlsPageLayout from "./ControlsPageLayout.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
 import CommentComposerModal from "../components/CommentComposerModal.vue";
 import ReplyComposerMixin from "../../mixins/ReplyComposerMixin.vue";
-import { useRuleSelection, useRuleFilters, useSidebar } from "../../composables";
+import { useRuleFilters, useSidebar } from "../../composables";
+import { useRuleSelectionStore } from "../../stores/ruleSelection";
+import { getFirstVisibleRule } from "../../utils/ruleSelectionUtils";
 import { useRuleAutosave } from "../../composables/useRuleAutosave";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
@@ -341,17 +337,23 @@ export default {
     const rulesRef = toRef(props, "rules");
     const componentId = props.component.id;
 
-    // Use composables
-    const {
-      selectedRuleId,
-      openRuleIds,
-      selectedRule,
-      lastEditor,
-      selectRule,
-      deselectRule,
-      closeAllRules,
-      isRuleOpen,
-    } = useRuleSelection(rulesRef, componentId, { autoSelectFirst: true });
+    const ruleStore = useRuleSelectionStore();
+
+    const selectedRuleId = computed(() => ruleStore.selectedRuleId);
+    const openRuleIds = computed(() => ruleStore.openRuleIds);
+    const selectedRule = computed(() => {
+      if (ruleStore.selectedRuleId === null) return null;
+      return rulesRef.value.find((r) => r.id === ruleStore.selectedRuleId) || null;
+    });
+    const lastEditor = computed(() => {
+      const rule = selectedRule.value;
+      if (!rule?.histories?.length) return "Unknown User";
+      return rule.histories[rule.histories.length - 1].name;
+    });
+    const selectRule = (ruleId) => ruleStore.selectRule(ruleId);
+    const deselectRule = (ruleId) => ruleStore.deselectRule(ruleId);
+    const closeAllRules = () => ruleStore.closeAllRules();
+    const isRuleOpen = (ruleId) => ruleStore.isRuleOpen(ruleId);
 
     const {
       filters,
@@ -421,7 +423,7 @@ export default {
     loadFiltersFromStorage();
 
     return {
-      // Rule selection (from useRuleSelection)
+      ruleStore,
       selectedRuleId,
       openRuleIds,
       selectedRule,
@@ -512,7 +514,12 @@ export default {
     },
   },
   mounted() {
-    // Wire autosave callback to refresh rule history after auto-save
+    this.ruleStore.init(this.$router, this.component.id);
+    if (this.ruleStore.selectedRuleId === null && this.rules.length > 0) {
+      const firstVisible = getFirstVisibleRule(this.rules);
+      if (firstVisible) this.ruleStore.selectRule(firstVisible.id);
+    }
+
     this.autosaveOptions.onAutoSave = (ruleId) => {
       this.$root.$emit("refresh:rule", ruleId);
     };

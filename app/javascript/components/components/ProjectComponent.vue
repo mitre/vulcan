@@ -50,14 +50,10 @@
         <RuleNavigator
           :component-id="component.id"
           :rules="rules"
-          :selected-rule-id="selectedRuleId"
           :effective-permissions="effective_permissions"
           :project-prefix="component.prefix"
           :read-only="true"
-          :open-rule-ids="openRuleIds"
           :external-filters="filters"
-          @ruleSelected="handleRuleSelected"
-          @ruleDeselected="handleRuleDeselected"
         />
       </template>
 
@@ -116,7 +112,6 @@
         <ControlsSidepanels
           :component="component"
           :selected-rule="selectedRule"
-          :selected-rule-id="selectedRuleId"
           :active-panel="activePanel"
           :effective-permissions="effective_permissions"
           :current-user-id="current_user_id"
@@ -125,7 +120,6 @@
           :reviews-section-filter="reviewsSectionFilter"
           @close-panel="closePanel"
           @component-updated="refreshComponent"
-          @rule-selected="handleRuleSelected"
           @open-reply-composer="onOpenReplyComposer"
         />
       </template>
@@ -134,7 +128,7 @@
 </template>
 
 <script>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { getComponent, patchComponent } from "../../api/componentsApi";
 import { getRule } from "../../api/rulesApi";
 import { exportProjectData } from "../../api/projectsApi";
@@ -143,7 +137,9 @@ import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import SortRulesMixin from "../../mixins/SortRulesMixin.vue";
 import ConfirmComponentReleaseMixin from "../../mixins/ConfirmComponentReleaseMixin.vue";
-import { useRuleSelection, useRuleFilters, useSidebar } from "../../composables";
+import { useRuleFilters, useSidebar } from "../../composables";
+import { useRuleSelectionStore } from "../../stores/ruleSelection";
+import { getFirstVisibleRule } from "../../utils/ruleSelectionUtils";
 import { MESSAGE_LABELS } from "../../constants/terminology";
 import ControlsPageLayout from "../rules/ControlsPageLayout.vue";
 import ControlsCommandBar from "../shared/ControlsCommandBar.vue";
@@ -222,21 +218,24 @@ export default {
   },
   setup(props) {
     const componentId = props.initialComponentState.id;
-    // Local clone of the rules array so reactivity is owned by Vue (not
-    // the prop). Mutations via this ref reliably propagate through
-    // useRuleSelection → selectedRule → RuleEditor → SectionCommentIcon.
-    // Mirrors the pattern used by Rules.vue in the editor pack.
     const localRules = ref(structuredClone(props.initialComponentState.rules || []));
 
-    const { selectedRuleId, openRuleIds, selectedRule, selectRule, deselectRule } =
-      useRuleSelection(localRules, componentId, { autoSelectFirst: true });
+    const ruleStore = useRuleSelectionStore();
 
-    const { filters, counts, setFilter } = useRuleFilters(localRules, componentId);
+    const selectedRuleId = computed(() => ruleStore.selectedRuleId);
+    const openRuleIds = computed(() => ruleStore.openRuleIds);
+    const selectedRule = computed(() => {
+      if (ruleStore.selectedRuleId === null) return null;
+      return localRules.value.find((r) => r.id === ruleStore.selectedRuleId) || null;
+    });
 
-    const { activePanel, togglePanel, closePanel } = useSidebar();
-
+    const selectRule = (ruleId) => ruleStore.selectRule(ruleId);
+    const deselectRule = (ruleId) => ruleStore.deselectRule(ruleId);
     const handleRuleSelected = selectRule;
     const handleRuleDeselected = deselectRule;
+
+    const { filters, counts, setFilter } = useRuleFilters(localRules, componentId);
+    const { activePanel, togglePanel, closePanel } = useSidebar();
 
     const updateFilter = (filterName, value) => {
       setFilter(filterName, value);
@@ -245,6 +244,7 @@ export default {
     };
 
     return {
+      ruleStore,
       localRules,
       selectedRuleId,
       openRuleIds,
@@ -310,10 +310,13 @@ export default {
     },
   },
   mounted() {
+    this.ruleStore.init(this.$router, this.component.id);
+
     if (this.queriedRule && this.queriedRule.id) {
-      this.selectRule(this.queriedRule.id);
-      // replaceState (not pushState) so back returns to the calling page.
-      window.history.replaceState({}, "", `/components/${this.component.id}`);
+      this.ruleStore.selectRule(this.queriedRule.id);
+    } else if (this.ruleStore.selectedRuleId === null && this.localRules.length > 0) {
+      const firstVisible = getFirstVisibleRule(this.localRules);
+      if (firstVisible) this.ruleStore.selectRule(firstVisible.id);
     }
   },
   methods: {

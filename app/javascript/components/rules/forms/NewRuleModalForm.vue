@@ -11,6 +11,8 @@
 </template>
 <script>
 import FormMixinVue from "../../../mixins/FormMixin.vue";
+import { useRuleSelectionStore } from "../../../stores/ruleSelection";
+
 export default {
   name: "NewRuleModalForm",
   mixins: [FormMixinVue],
@@ -36,13 +38,17 @@ export default {
       required: false,
     },
   },
+  setup() {
+    const ruleStore = useRuleSelectionStore();
+    return { ruleStore };
+  },
   methods: {
     handleSubmit: function () {
       this.$root.$emit(
         "create:rule",
         { duplicate: this.forDuplicate, id: this.selectedRuleId },
         (response) => {
-          this.$emit("ruleSelected", response.data.data);
+          this.ruleStore.selectRule(response.data.data.id);
         },
       );
     },

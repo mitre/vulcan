@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
+import { createPinia } from "pinia";
+import { createTestRouter } from "@test/support/routerTestHelper";
 import RulesCodeEditorView from "@/components/rules/RulesCodeEditorView.vue";
 
 vi.mock("@/api/baseApi", () => ({
@@ -89,8 +91,14 @@ describe("RulesCodeEditorView", () => {
   };
 
   const createWrapper = (props = {}) => {
+    const router = createTestRouter([
+      { path: "/", name: "editor-root" },
+      { path: "/rules/:ruleId", name: "rule", props: true },
+    ]);
     return shallowMount(RulesCodeEditorView, {
       localVue,
+      pinia: createPinia(),
+      router,
       propsData: {
         ...defaultProps,
         ...props,

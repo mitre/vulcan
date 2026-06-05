@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
+import { createPinia } from "pinia";
+import { createTestRouter } from "@test/support/routerTestHelper";
 import ProjectComponent from "@/components/components/ProjectComponent.vue";
 import { getComponent, patchComponent } from "@/api/componentsApi";
 import { getRule } from "@/api/rulesApi";
@@ -97,8 +99,14 @@ describe("ProjectComponent", () => {
   };
 
   const createWrapper = (props = {}) => {
+    const router = createTestRouter([
+      { path: "/", name: "editor-root" },
+      { path: "/rules/:ruleId", name: "rule", props: true },
+    ]);
     return shallowMount(ProjectComponent, {
       localVue,
+      pinia: createPinia(),
+      router,
       propsData: {
         ...defaultProps,
         ...props,
