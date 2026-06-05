@@ -205,9 +205,21 @@
         v-on="commentIconListeners"
       >
         <template #default="{ inputId, isDisabled }">
+          <b-alert
+            v-if="rule.satisfied_by && rule.satisfied_by.length > 0"
+            show
+            variant="info"
+            class="mb-2 py-1 px-2 small"
+          >
+            Inherited fix from {{ rule.satisfied_by[0].displayed_name || "parent rule" }}:
+            <em
+              >{{ (rule.satisfied_by[0].fixtext || "").substring(0, 200)
+              }}{{ (rule.satisfied_by[0].fixtext || "").length > 200 ? "…" : "" }}</em
+            >
+          </b-alert>
           <MarkdownTextarea
             :id="inputId"
-            :value="rule.satisfied_by.length > 0 ? rule.satisfied_by[0].fixtext : rule.fixtext"
+            :value="rule.fixtext"
             :input-class="inputClass('fixtext')"
             placeholder=""
             :disabled="isDisabled"
