@@ -83,4 +83,33 @@ RSpec.describe Review do
       expect(review.adjudicated_by_id).to eq(explicit_admin.id)
     end
   end
+
+  describe 'save_intent :reopen bypasses auto-adjudication on terminal statuses' do
+    Review::TERMINAL_AUTO_ADJUDICATE_STATUSES.each do |status|
+      it "does NOT re-set adjudicated_at when save_intent is :reopen for '#{status}'" do
+        review = create(:review, :comment, comment: 'reopen test', section: nil,
+                                           user: @p_viewer, rule: @p1r1)
+
+        attrs = { triage_status: status, triage_set_by_id: @p_admin.id, triage_set_at: Time.current }
+        if status == 'duplicate'
+          dup_target = create(:review, :comment, comment: 'dup target', section: nil,
+                                                 user: @p_viewer, rule: @p1r1)
+          attrs[:duplicate_of_review_id] = dup_target.id
+        end
+        attrs[:addressed_by_rule_id] = @p1r1.id if status == 'addressed_by'
+
+        review.update!(attrs)
+        review.reload
+        expect(review.adjudicated_at).to be_present
+
+        review.save_intent = :reopen
+        review.update!(adjudicated_at: nil, adjudicated_by_id: nil)
+        review.reload
+
+        expect(review.adjudicated_at).to be_nil,
+                                         "Expected adjudicated_at to stay nil after reopen on '#{status}', but callback re-set it"
+        expect(review.adjudicated_by_id).to be_nil
+      end
+    end
+  end
 end

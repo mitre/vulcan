@@ -612,5 +612,15 @@ RSpec.describe Review do
       expect(child_rule.status).to eq('Applicable - Does Not Meet')
       expect(child_rule[:status]).to eq('Applicable - Does Not Meet')
     end
+
+    it 'fixtext returns the child own text, not the parent (export_fixtext delegates)' do
+      child_rule.update!(fixtext: 'Child-specific fix text', audit_comment: 'regression')
+      parent_rule.update!(fixtext: 'Parent fix text', audit_comment: 'regression')
+      child_rule.reload
+
+      expect(child_rule.fixtext).to eq('Child-specific fix text')
+      expect(child_rule.send(:export_fixtext)).to eq('Parent fix text')
+      expect(child_rule.fixtext).not_to eq(child_rule.send(:export_fixtext))
+    end
   end
 end
