@@ -43,6 +43,10 @@ RSpec.describe 'Dark mode CSS foundation' do
       expect(dark_block).to include('.bg-white')
     end
 
+    # NOTE: This tests SCSS source structure, not compiled CSS output.
+    # A malformed @each that parses but generates wrong selectors would
+    # pass here — esbuild catches compilation errors at build time.
+    # Compiled CSS validation deferred until a CSS testing tool is adopted.
     it 'generates alert overrides for all 4 variants via @each loop' do
       %w[success danger warning info].each do |variant|
         expect(dark_block).to include("#{variant}:"),

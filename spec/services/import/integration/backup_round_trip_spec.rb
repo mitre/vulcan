@@ -165,6 +165,18 @@ RSpec.describe 'JSON Archive Backup Round-Trip' do
       end
     end
 
+    it 'regenerates inspec_control_file on imported rules' do
+      import_result
+      imported_rules = imported_component.rules.order(:rule_id).to_a
+
+      imported_rules.each do |rule|
+        expect(rule.inspec_control_file).to be_present,
+                                            "Rule #{rule.rule_id} has nil inspec_control_file after import"
+        expect(rule.inspec_control_file).to include(rule.title),
+                                            "Rule #{rule.rule_id} inspec_control_file does not contain its title"
+      end
+    end
+
     it 'preserves disa_rule_descriptions' do
       import_result
       source_rules = source_component.rules.includes(:disa_rule_descriptions).order(:rule_id)

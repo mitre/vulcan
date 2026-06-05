@@ -33,12 +33,15 @@ RSpec.describe 'Lock Sections' do
       expect(body.dig('toast', 'variant')).to eq('success')
     end
 
-    it 'rejects an invalid section name' do
+    it 'rejects an invalid section name with toast-shaped error' do
       patch "/components/#{component.id}/lock_sections",
             params: { sections: %w[NotAField], locked: true, comment: 'bogus' }
 
       expect(response).to have_http_status(:unprocessable_content)
-      expect(response.parsed_body['error']).to include('Invalid sections')
+      body = response.parsed_body
+      expect(body.dig('toast', 'variant')).to eq('danger')
+      expect(body.dig('toast', 'message')).to be_an(Array)
+      expect(body.dig('toast', 'message').first).to include('NotAField')
     end
 
     it 'rolls back ALL prior locks if a later rule.update! fails (no partial writes)' do

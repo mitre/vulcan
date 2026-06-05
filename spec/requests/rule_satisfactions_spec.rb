@@ -138,7 +138,6 @@ RSpec.describe 'Rule Satisfactions' do
 
   describe 'round-trip content preservation — nest then unnest' do
     it 'preserves user-edited check/fix/title content and restores original status through nest + unnest cycle' do
-      # User has edited content and set status to AC
       original_fixtext = 'Custom fix text the user spent hours writing'
       original_title = 'Custom requirement title'
       original_check = rule_a.checks.first&.content || 'Original check content'

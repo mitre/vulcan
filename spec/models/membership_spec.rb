@@ -22,6 +22,33 @@ RSpec.describe Membership do
       expect(Membership.where(user: user, membership_type: 'Component').count).to eq(0)
     end
 
+    it 'handles zero component memberships without error' do
+      expect(Membership.where(user: user, membership_type: 'Component').count).to eq(0)
+
+      expect do
+        Membership.create!(user: user, membership: project, role: 'author')
+      end.not_to raise_error
+    end
+
+    it 'uses destroy! (fail-fast) and removes in sorted ID order' do
+      second_component = create(:component, project: project, based_on: srg)
+      m1 = Membership.create!(user: user, membership: component, role: 'viewer')
+      m2 = Membership.create!(user: user, membership: second_component, role: 'viewer')
+
+      destroyed_ids = []
+      allow_any_instance_of(Membership).to receive(:destroy!).and_wrap_original do |method, *args|
+        destroyed_ids << method.receiver.id
+        method.call(*args)
+      end
+
+      Membership.create!(user: user, membership: project, role: 'author')
+
+      expect(destroyed_ids).to eq(destroyed_ids.sort),
+                               'component memberships must be destroyed in ID order (deadlock prevention)'
+      expect(destroyed_ids.size).to be >= 2, 'expected destroy! to be called on at least 2 memberships'
+      expect(Membership.where(id: [m1.id, m2.id]).count).to eq(0)
+    end
+
     it 'does not remove component memberships with higher roles than the new project membership' do
       # Create a component-level admin membership
       Membership.create!(user: user, membership: component, role: 'admin')

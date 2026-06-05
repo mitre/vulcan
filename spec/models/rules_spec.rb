@@ -17,7 +17,7 @@ RSpec.describe Review do
   end
   let_it_be(:shared_p1) { Project.create(name: 'Photon OS 3') }
   let_it_be(:shared_p2) { Project.create(name: 'Photon OS 3.1') }
-  let_it_be(:shared_component, refind: true) do
+  let_it_be(:shared_component) do
     Component.create!(project: shared_p1, name: 'Photon OS 3', title: 'Photon OS 3 STIG',
                       version: 'Photon OS 3 V1R1', prefix: 'PHOS-03', based_on: shared_srg)
   end
@@ -25,7 +25,7 @@ RSpec.describe Review do
   let_it_be(:shared_p_reviewer) { create(:user) }
   let_it_be(:shared_p_author) { create(:user) }
   let_it_be(:shared_other_p_admin) { create(:user) }
-  let_it_be(:shared_rule, refind: true) do
+  let_it_be(:shared_rule) do
     Rule.create(component: shared_component, rule_id: 'P1-R1',
                 status: 'Applicable - Configurable', rule_severity: 'medium',
                 srg_rule: shared_srg.srg_rules.first)
@@ -519,6 +519,56 @@ RSpec.describe Review do
     it 'uses update_column — no recursion guard needed' do
       @p1r1.update!(title: 'No flag test', audit_comment: 'test')
       expect(@p1r1).not_to respond_to(:skip_update_inspec_code)
+    end
+
+    it 'handles rule with no disa_rule_descriptions gracefully' do
+      @p1r1.disa_rule_descriptions.destroy_all
+      @p1r1.update!(title: 'No desc test', audit_comment: 'test')
+      @p1r1.reload
+      expect(@p1r1.inspec_control_file).to include('No desc test')
+      expect(@p1r1.inspec_control_file).not_to include('vuln_discussion')
+    end
+
+    it 'includes inspec_control_body when present' do
+      @p1r1.update!(
+        inspec_control_body: "describe service('sshd') do\n  it { should be_running }\nend",
+        audit_comment: 'test'
+      )
+      @p1r1.reload
+      expect(@p1r1.inspec_control_file).to include("describe service('sshd')")
+    end
+
+    it 'update_column rolls back with the parent transaction on error' do
+      @p1r1.update!(title: 'Rollback test title', audit_comment: 'test')
+      @p1r1.reload
+      new_file = @p1r1.inspec_control_file
+      expect(new_file).to include('Rollback test title')
+
+      begin
+        Rule.transaction do
+          @p1r1.update!(title: 'Should be rolled back', audit_comment: 'rollback')
+          raise ActiveRecord::Rollback
+        end
+      rescue ActiveRecord::Rollback
+        # expected
+      end
+
+      @p1r1.reload
+      expect(@p1r1.title).to eq('Rollback test title')
+      expect(@p1r1.inspec_control_file).to eq(new_file)
+    end
+
+    it 'does not update updated_at (derived column — no false cache invalidation)' do
+      @p1r1.reload
+      original_updated_at = @p1r1.updated_at
+      @p1r1.update!(title: 'Timestamp check', audit_comment: 'test')
+      @p1r1.reload
+      expect(@p1r1.updated_at).to be > original_updated_at
+      saved_updated_at = @p1r1.updated_at
+
+      @p1r1.update_inspec_code
+      @p1r1.reload
+      expect(@p1r1.updated_at).to eq(saved_updated_at)
     end
   end
 end
