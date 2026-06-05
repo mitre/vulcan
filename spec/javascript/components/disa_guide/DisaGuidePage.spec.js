@@ -113,9 +113,4 @@ describe("DisaGuidePage", () => {
     expect(toggleTheme).toHaveBeenCalledOnce();
   });
 
-  it("sets data-turbolinks=false on TOC links", () => {
-    wrapper = createWrapper();
-    const tocLink = wrapper.find(".disa-guide-toc__link");
-    expect(tocLink.attributes("data-turbolinks")).toBe("false");
-  });
 });

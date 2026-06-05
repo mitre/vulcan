@@ -46,7 +46,6 @@
             :key="entry.id"
             :href="'#' + entry.id"
             :class="['disa-guide-toc__link', 'toc-level-' + entry.level]"
-            data-turbolinks="false"
           >
             {{ entry.text }}
           </a>

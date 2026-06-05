@@ -14,8 +14,6 @@ gem 'puma', '~> 7.0'
 gem 'jsbundling-rails'
 # Asset pipeline for Rails
 gem 'propshaft'
-# Turbolinks makes navigating your web application faster. Read more: https://github.com/turbolinks/turbolinks
-gem 'turbolinks', '~> 5'
 # Build JSON APIs with ease. Read more: https://github.com/rails/jbuilder
 gem 'jbuilder', '~> 2.7'
 # Use HAML instead of ERB

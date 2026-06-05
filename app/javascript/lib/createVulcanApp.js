@@ -1,27 +1,17 @@
 import Vue from "vue";
-import TurbolinksAdapter from "vue-turbolinks";
 import { BootstrapVue, IconsPlugin } from "bootstrap-vue";
 import { PiniaVuePlugin, createPinia } from "pinia";
 import { bvConfig } from "../config/bootstrapVueConfig";
 
 Vue.use(PiniaVuePlugin);
-Vue.use(TurbolinksAdapter);
 Vue.use(BootstrapVue, bvConfig);
 Vue.use(IconsPlugin);
 
 const sharedPinia = createPinia();
 
-document.addEventListener("turbolinks:before-visit", () => {
-  sharedPinia._s.forEach((store) => {
-    if (typeof store.$reset === "function") {
-      store.$reset();
-    }
-  });
-});
-
 export { sharedPinia };
 
-export function createVulcanApp({ el, componentName, component, directives }) {
+export function createVulcanApp({ el, componentName, component, directives, router }) {
   if (component) {
     Vue.component(componentName, component);
   }
@@ -34,5 +24,10 @@ export function createVulcanApp({ el, componentName, component, directives }) {
   const targetEl = document.querySelector(el);
   if (!targetEl) return null;
 
-  return new Vue({ el, pinia: sharedPinia });
+  const options = { el, pinia: sharedPinia };
+  if (router) {
+    options.router = router;
+  }
+
+  return new Vue(options);
 }

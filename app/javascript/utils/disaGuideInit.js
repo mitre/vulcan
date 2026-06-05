@@ -7,4 +7,4 @@ function init() {
   btn.addEventListener("click", toggleTheme);
 }
 
-document.addEventListener("turbolinks:load", init);
+document.addEventListener("DOMContentLoaded", init);

@@ -12,18 +12,7 @@ vi.mock("@/api/baseApi", () => ({
   },
 }));
 
-import { createVulcanApp, sharedPinia } from "@/lib/createVulcanApp";
-import { setActivePinia } from "pinia";
-import { useCommentsStore } from "@/stores/comments";
-
-vi.mock("@/api/componentsApi", () => ({ getComments: vi.fn() }));
-vi.mock("@/api/reviewsApi", () => ({
-  getReviewResponses: vi.fn(),
-  createRuleReview: vi.fn(),
-  createComponentReview: vi.fn(),
-  triageReview: vi.fn(),
-  bulkTriageReviews: vi.fn(),
-}));
+import { createVulcanApp } from "@/lib/createVulcanApp";
 
 describe("createVulcanApp", () => {
   let el;
@@ -71,16 +60,4 @@ describe("createVulcanApp", () => {
     vm.$destroy();
   });
 
-  it("resets store state on turbolinks:before-visit", () => {
-    setActivePinia(sharedPinia);
-    const store = useCommentsStore();
-    store.cache["38:{}"] = { rows: [{ id: 1 }] };
-    expect(Object.keys(store.cache)).toHaveLength(1);
-
-    document.dispatchEvent(new Event("turbolinks:before-visit"));
-
-    expect(Object.keys(store.cache)).toHaveLength(0);
-    expect(store.loading).toBe(false);
-    expect(store.error).toBeNull();
-  });
 });

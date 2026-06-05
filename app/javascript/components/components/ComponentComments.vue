@@ -199,19 +199,15 @@
         />
       </template>
       <template #cell(rule_displayed_name)="{ item }">
-        <!-- data-turbolinks="false" forces a full page load. Without it,
-             turbolinks navigates to the rule editor but the project_component
-             pack registers its turbolinks:load listener after the event has
-             already fired, so Vue never mounts and the page is blank. -->
         <span v-if="item.commentable_type === 'Component'" class="text-muted font-italic">
           {{ item.rule_displayed_name }}
         </span>
-        <a v-else :href="ruleHref(item)" data-turbolinks="false">
+        <a v-else :href="ruleHref(item)">
           {{ item.rule_displayed_name }}
         </a>
       </template>
       <template #cell(component_name)="{ item }">
-        <a :href="`/components/${item.component_id}/triage`" data-turbolinks="false">
+        <a :href="`/components/${item.component_id}/triage`">
           {{ item.component_name }}
         </a>
       </template>

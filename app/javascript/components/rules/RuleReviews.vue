@@ -12,7 +12,7 @@
       />
     </div>
     <p v-if="triageHref" class="mb-2 small">
-      <a :href="triageHref" data-turbolinks="false">
+      <a :href="triageHref">
         <b-icon icon="kanban" class="mr-1" /> Open triage queue for this component
       </a>
     </p>

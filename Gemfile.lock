@@ -700,9 +700,6 @@ GEM
       pastel (~> 0.8)
       strings (~> 0.2.0)
       tty-screen (~> 0.8)
-    turbolinks (5.2.1)
-      turbolinks-source (~> 5.2)
-    turbolinks-source (5.2.0)
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
     tzinfo-data (1.2025.2)
@@ -824,7 +821,6 @@ DEPENDENCIES
   slack_block_kit (= 0.3.3)
   swagcov!
   test-prof (~> 1.5)
-  turbolinks (~> 5)
   tzinfo-data
   web-console (>= 3.3.0)
   webmock

@@ -43,19 +43,13 @@
         aria-label="My comments"
       >
         <template #cell(rule_displayed_name)="{ item }">
-          <!-- data-turbolinks="false" forces a full page load so the rule
-               editor's project_component pack registers its turbolinks:load
-               listener before the event fires (otherwise Vue never mounts
-               and the rule editor is blank). -->
           <span v-if="item.commentable_type === 'Component'" class="text-muted font-italic">
             {{ item.rule_displayed_name }}
           </span>
-          <a v-else :href="ruleHref(item)" data-turbolinks="false">{{
-            item.rule_displayed_name
-          }}</a>
+          <a v-else :href="ruleHref(item)">{{ item.rule_displayed_name }}</a>
         </template>
         <template #cell(component_name)="{ item }">
-          <a :href="`/components/${item.component_id}`" data-turbolinks="false">
+          <a :href="`/components/${item.component_id}`">
             {{ item.component_name }}
           </a>
           <small class="text-muted d-block">{{ item.project_name }}</small>

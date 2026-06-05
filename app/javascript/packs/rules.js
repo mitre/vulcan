@@ -1,17 +1,12 @@
-import TurbolinksAdapter from "vue-turbolinks";
-import Vue from "vue";
-import { BootstrapVue, IconsPlugin } from "bootstrap-vue";
-import { bvConfig } from "../config/bootstrapVueConfig";
+import { createVulcanApp } from "../lib/createVulcanApp";
 import Rules from "../components/rules/Rules.vue";
+import { createComponentEditorRouter } from "../router/componentEditor";
 
-Vue.use(TurbolinksAdapter);
-Vue.use(BootstrapVue, bvConfig);
-Vue.use(IconsPlugin);
-
-Vue.component("Rules", Rules);
-
-document.addEventListener("turbolinks:load", () => {
-  new Vue({
+document.addEventListener("DOMContentLoaded", () => {
+  createVulcanApp({
     el: "#Rules",
+    componentName: "Rules",
+    component: Rules,
+    router: createComponentEditorRouter(),
   });
 });
