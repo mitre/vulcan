@@ -39,8 +39,10 @@ RSpec.describe Export::Serializers::BackupSerializer do
       end
 
       it 'includes timestamps as ISO8601 strings' do
-        expect(comp_data[:created_at]).to eq(component.created_at.iso8601)
-        expect(comp_data[:updated_at]).to eq(component.updated_at.iso8601)
+        # Microsecond precision contract — see 'timestamp precision contract'
+        # describe block below for the round-trip rationale.
+        expect(comp_data[:created_at]).to eq(component.created_at.iso8601(6))
+        expect(comp_data[:updated_at]).to eq(component.updated_at.iso8601(6))
       end
 
       it 'includes based_on SRG reference' do
@@ -347,6 +349,79 @@ RSpec.describe Export::Serializers::BackupSerializer do
         expect(answers.size).to eq(1)
         expect(answers.first[:question_name]).to eq('Test Question')
         expect(answers.first[:answer]).to eq('Test answer')
+      end
+    end
+
+    # Round-trip data fidelity: any timestamp that flows through backup
+    # serialize → archive zip → JsonArchiveImporter must preserve full
+    # microsecond precision stored in the DB. Otherwise the round-trip
+    # is lossy and ReviewMatcher's composite key (which depends on
+    # iso8601(6) created_at) cannot distinguish reviews posted within
+    # the same second on different instances. CSV / UI / API serializers
+    # stay at iso8601 (second precision) — different contracts.
+    describe 'timestamp precision contract — iso8601(6) for all round-trip surfaces' do
+      microsecond = /\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}/
+
+      it 'component.created_at uses microsecond precision' do
+        expect(data[:component][:created_at]).to match(microsecond)
+      end
+
+      it 'component.updated_at uses microsecond precision' do
+        expect(data[:component][:updated_at]).to match(microsecond)
+      end
+
+      it 'component.comment_period_starts_at uses microsecond precision when set' do
+        component.update!(comment_period_starts_at: 1.day.ago)
+        expect(data[:component][:comment_period_starts_at]).to match(microsecond)
+      end
+
+      it 'component.comment_period_ends_at uses microsecond precision when set' do
+        component.update!(comment_period_ends_at: 1.day.from_now)
+        expect(data[:component][:comment_period_ends_at]).to match(microsecond)
+      end
+
+      it 'rule.created_at uses microsecond precision' do
+        expect(data[:rules].first[:created_at]).to match(microsecond)
+      end
+
+      it 'rule.updated_at uses microsecond precision' do
+        expect(data[:rules].first[:updated_at]).to match(microsecond)
+      end
+
+      it 'rule.deleted_at uses microsecond precision when soft-deleted' do
+        # rules in the serialized output are sorted by rule_id, which may
+        # differ from component.rules ordering — update the one we assert.
+        component.rules.min_by(&:rule_id).update!(deleted_at: Time.current)
+        expect(data[:rules].first[:deleted_at]).to match(microsecond)
+      end
+
+      it 'review.created_at uses microsecond precision' do
+        seed_review_for_precision_check
+        expect(data[:reviews].first[:created_at]).to match(microsecond)
+      end
+
+      it 'review.triage_set_at uses microsecond precision when set' do
+        seed_review_for_precision_check
+        expect(data[:reviews].first[:triage_set_at]).to match(microsecond)
+      end
+
+      it 'review.adjudicated_at uses microsecond precision when set' do
+        seed_review_for_precision_check
+        expect(data[:reviews].first[:adjudicated_at]).to match(microsecond)
+      end
+
+      def seed_review_for_precision_check
+        user = create(:user)
+        component.rules.first.reviews.create!(
+          user: user,
+          action: 'comment',
+          comment: 'precision check',
+          triage_status: 'concur',
+          triage_set_by: user,
+          triage_set_at: Time.current,
+          adjudicated_by: user,
+          adjudicated_at: Time.current
+        )
       end
     end
   end
