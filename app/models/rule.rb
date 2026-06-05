@@ -268,6 +268,13 @@ class Rule < BaseRule
     "#{component[:prefix]}-#{rule_id}"
   end
 
+  # Runs inside the parent save's transaction (after_save, not after_commit).
+  # update_column participates in the transaction — rolls back if the
+  # transaction fails. Does NOT update updated_at — inspec_control_file
+  # is a derived column and regeneration should not trigger cache
+  # invalidation or misleading audit signals. Errors from Inspec::Object
+  # propagate as StatementInvalid and roll back the parent save — this is
+  # correct (a rule save that fails InSpec generation should not persist).
   def update_inspec_code
     desc = disa_rule_descriptions.first
     control = Inspec::Object::Control.new

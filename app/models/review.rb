@@ -61,10 +61,10 @@ class Review < ApplicationRecord
     disa_metadata vendor_comments artifact_description xccdf_metadata
   ].freeze
 
-  # adjudicated_at is intentionally NOT audited. Auditing a datetime column
-  # trips Rails 7.1's safe-YAML dump for ActiveSupport::TimeWithZone. The
-  # transition timestamp is recoverable from the audit's created_at on the
-  # triage_status record that captured the terminal-state change.
+  # adjudicated_at and triage_set_at are intentionally NOT audited.
+  # Auditing a datetime column trips Rails 7.1's safe-YAML dump for
+  # ActiveSupport::TimeWithZone. Both timestamps are recoverable from
+  # the audit row's created_at on the triage_status change record.
   # Audit-tracked columns. PR-717:
   # - `rule_id` added for Task 26 (admin move-to-rule) so the column-change
   #   diff is captured on the trail, not just the audit_comment text.
@@ -232,18 +232,18 @@ class Review < ApplicationRecord
                       allow_nil: true
   # rubocop:enable Rails/I18nLocaleTexts
   validate :duplicate_status_requires_target
-  # duplicate_of_review_id only makes
-  # sense when triage_status='duplicate'. The existing
-  # duplicate_status_requires_target validator catches duplicate-WITHOUT-
-  # target; this one catches the opposite (target-without-duplicate-status,
-  # e.g. concur + stray duplicate_of_review_id). Without it, a bogus
-  # cross-link silently persists and corrupts the disposition matrix
-  # "Duplicate Of" column.
+  # Retained as documentation + regression guard. clear_stale_foreign_keys
+  # (before_validation) nils these fields before this validator fires, so
+  # it will never produce an error under normal operation. If the callback
+  # is ever removed, this validator catches the gap. The DB CHECK
+  # constraint (chk_review_duplicate_fk_consistency) is the final safety net.
   # rubocop:disable Rails/I18nLocaleTexts -- consistent with neighbor validators on this model
   validates :duplicate_of_review_id, absence: { message: 'must be blank when triage_status is not duplicate' },
                                      unless: -> { triage_status == 'duplicate' }
   # rubocop:enable Rails/I18nLocaleTexts
   validate :addressed_by_status_requires_rule
+  # Same layered defense as duplicate_of_review_id above — see
+  # chk_review_addressed_by_fk_consistency DB CHECK constraint.
   # rubocop:disable Rails/I18nLocaleTexts -- consistent with neighbor validators on this model
   validates :addressed_by_rule_id, absence: { message: 'must be blank when triage_status is not addressed_by' },
                                    unless: -> { triage_status == 'addressed_by' }
@@ -633,6 +633,20 @@ class Review < ApplicationRecord
     errors.add(:triage_status, 'cannot be set on a reply (replies are not adjudicable)')
   end
 
+  # Placed in before_validation (not before_save) so that the absence
+  # validators on lines 243-249 don't reject stale FKs before this
+  # callback can clear them. Moving to before_save would break status
+  # transitions away from duplicate/addressed_by.
+  #
+  # Fires on EVERY save, not just when triage_status changes. This is
+  # intentional: it self-heals stale FK data from prior bugs or raw SQL
+  # on any subsequent save, not just the transition that caused it.
+  #
+  # Silent FK clearing is correct data normalization, not data loss.
+  # The triage_status change is audited via vulcan_audited; the FK
+  # value is recoverable from the audit diff on that transition.
+  # The DB CHECK constraints (chk_review_*_fk_consistency) enforce
+  # the same invariant as a non-bypassable safety net.
   def clear_stale_foreign_keys
     self.duplicate_of_review_id = nil unless triage_status == 'duplicate'
     self.addressed_by_rule_id = nil unless triage_status == 'addressed_by'

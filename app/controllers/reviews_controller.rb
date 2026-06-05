@@ -305,7 +305,9 @@ class ReviewsController < ApplicationController
   # component is frozen_for_writes (admin override is the whole point).
   def admin_withdraw
     @review.audit_comment = "Admin force-withdraw: #{@audit_comment}"
-    @review.save_intent = :admin_withdraw
+    # save_intent not needed — adjudicated_at is explicitly set, so
+    # auto_set_adjudicated_for_terminal_statuses returns early on its
+    # adjudicated_at.present? guard (review.rb:644).
     @review.update!(
       triage_status: 'withdrawn',
       adjudicated_at: Time.current,
@@ -332,6 +334,10 @@ class ReviewsController < ApplicationController
     @review.audit_comment = "Admin restore: #{@audit_comment}"
     @review.update!(
       triage_status: 'pending',
+      duplicate_of_review_id: nil,
+      addressed_by_rule_id: nil,
+      triage_set_by_id: nil,
+      triage_set_at: nil,
       adjudicated_at: nil,
       adjudicated_by_id: nil
     )
@@ -608,7 +614,12 @@ class ReviewsController < ApplicationController
     comment = params[:comment]
 
     invalid = sections - RuleConstants::LOCKABLE_SECTION_NAMES
-    return render json: { error: "Invalid sections: #{invalid.join(', ')}" }, status: :unprocessable_content if invalid.any?
+    if invalid.any?
+      return render_toast(title: 'Invalid sections',
+                          message: "Not recognized: #{invalid.join(', ')}",
+                          variant: 'danger',
+                          status: :unprocessable_content)
+    end
 
     rules = @component.rules.where(locked: false)
     count = 0

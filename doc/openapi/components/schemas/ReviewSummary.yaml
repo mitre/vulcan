@@ -85,6 +85,12 @@ properties:
       - 'null'
     description: ID of the review this is marked as a duplicate of. Null if not a duplicate.
     example: null
+  addressed_by_rule_id:
+    type:
+      - integer
+      - 'null'
+    description: ID of the rule that addresses this comment. Set when triage_status is addressed_by. Null otherwise.
+    example: null
   triage_set_by_id:
     type:
       - integer
