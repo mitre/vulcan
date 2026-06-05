@@ -9,6 +9,8 @@ Comprehensive guide for testing Vulcan application code, including unit tests, i
 - **FactoryBot** - Test data factories
 - **SimpleCov** - Code coverage reporting
 - **DatabaseCleaner** - Test database management
+- **test-prof** - Test profiling and optimization (let_it_be, before_all, TagProf, EventProf, FactoryProf)
+- **climate_control** - Scoped ENV variable mutation for parallel-safe tests
 
 ## Running Tests
 
@@ -558,6 +560,152 @@ describe 'Performance' do
 end
 ```
 
+
+## test-prof: Profiling and Optimization
+
+[test-prof](https://test-prof.evilmartians.io/) provides profiling tools and performance recipes. All profiling is ENV-var-activated with zero overhead when disabled.
+
+### `let_it_be` — Share Records Across Examples
+
+`let_it_be` creates records once per example group (via `before_all`) instead of once per example. Significant speedup for expensive setup like SRG XML parsing.
+
+```ruby
+# SLOW — creates a new SRG + component + 250 rules for EVERY example
+let(:component) { create(:component) }
+
+# FAST — creates once, reuses across all examples in the describe block
+let_it_be(:component) { create(:component) }
+```
+
+### Global `refind: true` (MANDATORY)
+
+Configured in `rails_helper.rb`. Every `let_it_be` record gets a fresh ActiveRecord instance per example via `Model.unscoped.find(id)`.
+
+**Why:** `let_it_be` shares a single Ruby object across examples. Transactional fixtures roll back the DB row, but the in-memory object retains mutated attributes and cached associations. Without `refind`, Test A's mutations leak into Test B's in-memory state.
+
+```ruby
+# rails_helper.rb — already configured
+TestProf::LetItBe.configure do |config|
+  config.default_modifiers[:refind] = true
+end
+```
+
+- **`reload: true`** refreshes columns but preserves cached associations — NOT sufficient
+- **`refind: true`** returns a brand-new AR instance — correct
+- **`refind: false`** overrides the global default — blocked by `Vulcan/LetItBeRefind` RuboCop cop
+- Per-declaration `refind: true` is redundant — the global handles it
+
+### Profiling Commands
+
+```bash
+# Profile by test type — find the slowest categories
+TAG_PROF=type bundle exec rspec
+
+# Profile with factory + SQL event tracking
+TAG_PROF=type TAG_PROF_EVENT=sql.active_record,factory.create bundle exec rspec
+
+# Factory cascade detection — find factories that trigger excessive creates
+FPROF=1 bundle exec rspec
+FPROF=flamegraph bundle exec rspec  # generates tmp/test_prof/factory-flame.html
+
+# SQL query profiling — find tests with excessive queries
+EVENT_PROF=sql.active_record bundle exec rspec
+
+# Factory usage profiling — find tests that create too many records
+EVENT_PROF=factory.create bundle exec rspec
+```
+
+### Shared Contexts
+
+Shared contexts live in `spec/support/shared_contexts/`. Rules:
+
+1. **Minimal** — only include records that 2+ consumer files actually use
+2. **No `@ivar` aliases** — use `let_it_be` names directly
+3. **Use `create!`** (or FactoryBot `create`) — never `create` without bang
+4. **No name collisions** — prefix if multiple contexts exist: `reviews_srg`, `components_srg`
+5. **Membership in `let_it_be`** — not in `before` blocks (avoids transactional fixture dependency)
+
+## Spec File Organization
+
+### Size Standards
+
+| Lines | Action |
+|-------|--------|
+| ≤ 300 | Ideal — no action |
+| 301–500 | Acceptable — monitor |
+| 501–800 | Split when touching the file |
+| 800+ | Split immediately |
+
+Target: **~300 lines per file.** Each file should have a single cohesive domain theme findable by filename.
+
+### Naming Convention
+
+Flat naming — no subdirectories within `spec/requests/` or `spec/models/`:
+
+```
+spec/requests/reviews_triage_spec.rb      # ✅ flat, domain-clear
+spec/requests/reviews/triage_spec.rb      # ❌ subdirectory
+spec/requests/reviews_spec.rb             # ❌ monolith
+```
+
+### When NOT to Split
+
+- **Single integration test** with expensive shared setup (e.g., `backup_round_trip_spec.rb`)
+- **Parametric test files** where a loop generates many examples from one describe block
+- **Contract test files** that mirror an OpenAPI spec structure
+
+Document WHY the file is large with a comment at the top.
+
+### Splitting Process
+
+Use the `/spec-split-review` skill which provides a full checklist:
+
+1. Audit the file structure (map describe blocks to domains)
+2. Capture coverage baseline
+3. Extract shared context
+4. Create domain files (copy test code exactly — zero logic changes)
+5. Verify example count matches and coverage not reduced
+6. Expert review with domain-matched agents
+7. Card every finding with `/project-card`
+
+## Parallel Test Safety
+
+### Rules
+
+| Pattern | Risk | Fix |
+|---------|------|-----|
+| `ENV['X'] = value` in before/after | Leaks to other tests in same worker | Use `climate_control` gem |
+| `Record.last` for identity | Fragile if setup creates extra records | Use scoped query or response ID |
+| `Audited.auditing_enabled = false` | Global class state mutation | Use `Model.without_auditing { }` |
+| `ensure { record.update_columns(...) }` on `let_it_be` | Exception in ensure leaks state | Use local record or before/after pair |
+| `update_all` in `before_all` | Permanent for the example group | Only use in `before` (per-example, rolled back) |
+
+### ENV Variable Isolation
+
+Use `climate_control` for any test that sets ENV variables:
+
+```ruby
+require 'climate_control'
+
+it 'reads admin email from ENV' do
+  ClimateControl.modify(VULCAN_ADMIN_EMAIL: 'admin@example.com') do
+    expect(Settings.admin_email).to eq('admin@example.com')
+  end
+  # ENV automatically restored after the block
+end
+```
+
+### Detecting Flaky Tests
+
+```bash
+# Run 3x with different seeds to catch ordering-dependent flakes
+bundle exec rspec spec/path/to/file_spec.rb --seed 12345
+bundle exec rspec spec/path/to/file_spec.rb --seed 54321
+bundle exec rspec spec/path/to/file_spec.rb --seed 99999
+
+# If failures are seed-dependent, find the minimum failing combination
+bundle exec rspec spec/path/to/file_spec.rb --bisect
+```
 
 ## CI/CD Testing
 

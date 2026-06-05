@@ -516,6 +516,42 @@ These patterns were verified by an 8-agent expert review (2026-06-04) and confir
 | `setCacheEntry` replaces entire cache ref | `cache.value = { ...cache.value, [key]: value }` creates a new top-level object — correct for Vue 2.7 ref reactivity (replacing the value triggers watchers). | Optimize by mutating `cache.value[key]` directly — this breaks Vue 2 reactivity |
 | `normalizeComment` uses `??` (nullish coalescing) | Preserves legitimate falsy values (0, '', false). `||` would coerce them to defaults — data loss bug. | Switch to `||` for "simpler" fallbacks |
 
+## Callback Design Decisions (Do Not Change)
+
+These Review model callback decisions were verified by a 10-agent expert review (2026-06-04) and confirmed correct. Each has been questioned by agents and re-validated against test-prof docs, Rails source, and PostgreSQL semantics.
+
+### `clear_stale_foreign_keys` — before_validation, not before_save
+
+**Decision:** The defensive callback runs in `before_validation`, not `before_save`.
+
+**Why:** The absence validators on `duplicate_of_review_id` and `addressed_by_rule_id` (review.rb lines 243-249) fire DURING validation. If the callback were `before_save`, validators would reject stale FKs before the callback could clear them — breaking status transitions away from duplicate/addressed_by.
+
+**Do not:** Move to `before_save`. Move to `after_validation`. Add a `triage_status_changed?` guard (breaks self-healing of pre-existing stale data on subsequent saves).
+
+### `clear_stale_foreign_keys` — fires on every save
+
+**Decision:** No `triage_status_changed?` guard. The callback runs on every save regardless of which fields changed.
+
+**Why:** Self-healing. If a prior bug or raw SQL left stale FK data (e.g., `triage_status='concur'` with `duplicate_of_review_id` set), any subsequent save cleans it up automatically. A `changed?` guard would only fire on the transition that caused the staleness — pre-existing stale data would never be healed.
+
+**Do not:** Add a `triage_status_changed?` guard for "performance." The two nil assignments are O(1) — the DB round-trip from `refind: true` is 1000x more expensive.
+
+### `save_intent` — attr_accessor, not validation contexts
+
+**Decision:** `attr_accessor :save_intent` passes controller context to callbacks. Only `:reopen` is checked.
+
+**Why:** Rails validation contexts (`on: :reopen`) scope validators, not `before_save` callbacks. `validation_context` is accessible in callbacks but `update!(attrs, context: :reopen)` is not valid Rails API — you'd need `assign_attributes + save(context:)`, a worse interface. The `attr_accessor` pattern is used by GitLab and Discourse for the same purpose.
+
+**Do not:** Refactor to validation contexts. Set `save_intent` for actions that don't need it (admin_withdraw works via the `adjudicated_at.present?` guard, not save_intent).
+
+### DB CHECK constraints — defense-in-depth
+
+**Decision:** PostgreSQL CHECK constraints (`chk_review_duplicate_fk_consistency`, `chk_review_addressed_by_fk_consistency`) use `IS NOT DISTINCT FROM` (NULL-safe equality) and are added via 2-pass Strong Migrations pattern.
+
+**Why:** Three layers enforce FK consistency: (1) `clear_stale_foreign_keys` callback normalizes on every Rails save, (2) absence validators catch violations if the callback is removed, (3) CHECK constraints catch violations from raw SQL, rake tasks, console, and future bugs. Each layer is deliberately redundant.
+
+**Do not:** Remove any layer. Remove the `validate: false` from the migration (causes ACCESS EXCLUSIVE lock). Use standard SQL `=` instead of `IS NOT DISTINCT FROM` (NULL gap).
+
 ## Anti-Patterns
 
 | Don't | Do Instead |
