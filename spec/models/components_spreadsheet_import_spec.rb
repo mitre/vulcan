@@ -174,6 +174,22 @@ RSpec.describe Component do
       first_rule = component.rules.first
       expect(first_rule.fixtext).to eq(test_fix_text)
     end
+
+    it 'adds error when all STIGID values are blank (no prefix detectable)' do
+      disa_headers = %w[SRGID STIGID Severity Requirement VulDiscussion Status Check Fix] +
+                     [header_status_justification, header_artifact_description]
+      rows = srg_rules.map do |srg_rule|
+        [srg_rule.version, '', test_severity, test_title, test_vuln_discussion, test_status,
+         test_check_content, test_fix_text, '', '']
+      end
+
+      csv_path = create_csv_file(disa_headers, rows)
+      component = Component.new(project: components_project, based_on: components_srg)
+      component.from_spreadsheet(csv_path)
+
+      expect(component.errors[:base]).to be_present
+      expect(component.errors[:base].join).to include('No STIG prefixes were detected')
+    end
   end
 
   context 'CSV export/import roundtrip for satisfaction relationships' do

@@ -165,4 +165,33 @@ RSpec.describe Component do
       orphan.destroy!
     end
   end
+
+  describe '#csv_export' do
+    it 'produces headers-only CSV for component with zero rules' do
+      empty = Component.create!(project: components_project, name: 'CSV Empty', title: 'E',
+                                version: 'V1R1', prefix: 'CSVE-01', based_on: components_srg,
+                                skip_import_srg_rules: true)
+      csv = empty.csv_export
+      lines = csv.strip.split("\n")
+      expect(lines.size).to eq(1)
+      expect(lines.first).to include('STIGID')
+      empty.destroy!
+    end
+  end
+
+  describe '#duplicate_reviews_and_history' do
+    it 'returns without error when passed nil' do
+      expect { components_component.duplicate_reviews_and_history(nil) }.not_to raise_error
+    end
+  end
+
+  describe '.pending_comment_counts' do
+    it 'returns empty hash when passed nil' do
+      expect(Project.pending_comment_counts(nil)).to eq({})
+    end
+
+    it 'returns empty hash when passed empty array' do
+      expect(Project.pending_comment_counts([])).to eq({})
+    end
+  end
 end

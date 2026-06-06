@@ -232,5 +232,15 @@ RSpec.describe Component do
       expect(parent.reload.satisfied_by.size).to eq(1)
       expect(parent.satisfied_by.first.id).to eq(child.id)
     end
+
+    it 'skips self-reference — a rule does not satisfy itself' do
+      self_ref_rule = components_component.rules.third
+      self_ref_rule.update_column(:vendor_comments, "Satisfies: #{components_component.prefix}-#{self_ref_rule.rule_id}")
+
+      components_component.create_rule_satisfactions
+
+      expect(self_ref_rule.reload.satisfies.pluck(:id)).not_to include(self_ref_rule.id)
+      expect(self_ref_rule.satisfied_by.pluck(:id)).not_to include(self_ref_rule.id)
+    end
   end
 end
