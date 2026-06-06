@@ -396,4 +396,73 @@ describe("RuleActionsToolbar", () => {
       });
     });
   });
+
+  // ==========================================
+  // TOOLTIPS
+  // ==========================================
+  describe("tooltips", () => {
+    it("Related button has tooltip", () => {
+      wrapper = createWrapper();
+      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Related"));
+      expect(btn.attributes("title")).toBe("View related rules from other components");
+    });
+
+    it("Satisfies button has tooltip", () => {
+      wrapper = createWrapper();
+      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Satisfies"));
+      expect(btn.attributes("title")).toBe("Rules this control satisfies or is satisfied by");
+    });
+
+    it("History button has tooltip", () => {
+      wrapper = createWrapper();
+      const btn = wrapper
+        .findAll("button")
+        .wrappers.find((b) => b.text().includes("History") && !b.text().includes("Comment"));
+      expect(btn.attributes("title")).toBe("Rule edit history");
+    });
+
+    it("Comment History button has tooltip", () => {
+      wrapper = createWrapper();
+      const btn = wrapper
+        .findAll("button")
+        .wrappers.find((b) => b.text().includes("Comment History"));
+      expect(btn.attributes("title")).toBe("View comments and reviews on this rule");
+    });
+
+    it("DISA Guide button has tooltip", () => {
+      wrapper = createWrapper();
+      const btn = wrapper.findAll("a").wrappers.find((b) => b.text().includes("DISA Guide"));
+      expect(btn.attributes("title")).toBe("Open DISA Vendor STIG Process Guide");
+    });
+
+    it("Change Review Status button has tooltip", () => {
+      wrapper = createWrapper();
+      const btn = wrapper
+        .findAll("button")
+        .wrappers.find((b) => b.text().includes("Change Review Status"));
+      expect(btn.attributes("title")).toBe("Submit or change the review status");
+    });
+
+    it("Clone button has tooltip", () => {
+      wrapper = createWrapper();
+      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Clone"));
+      expect(btn.attributes("title")).toBe("Duplicate this rule");
+    });
+
+    it("Delete button has tooltip", () => {
+      wrapper = createWrapper();
+      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Delete"));
+      expect(btn.attributes("title")).toBe("Permanently delete this rule");
+    });
+
+    it("Comment button has tooltip when enabled", () => {
+      wrapper = createWrapper();
+      const btn = wrapper
+        .findAll("button")
+        .wrappers.find(
+          (b) => b.text().includes("Comment") && !b.text().includes("History"),
+        );
+      expect(btn.attributes("title")).toBe("Add a general comment on this rule");
+    });
+  });
 });

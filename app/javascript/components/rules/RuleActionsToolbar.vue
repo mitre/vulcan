@@ -4,13 +4,27 @@
     <div class="toolbar-row">
       <span class="toolbar-label">Info</span>
       <div class="toolbar-btn-group">
-        <b-button variant="outline-secondary" size="sm" @click="$emit('open-related-modal')">
+        <b-button
+          v-b-tooltip.hover
+          title="View related rules from other components"
+          variant="outline-secondary"
+          size="sm"
+          @click="$emit('open-related-modal')"
+        >
           <b-icon icon="link-45deg" /> Related
         </b-button>
-        <b-button variant="outline-secondary" size="sm" @click="$emit('toggle-panel', 'satisfies')">
+        <b-button
+          v-b-tooltip.hover
+          title="Rules this control satisfies or is satisfied by"
+          variant="outline-secondary"
+          size="sm"
+          @click="$emit('toggle-panel', 'satisfies')"
+        >
           <b-icon icon="diagram-3" /> Satisfies
         </b-button>
         <b-button
+          v-b-tooltip.hover
+          title="Rule edit history"
           variant="outline-secondary"
           size="sm"
           @click="$emit('toggle-panel', 'rule-history')"
@@ -18,6 +32,8 @@
           <b-icon icon="clock-history" /> History
         </b-button>
         <b-button
+          v-b-tooltip.hover
+          title="View comments and reviews on this rule"
           variant="outline-secondary"
           size="sm"
           @click="$emit('toggle-panel', 'rule-reviews')"
@@ -29,6 +45,7 @@
              "(general)"). The event bubbles up to RulesCodeEditorView /
              ProjectComponent which mount the modal. -->
         <b-button
+          v-b-tooltip.hover
           variant="outline-secondary"
           size="sm"
           :title="commentButtonTooltip"
@@ -38,7 +55,14 @@
         >
           <b-icon icon="pencil-square" /> Comment
         </b-button>
-        <b-button variant="outline-info" size="sm" href="/disa-guide" target="_blank">
+        <b-button
+          v-b-tooltip.hover
+          title="Open DISA Vendor STIG Process Guide"
+          variant="outline-info"
+          size="sm"
+          href="/disa-guide"
+          target="_blank"
+        >
           <b-icon icon="question-circle" /> DISA Guide
         </b-button>
       </div>
@@ -51,6 +75,8 @@
       <span class="toolbar-label">Actions</span>
       <div class="toolbar-btn-group">
         <b-button
+          v-b-tooltip.hover
+          title="Submit or change the review status"
           variant="outline-primary"
           size="sm"
           :disabled="readOnly"
@@ -70,13 +96,25 @@
           wrapper-class="d-inline-flex"
           @comment="$emit('save', $event)"
         />
-        <b-button variant="outline-info" :disabled="readOnly" @click="$emit('clone')">
+        <b-button
+          v-b-tooltip.hover
+          title="Duplicate this rule"
+          variant="outline-info"
+          :disabled="readOnly"
+          @click="$emit('clone')"
+        >
           <b-icon icon="files" /> Clone
         </b-button>
       </div>
       <!-- Destructive/admin actions separated with gap -->
       <div v-if="effectivePermissions === 'admin'" class="toolbar-btn-group ml-3">
-        <b-button variant="outline-danger" :disabled="isReadOnly" @click="$emit('delete')">
+        <b-button
+          v-b-tooltip.hover
+          title="Permanently delete this rule"
+          variant="outline-danger"
+          :disabled="isReadOnly"
+          @click="$emit('delete')"
+        >
           <b-icon icon="trash" /> Delete
         </b-button>
         <CommentModal
