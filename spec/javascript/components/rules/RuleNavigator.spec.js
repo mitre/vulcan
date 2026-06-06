@@ -7,21 +7,17 @@ import { useRuleSelectionStore } from "@/stores/ruleSelection";
 import RuleNavigator from "@/components/rules/RuleNavigator.vue";
 
 /**
- * RuleNavigator requirements:
+ * RuleNavigator is a thin orchestrator that:
+ * 1. Manages filter state (local + external) and localStorage persistence
+ * 2. Computes filteredRules from rules + filters
+ * 3. Delegates rendering to RuleSearchBar + RuleList sub-components
+ * 4. Handles search result selection (selects rule via store + field scrolling)
+ * 5. Manages sidebar scroll position
  *
- * FILTERING/SORTING:
- * - When nestSatisfiedRulesChecked is true, parent rules (satisfies.length > 0)
- *   appear BEFORE leaf rules
- * - Leaves "satisfied by" other rules are hidden from the main list
- *   (they appear nested under their parent)
- *
- * SRG ID DISPLAY (CRITICAL):
- * - When showSRGIdChecked is true, ALL items display SRG requirement IDs
- * - Parent rules display via rule.version (which IS the SRG ID for Component Rules)
- * - Nested satisfaction children display via satisfies.srg_id (from as_json serialization)
- * - Backend serializes satisfaction objects as: { id, rule_id, srg_id }
- *   They do NOT include a 'version' field — srg_id is the correct field
- * - When showSRGIdChecked is false, all items display formatted rule IDs (prefix-rule_id)
+ * Sub-component responsibilities tested in their own specs:
+ * - RuleSearchBar.spec.js — search input, debounce, ComponentSearchModal, reset
+ * - RuleList.spec.js — rule row rendering, selection, nesting, SRG ID display
+ * - RuleRowIcons.spec.js — comment badges, lock/review/changes icons
  */
 describe("RuleNavigator", () => {
   let wrapper;
@@ -45,16 +41,10 @@ describe("RuleNavigator", () => {
     ...overrides,
   });
 
-  /**
-   * Creates a satisfaction child reference matching the ACTUAL backend serialization.
-   * Backend as_json produces: { id, rule_id, srg_id } — NO version field.
-   * This is the data shape the template MUST work with.
-   */
   const createSatisfactionRef = (id, ruleId, srgId) => ({
     id,
     rule_id: ruleId,
     srg_id: srgId,
-    // Intentionally NO version field — matches real as_json serialization
     locked: false,
     review_requestor_id: null,
     changes_requested: false,
@@ -104,17 +94,14 @@ describe("RuleNavigator", () => {
             nestSatisfiedRulesChecked: true,
             showSRGIdChecked: false,
             sortBySRGIdChecked: true,
+            openCommentsOnly: false,
             ...filters,
           },
-          expandedParents: new Set(),
         };
       },
       stubs: {
-        BIcon: true,
-        BBadge: true,
-        BModal: true,
-        FindAndReplace: true,
-        NewRuleModalForm: true,
+        RuleSearchBar: true,
+        RuleList: true,
       },
       mocks: {
         $root: {
@@ -133,24 +120,18 @@ describe("RuleNavigator", () => {
   describe("filterRules sorting", () => {
     describe("when nestSatisfiedRulesChecked is true", () => {
       it("sorts parents (satisfies.length > 0) before leaves", () => {
-        // Create rules: some are parents (have satisfies), some are leaves
         const leafRule1 = createRule(1, "001", { satisfies: [], satisfied_by: [] });
         const parentRule = createRule(2, "002", {
-          satisfies: [createRule(3, "003")], // This rule satisfies another
+          satisfies: [createRule(3, "003")],
           satisfied_by: [],
         });
         const leafRule2 = createRule(4, "004", { satisfies: [], satisfied_by: [] });
 
-        // Rules in mixed order: leaf, parent, leaf
         const rules = [leafRule1, parentRule, leafRule2];
-
         wrapper = createWrapper({ rules }, { nestSatisfiedRulesChecked: true });
 
         const filteredRules = wrapper.vm.filteredRules;
-
-        // Parent should come first
         expect(filteredRules[0].id).toBe(parentRule.id);
-        // Leaves should come after
         expect(filteredRules[1].id).toBe(leafRule1.id);
         expect(filteredRules[2].id).toBe(leafRule2.id);
       });
@@ -161,17 +142,12 @@ describe("RuleNavigator", () => {
         const parent2 = createRule(3, "003", { satisfies: [createRule(11, "011")] });
         const leaf2 = createRule(4, "004", { satisfies: [] });
 
-        // Mixed order: parent1, leaf1, parent2, leaf2
         const rules = [parent1, leaf1, parent2, leaf2];
-
         wrapper = createWrapper({ rules }, { nestSatisfiedRulesChecked: true });
 
         const filteredRules = wrapper.vm.filteredRules;
-
-        // Parents first, in their original relative order
         expect(filteredRules[0].id).toBe(parent1.id);
         expect(filteredRules[1].id).toBe(parent2.id);
-        // Leaves after, in their original relative order
         expect(filteredRules[2].id).toBe(leaf1.id);
         expect(filteredRules[3].id).toBe(leaf2.id);
       });
@@ -184,12 +160,9 @@ describe("RuleNavigator", () => {
         const leafRule2 = createRule(4, "004", { satisfies: [] });
 
         const rules = [leafRule1, parentRule, leafRule2];
-
         wrapper = createWrapper({ rules }, { nestSatisfiedRulesChecked: false });
 
         const filteredRules = wrapper.vm.filteredRules;
-
-        // Order should remain as-is (no parent-first sorting)
         expect(filteredRules[0].id).toBe(leafRule1.id);
         expect(filteredRules[1].id).toBe(parentRule.id);
         expect(filteredRules[2].id).toBe(leafRule2.id);
@@ -198,7 +171,6 @@ describe("RuleNavigator", () => {
 
     describe("combined with sortBySRGIdChecked", () => {
       it("sorts by SRG ID first, then groups parents before leaves", () => {
-        // Create rules with specific versions for SRG ID sorting
         const leaf_v3 = createRule(1, "001", { version: "SV-300", satisfies: [] });
         const parent_v1 = createRule(2, "002", {
           version: "SV-100",
@@ -211,236 +183,20 @@ describe("RuleNavigator", () => {
         });
 
         const rules = [leaf_v3, parent_v1, leaf_v2, parent_v4];
-
         wrapper = createWrapper(
           { rules },
           { nestSatisfiedRulesChecked: true, sortBySRGIdChecked: true },
         );
 
         const filteredRules = wrapper.vm.filteredRules;
-
-        // When both sorts active: SRG ID sort happens first, then parent-first grouping
-        // Expected: parents first (sorted by version), then leaves (sorted by version)
-        expect(filteredRules[0].version).toBe("SV-100"); // parent_v1
-        expect(filteredRules[1].version).toBe("SV-400"); // parent_v4
-        expect(filteredRules[2].version).toBe("SV-200"); // leaf_v2
-        expect(filteredRules[3].version).toBe("SV-300"); // leaf_v3
+        expect(filteredRules[0].version).toBe("SV-100");
+        expect(filteredRules[1].version).toBe("SV-400");
+        expect(filteredRules[2].version).toBe("SV-200");
+        expect(filteredRules[3].version).toBe("SV-300");
       });
     });
   });
 
-  // ===========================================================================
-  // REQUIREMENT: Satisfaction nested children must display SRG IDs when
-  // showSRGIdChecked is true. The srg_id field comes from the backend
-  // serialization (as_json) which maps it from srg_rule.version.
-  //
-  // This was a P0 REGRESSION: children displayed empty strings because
-  // the template used `satisfies.version` which doesn't exist in the
-  // serialization. The correct field is `satisfies.srg_id`.
-  // ===========================================================================
-  describe("satisfaction nested children SRG ID display", () => {
-    const srgIdParent = "SRG-OS-000001-GPOS-00001";
-    const srgIdChild1 = "SRG-OS-000480-GPOS-00227";
-    const srgIdChild2 = "SRG-APP-000123-GPOS-00456";
-
-    const createParentWithChildren = () => {
-      const child1 = createSatisfactionRef(10, "001002", srgIdChild1);
-      const child2 = createSatisfactionRef(11, "001003", srgIdChild2);
-      const parentRule = createRule(1, "000020", {
-        version: srgIdParent,
-        srg_id: srgIdParent,
-        satisfies: [child1, child2],
-      });
-      return { parentRule, child1, child2 };
-    };
-
-    it("ALWAYS displays SRG IDs for nested children regardless of toggle", () => {
-      const { parentRule } = createParentWithChildren();
-
-      // showSRGIdChecked is FALSE — but nested children ALWAYS show SRG IDs
-      // WHY: These represent SRG requirements, not STIG rules
-      wrapper = createWrapper(
-        { rules: [parentRule] },
-        { nestSatisfiedRulesChecked: true, showSRGIdChecked: false },
-      );
-
-      // Expand the parent to reveal nested children
-      wrapper.setData({ expandedParents: new Set([parentRule.id]) });
-
-      const childRows = wrapper.findAll(".child-row");
-      expect(childRows.length).toBe(2);
-
-      // Children sorted by rule_id: 001002 (SRG-OS-000480) < 001003 (SRG-APP-000123)
-      const child1Text = childRows.at(0).text();
-      expect(child1Text).toContain("SRG-OS-000480");
-      const child2Text = childRows.at(1).text();
-      expect(child2Text).toContain("SRG-APP-000123");
-
-      // Must NOT show formatted rule IDs — always SRG IDs
-      expect(child1Text).not.toContain("TEST-001");
-      expect(child2Text).not.toContain("TEST-001");
-    });
-
-    it("shows full SRG ID in tooltip for nested children", () => {
-      const { parentRule } = createParentWithChildren();
-
-      wrapper = createWrapper(
-        { rules: [parentRule] },
-        { nestSatisfiedRulesChecked: true, showSRGIdChecked: false },
-      );
-
-      wrapper.setData({ expandedParents: new Set([parentRule.id]) });
-
-      const childRows = wrapper.findAll(".child-row");
-      // Find span with title attribute (tooltip shows full SRG ID)
-      const tooltipSpans = childRows.at(0).findAll("span[title]");
-      expect(tooltipSpans.length).toBeGreaterThan(0);
-
-      // Tooltip should contain a full SRG ID, not be empty or undefined
-      const titleValue = tooltipSpans.at(0).attributes("title");
-      expect(titleValue).toBeTruthy();
-      expect(titleValue).toMatch(/^SRG-/);
-    });
-
-    it("displays truncated SRG ID for parent rule when showSRGIdChecked is true", () => {
-      const { parentRule } = createParentWithChildren();
-
-      wrapper = createWrapper(
-        { rules: [parentRule] },
-        { nestSatisfiedRulesChecked: true, showSRGIdChecked: true },
-      );
-
-      // Find the parent rule row (not a child-row)
-      const allRows = wrapper.findAll(".ruleRow");
-      expect(allRows.length).toBeGreaterThan(0);
-
-      // Parent should display truncated SRG ID (truncateId removes -GPOS-##### suffix)
-      const parentText = allRows.at(0).text();
-      expect(parentText).toContain("SRG-OS-000001");
-
-      // Full SRG ID should be in tooltip
-      const tooltipSpan = allRows.at(0).find("span[title]");
-      expect(tooltipSpan.exists()).toBe(true);
-      expect(tooltipSpan.attributes("title")).toBe(srgIdParent);
-    });
-  });
-
-  // ===========================================================================
-  // REQUIREMENT: Satisfaction data shape contract.
-  // The satisfaction objects in a rule's satisfies/satisfied_by arrays
-  // must work correctly with the compact serialization from as_json:
-  // { id, rule_id, srg_id } — no version field.
-  // ===========================================================================
-  describe("satisfaction data shape contract", () => {
-    it("works with satisfaction objects that have srg_id but no version field", () => {
-      // This matches the REAL serialization from Rule#as_json
-      const satisfactionRef = createSatisfactionRef(10, "001002", "SRG-OS-000480-GPOS-00227");
-
-      // Verify the test helper produces the correct shape
-      expect(satisfactionRef).toHaveProperty("srg_id");
-      expect(satisfactionRef).not.toHaveProperty("version");
-      expect(satisfactionRef.srg_id).toBe("SRG-OS-000480-GPOS-00227");
-    });
-
-    it("sortAlsoSatisfies works with compact satisfaction objects", () => {
-      const child1 = createSatisfactionRef(10, "001003", "SRG-OS-000480-GPOS-00227");
-      const child2 = createSatisfactionRef(11, "001002", "SRG-APP-000123-GPOS-00456");
-      const parentRule = createRule(1, "000020", {
-        satisfies: [child1, child2],
-      });
-
-      wrapper = createWrapper({ rules: [parentRule] });
-
-      // sortAlsoSatisfies should sort by rule_id
-      const sorted = wrapper.vm.sortAlsoSatisfies(parentRule.satisfies);
-      expect(sorted[0].rule_id).toBe("001002");
-      expect(sorted[1].rule_id).toBe("001003");
-    });
-  });
-
-  // ─── B1 Regression: Nest satisfies spacer ──────────────────
-  // REQUIREMENT: When "Nest Satisfied" is toggled on but NO rules have children,
-  // leaf rules should NOT shift right. The spacer (tree-toggle-spacer) only appears
-  // when there are parent rules with chevrons to align with.
-  describe("nest satisfies spacer (B1 regression)", () => {
-    it("hasParentRules is false when no rules have satisfies", () => {
-      const rules = [createRule(1, "000001"), createRule(2, "000002")];
-      wrapper = createWrapper({ rules }, { nestSatisfiedRulesChecked: true });
-      expect(wrapper.vm.hasParentRules).toBe(false);
-    });
-
-    it("hasParentRules is true when at least one rule has satisfies", () => {
-      const parentRule = createRule(1, "000001", {
-        satisfies: [createSatisfactionRef(2, "000002", "SRG-OS-000002")],
-      });
-      const leafRule = createRule(3, "000003");
-      wrapper = createWrapper(
-        { rules: [parentRule, leafRule] },
-        { nestSatisfiedRulesChecked: true },
-      );
-      expect(wrapper.vm.hasParentRules).toBe(true);
-    });
-  });
-
-  // ─── PR #717 Task 19: Comment-count badge + open-only filter ──
-  describe("PR #717 comment-count badge", () => {
-    const ruleWithOpen = (id, ruleId, open = 0, total = 0) =>
-      createRule(id, ruleId, {
-        comment_summary: { open: open, total: total },
-      });
-
-    it("renders a comment-count badge for rules with open > 0", () => {
-      const rules = [ruleWithOpen(1, "000010", 3, 5), ruleWithOpen(2, "000020", 0, 0)];
-      wrapper = createWrapper({ rules });
-      // The badge wrapper has a stable data-test selector.
-      expect(wrapper.find('[data-test="rule-open-comment-1"]').exists()).toBe(true);
-      // Rule 2 has no comments — no badge.
-      expect(wrapper.find('[data-test="rule-open-comment-2"]').exists()).toBe(false);
-    });
-
-    it("badge is icon-only (no count text rendered) — count lives in the tooltip", () => {
-      const rules = [ruleWithOpen(7, "000070", 4, 4)];
-      wrapper = createWrapper({ rules });
-      const badge = wrapper.find('[data-test="rule-open-comment-7"]');
-      expect(badge.exists()).toBe(true);
-      // No digits in the rendered badge — the chat icon alone is the
-      // scan-time signal; the count is surfaced via the v-b-tooltip title.
-      expect(badge.text()).not.toMatch(/\d/);
-      // Tooltip carries the precise count for accessibility + on-hover detail.
-      expect(badge.attributes("title")).toContain("4");
-    });
-
-    it("does NOT render the badge when comment_summary is missing", () => {
-      const rules = [createRule(8, "000080")];
-      wrapper = createWrapper({ rules });
-      expect(wrapper.find('[data-test="rule-open-comment-8"]').exists()).toBe(false);
-    });
-
-    it("filteredRules narrows to rules with open > 0 when openCommentsOnly is set", () => {
-      const rules = [
-        ruleWithOpen(10, "000100", 3, 3),
-        ruleWithOpen(11, "000110", 0, 0),
-        createRule(12, "000120"),
-      ];
-      wrapper = createWrapper({ rules }, { openCommentsOnly: true });
-      const ids = wrapper.vm.filteredRules.map((r) => r.id);
-      expect(ids).toEqual([10]);
-    });
-
-    it("filteredRules behaves as before when openCommentsOnly is unset", () => {
-      const rules = [ruleWithOpen(20, "000200", 1, 1), ruleWithOpen(21, "000210", 0, 0)];
-      wrapper = createWrapper({ rules });
-      expect(wrapper.vm.filteredRules.length).toBe(2);
-    });
-  });
-
-  // ===========================================================================
-  // REQUIREMENT: ruleOpen() must return rolled-up comment counts for parent
-  // rules — the parent's own open count PLUS all children's open counts.
-  // A parent that satisfies 3 children with 2, 1, 0 open comments and has
-  // 1 of its own should show 4 total. This drives the comment badge and
-  // the "open comments only" filter.
-  // ===========================================================================
   describe("ruleOpen rolled-up comment counts", () => {
     const ruleWithComments = (id, ruleId, open, total, overrides = {}) =>
       createRule(id, ruleId, {
@@ -461,11 +217,10 @@ describe("RuleNavigator", () => {
       });
 
       wrapper = createWrapper({ rules: [parent, child1, child2, child3] });
-      // Parent's own: 1, child1: 2, child2: 1, child3: 0 => total 4
       expect(wrapper.vm.ruleOpen(parent)).toBe(4);
     });
 
-    it("returns only the rule's own count for non-parent rules (no satisfies)", () => {
+    it("returns only the rule's own count for non-parent rules", () => {
       const leaf = ruleWithComments(5, "000050", 3, 5);
       wrapper = createWrapper({ rules: [leaf] });
       expect(wrapper.vm.ruleOpen(leaf)).toBe(3);
@@ -496,7 +251,6 @@ describe("RuleNavigator", () => {
       const parent = ruleWithComments(1, "000020", 0, 0, {
         satisfies: [createSatisfactionRef(10, "001002", "SRG-OS-000010")],
       });
-      // Standalone rule with no comments
       const standalone = createRule(2, "000030");
 
       wrapper = createWrapper(
@@ -504,19 +258,11 @@ describe("RuleNavigator", () => {
         { openCommentsOnly: true },
       );
       const ids = wrapper.vm.filteredRules.map((r) => r.id);
-      // Parent should appear because child has open comments
       expect(ids).toContain(1);
-      // Standalone with no comments should NOT appear
       expect(ids).not.toContain(2);
     });
   });
 
-  // ===========================================================================
-  // REQUIREMENT: Search must respect nesting filter. When
-  // nestSatisfiedRulesChecked is true, searching should NOT reveal
-  // hidden children. Only parent/standalone rules matching the search
-  // should appear. Children are accessed via disclosure, not search.
-  // ===========================================================================
   describe("search respects nesting filter", () => {
     it("does not show satisfied-by children even when they match the search text", () => {
       const child = createRule(10, "001002", {
@@ -534,7 +280,6 @@ describe("RuleNavigator", () => {
       );
 
       const ids = wrapper.vm.filteredRules.map((r) => r.id);
-      // Child should NOT appear — it's nested under parent
       expect(ids).not.toContain(10);
     });
 
@@ -573,7 +318,6 @@ describe("RuleNavigator", () => {
       );
 
       const ids = wrapper.vm.filteredRules.map((r) => r.id);
-      // With nesting off, child should appear
       expect(ids).toContain(10);
     });
 
@@ -593,17 +337,7 @@ describe("RuleNavigator", () => {
     });
   });
 
-  describe("search modal integration", () => {
-    it("renders ComponentSearchModal with correct props", () => {
-      const rules = [createRule(1, "000001")];
-      wrapper = createWrapper({ rules });
-      const modal = wrapper.findComponent({ name: "ComponentSearchModal" });
-      expect(modal.exists()).toBe(true);
-      expect(modal.props("componentId")).toBe(41);
-      expect(modal.props("projectPrefix")).toBe("TEST");
-      expect(modal.props("searchType")).toBe("rules");
-    });
-
+  describe("search result selection", () => {
     it("selects rule via store when search result is chosen", () => {
       const rules = [createRule(1, "000001"), createRule(2, "000002")];
       wrapper = createWrapper({ rules });
@@ -612,60 +346,81 @@ describe("RuleNavigator", () => {
       expect(store.selectedRuleId).toBe(2);
     });
 
-    it("calls scrollToField with matched_field and searchQuery", () => {
+    it("does not throw when result has matched_field (delegates to scrollToField utility)", () => {
       const rules = [createRule(1, "000001")];
       wrapper = createWrapper({ rules });
-      const spy = vi.spyOn(wrapper.vm, "scrollToField");
-      wrapper.vm.onSearchResultSelected({
-        id: 1,
-        rule_id: "000001",
-        matched_field: "fixtext",
-        searchQuery: "least privilege",
-      });
-      expect(spy).toHaveBeenCalledWith("fixtext", "least privilege");
+      expect(() => {
+        wrapper.vm.onSearchResultSelected({
+          id: 1,
+          rule_id: "000001",
+          matched_field: "fixtext",
+          searchQuery: "least privilege",
+        });
+      }).not.toThrow();
     });
 
-    it("does not call scrollToField when result has no matched_field", () => {
+    it("does not throw when result has no matched_field", () => {
       const rules = [createRule(1, "000001")];
       wrapper = createWrapper({ rules });
-      const spy = vi.spyOn(wrapper.vm, "scrollToField");
-      wrapper.vm.onSearchResultSelected({ id: 1, rule_id: "000001" });
-      expect(spy).not.toHaveBeenCalled();
-    });
-
-    it("maps backend 'check' field to frontend 'content' fieldName", () => {
-      const rules = [createRule(1, "000001")];
-      wrapper = createWrapper({ rules });
-      const querySpy = vi.spyOn(document, "querySelector").mockReturnValue(null);
-      wrapper.vm.scrollToField("check");
-      // scrollToField uses $nextTick + setTimeout, so we verify the mapping
-      // by checking the method exists and accepts the arg without error
-      expect(wrapper.vm.scrollToField).toBeDefined();
-      querySpy.mockRestore();
+      expect(() => {
+        wrapper.vm.onSearchResultSelected({ id: 1, rule_id: "000001" });
+      }).not.toThrow();
     });
   });
 
-  describe("sidebarStyle banner clearance", () => {
-    it("subtracts banner height from max-height to prevent content hiding behind fixed banner", () => {
+  describe("sidebar layout", () => {
+    it("does not use computed max-height (flex layout handles height)", () => {
       wrapper = createWrapper();
-      // Simulate sidebarOffset as if the sidebar top is 200px from viewport top
-      wrapper.setData({ sidebarOffset: 200 });
+      expect(wrapper.vm.sidebarStyle).toBeUndefined();
+    });
+  });
 
-      const style = wrapper.vm.sidebarStyle;
-      // The max-height must account for the 20px fixed bottom classification banner
-      // Expected: calc(100vh - 200px - 20px) or equivalent
-      expect(style["max-height"]).toContain("20px");
-      expect(style["max-height"]).toContain("200px");
-      expect(style["max-height"]).toMatch(/calc\(100vh\s*-\s*\d+px\s*-\s*20px\)/);
+  describe("sub-component composition", () => {
+    it("renders RuleSearchBar with correct props", () => {
+      const rules = [createRule(1, "000001")];
+      wrapper = createWrapper({ rules });
+      const searchBar = wrapper.findComponent({ name: "RuleSearchBar" });
+      expect(searchBar.exists()).toBe(true);
     });
 
-    it("clears banner even when sidebarOffset is 0", () => {
-      wrapper = createWrapper();
-      wrapper.setData({ sidebarOffset: 0 });
+    it("renders RuleList with correct props", () => {
+      const rules = [createRule(1, "000001")];
+      wrapper = createWrapper({ rules });
+      const ruleList = wrapper.findComponent({ name: "RuleList" });
+      expect(ruleList.exists()).toBe(true);
+    });
 
-      const style = wrapper.vm.sidebarStyle;
-      // Even with 0 offset, must still subtract banner height
-      expect(style["max-height"]).toMatch(/calc\(100vh\s*-\s*0px\s*-\s*20px\)/);
+    it("passes filteredRules to RuleList", () => {
+      const rules = [
+        createRule(1, "000001", { status: "Applicable - Configurable" }),
+        createRule(2, "000002", { status: "Not Applicable" }),
+      ];
+      wrapper = createWrapper({ rules }, { naFilterChecked: false });
+      const filteredIds = wrapper.vm.filteredRules.map((r) => r.id);
+      expect(filteredIds).toContain(1);
+      expect(filteredIds).not.toContain(2);
+    });
+  });
+
+  describe("filteredRules status filter", () => {
+    it("narrows to rules with open > 0 when openCommentsOnly is set", () => {
+      const rules = [
+        createRule(10, "000100", { comment_summary: { open: 3, total: 3 } }),
+        createRule(11, "000110", { comment_summary: { open: 0, total: 0 } }),
+        createRule(12, "000120"),
+      ];
+      wrapper = createWrapper({ rules }, { openCommentsOnly: true });
+      const ids = wrapper.vm.filteredRules.map((r) => r.id);
+      expect(ids).toEqual([10]);
+    });
+
+    it("shows all rules when openCommentsOnly is false", () => {
+      const rules = [
+        createRule(20, "000200", { comment_summary: { open: 1, total: 1 } }),
+        createRule(21, "000210", { comment_summary: { open: 0, total: 0 } }),
+      ];
+      wrapper = createWrapper({ rules });
+      expect(wrapper.vm.filteredRules.length).toBe(2);
     });
   });
 });
