@@ -24,20 +24,20 @@ describe('useRuleFilters', () => {
   })
 
   describe('initialization', () => {
-    it('initializes with all status filters enabled', () => {
+    it('initializes with all status filters unchecked (additive model — no filter = show all)', () => {
       const { filters } = useRuleFilters(mockRules, componentId)
-      expect(filters.value.acFilterChecked).toBe(true)
-      expect(filters.value.aimFilterChecked).toBe(true)
-      expect(filters.value.adnmFilterChecked).toBe(true)
-      expect(filters.value.naFilterChecked).toBe(true)
-      expect(filters.value.nydFilterChecked).toBe(true)
+      expect(filters.value.acFilterChecked).toBe(false)
+      expect(filters.value.aimFilterChecked).toBe(false)
+      expect(filters.value.adnmFilterChecked).toBe(false)
+      expect(filters.value.naFilterChecked).toBe(false)
+      expect(filters.value.nydFilterChecked).toBe(false)
     })
 
-    it('initializes with all review filters enabled', () => {
+    it('initializes with all review filters unchecked (additive model)', () => {
       const { filters } = useRuleFilters(mockRules, componentId)
-      expect(filters.value.nurFilterChecked).toBe(true)
-      expect(filters.value.urFilterChecked).toBe(true)
-      expect(filters.value.lckFilterChecked).toBe(true)
+      expect(filters.value.nurFilterChecked).toBe(false)
+      expect(filters.value.urFilterChecked).toBe(false)
+      expect(filters.value.lckFilterChecked).toBe(false)
     })
 
     it('initializes with display options (nest + sort by SRG enabled, show SRG ID disabled)', () => {
@@ -83,14 +83,14 @@ describe('useRuleFilters', () => {
   })
 
   describe('toggleFilter', () => {
-    it('toggles a filter from true to false', () => {
+    it('toggles a status filter from false to true', () => {
       const { filters, toggleFilter } = useRuleFilters(mockRules, componentId)
-      expect(filters.value.acFilterChecked).toBe(true)
-      toggleFilter('acFilterChecked')
       expect(filters.value.acFilterChecked).toBe(false)
+      toggleFilter('acFilterChecked')
+      expect(filters.value.acFilterChecked).toBe(true)
     })
 
-    it('toggles a filter from true to false', () => {
+    it('toggles a display option from true to false', () => {
       const { filters, toggleFilter } = useRuleFilters(mockRules, componentId)
       expect(filters.value.nestSatisfiedRulesChecked).toBe(true)
       toggleFilter('nestSatisfiedRulesChecked')
@@ -115,10 +115,10 @@ describe('useRuleFilters', () => {
   })
 
   describe('resetFilters', () => {
-    it('resets all filters to defaults', () => {
+    it('resets all filters to defaults (all unchecked)', () => {
       const { filters, toggleFilter, setFilter, resetFilters } = useRuleFilters(mockRules, componentId)
 
-      // Change some filters
+      // Activate some filters
       toggleFilter('acFilterChecked')
       toggleFilter('nestSatisfiedRulesChecked')
       setFilter('search', 'test')
@@ -126,8 +126,8 @@ describe('useRuleFilters', () => {
       // Reset
       resetFilters()
 
-      // Verify defaults restored
-      expect(filters.value.acFilterChecked).toBe(true)
+      // Verify defaults restored (additive model: all unchecked)
+      expect(filters.value.acFilterChecked).toBe(false)
       expect(filters.value.nestSatisfiedRulesChecked).toBe(true)
       expect(filters.value.search).toBe('')
     })
@@ -139,31 +139,54 @@ describe('useRuleFilters', () => {
       expect(filteredRules.value.length).toBe(6)
     })
 
-    it('filters by status', () => {
+    it('returns all rules when NO status filters are checked (additive model — no filter = show all)', () => {
       const { filters, filteredRules } = useRuleFilters(mockRules, componentId)
+      filters.value.acFilterChecked = false
       filters.value.aimFilterChecked = false
       filters.value.adnmFilterChecked = false
       filters.value.naFilterChecked = false
       filters.value.nydFilterChecked = false
-      // Only Applicable - Configurable should remain
+      expect(filteredRules.value.length).toBe(6)
+    })
+
+    it('returns all rules when NO review filters are checked (additive model)', () => {
+      const { filters, filteredRules } = useRuleFilters(mockRules, componentId)
+      filters.value.nurFilterChecked = false
+      filters.value.urFilterChecked = false
+      filters.value.lckFilterChecked = false
+      expect(filteredRules.value.length).toBe(6)
+    })
+
+    it('returns all rules when ALL filters are unchecked (both status and review)', () => {
+      const { filters, filteredRules } = useRuleFilters(mockRules, componentId)
+      filters.value.acFilterChecked = false
+      filters.value.aimFilterChecked = false
+      filters.value.adnmFilterChecked = false
+      filters.value.naFilterChecked = false
+      filters.value.nydFilterChecked = false
+      filters.value.nurFilterChecked = false
+      filters.value.urFilterChecked = false
+      filters.value.lckFilterChecked = false
+      expect(filteredRules.value.length).toBe(6)
+    })
+
+    it('filters by status (additive: check AC to show only AC)', () => {
+      const { filters, filteredRules } = useRuleFilters(mockRules, componentId)
+      filters.value.acFilterChecked = true
       expect(filteredRules.value.length).toBe(2)
       expect(filteredRules.value.every(r => r.status === 'Applicable - Configurable')).toBe(true)
     })
 
-    it('filters by review status (locked)', () => {
+    it('filters by review status (check locked to show only locked)', () => {
       const { filters, filteredRules } = useRuleFilters(mockRules, componentId)
-      filters.value.nurFilterChecked = false
-      filters.value.urFilterChecked = false
-      // Only locked should remain
+      filters.value.lckFilterChecked = true
       expect(filteredRules.value.length).toBe(1)
       expect(filteredRules.value[0].locked).toBe(true)
     })
 
-    it('filters by review status (under review)', () => {
+    it('filters by review status (check under review to show only UR)', () => {
       const { filters, filteredRules } = useRuleFilters(mockRules, componentId)
-      filters.value.nurFilterChecked = false
-      filters.value.lckFilterChecked = false
-      // Only under review should remain
+      filters.value.urFilterChecked = true
       expect(filteredRules.value.length).toBe(1)
       expect(filteredRules.value[0].review_requestor_id).toBeTruthy()
     })
@@ -193,28 +216,34 @@ describe('useRuleFilters', () => {
   })
 
   describe('allStatusFiltersEnabled', () => {
-    it('returns true when all status filters are enabled', () => {
+    it('returns false when defaults are all-unchecked', () => {
       const { allStatusFiltersEnabled } = useRuleFilters(mockRules, componentId)
-      expect(allStatusFiltersEnabled.value).toBe(true)
+      expect(allStatusFiltersEnabled.value).toBe(false)
     })
 
-    it('returns false when any status filter is disabled', () => {
+    it('returns true when all status filters are manually enabled', () => {
       const { filters, allStatusFiltersEnabled } = useRuleFilters(mockRules, componentId)
-      filters.value.acFilterChecked = false
-      expect(allStatusFiltersEnabled.value).toBe(false)
+      filters.value.acFilterChecked = true
+      filters.value.aimFilterChecked = true
+      filters.value.adnmFilterChecked = true
+      filters.value.naFilterChecked = true
+      filters.value.nydFilterChecked = true
+      expect(allStatusFiltersEnabled.value).toBe(true)
     })
   })
 
   describe('allReviewFiltersEnabled', () => {
-    it('returns true when all review filters are enabled', () => {
+    it('returns false when defaults are all-unchecked', () => {
       const { allReviewFiltersEnabled } = useRuleFilters(mockRules, componentId)
-      expect(allReviewFiltersEnabled.value).toBe(true)
+      expect(allReviewFiltersEnabled.value).toBe(false)
     })
 
-    it('returns false when any review filter is disabled', () => {
+    it('returns true when all review filters are manually enabled', () => {
       const { filters, allReviewFiltersEnabled } = useRuleFilters(mockRules, componentId)
-      filters.value.lckFilterChecked = false
-      expect(allReviewFiltersEnabled.value).toBe(false)
+      filters.value.nurFilterChecked = true
+      filters.value.urFilterChecked = true
+      filters.value.lckFilterChecked = true
+      expect(allReviewFiltersEnabled.value).toBe(true)
     })
   })
 })

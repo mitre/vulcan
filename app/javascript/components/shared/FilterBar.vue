@@ -77,6 +77,12 @@ export default {
     statusItems() {
       return [
         {
+          key: "nydFilterChecked",
+          label: "Not Yet Determined",
+          count: this.counts.nyd,
+          checked: this.filters.nydFilterChecked,
+        },
+        {
           key: "acFilterChecked",
           label: "Applicable - Configurable",
           count: this.counts.ac,
@@ -99,12 +105,6 @@ export default {
           label: "Not Applicable",
           count: this.counts.na,
           checked: this.filters.naFilterChecked,
-        },
-        {
-          key: "nydFilterChecked",
-          label: "Not Yet Determined",
-          count: this.counts.nyd,
-          checked: this.filters.nydFilterChecked,
         },
       ];
     },
@@ -147,6 +147,11 @@ export default {
           label: "Sort SRG",
           checked: this.filters.sortBySRGIdChecked,
         },
+        {
+          key: "openCommentsOnly",
+          label: "Open Comments Only",
+          checked: this.filters.openCommentsOnly,
+        },
       ];
     },
   },
@@ -186,6 +191,7 @@ export default {
         nestSatisfiedRulesChecked: defaults.nestSatisfiedRulesChecked,
         showSRGIdChecked: defaults.showSRGIdChecked,
         sortBySRGIdChecked: defaults.sortBySRGIdChecked,
+        openCommentsOnly: defaults.openCommentsOnly,
       });
     },
   },

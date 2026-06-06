@@ -7,22 +7,21 @@ import { ref, computed } from "vue";
 export function getDefaultFilters() {
   return {
     search: "",
-    // Status filters
-    acFilterChecked: true, // Applicable - Configurable
-    aimFilterChecked: true, // Applicable - Inherently Meets
-    adnmFilterChecked: true, // Applicable - Does Not Meet
-    naFilterChecked: true, // Not Applicable
-    nydFilterChecked: true, // Not Yet Determined
-    // Review filters
-    nurFilterChecked: true, // Not Under Review
-    urFilterChecked: true, // Under Review
-    lckFilterChecked: true, // Locked
-    // Display options
+    // Status filters — additive model: unchecked = no filter (show all)
+    // Per NNG, Baymard, Carbon Design System: check to narrow, not uncheck to hide
+    acFilterChecked: false,
+    aimFilterChecked: false,
+    adnmFilterChecked: false,
+    naFilterChecked: false,
+    nydFilterChecked: false,
+    // Review filters — same additive model
+    nurFilterChecked: false,
+    urFilterChecked: false,
+    lckFilterChecked: false,
+    // Display options (these are toggles, not filters — keep enabled defaults)
     nestSatisfiedRulesChecked: true,
     showSRGIdChecked: false,
     sortBySRGIdChecked: true,
-    // comment-aware filter — narrows to rules with open (non-adjudicated)
-    // comments, including replies under open parents.
     openCommentsOnly: false,
   };
 }
@@ -77,22 +76,45 @@ export function useRuleFilters(rules, componentId) {
     return { ac, aim, adnm, na, nyd, nur, ur, lck };
   });
 
+  const anyStatusFilterActive = computed(() => {
+    return (
+      filters.value.acFilterChecked ||
+      filters.value.aimFilterChecked ||
+      filters.value.adnmFilterChecked ||
+      filters.value.naFilterChecked ||
+      filters.value.nydFilterChecked
+    );
+  });
+
+  const anyReviewFilterActive = computed(() => {
+    return (
+      filters.value.nurFilterChecked ||
+      filters.value.urFilterChecked ||
+      filters.value.lckFilterChecked
+    );
+  });
+
   // Computed: Filtered rules based on current filter state
+  // Additive model: no filters checked = show all (per NNG/Baymard/Carbon)
   const filteredRules = computed(() => {
     return rules.value.filter((rule) => {
-      // Status filter
-      const statusFilterKey = STATUS_FILTER_MAP[rule.status];
-      if (statusFilterKey && !filters.value[statusFilterKey]) {
-        return false;
+      // Status filter — skip when no status filters are active (show all)
+      if (anyStatusFilterActive.value) {
+        const statusFilterKey = STATUS_FILTER_MAP[rule.status];
+        if (statusFilterKey && !filters.value[statusFilterKey]) {
+          return false;
+        }
       }
 
-      // Review filter
-      if (rule.locked) {
-        if (!filters.value.lckFilterChecked) return false;
-      } else if (rule.review_requestor_id) {
-        if (!filters.value.urFilterChecked) return false;
-      } else if (!filters.value.nurFilterChecked) {
-        return false;
+      // Review filter — skip when no review filters are active (show all)
+      if (anyReviewFilterActive.value) {
+        if (rule.locked) {
+          if (!filters.value.lckFilterChecked) return false;
+        } else if (rule.review_requestor_id) {
+          if (!filters.value.urFilterChecked) return false;
+        } else if (!filters.value.nurFilterChecked) {
+          return false;
+        }
       }
 
       // Search filter

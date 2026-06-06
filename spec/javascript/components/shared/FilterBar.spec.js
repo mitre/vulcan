@@ -169,41 +169,41 @@ describe("FilterBar", () => {
   // STATUS ITEMS
   // ==========================================
   describe("statusItems computed", () => {
-    it("returns 5 status items with correct keys", () => {
+    it("returns 5 status items in authoring lifecycle order (NYD first)", () => {
       wrapper = createWrapper();
       const items = wrapper.vm.statusItems;
       expect(items).toHaveLength(5);
       expect(items.map((i) => i.key)).toEqual([
+        "nydFilterChecked",
         "acFilterChecked",
         "aimFilterChecked",
         "adnmFilterChecked",
         "naFilterChecked",
-        "nydFilterChecked",
       ]);
     });
 
-    it("status items have correct labels", () => {
+    it("status items have correct labels in lifecycle order", () => {
       wrapper = createWrapper();
       const items = wrapper.vm.statusItems;
-      expect(items[0].label).toBe("Applicable - Configurable");
-      expect(items[1].label).toBe("Applicable - Inherently Meets");
-      expect(items[2].label).toBe("Applicable - Does Not Meet");
-      expect(items[3].label).toBe("Not Applicable");
-      expect(items[4].label).toBe("Not Yet Determined");
+      expect(items[0].label).toBe("Not Yet Determined");
+      expect(items[1].label).toBe("Applicable - Configurable");
+      expect(items[2].label).toBe("Applicable - Inherently Meets");
+      expect(items[3].label).toBe("Applicable - Does Not Meet");
+      expect(items[4].label).toBe("Not Applicable");
     });
 
     it("status items include counts from props", () => {
       wrapper = createWrapper();
       const items = wrapper.vm.statusItems;
-      expect(items[0].count).toBe(264); // ac
-      expect(items[1].count).toBe(0); // aim
+      expect(items[0].count).toBe(0); // nyd
+      expect(items[1].count).toBe(264); // ac
     });
 
     it("status items reflect checked state from filters prop", () => {
       wrapper = createWrapper();
       const items = wrapper.vm.statusItems;
-      expect(items[0].checked).toBe(true); // acFilterChecked
-      expect(items[2].checked).toBe(false); // adnmFilterChecked
+      expect(items[0].checked).toBe(true); // nydFilterChecked (from mock props)
+      expect(items[1].checked).toBe(true); // acFilterChecked (from mock props)
     });
 
     it("passes status items to Status group", () => {
@@ -241,14 +241,15 @@ describe("FilterBar", () => {
   // DISPLAY ITEMS
   // ==========================================
   describe("displayItems computed", () => {
-    it("returns 3 display items with correct keys", () => {
+    it("returns 4 display items with correct keys", () => {
       wrapper = createWrapper();
       const items = wrapper.vm.displayItems;
-      expect(items).toHaveLength(3);
+      expect(items).toHaveLength(4);
       expect(items.map((i) => i.key)).toEqual([
         "nestSatisfiedRulesChecked",
         "showSRGIdChecked",
         "sortBySRGIdChecked",
+        "openCommentsOnly",
       ]);
     });
 
@@ -258,6 +259,7 @@ describe("FilterBar", () => {
       expect(items[0].label).toBe("Nest Satisfied");
       expect(items[1].label).toBe("SRG ID");
       expect(items[2].label).toBe("Sort SRG");
+      expect(items[3].label).toBe("Open Comments Only");
     });
 
     it("display items do not have count property", () => {
