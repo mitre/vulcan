@@ -77,4 +77,39 @@ RSpec.describe Component do
       expect(components_component.valid?).to be(false)
     end
   end
+
+  describe '#prefix= auto-upcase' do
+    it 'upcases lowercase prefix on assignment' do
+      components_component.prefix = 'abcd-01'
+      expect(components_component.prefix).to eq('ABCD-01')
+    end
+
+    it 'handles nil without error' do
+      components_component.prefix = nil
+      expect(components_component.prefix).to be_nil
+    end
+  end
+
+  describe '#releasable' do
+    it 'returns false when already released' do
+      components_component.rules.update_all(locked: true)
+      components_component.update!(released: true)
+      expect(components_component.releasable).to be(false)
+    end
+  end
+
+  describe '#largest_rule_id' do
+    it 'returns the highest numeric rule_id' do
+      max_id = components_component.rules.pluck(:rule_id).map(&:to_i).max
+      expect(components_component.largest_rule_id).to eq(max_id)
+    end
+
+    it 'returns nil for component with no rules' do
+      empty = Component.create!(project: components_project, name: 'Empty', title: 'E',
+                                version: 'V1R1', prefix: 'EMPT-99', based_on: components_srg,
+                                skip_import_srg_rules: true)
+      expect(empty.largest_rule_id).to eq(0)
+      empty.destroy!
+    end
+  end
 end
