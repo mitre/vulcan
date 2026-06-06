@@ -3,10 +3,8 @@
 require 'rails_helper'
 
 RSpec.describe Component do
-  include_context 'components model base setup'
-
   describe 'comment phase' do
-    let(:component) { create(:component) }
+    let(:component) { create(:component, :skip_rules) }
 
     it 'defaults to open' do
       expect(component.comment_phase).to eq('open')
