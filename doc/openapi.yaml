@@ -200,6 +200,65 @@ paths:
                     error: Unauthorized
         4XX:
           $ref: '#/components/responses/ErrorResponse'
+  /api/navigation:
+    get:
+      operationId: getNavigation
+      tags:
+        - System
+      summary: App shell navigation data
+      description: Returns navbar links, pending access request notifications, and locked user alerts for the authenticated user. Used by the SPA app shell on every page load after authentication.
+      responses:
+        '200':
+          description: Navigation data for app shell
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NavigationResponse'
+              examples:
+                admin:
+                  summary: Admin user with pending requests
+                  value:
+                    nav_links:
+                      - icon: folder2-open
+                        name: Projects
+                        link: /projects
+                      - icon: patch-check-fill
+                        name: Released Components
+                        link: /components
+                    access_requests:
+                      - id: 1
+                        user:
+                          id: 42
+                          name: Jane Doe
+                          email: jane@example.com
+                        project:
+                          id: 7
+                          name: RHEL 9 STIG
+                    locked_users:
+                      - id: 99
+                        name: Locked User
+                        email: locked@example.com
+                regular:
+                  summary: Non-admin user
+                  value:
+                    nav_links:
+                      - icon: folder2-open
+                        name: Projects
+                        link: /projects
+                    access_requests: []
+                    locked_users: []
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Unauthorized
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
   /api/settings:
     get:
       operationId: getSettings
@@ -5189,6 +5248,97 @@ components:
             - 'null'
           description: Authentication provider (local, github, ldap, oidc). Null for local.
           example: null
+    NavigationResponse:
+      description: App shell navigation data for SPA navbar. Includes static nav links, pending access request notifications, and locked user alerts.
+      type: object
+      required:
+        - nav_links
+        - access_requests
+        - locked_users
+      properties:
+        nav_links:
+          type: array
+          description: Primary navigation links for the sidebar/navbar.
+          items:
+            type: object
+            properties:
+              icon:
+                type: string
+                description: Bootstrap icon name.
+                example: folder2-open
+              name:
+                type: string
+                description: Display label.
+                example: Projects
+              link:
+                type: string
+                description: URL path. Absent on parent items with children.
+                example: /projects
+              children:
+                type: array
+                description: Nested sub-links (e.g., Resources → DISA Guide).
+                items:
+                  type: object
+                  properties:
+                    icon:
+                      type: string
+                      example: book
+                    name:
+                      type: string
+                      example: DISA Process Guide
+                    link:
+                      type: string
+                      example: /disa_guide
+        access_requests:
+          type: array
+          description: Pending project access requests visible to the current user. Empty for non-admin users.
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                description: Access request ID.
+                example: 1
+              user:
+                type: object
+                description: Requesting user summary.
+                properties:
+                  id:
+                    type: integer
+                    example: 42
+                  name:
+                    type: string
+                    example: Jane Doe
+                  email:
+                    type: string
+                    format: email
+                    example: jane@example.com
+              project:
+                type: object
+                description: Target project summary.
+                properties:
+                  id:
+                    type: integer
+                    example: 7
+                  name:
+                    type: string
+                    example: RHEL 9 STIG
+        locked_users:
+          type: array
+          description: Locked user accounts (admin-only, lockout enabled). Empty for non-admin or when lockout disabled.
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 42
+              name:
+                type: string
+                example: Locked User
+              email:
+                type: string
+                format: email
+                example: locked@example.com
     SettingsResponse:
       description: Public application settings for pre-auth SPA UI.
       type: object
