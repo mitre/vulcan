@@ -37,9 +37,169 @@ tags:
     description: User management and admin operations
   - name: Benchmarks
     description: SRG and STIG upload, listing, export, and deletion
+  - name: Auth
+    description: Session authentication — login, logout, current user identity
   - name: System
     description: Version and health check endpoints
 paths:
+  /api/auth/me:
+    get:
+      operationId: getAuthMe
+      tags:
+        - Auth
+      summary: Current authenticated user identity
+      description: Returns the authenticated user's identity, admin status, and provider. Used by the SPA on every page load to determine auth state, populate the navbar, and guard routes. Returns 401 when not authenticated.
+      responses:
+        '200':
+          description: Authenticated user identity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUserResponse'
+              examples:
+                regular_user:
+                  summary: Non-admin local user
+                  value:
+                    id: 42
+                    name: Jane Doe
+                    email: jane@example.com
+                    admin: false
+                    provider: null
+                admin_user:
+                  summary: Admin user via OIDC
+                  value:
+                    id: 1
+                    name: Admin
+                    email: admin@example.com
+                    admin: true
+                    provider: oidc
+        '401':
+          description: Not authenticated — no valid session or token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Unauthorized
+              examples:
+                unauthorized:
+                  summary: No session
+                  value:
+                    error: Unauthorized
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
+  /api/auth/login:
+    post:
+      operationId: postAuthLogin
+      tags:
+        - Auth
+      security: []
+      summary: Authenticate with email and password
+      description: Creates a session for local (email/password) authentication. Returns the authenticated user identity on success. Sets a session cookie for subsequent requests. OIDC and LDAP providers use their own OAuth callback flows.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: User's login email address.
+                  example: jane@example.com
+                password:
+                  type: string
+                  format: password
+                  description: User's password.
+                  example: ••••••••••••••••
+            examples:
+              login:
+                summary: Local login
+                value:
+                  email: jane@example.com
+                  password: S3cure!#Pass001
+      responses:
+        '200':
+          description: Authentication successful — session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUserResponse'
+              examples:
+                success:
+                  summary: Successful login
+                  value:
+                    id: 42
+                    name: Jane Doe
+                    email: jane@example.com
+                    admin: false
+                    provider: null
+        '401':
+          description: Invalid email or password
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid email or password
+              examples:
+                invalid:
+                  summary: Bad credentials
+                  value:
+                    error: Invalid email or password
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
+  /api/auth/logout:
+    delete:
+      operationId: deleteAuthLogout
+      tags:
+        - Auth
+      summary: Sign out and destroy session
+      description: Destroys the current session. Subsequent requests require re-authentication. Returns a confirmation message.
+      responses:
+        '200':
+          description: Session destroyed
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - message
+                properties:
+                  message:
+                    type: string
+                    description: Confirmation message.
+                    example: Signed out successfully
+              examples:
+                success:
+                  summary: Signed out
+                  value:
+                    message: Signed out successfully
+        '401':
+          description: Not authenticated — no session to destroy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Unauthorized
+              examples:
+                unauthorized:
+                  summary: No session
+                  value:
+                    error: Unauthorized
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
   /api/version:
     get:
       operationId: getVersion
@@ -4942,6 +5102,39 @@ components:
       scheme: token
       description: 'Personal access token authentication. Send via Authorization header: `Authorization: Token vulcan_xxx`. Tokens are SHA-256 hashed server-side (never stored in plaintext). Scopes: read (GET), write (mutations), admin (everything). Create tokens via Settings → API Tokens in the web UI.'
   schemas:
+    CurrentUserResponse:
+      description: Authenticated user identity for SPA route guards and UI state.
+      type: object
+      required:
+        - id
+        - email
+        - admin
+      properties:
+        id:
+          type: integer
+          description: Unique user identifier.
+          example: 42
+        name:
+          type:
+            - string
+            - 'null'
+          description: Display name. Null for users who haven't set one.
+          example: Jane Doe
+        email:
+          type: string
+          format: email
+          description: Login email address.
+          example: jane@example.com
+        admin:
+          type: boolean
+          description: Whether the user has admin privileges.
+          example: false
+        provider:
+          type:
+            - string
+            - 'null'
+          description: Authentication provider (local, github, ldap, oidc). Null for local.
+          example: null
     VersionResponse:
       description: Application version and runtime information. No authentication required.
       type: object

@@ -167,6 +167,10 @@ Rails.application.routes.draw do
 
   # API namespace for JSON endpoints
   namespace :api do
+    get 'auth/me', to: 'auth#me'
+    post 'auth/login', to: 'auth#login'
+    delete 'auth/logout', to: 'auth#logout'
+
     get 'search/global', to: 'search#global'
     get 'users/search', to: 'user_search#index'
     get 'version', to: 'version#show'

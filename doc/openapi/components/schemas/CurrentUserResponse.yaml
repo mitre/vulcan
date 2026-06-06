@@ -1,0 +1,32 @@
+description: Authenticated user identity for SPA route guards and UI state.
+type: object
+required:
+  - id
+  - email
+  - admin
+properties:
+  id:
+    type: integer
+    description: Unique user identifier.
+    example: 42
+  name:
+    type:
+      - string
+      - 'null'
+    description: Display name. Null for users who haven't set one.
+    example: Jane Doe
+  email:
+    type: string
+    format: email
+    description: Login email address.
+    example: jane@example.com
+  admin:
+    type: boolean
+    description: Whether the user has admin privileges.
+    example: false
+  provider:
+    type:
+      - string
+      - 'null'
+    description: Authentication provider (local, github, ldap, oidc). Null for local.
+    example: null

@@ -41,9 +41,17 @@ tags:
     description: User management and admin operations
   - name: Benchmarks
     description: SRG and STIG upload, listing, export, and deletion
+  - name: Auth
+    description: Session authentication — login, logout, current user identity
   - name: System
     description: Version and health check endpoints
 paths:
+  /api/auth/me:
+    $ref: paths/api_auth_me.yaml
+  /api/auth/login:
+    $ref: paths/api_auth_login.yaml
+  /api/auth/logout:
+    $ref: paths/api_auth_logout.yaml
   /api/version:
     $ref: paths/api_version.yaml
   /api/search/global:
