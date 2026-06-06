@@ -1,10 +1,10 @@
 <template>
   <ControlsPageLayout
-      :has-selected-rule="!!selectedRule"
-      :show-command-bar="true"
-      :show-filter-bar="filterBarVisible"
-      :sidebar-width="2"
-    >
+    :has-selected-rule="!!selectedRule"
+    :show-command-bar="true"
+    :show-filter-bar="filterBarVisible"
+    :sidebar-width="2"
+  >
     <!-- Command Bar -->
     <template #command-bar>
       <ControlsCommandBar
