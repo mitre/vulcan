@@ -46,6 +46,8 @@ describe("ProjectComponent", () => {
       histories: [{ name: "Test User" }],
       reviews: [],
       version: "SV-001",
+      checks_attributes: [],
+      disa_rule_descriptions_attributes: [],
     },
     {
       id: 2,
@@ -58,6 +60,8 @@ describe("ProjectComponent", () => {
       histories: [],
       reviews: [],
       version: "SV-002",
+      checks_attributes: [],
+      disa_rule_descriptions_attributes: [],
     },
   ];
 
@@ -115,7 +119,9 @@ describe("ProjectComponent", () => {
         ControlsPageLayout: true,
         ControlsCommandBar: true,
         ControlsSidepanels: true,
-        RuleNavigator: true,
+        RuleSearchBar: true,
+        RuleList: true,
+        ActiveFilterPills: true,
         RuleEditor: true,
         RuleSatisfactions: true,
         RuleReviews: true,
@@ -155,9 +161,24 @@ describe("ProjectComponent", () => {
       expect(wrapper.findComponent({ name: "ControlsCommandBar" }).exists()).toBe(true);
     });
 
-    it("renders RuleNavigator", () => {
+    it("renders RuleSearchBar in sidebar header (pinned)", () => {
       wrapper = createWrapper();
-      expect(wrapper.findComponent({ name: "RuleNavigator" }).exists()).toBe(true);
+      expect(wrapper.findComponent({ name: "RuleSearchBar" }).exists()).toBe(true);
+    });
+
+    it("renders ActiveFilterPills in sidebar header (pinned)", () => {
+      wrapper = createWrapper();
+      expect(wrapper.findComponent({ name: "ActiveFilterPills" }).exists()).toBe(true);
+    });
+
+    it("renders RuleList in sidebar body (scrollable)", () => {
+      wrapper = createWrapper();
+      expect(wrapper.findComponent({ name: "RuleList" }).exists()).toBe(true);
+    });
+
+    it("does NOT render RuleNavigator (replaced by composable)", () => {
+      wrapper = createWrapper();
+      expect(wrapper.findComponent({ name: "RuleNavigator" }).exists()).toBe(false);
     });
   });
 

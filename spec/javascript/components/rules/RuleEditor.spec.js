@@ -476,4 +476,29 @@ describe("RuleEditor", () => {
       expect(lastPayload).toEqual(["check_content"]);
     });
   });
+
+  describe("viewport-locked layout (toolbar pinned, content scrolls)", () => {
+    it("root element is a flex column that fills its parent", () => {
+      wrapper = createWrapper();
+      const root = wrapper.element;
+      expect(root.classList.contains("d-flex")).toBe(true);
+      expect(root.classList.contains("flex-column")).toBe(true);
+      expect(root.classList.contains("h-100")).toBe(true);
+    });
+
+    it("RuleActionsToolbar wrapper is flex-shrink-0 (pinned)", () => {
+      wrapper = createWrapper();
+      const toolbar = wrapper.find('[data-test="rule-toolbar-pinned"]');
+      expect(toolbar.exists()).toBe(true);
+      expect(toolbar.classes()).toContain("flex-shrink-0");
+    });
+
+    it("tabs content wrapper is flex-grow-1 overflow-auto (scrollable)", () => {
+      wrapper = createWrapper();
+      const tabsWrapper = wrapper.find('[data-test="rule-content-scrollable"]');
+      expect(tabsWrapper.exists()).toBe(true);
+      expect(tabsWrapper.classes()).toContain("flex-grow-1");
+      expect(tabsWrapper.classes()).toContain("overflow-auto");
+    });
+  });
 });

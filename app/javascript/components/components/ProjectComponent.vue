@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <b-breadcrumb :items="breadcrumbs" />
+  <div class="vulcan-editor-layout">
+    <b-breadcrumb :items="breadcrumbs" class="flex-shrink-0" />
 
     <CommentPeriodBanner
       :component="component"
@@ -45,15 +45,38 @@
         />
       </template>
 
-      <!-- Left Sidebar -->
-      <template #left-sidebar>
-        <RuleNavigator
+      <!-- Left Sidebar Header (pinned — search, filter pills) -->
+      <template #left-sidebar-header>
+        <RuleSearchBar
+          ref="sidebarSearchBar"
           :component-id="component.id"
+          :project-prefix="component.prefix"
           :rules="rules"
-          :effective-permissions="effective_permissions"
+          :read-only="true"
+          :search-value="navFilters.search"
+          @search-updated="navOnSearchUpdated"
+          @clear-filters="onClearNavFilters"
+          @search-result-selected="onNavSearchResultSelected"
+        />
+        <ActiveFilterPills
+          :filters="navFilters"
+          @remove-filter="onRemoveNavFilter"
+          @clear-all="onClearNavFilters"
+        />
+      </template>
+
+      <!-- Left Sidebar Body (scrollable — rule list) -->
+      <template #left-sidebar>
+        <RuleList
+          :filtered-rules="navFilteredRules"
+          :all-rules="rules"
+          :component-id="component.id"
           :project-prefix="component.prefix"
           :read-only="true"
-          :external-filters="filters"
+          :nest-satisfied-rules-checked="navFilters.nestSatisfiedRulesChecked"
+          :show-s-r-g-id-checked="navFilters.showSRGIdChecked"
+          :has-active-filters="navHasActiveFilters"
+          @reset-filters="onClearNavFilters"
         />
       </template>
 
@@ -144,7 +167,11 @@ import { MESSAGE_LABELS } from "../../constants/terminology";
 import ControlsPageLayout from "../rules/ControlsPageLayout.vue";
 import ControlsCommandBar from "../shared/ControlsCommandBar.vue";
 import RuleFilterBar from "../rules/RuleFilterBar.vue";
-import RuleNavigator from "../rules/RuleNavigator.vue";
+import RuleSearchBar from "../rules/RuleSearchBar.vue";
+import RuleList from "../rules/RuleList.vue";
+import ActiveFilterPills from "../rules/ActiveFilterPills.vue";
+import { useRuleNavigation } from "../../composables/useRuleNavigation";
+import { scrollToField } from "../../utils/searchHighlight";
 import RuleEditor from "../rules/RuleEditor.vue";
 import RelatedRulesModal from "../rules/RelatedRulesModal.vue";
 import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
@@ -159,7 +186,9 @@ export default {
     ControlsPageLayout,
     ControlsCommandBar,
     RuleFilterBar,
-    RuleNavigator,
+    RuleSearchBar,
+    RuleList,
+    ActiveFilterPills,
     RuleEditor,
     RelatedRulesModal,
     ControlsSidepanels,
@@ -235,6 +264,12 @@ export default {
     const handleRuleDeselected = deselectRule;
 
     const { filters, counts, setFilter } = useRuleFilters(localRules, componentId);
+    const nav = useRuleNavigation(
+      localRules,
+      props.initialComponentState.prefix,
+      componentId,
+      filters,
+    );
     const { activePanel, togglePanel, closePanel } = useSidebar();
 
     const updateFilter = (filterName, value) => {
@@ -253,6 +288,12 @@ export default {
       deselectRule,
       handleRuleSelected,
       handleRuleDeselected,
+      navFilters: nav.filters,
+      navFilteredRules: nav.filteredRules,
+      navHasActiveFilters: nav.hasActiveFilters,
+      navClearFilters: nav.clearFilters,
+      navRemoveFilter: nav.removeFilter,
+      navOnSearchUpdated: nav.onSearchUpdated,
       filters,
       counts,
       updateFilter,
@@ -320,6 +361,38 @@ export default {
     }
   },
   methods: {
+    onNavSearchResultSelected(result) {
+      const rule = this.rules.find((r) => r.id === result.id);
+      if (rule) {
+        if (!rule.histories) {
+          this.$root.$emit("refresh:rule", rule.id);
+        }
+        this.ruleStore.selectRule(rule.id);
+        if (result.matched_field) {
+          this.$nextTick(() => {
+            scrollToField(result.matched_field, result.searchQuery);
+          });
+        }
+      }
+    },
+    onClearNavFilters() {
+      this.navClearFilters();
+      this.$nextTick(() => {
+        if (this.$refs.sidebarSearchBar) {
+          this.$refs.sidebarSearchBar.setSearchValue("");
+        }
+      });
+    },
+    onRemoveNavFilter(key) {
+      this.navRemoveFilter(key);
+      if (key === "search") {
+        this.$nextTick(() => {
+          if (this.$refs.sidebarSearchBar) {
+            this.$refs.sidebarSearchBar.setSearchValue("");
+          }
+        });
+      }
+    },
     /**
      * open the comment composer with a pre-selected section.
      * Triggered when SectionCommentIcon emits open-composer; the event
