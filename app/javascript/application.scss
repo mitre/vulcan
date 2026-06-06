@@ -260,74 +260,34 @@
     color: var(--vulcan-body-color);
   }
 
-  // ── fad.8.2: Outline button dark mode colors ─────────────────────
-  // Bootstrap 5.3 uses tint-color($color, 40%) for text-emphasis-dark.
-  // BS4 equivalent: mix(white, $color, 40%). Outline buttons use these
-  // as text + border color for WCAG AA 4.5:1 contrast on dark surfaces.
-  $secondary-dark-text: mix(white, $secondary, 40%);
-  $primary-dark-text: mix(white, $primary, 40%);
-  $success-dark-text: mix(white, $success, 40%);
-  $danger-dark-text: mix(white, $danger, 40%);
-  $warning-dark-text: mix(white, $warning, 40%);
-  $info-dark-text: mix(white, $info, 40%);
+  // ── Variant tints — Bootstrap 5.3 pattern ──────────────────────────
+  // ONE @each loop for outline buttons + badges. BS5.3 formula:
+  //   text-emphasis-dark: tint-color($color, 40%)  → mix(white, $color, 40%)
+  //   bg-subtle-dark:     shade-color($color, 80%) → mix(black, $color, 80%)
+  //   border-subtle-dark: shade-color($color, 40%) → mix(black, $color, 40%)
+  // Ref: https://getbootstrap.com/docs/5.3/customize/color-modes/
+  $dark-variants: (
+    primary: $primary,
+    secondary: $secondary,
+    success: $success,
+    danger: $danger,
+    warning: $warning,
+    info: $info,
+  );
 
-  .btn-outline-secondary {
-    color: $secondary-dark-text;
-    border-color: $secondary-dark-text;
-  }
+  @each $variant, $color in $dark-variants {
+    $dark-text: mix(white, $color, 40%);
+    $dark-bg: mix(black, $color, 60%);
 
-  .btn-outline-primary {
-    color: $primary-dark-text;
-    border-color: $primary-dark-text;
-  }
+    .btn-outline-#{$variant} {
+      color: $dark-text;
+      border-color: $dark-text;
+    }
 
-  .btn-outline-success {
-    color: $success-dark-text;
-    border-color: $success-dark-text;
-  }
-
-  .btn-outline-danger {
-    color: $danger-dark-text;
-    border-color: $danger-dark-text;
-  }
-
-  .btn-outline-warning {
-    color: $warning-dark-text;
-    border-color: $warning-dark-text;
-  }
-
-  .btn-outline-info {
-    color: $info-dark-text;
-    border-color: $info-dark-text;
-  }
-
-  // ── fad.8.4: Badge dark mode desaturation ─────────────────────────
-  // Material Design M2: "avoid saturated colors on dark backgrounds —
-  // they produce optical vibrations causing eye strain." Use tinted bg
-  // (shade-color 80% per BS5.3) with tinted text (tint-color 40%).
-  .badge-warning {
-    background-color: #{mix(black, $warning, 60%)};
-    color: $warning-dark-text;
-  }
-
-  .badge-info {
-    background-color: #{mix(black, $info, 60%)};
-    color: $info-dark-text;
-  }
-
-  .badge-success {
-    background-color: #{mix(black, $success, 60%)};
-    color: $success-dark-text;
-  }
-
-  .badge-danger {
-    background-color: #{mix(black, $danger, 60%)};
-    color: $danger-dark-text;
-  }
-
-  .badge-secondary {
-    background-color: #{mix(black, $secondary, 40%)};
-    color: $secondary-dark-text;
+    .badge-#{$variant} {
+      background-color: $dark-bg;
+      color: $dark-text;
+    }
   }
 
   // ── fad.2: Component backgrounds ─────────────────────────────────

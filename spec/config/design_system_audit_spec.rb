@@ -179,6 +179,27 @@ RSpec.describe 'Vulcan Design System audit' do
     end
   end
 
+  describe 'dark mode DRY — variant overrides use @each loops' do
+    let(:scss_content) { File.read(JS_DIR.join('application.scss')) }
+    let(:dark_block) do
+      scss_content.match(/\[data-bs-theme="dark"\]\s*\{(.*)\Z/m)&.captures&.first || ''
+    end
+
+    it 'badge variants use @each loop, not individual blocks' do
+      individual_badges = dark_block.scan(/\.badge-(warning|info|success|danger|secondary)\s*\{/)
+      expect(individual_badges).to be_empty,
+                                   "Found #{individual_badges.size} individual .badge-* blocks in dark mode. " \
+                                   'Use ONE @each loop per Bootstrap 5.3 pattern.'
+    end
+
+    it 'outline button variants use @each loop, not individual blocks' do
+      individual_btns = dark_block.scan(/\.btn-outline-(secondary|primary|success|danger|warning|info)\s*\{/)
+      expect(individual_btns).to be_empty,
+                                 "Found #{individual_btns.size} individual .btn-outline-* blocks in dark mode. " \
+                                 'Use ONE @each loop per Bootstrap 5.3 pattern.'
+    end
+  end
+
   describe 'BvConfig global defaults' do
     let(:config_content) { File.read(JS_DIR.join('config/bootstrapVueConfig.js')) }
 

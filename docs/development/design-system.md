@@ -242,3 +242,33 @@ app/javascript/config/bootstrapVueConfig.js        # BvConfig global defaults
 app/javascript/components/shared/PanelLayout.vue   # Multi-panel layout component
 spec/config/design_system_audit_spec.rb            # TDD guard tests
 ```
+
+## Dark Mode Component Overrides
+
+All dark mode overrides live in the `[data-bs-theme="dark"]` block in `application.scss`. Light mode is never touched.
+
+### The pattern (Bootstrap 5.3 port)
+
+Variant colors use ONE `@each` loop with shared Sass `mix()` formulas. Never add individual `.badge-warning`, `.btn-outline-info` etc. blocks — the loop handles all variants.
+
+```scss
+// Inside [data-bs-theme="dark"] { ... }
+$dark-variants: (primary: $primary, secondary: $secondary, success: $success,
+                 danger: $danger, warning: $warning, info: $info);
+
+@each $variant, $color in $dark-variants {
+  $dark-text: mix(white, $color, 40%);   // BS5.3: tint-color($color, 40%)
+  $dark-bg:   mix(black, $color, 60%);   // BS5.3: shade-color($color, 80%)
+
+  .btn-outline-#{$variant} { color: $dark-text; border-color: $dark-text; }
+  .badge-#{$variant} { background-color: $dark-bg; color: $dark-text; }
+}
+```
+
+### Rules
+
+1. Variables in `:root` (light) + overrides in `[data-bs-theme="dark"]` — never global `!important` unless matching BootstrapVue specificity
+2. Use Sass `mix()` not hardcoded hex — formulas track Bootstrap 5.3 source
+3. Specificity must beat BootstrapVue selectors (e.g., `.b-toast-solid .toast` needs `(0,4,0)`)
+4. Regression tests in `spec/config/design_system_audit_spec.rb` enforce DRY (`@each` loops, no individual variant blocks)
+5. Reference: https://getbootstrap.com/docs/5.3/customize/color-modes/
