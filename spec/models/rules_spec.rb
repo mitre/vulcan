@@ -323,7 +323,7 @@ RSpec.describe Review do
 
       expect(satisfier).to have_key(:srg_id)
       expect(satisfier).not_to have_key(:version)
-      expect(satisfier.keys).to match_array(%i[id rule_id fixtext srg_id])
+      expect(satisfier.keys).to match_array(%i[id rule_id fixtext srg_id component_prefix])
     end
 
     it 'handles satisfaction with nil srg_rule gracefully' do
