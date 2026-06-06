@@ -52,6 +52,8 @@ paths:
     $ref: paths/api_auth_login.yaml
   /api/auth/logout:
     $ref: paths/api_auth_logout.yaml
+  /api/settings:
+    $ref: paths/api_settings.yaml
   /api/version:
     $ref: paths/api_version.yaml
   /api/search/global:

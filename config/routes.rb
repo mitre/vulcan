@@ -170,6 +170,7 @@ Rails.application.routes.draw do
     get 'auth/me', to: 'auth#me'
     post 'auth/login', to: 'auth#login'
     delete 'auth/logout', to: 'auth#logout'
+    get 'settings', to: 'settings#show'
 
     get 'search/global', to: 'search#global'
     get 'users/search', to: 'user_search#index'

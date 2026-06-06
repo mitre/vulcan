@@ -1,0 +1,129 @@
+description: Public application settings for pre-auth SPA UI.
+type: object
+required:
+  - banner
+  - consent
+  - local_login
+  - user_registration
+  - ldap
+  - oidc
+  - smtp
+  - password
+  - lockout
+properties:
+  banner:
+    type: object
+    description: Classification banner configuration.
+    properties:
+      enabled:
+        type: boolean
+        example: true
+      text:
+        type: string
+        example: "UNCLASSIFIED"
+      background_color:
+        type: string
+        example: "#007a33"
+      text_color:
+        type: string
+        example: "#ffffff"
+  consent:
+    type: object
+    description: Consent/terms-of-use modal configuration.
+    properties:
+      enabled:
+        type: boolean
+        example: false
+      version:
+        type: integer
+        description: Consent version number. Incrementing re-prompts all users.
+        example: 1
+      title:
+        type: string
+        example: Terms of Use
+      content:
+        type: string
+        example: ""
+      ttl:
+        type: integer
+        description: Time-to-live in seconds. 0 means consent never expires.
+        example: 0
+  local_login:
+    type: object
+    description: Local email/password login availability.
+    properties:
+      enabled:
+        type: boolean
+        example: true
+  user_registration:
+    type: object
+    description: Self-service registration availability.
+    properties:
+      enabled:
+        type: boolean
+        example: true
+  ldap:
+    type: object
+    description: LDAP authentication provider.
+    properties:
+      enabled:
+        type: boolean
+        example: false
+      title:
+        type:
+          - string
+          - 'null'
+        description: Display name for the LDAP login button.
+        example: null
+  oidc:
+    type: object
+    description: OpenID Connect authentication provider.
+    properties:
+      enabled:
+        type: boolean
+        example: false
+      title:
+        type:
+          - string
+          - 'null'
+        description: Display name for the OIDC login button.
+        example: null
+  smtp:
+    type: object
+    description: Whether outbound email is available.
+    properties:
+      enabled:
+        type: boolean
+        example: false
+  password:
+    type: object
+    description: Password complexity policy for client-side validation.
+    properties:
+      min_length:
+        type: integer
+        example: 15
+      min_uppercase:
+        type: integer
+        example: 2
+      min_lowercase:
+        type: integer
+        example: 2
+      min_number:
+        type: integer
+        example: 2
+      min_special:
+        type: integer
+        example: 2
+  lockout:
+    type: object
+    description: Account lockout policy.
+    properties:
+      enabled:
+        type: boolean
+        example: true
+      maximum_attempts:
+        type: integer
+        example: 3
+      last_attempt_warning:
+        type: boolean
+        example: true
