@@ -51,3 +51,35 @@ jobs:
           image: mitre/vulcan:${{ steps.meta.outputs.version }}
           artifact-name: image.spdx.json
           dependency-snapshot: true
+
+      # ─── IRON BANK RELEASE STEPS ───
+
+      # Vulcan on IB has both arm and amd builds; we need hashes of both to provide to the hardening manifest in repo1
+      - name: Resolve per-architecture image digests for the Iron Bank manifest
+        id: digests
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="mitre/vulcan:${{ steps.meta.outputs.version }}"
+          amd64="$(docker buildx imagetools inspect "$tag" --format '{{range .Manifest.Manifests}}{{if and (eq .Platform.OS "linux") (eq .Platform.Architecture "amd64")}}{{.Digest}}{{end}}{{end}}')"
+          arm64="$(docker buildx imagetools inspect "$tag" --format '{{range .Manifest.Manifests}}{{if and (eq .Platform.OS "linux") (eq .Platform.Architecture "arm64")}}{{.Digest}}{{end}}{{end}}')"
+          [[ "$amd64" == sha256:* ]] || { echo "Failed to resolve amd64 digest for $tag"; exit 1; }
+          [[ "$arm64" == sha256:* ]] || { echo "Failed to resolve arm64 digest for $tag"; exit 1; }
+          echo "amd64=$amd64" >> "$GITHUB_OUTPUT"
+          echo "arm64=$arm64" >> "$GITHUB_OUTPUT"
+          echo "Resolved digests:  amd64=$amd64  arm64=$arm64"
+
+      # Opens a MR on Vulcan's repo1 repository with the new release
+      - name: Open Iron Bank merge request
+        uses: mitre/ironbank_release_action@1c14c27db1c37e894f8042ac2edcde08d445882d # v1
+        with:
+          name: Vulcan
+          version: ${{ steps.meta.outputs.version }}
+          ironbank_pat: ${{ secrets.SAF_IRONBANK_REPO1_PAT }}
+          ironbank_username: ${{ secrets.SAF_IRONBANK_REPO1_USERNAME }}
+          ironbank_project_id: 17073
+          ironbank_project_clone_url: repo1.dso.mil/dsop/mitre/security-automation-framework/vulcan.git
+          git_commit_author_name: "Automated Vulcan Release"
+          git_commit_author_email: "saf@mitre.org"
+          update_commands: |
+            yq e -i '.tags[0]=\"${{ steps.meta.outputs.version }}\" | .labels.\"org.opencontainers.image.version\"=\"${{ steps.meta.outputs.version }}\" | .resources[0].tag=\"mitre/vulcan:${{ steps.meta.outputs.version }}\" | .resources[0].url=\"docker://docker.io/mitre/vulcan@${{ steps.digests.outputs.amd64 }}\" | .resources[1].tag=\"mitre/vulcan:${{ steps.meta.outputs.version }}.arm64\" | .resources[1].url=\"docker://docker.io/mitre/vulcan@${{ steps.digests.outputs.arm64 }}\"' hardening_manifest.yaml
