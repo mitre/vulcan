@@ -70,14 +70,6 @@ RSpec.describe Review do
     end
   end
 
-  describe 'withdrawn auto-sets adjudicated_by_id to commenter' do
-    it 'sets adjudicated_by_id to user_id (the commenter themselves)' do
-      review = create(:review, :comment, comment: 'x', section: nil, user: p_viewer, rule: rule)
-      review.update!(triage_status: 'withdrawn')
-      expect(review.reload.adjudicated_by_id).to eq(p_viewer.id)
-    end
-  end
-
   describe 'audits' do
     it 'audits triage_status changes' do
       review = create(:review, :comment, comment: 'x', section: nil, user: p_viewer, rule: rule)

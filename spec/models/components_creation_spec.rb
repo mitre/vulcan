@@ -39,4 +39,81 @@ RSpec.describe Component do
       expect(components_component.rules.size).to eq(components_srg.srg_rules.size)
     end
   end
+
+  # ─── B8 Regression: Duplicated component rules_count ─────
+  # REQUIREMENT: When a component is duplicated, the new component's
+  # rules_count must equal the actual number of rules, NOT accumulate
+  # from the original's counter_cache value + new rule inserts.
+  describe '#duplicate rules_count (B8 regression)' do
+    it 'duplicated component has correct rules_count after save' do
+      original = components_component
+      original_count = original.rules.where(deleted_at: nil).count
+      expect(original_count).to be > 0
+
+      dup = original.duplicate(new_version: 99, new_release: 99)
+      dup.save!
+      dup.reload
+
+      # Without counter reset, rules_count may be double the actual count
+      actual_count = dup.rules.where(deleted_at: nil).count
+      expect(dup.rules_count).to eq(actual_count),
+                                 "rules_count (#{dup.rules_count}) should equal actual count (#{actual_count}), " \
+                                 "not #{original_count * 2} (counter_cache accumulation bug)"
+
+      dup.destroy!
+    end
+
+    it 'duplicate_reviews_and_history copies without error' do
+      original = components_component
+      dup = original.duplicate(new_version: 98, new_release: 98)
+      dup.save!
+
+      # This was raising TypeError (Rails 8 bind params) and
+      # NoMethodError (sanitize_sql_array as instance method)
+      expect { dup.duplicate_reviews_and_history(original.id) }.not_to raise_error
+
+      dup.destroy!
+    end
+
+    # Regression: the raw-SQL copy bypasses sync_commentable_from_rule, so it
+    # must dual-write commentable_*. Without them the copied comment is counted
+    # but never listed in the triage view (paginated_comments filters commentable).
+    it 'duplicate_reviews_and_history dual-writes commentable on copied reviews' do
+      original = components_component
+      commenter = Membership.find_or_create_by!(user: create(:user), membership: original.project) do |m|
+        m.role = 'viewer'
+      end.user
+      Review.create!(rule: original.rules.first, user: commenter, action: 'comment', comment: 'orig comment')
+
+      dup = original.duplicate(new_version: 96, new_release: 96)
+      dup.save!
+      dup.duplicate_reviews_and_history(original.id)
+
+      copied = Review.where(rule_id: dup.rules.pluck(:id), comment: 'orig comment').first
+      expect(copied).to be_present
+      expect(copied.commentable_type).to eq('BaseRule')
+      expect(copied.commentable_id).to eq(copied.rule_id)
+      expect(dup.paginated_comments[:rows].pluck(:id)).to include(copied.id)
+
+      dup.destroy!
+    end
+
+    it 'auditing can be suppressed during save for performance' do
+      original = components_component
+      dup = original.duplicate(new_version: 97, new_release: 97)
+
+      # Controller suppresses auditing during dup save — verify the
+      # mechanism works at model level
+      Component.without_auditing { Rule.without_auditing { dup.save! } }
+
+      rule_audits = Audited::Audit.where(
+        auditable_type: 'BaseRule',
+        auditable_id: dup.rules.pluck(:id)
+      ).count
+      expect(rule_audits).to eq(0),
+                             "Expected 0 rule audits with auditing disabled, got #{rule_audits}"
+
+      dup.destroy!
+    end
+  end
 end

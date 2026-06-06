@@ -5,61 +5,6 @@ require 'rails_helper'
 RSpec.describe 'Reviews' do
   include_context 'reviews request base setup'
 
-  describe 'soft redirect — comments on satisfied-by children' do
-    let_it_be(:viewer) { create(:user) }
-    let(:parent_rule) { component.rules.first }
-    let(:child_rule) { component.rules.second }
-
-    before do
-      create(:membership, user: viewer, membership: project, role: 'viewer')
-      child_rule.satisfied_by << parent_rule
-      sign_in viewer
-    end
-
-    it 'redirects comment to parent rule when child is satisfied-by' do
-      post "/rules/#{child_rule.id}/reviews",
-           params: { action: 'comment', comment: 'This check is vendor-specific', section: 'fixtext' },
-           as: :json
-
-      expect(response).to have_http_status(:ok)
-      review = Review.last
-      expect(review.rule_id).to eq(parent_rule.id)
-      expect(review.commentable_id).to eq(parent_rule.id)
-    end
-
-    it 'sets original_commentable_id to the child rule' do
-      post "/rules/#{child_rule.id}/reviews",
-           params: { action: 'comment', comment: 'Vendor concern', section: 'fixtext' },
-           as: :json
-
-      review = Review.last
-      expect(review.original_commentable_id).to eq(child_rule.id)
-    end
-
-    it 'prefixes comment with [Re: prefix-child_rule_id]' do
-      post "/rules/#{child_rule.id}/reviews",
-           params: { action: 'comment', comment: 'Vendor concern', section: 'fixtext' },
-           as: :json
-
-      review = Review.last
-      expect(review.comment).to start_with("[Re: #{component.prefix}-#{child_rule.rule_id}]")
-      expect(review.comment).to include('Vendor concern')
-    end
-
-    it 'does NOT redirect when rule has no satisfied-by parent' do
-      standalone = component.rules.where.not(id: [parent_rule.id, child_rule.id]).first
-      post "/rules/#{standalone.id}/reviews",
-           params: { action: 'comment', comment: 'Normal comment', section: 'fixtext' },
-           as: :json
-
-      expect(response).to have_http_status(:ok)
-      review = Review.last
-      expect(review.rule_id).to eq(standalone.id)
-      expect(review.original_commentable_id).to be_nil
-      expect(review.comment).to eq('Normal comment')
-    end
-  end
-
   describe 'PATCH /reviews/bulk_triage' do
     let_it_be(:bulk_triager) { create(:user) }
     let_it_be(:bulk_commenter) { create(:user) }

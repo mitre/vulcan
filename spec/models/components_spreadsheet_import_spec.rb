@@ -175,4 +175,82 @@ RSpec.describe Component do
       expect(first_rule.fixtext).to eq(test_fix_text)
     end
   end
+
+  context 'CSV export/import roundtrip for satisfaction relationships' do
+    # REQUIREMENT: Export a component with satisfaction relationships to CSV,
+    # re-import it, and the satisfaction relationships survive the roundtrip.
+
+    it 'exports satisfaction relationships in a dedicated Satisfies column' do
+      parent = components_component.rules.first
+      child = components_component.rules.second
+      child.satisfies << parent
+      child.save!
+
+      csv_data = components_component.csv_export
+      parsed = CSV.parse(csv_data, headers: true)
+
+      # Verify 'Satisfies' header exists
+      expect(parsed.headers).to include('Satisfies')
+
+      child_row = parsed.find { |row| row['STIGID'] == "#{components_component.prefix}-#{child.rule_id}" }
+      expect(child_row).not_to be_nil
+      expect(child_row['Satisfies']).to be_present
+      expect(child_row['Satisfies']).to include(parent.rule_id)
+
+      # Vendor Comments column should be clean (no satisfaction text)
+      expect(child_row['Vendor Comments']).to be_nil.or(
+        satisfy { |v| !v.match?(/satisfi/i) }
+      )
+    end
+
+    it 'keeps vendor comments separate from satisfaction in export' do
+      parent = components_component.rules.first
+      child = components_component.rules.second
+      child.satisfies << parent
+      child.update!(vendor_comments: 'Important security note.')
+
+      csv_data = components_component.csv_export
+      parsed = CSV.parse(csv_data, headers: true)
+      child_row = parsed.find { |row| row['STIGID'] == "#{components_component.prefix}-#{child.rule_id}" }
+
+      expect(child_row['Vendor Comments']).to eq('Important security note.')
+      expect(child_row['Satisfies']).to be_present
+      expect(child_row['Satisfies']).not_to include('Important security note')
+    end
+
+    it 'imports satisfaction from Satisfies column via create_rule_satisfactions' do
+      # Simulate what happens after spreadsheet import: vendor_comments has
+      # satisfaction text appended from the Satisfies column
+      pref = components_component.prefix
+      parent = components_component.rules.first
+      child = components_component.rules.second
+
+      # This is what the import loop does: appends "Satisfies: PREFIX-ID" to vendor_comments
+      child.update_column(:vendor_comments, "Satisfies: #{pref}-#{parent.rule_id}")
+
+      components_component.create_rule_satisfactions
+
+      child.reload
+      expect(child.satisfies.size).to eq(1)
+      expect(child.satisfies.first.id).to eq(parent.id)
+      # vendor_comments should be clean after parsing
+      expect(child.vendor_comments).to be_nil
+    end
+
+    it 'preserves user vendor comments alongside imported satisfaction' do
+      pref = components_component.prefix
+      parent = components_component.rules.first
+      child = components_component.rules.second
+
+      # Simulate import with both vendor comments and satisfaction
+      child.update_column(:vendor_comments,
+                          "Important note. Satisfies: #{pref}-#{parent.rule_id}")
+
+      components_component.create_rule_satisfactions
+
+      child.reload
+      expect(child.satisfies.size).to eq(1)
+      expect(child.vendor_comments).to eq('Important note.')
+    end
+  end
 end
