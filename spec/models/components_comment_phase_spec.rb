@@ -153,4 +153,11 @@ RSpec.describe Component do
       end
     end
   end
+
+  describe '#metadata' do
+    it 'returns nil when component_metadata is absent' do
+      comp = create(:component, :skip_rules)
+      expect(comp.metadata).to be_nil
+    end
+  end
 end

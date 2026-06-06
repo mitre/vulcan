@@ -127,4 +127,21 @@ RSpec.describe Component do
       end
     end
   end
+
+  describe '#inherited_memberships' do
+    it 'excludes users who already have component-level membership' do
+      inherited = components_component.inherited_memberships
+      inherited_user_ids = inherited.pluck(:user_id)
+      component_user_ids = components_component.memberships.pluck(:user_id)
+      expect(inherited_user_ids & component_user_ids).to be_empty
+    end
+
+    it 'includes project-level members who are not on the component' do
+      project_only = create(:user, name: 'Project Only')
+      Membership.create!(user: project_only, membership: components_project, role: 'viewer')
+
+      inherited = components_component.inherited_memberships
+      expect(inherited.pluck(:user_id)).to include(project_only.id)
+    end
+  end
 end

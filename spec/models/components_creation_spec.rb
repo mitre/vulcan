@@ -39,6 +39,24 @@ RSpec.describe Component do
       expect(components_component.rules.size).to eq(components_srg.srg_rules.size)
     end
 
+    it 'amoeba re-links additional_answers to the new component rules' do
+      orig_rule = components_component.rules.first
+      question = AdditionalQuestion.create!(component: components_component, name: 'Test Q',
+                                            question_type: 'freeform')
+      AdditionalAnswer.create!(additional_question: question, rule: orig_rule, answer: 'test answer')
+
+      dup = components_component.duplicate(new_version: 94, new_release: 1)
+      dup.save!
+
+      dup_question = dup.additional_questions.find_by(name: 'Test Q')
+      expect(dup_question).to be_present
+      dup_answer = dup_question.additional_answers.first
+      expect(dup_answer.rule.component_id).to eq(dup.id)
+      expect(dup_answer.rule.rule_id).to eq(orig_rule.rule_id)
+
+      dup.destroy!
+    end
+
     it 'amoeba duplicated rules belong to the new component, not the original' do
       dup = components_component.duplicate(new_version: 95, new_release: 1)
       dup.save!
