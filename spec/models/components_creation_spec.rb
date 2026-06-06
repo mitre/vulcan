@@ -38,6 +38,18 @@ RSpec.describe Component do
       components_component.reload
       expect(components_component.rules.size).to eq(components_srg.srg_rules.size)
     end
+
+    it 'amoeba duplicated rules belong to the new component, not the original' do
+      dup = components_component.duplicate(new_version: 95, new_release: 1)
+      dup.save!
+
+      dup.rules.each do |dup_rule|
+        expect(dup_rule.component_id).to eq(dup.id)
+      end
+      expect(dup.rules.pluck(:component_id).uniq).to eq([dup.id])
+
+      dup.destroy!
+    end
   end
 
   # ─── B8 Regression: Duplicated component rules_count ─────

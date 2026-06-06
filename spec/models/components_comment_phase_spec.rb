@@ -99,6 +99,12 @@ RSpec.describe Component do
         component.comment_period_ends_at = 2.days.ago
         expect(component.comment_period_days_remaining).to be_nil
       end
+
+      it 'returns 1 when end date is less than 24 hours away (ceil rounding)' do
+        component.comment_phase = 'open'
+        component.comment_period_ends_at = 12.hours.from_now
+        expect(component.comment_period_days_remaining).to eq(1)
+      end
     end
 
     describe '#frozen_for_writes?' do
