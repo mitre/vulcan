@@ -12,7 +12,7 @@
     = javascript_include_tag 'project_component'
     = stylesheet_link_tag 'project_component'
 
-  #projectcomponent
+  #projectcomponent.vulcan-editor-layout
     %projectcomponent{                                                                |
       'v-bind:queried-rule': (@rule_json || {}.to_json),                                              |
       'v-bind:effective_permissions': @effective_permissions.to_json,                 |

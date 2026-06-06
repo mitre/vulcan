@@ -1,30 +1,35 @@
 <template>
-  <b-row no-gutters class="panel-layout">
-    <b-col
-      v-for="(panel, index) in panels"
-      :key="panel.name"
-      :lg="panel.cols"
-      cols="12"
-      class="panel-layout__panel d-flex flex-column"
-      :class="panelClasses(panel, index)"
-      :style="panelStyle(panel)"
-    >
-      <div
-        v-if="$slots[panel.name + '-header']"
-        class="panel-layout__header px-3 py-2 border-bottom"
+  <b-card no-body class="panel-layout overflow-hidden">
+    <b-row no-gutters class="flex-grow-1 h-100">
+      <b-col
+        v-for="(panel, index) in panels"
+        :key="panel.name"
+        :lg="panel.cols"
+        cols="12"
+        class="panel-layout__panel d-flex flex-column h-100"
+        :class="panelClasses(panel, index)"
+        :style="panelStyle(panel)"
       >
-        <slot :name="panel.name + '-header'" />
-      </div>
+        <div
+          v-if="$slots[panel.name + '-header']"
+          class="panel-layout__header px-3 py-2 border-bottom flex-shrink-0"
+        >
+          <slot :name="panel.name + '-header'" />
+        </div>
 
-      <div class="panel-layout__body flex-grow-1 overflow-auto min-height-0 p-3">
-        <slot :name="panel.name" />
-      </div>
+        <div class="panel-layout__body flex-grow-1 overflow-auto p-3">
+          <slot :name="panel.name" />
+        </div>
 
-      <div v-if="$slots[panel.name + '-footer']" class="panel-layout__footer px-3 py-2 border-top">
-        <slot :name="panel.name + '-footer'" />
-      </div>
-    </b-col>
-  </b-row>
+        <div
+          v-if="$slots[panel.name + '-footer']"
+          class="panel-layout__footer px-3 py-2 border-top flex-shrink-0"
+        >
+          <slot :name="panel.name + '-footer'" />
+        </div>
+      </b-col>
+    </b-row>
+  </b-card>
 </template>
 
 <script>

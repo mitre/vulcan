@@ -18,7 +18,7 @@
     / CSS customizations can be added here if needed
 
     = yield :assets
-  %body{ class: (Settings.banner.enabled && Settings.banner.text.present?) ? 'has-classification-banner' : nil }
+  %body{ class: [('has-classification-banner' if Settings.banner.enabled && Settings.banner.text.present?), 'd-flex', 'flex-column', 'vh-100', 'overflow-hidden'].compact.join(' ') }
     - if Settings.banner.enabled && Settings.banner.text.present?
       .classification-banner{ style: "background-color: #{Settings.banner.background_color}; color: #{Settings.banner.text_color};" }
         = Settings.banner.text
@@ -40,7 +40,7 @@
         'v-bind:notice': notice.to_json,
         'v-bind:alert': alert.to_json
       }
-    .pt-3.container-fluid{"data-behavior" => "vue"}
+    .pt-3.container-fluid.flex-grow-1.d-flex.flex-column.overflow-auto{"data-behavior" => "vue"}
       = yield
     - if Settings.banner.enabled && Settings.banner.text.present?
       .classification-banner.classification-banner--bottom{ style: "background-color: #{Settings.banner.background_color}; color: #{Settings.banner.text_color};" }

@@ -124,13 +124,12 @@ describe("PanelLayout", () => {
     expect(panels.length).toBe(2);
   });
 
-  it("panel body has overflow-auto, min-height-0, and p-3 padding", () => {
+  it("panel body has overflow-auto and p-3 padding for independent scroll", () => {
     const wrapper = mountWith();
     const bodies = wrapper.findAll(".panel-layout__body");
     expect(bodies.length).toBe(3);
     bodies.wrappers.forEach((body) => {
       expect(body.classes()).toContain("overflow-auto");
-      expect(body.classes()).toContain("min-height-0");
       expect(body.classes()).toContain("p-3");
     });
   });

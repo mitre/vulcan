@@ -854,6 +854,30 @@
 
 @import "./styles/triage-tints.css";
 
+// ── Vulcan Layout Utilities ──────────────────────────────────────────
+// Viewport-locked editor layout pattern (VS Code / GitHub / Linear style).
+// Each element in the flex chain from body to the scroll regions applies
+// this class. Terminal scroll containers use overflow-auto instead.
+//
+// Why overflow:hidden: CSS Flexbox spec defines min-height:auto as the
+// default for flex items, preventing them from shrinking below content
+// size. Setting overflow to any value other than 'visible' resets the
+// automatic minimum to 0, enabling proper flex shrink behavior.
+// This is not a hack — it's spec-defined (MDN: min-height auto behavior).
+//
+// Usage:
+//   HAML wrapper:  #projectcomponent.vulcan-editor-layout
+//   Vue page root: <div class="vulcan-editor-layout">
+//   Layout comp:   <div class="vulcan-editor-layout">
+//   Scroll boundary: PanelLayout b-card (flex-grow-1 overflow-hidden)
+//   Scroll regions:  .panel-layout__body (flex-grow-1 overflow-auto)
+.vulcan-editor-layout {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow: hidden;
+}
+
 // Bootstrap Icons are included via the IconsPlugin in Vue
 // No need to import separate icon CSS files
 // Font Awesome 4 is served from public/css/ and public/fonts/ (see layout)
