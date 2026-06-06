@@ -155,4 +155,26 @@ RSpec.describe Review do
       expect(reply.valid?).to be(true)
     end
   end
+
+  describe '#component accessor' do
+    it 'returns the component for a rule-scoped review' do
+      review = create(:review, :comment, comment: 'x', section: nil, user: p_admin, rule: rule)
+      expect(review.component).to eq(rule.component)
+    end
+
+    it 'returns the component directly for a component-scoped review' do
+      comp_review = Review.create!(action: 'comment', comment: 'comp-level', user: p_admin,
+                                   commentable: component, section: nil)
+      expect(comp_review.component).to eq(component)
+    end
+  end
+
+  describe 'sync_commentable_from_rule reverse branch' do
+    it 'populates rule_id from commentable when commentable is BaseRule and rule_id blank' do
+      review = Review.new(action: 'comment', comment: 'x', user: p_admin,
+                          commentable_type: 'BaseRule', commentable_id: rule.id, rule_id: nil)
+      review.valid?
+      expect(review.rule_id).to eq(rule.id)
+    end
+  end
 end

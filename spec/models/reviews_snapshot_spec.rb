@@ -24,7 +24,7 @@ RSpec.describe Review do
       h = snap_review.snapshot_attributes
       %w[id user_id rule_id action comment section triage_status
          triage_set_by_id triage_set_at adjudicated_at adjudicated_by_id
-         duplicate_of_review_id responding_to_review_id
+         duplicate_of_review_id addressed_by_rule_id responding_to_review_id
          triage_set_by_imported_email triage_set_by_imported_name
          adjudicated_by_imported_email adjudicated_by_imported_name
          commenter_imported_email commenter_imported_name

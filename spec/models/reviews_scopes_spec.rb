@@ -67,5 +67,35 @@ RSpec.describe Review do
         expect(legacy_comment).to be_valid
       end
     end
+
+    describe '.awaiting_adjudication' do
+      it 'includes concur review with nil adjudicated_at' do
+        review = create(:review, :comment, comment: 'x', section: nil, user: p_viewer, rule: rule)
+        review.update!(triage_status: 'concur', triage_set_by_id: p_admin.id, triage_set_at: Time.current,
+                       adjudicated_at: nil, adjudicated_by_id: nil)
+        review.save_intent = :reopen
+        review.update!(adjudicated_at: nil, adjudicated_by_id: nil)
+        expect(Review.awaiting_adjudication.pluck(:id)).to include(review.id)
+      end
+
+      it 'excludes concur review with adjudicated_at present' do
+        review = create(:review, :comment, comment: 'x', section: nil, user: p_viewer, rule: rule)
+        review.update!(triage_status: 'concur', triage_set_by_id: p_admin.id, triage_set_at: Time.current,
+                       adjudicated_at: Time.current, adjudicated_by_id: p_admin.id)
+        expect(Review.awaiting_adjudication.pluck(:id)).not_to include(review.id)
+      end
+
+      it 'excludes pending reviews' do
+        review = create(:review, :comment, comment: 'x', section: nil, user: p_viewer, rule: rule)
+        expect(Review.awaiting_adjudication.pluck(:id)).not_to include(review.id)
+      end
+
+      it 'excludes replies' do
+        parent = create(:review, :comment, comment: 'p', section: nil, user: p_viewer, rule: rule)
+        reply = create(:review, :comment, comment: 'r', section: nil, user: p_admin, rule: rule,
+                                          responding_to_review_id: parent.id)
+        expect(Review.awaiting_adjudication.pluck(:id)).not_to include(reply.id)
+      end
+    end
   end
 end

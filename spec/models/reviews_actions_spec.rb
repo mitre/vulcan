@@ -67,6 +67,7 @@ RSpec.describe Review do
       rule.reload
       expect(rule.review_requestor_id).to be_nil
       expect(rule.locked).to be(false)
+      expect(rule.changes_requested).to be(true)
     end
 
     it 'take action on approve' do
@@ -75,6 +76,7 @@ RSpec.describe Review do
       rule.reload
       expect(rule.review_requestor_id).to be_nil
       expect(rule.locked).to be(true)
+      expect(rule.changes_requested).to be(false)
     end
 
     it 'take action on lock_control' do
