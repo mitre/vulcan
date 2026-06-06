@@ -78,12 +78,14 @@ RSpec.describe 'Projects endpoint contracts', type: :request do
       assert_fields_present body, :id, :name, :description, :visibility, :memberships_count,
                             :admin_name, :admin_email, :created_at, :updated_at,
                             :pending_comment_count, :details, :histories, :metadata,
-                            :memberships, :components, :available_components, :users, :access_requests
+                            :memberships, :components, :available_components, :users,
+                            :access_requests, :effective_permissions
       expect(body['memberships']).to be_an(Array)
       expect(body['components']).to be_an(Array)
       expect(body['users']).to be_an(Array)
       expect(body['access_requests']).to be_an(Array)
       expect(body['histories']).to be_an(Array)
+      expect(body['effective_permissions']).to eq('admin')
     end
   end
 

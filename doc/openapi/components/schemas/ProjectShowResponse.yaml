@@ -5,6 +5,20 @@ allOf:
   - $ref: ./ProjectSummary.yaml
   - type: object
     properties:
+      effective_permissions:
+        type:
+          - string
+          - 'null'
+        description: >-
+          Current user's role on this project (admin, reviewer, author, viewer).
+          Null when the user is not a member. System admins always get 'admin'.
+        enum:
+          - admin
+          - reviewer
+          - author
+          - viewer
+          - null
+        example: admin
       pending_comment_count:
         type: integer
         description: Aggregate pending comment count across all components.

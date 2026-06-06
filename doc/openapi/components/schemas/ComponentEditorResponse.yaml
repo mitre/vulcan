@@ -6,6 +6,21 @@ allOf:
   - $ref: ./ComponentSummary.yaml
   - type: object
     properties:
+      effective_permissions:
+        type:
+          - string
+          - 'null'
+        description: >-
+          Current user's role on this component's project (admin, reviewer,
+          author, viewer). Null when user is not a member. System admins
+          always get 'admin'.
+        enum:
+          - admin
+          - reviewer
+          - author
+          - viewer
+          - null
+        example: admin
       title:
         type:
           - string

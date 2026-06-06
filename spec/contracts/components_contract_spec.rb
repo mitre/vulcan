@@ -74,13 +74,15 @@ RSpec.describe 'Components endpoint contracts', type: :request do
                             :memberships_count, :rules_count, :updated_at, :created_at,
                             :comment_phase, :releasable, :status_counts,
                             :additional_questions, :rules, :reviews, :histories,
-                            :memberships, :metadata, :inherited_memberships
+                            :memberships, :metadata, :inherited_memberships,
+                            :effective_permissions
 
       expect(body['rules']).to be_an(Array)
       expect(body['memberships']).to be_an(Array)
       expect(body['inherited_memberships']).to be_an(Array)
       expect(body['status_counts']).to be_a(Hash)
       expect(body['project_id']).to eq(project.id)
+      expect(body['effective_permissions']).to eq('admin')
     end
   end
 
