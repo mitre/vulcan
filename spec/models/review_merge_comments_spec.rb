@@ -114,4 +114,13 @@ RSpec.describe Review, '.merge_comments!' do
     expect(survivor.reload.triage_status).not_to eq('duplicate')
     expect(dup.reload.triage_status).to eq('duplicate')
   end
+
+  it 'raises NoMethodError when merged_by is nil (accesses .id)' do
+    survivor = cmt(rule: rule_a)
+    dup      = cmt(rule: rule_b)
+
+    expect do
+      Review.merge_comments!(survivor: survivor, duplicates: [dup], merged_by: nil)
+    end.to raise_error(NoMethodError)
+  end
 end

@@ -177,4 +177,16 @@ RSpec.describe Review do
       expect(review.rule_id).to eq(rule.id)
     end
   end
+
+  describe 'duplicate_of_must_be_same_component with nil rule_id' do
+    it 'skips the component check when rule_id is blank' do
+      target = create(:review, :comment, comment: 'target', section: nil, user: p_admin, rule: rule)
+      review = build(:review, :comment, comment: 'x', section: nil, user: p_admin, rule: rule)
+      review.save!(validate: false)
+      review.update_columns(rule_id: nil, triage_status: 'duplicate', duplicate_of_review_id: target.id)
+      review.reload
+      review.valid?(:import_integrity)
+      expect(review.errors[:duplicate_of_review_id].join).not_to include('same component')
+    end
+  end
 end

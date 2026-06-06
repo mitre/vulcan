@@ -174,4 +174,18 @@ RSpec.describe Review do
       end
     end
   end
+
+  describe '#name delegation' do
+    it 'returns user name for a normal review' do
+      review = create(:review, :comment, comment: 'x', section: nil, user: p_admin, rule: rule)
+      expect(review.name).to eq(p_admin.name)
+    end
+
+    it 'raises NoMethodError when user is nil (no allow_nil on delegate)' do
+      review = create(:review, :comment, comment: 'x', section: nil, user: p_admin, rule: rule)
+      review.update_columns(user_id: nil)
+      review.reload
+      expect { review.name }.to raise_error(Module::DelegationError)
+    end
+  end
 end
