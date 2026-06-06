@@ -22,7 +22,7 @@ RSpec.describe 'Reviews' do
         end.to change(Review, :count).by(1)
 
         expect(response).to have_http_status(:ok)
-        expect(Review.last).to have_attributes(action: 'comment', user: viewer, rule: rule)
+        expect(Review.where(rule: rule).order(:id).last).to have_attributes(action: 'comment', user: viewer, rule: rule)
       end
 
       # canonicalize create response toast.
@@ -214,7 +214,7 @@ RSpec.describe 'Reviews' do
            as: :json
 
       expect(response).to have_http_status(:ok)
-      review = Review.last
+      review = Review.where(rule: parent_rule).order(:id).last
       expect(review.rule_id).to eq(parent_rule.id)
       expect(review.commentable_id).to eq(parent_rule.id)
     end
@@ -224,7 +224,7 @@ RSpec.describe 'Reviews' do
            params: { action: 'comment', comment: 'Vendor concern', section: 'fixtext' },
            as: :json
 
-      review = Review.last
+      review = Review.where(rule: parent_rule).order(:id).last
       expect(review.original_commentable_id).to eq(child_rule.id)
     end
 
@@ -233,7 +233,7 @@ RSpec.describe 'Reviews' do
            params: { action: 'comment', comment: 'Vendor concern', section: 'fixtext' },
            as: :json
 
-      review = Review.last
+      review = Review.where(rule: parent_rule).order(:id).last
       expect(review.comment).to start_with("[Re: #{component.prefix}-#{child_rule.rule_id}]")
       expect(review.comment).to include('Vendor concern')
     end
@@ -245,7 +245,7 @@ RSpec.describe 'Reviews' do
            as: :json
 
       expect(response).to have_http_status(:ok)
-      review = Review.last
+      review = Review.where(rule: standalone).order(:id).last
       expect(review.rule_id).to eq(standalone.id)
       expect(review.original_commentable_id).to be_nil
       expect(review.comment).to eq('Normal comment')

@@ -90,7 +90,7 @@ RSpec.describe 'Reviews' do
                                  responding_to_review_id: parent_comment.id } },
              as: :json
         expect(response).to have_http_status(:success)
-        expect(Review.last.responding_to_review_id).to eq(parent_comment.id)
+        expect(Review.where(rule: phase_rule).order(:id).last.responding_to_review_id).to eq(parent_comment.id)
       end
 
       it 'rejects a reply during closed+finalized' do

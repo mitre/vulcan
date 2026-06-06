@@ -82,8 +82,6 @@ RSpec.describe 'Reviews' do
               params: { audit_comment: 'PII cleanup post-window' }, as: :json
         expect(response).to have_http_status(:ok)
         expect(target_review.reload.triage_status).to eq('withdrawn')
-      ensure
-        component.update_columns(comment_phase: 'open', closed_reason: nil)
       end
     end
 

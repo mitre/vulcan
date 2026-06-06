@@ -105,7 +105,7 @@ RSpec.describe Review, '#original_commentable_id' do
       count = builder.build_all
 
       expect(count).to eq(1)
-      imported = Review.last
+      imported = Review.where(rule: rule_a).order(:id).last
       expect(imported.original_commentable_id).to eq(rule_b.id)
     end
 
@@ -125,7 +125,7 @@ RSpec.describe Review, '#original_commentable_id' do
       builder = Import::JsonArchive::ReviewBuilder.new(reviews_data, rule_id_map, result)
       builder.build_all
 
-      imported = Review.last
+      imported = Review.where(rule: rule_a).order(:id).last
       expect(imported.original_commentable_id).to be_nil
     end
   end

@@ -29,7 +29,7 @@ RSpec.describe 'Component-level reviews' do
       end.to change(Review, :count).by(1)
 
       expect(response).to have_http_status(:ok)
-      created = Review.last
+      created = Review.where(commentable: component).order(:id).last
       expect(created).to have_attributes(
         action: 'comment',
         user: viewer,
