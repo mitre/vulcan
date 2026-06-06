@@ -1,102 +1,135 @@
 <template>
   <BaseCommandBar>
-    <!-- Left: Actions (Edit/View, Members, Release) -->
-    <template #left>
-      <!-- VIEW mode: Show Edit button -->
-      <b-button
-        v-if="readOnly && canEdit"
-        variant="primary"
-        size="sm"
-        class="mr-2"
-        :href="`/components/${component.id}/edit`"
-      >
-        <b-icon icon="pencil" /> Edit
-      </b-button>
-      <!-- EDIT mode: Show View button -->
-      <b-button
-        v-if="!readOnly && canEdit"
-        variant="outline-primary"
-        size="sm"
-        class="mr-2"
-        :href="`/components/${component.id}`"
-      >
-        <b-icon icon="eye" /> View
-      </b-button>
-
-      <!-- Release Button (with tooltip for disabled state) -->
-      <span v-if="canRelease" v-b-tooltip.hover :title="releaseComponentTooltip" class="mr-2">
-        <b-button variant="outline-success" size="sm" :disabled="!isReleasable" @click="onRelease">
-          <b-icon icon="patch-check" /> Release
-        </b-button>
-      </span>
-
-      <!-- Download Button — opens the unified ExportModal in the parent.
-           Available to anyone with component access (gates within the modal
-           cover format-/mode-specific role restrictions). PR-717 Step 5 closed
-           the per-component-editor "where do I click" gap with this. -->
-      <b-button
-        variant="outline-secondary"
-        size="sm"
-        class="mr-2"
-        data-testid="download-btn"
-        @click="$emit('download')"
-      >
-        <b-icon icon="download" /> Download
-      </b-button>
-
-      <!-- Update from Spreadsheet (author+ only) -->
-      <UpdateFromSpreadsheetModal
-        v-if="canEdit"
-        :component="component"
-        @spreadsheet-updated="onSpreadsheetUpdated"
-      />
-
-      <!-- Component-level comment composer entry point. Visible to anyone
-           with project access; closed-phase clicks surface a rejection toast
-           rather than hiding the button (matches SectionCommentIcon). -->
-      <b-button
-        v-if="canCommentOnComponent"
-        variant="outline-secondary"
-        size="sm"
-        class="mr-2"
-        data-testid="comment-on-component-btn"
-        @click="$emit('open-component-composer')"
-      >
-        <b-icon icon="chat-left-text" /> Comment
-      </b-button>
+    <!-- Above: Breadcrumbs (inline, no separate row) -->
+    <template v-if="breadcrumbs && breadcrumbs.length" #above>
+      <nav aria-label="breadcrumb" data-testid="command-bar-breadcrumbs" class="mb-1">
+        <ol class="breadcrumb bg-transparent p-0 mb-0 small">
+          <li
+            v-for="(item, i) in breadcrumbs"
+            :key="i"
+            class="breadcrumb-item"
+            :class="{ active: item.active }"
+          >
+            <a v-if="!item.active && item.href" :href="item.href">{{ item.text }}</a>
+            <span v-else>{{ item.text }}</span>
+          </li>
+        </ol>
+      </nav>
     </template>
 
-    <!-- Right: Panel Toggles -->
-    <template #right>
-      <!-- Component Panels (component-level info, always available) -->
-      <b-button-group size="sm">
+    <!-- Left: Primary actions + overflow -->
+    <template #left>
+      <div data-testid="toolbar-actions" class="d-inline-flex align-items-center">
         <b-button
+          v-if="readOnly && canEdit"
+          v-b-tooltip.hover
+          title="Switch to edit mode"
+          variant="primary"
+          size="sm"
+          class="mr-2"
+          :href="`/components/${component.id}/edit`"
+        >
+          <b-icon icon="pencil" /> Edit
+        </b-button>
+        <b-button
+          v-if="!readOnly && canEdit"
+          v-b-tooltip.hover
+          title="Switch to view mode"
+          variant="outline-primary"
+          size="sm"
+          class="mr-2"
+          :href="`/components/${component.id}`"
+        >
+          <b-icon icon="eye" /> View
+        </b-button>
+        <b-button
+          v-if="canCommentOnComponent"
+          v-b-tooltip.hover
+          title="Post a comment on this component"
+          variant="outline-secondary"
+          size="sm"
+          data-testid="comment-on-component-btn"
+          @click="$emit('open-component-composer')"
+        >
+          <b-icon icon="chat-left-text" /> Comment
+        </b-button>
+      </div>
+
+      <!-- Separator -->
+      <span class="border-left align-self-stretch mx-2" />
+
+      <!-- Center: Status indicator -->
+      <div data-testid="toolbar-status" class="d-inline-flex align-items-center">
+        <CommentStatusChip
+          :component="component"
+          @open-comments-panel="$emit('open-comments-panel')"
+        />
+      </div>
+    </template>
+
+    <!-- Right: Clear Filters + Panel Toggles -->
+    <template #right>
+      <b-button
+        v-if="showFilterToggle && activeFilterCount > 0"
+        v-b-tooltip.hover
+        title="Reset all active filters"
+        variant="link"
+        size="sm"
+        class="mr-2 text-decoration-none"
+        data-testid="clear-filters-btn"
+        @click="$emit('clear-filters')"
+      >
+        <b-icon icon="x-circle" /> Clear Filters
+      </b-button>
+      <b-button-group size="sm" data-testid="panel-toggles">
+        <b-button
+          v-if="showFilterToggle"
+          v-b-tooltip.hover
+          title="Show or hide the filter bar"
+          :variant="filterBarVisible ? 'secondary' : 'outline-secondary'"
+          data-testid="filter-toggle-btn"
+          @click="$emit('toggle-filter-bar')"
+        >
+          <b-icon icon="funnel" /> Filters
+          <b-badge v-if="activeFilterCount > 0" variant="warning" pill class="ml-1">
+            {{ activeFilterCount }}
+          </b-badge>
+        </b-button>
+        <b-button
+          v-b-tooltip.hover
+          title="Component details panel"
           :variant="isPanelActive('details') ? 'secondary' : 'outline-secondary'"
           @click="onTogglePanel('details')"
         >
           <b-icon icon="info-circle" /> {{ labels.details }}
         </b-button>
         <b-button
+          v-b-tooltip.hover
+          title="Component metadata panel"
           :variant="isPanelActive('metadata') ? 'secondary' : 'outline-secondary'"
           @click="onTogglePanel('metadata')"
         >
           <b-icon icon="tags" /> {{ labels.metadata }}
         </b-button>
         <b-button
+          v-b-tooltip.hover
+          title="Additional questions panel"
           :variant="isPanelActive('questions') ? 'secondary' : 'outline-secondary'"
           @click="onTogglePanel('questions')"
         >
           <b-icon icon="question-circle" /> {{ labels.questions }}
         </b-button>
         <b-button
+          v-b-tooltip.hover
+          title="Component change history"
           :variant="isPanelActive('comp-history') ? 'secondary' : 'outline-secondary'"
           @click="onTogglePanel('comp-history')"
         >
           <b-icon icon="clock-history" /> {{ labels.compHistory }}
         </b-button>
-        <!-- Triage navigates to the dedicated full-page triage view
-             (the comp-reviews slideover was retired in PR #717). -->
         <b-button
+          v-b-tooltip.hover
+          title="Open comment triage page"
           :href="`/components/${component.id}/triage`"
           variant="outline-secondary"
           data-testid="triage-btn"
@@ -106,21 +139,52 @@
             {{ component.pending_comment_count }}
           </b-badge>
         </b-button>
-        <!-- Component Settings — admin-only dedicated page for typed
-             configuration (Identity, PoC, Public Comment Period).
-             Replaces the "Update Details" button that lived inside
-             the Details slideover. -->
         <b-button
           v-if="canAdmin"
+          v-b-tooltip.hover
+          title="Component settings"
           :href="`/components/${component.id}/settings`"
           variant="outline-secondary"
-          aria-label="Component settings"
         >
           <b-icon icon="gear" /> Settings
         </b-button>
+        <b-dropdown
+          v-b-tooltip.hover.bottom
+          title="Download, Upload, Release"
+          data-testid="toolbar-overflow"
+          size="sm"
+          variant="outline-secondary"
+          no-caret
+          right
+        >
+          <template #button-content>
+            <b-icon icon="three-dots" />
+          </template>
+          <b-dropdown-item data-testid="download-btn" @click="$emit('download')">
+            <b-icon icon="download" /> Download
+          </b-dropdown-item>
+          <b-dropdown-item v-if="canEdit" @click="openSpreadsheetUpload">
+            <b-icon icon="upload" /> Update from Spreadsheet
+          </b-dropdown-item>
+          <b-dropdown-divider v-if="canRelease" />
+          <b-dropdown-item v-if="canRelease" :disabled="!isReleasable" @click="onRelease">
+            <b-icon icon="patch-check" /> Release
+            <small v-if="!isReleasable" class="text-muted d-block">
+              {{ releaseComponentTooltip }}
+            </small>
+          </b-dropdown-item>
+        </b-dropdown>
       </b-button-group>
-      <!-- Rule panels (Satisfies, History, Reviews) moved to RuleActionsToolbar -->
     </template>
+
+    <!-- Hidden: UpdateFromSpreadsheetModal (triggered from overflow menu) -->
+    <UpdateFromSpreadsheetModal
+      v-if="canEdit"
+      ref="spreadsheetModal"
+      :component="component"
+      class="d-none"
+      @spreadsheet-updated="onSpreadsheetUpdated"
+    />
 
     <!-- Rule Context Bar (shown when rule is selected) -->
     <template #below>
@@ -165,12 +229,13 @@
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import BaseCommandBar from "./BaseCommandBar.vue";
+import CommentStatusChip from "./CommentStatusChip.vue";
 import UpdateFromSpreadsheetModal from "../components/UpdateFromSpreadsheetModal.vue";
 import { PANEL_LABELS } from "../../constants/terminology";
 
 export default {
   name: "ControlsCommandBar",
-  components: { BaseCommandBar, UpdateFromSpreadsheetModal },
+  components: { BaseCommandBar, CommentStatusChip, UpdateFromSpreadsheetModal },
   mixins: [RoleComparisonMixin, DateFormatMixinVue],
   props: {
     component: {
@@ -192,6 +257,22 @@ export default {
     readOnly: {
       type: Boolean,
       default: true,
+    },
+    breadcrumbs: {
+      type: Array,
+      default: null,
+    },
+    showFilterToggle: {
+      type: Boolean,
+      default: false,
+    },
+    filterBarVisible: {
+      type: Boolean,
+      default: false,
+    },
+    activeFilterCount: {
+      type: Number,
+      default: 0,
     },
   },
   data() {
@@ -259,6 +340,11 @@ export default {
     onSpreadsheetUpdated() {
       this.$emit("spreadsheet-updated");
     },
+    openSpreadsheetUpload() {
+      if (this.$refs.spreadsheetModal) {
+        this.$refs.spreadsheetModal.showModal();
+      }
+    },
   },
 };
 </script>
@@ -282,14 +368,12 @@ export default {
   text-overflow: ellipsis;
 }
 
-/* Responsive: wrap to two rows on medium screens */
 @media (max-width: 1199.98px) {
   .command-bar > div {
     flex-wrap: wrap;
   }
 }
 
-/* Responsive: stack on small screens */
 @media (max-width: 767.98px) {
   .command-bar {
     padding: 0.75rem !important;
@@ -299,10 +383,6 @@ export default {
     width: 100%;
     flex-wrap: wrap;
     gap: 0.5rem;
-  }
-
-  .command-bar .btn-group {
-    flex-wrap: wrap;
   }
 
   .rule-context-bar h5 {
