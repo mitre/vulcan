@@ -1,17 +1,9 @@
 <template>
   <div class="vulcan-editor-layout">
-    <b-breadcrumb :items="breadcrumbs" class="flex-shrink-0" />
-
-    <CommentPeriodBanner
-      :component="component"
-      @open-comments-panel="openCommentsPanel"
-      @open-component-composer="onOpenComponentComposer"
-    />
-
     <ControlsPageLayout
       :has-selected-rule="!!selectedRule"
       :show-command-bar="true"
-      :show-filter-bar="true"
+      :show-filter-bar="filterBarVisible"
       :sidebar-width="2"
       :empty-state-message="msg.selectRule"
     >
@@ -23,12 +15,19 @@
           :effective-permissions="effective_permissions"
           :active-panel="activePanel"
           :read-only="true"
+          :breadcrumbs="breadcrumbs"
+          :show-filter-toggle="true"
+          :filter-bar-visible="filterBarVisible"
+          :active-filter-count="activeFilterCount"
           @release="confirmComponentRelease"
           @open-members="$bvModal.show(`members-modal-${component.id}`)"
           @toggle-panel="togglePanel"
+          @toggle-filter-bar="toggleFilterBar"
           @spreadsheet-updated="refreshComponent"
           @download="openExportModal"
           @open-component-composer="onOpenComponentComposer"
+          @open-comments-panel="openCommentsPanel"
+          @clear-filters="clearAllFilters"
         />
       </template>
 
@@ -176,7 +175,6 @@ import RuleEditor from "../rules/RuleEditor.vue";
 import RelatedRulesModal from "../rules/RelatedRulesModal.vue";
 import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
 import CommentComposerModal from "./CommentComposerModal.vue";
-import CommentPeriodBanner from "./CommentPeriodBanner.vue";
 import ExportModal from "../shared/ExportModal.vue";
 import ReplyComposerMixin from "../../mixins/ReplyComposerMixin.vue";
 
@@ -193,7 +191,6 @@ export default {
     RelatedRulesModal,
     ControlsSidepanels,
     CommentComposerModal,
-    CommentPeriodBanner,
     ExportModal,
   },
   mixins: [
@@ -263,7 +260,10 @@ export default {
     const handleRuleSelected = selectRule;
     const handleRuleDeselected = deselectRule;
 
-    const { filters, counts, setFilter } = useRuleFilters(localRules, componentId);
+    const { filters, counts, setFilter, activeFilterCount } = useRuleFilters(
+      localRules,
+      componentId,
+    );
     const nav = useRuleNavigation(
       localRules,
       props.initialComponentState.prefix,
@@ -296,6 +296,7 @@ export default {
       navOnSearchUpdated: nav.onSearchUpdated,
       filters,
       counts,
+      activeFilterCount,
       updateFilter,
       activePanel,
       togglePanel,
@@ -303,17 +304,16 @@ export default {
     };
   },
   data() {
+    const componentId = this.initialComponentState.id;
+    const savedFilterBar = localStorage.getItem(`filterBarVisible-${componentId}`);
     return {
       component: this.initialComponentState,
       localAdvancedFields: this.initialComponentState.advanced_fields,
       msg: MESSAGE_LABELS,
-      // per-component editor Download surface.
-      // Mode-aware ExportModal (Working Copy / Vendor Submission /
-      // STIG-Ready Publish Draft / Backup) hits the project export
-      // route scoped to this single component.
       showExportModal: false,
       availableExportModes: ["working_copy", "vendor_submission", "published_stig", "backup"],
       reviewsSectionFilter: "all",
+      filterBarVisible: savedFilterBar === "true",
     };
   },
   computed: {
@@ -361,6 +361,18 @@ export default {
     }
   },
   methods: {
+    clearAllFilters() {
+      this.navClearFilters();
+      this.$nextTick(() => {
+        if (this.$refs.sidebarSearchBar) {
+          this.$refs.sidebarSearchBar.setSearchValue("");
+        }
+      });
+    },
+    toggleFilterBar() {
+      this.filterBarVisible = !this.filterBarVisible;
+      localStorage.setItem(`filterBarVisible-${this.component.id}`, String(this.filterBarVisible));
+    },
     onNavSearchResultSelected(result) {
       const rule = this.rules.find((r) => r.id === result.id);
       if (rule) {

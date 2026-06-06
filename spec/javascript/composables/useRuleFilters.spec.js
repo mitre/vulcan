@@ -246,4 +246,51 @@ describe('useRuleFilters', () => {
       expect(allReviewFiltersEnabled.value).toBe(true)
     })
   })
+
+  describe('activeFilterCount', () => {
+    it('returns 0 when no filters are active', () => {
+      const { activeFilterCount } = useRuleFilters(mockRules, componentId)
+      expect(activeFilterCount.value).toBe(0)
+    })
+
+    it('counts each individual status filter', () => {
+      const { filters, activeFilterCount } = useRuleFilters(mockRules, componentId)
+      filters.value.acFilterChecked = true
+      expect(activeFilterCount.value).toBe(1)
+      filters.value.aimFilterChecked = true
+      expect(activeFilterCount.value).toBe(2)
+      filters.value.nydFilterChecked = true
+      expect(activeFilterCount.value).toBe(3)
+    })
+
+    it('counts each individual review filter', () => {
+      const { filters, activeFilterCount } = useRuleFilters(mockRules, componentId)
+      filters.value.nurFilterChecked = true
+      expect(activeFilterCount.value).toBe(1)
+      filters.value.lckFilterChecked = true
+      expect(activeFilterCount.value).toBe(2)
+    })
+
+    it('counts search as 1', () => {
+      const { filters, activeFilterCount } = useRuleFilters(mockRules, componentId)
+      filters.value.search = 'test'
+      expect(activeFilterCount.value).toBe(1)
+    })
+
+    it('counts openCommentsOnly as 1', () => {
+      const { filters, activeFilterCount } = useRuleFilters(mockRules, componentId)
+      filters.value.openCommentsOnly = true
+      expect(activeFilterCount.value).toBe(1)
+    })
+
+    it('counts across all categories correctly', () => {
+      const { filters, activeFilterCount } = useRuleFilters(mockRules, componentId)
+      filters.value.acFilterChecked = true
+      filters.value.aimFilterChecked = true
+      filters.value.nurFilterChecked = true
+      filters.value.search = 'test'
+      filters.value.openCommentsOnly = true
+      expect(activeFilterCount.value).toBe(5)
+    })
+  })
 })

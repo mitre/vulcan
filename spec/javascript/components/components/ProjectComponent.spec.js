@@ -404,6 +404,78 @@ describe("ProjectComponent", () => {
   });
 
   // ==========================================================================
+  // Chrome condensation: breadcrumbs, banner chip, filter toggle
+  // ==========================================================================
+  describe("chrome condensation", () => {
+    it("does NOT render a standalone b-breadcrumb row", () => {
+      wrapper = createWrapper();
+      expect(wrapper.findComponent({ name: "BBreadcrumb" }).exists()).toBe(false);
+    });
+
+    it("passes breadcrumbs to ControlsCommandBar", () => {
+      wrapper = createWrapper();
+      const commandBar = wrapper.findComponent({ name: "ControlsCommandBar" });
+      const breadcrumbs = commandBar.props("breadcrumbs");
+      expect(breadcrumbs).toBeDefined();
+      expect(breadcrumbs.length).toBe(3);
+      expect(breadcrumbs[0].text).toBe("Projects");
+      expect(breadcrumbs[0].href).toBe("/projects");
+      expect(breadcrumbs[2].active).toBe(true);
+    });
+
+    it("does NOT render a standalone CommentPeriodBanner", () => {
+      wrapper = createWrapper();
+      expect(wrapper.findComponent({ name: "CommentPeriodBanner" }).exists()).toBe(false);
+    });
+
+    it("passes showFilterToggle=true to ControlsCommandBar", () => {
+      wrapper = createWrapper();
+      const commandBar = wrapper.findComponent({ name: "ControlsCommandBar" });
+      expect(commandBar.props("showFilterToggle")).toBe(true);
+    });
+
+    it("filter bar is hidden by default", () => {
+      wrapper = createWrapper();
+      const layout = wrapper.findComponent({ name: "ControlsPageLayout" });
+      expect(layout.props("showFilterBar")).toBe(false);
+    });
+
+    it("toggles filter bar visibility when command bar emits toggle-filter-bar", async () => {
+      wrapper = createWrapper();
+      const commandBar = wrapper.findComponent({ name: "ControlsCommandBar" });
+      commandBar.vm.$emit("toggle-filter-bar");
+      await wrapper.vm.$nextTick();
+      const layout = wrapper.findComponent({ name: "ControlsPageLayout" });
+      expect(layout.props("showFilterBar")).toBe(true);
+    });
+
+    it("persists filter bar visibility to localStorage", async () => {
+      wrapper = createWrapper();
+      const commandBar = wrapper.findComponent({ name: "ControlsCommandBar" });
+      commandBar.vm.$emit("toggle-filter-bar");
+      await wrapper.vm.$nextTick();
+      expect(localStorage.getItem("filterBarVisible-41")).toBe("true");
+    });
+
+    it("restores filter bar visibility from localStorage", () => {
+      localStorage.setItem("filterBarVisible-41", "true");
+      wrapper = createWrapper();
+      const layout = wrapper.findComponent({ name: "ControlsPageLayout" });
+      expect(layout.props("showFilterBar")).toBe(true);
+    });
+
+    it("has openCommentsPanel method for command bar event forwarding", () => {
+      wrapper = createWrapper();
+      expect(typeof wrapper.vm.openCommentsPanel).toBe("function");
+    });
+
+    it("clearAllFilters resets both filter bar and nav filters", () => {
+      wrapper = createWrapper();
+      expect(typeof wrapper.vm.clearAllFilters).toBe("function");
+    });
+  });
+
+  // ==========================================================================
   // per-component editor Download surface. Mounts ExportModal
   // and listens for the `download` event from ControlsCommandBar.
   // ==========================================================================

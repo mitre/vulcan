@@ -2,7 +2,7 @@
   <ControlsPageLayout
     :has-selected-rule="!!selectedRule"
     :show-command-bar="true"
-    :show-filter-bar="true"
+    :show-filter-bar="filterBarVisible"
     :sidebar-width="2"
   >
     <!-- Command Bar -->
@@ -13,8 +13,13 @@
         :effective-permissions="effectivePermissions"
         :active-panel="activePanel"
         :read-only="false"
+        :show-filter-toggle="true"
+        :filter-bar-visible="filterBarVisible"
+        :active-filter-count="activeFilterCount"
         @open-members="$bvModal.show(`members-modal-${component.id}`)"
         @toggle-panel="togglePanel"
+        @toggle-filter-bar="toggleFilterBar"
+        @clear-filters="clearAllFilters"
         @open-component-composer="onOpenComponentComposer"
       />
 
@@ -310,7 +315,10 @@ export default {
       return rulesRef.value.find((r) => r.id === ruleStore.selectedRuleId) || null;
     });
 
-    const { filters, counts, setFilter, resetFilters } = useRuleFilters(rulesRef, componentId);
+    const { filters, counts, setFilter, resetFilters, activeFilterCount } = useRuleFilters(
+      rulesRef,
+      componentId,
+    );
     const nav = useRuleNavigation(rulesRef, props.component.prefix, componentId, filters);
     const { activePanel, togglePanel, openPanel, closePanel } = useSidebar();
     const autosave = useRuleAutosave(selectedRule, { componentId, onAutoSave: null });
@@ -363,6 +371,7 @@ export default {
       navOnSearchUpdated: nav.onSearchUpdated,
       filters,
       counts,
+      activeFilterCount,
       setFilter,
       resetFilters,
       updateFilter,
@@ -380,8 +389,11 @@ export default {
     };
   },
   data() {
+    const componentId = this.component.id;
+    const savedFilterBar = localStorage.getItem(`filterBarVisible-${componentId}`);
     return {
       localAdvancedFields: this.component.advanced_fields,
+      filterBarVisible: savedFilterBar === "true",
       sectionLockModal: {
         visible: false,
         section: null,
@@ -437,6 +449,19 @@ export default {
     this.destroyAutosave();
   },
   methods: {
+    toggleFilterBar() {
+      this.filterBarVisible = !this.filterBarVisible;
+      localStorage.setItem(`filterBarVisible-${this.component.id}`, String(this.filterBarVisible));
+    },
+    clearAllFilters() {
+      this.resetFilters();
+      this.navClearFilters();
+      this.$nextTick(() => {
+        if (this.$refs.sidebarSearchBar) {
+          this.$refs.sidebarSearchBar.setSearchValue("");
+        }
+      });
+    },
     onNavSearchResultSelected(result) {
       const rule = this.rules.find((r) => r.id === result.id);
       if (rule) {

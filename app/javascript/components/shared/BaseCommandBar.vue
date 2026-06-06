@@ -1,5 +1,8 @@
 <template>
   <div class="command-bar bg-light px-3 py-2 mb-3">
+    <!-- Above: Breadcrumbs or other inline header content -->
+    <slot name="above" />
+
     <div class="d-flex align-items-center justify-content-between flex-wrap">
       <!-- Left: Page-specific actions -->
       <div class="d-flex align-items-center">

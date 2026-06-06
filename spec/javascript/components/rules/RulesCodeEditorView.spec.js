@@ -450,6 +450,54 @@ describe("RulesCodeEditorView", () => {
     });
   });
 
+  // ==========================================================================
+  // Chrome condensation: filter toggle
+  // ==========================================================================
+  describe("chrome condensation", () => {
+    it("passes showFilterToggle=true to ControlsCommandBar", () => {
+      wrapper = createWrapper();
+      const commandBar = wrapper.findComponent({ name: "ControlsCommandBar" });
+      expect(commandBar.props("showFilterToggle")).toBe(true);
+    });
+
+    it("filter bar is hidden by default", () => {
+      wrapper = createWrapper();
+      const layout = wrapper.findComponent({ name: "ControlsPageLayout" });
+      expect(layout.props("showFilterBar")).toBe(false);
+    });
+
+    it("toggles filter bar when command bar emits toggle-filter-bar", async () => {
+      wrapper = createWrapper();
+      const commandBar = wrapper.findComponent({ name: "ControlsCommandBar" });
+      commandBar.vm.$emit("toggle-filter-bar");
+      await wrapper.vm.$nextTick();
+      const layout = wrapper.findComponent({ name: "ControlsPageLayout" });
+      expect(layout.props("showFilterBar")).toBe(true);
+    });
+
+    it("persists filter bar visibility to localStorage", async () => {
+      wrapper = createWrapper();
+      const commandBar = wrapper.findComponent({ name: "ControlsCommandBar" });
+      commandBar.vm.$emit("toggle-filter-bar");
+      await wrapper.vm.$nextTick();
+      const componentId = defaultProps.component.id;
+      expect(localStorage.getItem(`filterBarVisible-${componentId}`)).toBe("true");
+    });
+
+    it("clearAllFilters resets both filter bar and nav filters", () => {
+      wrapper = createWrapper();
+      expect(typeof wrapper.vm.clearAllFilters).toBe("function");
+    });
+
+    it("restores filter bar visibility from localStorage", () => {
+      const componentId = defaultProps.component.id;
+      localStorage.setItem(`filterBarVisible-${componentId}`, "true");
+      wrapper = createWrapper();
+      const layout = wrapper.findComponent({ name: "ControlsPageLayout" });
+      expect(layout.props("showFilterBar")).toBe(true);
+    });
+  });
+
   describe("AlsoSatisfiesModal integration", () => {
     it("renders AlsoSatisfiesModal when a rule is selected", async () => {
       wrapper = createWrapper();

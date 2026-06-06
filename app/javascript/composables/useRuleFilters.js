@@ -150,6 +150,22 @@ export function useRuleFilters(rules, componentId) {
     );
   });
 
+  const activeFilterCount = computed(() => {
+    const f = filters.value;
+    let count = 0;
+    if (f.acFilterChecked) count++;
+    if (f.aimFilterChecked) count++;
+    if (f.adnmFilterChecked) count++;
+    if (f.naFilterChecked) count++;
+    if (f.nydFilterChecked) count++;
+    if (f.nurFilterChecked) count++;
+    if (f.urFilterChecked) count++;
+    if (f.lckFilterChecked) count++;
+    if (f.search) count++;
+    if (f.openCommentsOnly) count++;
+    return count;
+  });
+
   // Methods
   function toggleFilter(filterName) {
     if (filterName in filters.value) {
@@ -176,6 +192,7 @@ export function useRuleFilters(rules, componentId) {
     filteredRules,
     allStatusFiltersEnabled,
     allReviewFiltersEnabled,
+    activeFilterCount,
 
     // Methods
     toggleFilter,
