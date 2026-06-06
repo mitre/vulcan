@@ -7,7 +7,7 @@ require 'rails_helper'
 # comments can be retagged to the correct XCCDF section without rejecting the
 # commenter or going out-of-band via the console. Audit-comment required.
 RSpec.describe 'Reviews' do
-  include_context 'reviews base setup'
+  include_context 'reviews request base setup'
 
   describe 'PATCH /reviews/:id/section' do
     let_it_be(:sec_admin) { create(:user) }

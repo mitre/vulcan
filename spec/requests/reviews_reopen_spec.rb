@@ -7,7 +7,7 @@ require 'rails_helper'
 # decision to be revised. Withdrawn comments (commenter-revoked) are NOT
 # re-openable by triagers — withdrawal is the commenter's prerogative.
 RSpec.describe 'Reviews' do
-  include_context 'reviews base setup'
+  include_context 'reviews request base setup'
 
   describe 'PATCH /reviews/:id/reopen' do
     let_it_be(:reopen_triager) { create(:user) }

@@ -8,7 +8,7 @@ require 'rails_helper'
 # Walks parent-first so the responding_to_must_be_same_rule validator
 # sees the parent already at the target when each child moves.
 RSpec.describe 'Reviews' do
-  include_context 'reviews base setup'
+  include_context 'reviews request base setup'
 
   describe 'PATCH /reviews/:id/move_to_rule' do
     let_it_be(:mtr_admin) { create(:user) }

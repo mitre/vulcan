@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Reviews' do
-  include_context 'reviews base setup'
+  include_context 'reviews request base setup'
 
   # Task 33: reply-chain reader. Auth mirrors the parent component's
   # released-vs-member gate (released → any logged-in user; unreleased

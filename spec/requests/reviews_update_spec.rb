@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Reviews' do
-  include_context 'reviews base setup'
+  include_context 'reviews request base setup'
 
   describe 'PUT /reviews/:id (commenter edit own pending comment)' do
     let_it_be(:edit_owner) { create(:user) }

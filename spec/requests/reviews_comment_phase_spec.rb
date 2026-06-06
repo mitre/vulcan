@@ -12,7 +12,7 @@ require 'rails_helper'
 # The controller honors the phase + closed_reason combination so the
 # lifecycle has teeth.
 RSpec.describe 'Reviews' do
-  include_context 'reviews base setup'
+  include_context 'reviews request base setup'
 
   describe 'comment_phase enforcement' do
     let_it_be(:phase_seed_admin) { create(:user, admin: true) }

@@ -11,7 +11,7 @@ require 'rails_helper'
 # adjudication) so the comment can be re-triaged. Same admin gate +
 # audit comment requirement.
 RSpec.describe 'Reviews' do
-  include_context 'reviews base setup'
+  include_context 'reviews request base setup'
 
   describe 'PATCH /reviews/:id/admin_withdraw' do
     let_it_be(:adm_admin) { create(:user) }

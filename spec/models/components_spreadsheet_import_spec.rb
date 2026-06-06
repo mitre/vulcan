@@ -10,7 +10,7 @@ RSpec.describe Component do
     # and import it as a Component spreadsheet without manually renaming headers.
     # The import should accept both standard DISA headers AND benchmark export headers.
 
-    let(:srg_rules) { @srg.srg_rules.order(:version) }
+    let(:srg_rules) { components_srg.srg_rules.order(:version) }
     let(:first_srg_rule) { srg_rules.first }
     let(:second_srg_rule) { srg_rules.second }
 
@@ -84,7 +84,7 @@ RSpec.describe Component do
       rows = build_all_srg_rows_disa(srg_rules, test_prefix)
 
       csv_path = create_csv_file(disa_headers, rows)
-      component = Component.new(project: @p1, based_on: @srg)
+      component = Component.new(project: components_project, based_on: components_srg)
       component.from_spreadsheet(csv_path)
 
       expect(component.errors.full_messages).to be_empty
@@ -100,7 +100,7 @@ RSpec.describe Component do
       rows = build_all_srg_rows_benchmark(srg_rules, test_prefix)
 
       csv_path = create_csv_file(benchmark_headers, rows)
-      component = Component.new(project: @p1, based_on: @srg)
+      component = Component.new(project: components_project, based_on: components_srg)
       component.from_spreadsheet(csv_path)
 
       expect(component.errors.full_messages).to be_empty
@@ -116,7 +116,7 @@ RSpec.describe Component do
       rows = build_all_srg_rows_benchmark(srg_rules, test_prefix)
 
       csv_path = create_csv_file(benchmark_headers, rows)
-      component = Component.new(project: @p1, based_on: @srg)
+      component = Component.new(project: components_project, based_on: components_srg)
       component.from_spreadsheet(csv_path)
 
       expect(component.errors.full_messages).to be_empty
@@ -131,7 +131,7 @@ RSpec.describe Component do
       rows = build_all_srg_rows_benchmark(srg_rules, test_prefix)
 
       csv_path = create_csv_file(benchmark_headers, rows)
-      component = Component.new(project: @p1, based_on: @srg)
+      component = Component.new(project: components_project, based_on: components_srg)
       component.from_spreadsheet(csv_path)
 
       expect(component.errors.full_messages).to be_empty
@@ -152,7 +152,7 @@ RSpec.describe Component do
       end
 
       csv_path = create_csv_file(benchmark_headers, rows)
-      component = Component.new(project: @p1, based_on: @srg)
+      component = Component.new(project: components_project, based_on: components_srg)
       component.from_spreadsheet(csv_path)
 
       expect(component.errors.full_messages).to be_empty
@@ -167,7 +167,7 @@ RSpec.describe Component do
       rows = build_all_srg_rows_benchmark(srg_rules, test_prefix)
 
       csv_path = create_csv_file(benchmark_headers, rows)
-      component = Component.new(project: @p1, based_on: @srg)
+      component = Component.new(project: components_project, based_on: components_srg)
       component.from_spreadsheet(csv_path)
 
       expect(component.errors.full_messages).to be_empty

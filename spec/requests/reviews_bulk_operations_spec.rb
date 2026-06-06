@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Reviews' do
-  include_context 'reviews base setup'
+  include_context 'reviews request base setup'
 
   describe 'soft redirect — comments on satisfied-by children' do
     let_it_be(:viewer) { create(:user) }

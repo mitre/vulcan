@@ -7,18 +7,18 @@ RSpec.describe Component do
 
   context 'component creation' do
     it 'can duplicate a component under the same project' do
-      @p1_c1.rules.update(locked: true)
-      @p1_c1.reload
-      @p1_c1.update(released: true)
+      components_component.rules.update(locked: true)
+      components_component.reload
+      components_component.update(released: true)
 
-      p1_c2 = @p1_c1.duplicate(new_name: 'Photon OS 3', new_version: 1, new_release: 2, new_title: 'title',
-                               new_description: 'desc')
+      p1_c2 = components_component.duplicate(new_name: 'Photon OS 3', new_version: 1, new_release: 2, new_title: 'title',
+                                             new_description: 'desc')
       # should have the same number of rules
-      expect(@p1_c1.rules.size).to eq(p1_c2.rules.size)
+      expect(components_component.rules.size).to eq(p1_c2.rules.size)
       # should still belong to the same SRG
-      expect(@p1_c1.security_requirements_guide_id).to eq(p1_c2.security_requirements_guide_id)
+      expect(components_component.security_requirements_guide_id).to eq(p1_c2.security_requirements_guide_id)
       # should still belong to the same project
-      expect(@p1_c1.project_id).to eq(p1_c2.project_id)
+      expect(components_component.project_id).to eq(p1_c2.project_id)
       # should not be released
       expect(p1_c2.released).to be(false)
       # should have the new name
@@ -35,8 +35,8 @@ RSpec.describe Component do
 
     it 'can create a new component from a base SRG' do
       # The creation of p1_c1 in the setup should alread have these rules created
-      @p1_c1.reload
-      expect(@p1_c1.rules.size).to eq(@srg.srg_rules.size)
+      components_component.reload
+      expect(components_component.rules.size).to eq(components_srg.srg_rules.size)
     end
   end
 end

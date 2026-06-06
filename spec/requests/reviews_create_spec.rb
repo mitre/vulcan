@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Reviews' do
-  include_context 'reviews base setup'
+  include_context 'reviews request base setup'
 
   describe 'POST /rules/:rule_id/reviews' do
     context 'as a project viewer' do

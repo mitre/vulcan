@@ -9,22 +9,22 @@ RSpec.describe Review do
 
   describe 'scopes' do
     before do
-      @c1 = create(:review, :comment, comment: 'one', section: nil, user: @p_viewer, rule: @p1r1,
+      @c1 = create(:review, :comment, comment: 'one', section: nil, user: reviews_p_viewer, rule: reviews_rule,
                                       triage_status: 'pending')
-      @c2 = create(:review, :comment, comment: 'two', section: nil, user: @p_viewer, rule: @p1r1,
-                                      triage_status: 'concur', triage_set_by_id: @p_admin.id, triage_set_at: Time.current)
-      @reply = create(:review, :comment, comment: 'reply', section: nil, user: @p_admin, rule: @p1r1,
+      @c2 = create(:review, :comment, comment: 'two', section: nil, user: reviews_p_viewer, rule: reviews_rule,
+                                      triage_status: 'concur', triage_set_by_id: reviews_p_admin.id, triage_set_at: Time.current)
+      @reply = create(:review, :comment, comment: 'reply', section: nil, user: reviews_p_admin, rule: reviews_rule,
                                          responding_to_review_id: @c1.id)
     end
 
     it 'top_level_comments excludes responses' do
-      expect(Review.top_level_comments.where(rule: @p1r1)).to include(@c1, @c2)
-      expect(Review.top_level_comments.where(rule: @p1r1)).not_to include(@reply)
+      expect(Review.top_level_comments.where(rule: reviews_rule)).to include(@c1, @c2)
+      expect(Review.top_level_comments.where(rule: reviews_rule)).not_to include(@reply)
     end
 
     it 'pending_triage returns only pending top-level comments' do
-      expect(Review.pending_triage.where(rule: @p1r1)).to include(@c1)
-      expect(Review.pending_triage.where(rule: @p1r1)).not_to include(@c2, @reply)
+      expect(Review.pending_triage.where(rule: reviews_rule)).to include(@c1)
+      expect(Review.pending_triage.where(rule: reviews_rule)).not_to include(@c2, @reply)
     end
 
     # the original lifecycle migration set
@@ -40,7 +40,7 @@ RSpec.describe Review do
     # `where.not(triage_status: nil)` clause for explicit intent.
     context 'with legacy reviews (NULL triage_status)' do
       let!(:legacy_comment) do
-        review = create(:review, :comment, comment: 'legacy', section: nil, user: @p_viewer, rule: @p1r1,
+        review = create(:review, :comment, comment: 'legacy', section: nil, user: reviews_p_viewer, rule: reviews_rule,
                                            triage_status: 'pending')
         # Simulate the legacy state directly. update_columns bypasses
         # validators + callbacks; the DB-level NOT NULL constraint must
@@ -50,7 +50,7 @@ RSpec.describe Review do
       end
 
       it 'pending_triage excludes legacy comments with NULL triage_status' do
-        expect(Review.pending_triage.where(rule: @p1r1)).not_to include(legacy_comment)
+        expect(Review.pending_triage.where(rule: reviews_rule)).not_to include(legacy_comment)
       end
 
       it 'allows NULL on triage_status at the DB layer' do

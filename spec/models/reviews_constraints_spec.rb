@@ -110,8 +110,8 @@ RSpec.describe Review do
   # display + export layers fall back to those columns when user_id is nil.
   describe 'belongs_to :user is optional' do
     it 'is valid with user_id nil and commenter_imported_* present' do
-      review = create(:review, :comment, comment: 'c', section: nil, user: @p_viewer,
-                                         rule: @p1r1, triage_status: 'pending')
+      review = create(:review, :comment, comment: 'c', section: nil, user: reviews_p_viewer,
+                                         rule: reviews_rule, triage_status: 'pending')
       review.update_columns(user_id: nil,
                             commenter_imported_email: 'former@example.com',
                             commenter_imported_name: 'Former User')
@@ -123,8 +123,8 @@ RSpec.describe Review do
       # Loose validity at the model layer — the row can persist without
       # a user FK. Display layer handles the "no commenter" case via
       # commenter_display_name (step B1).
-      review = create(:review, :comment, comment: 'c', section: nil, user: @p_viewer,
-                                         rule: @p1r1, triage_status: 'pending')
+      review = create(:review, :comment, comment: 'c', section: nil, user: reviews_p_viewer,
+                                         rule: reviews_rule, triage_status: 'pending')
       review.update_columns(user_id: nil)
       review.reload
       expect(review).to be_valid

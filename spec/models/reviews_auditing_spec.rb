@@ -9,7 +9,7 @@ RSpec.describe Review do
   # in the audit log so the disposition record reflects who retagged what + why.
   describe 'section auditing' do
     let!(:section_review) do
-      create(:review, :comment, rule: @p1r1, user: @p_viewer,
+      create(:review, :comment, rule: reviews_rule, user: reviews_p_viewer,
                                 comment: 'misclassified', triage_status: 'pending',
                                 section: nil)
     end
@@ -44,7 +44,7 @@ RSpec.describe Review do
   # resolves to a Rule instance through STI.
   describe 'audit-trail association via associated_with: :rule' do
     let!(:assoc_review) do
-      create(:review, :comment, rule: @p1r1, user: @p_viewer,
+      create(:review, :comment, rule: reviews_rule, user: reviews_p_viewer,
                                 comment: 'something', triage_status: 'pending', section: nil)
     end
 
@@ -53,36 +53,36 @@ RSpec.describe Review do
       assoc_review.update!(triage_status: 'concur')
       latest = assoc_review.audits.last
       expect(latest.associated_type).to eq('BaseRule')
-      expect(latest.associated_id).to eq(@p1r1.id)
+      expect(latest.associated_id).to eq(reviews_rule.id)
     end
 
     it 'populates associated on the create-time audit row' do
       first_audit = assoc_review.audits.first
       expect(first_audit.associated_type).to eq('BaseRule')
-      expect(first_audit.associated_id).to eq(@p1r1.id)
+      expect(first_audit.associated_id).to eq(reviews_rule.id)
     end
 
     it 'allows querying rule-scoped audit history independent of auditable' do
       assoc_review.audit_comment = 'note'
       assoc_review.update!(triage_status: 'concur')
-      rule_audits = Audited::Audit.where(associated_type: 'BaseRule', associated_id: @p1r1.id)
+      rule_audits = Audited::Audit.where(associated_type: 'BaseRule', associated_id: reviews_rule.id)
       expect(rule_audits.where(auditable_type: 'Review', auditable_id: assoc_review.id)).to exist
     end
   end
 
   describe 'withdrawn auto-sets adjudicated_by_id to commenter' do
     it 'sets adjudicated_by_id to user_id (the commenter themselves)' do
-      review = create(:review, :comment, comment: 'x', section: nil, user: @p_viewer, rule: @p1r1)
+      review = create(:review, :comment, comment: 'x', section: nil, user: reviews_p_viewer, rule: reviews_rule)
       review.update!(triage_status: 'withdrawn')
-      expect(review.reload.adjudicated_by_id).to eq(@p_viewer.id)
+      expect(review.reload.adjudicated_by_id).to eq(reviews_p_viewer.id)
     end
   end
 
   describe 'audits' do
     it 'audits triage_status changes' do
-      review = create(:review, :comment, comment: 'x', section: nil, user: @p_viewer, rule: @p1r1)
+      review = create(:review, :comment, comment: 'x', section: nil, user: reviews_p_viewer, rule: reviews_rule)
       expect do
-        review.update!(triage_status: 'concur', triage_set_by_id: @p_admin.id, triage_set_at: Time.current)
+        review.update!(triage_status: 'concur', triage_set_by_id: reviews_p_admin.id, triage_set_at: Time.current)
       end.to change(review.audits, :count).by(1)
       audit = review.audits.last
       expect(audit.audited_changes['triage_status']).to eq(%w[pending concur])

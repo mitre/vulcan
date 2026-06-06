@@ -18,43 +18,43 @@ RSpec.describe Component do
 
     describe '#status_counts' do
       it 'uses in-memory rules when preloaded' do
-        preloaded = Component.includes(:rules).find(shared_component.id)
+        preloaded = Component.includes(:rules).find(components_component.id)
         sql = capture_base_rules_sql { preloaded.status_counts }
         expect(sql).to be_empty,
                        "expected no SQL on base_rules when rules are preloaded; got:\n#{sql.join("\n")}"
       end
 
       it 'falls back to SQL when rules are NOT preloaded' do
-        fresh = Component.find(shared_component.id)
+        fresh = Component.find(components_component.id)
         sql = capture_base_rules_sql { fresh.status_counts }
         expect(sql).not_to be_empty, 'expected a base_rules SQL when rules not preloaded'
       end
 
       it 'returns the same hash shape regardless of preload state' do
-        preloaded = Component.includes(:rules).find(shared_component.id)
-        fresh = Component.find(shared_component.id)
+        preloaded = Component.includes(:rules).find(components_component.id)
+        fresh = Component.find(components_component.id)
         expect(preloaded.status_counts).to eq(fresh.status_counts)
       end
     end
 
     describe '#releasable' do
       it 'uses in-memory rules when preloaded' do
-        preloaded = Component.includes(:rules).find(shared_component.id)
+        preloaded = Component.includes(:rules).find(components_component.id)
         sql = capture_base_rules_sql { preloaded.releasable }
         expect(sql).to be_empty,
                        "expected no SQL on base_rules when rules are preloaded; got:\n#{sql.join("\n")}"
       end
 
       it 'returns the same result regardless of preload state' do
-        preloaded = Component.includes(:rules).find(shared_component.id)
-        fresh = Component.find(shared_component.id)
+        preloaded = Component.includes(:rules).find(components_component.id)
+        fresh = Component.find(components_component.id)
         expect(preloaded.releasable).to eq(fresh.releasable)
       end
     end
 
     describe '#reviews' do
       it 'uses in-memory rules + reviews when both preloaded' do
-        preloaded = Component.includes(rules: :reviews).find(shared_component.id)
+        preloaded = Component.includes(rules: :reviews).find(components_component.id)
         sql = []
         cb = lambda do |_, _, _, _, p|
           s = p[:sql].to_s
@@ -68,8 +68,8 @@ RSpec.describe Component do
       end
 
       it 'returns the same payload shape regardless of preload state' do
-        preloaded = Component.includes(rules: :reviews).find(shared_component.id)
-        fresh = Component.find(shared_component.id)
+        preloaded = Component.includes(rules: :reviews).find(components_component.id)
+        fresh = Component.find(components_component.id)
         # Same key set, same review ids in the same order.
         expect(preloaded.reviews.pluck('id')).to eq(fresh.reviews.pluck('id'))
       end
@@ -83,7 +83,7 @@ RSpec.describe Component do
   # TO_NUMBER literal remains in the SQL text.
   describe '#largest_rule_id SQL parameterization' do
     it 'parameterizes component ID in max rule_id SQL query' do
-      component = shared_component
+      component = components_component
       sql_events = []
       callback = ->(_, _, _, _, payload) { sql_events << payload }
       ActiveSupport::Notifications.subscribed(callback, 'sql.active_record') do
