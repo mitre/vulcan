@@ -2,8 +2,6 @@
 
 require 'rails_helper'
 
-# rubocop:disable Rails/SkipsModelValidations -- test setup deliberately bypasses validations
-# to create specific DB states (stale FKs, nil user_id, imported attribution)
 RSpec.describe Review do
   include_context 'srg model base setup'
 
@@ -139,7 +137,7 @@ RSpec.describe Review do
     let(:chk_rule) { chk_component.rules.first }
 
     before_all do
-      Membership.find_or_create_by!(user: chk_user, membership: chk_project) { |m| m.role = 'author' }
+      Membership.create!(user: chk_user, membership: chk_project, role: 'author')
     end
 
     it 'DB rejects duplicate_of_review_id when triage_status is not duplicate' do
@@ -193,4 +191,3 @@ RSpec.describe Review do
     end
   end
 end
-# rubocop:enable Rails/SkipsModelValidations

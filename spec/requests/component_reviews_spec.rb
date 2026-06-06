@@ -4,7 +4,7 @@ require 'rails_helper'
 
 # Coverage for POST /components/:component_id/reviews — component-level
 # comments via polymorphic Review (issue #725). Mirrors the rule-scoped
-# spec/requests/reviews_spec.rb create-side coverage.
+# spec/requests/reviews_create_spec.rb create-side coverage.
 RSpec.describe 'Component-level reviews' do
   let_it_be(:anchor_admin) { create(:user, admin: true) }
   let_it_be(:project) { create(:project) }

@@ -15,7 +15,6 @@ RSpec.describe 'Reviews' do
   include_context 'reviews request base setup'
 
   describe 'comment_phase enforcement' do
-    let_it_be(:phase_seed_admin) { create(:user, admin: true) }
     let_it_be(:phase_project) { create(:project) }
     let_it_be(:phase_component) { create(:component, project: phase_project, based_on: srg) }
     let(:phase_rule) { phase_component.rules.first }
@@ -116,7 +115,7 @@ RSpec.describe 'Reviews' do
       end
 
       it 'rejects a reply pointing at a non-comment review (defensive — guards against ID confusion)' do
-        @phase_rule_under_review = phase_rule
+        phase_rule
         non_comment = create(:review, rule: phase_rule, user: phase_author,
                                       comment: 'requesting review', triage_status: 'pending')
         phase_component.update_columns(comment_phase: 'closed', closed_reason: 'adjudicating')

@@ -2,8 +2,6 @@
 
 require 'rails_helper'
 
-# rubocop:disable Rails/SkipsModelValidations -- test setup deliberately bypasses validations
-# to create specific DB states (stale FKs, nil user_id, imported attribution)
 RSpec.describe Review do
   include_context 'srg model base setup'
 
@@ -177,4 +175,3 @@ RSpec.describe Review do
     end
   end
 end
-# rubocop:enable Rails/SkipsModelValidations
