@@ -12,7 +12,11 @@ module Export
     class BackupSerializer
       BACKUP_FORMAT_VERSION = '1.0'
 
-      # base_rules columns to EXCLUDE from export (internal/relational IDs)
+      # base_rules columns to EXCLUDE from export (internal/relational IDs).
+      # Complement of Rule::MERGEABLE_FIELDS + Rule::DERIVED_COLUMNS +
+      # %w[rule_id srg_id locked locked_fields deleted_at] + timestamps;
+      # those constants are the canonical source of truth for what
+      # round-trips through backup/restore. See Rule::MERGEABLE_FIELDS.
       EXCLUDED_RULE_COLUMNS = %w[
         id type component_id srg_rule_id review_requestor_id
         security_requirements_guide_id stig_id stig_rule_id
