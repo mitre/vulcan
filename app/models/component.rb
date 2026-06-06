@@ -604,26 +604,22 @@ class Component < ApplicationRecord
   end
 
   def reviews
-    # Prefer in-memory rules + reviews when the editor preloaded both
-    # Fall back to SQL for other call sites.
     rule_names = if association_cached?(:rules)
                    rules.each_with_object({}) { |r, h| h[r.id] = "#{prefix}-#{r.rule_id}" }
                  else
                    rules.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
                  end
 
-    review_jsons = if association_cached?(:rules) &&
-                      rules.all? { |r| r.association(:reviews).loaded? }
-                     rules.flat_map(&:reviews).sort_by(&:created_at).last(20).reverse.as_json
-                   else
-                     Review.where(rule_id: rule_names.keys)
-                           .order(created_at: :desc).limit(20).as_json
-                   end
+    review_records = if association_cached?(:rules) &&
+                        rules.all? { |r| r.association(:reviews).loaded? }
+                       rules.flat_map(&:reviews).sort_by(&:created_at).last(20).reverse
+                     else
+                       Review.where(rule_id: rule_names.keys)
+                             .preload(:user, :responses)
+                             .order(created_at: :desc).limit(20)
+                     end
 
-    review_jsons.map do |review|
-      review['displayed_rule_name'] = rule_names[review['rule_id'].to_i]
-      review
-    end
+    ReviewBlueprint.render_as_hash(review_records, rule_names: rule_names)
   end
 
   # Paginated, filterable accessor for top-level comment Reviews scoped to

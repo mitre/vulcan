@@ -72,8 +72,8 @@ class ComponentBlueprint < Blueprinter::Base
       component.rules
     end
 
-    # Uses Component#reviews method (not ReviewBlueprint) because it returns
-    # pre-formatted hashes with `displayed_rule_name` that ReviewBlueprint lacks.
+    # Component#reviews returns ReviewBlueprint-serialized hashes with
+    # rule_displayed_name injected via options[:rule_names].
     field :reviews do |component, _options|
       component.reviews
     end
@@ -109,8 +109,8 @@ class ComponentBlueprint < Blueprinter::Base
       component.rules
     end
 
-    # Uses Component#reviews method (not ReviewBlueprint) because it returns
-    # pre-formatted hashes with `displayed_rule_name` that ReviewBlueprint lacks.
+    # Component#reviews returns ReviewBlueprint-serialized hashes with
+    # rule_displayed_name injected via options[:rule_names].
     field :reviews do |component, _options|
       component.reviews
     end

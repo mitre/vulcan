@@ -3262,7 +3262,7 @@ paths:
       tags:
         - Reviews
       summary: List replies to a review
-      description: Returns threaded replies to a parent review, ordered by creation time. Each reply includes commenter attribution and reaction counts with the current user's reaction. Hand-built hashes (NOT ReviewBlueprint).
+      description: Returns threaded replies to a parent review, ordered by creation time. Each reply is serialized via ReviewBlueprint with commenter attribution, reaction counts, and the current user's reaction.
       responses:
         '200':
           description: Reply thread
@@ -3272,61 +3272,12 @@ paths:
                 type: object
                 required:
                   - rows
-                additionalProperties: false
                 properties:
                   rows:
                     type: array
                     description: Reply rows ordered by created_at.
                     items:
-                      type: object
-                      additionalProperties: false
-                      properties:
-                        id:
-                          type: integer
-                          example: 45
-                        responding_to_review_id:
-                          type: integer
-                          example: 44
-                        section:
-                          type:
-                            - string
-                            - 'null'
-                          example: fixtext
-                        comment:
-                          type: string
-                          example: Good point — we will add the CLI command.
-                        created_at:
-                          type: string
-                          example: 2026-05-19 14:08:17 UTC
-                        commenter_display_name:
-                          type:
-                            - string
-                            - 'null'
-                          example: Demo Author
-                        commenter_email:
-                          type:
-                            - string
-                            - 'null'
-                          format: email
-                          description: Email of the reply author for UserBadge popover display.
-                          example: author@example.com
-                        commenter_imported:
-                          type: boolean
-                          example: false
-                        reactions:
-                          type: object
-                          properties:
-                            up:
-                              type: integer
-                              example: 0
-                            down:
-                              type: integer
-                              example: 0
-                            mine:
-                              type:
-                                - string
-                                - 'null'
-                              example: null
+                      $ref: '#/components/schemas/ReviewSummary'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /reviews/{reviewId}/reactions:
@@ -6920,6 +6871,29 @@ components:
           type: boolean
           description: Whether the commenter attribution came from an import.
           example: false
+        commentable_type:
+          type:
+            - string
+            - 'null'
+          description: Polymorphic type — BaseRule for rule-scoped, Component for component-scoped.
+          example: BaseRule
+        responses_count:
+          type: integer
+          description: Number of direct replies to this review.
+          example: 0
+        rule_displayed_name:
+          type:
+            - string
+            - 'null'
+          description: Human-readable rule label (PREFIX-RULE_ID). Populated when the serializer is called with rule_names option. Null otherwise.
+          example: PHOS-03-000001
+        author_email:
+          type:
+            - string
+            - 'null'
+          format: email
+          description: Author's email. Only present when include_email option is true (admin-tier surfaces). Null or absent for public endpoints.
+          example: null
         reactions:
           type: object
           description: Aggregate reaction counts and current user's reaction for this review.

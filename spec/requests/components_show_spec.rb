@@ -137,4 +137,34 @@ RSpec.describe 'Components' do
       expect(response).to have_http_status(:forbidden)
     end
   end
+
+  describe 'reviews in editor JSON — ReviewBlueprint shape' do
+    before do
+      Review.create!(action: 'comment', comment: 'Blueprint shape test',
+                     section: nil, user: user, rule: component.rules.first)
+    end
+
+    it 'reviews include commenter_display_name from ReviewBlueprint' do
+      get "/components/#{component.id}.json"
+      reviews = response.parsed_body['reviews']
+      review = reviews.find { |r| r['comment'] == 'Blueprint shape test' }
+      expect(review).to be_present
+      expect(review).to have_key('commenter_display_name')
+      expect(review['commenter_display_name']).to eq(user.name)
+    end
+
+    it 'reviews do NOT expose user_id (privacy)' do
+      get "/components/#{component.id}.json"
+      reviews = response.parsed_body['reviews']
+      review = reviews.find { |r| r['comment'] == 'Blueprint shape test' }
+      expect(review).not_to have_key('user_id')
+    end
+
+    it 'reviews include commentable_type' do
+      get "/components/#{component.id}.json"
+      reviews = response.parsed_body['reviews']
+      review = reviews.find { |r| r['comment'] == 'Blueprint shape test' }
+      expect(review).to have_key('commentable_type')
+    end
+  end
 end

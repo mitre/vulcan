@@ -511,24 +511,12 @@ class ReviewsController < ApplicationController
   # uses for nested replies.
   def responses
     replies = @review.responses
-                     .preload(:user)
+                     .preload(:user, :responses)
                      .order(:created_at)
-    reaction_counts = Reaction.where(review_id: replies.map(&:id)).group(:review_id, :kind).count
-    rows = replies.map do |r|
-      {
-        id: r.id,
-        responding_to_review_id: r.responding_to_review_id,
-        section: r.section,
-        comment: r.comment,
-        created_at: r.created_at,
-        commenter_display_name: r.commenter_display_name,
-        commenter_email: r.user&.email,
-        commenter_imported: r.commenter_imported?,
-        reactions: { up: reaction_counts[[r.id, 'up']] || 0,
-                     down: reaction_counts[[r.id, 'down']] || 0 }
-      }
-    end
-    inject_reactions_mine!(rows)
+    reactions_summary = Reaction.summary(replies.map(&:id), current_user&.id)
+    rows = ReviewBlueprint.render_as_hash(replies,
+                                          reactions_summary: reactions_summary,
+                                          include_email: true)
     response.headers['Cache-Control'] = 'no-store'
     render json: { rows: rows }
   end

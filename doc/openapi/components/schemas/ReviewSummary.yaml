@@ -139,6 +139,33 @@ properties:
     type: boolean
     description: Whether the commenter attribution came from an import.
     example: false
+  commentable_type:
+    type:
+      - string
+      - 'null'
+    description: Polymorphic type — BaseRule for rule-scoped, Component for component-scoped.
+    example: BaseRule
+  responses_count:
+    type: integer
+    description: Number of direct replies to this review.
+    example: 0
+  rule_displayed_name:
+    type:
+      - string
+      - 'null'
+    description: >-
+      Human-readable rule label (PREFIX-RULE_ID). Populated when the
+      serializer is called with rule_names option. Null otherwise.
+    example: PHOS-03-000001
+  author_email:
+    type:
+      - string
+      - 'null'
+    format: email
+    description: >-
+      Author's email. Only present when include_email option is true
+      (admin-tier surfaces). Null or absent for public endpoints.
+    example: null
   reactions:
     type: object
     description: Aggregate reaction counts and current user's reaction for this review.

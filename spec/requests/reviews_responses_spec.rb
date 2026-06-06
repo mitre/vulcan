@@ -102,12 +102,39 @@ RSpec.describe 'Reviews' do
       row = response.parsed_body['rows'].find { |r| r['id'] == reply.id }
       expect(row['reactions']).to eq('up' => 1, 'down' => 0, 'mine' => 'up')
     end
+
+    context 'ReviewBlueprint shape validation' do
+      before do
+        sign_in rr_member
+        create(:review, :comment, comment: 'shape reply', section: nil, user: rr_member,
+                                  rule: rr_unreleased_component.rules.first,
+                                  responding_to_review_id: rr_unreleased_parent.id)
+      end
+
+      it 'returns rows with commenter_display_name (Blueprint field, not hand-built)' do
+        get "/reviews/#{rr_unreleased_parent.id}/responses", as: :json
+        expect(response).to have_http_status(:ok)
+        row = response.parsed_body['rows'].first
+        expect(row).to have_key('commenter_display_name')
+        expect(row['commenter_display_name']).to eq(rr_member.name)
+      end
+
+      it 'does NOT expose user_id in response rows' do
+        get "/reviews/#{rr_unreleased_parent.id}/responses", as: :json
+        row = response.parsed_body['rows'].first
+        expect(row).not_to have_key('user_id')
+      end
+
+      it 'includes reactions in each row' do
+        get "/reviews/#{rr_unreleased_parent.id}/responses", as: :json
+        row = response.parsed_body['rows'].first
+        expect(row).to have_key('reactions')
+        expect(row['reactions']).to have_key('up')
+        expect(row['reactions']).to have_key('down')
+      end
+    end
   end
 
-  # Task 33: defense-in-depth — replies must be rejected when comment_phase
-  # is closed. Today the existing reject_if_comments_closed filter applies
-  # to action='comment' reviews regardless of responding_to_review_id, so
-  # this is documenting+locking that behavior.
   describe 'POST /rules/:rule_id/reviews — closed-window reply rejection' do
     let_it_be(:closed_member) { create(:user) }
     let_it_be(:closed_component) do

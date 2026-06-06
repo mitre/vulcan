@@ -14,7 +14,17 @@ class ReviewBlueprint < Blueprinter::Base
   # fields the frontend modal needs
   # to refresh in place after a triage/adjudicate/withdraw/update
   # mutation, eliminating the post-mutation refetch round trip.
-  fields :rule_id, :section, :responding_to_review_id, :duplicate_of_review_id, :addressed_by_rule_id, :triage_set_by_id
+  fields :rule_id, :section, :responding_to_review_id, :duplicate_of_review_id,
+         :addressed_by_rule_id, :triage_set_by_id, :commentable_type
+
+  field :responses_count do |review, _options|
+    review.responses.size
+  end
+
+  field :rule_displayed_name do |review, options|
+    rule_names = options[:rule_names] || {}
+    rule_names[review.rule_id]
+  end
 
   # Delegated from user — avoids N+1 when user is eager-loaded
   field :name do |review, _options|

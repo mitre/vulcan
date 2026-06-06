@@ -7,8 +7,8 @@ get:
   summary: List replies to a review
   description: >-
     Returns threaded replies to a parent review, ordered by creation time.
-    Each reply includes commenter attribution and reaction counts with the
-    current user's reaction. Hand-built hashes (NOT ReviewBlueprint).
+    Each reply is serialized via ReviewBlueprint with commenter attribution,
+    reaction counts, and the current user's reaction.
   responses:
     '200':
       description: Reply thread
@@ -18,60 +18,11 @@ get:
             type: object
             required:
               - rows
-            additionalProperties: false
             properties:
               rows:
                 type: array
                 description: Reply rows ordered by created_at.
                 items:
-                  type: object
-                  additionalProperties: false
-                  properties:
-                    id:
-                      type: integer
-                      example: 45
-                    responding_to_review_id:
-                      type: integer
-                      example: 44
-                    section:
-                      type:
-                        - string
-                        - 'null'
-                      example: fixtext
-                    comment:
-                      type: string
-                      example: "Good point — we will add the CLI command."
-                    created_at:
-                      type: string
-                      example: "2026-05-19 14:08:17 UTC"
-                    commenter_display_name:
-                      type:
-                        - string
-                        - 'null'
-                      example: Demo Author
-                    commenter_email:
-                      type:
-                        - string
-                        - 'null'
-                      format: email
-                      description: Email of the reply author for UserBadge popover display.
-                      example: author@example.com
-                    commenter_imported:
-                      type: boolean
-                      example: false
-                    reactions:
-                      type: object
-                      properties:
-                        up:
-                          type: integer
-                          example: 0
-                        down:
-                          type: integer
-                          example: 0
-                        mine:
-                          type:
-                            - string
-                            - 'null'
-                          example: null
+                  $ref: ../components/schemas/ReviewSummary.yaml
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
