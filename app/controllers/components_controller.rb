@@ -301,7 +301,7 @@ class ComponentsController < ApplicationController
   def triage
     respond_to do |format|
       format.html do
-        @component_json = ComponentBlueprint.render(@component, view: :show)
+        @component_json = ComponentBlueprint.render(@component, view: :show, current_user: current_user)
         @project_json = @component.project.to_json
       end
       # Explicit 406 for non-HTML formats so the catch-all StandardError
@@ -590,6 +590,7 @@ class ComponentsController < ApplicationController
                    []
                  end
     {
+      current_user: current_user,
       pending_comment_counts: Component.pending_comment_counts([@component.id]),
       reactions_summary: Reaction.summary(review_ids, current_user&.id)
     }

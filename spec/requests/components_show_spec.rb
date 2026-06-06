@@ -113,4 +113,28 @@ RSpec.describe 'Components' do
       expect(response.parsed_body).not_to have_key('all_users')
     end
   end
+
+  describe 'effective_permissions in JSON response' do
+    it 'includes effective_permissions=admin for project admin' do
+      get "/components/#{component.id}.json"
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body['effective_permissions']).to eq('admin')
+    end
+
+    it 'includes effective_permissions=viewer for viewer member' do
+      viewer = create(:user)
+      Membership.create!(user: viewer, membership: project, role: 'viewer')
+      sign_in viewer
+      get "/components/#{component.id}.json"
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body['effective_permissions']).to eq('viewer')
+    end
+
+    it 'returns 403 for non-member (no effective_permissions exposed)' do
+      outsider = create(:user)
+      sign_in outsider
+      get "/components/#{component.id}.json"
+      expect(response).to have_http_status(:forbidden)
+    end
+  end
 end

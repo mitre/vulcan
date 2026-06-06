@@ -50,4 +50,21 @@ RSpec.describe 'GET /projects/:id' do
     get "/projects/#{project.id}", as: :json
     expect(response).to have_http_status(:success)
   end
+
+  describe 'effective_permissions in JSON response' do
+    it 'includes effective_permissions=admin for project admin' do
+      get "/projects/#{project.id}", as: :json
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body['effective_permissions']).to eq('admin')
+    end
+
+    it 'includes effective_permissions=viewer for viewer member' do
+      viewer = create(:user)
+      Membership.create!(user: viewer, membership: project, role: 'viewer')
+      sign_in viewer
+      get "/projects/#{project.id}", as: :json
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body['effective_permissions']).to eq('viewer')
+    end
+  end
 end

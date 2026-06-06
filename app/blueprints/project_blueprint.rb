@@ -14,6 +14,10 @@ class ProjectBlueprint < Blueprinter::Base
   end
 
   view :show do
+    field :effective_permissions do |project, options|
+      options[:current_user]&.effective_permissions(project)
+    end
+
     # Aggregate of pending comments across this project's components — sum
     # of the per-component counts passed in via options[:pending_comment_counts].
     # Renders a project-level discovery banner near the page header.

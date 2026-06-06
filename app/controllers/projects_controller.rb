@@ -72,6 +72,7 @@ class ProjectsController < ApplicationController
     @project_json = ProjectBlueprint.render(
       @project,
       view: :show,
+      current_user: current_user,
       pending_comment_counts: pending_comment_counts
     )
     respond_to do |format|
@@ -97,7 +98,7 @@ class ProjectsController < ApplicationController
     respond_to do |format|
       format.html do
         @project.current_user = current_user
-        @project_json = ProjectBlueprint.render(@project, view: :show)
+        @project_json = ProjectBlueprint.render(@project, view: :show, current_user: current_user)
       end
       format.any { head :not_acceptable }
     end

@@ -64,6 +64,10 @@ class ComponentBlueprint < Blueprinter::Base
     fields :title, :description, :admin_name, :admin_email, :released, :updated_at,
            :comment_phase, :closed_reason, :comment_period_starts_at, :comment_period_ends_at
 
+    field :effective_permissions do |component, options|
+      options[:current_user]&.effective_permissions(component)
+    end
+
     association :rules, blueprint: RuleBlueprint, view: :viewer do |component, _options|
       component.rules
     end
@@ -83,6 +87,10 @@ class ComponentBlueprint < Blueprinter::Base
            :security_requirements_guide_id, :memberships_count,
            :rules_count, :updated_at, :created_at,
            :comment_phase, :closed_reason, :comment_period_starts_at, :comment_period_ends_at
+
+    field :effective_permissions do |component, options|
+      options[:current_user]&.effective_permissions(component)
+    end
 
     field :releasable do |component, _options|
       component.releasable
