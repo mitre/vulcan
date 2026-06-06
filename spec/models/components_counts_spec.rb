@@ -230,12 +230,7 @@ RSpec.describe Component do
 
       # Controller suppresses auditing during dup save — verify the
       # mechanism works at model level
-      Audited.auditing_enabled = false
-      begin
-        dup.save!
-      ensure
-        Audited.auditing_enabled = true
-      end
+      Component.without_auditing { Rule.without_auditing { dup.save! } }
 
       rule_audits = Audited::Audit.where(
         auditable_type: 'BaseRule',
