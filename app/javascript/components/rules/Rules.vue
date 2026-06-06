@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="vulcan-editor-layout">
     <b-breadcrumb :items="breadcrumbs" />
 
     <RulesCodeEditorView

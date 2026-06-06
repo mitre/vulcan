@@ -856,21 +856,21 @@
 
 // ── Vulcan Layout Utilities ──────────────────────────────────────────
 // Viewport-locked editor layout pattern (VS Code / GitHub / Linear style).
-// Each element in the flex chain from body to the scroll regions applies
-// this class. Terminal scroll containers use overflow-auto instead.
 //
-// Why overflow:hidden: CSS Flexbox spec defines min-height:auto as the
-// default for flex items, preventing them from shrinking below content
-// size. Setting overflow to any value other than 'visible' resets the
-// automatic minimum to 0, enabling proper flex shrink behavior.
-// This is not a hack — it's spec-defined (MDN: min-height auto behavior).
+// MANDATORY: Every element in the chain MUST have this class.
+// A plain <div> without it breaks the chain silently — no error,
+// no warning, just an expanded layout with no scroll. Per CSS Flexbox
+// spec §4.5, overflow:hidden resets min-height:auto to 0, enabling
+// shrink. One missing link and all downstream scroll containers
+// expand to content height. Regression tests guard each level
+// (Rules.spec, ProjectComponent.spec, ControlsPageLayout.spec).
 //
-// Usage:
-//   HAML wrapper:  #projectcomponent.vulcan-editor-layout
-//   Vue page root: <div class="vulcan-editor-layout">
-//   Layout comp:   <div class="vulcan-editor-layout">
-//   Scroll boundary: PanelLayout b-card (flex-grow-1 overflow-hidden)
-//   Scroll regions:  .panel-layout__body (flex-grow-1 overflow-auto)
+// Chain (all required):
+//   HAML wrapper:     #projectcomponent.vulcan-editor-layout
+//   Vue page root:    <div class="vulcan-editor-layout">   (Rules.vue, ProjectComponent.vue)
+//   Layout comp:      <div class="vulcan-editor-layout">   (ControlsPageLayout.vue)
+//   Scroll boundary:  PanelLayout b-card (flex-grow-1 overflow-hidden)
+//   Scroll regions:   .panel-layout__body (flex-grow-1 overflow-auto)
 .vulcan-editor-layout {
   display: flex;
   flex-direction: column;

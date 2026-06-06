@@ -53,6 +53,11 @@ describe("ControlsPageLayout", () => {
       expect(wrapper.find(".controls-page-layout").exists()).toBe(true);
     });
 
+    it("root element has vulcan-editor-layout class for flex chain continuity", () => {
+      wrapper = createWrapper();
+      expect(wrapper.classes()).toContain("vulcan-editor-layout");
+    });
+
     it("renders the two-column row", () => {
       wrapper = createWrapper();
       expect(wrapper.find(".row").exists()).toBe(true);

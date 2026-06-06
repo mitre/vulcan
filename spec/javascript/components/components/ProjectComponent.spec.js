@@ -407,6 +407,11 @@ describe("ProjectComponent", () => {
   // Chrome condensation: breadcrumbs, banner chip, filter toggle
   // ==========================================================================
   describe("chrome condensation", () => {
+    it("root element has vulcan-editor-layout class for flex chain continuity", () => {
+      wrapper = createWrapper();
+      expect(wrapper.classes()).toContain("vulcan-editor-layout");
+    });
+
     it("does NOT render a standalone b-breadcrumb row", () => {
       wrapper = createWrapper();
       expect(wrapper.findComponent({ name: "BBreadcrumb" }).exists()).toBe(false);

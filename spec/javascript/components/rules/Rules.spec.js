@@ -52,6 +52,14 @@ describe("Rules", () => {
     });
   };
 
+  describe("viewport-locked layout", () => {
+    it("root element has vulcan-editor-layout class for flex chain continuity", () => {
+      const wrapper = createWrapper();
+      expect(wrapper.classes()).toContain("vulcan-editor-layout");
+      wrapper.destroy();
+    });
+  });
+
   describe("addSatisfiedRule", () => {
     beforeEach(() => {
       vi.clearAllMocks();
