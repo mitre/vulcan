@@ -5,7 +5,7 @@ require 'rails_helper'
 # rubocop:disable Rails/SkipsModelValidations -- test setup deliberately bypasses validations
 # to create specific DB states (stale FKs, nil user_id, imported attribution)
 RSpec.describe Review do
-  include_context 'reviews model base setup'
+  include_context 'srg model base setup'
 
   # DB-layer FK constraints
   # on `reviews.user_id` and `reviews.rule_id`. Pre-.j4a, neither column
@@ -110,8 +110,8 @@ RSpec.describe Review do
   # display + export layers fall back to those columns when user_id is nil.
   describe 'belongs_to :user is optional' do
     it 'is valid with user_id nil and commenter_imported_* present' do
-      review = create(:review, :comment, comment: 'c', section: nil, user: reviews_p_viewer,
-                                         rule: reviews_rule, triage_status: 'pending')
+      review = create(:review, :comment, comment: 'c', section: nil, user: p_viewer,
+                                         rule: rule, triage_status: 'pending')
       review.update_columns(user_id: nil,
                             commenter_imported_email: 'former@example.com',
                             commenter_imported_name: 'Former User')
@@ -123,8 +123,8 @@ RSpec.describe Review do
       # Loose validity at the model layer — the row can persist without
       # a user FK. Display layer handles the "no commenter" case via
       # commenter_display_name (step B1).
-      review = create(:review, :comment, comment: 'c', section: nil, user: reviews_p_viewer,
-                                         rule: reviews_rule, triage_status: 'pending')
+      review = create(:review, :comment, comment: 'c', section: nil, user: p_viewer,
+                                         rule: rule, triage_status: 'pending')
       review.update_columns(user_id: nil)
       review.reload
       expect(review).to be_valid

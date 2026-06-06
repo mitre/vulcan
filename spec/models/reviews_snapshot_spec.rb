@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe Review do
-  include_context 'reviews model base setup'
+  include_context 'srg model base setup'
 
   # snapshot serialization for
   # the admin_destroy Component-level audit row. Captures full pre-
@@ -11,13 +11,13 @@ RSpec.describe Review do
   # ISO8601 timestamps so YAML safe-load doesn't break on Audit#find).
   describe '#snapshot_attributes' do
     let!(:snap_review) do
-      create(:review, :comment, comment: 'snap content', user: reviews_p_viewer, rule: reviews_rule,
+      create(:review, :comment, comment: 'snap content', user: p_viewer, rule: rule,
                                 section: 'check_content',
                                 triage_status: 'concur',
-                                triage_set_by_id: reviews_p_admin.id,
+                                triage_set_by_id: p_admin.id,
                                 triage_set_at: Time.zone.parse('2026-04-01T10:00:00Z'),
                                 adjudicated_at: Time.zone.parse('2026-04-02T11:00:00Z'),
-                                adjudicated_by_id: reviews_p_admin.id)
+                                adjudicated_by_id: p_admin.id)
     end
 
     it 'returns a hash with every audited + lifecycle + imported_attribution column' do
@@ -49,7 +49,7 @@ RSpec.describe Review do
     end
 
     it 'returns nil for unset nullable fields, not empty strings' do
-      bare = create(:review, :comment, comment: 'bare', section: nil, user: reviews_p_viewer, rule: reviews_rule)
+      bare = create(:review, :comment, comment: 'bare', section: nil, user: p_viewer, rule: rule)
       h = bare.snapshot_attributes
       expect(h['triage_set_by_id']).to be_nil
       expect(h['adjudicated_at']).to be_nil
@@ -63,18 +63,18 @@ RSpec.describe Review do
   # depth-first-ish order so the audit-row snapshot is reproducible.
   describe '.subtree_with_ancestry' do
     let!(:root) do
-      create(:review, :comment, comment: 'root', section: nil, user: reviews_p_viewer, rule: reviews_rule)
+      create(:review, :comment, comment: 'root', section: nil, user: p_viewer, rule: rule)
     end
     let!(:child_a) do
-      create(:review, :comment, comment: 'child A', section: nil, user: reviews_p_viewer, rule: reviews_rule,
+      create(:review, :comment, comment: 'child A', section: nil, user: p_viewer, rule: rule,
                                 responding_to_review_id: root.id)
     end
     let!(:child_b) do
-      create(:review, :comment, comment: 'child B', section: nil, user: reviews_p_viewer, rule: reviews_rule,
+      create(:review, :comment, comment: 'child B', section: nil, user: p_viewer, rule: rule,
                                 responding_to_review_id: root.id)
     end
     let!(:grandchild) do
-      create(:review, :comment, comment: 'grandchild of A', section: nil, user: reviews_p_viewer, rule: reviews_rule,
+      create(:review, :comment, comment: 'grandchild of A', section: nil, user: p_viewer, rule: rule,
                                 responding_to_review_id: child_a.id)
     end
 
@@ -84,7 +84,7 @@ RSpec.describe Review do
     end
 
     it 'returns just the root when there are no replies' do
-      lone = create(:review, :comment, comment: 'lone', section: nil, user: reviews_p_viewer, rule: reviews_rule)
+      lone = create(:review, :comment, comment: 'lone', section: nil, user: p_viewer, rule: rule)
       expect(Review.subtree_with_ancestry(lone.id).map(&:id)).to eq([lone.id])
     end
 
@@ -104,7 +104,7 @@ RSpec.describe Review do
       result = Review.subtree_with_ancestry(root.id)
       expect(result.first).to be_a(Review)
       # Has access to associations, not just attributes
-      expect(result.first.user).to eq(reviews_p_viewer)
+      expect(result.first.user).to eq(p_viewer)
     end
   end
 end

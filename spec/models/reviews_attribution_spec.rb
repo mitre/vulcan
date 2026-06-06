@@ -5,7 +5,7 @@ require 'rails_helper'
 # rubocop:disable Rails/SkipsModelValidations -- test setup deliberately bypasses validations
 # to create specific DB states (stale FKs, nil user_id, imported attribution)
 RSpec.describe Review do
-  include_context 'reviews model base setup'
+  include_context 'srg model base setup'
 
   # `reviews` table needs two
   # nullable string columns to preserve original commenter attribution
@@ -24,8 +24,8 @@ RSpec.describe Review do
     end
 
     it 'persists commenter_imported_email + commenter_imported_name values' do
-      review = create(:review, :comment, comment: 'c', section: nil, user: reviews_p_viewer,
-                                         rule: reviews_rule, triage_status: 'pending')
+      review = create(:review, :comment, comment: 'c', section: nil, user: p_viewer,
+                                         rule: rule, triage_status: 'pending')
       review.update_columns(commenter_imported_email: 'imp@old.example',
                             commenter_imported_name: 'Imported Person')
       review.reload
@@ -36,13 +36,13 @@ RSpec.describe Review do
 
   describe 'attribution display helpers' do
     let(:base) do
-      create(:review, :comment, comment: 'c', section: nil, user: reviews_p_viewer, rule: reviews_rule, triage_status: 'pending')
+      create(:review, :comment, comment: 'c', section: nil, user: p_viewer, rule: rule, triage_status: 'pending')
     end
 
     describe '#triager_display_name' do
       it 'returns the resolved User name when FK is set' do
-        base.update_columns(triage_set_by_id: reviews_p_admin.id, triage_set_at: Time.current)
-        expect(base.reload.triager_display_name).to eq(reviews_p_admin.name)
+        base.update_columns(triage_set_by_id: p_admin.id, triage_set_at: Time.current)
+        expect(base.reload.triager_display_name).to eq(p_admin.name)
       end
 
       it 'falls back to imported_name when FK is nil' do
@@ -66,7 +66,7 @@ RSpec.describe Review do
 
     describe '#triager_imported?' do
       it 'is false when FK is set (resolved User)' do
-        base.update_columns(triage_set_by_id: reviews_p_admin.id, triage_set_at: Time.current)
+        base.update_columns(triage_set_by_id: p_admin.id, triage_set_at: Time.current)
         expect(base.reload.triager_imported?).to be(false)
       end
 
@@ -82,8 +82,8 @@ RSpec.describe Review do
 
     describe '#adjudicator_display_name' do
       it 'returns the resolved User name when FK is set' do
-        base.update_columns(adjudicated_by_id: reviews_p_admin.id, adjudicated_at: Time.current)
-        expect(base.reload.adjudicator_display_name).to eq(reviews_p_admin.name)
+        base.update_columns(adjudicated_by_id: p_admin.id, adjudicated_at: Time.current)
+        expect(base.reload.adjudicator_display_name).to eq(p_admin.name)
       end
 
       it 'falls back to imported_name when FK is nil' do
@@ -106,7 +106,7 @@ RSpec.describe Review do
 
     describe '#adjudicator_imported?' do
       it 'is false when FK is set' do
-        base.update_columns(adjudicated_by_id: reviews_p_admin.id, adjudicated_at: Time.current)
+        base.update_columns(adjudicated_by_id: p_admin.id, adjudicated_at: Time.current)
         expect(base.reload.adjudicator_imported?).to be(false)
       end
 
@@ -128,12 +128,12 @@ RSpec.describe Review do
   # imported_email → nil.
   describe 'commenter display helpers' do
     let(:base) do
-      create(:review, :comment, comment: 'c', section: nil, user: reviews_p_viewer, rule: reviews_rule, triage_status: 'pending')
+      create(:review, :comment, comment: 'c', section: nil, user: p_viewer, rule: rule, triage_status: 'pending')
     end
 
     describe '#commenter_display_name' do
       it 'returns the resolved User name when user_id is set' do
-        expect(base.commenter_display_name).to eq(reviews_p_viewer.name)
+        expect(base.commenter_display_name).to eq(p_viewer.name)
       end
 
       it 'falls back to commenter_imported_name when user_id is nil' do
