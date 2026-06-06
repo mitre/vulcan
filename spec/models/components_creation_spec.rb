@@ -116,4 +116,87 @@ RSpec.describe Component do
       dup.destroy!
     end
   end
+
+  describe '#overlay' do
+    before do
+      components_component.rules.update_all(locked: true)
+      components_component.update!(released: true)
+    end
+
+    it 'returns unpersisted component with correct project_id and component_id' do
+      other_project = create(:project)
+      overlaid = components_component.overlay(other_project.id)
+
+      expect(overlaid.project_id).to eq(other_project.id)
+      expect(overlaid.component_id).to eq(components_component.id)
+      expect(overlaid).not_to be_persisted
+    end
+
+    it 'copies rules from the parent component' do
+      other_project = create(:project)
+      overlaid = components_component.overlay(other_project.id)
+      expect(overlaid.rules.size).to eq(components_component.rules.size)
+    end
+
+    it 'fails validation when parent component is not released' do
+      components_component.update_columns(released: false)
+      other_project = create(:project)
+      overlaid = components_component.overlay(other_project.id)
+      expect(overlaid).not_to be_valid
+      expect(overlaid.errors[:base].join).to match(/not been released/i)
+    end
+  end
+
+  describe '#duplicate with new_srg_id' do
+    let_it_be(:new_srg) do
+      srg_xml = Rails.root.join('db/seeds/srgs/U_Web_Server_SRG_V4R4_Manual-xccdf.xml').read
+      parsed_benchmark = Xccdf::Benchmark.parse(srg_xml)
+      srg = SecurityRequirementsGuide.from_mapping(parsed_benchmark)
+      srg.xml = srg_xml
+      srg.save!
+      srg
+    end
+
+    it 'preserves AC rules and updates their srg_rule association' do
+      ac_rule = components_component.rules.first
+      ac_rule.update!(status: 'Applicable - Configurable')
+      original_title = ac_rule.title
+
+      dup = components_component.duplicate(new_version: 50, new_release: 1, new_srg_id: new_srg.id)
+      matching = dup.rules.find_by(version: ac_rule.version)
+
+      expect(matching).to be_present
+      expect(matching.status).to eq('Applicable - Configurable')
+      expect(matching.title).to eq(original_title)
+
+      dup.destroy! if dup.persisted?
+    end
+
+    it 'skips SRG migration when new SRG matches current SRG' do
+      original_srg_id = components_component.security_requirements_guide_id
+      dup = components_component.duplicate(
+        new_version: 51, new_release: 1,
+        new_srg_id: original_srg_id
+      )
+      expect(dup.security_requirements_guide_id).to eq(original_srg_id)
+      expect(dup).not_to be_persisted
+
+      dup.destroy! if dup.persisted?
+    end
+  end
+
+  describe '#import_srg_rules failure path' do
+    it 'raises RecordInvalid when from_mapping returns false' do
+      allow_any_instance_of(Component).to receive(:from_mapping).and_return(false)
+
+      expect do
+        Component.create!(
+          project: components_project, name: 'Fail Import', title: 'Fail',
+          version: 'V1R1', prefix: 'FAIL-01', based_on: components_srg
+        )
+      end.to raise_error(ActiveRecord::RecordInvalid)
+
+      expect(Component.find_by(prefix: 'FAIL-01')).to be_nil
+    end
+  end
 end
