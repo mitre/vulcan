@@ -92,4 +92,32 @@ RSpec.describe Review do
       expect(rule.locked).to be(false)
     end
   end
+
+  describe 'default_triage_status_for_new_top_level_comment (before_create)' do
+    it 'defaults triage_status to pending for a new top-level comment' do
+      review = Review.create!(action: 'comment', comment: 'test', section: nil,
+                              user: p_admin, rule: rule)
+      expect(review.triage_status).to eq('pending')
+    end
+
+    it 'preserves explicit triage_status when set by caller' do
+      review = Review.create!(action: 'comment', comment: 'test', section: nil,
+                              user: p_admin, rule: rule, triage_status: 'informational',
+                              triage_set_by_id: p_admin.id, triage_set_at: Time.current)
+      expect(review.triage_status).to eq('informational')
+    end
+
+    it 'does NOT set triage_status for non-comment actions' do
+      review = Review.create!(action: 'request_review', comment: 'please', section: nil,
+                              user: p_admin, rule: rule)
+      expect(review.triage_status).to be_nil
+    end
+
+    it 'does NOT set triage_status for replies (responding_to_review_id present)' do
+      parent = create(:review, :comment, comment: 'parent', section: nil, user: p_admin, rule: rule)
+      reply = Review.create!(action: 'comment', comment: 'reply', section: nil,
+                             user: p_viewer, rule: rule, responding_to_review_id: parent.id)
+      expect(reply.triage_status).to be_nil
+    end
+  end
 end
