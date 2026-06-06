@@ -464,5 +464,29 @@ describe("RuleActionsToolbar", () => {
         );
       expect(btn.attributes("title")).toBe("Add a general comment on this rule");
     });
+
+    it("Save button has tooltip", () => {
+      wrapper = createWrapper();
+      const saveStub = wrapper
+        .findAll(".comment-modal-stub")
+        .wrappers.find((b) => b.text().includes("Save"));
+      expect(saveStub.attributes("button-tooltip")).toBe("Save rule with a comment");
+    });
+
+    it("Lock button has tooltip", () => {
+      wrapper = createWrapper();
+      const lockStub = wrapper
+        .findAll(".comment-modal-stub")
+        .wrappers.find((b) => b.text().includes("Lock"));
+      expect(lockStub.attributes("button-tooltip")).toBe("Lock this rule to prevent edits");
+    });
+
+    it("Unlock button has tooltip", () => {
+      wrapper = createWrapper({ rule: { ...defaultRule, locked: true } });
+      const unlockStub = wrapper
+        .findAll(".comment-modal-stub")
+        .wrappers.find((b) => b.text().includes("Unlock"));
+      expect(unlockStub.attributes("button-tooltip")).toBe("Unlock this rule for editing");
+    });
   });
 });

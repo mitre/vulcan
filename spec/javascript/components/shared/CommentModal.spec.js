@@ -248,4 +248,27 @@ describe("CommentModal", () => {
       wrapper2.destroy();
     });
   });
+
+  describe("buttonTooltip prop", () => {
+    it("shows buttonTooltip as title when button is enabled", () => {
+      wrapper = createWrapper({ buttonTooltip: "Save changes with a comment" });
+      const btn = wrapper.find("button");
+      expect(btn.attributes("title")).toBe("Save changes with a comment");
+    });
+
+    it("shows disabled tooltip when button is disabled, even if buttonTooltip set", () => {
+      wrapper = createWrapper({
+        buttonTooltip: "Save changes",
+        buttonDisabled: true,
+      });
+      const btn = wrapper.find("button");
+      expect(btn.attributes("title")).toBe("Cannot replace on read only mode");
+    });
+
+    it("shows empty title when no buttonTooltip and button is enabled", () => {
+      wrapper = createWrapper();
+      const btn = wrapper.find("button");
+      expect(btn.attributes("title")).toBe("");
+    });
+  });
 });
