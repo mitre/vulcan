@@ -150,7 +150,7 @@
 </template>
 
 <script>
-import { ref, computed } from "vue";
+import { ref, computed, provide } from "vue";
 import { getComponent, patchComponent } from "../../api/componentsApi";
 import { getRule } from "../../api/rulesApi";
 import { exportProjectData } from "../../api/projectsApi";
@@ -219,9 +219,6 @@ export default {
         return {};
       },
     },
-    effective_permissions: {
-      type: String,
-    },
     initialComponentState: {
       type: Object,
       required: true,
@@ -244,6 +241,8 @@ export default {
   },
   setup(props) {
     const componentId = props.initialComponentState.id;
+    const effective_permissions = props.initialComponentState?.effective_permissions || null;
+    provide("effectivePermissions", effective_permissions);
     const localRules = ref(structuredClone(props.initialComponentState.rules || []));
 
     const ruleStore = useRuleSelectionStore();
@@ -298,6 +297,7 @@ export default {
       counts,
       activeFilterCount,
       updateFilter,
+      effective_permissions,
       activePanel,
       togglePanel,
       closePanel,

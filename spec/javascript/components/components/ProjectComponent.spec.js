@@ -66,10 +66,10 @@ describe("ProjectComponent", () => {
   ];
 
   const defaultProps = {
-    effective_permissions: "admin",
     current_user_id: 1,
     project: { id: 1, name: "Test Project" },
     initialComponentState: {
+      effective_permissions: "admin",
       id: 41,
       name: "Test Component",
       prefix: "TEST",
@@ -545,6 +545,30 @@ describe("ProjectComponent", () => {
       expect(modal.props("hideComponentSelection")).toBe(true);
       expect(modal.props("components").length).toBe(1);
       expect(modal.props("components")[0].id).toBe(41);
+    });
+  });
+
+  describe("permissions via provide", () => {
+    it("reads effective_permissions from initialComponentState", () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.effective_permissions).toBe("admin");
+    });
+
+    it("derives viewer permissions from initialComponentState", () => {
+      wrapper = createWrapper({
+        initialComponentState: {
+          ...defaultProps.initialComponentState,
+          effective_permissions: "viewer",
+        },
+      });
+      expect(wrapper.vm.effective_permissions).toBe("viewer");
+    });
+
+    it("defaults to null when initialComponentState has no permissions", () => {
+      const stateWithout = { ...defaultProps.initialComponentState };
+      delete stateWithout.effective_permissions;
+      wrapper = createWrapper({ initialComponentState: stateWithout });
+      expect(wrapper.vm.effective_permissions).toBeNull();
     });
   });
 });

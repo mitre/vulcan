@@ -49,9 +49,8 @@ const createWrapper = (componentOverrides = {}) =>
   mount(ComponentSettingsPage, {
     localVue,
     propsData: {
-      initialComponentState: { ...baseComponent, ...componentOverrides },
+      initialComponentState: { ...baseComponent, effective_permissions: "admin", ...componentOverrides },
       project: baseProject,
-      effectivePermissions: "admin",
       currentUserId: 1,
     },
     stubs: {

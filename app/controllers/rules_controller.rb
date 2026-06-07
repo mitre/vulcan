@@ -20,7 +20,7 @@ class RulesController < ApplicationController
                                          { satisfies: :srg_rule, satisfied_by: :srg_rule },
                                          srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
     @rules_json = RuleBlueprint.render(@rules, view: :editor)
-    @component_json = ComponentBlueprint.render(@component, view: :editor)
+    @component_json = ComponentBlueprint.render(@component, view: :editor, current_user: current_user)
     respond_to do |format|
       format.html
       format.json { render body: @rules_json, content_type: 'application/json' }

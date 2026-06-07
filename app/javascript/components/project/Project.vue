@@ -151,6 +151,7 @@
 </template>
 
 <script>
+import { provide } from "vue";
 import _ from "lodash";
 import { getProject, updateProject, exportProjectData } from "../../api/projectsApi";
 import { deleteComponent } from "../../api/componentsApi";
@@ -186,9 +187,6 @@ export default {
   },
   mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue, RoleComparisonMixin],
   props: {
-    effective_permissions: {
-      type: String,
-    },
     initialProjectState: {
       type: Object,
       required: true,
@@ -205,9 +203,13 @@ export default {
       required: true,
     },
   },
-  setup() {
+  setup(props) {
     const { activePanel, togglePanel, closePanel } = useSidebar();
-    return { activePanel, togglePanel, closePanel };
+
+    const effective_permissions = props.initialProjectState?.effective_permissions || null;
+    provide("effectivePermissions", effective_permissions);
+
+    return { activePanel, togglePanel, closePanel, effective_permissions };
   },
   data: function () {
     return {

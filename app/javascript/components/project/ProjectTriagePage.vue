@@ -25,6 +25,7 @@
 </template>
 
 <script>
+import { provide } from "vue";
 import ComponentComments from "../components/ComponentComments.vue";
 
 export default {
@@ -32,8 +33,12 @@ export default {
   components: { ComponentComments },
   props: {
     project: { type: Object, required: true },
-    effectivePermissions: { type: String, default: null },
     currentUserId: { type: Number, required: true },
+  },
+  setup(props) {
+    const effectivePermissions = props.project?.effective_permissions || null;
+    provide("effectivePermissions", effectivePermissions);
+    return { effectivePermissions };
   },
   computed: {
     breadcrumbs() {

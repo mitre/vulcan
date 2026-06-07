@@ -49,6 +49,7 @@
 </template>
 
 <script>
+import { provide } from "vue";
 import BaseCommandBar from "../shared/BaseCommandBar.vue";
 import ComponentComments from "./ComponentComments.vue";
 
@@ -58,7 +59,11 @@ export default {
   props: {
     initialComponentState: { type: Object, required: true },
     project: { type: Object, required: true },
-    effectivePermissions: { type: String, default: null },
+  },
+  setup(props) {
+    const effectivePermissions = props.initialComponentState?.effective_permissions || null;
+    provide("effectivePermissions", effectivePermissions);
+    return { effectivePermissions };
   },
   data() {
     return {

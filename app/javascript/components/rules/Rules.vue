@@ -15,6 +15,7 @@
 </template>
 
 <script>
+import { provide } from "vue";
 import {
   getRule,
   deleteRule,
@@ -31,10 +32,6 @@ export default {
   components: { RulesCodeEditorView },
   mixins: [AlertMixinVue, FormMixinVue, SortRulesMixin],
   props: {
-    effective_permissions: {
-      type: String,
-      required: true,
-    },
     current_user_id: {
       type: Number,
       required: true,
@@ -59,6 +56,11 @@ export default {
       type: Array,
       required: true,
     },
+  },
+  setup(props) {
+    const effective_permissions = props.component?.effective_permissions || null;
+    provide("effectivePermissions", effective_permissions);
+    return { effective_permissions };
   },
   data: function () {
     return {

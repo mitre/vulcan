@@ -65,6 +65,13 @@ RSpec.describe 'Rules' do
         expect(response.body).to include('Security')
       end
 
+      it 'includes effective_permissions in component JSON (provide/inject source)' do
+        get "/components/#{component.id}/edit"
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('&quot;effective_permissions&quot;:&quot;admin&quot;')
+      end
+
       it 'does NOT include all_users in component JSON (information disclosure regression guard)' do
         # SECURITY: all_users used to be pre-loaded into the SSR'd component JSON,
         # exposing the entire user directory to any project member with edit access.

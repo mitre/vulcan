@@ -224,6 +224,7 @@
 
 <script>
 import { updateComponent } from "../../api/componentsApi";
+import { provide } from "vue";
 import { searchUsers } from "../../api/usersApi";
 import debounce from "lodash/debounce";
 import VueMultiselect from "vue-multiselect";
@@ -262,8 +263,12 @@ export default {
   props: {
     initialComponentState: { type: Object, required: true },
     project: { type: Object, required: true },
-    effectivePermissions: { type: String, default: null },
     currentUserId: { type: Number, required: true },
+  },
+  setup(props) {
+    const effectivePermissions = props.initialComponentState?.effective_permissions || null;
+    provide("effectivePermissions", effectivePermissions);
+    return { effectivePermissions };
   },
   data() {
     return {

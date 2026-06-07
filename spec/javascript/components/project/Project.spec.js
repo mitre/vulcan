@@ -54,12 +54,12 @@ describe("Project", () => {
   let wrapper;
 
   const defaultProps = {
-    effective_permissions: "admin",
     initialProjectState: {
       id: 1,
       name: "Test Project",
       description: "Test description",
       visibility: "hidden",
+      effective_permissions: "admin",
       components: [],
       available_components: [],
       memberships: [],
@@ -143,6 +143,33 @@ describe("Project", () => {
     it("renders tabs", () => {
       wrapper = createWrapper();
       expect(wrapper.findComponent({ name: "BTabs" }).exists()).toBe(true);
+    });
+  });
+
+  // ==========================================
+  // PERMISSIONS VIA PROVIDE (SPA-ready)
+  // ==========================================
+  describe("permissions via provide", () => {
+    it("reads effective_permissions from initialProjectState, not from a separate prop", () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.effective_permissions).toBe("admin");
+    });
+
+    it("derives permissions from initialProjectState data", () => {
+      wrapper = createWrapper({
+        initialProjectState: {
+          ...defaultProps.initialProjectState,
+          effective_permissions: "viewer",
+        },
+      });
+      expect(wrapper.vm.effective_permissions).toBe("viewer");
+    });
+
+    it("defaults to null when initialProjectState has no permissions", () => {
+      const stateWithout = { ...defaultProps.initialProjectState };
+      delete stateWithout.effective_permissions;
+      wrapper = createWrapper({ initialProjectState: stateWithout });
+      expect(wrapper.vm.effective_permissions).toBeNull();
     });
   });
 
