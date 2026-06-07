@@ -131,7 +131,7 @@ class RuleBlueprint < Blueprinter::Base
     end
 
     field :srg_rule_attributes do |rule, _options|
-      SrgRuleBlueprint.render_as_hash(rule.srg_rule) if rule.srg_rule
+      SrgRuleBlueprint.render_as_json(rule.srg_rule) if rule.srg_rule
     end
 
     field :srg_info do |rule, _options|

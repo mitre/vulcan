@@ -55,7 +55,7 @@ class ComponentBlueprint < Blueprinter::Base
     fields :updated_at, :released
 
     field :project do |component, _options|
-      ProjectBlueprint.render_as_hash(component.project)
+      ProjectBlueprint.render_as_json(component.project)
     end
   end
 

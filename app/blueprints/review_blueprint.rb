@@ -42,7 +42,7 @@ class ReviewBlueprint < Blueprinter::Base
   # response omits it (a public-comment endpoint exposing every
   # commenter's email enables scraping during open comment windows).
   # Admin-tier surfaces (admin actions disclosure, disposition export)
-  # opt in via `render_as_hash(review, include_email: true)`. Mirrors
+  # opt in via `render_as_json(review, include_email: true)`. Mirrors
   # the disposition-export include_email pattern in
   # app/lib/disposition_matrix_export.rb.
   field :author_email,
@@ -70,7 +70,7 @@ class ReviewBlueprint < Blueprinter::Base
   end
 
   # Controllers pass `reactions_summary: Reaction.summary(ids, current_user.id)`
-  # via render_as_hash options. Falls back to zeros + nil mine when the
+  # via render_as_json options. Falls back to zeros + nil mine when the
   # option isn't supplied so older callers don't break.
   field :reactions do |review, options|
     summary = options[:reactions_summary] || {}
