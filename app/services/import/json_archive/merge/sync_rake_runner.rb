@@ -94,7 +94,8 @@ module Import
         end
 
         # Rule-shaped adapter: exposes rule_id, attributes, reviews,
-        # satisfies, and locked_fields for the Analyzer pipeline.
+        # satisfies, locked_fields, and nested associations (checks,
+        # disa_rule_descriptions) for the Analyzer + NestedAssociationDiffer.
         class VirtualRule
           attr_reader :rule_id, :reviews, :satisfies, :locked_fields, :attributes
 
@@ -103,7 +104,42 @@ module Import
             @attributes = rule_hash
             @reviews = reviews
             @satisfies = satisfies
-            @locked_fields = Array(rule_hash['locked_fields'])
+            # Preserve the real JSONB shape — {"Section" => true} — so
+            # RuleFieldDiffer's section-keyed lock check works.
+            @locked_fields = rule_hash['locked_fields'] || {}
+          end
+
+          # Nested-association accessors. Lazy-build VirtualNestedRecord
+          # wrappers for each row in the archive's nested arrays.
+          Rule::NESTED_MERGEABLE_ASSOCIATIONS.each do |assoc_name, config|
+            define_method(assoc_name) do
+              @nested_cache ||= {}
+              @nested_cache[assoc_name] ||= Array(@attributes[config[:backup_key]])
+                                            .map { |h| VirtualNestedRecord.new(h) }
+            end
+          end
+        end
+
+        # Hash-backed adapter that quacks like an AR nested record:
+        # supports #attributes (raw hash) and dynamic accessors for each
+        # column. NestedAssociationDiffer needs both (attributes for
+        # field-by-field comparison, accessors for identity_keys).
+        class VirtualNestedRecord
+          def initialize(hash)
+            @attributes = (hash || {}).dup
+          end
+
+          attr_reader :attributes
+
+          def method_missing(name, *_args)
+            key = name.to_s
+            return @attributes[key] if @attributes.key?(key)
+
+            super
+          end
+
+          def respond_to_missing?(name, _include_private = false)
+            @attributes.key?(name.to_s) || super
           end
         end
 

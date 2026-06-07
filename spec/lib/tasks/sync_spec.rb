@@ -100,6 +100,48 @@ RSpec.describe 'sync rake tasks' do
     end
   end
 
+  describe 'VirtualComponent / VirtualRule (two-archive diff adapter)' do
+    let(:archive_data) do
+      Export::Serializers::BackupSerializer.new(component).serialize
+    end
+    let(:merge_input) do
+      Import::JsonArchive::Merge::MergeInput.from_json_archive(archive_data)
+    end
+    let(:virtual) do
+      Import::JsonArchive::Merge::SyncRakeRunner::VirtualComponent.new(merge_input)
+    end
+    let(:first_rule) { virtual.rules.first }
+
+    it 'preserves locked_fields as a section-keyed hash (not an array)' do
+      target_rule = component.rules.first
+      target_rule.update_columns(locked_fields: { 'Check' => true })
+      target_rule.reload
+
+      fresh = Import::JsonArchive::Merge::MergeInput.from_json_archive(
+        Export::Serializers::BackupSerializer.new(component.reload).serialize
+      )
+      v = Import::JsonArchive::Merge::SyncRakeRunner::VirtualComponent.new(fresh)
+      vrule = v.rules.find { |r| r.rule_id == target_rule.rule_id }
+
+      expect(vrule.locked_fields).to be_a(Hash)
+      expect(vrule.locked_fields).to include('Check' => true)
+    end
+
+    it 'exposes #checks from the archive as quacking nested records' do
+      expect(first_rule.checks).to all(respond_to(:attributes))
+      expect(first_rule.checks.first.attributes).to include('content', 'system')
+    end
+
+    it 'exposes #disa_rule_descriptions from the archive' do
+      expect(first_rule.disa_rule_descriptions).to all(respond_to(:attributes))
+    end
+
+    it 'VirtualNestedRecord responds to column-named accessors (identity_keys)' do
+      check = first_rule.checks.first
+      expect(check.system).to eq(check.attributes['system'])
+    end
+  end
+
   describe 'rake task wiring' do
     before(:all) do
       Rails.application.load_tasks unless Rake::Task.task_defined?('sync:diff')
