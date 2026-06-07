@@ -25,7 +25,7 @@ class PersonalAccessTokensController < ApplicationController
     if token.save
       render json: {
         token: token.raw_token,
-        personal_access_token: PersonalAccessTokenBlueprint.render_as_hash(token)
+        personal_access_token: PersonalAccessTokenBlueprint.render_as_json(token)
       }, status: :created
     else
       render_toast(title: 'Could not create token.', message: token.errors.full_messages,

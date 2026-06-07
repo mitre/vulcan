@@ -411,7 +411,7 @@ class ApplicationController < ActionController::Base
     @access_requests = pending_requests.map do |ar|
       {
         id: ar.id,
-        user: UserBlueprint.render_as_hash(ar.user),
+        user: UserBlueprint.render_as_json(ar.user),
         project: { id: ar.project.id, name: ar.project.name }
       }
     end
@@ -421,7 +421,7 @@ class ApplicationController < ActionController::Base
     @locked_users = []
     return unless user_signed_in? && current_user.admin? && Settings.lockout&.enabled
 
-    @locked_users = UserBlueprint.render_as_hash(
+    @locked_users = UserBlueprint.render_as_json(
       User.where.not(locked_at: nil).limit(100)
     )
   end
@@ -431,7 +431,7 @@ class ApplicationController < ActionController::Base
   # full { up:0, down:0, mine: } injected. Callers pass the array of
   # rows (any iterable producing hashes) and the row id key (defaults
   # to :id). Single batched query for current_user's reactions.
-  def inject_reactions_mine!(rows, id_key: :id)
+  def inject_reactions_mine!(rows, id_key: 'id')
     return rows if rows.blank? || current_user.nil?
 
     ids = rows.filter_map { |row| row[id_key] }
@@ -439,8 +439,8 @@ class ApplicationController < ActionController::Base
 
     mine = Reaction.where(review_id: ids, user_id: current_user.id).pluck(:review_id, :kind).to_h
     rows.each do |row|
-      row[:reactions] ||= { up: 0, down: 0 }
-      row[:reactions][:mine] = mine[row[id_key]]
+      row['reactions'] ||= { 'up' => 0, 'down' => 0 }
+      row['reactions']['mine'] = mine[row[id_key]]
     end
   end
 end

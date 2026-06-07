@@ -35,7 +35,7 @@ class ProjectsController < ApplicationController
     # one component with pending comments, the row link goes straight to
     # that component (one click → triage panel — no intermediate-page bounce).
     pending_comment_targets = Project.pending_comment_target_components(project_ids)
-    @projects = ProjectIndexBlueprint.render_as_hash(
+    @projects = ProjectIndexBlueprint.render_as_json(
       projects,
       current_user: current_user,
       access_requests_by_project: ar_by_project,

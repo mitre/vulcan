@@ -134,8 +134,8 @@ class CommentQueryService
     }
 
     page_records.map do |r|
-      row = CommentRowBlueprint.render_as_hash(r, **blueprint_options)
-      row[:rule_content] = @component.serialize_rule_content(r, r.commentable_type == 'Component') if @include_rule_content
+      row = CommentRowBlueprint.render_as_json(r, **blueprint_options)
+      row['rule_content'] = @component.serialize_rule_content(r, r.commentable_type == 'Component') if @include_rule_content
       row
     end
   end

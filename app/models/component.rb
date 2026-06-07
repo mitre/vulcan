@@ -619,7 +619,7 @@ class Component < ApplicationRecord
                              .order(created_at: :desc).limit(20)
                      end
 
-    ReviewBlueprint.render_as_hash(review_records, rule_names: rule_names)
+    ReviewBlueprint.render_as_json(review_records, rule_names: rule_names)
   end
 
   # Paginated, filterable accessor for top-level comment Reviews scoped to

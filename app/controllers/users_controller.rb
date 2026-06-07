@@ -32,7 +32,7 @@ class UsersController < ApplicationController
 
     if user.save
       user.reload
-      result = { user: UserBlueprint.render_as_hash(user, view: :admin) }
+      result = { user: UserBlueprint.render_as_json(user, view: :admin) }
 
       if password_params[:password].present?
         result[:toast] = { title: 'User created.', message: ["User #{user.email} created with the provided password."], variant: 'success' }
@@ -91,7 +91,7 @@ class UsersController < ApplicationController
         format.json do
           render json: {
             toast: Toast.new(title: 'User updated.', message: ['Successfully updated user.'], variant: 'success'),
-            user: UserBlueprint.render_as_hash(@user, view: :admin)
+            user: UserBlueprint.render_as_json(@user, view: :admin)
           }
         end
       end
@@ -210,7 +210,7 @@ class UsersController < ApplicationController
       toast: Toast.new(title: 'Account locked.',
                        message: ["Account #{@user.email} locked."],
                        variant: 'success'),
-      user: UserBlueprint.render_as_hash(@user, view: :admin)
+      user: UserBlueprint.render_as_json(@user, view: :admin)
     }
   end
 
@@ -225,7 +225,7 @@ class UsersController < ApplicationController
       toast: Toast.new(title: 'Account unlocked.',
                        message: ["Account #{@user.email} unlocked."],
                        variant: 'success'),
-      user: UserBlueprint.render_as_hash(@user, view: :admin)
+      user: UserBlueprint.render_as_json(@user, view: :admin)
     }
   end
 
@@ -324,7 +324,7 @@ class UsersController < ApplicationController
       latest_response_at: latest_response_at
     }
 
-    rows = page_records.map { |r| CommentRowBlueprint.render_as_hash(r, **blueprint_options) }
+    rows = page_records.map { |r| CommentRowBlueprint.render_as_json(r, **blueprint_options) }
     inject_reactions_mine!(rows)
 
     { rows: rows, pagination: { page: page, per_page: per_page, total: total } }

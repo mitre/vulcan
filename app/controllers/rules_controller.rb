@@ -48,7 +48,7 @@ class RulesController < ApplicationController
 
   def show
     summary = Reaction.summary(@rule.reviews.map(&:id), current_user&.id)
-    render json: RuleBlueprint.render_as_hash(@rule, view: :editor, reactions_summary: summary)
+    render json: RuleBlueprint.render_as_json(@rule, view: :editor, reactions_summary: summary)
   end
 
   def related_rules
@@ -58,14 +58,14 @@ class RulesController < ApplicationController
     )
     stig_rules = StigRule.where(srg_id: srg_id).eager_load(:disa_rule_descriptions, :checks, :stig)
     rules = rules.filter { |r| r.component.all_users.include?(current_user) } unless current_user.admin?
-    stig_parents = StigBlueprint.render_as_hash(stig_rules.map(&:stig).uniq, view: :index)
+    stig_parents = StigBlueprint.render_as_json(stig_rules.map(&:stig).uniq, view: :index)
     components = rules.map(&:component).uniq
     ActiveRecord::Associations::Preloader.new(records: components, associations: :project).call
-    component_parents = ComponentBlueprint.render_as_hash(components, view: :related)
+    component_parents = ComponentBlueprint.render_as_json(components, view: :related)
     parents = (stig_parents + component_parents)
 
-    all_rules = StigRuleBlueprint.render_as_hash(stig_rules) +
-                RuleBlueprint.render_as_hash(rules, view: :editor)
+    all_rules = StigRuleBlueprint.render_as_json(stig_rules) +
+                RuleBlueprint.render_as_json(rules, view: :editor)
 
     render json: { rules: all_rules, parents: parents }
   end
@@ -78,7 +78,7 @@ class RulesController < ApplicationController
       # doesn't support piggybacking extra response keys.
       render json: {
         toast: Toast.new(title: 'Control created.', message: ['Successfully created control.'], variant: 'success'),
-        data: RuleBlueprint.render_as_hash(rule, view: :editor)
+        data: RuleBlueprint.render_as_json(rule, view: :editor)
       }
     else
       render json: {
@@ -180,7 +180,7 @@ class RulesController < ApplicationController
 
     # multi-key response (rule + toast).
     render json: {
-      rule: RuleBlueprint.render_as_hash(@rule, view: :editor),
+      rule: RuleBlueprint.render_as_json(@rule, view: :editor),
       toast: Toast.new(title: locked ? 'Section locked.' : 'Section unlocked.',
                        message: ["#{section} #{locked ? 'locked' : 'unlocked'}"],
                        variant: 'success')
@@ -210,7 +210,7 @@ class RulesController < ApplicationController
 
     # multi-key response (rule + toast).
     render json: {
-      rule: RuleBlueprint.render_as_hash(@rule, view: :editor),
+      rule: RuleBlueprint.render_as_json(@rule, view: :editor),
       toast: Toast.new(title: "Sections #{action_word.downcase}.",
                        message: ["#{action_word} #{sections.size} sections"],
                        variant: 'success')

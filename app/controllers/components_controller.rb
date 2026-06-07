@@ -337,7 +337,7 @@ class ComponentsController < ApplicationController
     return render_not_found unless @component
 
     rules = @component.rules.includes(:satisfied_by, :satisfies)
-    render json: { rules: RuleBlueprint.render_as_hash(rules, view: :picker) }
+    render json: { rules: RuleBlueprint.render_as_json(rules, view: :picker) }
   end
 
   def comments
@@ -442,13 +442,13 @@ class ComponentsController < ApplicationController
         end
 
         history << {
-          base_component: ComponentBlueprint.render_as_hash(prev_component),
-          diff_component: ComponentBlueprint.render_as_hash(component),
+          base_component: ComponentBlueprint.render_as_json(prev_component),
+          diff_component: ComponentBlueprint.render_as_json(component),
           changes: changes
         }
       end
 
-      history << { component: ComponentBlueprint.render_as_hash(component) }
+      history << { component: ComponentBlueprint.render_as_json(component) }
     end
 
     render json: history
@@ -536,7 +536,7 @@ class ComponentsController < ApplicationController
     )
                  .order(:rule_id)
 
-    render json: RuleBlueprint.render_as_hash(rules, view: :editor)
+    render json: RuleBlueprint.render_as_json(rules, view: :editor)
   end
 
   private

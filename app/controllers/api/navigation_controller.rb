@@ -37,7 +37,7 @@ module Api
       pending.map do |ar|
         {
           id: ar.id,
-          user: UserBlueprint.render_as_hash(ar.user),
+          user: UserBlueprint.render_as_json(ar.user),
           project: { id: ar.project.id, name: ar.project.name }
         }
       end
@@ -46,7 +46,7 @@ module Api
     def locked_users
       return [] unless current_user.admin? && Settings.lockout&.enabled
 
-      UserBlueprint.render_as_hash(User.where.not(locked_at: nil).limit(100))
+      UserBlueprint.render_as_json(User.where.not(locked_at: nil).limit(100))
     end
 
     def admin_project_ids

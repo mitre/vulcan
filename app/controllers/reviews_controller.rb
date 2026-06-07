@@ -166,8 +166,8 @@ class ReviewsController < ApplicationController
     end
 
     render json: {
-      review: ReviewBlueprint.render_as_hash(@review),
-      response_review: response_review ? ReviewBlueprint.render_as_hash(response_review) : nil
+      review: ReviewBlueprint.render_as_json(@review),
+      response_review: response_review ? ReviewBlueprint.render_as_json(response_review) : nil
     }
   end
 
@@ -188,8 +188,8 @@ class ReviewsController < ApplicationController
     )
 
     render json: {
-      reviews: result[:reviews].map { |r| ReviewBlueprint.render_as_hash(r) },
-      response_reviews: result[:response_reviews].map { |r| ReviewBlueprint.render_as_hash(r) }
+      reviews: result[:reviews].map { |r| ReviewBlueprint.render_as_json(r) },
+      response_reviews: result[:response_reviews].map { |r| ReviewBlueprint.render_as_json(r) }
     }
   rescue ArgumentError => e
     render_toast(title: 'Could not save triage.', message: e.message)
@@ -205,8 +205,8 @@ class ReviewsController < ApplicationController
       merged_by: current_user
     )
     render json: {
-      survivor: ReviewBlueprint.render_as_hash(result[:survivor].reload),
-      duplicates: result[:duplicates].map { |r| ReviewBlueprint.render_as_hash(r.reload) }
+      survivor: ReviewBlueprint.render_as_json(result[:survivor].reload),
+      duplicates: result[:duplicates].map { |r| ReviewBlueprint.render_as_json(r.reload) }
     }
   rescue ArgumentError => e
     render_toast(title: 'Could not merge comments.', message: e.message)
@@ -223,7 +223,7 @@ class ReviewsController < ApplicationController
   def adjudicate
     if @review.adjudicated_at.present?
       return render json: {
-        review: ReviewBlueprint.render_as_hash(@review),
+        review: ReviewBlueprint.render_as_json(@review),
         response_review: nil
       }
     end
@@ -251,8 +251,8 @@ class ReviewsController < ApplicationController
     end
 
     render json: {
-      review: ReviewBlueprint.render_as_hash(@review),
-      response_review: response_review ? ReviewBlueprint.render_as_hash(response_review) : nil
+      review: ReviewBlueprint.render_as_json(@review),
+      response_review: response_review ? ReviewBlueprint.render_as_json(response_review) : nil
     }
   end
 
@@ -276,7 +276,7 @@ class ReviewsController < ApplicationController
 
     @review.save_intent = :reopen
     @review.update!(adjudicated_at: nil, adjudicated_by_id: nil)
-    render json: { review: ReviewBlueprint.render_as_hash(@review) }
+    render json: { review: ReviewBlueprint.render_as_json(@review) }
   end
 
   # PATCH /reviews/:id/withdraw — commenter retracts their own comment
@@ -291,7 +291,7 @@ class ReviewsController < ApplicationController
     end
 
     @review.update!(triage_status: 'withdrawn')
-    render json: { review: ReviewBlueprint.render_as_hash(@review) }
+    render json: { review: ReviewBlueprint.render_as_json(@review) }
   end
 
   # PATCH /reviews/:id/admin_withdraw.
@@ -313,7 +313,7 @@ class ReviewsController < ApplicationController
       adjudicated_at: Time.current,
       adjudicated_by_id: current_user.id
     )
-    render json: { review: ReviewBlueprint.render_as_hash(@review) }
+    render json: { review: ReviewBlueprint.render_as_json(@review) }
   end
 
   # PATCH /reviews/:id/admin_restore.
@@ -341,7 +341,7 @@ class ReviewsController < ApplicationController
       adjudicated_at: nil,
       adjudicated_by_id: nil
     )
-    render json: { review: ReviewBlueprint.render_as_hash(@review) }
+    render json: { review: ReviewBlueprint.render_as_json(@review) }
   end
 
   # PATCH /reviews/:id/move_to_rule.
@@ -406,7 +406,7 @@ class ReviewsController < ApplicationController
       # recurses to depth-N replies in one transaction.
       @review.move_to_rule!(target_rule, reason: @audit_comment, moved_by: current_user)
     end
-    render json: { review: ReviewBlueprint.render_as_hash(@review.reload) }
+    render json: { review: ReviewBlueprint.render_as_json(@review.reload) }
   end
 
   # DELETE /reviews/:id/admin_destroy.
@@ -481,12 +481,12 @@ class ReviewsController < ApplicationController
     # would be tautological — Rails update!(same_value) writes no audit
     # regardless of whether the short-circuit is in place).
     if new_section == @review.section # rubocop:disable Style/IfUnlessModifier -- modifier form > 120 chars
-      return render json: { review: ReviewBlueprint.render_as_hash(@review), idempotent: true }
+      return render json: { review: ReviewBlueprint.render_as_json(@review), idempotent: true }
     end
 
     @review.audit_comment = "Section change: #{@audit_comment}"
     @review.update!(section: new_section)
-    render json: { review: ReviewBlueprint.render_as_hash(@review) }
+    render json: { review: ReviewBlueprint.render_as_json(@review) }
   end
 
   # PUT /reviews/:id — commenter edits their own comment text. Allowed
@@ -501,7 +501,7 @@ class ReviewsController < ApplicationController
     end
 
     @review.update!(review_update_params)
-    render json: { review: ReviewBlueprint.render_as_hash(@review) }
+    render json: { review: ReviewBlueprint.render_as_json(@review) }
   end
 
   # GET /reviews/:id/responses — fetch the reply chain under a top-level
@@ -514,7 +514,7 @@ class ReviewsController < ApplicationController
                      .preload(:user, :responses)
                      .order(:created_at)
     reactions_summary = Reaction.summary(replies.map(&:id), current_user&.id)
-    rows = ReviewBlueprint.render_as_hash(replies,
+    rows = ReviewBlueprint.render_as_json(replies,
                                           reactions_summary: reactions_summary,
                                           include_email: true)
     response.headers['Cache-Control'] = 'no-store'
