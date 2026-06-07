@@ -64,6 +64,11 @@ class ReviewBlueprint < Blueprinter::Base
   attribution_fields :adjudicator
   attribution_fields :commenter
 
+  field :commenter_email,
+        if: ->(_field, _review, options) { options && options[:include_email] } do |review, _options|
+    review.user&.email
+  end
+
   # Controllers pass `reactions_summary: Reaction.summary(ids, current_user.id)`
   # via render_as_hash options. Falls back to zeros + nil mine when the
   # option isn't supplied so older callers don't break.

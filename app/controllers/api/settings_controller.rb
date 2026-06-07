@@ -24,7 +24,7 @@ module Api
           version: Settings.consent.version,
           title: Settings.consent.title,
           content: Settings.consent.content,
-          ttl: Settings.consent.ttl
+          ttl: Settings.consent.ttl.to_i
         },
         local_login: {
           enabled: Settings.local_login.enabled

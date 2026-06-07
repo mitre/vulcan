@@ -64,8 +64,10 @@ properties:
     description: Timestamp when the comment reached a terminal triage state. Null if not yet adjudicated.
     example: null
   rule_id:
-    type: integer
-    description: ID of the rule this review is attached to.
+    type:
+      - integer
+      - 'null'
+    description: ID of the rule this review is attached to. Null for component-scoped reviews.
     example: 2976
   section:
     type:
@@ -165,6 +167,16 @@ properties:
     description: >-
       Author's email. Only present when include_email option is true
       (admin-tier surfaces). Null or absent for public endpoints.
+    example: null
+  commenter_email:
+    type:
+      - string
+      - 'null'
+    format: email
+    description: >-
+      Commenter's email (same as author_email but follows the commenter attribution
+      naming convention). Only present when include_email option is true. Null for
+      imported reviews with no matching DB user.
     example: null
   reactions:
     type: object
