@@ -27,6 +27,10 @@ class Project < ApplicationRecord
             length: { maximum: ->(_r) { Settings.input_limits.short_string } }, allow_nil: true
 
   scope :alphabetical, -> { order(:name) }
+  scope :search, lambda { |q|
+    sanitized = sanitize_sql_like(q)
+    where('projects.name ILIKE :q OR projects.description ILIKE :q', q: "%#{sanitized}%")
+  }
 
   # Inner SELECT body that unions rule-scoped and component-scoped top-level
   # comment Reviews. Two ? placeholders (one per UNION branch) bind the
@@ -194,7 +198,7 @@ class Project < ApplicationRecord
       reaction_counts: reaction_counts
     }
 
-    rows = page_reviews.map { |r| CommentRowBlueprint.render_as_hash(r, **blueprint_options) }
+    rows = page_reviews.map { |r| CommentRowBlueprint.render_as_json(r, **blueprint_options) }
 
     status_counts = base_scope_for_counts.group(:triage_status).count
 

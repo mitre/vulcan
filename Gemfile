@@ -161,3 +161,6 @@ gem 'blueprinter-activerecord', '~> 1.3'
 gem 'oj', '~> 3.16'
 
 gem 'climate_control', '~> 1.2', group: :test
+
+gem "pagy", "~> 43.5"
+gem "has_scope", "~> 0.9.0"

@@ -37,6 +37,12 @@ module Api
       render json: { error: 'Not found' }, status: :not_found
     end
 
+    # 400 Bad Request - Pagination page out of range
+    rescue_from Pagy::RangeError do |exception|
+      render json: { error: "Page #{exception.pagy.page} is out of range (1..#{exception.pagy.last})" },
+             status: :bad_request
+    end
+
     # 403 Forbidden - Authenticated but not authorized
     # Note: 401 Unauthorized is for unauthenticated requests (handled above)
     rescue_from NotAuthorizedError do |exception|

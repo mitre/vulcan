@@ -176,6 +176,8 @@ Rails.application.routes.draw do
     get 'search/global', to: 'search#global'
     get 'users/search', to: 'user_search#index'
     get 'version', to: 'version#show'
+
+    resources :projects, only: [:index]
     # peer-shaped diff endpoint. Route points at the existing
     # ComponentsController#compare action (not a new Api::ComponentsController)
     # to keep blast radius small for one endpoint.
