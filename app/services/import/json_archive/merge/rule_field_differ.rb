@@ -43,7 +43,11 @@ module Import
           @strategy = strategy
           @srg_baseline = srg_baseline
           @ours_attrs = ours_rule.attributes
-          @locked_fields = Array(ours_rule.locked_fields)
+          # locked_fields on Rule is a JSONB hash keyed by SECTION name
+          # (e.g. {"Check" => true, "Fix" => true}), NOT a flat list of
+          # column names. Locking a section locks every column that
+          # RuleConstants::SECTION_FIELDS maps under it.
+          @locked_sections = (ours_rule.locked_fields || {}).keys.to_set
         end
 
         def diff
@@ -69,11 +73,11 @@ module Import
         end
 
         def build_change(field, ours_val, theirs_val)
-          if @locked_fields.include?(field)
+          if field_locked?(field)
             FieldChange.new(
               field: field, from: ours_val, to: theirs_val,
               resolution: :locked_conflict, locked: true,
-              reason: "Field '#{field}' is locked on the receiving component"
+              reason: "Field '#{field}' is locked (section '#{RuleConstants::FIELD_TO_SECTION[field.to_sym]}') on the receiving component"
             )
           else
             verb = @strategy.for_field(:rule, field)
@@ -87,6 +91,18 @@ module Import
 
         def map_strategy_verb(verb)
           STRATEGY_VERB_MAP.fetch(verb, :conflict)
+        end
+
+        # A field is locked when its parent section is present in the
+        # receiving component's locked_fields. RuleConstants::FIELD_TO_SECTION
+        # is the canonical column→section map (e.g. :fixtext → 'Fix',
+        # :check_content → 'Check'). Fields outside the map cannot be
+        # locked, so default to false.
+        def field_locked?(field)
+          section = RuleConstants::FIELD_TO_SECTION[field.to_sym]
+          return false unless section
+
+          @locked_sections.include?(section)
         end
 
         def strategy_reason(verb)

@@ -71,7 +71,10 @@ RSpec.describe Import::JsonArchive::Merge::RuleFieldDiffer, type: :service do
   end
 
   describe '#diff (locked field — always :locked_conflict)' do
-    before { ours_rule.update_columns(locked_fields: %w[title]) }
+    # Real JSONB shape: hash keyed by section name (Title, Status, Check, ...),
+    # NOT an array of column names. Locking the 'Title' section locks every
+    # column in RuleConstants::SECTION_FIELDS['Title'].
+    before { ours_rule.update_columns(locked_fields: { 'Title' => true }) }
 
     it 'flags a locked field as :locked_conflict even when only one side changed' do
       theirs = base_theirs_hash.merge('title' => 'theirs title')
@@ -93,6 +96,29 @@ RSpec.describe Import::JsonArchive::Merge::RuleFieldDiffer, type: :service do
 
       title_change = differ.diff.find { |c| c.field == 'title' }
       expect(title_change.resolution).to eq(:locked_conflict)
+    end
+
+    it 'locks every column in the section, not just the named one' do
+      # Locking 'Fix' should make BOTH fixtext and fix_id (per SECTION_FIELDS)
+      # flag as :locked_conflict on divergence.
+      ours_rule.update_columns(locked_fields: { 'Fix' => true })
+      theirs = base_theirs_hash.merge('fixtext' => 'changed fix', 'fix_id' => 'F-999')
+
+      differ = described_class.new(ours_rule: ours_rule, theirs_rule_hash: theirs, strategy: strategy)
+      changes = differ.diff
+
+      expect(changes.find { |c| c.field == 'fixtext' }.resolution).to eq(:locked_conflict)
+      expect(changes.find { |c| c.field == 'fix_id' }.resolution).to eq(:locked_conflict)
+    end
+
+    it 'does NOT lock a field outside the locked section' do
+      ours_rule.update_columns(locked_fields: { 'Title' => true })
+      theirs = base_theirs_hash.merge('fixtext' => 'theirs fix')
+
+      differ = described_class.new(ours_rule: ours_rule, theirs_rule_hash: theirs, strategy: strategy)
+      fix_change = differ.diff.find { |c| c.field == 'fixtext' }
+      expect(fix_change.resolution).to eq(:conflict) # Strategy default, NOT :locked_conflict
+      expect(fix_change.locked).to be(false)
     end
   end
 
