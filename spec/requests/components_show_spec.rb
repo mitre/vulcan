@@ -86,7 +86,7 @@ RSpec.describe 'Components' do
       expect(response).to have_http_status(:success)
 
       json_keys = response.parsed_body.keys.sort
-      blueprint_keys = ComponentBlueprint.render_as_hash(component, view: :editor).keys.map(&:to_s).sort
+      blueprint_keys = ComponentBlueprint.render_as_json(component, view: :editor).keys.sort
 
       expect(json_keys).to eq(blueprint_keys)
     end

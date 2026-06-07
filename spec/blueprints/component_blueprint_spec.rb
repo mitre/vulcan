@@ -24,10 +24,10 @@ RSpec.describe 'ComponentBlueprint' do
   end
 
   describe ':index view' do
-    let(:json) { ComponentBlueprint.render_as_hash(component, view: :index) }
+    let(:json) { ComponentBlueprint.render_as_json(component, view: :index) }
 
     it 'includes every field ComponentCard.vue reads' do
-      %i[id name prefix version release based_on_title based_on_version
+      %w[id name prefix version release based_on_title based_on_version
          severity_counts rules_count component_id project_id
          security_requirements_guide_id admin_name admin_email
          description releasable pending_comment_count].each do |f|
@@ -36,37 +36,37 @@ RSpec.describe 'ComponentBlueprint' do
     end
 
     it 'rules_count is an integer (controls badge)' do
-      expect(json[:rules_count]).to be_a(Integer)
+      expect(json['rules_count']).to be_a(Integer)
     end
 
     it 'excludes heavy fields' do
-      expect(json).not_to have_key(:rules)
-      expect(json).not_to have_key(:histories)
-      expect(json).not_to have_key(:available_members)
+      expect(json).not_to have_key('rules')
+      expect(json).not_to have_key('histories')
+      expect(json).not_to have_key('available_members')
     end
   end
 
   describe ':show view (non-member, released component)' do
-    let(:json) { ComponentBlueprint.render_as_hash(component, view: :show) }
+    let(:json) { ComponentBlueprint.render_as_json(component, view: :show) }
 
     it 'includes rules and reviews' do
-      expect(json).to have_key(:rules)
-      expect(json).to have_key(:reviews)
-      expect(json[:rules]).to be_an(Array)
+      expect(json).to have_key('rules')
+      expect(json).to have_key('reviews')
+      expect(json['rules']).to be_an(Array)
     end
 
     it 'excludes editor-only fields' do
-      expect(json).not_to have_key(:available_members)
-      expect(json).not_to have_key(:all_users)
-      expect(json).not_to have_key(:inherited_memberships)
+      expect(json).not_to have_key('available_members')
+      expect(json).not_to have_key('all_users')
+      expect(json).not_to have_key('inherited_memberships')
     end
   end
 
   describe ':editor view (project member)' do
-    let(:json) { ComponentBlueprint.render_as_hash(component, view: :editor) }
+    let(:json) { ComponentBlueprint.render_as_json(component, view: :editor) }
 
     it 'includes all DB columns needed by Vue' do
-      %i[id name prefix version release title description
+      %w[id name prefix version release title description
          admin_name admin_email released advanced_fields
          project_id component_id security_requirements_guide_id
          memberships_count rules_count updated_at].each do |f|
@@ -75,52 +75,52 @@ RSpec.describe 'ComponentBlueprint' do
     end
 
     it 'includes computed fields' do
-      expect(json).to have_key(:based_on_title)
-      expect(json).to have_key(:based_on_version)
-      expect(json).to have_key(:releasable)
-      expect(json).to have_key(:severity_counts)
-      expect(json).to have_key(:status_counts)
+      expect(json).to have_key('based_on_title')
+      expect(json).to have_key('based_on_version')
+      expect(json).to have_key('releasable')
+      expect(json).to have_key('severity_counts')
+      expect(json).to have_key('status_counts')
     end
 
     it 'includes all method-derived data' do
-      expect(json).to have_key(:rules)
-      expect(json).to have_key(:reviews)
-      expect(json).to have_key(:histories)
-      expect(json).to have_key(:memberships)
-      expect(json).to have_key(:metadata)
-      expect(json).to have_key(:inherited_memberships)
-      expect(json).to have_key(:additional_questions)
+      expect(json).to have_key('rules')
+      expect(json).to have_key('reviews')
+      expect(json).to have_key('histories')
+      expect(json).to have_key('memberships')
+      expect(json).to have_key('metadata')
+      expect(json).to have_key('inherited_memberships')
+      expect(json).to have_key('additional_questions')
     end
 
     it 'does NOT include dead admins field' do
       # Per Vue analysis: no component page Vue consumer reads component.admins
-      expect(json).not_to have_key(:admins)
+      expect(json).not_to have_key('admins')
     end
 
     it 'does NOT include available_members or all_users (information disclosure regression guard)' do
       # SECURITY: pre-loading the full user directory into the payload was an
       # information disclosure issue. The Add Member dropdown and PoC dropdown
       # now fetch via /api/users/search and /api/users/search?scope=members.
-      expect(json).not_to have_key(:available_members)
-      expect(json).not_to have_key(:all_users)
+      expect(json).not_to have_key('available_members')
+      expect(json).not_to have_key('all_users')
     end
 
     it 'rules are serialized via RuleBlueprint :editor' do
-      if json[:rules].any?
-        rule_json = json[:rules].first
+      if json['rules'].any?
+        rule_json = json['rules'].first
         # RuleBlueprint :editor includes these
-        expect(rule_json).to have_key(:srg_rule_attributes)
-        expect(rule_json).to have_key(:reviews)
-        expect(rule_json).to have_key(:srg_info)
+        expect(rule_json).to have_key('srg_rule_attributes')
+        expect(rule_json).to have_key('reviews')
+        expect(rule_json).to have_key('srg_info')
       end
     end
 
     it 'memberships include name and email' do
-      if json[:memberships].any?
-        m = json[:memberships].first
-        expect(m).to have_key(:name)
-        expect(m).to have_key(:email)
-        expect(m).to have_key(:role)
+      if json['memberships'].any?
+        m = json['memberships'].first
+        expect(m).to have_key('name')
+        expect(m).to have_key('email')
+        expect(m).to have_key('role')
       end
     end
   end

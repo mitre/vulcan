@@ -233,59 +233,58 @@ RSpec.describe Review do
     end
 
     it 'includes srg_id in the satisfies array' do
-      json = RuleBlueprint.render_as_hash(rule, view: :editor)
-      satisfies_list = json[:satisfies]
+      json = RuleBlueprint.render_as_json(rule, view: :editor)
+      satisfies_list = json['satisfies']
       expect(satisfies_list).to be_an(Array)
       expect(satisfies_list.size).to eq(1)
 
       satisfied = satisfies_list.first
-      expect(satisfied[:id]).to eq(@p1r2.id)
-      expect(satisfied[:rule_id]).to eq('P1-R2')
-      expect(satisfied[:srg_id]).to eq(@p1r2.srg_rule.version)
+      expect(satisfied['id']).to eq(@p1r2.id)
+      expect(satisfied['rule_id']).to eq('P1-R2')
+      expect(satisfied['srg_id']).to eq(@p1r2.srg_rule.version)
     end
 
     it 'includes srg_id in the satisfied_by array' do
       @p1r2.reload
-      json = RuleBlueprint.render_as_hash(@p1r2, view: :editor)
-      satisfied_by_list = json[:satisfied_by]
+      json = RuleBlueprint.render_as_json(@p1r2, view: :editor)
+      satisfied_by_list = json['satisfied_by']
       expect(satisfied_by_list).to be_an(Array)
       expect(satisfied_by_list.size).to eq(1)
 
       satisfier = satisfied_by_list.first
-      expect(satisfier[:id]).to eq(rule.id)
-      expect(satisfier[:rule_id]).to eq('P1-R1')
-      expect(satisfier[:srg_id]).to eq(rule.srg_rule.version)
+      expect(satisfier['id']).to eq(rule.id)
+      expect(satisfier['rule_id']).to eq('P1-R1')
+      expect(satisfier['srg_id']).to eq(rule.srg_rule.version)
     end
 
     it 'includes srg_id derived from srg_rule.version' do
-      json = RuleBlueprint.render_as_hash(rule, view: :editor)
-      # Blueprinter uses symbol keys consistently
-      expect(json).to have_key(:srg_id)
-      expect(json[:srg_id]).to eq(rule.srg_rule.version)
+      json = RuleBlueprint.render_as_json(rule, view: :editor)
+      expect(json).to have_key('srg_id')
+      expect(json['srg_id']).to eq(rule.srg_rule.version)
     end
 
     it 'does NOT include version in satisfaction objects (frontend uses srg_id)' do
-      json = RuleBlueprint.render_as_hash(rule, view: :editor)
-      satisfies_list = json[:satisfies]
+      json = RuleBlueprint.render_as_json(rule, view: :editor)
+      satisfies_list = json['satisfies']
       satisfied = satisfies_list.first
 
       # CRITICAL CONTRACT: Frontend RuleNavigator uses srg_id for display.
       # If version were included, it would mask the bug where template
       # references satisfies.version instead of satisfies.srg_id.
-      expect(satisfied).to have_key(:srg_id)
-      expect(satisfied).not_to have_key(:version)
-      expect(satisfied.keys).to match_array(%i[id rule_id srg_id])
+      expect(satisfied).to have_key('srg_id')
+      expect(satisfied).not_to have_key('version')
+      expect(satisfied.keys).to match_array(%w[id rule_id srg_id])
     end
 
     it 'does NOT include version in satisfied_by objects (frontend uses srg_id)' do
       @p1r2.reload
-      json = RuleBlueprint.render_as_hash(@p1r2, view: :editor)
-      satisfied_by_list = json[:satisfied_by]
+      json = RuleBlueprint.render_as_json(@p1r2, view: :editor)
+      satisfied_by_list = json['satisfied_by']
       satisfier = satisfied_by_list.first
 
-      expect(satisfier).to have_key(:srg_id)
-      expect(satisfier).not_to have_key(:version)
-      expect(satisfier.keys).to match_array(%i[id rule_id fixtext srg_id component_prefix])
+      expect(satisfier).to have_key('srg_id')
+      expect(satisfier).not_to have_key('version')
+      expect(satisfier.keys).to match_array(%w[id rule_id fixtext srg_id component_prefix])
     end
 
     it 'handles satisfaction with nil srg_rule gracefully' do
@@ -298,9 +297,9 @@ RSpec.describe Review do
         srg_rule: nil
       )
       # Verify blueprint handles nil srg_rule without error
-      json = RuleBlueprint.render_as_hash(rule_no_srg, view: :editor)
-      expect(json[:srg_id]).to be_nil
-      expect(json[:satisfies]).to eq([])
+      json = RuleBlueprint.render_as_json(rule_no_srg, view: :editor)
+      expect(json['srg_id']).to be_nil
+      expect(json['satisfies']).to eq([])
     end
   end
 
@@ -433,9 +432,9 @@ RSpec.describe Review do
         srg_rule: nil
       )
       json = nil
-      expect { json = RuleBlueprint.render_as_hash(rule_without_srg, view: :editor) }.not_to raise_error
-      expect(json[:srg_rule_attributes]).to be_nil
-      expect(json[:srg_info][:version]).to be_nil
+      expect { json = RuleBlueprint.render_as_json(rule_without_srg, view: :editor) }.not_to raise_error
+      expect(json['srg_rule_attributes']).to be_nil
+      expect(json['srg_info']['version']).to be_nil
     end
 
     it 'handles rule with srg_rule but nil security_requirements_guide_id' do
@@ -452,16 +451,16 @@ RSpec.describe Review do
         srg_rule: orphan_srg_rule
       )
       json = nil
-      expect { json = RuleBlueprint.render_as_hash(rule_with_orphan_srg, view: :editor) }.not_to raise_error
-      expect(json[:srg_info][:version]).to be_nil
+      expect { json = RuleBlueprint.render_as_json(rule_with_orphan_srg, view: :editor) }.not_to raise_error
+      expect(json['srg_info']['version']).to be_nil
     end
 
     it 'returns correct SRG version when all data is present' do
       # Use the existing rule which has a valid srg_rule
-      json = RuleBlueprint.render_as_hash(rule, view: :editor)
-      expect(json[:srg_info][:version]).not_to be_nil
+      json = RuleBlueprint.render_as_json(rule, view: :editor)
+      expect(json['srg_info']['version']).not_to be_nil
       srg = rule.srg_rule.security_requirements_guide
-      expect(json[:srg_info][:version]).to eq(srg.version)
+      expect(json['srg_info']['version']).to eq(srg.version)
     end
   end
 
