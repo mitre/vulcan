@@ -1,5 +1,17 @@
 - content_for :title, 'API Documentation'
 
+:css
+  .light-mode, .dark-mode {
+    --scalar-color-1: var(--vulcan-body-color) !important;
+    --scalar-color-2: var(--vulcan-secondary-color) !important;
+    --scalar-color-accent: var(--vulcan-primary) !important;
+    --scalar-background-1: var(--vulcan-body-bg) !important;
+    --scalar-background-2: var(--vulcan-secondary-bg) !important;
+    --scalar-background-3: var(--vulcan-tertiary-bg) !important;
+    --scalar-background-accent: var(--vulcan-primary-tint) !important;
+    --scalar-border-color: var(--vulcan-border-color) !important;
+  }
+
 %div#scalar-docs
 
 %script{ src: 'https://cdn.jsdelivr.net/npm/@scalar/api-reference' }
