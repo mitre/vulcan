@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Bundler upgraded from 2.7.2 to 4.0.13 (`Gemfile.lock` `BUNDLED WITH`). The Dockerfile's `ARG BUNDLER_VERSION` pin and explicit `gem install bundler` step are removed: RubyGems and Bundler now release in lockstep, so the existing `gem update --system` in the build stage already provides the latest Bundler as RubyGems' default. `bundle install` uses it directly — no separate Bundler pin to maintain.
+
 ## [v2.3.7] - 2026-05-10
 
 ### Added

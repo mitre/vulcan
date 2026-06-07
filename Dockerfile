@@ -19,7 +19,6 @@
 ARG RUBY_VERSION=3.4.9
 # Upstream SHA256 from https://www.ruby-lang.org/en/news/<release>/
 ARG RUBY_SHA256=7bb4d4f5e807cc27251d14d9d6086d182c5b25875191e44ab15b709cd7a7dd9c
-ARG BUNDLER_VERSION=2.7.2
 ARG NODE_VERSION=24.14.0
 
 # =============================================================================
@@ -84,7 +83,6 @@ FROM base AS build-base
 
 ARG RUBY_VERSION
 ARG RUBY_SHA256
-ARG BUNDLER_VERSION
 
 USER 0
 
@@ -125,13 +123,14 @@ RUN curl -fsSL https://cache.ruby-lang.org/pub/ruby/${RUBY_VERSION%.*}/ruby-${RU
     make -j"$(nproc)" && \
     make install && \
     gem update --system --no-document && \
-    gem install bundler:${BUNDLER_VERSION} --no-document && \
     chown -R 1000:0 /usr/local/bundle && \
     chmod -R g=u /usr/local/bundle && \
     cd /tmp && \
     rm -rf /tmp/ruby-${RUBY_VERSION} /tmp/ruby.tar.gz && \
     ruby --version && \
     bundle --version
+# `gem update --system` above upgrades RubyGems and its bundled Bundler in
+# lockstep (they share a release), so Bundler needs no separate install/pin.
 
 # jemalloc — UBI doesn't ship it; compile from source for ~20-30% memory savings.
 ARG JEMALLOC_VERSION=5.3.0
