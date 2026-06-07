@@ -61,13 +61,13 @@ describe("ControlsCommandBar", () => {
     updated_at: "2024-01-15T10:00:00Z",
   };
 
-  const createWrapper = (props = {}) => {
+  const createWrapper = (props = {}, permissions = "admin") => {
     return mount(ControlsCommandBar, {
       localVue,
+      provide: { effectivePermissions: permissions },
       propsData: {
         component: defaultComponent,
         selectedRule: null,
-        effectivePermissions: "admin",
         activePanel: null,
         readOnly: true,
         ...props,
@@ -154,13 +154,13 @@ describe("ControlsCommandBar", () => {
     });
 
     it("overflow dropdown contains Release for admin", () => {
-      wrapper = createWrapper({ effectivePermissions: "admin" });
+      wrapper = createWrapper({}, "admin");
       const dropdown = wrapper.findComponent({ name: "BDropdown" });
       expect(dropdown.text()).toContain("Release");
     });
 
     it("overflow dropdown hides Release for non-admin", () => {
-      wrapper = createWrapper({ effectivePermissions: "viewer" });
+      wrapper = createWrapper({}, "viewer");
       const dropdown = wrapper.findComponent({ name: "BDropdown" });
       expect(dropdown.text()).not.toContain("Release");
     });
@@ -268,7 +268,7 @@ describe("ControlsCommandBar", () => {
   describe("mode behavior", () => {
     describe("VIEW mode (readOnly=true)", () => {
       it("shows Edit button", () => {
-        wrapper = createWrapper({ readOnly: true, effectivePermissions: "admin" });
+        wrapper = createWrapper({ readOnly: true }, "admin");
         expect(wrapper.text()).toContain("Edit");
         expect(wrapper.text()).not.toContain("View");
       });
@@ -282,7 +282,7 @@ describe("ControlsCommandBar", () => {
 
     describe("EDIT mode (readOnly=false)", () => {
       it("shows View button", () => {
-        wrapper = createWrapper({ readOnly: false, effectivePermissions: "admin" });
+        wrapper = createWrapper({ readOnly: false }, "admin");
         expect(wrapper.text()).toContain("View");
       });
 
@@ -299,17 +299,17 @@ describe("ControlsCommandBar", () => {
   // ==========================================
   describe("Edit/View button permissions", () => {
     it("shows Edit button for admin", () => {
-      wrapper = createWrapper({ effectivePermissions: "admin", readOnly: true });
+      wrapper = createWrapper({ readOnly: true }, "admin");
       expect(wrapper.text()).toContain("Edit");
     });
 
     it("shows Edit button for author", () => {
-      wrapper = createWrapper({ effectivePermissions: "author", readOnly: true });
+      wrapper = createWrapper({ readOnly: true }, "author");
       expect(wrapper.text()).toContain("Edit");
     });
 
     it("hides Edit button for viewer", () => {
-      wrapper = createWrapper({ effectivePermissions: "viewer", readOnly: true });
+      wrapper = createWrapper({ readOnly: true }, "viewer");
       const buttons = wrapper.findAll("a.btn");
       const editButton = buttons.wrappers.find((b) => b.text().includes("Edit"));
       expect(editButton).toBeUndefined();
@@ -318,13 +318,13 @@ describe("ControlsCommandBar", () => {
 
   describe("Release (in overflow menu)", () => {
     it("shows Release item in overflow for admin", () => {
-      wrapper = createWrapper({ effectivePermissions: "admin" });
+      wrapper = createWrapper({}, "admin");
       const dropdown = wrapper.findComponent({ name: "BDropdown" });
       expect(dropdown.text()).toContain("Release");
     });
 
     it("hides Release item for non-admin", () => {
-      wrapper = createWrapper({ effectivePermissions: "author" });
+      wrapper = createWrapper({}, "author");
       const dropdown = wrapper.findComponent({ name: "BDropdown" });
       expect(dropdown.text()).not.toContain("Release");
     });

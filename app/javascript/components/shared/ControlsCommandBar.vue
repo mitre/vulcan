@@ -226,8 +226,8 @@
 </template>
 
 <script>
-import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
-import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
+import { usePermissions } from "../../composables/usePermissions";
+import { useDateFormat } from "../../composables/useDateFormat";
 import BaseCommandBar from "./BaseCommandBar.vue";
 import CommentStatusChip from "./CommentStatusChip.vue";
 import UpdateFromSpreadsheetModal from "../components/UpdateFromSpreadsheetModal.vue";
@@ -236,7 +236,6 @@ import { PANEL_LABELS } from "../../constants/terminology";
 export default {
   name: "ControlsCommandBar",
   components: { BaseCommandBar, CommentStatusChip, UpdateFromSpreadsheetModal },
-  mixins: [RoleComparisonMixin, DateFormatMixinVue],
   props: {
     component: {
       type: Object,
@@ -245,10 +244,6 @@ export default {
     selectedRule: {
       type: Object,
       default: null,
-    },
-    effectivePermissions: {
-      type: String,
-      required: true,
     },
     activePanel: {
       type: String,
@@ -275,23 +270,22 @@ export default {
       default: 0,
     },
   },
+  setup() {
+    const { effectivePermissions, canEdit, canAdmin, isMember } = usePermissions();
+    const { friendlyDateTime } = useDateFormat();
+    return { effectivePermissions, canEdit, canAdmin, isMember, friendlyDateTime };
+  },
   data() {
     return {
       labels: PANEL_LABELS,
     };
   },
   computed: {
-    canEdit() {
-      return this.role_gte_to(this.effectivePermissions, "author");
-    },
-    canAdmin() {
-      return this.effectivePermissions === "admin";
-    },
     canCommentOnComponent() {
-      return !!this.effectivePermissions;
+      return this.isMember;
     },
     canRelease() {
-      return this.effectivePermissions === "admin";
+      return this.canAdmin;
     },
     isReleasable() {
       return this.component.releasable && !this.component.released;

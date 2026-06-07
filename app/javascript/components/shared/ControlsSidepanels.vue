@@ -202,7 +202,6 @@
 <script>
 import { getHistories } from "../../api/componentsApi";
 import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
-import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import { SIDEBAR_TITLES } from "../../constants/terminology";
 import History from "./History.vue";
 import RuleSatisfactions from "../rules/RuleSatisfactions.vue";
@@ -221,7 +220,7 @@ export default {
     UpdateMetadataModal,
     AddQuestionsModal,
   },
-  mixins: [RoleComparisonMixin, DateFormatMixinVue],
+  mixins: [RoleComparisonMixin],
   props: {
     component: {
       type: Object,
