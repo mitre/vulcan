@@ -28,6 +28,10 @@ pre-commit:
     json-syntax:
       glob: "*.json"
       run: ruby -e "require 'json'; ARGV.each { |f| JSON.parse(File.read(f)) }" {staged_files}
+    openapi-bundle-check:
+      glob: "doc/openapi/**/*.{yaml,yml}"
+      run: yarn openapi:bundle --quiet && git diff --exit-code doc/openapi.yaml
+      fail_text: "OpenAPI bundle is stale. Run: yarn openapi:bundle && git add doc/openapi.yaml"
     merge-conflicts:
       run: git diff --staged --check
 
@@ -53,6 +57,9 @@ pre-push:
       run: yarn lint:ci
     brakeman:
       run: bundle exec brakeman --quiet --no-pager
+    openapi-bundle-check:
+      run: yarn openapi:bundle --quiet && git diff --exit-code doc/openapi.yaml
+      fail_text: "OpenAPI bundle is stale. Run: yarn openapi:bundle && git add doc/openapi.yaml"
 
 post-checkout:
   commands:
