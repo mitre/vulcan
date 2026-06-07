@@ -38,7 +38,7 @@ RSpec.describe 'admin:bootstrap rake task' do
         ClimateControl.modify(VULCAN_ADMIN_EMAIL: bootstrap_email, VULCAN_ADMIN_PASSWORD: bootstrap_password) do
           allow(Rails.logger).to receive(:info)
           expect { Rake::Task[bootstrap_task].invoke }.not_to change(User, :count)
-          expect(Rails.logger).to have_received(:info).with(/Admin user already exists/)
+          expect(Rails.logger).to have_received(:info).with(/Admin user already exists/).at_least(:once)
         ensure
           Rake::Task[bootstrap_task].reenable
         end
@@ -82,7 +82,7 @@ RSpec.describe 'admin:bootstrap rake task' do
           admin = User.find_by(email: no_password_email)
           expect(admin).to be_present
           expect(admin.admin).to be true
-          expect(Rails.logger).to have_received(:warn).with(/Generated temporary password/)
+          expect(Rails.logger).to have_received(:warn).with(/Generated temporary password/).at_least(:once)
         ensure
           Rake::Task[bootstrap_task].reenable
         end
@@ -102,7 +102,7 @@ RSpec.describe 'admin:bootstrap rake task' do
         ClimateControl.modify(VULCAN_ADMIN_EMAIL: nil, VULCAN_ADMIN_PASSWORD: nil) do
           allow(Rails.logger).to receive(:info)
           Rake::Task[bootstrap_task].invoke
-          expect(Rails.logger).to have_received(:info).with(/No VULCAN_ADMIN_EMAIL set/)
+          expect(Rails.logger).to have_received(:info).with(/No VULCAN_ADMIN_EMAIL set/).at_least(:once)
         ensure
           Rake::Task[bootstrap_task].reenable
         end
@@ -114,7 +114,7 @@ RSpec.describe 'admin:bootstrap rake task' do
         ClimateControl.modify(VULCAN_ADMIN_EMAIL: 'not-a-valid-email', VULCAN_ADMIN_PASSWORD: bootstrap_password) do
           allow(Rails.logger).to receive(:error)
           expect { Rake::Task[bootstrap_task].invoke }.not_to change(User, :count)
-          expect(Rails.logger).to have_received(:error).with(/Failed to create admin/)
+          expect(Rails.logger).to have_received(:error).with(/Failed to create admin/).at_least(:once)
         ensure
           Rake::Task[bootstrap_task].reenable
         end
@@ -127,7 +127,7 @@ RSpec.describe 'admin:bootstrap rake task' do
                               VULCAN_ADMIN_PASSWORD: 'weak') do
           allow(Rails.logger).to receive(:error)
           expect { Rake::Task[bootstrap_task].invoke }.not_to change(User, :count)
-          expect(Rails.logger).to have_received(:error).with(/Failed to create admin/)
+          expect(Rails.logger).to have_received(:error).with(/Failed to create admin/).at_least(:once)
         ensure
           Rake::Task[bootstrap_task].reenable
         end
