@@ -135,6 +135,40 @@ class Rule < BaseRule
   # doesn't manifest as a phantom conflict.
   DERIVED_COLUMNS = %w[inspec_control_file].freeze
 
+  # Content carried on rule-associated records (Check, DisaRuleDescription,
+  # etc.) that the merge engine must also diff. Without this, locking the
+  # 'Check' section would silently fail to enforce on Check#content edits
+  # because RuleFieldDiffer only sees rule columns.
+  #
+  # Structure: { association_name => {
+  #   backup_key:     the JSON key BackupSerializer emits,
+  #   identity_keys:  list of fields used to pair records across sides
+  #                   (nil → positional pairing, used when there's typically
+  #                   one record per rule like DisaRuleDescription),
+  #   fields_by_section: {section_name => [columns]} so the lock check can
+  #                   reuse RuleConstants::LOCKABLE_SECTION_NAMES semantics
+  # } }
+  NESTED_MERGEABLE_ASSOCIATIONS = {
+    checks: {
+      backup_key: 'checks',
+      identity_keys: %w[system],
+      fields_by_section: {
+        'Check' => %w[content system content_ref_name content_ref_href]
+      }
+    },
+    disa_rule_descriptions: {
+      backup_key: 'disa_rule_descriptions',
+      identity_keys: nil,
+      fields_by_section: {
+        'Vulnerability Discussion' => %w[vuln_discussion],
+        'DISA Metadata' => %w[documentable false_positives false_negatives mitigations
+                              mitigations_available poam poam_available potential_impacts
+                              third_party_tools mitigation_control responsibility ia_controls
+                              severity_override_guidance]
+      }
+    }
+  }.freeze
+
   INSPEC_STUB_BODY = <<~RUBY
     # describe file('/tmp') do
     #   it { should be_directory }

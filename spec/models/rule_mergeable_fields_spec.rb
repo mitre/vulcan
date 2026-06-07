@@ -50,6 +50,51 @@ RSpec.describe Rule do
     end
   end
 
+  describe '::NESTED_MERGEABLE_ASSOCIATIONS' do
+    subject(:nested) { described_class::NESTED_MERGEABLE_ASSOCIATIONS }
+
+    it 'is frozen' do
+      expect(nested).to be_frozen
+    end
+
+    it 'every association name resolves to a real AR association on Rule' do
+      nested.each_key do |assoc_name|
+        expect(described_class.reflect_on_association(assoc_name)).not_to be_nil,
+                                                                          "Rule does not have association #{assoc_name.inspect}"
+      end
+    end
+
+    it 'every listed column exists on the target AR model' do
+      nested.each do |assoc_name, config|
+        target_class = described_class.reflect_on_association(assoc_name).klass
+        all_fields = config[:fields_by_section].values.flatten.uniq
+        missing = all_fields - target_class.column_names
+        expect(missing).to be_empty,
+                           "Columns missing on #{target_class.name}: #{missing.inspect}"
+      end
+    end
+
+    it 'every section is in RuleConstants::LOCKABLE_SECTION_NAMES' do
+      nested.each_value do |config|
+        section_names = config[:fields_by_section].keys
+        invalid = section_names - RuleConstants::LOCKABLE_SECTION_NAMES
+        expect(invalid).to be_empty,
+                           "Unknown lockable sections referenced: #{invalid.inspect}"
+      end
+    end
+
+    it 'identity_keys (when present) are columns on the target model' do
+      nested.each do |assoc_name, config|
+        next if config[:identity_keys].nil?
+
+        target_class = described_class.reflect_on_association(assoc_name).klass
+        missing = config[:identity_keys] - target_class.column_names
+        expect(missing).to be_empty,
+                           "identity_keys missing on #{target_class.name}: #{missing.inspect}"
+      end
+    end
+  end
+
   describe 'RuleBuilder::DIRECT_COLUMNS coverage' do
     it 'is the union of MERGEABLE + identity + lifecycle + DERIVED — no overlap, no drift' do
       direct = Import::JsonArchive::RuleBuilder::DIRECT_COLUMNS
