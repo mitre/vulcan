@@ -57,10 +57,8 @@ class ProjectBlueprint < Blueprinter::Base
       project.users
     end
 
-    field :access_requests do |project, _options|
-      project.access_requests.eager_load(:user, :project).map do |ar|
-        { id: ar.id, user: UserBlueprint.render_as_json(ar.user), project_id: ar.project_id }
-      end
+    association :access_requests, blueprint: ProjectAccessRequestBlueprint do |project, _options|
+      project.access_requests.eager_load(:user, :project)
     end
   end
 end

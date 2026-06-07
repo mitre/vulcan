@@ -408,13 +408,7 @@ class ApplicationController < ActionController::Base
                                              .eager_load(:user, :project)
                        end
 
-    @access_requests = pending_requests.map do |ar|
-      {
-        id: ar.id,
-        user: UserBlueprint.render_as_json(ar.user),
-        project: { id: ar.project.id, name: ar.project.name }
-      }
-    end
+    @access_requests = ProjectAccessRequestBlueprint.render_as_json(pending_requests)
   end
 
   def check_locked_user_notifications
