@@ -32,11 +32,12 @@ module Users
 
     def edit_activity
       self.resource = current_user
-      @histories = Audited.audit_class.includes(:user)
-                          .where(user_id: current_user.id, user_type: 'User')
-                          .order(created_at: :desc)
-                          .limit(50)
-                          .map(&:format)
+      @histories = AuditBlueprint.render_as_json(
+        Audited.audit_class.includes(:user)
+               .where(user_id: current_user.id, user_type: 'User')
+               .order(created_at: :desc)
+               .limit(50)
+      )
     end
 
     def create

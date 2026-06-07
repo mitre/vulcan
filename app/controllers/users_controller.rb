@@ -11,11 +11,12 @@ class UsersController < ApplicationController
   def index
     @users = User.alphabetical.select(:id, :name, :email, :provider, :admin, :last_sign_in_at,
                                       :failed_attempts, :locked_at)
-    @histories = Audited.audit_class.includes(:auditable, :user)
-                        .where(auditable_type: 'User')
-                        .order(created_at: :desc)
-                        .limit(200)
-                        .map(&:format)
+    @histories = AuditBlueprint.render_as_json(
+      Audited.audit_class.includes(:auditable, :user)
+             .where(auditable_type: 'User')
+             .order(created_at: :desc)
+             .limit(200)
+    )
     respond_to do |format|
       format.html
       format.json { render json: UserBlueprint.render(@users, view: :admin) }
