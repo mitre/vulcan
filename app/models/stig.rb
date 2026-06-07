@@ -5,6 +5,7 @@ class Stig < ApplicationRecord
   include SeverityCounts
   include XccdfParseable
   include BenchmarkCsvExport
+  include VersionSortable
 
   has_many :stig_rules, dependent: :destroy
 

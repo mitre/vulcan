@@ -6,6 +6,7 @@ class SecurityRequirementsGuide < ApplicationRecord
   include SeverityCounts
   include XccdfParseable
   include BenchmarkCsvExport
+  include VersionSortable
 
   has_many :components, dependent: :restrict_with_error
   has_many :srg_rules, dependent: :destroy
@@ -61,16 +62,7 @@ class SecurityRequirementsGuide < ApplicationRecord
   end
 
   def self.latest
-    query = <<-SQL.squish
-      SELECT id, title, version
-      FROM security_requirements_guides
-      WHERE version IN (
-          SELECT MAX(version)
-          FROM security_requirements_guides
-          GROUP BY title
-      )
-    SQL
-    SecurityRequirementsGuide.connection.execute(Arel.sql(query)).to_a
+    latest_versions.select(:id, :title, :version).to_a
   end
 
   def full_title
