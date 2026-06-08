@@ -28,5 +28,16 @@ class ComponentSyncEvent < ApplicationRecord
             uniqueness: { conditions: -> { where(status: 'pending') },
                           message: 'already has a pending sync' },
             if: -> { status == 'pending' }
+
+  # Replay protection: same archive_hash can't reach status='applied'
+  # on the same component twice. Backed by partial unique index
+  # (index_component_sync_events_on_applied_archive_hash). Only enforced
+  # when archive_hash is present AND status='applied' (pending/failed
+  # rows for the same hash are fine — those are in-flight or aborted).
+  validates :archive_hash,
+            uniqueness: { scope: :component_id,
+                          conditions: -> { where(status: 'applied').where.not(archive_hash: nil) },
+                          message: 'this archive has already been applied to this component' },
+            if: -> { archive_hash.present? && status == 'applied' }
   # rubocop:enable Rails/I18nLocaleTexts
 end

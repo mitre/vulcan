@@ -824,6 +824,55 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
     end
   end
 
+  describe '#call (archive_hash replay protection)' do
+    it 'refuses to re-apply an archive whose SHA-256 already exists on a prior applied sync_event' do
+      prior_hash = Digest::SHA256.hexdigest(archive_bytes)
+      ComponentSyncEvent.create!(
+        component: component, sync_id: SecureRandom.uuid,
+        source: 'theirs', direction: 'inbound', status: 'applied',
+        archive_hash: prior_hash
+      )
+
+      result = described_class.new(
+        merge_plan: plan, component: component, source: 'theirs', archive_bytes: archive_bytes
+      ).call
+
+      expect(result.success?).to be(false)
+      expect(result.errors.join).to match(/already applied/i)
+    end
+
+    it 'allows re-apply when the prior sync_event with the same hash is failed (retry path)' do
+      prior_hash = Digest::SHA256.hexdigest(archive_bytes)
+      ComponentSyncEvent.create!(
+        component: component, sync_id: SecureRandom.uuid,
+        source: 'theirs', direction: 'inbound', status: 'failed',
+        archive_hash: prior_hash
+      )
+
+      result = described_class.new(
+        merge_plan: plan, component: component, source: 'theirs', archive_bytes: archive_bytes
+      ).call
+
+      expect(result.success?).to be(true)
+    end
+
+    it 'allows apply on a different component with the same archive (cross-component replay is legit)' do
+      other_component = create(:component, :closed_comment_phase)
+      prior_hash = Digest::SHA256.hexdigest(archive_bytes)
+      ComponentSyncEvent.create!(
+        component: other_component, sync_id: SecureRandom.uuid,
+        source: 'theirs', direction: 'inbound', status: 'applied',
+        archive_hash: prior_hash
+      )
+
+      result = described_class.new(
+        merge_plan: plan, component: component, source: 'theirs', archive_bytes: archive_bytes
+      ).call
+
+      expect(result.success?).to be(true)
+    end
+  end
+
   describe '#call (one pending sync per component invariant)' do
     it 'refuses to start a second apply while another sync is still pending' do
       ComponentSyncEvent.create!(

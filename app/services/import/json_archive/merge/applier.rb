@@ -40,8 +40,12 @@ module Import
         # @param component [Component] the receiving component (live AR)
         # @param source [String] one of VALID_SOURCES — labels the
         #   ComponentSyncEvent's source field
-        # @param archive_bytes [String, nil] raw zip bytes for SHA-256
-        #   hashing (commit 2 wires this in for replay protection)
+        # @param archive_bytes [String, nil] raw zip bytes hashed (SHA-256)
+        #   for literal-byte replay protection. Same archive can't reach
+        #   status='applied' twice on the same component. NOTE: the hash
+        #   covers raw zip bytes (manifest exported_at + zip mtimes are
+        #   non-deterministic) so two different exports of identical DB
+        #   state produce different hashes — that case is not covered.
         def initialize(merge_plan:, component:, source:, archive_bytes: nil)
           @merge_plan = merge_plan
           @component = component
@@ -55,6 +59,7 @@ module Import
           @quarantine_buffer = []
 
           begin
+            require_no_prior_applied_with_same_hash!
             @sync_event = create_sync_event
             validate_apply_preconditions!
             # Wrap the entire apply in a VulcanAudit correlation scope so
@@ -540,6 +545,24 @@ module Import
         def recalculate_rules_count
           fresh_count = @component.rules.where(deleted_at: nil).count
           @component.update_columns(rules_count: fresh_count) # rubocop:disable Rails/SkipsModelValidations -- counter cache repair only
+        end
+
+        # Reject any apply whose archive_hash already lives on a successful
+        # ComponentSyncEvent for this component — that archive has already
+        # been merged, so re-applying would reflood audit + PII. Backed
+        # by index_component_sync_events_on_applied_archive_hash; this
+        # pre-create check produces an operator-readable PreconditionError
+        # instead of an opaque RecordNotUnique.
+        def require_no_prior_applied_with_same_hash!
+          return if @archive_bytes.blank?
+
+          hash = Digest::SHA256.hexdigest(@archive_bytes)
+          return unless ComponentSyncEvent
+                        .exists?(component: @component, archive_hash: hash, status: 'applied')
+
+          raise PreconditionError,
+                'archive already applied to this component (matched archive_hash on a prior ' \
+                "successful ComponentSyncEvent: #{hash[0, 12]}…)"
         end
 
         def create_sync_event
