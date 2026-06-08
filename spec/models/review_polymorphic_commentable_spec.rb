@@ -55,22 +55,22 @@ RSpec.describe 'Polymorphic Review.commentable' do
 
     it 'returns BOTH rule-scoped and component-scoped top-level comments' do
       result = component.paginated_comments
-      ids = result[:rows].pluck(:id)
+      ids = result[:rows].pluck('id')
       expect(ids).to include(rule_comment.id, component_comment.id)
       expect(result[:pagination][:total]).to eq(2)
     end
 
     it 'tags component-scoped rows with rule_displayed_name=(component) and rule_id=nil' do
       result = component.paginated_comments
-      row = result[:rows].find { |r| r[:id] == component_comment.id }
-      expect(row[:rule_displayed_name]).to eq('(component)')
-      expect(row[:rule_id]).to be_nil
-      expect(row[:commentable_type]).to eq('Component')
+      row = result[:rows].find { |r| r['id'] == component_comment.id }
+      expect(row['rule_displayed_name']).to eq('(component)')
+      expect(row['rule_id']).to be_nil
+      expect(row['commentable_type']).to eq('Component')
     end
 
     it 'rule_id filter narrows to the specific rule (excludes component-scoped rows)' do
       result = component.paginated_comments(rule_id: rule.id)
-      ids = result[:rows].pluck(:id)
+      ids = result[:rows].pluck('id')
       expect(ids).to eq([rule_comment.id])
     end
   end
@@ -81,7 +81,7 @@ RSpec.describe 'Polymorphic Review.commentable' do
 
     it 'aggregates rule-scoped and component-scoped reviews across the project' do
       result = project.paginated_comments
-      ids = result[:rows].pluck(:id)
+      ids = result[:rows].pluck('id')
       expect(ids).to include(rule_comment.id, component_comment.id)
       expect(result[:pagination][:total]).to eq(2)
     end

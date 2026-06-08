@@ -35,7 +35,7 @@ RSpec.describe 'paginated_comments — PII shape' do
     it 'includes the author name but omits email at project scope' do
       row = project.paginated_comments[:rows].first
       expect(row['author_name']).to eq('Industry Commenter')
-      expect(row).not_to have_key(:author_email)
+      expect(row).not_to have_key('author_email')
     end
   end
 
@@ -61,8 +61,8 @@ RSpec.describe 'paginated_comments — PII shape' do
       row = component.paginated_comments[:rows].first
       expect(row['triager_display_name']).to eq('Tri Ager')
       expect(row['triager_imported']).to be(false)
-      expect(row).to have_key(:adjudicator_display_name)
-      expect(row).to have_key(:adjudicator_imported)
+      expect(row).to have_key('adjudicator_display_name')
+      expect(row).to have_key('adjudicator_imported')
     end
 
     it 'falls back to imported attribution when FK is nil' do
@@ -109,8 +109,8 @@ RSpec.describe 'paginated_comments — PII shape' do
       row = project.paginated_comments[:rows].first
       expect(row['triager_display_name']).to eq('Tri Ager')
       expect(row['triager_imported']).to be(false)
-      expect(row).to have_key(:adjudicator_display_name)
-      expect(row).to have_key(:adjudicator_imported)
+      expect(row).to have_key('adjudicator_display_name')
+      expect(row).to have_key('adjudicator_imported')
     end
   end
 
