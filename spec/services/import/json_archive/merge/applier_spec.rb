@@ -601,6 +601,29 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
     end
   end
 
+  describe '#call (component sync metadata)' do
+    it 'sets component.last_sync_id, last_sync_at, last_sync_source on success' do
+      now = Time.current
+      described_class.new(merge_plan: plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+
+      component.reload
+      event = ComponentSyncEvent.last
+      expect(component.last_sync_id).to eq(event.sync_id)
+      expect(component.last_sync_at).to be_within(5.seconds).of(now)
+      expect(component.last_sync_source).to eq('theirs')
+    end
+
+    it 'does NOT update sync metadata when the merge fails (status=failed)' do
+      applier = described_class.new(merge_plan: plan, component: component, source: 'theirs', archive_bytes: archive_bytes)
+      allow(applier).to receive(:apply_all).and_raise(ActiveRecord::StatementInvalid.new('boom'))
+      original_last_sync_id = component.last_sync_id
+
+      applier.call
+
+      expect(component.reload.last_sync_id).to eq(original_last_sync_id)
+    end
+  end
+
   describe '#call (closed-phase precondition)' do
     it 'refuses to apply against an open-phase component and marks the event failed' do
       open_component = create(:component, :open_comment_period)

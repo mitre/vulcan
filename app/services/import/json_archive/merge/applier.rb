@@ -64,6 +64,7 @@ module Import
             VulcanAudit.with_correlation_scope(uuid: @sync_event.sync_id) do
               with_serializable_transaction { apply_all }
             end
+            update_component_sync_metadata
             mark_event_status('applied')
           rescue PreconditionError => e
             mark_event_status('failed')
@@ -495,6 +496,19 @@ module Import
           else
             ActiveRecord::Base.transaction(isolation: TRANSACTION_ISOLATION, &)
           end
+        end
+
+        # Stamp the receiving component with the sync event details so
+        # the UI / audit history can show "last synced from <source> at
+        # <time>" for operators. Only runs on a successful apply — the
+        # ensure block in #call does NOT update these on failure so
+        # operators can see the still-pending sync state and retry.
+        def update_component_sync_metadata
+          @component.update_columns( # rubocop:disable Rails/SkipsModelValidations -- sync metadata is internal bookkeeping, no validations apply
+            last_sync_id: @sync_event.sync_id,
+            last_sync_at: Time.current,
+            last_sync_source: @source
+          )
         end
 
         # Tag every save with the merge sync_id so audit history can group
