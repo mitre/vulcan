@@ -142,6 +142,54 @@ RSpec.describe 'sync rake tasks' do
     end
   end
 
+  describe 'locked-section regression (v2-dqx)' do
+    it 'exits 1 with :locked_conflict on the rake CLI when Check section is locked and check content diverges' do
+      target_rule = component.rules.first
+      target_rule.update_columns(locked_fields: { 'Check' => true })
+      target_rule.reload
+
+      ours_path = write_zip_from(component.reload, name: 'locked-ours')
+      theirs_path = write_zip_from(
+        component, name: 'locked-theirs',
+                   mutations: lambda { |d|
+                     target = d[:rules].find { |r| r[:rule_id] == target_rule.rule_id }
+                     target[:locked_fields] = {} # theirs unlocked it
+                     target[:checks].first[:content] = 'EDITED CHECK CONTENT'
+                   }
+      )
+
+      code = runner.diff(ours_path: ours_path, theirs_path: theirs_path)
+
+      expect(code).to eq(1)
+      expect(stdout.string).to match(/Conflicts: \d+ field/)
+      expect(stdout.string).to include('content')
+      expect(stdout.string).to include('locked_conflict')
+      expect(stdout.string).to include('[LOCKED]')
+    end
+
+    it 'exits 1 with :locked_conflict when Vulnerability Discussion is locked and vuln_discussion diverges' do
+      target_rule = component.rules.first
+      target_rule.update_columns(locked_fields: { 'Vulnerability Discussion' => true })
+      target_rule.reload
+
+      ours_path = write_zip_from(component.reload, name: 'locked-vd-ours')
+      theirs_path = write_zip_from(
+        component, name: 'locked-vd-theirs',
+                   mutations: lambda { |d|
+                     target = d[:rules].find { |r| r[:rule_id] == target_rule.rule_id }
+                     target[:locked_fields] = {}
+                     target[:disa_rule_descriptions].first[:vuln_discussion] = 'EDITED VULN DISCUSSION'
+                   }
+      )
+
+      code = runner.diff(ours_path: ours_path, theirs_path: theirs_path)
+
+      expect(code).to eq(1)
+      expect(stdout.string).to include('vuln_discussion')
+      expect(stdout.string).to include('locked_conflict')
+    end
+  end
+
   describe 'rake task wiring' do
     before(:all) do
       Rails.application.load_tasks unless Rake::Task.task_defined?('sync:diff')
