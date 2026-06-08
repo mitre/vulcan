@@ -31,7 +31,7 @@ module Import
           @strategy = strategy
           @manifest = manifest
 
-          @partitions = ENTITY_KEYS.index_with { { 'matched' => 0, 'only_ours' => 0, 'only_theirs' => 0 } }
+          @partitions = ENTITY_KEYS.index_with { { 'matched' => [], 'only_ours' => [], 'only_theirs' => [] } }
           @field_changes = {}
           @resolution_log = []
         end
@@ -50,6 +50,18 @@ module Import
 
         def add_membership_partition(matched:, only_ours:, only_theirs:)
           record_partition('memberships', matched, only_ours, only_theirs)
+        end
+
+        # Accessors for the actual partition records (the Applier reads
+        # these to delegate to ReviewBuilder, build insert_all batches,
+        # etc.). #summary derives counts on the fly so the existing
+        # public contract is unchanged.
+        BUCKET_KEYS = %w[matched only_ours only_theirs].freeze
+
+        ENTITY_KEYS.each do |entity|
+          BUCKET_KEYS.each do |bucket|
+            define_method("#{bucket}_#{entity}") { @partitions.fetch(entity).fetch(bucket) }
+          end
         end
 
         def add_field_changes(rule_id, changes)
@@ -74,8 +86,13 @@ module Import
           @resolution_log.dup.freeze
         end
 
+        # Derives counts from the stored record arrays. Public contract
+        # is unchanged (Hash{entity_key => {matched/only_ours/only_theirs =>
+        # Integer}}) — the existing formatter still works.
         def summary
-          @partitions.transform_values(&:dup)
+          @partitions.transform_values do |buckets|
+            buckets.transform_values(&:size)
+          end
         end
 
         def conflicts
@@ -95,17 +112,17 @@ module Import
         # transform) dropped or double-counted rows — surface immediately.
         def validate_partition_invariant!(entity, ours_count:, theirs_count:)
           key = entity.to_s
-          p = @partitions.fetch(key)
+          counts = summary.fetch(key)
 
-          unless p['matched'] + p['only_ours'] == ours_count
+          unless counts['matched'] + counts['only_ours'] == ours_count
             raise PartitionInvariantError,
-                  "#{key}: matched (#{p['matched']}) + only_ours (#{p['only_ours']}) " \
+                  "#{key}: matched (#{counts['matched']}) + only_ours (#{counts['only_ours']}) " \
                   "!= ours_count (#{ours_count})"
           end
-          return if p['matched'] + p['only_theirs'] == theirs_count
+          return if counts['matched'] + counts['only_theirs'] == theirs_count
 
           raise PartitionInvariantError,
-                "#{key}: matched (#{p['matched']}) + only_theirs (#{p['only_theirs']}) " \
+                "#{key}: matched (#{counts['matched']}) + only_theirs (#{counts['only_theirs']}) " \
                 "!= theirs_count (#{theirs_count})"
         end
 
@@ -113,9 +130,9 @@ module Import
 
         def record_partition(entity_key, matched, only_ours, only_theirs)
           @partitions[entity_key] = {
-            'matched' => Array(matched).size,
-            'only_ours' => Array(only_ours).size,
-            'only_theirs' => Array(only_theirs).size
+            'matched' => Array(matched),
+            'only_ours' => Array(only_ours),
+            'only_theirs' => Array(only_theirs)
           }
         end
 

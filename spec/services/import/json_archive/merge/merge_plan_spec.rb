@@ -23,6 +23,26 @@ RSpec.describe Import::JsonArchive::Merge::MergePlan, type: :service do
     end
   end
 
+  describe 'partition record accessors' do
+    it 'exposes the actual records (not just counts) so the applier can act on them' do
+      reviews_matched = [{ 'external_id' => 1 }, { 'external_id' => 2 }]
+      reviews_theirs = [{ 'external_id' => 99 }]
+      plan.add_review_partition(matched: reviews_matched, only_ours: [], only_theirs: reviews_theirs)
+
+      expect(plan.matched_reviews).to eq(reviews_matched)
+      expect(plan.only_theirs_reviews).to eq(reviews_theirs)
+      expect(plan.only_ours_reviews).to eq([])
+    end
+
+    it 'summary counts agree with the underlying record arrays' do
+      plan.add_rule_partition(matched: [1, 2, 3], only_ours: [4], only_theirs: [5, 6])
+
+      expect(plan.summary['rules']).to eq('matched' => 3, 'only_ours' => 1, 'only_theirs' => 2)
+      expect(plan.matched_rules.size).to eq(3)
+      expect(plan.only_theirs_rules.size).to eq(2)
+    end
+  end
+
   describe '#validate_partition_invariant!' do
     it 'passes when sides are internally consistent' do
       plan.add_rule_partition(matched: [1, 2], only_ours: [3], only_theirs: [4])
