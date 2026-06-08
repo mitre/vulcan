@@ -11,7 +11,11 @@ document.addEventListener("DOMContentLoaded", function () {
   syncScalarThemeClass(isDark);
 
   Scalar.createApiReference("#scalar-docs", {
-    url: "/api/docs/openapi.yaml",
+    sources: [
+      {
+        url: "/api/docs/openapi.yaml",
+      },
+    ],
     theme: "kepler",
     darkMode: isDark,
     layout: "modern",

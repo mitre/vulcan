@@ -164,6 +164,8 @@ Rails.application.routes.draw do
 
   get 'api/docs', to: 'api_docs#show'
   get 'api/docs/openapi.yaml', to: 'api_docs#spec', as: :api_docs_spec
+  get 'api/docs/openapi.yml', to: 'api_docs#spec'
+  get 'api/docs/openapi.json', to: 'api_docs#spec_json'
 
   # API namespace for JSON endpoints
   namespace :api do
