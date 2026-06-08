@@ -113,6 +113,46 @@ RSpec.describe Import::JsonArchive::Merge::NestedAssociationDiffer, type: :servi
     end
   end
 
+  describe '#diff (v2-480.34: nested rows present on only one side)' do
+    it 'captures a ours-only Check.system into one_sided_records' do
+      ours_rule.checks.create!(system: 'C.ONLY-OURS', content: 'only on ours')
+      ours_rule.reload
+      theirs = theirs_for(ours_rule)
+      theirs['checks'].reject! { |c| c['system'] == 'C.ONLY-OURS' } # remove from theirs
+
+      differ = described_class.new(ours_rule: ours_rule, theirs_rule_hash: theirs, strategy: strategy)
+      differ.diff
+
+      ours_only = differ.one_sided_records.select { |r| r[:side] == 'ours_only' && r[:assoc] == :checks }
+      expect(ours_only.size).to eq(1)
+      expect(ours_only.first[:identity]).to eq('system' => 'C.ONLY-OURS')
+    end
+
+    it 'captures a theirs-only Check.system into one_sided_records' do
+      theirs = theirs_for(ours_rule)
+      theirs['checks'] << { 'system' => 'C.ONLY-THEIRS', 'content' => 'only on theirs' }
+
+      differ = described_class.new(ours_rule: ours_rule, theirs_rule_hash: theirs, strategy: strategy)
+      differ.diff
+
+      theirs_only = differ.one_sided_records.select { |r| r[:side] == 'theirs_only' && r[:assoc] == :checks }
+      expect(theirs_only.size).to eq(1)
+      expect(theirs_only.first[:identity]).to eq('system' => 'C.ONLY-THEIRS')
+    end
+
+    it 'does not emit a FieldChange for the one-sided row' do
+      ours_rule.checks.create!(system: 'C.ONLY-OURS', content: 'only on ours')
+      ours_rule.reload
+      theirs = theirs_for(ours_rule)
+      theirs['checks'].reject! { |c| c['system'] == 'C.ONLY-OURS' }
+
+      differ = described_class.new(ours_rule: ours_rule, theirs_rule_hash: theirs, strategy: strategy)
+      changes = differ.diff
+
+      expect(changes.select { |c| c.field == 'content' }).to be_empty
+    end
+  end
+
   describe "#diff (v2-480.33: locking 'Severity' blocks severity_override_guidance)" do
     it "yields resolution=:locked_conflict when 'Severity' is locked and severity_override_guidance diverges" do
       ours_rule.update!(locked_fields: { 'Severity' => true })

@@ -121,6 +121,28 @@ RSpec.describe Import::JsonArchive::Merge::Analyzer, type: :service do
     end
   end
 
+  describe 'v2-480.34: nested-only-side records surface to resolution_log' do
+    it 'adds a nested_one_sided resolution_log entry for a Check on theirs only' do
+      target_rule = component.rules.first
+      theirs_data = base_archive.deep_stringify_keys
+      theirs_data['rules'].find { |r| r['rule_id'] == target_rule.rule_id }['checks'] << {
+        'system' => 'C.NEW-FROM-THEIRS', 'content' => 'new from theirs'
+      }
+      input = Import::JsonArchive::Merge::MergeInput.from_json_archive(theirs_data, manifest: manifest)
+      analyzer = described_class.new(merge_input: input, component: component,
+                                     strategy: strategy, manifest: manifest)
+
+      plan = analyzer.call
+
+      entries = plan.resolution_log.select { |e| e['type'] == 'nested_one_sided' }
+      expect(entries.size).to be >= 1
+      target_entry = entries.find { |e| JSON.parse(e['identity'])['system'] == 'C.NEW-FROM-THEIRS' }
+      expect(target_entry).not_to be_nil
+      expect(target_entry['side']).to eq('theirs_only')
+      expect(target_entry['assoc']).to eq('checks')
+    end
+  end
+
   describe 'eager-load contract (no N+1 on rules/reviews/satisfies)' do
     def captured_sql(&)
       queries = []

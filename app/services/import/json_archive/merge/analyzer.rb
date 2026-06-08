@@ -164,10 +164,12 @@ module Import
               field_changes = RuleFieldDiffer.new(
                 ours_rule: ours_rule, theirs_rule_hash: theirs_hash, strategy: @strategy
               ).diff
-              nested_changes = NestedAssociationDiffer.new(
+              nested_differ = NestedAssociationDiffer.new(
                 ours_rule: ours_rule, theirs_rule_hash: theirs_hash, strategy: @strategy
-              ).diff
+              )
+              nested_changes = nested_differ.diff
               plan.add_field_changes(rule_id, field_changes + nested_changes)
+              record_nested_one_sided(plan, rule_id, nested_differ.one_sided_records)
             elsif ours_rule
               only_ours << rule_id
             else
@@ -241,6 +243,27 @@ module Import
           end
 
           plan.add_membership_partition(matched: matched, only_ours: [], only_theirs: only_theirs)
+        end
+
+        # Surface one-sided nested rows (Check/DisaRuleDescription on ours
+        # XOR theirs) as resolution_log entries instead of silently dropping
+        # them. v2-480.34 — Phase 1 doesn't insert/delete nested rows;
+        # operators see the diagnostic but the merge continues.
+        def record_nested_one_sided(plan, rule_id, one_sided_records)
+          return if one_sided_records.blank?
+
+          one_sided_records.each do |entry|
+            plan.add_resolution_log_entry(
+              entry: {
+                'type' => 'nested_one_sided',
+                'rule_id' => rule_id.to_s,
+                'assoc' => entry[:assoc].to_s,
+                'side' => entry[:side].to_s,
+                'identity' => entry[:identity].to_json,
+                'note' => 'nested row present on one side only — not diffed in Phase 1'
+              }
+            )
+          end
         end
 
         def review_to_hash(review, rule_id)

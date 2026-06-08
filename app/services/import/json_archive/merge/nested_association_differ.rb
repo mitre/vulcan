@@ -17,11 +17,20 @@ module Import
         FieldChange = RuleFieldDiffer::FieldChange
         STRATEGY_VERB_MAP = RuleFieldDiffer::STRATEGY_VERB_MAP
 
+        # Records {assoc:, side:, identity:} entries for nested rows that
+        # exist only on one side (Check.system='linux' on ours but not
+        # theirs, or vice versa). Phase 1 surfaces these as warnings via
+        # Analyzer → MergePlan.resolution_log rather than silently dropping
+        # or aborting; Phase 2c may extend MergePlan with only_*_nested
+        # partitions if a real insert/delete pass is needed (v2-480.34).
+        attr_reader :one_sided_records
+
         def initialize(ours_rule:, theirs_rule_hash:, strategy:)
           @ours_rule = ours_rule
           @theirs_rule_hash = theirs_rule_hash
           @strategy = strategy
           @locked_sections = (ours_rule.locked_fields || {}).keys.to_set
+          @one_sided_records = []
         end
 
         def diff
@@ -41,12 +50,28 @@ module Import
           pairs = pair_records(ours_records, theirs_records, config[:identity_keys])
 
           pairs.each do |ours_rec, theirs_rec|
-            next if ours_rec.nil? || theirs_rec.nil? # only diff matched pairs in Phase 1
+            if ours_rec.nil? || theirs_rec.nil?
+              record_one_sided(assoc_name, ours_rec, theirs_rec, config[:identity_keys])
+              next # Phase 1 doesn't diff one-side rows
+            end
 
             target_identity = identity_for(ours_rec, config[:identity_keys])
             diff_record_into(changes, ours_rec, theirs_rec, config[:fields_by_section],
                              assoc_name, target_identity)
           end
+        end
+
+        # Capture which side carried a given nested row so the Analyzer can
+        # forward it to the MergePlan's resolution_log. Identity comes from
+        # whichever side is non-nil (positional rows use {} as identity).
+        def record_one_sided(assoc_name, ours_rec, theirs_rec, identity_keys)
+          side = ours_rec.nil? ? 'theirs_only' : 'ours_only'
+          identity = if ours_rec
+                       identity_for(ours_rec, identity_keys) || {}
+                     else
+                       identity_keys ? identity_keys.index_with { |k| theirs_rec[k] } : {}
+                     end
+          @one_sided_records << { assoc: assoc_name, side: side, identity: identity }
         end
 
         # The identity hash the Applier needs to resolve "which nested
