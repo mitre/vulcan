@@ -403,6 +403,59 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
     end
   end
 
+  describe '#call (applies only_theirs rules)' do
+    let(:srg) { component.security_requirements_guide }
+    let(:new_rule_hash) do
+      existing = component.rules.first
+      {
+        'rule_id' => 'V-99999', 'title' => 'Brand new from theirs',
+        'srg_rule_version' => existing.srg_rule&.version,
+        'status' => 'Applicable - Configurable', 'rule_severity' => 'medium',
+        'fixtext' => 'Set X to Y.', 'vendor_comments' => '',
+        'locked' => false, 'locked_fields' => {}
+      }
+    end
+    let(:new_rule_plan) do
+      p = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id, strategy: strategy, manifest: manifest
+      )
+      p.add_rule_partition(matched: [], only_ours: [], only_theirs: [new_rule_hash])
+      p
+    end
+
+    it 'inserts the new rule via RuleBuilder' do
+      expect do
+        described_class.new(merge_plan: new_rule_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+      end.to change { component.rules.where(rule_id: 'V-99999').count }.from(0).to(1)
+
+      inserted = component.rules.find_by(rule_id: 'V-99999')
+      expect(inserted.title).to eq('Brand new from theirs')
+    end
+
+    it 'writes a MergeOperation insert row tagged with the new Rule.id' do
+      expect do
+        described_class.new(merge_plan: new_rule_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+      end.to change(MergeOperation.where(entity_type: 'rule', operation: 'insert'), :count).by(1)
+
+      op = MergeOperation.where(entity_type: 'rule', operation: 'insert').last
+      inserted = component.rules.find_by(rule_id: 'V-99999')
+      expect(op.entity_id).to eq(inserted.id)
+      expect(op.entity_key).to eq('V-99999')
+      expect(op.source).to eq('theirs')
+    end
+
+    it 'refreshes rule_id_map so a satisfaction referencing the new rule resolves correctly' do
+      anchor = component.rules.first
+      sat_hash = { 'rule_id' => anchor.rule_id, 'satisfied_by_rule_id' => 'V-99999' }
+      new_rule_plan.add_satisfaction_partition(matched: [], only_ours: [], only_theirs: [sat_hash])
+
+      described_class.new(merge_plan: new_rule_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+
+      newly_inserted = component.rules.find_by(rule_id: 'V-99999')
+      expect(RuleSatisfaction.where(rule_id: anchor.id, satisfied_by_rule_id: newly_inserted.id)).to exist
+    end
+  end
+
   describe '#call (applies only_theirs satisfactions)' do
     let(:satisfier) { component.rules.first }
     let(:satisfied) { component.rules.second }

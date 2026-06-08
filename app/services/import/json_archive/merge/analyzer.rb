@@ -171,7 +171,10 @@ module Import
             elsif ours_rule
               only_ours << rule_id
             else
-              only_theirs << rule_id
+              # Store the full theirs hash (was: just rule_id string) so the
+              # Applier can hand it to RuleBuilder verbatim. Mirrors how
+              # reviews/satisfactions/memberships partition full records.
+              only_theirs << theirs_hash
             end
           end
 

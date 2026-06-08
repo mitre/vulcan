@@ -103,9 +103,13 @@ module Import
         private
 
         # Per-entity apply pipeline. Each commit fills in one entity.
+        # apply_new_rules MUST land before import_new_reviews and
+        # apply_new_satisfactions so the refreshed rule_id_map carries the
+        # newly inserted rule IDs they depend on.
         def apply_all
           apply_rule_field_changes
           record_skipped_conflicts
+          apply_new_rules
           recalculate_rules_count
           import_new_reviews
           apply_review_field_updates
@@ -143,7 +147,7 @@ module Import
         def apply_rule_field_changes
           @merge_plan.auto_merged.group_by { |c| rule_id_for(c) }.each do |rule_id, rule_changes|
             rule = ours_rules_by_id[rule_id]
-            next if rule.nil? # only_theirs rules don't exist yet — handled by a later pass
+            next if rule.nil? # defensive: matched bucket should never carry an unknown rule_id
 
             apply_changes_to_rule(rule, rule_changes)
           end
@@ -223,6 +227,43 @@ module Import
         # one as a merge_operations row with operation=skip so the audit
         # trail captures "we saw this divergence, didn't act on it" and
         # the UI / undo path can replay decisions if needed.
+        # Insert rules present only in theirs via RuleBuilder (same two-pass
+        # logic as a fresh import). Merges the resulting rule_id_map back
+        # into the applier's memoized lookup so downstream import_new_reviews
+        # and apply_new_satisfactions can reference the new IDs.
+        def apply_new_rules
+          new_rules = @merge_plan.only_theirs_rules
+          return if new_rules.empty?
+
+          builder_result = Import::Result.new
+          new_rule_id_map = RuleBuilder.new(new_rules, @component, builder_result).build_all
+          builder_result.warnings.each { |w| @result.add_warning(w) }
+          builder_result.errors.each { |e| @result.add_warning(e) }
+
+          # Invalidate the cached rule_id_map so import_new_reviews /
+          # apply_new_satisfactions re-pluck including the newly inserted
+          # rules. Same for ours_rules_by_id used by record_skipped_conflicts.
+          @rule_id_map = nil
+          @ours_rules_by_id = nil
+          @ours_rules_eager_loaded = nil
+
+          new_rule_id_map.each { |rule_id_str, new_db_id| log_rule_insert(rule_id_str, new_db_id) }
+        end
+
+        def log_rule_insert(rule_id_str, new_db_id)
+          MergeOperation.create!(
+            component_sync_event: @sync_event,
+            entity_type: 'rule',
+            entity_id: new_db_id,
+            entity_key: rule_id_str,
+            operation: 'insert',
+            field_name: nil,
+            old_value: nil,
+            new_value: nil,
+            source: 'theirs'
+          )
+        end
+
         def record_skipped_conflicts
           @merge_plan.conflicts.group_by { |c| rule_id_for(c) }.each do |rule_id, changes|
             rule = ours_rules_by_id[rule_id]
