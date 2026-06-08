@@ -198,6 +198,77 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
     end
   end
 
+  describe '#call (routes nested-association FieldChanges)' do
+    let(:target_rule) { component.rules.first }
+    let(:check) { target_rule.checks.first }
+    let(:disa) { target_rule.disa_rule_descriptions.first }
+
+    def field_change(field:, from:, to:, target_association:, target_identity: nil)
+      Import::JsonArchive::Merge::RuleFieldDiffer::FieldChange.new(
+        field: field, from: from, to: to,
+        resolution: :auto_theirs, locked: false,
+        reason: 'spec', target_association: target_association,
+        target_identity: target_identity
+      )
+    end
+
+    it 'Check#content lands on the Check row, NOT on the Rule' do
+      plan_with_check = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id, strategy: strategy, manifest: manifest
+      )
+      plan_with_check.add_field_changes(target_rule.rule_id, [
+                                          field_change(
+                                            field: 'content', from: check.content, to: 'THEIRS check content',
+                                            target_association: :checks,
+                                            target_identity: { 'system' => check.system }
+                                          )
+                                        ])
+
+      described_class.new(merge_plan: plan_with_check, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+
+      expect(check.reload.content).to eq('THEIRS check content')
+      expect(MergeOperation.where(entity_type: 'checks', operation: 'update').last.entity_id).to eq(check.id)
+    end
+
+    it 'DisaRuleDescription#vuln_discussion lands on the disa_rule_descriptions row' do
+      plan_with_disa = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id, strategy: strategy, manifest: manifest
+      )
+      plan_with_disa.add_field_changes(target_rule.rule_id, [
+                                         field_change(
+                                           field: 'vuln_discussion',
+                                           from: disa.vuln_discussion, to: 'THEIRS vuln discussion',
+                                           target_association: :disa_rule_descriptions, target_identity: nil
+                                         )
+                                       ])
+
+      described_class.new(merge_plan: plan_with_disa, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+
+      expect(disa.reload.vuln_discussion).to eq('THEIRS vuln discussion')
+      expect(MergeOperation.where(entity_type: 'disa_rule_descriptions', operation: 'update').last.entity_id).to eq(disa.id)
+    end
+
+    it 'severity_override_guidance under DISA Metadata locked section is skipped (record_skipped_conflicts)' do
+      target_rule.update!(locked_fields: { 'DISA Metadata' => true })
+      locked_change = Import::JsonArchive::Merge::RuleFieldDiffer::FieldChange.new(
+        field: 'severity_override_guidance',
+        from: disa.severity_override_guidance, to: 'THEIRS sev override',
+        resolution: :locked_conflict, locked: true, reason: 'locked',
+        target_association: :disa_rule_descriptions, target_identity: nil
+      )
+      locked_plan = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id, strategy: strategy, manifest: manifest
+      )
+      locked_plan.add_field_changes(target_rule.rule_id, [locked_change])
+
+      described_class.new(merge_plan: locked_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+
+      expect(disa.reload.severity_override_guidance).not_to eq('THEIRS sev override')
+      skip = MergeOperation.where(entity_type: 'rule', operation: 'skip', field_name: 'severity_override_guidance').last
+      expect(skip).not_to be_nil
+    end
+  end
+
   describe '#call (skips conflict / locked_conflict)' do
     let(:target_rule) { component.rules.first }
     let(:conflict_plan) do

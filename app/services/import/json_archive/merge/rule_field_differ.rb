@@ -30,7 +30,15 @@ module Import
           union: :auto_merged
         }.freeze
 
-        FieldChange = Struct.new(:field, :from, :to, :resolution, :reason, :locked, keyword_init: true)
+        # target_association: nil (top-level rule field) | :checks |
+        #   :disa_rule_descriptions — routes Applier#apply_one_rule_change
+        # target_identity: nil (positional pair) | {column => value} —
+        #   resolves which nested record to update when N exist per rule
+        FieldChange = Struct.new(
+          :field, :from, :to, :resolution, :reason, :locked,
+          :target_association, :target_identity,
+          keyword_init: true
+        )
 
         # @param ours_rule [Rule] the live AR rule (read-only here)
         # @param theirs_rule_hash [Hash] string-keyed snapshot from the archive

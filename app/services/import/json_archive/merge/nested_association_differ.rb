@@ -43,8 +43,19 @@ module Import
           pairs.each do |ours_rec, theirs_rec|
             next if ours_rec.nil? || theirs_rec.nil? # only diff matched pairs in Phase 1
 
-            diff_record_into(changes, ours_rec, theirs_rec, config[:fields_by_section])
+            target_identity = identity_for(ours_rec, config[:identity_keys])
+            diff_record_into(changes, ours_rec, theirs_rec, config[:fields_by_section],
+                             assoc_name, target_identity)
           end
+        end
+
+        # The identity hash the Applier needs to resolve "which nested
+        # record" to update. nil for positional-pair associations
+        # (Applier uses .first).
+        def identity_for(ours_rec, identity_keys)
+          return nil if identity_keys.blank?
+
+          identity_keys.index_with { |k| ours_rec.public_send(k) }
         end
 
         def ours_records_for(assoc_name)
@@ -78,14 +89,14 @@ module Import
           end
         end
 
-        def diff_record_into(changes, ours_rec, theirs_rec, fields_by_section)
+        def diff_record_into(changes, ours_rec, theirs_rec, fields_by_section, assoc_name, target_identity)
           fields_by_section.each do |section, fields|
             fields.each do |field|
               ours_val = ours_rec.attributes[field]
               theirs_val = theirs_rec[field]
               next if values_equal?(ours_val, theirs_val)
 
-              changes << build_change(field, section, ours_val, theirs_val)
+              changes << build_change(field, section, ours_val, theirs_val, assoc_name, target_identity)
             end
           end
         end
@@ -98,12 +109,13 @@ module Import
           false
         end
 
-        def build_change(field, section, ours_val, theirs_val)
+        def build_change(field, section, ours_val, theirs_val, assoc_name, target_identity)
           if @locked_sections.include?(section)
             FieldChange.new(
               field: field, from: ours_val, to: theirs_val,
               resolution: :locked_conflict, locked: true,
-              reason: "Field '#{field}' is locked (section '#{section}') on the receiving component"
+              reason: "Field '#{field}' is locked (section '#{section}') on the receiving component",
+              target_association: assoc_name, target_identity: target_identity
             )
           else
             verb = @strategy.for_field(:rule, field)
@@ -111,7 +123,8 @@ module Import
               field: field, from: ours_val, to: theirs_val,
               resolution: STRATEGY_VERB_MAP.fetch(verb, :conflict),
               locked: false,
-              reason: "Strategy resolved to #{verb.inspect} (nested: #{section})"
+              reason: "Strategy resolved to #{verb.inspect} (nested: #{section})",
+              target_association: assoc_name, target_identity: target_identity
             )
           end
         end

@@ -166,10 +166,21 @@ module Import
         def apply_changes_to_rule(rule, changes)
           changes.each do |change|
             winning_value = winning_value_for(change)
-            next if winning_value == rule.public_send(change.field)
 
-            apply_one_rule_change(rule, change, winning_value)
+            if nested_change?(change)
+              apply_one_nested_change(rule, change, winning_value)
+            else
+              next if winning_value == rule.public_send(change.field)
+
+              apply_one_rule_change(rule, change, winning_value)
+            end
           end
+        end
+
+        def nested_change?(change)
+          change.respond_to?(:target_association) &&
+            !change.target_association.nil? &&
+            change.target_association != :rule
         end
 
         # Each field write is wrapped in a savepoint so a validation failure
@@ -189,6 +200,62 @@ module Import
             reason: 'rule validation failed during apply',
             original: { 'rule_id' => rule.rule_id, 'field' => change.field, 'new_value' => winning_value.to_s },
             errors: e
+          )
+        end
+
+        # Route a nested-association FieldChange (Check#content,
+        # DisaRuleDescription#vuln_discussion, etc.) to the correct nested
+        # record. target_identity disambiguates when N exist per rule
+        # (e.g. multiple Check rows keyed by system); nil means positional.
+        def apply_one_nested_change(rule, change, winning_value)
+          nested = resolve_nested_record(rule, change.target_association, change.target_identity)
+          if nested.nil?
+            @result.add_warning(
+              "Rule #{rule.rule_id}: nested record on #{change.target_association} " \
+              "matching identity #{change.target_identity.inspect} not found — " \
+              "field '#{change.field}' skipped"
+            )
+            return
+          end
+          return if winning_value == nested.public_send(change.field)
+
+          old_value = nested.public_send(change.field)
+          ActiveRecord::Base.transaction(requires_new: true) do
+            nested.assign_attributes(change.field => winning_value)
+            nested.save!
+            log_nested_change(rule, nested, change, old_value, winning_value)
+          end
+        rescue ActiveRecord::RecordInvalid => e
+          enqueue_quarantine(
+            entity_type: change.target_association.to_s,
+            entity_key: "#{rule.rule_id}::#{change.field}",
+            reason: 'nested record validation failed during apply',
+            original: { 'rule_id' => rule.rule_id, 'assoc' => change.target_association,
+                        'field' => change.field, 'new_value' => winning_value.to_s },
+            errors: e
+          )
+        end
+
+        def resolve_nested_record(rule, assoc, identity)
+          records = rule.public_send(assoc)
+          return records.first if identity.blank?
+
+          records.find do |r|
+            identity.all? { |k, v| r.public_send(k).to_s == v.to_s }
+          end
+        end
+
+        def log_nested_change(rule, nested, change, old_value, new_value)
+          MergeOperation.create!(
+            component_sync_event: @sync_event,
+            entity_type: change.target_association.to_s,
+            entity_id: nested.id,
+            entity_key: rule.rule_id,
+            operation: 'update',
+            field_name: change.field,
+            old_value: old_value.to_s,
+            new_value: new_value.to_s,
+            source: source_for(change.resolution)
           )
         end
 
