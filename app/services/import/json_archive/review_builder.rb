@@ -61,6 +61,7 @@ module Import
             new_id = insert_review(review_data, rule_db_id, commenter)
             external_id = review_data['external_id']
             @external_to_new_id[external_id] = new_id if external_id
+            build_reactions(new_id, review_data['reactions']) if review_data['action'] == Review::ACTION_COMMENT
             count += 1
           end
 
@@ -89,6 +90,46 @@ module Import
       end
 
       private
+
+      # Bulk-insert reactions for a freshly imported comment-action Review.
+      # Mirrors the rest of the bulk-insert path (bypasses callbacks).
+      # User resolved by email; kind validated against Reaction::KINDS;
+      # idempotent via the (review_id, user_id) unique index.
+      def build_reactions(review_db_id, reactions_data)
+        return if reactions_data.blank?
+
+        rows = reactions_data.filter_map { |r| build_reaction_row(review_db_id, r) }
+        return if rows.empty?
+
+        # rubocop:disable Rails/SkipsModelValidations -- bulk insert mirrors insert_review path
+        Reaction.insert_all(rows, unique_by: %i[review_id user_id])
+        # rubocop:enable Rails/SkipsModelValidations
+      end
+
+      def build_reaction_row(review_db_id, reaction_data)
+        kind = reaction_data['kind']
+        unless Reaction::KINDS.include?(kind)
+          @result.add_warning(
+            "Reaction on review #{review_db_id}: kind '#{kind}' not in #{Reaction::KINDS.inspect} — skipped"
+          )
+          return nil
+        end
+
+        email = reaction_data['user_email']
+        user = User.find_by(email: email) if email.present?
+        if user.nil?
+          @result.add_warning(
+            "Reaction on review #{review_db_id}: user '#{email}' not present on receiving instance — skipped"
+          )
+          return nil
+        end
+
+        created_at = parse_time(reaction_data['created_at']) || Time.current
+        {
+          review_id: review_db_id, user_id: user.id, kind: kind,
+          created_at: created_at, updated_at: created_at
+        }
+      end
 
       def insert_review(review_data, rule_db_id, commenter)
         created_at = parse_time(review_data['created_at']) || Time.current

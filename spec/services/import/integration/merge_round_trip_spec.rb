@@ -106,6 +106,43 @@ RSpec.describe 'Merge engine round-trip (Analyzer + Applier)', type: :service do
     end
   end
 
+  describe 'only_theirs review with reactions round-trip' do
+    it 'analyze → apply imports the new comment review AND its reactions' do
+      target_rule = component.rules.first
+      reactor_up = create(:user, email: 'merge-react-up@test.org', name: 'Up Reactor')
+      reactor_down = create(:user, email: 'merge-react-down@test.org', name: 'Down Reactor')
+
+      theirs_data = serialize(component).deep_stringify_keys
+      theirs_data['reviews'] << {
+        'external_id' => 9999, 'rule_id' => target_rule.rule_id,
+        'action' => 'comment', 'comment' => 'merge-side new comment',
+        'created_at' => Time.zone.local(2026, 6, 8, 12, 0).iso8601(6),
+        'user_email' => reactor_up.email, 'user_name' => reactor_up.name,
+        'reactions' => [
+          { 'kind' => 'up', 'user_email' => reactor_up.email,
+            'created_at' => Time.zone.local(2026, 6, 8, 12, 1).iso8601(6) },
+          { 'kind' => 'down', 'user_email' => reactor_down.email,
+            'created_at' => Time.zone.local(2026, 6, 8, 12, 2).iso8601(6) }
+        ]
+      }
+      Membership.create!(user: reactor_up, membership: component.project, role: 'viewer')
+
+      theirs_input = Import::JsonArchive::Merge::MergeInput.from_json_archive(theirs_data, manifest: manifest)
+      plan = Import::JsonArchive::Merge::Analyzer.new(
+        merge_input: theirs_input, component: component, strategy: strategy, manifest: manifest
+      ).call
+
+      Import::JsonArchive::Merge::Applier.new(
+        merge_plan: plan, component: component, source: 'theirs', archive_bytes: 'round-trip-bytes'
+      ).call
+
+      imported = Review.where(rule_id: target_rule.id, comment: 'merge-side new comment').first
+      expect(imported).not_to be_nil
+      tuples = imported.reactions.includes(:user).map { |r| [r.kind, r.user&.email] }.sort
+      expect(tuples).to contain_exactly(['down', reactor_down.email], ['up', reactor_up.email])
+    end
+  end
+
   describe 'sync metadata' do
     it 'after a successful merge, component.last_sync_id matches the latest sync_event.sync_id' do
       theirs_input = Import::JsonArchive::Merge::MergeInput.from_json_archive(serialize(component), manifest: manifest)

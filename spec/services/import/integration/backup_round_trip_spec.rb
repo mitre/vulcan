@@ -75,6 +75,13 @@ RSpec.describe 'JSON Archive Backup Round-Trip' do
     rules[1].reload
     create(:review, user: review_user, rule: rules[1], action: 'unlock_control', comment: 'Unlocking after review')
 
+    # Add a comment review with reactions for the reactions round-trip test
+    comment_review = create(:review, user: review_user, rule: rules[2], action: 'comment', comment: 'Considering for FY26')
+    reactor_up = create(:user, email: 'reactor-up@test.org', name: 'Reactor Up')
+    reactor_down = create(:user, email: 'reactor-down@test.org', name: 'Reactor Down')
+    Reaction.create!(review: comment_review, user: reactor_up, kind: 'up')
+    Reaction.create!(review: comment_review, user: reactor_down, kind: 'down')
+
     # Add additional question + answer
     question = source_component.additional_questions.create!(
       name: 'Deployment Environment', question_type: 'dropdown',
@@ -256,6 +263,18 @@ RSpec.describe 'JSON Archive Backup Round-Trip' do
       end
     end
 
+    it 'round-trips review reactions (kind + user + timestamp)' do
+      import_result
+      source_comment = Review.where(rule_id: source_component.rule_ids, action: 'comment').first
+      imported_comment = Review.where(rule_id: imported_component.rule_ids, action: 'comment').first
+
+      source_tuples = source_comment.reactions.includes(:user).map { |r| [r.kind, r.user&.email] }.sort
+      imported_tuples = imported_comment.reactions.includes(:user).map { |r| [r.kind, r.user&.email] }.sort
+
+      expect(imported_tuples).to eq(source_tuples)
+      expect(imported_comment.reactions.size).to eq(2)
+    end
+
     it 'preserves additional answers' do
       import_result
       source_rule = source_component.rules.first
@@ -289,7 +308,7 @@ RSpec.describe 'JSON Archive Backup Round-Trip' do
       expect(result.summary[:components_imported]).to eq(1)
       expect(result.summary[:rules_imported]).to eq(source_component.rules.count)
       expect(result.summary[:satisfactions_imported]).to eq(1)
-      expect(result.summary[:reviews_imported]).to eq(2)
+      expect(result.summary[:reviews_imported]).to eq(3)
     end
   end
 
