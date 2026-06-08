@@ -112,4 +112,32 @@ RSpec.describe Import::JsonArchive::Merge::NestedAssociationDiffer, type: :servi
       expect(changes.first.to).to eq('second edited')
     end
   end
+
+  describe "#diff (v2-480.33: locking 'Severity' blocks severity_override_guidance)" do
+    it "yields resolution=:locked_conflict when 'Severity' is locked and severity_override_guidance diverges" do
+      ours_rule.update!(locked_fields: { 'Severity' => true })
+      theirs = theirs_for(ours_rule)
+      theirs['disa_rule_descriptions'].first['severity_override_guidance'] = 'THEIRS sev override'
+
+      differ = described_class.new(ours_rule: ours_rule, theirs_rule_hash: theirs, strategy: strategy)
+      changes = differ.diff.select { |c| c.field == 'severity_override_guidance' }
+
+      expect(changes.size).to eq(1)
+      expect(changes.first.resolution).to eq(:locked_conflict)
+      expect(changes.first.locked).to be(true)
+    end
+
+    it "does NOT block severity_override_guidance when only 'DISA Metadata' is locked" do
+      ours_rule.update!(locked_fields: { 'DISA Metadata' => true })
+      theirs = theirs_for(ours_rule)
+      theirs['disa_rule_descriptions'].first['severity_override_guidance'] = 'THEIRS sev override'
+
+      differ = described_class.new(ours_rule: ours_rule, theirs_rule_hash: theirs, strategy: strategy)
+      changes = differ.diff.select { |c| c.field == 'severity_override_guidance' }
+
+      expect(changes.size).to eq(1)
+      expect(changes.first.resolution).not_to eq(:locked_conflict)
+      expect(changes.first.locked).to be(false)
+    end
+  end
 end

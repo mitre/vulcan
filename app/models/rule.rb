@@ -159,12 +159,17 @@ class Rule < BaseRule
     disa_rule_descriptions: {
       backup_key: 'disa_rule_descriptions',
       identity_keys: nil,
+      # Section names mirror RuleConstants::SECTION_FIELDS so locking a
+      # section here matches the locking semantics on the rule-level
+      # field path. severity_override_guidance lives under 'Severity'
+      # (matching SECTION_FIELDS), NOT 'DISA Metadata' — closes the
+      # v2-dqx-class lock bypass on governance-sensitive content (v2-480.33).
       fields_by_section: {
+        'Severity' => %w[severity_override_guidance],
         'Vulnerability Discussion' => %w[vuln_discussion],
         'DISA Metadata' => %w[documentable false_positives false_negatives mitigations
                               mitigations_available poam poam_available potential_impacts
-                              third_party_tools mitigation_control responsibility ia_controls
-                              severity_override_guidance]
+                              third_party_tools mitigation_control responsibility ia_controls]
       }
     }
   }.freeze
