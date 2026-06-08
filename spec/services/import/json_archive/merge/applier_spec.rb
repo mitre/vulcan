@@ -293,6 +293,35 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
       expect(op.source).to eq('theirs')
     end
 
+    it 'stamps entity_id with the actual inserted Review.id (not zero)' do
+      described_class.new(merge_plan: review_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+
+      inserted = target_rule.reviews.order(:created_at).last
+      op = MergeOperation.where(entity_type: 'review', operation: 'insert').last
+      expect(op.entity_id).to eq(inserted.id)
+      expect(op.entity_id).to be > 0
+    end
+
+    it 'skips merge_operations rows for reviews ReviewBuilder dropped (missing rule_id)' do
+      # One landing review + one with an unresolvable rule_id (ReviewBuilder skips it)
+      skipped_review = new_review_hash.merge(
+        'external_id' => 99, 'rule_id' => 'NONEXISTENT-V-9999',
+        'comment' => 'should be skipped'
+      )
+      mixed_plan = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id, strategy: strategy, manifest: manifest
+      )
+      mixed_plan.add_review_partition(matched: [], only_ours: [], only_theirs: [new_review_hash, skipped_review])
+
+      expect do
+        described_class.new(merge_plan: mixed_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+      end.to change(MergeOperation.where(entity_type: 'review', operation: 'insert'), :count).by(1)
+
+      ops = MergeOperation.where(entity_type: 'review', operation: 'insert')
+      expect(ops.pluck(:entity_key)).to contain_exactly('42') # not '99' — that one was skipped
+      expect(ops.pluck(:entity_id)).to all(be > 0)
+    end
+
     it 'is a no-op when only_theirs is empty' do
       empty_plan = Import::JsonArchive::Merge::MergePlan.new(
         component_id: component.id, strategy: strategy, manifest: manifest

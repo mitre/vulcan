@@ -21,6 +21,12 @@ module Import
       # remediation .10 (admin_destroy → re-import via Review.insert!
       # bypasses audited; the Component-level row preserves the recovery
       # trail).
+      #
+      # external_to_new_id is populated during build_all and exposed to
+      # callers (Applier) that need per-row audit linkage between the
+      # archive's external_id and the actual new Review.id.
+      attr_reader :external_to_new_id
+
       def initialize(reviews_data, rule_id_map, result, component: nil, manifest: nil, imported_by: nil)
         @reviews_data = reviews_data
         @rule_id_map = rule_id_map
@@ -28,6 +34,7 @@ module Import
         @component = component
         @manifest = manifest
         @imported_by = imported_by
+        @external_to_new_id = {}
       end
 
       def build_all
@@ -40,7 +47,6 @@ module Import
         # pass 2 (relink) or pass 3 (drop_invalid + audit) raises.
         Review.transaction do
           # Pass 1: insert every review, capture external_id → new DB id map
-          external_to_new_id = {}
           count = 0
           @reviews_data.each do |review_data|
             rule_db_id = @rule_id_map[review_data['rule_id']]
@@ -54,29 +60,29 @@ module Import
 
             new_id = insert_review(review_data, rule_db_id, commenter)
             external_id = review_data['external_id']
-            external_to_new_id[external_id] = new_id if external_id
+            @external_to_new_id[external_id] = new_id if external_id
             count += 1
           end
 
           # Pass 2: patch responding_to_review_id + duplicate_of_review_id using
           # the external_id → new_id map. Backups without these refs short-circuit.
-          relink_threaded_refs(external_to_new_id)
+          relink_threaded_refs(@external_to_new_id)
 
           # Review.insert! bypasses model
           # validators. Re-load each inserted record and run `valid?`; on
           # failure, warn + delete the row. Children of removed parents
           # cascade-delete via the FK semantics on responding_to_review_id.
-          dropped = drop_invalid_reviews(external_to_new_id)
+          dropped = drop_invalid_reviews(@external_to_new_id)
 
           # Defensive net: insert_review dual-writes commentable, but guard
           # against any future insert!/raw-SQL path that forgets it so the
           # triage read paths never silently hide imported comments.
-          Review.where(id: external_to_new_id.values).repair_missing_commentable!
+          Review.where(id: @external_to_new_id.values).repair_missing_commentable!
 
           # write a Component-level audit row
           # listing imported external_ids + archive identifier. Recovery
           # trail for admin_destroy → re-import scenarios.
-          write_import_audit(external_to_new_id)
+          write_import_audit(@external_to_new_id)
 
           count - dropped
         end

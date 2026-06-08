@@ -221,13 +221,35 @@ module Import
           rule_id_map = @component.rules.pluck(:rule_id, :id).to_h
           builder_result = Import::Result.new
 
-          inserted = ReviewBuilder.new(
+          builder = ReviewBuilder.new(
             new_reviews, rule_id_map, builder_result,
             component: @component, manifest: @merge_plan.manifest
-          ).build_all
+          )
+          builder.build_all
 
-          new_reviews.first(inserted).each { |review_hash| log_review_insert(review_hash) }
+          log_review_inserts(builder.external_to_new_id, new_reviews)
           builder_result.warnings.each { |w| @result.add_warning(w) }
+        end
+
+        # Walk ReviewBuilder.external_to_new_id and emit one MergeOperation
+        # row per actually-inserted Review, with entity_id = new Review.id
+        # and entity_key = external_id. Filters out rows ReviewBuilder
+        # dropped post-insert via drop_invalid_reviews so audit row count
+        # matches DB row count one-for-one.
+        def log_review_inserts(external_to_new_id, new_reviews)
+          return if external_to_new_id.empty?
+
+          surviving_ids = Review.where(id: external_to_new_id.values).pluck(:id).to_set
+          review_index = new_reviews.index_by { |r| r['external_id'] }
+
+          external_to_new_id.each do |external_id, new_id|
+            next unless surviving_ids.include?(new_id)
+
+            review_hash = review_index[external_id]
+            next if review_hash.nil?
+
+            log_review_insert(new_id, review_hash)
+          end
         end
 
         # For each {ours:, theirs:} review pair in the matched bucket,
@@ -432,11 +454,11 @@ module Import
           )
         end
 
-        def log_review_insert(review_hash)
+        def log_review_insert(new_id, review_hash)
           MergeOperation.create!(
             component_sync_event: @sync_event,
             entity_type: 'review',
-            entity_id: 0, # filled by Phase 2c when we round-trip back via the new_id map
+            entity_id: new_id,
             entity_key: review_hash['external_id'].to_s,
             operation: 'insert',
             field_name: nil,
