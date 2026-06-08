@@ -21,6 +21,7 @@ RSpec.describe 'Reviews' do
     end
 
     context 'as the original commenter while pending' do
+      include_context 'with auditing'
       before { sign_in edit_owner }
 
       it 'updates the comment text' do

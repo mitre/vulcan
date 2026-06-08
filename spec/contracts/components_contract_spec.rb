@@ -143,6 +143,8 @@ RSpec.describe 'Components endpoint contracts', type: :request do
   # ── GET /components/:id/histories ──
 
   describe 'GET /components/:id/histories (JSON)' do
+    include_context 'with auditing'
+
     before do
       component.update!(description: 'History test trigger')
     end

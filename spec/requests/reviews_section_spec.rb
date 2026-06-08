@@ -8,6 +8,7 @@ require 'rails_helper'
 # commenter or going out-of-band via the console. Audit-comment required.
 RSpec.describe 'Reviews' do
   include_context 'reviews request base setup'
+  include_context 'with auditing'
 
   describe 'PATCH /reviews/:id/section' do
     let_it_be(:sec_admin) { create(:user) }

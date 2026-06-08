@@ -8,6 +8,8 @@ require 'rails_helper'
 # - Component changes (via has_associated_audits)
 # - Membership changes (via associated_with)
 RSpec.describe 'Project Histories' do
+  include_context 'with auditing'
+
   let_it_be(:user) { create(:user, admin: true) }
   let_it_be(:project) { create(:project) }
   let_it_be(:component) { create(:component, project: project) }

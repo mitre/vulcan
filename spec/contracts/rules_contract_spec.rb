@@ -186,6 +186,10 @@ RSpec.describe 'Rules endpoint contracts', type: :request do
   # ── POST /rules/:id/revert ──
 
   describe 'POST /rules/:id/revert (JSON)' do
+    include_context 'with auditing'
+    before(:all) { Audited.auditing_enabled = true }
+    after(:all) { Audited.auditing_enabled = false }
+
     let_it_be(:audit) do
       rule.update!(vendor_comments: 'Before revert')
       rule.update!(vendor_comments: 'After revert')

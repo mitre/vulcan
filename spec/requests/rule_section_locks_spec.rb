@@ -3,6 +3,8 @@
 require 'rails_helper'
 
 RSpec.describe 'Rule section locks API' do
+  include_context 'with auditing'
+
   let_it_be(:admin_user) { create(:user, admin: true) }
   let_it_be(:project) { create(:project) }
   let_it_be(:component) { create(:component, project: project) }

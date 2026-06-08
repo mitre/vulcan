@@ -12,6 +12,7 @@ require 'rails_helper'
 # audit comment requirement.
 RSpec.describe 'Reviews' do
   include_context 'reviews request base setup'
+  include_context 'with auditing'
 
   describe 'PATCH /reviews/:id/admin_withdraw' do
     let_it_be(:adm_admin) { create(:user) }

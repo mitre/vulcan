@@ -34,6 +34,8 @@ RSpec.describe 'Users::RegistrationsController#unlink_identity' do
 
   describe 'POST /users/unlink_identity' do
     context 'with valid current password' do
+      include_context 'with auditing'
+
       it 'clears provider and uid' do
         post '/users/unlink_identity', params: { current_password: password }
 

@@ -200,6 +200,8 @@ RSpec.describe PersonalAccessToken do
   end
 
   describe 'audit trail' do
+    include_context 'with auditing'
+
     it 'creates an audit record on token creation' do
       expect do
         create(:personal_access_token, user: user, name: 'Audit Test')

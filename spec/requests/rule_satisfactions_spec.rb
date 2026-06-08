@@ -87,6 +87,8 @@ RSpec.describe 'Rule Satisfactions' do
   end
 
   describe 'ADNM automation on destroy — resets to NYD' do
+    include_context 'with auditing'
+
     before do
       # Create the satisfaction first (which sets ADNM)
       rule_a.satisfied_by << rule_b
@@ -137,6 +139,8 @@ RSpec.describe 'Rule Satisfactions' do
   end
 
   describe 'round-trip content preservation — nest then unnest' do
+    include_context 'with auditing'
+
     it 'preserves user-edited check/fix/title content and restores original status through nest + unnest cycle' do
       original_fixtext = 'Custom fix text the user spent hours writing'
       original_title = 'Custom requirement title'

@@ -4,6 +4,7 @@ require 'rails_helper'
 
 RSpec.describe Review do
   include_context 'srg model base setup'
+  include_context 'with auditing'
 
   # section is editable post-creation; the change must show up
   # in the audit log so the disposition record reflects who retagged what + why.

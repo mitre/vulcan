@@ -27,6 +27,7 @@ RSpec.describe 'Reviews' do
     end
 
     context 'as an author' do
+      include_context 'with auditing'
       before { sign_in triager }
 
       it 'sets triage_status + audit fields and creates a response Review when text is supplied' do

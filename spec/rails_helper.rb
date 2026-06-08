@@ -110,6 +110,14 @@ RSpec.configure do |config|
   # See: https://github.com/grosser/parallel_tests/issues/301
   config.before(:suite) do
     DatabaseCleaner.clean_with(:deletion)
+
+    # Disable auditing globally to eliminate PostgreSQL deadlocks in parallel
+    # tests. The audited gem's after_create callback inserts into the audits
+    # table on every factory create(), and FK triggers on base_rules cause
+    # lock ordering conflicts between parallel workers.
+    # Specs that test audit behavior re-enable via include_context 'with auditing'.
+    # See: audited gem issue #410, parallel_tests issue #301
+    Audited.auditing_enabled = false
   end
 
   config.before do

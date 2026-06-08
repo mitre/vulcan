@@ -88,13 +88,17 @@ RSpec.describe Review, '#move_to_rule!' do
     expect(nested.commentable_id).to eq(rule_target.id)
   end
 
-  it 'writes an audit row with audit_comment naming the move' do
-    review = fresh_review
-    expect do
-      review.move_to_rule!(rule_target, reason: 'audit check', moved_by: admin)
-    end.to change { review.audits.count }.by_at_least(1)
-    last_audit = review.audits.last
-    expect(last_audit.comment).to include("#{component.prefix}-#{rule_target.rule_id}")
-    expect(last_audit.comment).to include('audit check')
+  context 'audit trail' do
+    include_context 'with auditing'
+
+    it 'writes an audit row with audit_comment naming the move' do
+      review = fresh_review
+      expect do
+        review.move_to_rule!(rule_target, reason: 'audit check', moved_by: admin)
+      end.to change { review.audits.count }.by_at_least(1)
+      last_audit = review.audits.last
+      expect(last_audit.comment).to include("#{component.prefix}-#{rule_target.rule_id}")
+      expect(last_audit.comment).to include('audit check')
+    end
   end
 end

@@ -157,6 +157,8 @@ RSpec.describe Reaction do
   end
 
   describe 'audit trail' do
+    include_context 'with auditing'
+
     it 'writes an audit row on create' do
       review = comment_review
       expect do

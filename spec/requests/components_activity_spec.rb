@@ -4,6 +4,7 @@ require 'rails_helper'
 
 RSpec.describe 'Components' do
   include_context 'components request base setup'
+  include_context 'with auditing'
 
   # REQUIREMENT: Activity panel (B5) needs a dedicated histories endpoint
   # so the frontend can re-fetch after rule saves without full page reload.

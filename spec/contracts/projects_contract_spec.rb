@@ -158,6 +158,8 @@ RSpec.describe 'Projects endpoint contracts', type: :request do
   # ── GET /projects/:id/histories ──
 
   describe 'GET /projects/:id/histories (JSON)' do
+    include_context 'with auditing'
+
     before { project.update!(description: 'History trigger for contract test') }
 
     it 'returns AuditEntry array with project audit trail pinned to project' do

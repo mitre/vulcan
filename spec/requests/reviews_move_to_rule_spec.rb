@@ -9,6 +9,7 @@ require 'rails_helper'
 # sees the parent already at the target when each child moves.
 RSpec.describe 'Reviews' do
   include_context 'reviews request base setup'
+  include_context 'with auditing'
 
   describe 'PATCH /reviews/:id/move_to_rule' do
     let_it_be(:mtr_admin) { create(:user) }

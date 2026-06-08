@@ -793,6 +793,8 @@ RSpec.describe Import::JsonArchiveImporter do
     # AuditEventBundle.bundled_with(audit_id) reconstructs the entire
     # import as one logical operation.
     context 'with request_uuid correlation' do
+      include_context 'with auditing'
+
       before { Audited.store.delete(:current_request_uuid) }
 
       after { Audited.store.delete(:current_request_uuid) }

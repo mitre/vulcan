@@ -3,6 +3,8 @@
 require 'rails_helper'
 
 RSpec.describe Rule do
+  include_context 'with auditing'
+
   let_it_be(:project) { create(:project) }
   let_it_be(:srg) { create(:security_requirements_guide) }
   let_it_be(:component) { create(:component, project: project, based_on: srg) }
