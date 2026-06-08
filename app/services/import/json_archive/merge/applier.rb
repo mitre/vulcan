@@ -56,13 +56,17 @@ module Import
           begin
             @sync_event = create_sync_event
             validate_apply_preconditions!
-            take_pre_merge_snapshot!
             # Wrap the entire apply in a VulcanAudit correlation scope so
             # every audit row produced by an inner save shares one
             # request_uuid (the sync_id). The merge tag also lands in
             # audit_comment on each save via #audit_comment_for_merge.
             VulcanAudit.with_correlation_scope(uuid: @sync_event.sync_id) do
-              with_serializable_transaction { apply_all }
+              with_serializable_transaction do
+                acquire_component_lock!
+                reload_and_revalidate!
+                take_pre_merge_snapshot!
+                apply_all
+              end
             end
             update_component_sync_metadata
             mark_event_status('applied')
@@ -466,12 +470,33 @@ module Import
                 'ComponentSyncEvent exists — wait for it to complete or fail)'
         end
 
+        # Session-scoped advisory lock keyed on component.id. Two operators
+        # racing sync:apply serialize here; auto-released at outer txn
+        # commit/rollback. Different components merge concurrently.
+        def acquire_component_lock!
+          ActiveRecord::Base.connection.execute(
+            "SELECT pg_advisory_xact_lock(#{@component.id.to_i})"
+          )
+        end
+
+        # Inside the locked txn, re-read the component under SELECT FOR
+        # UPDATE and re-validate preconditions against the just-read row.
+        # Catches: (a) component destroyed between pre-check and apply,
+        # (b) comment_phase reopened mid-flight by another operator.
+        def reload_and_revalidate!
+          @component.lock!
+          validate_apply_preconditions!
+        rescue ActiveRecord::RecordNotFound
+          raise PreconditionError, 'component was destroyed during merge'
+        end
+
         # The apply path requires concurrent-edit protection — the
         # receiving component must be in 'closed' comment_phase so no one
         # is mid-write while we apply theirs. Analyzer (read-only) does
-        # not require this. Raises PreconditionError on failure
-        # so the same exception class is used uniformly across the
-        # analyze + apply boundary.
+        # not require this. Called once before opening the txn (fast-fail)
+        # and again after acquiring the advisory + row lock inside the txn.
+        # Raises PreconditionError on failure so the same exception class
+        # is used uniformly across the analyze + apply boundary.
         def validate_apply_preconditions!
           return if @component.comment_phase == Analyzer::COMMENT_PHASE_REQUIRED
 
@@ -483,6 +508,8 @@ module Import
         # Captures the current state of the receiving component as a
         # zip + checksum so disaster-recovery (v2-480.10) can restore it
         # if a merge is reverted. Snapshot path recorded on the sync event.
+        # Runs inside the locked apply transaction so the captured state
+        # reflects the actual apply pre-state (post-lock, pre-write).
         def take_pre_merge_snapshot!
           path = SnapshotManager.create_snapshot(@component)
           @sync_event.update!(snapshot_path: path)

@@ -640,6 +640,56 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
     end
   end
 
+  describe '#call (advisory lock + reload-locked precondition)' do
+    subject(:result) do
+      described_class.new(merge_plan: plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+    end
+
+    it 'acquires pg_advisory_xact_lock on component.id inside the apply transaction' do
+      captured_sql = []
+      allow(ActiveRecord::Base.connection).to receive(:execute).and_wrap_original do |orig, sql|
+        captured_sql << sql.to_s
+        orig.call(sql)
+      end
+
+      result
+
+      expect(captured_sql.any? { |s| s.include?("pg_advisory_xact_lock(#{component.id})") }).to be(true)
+    end
+
+    it 'takes the pre-merge snapshot inside the apply transaction (not before)' do
+      txn_open_at_snapshot = nil
+      allow(Import::JsonArchive::Merge::SnapshotManager)
+        .to receive(:create_snapshot) do
+          txn_open_at_snapshot = ActiveRecord::Base.connection.transaction_open?
+          '/tmp/snap-in-txn.zip'
+        end
+
+      result
+
+      expect(txn_open_at_snapshot).to be(true)
+    end
+
+    it 'fails with PreconditionError when the component is destroyed mid-apply' do
+      allow(component).to receive(:lock!).and_raise(ActiveRecord::RecordNotFound)
+
+      expect(result.success?).to be(false)
+      expect(result.errors.join).to match(/destroyed/i)
+      expect(ComponentSyncEvent.last.status).to eq('failed')
+    end
+
+    it 'fails when comment_phase is reopened between the fast-fail and the locked re-check' do
+      allow(component).to receive(:lock!) do
+        component.assign_attributes(comment_phase: 'reopened_during_apply')
+        component
+      end
+
+      expect(result.success?).to be(false)
+      expect(result.errors.join).to match(/comment_phase/i)
+      expect(ComponentSyncEvent.last.status).to eq('failed')
+    end
+  end
+
   describe '#call (one pending sync per component invariant)' do
     it 'refuses to start a second apply while another sync is still pending' do
       ComponentSyncEvent.create!(
