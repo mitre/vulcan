@@ -420,4 +420,53 @@ RSpec.describe 'User Registrations' do
       end
     end
   end
+
+  describe 'session timeout default' do
+    it 'defaults to 600 seconds (10 min) per DoD AC-12 STIG requirement' do
+      expect(Settings.local_login.session_timeout).to eq(600)
+    end
+  end
+
+  describe 'authenticate_scope! coverage (Devise before_action)' do
+    it 'guards edit, update, destroy, and custom settings actions' do
+      callbacks = Users::RegistrationsController._process_action_callbacks
+                                                .select { |cb| cb.kind == :before && cb.filter == :authenticate_scope! }
+      guarded_actions = callbacks.flat_map do |cb|
+        cb.instance_variable_get(:@if)
+          &.select { |f| f.is_a?(AbstractController::Callbacks::ActionFilter) }
+          &.flat_map { |f| f.instance_variable_get(:@actions)&.to_a } || []
+      end
+
+      %w[edit update destroy edit_password edit_activity edit_tokens].each do |action|
+        expect(guarded_actions).to include(action),
+                                   "authenticate_scope! must guard '#{action}' but it does not. " \
+                                   "Guarded: #{guarded_actions.sort.join(', ')}"
+      end
+    end
+  end
+
+  describe 'expired session redirects instead of crashing (authenticate_scope!)' do
+    let(:user) { create(:user, password: 'S3cure!#TestPas1', password_confirmation: 'S3cure!#TestPas1') }
+
+    it 'GET /users/edit redirects when session expired' do
+      sign_in user
+      sign_out user
+      get edit_user_registration_path
+      expect(response).to be_redirect
+    end
+
+    it 'PUT /users redirects when session expired' do
+      sign_in user
+      sign_out user
+      put user_registration_path, params: { user: { name: 'test' } }
+      expect(response).to be_redirect
+    end
+
+    it 'DELETE /users redirects when session expired' do
+      sign_in user
+      sign_out user
+      delete user_registration_path
+      expect(response).to be_redirect
+    end
+  end
 end

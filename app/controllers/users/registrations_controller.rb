@@ -5,10 +5,11 @@ module Users
   # login is disabled.
   class RegistrationsController < Devise::RegistrationsController
     before_action :configure_permitted_parameters
-    # Devise's stock `authenticate_scope!` only guards :edit / :update /
-    # :destroy. The settings-shell sub-pages we add (#edit_password,
-    # #edit_activity) need the same protection.
-    prepend_before_action :authenticate_scope!, only: %i[edit_password edit_activity edit_tokens]
+    # Devise's base class guards :edit/:update/:destroy with authenticate_scope!
+    # (which calls authenticate_user!(force: true) for stale-session protection).
+    # We must INCLUDE those originals when adding our custom settings-shell actions,
+    # because prepend_before_action replaces — not extends — the parent's registration.
+    prepend_before_action :authenticate_scope!, only: %i[edit update destroy edit_password edit_activity edit_tokens]
 
     def edit
       super
