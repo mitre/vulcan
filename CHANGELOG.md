@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Renamed "Triage Queue" to "Comments" (heading, breadcrumbs, aria labels). (PR #731)
 - Commented/All toggle moved to rule ID row as simple switch. (PR #731)
 - Locked fields now allow comments (lock prevents editing, not commenting). (PR #731)
+- **Backup format version bumped to 1.1** — exports now declare `backup_format_version: "1.1"` (was 1.0). The format itself is a forward-compatible bump: review `created_at`/`updated_at` carry microsecond precision (already emitted as `iso8601(6)` since v2-480.12), and `ManifestValidator` accepts both `1.0` and `1.1`. The matcher's `legacy_format?` branch (second-precision normalization) now triggers only on `1.0`, so two reviews <1s apart with identical rule_id and comment no longer collapse into `pair_degenerate` on fresh exports. Old 1.0 archives are still importable. (v2-480.26)
 
 ### Fixed
 

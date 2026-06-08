@@ -5,7 +5,10 @@ module Import
     # Validates the manifest.json from a backup archive.
     # Checks format version, SRG dependencies, and name conflicts.
     class ManifestValidator
-      SUPPORTED_VERSIONS = ['1.0'].freeze
+      # 1.0 — original format (second-precision review timestamps).
+      # 1.1 — microsecond-precision review created_at/updated_at + the
+      #       compatible matcher path (v2-480.26).
+      SUPPORTED_VERSIONS = %w[1.0 1.1].freeze
 
       def initialize(manifest, project, component_filter: nil, dry_run: false)
         @manifest = manifest

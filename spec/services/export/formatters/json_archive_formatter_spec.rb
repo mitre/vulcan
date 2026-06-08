@@ -62,7 +62,7 @@ RSpec.describe Export::Formatters::JsonArchiveFormatter do
       subject(:manifest) { JSON.parse(zip_read(data, manifest_file)) }
 
       it 'has backup_format_version' do
-        expect(manifest['backup_format_version']).to eq('1.0')
+        expect(manifest['backup_format_version']).to eq('1.1')
       end
 
       it 'has exported_at timestamp' do

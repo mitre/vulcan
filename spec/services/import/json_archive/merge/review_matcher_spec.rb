@@ -168,4 +168,26 @@ RSpec.describe Import::JsonArchive::Merge::ReviewMatcher, type: :service do
       expect(result.only_theirs.size).to eq(1)
     end
   end
+
+  describe 'manifest v1.1 microsecond precision (v2-480.26)' do
+    it 'does NOT collide two reviews 100ms apart with identical rule_id and comment into pair_degenerate' do
+      ours = [
+        base_review.merge('external_id' => 1, 'created_at' => '2026-06-08T15:00:00.100000'),
+        base_review.merge('external_id' => 2, 'created_at' => '2026-06-08T15:00:00.200000')
+      ]
+      theirs = [
+        base_review.merge('external_id' => 11, 'created_at' => '2026-06-08T15:00:00.100000'),
+        base_review.merge('external_id' => 12, 'created_at' => '2026-06-08T15:00:00.200000')
+      ]
+
+      result = described_class.new(
+        ours_reviews: ours, theirs_reviews: theirs, manifest_version: '1.1'
+      ).match
+
+      expect(result.matched.size).to eq(2)
+      expect(result.collisions).to be_empty
+      expect(result.only_ours).to be_empty
+      expect(result.only_theirs).to be_empty
+    end
+  end
 end

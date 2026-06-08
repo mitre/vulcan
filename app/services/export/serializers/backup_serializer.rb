@@ -10,7 +10,11 @@ module Export
     #   data = serializer.serialize
     #   # => { component: {}, rules: [], satisfactions: [], reviews: [] }
     class BackupSerializer
-      BACKUP_FORMAT_VERSION = '1.0'
+      # v1.1 — emit iso8601(6) (microsecond) on review created_at/updated_at
+      # so ReviewMatcher uses microsecond precision (legacy_format? only
+      # triggers on '1.0'). Two reviews <1s apart with identical rule_id
+      # and comment no longer collapse into pair_degenerate. v2-480.26
+      BACKUP_FORMAT_VERSION = '1.1'
 
       # base_rules columns to EXCLUDE from export (internal/relational IDs).
       # Complement of Rule::MERGEABLE_FIELDS + Rule::DERIVED_COLUMNS +
