@@ -131,6 +131,73 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
     end
   end
 
+  describe '#call (applies rule auto-merged changes)' do
+    # Build a plan with one auto_theirs field change so we can observe
+    # the applier write to the DB + log a merge_operations row.
+    let(:target_rule) { component.rules.first }
+    let(:auto_plan) do
+      p = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id,
+        strategy: strategy,
+        manifest: manifest
+      )
+      change = Import::JsonArchive::Merge::RuleFieldDiffer::FieldChange.new(
+        field: 'fixtext', from: target_rule.fixtext, to: 'THEIRS fixtext',
+        resolution: :auto_theirs, locked: false, reason: 'Strategy resolved to :theirs'
+      )
+      p.add_field_changes(target_rule.rule_id, [change])
+      p
+    end
+
+    it 'persists the field change on the rule' do
+      described_class.new(merge_plan: auto_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+
+      expect(target_rule.reload.fixtext).to eq('THEIRS fixtext')
+    end
+
+    it 'writes one MergeOperation row per applied field with before/after captured' do
+      expect do
+        described_class.new(merge_plan: auto_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+      end.to change(MergeOperation, :count).by(1)
+
+      op = MergeOperation.last
+      expect(op.entity_type).to eq('rule')
+      expect(op.entity_key).to eq(target_rule.rule_id)
+      expect(op.field_name).to eq('fixtext')
+      expect(op.new_value).to eq('THEIRS fixtext')
+      expect(op.operation).to eq('update')
+      expect(op.source).to eq('theirs')
+    end
+
+    it ':auto_ours uses the from value (keeps ours), still logs the operation' do
+      auto_ours_plan = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id, strategy: strategy, manifest: manifest
+      )
+      auto_ours_plan.add_field_changes(target_rule.rule_id, [
+                                         Import::JsonArchive::Merge::RuleFieldDiffer::FieldChange.new(
+                                           field: 'fixtext', from: 'OURS fixtext keep', to: 'THEIRS fixtext drop',
+                                           resolution: :auto_ours, locked: false, reason: ''
+                                         )
+                                       ])
+
+      described_class.new(merge_plan: auto_ours_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+
+      # auto_ours = keep ours; the rule's current value stays. No DB change.
+      expect(target_rule.reload.fixtext).to eq(target_rule.fixtext)
+      op = MergeOperation.last
+      expect(op.source).to eq('ours')
+    end
+
+    it 'recalculates the components.rules_count counter cache after rule writes' do
+      original_count = component.rules.where(deleted_at: nil).count
+      component.update_columns(rules_count: 9999) # -- corrupt the cache to verify recalc
+
+      described_class.new(merge_plan: auto_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+
+      expect(component.reload.rules_count).to eq(original_count)
+    end
+  end
+
   describe '#call (closed-phase precondition)' do
     it 'refuses to apply against an open-phase component and marks the event failed' do
       open_component = create(:component, :open_comment_period)
