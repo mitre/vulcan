@@ -553,6 +553,54 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
     end
   end
 
+  describe '#call (audit correlation scope)' do
+    let(:target_rule) { component.rules.first }
+    let(:auto_plan) do
+      p = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id, strategy: strategy, manifest: manifest
+      )
+      p.add_field_changes(target_rule.rule_id, [
+                            Import::JsonArchive::Merge::RuleFieldDiffer::FieldChange.new(
+                              field: 'fixtext', from: target_rule.fixtext, to: 'audit-test',
+                              resolution: :auto_theirs, locked: false, reason: ''
+                            )
+                          ])
+      p
+    end
+
+    it 'wraps the apply in VulcanAudit.with_correlation_scope keyed to sync_id' do
+      expect(VulcanAudit).to receive(:with_correlation_scope).and_call_original
+
+      described_class.new(merge_plan: auto_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+    end
+
+    it 'tags each save audit_comment with "merge:{sync_id}"' do
+      described_class.new(merge_plan: auto_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+
+      event = ComponentSyncEvent.last
+      audit = target_rule.audits.last
+      expect(audit.comment).to eq("merge:#{event.sync_id}")
+    end
+
+    it 'all audit rows from one merge share the same request_uuid' do
+      # Trigger TWO rule writes so we can verify both audits share a uuid
+      second_rule = component.rules.second
+      auto_plan.add_field_changes(second_rule.rule_id, [
+                                    Import::JsonArchive::Merge::RuleFieldDiffer::FieldChange.new(
+                                      field: 'fixtext', from: second_rule.fixtext, to: 'audit-test-2',
+                                      resolution: :auto_theirs, locked: false, reason: ''
+                                    )
+                                  ])
+
+      described_class.new(merge_plan: auto_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+
+      a1 = target_rule.audits.last
+      a2 = second_rule.audits.last
+      expect(a1.request_uuid).to eq(a2.request_uuid)
+      expect(a1.request_uuid).to be_present
+    end
+  end
+
   describe '#call (closed-phase precondition)' do
     it 'refuses to apply against an open-phase component and marks the event failed' do
       open_component = create(:component, :open_comment_period)

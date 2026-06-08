@@ -57,7 +57,13 @@ module Import
           begin
             validate_apply_preconditions!
             take_pre_merge_snapshot!
-            with_serializable_transaction { apply_all }
+            # Wrap the entire apply in a VulcanAudit correlation scope so
+            # every audit row produced by an inner save shares one
+            # request_uuid (the sync_id). The merge tag also lands in
+            # audit_comment on each save via #audit_comment_for_merge.
+            VulcanAudit.with_correlation_scope(uuid: @sync_event.sync_id) do
+              with_serializable_transaction { apply_all }
+            end
             mark_event_status('applied')
           rescue PreconditionError => e
             mark_event_status('failed')
@@ -129,6 +135,7 @@ module Import
 
             old_value = rule.public_send(change.field)
             rule.assign_attributes(change.field => winning_value)
+            rule.audit_comment = audit_comment_for_merge
             rule.save!
             log_field_change(rule, change, old_value, winning_value)
           end
@@ -266,6 +273,7 @@ module Import
           # changing here, but the design doc flags it as MUST FIX.
           review.commentable_type ||= 'BaseRule'
           review.commentable_id ||= review.rule_id
+          review.audit_comment = audit_comment_for_merge if review.respond_to?(:audit_comment=)
           review.save!
           log_review_update(review, field, current, new_value, verb)
         end
@@ -487,6 +495,13 @@ module Import
           else
             ActiveRecord::Base.transaction(isolation: TRANSACTION_ISOLATION, &)
           end
+        end
+
+        # Tag every save with the merge sync_id so audit history can group
+        # all rows from one merge. Paired with the correlation-scope
+        # request_uuid; comment text is the human-readable lookup.
+        def audit_comment_for_merge
+          "merge:#{@sync_event.sync_id}"
         end
 
         def mark_event_status(status)
