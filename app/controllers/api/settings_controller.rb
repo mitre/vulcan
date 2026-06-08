@@ -21,7 +21,7 @@ module Api
         },
         consent: {
           enabled: Settings.consent.enabled,
-          version: Settings.consent.version,
+          version: Settings.consent.version.to_i,
           title: Settings.consent.title,
           content: Settings.consent.content,
           ttl: Settings.consent.ttl.to_i

@@ -26,13 +26,13 @@ defaults: &defaults
   local_login:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_LOCAL_LOGIN']) != false %>
     email_confirmation: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_EMAIL_CONFIRMATION']) || false %>
-    # Accepts: plain seconds (900), or with suffix: 30s, 15m, 1h
-    # Default: 3600 (1 hour). DoD standard is typically 900 (15 min).
-    session_timeout: <%= ENV['VULCAN_SESSION_TIMEOUT'] || 3600 %>
+    # Accepts: plain seconds (600), or with suffix: 10m, 15m, 1h
+    # Default: 600 (10 min) per DoD AC-12 STIG requirement.
+    session_timeout: <%= (ENV['VULCAN_SESSION_TIMEOUT'] || 600).to_i %>
     remember_me_enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_REMEMBER_ME']) != false %>
     # Accepts: plain seconds (28800), or with suffix: 8h, 480m
     # Default: 28800 (8 hours). Set to 0 to disable remember me entirely.
-    remember_me_duration: <%= ENV['VULCAN_REMEMBER_ME_DURATION'] || 28800 %>
+    remember_me_duration: <%= (ENV['VULCAN_REMEMBER_ME_DURATION'] || 28800).to_i %>
   user_registration:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_USER_REGISTRATION']) != false %>
   admin_bootstrap:
@@ -97,10 +97,10 @@ defaults: &defaults
     text_color: <%= ENV.fetch('VULCAN_BANNER_TEXT_COLOR', '#ffffff') %>
   consent:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_CONSENT_ENABLED']) || false %>
-    version: <%= ENV.fetch('VULCAN_CONSENT_VERSION', '1') %>
+    version: <%= ENV.fetch('VULCAN_CONSENT_VERSION', '1').to_i %>
     title: <%= ENV.fetch('VULCAN_CONSENT_TITLE', 'Terms of Use') %>
     content: <%= ENV['VULCAN_CONSENT_CONTENT'] || '' %>
-    ttl: <%= ENV.fetch('VULCAN_CONSENT_TTL', '0') %>
+    ttl: <%= ENV.fetch('VULCAN_CONSENT_TTL', '0').to_i %>
   session_limits:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV.fetch('VULCAN_SESSION_LIMITS_ENABLED', 'true')) != false %>
     max_sessions: <%= ENV.fetch('VULCAN_MAX_CONCURRENT_SESSIONS', '1').to_i %>
@@ -111,11 +111,11 @@ defaults: &defaults
     unlock_strategy: <%= ENV.fetch('VULCAN_LOCKOUT_UNLOCK_STRATEGY', 'both') %>
     last_attempt_warning: <%= ActiveModel::Type::Boolean.new.cast(ENV.fetch('VULCAN_LOCKOUT_LAST_ATTEMPT_WARNING', 'true')) != false %>
   password:
-    min_length: <%= ENV.fetch('VULCAN_PASSWORD_MIN_LENGTH', '15') %>
-    min_uppercase: <%= ENV.fetch('VULCAN_PASSWORD_MIN_UPPERCASE', '2') %>
-    min_lowercase: <%= ENV.fetch('VULCAN_PASSWORD_MIN_LOWERCASE', '2') %>
-    min_number: <%= ENV.fetch('VULCAN_PASSWORD_MIN_NUMBER', '2') %>
-    min_special: <%= ENV.fetch('VULCAN_PASSWORD_MIN_SPECIAL', '2') %>
+    min_length: <%= ENV.fetch('VULCAN_PASSWORD_MIN_LENGTH', '15').to_i %>
+    min_uppercase: <%= ENV.fetch('VULCAN_PASSWORD_MIN_UPPERCASE', '2').to_i %>
+    min_lowercase: <%= ENV.fetch('VULCAN_PASSWORD_MIN_LOWERCASE', '2').to_i %>
+    min_number: <%= ENV.fetch('VULCAN_PASSWORD_MIN_NUMBER', '2').to_i %>
+    min_special: <%= ENV.fetch('VULCAN_PASSWORD_MIN_SPECIAL', '2').to_i %>
   input_limits:
     # Maximum lengths for text fields, grouped by category.
     # Based on analysis of real DISA STIG/SRG data (1,785 rules across 8 benchmarks).

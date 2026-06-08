@@ -136,4 +136,59 @@ RSpec.describe 'Settings defaults' do
       expect(Settings['providers']).not_to be_nil
     end
   end
+
+  describe 'numeric settings are Integer, not String' do
+    {
+      'consent.version' => -> { Settings.consent.version },
+      'consent.ttl' => -> { Settings.consent.ttl },
+      'password.min_length' => -> { Settings.password.min_length },
+      'password.min_uppercase' => -> { Settings.password.min_uppercase },
+      'password.min_lowercase' => -> { Settings.password.min_lowercase },
+      'password.min_number' => -> { Settings.password.min_number },
+      'password.min_special' => -> { Settings.password.min_special },
+      'local_login.session_timeout' => -> { Settings.local_login.session_timeout },
+      'local_login.remember_me_duration' => -> { Settings.local_login.remember_me_duration },
+      'lockout.maximum_attempts' => -> { Settings.lockout.maximum_attempts },
+      'lockout.unlock_in_minutes' => -> { Settings.lockout.unlock_in_minutes },
+      'session_limits.max_sessions' => -> { Settings.session_limits.max_sessions },
+      'input_limits.short_string' => -> { Settings.input_limits.short_string },
+      'input_limits.long_text' => -> { Settings.input_limits.long_text },
+      'api_tokens.max_tokens_per_user' => -> { Settings.api_tokens.max_tokens_per_user },
+      'api_tokens.max_lifetime_days' => -> { Settings.api_tokens.max_lifetime_days },
+      'api_tokens.auto_revoke_idle_days' => -> { Settings.api_tokens.auto_revoke_idle_days }
+    }.each do |path, accessor|
+      it "Settings.#{path} is Integer" do
+        value = accessor.call
+        expect(value).to be_a(Integer),
+                         "Expected Settings.#{path} to be Integer, got #{value.class} (#{value.inspect})"
+      end
+    end
+  end
+
+  describe 'auditing is disabled by default in test environment' do
+    it 'Audited.auditing_enabled is false' do
+      expect(Audited.auditing_enabled).to be(false)
+    end
+
+    it 'factory-created records do NOT generate audit records' do
+      expect { create(:project) }.not_to change(Audited::Audit, :count)
+    end
+
+    context 'with auditing re-enabled via shared context' do
+      include_context 'with auditing'
+
+      it 'Audited.auditing_enabled is true inside the context' do
+        expect(Audited.auditing_enabled).to be(true)
+      end
+
+      it 'factory-created records DO generate audit records' do
+        expect { create(:project) }.to change(Audited::Audit, :count).by(1)
+      end
+    end
+
+    it 'restores auditing to false after shared context exits' do
+      expect(Audited.auditing_enabled).to be(false)
+      expect { create(:project) }.not_to change(Audited::Audit, :count)
+    end
+  end
 end
