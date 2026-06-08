@@ -245,6 +245,66 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
     end
   end
 
+  describe '#call (imports only_theirs reviews)' do
+    let(:target_rule) { component.rules.first }
+    let(:new_review_hash) do
+      {
+        'external_id' => 42,
+        'rule_id' => target_rule.rule_id,
+        'action' => 'comment',
+        'section' => 'check_content',
+        'comment' => 'NEW from theirs',
+        'created_at' => Time.zone.local(2026, 6, 7, 12, 0).iso8601(6),
+        'user_email' => 'someone@example.com',
+        'user_name' => 'Someone Example'
+      }
+    end
+    let(:review_plan) do
+      p = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id, strategy: strategy, manifest: manifest
+      )
+      p.add_review_partition(matched: [], only_ours: [], only_theirs: [new_review_hash])
+      p
+    end
+
+    before do
+      # ReviewBuilder needs a user matching user_email or it'll skip with a warning
+      create(:user, email: 'someone@example.com', name: 'Someone Example')
+      # And a project membership so the import passes commenter validation
+      Membership.create!(user: User.find_by(email: 'someone@example.com'), membership: component.project, role: 'viewer')
+    end
+
+    it 'creates the new review in the DB scoped to the matched rule' do
+      expect do
+        described_class.new(merge_plan: review_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+      end.to change { target_rule.reviews.count }.by(1)
+
+      review = target_rule.reviews.order(:created_at).last
+      expect(review.comment).to eq('NEW from theirs')
+    end
+
+    it 'records a merge_operations row with operation=insert for each new review' do
+      expect do
+        described_class.new(merge_plan: review_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+      end.to change(MergeOperation.where(entity_type: 'review', operation: 'insert'), :count).by(1)
+
+      op = MergeOperation.where(entity_type: 'review', operation: 'insert').last
+      expect(op.entity_key).to eq('42') # external_id from archive
+      expect(op.source).to eq('theirs')
+    end
+
+    it 'is a no-op when only_theirs is empty' do
+      empty_plan = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id, strategy: strategy, manifest: manifest
+      )
+      empty_plan.add_review_partition(matched: [], only_ours: [], only_theirs: [])
+
+      expect do
+        described_class.new(merge_plan: empty_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+      end.not_to(change(Review, :count))
+    end
+  end
+
   describe '#call (closed-phase precondition)' do
     it 'refuses to apply against an open-phase component and marks the event failed' do
       open_component = create(:component, :open_comment_period)

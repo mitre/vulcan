@@ -73,7 +73,8 @@ module Import
           apply_rule_field_changes
           record_skipped_conflicts
           recalculate_rules_count
-          # reviews, satisfactions, memberships land in commits 5-8
+          import_new_reviews
+          # Review field updates, satisfactions, memberships land in c6-c8.
         end
 
         # Iterate the plan's auto-resolved FieldChange records, write them
@@ -171,6 +172,44 @@ module Import
             old_value: change.from.to_s,
             new_value: change.to.to_s,
             source: 'conflict_resolved'
+          )
+        end
+
+        # Reviews that exist only on theirs side need to be imported into
+        # the receiving component. Delegate to the existing ReviewBuilder
+        # two-pass — it already handles user-resolution, threaded-reply
+        # relinking, and the post-import commentable repair pass.
+        # Each successful insert is logged as a merge_operations row for
+        # parity with the rule-field-change records.
+        def import_new_reviews
+          new_reviews = @merge_plan.only_theirs_reviews
+          return if new_reviews.empty?
+
+          # ReviewBuilder needs a rule_id (archive string) -> DB id map.
+          # The applier already has the live component, so just walk it.
+          rule_id_map = @component.rules.pluck(:rule_id, :id).to_h
+          builder_result = Import::Result.new
+
+          inserted = ReviewBuilder.new(
+            new_reviews, rule_id_map, builder_result,
+            component: @component, manifest: @merge_plan.manifest
+          ).build_all
+
+          new_reviews.first(inserted).each { |review_hash| log_review_insert(review_hash) }
+          builder_result.warnings.each { |w| @result.add_warning(w) }
+        end
+
+        def log_review_insert(review_hash)
+          MergeOperation.create!(
+            component_sync_event: @sync_event,
+            entity_type: 'review',
+            entity_id: 0, # filled by Phase 2c when we round-trip back via the new_id map
+            entity_key: review_hash['external_id'].to_s,
+            operation: 'insert',
+            field_name: nil,
+            old_value: nil,
+            new_value: review_hash['comment'].to_s,
+            source: 'theirs'
           )
         end
 
