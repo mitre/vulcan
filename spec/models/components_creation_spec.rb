@@ -123,7 +123,7 @@ RSpec.describe Component do
       expect(copied).to be_present
       expect(copied.commentable_type).to eq('BaseRule')
       expect(copied.commentable_id).to eq(copied.rule_id)
-      expect(dup.paginated_comments[:rows].pluck(:id)).to include(copied.id)
+      expect(dup.paginated_comments[:rows].pluck('id')).to include(copied.id)
 
       dup.destroy!
     end

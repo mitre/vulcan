@@ -32,30 +32,30 @@ RSpec.describe 'paginated_comments — parent rollup fields' do
   describe 'Component#paginated_comments' do
     it 'includes parent_rule_displayed_name for child rule comments' do
       result = component.paginated_comments(triage_status: 'all', per_page: 50)
-      child_row = result[:rows].find { |r| r[:id] == child_comment.id }
+      child_row = result[:rows].find { |r| r['id'] == child_comment.id }
       expect(child_row).not_to be_nil
-      expect(child_row[:parent_rule_displayed_name]).to eq("#{component.prefix}-#{parent_rule.rule_id}")
+      expect(child_row['parent_rule_displayed_name']).to eq("#{component.prefix}-#{parent_rule.rule_id}")
     end
 
     it 'returns nil parent_rule_displayed_name for parent/standalone rule comments' do
       result = component.paginated_comments(triage_status: 'all', per_page: 50)
-      parent_row = result[:rows].find { |r| r[:id] == parent_comment.id }
+      parent_row = result[:rows].find { |r| r['id'] == parent_comment.id }
       expect(parent_row).not_to be_nil
-      expect(parent_row).to have_key(:parent_rule_displayed_name)
-      expect(parent_row[:parent_rule_displayed_name]).to be_nil
+      expect(parent_row).to have_key('parent_rule_displayed_name')
+      expect(parent_row['parent_rule_displayed_name']).to be_nil
     end
 
     it 'includes group_rule_displayed_name that resolves to parent for children' do
       result = component.paginated_comments(triage_status: 'all', per_page: 50)
-      child_row = result[:rows].find { |r| r[:id] == child_comment.id }
+      child_row = result[:rows].find { |r| r['id'] == child_comment.id }
       parent_name = "#{component.prefix}-#{parent_rule.rule_id}"
-      expect(child_row[:group_rule_displayed_name]).to eq(parent_name)
+      expect(child_row['group_rule_displayed_name']).to eq(parent_name)
     end
 
     it 'includes group_rule_displayed_name that is own name for standalone comments' do
       result = component.paginated_comments(triage_status: 'all', per_page: 50)
-      parent_row = result[:rows].find { |r| r[:id] == parent_comment.id }
-      expect(parent_row[:group_rule_displayed_name]).to eq(parent_row[:rule_displayed_name])
+      parent_row = result[:rows].find { |r| r['id'] == parent_comment.id }
+      expect(parent_row['group_rule_displayed_name']).to eq(parent_row['rule_displayed_name'])
     end
   end
 end

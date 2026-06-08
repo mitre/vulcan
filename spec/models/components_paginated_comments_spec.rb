@@ -25,33 +25,33 @@ RSpec.describe Component do
 
     it 'returns top-level comments only (no replies)' do
       result = components_component.paginated_comments(triage_status: 'all')
-      review_ids = result[:rows].pluck(:id)
+      review_ids = result[:rows].pluck('id')
       expect(review_ids).to include(@c1.id, @c2.id, @c3.id)
       expect(review_ids).not_to include(@reply.id)
     end
 
     it 'filters by triage_status' do
       pending_only = components_component.paginated_comments(triage_status: 'pending')
-      expect(pending_only[:rows].pluck(:id)).to contain_exactly(@c1.id, @c2.id)
+      expect(pending_only[:rows].pluck('id')).to contain_exactly(@c1.id, @c2.id)
 
       concur_only = components_component.paginated_comments(triage_status: 'concur')
-      expect(concur_only[:rows].pluck(:id)).to eq([@c3.id])
+      expect(concur_only[:rows].pluck('id')).to eq([@c3.id])
     end
 
     it 'filters by section' do
       check = components_component.paginated_comments(triage_status: 'all', section: 'check_content')
-      expect(check[:rows].pluck(:id)).to eq([@c1.id])
+      expect(check[:rows].pluck('id')).to eq([@c1.id])
     end
 
     it 'filters by rule_id' do
       rule_id = components_component.rules[0].id
       by_rule = components_component.paginated_comments(triage_status: 'all', rule_id: rule_id)
-      expect(by_rule[:rows].pluck(:id)).to contain_exactly(@c1.id, @c2.id)
+      expect(by_rule[:rows].pluck('id')).to contain_exactly(@c1.id, @c2.id)
     end
 
     it 'filters by author_id' do
       by_author = components_component.paginated_comments(triage_status: 'all', author_id: pc_viewer.id)
-      expect(by_author[:rows].pluck(:id)).to contain_exactly(@c1.id, @c2.id, @c3.id)
+      expect(by_author[:rows].pluck('id')).to contain_exactly(@c1.id, @c2.id, @c3.id)
     end
 
     it 'sanitizes ILIKE wildcards in q (100% should not match everything)' do
@@ -61,7 +61,7 @@ RSpec.describe Component do
 
     it 'searches comment text via q' do
       result = components_component.paginated_comments(triage_status: 'all', query: 'second')
-      expect(result[:rows].pluck(:id)).to eq([@c2.id])
+      expect(result[:rows].pluck('id')).to eq([@c2.id])
     end
 
     it 'paginates' do
@@ -77,7 +77,7 @@ RSpec.describe Component do
 
     it 'filters by resolved=false (adjudicated_at IS NULL)' do
       unresolved = components_component.paginated_comments(triage_status: 'all', resolved: 'false')
-      expect(unresolved[:rows].pluck(:id)).to contain_exactly(@c1.id, @c2.id, @c3.id)
+      expect(unresolved[:rows].pluck('id')).to contain_exactly(@c1.id, @c2.id, @c3.id)
     end
 
     # partial index covering the triage
@@ -136,9 +136,9 @@ RSpec.describe Component do
     describe 'commenter attribution fields' do
       it 'exposes commenter_display_name with resolved User name' do
         result = components_component.paginated_comments(triage_status: 'all')
-        c1_row = result[:rows].find { |r| r[:id] == @c1.id }
-        expect(c1_row[:commenter_display_name]).to eq(pc_viewer.name)
-        expect(c1_row[:commenter_imported]).to be(false)
+        c1_row = result[:rows].find { |r| r['id'] == @c1.id }
+        expect(c1_row['commenter_display_name']).to eq(pc_viewer.name)
+        expect(c1_row['commenter_imported']).to be(false)
       end
 
       it 'falls back to commenter_imported_name when user_id is nil' do
@@ -146,9 +146,9 @@ RSpec.describe Component do
                            commenter_imported_name: 'Former User',
                            commenter_imported_email: 'former@old.example')
         result = components_component.paginated_comments(triage_status: 'all')
-        c1_row = result[:rows].find { |r| r[:id] == @c1.id }
-        expect(c1_row[:commenter_display_name]).to eq('Former User')
-        expect(c1_row[:commenter_imported]).to be(true)
+        c1_row = result[:rows].find { |r| r['id'] == @c1.id }
+        expect(c1_row['commenter_display_name']).to eq('Former User')
+        expect(c1_row['commenter_imported']).to be(true)
       end
 
       # Task 33 PII guard: redact to role label when only imported_email
@@ -156,16 +156,16 @@ RSpec.describe Component do
       it 'redacts to "(imported commenter)" when only imported_email is populated' do
         @c1.update_columns(user_id: nil, commenter_imported_email: 'imp@old.example')
         result = components_component.paginated_comments(triage_status: 'all')
-        c1_row = result[:rows].find { |r| r[:id] == @c1.id }
-        expect(c1_row[:commenter_display_name]).to eq('(imported commenter)')
-        expect(c1_row[:commenter_imported]).to be(true)
+        c1_row = result[:rows].find { |r| r['id'] == @c1.id }
+        expect(c1_row['commenter_display_name']).to eq('(imported commenter)')
+        expect(c1_row['commenter_imported']).to be(true)
       end
     end
 
     it 'includes rule_content hash with all expected fields when include_rule_content: true' do
       result = components_component.paginated_comments(triage_status: 'all', include_rule_content: true)
-      c1_row = result[:rows].find { |r| r[:id] == @c1.id }
-      rc = c1_row[:rule_content]
+      c1_row = result[:rows].find { |r| r['id'] == @c1.id }
+      rc = c1_row['rule_content']
 
       expect(rc).to be_a(Hash)
       expected_keys = %i[
@@ -194,24 +194,24 @@ RSpec.describe Component do
                            comment: 'component-level feedback',
                            user: pc_viewer, commentable: components_component)
       result = components_component.paginated_comments(triage_status: 'all', include_rule_content: true)
-      comp_row = result[:rows].find { |r| r[:id] == comp_review.id }
-      expect(comp_row[:rule_content]).to be_nil
+      comp_row = result[:rows].find { |r| r['id'] == comp_review.id }
+      expect(comp_row['rule_content']).to be_nil
     end
 
     it 'omits rule_content key in default table mode (no include_rule_content)' do
       result = components_component.paginated_comments(triage_status: 'all')
-      c1_row = result[:rows].find { |r| r[:id] == @c1.id }
-      expect(c1_row).not_to have_key(:rule_content)
+      c1_row = result[:rows].find { |r| r['id'] == @c1.id }
+      expect(c1_row).not_to have_key('rule_content')
     end
 
     it 'always includes updated_at for optimistic locking regardless of include_rule_content' do
       result = components_component.paginated_comments(triage_status: 'all')
-      c1_row = result[:rows].find { |r| r[:id] == @c1.id }
-      expect(c1_row[:updated_at]).to eq(@c1.updated_at)
+      c1_row = result[:rows].find { |r| r['id'] == @c1.id }
+      expect(c1_row['updated_at']).to eq(@c1.updated_at)
 
       result_with = components_component.paginated_comments(triage_status: 'all', include_rule_content: true)
-      c1_row_with = result_with[:rows].find { |r| r[:id] == @c1.id }
-      expect(c1_row_with[:updated_at]).to eq(@c1.updated_at)
+      c1_row_with = result_with[:rows].find { |r| r['id'] == @c1.id }
+      expect(c1_row_with['updated_at']).to eq(@c1.updated_at)
     end
   end
 end

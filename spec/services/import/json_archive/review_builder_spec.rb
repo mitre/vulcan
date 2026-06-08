@@ -72,7 +72,7 @@ RSpec.describe Import::JsonArchive::ReviewBuilder do
       review = Review.find_by(comment: 'commentable-backfill sample')
       expect(review.commentable_type).to eq('BaseRule')
       expect(review.commentable_id).to eq(rule_a.id)
-      expect(component.paginated_comments[:rows].pluck(:id)).to include(review.id)
+      expect(component.paginated_comments[:rows].pluck('id')).to include(review.id)
     end
 
     it 'warns and removes a duplicate-status review with no target' do

@@ -135,7 +135,7 @@ RSpec.describe 'Query performance optimizations' do
     it 'returns reviews with correct rule_displayed_name' do
       reviews = component.reviews
       expect(reviews.length).to eq(1)
-      expect(reviews.first[:rule_displayed_name]).to eq("#{component.prefix}-000001")
+      expect(reviews.first['rule_displayed_name']).to eq("#{component.prefix}-000001")
     end
 
     it 'limits to 20 reviews' do

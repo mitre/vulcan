@@ -27,8 +27,8 @@ RSpec.describe CommentQueryService do
     it 'returns the comment in rows' do
       result = described_class.new(component, {}).call
       expect(result[:rows].length).to eq(1)
-      expect(result[:rows].first[:id]).to eq(comment.id)
-      expect(result[:rows].first[:comment]).to eq('Test comment for filtering')
+      expect(result[:rows].first['id']).to eq(comment.id)
+      expect(result[:rows].first['comment']).to eq('Test comment for filtering')
     end
 
     it 'returns correct pagination structure' do
@@ -52,7 +52,7 @@ RSpec.describe CommentQueryService do
 
       result = described_class.new(component, { rule_id: rule.id }).call
       expect(result[:rows].length).to eq(1)
-      expect(result[:rows].first[:rule_id]).to eq(rule.id)
+      expect(result[:rows].first['rule_id']).to eq(rule.id)
     end
 
     it 'filters by text query with ILIKE' do
@@ -77,7 +77,7 @@ RSpec.describe CommentQueryService do
     it 'produces identical output to Component#paginated_comments' do
       direct = component.paginated_comments
       via_service = described_class.new(component, {}).call
-      expect(via_service[:rows].map { |r| r[:id] }).to eq(direct[:rows].map { |r| r[:id] }) # rubocop:disable Rails/Pluck
+      expect(via_service[:rows].map { |r| r['id'] }).to eq(direct[:rows].map { |r| r['id'] }) # rubocop:disable Rails/Pluck
       expect(via_service[:pagination][:total]).to eq(direct[:pagination][:total])
       expect(via_service[:status_counts]).to eq(direct[:status_counts])
     end

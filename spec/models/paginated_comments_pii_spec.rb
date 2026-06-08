@@ -26,15 +26,15 @@ RSpec.describe 'paginated_comments — PII shape' do
   describe 'Component#paginated_comments' do
     it 'includes the author name and email for project members' do
       row = component.paginated_comments[:rows].first
-      expect(row[:author_name]).to eq('Industry Commenter')
-      expect(row[:author_email]).to eq(viewer.email)
+      expect(row['author_name']).to eq('Industry Commenter')
+      expect(row['author_email']).to eq(viewer.email)
     end
   end
 
   describe 'Project#paginated_comments' do
     it 'includes the author name but omits email at project scope' do
       row = project.paginated_comments[:rows].first
-      expect(row[:author_name]).to eq('Industry Commenter')
+      expect(row['author_name']).to eq('Industry Commenter')
       expect(row).not_to have_key(:author_email)
     end
   end
@@ -59,8 +59,8 @@ RSpec.describe 'paginated_comments — PII shape' do
 
     it 'Component#paginated_comments includes triager_display_name + triager_imported' do
       row = component.paginated_comments[:rows].first
-      expect(row[:triager_display_name]).to eq('Tri Ager')
-      expect(row[:triager_imported]).to be(false)
+      expect(row['triager_display_name']).to eq('Tri Ager')
+      expect(row['triager_imported']).to be(false)
       expect(row).to have_key(:adjudicator_display_name)
       expect(row).to have_key(:adjudicator_imported)
     end
@@ -72,8 +72,8 @@ RSpec.describe 'paginated_comments — PII shape' do
         triage_set_by_imported_email: 'old@former.example'
       )
       row = component.paginated_comments[:rows].first
-      expect(row[:triager_display_name]).to eq('Old Triager')
-      expect(row[:triager_imported]).to be(true)
+      expect(row['triager_display_name']).to eq('Old Triager')
+      expect(row['triager_imported']).to be(true)
     end
 
     # PII redaction: when ONLY the imported_email column is populated
@@ -88,8 +88,8 @@ RSpec.describe 'paginated_comments — PII shape' do
         triage_set_by_imported_email: 'leak-me@example.com'
       )
       row = component.paginated_comments[:rows].first
-      expect(row[:triager_display_name]).to eq('(imported triager)')
-      expect(row[:triager_imported]).to be(true)
+      expect(row['triager_display_name']).to eq('(imported triager)')
+      expect(row['triager_imported']).to be(true)
       expect(row.values).not_to include('leak-me@example.com')
     end
 
@@ -100,15 +100,15 @@ RSpec.describe 'paginated_comments — PII shape' do
         commenter_imported_email: 'commenter-fallback@example.com'
       )
       row = component.paginated_comments[:rows].first
-      expect(row[:commenter_display_name]).to eq('(imported commenter)')
-      expect(row[:commenter_imported]).to be(true)
-      expect(row[:author_email]).to eq('commenter-fallback@example.com')
+      expect(row['commenter_display_name']).to eq('(imported commenter)')
+      expect(row['commenter_imported']).to be(true)
+      expect(row['author_email']).to eq('commenter-fallback@example.com')
     end
 
     it 'Project#paginated_comments carries the same four display fields' do
       row = project.paginated_comments[:rows].first
-      expect(row[:triager_display_name]).to eq('Tri Ager')
-      expect(row[:triager_imported]).to be(false)
+      expect(row['triager_display_name']).to eq('Tri Ager')
+      expect(row['triager_imported']).to be(false)
       expect(row).to have_key(:adjudicator_display_name)
       expect(row).to have_key(:adjudicator_imported)
     end
@@ -132,19 +132,19 @@ RSpec.describe 'paginated_comments — PII shape' do
     end
 
     it 'Component#paginated_comments includes responses_count' do
-      row = component.paginated_comments[:rows].find { |r| r[:id] == posted_review.id }
-      expect(row[:responses_count]).to eq(2)
+      row = component.paginated_comments[:rows].find { |r| r['id'] == posted_review.id }
+      expect(row['responses_count']).to eq(2)
     end
 
     it 'Project#paginated_comments includes responses_count' do
-      row = project.paginated_comments[:rows].find { |r| r[:id] == posted_review.id }
-      expect(row[:responses_count]).to eq(2)
+      row = project.paginated_comments[:rows].find { |r| r['id'] == posted_review.id }
+      expect(row['responses_count']).to eq(2)
     end
 
     it 'returns 0 when a top-level comment has no replies' do
       lone = create(:review, :comment, comment: 'lone', user: replier, rule: posted_review.rule)
-      row = component.paginated_comments[:rows].find { |r| r[:id] == lone.id }
-      expect(row[:responses_count]).to eq(0)
+      row = component.paginated_comments[:rows].find { |r| r['id'] == lone.id }
+      expect(row['responses_count']).to eq(0)
     end
   end
 
@@ -158,20 +158,20 @@ RSpec.describe 'paginated_comments — PII shape' do
     it 'Component#paginated_comments includes reactions counts (up/down) without mine' do
       Reaction.create!(review: posted_review, user: viewer, kind: 'up')
       Reaction.create!(review: posted_review, user: up_user, kind: 'up')
-      row = component.paginated_comments[:rows].find { |r| r[:id] == posted_review.id }
-      expect(row[:reactions]).to eq(up: 2, down: 0)
+      row = component.paginated_comments[:rows].find { |r| r['id'] == posted_review.id }
+      expect(row['reactions']).to eq('up' => 2, 'down' => 0)
     end
 
     it 'Project#paginated_comments includes reactions counts' do
       Reaction.create!(review: posted_review, user: viewer, kind: 'down')
-      row = project.paginated_comments[:rows].find { |r| r[:id] == posted_review.id }
-      expect(row[:reactions]).to eq(up: 0, down: 1)
+      row = project.paginated_comments[:rows].find { |r| r['id'] == posted_review.id }
+      expect(row['reactions']).to eq('up' => 0, 'down' => 1)
     end
 
     it 'returns zeros when a comment has no reactions' do
       lone = create(:review, :comment, comment: 'lone', user: viewer, rule: posted_review.rule)
-      row = component.paginated_comments[:rows].find { |r| r[:id] == lone.id }
-      expect(row[:reactions]).to eq(up: 0, down: 0)
+      row = component.paginated_comments[:rows].find { |r| r['id'] == lone.id }
+      expect(row['reactions']).to eq('up' => 0, 'down' => 0)
     end
   end
 end
