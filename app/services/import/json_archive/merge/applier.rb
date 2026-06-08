@@ -18,6 +18,16 @@ module Import
         TRANSACTION_ISOLATION = :serializable
         VALID_SOURCES = %w[theirs ours auto_merge].freeze
 
+        # Reviews are mostly immutable, but a few lifecycle fields legit
+        # change post-creation (triage state, adjudication, rule-addressed
+        # links). The merge engine respects Strategy on these — by
+        # default ours wins on triage_status.
+        REVIEW_MERGEABLE_FIELDS = %w[
+          triage_status triage_set_by_imported_email triage_set_by_imported_name
+          adjudicated_at adjudicated_by_imported_email adjudicated_by_imported_name
+          addressed_by_rule_id
+        ].freeze
+
         attr_reader :sync_event
 
         # @param merge_plan [MergePlan] from Analyzer#call
@@ -74,7 +84,9 @@ module Import
           record_skipped_conflicts
           recalculate_rules_count
           import_new_reviews
-          # Review field updates, satisfactions, memberships land in c6-c8.
+          apply_review_field_updates
+          Review.where(commentable_id: nil).where.not(rule_id: nil).repair_missing_commentable!
+          # Satisfactions, memberships land in c7-c8.
         end
 
         # Iterate the plan's auto-resolved FieldChange records, write them
@@ -197,6 +209,80 @@ module Import
 
           new_reviews.first(inserted).each { |review_hash| log_review_insert(review_hash) }
           builder_result.warnings.each { |w| @result.add_warning(w) }
+        end
+
+        # For each {ours:, theirs:} review pair in the matched bucket,
+        # walk REVIEW_MERGEABLE_FIELDS and update any divergence per
+        # Strategy. Dual-write commentable_type/id on every save to keep
+        # the comment-triage read paths consistent. The post-loop
+        # repair_missing_commentable! is a defensive net (callbacks
+        # should set commentable, but bulk paths historically have not).
+        def apply_review_field_updates
+          @merge_plan.matched_reviews.each do |pair|
+            ours = pair[:ours] || pair['ours']
+            theirs = pair[:theirs] || pair['theirs']
+            next if ours.nil? || theirs.nil?
+
+            update_one_review(ours, theirs)
+          end
+        end
+
+        def update_one_review(ours_hash, theirs_hash)
+          review_id = ours_hash['external_id']
+          return if review_id.nil?
+
+          review = Review.find_by(id: review_id)
+          return if review.nil?
+
+          REVIEW_MERGEABLE_FIELDS.each do |field|
+            next unless theirs_hash.key?(field)
+
+            verb = @merge_plan.strategy.for_field(:review, field)
+            next if verb == :skip
+
+            apply_review_field(review, ours_hash, theirs_hash, field, verb)
+          end
+        end
+
+        def apply_review_field(review, ours_hash, theirs_hash, field, verb)
+          new_value = case verb
+                      when :theirs then theirs_hash[field]
+                      when :ours then ours_hash[field]
+                      else return # :conflict, :newer, etc. — Phase 1 does not auto-merge
+                      end
+
+          current = review.public_send(field)
+          return if current == new_value
+
+          review.assign_attributes(field => new_value)
+          # Defensive dual-write — should be a no-op since rule_id isn't
+          # changing here, but the design doc flags it as MUST FIX.
+          review.commentable_type ||= 'BaseRule'
+          review.commentable_id ||= review.rule_id
+          review.save!
+          log_review_update(review, field, current, new_value, verb)
+        end
+
+        def log_review_update(review, field, old_value, new_value, verb)
+          MergeOperation.create!(
+            component_sync_event: @sync_event,
+            entity_type: 'review',
+            entity_id: review.id,
+            entity_key: review.id.to_s,
+            operation: 'update',
+            field_name: field,
+            old_value: old_value.to_s,
+            new_value: new_value.to_s,
+            source: source_for_verb(verb)
+          )
+        end
+
+        def source_for_verb(verb)
+          case verb
+          when :ours then 'ours'
+          when :theirs then 'theirs'
+          else 'auto_merge'
+          end
         end
 
         def log_review_insert(review_hash)

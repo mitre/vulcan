@@ -305,6 +305,75 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
     end
   end
 
+  describe '#call (updates matched review fields per Strategy)' do
+    let(:target_rule) { component.rules.first }
+    let(:existing_review) do
+      create(:review, rule: target_rule, user: create(:user, email: 'commenter@example.com'),
+                      action: 'comment', section: 'check_content', comment: 'existing comment',
+                      triage_status: 'concur')
+    end
+    # Strategy override so triage_status edits actually take effect — by
+    # default Strategy says ours wins for triage state.
+    let(:theirs_wins) do
+      Import::JsonArchive::Merge::Strategy.new(
+        overrides: { review: { 'triage_status' => :theirs } }
+      )
+    end
+    let(:ours_hash) do
+      {
+        'external_id' => existing_review.id, 'rule_id' => target_rule.rule_id,
+        'comment' => 'existing comment', 'created_at' => existing_review.created_at.iso8601(6),
+        'triage_status' => 'concur'
+      }
+    end
+    let(:theirs_hash) { ours_hash.merge('triage_status' => 'non_concur') }
+    let(:matched_plan) do
+      p = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id, strategy: theirs_wins, manifest: manifest
+      )
+      p.add_review_partition(matched: [{ ours: ours_hash, theirs: theirs_hash }], only_ours: [], only_theirs: [])
+      p
+    end
+
+    before { existing_review } # let-bang trick: realize the review before the applier runs
+
+    it 'updates the field on the matched review' do
+      described_class.new(merge_plan: matched_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+
+      expect(existing_review.reload.triage_status).to eq('non_concur')
+    end
+
+    it 'records a merge_operations row with operation=update for the changed field' do
+      expect do
+        described_class.new(merge_plan: matched_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+      end.to change(MergeOperation.where(entity_type: 'review', operation: 'update'), :count).by(1)
+
+      op = MergeOperation.where(entity_type: 'review', operation: 'update').last
+      expect(op.entity_key).to eq(existing_review.id.to_s)
+      expect(op.field_name).to eq('triage_status')
+      expect(op.old_value).to eq('concur')
+      expect(op.new_value).to eq('non_concur')
+      expect(op.source).to eq('theirs')
+    end
+
+    it 'does NOT update when Strategy default (review triage_status → ours) is in effect' do
+      ours_default_plan = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id, strategy: strategy, manifest: manifest
+      )
+      ours_default_plan.add_review_partition(matched: [{ ours: ours_hash, theirs: theirs_hash }], only_ours: [], only_theirs: [])
+
+      described_class.new(merge_plan: ours_default_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+
+      expect(existing_review.reload.triage_status).to eq('concur') # unchanged
+    end
+
+    it 'calls repair_missing_commentable! after updates as a defensive safety net' do
+      expect(Review).to receive(:repair_missing_commentable!).at_least(:once).and_call_original
+
+      described_class.new(merge_plan: matched_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+    end
+  end
+
   describe '#call (closed-phase precondition)' do
     it 'refuses to apply against an open-phase component and marks the event failed' do
       open_component = create(:component, :open_comment_period)
