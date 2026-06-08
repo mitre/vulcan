@@ -370,6 +370,25 @@ module Import
                       else return # :conflict, :newer, etc. — Phase 1 does not auto-merge
                       end
 
+          # addressed_by_rule_id is a bigint FK; theirs carries the archive
+          # rule_id STRING. Remap via rule_id_map or warn+skip. ours_hash
+          # never serializes this field (Analyzer#review_to_hash is sparse)
+          # so the :ours path is a no-op to avoid blanking the live FK.
+          if field == 'addressed_by_rule_id'
+            return if verb == :ours
+            return if new_value.blank?
+
+            remapped = rule_id_map[new_value]
+            if remapped.nil?
+              @result.add_warning(
+                "Review #{review.id}: addressed_by_rule_id '#{new_value}' not present " \
+                'on receiving component — skipped'
+              )
+              return
+            end
+            new_value = remapped
+          end
+
           current = review.public_send(field)
           return if current == new_value
 

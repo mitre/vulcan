@@ -334,6 +334,7 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
     end
   end
 
+  # rubocop:disable RSpec/MultipleMemoizedHelpers
   describe '#call (updates matched review fields per Strategy)' do
     let(:target_rule) { component.rules.first }
     let(:existing_review) do
@@ -401,7 +402,69 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
 
       described_class.new(merge_plan: matched_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
     end
+
+    context 'when theirs updates addressed_by_rule_id (bigint FK via archive rule_id string)' do
+      # addressed_by_rule_id is only allowed when triage_status='addressed_by' —
+      # Review#clear_stale_foreign_keys nils it under any other status. Existing
+      # review is set up in that addressed_by state pointing at NO rule; theirs
+      # supplies the archive rule_id string of the rule we want to address.
+      let(:addressed_rule) { component.rules.second }
+      let(:prior_addressed_rule) { component.rules.third }
+      let(:remap_strategy) do
+        Import::JsonArchive::Merge::Strategy.new(
+          overrides: { review: { 'addressed_by_rule_id' => :theirs } }
+        )
+      end
+      let(:addressed_review) do
+        create(:review, rule: target_rule, user: create(:user, email: 'addr@example.com'),
+                        action: 'comment', section: 'check_content',
+                        comment: 'addressed_by sample',
+                        triage_status: 'addressed_by',
+                        addressed_by_rule_id: prior_addressed_rule.id)
+      end
+      let(:addressed_ours) do
+        {
+          'external_id' => addressed_review.id, 'rule_id' => target_rule.rule_id,
+          'comment' => addressed_review.comment,
+          'created_at' => addressed_review.created_at.iso8601(6),
+          'triage_status' => 'addressed_by',
+          'addressed_by_rule_id' => prior_addressed_rule.id
+        }
+      end
+      let(:theirs_with_archive_string) { addressed_ours.merge('addressed_by_rule_id' => addressed_rule.rule_id) }
+      let(:remap_plan) do
+        p = Import::JsonArchive::Merge::MergePlan.new(
+          component_id: component.id, strategy: remap_strategy, manifest: manifest
+        )
+        p.add_review_partition(matched: [{ ours: addressed_ours, theirs: theirs_with_archive_string }],
+                               only_ours: [], only_theirs: [])
+        p
+      end
+
+      before { addressed_review } # realize before applier runs
+
+      it 'remaps the archive rule_id string to the live BaseRule.id before assign_attributes' do
+        described_class.new(merge_plan: remap_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+
+        expect(addressed_review.reload.addressed_by_rule_id).to eq(addressed_rule.id)
+      end
+
+      it 'warns and skips when the archive rule_id is not present on the receiving component' do
+        bad_theirs = addressed_ours.merge('addressed_by_rule_id' => 'V-NONEXISTENT-1')
+        bad_plan = Import::JsonArchive::Merge::MergePlan.new(
+          component_id: component.id, strategy: remap_strategy, manifest: manifest
+        )
+        bad_plan.add_review_partition(matched: [{ ours: addressed_ours, theirs: bad_theirs }],
+                                      only_ours: [], only_theirs: [])
+
+        result = described_class.new(merge_plan: bad_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+
+        expect(result.warnings.join).to match(/addressed_by_rule_id .* not present/i)
+        expect(addressed_review.reload.addressed_by_rule_id).to eq(prior_addressed_rule.id) # unchanged
+      end
+    end
   end
+  # rubocop:enable RSpec/MultipleMemoizedHelpers
 
   describe '#call (applies only_theirs rules)' do
     let(:srg) { component.security_requirements_guide }
