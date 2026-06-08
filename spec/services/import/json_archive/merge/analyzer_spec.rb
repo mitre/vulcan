@@ -120,4 +120,52 @@ RSpec.describe Import::JsonArchive::Merge::Analyzer, type: :service do
       analyzer.call
     end
   end
+
+  describe 'eager-load contract (no N+1 on rules/reviews/satisfies)' do
+    def captured_sql(&)
+      queries = []
+      callback = lambda do |_n, _s, _f, _id, payload|
+        queries << payload[:sql] unless payload[:name] == 'SCHEMA'
+      end
+      ActiveSupport::Notifications.subscribed(callback, 'sql.active_record', &)
+      queries
+    end
+
+    let(:component_with_many_rules) do
+      c = create(:component, :closed_comment_phase)
+      3.times do |i|
+        rule = create(:rule, component: c, rule_id: "V-100#{i}")
+        2.times do |j|
+          create(:review, rule: rule, user: create(:user),
+                          action: 'comment', comment: "c#{i}-#{j}")
+        end
+      end
+      c
+    end
+
+    it 'fires SELECT FROM reviews exactly once for the full pipeline (not N times)' do
+      input = Import::JsonArchive::Merge::MergeInput.from_json_archive(
+        build_backup_hash(component_with_many_rules), manifest: manifest
+      )
+      analyzer = described_class.new(merge_input: input, component: component_with_many_rules,
+                                     strategy: strategy, manifest: manifest)
+
+      sql = captured_sql { analyzer.call }
+      review_selects = sql.grep(/SELECT.*FROM .reviews./i)
+      expect(review_selects.size).to be <= 1
+    end
+
+    it 'fires SELECT FROM rule_satisfactions a bounded number of times (satisfies + satisfied_by, not N+1)' do
+      input = Import::JsonArchive::Merge::MergeInput.from_json_archive(
+        build_backup_hash(component_with_many_rules), manifest: manifest
+      )
+      analyzer = described_class.new(merge_input: input, component: component_with_many_rules,
+                                     strategy: strategy, manifest: manifest)
+
+      sql = captured_sql { analyzer.call }
+      sat_selects = sql.grep(/SELECT.*FROM .rule_satisfactions./i)
+      # eager-load preloads :satisfies and :satisfied_by — 2 IN(...) queries, not N+1
+      expect(sat_selects.size).to be <= 2
+    end
+  end
 end

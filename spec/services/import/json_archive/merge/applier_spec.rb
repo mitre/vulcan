@@ -669,6 +669,42 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
     end
   end
 
+  describe '#call (eager-load + memoization contract)' do
+    def captured_sql(&)
+      queries = []
+      callback = lambda do |_n, _s, _f, _id, payload|
+        queries << payload[:sql] unless payload[:name] == 'SCHEMA'
+      end
+      ActiveSupport::Notifications.subscribed(callback, 'sql.active_record', &)
+      queries
+    end
+
+    it 'plucks rule_id_map exactly once across import_new_reviews + apply_new_satisfactions' do
+      target_rule = component.rules.first
+      another_rule = create(:rule, component: component, rule_id: 'V-9999')
+      new_review = {
+        'external_id' => 71, 'rule_id' => target_rule.rule_id, 'action' => 'comment',
+        'comment' => 'q', 'created_at' => Time.zone.local(2026, 6, 7).iso8601(6),
+        'user_email' => 'q@example.com', 'user_name' => 'Q'
+      }
+      new_sat = { 'rule_id' => target_rule.rule_id, 'satisfied_by_rule_id' => another_rule.rule_id }
+      mixed = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id, strategy: strategy, manifest: manifest
+      )
+      mixed.add_review_partition(matched: [], only_ours: [], only_theirs: [new_review])
+      mixed.add_satisfaction_partition(matched: [], only_ours: [], only_theirs: [new_sat])
+      create(:user, email: 'q@example.com', name: 'Q').tap do |u|
+        Membership.create!(user: u, membership: component.project, role: 'viewer')
+      end
+
+      sql = captured_sql do
+        described_class.new(merge_plan: mixed, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+      end
+      plucks = sql.grep(/SELECT "base_rules"\."rule_id", "base_rules"\."id" FROM "base_rules"/i)
+      expect(plucks.size).to eq(1)
+    end
+  end
+
   describe '#call (advisory lock + reload-locked precondition)' do
     subject(:result) do
       described_class.new(merge_plan: plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call

@@ -107,16 +107,35 @@ module Import
           apply_new_memberships
         end
 
+        # Eager-loaded rules indexed by rule_id, memoized for one apply pass.
+        # Shared by apply_rule_field_changes + record_skipped_conflicts so the
+        # eager-load (nested associations for v2-480.23 routing) happens once.
+        def ours_rules_by_id
+          @ours_rules_by_id ||= ours_rules_eager_loaded.index_by(&:rule_id)
+        end
+
+        def ours_rules_eager_loaded
+          return @component.rules unless @component.is_a?(Component)
+
+          @ours_rules_eager_loaded ||= @component.rules.includes(
+            Export::Modes::Backup.new.eager_load_associations
+          )
+        end
+
+        # Archive rule_id -> live BaseRule.id. Memoized so import_new_reviews
+        # and apply_new_satisfactions share a single pluck.
+        def rule_id_map
+          @rule_id_map ||= @component.rules.pluck(:rule_id, :id).to_h
+        end
+
         # Iterate the plan's auto-resolved FieldChange records, write them
         # to the matching rule via assign + save (hash comparison only —
         # we already vetted the values in RuleFieldDiffer / Analyzer with
         # F14-safe semantics), then capture each effective change as a
         # MergeOperation row.
         def apply_rule_field_changes
-          rules_by_id = @component.rules.index_by(&:rule_id)
-
           @merge_plan.auto_merged.group_by { |c| rule_id_for(c) }.each do |rule_id, rule_changes|
-            rule = rules_by_id[rule_id]
+            rule = ours_rules_by_id[rule_id]
             next if rule.nil? # only_theirs rules don't exist yet — handled by a later pass
 
             apply_changes_to_rule(rule, rule_changes)
@@ -182,10 +201,8 @@ module Import
         # trail captures "we saw this divergence, didn't act on it" and
         # the UI / undo path can replay decisions if needed.
         def record_skipped_conflicts
-          rules_by_id = @component.rules.index_by(&:rule_id)
-
           @merge_plan.conflicts.group_by { |c| rule_id_for(c) }.each do |rule_id, changes|
-            rule = rules_by_id[rule_id]
+            rule = ours_rules_by_id[rule_id]
             next if rule.nil?
 
             changes.each { |change| log_skipped_conflict(rule, change) }
@@ -216,9 +233,6 @@ module Import
           new_reviews = @merge_plan.only_theirs_reviews
           return if new_reviews.empty?
 
-          # ReviewBuilder needs a rule_id (archive string) -> DB id map.
-          # The applier already has the live component, so just walk it.
-          rule_id_map = @component.rules.pluck(:rule_id, :id).to_h
           builder_result = Import::Result.new
 
           builder = ReviewBuilder.new(
@@ -337,8 +351,6 @@ module Import
         def apply_new_satisfactions
           new_sats = @merge_plan.only_theirs_satisfactions
           return if new_sats.empty?
-
-          rule_id_map = @component.rules.pluck(:rule_id, :id).to_h
 
           new_sats.each { |sat| insert_one_satisfaction(sat, rule_id_map) }
         end

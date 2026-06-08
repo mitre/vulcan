@@ -180,7 +180,7 @@ module Import
         end
 
         def match_reviews_into(plan)
-          ours_reviews = @component.rules.flat_map do |rule|
+          ours_reviews = ours_rules_eager_loaded.flat_map do |rule|
             rule.reviews.map { |r| review_to_hash(r, rule.rule_id) }
           end
           theirs_reviews = @merge_input.reviews
@@ -200,7 +200,7 @@ module Import
         end
 
         def diff_satisfactions_into(plan)
-          ours_sat = @component.rules.flat_map do |rule|
+          ours_sat = ours_rules_eager_loaded.flat_map do |rule|
             rule.satisfies.map { |satisfied| { 'rule_id' => satisfied.rule_id, 'satisfied_by_rule_id' => rule.rule_id } }
           end
           theirs_sat = @merge_input.satisfactions.map { |s| s.is_a?(Hash) ? s : s.to_h }
