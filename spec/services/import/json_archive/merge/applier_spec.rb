@@ -431,6 +431,65 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
     end
   end
 
+  describe '#call (applies memberships)' do
+    let(:known_user) { create(:user, email: 'newcomer@example.com', name: 'New Comer') }
+    let(:new_membership_hash) { { 'email' => known_user.email, 'name' => known_user.name, 'role' => 'admin' } }
+    let(:unknown_membership_hash) { { 'email' => 'ghost@nowhere.local', 'name' => 'Ghost', 'role' => 'admin' } }
+
+    let(:membership_plan) do
+      p = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id, strategy: strategy, manifest: manifest
+      )
+      p.add_membership_partition(matched: [], only_ours: [], only_theirs: [new_membership_hash])
+      p
+    end
+
+    before { known_user } # realize
+
+    it 'adds a project membership at viewer (NEVER auto-escalates the role from the archive)' do
+      expect do
+        described_class.new(merge_plan: membership_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+      end.to change(Membership, :count).by(1)
+
+      m = Membership.find_by(user: known_user, membership: component.project)
+      expect(m.role).to eq('viewer') # not 'admin' from the archive
+    end
+
+    it 'records a merge_operations row with operation=insert for added membership' do
+      expect do
+        described_class.new(merge_plan: membership_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+      end.to change(MergeOperation.where(entity_type: 'membership', operation: 'insert'), :count).by(1)
+
+      op = MergeOperation.where(entity_type: 'membership').last
+      expect(op.entity_key).to eq(known_user.email)
+      expect(op.source).to eq('theirs')
+    end
+
+    it 'skips unknown users with a warning rather than creating ghost rows' do
+      unknown_plan = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id, strategy: strategy, manifest: manifest
+      )
+      unknown_plan.add_membership_partition(matched: [], only_ours: [], only_theirs: [unknown_membership_hash])
+
+      result = described_class.new(merge_plan: unknown_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+
+      expect(result.warnings.join).to match(/ghost@nowhere\.local/)
+      expect(Membership.where(membership: component.project).count).to eq(0)
+    end
+
+    it 'matched memberships are not re-inserted' do
+      Membership.create!(user: known_user, membership: component.project, role: 'viewer')
+      matched_plan = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id, strategy: strategy, manifest: manifest
+      )
+      matched_plan.add_membership_partition(matched: [new_membership_hash], only_ours: [], only_theirs: [])
+
+      expect do
+        described_class.new(merge_plan: matched_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+      end.not_to(change(Membership, :count))
+    end
+  end
+
   describe '#call (closed-phase precondition)' do
     it 'refuses to apply against an open-phase component and marks the event failed' do
       open_component = create(:component, :open_comment_period)

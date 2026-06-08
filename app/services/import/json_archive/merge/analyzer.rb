@@ -222,7 +222,7 @@ module Import
         # unknown → skip with warning. Phase 1 just classifies; the Applier
         # decides what to actually do with the partition.
         def diff_memberships_into(plan)
-          theirs = Array(@merge_input.memberships)
+          theirs = Array(@merge_input.memberships).map { |m| m.is_a?(Hash) ? m : m.to_h }
           ours_emails = @component.project.memberships.includes(:user).filter_map { |m| m.user&.email }.to_set
 
           matched = []
@@ -231,9 +231,9 @@ module Import
           theirs.each do |membership|
             email = membership['email']
             if ours_emails.include?(email)
-              matched << email
+              matched << membership
             else
-              only_theirs << email
+              only_theirs << membership
             end
           end
 

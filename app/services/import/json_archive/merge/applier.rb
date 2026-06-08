@@ -28,6 +28,12 @@ module Import
           addressed_by_rule_id
         ].freeze
 
+        # Memberships imported from theirs always land at the viewer tier
+        # regardless of what role the archive carries. NEVER auto-escalates
+        # — even if theirs says the user is an admin, an existing admin on
+        # the receiving instance must explicitly escalate.
+        MEMBERSHIP_IMPORT_ROLE = 'viewer'
+
         attr_reader :sync_event
 
         # @param merge_plan [MergePlan] from Analyzer#call
@@ -87,7 +93,7 @@ module Import
           apply_review_field_updates
           Review.where(commentable_id: nil).where.not(rule_id: nil).repair_missing_commentable!
           apply_new_satisfactions
-          # Memberships land in c8.
+          apply_new_memberships
         end
 
         # Iterate the plan's auto-resolved FieldChange records, write them
@@ -333,6 +339,46 @@ module Import
           # produce an extra log row but the underlying state is unchanged).
           _ = result # suppress UnusedMethodArgument
           log_satisfaction_insert(sat, rule_db_id, satisfier_db_id)
+        end
+
+        def apply_new_memberships
+          new_memberships = @merge_plan.only_theirs_memberships
+          return if new_memberships.empty?
+
+          new_memberships.each { |membership| insert_one_membership(membership) }
+        end
+
+        def insert_one_membership(membership_hash)
+          email = membership_hash['email']
+          user = User.find_by(email: email)
+          if user.nil?
+            @result.add_warning(
+              "Membership: user '#{email}' not present on receiving instance — skipped (archive did not auto-create the account)"
+            )
+            return
+          end
+
+          # Skip if already a member at any role (matched bucket should
+          # cover this, but defensive against partition drift).
+          existing = Membership.find_by(user: user, membership: @component.project)
+          return if existing
+
+          Membership.create!(user: user, membership: @component.project, role: MEMBERSHIP_IMPORT_ROLE)
+          log_membership_insert(membership_hash, user)
+        end
+
+        def log_membership_insert(membership_hash, user)
+          MergeOperation.create!(
+            component_sync_event: @sync_event,
+            entity_type: 'membership',
+            entity_id: user.id,
+            entity_key: membership_hash['email'].to_s,
+            operation: 'insert',
+            field_name: 'role',
+            old_value: nil,
+            new_value: MEMBERSHIP_IMPORT_ROLE,
+            source: 'theirs'
+          )
         end
 
         def log_satisfaction_insert(sat, rule_db_id, satisfier_db_id)
