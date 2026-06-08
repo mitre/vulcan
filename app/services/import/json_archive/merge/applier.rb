@@ -52,6 +52,7 @@ module Import
 
         def call
           @result.attach_plan(@merge_plan)
+          @quarantine_buffer = []
 
           begin
             @sync_event = create_sync_event
@@ -90,6 +91,7 @@ module Import
             )
           end
 
+          drain_quarantine_buffer!
           @result
         end
 
@@ -157,12 +159,28 @@ module Import
             winning_value = winning_value_for(change)
             next if winning_value == rule.public_send(change.field)
 
-            old_value = rule.public_send(change.field)
+            apply_one_rule_change(rule, change, winning_value)
+          end
+        end
+
+        # Each field write is wrapped in a savepoint so a validation failure
+        # on one change quarantines that record and lets the rest of the
+        # merge proceed instead of aborting the entire serializable txn.
+        def apply_one_rule_change(rule, change, winning_value)
+          old_value = rule.public_send(change.field)
+          ActiveRecord::Base.transaction(requires_new: true) do
             rule.assign_attributes(change.field => winning_value)
             rule.audit_comment = audit_comment_for_merge
             rule.save!
             log_field_change(rule, change, old_value, winning_value)
           end
+        rescue ActiveRecord::RecordInvalid => e
+          enqueue_quarantine(
+            entity_type: 'rule', entity_key: "#{rule.rule_id}::#{change.field}",
+            reason: 'rule validation failed during apply',
+            original: { 'rule_id' => rule.rule_id, 'field' => change.field, 'new_value' => winning_value.to_s },
+            errors: e
+          )
         end
 
         # For auto_theirs the incoming value wins; for everything else
@@ -309,14 +327,22 @@ module Import
           current = review.public_send(field)
           return if current == new_value
 
-          review.assign_attributes(field => new_value)
-          # Defensive dual-write — should be a no-op since rule_id isn't
-          # changing here, but the design doc flags it as MUST FIX.
-          review.commentable_type ||= 'BaseRule'
-          review.commentable_id ||= review.rule_id
-          review.audit_comment = audit_comment_for_merge if review.respond_to?(:audit_comment=)
-          review.save!
-          log_review_update(review, field, current, new_value, verb)
+          ActiveRecord::Base.transaction(requires_new: true) do
+            review.assign_attributes(field => new_value)
+            # Defensive dual-write — should be a no-op since rule_id isn't
+            # changing here, but the design doc flags it as MUST FIX.
+            review.commentable_type ||= 'BaseRule'
+            review.commentable_id ||= review.rule_id
+            review.audit_comment = audit_comment_for_merge if review.respond_to?(:audit_comment=)
+            review.save!
+            log_review_update(review, field, current, new_value, verb)
+          end
+        rescue ActiveRecord::RecordInvalid => e
+          enqueue_quarantine(
+            entity_type: 'review', entity_key: review.id.to_s,
+            reason: 'review validation failed during update',
+            original: ours_hash, errors: e
+          )
         end
 
         def log_review_update(review, field, old_value, new_value, verb)
@@ -410,32 +436,60 @@ module Import
           existing = Membership.find_by(user: user, membership: @component.project)
           return if existing
 
-          Membership.create!(user: user, membership: @component.project, role: MEMBERSHIP_IMPORT_ROLE)
-          log_membership_insert(membership_hash, user)
+          ActiveRecord::Base.transaction(requires_new: true) do
+            Membership.create!(user: user, membership: @component.project, role: MEMBERSHIP_IMPORT_ROLE)
+            log_membership_insert(membership_hash, user)
+          end
         rescue ActiveRecord::RecordInvalid => e
-          quarantine!(
+          enqueue_quarantine(
             entity_type: 'membership', entity_key: membership_hash['email'].to_s,
             reason: 'membership validation failed', original: membership_hash, errors: e
           )
         end
 
         # When a per-record save fails validation mid-apply, the offending
-        # record + diagnostics land in merge_quarantine so the operator
-        # can review (and retry via `rake sync:retry_quarantined` in
-        # Phase 2d) without aborting the whole merge. The applier
-        # continues with the next record.
-        def quarantine!(entity_type:, entity_key:, reason:, original:, errors:)
-          MergeQuarantineRecord.create!(
-            component_sync_event: @sync_event,
-            entity_type: entity_type,
-            entity_key: entity_key.to_s,
-            quarantine_reason: reason,
-            original_archive_data: original,
-            validation_errors: { 'message' => errors.message, 'class' => errors.class.name }
-          )
-          @result.add_warning(
-            "#{entity_type}: '#{entity_key}' quarantined — #{errors.message} (see merge_quarantine for diagnostics)"
-          )
+        # record + diagnostics are BUFFERED for post-txn persistence so the
+        # outer txn rolling back (SerializationFailure, StandardError, etc.)
+        # does NOT also discard the diagnostic trail. drain_quarantine_buffer!
+        # writes the rows AFTER the outer rescue, in autocommit / RSpec-txn
+        # mode — preserving the "retry via sync:retry_quarantined" contract.
+        def enqueue_quarantine(entity_type:, entity_key:, reason:, original:, errors:)
+          @quarantine_buffer << {
+            entity_type: entity_type, entity_key: entity_key.to_s, reason: reason,
+            original: original, errors: errors
+          }
+        end
+
+        # Persist buffered quarantine intents after the outer txn closes
+        # (committed or rolled back). Each create! runs in whatever
+        # transaction scope the caller is in — production: autocommit (the
+        # outer with_serializable_transaction has closed); tests: RSpec's
+        # wrapping fixture txn (still visible to the test).
+        def drain_quarantine_buffer!
+          return if @quarantine_buffer.blank?
+          return if @sync_event.nil?
+
+          @quarantine_buffer.each do |q|
+            begin
+              MergeQuarantineRecord.create!(
+                component_sync_event: @sync_event,
+                entity_type: q[:entity_type],
+                entity_key: q[:entity_key],
+                quarantine_reason: q[:reason],
+                original_archive_data: q[:original],
+                validation_errors: { 'message' => q[:errors].message, 'class' => q[:errors].class.name }
+              )
+            rescue StandardError => e
+              @result.add_warning(
+                "Failed to persist quarantine for #{q[:entity_type]} '#{q[:entity_key]}': #{e.message}"
+              )
+              next
+            end
+            @result.add_warning(
+              "#{q[:entity_type]}: '#{q[:entity_key]}' quarantined — #{q[:errors].message} " \
+              '(see merge_quarantine for diagnostics)'
+            )
+          end
         end
 
         def log_membership_insert(membership_hash, user)

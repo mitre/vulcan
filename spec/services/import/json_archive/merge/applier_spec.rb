@@ -580,6 +580,75 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
       expect(result.warnings.join).to match(/quarantined/i)
       expect(result.warnings.join).to include(known_user.email)
     end
+
+    it 'quarantines a rule-write failure via savepoint while letting other rule writes commit' do
+      rule_a, rule_b = component.rules.first(2)
+      plan_with_two_rules = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id, strategy: strategy, manifest: manifest
+      )
+      plan_with_two_rules.add_field_changes(rule_a.rule_id, [
+                                              Import::JsonArchive::Merge::RuleFieldDiffer::FieldChange.new(
+                                                field: 'fixtext', from: rule_a.fixtext, to: 'A WINS',
+                                                resolution: :auto_theirs, locked: false, reason: ''
+                                              )
+                                            ])
+      plan_with_two_rules.add_field_changes(rule_b.rule_id, [
+                                              Import::JsonArchive::Merge::RuleFieldDiffer::FieldChange.new(
+                                                field: 'fixtext', from: rule_b.fixtext, to: 'B WINS',
+                                                resolution: :auto_theirs, locked: false, reason: ''
+                                              )
+                                            ])
+
+      # Force rule_b.save! to raise RecordInvalid mid-apply via the AR
+      # instance the applier loaded (eager_loaded_rules indexes by rule_id).
+      allow_any_instance_of(BaseRule).to receive(:save!) do |inst|
+        if inst.rule_id == rule_b.rule_id
+          inst.errors.add(:base, 'rule_b spec failure')
+          raise ActiveRecord::RecordInvalid, inst
+        end
+        inst.save(validate: false)
+      end
+
+      described_class.new(merge_plan: plan_with_two_rules, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+
+      expect(rule_a.reload.fixtext).to eq('A WINS') # savepoint protected
+      expect(rule_b.reload.fixtext).not_to eq('B WINS') # rule_b savepoint rolled back
+      q = MergeQuarantineRecord.where(entity_type: 'rule').last
+      expect(q.entity_key).to include(rule_b.rule_id)
+    end
+
+    it 'persists buffered quarantine rows even when a later step rolls back the outer txn' do
+      # apply_all order: rule_field_changes (1st) → ... → apply_new_satisfactions.
+      # Quarantine rule write #5, then have apply_new_satisfactions raise
+      # StandardError → outer rescue catches → outer txn rolls back. drain
+      # then runs post-rescue and writes the buffered quarantine row.
+      target_rule = component.rules.first
+      rule_plan = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id, strategy: strategy, manifest: manifest
+      )
+      rule_plan.add_field_changes(target_rule.rule_id, [
+                                    Import::JsonArchive::Merge::RuleFieldDiffer::FieldChange.new(
+                                      field: 'fixtext', from: target_rule.fixtext, to: 'will-quarantine',
+                                      resolution: :auto_theirs, locked: false, reason: ''
+                                    )
+                                  ])
+
+      allow_any_instance_of(BaseRule).to receive(:save!) do |inst|
+        inst.errors.add(:base, '#5 forced RecordInvalid')
+        raise ActiveRecord::RecordInvalid, inst
+      end
+
+      applier = described_class.new(merge_plan: rule_plan, component: component, source: 'theirs', archive_bytes: archive_bytes)
+      allow(applier).to receive(:apply_new_satisfactions).and_raise(StandardError, 'simulated #6 explosion')
+
+      result = applier.call
+
+      expect(result.success?).to be(false)
+      expect(MergeQuarantineRecord.where(entity_type: 'rule').count).to eq(1)
+      q = MergeQuarantineRecord.where(entity_type: 'rule').last
+      expect(q.entity_key).to include(target_rule.rule_id)
+      expect(result.warnings.join).to match(/quarantined/i)
+    end
   end
 
   describe '#call (audit correlation scope)' do
