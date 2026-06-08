@@ -138,8 +138,20 @@ module Import
                 'in the future — likely clock skew or tampered archive'
         end
 
+        # Reuse the canonical backup eager-load list so the
+        # NestedAssociationDiffer walks checks / disa_rule_descriptions
+        # without N+1ing. Skip when the component is a duck-typed adapter
+        # (VirtualComponent) — its rules are already in-memory hashes.
+        def ours_rules_eager_loaded
+          return @component.rules unless @component.is_a?(Component)
+
+          @ours_rules_eager_loaded ||= @component.rules.includes(
+            Export::Modes::Backup.new.eager_load_associations
+          )
+        end
+
         def diff_rules_into(plan)
-          ours_by_id = @component.rules.index_by(&:rule_id)
+          ours_by_id = ours_rules_eager_loaded.index_by(&:rule_id)
           theirs_by_id = @merge_input.rules.index_by { |r| r['rule_id'] }
 
           matched = []
@@ -152,10 +164,13 @@ module Import
 
             if ours_rule && theirs_hash
               matched << rule_id
-              differ = RuleFieldDiffer.new(
+              field_changes = RuleFieldDiffer.new(
                 ours_rule: ours_rule, theirs_rule_hash: theirs_hash, strategy: @strategy
-              )
-              plan.add_field_changes(rule_id, differ.diff)
+              ).diff
+              nested_changes = NestedAssociationDiffer.new(
+                ours_rule: ours_rule, theirs_rule_hash: theirs_hash, strategy: @strategy
+              ).diff
+              plan.add_field_changes(rule_id, field_changes + nested_changes)
             elsif ours_rule
               only_ours << rule_id
             else
