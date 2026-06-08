@@ -11,7 +11,7 @@ RSpec.describe Import::JsonArchive::Merge::Analyzer, type: :service do
   let(:merge_input) { Import::JsonArchive::Merge::MergeInput.from_json_archive(base_archive, manifest: manifest) }
 
   describe 'preconditions' do
-    it 'raises PreconditionError when component.comment_phase != closed' do
+    it 'does NOT require comment_phase=closed at analysis time (read-only delta, applier enforces)' do
       open_component = create(:component, :open_comment_period)
       open_archive = build_backup_hash(open_component)
       open_input = Import::JsonArchive::Merge::MergeInput.from_json_archive(open_archive, manifest: manifest)
@@ -19,8 +19,7 @@ RSpec.describe Import::JsonArchive::Merge::Analyzer, type: :service do
       analyzer = described_class.new(merge_input: open_input, component: open_component,
                                      strategy: strategy, manifest: manifest)
 
-      expect { analyzer.call }
-        .to raise_error(Import::JsonArchive::Merge::PreconditionError, /comment_phase/)
+      expect { analyzer.call }.not_to raise_error
     end
 
     it 'raises PreconditionError when reviews.size > 10_000 (CLI ceiling)' do

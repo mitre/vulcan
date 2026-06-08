@@ -57,20 +57,17 @@ module Import
 
         private
 
+        # Analysis-time preconditions only check things the analyzer itself
+        # could trip over (memory, read-time data integrity). The
+        # comment_phase == 'closed' guarantee is intent-coupled — it only
+        # matters when actually writing — so it lives on the applier
+        # (Phase 2, v2-480.8), NOT here. sync:preview is a read-only
+        # delta and must work regardless of phase.
         def validate_preconditions!
-          require_closed_comment_phase!
           require_review_ceiling!
           require_no_self_referencing_reviews! # F17 — before cycle DFS
           require_acyclic_reply_chains!
           require_no_future_timestamps!
-        end
-
-        def require_closed_comment_phase!
-          return if @component.comment_phase == COMMENT_PHASE_REQUIRED
-
-          raise PreconditionError,
-                "component.comment_phase must be '#{COMMENT_PHASE_REQUIRED}' to merge " \
-                "(got '#{@component.comment_phase}')"
         end
 
         def require_review_ceiling!

@@ -89,14 +89,14 @@ RSpec.describe 'sync rake tasks' do
       expect(stderr.string).to include('sync:preview:')
     end
 
-    it 'exits 2 with stderr when receiving component has open comment_phase' do
+    it 'runs against a component with open comment_phase (read-only delta, applier enforces)' do
       open_component = create(:component, :open_comment_period)
-      path = write_zip_from(component) # any valid archive
+      path = write_zip_from(open_component)
 
       code = runner.preview(component_id: open_component.id, theirs_path: path)
 
-      expect(code).to eq(2)
-      expect(stderr.string).to include('Precondition failed')
+      expect(code).to eq(0)
+      expect(stdout.string).to include('=== Merge Plan ===')
     end
   end
 
