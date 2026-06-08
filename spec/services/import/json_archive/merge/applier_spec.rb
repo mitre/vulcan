@@ -490,6 +490,69 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
     end
   end
 
+  describe '#call (quarantines invalid records)' do
+    let(:known_user) { create(:user, email: 'q@example.com', name: 'Quaranteen') }
+    let(:m_hash) { { 'email' => known_user.email, 'name' => known_user.name, 'role' => 'viewer' } }
+    let(:bad_plan) do
+      p = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id, strategy: strategy, manifest: manifest
+      )
+      p.add_membership_partition(matched: [], only_ours: [], only_theirs: [m_hash])
+      p
+    end
+
+    before { known_user }
+
+    it 'writes a merge_quarantine row when a per-record save raises ActiveRecord::RecordInvalid' do
+      # Force the membership create! to raise mid-apply.
+      invalid_membership = Membership.new
+      invalid_membership.errors.add(:base, 'forced invalid for spec')
+      allow(Membership).to receive(:create!).and_raise(ActiveRecord::RecordInvalid.new(invalid_membership))
+
+      expect do
+        described_class.new(merge_plan: bad_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+      end.to change(MergeQuarantineRecord, :count).by(1)
+
+      q = MergeQuarantineRecord.last
+      expect(q.entity_type).to eq('membership')
+      expect(q.entity_key).to eq(known_user.email)
+      expect(q.original_archive_data).to include('email' => known_user.email)
+      expect(q.validation_errors['message']).to include('Validation failed')
+    end
+
+    it 'continues applying the rest of the plan after a quarantine event' do
+      # Force a per-record failure on the membership path
+      bad_membership = Membership.new
+      bad_membership.errors.add(:base, 'spec failure')
+      allow(Membership).to receive(:create!).and_raise(ActiveRecord::RecordInvalid.new(bad_membership))
+
+      # Now add an unrelated change that should still apply
+      target_rule = component.rules.first
+      bad_plan.add_field_changes(target_rule.rule_id, [
+                                   Import::JsonArchive::Merge::RuleFieldDiffer::FieldChange.new(
+                                     field: 'fixtext', from: target_rule.fixtext, to: 'still wins',
+                                     resolution: :auto_theirs, locked: false, reason: ''
+                                   )
+                                 ])
+
+      described_class.new(merge_plan: bad_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+
+      expect(target_rule.reload.fixtext).to eq('still wins') # rule write was NOT rolled back by membership failure
+      expect(MergeQuarantineRecord.count).to eq(1)
+    end
+
+    it 'returns a warning on the MergeResult naming the quarantined record' do
+      bad_membership = Membership.new
+      bad_membership.errors.add(:base, 'spec failure')
+      allow(Membership).to receive(:create!).and_raise(ActiveRecord::RecordInvalid.new(bad_membership))
+
+      result = described_class.new(merge_plan: bad_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+
+      expect(result.warnings.join).to match(/quarantined/i)
+      expect(result.warnings.join).to include(known_user.email)
+    end
+  end
+
   describe '#call (closed-phase precondition)' do
     it 'refuses to apply against an open-phase component and marks the event failed' do
       open_component = create(:component, :open_comment_period)

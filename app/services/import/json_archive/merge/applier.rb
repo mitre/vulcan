@@ -365,6 +365,30 @@ module Import
 
           Membership.create!(user: user, membership: @component.project, role: MEMBERSHIP_IMPORT_ROLE)
           log_membership_insert(membership_hash, user)
+        rescue ActiveRecord::RecordInvalid => e
+          quarantine!(
+            entity_type: 'membership', entity_key: membership_hash['email'].to_s,
+            reason: 'membership validation failed', original: membership_hash, errors: e
+          )
+        end
+
+        # When a per-record save fails validation mid-apply, the offending
+        # record + diagnostics land in merge_quarantine so the operator
+        # can review (and retry via `rake sync:retry_quarantined` in
+        # Phase 2d) without aborting the whole merge. The applier
+        # continues with the next record.
+        def quarantine!(entity_type:, entity_key:, reason:, original:, errors:)
+          MergeQuarantineRecord.create!(
+            component_sync_event: @sync_event,
+            entity_type: entity_type,
+            entity_key: entity_key.to_s,
+            quarantine_reason: reason,
+            original_archive_data: original,
+            validation_errors: { 'message' => errors.message, 'class' => errors.class.name }
+          )
+          @result.add_warning(
+            "#{entity_type}: '#{entity_key}' quarantined — #{errors.message} (see merge_quarantine for diagnostics)"
+          )
         end
 
         def log_membership_insert(membership_hash, user)
