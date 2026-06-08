@@ -203,14 +203,15 @@ module Import
           ours_sat = @component.rules.flat_map do |rule|
             rule.satisfies.map { |satisfied| { 'rule_id' => satisfied.rule_id, 'satisfied_by_rule_id' => rule.rule_id } }
           end
-          theirs_sat = @merge_input.satisfactions
+          theirs_sat = @merge_input.satisfactions.map { |s| s.is_a?(Hash) ? s : s.to_h }
 
-          ours_keys = ours_sat.map { |s| sat_key(s) }
-          theirs_keys = theirs_sat.map { |s| sat_key(s) }
+          ours_by_key = ours_sat.index_by { |s| sat_key(s) }
+          theirs_by_key = theirs_sat.index_by { |s| sat_key(s) }
 
-          matched = ours_keys & theirs_keys
-          only_ours = ours_keys - theirs_keys
-          only_theirs = theirs_keys - ours_keys
+          matched_keys = ours_by_key.keys & theirs_by_key.keys
+          only_ours = (ours_by_key.keys - theirs_by_key.keys).map { |k| ours_by_key[k] }
+          only_theirs = (theirs_by_key.keys - ours_by_key.keys).map { |k| theirs_by_key[k] }
+          matched = matched_keys.map { |k| { ours: ours_by_key[k], theirs: theirs_by_key[k] } }
 
           plan.add_satisfaction_partition(matched: matched, only_ours: only_ours, only_theirs: only_theirs)
           plan.validate_partition_invariant!(:satisfactions,

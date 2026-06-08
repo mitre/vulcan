@@ -86,7 +86,8 @@ module Import
           import_new_reviews
           apply_review_field_updates
           Review.where(commentable_id: nil).where.not(rule_id: nil).repair_missing_commentable!
-          # Satisfactions, memberships land in c7-c8.
+          apply_new_satisfactions
+          # Memberships land in c8.
         end
 
         # Iterate the plan's auto-resolved FieldChange records, write them
@@ -283,6 +284,69 @@ module Import
           when :theirs then 'theirs'
           else 'auto_merge'
           end
+        end
+
+        # Insert any only_theirs satisfactions, resolving the archive
+        # rule_id strings to live DB ids. Idempotent: re-running the
+        # applier against the same plan does NOT duplicate rows because
+        # we use upsert_all + on_duplicate: :skip against the natural
+        # uniqueness constraint on (rule_id, satisfied_by_rule_id).
+        # Missing rule_id targets get a structured warning rather than
+        # erroring the whole apply.
+        def apply_new_satisfactions
+          new_sats = @merge_plan.only_theirs_satisfactions
+          return if new_sats.empty?
+
+          rule_id_map = @component.rules.pluck(:rule_id, :id).to_h
+
+          new_sats.each { |sat| insert_one_satisfaction(sat, rule_id_map) }
+        end
+
+        def insert_one_satisfaction(sat, rule_id_map)
+          rule_db_id = rule_id_map[sat['rule_id']]
+          satisfier_db_id = rule_id_map[sat['satisfied_by_rule_id']]
+
+          if rule_db_id.nil? || satisfier_db_id.nil?
+            missing = rule_db_id.nil? ? sat['rule_id'] : sat['satisfied_by_rule_id']
+            @result.add_warning(
+              "Satisfaction: rule_id '#{missing}' not present on receiving component — skipped"
+            )
+            return
+          end
+
+          # rubocop:disable Rails/SkipsModelValidations -- RuleSatisfaction
+          # is an empty join-table stub (no validations, no callbacks);
+          # upsert_all + on_duplicate: :skip is the correct idempotent
+          # write per the design doc and v2-480.13 FK convention.
+          result = RuleSatisfaction.upsert_all(
+            [{ rule_id: rule_db_id, satisfied_by_rule_id: satisfier_db_id }],
+            unique_by: %i[rule_id satisfied_by_rule_id],
+            on_duplicate: :skip,
+            returning: false
+          )
+          # rubocop:enable Rails/SkipsModelValidations
+
+          # upsert_all returns an Array<Hash> of inserted rows (returning: false skips that);
+          # we use record_rowcount via raw connection diagnostic. Simpler: query existence
+          # afterwards — present means we either just inserted OR it already existed.
+          # Either way, log an operation for audit (operation=insert; idempotent retries
+          # produce an extra log row but the underlying state is unchanged).
+          _ = result # suppress UnusedMethodArgument
+          log_satisfaction_insert(sat, rule_db_id, satisfier_db_id)
+        end
+
+        def log_satisfaction_insert(sat, rule_db_id, satisfier_db_id)
+          MergeOperation.create!(
+            component_sync_event: @sync_event,
+            entity_type: 'satisfaction',
+            entity_id: rule_db_id,
+            entity_key: "#{sat['rule_id']}::#{sat['satisfied_by_rule_id']}",
+            operation: 'insert',
+            field_name: nil,
+            old_value: nil,
+            new_value: satisfier_db_id.to_s,
+            source: 'theirs'
+          )
         end
 
         def log_review_insert(review_hash)

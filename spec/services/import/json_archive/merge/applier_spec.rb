@@ -374,6 +374,63 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
     end
   end
 
+  describe '#call (applies only_theirs satisfactions)' do
+    let(:satisfier) { component.rules.first }
+    let(:satisfied) { component.rules.second }
+
+    let(:satisfaction_hash) do
+      { 'rule_id' => satisfied.rule_id, 'satisfied_by_rule_id' => satisfier.rule_id }
+    end
+    let(:satisfaction_plan) do
+      p = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id, strategy: strategy, manifest: manifest
+      )
+      p.add_satisfaction_partition(matched: [], only_ours: [], only_theirs: [satisfaction_hash])
+      p
+    end
+
+    it 'inserts new satisfaction row resolving rule_id strings to DB ids' do
+      expect do
+        described_class.new(merge_plan: satisfaction_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+      end.to change(RuleSatisfaction, :count).by(1)
+
+      # rule_satisfactions has no PK; query by composite key.
+      sat = RuleSatisfaction.find_by(rule_id: satisfied.id, satisfied_by_rule_id: satisfier.id)
+      expect(sat).not_to be_nil
+    end
+
+    it 'is idempotent: re-applying an existing satisfaction does not raise or double-insert' do
+      RuleSatisfaction.create!(rule_id: satisfied.id, satisfied_by_rule_id: satisfier.id)
+
+      expect do
+        described_class.new(merge_plan: satisfaction_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+      end.not_to(change(RuleSatisfaction, :count))
+    end
+
+    it 'records a merge_operations row with operation=insert per applied satisfaction' do
+      expect do
+        described_class.new(merge_plan: satisfaction_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+      end.to change(MergeOperation.where(entity_type: 'satisfaction', operation: 'insert'), :count).by(1)
+
+      op = MergeOperation.where(entity_type: 'satisfaction').last
+      expect(op.entity_key).to eq("#{satisfied.rule_id}::#{satisfier.rule_id}")
+      expect(op.source).to eq('theirs')
+    end
+
+    it 'skips with a warning when a referenced rule_id is unknown on the receiving side' do
+      bad_hash = { 'rule_id' => 'V-DOES-NOT-EXIST', 'satisfied_by_rule_id' => satisfier.rule_id }
+      bad_plan = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id, strategy: strategy, manifest: manifest
+      )
+      bad_plan.add_satisfaction_partition(matched: [], only_ours: [], only_theirs: [bad_hash])
+
+      result = described_class.new(merge_plan: bad_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+
+      expect(result.warnings.join).to match(/V-DOES-NOT-EXIST/i)
+      expect(RuleSatisfaction.count).to eq(0)
+    end
+  end
+
   describe '#call (closed-phase precondition)' do
     it 'refuses to apply against an open-phase component and marks the event failed' do
       open_component = create(:component, :open_comment_period)
