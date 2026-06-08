@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'securerandom'
+require 'digest'
 
 module Import
   module JsonArchive
@@ -38,8 +39,16 @@ module Import
           @result.attach_plan(@merge_plan)
 
           begin
+            validate_apply_preconditions!
+            take_pre_merge_snapshot!
             with_serializable_transaction { apply_all }
             mark_event_status('applied')
+          rescue PreconditionError => e
+            mark_event_status('failed')
+            @result.add_structured_error(
+              entity_type: :component, entity_key: @component.id.to_s,
+              step: :precondition, message: e.message
+            )
           rescue ActiveRecord::SerializationFailure
             mark_event_status('failed')
             @result.add_structured_error(
@@ -72,8 +81,31 @@ module Import
             source: @source,
             direction: 'inbound',
             status: 'pending',
-            resolution_log_json: @merge_plan.resolution_log
+            resolution_log_json: @merge_plan.resolution_log,
+            archive_hash: @archive_bytes && Digest::SHA256.hexdigest(@archive_bytes)
           )
+        end
+
+        # The apply path requires concurrent-edit protection — the
+        # receiving component must be in 'closed' comment_phase so no one
+        # is mid-write while we apply theirs. Analyzer (read-only) does
+        # not require this. Raises PreconditionError on failure
+        # so the same exception class is used uniformly across the
+        # analyze + apply boundary.
+        def validate_apply_preconditions!
+          return if @component.comment_phase == Analyzer::COMMENT_PHASE_REQUIRED
+
+          raise PreconditionError,
+                "component.comment_phase must be '#{Analyzer::COMMENT_PHASE_REQUIRED}' to apply " \
+                "(got '#{@component.comment_phase}')"
+        end
+
+        # Captures the current state of the receiving component as a
+        # zip + checksum so disaster-recovery (v2-480.10) can restore it
+        # if a merge is reverted. Snapshot path recorded on the sync event.
+        def take_pre_merge_snapshot!
+          path = SnapshotManager.create_snapshot(@component)
+          @sync_event.update!(snapshot_path: path)
         end
 
         # When the applier is invoked outside an existing transaction (the

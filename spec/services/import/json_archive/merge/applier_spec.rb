@@ -3,6 +3,14 @@
 require 'rails_helper'
 
 RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
+  # All applier specs short-circuit SnapshotManager: it's tested in its own
+  # spec, and exercising it here would write real zips to the default
+  # storage path. Override locally in specs that assert on snapshot paths.
+  before do
+    allow(Import::JsonArchive::Merge::SnapshotManager)
+      .to receive(:create_snapshot).and_return('/tmp/applier_spec_default_snapshot.zip')
+  end
+
   let(:component) { create(:component, :closed_comment_phase) }
   let(:strategy) { Import::JsonArchive::Merge::Strategy.new }
   let(:manifest) { { 'backup_format_version' => '1.1' } }
@@ -89,6 +97,52 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
 
       applier.call
 
+      expect(ComponentSyncEvent.last.status).to eq('failed')
+    end
+  end
+
+  describe '#call (pre-merge snapshot + archive hash)' do
+    let(:tmp_snapshot_path) { Tempfile.new(['snapshot', '.zip']).path }
+
+    before do
+      allow(Import::JsonArchive::Merge::SnapshotManager)
+        .to receive(:create_snapshot).and_return(tmp_snapshot_path)
+    end
+
+    it 'creates a snapshot via SnapshotManager and records the path on the sync event' do
+      expect(Import::JsonArchive::Merge::SnapshotManager).to receive(:create_snapshot).with(component)
+
+      described_class.new(merge_plan: plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+
+      expect(ComponentSyncEvent.last.snapshot_path).to eq(tmp_snapshot_path)
+    end
+
+    it 'stores SHA-256 of the archive bytes on the sync event' do
+      described_class.new(merge_plan: plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+
+      event = ComponentSyncEvent.last
+      expect(event.archive_hash).to eq(Digest::SHA256.hexdigest(archive_bytes))
+    end
+
+    it 'leaves archive_hash nil when archive_bytes is nil (caller did not provide)' do
+      described_class.new(merge_plan: plan, component: component, source: 'theirs', archive_bytes: nil).call
+
+      expect(ComponentSyncEvent.last.archive_hash).to be_nil
+    end
+  end
+
+  describe '#call (closed-phase precondition)' do
+    it 'refuses to apply against an open-phase component and marks the event failed' do
+      open_component = create(:component, :open_comment_period)
+      open_plan = Import::JsonArchive::Merge::Analyzer.new(
+        merge_input: Import::JsonArchive::Merge::MergeInput.from_json_archive(build_backup_hash(open_component), manifest: manifest),
+        component: open_component, strategy: strategy, manifest: manifest
+      ).call
+
+      result = described_class.new(merge_plan: open_plan, component: open_component, source: 'theirs', archive_bytes: archive_bytes).call
+
+      expect(result.success?).to be(false)
+      expect(result.errors.join).to match(/comment_phase/i)
       expect(ComponentSyncEvent.last.status).to eq('failed')
     end
   end
