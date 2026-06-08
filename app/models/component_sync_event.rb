@@ -19,4 +19,14 @@ class ComponentSyncEvent < ApplicationRecord
   validates :source, :direction, presence: true
   validates :direction, inclusion: { in: DIRECTIONS }
   validates :status,    inclusion: { in: STATUSES }
+
+  # At most one pending sync per component. Backed by a partial unique index
+  # (index_component_sync_events_on_pending_component). Validation gives a
+  # readable message; the index is the authoritative race-safe constraint.
+  # rubocop:disable Rails/I18nLocaleTexts -- consistent with neighbor validators
+  validates :component_id,
+            uniqueness: { conditions: -> { where(status: 'pending') },
+                          message: 'already has a pending sync' },
+            if: -> { status == 'pending' }
+  # rubocop:enable Rails/I18nLocaleTexts
 end

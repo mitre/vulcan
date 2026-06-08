@@ -639,4 +639,34 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
       expect(ComponentSyncEvent.last.status).to eq('failed')
     end
   end
+
+  describe '#call (one pending sync per component invariant)' do
+    it 'refuses to start a second apply while another sync is still pending' do
+      ComponentSyncEvent.create!(
+        component: component, sync_id: SecureRandom.uuid,
+        source: 'theirs', direction: 'inbound', status: 'pending'
+      )
+
+      result = described_class.new(
+        merge_plan: plan, component: component, source: 'theirs', archive_bytes: archive_bytes
+      ).call
+
+      expect(result.success?).to be(false)
+      expect(result.errors.join).to match(/already in progress|pending/i)
+    end
+
+    it 'allows a new apply once the prior pending event has transitioned to applied' do
+      prior = ComponentSyncEvent.create!(
+        component: component, sync_id: SecureRandom.uuid,
+        source: 'theirs', direction: 'inbound', status: 'pending'
+      )
+      prior.update!(status: 'applied')
+
+      result = described_class.new(
+        merge_plan: plan, component: component, source: 'theirs', archive_bytes: archive_bytes
+      ).call
+
+      expect(result.success?).to be(true)
+    end
+  end
 end

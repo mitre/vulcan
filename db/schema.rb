@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_05_142103) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_08_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -142,6 +142,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_05_142103) do
     t.string "status", default: "pending", null: false
     t.datetime "created_at", null: false
     t.index ["component_id"], name: "index_component_sync_events_on_component_id"
+    t.index ["component_id"], name: "index_component_sync_events_on_pending_component", unique: true, where: "((status)::text = 'pending'::text)"
     t.index ["sync_id"], name: "index_component_sync_events_on_sync_id", unique: true
   end
 

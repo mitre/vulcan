@@ -51,10 +51,10 @@ module Import
         end
 
         def call
-          @sync_event = create_sync_event
           @result.attach_plan(@merge_plan)
 
           begin
+            @sync_event = create_sync_event
             validate_apply_preconditions!
             take_pre_merge_snapshot!
             # Wrap the entire apply in a VulcanAudit correlation scope so
@@ -460,6 +460,10 @@ module Import
             resolution_log_json: @merge_plan.resolution_log,
             archive_hash: @archive_bytes && Digest::SHA256.hexdigest(@archive_bytes)
           )
+        rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
+          raise PreconditionError,
+                'another sync is already in progress on this component (a pending ' \
+                'ComponentSyncEvent exists — wait for it to complete or fail)'
         end
 
         # The apply path requires concurrent-edit protection — the
