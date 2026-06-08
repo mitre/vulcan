@@ -198,6 +198,53 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
     end
   end
 
+  describe '#call (skips conflict / locked_conflict)' do
+    let(:target_rule) { component.rules.first }
+    let(:conflict_plan) do
+      p = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id, strategy: strategy, manifest: manifest
+      )
+      p.add_field_changes(target_rule.rule_id, [
+                            Import::JsonArchive::Merge::RuleFieldDiffer::FieldChange.new(
+                              field: 'fixtext', from: 'OURS', to: 'THEIRS',
+                              resolution: :conflict, locked: false, reason: 'Strategy default'
+                            ),
+                            Import::JsonArchive::Merge::RuleFieldDiffer::FieldChange.new(
+                              field: 'title', from: 'ours title', to: 'theirs title',
+                              resolution: :locked_conflict, locked: true, reason: "section 'Title' locked"
+                            )
+                          ])
+      p
+    end
+
+    it 'does NOT write conflicted fields to the rule' do
+      original_fixtext = target_rule.fixtext
+      original_title = target_rule.title
+
+      described_class.new(merge_plan: conflict_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+
+      target_rule.reload
+      expect(target_rule.fixtext).to eq(original_fixtext)
+      expect(target_rule.title).to eq(original_title)
+    end
+
+    it 'records a merge_operations row with operation=skip for every conflict' do
+      expect do
+        described_class.new(merge_plan: conflict_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+      end.to change(MergeOperation.where(operation: 'skip'), :count).by(2)
+
+      skipped_fields = MergeOperation.where(operation: 'skip').pluck(:field_name).sort
+      expect(skipped_fields).to eq(%w[fixtext title])
+    end
+
+    it 'tags the skip source as conflict_resolved' do
+      described_class.new(merge_plan: conflict_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+
+      sources = MergeOperation.where(operation: 'skip').pluck(:source).uniq
+      expect(sources).to eq(['conflict_resolved'])
+    end
+  end
+
   describe '#call (closed-phase precondition)' do
     it 'refuses to apply against an open-phase component and marks the event failed' do
       open_component = create(:component, :open_comment_period)

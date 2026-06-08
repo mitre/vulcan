@@ -71,6 +71,7 @@ module Import
         # Per-entity apply pipeline. Each commit fills in one entity.
         def apply_all
           apply_rule_field_changes
+          record_skipped_conflicts
           recalculate_rules_count
           # reviews, satisfactions, memberships land in commits 5-8
         end
@@ -141,6 +142,36 @@ module Import
           when :auto_merged then 'auto_merge'
           else 'conflict_resolved'
           end
+        end
+
+        # Conflicts (:conflict, :locked_conflict) are NEVER auto-applied —
+        # by contract they require a human decision. We still record each
+        # one as a merge_operations row with operation=skip so the audit
+        # trail captures "we saw this divergence, didn't act on it" and
+        # the UI / undo path can replay decisions if needed.
+        def record_skipped_conflicts
+          rules_by_id = @component.rules.index_by(&:rule_id)
+
+          @merge_plan.conflicts.group_by { |c| rule_id_for(c) }.each do |rule_id, changes|
+            rule = rules_by_id[rule_id]
+            next if rule.nil?
+
+            changes.each { |change| log_skipped_conflict(rule, change) }
+          end
+        end
+
+        def log_skipped_conflict(rule, change)
+          MergeOperation.create!(
+            component_sync_event: @sync_event,
+            entity_type: 'rule',
+            entity_id: rule.id,
+            entity_key: rule.rule_id,
+            operation: 'skip',
+            field_name: change.field,
+            old_value: change.from.to_s,
+            new_value: change.to.to_s,
+            source: 'conflict_resolved'
+          )
         end
 
         # Counter cache safety net: the component's rules_count column can
