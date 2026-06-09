@@ -10,11 +10,12 @@ module Import
       #       compatible matcher path (v2-480.26).
       SUPPORTED_VERSIONS = %w[1.0 1.1].freeze
 
-      def initialize(manifest, project, component_filter: nil, dry_run: false)
+      def initialize(manifest, project, component_filter: nil, dry_run: false, merge: false)
         @manifest = manifest
         @project = project
         @component_filter = component_filter
         @dry_run = dry_run
+        @merge = merge
       end
 
       def validate(result)
@@ -78,8 +79,14 @@ module Import
           existing = @project.components.find_by(name: entry['name'])
           next unless existing
 
-          # During dry-run or with component_filter, conflicts are warnings (user can deselect/rename)
-          if @component_filter || @dry_run
+          # merge: true (v2-480.9) takes precedence — merge mode WANTS the
+          # name collision because that's how it finds the receiving component.
+          if @merge
+            result.add_warning(
+              "Component name conflict in merge mode: '#{entry['name']}' will be merged into existing component."
+            )
+          elsif @component_filter || @dry_run
+            # During dry-run or with component_filter, conflicts are warnings (user can deselect/rename)
             result.add_warning(
               "Component name conflict: '#{entry['name']}' already exists in project '#{@project.name}'."
             )
