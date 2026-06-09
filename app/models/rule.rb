@@ -198,7 +198,7 @@ class Rule < BaseRule
     rule
   end
 
-  # DISA ADNM nesting automation (V4R1 §4.1.9/§4.1.15).
+  # DISA ADNM nesting automation (V4R3 §4.1.9/§4.1.15).
   # Called by RuleSatisfactionsController AND rake tasks.
   def apply_nesting_status!(parent)
     parent_label = "#{parent.component.prefix}-#{parent.rule_id}"

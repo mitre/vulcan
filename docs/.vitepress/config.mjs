@@ -103,6 +103,7 @@ export default defineConfig({
         text: "DISA Process",
         items: [
           { text: "Overview", link: "/disa-process/overview" },
+          { text: "Vendor STIG Process Guide", link: "/disa-process/vendor-stig-process-guide" },
           { text: "Field Requirements", link: "/disa-process/field-requirements" },
           { text: "Export Requirements", link: "/disa-process/export-requirements" },
           { text: "Intent Form & Questionnaire", link: "/disa-process/intent-form" },
@@ -250,6 +251,7 @@ export default defineConfig({
           text: "DISA STIG Process",
           items: [
             { text: "Overview", link: "/disa-process/overview" },
+            { text: "Vendor STIG Process Guide", link: "/disa-process/vendor-stig-process-guide" },
             { text: "Field Requirements by Status", link: "/disa-process/field-requirements" },
             { text: "Export Requirements", link: "/disa-process/export-requirements" },
             { text: "Intent Form & Questionnaire", link: "/disa-process/intent-form" },

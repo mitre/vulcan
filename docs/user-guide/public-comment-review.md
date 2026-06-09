@@ -26,7 +26,7 @@ later.
 This workflow exists because security guidance is too consequential
 to publish without scrutiny from the people who will operate under it.
 Vulcan implements the workflow per the DISA Vendor STIG Process Guide
-(V4R1).
+(V4R3).
 
 ## Who participates?
 
@@ -90,7 +90,7 @@ The status is the primary lever an author uses. Pick one per comment:
 | **Needs Clarification** | More info needed from commenter — they get a notification. | No |
 | **Withdrawn** | Commenter retracted (or admin force-withdrew). | Yes (auto-adjudicates) |
 | **Duplicate** | Same issue as another comment in this component — linked to the survivor. See [Merge Comments](./merge-comments). | Yes (auto-adjudicates) |
-| **Addressed By** | Already mitigated by a parent rule (per DISA V4R1 §4.1.15). A rule picker appears at triage time so you can select the covering parent rule. | Yes (auto-adjudicates) |
+| **Addressed By** | Already mitigated by a parent rule (per DISA V4R3 §4.1.15). A rule picker appears at triage time so you can select the covering parent rule. | Yes (auto-adjudicates) |
 
 ## The three triage views
 

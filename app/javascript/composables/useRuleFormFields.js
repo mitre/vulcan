@@ -45,7 +45,7 @@ export function useRuleFormFields(rule, advancedMode, options = {}) {
   const readOnly = options.readOnly || { value: false };
 
   // ─── Effective status ───
-  // Status is set by the backend: ADNM when satisfied-by (per DISA V4R1
+  // Status is set by the backend: ADNM when satisfied-by (per DISA V4R3
   // §4.1.9), NYD on removal. No frontend override needed — the DB value
   // drives STATUS_FIELD_CONFIG field visibility.
   const effectiveStatus = computed(() => {

@@ -334,7 +334,7 @@ describe("UnifiedRuleForm", () => {
       const ruleForm = wrapper.findComponent({ name: "RuleForm" });
       const fields = ruleForm.props("fields");
       // NYD field set: status, rule_severity, title, fixtext — no vendor_comments
-      // (AC override was removed per DISA V4R1 — backend sets ADNM, not frontend)
+      // (AC override was removed per DISA V4R3 — backend sets ADNM, not frontend)
       expect(fields.displayed).toEqual(
         expect.arrayContaining(["status", "rule_severity", "title", "fixtext"]),
       );
@@ -525,7 +525,7 @@ describe("UnifiedRuleForm", () => {
       });
       ruleForm = wrapper.findComponent({ name: "RuleForm" });
       const fields = ruleForm.props("fields");
-      // Still NYD field set — no AC override (removed per DISA V4R1)
+      // Still NYD field set — no AC override (removed per DISA V4R3)
       expect(fields.displayed).not.toContain("vendor_comments");
       // Title and fixtext still disabled by NYD config
       expect(fields.disabled).toContain("title");

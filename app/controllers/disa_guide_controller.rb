@@ -9,11 +9,15 @@ class DisaGuideController < ApplicationController
 
   GUIDE_DIR = Rails.root.join('docs/disa-process')
 
+  LEGACY_SLUGS = {
+    'vendor-stig-process-guide-v4r1' => 'vendor-stig-process-guide'
+  }.freeze
+
   PAGE_SECTIONS = [
     {
       label: 'Reference',
       pages: {
-        'vendor-stig-process-guide-v4r1' => 'Vendor STIG Process Guide (V4R1)'
+        'vendor-stig-process-guide' => 'Vendor STIG Process Guide (V4R3)'
       }
     },
     {
@@ -32,6 +36,11 @@ class DisaGuideController < ApplicationController
   def show
     page = params[:page] || 'overview'
 
+    if LEGACY_SLUGS.key?(page)
+      redirect_to disa_guide_path(page: LEGACY_SLUGS[page]), status: :found
+      return
+    end
+
     unless PAGES.key?(page)
       render plain: 'Page not found', status: :not_found
       return
@@ -45,6 +54,8 @@ class DisaGuideController < ApplicationController
     end
 
     markdown_content = file_path.read
+    # Strip YAML frontmatter (VitePress metadata, not renderable by Commonmarker)
+    markdown_content = markdown_content.sub(/\A---\n.*?\n---\n/m, '')
     # Convert ::: callouts to HTML before markdown rendering
     markdown_content = convert_callouts(markdown_content)
     # Rewrite relative attachment links to use the download route
@@ -60,7 +71,8 @@ class DisaGuideController < ApplicationController
     @toc = extract_toc(doc)
     @html_content = ActionController::Base.helpers.sanitize(
       doc.to_html,
-      attributes: Rails::HTML::SafeListSanitizer.allowed_attributes + %w[id aria-hidden role]
+      tags: Rails::HTML::SafeListSanitizer.allowed_tags + %w[details summary],
+      attributes: Rails::HTML::SafeListSanitizer.allowed_attributes + %w[id aria-hidden role class]
     )
     @current_page = page
     @pages = PAGES
@@ -95,10 +107,16 @@ class DisaGuideController < ApplicationController
       type = Regexp.last_match(1)
       title = Regexp.last_match(2)&.strip
       body = Regexp.last_match(3).strip
-      variant = CALLOUT_VARIANTS[type] || 'secondary'
       rendered_body = Commonmarker.to_html(body, options: { render: { unsafe: true } })
-      header = title.present? ? "<strong class=\"d-block mb-2\">#{title}</strong>" : ''
-      "\n<div class=\"alert alert-#{variant} disa-guide-callout\" role=\"alert\">\n#{header}#{rendered_body}\n</div>\n"
+
+      if type == 'details'
+        summary = title.presence || 'Details'
+        "\n<details class=\"disa-guide-details\">\n<summary>#{summary}</summary>\n#{rendered_body}\n</details>\n"
+      else
+        variant = CALLOUT_VARIANTS[type] || 'secondary'
+        header = title.present? ? "<strong class=\"d-block mb-2\">#{title}</strong>" : ''
+        "\n<div class=\"alert alert-#{variant} disa-guide-callout\" role=\"alert\">\n#{header}#{rendered_body}\n</div>\n"
+      end
     end
   end
 

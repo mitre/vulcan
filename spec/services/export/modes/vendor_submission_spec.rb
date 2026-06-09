@@ -4,7 +4,7 @@ require 'rails_helper'
 
 # ==========================================================================
 # REQUIREMENT: VendorSubmission mode produces a strict DISA-compliant export
-# per the Vendor STIG Process Guide V4R1:
+# per the Vendor STIG Process Guide V4R3:
 #
 # - Exactly 17 columns (Table 8-1) — no Vendor Comments, no Satisfies, no InSpec
 # - STIGID left blank (DISA fills during finalization) — Section 4.1.4
@@ -150,7 +150,7 @@ RSpec.describe Export::Modes::VendorSubmission do
   end
 
   # ==========================================================================
-  # Field-blanking requirements per DISA Process Guide V4R1
+  # Field-blanking requirements per DISA Process Guide V4R3
   # See docs/disa-process/field-requirements.md for full matrix
   # ==========================================================================
   describe '#transform_value' do
