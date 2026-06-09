@@ -1,5 +1,7 @@
 import { defineConfig } from "vitepress";
 import { ViteImageOptimizer } from "vite-plugin-image-optimizer";
+import { useSidebar } from "vitepress-openapi";
+import spec from "../data/openapi.json" with { type: "json" };
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -10,7 +12,7 @@ export default defineConfig({
 
   // Exclude internal planning docs and non-publishable content from the build.
   // These contain raw HTML/markdown that Vue's template compiler rejects.
-  srcExclude: ['**/superpowers/**', '**/plans/**'],
+  srcExclude: ['**/superpowers/**', '**/plans/**', '**/research/**'],
 
   // Clean URLs without .html extension
   cleanUrls: true,
@@ -116,7 +118,7 @@ export default defineConfig({
           { text: "Testing", link: "/development/testing" },
           { text: "Design System", link: "/development/design-system" },
           { text: "Toast Contract", link: "/development/toast-contract" },
-          { text: "API Docs (Scalar)", link: "/development/api-docs" },
+          { text: "API Documentation", link: "/development/api-docs" },
           { text: "OpenAPI Testing", link: "/development/openapi-testing" },
           { text: "Release Process", link: "/development/release-process" },
           { text: "Upgrade System", link: "/development/upgrade-system" },
@@ -129,8 +131,7 @@ export default defineConfig({
         items: [
           { text: "Overview", link: "/api/overview" },
           { text: "Authentication", link: "/api/authentication" },
-          { text: "Endpoints", link: "/api/endpoints" },
-        ],
+                  ],
       },
       {
         text: "Project",
@@ -267,7 +268,7 @@ export default defineConfig({
             { text: "Testing", link: "/development/testing" },
             { text: "Design System", link: "/development/design-system" },
             { text: "Toast Contract", link: "/development/toast-contract" },
-            { text: "API Docs (Scalar)", link: "/development/api-docs" },
+            { text: "API Documentation", link: "/development/api-docs" },
           { text: "OpenAPI Testing", link: "/development/openapi-testing" },
             { text: "Release Process", link: "/development/release-process" },
             { text: "Upgrade System", link: "/development/upgrade-system" },
@@ -284,13 +285,17 @@ export default defineConfig({
       ],
       "/api/": [
         {
-          text: "API Reference",
+          text: "API Guide",
           items: [
             { text: "Overview", link: "/api/overview" },
             { text: "Authentication", link: "/api/authentication" },
-            { text: "Endpoints", link: "/api/endpoints" },
           ],
         },
+        ...useSidebar({
+          spec,
+          linkPrefix: "/api/operations/",
+          tagLinkPrefix: "/api/tags/",
+        }).generateSidebarGroups(),
       ],
       "/security/": [
         {
@@ -446,5 +451,7 @@ export default defineConfig({
   ignoreDeadLinks: [
     // Ignore localhost URLs
     /^https?:\/\/localhost/,
+    // Binary attachments served from public/ — VitePress can't resolve non-page files
+    /\.docx$/,
   ],
 });

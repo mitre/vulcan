@@ -3,4 +3,4 @@ node_modules/
 .vitepress/cache/
 
 # Generated at build time from doc/openapi.yaml — do not commit
-public/api/openapi.json
+data/openapi.json

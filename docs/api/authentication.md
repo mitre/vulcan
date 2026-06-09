@@ -120,7 +120,7 @@ Returns the raw token in the response body (show-once):
     "id": 1,
     "name": "CI/CD Token",
     "scopes": ["read", "write"],
-    "token_prefix": "vulcan_abc1",
+    "token_prefix": "vulcan_a",
     "expires_at": "2027-01-01",
     "last_used_at": null
   }
