@@ -46,11 +46,19 @@ module Import
         #   covers raw zip bytes (manifest exported_at + zip mtimes are
         #   non-deterministic) so two different exports of identical DB
         #   state produce different hashes — that case is not covered.
-        def initialize(merge_plan:, component:, source:, archive_bytes: nil)
+        # @param actor [User, nil] the user authorizing the merge. Passed
+        #   to ReviewBuilder as imported_by: so the Component-level import
+        #   audit row attributes correctly; per-review Audited::Audit rows
+        #   bulk-insert with this actor + comment=audit_comment_for_merge.
+        #   Stamped on Membership.create! audit_comment too. When nil for
+        #   source='theirs'/'auto_merge' the apply emits a structured
+        #   warning — the Phase 2c controller MUST pass actor. v2-480.37.
+        def initialize(merge_plan:, component:, source:, archive_bytes: nil, actor: nil)
           @merge_plan = merge_plan
           @component = component
           @source = source
           @archive_bytes = archive_bytes
+          @actor = actor
           @result = MergeResult.new
         end
 
@@ -58,6 +66,8 @@ module Import
           @result.attach_plan(@merge_plan)
           @quarantine_buffer = []
           apply_exception = nil
+
+          warn_when_actor_missing_for_inbound_source!
 
           begin
             require_no_prior_applied_with_same_hash!
@@ -379,12 +389,39 @@ module Import
 
           builder = ReviewBuilder.new(
             new_reviews, rule_id_map, builder_result,
-            component: @component, manifest: @merge_plan.manifest
+            component: @component, manifest: @merge_plan.manifest, imported_by: @actor
           )
           builder.build_all
 
           log_review_inserts(builder.external_to_new_id, new_reviews)
+          bulk_insert_review_audits(builder.external_to_new_id)
           builder_result.warnings.each { |w| @result.add_warning(w) }
+        end
+
+        # Bulk-insert per-review Audited::Audit rows so imported reviews
+        # land in the per-record audit history with a non-nil user_id and
+        # comment=audit_comment_for_merge. Mirrors the
+        # VulcanAudit.create_initial_rule_audit_from_mapping bulk-bypass
+        # pattern. No-op when actor is nil — caller-side warning emitted
+        # via warn_when_actor_missing_for_inbound_source!. v2-480.37.
+        def bulk_insert_review_audits(external_to_new_id)
+          return if @actor.nil?
+          return if external_to_new_id.empty?
+
+          surviving_ids = Review.where(id: external_to_new_id.values).pluck(:id).to_set
+          rows = surviving_ids.map do |new_id|
+            {
+              auditable_type: 'Review', auditable_id: new_id,
+              action: 'create',
+              user_id: @actor.id, user_type: @actor.class.name,
+              request_uuid: @sync_event.sync_id,
+              comment: audit_comment_for_merge,
+              created_at: Time.current
+            }
+          end
+          # rubocop:disable Rails/SkipsModelValidations -- bulk audit insert mirrors the design doc pattern
+          Audited.audit_class.insert_all(rows)
+          # rubocop:enable Rails/SkipsModelValidations
         end
 
         # Walk ReviewBuilder.external_to_new_id and emit one MergeOperation
@@ -580,7 +617,10 @@ module Import
           return if existing
 
           ActiveRecord::Base.transaction(requires_new: true) do
-            Membership.create!(user: user, membership: @component.project, role: MEMBERSHIP_IMPORT_ROLE)
+            Membership.create!(
+              user: user, membership: @component.project, role: MEMBERSHIP_IMPORT_ROLE,
+              audit_comment: audit_comment_for_merge
+            )
             log_membership_insert(membership_hash, user)
           end
         rescue ActiveRecord::RecordInvalid => e
@@ -683,6 +723,22 @@ module Import
         def recalculate_rules_count
           fresh_count = @component.rules.where(deleted_at: nil).count
           @component.update_columns(rules_count: fresh_count) # rubocop:disable Rails/SkipsModelValidations -- counter cache repair only
+        end
+
+        # Phase 2c controller MUST pass actor for any inbound merge so the
+        # per-record audit trail carries who-authorized attribution. Until
+        # that gate lands, emit a structured warning instead of raising so
+        # existing test callers (no actor needed) keep working.
+        # v2-480.37.
+        def warn_when_actor_missing_for_inbound_source!
+          return unless @actor.nil?
+          return unless %w[theirs auto_merge].include?(@source)
+
+          @result.add_warning(
+            "Applier: actor not provided for source='#{@source}' — imported " \
+            'review/membership audit rows will lack who-authorized attribution. ' \
+            'Phase 2c controller must pass actor:.'
+          )
         end
 
         # Reject any apply whose archive_hash already lives on a successful

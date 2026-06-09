@@ -1119,6 +1119,85 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
     end
   end
 
+  describe '#call (actor attribution v2-480.37)' do
+    let(:target_rule) { component.rules.first }
+    let(:operator) { create(:user, email: 'op@example.com', name: 'Op Erator') }
+    let(:new_review_hash) do
+      {
+        'external_id' => 7777, 'rule_id' => target_rule.rule_id, 'action' => 'comment',
+        'section' => 'check_content', 'comment' => 'attributed',
+        'created_at' => Time.zone.local(2026, 6, 8, 12, 0).iso8601(6),
+        'user_email' => operator.email, 'user_name' => operator.name
+      }
+    end
+    let(:plan_with_review) do
+      p = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id, strategy: strategy, manifest: manifest
+      )
+      p.add_review_partition(matched: [], only_ours: [], only_theirs: [new_review_hash])
+      p
+    end
+
+    before do
+      Membership.create!(user: operator, membership: component.project, role: 'viewer')
+    end
+
+    it 'bulk-inserts an Audited::Audit row per imported review tagged with actor + request_uuid' do
+      described_class.new(
+        merge_plan: plan_with_review, component: component, source: 'theirs',
+        archive_bytes: archive_bytes, actor: operator
+      ).call
+
+      imported = Review.where(rule_id: target_rule.id, comment: 'attributed').first
+      audits = Audited.audit_class.where(auditable_type: 'Review', auditable_id: imported.id)
+      expect(audits.count).to be >= 1
+      audit = audits.find { |a| a.action == 'create' && a.comment&.start_with?('merge:') }
+      expect(audit).not_to be_nil
+      expect(audit.user_id).to eq(operator.id)
+      expect(audit.request_uuid).to eq(ComponentSyncEvent.last.sync_id)
+    end
+
+    it 'does NOT bulk-insert review audits when actor is nil' do
+      described_class.new(
+        merge_plan: plan_with_review, component: component, source: 'theirs',
+        archive_bytes: archive_bytes, actor: nil
+      ).call
+
+      imported = Review.where(rule_id: target_rule.id, comment: 'attributed').first
+      bulk_audits = Audited.audit_class.where(auditable_type: 'Review', auditable_id: imported.id,
+                                              action: 'create').where("comment LIKE 'merge:%'")
+      expect(bulk_audits).to be_empty
+    end
+
+    it 'warns when actor is nil for source=theirs' do
+      result = described_class.new(
+        merge_plan: plan_with_review, component: component, source: 'theirs',
+        archive_bytes: archive_bytes, actor: nil
+      ).call
+
+      expect(result.warnings.join).to match(/actor not provided.*theirs/i)
+    end
+
+    it 'stamps audit_comment_for_merge on imported memberships' do
+      new_user = create(:user, email: 'newbie@example.com', name: 'Newbie')
+      membership_plan = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id, strategy: strategy, manifest: manifest
+      )
+      membership_plan.add_membership_partition(
+        matched: [], only_ours: [], only_theirs: [{ 'email' => new_user.email, 'role' => 'viewer' }]
+      )
+
+      described_class.new(
+        merge_plan: membership_plan, component: component, source: 'theirs',
+        archive_bytes: archive_bytes, actor: operator
+      ).call
+
+      imported = Membership.find_by(user: new_user, membership: component.project)
+      create_audit = imported.audits.find_by(action: 'create')
+      expect(create_audit&.comment).to start_with('merge:')
+    end
+  end
+
   describe '#call (one pending sync per component invariant)' do
     it 'refuses to start a second apply while another sync is still pending' do
       ComponentSyncEvent.create!(
