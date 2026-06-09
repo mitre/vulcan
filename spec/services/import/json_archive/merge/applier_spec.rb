@@ -101,6 +101,53 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
     end
   end
 
+  describe '#call (failure_diagnostics_json v2-480.36)' do
+    it 'populates failure_diagnostics on a StandardError apply failure' do
+      applier = described_class.new(merge_plan: plan, component: component, source: 'theirs', archive_bytes: archive_bytes)
+      allow(applier).to receive(:apply_all).and_raise(ActiveRecord::StatementInvalid.new('boom'))
+
+      applier.call
+
+      diag = ComponentSyncEvent.last.failure_diagnostics_json
+      expect(diag).to be_a(Hash)
+      expect(diag['exception_class']).to eq('ActiveRecord::StatementInvalid')
+      expect(diag['exception_message']).to include('boom')
+      expect(diag['structured_errors']).to be_an(Array).and(be_present)
+      expect(diag['structured_errors'].first).to include('step' => 'apply')
+    end
+
+    it 'populates failure_diagnostics on SerializationFailure' do
+      applier = described_class.new(merge_plan: plan, component: component, source: 'theirs', archive_bytes: archive_bytes)
+      allow(applier).to receive(:apply_all).and_raise(ActiveRecord::SerializationFailure.new('serial'))
+
+      applier.call
+
+      diag = ComponentSyncEvent.last.failure_diagnostics_json
+      expect(diag['exception_class']).to eq('ActiveRecord::SerializationFailure')
+      expect(diag['structured_errors'].first['message']).to include('component modified during merge')
+    end
+
+    it 'populates failure_diagnostics on PreconditionError (open comment phase)' do
+      open_component = create(:component, :open_comment_period)
+      open_plan = Import::JsonArchive::Merge::Analyzer.new(
+        merge_input: Import::JsonArchive::Merge::MergeInput.from_json_archive(build_backup_hash(open_component), manifest: manifest),
+        component: open_component, strategy: strategy, manifest: manifest
+      ).call
+
+      described_class.new(merge_plan: open_plan, component: open_component, source: 'theirs', archive_bytes: archive_bytes).call
+
+      diag = ComponentSyncEvent.last.failure_diagnostics_json
+      expect(diag['exception_class']).to eq('Import::JsonArchive::Merge::PreconditionError')
+      expect(diag['exception_message']).to match(/comment_phase/i)
+      expect(diag['structured_errors'].first['step']).to eq('precondition')
+    end
+
+    it 'leaves failure_diagnostics nil on a successful apply' do
+      described_class.new(merge_plan: plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+      expect(ComponentSyncEvent.last.failure_diagnostics_json).to be_nil
+    end
+  end
+
   describe '#call (pre-merge snapshot + archive hash)' do
     let(:tmp_snapshot_path) { Tempfile.new(['snapshot', '.zip']).path }
 

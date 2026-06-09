@@ -57,6 +57,7 @@ module Import
         def call
           @result.attach_plan(@merge_plan)
           @quarantine_buffer = []
+          apply_exception = nil
 
           begin
             require_no_prior_applied_with_same_hash!
@@ -81,19 +82,19 @@ module Import
             # the merge as failed. v2-480.38.
             rotate_snapshots_safely!
           rescue PreconditionError => e
-            mark_event_status('failed')
+            apply_exception = e
             @result.add_structured_error(
               entity_type: :component, entity_key: @component.id.to_s,
               step: :precondition, message: e.message
             )
-          rescue ActiveRecord::SerializationFailure
-            mark_event_status('failed')
+          rescue ActiveRecord::SerializationFailure => e
+            apply_exception = e
             @result.add_structured_error(
               entity_type: :component, entity_key: @component.id.to_s,
               step: :apply, message: 'component modified during merge (serialization conflict)'
             )
           rescue StandardError => e
-            mark_event_status('failed')
+            apply_exception = e
             @result.add_structured_error(
               entity_type: :component, entity_key: @component.id.to_s,
               step: :apply, message: "#{e.class.name}: #{e.message}"
@@ -101,6 +102,7 @@ module Import
           end
 
           drain_quarantine_buffer!
+          finalize_failed_event!(apply_exception) if apply_exception
           @result
         end
 
@@ -809,6 +811,29 @@ module Import
           return if @sync_event.nil?
 
           @sync_event.update!(status: status)
+        end
+
+        # On any failure path, capture exception + structured_errors +
+        # warnings into ComponentSyncEvent.failure_diagnostics_json so the
+        # operator can SELECT and triage 5 minutes later without re-running
+        # the merge. Runs AFTER drain_quarantine_buffer! so quarantine
+        # warnings (added during drain) are included. v2-480.36.
+        def finalize_failed_event!(exception)
+          return if @sync_event.nil?
+
+          @sync_event.update!(
+            status: 'failed',
+            failure_diagnostics_json: build_failure_diagnostics(exception)
+          )
+        end
+
+        def build_failure_diagnostics(exception)
+          {
+            'exception_class' => exception.class.name,
+            'exception_message' => exception.message,
+            'structured_errors' => @result.structured_errors.map(&:to_h),
+            'warnings' => @result.warnings.to_a
+          }
         end
       end
     end
