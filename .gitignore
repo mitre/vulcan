@@ -92,6 +92,8 @@ AGENT-STATUS/
 # The .beads/ copy is tracked for team visibility.
 issues.jsonl
 !.beads/issues.jsonl
+# interactions.jsonl is session-local chat history — not shared
+.beads/interactions.jsonl
 
 # Local build / tool caches (yarn, corepack, node) when running outside Docker
 /.cache/
