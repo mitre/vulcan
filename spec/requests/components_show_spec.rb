@@ -197,4 +197,25 @@ RSpec.describe 'Component show' do
                                "expected ≤ 100 review ids passed to Reaction.summary; got #{captured.size}"
     end
   end
+
+  context 'when unauthenticated' do
+    before { sign_out user }
+
+    it 'redirects to sign-in' do
+      get "/components/#{component.id}", headers: { 'Accept' => application_json }
+      expect(response).to have_http_status(:unauthorized)
+        .or redirect_to(new_user_session_path)
+    end
+  end
+
+  context 'as non-member on unreleased component' do
+    let(:outsider) { create(:user) }
+
+    before { sign_in outsider }
+
+    it 'rejects with 403' do
+      get "/components/#{component.id}", headers: { 'Accept' => application_json }
+      expect(response).to have_http_status(:forbidden)
+    end
+  end
 end

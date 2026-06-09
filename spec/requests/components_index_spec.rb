@@ -29,5 +29,15 @@ RSpec.describe 'Component index' do
       expect(ids).to include(released_component.id)
       expect(ids).not_to include(unreleased_component.id)
     end
+
+    context 'when unauthenticated' do
+      before { sign_out user }
+
+      it 'redirects to sign-in' do
+        get '/components', headers: { 'Accept' => application_json }
+        expect(response).to have_http_status(:unauthorized)
+          .or redirect_to(new_user_session_path)
+      end
+    end
   end
 end

@@ -17,6 +17,14 @@ RSpec.describe 'Component activity and history' do
         .or redirect_to(new_user_session_path)
     end
 
+    it 'rejects non-member on unreleased component' do
+      outsider = create(:user)
+      sign_in outsider
+      get "/components/#{component.id}/histories",
+          headers: { 'Accept' => application_json }
+      expect(response).to have_http_status(:forbidden)
+    end
+
     it 'returns an array of formatted audit entries' do
       # Create a change to generate an audit
       rule = component.rules.first

@@ -40,5 +40,14 @@ RSpec.describe 'Component bulk export' do
           headers: { 'Accept' => application_json }
       expect(response).to have_http_status(:bad_request)
     end
+
+    context 'when unauthenticated' do
+      before { sign_out user }
+
+      it 'redirects to sign-in' do
+        get "/components/bulk_export/csv?component_ids=#{released.id}"
+        expect(response).to redirect_to(new_user_session_path)
+      end
+    end
   end
 end

@@ -57,15 +57,54 @@ RSpec.describe 'Component update' do
 
     context 'when updating advanced_fields' do
       it 'allows admin to update advanced_fields' do
-        # Admin membership already set up in before block
         put "/components/#{component.id}", params: {
-          component: {
-            advanced_fields: true
-          }
+          component: { advanced_fields: true }
         }
 
         expect(response).to have_http_status(:success)
         expect(component.reload.advanced_fields).to be(true)
+      end
+    end
+
+    context 'as project viewer (not author)' do
+      let(:viewer_user) { create(:user) }
+
+      before do
+        Membership.create!(user: viewer_user, membership: project, role: 'viewer')
+        sign_in viewer_user
+      end
+
+      it 'rejects — update requires author' do
+        put "/components/#{component.id}",
+            params: { component: { name: 'Should Fail' } },
+            headers: { 'Accept' => application_json }
+        expect(response).to have_http_status(:forbidden)
+      end
+    end
+
+    context 'as project author updating advanced_fields' do
+      let(:author_user) { create(:user) }
+
+      before do
+        Membership.create!(user: author_user, membership: project, role: 'author')
+        sign_in author_user
+      end
+
+      it 'rejects — advanced_fields requires admin' do
+        put "/components/#{component.id}",
+            params: { component: { advanced_fields: true } },
+            headers: { 'Accept' => application_json }
+        expect(response).to have_http_status(:forbidden)
+      end
+    end
+
+    context 'when unauthenticated' do
+      before { sign_out user }
+
+      it 'redirects to sign-in' do
+        put "/components/#{component.id}",
+            params: { component: { name: 'No Auth' } }
+        expect(response).to redirect_to(new_user_session_path)
       end
     end
   end
