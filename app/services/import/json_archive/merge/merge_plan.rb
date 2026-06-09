@@ -34,6 +34,7 @@ module Import
           @partitions = ENTITY_KEYS.index_with { { 'matched' => [], 'only_ours' => [], 'only_theirs' => [] } }
           @field_changes = {}
           @resolution_log = []
+          @review_collisions = []
         end
 
         def add_rule_partition(matched:, only_ours:, only_theirs:)
@@ -84,6 +85,18 @@ module Import
         # never mutate.
         def resolution_log
           @resolution_log.dup.freeze
+        end
+
+        # Degenerate review groups (same composite key on both sides, >1
+        # member). Surfaced from ReviewMatcher by the Analyzer so the
+        # formatter / Applier can warn operators even when conflicts are
+        # empty — the merge still applies but human review is recommended.
+        def add_review_collisions(collisions)
+          @review_collisions.concat(Array(collisions))
+        end
+
+        def review_collisions
+          @review_collisions.dup.freeze
         end
 
         # Derives counts from the stored record arrays. Public contract

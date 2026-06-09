@@ -25,8 +25,14 @@ module Import
         # Pure-Ruby matcher is comfortable up to ~10K reviews; beyond
         # that callers should drop into the SQL-staging path (deferred
         # to Phase 2c). Sized to leave headroom below typical Postgres
-        # statement-timeout settings.
+        # statement-timeout settings. Counted as inbound + receiving so
+        # the matcher's worst-case Hash allocation is bounded.
         REVIEW_CEILING = 10_000
+        # Companion ceilings for v2-480.35 — same defense-in-depth
+        # rationale, scaled to realistic STIG/component sizes.
+        RULES_CEILING = 50_000
+        SATISFACTIONS_CEILING = 50_000
+        MEMBERSHIPS_CEILING = 10_000
 
         # Clock skew tolerance for archive created_at sanity check.
         FUTURE_TIMESTAMP_TOLERANCE = 1.day
@@ -65,18 +71,50 @@ module Import
         # delta and must work regardless of phase.
         def validate_preconditions!
           require_review_ceiling!
+          require_rules_ceiling!
+          require_satisfactions_ceiling!
+          require_memberships_ceiling!
           require_no_self_referencing_reviews! # F17 — before cycle DFS
           require_acyclic_reply_chains!
           require_no_future_timestamps!
         end
 
         def require_review_ceiling!
-          count = @merge_input.reviews.size
-          return if count <= REVIEW_CEILING
+          # Total = inbound (archive) + receiving (live component). The
+          # matcher allocates a Hash entry for both sides; the ceiling
+          # must bound the actual memory footprint.
+          inbound = @merge_input.reviews.size
+          receiving = @component.is_a?(Component) ? @component.rules.joins(:reviews).count : 0
+          total = inbound + receiving
+          return if total <= REVIEW_CEILING
 
           raise PreconditionError,
-                "reviews.size (#{count}) exceeds Phase 1 ceiling of #{REVIEW_CEILING} — " \
-                'use the SQL-staging path (Phase 2c)'
+                "reviews.size (inbound=#{inbound}, receiving=#{receiving}, total=#{total}) " \
+                "exceeds Phase 1 ceiling of #{REVIEW_CEILING} — use the SQL-staging path (Phase 2c)"
+        end
+
+        def require_rules_ceiling!
+          count = @merge_input.rules.size
+          return if count <= RULES_CEILING
+
+          raise PreconditionError,
+                "rules.size (#{count}) exceeds ceiling of #{RULES_CEILING} — archive too large"
+        end
+
+        def require_satisfactions_ceiling!
+          count = @merge_input.satisfactions.size
+          return if count <= SATISFACTIONS_CEILING
+
+          raise PreconditionError,
+                "satisfactions.size (#{count}) exceeds ceiling of #{SATISFACTIONS_CEILING} — archive too large"
+        end
+
+        def require_memberships_ceiling!
+          count = Array(@merge_input.memberships).size
+          return if count <= MEMBERSHIPS_CEILING
+
+          raise PreconditionError,
+                "memberships.size (#{count}) exceeds ceiling of #{MEMBERSHIPS_CEILING} — archive too large"
         end
 
         # F17 CRITICAL: a review whose responding_to_external_id equals its
@@ -200,6 +238,7 @@ module Import
           plan.add_review_partition(
             matched: result.matched, only_ours: result.only_ours, only_theirs: result.only_theirs
           )
+          plan.add_review_collisions(result.collisions)
           plan.validate_partition_invariant!(:reviews,
                                              ours_count: ours_reviews.size, theirs_count: theirs_reviews.size)
         end

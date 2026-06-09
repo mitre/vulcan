@@ -21,6 +21,7 @@ module Import
           lines.concat(render_summary)
           lines.concat(render_auto_merged)
           lines.concat(render_conflicts)
+          lines.concat(render_review_collisions)
           lines.join("\n")
         end
 
@@ -73,6 +74,22 @@ module Import
 
           lines = ["--- Conflicts: #{changes.size} field(s) — human must reconcile ---"]
           changes.each { |c| lines << format_change(c) }
+          lines << ''
+          lines
+        end
+
+        # Review collisions surface even when conflicts.empty? — they're
+        # degenerate matcher groups (>1 member with the same composite
+        # key) where ReviewMatcher fell back to external_id tiebreaking
+        # but a human should still verify the pairing.
+        def render_review_collisions
+          return [] if @plan.review_collisions.empty?
+
+          lines = ["--- Review collisions: #{@plan.review_collisions.size} degenerate group(s) ---"]
+          @plan.review_collisions.first(20).each do |group|
+            lines << "  key=#{truncate(group[:key].to_s)}  members=#{group[:members].size}"
+          end
+          lines << "  ... (#{@plan.review_collisions.size - 20} more) ..." if @plan.review_collisions.size > 20
           lines << ''
           lines
         end

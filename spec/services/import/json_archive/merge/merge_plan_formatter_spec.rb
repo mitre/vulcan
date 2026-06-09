@@ -95,4 +95,23 @@ RSpec.describe Import::JsonArchive::Merge::MergePlanFormatter, type: :service do
       expect(formatter.exit_code).to eq(1)
     end
   end
+
+  describe '#render (v2-480.35: review collisions section)' do
+    it 'renders a "Review collisions" section when present' do
+      plan.add_review_collisions([
+                                   { key: 'rule-V-1::same-text::2026-06-08T12:00:00Z', members: %w[r1 r2] },
+                                   { key: 'rule-V-2::other::2026-06-08T12:00:01Z', members: %w[r3 r4 r5] }
+                                 ])
+
+      out = formatter.render
+
+      expect(out).to include('Review collisions: 2 degenerate group(s)')
+      expect(out).to include('members=2')
+      expect(out).to include('members=3')
+    end
+
+    it 'omits the section when collisions list is empty' do
+      expect(formatter.render).not_to include('Review collisions:')
+    end
+  end
 end

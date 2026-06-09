@@ -33,6 +33,37 @@ RSpec.describe Import::JsonArchive::Merge::Analyzer, type: :service do
         .to raise_error(Import::JsonArchive::Merge::PreconditionError, /10_?000|ceiling/i)
     end
 
+    it 'raises PreconditionError when rules.size > RULES_CEILING (v2-480.35)' do
+      huge_archive = base_archive.merge('rules' => Array.new(50_001) { |i| { 'rule_id' => "V-#{i}" } })
+      huge_input = Import::JsonArchive::Merge::MergeInput.from_json_archive(huge_archive, manifest: manifest)
+      analyzer = described_class.new(merge_input: huge_input, component: component,
+                                     strategy: strategy, manifest: manifest)
+      expect { analyzer.call }
+        .to raise_error(Import::JsonArchive::Merge::PreconditionError, /rules\.size.*ceiling/i)
+    end
+
+    it 'raises PreconditionError when satisfactions.size > SATISFACTIONS_CEILING (v2-480.35)' do
+      huge_archive = base_archive.merge(
+        'satisfactions' => Array.new(50_001) { |i| { 'rule_id' => 'V-1', 'satisfied_by_rule_id' => "V-#{i}" } }
+      )
+      huge_input = Import::JsonArchive::Merge::MergeInput.from_json_archive(huge_archive, manifest: manifest)
+      analyzer = described_class.new(merge_input: huge_input, component: component,
+                                     strategy: strategy, manifest: manifest)
+      expect { analyzer.call }
+        .to raise_error(Import::JsonArchive::Merge::PreconditionError, /satisfactions\.size.*ceiling/i)
+    end
+
+    it 'raises PreconditionError when memberships.size > MEMBERSHIPS_CEILING (v2-480.35)' do
+      huge_memberships = Array.new(10_001) { |i| { 'email' => "u#{i}@x" } }
+      huge_input = Import::JsonArchive::Merge::MergeInput.from_json_archive(
+        base_archive, manifest: manifest, memberships: huge_memberships
+      )
+      analyzer = described_class.new(merge_input: huge_input, component: component,
+                                     strategy: strategy, manifest: manifest)
+      expect { analyzer.call }
+        .to raise_error(Import::JsonArchive::Merge::PreconditionError, /memberships\.size.*ceiling/i)
+    end
+
     it 'raises PreconditionError when any review.created_at is more than 1.day in the future' do
       future = 2.days.from_now.iso8601(6)
       reviews = [{ 'rule_id' => 'V-1', 'comment' => 'x', 'created_at' => future, 'external_id' => 1 }]
@@ -118,6 +149,30 @@ RSpec.describe Import::JsonArchive::Merge::Analyzer, type: :service do
       expect(plan_spy).to receive(:validate_partition_invariant!).at_least(:once).and_call_original
 
       analyzer.call
+    end
+  end
+
+  describe 'v2-480.35: review collisions forwarded into MergePlan' do
+    it 'populates plan.review_collisions when ReviewMatcher emits degenerate groups' do
+      target_rule = component.rules.first
+      now = Time.zone.local(2026, 6, 8, 12, 0).iso8601(6)
+      # Two reviews on ours and theirs with identical composite key → degenerate
+      collide_attrs = { 'rule_id' => target_rule.rule_id, 'comment' => 'same text', 'created_at' => now }
+      review1 = create(:review, rule: target_rule, user: create(:user), action: 'comment',
+                                comment: 'same text', created_at: Time.zone.parse(now))
+      review2 = create(:review, rule: target_rule, user: create(:user), action: 'comment',
+                                comment: 'same text', created_at: Time.zone.parse(now))
+      _ = [review1, review2]
+
+      reviews = [collide_attrs.merge('external_id' => 'X1'), collide_attrs.merge('external_id' => 'X2')]
+      archive = base_archive.merge('reviews' => reviews)
+      input = Import::JsonArchive::Merge::MergeInput.from_json_archive(archive, manifest: manifest)
+      analyzer = described_class.new(merge_input: input, component: component,
+                                     strategy: strategy, manifest: manifest)
+
+      plan = analyzer.call
+
+      expect(plan.review_collisions).not_to be_empty
     end
   end
 
