@@ -30,7 +30,8 @@ Rails.application.configure do
     policy.script_src  :self, :unsafe_eval, 'https://cdn.jsdelivr.net'
     policy.style_src   :self, :unsafe_inline, 'https://cdn.jsdelivr.net'
     policy.connect_src :self, 'https://api.github.com', 'https://cdn.jsdelivr.net',
-                       'https://api.scalar.com', *[oidc_origin].compact
+                       'https://api.scalar.com', 'https://registry.scalar.com',
+                       'https://vulcan.mitre.org', *[oidc_origin].compact
     policy.frame_src   :none
     policy.base_uri    :self
     policy.form_action :self, *[oidc_origin].compact

@@ -111,4 +111,46 @@ describe("api_docs.js — Scalar theme integration", () => {
     const config = createApiReferenceMock.mock.calls[0][1];
     expect(config.customCss).toBeUndefined();
   });
+
+  it("loads spec from Scalar registry via sources URL", async () => {
+    await loadApiDocs();
+
+    const config = createApiReferenceMock.mock.calls[0][1];
+    expect(config.sources).toBeDefined();
+    expect(config.sources[0].url).toContain("registry.scalar.com/@mitre/apis/vulcan");
+  });
+
+  describe("customFetch credentials handling", () => {
+    it("includes credentials for same-origin requests", async () => {
+      await loadApiDocs();
+
+      const config = createApiReferenceMock.mock.calls[0][1];
+      const mockFetch = vi.fn(() => Promise.resolve(new Response()));
+      vi.stubGlobal("fetch", mockFetch);
+
+      await config.customFetch("/api/projects", {});
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/projects",
+        expect.objectContaining({ credentials: "include" })
+      );
+
+      vi.unstubAllGlobals();
+    });
+
+    it("does NOT include credentials for cross-origin requests", async () => {
+      await loadApiDocs();
+
+      const config = createApiReferenceMock.mock.calls[0][1];
+      const mockFetch = vi.fn(() => Promise.resolve(new Response()));
+      vi.stubGlobal("fetch", mockFetch);
+
+      await config.customFetch("https://registry.scalar.com/@mitre/apis/vulcan/latest?format=json", {});
+
+      const callOpts = mockFetch.mock.calls[0][1];
+      expect(callOpts.credentials).toBeUndefined();
+
+      vi.unstubAllGlobals();
+    });
+  });
 });

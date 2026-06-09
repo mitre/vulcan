@@ -31,6 +31,11 @@ RSpec.describe 'API Docs (Scalar viewer)' do
         get '/api/docs'
         expect(response.body).to include('api_docs')
       end
+
+      it 'does not embed inline spec (loaded from Scalar registry via JS)' do
+        get '/api/docs'
+        expect(response.body).not_to include('openapi-spec')
+      end
     end
   end
 end

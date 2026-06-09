@@ -13,7 +13,8 @@ document.addEventListener("DOMContentLoaded", function () {
   Scalar.createApiReference("#scalar-docs", {
     sources: [
       {
-        url: "/api/docs/openapi.yaml",
+        title: "Vulcan API",
+        url: "https://registry.scalar.com/@mitre/apis/vulcan/latest?format=json",
       },
     ],
     theme: "kepler",
@@ -26,9 +27,15 @@ document.addEventListener("DOMContentLoaded", function () {
     authentication: {
       preferredSecurityScheme: "cookieAuth",
     },
-    // Direct fetch with cookies — bypasses Scalar's sandboxed iframe proxy.
+    // Include cookies only for same-origin API requests ("Try it" button).
+    // Cross-origin fetches (registry spec load) must NOT send credentials
+    // because the registry responds with Access-Control-Allow-Origin: *.
     customFetch: function (input, init) {
-      return window.fetch(input, Object.assign({}, init, { credentials: "include" }));
+      var url = typeof input === "string" ? input : input.url || "";
+      var sameOrigin = url.startsWith("/") || url.startsWith(window.location.origin);
+      var opts = Object.assign({}, init);
+      if (sameOrigin) opts.credentials = "include";
+      return window.fetch(input, opts);
     },
     // Inject Rails CSRF token on every mutation request.
     onBeforeRequest: function (ref) {
