@@ -1,2 +1,3 @@
 ruby 3.4.9
-nodejs 22.13.1
+nodejs 24
+yarn latest
