@@ -33,4 +33,35 @@ RSpec.describe ComponentSyncEvent do
       expect(described_class.new(valid_attrs)).to be_valid
     end
   end
+
+  describe 'status state machine (v2-480.40)' do
+    let(:event) { described_class.create!(valid_attrs(status: 'pending')) }
+
+    # Same-state (X → X) is a no-op — status_changed? returns false so the
+    # validator never fires. Only cross-state transitions are tested here.
+    {
+      'pending' => { allowed: %w[analyzed applied failed], denied: %w[undone] },
+      'analyzed' => { allowed: %w[applied failed], denied: %w[pending undone] },
+      'applied' => { allowed: %w[undone], denied: %w[pending analyzed failed] },
+      'failed' => { allowed: [], denied: %w[pending analyzed applied undone] },
+      'undone' => { allowed: [], denied: %w[pending analyzed applied failed] }
+    }.each do |from, paths|
+      paths[:allowed].each do |to|
+        it "allows #{from} → #{to}" do
+          event.update_columns(status: from) # bypass validation to seed
+          event.reload
+          expect(event.update(status: to)).to be(true), "expected #{from} → #{to} to be allowed; errors=#{event.errors.full_messages.inspect}"
+        end
+      end
+
+      paths[:denied].each do |to|
+        it "rejects #{from} → #{to}" do
+          event.update_columns(status: from)
+          event.reload
+          expect(event.update(status: to)).to be(false)
+          expect(event.errors[:status].join).to match(/cannot transition/i)
+        end
+      end
+    end
+  end
 end

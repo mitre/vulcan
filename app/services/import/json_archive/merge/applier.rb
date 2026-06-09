@@ -482,7 +482,12 @@ module Import
           new_value = case verb
                       when :theirs then theirs_hash[field]
                       when :ours then ours_hash[field]
-                      else return # :conflict, :newer, etc. — Phase 1 does not auto-merge
+                      else
+                        # :conflict / :newer / :manual / :union — Phase 1 does
+                        # not auto-merge. Log the skip so the audit trail
+                        # captures the divergence operators must reconcile.
+                        log_skipped_review_conflict(review, field, ours_hash[field], theirs_hash[field])
+                        return
                       end
 
           # addressed_by_rule_id is a bigint FK; theirs carries the archive
@@ -522,6 +527,23 @@ module Import
             entity_type: 'review', entity_key: review.id.to_s,
             reason: 'review validation failed during update',
             original: ours_hash, errors: e
+          )
+        end
+
+        # Capture a review-field divergence that the applier skipped because
+        # the resolution was not :theirs/:ours. Mirrors log_skipped_conflict
+        # for rule fields. v2-480.40.
+        def log_skipped_review_conflict(review, field, old_value, new_value)
+          MergeOperation.create!(
+            component_sync_event: @sync_event,
+            entity_type: 'review',
+            entity_id: review.id,
+            entity_key: review.id.to_s,
+            operation: 'skip',
+            field_name: field,
+            old_value: old_value.to_s,
+            new_value: new_value.to_s,
+            source: 'conflict_resolved'
           )
         end
 
@@ -577,21 +599,18 @@ module Import
           # is an empty join-table stub (no validations, no callbacks);
           # upsert_all + on_duplicate: :skip is the correct idempotent
           # write per the design doc and v2-480.13 FK convention.
-          result = RuleSatisfaction.upsert_all(
+          # v2-480.40: returning: %w[...] makes the result array empty
+          # when the row already existed, so log_satisfaction_insert no
+          # longer double-counts on re-apply of the same plan.
+          inserted = RuleSatisfaction.upsert_all(
             [{ rule_id: rule_db_id, satisfied_by_rule_id: satisfier_db_id }],
             unique_by: %i[rule_id satisfied_by_rule_id],
             on_duplicate: :skip,
-            returning: false
+            returning: %w[rule_id satisfied_by_rule_id]
           )
           # rubocop:enable Rails/SkipsModelValidations
 
-          # upsert_all returns an Array<Hash> of inserted rows (returning: false skips that);
-          # we use record_rowcount via raw connection diagnostic. Simpler: query existence
-          # afterwards — present means we either just inserted OR it already existed.
-          # Either way, log an operation for audit (operation=insert; idempotent retries
-          # produce an extra log row but the underlying state is unchanged).
-          _ = result # suppress UnusedMethodArgument
-          log_satisfaction_insert(sat, rule_db_id, satisfier_db_id)
+          log_satisfaction_insert(sat, rule_db_id, satisfier_db_id) if inserted.any?
         end
 
         def apply_new_memberships

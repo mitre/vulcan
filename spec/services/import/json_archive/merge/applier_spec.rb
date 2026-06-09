@@ -1020,6 +1020,64 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
     end
   end
 
+  describe '#call (review-conflict skip audit + idempotency v2-480.40)' do
+    let(:target_rule) { component.rules.first }
+    let(:existing_review) do
+      create(:review, rule: target_rule, user: create(:user, email: 'cc@example.com'),
+                      action: 'comment', section: 'check_content',
+                      comment: 'existing', triage_status: 'concur')
+    end
+    let(:ours_h) do
+      { 'external_id' => existing_review.id, 'rule_id' => target_rule.rule_id,
+        'comment' => 'existing', 'created_at' => existing_review.created_at.iso8601(6),
+        'triage_status' => 'concur' }
+    end
+    let(:theirs_h) { ours_h.merge('triage_status' => 'non_concur') }
+    # Use a verb that's not :theirs/:ours so the skip path fires.
+    let(:conflict_strategy) do
+      Import::JsonArchive::Merge::Strategy.new(
+        overrides: { review: { 'triage_status' => :conflict } }
+      )
+    end
+    let(:conflict_plan) do
+      p = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id, strategy: conflict_strategy, manifest: manifest
+      )
+      p.add_review_partition(matched: [{ ours: ours_h, theirs: theirs_h }], only_ours: [], only_theirs: [])
+      p
+    end
+
+    before { existing_review }
+
+    it 'writes a skip MergeOperation row when verb=:conflict on a divergent review field' do
+      expect do
+        described_class.new(merge_plan: conflict_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+      end.to change(MergeOperation.where(entity_type: 'review', operation: 'skip'), :count).by(1)
+
+      op = MergeOperation.where(entity_type: 'review', operation: 'skip').last
+      expect(op.field_name).to eq('triage_status')
+      expect(op.source).to eq('conflict_resolved')
+      expect(op.old_value).to eq('concur')
+      expect(op.new_value).to eq('non_concur')
+    end
+
+    it 'a second apply against the same already-applied satisfaction does NOT log a duplicate insert (v2-480.40)' do
+      anchor = component.rules.first
+      satisfier = component.rules.second
+      sat_hash = { 'rule_id' => anchor.rule_id, 'satisfied_by_rule_id' => satisfier.rule_id }
+      # Pre-create the satisfaction so upsert_all hits the on_duplicate path.
+      RuleSatisfaction.create!(rule_id: anchor.id, satisfied_by_rule_id: satisfier.id)
+      idempotent_plan = Import::JsonArchive::Merge::MergePlan.new(
+        component_id: component.id, strategy: strategy, manifest: manifest
+      )
+      idempotent_plan.add_satisfaction_partition(matched: [], only_ours: [], only_theirs: [sat_hash])
+
+      expect do
+        described_class.new(merge_plan: idempotent_plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+      end.not_to(change(MergeOperation.where(entity_type: 'satisfaction', operation: 'insert'), :count))
+    end
+  end
+
   describe '#call (advisory lock + reload-locked precondition)' do
     subject(:result) do
       described_class.new(merge_plan: plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call

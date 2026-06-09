@@ -40,4 +40,36 @@ class ComponentSyncEvent < ApplicationRecord
                           message: 'this archive has already been applied to this component' },
             if: -> { archive_hash.present? && status == 'applied' }
   # rubocop:enable Rails/I18nLocaleTexts
+
+  # v2-480.40 status state machine. Lifecycle progresses forward only:
+  #   pending  → {analyzed, applied, failed}
+  #   analyzed → {applied, failed}
+  #   applied  → {undone}
+  #   failed, undone — terminal
+  # Enforced as a model validation. The DB-level partial index on the
+  # 'pending' state remains the race-safe authority; this validator gives
+  # an operator-readable error when in-process code attempts a backward
+  # or terminal-state transition.
+  ALLOWED_STATUS_TRANSITIONS = {
+    'pending' => %w[analyzed applied failed].freeze,
+    'analyzed' => %w[applied failed].freeze,
+    'applied' => %w[undone].freeze,
+    'failed' => [].freeze,
+    'undone' => [].freeze
+  }.freeze
+
+  validate :status_transition_allowed, on: :update
+
+  private
+
+  def status_transition_allowed
+    return unless status_changed?
+    return if status_was.nil? # newly-loaded record
+
+    allowed = ALLOWED_STATUS_TRANSITIONS.fetch(status_was, [])
+    return if allowed.include?(status)
+
+    errors.add(:status, "cannot transition from '#{status_was}' to '#{status}' " \
+                        "(allowed: #{allowed.empty? ? 'terminal state' : allowed.join(', ')})")
+  end
 end
