@@ -13,6 +13,34 @@ module Import
       class Strategy
         VALID_STRATEGY_RESOLUTIONS = %i[ours theirs newer conflict union skip manual].freeze
 
+        # v2-480.39 — single source of truth for verb → {resolution, source}.
+        # RuleFieldDiffer / NestedAssociationDiffer consult :resolution to
+        # build FieldChange; Applier consults :source to stamp MergeOperation.
+        # Verbs not in this map are programmer errors (Strategy validates
+        # overrides at construction). :newer/:manual map to :conflict —
+        # Phase 1 does not auto-merge those; the operator must reconcile.
+        VERB_TRANSLATION = {
+          ours: { resolution: :auto_ours, source: 'ours' }.freeze,
+          theirs: { resolution: :auto_theirs, source: 'theirs' }.freeze,
+          skip: { resolution: :auto_ours, source: 'ours' }.freeze,
+          union: { resolution: :auto_merged, source: 'auto_merge' }.freeze,
+          conflict: { resolution: :conflict, source: 'conflict_resolved' }.freeze,
+          newer: { resolution: :conflict, source: 'conflict_resolved' }.freeze,
+          manual: { resolution: :conflict, source: 'conflict_resolved' }.freeze
+        }.freeze
+
+        # Centralized verb → {resolution:, source:} lookup. Returns nil
+        # when verb is not in the canonical map (callers fall back to
+        # :conflict — matches the legacy fallthrough but is now explicit).
+        def self.resolve_verb(verb)
+          VERB_TRANSLATION[verb]
+        end
+
+        # Scalar entities — :union is only valid for set-like entities
+        # (memberships, satisfactions). validate_resolutions! enforces.
+        SCALAR_FIELD_ENTITIES = %i[rule review].freeze
+        private_constant :SCALAR_FIELD_ENTITIES
+
         # Defaults are tuned for the receiving instance:
         # - rule content fields default to :conflict because content drift
         #   from another instance should be reviewed, not silently overwritten
@@ -83,15 +111,32 @@ module Import
         private
 
         def validate_resolutions!
-          @overrides.each_value do |entity_overrides|
-            resolutions = entity_overrides.is_a?(Hash) ? entity_overrides.values : [entity_overrides]
-            resolutions.each do |r|
-              next if VALID_STRATEGY_RESOLUTIONS.include?(r)
-
-              raise ArgumentError,
-                    "unknown resolution: #{r.inspect} (valid: #{VALID_STRATEGY_RESOLUTIONS.inspect})"
+          @overrides.each do |entity, entity_overrides|
+            if entity_overrides.is_a?(Hash)
+              entity_overrides.each_value { |r| validate_field_resolution!(entity, r) }
+            else
+              validate_entity_resolution!(entity_overrides)
             end
           end
+        end
+
+        def validate_field_resolution!(entity, resolution)
+          unless VALID_STRATEGY_RESOLUTIONS.include?(resolution)
+            raise ArgumentError,
+                  "unknown resolution: #{resolution.inspect} (valid: #{VALID_STRATEGY_RESOLUTIONS.inspect})"
+          end
+          return unless resolution == :union && SCALAR_FIELD_ENTITIES.include?(entity)
+
+          raise ArgumentError,
+                ":union is not valid for scalar #{entity} fields — only set-like entities " \
+                '(memberships, satisfactions) accept :union'
+        end
+
+        def validate_entity_resolution!(resolution)
+          return if VALID_STRATEGY_RESOLUTIONS.include?(resolution)
+
+          raise ArgumentError,
+                "unknown resolution: #{resolution.inspect} (valid: #{VALID_STRATEGY_RESOLUTIONS.inspect})"
         end
       end
     end

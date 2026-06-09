@@ -5,6 +5,19 @@ class Review < ApplicationRecord
   include VulcanAuditable
   include ImportedAttribution
 
+  # Lifecycle columns the merge engine may legitimately update on a
+  # matched review (triage state, adjudication, addressed_by FK). The
+  # full review body (comment, action, rule_id, created_at, etc.) is
+  # immutable post-creation. Mirrors Rule::MERGEABLE_FIELDS as the
+  # canonical single source of truth — Applier, BackupSerializer
+  # review-projection, and ReviewBuilder consult this list.
+  # v2-480.39.
+  MERGEABLE_FIELDS = %w[
+    triage_status triage_set_by_imported_email triage_set_by_imported_name
+    adjudicated_at adjudicated_by_imported_email adjudicated_by_imported_name
+    addressed_by_rule_id
+  ].freeze
+
   # see app/models/concerns/
   # imported_attribution.rb for the macro implementation. The three
   # declarations below replace six hand-written method bodies.

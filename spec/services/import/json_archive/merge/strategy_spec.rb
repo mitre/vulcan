@@ -71,4 +71,57 @@ RSpec.describe Import::JsonArchive::Merge::Strategy, type: :service do
       expect(described_class::DEFAULT_STRATEGY).to be_frozen
     end
   end
+
+  describe '.resolve_verb (v2-480.39 VERB_TRANSLATION single source of truth)' do
+    it 'maps :ours to auto_ours + ours' do
+      expect(described_class.resolve_verb(:ours)).to eq(resolution: :auto_ours, source: 'ours')
+    end
+
+    it 'maps :theirs to auto_theirs + theirs' do
+      expect(described_class.resolve_verb(:theirs)).to eq(resolution: :auto_theirs, source: 'theirs')
+    end
+
+    it 'maps :union to auto_merged + auto_merge' do
+      expect(described_class.resolve_verb(:union)).to eq(resolution: :auto_merged, source: 'auto_merge')
+    end
+
+    it ':conflict / :newer / :manual all resolve to :conflict + conflict_resolved (NOT auto_merge)' do
+      %i[conflict newer manual].each do |verb|
+        tuple = described_class.resolve_verb(verb)
+        expect(tuple[:resolution]).to eq(:conflict), "verb=#{verb} resolution"
+        expect(tuple[:source]).to eq('conflict_resolved'), "verb=#{verb} source"
+      end
+    end
+
+    it 'every VALID_STRATEGY_RESOLUTIONS verb has a translation tuple' do
+      missing = described_class::VALID_STRATEGY_RESOLUTIONS - described_class::VERB_TRANSLATION.keys
+      expect(missing).to be_empty, "verbs missing from VERB_TRANSLATION: #{missing.inspect}"
+    end
+
+    it 'returns nil for unknown verbs (caller falls back explicitly)' do
+      expect(described_class.resolve_verb(:nonsense)).to be_nil
+    end
+  end
+
+  describe '#validate_resolutions! (v2-480.39 :union rejection for scalar fields)' do
+    it 'rejects :union for a rule scalar field' do
+      expect do
+        described_class.new(overrides: { rule: { 'fixtext' => :union } })
+      end.to raise_error(ArgumentError, /:union is not valid for scalar rule/i)
+    end
+
+    it 'rejects :union for a review scalar field' do
+      expect do
+        described_class.new(overrides: { review: { 'triage_status' => :union } })
+      end.to raise_error(ArgumentError, /:union is not valid for scalar review/i)
+    end
+
+    it 'still accepts :union for memberships (set-like entity)' do
+      expect { described_class.new(overrides: { memberships: :union }) }.not_to raise_error
+    end
+
+    it 'still accepts :union for satisfactions (set-like entity)' do
+      expect { described_class.new(overrides: { satisfactions: :union }) }.not_to raise_error
+    end
+  end
 end

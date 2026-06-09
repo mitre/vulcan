@@ -18,15 +18,10 @@ module Import
         TRANSACTION_ISOLATION = :serializable
         VALID_SOURCES = %w[theirs ours auto_merge].freeze
 
-        # Reviews are mostly immutable, but a few lifecycle fields legit
-        # change post-creation (triage state, adjudication, rule-addressed
-        # links). The merge engine respects Strategy on these — by
-        # default ours wins on triage_status.
-        REVIEW_MERGEABLE_FIELDS = %w[
-          triage_status triage_set_by_imported_email triage_set_by_imported_name
-          adjudicated_at adjudicated_by_imported_email adjudicated_by_imported_name
-          addressed_by_rule_id
-        ].freeze
+        # The merge-mergeable surface for Review lives on the Review model
+        # as the canonical single source of truth (v2-480.39). Aliased here
+        # for callsite legibility; never define a divergent list locally.
+        REVIEW_MERGEABLE_FIELDS = Review::MERGEABLE_FIELDS
 
         # Memberships imported from theirs always land at the viewer tier
         # regardless of what role the archive carries. NEVER auto-escalates
@@ -552,11 +547,11 @@ module Import
         end
 
         def source_for_verb(verb)
-          case verb
-          when :ours then 'ours'
-          when :theirs then 'theirs'
-          else 'auto_merge'
-          end
+          # v2-480.39: consult the central VERB_TRANSLATION instead of
+          # falling through to 'auto_merge' for :conflict/:newer/:manual —
+          # those resolutions are NOT auto-merges and must label the
+          # MergeOperation row honestly.
+          (Strategy.resolve_verb(verb) || {})[:source] || 'conflict_resolved'
         end
 
         # Insert any only_theirs satisfactions, resolving the archive

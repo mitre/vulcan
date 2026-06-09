@@ -23,12 +23,12 @@ module Import
         # :skip behaves as :auto_ours (keep our value, drop theirs).
         # Unmapped verbs (:newer, :manual, :conflict, unknowns) collapse
         # to :conflict so a human has to weigh in.
-        STRATEGY_VERB_MAP = {
-          ours: :auto_ours,
-          theirs: :auto_theirs,
-          skip: :auto_ours,
-          union: :auto_merged
-        }.freeze
+        # v2-480.39: derived from Strategy::VERB_TRANSLATION single source
+        # of truth; kept here as a derived constant for the existing
+        # consumers (Applier source_for delegation, spec readability).
+        STRATEGY_VERB_MAP = Strategy::VERB_TRANSLATION
+                            .transform_values { |t| t[:resolution] }
+                            .freeze
 
         # target_association: nil (top-level rule field) | :checks |
         #   :disa_rule_descriptions — routes Applier#apply_one_rule_change
