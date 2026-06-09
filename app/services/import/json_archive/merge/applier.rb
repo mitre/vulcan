@@ -166,22 +166,12 @@ module Import
         # F14-safe semantics), then capture each effective change as a
         # MergeOperation row.
         def apply_rule_field_changes
-          @merge_plan.auto_merged.group_by { |c| rule_id_for(c) }.each do |rule_id, rule_changes|
+          @merge_plan.auto_merged_by_rule_id.each do |rule_id, rule_changes|
             rule = ours_rules_by_id[rule_id]
             next if rule.nil? # defensive: matched bucket should never carry an unknown rule_id
 
             apply_changes_to_rule(rule, rule_changes)
           end
-        end
-
-        # FieldChange records carry no rule_id field, but the MergePlan
-        # groups them by rule_id internally. Build a reverse lookup once
-        # per call so the partition iteration above is O(N).
-        def rule_id_for(change)
-          @field_changes_index ||= @merge_plan.instance_variable_get(:@field_changes)
-                                              .flat_map { |rid, list| list.map { |c| [c, rid] } }
-                                              .to_h
-          @field_changes_index[change]
         end
 
         def apply_changes_to_rule(rule, changes)
@@ -353,7 +343,7 @@ module Import
         end
 
         def record_skipped_conflicts
-          @merge_plan.conflicts.group_by { |c| rule_id_for(c) }.each do |rule_id, changes|
+          @merge_plan.conflicts_by_rule_id.each do |rule_id, changes|
             rule = ours_rules_by_id[rule_id]
             next if rule.nil?
 

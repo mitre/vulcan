@@ -111,4 +111,44 @@ RSpec.describe Import::JsonArchive::Merge::MergePlan, type: :service do
       expect(plan.conflicts.map(&:field)).to contain_exactly('fixtext', 'check_content')
     end
   end
+
+  describe 'field_changes_by_rule_id read-side accessors (v2-480.42)' do
+    let(:plan) do
+      described_class.new(component_id: 1, strategy: 'default', manifest: { 'backup_format_version' => '1.1' })
+    end
+
+    def fc(field, resolution)
+      Import::JsonArchive::Merge::RuleFieldDiffer::FieldChange.new(
+        field: field, from: 'a', to: 'b', resolution: resolution, locked: false, reason: ''
+      )
+    end
+
+    before do
+      plan.add_field_changes('V-1', [fc('title', :auto_theirs), fc('fixtext', :conflict)])
+      plan.add_field_changes('V-2', [fc('check_content', :locked_conflict)])
+      plan.add_field_changes('V-3', [fc('title', :auto_ours)])
+    end
+
+    it 'field_changes_by_rule_id returns a frozen Hash keyed by rule_id' do
+      out = plan.field_changes_by_rule_id
+      expect(out).to be_frozen
+      expect(out.keys).to contain_exactly('V-1', 'V-2', 'V-3')
+      expect(out['V-1'].map(&:field)).to contain_exactly('title', 'fixtext')
+      expect(out['V-1']).to be_frozen
+    end
+
+    it 'auto_merged_by_rule_id contains only auto_* resolutions' do
+      out = plan.auto_merged_by_rule_id
+      expect(out.keys).to contain_exactly('V-1', 'V-3')
+      expect(out['V-1'].map(&:field)).to eq(['title'])
+      expect(out['V-3'].map(&:field)).to eq(['title'])
+    end
+
+    it 'conflicts_by_rule_id contains only conflict/locked_conflict resolutions' do
+      out = plan.conflicts_by_rule_id
+      expect(out.keys).to contain_exactly('V-1', 'V-2')
+      expect(out['V-1'].map(&:field)).to eq(['fixtext'])
+      expect(out['V-2'].map(&:field)).to eq(['check_content'])
+    end
+  end
 end

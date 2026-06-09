@@ -69,6 +69,21 @@ module Import
           (@field_changes[rule_id] ||= []).concat(Array(changes))
         end
 
+        # Read-side access to the field-changes index. Returns a frozen
+        # Hash{rule_id => [FieldChange]} so callers (Applier) iterate
+        # directly without resorting to instance_variable_get. v2-480.42.
+        def field_changes_by_rule_id
+          @field_changes.transform_values { |list| list.dup.freeze }.freeze
+        end
+
+        def auto_merged_by_rule_id
+          filter_by_resolution(%i[auto_ours auto_theirs auto_merged])
+        end
+
+        def conflicts_by_rule_id
+          filter_by_resolution(%i[conflict locked_conflict])
+        end
+
         def add_resolution_log_entry(entry:)
           raise ArgumentError, 'resolution_log entries must use string keys (F19)' unless entry.keys.all?(String)
           raise ArgumentError, 'resolution_log entries must use string values (F19)' unless entry.values.all?(String)
@@ -140,6 +155,18 @@ module Import
         end
 
         private
+
+        # Walk @field_changes once, returning a frozen Hash{rule_id =>
+        # frozen [FieldChange]} containing only changes whose resolution
+        # is in `resolutions`. Empty rule_ids dropped.
+        def filter_by_resolution(resolutions)
+          out = {}
+          @field_changes.each do |rule_id, list|
+            filtered = list.select { |c| resolutions.include?(c.resolution) }
+            out[rule_id] = filtered.dup.freeze if filtered.any?
+          end
+          out.freeze
+        end
 
         def record_partition(entity_key, matched, only_ours, only_theirs)
           @partitions[entity_key] = {
