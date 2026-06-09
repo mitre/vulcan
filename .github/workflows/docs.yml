@@ -7,6 +7,8 @@ on:
       - main
     paths:
       - 'docs/**'
+      - 'doc/openapi.yaml'
+      - 'doc/openapi/**'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
@@ -37,6 +39,12 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      - name: Install root dependencies (for redocly CLI)
+        run: yarn install --frozen-lockfile
+
+      - name: Generate OpenAPI JSON for docs
+        run: yarn openapi:docs
 
       - name: Install and build docs
         env:

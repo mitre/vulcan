@@ -25,6 +25,6 @@ post:
                   message:
                     - Reset link generated. Copy it and deliver to the user.
                   variant: success
-                reset_url: "http://localhost:3000/users/password/edit?reset_password_token=abc123def456"
+                reset_url: "https://vulcan.example.org/users/password/edit?reset_password_token=abc123def456"
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

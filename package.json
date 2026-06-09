@@ -66,6 +66,7 @@
     "build:watch": "chokidar 'app/javascript/**/*' -c 'yarn build'",
     "dev": "concurrently \"rails server\" \"yarn build:watch\"",
     "openapi:bundle": "redocly bundle doc/openapi/openapi.yaml -o doc/openapi.yaml",
+    "openapi:docs": "redocly bundle doc/openapi/openapi.yaml -o docs/data/openapi.json --ext json",
     "openapi:lint": "redocly lint doc/openapi/openapi.yaml",
     "docs:dev": "cd docs && yarn install --frozen-lockfile --silent && yarn dev",
     "docs:build": "cd docs && yarn install --frozen-lockfile --silent && yarn build",

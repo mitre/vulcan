@@ -2,7 +2,7 @@
 
 **DISA — Version 4, Release 1 — 15 August 2022**
 
-[Download original document (DOCX)](attachments/U_Vendor_STIG_Process_Guide_V4R1_20220815.docx)
+[Download original document (DOCX)](/attachments/U_Vendor_STIG_Process_Guide_V4R1_20220815.docx)
 
 ---
 
