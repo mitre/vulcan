@@ -163,6 +163,12 @@ defaults: &defaults
     # 0 = disabled (default); operators set VULCAN_SYNC_MAX_SNAPSHOT_BYTES
     # to a positive integer to enforce. v2-480.38.
     max_snapshot_bytes_per_component: <%= ENV.fetch('VULCAN_SYNC_MAX_SNAPSHOT_BYTES', '0').to_i %>
+    # When true, the merge engine refuses any archive whose manifest does
+    # not carry a 'signature' field. Default false preserves existing
+    # behavior. NOTE (v2-480.9): presence-only stub — full HMAC
+    # verification of the signature is a separate follow-up. Operators
+    # who want the gate today should also restrict who can upload archives.
+    require_signed_archives: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_SYNC_REQUIRE_SIGNED_ARCHIVES']) || false %>
   slack:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_SLACK_COMMS']) || false %>
     api_token: <%= ENV['VULCAN_SLACK_API_TOKEN'] %>
