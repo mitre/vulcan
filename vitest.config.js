@@ -8,7 +8,11 @@ export default defineConfig({
   plugins: [vue()],
   resolve: {
     alias: {
-      // Critical: Vue Test Utils uses CJS, Vitest uses ESM
+      // Critical: Vue Test Utils uses CJS, Vitest uses ESM.
+      // Runtime-only build: VTU-optimal; SFC templates are precompiled by
+      // vite-plugin-vue2. Production packs use the FULL build (esbuild
+      // useFullVue: true) for HAML el-compilation — createVulcanApp.spec
+      // documents that divergence via Vue.config.warnHandler.
       vue: "vue/dist/vue.runtime.common.js",
       "@": path.resolve(__dirname, "app/javascript"),
       "@test": path.resolve(__dirname, "spec/javascript"),

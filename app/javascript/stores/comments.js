@@ -39,7 +39,10 @@ export const useCommentsStore = defineStore("comments", () => {
       section: raw.section ?? null,
       triageStatus: raw.triage_status ?? null,
       createdAt: raw.created_at ?? null,
-      reactions: raw.reactions ?? {},
+      // null (not {}) when absent — {} passes CommentThread's v-if but
+      // fails ReactionButtons' validator. The wire always sends
+      // { up, down, mine } when reaction data exists (Reaction.summary).
+      reactions: raw.reactions ?? null,
       responsesCount: raw.responses_count ?? 0,
       isImported: raw.commenter_imported ?? false,
       duplicateOfReviewId: raw.duplicate_of_review_id ?? null,

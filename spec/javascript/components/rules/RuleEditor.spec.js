@@ -74,16 +74,16 @@ describe("RuleEditor", () => {
       wrapper = createWrapper();
       const tabs = wrapper.findComponent({ name: "BTabs" });
       // b-tabs contains multiple b-tab children
-      const btabs = tabs.findAll({ name: "BTab" });
+      const btabs = tabs.findAllComponents({ name: "BTab" });
       expect(btabs.length).toBe(3);
     });
 
     it("second tab is 'Test Script' for InSpec control body editing", () => {
       wrapper = createWrapper();
       const tabs = wrapper.findComponent({ name: "BTabs" });
-      const btabs = tabs.findAll({ name: "BTab" });
+      const btabs = tabs.findAllComponents({ name: "BTab" });
       // Verify second tab (index 1) has title "Test Script" via props
-      expect(btabs.wrappers[1].props("title")).toBe("Test Script");
+      expect(btabs.at(1).props("title")).toBe("Test Script");
     });
   });
 

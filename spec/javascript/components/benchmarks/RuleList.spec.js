@@ -519,9 +519,11 @@ describe("RuleList", () => {
   // ACCESSIBILITY
   // ==========================================
   describe("scroll container layout", () => {
+    // data-test selector instead of { ref: } — ref selectors with find()
+    // are removed in @vue/test-utils v2 (migration guide: use data-test).
     it("renders title and filter outside the scroll container", () => {
       wrapper = createWrapper({ type: "stig", rules: stigRules });
-      const scrollContainer = wrapper.find({ ref: "ruleListContainer" });
+      const scrollContainer = wrapper.find('[data-test="rule-list-scroll-container"]');
       expect(scrollContainer.exists()).toBe(true);
       // Heading and filter dropdown should NOT be inside the overflow scroll area
       expect(scrollContainer.find("h5").exists()).toBe(false);
@@ -530,7 +532,7 @@ describe("RuleList", () => {
 
     it("renders rule listbox inside the scroll container", () => {
       wrapper = createWrapper({ type: "stig", rules: stigRules });
-      const scrollContainer = wrapper.find({ ref: "ruleListContainer" });
+      const scrollContainer = wrapper.find('[data-test="rule-list-scroll-container"]');
       expect(scrollContainer.find("[role='listbox']").exists()).toBe(true);
     });
   });

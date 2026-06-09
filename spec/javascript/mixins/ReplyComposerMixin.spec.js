@@ -9,10 +9,10 @@ function createHost(methodOverrides = {}) {
     template: "<div />",
     methods: methodOverrides,
   };
-  return mount(Host, {
-    localVue,
-    mocks: { $bvModal: { show: vi.fn() } },
-  });
+  // No mocks: BootstrapVue installs $bvModal as a read-only property —
+  // mocks: { $bvModal } cannot overwrite it and only emits VTU warnings.
+  // Tests spy on the real injection: vi.spyOn(w.vm.$bvModal, "show").
+  return mount(Host, { localVue });
 }
 
 const replyPayload = {

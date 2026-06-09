@@ -277,7 +277,7 @@ export default {
   props: {
     effectivePermissions: {
       type: String,
-      required: true,
+      default: null,
     },
     currentUserId: {
       type: Number,

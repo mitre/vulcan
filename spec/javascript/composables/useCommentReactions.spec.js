@@ -79,7 +79,11 @@ describe("useCommentReactions", () => {
       expect(apply).toHaveBeenLastCalledWith(serverReactions);
     });
 
+    // Error-path tests spy console.error and ASSERT the log — the composable
+    // intentionally logs failures, so the test pins that contract instead of
+    // leaking it as suite stderr noise.
     it("reverts to previous state on API error", async () => {
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       toggleReaction.mockRejectedValue(new Error("500"));
 
       const { toggle } = useCommentReactions();
@@ -90,9 +94,15 @@ describe("useCommentReactions", () => {
 
       expect(apply).toHaveBeenCalledTimes(2);
       expect(apply).toHaveBeenLastCalledWith(prev);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[useCommentReactions] Toggle failed:",
+        expect.any(Error),
+      );
+      consoleSpy.mockRestore();
     });
 
     it("sets error ref on API failure", async () => {
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       const apiError = new Error("403 Forbidden");
       toggleReaction.mockRejectedValue(apiError);
 
@@ -103,9 +113,12 @@ describe("useCommentReactions", () => {
       await toggle(42, "up", prev, apply);
 
       expect(error.value).toBe(apiError);
+      expect(consoleSpy).toHaveBeenCalledWith("[useCommentReactions] Toggle failed:", apiError);
+      consoleSpy.mockRestore();
     });
 
     it("clears error ref on successful toggle", async () => {
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       toggleReaction.mockRejectedValueOnce(new Error("500"));
       toggleReaction.mockResolvedValueOnce({
         data: { reactions: { up: 1, down: 0, mine: "up" } },
@@ -120,6 +133,8 @@ describe("useCommentReactions", () => {
 
       await toggle(42, "up", prev, apply);
       expect(error.value).toBeNull();
+      expect(consoleSpy).toHaveBeenCalledTimes(1);
+      consoleSpy.mockRestore();
     });
 
     it("prevents duplicate toggles while pending", async () => {

@@ -116,6 +116,45 @@ describe("CommentThread", () => {
     expect(getReviewResponses).toHaveBeenCalledTimes(1);
   });
 
+  // REQUIREMENT: the wire (Reaction.summary via ReviewBlueprint) always sends
+  // { up, down, mine } for replies that have reaction data; rows without it
+  // normalize to null and the buttons stay hidden. {} must never reach
+  // ReactionButtons (its validator requires up/down keys).
+  it("renders ReactionButtons for wire-shape reactions and hides them when absent", async () => {
+    getReviewResponses.mockResolvedValue({
+      data: {
+        rows: [
+          {
+            id: 7,
+            comment: "with reactions",
+            commenter_display_name: "Replier",
+            commenter_imported: false,
+            created_at: "2026-05-04T00:00:00Z",
+            reactions: { up: 2, down: 0, mine: "up" },
+          },
+          {
+            id: 8,
+            comment: "without reactions",
+            commenter_display_name: "Other",
+            commenter_imported: false,
+            created_at: "2026-05-04T00:01:00Z",
+          },
+        ],
+      },
+    });
+
+    const w = mount(CommentThread, {
+      localVue,
+      propsData: { parentReviewId: 1, responsesCount: 2 },
+    });
+    await w.find("button[aria-controls]").trigger("click");
+    await new Promise((r) => setTimeout(r, 0));
+
+    const buttons = w.findAllComponents({ name: "ReactionButtons" });
+    expect(buttons).toHaveLength(1);
+    expect(buttons.at(0).props("reactions")).toEqual({ up: 2, down: 0, mine: "up" });
+  });
+
   it("calls the correct endpoint for responses", async () => {
     getReviewResponses.mockResolvedValue({ data: { rows: [] } });
     const w = mount(CommentThread, {

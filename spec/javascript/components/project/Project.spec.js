@@ -168,8 +168,16 @@ describe("Project", () => {
     it("defaults to null when initialProjectState has no permissions", () => {
       const stateWithout = { ...defaultProps.initialProjectState };
       delete stateWithout.effective_permissions;
+      // REQUIREMENT: null permissions is the designed non-member contract —
+      // every child prop in the tree must accept it without Vue warnings.
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       wrapper = createWrapper({ initialProjectState: stateWithout });
       expect(wrapper.vm.effective_permissions).toBeNull();
+      const propWarnings = errorSpy.mock.calls.filter((call) =>
+        String(call[0]).includes('type check failed for prop "effectivePermissions"'),
+      );
+      errorSpy.mockRestore();
+      expect(propWarnings).toEqual([]);
     });
   });
 

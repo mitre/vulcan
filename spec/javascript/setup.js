@@ -50,3 +50,31 @@ if (typeof localStorage === "undefined" || typeof localStorage.clear !== "functi
     },
   };
 }
+
+// jsdom has no layout engine — Range measurement APIs are missing.
+// CodeMirror (via MarkdownTextarea) calls range.getBoundingClientRect()
+// and range.getClientRects() while measuring text. Stub them with empty
+// rects so editor-bearing components mount cleanly in tests.
+// Standard jsdom + CodeMirror fix; remove if jsdom ever implements layout.
+if (typeof Range !== "undefined") {
+  const emptyRect = {
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    width: 0,
+    height: 0,
+    x: 0,
+    y: 0,
+  };
+  if (typeof Range.prototype.getBoundingClientRect !== "function") {
+    Range.prototype.getBoundingClientRect = () => emptyRect;
+  }
+  if (typeof Range.prototype.getClientRects !== "function") {
+    Range.prototype.getClientRects = () => ({
+      length: 0,
+      item: () => null,
+      [Symbol.iterator]: [][Symbol.iterator],
+    });
+  }
+}

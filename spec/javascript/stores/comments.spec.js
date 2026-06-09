@@ -313,7 +313,13 @@ describe("useCommentsStore", () => {
       const raw = { id: 1 };
       const n = store.normalizeComment(raw);
       expect(n.text).toBe("");
-      expect(n.reactions).toEqual({});
+      // REQUIREMENT: absent reactions normalize to null, NOT {}.
+      // The wire (Reaction.summary via ReviewBlueprint) always sends
+      // { up, down, mine } when reactions exist; {} is a fabricated shape
+      // that passes CommentThread's v-if but fails ReactionButtons'
+      // validator ("up" in v && "down" in v). null correctly hides the
+      // buttons when there is no reaction data.
+      expect(n.reactions).toBeNull();
       expect(n.responsesCount).toBe(0);
       expect(n.section).toBeNull();
       expect(n.triageStatus).toBeNull();

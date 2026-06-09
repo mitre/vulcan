@@ -71,7 +71,11 @@
           @click="sortOrder = 'asc'"
         />
       </div>
-      <div ref="ruleListContainer" style="max-height: 600px; overflow-y: auto">
+      <div
+        ref="ruleListContainer"
+        data-test="rule-list-scroll-container"
+        style="max-height: 600px; overflow-y: auto"
+      >
         <div role="listbox" tabindex="0" :aria-label="RULE_TERM.plural" @keydown="handleKeydown">
           <div
             v-for="(rule, index) in sortedRules"

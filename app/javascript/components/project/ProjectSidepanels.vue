@@ -167,7 +167,7 @@ export default {
     },
     effectivePermissions: {
       type: String,
-      required: true,
+      default: null,
     },
     activePanel: {
       type: String,

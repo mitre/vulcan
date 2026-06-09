@@ -174,7 +174,7 @@ export default {
     },
     effectivePermissions: {
       type: String,
-      required: true,
+      default: null,
     },
     readOnly: {
       type: Boolean,

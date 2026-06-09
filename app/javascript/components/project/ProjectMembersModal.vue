@@ -38,7 +38,7 @@ export default {
     },
     effectivePermissions: {
       type: String,
-      required: true,
+      default: null,
     },
     availableRoles: {
       type: Array,

@@ -75,12 +75,9 @@ describe("MembersModal", () => {
         ...defaultProps,
         ...props,
       },
-      mocks: {
-        $bvModal: {
-          show: () => {},
-          hide: () => {},
-        },
-      },
+      // No $bvModal mock: BootstrapVue installs it read-only — mocks cannot
+      // overwrite it and only emit VTU warnings. Spy on the real injection
+      // (vi.spyOn(wrapper.vm.$bvModal, ...)) if a test needs to assert it.
     });
   };
 

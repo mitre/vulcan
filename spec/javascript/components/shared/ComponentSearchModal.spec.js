@@ -93,9 +93,9 @@ describe("ComponentSearchModal", () => {
         BInputGroupText: { template: "<div><slot /></div>" },
         BBadge: { template: "<span><slot /></span>" },
       },
-      mocks: {
-        $bvModal: { show: vi.fn(), hide: vi.fn() },
-      },
+      // No $bvModal mock: BootstrapVue installs it read-only — mocks cannot
+      // overwrite it and only emit VTU warnings. Spy on the real injection
+      // (vi.spyOn(wrapper.vm.$bvModal, ...)) if a test needs to assert it.
     });
   };
 

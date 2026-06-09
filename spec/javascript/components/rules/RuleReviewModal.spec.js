@@ -31,7 +31,9 @@ describe("RuleReviewModal", () => {
         ...props,
       },
       stubs: { BModal: true, BFormGroup: true, BFormSelect: true, BFormTextarea: true, BButton: true },
-      mocks: { $bvModal: { hide: vi.fn() } },
+      // No $bvModal mock: BootstrapVue installs it read-only — mocks cannot
+      // overwrite it and only emit VTU warnings. Spy on the real injection
+      // (vi.spyOn(wrapper.vm.$bvModal, ...)) if a test needs to assert it.
     });
   };
 
