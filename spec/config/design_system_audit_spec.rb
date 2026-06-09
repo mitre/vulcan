@@ -131,6 +131,18 @@ RSpec.describe 'Vulcan Design System audit' do
       --vulcan-input-placeholder-color
       --vulcan-input-disabled-bg
       --vulcan-link-hover-color
+      --vulcan-code-color
+      --vulcan-kbd-bg
+      --vulcan-kbd-color
+      --vulcan-pre-color
+      --vulcan-mark-bg
+      --vulcan-mark-color
+      --vulcan-heading-color
+      --vulcan-hr-color
+      --vulcan-form-valid-color
+      --vulcan-form-valid-border-color
+      --vulcan-form-invalid-color
+      --vulcan-form-invalid-border-color
     ].freeze
 
     it 'all design system variables are defined in :root (light mode)' do
@@ -168,6 +180,20 @@ RSpec.describe 'Vulcan Design System audit' do
       --vulcan-indigo-tint
     ].freeze
 
+    REQUIRED_DARK_NATIVE_ELEMENT_VARS = %w[
+      --vulcan-code-color
+      --vulcan-kbd-bg
+      --vulcan-kbd-color
+      --vulcan-pre-color
+      --vulcan-mark-bg
+      --vulcan-mark-color
+      --vulcan-hr-color
+      --vulcan-form-valid-color
+      --vulcan-form-valid-border-color
+      --vulcan-form-invalid-color
+      --vulcan-form-invalid-border-color
+    ].freeze
+
     it 'extended palette tints are defined in dark mode (used by triage row tints)' do
       missing = REQUIRED_DARK_TINTS.reject { |var| dark_block.include?(var) }
 
@@ -175,6 +201,18 @@ RSpec.describe 'Vulcan Design System audit' do
         raise "#{missing.size} tint variable(s) missing from dark mode block:\n  " \
               "#{missing.join("\n  ")}\n\n" \
               'Without dark mode tints, withdrawn/duplicate/addressed-by row tints are invisible.'
+      end
+    end
+
+    it 'native HTML element variables have dark mode overrides (BS 5.3 port)' do
+      missing = REQUIRED_DARK_NATIVE_ELEMENT_VARS.reject { |var| dark_block.include?(var) }
+
+      if missing.any?
+        raise "#{missing.size} native element variable(s) missing from dark mode block:\n  " \
+              "#{missing.join("\n  ")}\n\n" \
+              'Without dark overrides, <code>, <kbd>, <mark>, <hr>, and form validation colors ' \
+              "use light-mode values on dark backgrounds.\n" \
+              'Port from Bootstrap 5.3 _variables-dark.scss.'
       end
     end
   end

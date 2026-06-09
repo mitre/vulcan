@@ -154,6 +154,32 @@ Ported from Bootstrap 5.3 — form controls reference global vars so they auto-a
 | `--vulcan-input-placeholder-color` | `var(--vulcan-secondary-color)` |
 | `--vulcan-input-disabled-bg` | `var(--vulcan-secondary-bg)` |
 
+## Typography & Native Element Variables
+
+Ported from Bootstrap 5.3 — these override Bootstrap 4's hardcoded colors on native HTML elements so they adapt to dark mode:
+
+| Variable | Light | Dark | Element |
+|----------|-------|------|---------|
+| `--vulcan-code-color` | `$pink` | `mix(white, $pink, 40%)` | `<code>` inline text |
+| `--vulcan-kbd-bg` | `$gray-900` | `$gray-700` | `<kbd>` background |
+| `--vulcan-kbd-color` | `$white` | `$gray-100` | `<kbd>` text |
+| `--vulcan-pre-color` | `$gray-900` | `$gray-300` | `<pre>` block text |
+| `--vulcan-mark-bg` | `#fcf8e3` | `mix($gray-800, $yellow, 20%)` | `<mark>` highlight |
+| `--vulcan-mark-color` | `$body-color` | `$gray-300` | `<mark>` text |
+| `--vulcan-heading-color` | `inherit` | `inherit` | Heading text override |
+| `--vulcan-hr-color` | `rgba(black, 0.1)` | `rgba(white, 0.15)` | `<hr>` border |
+
+## Form Validation Variables
+
+Ported from Bootstrap 5.3 — validation feedback colors adapt to dark mode:
+
+| Variable | Light | Dark |
+|----------|-------|------|
+| `--vulcan-form-valid-color` | `$success` | `mix(white, $success, 40%)` |
+| `--vulcan-form-valid-border-color` | `$success` | `mix(white, $success, 40%)` |
+| `--vulcan-form-invalid-color` | `$danger` | `mix(white, $danger, 40%)` |
+| `--vulcan-form-invalid-border-color` | `$danger` | `mix(white, $danger, 40%)` |
+
 ## BvConfig Global Defaults
 
 `app/javascript/config/bootstrapVueConfig.js` sets component defaults for all 22 pack files:
@@ -179,6 +205,29 @@ export const bvConfig = {
 - **Form group margin:** `.form-group` owns `margin-bottom: 1rem`. Do NOT override with custom classes.
 - **`.rule-form-field`** controls padding + border-radius for rule editor fields. It does NOT set margin — `.form-group` handles that.
 - **Horizontal label:value:** use `<b-form-group label-cols-md="3" label-align-md="right">` — NOT manual `.row > .col-4 > strong`
+
+## Native HTML Elements
+
+### `<details>` / `<summary>` (Disclosure Widget)
+
+Styled globally with `--vulcan-*` variables. Used for collapsible content blocks — VitePress `::: details` syntax, in-app rendered via `DisaGuideController#convert_callouts`, or anywhere native disclosure is appropriate.
+
+| Part | Variable | Purpose |
+|------|----------|---------|
+| Summary background | `--vulcan-tertiary-bg` | Visually recessed header |
+| Summary text | `--vulcan-emphasis-color` | High contrast label |
+| Border | `--vulcan-border-color` | Consistent with card borders |
+| Open divider | `--vulcan-border-subtle` | Faint line between summary and body |
+| Hover | `--vulcan-hover-bg` | Interactive feedback |
+
+Auto-adapts to dark mode — no per-component overrides needed.
+
+```html
+<details>
+  <summary>Click to expand</summary>
+  <p>Content here uses body text color on body background.</p>
+</details>
+```
 
 ## Bootstrap-Vue Components to Use
 
