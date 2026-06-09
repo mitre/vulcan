@@ -198,13 +198,27 @@ lifecycle metadata applied after the comment was posted. This maps to G-Set
 
 ### 4.4 Component Metadata
 
+**Preserved, not merged (v2-480.41 corrected).** The merge engine carries
+only rule fields + checks + disa_rule_descriptions + reviews + satisfactions
++ memberships through diff/apply. All other component-level data —
+`comment_phase`, `closed_reason`, `comment_period_starts_at`,
+`comment_period_ends_at`, `metadata`, `additional_questions`, `title`,
+`description`, `admin_name`, `admin_email`, `version`, `release` — round-trips
+in BackupSerializer but does **NOT** participate in merge resolution.
+The receiving component's values are preserved.
+
 | Aspect | Design |
 |---|---|
 | **Match key** | `name` (component name within project) |
-| **Merge strategy** | Per-field choose-side with defaults |
-| **Auto-merge fields** | `comment_phase`, `closed_reason`, `comment_period_starts_at`, `comment_period_ends_at` — take theirs (DISA controls the review lifecycle) |
-| **Conflict fields** | `title`, `description`, `admin_name`, `admin_email`, `version`, `release` — present for human resolution |
-| **Immutable fields** | `name`, `prefix`, `based_on` (SRG reference) — must match for merge to proceed |
+| **Merge strategy** | None — preservation only (`Strategy::DEFAULT_STRATEGY[:component]` removed) |
+| **Preserved (round-trip only)** | `comment_phase`, `closed_reason`, `comment_period_starts_at`, `comment_period_ends_at`, `metadata`, `additional_questions`, `title`, `description`, `admin_name`, `admin_email`, `version`, `release` |
+| **Immutable for apply** | `name`, `prefix`, `based_on` (SRG reference) — must match for the receiving Component lookup |
+
+> **Future work (deferred):** if component-level governance metadata
+> (e.g. `comment_phase` flip) must be merged across instances, extend
+> `Rule::NESTED_MERGEABLE_ASSOCIATIONS` to cover the relevant nested rows
+> (`rule_descriptions`, `references`, `additional_answers`) and add a
+> `component_meta` partition to `MergePlan` / `Analyzer` / `Applier`.
 
 ### 4.5 Memberships
 

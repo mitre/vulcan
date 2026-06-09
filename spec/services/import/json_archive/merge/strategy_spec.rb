@@ -12,8 +12,8 @@ RSpec.describe Import::JsonArchive::Merge::Strategy, type: :service do
       expect(strategy.for_field(:rule, 'vuln_discussion')).to eq(:conflict)
     end
 
-    it 'returns :newer for component-level metadata so drift is recoverable' do
-      expect(strategy.for_field(:component, 'description')).to eq(:newer)
+    it 'falls back to :conflict for unknown :component-level fields (v2-480.41: component meta does not participate in merge)' do
+      expect(strategy.for_field(:component, 'description')).to eq(:conflict)
     end
 
     it 'returns :union for memberships (additive)' do

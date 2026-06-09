@@ -16,10 +16,19 @@ module Import
         # Defaults are tuned for the receiving instance:
         # - rule content fields default to :conflict because content drift
         #   from another instance should be reviewed, not silently overwritten
-        # - component-level metadata defaults to :newer (LWW by updated_at)
         # - memberships and satisfactions are set-like and default to :union
         # - review triage_status defaults to :ours because triage state is
         #   instance-local
+        #
+        # Note (v2-480.41): the merge engine only diffs/merges rule fields +
+        # nested associations (checks, disa_rule_descriptions) + reviews +
+        # satisfactions + memberships. Component-level metadata (comment_phase,
+        # closed_reason, metadata, additional_questions, etc.) round-trips
+        # via BackupSerializer but does NOT participate in merge resolution;
+        # the receiving component's values are preserved as-is. No
+        # DEFAULT_STRATEGY[:component] entry — anyone attempting to merge
+        # component metadata should add a component_meta partition to
+        # MergePlan/Analyzer/Applier first.
         DEFAULT_STRATEGY = {
           rule: {
             _default: :conflict,
@@ -28,10 +37,6 @@ module Import
             'vuln_discussion' => :conflict,
             'title' => :conflict,
             'rule_severity' => :conflict
-          },
-          component: {
-            _default: :newer,
-            'description' => :newer
           },
           review: {
             _default: :skip,

@@ -275,6 +275,23 @@ RSpec.describe 'JSON Archive Backup Round-Trip' do
       expect(imported_comment.reactions.size).to eq(2)
     end
 
+    it 'preserves locked_fields JSONB shape through round-trip (v2-480.41)' do
+      # locked_fields is a JSONB hash keyed by SECTION name (not column).
+      # Set on source, export, import, and assert the target rule carries
+      # the identical shape so operators can rely on lock persistence.
+      source_rule = source_component.rules.first
+      source_rule.update_columns(locked_fields: { 'Check' => true, 'Fix' => true })
+      zip = Export::Base.new(
+        exportable: source_component.reload, mode: :backup, format: :json_archive
+      ).call.data
+      target = create(:project, name: 'Target Locked Project')
+      Import::JsonArchiveImporter.new(zip_file: zip, project: target, include_reviews: true).call
+
+      imported_component = target.components.find_by(name: source_component.name)
+      imported_rule = imported_component.rules.find_by(rule_id: source_rule.rule_id)
+      expect(imported_rule.locked_fields.deep_stringify_keys).to eq('Check' => true, 'Fix' => true)
+    end
+
     it 'preserves additional answers' do
       import_result
       source_rule = source_component.rules.first
