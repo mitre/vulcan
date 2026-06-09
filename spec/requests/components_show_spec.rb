@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'Components' do
+RSpec.describe 'Component show' do
   include_context 'components request base setup'
 
   # ==========================================================================
@@ -165,6 +165,36 @@ RSpec.describe 'Components' do
       reviews = response.parsed_body['reviews']
       review = reviews.find { |r| r['comment'] == 'Blueprint shape test' }
       expect(review).to have_key('commentable_type')
+    end
+  end
+
+  describe 'GET /components/:id (reaction scoping)' do
+    it 'show does not load reactions for non-displayed reviews' do
+      rule = component.rules.first
+      Review.transaction do
+        110.times do |i|
+          Review.insert!({
+                           rule_id: rule.id,
+                           commentable_type: 'BaseRule', commentable_id: rule.id,
+                           user_id: user.id, action: 'comment',
+                           comment: "scoping-test #{i}",
+                           created_at: Time.current, updated_at: Time.current
+                         })
+        end
+      end
+
+      captured = nil
+      allow(Reaction).to receive(:summary).and_wrap_original do |orig, ids, *rest|
+        captured = ids
+        orig.call(ids, *rest)
+      end
+
+      get "/components/#{component.id}", headers: { 'Accept' => application_json }
+      expect(response).to have_http_status(:ok)
+
+      expect(captured).not_to be_nil, 'Reaction.summary was not called'
+      expect(captured.size).to be <= 100,
+                               "expected ≤ 100 review ids passed to Reaction.summary; got #{captured.size}"
     end
   end
 end

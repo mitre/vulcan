@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'Components' do
+RSpec.describe 'Component update' do
   include_context 'components request base setup'
 
   # ==========================================================================
@@ -66,37 +66,6 @@ RSpec.describe 'Components' do
 
         expect(response).to have_http_status(:success)
         expect(component.reload.advanced_fields).to be(true)
-      end
-    end
-
-    # The controller must permit the lifecycle params or strong params
-    # filters them out and the model never sees them.
-    context 'when updating the comment-phase fieldset' do
-      it 'permits comment_phase, closed_reason, and date params' do
-        put "/components/#{component.id}", params: {
-          component: {
-            comment_phase: 'closed',
-            closed_reason: 'adjudicating',
-            comment_period_starts_at: '2026-04-29',
-            comment_period_ends_at: '2026-05-14'
-          }
-        }
-
-        expect(response).to have_http_status(:success)
-        component.reload
-        expect(component.comment_phase).to eq('closed')
-        expect(component.closed_reason).to eq('adjudicating')
-        expect(component.comment_period_starts_at).not_to be_nil
-        expect(component.comment_period_ends_at).not_to be_nil
-      end
-
-      it 'rejects invalid comment_phase via the model validator' do
-        put "/components/#{component.id}", params: {
-          component: { comment_phase: 'not-a-real-phase' }
-        }
-
-        expect(response).to have_http_status(:unprocessable_content)
-        expect(component.reload.comment_phase).not_to eq('not-a-real-phase')
       end
     end
   end

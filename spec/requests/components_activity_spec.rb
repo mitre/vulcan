@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'Components' do
+RSpec.describe 'Component activity and history' do
   include_context 'components request base setup'
   include_context 'with auditing'
 
@@ -40,6 +40,30 @@ RSpec.describe 'Components' do
       get '/components/999999/histories',
           headers: { 'Accept' => application_json }
       expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  describe 'GET /components/history (revision history)' do
+    let!(:versioned_initial) do
+      create(:component, project: project, name: 'Versioned Comp', version: 1, release: 1)
+    end
+    let!(:versioned_revision) do
+      create(:component, project: project, name: 'Versioned Comp', version: 1, release: 2)
+    end
+
+    it 'returns snake_case keys (base_component, diff_component)' do
+      get '/components/history',
+          params: { project_id: project.id, name: 'Versioned Comp' },
+          headers: { 'Accept' => application_json }
+
+      expect(response).to have_http_status(:success)
+      json = response.parsed_body
+      expect(json).to be_an(Array)
+      diff_entry = json.find { |e| e.key?('base_component') }
+      expect(diff_entry).to be_present, "expected a diff entry with base_component key; got #{json.inspect}"
+      expect(diff_entry).to have_key('diff_component')
+      expect(diff_entry).not_to have_key('baseComponent')
+      expect(diff_entry).not_to have_key('diffComponent')
     end
   end
 
