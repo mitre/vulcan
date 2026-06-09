@@ -482,10 +482,14 @@ class Rule < BaseRule
   end
 
   def export_fixtext
+    return nil if status == RuleConstants::STATUS_APPLICABLE_DNM && satisfied_by.any?
+
     satisfied_by.size.positive? ? satisfied_by.order(:id).first.fixtext : fixtext
   end
 
   def export_checktext
+    return nil if status == RuleConstants::STATUS_APPLICABLE_DNM && satisfied_by.any?
+
     satisfied_by.size.positive? ? satisfied_by.order(:id).first.checks.first&.content : checks.first&.content
   end
 

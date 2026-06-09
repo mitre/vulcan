@@ -95,9 +95,8 @@ module Export
     end
 
     def fetch_check_content
-      # export_checktext is private on Rule but used by csv_attributes internally.
-      # We replicate its logic here rather than breaking encapsulation.
-      # Use .order(:id).first for deterministic results when multiple satisfied_by exist.
+      return nil if rule.status == RuleConstants::STATUS_APPLICABLE_DNM && rule.satisfied_by.any?
+
       if rule.satisfied_by.size.positive?
         rule.satisfied_by.order(:id).first.checks.first&.content
       else
@@ -110,9 +109,8 @@ module Export
     end
 
     def fetch_fixtext
-      # export_fixtext is private on Rule but used by csv_attributes internally.
-      # We replicate its logic here rather than breaking encapsulation.
-      # Use .order(:id).first for deterministic results when multiple satisfied_by exist.
+      return nil if rule.status == RuleConstants::STATUS_APPLICABLE_DNM && rule.satisfied_by.any?
+
       if rule.satisfied_by.size.positive?
         rule.satisfied_by.order(:id).first.fixtext
       else

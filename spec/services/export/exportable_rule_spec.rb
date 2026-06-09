@@ -147,6 +147,37 @@ RSpec.describe Export::ExportableRule do
     end
   end
 
+  describe 'ADNM field blanking (V4R3 §4.1.11/§4.1.13)' do
+    let_it_be(:parent_rule) { component.rules.detect { |r| r.checks.any? && r.fixtext.present? } }
+
+    let(:adnm_rule) do
+      rule = component.rules.where.not(id: parent_rule.id).first
+      rule.update_columns(status: RuleConstants::STATUS_APPLICABLE_DNM)
+      rule.satisfied_by << parent_rule unless rule.satisfied_by.include?(parent_rule)
+      rule
+    end
+
+    let(:adnm_exportable) { described_class.new(adnm_rule) }
+
+    it 'returns nil for check_content when status is ADNM' do
+      expect(adnm_exportable.value_for(:check_content)).to be_nil
+    end
+
+    it 'returns nil for fixtext when status is ADNM' do
+      expect(adnm_exportable.value_for(:fixtext)).to be_nil
+    end
+
+    it 'still returns parent content for AC rules with satisfied_by (nesting)' do
+      ac_nested = component.rules.where.not(id: [parent_rule.id, adnm_rule.id]).first
+      ac_nested.update_columns(status: RuleConstants::STATUS_APPLICABLE_CONFIGURABLE)
+      ac_nested.satisfied_by << parent_rule unless ac_nested.satisfied_by.include?(parent_rule)
+      ac_exportable = described_class.new(ac_nested)
+
+      expect(ac_exportable.value_for(:check_content)).to eq(parent_rule.checks.first&.content)
+      expect(ac_exportable.value_for(:fixtext)).to eq(parent_rule.fixtext)
+    end
+  end
+
   describe '#rule delegation' do
     it 'delegates rule model methods' do
       expect(exportable.rule).to eq rule
