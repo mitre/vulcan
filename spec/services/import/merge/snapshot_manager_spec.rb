@@ -79,4 +79,57 @@ RSpec.describe Import::JsonArchive::Merge::SnapshotManager do
       expect { described_class.rotate_snapshots(component) }.not_to raise_error
     end
   end
+
+  describe 'v2-480.38: atomic write + ENOSPC cleanup' do
+    it 'writes via *.tmp then mv (no .tmp leftovers on success)' do
+      path = described_class.create_snapshot(component)
+      dir = File.dirname(path)
+      expect(Dir["#{dir}/*.tmp"]).to be_empty
+      expect(File.exist?(path)).to be(true)
+      expect(File.exist?("#{path}.sha256")).to be(true)
+    end
+
+    it 'cleans up *.tmp orphans on disk-write failure (ENOSPC) and re-raises' do
+      allow(File).to receive(:binwrite).and_raise(Errno::ENOSPC)
+      expect { described_class.create_snapshot(component) }.to raise_error(Errno::ENOSPC)
+      dir = File.join(@tmp, component.id.to_s)
+      expect(Dir["#{dir}/*.tmp"]).to be_empty
+      expect(Dir["#{dir}/*.zip"]).to be_empty
+    end
+
+    it 'raises SnapshotTooLargeError when zip exceeds max_snapshot_bytes_per_component' do
+      allow(Settings.sync).to receive(:max_snapshot_bytes_per_component).and_return(10)
+      expect { described_class.create_snapshot(component) }
+        .to raise_error(Import::JsonArchive::Merge::SnapshotManager::SnapshotTooLargeError, /exceeds per-component budget/i)
+    end
+
+    it 'verify_snapshot returns false when the zip is missing (ENOENT)' do
+      expect(described_class.verify_snapshot('/tmp/does-not-exist.zip')).to be(false)
+    end
+
+    it 'verify_snapshot returns false when the checksum is missing (ENOENT)' do
+      path = described_class.create_snapshot(component)
+      FileUtils.rm_f("#{path}.sha256")
+      expect(described_class.verify_snapshot(path)).to be(false)
+    end
+
+    it 'rotate_snapshots deletes the checksum before the zip (consistent partial state)' do
+      delete_order = []
+      original = FileUtils.method(:rm_f)
+      allow(FileUtils).to receive(:rm_f) do |p|
+        delete_order << (p.end_with?('.sha256') ? :sha : :zip) if p.end_with?('.zip', '.sha256')
+        original.call(p)
+      end
+      4.times do
+        described_class.create_snapshot(component)
+        sleep 0.001
+      end
+
+      described_class.rotate_snapshots(component, keep: 1)
+
+      # For each rotated snapshot pair, .sha came before .zip
+      paired = delete_order.each_slice(2).to_a
+      expect(paired).to all(eq(%i[sha zip]))
+    end
+  end
 end

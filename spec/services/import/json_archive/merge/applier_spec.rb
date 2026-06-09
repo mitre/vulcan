@@ -129,6 +129,18 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
 
       expect(ComponentSyncEvent.last.archive_hash).to be_nil
     end
+
+    it 'calls SnapshotManager.rotate_snapshots after a successful apply (v2-480.38)' do
+      expect(Import::JsonArchive::Merge::SnapshotManager).to receive(:rotate_snapshots).with(component)
+      described_class.new(merge_plan: plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+    end
+
+    it 'does NOT call SnapshotManager.rotate_snapshots on a failed apply (v2-480.38)' do
+      applier = described_class.new(merge_plan: plan, component: component, source: 'theirs', archive_bytes: archive_bytes)
+      allow(applier).to receive(:apply_all).and_raise(StandardError, 'spec abort')
+      expect(Import::JsonArchive::Merge::SnapshotManager).not_to receive(:rotate_snapshots)
+      applier.call
+    end
   end
 
   describe '#call (applies rule auto-merged changes)' do

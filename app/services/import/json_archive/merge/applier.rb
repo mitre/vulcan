@@ -76,6 +76,10 @@ module Import
             end
             update_component_sync_metadata
             mark_event_status('applied')
+            # Bounded storage: keep the most recent N snapshots. Runs after
+            # status='applied' so a rotate failure can't accidentally mark
+            # the merge as failed. v2-480.38.
+            rotate_snapshots_safely!
           rescue PreconditionError => e
             mark_event_status('failed')
             @result.add_structured_error(
@@ -113,7 +117,12 @@ module Import
           recalculate_rules_count
           import_new_reviews
           apply_review_field_updates
-          Review.where(commentable_id: nil).where.not(rule_id: nil).repair_missing_commentable!
+          # Scoped to this component's rules (v2-480.38) so the merge
+          # never touches reviews on other tenants. Mirrors the
+          # ReviewBuilder pattern at review_builder.rb:74.
+          Review.where(rule_id: @component.rules.select(:id))
+                .where(commentable_id: nil).where.not(rule_id: nil)
+                .repair_missing_commentable!
           apply_new_satisfactions
           apply_new_memberships
         end
@@ -751,6 +760,15 @@ module Import
         def take_pre_merge_snapshot!
           path = SnapshotManager.create_snapshot(@component)
           @sync_event.update!(snapshot_path: path)
+        end
+
+        # Rotate older snapshots after successful apply. Any failure here
+        # is logged as a warning but does NOT change the apply status —
+        # disk-full rotation can't roll back a successful merge.
+        def rotate_snapshots_safely!
+          SnapshotManager.rotate_snapshots(@component)
+        rescue StandardError => e
+          @result.add_warning("Snapshot rotation failed: #{e.class}: #{e.message}")
         end
 
         # When the applier is invoked outside an existing transaction (the

@@ -158,6 +158,11 @@ defaults: &defaults
     # VULCAN_SYNC_INSTANCE_ID env var; falls back to Socket.gethostname so
     # developer-laptop syncs are still attributable.
     instance_id: <%= ENV.fetch('VULCAN_SYNC_INSTANCE_ID') { require 'socket'; Socket.gethostname } %>
+    # Per-component snapshot byte budget. Defense-in-depth against a
+    # runaway component filling the merge_snapshots disk partition.
+    # 0 = disabled (default); operators set VULCAN_SYNC_MAX_SNAPSHOT_BYTES
+    # to a positive integer to enforce. v2-480.38.
+    max_snapshot_bytes_per_component: <%= ENV.fetch('VULCAN_SYNC_MAX_SNAPSHOT_BYTES', '0').to_i %>
   slack:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_SLACK_COMMS']) || false %>
     api_token: <%= ENV['VULCAN_SLACK_API_TOKEN'] %>
