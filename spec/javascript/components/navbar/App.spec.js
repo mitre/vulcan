@@ -57,9 +57,7 @@ describe("Navbar locked user notifications", () => {
       localVue,
       propsData: {
         ...baseProps,
-        access_requests: [
-          { user: { name: "Requester" }, project: { id: 1, name: "Proj" } },
-        ],
+        access_requests: [{ user: { name: "Requester" }, project: { id: 1, name: "Proj" } }],
         locked_users: [{ id: 1, name: "Locked", email: "locked@example.com" }],
       },
     });
@@ -138,6 +136,22 @@ describe("Navbar profile dropdown", () => {
     current_user: { id: 42, name: "Casey Tester", email: "casey@example.com", ...overrides },
   });
 
+  // REQUIREMENT: the utility nav (bell / theme toggle / user menu) never
+  // collapses, so its dropdown menus must overlay the page content at EVERY
+  // viewport width — not expand the navbar in-flow. Bootstrap only restores
+  // dropdown position: absolute above the navbar's expand breakpoint (xl);
+  // the .utility-nav hook re-applies Bootstrap's own expanded-navbar rule to
+  // this always-expanded nav (the same rule the bare .navbar-expand pattern
+  // on Bootstrap's docs site uses). jsdom loads no CSS, so this pins the
+  // class hook; Playwright verifies the rendered behavior.
+  it("marks the always-visible utility nav with the dropdown-overlay hook", () => {
+    const wrapper = mount(App, { localVue, propsData: userProps() });
+    const utilityNav = wrapper.find(".utility-nav");
+    expect(utilityNav.exists()).toBe(true);
+    // Both utility dropdowns (notifications + user menu) live inside it
+    expect(utilityNav.findAll(".dropdown-menu").length).toBe(2);
+  });
+
   it("shows the user's name next to the profile icon when current_user is provided", () => {
     const wrapper = mount(App, { localVue, propsData: userProps() });
     expect(wrapper.text()).toContain("Casey Tester");
@@ -196,9 +210,7 @@ describe("Navbar access request link", () => {
 
 describe("Navbar access request reactivity", () => {
   it("initializes localAccessRequests from prop", () => {
-    const requests = [
-      { id: 10, user: { name: "Requester" }, project: { id: 1, name: "Proj" } },
-    ];
+    const requests = [{ id: 10, user: { name: "Requester" }, project: { id: 1, name: "Proj" } }];
     const wrapper = mount(App, {
       localVue,
       propsData: { ...baseProps, access_requests: requests },
@@ -227,9 +239,7 @@ describe("Navbar access request reactivity", () => {
   });
 
   it("decrements badge count when access request resolved", async () => {
-    const requests = [
-      { id: 10, user: { name: "Requester" }, project: { id: 1, name: "Proj" } },
-    ];
+    const requests = [{ id: 10, user: { name: "Requester" }, project: { id: 1, name: "Proj" } }];
     const wrapper = mount(App, {
       localVue,
       propsData: { ...baseProps, access_requests: requests },
@@ -249,42 +259,43 @@ describe("Navbar non-signed-in (login page)", () => {
 
   it("renders the dark mode toggle when not signed in", () => {
     const w = mount(App, { localVue, propsData: loginProps });
-    const toggleNav = w.findAll(".navbar-nav").wrappers.find(
-      (nav) => nav.find("[aria-label='Toggle dark mode']").exists(),
-    );
+    const toggleNav = w
+      .findAll(".navbar-nav")
+      .wrappers.find((nav) => nav.find("[aria-label='Toggle dark mode']").exists());
     expect(toggleNav).toBeTruthy();
   });
 
   it("right-aligns the dark mode toggle with order-xl-last", () => {
     const w = mount(App, { localVue, propsData: loginProps });
-    const toggleNav = w.findAll(".navbar-nav").wrappers.find(
-      (nav) => nav.find("[aria-label='Toggle dark mode']").exists(),
-    );
+    const toggleNav = w
+      .findAll(".navbar-nav")
+      .wrappers.find((nav) => nav.find("[aria-label='Toggle dark mode']").exists());
     expect(toggleNav.classes()).toContain("ml-auto");
     expect(toggleNav.classes()).toContain("order-xl-last");
   });
 });
 
-describe("Navbar dropdown viewport boundary", () => {
-  it("sets boundary=viewport on the notification dropdown", () => {
+describe("Navbar dropdown viewport containment", () => {
+  // The old tests here pinned boundary="viewport" — a NO-OP inside navbars:
+  // BootstrapVue never instantiates Popper in a navbar (mixins/dropdown.js
+  // "Only instantiate Popper.js when dropdown is not in <b-navbar>"), and
+  // boundary only configures Popper. Containment is CSS: menus anchor to the
+  // .utility-nav (li is position: static — Bootstrap's documented
+  // dropdown-parent pattern) and are width-capped, so wide notification
+  // menus cannot overflow the left viewport edge on small screens.
+  it("keeps the bell badge anchored to the toggle link, not the li", () => {
     const w = mount(App, {
       localVue,
       propsData: {
         ...baseProps,
-        access_requests: [
-          { user: { name: "Req" }, project: { id: 1, name: "P" } },
-        ],
+        access_requests: [{ user: { name: "Req" }, project: { id: 1, name: "P" } }],
       },
     });
     const dropdowns = w.findAllComponents({ name: "BNavItemDropdown" });
-    const bellDropdown = dropdowns.at(0);
-    expect(bellDropdown.props("boundary")).toBe("viewport");
-  });
-
-  it("sets boundary=viewport on the user dropdown", () => {
-    const w = mount(App, { localVue, propsData: baseProps });
-    const dropdowns = w.findAllComponents({ name: "BNavItemDropdown" });
-    const userDropdown = dropdowns.at(1);
-    expect(userDropdown.props("boundary")).toBe("viewport");
+    const bellToggle = dropdowns.at(0).find(".nav-link");
+    // The li must stay position: static (CSS) so the badge needs its
+    // positioning context on the toggle link itself.
+    expect(bellToggle.classes()).toContain("position-relative");
+    expect(dropdowns.at(0).find(".badge-danger").exists()).toBe(true);
   });
 });

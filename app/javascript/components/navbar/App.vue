@@ -9,8 +9,11 @@
         </b-link>
       </b-navbar-brand>
       <!-- ── Utility controls — OUTSIDE collapse, always visible ── -->
-      <b-navbar-nav v-if="signed_in" class="flex-row align-items-center ml-auto mr-2 order-xl-last">
-        <b-nav-item-dropdown right no-caret boundary="viewport" class="position-relative">
+      <b-navbar-nav
+        v-if="signed_in"
+        class="utility-nav flex-row align-items-center ml-auto mr-2 order-xl-last"
+      >
+        <b-nav-item-dropdown right no-caret toggle-class="position-relative">
           <template #button-content>
             <b-icon icon="bell" aria-hidden="true" />
             <b-badge
@@ -49,7 +52,7 @@
           <b-icon :icon="isDarkMode ? 'sun' : 'moon'" />
         </b-nav-item>
 
-        <b-nav-item-dropdown right no-caret boundary="viewport">
+        <b-nav-item-dropdown right no-caret>
           <template #button-content>
             <UserBadge v-if="current_user" :name="userDisplayName" :email="current_user.email" />
             <b-icon v-else icon="person-circle" aria-hidden="true" />
@@ -302,6 +305,42 @@ export default {
   font-family: verdana, arial, helvetica, sans-serif;
   font-weight: 700;
   letter-spacing: 1px;
+}
+
+/* The utility nav (bell / theme / user menu) sits outside the collapse and
+   is always an expanded row, but Bootstrap only restores dropdown
+   `position: absolute` above the navbar's expand breakpoint (xl) — below it,
+   `.navbar-nav .dropdown-menu` falls back to `position: static` and an open
+   menu inflates the navbar instead of overlaying the page (dropdowns are
+   CSS-positioned inside navbars; BootstrapVue never runs Popper there).
+   Re-apply Bootstrap's own expanded-navbar rule (_navbar.scss) to this
+   always-expanded nav so menus float over content at every width — the same
+   behavior the bare `.navbar-expand` pattern gives Bootstrap's docs-site
+   header. The base `.dropdown-menu` class supplies top: 100% and
+   z-index: 1000.
+
+   Menus anchor to the utility nav itself (Bootstrap's documented
+   `.position-static`-on-the-dropdown-parent pattern) rather than each <li>,
+   so a wide menu (e.g. long notification text) right-aligns to the nav —
+   which hugs the viewport edge — instead of overflowing the left edge of
+   small screens. The bell badge anchors to the toggle link
+   (toggle-class="position-relative"), not the <li>. */
+.utility-nav {
+  position: relative;
+}
+.utility-nav >>> .b-nav-dropdown {
+  position: static;
+}
+.utility-nav >>> .dropdown-menu {
+  position: absolute;
+  right: 0;
+  left: auto;
+  max-width: calc(100vw - 2rem);
+}
+/* Dropdown items are nowrap by default — let long notification strings wrap
+   inside the capped menu width. */
+.utility-nav >>> .dropdown-item {
+  white-space: normal;
 }
 
 .latest-release {
