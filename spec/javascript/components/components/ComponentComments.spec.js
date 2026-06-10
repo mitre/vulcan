@@ -1073,10 +1073,12 @@ describe("ComponentComments", () => {
       });
       await flushPromises(wrapper);
       const row = { id: 42, component_id: 29, rule_id: 7 };
-      delete window.location;
-      window.location = { href: "" };
+      // Stub + restore via vi (the old delete-window.location hack leaked a
+      // plain-object location to every later test in this worker).
+      vi.stubGlobal("location", { href: "" });
       wrapper.vm.openTriageFor(row);
-      expect(window.location.href).toContain("/components/29/triage?comment=42");
+      expect(globalThis.location.href).toContain("/components/29/triage?comment=42");
+      vi.unstubAllGlobals();
     });
   });
 

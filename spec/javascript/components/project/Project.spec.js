@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { shallowMount } from "@vue/test-utils";
-import { localVue } from "@test/testHelper";
+import { localVue, flushPromises } from "@test/testHelper";
 import Project from "@/components/project/Project.vue";
 
 vi.mock("@/api/baseApi", () => ({
@@ -438,6 +438,9 @@ describe("Project", () => {
 
     it("downloadExport calls exportProjectData with project id, type, and options", async () => {
       const { exportProjectData } = await import("@/api/projectsApi");
+      // window.open is the real side effect (browser performs the download).
+      // Spy + assert so jsdom never receives the un-implemented call (zero-noise).
+      const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
 
       wrapper = createWrapper();
       wrapper.vm.downloadExport("csv", [1, 2], "working_copy", true, false, true);
@@ -449,6 +452,10 @@ describe("Project", () => {
         includeMemberships: false,
         excludeSatisfiedBy: true,
       });
+
+      await flushPromises(wrapper);
+      expect(openSpy).toHaveBeenCalledWith("/projects/1/export/csv?component_ids=1");
+      openSpy.mockRestore();
     });
 
     it("renders ExportModal component", () => {

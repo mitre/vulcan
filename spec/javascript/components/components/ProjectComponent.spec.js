@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { shallowMount } from "@vue/test-utils";
-import { localVue } from "@test/testHelper";
+import { localVue, flushPromises } from "@test/testHelper";
 import { createPinia } from "pinia";
 import { createTestRouter } from "@test/support/routerTestHelper";
 import ProjectComponent from "@/components/components/ProjectComponent.vue";
@@ -349,7 +349,6 @@ describe("ProjectComponent", () => {
     // the component properties in-place for Vue reactivity.
 
     it("fetches component data as JSON", async () => {
-
       wrapper = createWrapper();
 
       // Call refreshComponent
@@ -359,7 +358,6 @@ describe("ProjectComponent", () => {
     });
 
     it("updates component properties in-place on successful fetch", async () => {
-
       const updatedData = {
         id: 41,
         name: "Updated Component Name",
@@ -382,7 +380,6 @@ describe("ProjectComponent", () => {
     });
 
     it("does NOT reload the page", async () => {
-
       getComponent.mockResolvedValueOnce({ data: { id: 41, name: "Test" } });
 
       // Mock location.reload to track if it's called
@@ -511,6 +508,9 @@ describe("ProjectComponent", () => {
 
     it("executeExport calls exportProjectData with project id, type, and options", async () => {
       const { exportProjectData } = await import("@/api/projectsApi");
+      // window.open is the real side effect (browser performs the download).
+      // Spy + assert so jsdom never receives the un-implemented call (zero-noise).
+      const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
 
       wrapper = createWrapper();
       wrapper.vm.executeExport({
@@ -526,6 +526,10 @@ describe("ProjectComponent", () => {
         includeMemberships: undefined,
         excludeSatisfiedBy: undefined,
       });
+
+      await flushPromises(wrapper);
+      expect(openSpy).toHaveBeenCalledWith("/projects/1/export/csv?component_ids=41");
+      openSpy.mockRestore();
     });
 
     it("passes the available Working Copy / Vendor Submission / Publish Draft / Backup modes to ExportModal", () => {

@@ -55,6 +55,8 @@ describe("UserProfile", () => {
 
   afterEach(() => {
     if (wrapper) wrapper.destroy();
+    // Restore any vi.stubGlobal("location", ...) stubs (navigation tests)
+    vi.unstubAllGlobals();
   });
 
   describe("layout", () => {
@@ -124,11 +126,16 @@ describe("UserProfile", () => {
 
     it("submits the unlink request with current password via unlinkIdentity", async () => {
       const { unlinkIdentity } = await import("@/api/usersApi");
+      // location.reload() is the real side effect after unlink (fresh session
+      // state). Stub + assert so jsdom never receives the navigation
+      // (zero-noise). Restored by afterEach vi.unstubAllGlobals().
+      vi.stubGlobal("location", { reload: vi.fn() });
       wrapper = createWrapper({ user: { ...defaultProps.user, provider: "oidc" } });
       wrapper.vm.unlinkForm.current_password = "mypassword";
       await wrapper.vm.submitUnlink();
 
       expect(unlinkIdentity).toHaveBeenCalledWith({ current_password: "mypassword" });
+      expect(globalThis.location.reload).toHaveBeenCalled();
     });
   });
 
@@ -200,11 +207,16 @@ describe("UserProfile", () => {
       expect(wrapper.vm.showDeleteModal).toBe(true);
     });
 
-    it("confirmDeleteAccount calls deleteAccount", async () => {
+    it("confirmDeleteAccount calls deleteAccount and navigates home", async () => {
       const { deleteAccount } = await import("@/api/usersApi");
+      // Navigation to "/" is the requirement after account deletion. Stub +
+      // assert so jsdom never receives the navigation (zero-noise).
+      // Restored by afterEach vi.unstubAllGlobals().
+      vi.stubGlobal("location", { href: "" });
       wrapper = createWrapper();
       await wrapper.vm.confirmDeleteAccount();
       expect(deleteAccount).toHaveBeenCalled();
+      expect(globalThis.location.href).toBe("/");
     });
   });
 });
