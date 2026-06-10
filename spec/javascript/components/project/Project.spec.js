@@ -165,6 +165,23 @@ describe("Project", () => {
       expect(wrapper.vm.effective_permissions).toBe("viewer");
     });
 
+    it("exposes canAdmin=true for admin permissions (gates admin-only children)", () => {
+      // Project.vue is the PROVIDER — it cannot inject its own provide, so
+      // canAdmin comes from the roleGteTo util in setup, not usePermissions.
+      wrapper = createWrapper();
+      expect(wrapper.vm.canAdmin).toBe(true);
+    });
+
+    it("exposes canAdmin=false for viewer permissions", () => {
+      wrapper = createWrapper({
+        initialProjectState: {
+          ...defaultProps.initialProjectState,
+          effective_permissions: "viewer",
+        },
+      });
+      expect(wrapper.vm.canAdmin).toBe(false);
+    });
+
     it("defaults to null when initialProjectState has no permissions", () => {
       const stateWithout = { ...defaultProps.initialProjectState };
       delete stateWithout.effective_permissions;
@@ -221,10 +238,15 @@ describe("Project", () => {
       expect(commandBar.props("project")).toEqual(defaultProps.initialProjectState);
     });
 
-    it("passes effective-permissions to ProjectCommandBar", () => {
+    it("provides effectivePermissions to descendants instead of prop-passing", () => {
+      // ProjectCommandBar (and the other project/ children) inject
+      // effectivePermissions via usePermissions — the template attribute is
+      // gone. A leftover attr would land in $attrs on the stub, so
+      // attributes() pins the removal.
       wrapper = createWrapper();
       const commandBar = wrapper.findComponent({ name: "ProjectCommandBar" });
-      expect(commandBar.props("effectivePermissions")).toBe("admin");
+      expect(commandBar.attributes("effective-permissions")).toBeUndefined();
+      expect(wrapper.vm.effective_permissions).toBe("admin");
     });
 
     it("passes activePanel to ProjectCommandBar", async () => {

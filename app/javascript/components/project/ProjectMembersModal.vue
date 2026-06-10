@@ -11,7 +11,7 @@
     <!-- Hide table headings since modal has title -->
     <div class="memberships-modal-wrapper">
       <MembershipsTable
-        :editable="isEditable"
+        :editable="canAdmin"
         membership_type="Project"
         :membership_id="project.id"
         :memberships="project.memberships"
@@ -24,26 +24,26 @@
 </template>
 
 <script>
-import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
+import { usePermissions } from "../../composables/usePermissions";
 import MembershipsTable from "../memberships/MembershipsTable.vue";
 
 export default {
   name: "ProjectMembersModal",
   components: { MembershipsTable },
-  mixins: [RoleComparisonMixin],
   props: {
     project: {
       type: Object,
       required: true,
     },
-    effectivePermissions: {
-      type: String,
-      default: null,
-    },
     availableRoles: {
       type: Array,
       required: true,
     },
+  },
+  setup() {
+    // Permissions are provided by the page root (Project.vue) — see usePermissions.
+    const { canAdmin } = usePermissions();
+    return { canAdmin };
   },
   computed: {
     modalTitle() {
@@ -51,9 +51,6 @@ export default {
       const total = this.project.memberships_count;
       const pending = pendingCount > 0 ? ` (${pendingCount} pending)` : "";
       return `Project Members (${total})${pending}`;
-    },
-    isEditable() {
-      return this.role_gte_to(this.effectivePermissions, "admin");
     },
   },
 };

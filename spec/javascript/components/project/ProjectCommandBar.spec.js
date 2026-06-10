@@ -37,13 +37,15 @@ describe("ProjectCommandBar", () => {
       visibility: "hidden",
       components: [],
     },
-    effectivePermissions: "admin",
     activePanel: null,
   };
 
-  const createWrapper = (props = {}) => {
+  // Permissions come from the page-root provide (usePermissions inject),
+  // matching production: Project.vue provides "effectivePermissions".
+  const createWrapper = (props = {}, permissions = "admin") => {
     return mount(ProjectCommandBar, {
       localVue,
+      provide: { effectivePermissions: permissions },
       propsData: {
         ...defaultProps,
         ...props,
@@ -92,19 +94,19 @@ describe("ProjectCommandBar", () => {
   // ==========================================
   describe("visibility toggle", () => {
     it("shows visibility toggle for admin", () => {
-      wrapper = createWrapper({ effectivePermissions: "admin" });
+      wrapper = createWrapper({}, "admin");
       const toggle = wrapper.find('[data-testid="visibility-toggle"]');
       expect(toggle.exists()).toBe(true);
     });
 
     it("hides visibility toggle for non-admin", () => {
-      wrapper = createWrapper({ effectivePermissions: "author" });
+      wrapper = createWrapper({}, "author");
       const toggle = wrapper.find('[data-testid="visibility-toggle"]');
       expect(toggle.exists()).toBe(false);
     });
 
     it("emits toggle-visibility when changed", async () => {
-      wrapper = createWrapper({ effectivePermissions: "admin" });
+      wrapper = createWrapper({}, "admin");
       const checkbox = wrapper.find('[data-testid="visibility-toggle"] input[type="checkbox"]');
       await checkbox.setChecked(true);
       expect(wrapper.emitted("toggle-visibility")).toBeTruthy();
@@ -113,7 +115,6 @@ describe("ProjectCommandBar", () => {
     it("localVisibility syncs with project.visibility prop", async () => {
       // Start with hidden project
       wrapper = createWrapper({
-        effectivePermissions: "admin",
         project: { id: 1, name: "Test", visibility: "hidden", components: [] },
       });
       expect(wrapper.vm.localVisibility).toBe(false);
@@ -127,7 +128,6 @@ describe("ProjectCommandBar", () => {
 
     it("resetVisibilityToggle resets local state to match prop", async () => {
       wrapper = createWrapper({
-        effectivePermissions: "admin",
         project: { id: 1, name: "Test", visibility: "hidden", components: [] },
       });
       // Simulate user toggling to true
@@ -164,19 +164,19 @@ describe("ProjectCommandBar", () => {
   // ==========================================
   describe("modal action buttons", () => {
     it("shows new component button for admin (grouped with Download and Members)", () => {
-      wrapper = createWrapper({ effectivePermissions: "admin" });
+      wrapper = createWrapper({}, "admin");
       const btn = wrapper.find('[data-testid="new-component-btn"]');
       expect(btn.exists()).toBe(true);
     });
 
     it("hides new component button for non-admin", () => {
-      wrapper = createWrapper({ effectivePermissions: "viewer" });
+      wrapper = createWrapper({}, "viewer");
       const btn = wrapper.find('[data-testid="new-component-btn"]');
       expect(btn.exists()).toBe(false);
     });
 
     it("new component button is positioned before Download button (modal actions group)", () => {
-      wrapper = createWrapper({ effectivePermissions: "admin" });
+      wrapper = createWrapper({}, "admin");
       // New Component, Download, and Members should all be on left side
       expect(wrapper.text()).toContain("New Component");
       expect(wrapper.text()).toContain("Download");
@@ -184,7 +184,7 @@ describe("ProjectCommandBar", () => {
     });
 
     it("emits new-component when clicked", async () => {
-      wrapper = createWrapper({ effectivePermissions: "admin" });
+      wrapper = createWrapper({}, "admin");
       const btn = wrapper.find('[data-testid="new-component-btn"]');
       await btn.trigger("click");
       expect(wrapper.emitted("new-component")).toBeTruthy();

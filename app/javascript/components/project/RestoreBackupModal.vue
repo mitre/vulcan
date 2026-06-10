@@ -77,14 +77,15 @@
 
 <script>
 import { importBackup } from "../../api/projectsApi";
-import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import BackupPreview from "../shared/BackupPreview.vue";
 
 export default {
   name: "RestoreBackupModal",
   components: { BackupPreview },
-  mixins: [FormMixinVue, AlertMixinVue],
+  // AlertMixin migrates in 0re.9 (useToast). FormMixin was a dead import —
+  // authenticityToken was never consumed; CSRF is handled by baseApi hooks.
+  mixins: [AlertMixinVue],
   props: {
     project_id: {
       type: Number,

@@ -6,7 +6,6 @@
     <ProjectCommandBar
       ref="commandBar"
       :project="project"
-      :effective-permissions="effective_permissions"
       :active-panel="activePanel"
       @toggle-visibility="showVisibilityConfirm"
       @new-component="openNewComponentModal"
@@ -79,7 +78,6 @@
     <!-- Slideover Panels -->
     <ProjectSidepanels
       :project="project"
-      :effective-permissions="effective_permissions"
       :active-panel="activePanel"
       :unique-component-names="uniqueComponentNames"
       @close-panel="closePanel"
@@ -89,21 +87,21 @@
     <!-- Component Action Picker (NEW) -->
     <ComponentActionPicker
       v-model="showComponentActionPicker"
-      :show-restore="role_gte_to(effective_permissions, 'admin')"
+      :show-restore="canAdmin"
       @next="handleComponentAction"
       @cancel="showComponentActionPicker = false"
     />
 
     <!-- Component Creation Modals (showOpener=false, triggered via refs) -->
     <NewComponentModal
-      v-if="role_gte_to(effective_permissions, 'admin')"
+      v-if="canAdmin"
       ref="newComponentModal"
       :project_id="project.id"
       :project="project"
       @projectUpdated="refreshProject"
     />
     <NewComponentModal
-      v-if="role_gte_to(effective_permissions, 'admin')"
+      v-if="canAdmin"
       ref="importComponentModal"
       :project_id="project.id"
       :project="project"
@@ -111,7 +109,7 @@
       @projectUpdated="refreshProject"
     />
     <NewComponentModal
-      v-if="role_gte_to(effective_permissions, 'admin')"
+      v-if="canAdmin"
       ref="copyComponentModal"
       :project_id="project.id"
       :project="project"
@@ -119,25 +117,21 @@
       @projectUpdated="refreshProject"
     />
     <AddComponentModal
-      v-if="role_gte_to(effective_permissions, 'admin')"
+      v-if="canAdmin"
       ref="addComponentModal"
       :project_id="project.id"
       :available_components="sortedAvailableComponents"
       @projectUpdated="refreshProject"
     />
     <RestoreBackupModal
-      v-if="role_gte_to(effective_permissions, 'admin')"
+      v-if="canAdmin"
       ref="restoreBackupModal"
       :project_id="project.id"
       @projectUpdated="refreshProject"
     />
 
     <!-- Project Members Modal -->
-    <ProjectMembersModal
-      :project="project"
-      :effective-permissions="effective_permissions"
-      :available-roles="available_roles"
-    />
+    <ProjectMembersModal :project="project" :available-roles="available_roles" />
 
     <!-- Export Modal (reusable) -->
     <ExportModal
@@ -155,11 +149,9 @@ import { provide } from "vue";
 import _ from "lodash";
 import { getProject, updateProject, exportProjectData } from "../../api/projectsApi";
 import { deleteComponent } from "../../api/componentsApi";
-import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
-import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import { useSidebar } from "../../composables";
+import { roleGteTo } from "../../utils/roleComparison";
 import ComponentCard from "../components/ComponentCard.vue";
 import AddComponentModal from "../components/AddComponentModal.vue";
 import NewComponentModal from "../components/NewComponentModal.vue";
@@ -185,7 +177,11 @@ export default {
     ComponentActionPicker,
     RestoreBackupModal,
   },
-  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue, RoleComparisonMixin],
+  // AlertMixin migrates in 0re.9 (useToast). DateFormat/Form mixins were dead
+  // imports (friendlyDateTime/authenticityToken never consumed here);
+  // RoleComparison is replaced by the roleGteTo util in setup — Project.vue
+  // is the permissions PROVIDER and cannot inject its own provide.
+  mixins: [AlertMixinVue],
   props: {
     initialProjectState: {
       type: Object,
@@ -209,7 +205,11 @@ export default {
     const effective_permissions = props.initialProjectState?.effective_permissions || null;
     provide("effectivePermissions", effective_permissions);
 
-    return { activePanel, togglePanel, closePanel, effective_permissions };
+    // Provider side of the permissions contract — children inject via
+    // usePermissions; Project.vue itself derives gates from the same util.
+    const canAdmin = roleGteTo(effective_permissions, "admin");
+
+    return { activePanel, togglePanel, closePanel, effective_permissions, canAdmin };
   },
   data: function () {
     return {

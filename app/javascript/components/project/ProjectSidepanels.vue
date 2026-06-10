@@ -70,7 +70,7 @@
         <p class="mb-2"><strong>Total:</strong> {{ project.details.total }}</p>
 
         <UpdateProjectDetailsModal
-          v-if="isAdmin"
+          v-if="canAdmin"
           :project="project"
           @projectUpdated="$emit('project-updated')"
         />
@@ -98,12 +98,12 @@
         </div>
         <p v-else class="text-muted">No metadata defined.</p>
 
-        <small v-if="isAdmin && !hasSlackChannel" class="text-muted d-block mt-3">
+        <small v-if="canAdmin && !hasSlackChannel" class="text-muted d-block mt-3">
           For Slack notifications, add metadata with key "Slack Channel ID".
         </small>
 
         <UpdateMetadataModal
-          v-if="canEditMetadata"
+          v-if="canEdit"
           :project="project"
           @projectUpdated="$emit('project-updated')"
         />
@@ -145,7 +145,7 @@
 </template>
 
 <script>
-import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
+import { usePermissions } from "../../composables/usePermissions";
 import History from "../shared/History.vue";
 import UpdateProjectDetailsModal from "../projects/UpdateProjectDetailsModal.vue";
 import UpdateMetadataModal from "./UpdateMetadataModal.vue";
@@ -159,15 +159,10 @@ export default {
     UpdateMetadataModal,
     RevisionHistory,
   },
-  mixins: [RoleComparisonMixin],
   props: {
     project: {
       type: Object,
       required: true,
-    },
-    effectivePermissions: {
-      type: String,
-      default: null,
     },
     activePanel: {
       type: String,
@@ -178,13 +173,12 @@ export default {
       default: () => [],
     },
   },
+  setup() {
+    // Permissions are provided by the page root (Project.vue) — see usePermissions.
+    const { canAdmin, canEdit } = usePermissions();
+    return { canAdmin, canEdit };
+  },
   computed: {
-    isAdmin() {
-      return this.effectivePermissions === "admin";
-    },
-    canEditMetadata() {
-      return this.role_gte_to(this.effectivePermissions, "author");
-    },
     hasMetadata() {
       return this.project.metadata && Object.keys(this.project.metadata).length > 0;
     },
