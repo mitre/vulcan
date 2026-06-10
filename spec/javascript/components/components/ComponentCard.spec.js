@@ -5,7 +5,11 @@ import ComponentCard from "@/components/components/ComponentCard.vue";
 
 vi.mock("@/api/baseApi", () => ({
   default: {
-    get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn(),
+    get: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
     defaults: { headers: { common: {} } },
   },
 }));
@@ -83,6 +87,30 @@ describe("ComponentCard", () => {
     if (wrapper) {
       wrapper.destroy();
     }
+  });
+
+  // REQUIREMENT (v2-8lb): the footer toolbar degrades cleanly at narrow card
+  // widths — the primary button label never splits across lines, and the
+  // admin buttons wrap below as a left-aligned group instead of squeezing
+  // the primary button (outer container must wrap). Gaps come from scoped
+  // CSS classes, never inline styles (Bootstrap 4 has no gap utilities).
+  // jsdom loads no CSS; Playwright verifies the rendered wrap behavior.
+  describe("footer action toolbar responsive contract", () => {
+    it("wraps the toolbar as groups and never splits the primary label", () => {
+      wrapper = createWrapper();
+      const toolbar = wrapper.find(".component-card-actions");
+      expect(toolbar.exists()).toBe(true);
+      expect(toolbar.classes()).toContain("flex-wrap");
+      const primary = toolbar.find(".btn-primary");
+      expect(primary.classes()).toContain("text-nowrap");
+    });
+
+    it("spaces the admin group via the scoped gap class, not an inline style", () => {
+      wrapper = createWrapper();
+      const group = wrapper.find(".component-card-admin-actions");
+      expect(group.exists()).toBe(true);
+      expect(group.attributes("style")).toBeUndefined();
+    });
   });
 
   // ==========================================
