@@ -27,9 +27,12 @@ vi.mock("@/api/componentsApi", () => ({
   getHistories: vi.fn(() => Promise.resolve({ data: [] })),
 }));
 
-function createWrapper(props = {}) {
+// Permissions come from the page-root provide (usePermissions inject),
+// matching production: ProjectComponent/Rules provide "effectivePermissions".
+function createWrapper(props = {}, permissions = "admin") {
   return shallowMount(ControlsSidepanels, {
     localVue,
+    provide: { effectivePermissions: permissions },
     propsData: {
       component: {
         id: 8,
@@ -44,7 +47,6 @@ function createWrapper(props = {}) {
         metadata: {},
         additional_questions: [],
       },
-      effectivePermissions: "admin",
       ...props,
     },
   });
@@ -56,6 +58,36 @@ describe("ControlsSidepanels", () => {
   afterEach(() => {
     if (wrapper) wrapper.destroy();
     vi.restoreAllMocks();
+  });
+
+  // REQUIREMENT: permissions arrive via the root provide (usePermissions
+  // inject), not a prop. Role gates: admin panels need "admin", authoring
+  // panels need "author" or above (canEdit).
+  describe("permissions via inject (usePermissions)", () => {
+    it("canAdmin is true when admin permissions are provided", () => {
+      wrapper = createWrapper({}, "admin");
+      expect(wrapper.vm.canAdmin).toBe(true);
+    });
+
+    it("canAdmin is false for author permissions", () => {
+      wrapper = createWrapper({}, "author");
+      expect(wrapper.vm.canAdmin).toBe(false);
+    });
+
+    it("canEdit is true for author permissions", () => {
+      wrapper = createWrapper({}, "author");
+      expect(wrapper.vm.canEdit).toBe(true);
+    });
+
+    it("canEdit is false for viewer permissions", () => {
+      wrapper = createWrapper({}, "viewer");
+      expect(wrapper.vm.canEdit).toBe(false);
+    });
+
+    it("exposes the injected effectivePermissions for child prop pass-through", () => {
+      wrapper = createWrapper({}, "reviewer");
+      expect(wrapper.vm.effectivePermissions).toBe("reviewer");
+    });
   });
 
   describe("B5: refresh:activity reactivity", () => {

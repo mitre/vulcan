@@ -54,11 +54,14 @@ describe("CommentBody", () => {
     expect(w.findAll(".badge").length).toBe(0);
   });
 
-  it("renders timestamp when provided", () => {
+  it("renders the formatted timestamp (useDateFormat), not the raw ISO string", () => {
     const w = mount(CommentBody, {
       localVue,
       propsData: { text: shortComment, createdAt: "2026-05-01T10:00:00Z" },
     });
-    expect(w.text()).toMatch(/May|2026/);
+    // moment "lll" format: month name + year, no raw ISO time marker
+    expect(w.text()).toContain("May");
+    expect(w.text()).toContain("2026");
+    expect(w.text()).not.toContain("T10:00");
   });
 });

@@ -109,6 +109,9 @@ describe("CommentThread", () => {
     expect(getReviewResponses).toHaveBeenCalledTimes(1);
     expect(getReviewResponses).toHaveBeenCalledWith(1);
     expect(w.text()).toContain("first reply");
+    // Reply timestamp is rendered formatted (useDateFormat), never raw ISO
+    expect(w.text()).toContain("May");
+    expect(w.text()).not.toContain("T00:00");
 
     // Toggle off then on → should NOT refetch (cached)
     await w.find("button[aria-controls]").trigger("click");

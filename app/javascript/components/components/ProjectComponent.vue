@@ -135,7 +135,6 @@
           :component="component"
           :selected-rule="selectedRule"
           :active-panel="activePanel"
-          :effective-permissions="effective_permissions"
           :current-user-id="current_user_id"
           :statuses="statuses"
           :read-only="true"

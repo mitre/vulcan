@@ -25,13 +25,12 @@
 </template>
 
 <script>
-import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
+import { useDateFormat } from "../../composables/useDateFormat";
 import UserBadge from "./UserBadge.vue";
 
 export default {
   name: "CommentAuthorLine",
   components: { UserBadge },
-  mixins: [DateFormatMixin],
   props: {
     name: { type: String, default: null },
     commenterDisplayName: { type: String, default: null },
@@ -42,6 +41,10 @@ export default {
       default: "inline",
       validator: (v) => ["inline", "block", "cell"].includes(v),
     },
+  },
+  setup() {
+    const { friendlyDateTime } = useDateFormat();
+    return { friendlyDateTime };
   },
   computed: {
     displayName() {

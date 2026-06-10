@@ -199,7 +199,6 @@
         :selected-rule="selectedRule"
         :selected-rule-id="selectedRuleId"
         :active-panel="activePanel"
-        :effective-permissions="effectivePermissions"
         :current-user-id="currentUserId"
         :statuses="statuses"
         :reviews-section-filter="reviewsSectionFilter"

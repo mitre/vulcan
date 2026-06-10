@@ -13,15 +13,18 @@
 </template>
 
 <script>
-import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
+import { useDateFormat } from "../../composables/useDateFormat";
 
 export default {
   name: "CommentBody",
-  mixins: [DateFormatMixin],
   props: {
     text: { type: String, default: "" },
     createdAt: { type: String, default: null },
     isImported: { type: Boolean, default: false },
+  },
+  setup() {
+    const { friendlyDateTime } = useDateFormat();
+    return { friendlyDateTime };
   },
   data() {
     return { expanded: false };

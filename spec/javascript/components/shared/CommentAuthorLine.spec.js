@@ -10,13 +10,17 @@ const baseProps = {
 
 describe("CommentAuthorLine", () => {
   describe("inline layout", () => {
-    it("renders avatar initials and date", () => {
+    it("renders avatar initials and the formatted date (useDateFormat)", () => {
       const wrapper = mount(CommentAuthorLine, {
         localVue,
         propsData: { ...baseProps, layout: "inline" },
       });
       expect(wrapper.find(".b-avatar-text span").text()).toBe("JO");
-      expect(wrapper.find("[data-testid='author-date']").exists()).toBe(true);
+      const dateText = wrapper.find("[data-testid='author-date']").text();
+      // moment "lll" format: month name + year, never the raw ISO string
+      expect(dateText).toContain("May");
+      expect(dateText).toContain("2026");
+      expect(dateText).not.toContain("T16:17");
     });
 
     it("renders a UserBadge with name and email", () => {

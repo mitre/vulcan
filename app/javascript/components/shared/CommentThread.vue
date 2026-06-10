@@ -68,14 +68,13 @@
 <script>
 import ReactionButtons from "./ReactionButtons.vue";
 import UserBadge from "./UserBadge.vue";
-import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
+import { useDateFormat } from "../../composables/useDateFormat";
 import { useCommentReactions } from "../../composables/useCommentReactions";
 import { useCommentThread } from "../../composables/useCommentThread";
 
 export default {
   name: "CommentThread",
   components: { ReactionButtons, UserBadge },
-  mixins: [DateFormatMixin],
   props: {
     componentId: { type: [Number, String], default: null },
     parentReviewId: { type: [Number, String], required: true },
@@ -92,7 +91,8 @@ export default {
   setup(props) {
     const thread = useCommentThread(props.componentId, props.parentReviewId);
     const { toggle: toggleReactionApi } = useCommentReactions();
-    return { ...thread, toggleReactionApi };
+    const { friendlyDateTime } = useDateFormat();
+    return { ...thread, toggleReactionApi, friendlyDateTime };
   },
   data() {
     return {};

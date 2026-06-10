@@ -78,7 +78,7 @@
           <p class="text-muted">No metadata defined.</p>
         </div>
         <UpdateMetadataModal
-          v-if="canAuthor"
+          v-if="canEdit"
           :component="component"
           @componentUpdated="$emit('component-updated')"
         />
@@ -114,7 +114,7 @@
           <p class="text-muted">No additional questions defined.</p>
         </div>
         <AddQuestionsModal
-          v-if="canAuthor"
+          v-if="canEdit"
           :component="component"
           @componentUpdated="$emit('component-updated')"
         />
@@ -201,7 +201,7 @@
 
 <script>
 import { getHistories } from "../../api/componentsApi";
-import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
+import { usePermissions } from "../../composables/usePermissions";
 import { SIDEBAR_TITLES } from "../../constants/terminology";
 import History from "./History.vue";
 import RuleSatisfactions from "../rules/RuleSatisfactions.vue";
@@ -220,7 +220,6 @@ export default {
     UpdateMetadataModal,
     AddQuestionsModal,
   },
-  mixins: [RoleComparisonMixin],
   props: {
     component: {
       type: Object,
@@ -235,10 +234,6 @@ export default {
       default: null,
     },
     activePanel: {
-      type: String,
-      default: null,
-    },
-    effectivePermissions: {
       type: String,
       default: null,
     },
@@ -259,6 +254,13 @@ export default {
       default: "all",
     },
   },
+  setup() {
+    // Permissions are provided by the page root (ProjectComponent / Rules) —
+    // see usePermissions. effectivePermissions is exposed for child prop
+    // pass-through (RuleReviews migrates to inject in 0re.14).
+    const { effectivePermissions, canAdmin, canEdit } = usePermissions();
+    return { effectivePermissions, canAdmin, canEdit };
+  },
   data() {
     return {
       titles: SIDEBAR_TITLES,
@@ -277,12 +279,6 @@ export default {
   computed: {
     commentsClosed() {
       return (this.component?.comment_phase || "open") !== "open";
-    },
-    canAdmin() {
-      return this.role_gte_to(this.effectivePermissions, "admin");
-    },
-    canAuthor() {
-      return this.role_gte_to(this.effectivePermissions, "author");
     },
     // Use local histories if available (refreshed via event), otherwise fall back to prop
     displayedHistories() {

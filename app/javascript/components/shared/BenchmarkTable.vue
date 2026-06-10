@@ -82,7 +82,6 @@
 </template>
 <script>
 import { deleteBenchmark } from "../../api/projectsApi";
-import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import { formatDate as formatDateUtil } from "../../utils/dateFormatter";
 import { abbreviateSrgName as abbreviateSrgNameUtil } from "../../utils/srgNameAbbreviator";
@@ -95,7 +94,9 @@ import { useTableSearch } from "../../composables/useTableSearch";
 export default {
   name: "BenchmarkTable",
   components: { SeverityBadges, ConfirmDeleteModal, TableActionButtons },
-  mixins: [FormMixinVue, AlertMixinVue],
+  // AlertMixin migrates in 0re.9 (useToast). FormMixin was a dead import —
+  // authenticityToken was never consumed; CSRF is handled by baseApi hooks.
+  mixins: [AlertMixinVue],
   props: {
     srgs: {
       type: Array,

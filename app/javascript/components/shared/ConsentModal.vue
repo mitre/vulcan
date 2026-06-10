@@ -23,11 +23,11 @@
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import { acknowledgeConsent } from "../../api/authApi";
-import FormMixinVue from "../../mixins/FormMixin.vue";
 
 export default {
   name: "ConsentModal",
-  mixins: [FormMixinVue],
+  // FormMixin was imported here but its authenticityToken computed was never
+  // consumed — CSRF is handled by the ky baseApi hooks (acknowledgeConsent).
   props: {
     config: {
       type: Object,
