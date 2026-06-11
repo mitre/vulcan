@@ -177,6 +177,35 @@ describe("Projects", () => {
   });
 
   // ==========================================
+  // REFRESH ERROR HANDLING
+  // ==========================================
+  // REQUIREMENT: a failed project refresh must surface a toast. The page
+  // historically referenced this.alertOrNotifyResponse WITHOUT ever mixing
+  // AlertMixin in — the .catch handler was undefined, so failures rethrew
+  // silently. The handler now comes from useToast; these tests guard it.
+  describe("refresh error handling", () => {
+    it("provides alertOrNotifyResponse from useToast (was undefined pre-fix)", () => {
+      wrapper = createWrapper();
+      expect(typeof wrapper.vm.alertOrNotifyResponse).toBe("function");
+    });
+
+    it("routes a failed refresh through the toast handler", async () => {
+      const { getProjects } = await import("@/api/projectsApi");
+      const error = Object.assign(new Error("boom"), {
+        response: { status: 500, data: {} },
+      });
+      getProjects.mockRejectedValueOnce(error);
+      wrapper = createWrapper();
+      const handlerSpy = vi.spyOn(wrapper.vm, "alertOrNotifyResponse").mockImplementation(() => {});
+
+      wrapper.vm.refreshProjects();
+      await new Promise((resolve) => setTimeout(resolve));
+
+      expect(handlerSpy).toHaveBeenCalledWith(error);
+    });
+  });
+
+  // ==========================================
   // PROJECTS TABLE
   // ==========================================
   describe("projects table", () => {
