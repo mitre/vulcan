@@ -257,7 +257,7 @@ export default {
   setup() {
     // Permissions are provided by the page root (ProjectComponent / Rules) —
     // see usePermissions. effectivePermissions is exposed for child prop
-    // pass-through (RuleReviews migrates to inject in 0re.14).
+    // pass-through (RuleReviews still declares it as a prop).
     const { effectivePermissions, canAdmin, canEdit } = usePermissions();
     return { effectivePermissions, canAdmin, canEdit };
   },

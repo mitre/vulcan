@@ -81,7 +81,7 @@ export default {
     VueMultiselect,
     ComponentCard,
   },
-  // AlertMixin migrates in 0re.9 (useToast)
+  // AlertMixin migrates with the toast architecture (useToast)
   mixins: [AlertMixinVue],
   props: {
     project_id: {

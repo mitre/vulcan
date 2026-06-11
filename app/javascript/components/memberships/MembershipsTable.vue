@@ -163,7 +163,7 @@ import { EVENTS, dispatch } from "../../utils/notificationEvents";
 export default {
   name: "MembershipsTable",
   components: { NewMembership, UserBadge },
-  // AlertMixin migrates in 0re.9 (useToast). FormMixin and RoleComparisonMixin
+  // AlertMixin migrates with the toast architecture (useToast). FormMixin and RoleComparisonMixin
   // were dead imports — authenticityToken/role_gte_to consumed nowhere here
   // (editing is gated by the `editable` prop from the parent).
   mixins: [AlertMixinVue],

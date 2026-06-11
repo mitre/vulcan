@@ -84,7 +84,7 @@ import { LOCKABLE_SECTIONS } from "../../composables/ruleFieldConfig";
 
 export default {
   name: "LockControlsModal",
-  // AlertMixin migrates in 0re.9 (useToast)
+  // AlertMixin migrates with the toast architecture (useToast)
   mixins: [AlertMixinVue],
   props: {
     component_id: {

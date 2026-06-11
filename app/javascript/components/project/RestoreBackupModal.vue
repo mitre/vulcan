@@ -83,7 +83,7 @@ import BackupPreview from "../shared/BackupPreview.vue";
 export default {
   name: "RestoreBackupModal",
   components: { BackupPreview },
-  // AlertMixin migrates in 0re.9 (useToast). FormMixin was a dead import —
+  // AlertMixin migrates with the toast architecture (useToast). FormMixin was a dead import —
   // authenticityToken was never consumed; CSRF is handled by baseApi hooks.
   mixins: [AlertMixinVue],
   props: {

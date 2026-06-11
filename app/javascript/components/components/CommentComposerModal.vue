@@ -74,7 +74,7 @@ const COMPONENT_SECTION_VALUE = "__component__";
 export default {
   name: "CommentComposerModal",
   components: { CommentDedupBanner, FilterDropdown },
-  // AlertMixin migrates in 0re.9 (useToast). FormMixin was removed as a dead
+  // AlertMixin migrates with the toast architecture (useToast). FormMixin was removed as a dead
   // import: the comment that used to live here claimed it set
   // axios.defaults X-CSRF-Token on mount — true in the axios era, but the ky
   // migration (447ca1e6) replaced that with a per-request beforeRequest hook

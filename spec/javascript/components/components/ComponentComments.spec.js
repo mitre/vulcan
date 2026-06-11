@@ -990,7 +990,7 @@ describe("ComponentComments", () => {
     });
   });
 
-  // ── 05f.28.5: viewParentComments + exitSplitMode ───────────────────
+  // ── viewParentComments + exitSplitMode ─────────────────────────────
 
   it("viewParentComments swaps filter to parent rule", async () => {
     const wrapper = mount(ComponentComments, {

@@ -175,7 +175,7 @@ export default {
     ComponentActionPicker,
     RestoreBackupModal,
   },
-  // AlertMixin migrates in 0re.9 (useToast). DateFormat/Form mixins were dead
+  // AlertMixin migrates with the toast architecture (useToast). DateFormat/Form mixins were dead
   // imports (friendlyDateTime/authenticityToken never consumed here);
   // RoleComparison is replaced by the roleGteTo util in setup — Project.vue
   // is the permissions PROVIDER and cannot inject its own provide.

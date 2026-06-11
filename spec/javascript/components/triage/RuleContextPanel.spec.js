@@ -399,7 +399,7 @@ describe("RuleContextPanel", () => {
     expect(body.classes()).not.toContain("section-body--focused");
   });
 
-  // ── 05f.28.1: unknown fields must sort AFTER known fields ──────
+  // ── unknown fields must sort AFTER known fields ──────────────────
 
   it("indexOf sort uses ternary not nullish coalescing for -1", async () => {
     const { FIELD_DISPLAY_ORDER } = await import("@/composables/ruleFieldConfig");
@@ -411,7 +411,7 @@ describe("RuleContextPanel", () => {
     expect(buggyVal).toBe(-1);
   });
 
-  // ── 05f.25: visibleFields sorted by FIELD_DISPLAY_ORDER ─────────
+  // ── visibleFields sorted by FIELD_DISPLAY_ORDER ──────────────────
   // REQUIREMENT: Triage panel must show fields in the same order as
   // the editor (RuleForm.vue). Previously concatenated config arrays
   // in wrong order (fix before vuln_discussion).
@@ -490,7 +490,7 @@ describe("RuleContextPanel", () => {
     expect(w.find('[data-section="fixtext"] .section-body').isVisible()).toBe(true);
   });
 
-  // ── WCAG: section buttons have aria-label (05f.28.2) ───────────────
+  // ── WCAG: section buttons have aria-label ──────────────────────────
 
   it("adds aria-label to collapsible section buttons", () => {
     const w = mount(RuleContextPanel, {

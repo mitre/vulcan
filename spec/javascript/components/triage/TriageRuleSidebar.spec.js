@@ -209,7 +209,7 @@ describe("TriageRuleSidebar", () => {
     expect(w.vm.allGroupsExpanded).toBe(true);
   });
 
-  // ── 05f.25: Comments within a group respect input order ─────────
+  // ── Comments within a group respect input order ──────────────────
   // Sidebar displays comments in the order received from sortedRows.
   // TriageSplitView.sortedRows sorts by compareBySectionOrder before
   // passing to the sidebar — test that the sidebar preserves that order.
@@ -290,7 +290,7 @@ describe("TriageRuleSidebar", () => {
     expect(w.vm.focusedIndex).toBe(syncedIdx + 1);
   });
 
-  // ── 05f.28.5: Edge cases ───────────────────────────────────────────
+  // ── Edge cases ─────────────────────────────────────────────────────
 
   it("renders empty state with zero comments", () => {
     const w = mount(TriageRuleSidebar, {

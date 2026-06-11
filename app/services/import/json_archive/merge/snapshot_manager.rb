@@ -75,7 +75,7 @@ module Import
 
         # True iff the snapshot's recorded checksum matches the file on disk.
         # Errno::ENOENT (missing zip OR missing checksum) returns false so
-        # callers can treat it as "no valid snapshot" instead of crashing. # -- API name fixed by 480.7 AC
+        # callers can treat it as "no valid snapshot" instead of crashing.
         def self.verify_snapshot(path)
           expected = File.read(checksum_path(path)).strip
           actual   = Digest::SHA256.hexdigest(File.binread(path))

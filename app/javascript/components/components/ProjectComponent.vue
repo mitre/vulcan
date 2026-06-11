@@ -206,7 +206,7 @@ export default {
     CommentComposerModal,
     ExportModal,
   },
-  // AlertMixin migrates in 0re.9 (useToast). DateFormatMixin and
+  // AlertMixin migrates with the toast architecture (useToast). DateFormatMixin and
   // RoleComparisonMixin were dead imports here — this component is the
   // PROVIDER for effectivePermissions (gates read the raw prop value) and
   // renders no dates itself.

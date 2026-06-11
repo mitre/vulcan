@@ -244,7 +244,7 @@ describe("TriageQueueNav", () => {
     expect(w.text()).toContain("Rule 1 of 40");
   });
 
-  // ── WCAG + ARIA fixes (05f.28.2) ──────────────────────────────────
+  // ── WCAG + ARIA fixes ─────────────────────────────────────────────
 
   it("uses role='option' on browse items, not role='button'", async () => {
     const w = mount(TriageQueueNav, { localVue, propsData: baseProps() });

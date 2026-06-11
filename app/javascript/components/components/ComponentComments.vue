@@ -400,7 +400,7 @@ export default {
     MergeCommentsModal,
     Highlighter,
   },
-  // AlertMixin migrates in 0re.9 (useToast). FormMixin was removed as a dead
+  // AlertMixin migrates with the toast architecture (useToast). FormMixin was removed as a dead
   // import: its old comment claimed axios.defaults CSRF setup was required
   // here — true in the axios era, but the ky migration (447ca1e6) replaced
   // that with a per-request beforeRequest hook in baseApi that reads the
