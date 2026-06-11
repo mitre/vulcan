@@ -34,6 +34,15 @@ vi.mock("@/api/reviewsApi", () => ({
   mergeReviews: vi.fn(() => Promise.resolve({ data: {} })),
 }));
 
+// Spy-wrap (real implementations preserved) so tests can pin that dates,
+// permissions, and the reply composer flow through the composables.
+vi.mock("@/composables/useDateFormat", { spy: true });
+vi.mock("@/composables/usePermissions", { spy: true });
+vi.mock("@/composables/useReplyComposer", { spy: true });
+import { useDateFormat } from "@/composables/useDateFormat";
+import { usePermissions } from "@/composables/usePermissions";
+import { useReplyComposer } from "@/composables/useReplyComposer";
+
 // Flush both microtasks (axios .then chain) and the next Vue tick so the
 // reactive state from a resolved fetch settles before assertions run.
 // @vue/test-utils for Vue 2 doesn't export flushPromises, so this is the
@@ -49,7 +58,6 @@ const SHARED_STUBS = [
   "b-button",
   "TriageStatusBadge",
   "SectionLabel",
-  "CommentTriageModal",
 ];
 
 const mockResponse = {
@@ -275,7 +283,8 @@ describe("ComponentComments", () => {
         },
       });
       const wrapper = mount(ComponentComments, {
-        propsData: { componentId: 42, effectivePermissions: "author" },
+        propsData: { componentId: 42 },
+        provide: { effectivePermissions: "author" },
       });
       await flushPromises();
       expect(wrapper.text()).toContain("Triage");
@@ -286,7 +295,8 @@ describe("ComponentComments", () => {
         data: { rows: [adjudicatedRow], pagination: { page: 1, per_page: 25, total: 1 } },
       });
       const wrapper = mount(ComponentComments, {
-        propsData: { componentId: 42, effectivePermissions: "viewer" },
+        propsData: { componentId: 42 },
+        provide: { effectivePermissions: "viewer" },
       });
       await flushPromises();
       // No mutating action buttons in the row
@@ -320,7 +330,8 @@ describe("ComponentComments", () => {
     it("PATCHes /reviews/:id/reopen and re-fetches the table", async () => {
       reopenReview.mockResolvedValue({ data: { review: { id: 99 } } });
       const wrapper = mount(ComponentComments, {
-        propsData: { componentId: 42, effectivePermissions: "author" },
+        propsData: { componentId: 42 },
+        provide: { effectivePermissions: "author" },
         stubs: SHARED_STUBS,
       });
       await flushPromises();
@@ -336,7 +347,8 @@ describe("ComponentComments", () => {
     it("surfaces server errors via alertOrNotifyResponse but still re-fetches", async () => {
       reopenReview.mockRejectedValue({ response: { status: 422, data: {} } });
       const wrapper = mount(ComponentComments, {
-        propsData: { componentId: 42, effectivePermissions: "author" },
+        propsData: { componentId: 42 },
+        provide: { effectivePermissions: "author" },
         stubs: SHARED_STUBS,
       });
       await flushPromises();
@@ -410,7 +422,8 @@ describe("ComponentComments", () => {
         },
       });
       return mount(ComponentComments, {
-        propsData: { componentId: 42, effectivePermissions: "author" },
+        propsData: { componentId: 42 },
+        provide: { effectivePermissions: "author" },
         stubs: SHARED_STUBS,
       });
     }
@@ -509,7 +522,8 @@ describe("ComponentComments", () => {
   describe("disposition CSV export button", () => {
     it("computes a path-based export URL with the active filterStatus", () => {
       const wrapper = mount(ComponentComments, {
-        propsData: { componentId: 42, effectivePermissions: "author", scope: "component" },
+        propsData: { componentId: 42, scope: "component" },
+        provide: { effectivePermissions: "author" },
         stubs: SHARED_STUBS,
       });
       wrapper.vm.filterStatus = "concur";
@@ -520,7 +534,8 @@ describe("ComponentComments", () => {
 
     it("omits the triage_status query param when filter is 'all'", () => {
       const wrapper = mount(ComponentComments, {
-        propsData: { componentId: 42, effectivePermissions: "author", scope: "component" },
+        propsData: { componentId: 42, scope: "component" },
+        provide: { effectivePermissions: "author" },
         stubs: SHARED_STUBS,
       });
       wrapper.vm.filterStatus = "all";
@@ -532,7 +547,8 @@ describe("ComponentComments", () => {
 
     it("renders the Export CSV button for author+ in component scope", async () => {
       const wrapper = mount(ComponentComments, {
-        propsData: { componentId: 42, effectivePermissions: "author", scope: "component" },
+        propsData: { componentId: 42, scope: "component" },
+        provide: { effectivePermissions: "author" },
         stubs: noBtnStubs,
       });
       await flushPromises();
@@ -543,7 +559,8 @@ describe("ComponentComments", () => {
 
     it("hides the Export CSV button for viewer role (server enforces 403; UI matches)", async () => {
       const wrapper = mount(ComponentComments, {
-        propsData: { componentId: 42, effectivePermissions: "viewer", scope: "component" },
+        propsData: { componentId: 42, scope: "component" },
+        provide: { effectivePermissions: "viewer" },
         stubs: noBtnStubs,
       });
       await flushPromises();
@@ -553,7 +570,8 @@ describe("ComponentComments", () => {
 
     it("renders the Export CSV button in project (aggregate) scope and links to the project endpoint", async () => {
       const wrapper = mount(ComponentComments, {
-        propsData: { projectId: 7, effectivePermissions: "author", scope: "project" },
+        propsData: { projectId: 7, scope: "project" },
+        provide: { effectivePermissions: "author" },
         stubs: noBtnStubs,
       });
       await flushPromises();
@@ -665,7 +683,8 @@ describe("ComponentComments", () => {
       },
     });
     const wrapper = mount(ComponentComments, {
-      propsData: { componentId: 42, effectivePermissions: "author" },
+      propsData: { componentId: 42 },
+        provide: { effectivePermissions: "author" },
     });
     await flushPromises(wrapper);
     expect(wrapper.text()).toContain(longComment);
@@ -1031,7 +1050,8 @@ describe("ComponentComments", () => {
 
   it("adds ml-auto to export button in split mode", async () => {
     const wrapper = mount(ComponentComments, {
-      propsData: { componentId: 42, effectivePermissions: "author" },
+      propsData: { componentId: 42 },
+        provide: { effectivePermissions: "author" },
       stubs: SHARED_STUBS,
     });
     await flushPromises(wrapper);
@@ -1043,7 +1063,8 @@ describe("ComponentComments", () => {
 
   it("adds ml-auto to comment button when export hidden in split mode", async () => {
     const wrapper = mount(ComponentComments, {
-      propsData: { componentId: 42, effectivePermissions: "viewer" },
+      propsData: { componentId: 42 },
+        provide: { effectivePermissions: "viewer" },
       stubs: SHARED_STUBS,
     });
     await flushPromises(wrapper);
@@ -1068,7 +1089,8 @@ describe("ComponentComments", () => {
 
     it("navigates to component triage instead of entering split mode", async () => {
       const wrapper = mount(ComponentComments, {
-        propsData: { projectId: 6, scope: "project", effectivePermissions: "author" },
+        propsData: { projectId: 6, scope: "project" },
+        provide: { effectivePermissions: "author" },
         stubs: SHARED_STUBS,
       });
       await flushPromises(wrapper);
@@ -1085,7 +1107,8 @@ describe("ComponentComments", () => {
   describe("bulk triage selection", () => {
     const mountAuthor = () =>
       mount(ComponentComments, {
-        propsData: { componentId: 42, effectivePermissions: "author" },
+        propsData: { componentId: 42 },
+        provide: { effectivePermissions: "author" },
         stubs: SHARED_STUBS,
       });
 
@@ -1152,6 +1175,104 @@ describe("ComponentComments", () => {
       expect(alert.exists()).toBe(true);
       expect(alert.props("variant")).toBe("info");
       expect(alert.props("show")).toBe(true);
+    });
+  });
+
+  // ── v2-0re.13.4: composable contracts ───────────────────────────────
+  // REQUIREMENTS: permissions arrive via provide/inject (usePermissions),
+  // dates render via useDateFormat, and the reply composer state machine
+  // flows through useReplyComposer with the onOpen/afterPosted bridge —
+  // no non-Alert mixins remain.
+
+  describe("composable contracts (v2-0re.13.4)", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("sources permissions from provide via usePermissions — author sees the select column", async () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 42 },
+        provide: { effectivePermissions: "author" },
+        stubs: SHARED_STUBS,
+      });
+      await flushPromises(wrapper);
+      expect(usePermissions).toHaveBeenCalled();
+      expect(wrapper.vm.fields.map((f) => f.key)).toContain("select");
+      expect(wrapper.vm.canTriage).toBe(true);
+      expect(wrapper.vm.canMerge).toBe(false);
+    });
+
+    it("viewer via provide gets no select column and no triage/merge ability", async () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 42 },
+        provide: { effectivePermissions: "viewer" },
+        stubs: SHARED_STUBS,
+      });
+      await flushPromises(wrapper);
+      expect(wrapper.vm.fields.map((f) => f.key)).not.toContain("select");
+      expect(wrapper.vm.canTriage).toBe(false);
+      expect(wrapper.vm.canMerge).toBe(false);
+    });
+
+    it("admin via provide can merge", async () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 42 },
+        provide: { effectivePermissions: "admin" },
+        stubs: SHARED_STUBS,
+      });
+      await flushPromises(wrapper);
+      expect(wrapper.vm.canMerge).toBe(true);
+    });
+
+    it("renders posted dates via useDateFormat", async () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 42 },
+        provide: { effectivePermissions: "viewer" },
+        stubs: SHARED_STUBS,
+      });
+      await flushPromises(wrapper);
+      expect(useDateFormat).toHaveBeenCalled();
+      expect(typeof wrapper.vm.friendlyDateTime).toBe("function");
+      // moment "lll" format renders the month name, never the raw ISO string
+      expect(wrapper.vm.friendlyDateTime("2026-04-27T10:00:00Z")).toContain("Apr");
+    });
+
+    it("wires useReplyComposer — reply from a row sets state and shows the modal via the bridge", async () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 42 },
+        provide: { effectivePermissions: "author" },
+        stubs: SHARED_STUBS,
+      });
+      await flushPromises(wrapper);
+      expect(useReplyComposer).toHaveBeenCalled();
+
+      const showSpy = vi.spyOn(wrapper.vm.$bvModal, "show").mockImplementation(() => {});
+      wrapper.vm.openReplyComposerFromRow({
+        id: 142,
+        rule_id: 7,
+        component_id: 42,
+        rule_displayed_name: "CRI-O-000050",
+      });
+      expect(wrapper.vm.composerState.mode).toBe("reply");
+      expect(wrapper.vm.composerState.reviewId).toBe(142);
+      expect(wrapper.vm.composerActive).toBe(true);
+      await wrapper.vm.$nextTick();
+      expect(showSpy).toHaveBeenCalledWith("comment-composer-modal");
+    });
+
+    it("afterPosted bridge refreshes the queue when the composer posts", async () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 42 },
+        provide: { effectivePermissions: "author" },
+        stubs: SHARED_STUBS,
+      });
+      await flushPromises(wrapper);
+      getComments.mockClear();
+
+      wrapper.vm.openComponentComposerLocal();
+      wrapper.vm.onComposerPosted();
+      await flushPromises(wrapper);
+
+      expect(getComments).toHaveBeenCalledTimes(1);
+      expect(wrapper.vm.composerActive).toBe(false);
     });
   });
 });

@@ -363,9 +363,9 @@ import { useCommentsStore } from "../../stores/comments";
 import { useCommentTriage } from "../../composables/mutations/useCommentTriage";
 import { SECTION_LABELS, buildStatusFilterOptions } from "../../constants/triageVocabulary";
 import AlertMixin from "../../mixins/AlertMixin.vue";
-import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
-import FormMixin from "../../mixins/FormMixin.vue";
-import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
+import { useDateFormat } from "../../composables/useDateFormat";
+import { usePermissions } from "../../composables/usePermissions";
+import { useReplyComposer } from "../../composables/useReplyComposer";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import SectionLabel from "../shared/SectionLabel.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
@@ -380,7 +380,6 @@ import ComponentSearchModal from "../shared/ComponentSearchModal.vue";
 import BulkTriageBar from "../triage/BulkTriageBar.vue";
 import MergeCommentsModal from "../triage/MergeCommentsModal.vue";
 import Highlighter from "vue-highlight-words";
-import ReplyComposerMixin from "../../mixins/ReplyComposerMixin.vue";
 import { ruleHref as buildRuleHref, rowTriageClass } from "../../utils/commentTableHelpers";
 
 export default {
@@ -401,11 +400,12 @@ export default {
     MergeCommentsModal,
     Highlighter,
   },
-  // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because
-  // each esbuild pack has its own axios singleton (bundle isolation) — the
-  // navbar pack's FormMixin doesn't reach the consuming pack. The reopen
-  // PATCH would 422 on CSRF in a pack that lacks pack-level CSRF setup.
-  mixins: [AlertMixin, DateFormatMixin, FormMixin, RoleComparisonMixin, ReplyComposerMixin],
+  // AlertMixin migrates in 0re.9 (useToast). FormMixin was removed as a dead
+  // import: its old comment claimed axios.defaults CSRF setup was required
+  // here — true in the axios era, but the ky migration (447ca1e6) replaced
+  // that with a per-request beforeRequest hook in baseApi that reads the
+  // CSRF meta tag. authenticityToken is consumed nowhere in this component.
+  mixins: [AlertMixin],
   props: {
     // Either componentId (single-component scope) or projectId (aggregate
     // scope) is required — but not both. The scope prop disambiguates and
@@ -419,17 +419,38 @@ export default {
       default: "component",
       validator: (v) => ["component", "project"].includes(v),
     },
-    // Server-resolved role on this project/component. Viewers see the
-    // triage queue but cannot mutate — author+ can triage / adjudicate
-    // / re-open. Mirrors the backend authorize_author_project gates.
-    effectivePermissions: { type: String, default: null },
     adminPanelOpen: { type: Boolean, default: false },
     contextMode: { type: String, default: "commented" },
   },
   setup() {
     const commentsStore = useCommentsStore();
     const triageComposable = useCommentTriage();
-    return { commentsStore, triageComposable };
+    // Server-resolved role, provided by the page root (ProjectTriagePage /
+    // ComponentTriagePage). Viewers see the triage queue but cannot mutate —
+    // author+ can triage / adjudicate / re-open. Mirrors the backend
+    // authorize_author_project gates.
+    const { effectivePermissions, canEdit, canAdmin } = usePermissions();
+    const { friendlyDateTime } = useDateFormat();
+    // Bridge: useReplyComposer's onOpen/afterPosted callbacks need the
+    // options-API instance ($bvModal.show, fetch), which setup() cannot
+    // reach in Vue 2.7 without getCurrentInstance (anti-pattern). The
+    // bridge object is filled in created() — late binding, same contract.
+    const composerBridge = { onOpen: null, afterPosted: null };
+    const composer = useReplyComposer({
+      onOpen: () => composerBridge.onOpen && composerBridge.onOpen(),
+      afterPosted: (parentReviewId, snapshot) =>
+        composerBridge.afterPosted && composerBridge.afterPosted(parentReviewId, snapshot),
+    });
+    return {
+      commentsStore,
+      triageComposable,
+      effectivePermissions,
+      canEdit,
+      canAdmin,
+      friendlyDateTime,
+      composerBridge,
+      ...composer,
+    };
   },
   data() {
     const persisted = this.loadPersistedFilters();
@@ -450,7 +471,8 @@ export default {
       { key: "triage_status", label: "Status", sortable: true },
       { key: "actions", label: "Action", sortable: false, tdClass: "text-nowrap" },
     );
-    if (this.role_gte_to(this.effectivePermissions, "author")) {
+    // canEdit (author+) is setup-returned, so it is available before data()
+    if (this.canEdit) {
       fields.unshift({ key: "select", label: "", sortable: false, thStyle: { width: "2.5rem" } });
     }
     return {
@@ -497,11 +519,13 @@ export default {
     hasStatusCounts() {
       return Object.values(this.statusCounts).some((n) => n > 0);
     },
+    // Domain aliases over the injected permission tiers — triage needs
+    // author+ (canEdit), merge is admin-only (canAdmin).
     canTriage() {
-      return this.role_gte_to(this.effectivePermissions, "author");
+      return this.canEdit;
     },
     canMerge() {
-      return this.role_gte_to(this.effectivePermissions, "admin");
+      return this.canAdmin;
     },
     splitModeFilterVisible() {
       return !this.splitMode;
@@ -558,6 +582,10 @@ export default {
         ...friendly,
       ];
     },
+  },
+  created() {
+    this.composerBridge.onOpen = () => this.$bvModal.show("comment-composer-modal");
+    this.composerBridge.afterPosted = () => this.fetch();
   },
   mounted() {
     this.fetch();
@@ -880,9 +908,6 @@ export default {
     },
     openComponentComposerLocal() {
       this.openComponentComposer(this.componentId);
-    },
-    afterComposerPosted() {
-      this.fetch();
     },
   },
 };

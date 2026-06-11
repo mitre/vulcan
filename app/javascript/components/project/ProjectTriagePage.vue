@@ -15,11 +15,8 @@
           </b-button>
         </div>
       </div>
-      <ComponentComments
-        scope="project"
-        :project-id="project.id"
-        :effective-permissions="effectivePermissions"
-      />
+      <!-- Permissions arrive via the provide("effectivePermissions") above -->
+      <ComponentComments scope="project" :project-id="project.id" />
     </div>
   </div>
 </template>

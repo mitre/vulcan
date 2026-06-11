@@ -58,10 +58,14 @@ describe("ProjectTriagePage", () => {
       expect(wrapper.vm.breadcrumbs[1].text).toBe("vSphere 7.0");
     });
 
-    it("passes effectivePermissions to ComponentComments", () => {
+    it("provides effectivePermissions to the component tree (inject contract)", () => {
       const wrapper = createWrapper();
+      // The page root is the provider — ComponentComments injects via
+      // usePermissions, so no prop pass-through exists anymore.
       const comments = wrapper.findComponent({ name: "ComponentComments" });
-      expect(comments.props("effectivePermissions")).toBe("admin");
+      expect(comments.exists()).toBe(true);
+      expect("effectivePermissions" in (comments.props() || {})).toBe(false);
+      expect(wrapper.vm.effectivePermissions).toBe("admin");
     });
   });
 });

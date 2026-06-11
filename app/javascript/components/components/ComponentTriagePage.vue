@@ -38,7 +38,6 @@
         :project-id="project.id"
         :component-displayed-name="component.name"
         :component-prefix="component.prefix"
-        :effective-permissions="effectivePermissions"
         :admin-panel-open="adminPanelOpen"
         :context-mode.sync="contextMode"
         @split-mode-changed="onSplitModeChanged"
