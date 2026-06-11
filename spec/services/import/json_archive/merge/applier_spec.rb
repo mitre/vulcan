@@ -898,6 +898,8 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
   end
 
   describe '#call (audit correlation scope)' do
+    include_context 'with auditing'
+
     let(:target_rule) { component.rules.first }
     let(:auto_plan) do
       p = Import::JsonArchive::Merge::MergePlan.new(
@@ -1178,6 +1180,8 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
   end
 
   describe '#call (actor attribution v2-480.37)' do
+    include_context 'with auditing'
+
     let(:target_rule) { component.rules.first }
     let(:operator) { create(:user, email: 'op@example.com', name: 'Op Erator') }
     let(:new_review_hash) do

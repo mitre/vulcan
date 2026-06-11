@@ -27,7 +27,9 @@ RSpec.describe 'MergeAnalyzer performance', :performance do
         'fixtext' => "Fix #{i}",
         'rule_severity' => %w[low medium high].sample,
         'status' => 'Applicable - Configurable',
-        'locked_fields' => []
+        # Real JSONB shape: section-keyed hash ({ "Check" => true }); empty
+        # hash = no locks. Array shape never occurs in real archives.
+        'locked_fields' => {}
       }
     end
   end
