@@ -25,12 +25,24 @@ describe("RuleReviewModal", () => {
     return shallowMount(RuleReviewModal, {
       localVue,
       propsData: {
-        rule: { id: 1, component_id: 10, status: "Not Yet Determined", locked: false, review_requestor_id: null },
+        rule: {
+          id: 1,
+          component_id: 10,
+          status: "Not Yet Determined",
+          locked: false,
+          review_requestor_id: null,
+        },
         effectivePermissions: "admin",
         currentUserId: 1,
         ...props,
       },
-      stubs: { BModal: true, BFormGroup: true, BFormSelect: true, BFormTextarea: true, BButton: true },
+      stubs: {
+        BModal: true,
+        BFormGroup: true,
+        BFormSelect: true,
+        BFormTextarea: true,
+        BButton: true,
+      },
       // No $bvModal mock: BootstrapVue installs it read-only — mocks cannot
       // overwrite it and only emit VTU warnings. Spy on the real injection
       // (vi.spyOn(wrapper.vm.$bvModal, ...)) if a test needs to assert it.
@@ -38,7 +50,9 @@ describe("RuleReviewModal", () => {
   };
 
   beforeEach(() => vi.resetAllMocks());
-  afterEach(() => { if (wrapper) wrapper.destroy(); });
+  afterEach(() => {
+    if (wrapper) wrapper.destroy();
+  });
 
   it("submitReview calls createRuleReview with rule id and review payload", async () => {
     const { createRuleReview } = await import("@/api/reviewsApi");

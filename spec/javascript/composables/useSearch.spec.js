@@ -80,9 +80,8 @@ describe("useSearch", () => {
       globalSearch.mockImplementationOnce(
         () =>
           new Promise((resolve) => {
-            resolvePromise = () =>
-              resolve({ data: { projects: [], components: [], rules: [] } });
-          })
+            resolvePromise = () => resolve({ data: { projects: [], components: [], rules: [] } });
+          }),
       );
 
       const { searchTerm, search, isLoading } = useSearch();
@@ -101,9 +100,7 @@ describe("useSearch", () => {
       const mockResponse = {
         data: {
           projects: [{ id: 1, name: "Project 1", description: "Desc" }],
-          components: [
-            { id: 2, name: "Component 1", project_name: "Project 1" },
-          ],
+          components: [{ id: 2, name: "Component 1", project_name: "Project 1" }],
           rules: [{ id: 3, rule_id: "RULE-001", title: "Rule Title" }],
         },
       };

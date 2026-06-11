@@ -108,7 +108,9 @@ describe("projectsApi", () => {
   it("getProjectComments calls GET /projects/:id/comments with params", async () => {
     api.get.mockResolvedValue({ data: {} });
     await getProjectComments(3, { page: 1, status: "pending" });
-    expect(api.get).toHaveBeenCalledWith("/projects/3/comments", { params: { page: 1, status: "pending" } });
+    expect(api.get).toHaveBeenCalledWith("/projects/3/comments", {
+      params: { page: 1, status: "pending" },
+    });
   });
 
   describe("exportProjectData", () => {

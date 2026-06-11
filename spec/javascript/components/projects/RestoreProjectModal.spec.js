@@ -242,9 +242,7 @@ describe("RestoreProjectModal", () => {
 
       await wrapper.vm.submitDryRun();
 
-      expect(createFromBackup).toHaveBeenCalledWith(
-        expect.any(FormData),
-      );
+      expect(createFromBackup).toHaveBeenCalledWith(expect.any(FormData));
     });
   });
 

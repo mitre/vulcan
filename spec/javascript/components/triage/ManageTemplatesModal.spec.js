@@ -9,7 +9,11 @@ vi.mock("@/api/projectsApi", () => ({
       data: {
         triage_response_templates: [
           { id: 1, name: "Accept standard", body: "Concur with the finding as written." },
-          { id: 2, name: "Decline - needs evidence", body: "Unable to incorporate without supporting evidence." },
+          {
+            id: 2,
+            name: "Decline - needs evidence",
+            body: "Unable to incorporate without supporting evidence.",
+          },
         ],
       },
     }),

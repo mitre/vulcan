@@ -166,9 +166,12 @@ describe("UserComments", () => {
     wrapper.vm.filterStatus = "pending";
     wrapper.vm.onFilterChanged();
     await flushPromises();
-    expect(getUserComments).toHaveBeenCalledWith(7, expect.objectContaining({
-      triage_status: "pending",
-    }));
+    expect(getUserComments).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({
+        triage_status: "pending",
+      }),
+    );
   });
 
   it("surfaces fetch errors via alertOrNotifyResponse", async () => {

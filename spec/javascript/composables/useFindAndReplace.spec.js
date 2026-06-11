@@ -1,8 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  useFindAndReplace,
-  FIND_AND_REPLACE_FIELDS,
-} from "@/composables/useFindAndReplace";
+import { useFindAndReplace, FIND_AND_REPLACE_FIELDS } from "@/composables/useFindAndReplace";
 
 // REQUIREMENT: useFindAndReplace must replicate FindAndReplaceMixin's engine —
 // grouping matches per rule, splitting values into highlighted segments, and
@@ -131,9 +128,7 @@ describe("useFindAndReplace", () => {
     });
 
     it("searches nested field paths (Vulnerability Discussion)", () => {
-      const results = groupFindResults(rules, "cleartext", false, [
-        "Vulnerability Discussion",
-      ]);
+      const results = groupFindResults(rules, "cleartext", false, ["Vulnerability Discussion"]);
       expect(Object.keys(results)).toEqual(["2"]);
       expect(results[2].results[0].value).toBe("Cleartext protocol");
     });

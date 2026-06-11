@@ -39,7 +39,9 @@ describe("AddQuestionsModal", () => {
   };
 
   beforeEach(() => vi.resetAllMocks());
-  afterEach(() => { if (wrapper) wrapper.destroy(); });
+  afterEach(() => {
+    if (wrapper) wrapper.destroy();
+  });
 
   it("updateQuestions calls updateComponent with component id and payload", async () => {
     const { updateComponent } = await import("@/api/componentsApi");

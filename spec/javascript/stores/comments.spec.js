@@ -144,8 +144,16 @@ describe("useCommentsStore", () => {
     it("loading stays true while ANY fetch is in-flight (ref-counted)", async () => {
       let resolveFirst, resolveSecond;
       getComments
-        .mockReturnValueOnce(new Promise((r) => { resolveFirst = r; }))
-        .mockReturnValueOnce(new Promise((r) => { resolveSecond = r; }));
+        .mockReturnValueOnce(
+          new Promise((r) => {
+            resolveFirst = r;
+          }),
+        )
+        .mockReturnValueOnce(
+          new Promise((r) => {
+            resolveSecond = r;
+          }),
+        );
       const store = useCommentsStore();
 
       const p1 = store.fetchComments(38, { a: 1 });
@@ -450,9 +458,7 @@ describe("useCommentsStore", () => {
 
       await store.fetchComments(38, {});
 
-      await expect(
-        store.postComment(38, 100, { comment: "test" }),
-      ).rejects.toThrow("403");
+      await expect(store.postComment(38, 100, { comment: "test" })).rejects.toThrow("403");
       expect(Object.keys(store.cache)).toHaveLength(1);
       expect(store.error).toBeInstanceOf(Error);
     });
@@ -500,9 +506,9 @@ describe("useCommentsStore", () => {
       const store = useCommentsStore();
 
       await store.fetchComments(38, {});
-      await expect(
-        store.triageComment(38, 142, { triage_status: "concur" }),
-      ).rejects.toThrow("409");
+      await expect(store.triageComment(38, 142, { triage_status: "concur" })).rejects.toThrow(
+        "409",
+      );
       expect(Object.keys(store.cache)).toHaveLength(1);
     });
   });

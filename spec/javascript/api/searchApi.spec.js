@@ -12,7 +12,9 @@ describe("searchApi", () => {
   it("globalSearch calls GET /api/search/global with params", async () => {
     api.get.mockResolvedValue({ data: { results: [] } });
     await globalSearch({ q: "test", limit: 10 });
-    expect(api.get).toHaveBeenCalledWith("/api/search/global", { params: { q: "test", limit: 10 } });
+    expect(api.get).toHaveBeenCalledWith("/api/search/global", {
+      params: { q: "test", limit: 10 },
+    });
   });
 
   it("getRelatedRules calls GET /rules/:id/search/related_rules", async () => {

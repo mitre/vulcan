@@ -614,7 +614,12 @@ describe("useRuleFormFields", () => {
       );
       const { ruleFormFields } = useRuleFormFields(rule, ref(false));
       expect(ruleFormFields.value.displayed).toEqual(
-        expect.arrayContaining(["status", "rule_severity", "status_justification", "vendor_comments"]),
+        expect.arrayContaining([
+          "status",
+          "rule_severity",
+          "status_justification",
+          "vendor_comments",
+        ]),
       );
     });
 
@@ -627,7 +632,9 @@ describe("useRuleFormFields", () => {
       );
       const { ruleFormFields } = useRuleFormFields(rule, ref(false));
       // ADNM doesn't show title/fixtext at all — they're not in displayed
-      expect(ruleFormFields.value.displayed).not.toEqual(expect.arrayContaining(["title", "fixtext"]));
+      expect(ruleFormFields.value.displayed).not.toEqual(
+        expect.arrayContaining(["title", "fixtext"]),
+      );
     });
 
     it("does NOT disable the entire form (isFormDisabled stays false)", () => {
@@ -878,12 +885,7 @@ describe("useRuleFormFields", () => {
       "Not Applicable": {
         basic: {
           rule: {
-            displayed: [
-              "status",
-              "rule_severity",
-              "status_justification",
-              "vendor_comments",
-            ],
+            displayed: ["status", "rule_severity", "status_justification", "vendor_comments"],
             disabled: ["rule_severity"],
           },
           disa: { displayed: [], disabled: [] },
@@ -891,12 +893,7 @@ describe("useRuleFormFields", () => {
         },
         advanced: {
           rule: {
-            displayed: [
-              "status",
-              "rule_severity",
-              "status_justification",
-              "vendor_comments",
-            ],
+            displayed: ["status", "rule_severity", "status_justification", "vendor_comments"],
             disabled: ["rule_severity"],
           },
           disa: { displayed: [], disabled: [] },

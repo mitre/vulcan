@@ -99,7 +99,13 @@ describe("CommentAuthorLine", () => {
     it("falls back to em-dash when both name and commenterDisplayName are null", () => {
       const wrapper = mount(CommentAuthorLine, {
         localVue,
-        propsData: { name: null, commenterDisplayName: null, email: null, date: null, layout: "inline" },
+        propsData: {
+          name: null,
+          commenterDisplayName: null,
+          email: null,
+          date: null,
+          layout: "inline",
+        },
       });
       const badge = wrapper.findComponent({ name: "UserBadge" });
       expect(badge.props("name")).toBe("—");

@@ -25,17 +25,32 @@ describe("RuleReviewDropdown", () => {
     return shallowMount(RuleReviewDropdown, {
       localVue,
       propsData: {
-        rule: { id: 5, component_id: 20, status: "Not Yet Determined", locked: false, review_requestor_id: null },
+        rule: {
+          id: 5,
+          component_id: 20,
+          status: "Not Yet Determined",
+          locked: false,
+          review_requestor_id: null,
+        },
         effectivePermissions: "admin",
         currentUserId: 1,
         ...props,
       },
-      stubs: { BDropdown: true, BDropdownForm: true, BFormGroup: true, BFormSelect: true, BFormTextarea: true, BButton: true },
+      stubs: {
+        BDropdown: true,
+        BDropdownForm: true,
+        BFormGroup: true,
+        BFormSelect: true,
+        BFormTextarea: true,
+        BButton: true,
+      },
     });
   };
 
   beforeEach(() => vi.resetAllMocks());
-  afterEach(() => { if (wrapper) wrapper.destroy(); });
+  afterEach(() => {
+    if (wrapper) wrapper.destroy();
+  });
 
   it("submitReview calls createRuleReview with rule id and review payload", async () => {
     const { createRuleReview } = await import("@/api/reviewsApi");

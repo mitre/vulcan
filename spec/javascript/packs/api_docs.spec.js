@@ -132,7 +132,7 @@ describe("api_docs.js — Scalar theme integration", () => {
 
       expect(mockFetch).toHaveBeenCalledWith(
         "/api/projects",
-        expect.objectContaining({ credentials: "include" })
+        expect.objectContaining({ credentials: "include" }),
       );
 
       vi.unstubAllGlobals();
@@ -145,7 +145,10 @@ describe("api_docs.js — Scalar theme integration", () => {
       const mockFetch = vi.fn(() => Promise.resolve(new Response()));
       vi.stubGlobal("fetch", mockFetch);
 
-      await config.customFetch("https://registry.scalar.com/@mitre/apis/vulcan/latest?format=json", {});
+      await config.customFetch(
+        "https://registry.scalar.com/@mitre/apis/vulcan/latest?format=json",
+        {},
+      );
 
       const callOpts = mockFetch.mock.calls[0][1];
       expect(callOpts.credentials).toBeUndefined();

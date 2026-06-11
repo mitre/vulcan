@@ -253,10 +253,7 @@ describe("RuleNavigator", () => {
       });
       const standalone = createRule(2, "000030");
 
-      wrapper = createWrapper(
-        { rules: [parent, child1, standalone] },
-        { openCommentsOnly: true },
-      );
+      wrapper = createWrapper({ rules: [parent, child1, standalone] }, { openCommentsOnly: true });
       const ids = wrapper.vm.filteredRules.map((r) => r.id);
       expect(ids).toContain(1);
       expect(ids).not.toContain(2);

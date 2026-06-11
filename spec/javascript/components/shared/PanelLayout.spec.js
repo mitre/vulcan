@@ -56,15 +56,9 @@ describe("PanelLayout", () => {
     const panels = wrapper.findAll(".panel-layout__panel");
     expect(panels.length).toBe(3);
 
-    expect(panels.at(0).element.style.backgroundColor).toBe(
-      "var(--vulcan-secondary-bg)"
-    );
-    expect(panels.at(1).element.style.backgroundColor).toBe(
-      "var(--vulcan-body-bg)"
-    );
-    expect(panels.at(2).element.style.backgroundColor).toBe(
-      "var(--vulcan-tertiary-bg)"
-    );
+    expect(panels.at(0).element.style.backgroundColor).toBe("var(--vulcan-secondary-bg)");
+    expect(panels.at(1).element.style.backgroundColor).toBe("var(--vulcan-body-bg)");
+    expect(panels.at(2).element.style.backgroundColor).toBe("var(--vulcan-tertiary-bg)");
   });
 
   it("places borders between adjacent panels only", () => {
@@ -73,9 +67,7 @@ describe("PanelLayout", () => {
 
     expect(panels.at(0).classes()).toContain("panel-layout__panel--border-right");
     expect(panels.at(1).classes()).toContain("panel-layout__panel--border-right");
-    expect(panels.at(2).classes()).not.toContain(
-      "panel-layout__panel--border-right"
-    );
+    expect(panels.at(2).classes()).not.toContain("panel-layout__panel--border-right");
   });
 
   it("sets correct col width from panels prop", () => {
@@ -87,9 +79,12 @@ describe("PanelLayout", () => {
   });
 
   it("renders header slot when provided", () => {
-    const wrapper = mountWith({}, {
-      "left-header": '<h6 data-testid="left-hdr">Nav</h6>',
-    });
+    const wrapper = mountWith(
+      {},
+      {
+        "left-header": '<h6 data-testid="left-hdr">Nav</h6>',
+      },
+    );
     const hdr = wrapper.find('[data-testid="left-hdr"]');
     expect(hdr.exists()).toBe(true);
     expect(hdr.text()).toBe("Nav");
@@ -102,9 +97,12 @@ describe("PanelLayout", () => {
   });
 
   it("renders footer slot when provided", () => {
-    const wrapper = mountWith({}, {
-      "left-footer": '<div data-testid="left-ftr">Footer</div>',
-    });
+    const wrapper = mountWith(
+      {},
+      {
+        "left-footer": '<div data-testid="left-ftr">Footer</div>',
+      },
+    );
     expect(wrapper.find('[data-testid="left-ftr"]').exists()).toBe(true);
   });
 
@@ -118,7 +116,7 @@ describe("PanelLayout", () => {
       {
         left: "<div>Left</div>",
         center: "<div>Center</div>",
-      }
+      },
     );
     const panels = wrapper.findAll(".panel-layout__panel");
     expect(panels.length).toBe(2);

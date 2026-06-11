@@ -87,7 +87,9 @@ describe("CreateUserModal", () => {
       await wrapper.vm.onSubmit({ preventDefault: vi.fn() });
 
       expect(createUser).toHaveBeenCalledWith({
-        name: "Jane", email: "jane@test.com", admin: false,
+        name: "Jane",
+        email: "jane@test.com",
+        admin: false,
       });
     });
 
@@ -151,7 +153,10 @@ describe("CreateUserModal", () => {
       await wrapper.vm.onSubmit({ preventDefault: vi.fn() });
 
       expect(createUser).toHaveBeenCalledWith({
-        name: "Jane", email: "jane@test.com", admin: false, password: "N3wSecure!!Pass99",
+        name: "Jane",
+        email: "jane@test.com",
+        admin: false,
+        password: "N3wSecure!!Pass99",
       });
     });
 

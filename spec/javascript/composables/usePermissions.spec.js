@@ -3,14 +3,16 @@ import { mount } from "@vue/test-utils";
 import { defineComponent } from "vue";
 import { usePermissions } from "../../../app/javascript/composables/usePermissions";
 
-function mountWithPermissions(effectivePermissions) {
-  const TestComponent = defineComponent({
-    setup() {
-      return usePermissions();
-    },
-    template: "<div />",
-  });
+// ONE harness component for the whole file — mounted with or without a
+// provide to exercise both the injected and default paths.
+const TestComponent = defineComponent({
+  setup() {
+    return usePermissions();
+  },
+  template: "<div />",
+});
 
+function mountWithPermissions(effectivePermissions) {
   return mount(TestComponent, {
     provide: { effectivePermissions },
   });
@@ -24,12 +26,6 @@ describe("usePermissions", () => {
     });
 
     it("defaults to null when nothing is provided", () => {
-      const TestComponent = defineComponent({
-        setup() {
-          return usePermissions();
-        },
-        template: "<div />",
-      });
       const wrapper = mount(TestComponent);
       expect(wrapper.vm.effectivePermissions).toBeNull();
     });

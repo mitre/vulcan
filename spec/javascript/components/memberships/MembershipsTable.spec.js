@@ -282,7 +282,10 @@ describe("MembershipsTable", () => {
       wrapper = createWrapper();
       const badges = wrapper.findAllComponents({ name: "UserBadge" });
       expect(badges.length).toBeGreaterThanOrEqual(3);
-      const props = badges.wrappers.map((b) => ({ name: b.props("name"), email: b.props("email") }));
+      const props = badges.wrappers.map((b) => ({
+        name: b.props("name"),
+        email: b.props("email"),
+      }));
       expect(props).toContainEqual({ name: "Alice Admin", email: "alice@example.com" });
       expect(props).toContainEqual({ name: "Bob Author", email: "bob@example.com" });
     });

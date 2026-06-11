@@ -24,7 +24,12 @@ describe("membershipsApi", () => {
 
   it("createMembership supports component memberships", async () => {
     api.post.mockResolvedValue({ data: {} });
-    await createMembership({ user_id: 5, role: "author", membership_type: "Component", membership_id: 10 });
+    await createMembership({
+      user_id: 5,
+      role: "author",
+      membership_type: "Component",
+      membership_id: 10,
+    });
     expect(api.post).toHaveBeenCalledWith("/memberships", {
       membership: { user_id: 5, role: "author", membership_type: "Component", membership_id: 10 },
     });
@@ -53,7 +58,9 @@ describe("membershipsApi", () => {
   describe("error propagation", () => {
     it("createMembership propagates rejected promise", async () => {
       api.post.mockRejectedValue(new Error("422 Duplicate"));
-      await expect(createMembership({ user_id: 1, role: "viewer" })).rejects.toThrow("422 Duplicate");
+      await expect(createMembership({ user_id: 1, role: "viewer" })).rejects.toThrow(
+        "422 Duplicate",
+      );
     });
   });
 });

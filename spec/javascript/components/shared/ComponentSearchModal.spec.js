@@ -72,16 +72,14 @@ describe("ComponentSearchModal", () => {
       propsData: { ...defaultProps, ...props },
       stubs: {
         BModal: {
-          template:
-            '<div class="modal"><slot /><slot name="modal-footer" /></div>',
+          template: '<div class="modal"><slot /><slot name="modal-footer" /></div>',
           methods: { show: vi.fn(), hide: vi.fn() },
         },
         BSpinner: true,
         BIcon: true,
         BListGroup: { template: '<div class="list-group"><slot /></div>' },
         BListGroupItem: {
-          template:
-            '<div class="list-group-item" @click="$emit(\'click\')"><slot /></div>',
+          template: '<div class="list-group-item" @click="$emit(\'click\')"><slot /></div>',
           props: ["active"],
         },
         BFormInput: {

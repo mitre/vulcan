@@ -56,8 +56,12 @@ describe("TableActionButtons", () => {
       propsData: { itemName: "My Project", showEdit: true, showDelete: true },
       stubs,
     });
-    expect(wrapper.find('[data-testid="action-edit"]').attributes("aria-label")).toBe("Edit My Project");
-    expect(wrapper.find('[data-testid="action-delete"]').attributes("aria-label")).toBe("Remove My Project");
+    expect(wrapper.find('[data-testid="action-edit"]').attributes("aria-label")).toBe(
+      "Edit My Project",
+    );
+    expect(wrapper.find('[data-testid="action-delete"]').attributes("aria-label")).toBe(
+      "Remove My Project",
+    );
   });
 
   it("disables buttons when disabled prop is true", () => {

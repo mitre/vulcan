@@ -99,7 +99,11 @@ describe("CommentList", () => {
 
     it("renders #loading slot while fetching", async () => {
       let resolvePromise;
-      getComments.mockReturnValue(new Promise((r) => { resolvePromise = r; }));
+      getComments.mockReturnValue(
+        new Promise((r) => {
+          resolvePromise = r;
+        }),
+      );
 
       const w = mount(CommentList, {
         localVue,

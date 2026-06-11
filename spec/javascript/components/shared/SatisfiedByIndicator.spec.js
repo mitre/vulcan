@@ -24,7 +24,13 @@ function createWrapper(propsData = {}) {
 
 describe("SatisfiedByIndicator", () => {
   const parentRules = [
-    { id: 100, rule_id: "000020", srg_id: "SRG-OS-000002", fixtext: "Parent fix text", component_prefix: "CNTR-00" },
+    {
+      id: 100,
+      rule_id: "000020",
+      srg_id: "SRG-OS-000002",
+      fixtext: "Parent fix text",
+      component_prefix: "CNTR-00",
+    },
   ];
 
   it("renders nothing when parentRules is empty", () => {

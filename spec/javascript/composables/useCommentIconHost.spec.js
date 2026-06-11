@@ -29,9 +29,7 @@ describe("useCommentIconHost", () => {
       const props = formGroupPropsWithCommentIcon.value;
 
       expect(props.showCommentIcon).toBe(true);
-      expect(props.ruleReviews).toEqual([
-        { id: 1, action: "comment", section: "check_content" },
-      ]);
+      expect(props.ruleReviews).toEqual([{ id: 1, action: "comment", section: "check_content" }]);
       expect(props.ruleLocked).toBe(false);
       expect(props.fields).toEqual({ displayed: ["status"], disabled: [] });
     });

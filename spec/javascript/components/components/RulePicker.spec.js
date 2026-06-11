@@ -27,7 +27,10 @@ const rulesPayload = {
       displayed_name: "CNTR-01-000010",
       title: "Parent control for container runtime",
       satisfied_by: [],
-      satisfies: [{ id: 2, rule_id: "CNTR-01-001002" }, { id: 3, rule_id: "CNTR-01-001003" }],
+      satisfies: [
+        { id: 2, rule_id: "CNTR-01-001002" },
+        { id: 3, rule_id: "CNTR-01-001003" },
+      ],
     },
     {
       id: 2,

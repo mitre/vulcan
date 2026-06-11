@@ -24,9 +24,7 @@ describe("routerTestHelper", () => {
     });
 
     it("resolves named routes with params", () => {
-      const router = createTestRouter([
-        { path: "/rules/:ruleId", name: "rule", props: true },
-      ]);
+      const router = createTestRouter([{ path: "/rules/:ruleId", name: "rule", props: true }]);
 
       const resolved = router.resolve({ name: "rule", params: { ruleId: "000020" } });
       expect(resolved.route.path).toBe("/rules/000020");

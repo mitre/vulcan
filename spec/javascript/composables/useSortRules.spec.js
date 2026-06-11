@@ -17,11 +17,7 @@ describe("useSortRules", () => {
   });
 
   it("sorts an array of rules correctly", () => {
-    const rules = [
-      { rule_id: "00003" },
-      { rule_id: "00001" },
-      { rule_id: "00002" },
-    ];
+    const rules = [{ rule_id: "00003" }, { rule_id: "00001" }, { rule_id: "00002" }];
     const sorted = [...rules].sort(compareRules);
     expect(sorted.map((r) => r.rule_id)).toEqual(["00001", "00002", "00003"]);
   });

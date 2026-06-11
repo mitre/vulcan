@@ -112,5 +112,4 @@ describe("DisaGuidePage", () => {
     await wrapper.find("[aria-label='Toggle dark mode']").trigger("click");
     expect(toggleTheme).toHaveBeenCalledOnce();
   });
-
 });

@@ -2,10 +2,39 @@ import { describe, it, expect } from "vitest";
 import { groupCommentsByRule } from "@/utils/groupCommentsByRule";
 
 const comments = [
-  { id: 1, rule_id: 10, rule_displayed_name: "CNTR-01-000001", group_rule_displayed_name: "CNTR-01-000001", section: "check_content", triage_status: "pending" },
-  { id: 2, rule_id: 10, rule_displayed_name: "CNTR-01-000001", group_rule_displayed_name: "CNTR-01-000001", section: "fixtext", triage_status: "concur" },
-  { id: 3, rule_id: 11, rule_displayed_name: "CNTR-01-000002", group_rule_displayed_name: "CNTR-01-000002", section: null, triage_status: "pending" },
-  { id: 4, rule_id: null, rule_displayed_name: "(component)", group_rule_displayed_name: null, commentable_type: "Component", section: null, triage_status: "pending" },
+  {
+    id: 1,
+    rule_id: 10,
+    rule_displayed_name: "CNTR-01-000001",
+    group_rule_displayed_name: "CNTR-01-000001",
+    section: "check_content",
+    triage_status: "pending",
+  },
+  {
+    id: 2,
+    rule_id: 10,
+    rule_displayed_name: "CNTR-01-000001",
+    group_rule_displayed_name: "CNTR-01-000001",
+    section: "fixtext",
+    triage_status: "concur",
+  },
+  {
+    id: 3,
+    rule_id: 11,
+    rule_displayed_name: "CNTR-01-000002",
+    group_rule_displayed_name: "CNTR-01-000002",
+    section: null,
+    triage_status: "pending",
+  },
+  {
+    id: 4,
+    rule_id: null,
+    rule_displayed_name: "(component)",
+    group_rule_displayed_name: null,
+    commentable_type: "Component",
+    section: null,
+    triage_status: "pending",
+  },
 ];
 
 describe("groupCommentsByRule", () => {
@@ -38,8 +67,18 @@ describe("groupCommentsByRule", () => {
 
   it("uses numeric locale-aware sorting", () => {
     const items = [
-      { id: 1, rule_displayed_name: "CNTR-01-000020", group_rule_displayed_name: "CNTR-01-000020", triage_status: "pending" },
-      { id: 2, rule_displayed_name: "CNTR-01-000002", group_rule_displayed_name: "CNTR-01-000002", triage_status: "pending" },
+      {
+        id: 1,
+        rule_displayed_name: "CNTR-01-000020",
+        group_rule_displayed_name: "CNTR-01-000020",
+        triage_status: "pending",
+      },
+      {
+        id: 2,
+        rule_displayed_name: "CNTR-01-000002",
+        group_rule_displayed_name: "CNTR-01-000002",
+        triage_status: "pending",
+      },
     ];
     const groups = groupCommentsByRule(items);
     expect(groups[0].key).toBe("CNTR-01-000002");
@@ -48,7 +87,12 @@ describe("groupCommentsByRule", () => {
 
   it("falls back to rule_displayed_name when group_rule_displayed_name is null", () => {
     const items = [
-      { id: 1, rule_displayed_name: "TEST-001", group_rule_displayed_name: null, triage_status: "pending" },
+      {
+        id: 1,
+        rule_displayed_name: "TEST-001",
+        group_rule_displayed_name: null,
+        triage_status: "pending",
+      },
     ];
     const groups = groupCommentsByRule(items);
     expect(groups[0].key).toBe("TEST-001");

@@ -5,7 +5,10 @@ import { localVue } from "@test/testHelper";
 vi.mock("@/api/baseApi", () => ({
   default: {
     get: vi.fn(() => Promise.resolve({ data: [] })),
-    post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
     defaults: { headers: { common: {} } },
   },
 }));
@@ -110,10 +113,12 @@ describe("CommentTriageForm", () => {
 
   it("hides 'Save decision' for single-button statuses (terminal + needs_clarification)", () => {
     const w = mount(CommentTriageForm, { localVue, propsData: baseProps() });
-    ["informational", "duplicate", "needs_clarification", "withdrawn", "addressed_by"].forEach((status) => {
-      w.vm.triageStatus = status;
-      expect(w.vm.hasSaveDecisionOnlyOption).toBe(false);
-    });
+    ["informational", "duplicate", "needs_clarification", "withdrawn", "addressed_by"].forEach(
+      (status) => {
+        w.vm.triageStatus = status;
+        expect(w.vm.hasSaveDecisionOnlyOption).toBe(false);
+      },
+    );
   });
 
   it("labels primary button 'Save & wait for commenter' for needs_clarification", () => {

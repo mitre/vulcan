@@ -169,10 +169,7 @@ describe("RestoreBackupModal", () => {
 
       await wrapper.vm.submitDryRun();
 
-      expect(importBackup).toHaveBeenCalledWith(
-        PROJECT_ID,
-        expect.any(FormData),
-      );
+      expect(importBackup).toHaveBeenCalledWith(PROJECT_ID, expect.any(FormData));
 
       const formData = importBackup.mock.calls[0][1];
       expect(formData.get("dry_run")).toBe("true");

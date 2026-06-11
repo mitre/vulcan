@@ -459,9 +459,7 @@ describe("RuleActionsToolbar", () => {
       wrapper = createWrapper();
       const btn = wrapper
         .findAll("button")
-        .wrappers.find(
-          (b) => b.text().includes("Comment") && !b.text().includes("History"),
-        );
+        .wrappers.find((b) => b.text().includes("Comment") && !b.text().includes("History"));
       expect(btn.attributes("title")).toBe("Add a general comment on this rule");
     });
 

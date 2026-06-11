@@ -442,9 +442,7 @@ describe("NewComponentModal", () => {
     it("accepts undefined project_id without error", () => {
       const spy = vi.spyOn(console, "error").mockImplementation(() => {});
       wrapper = createWrapper({ project_id: undefined });
-      const propWarnings = spy.mock.calls.filter((c) =>
-        c[0]?.toString().includes("project_id"),
-      );
+      const propWarnings = spy.mock.calls.filter((c) => c[0]?.toString().includes("project_id"));
       expect(propWarnings).toHaveLength(0);
       spy.mockRestore();
     });

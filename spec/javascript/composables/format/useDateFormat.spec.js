@@ -51,17 +51,13 @@ describe("useDateFormat", () => {
 
     it("returns 'h ago' for hour-old timestamps", () => {
       const { relativeTime } = useDateFormat();
-      const twoHoursAgo = new Date(
-        Date.now() - 2 * 60 * 60 * 1000,
-      ).toISOString();
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
       expect(relativeTime(twoHoursAgo)).toBe("2h ago");
     });
 
     it("returns 'd ago' for day-old timestamps", () => {
       const { relativeTime } = useDateFormat();
-      const threeDaysAgo = new Date(
-        Date.now() - 3 * 24 * 60 * 60 * 1000,
-      ).toISOString();
+      const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
       expect(relativeTime(threeDaysAgo)).toBe("3d ago");
     });
 

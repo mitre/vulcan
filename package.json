@@ -58,8 +58,8 @@
   "scripts": {
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
-    "lint": "eslint --fix --ext .js,.vue app/javascript",
-    "lint:ci": "eslint --max-warnings 0 --ext .js,.vue app/javascript",
+    "lint": "eslint --fix --ext .js,.vue app/javascript spec/javascript",
+    "lint:ci": "eslint --max-warnings 0 --ext .js,.vue app/javascript spec/javascript",
     "build": "node esbuild.config.js",
     "build:clean": "rm -rf app/assets/builds/*.js app/assets/builds/*.css && node esbuild.config.js",
     "build:css": "sass ./app/javascript/application.scss:./app/assets/builds/application.css --load-path=node_modules",

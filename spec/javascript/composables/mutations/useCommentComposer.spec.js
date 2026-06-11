@@ -89,9 +89,7 @@ describe("useCommentComposer", () => {
 
       const composer = useCommentComposer();
 
-      await expect(
-        composer.postComment(38, 100, { comment: "x" }),
-      ).rejects.toThrow("422");
+      await expect(composer.postComment(38, 100, { comment: "x" })).rejects.toThrow("422");
 
       expect(composer.submitError.value).toBeInstanceOf(Error);
     });

@@ -5,12 +5,54 @@ import TriageQueueNav from "@/components/triage/TriageQueueNav.vue";
 
 // Multi-rule fixture: 3 rules, rule A has 3 comments, rule B has 2, rule C has 1
 const groupedComments = [
-  { id: 1, rule_id: 10, rule_displayed_name: "CNTR-01-000001", section: "check_content", triage_status: "pending", adjudicated_at: null },
-  { id: 2, rule_id: 10, rule_displayed_name: "CNTR-01-000001", section: "check_content", triage_status: "pending", adjudicated_at: null },
-  { id: 3, rule_id: 10, rule_displayed_name: "CNTR-01-000001", section: "fixtext", triage_status: "pending", adjudicated_at: null },
-  { id: 4, rule_id: 20, rule_displayed_name: "CNTR-01-000002", section: "check_content", triage_status: "pending", adjudicated_at: null },
-  { id: 5, rule_id: 20, rule_displayed_name: "CNTR-01-000002", section: null, triage_status: "concur", adjudicated_at: "2026-05-01T00:00:00Z" },
-  { id: 6, rule_id: 30, rule_displayed_name: "CNTR-01-000003", section: "status", triage_status: "pending", adjudicated_at: null },
+  {
+    id: 1,
+    rule_id: 10,
+    rule_displayed_name: "CNTR-01-000001",
+    section: "check_content",
+    triage_status: "pending",
+    adjudicated_at: null,
+  },
+  {
+    id: 2,
+    rule_id: 10,
+    rule_displayed_name: "CNTR-01-000001",
+    section: "check_content",
+    triage_status: "pending",
+    adjudicated_at: null,
+  },
+  {
+    id: 3,
+    rule_id: 10,
+    rule_displayed_name: "CNTR-01-000001",
+    section: "fixtext",
+    triage_status: "pending",
+    adjudicated_at: null,
+  },
+  {
+    id: 4,
+    rule_id: 20,
+    rule_displayed_name: "CNTR-01-000002",
+    section: "check_content",
+    triage_status: "pending",
+    adjudicated_at: null,
+  },
+  {
+    id: 5,
+    rule_id: 20,
+    rule_displayed_name: "CNTR-01-000002",
+    section: null,
+    triage_status: "concur",
+    adjudicated_at: "2026-05-01T00:00:00Z",
+  },
+  {
+    id: 6,
+    rule_id: 30,
+    rule_displayed_name: "CNTR-01-000003",
+    section: "status",
+    triage_status: "pending",
+    adjudicated_at: null,
+  },
 ];
 
 function baseProps(overrides = {}) {
@@ -89,7 +131,9 @@ describe("TriageQueueNav", () => {
 
   it("has aria-labels on prev and next buttons", () => {
     const w = mount(TriageQueueNav, { localVue, propsData: baseProps({ currentId: 2 }) });
-    expect(w.find('[data-testid="prev-comment"]').attributes("aria-label")).toBe("Previous comment");
+    expect(w.find('[data-testid="prev-comment"]').attributes("aria-label")).toBe(
+      "Previous comment",
+    );
     expect(w.find('[data-testid="next-comment"]').attributes("aria-label")).toBe("Next comment");
   });
 

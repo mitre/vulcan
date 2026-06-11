@@ -107,9 +107,18 @@ describe("CommentsByRule", () => {
 
   it("applies triage-bg--concur class to accepted comments", () => {
     const rows = [
-      { id: 1, rule_id: 100, rule_displayed_name: "R1", section: "check_content",
-        author_name: "A", comment: "Good", created_at: "2026-01-01", triage_status: "concur",
-        responses_count: 0, reactions: { up: 0, down: 0, mine: null } },
+      {
+        id: 1,
+        rule_id: 100,
+        rule_displayed_name: "R1",
+        section: "check_content",
+        author_name: "A",
+        comment: "Good",
+        created_at: "2026-01-01",
+        triage_status: "concur",
+        responses_count: 0,
+        reactions: { up: 0, down: 0, mine: null },
+      },
     ];
     const w = mount(CommentsByRule, { propsData: { rows } });
     w.vm.toggleRule("R1");
@@ -118,9 +127,18 @@ describe("CommentsByRule", () => {
 
   it("applies triage-bg--non_concur class to declined comments", () => {
     const rows = [
-      { id: 1, rule_id: 100, rule_displayed_name: "R1", section: "check_content",
-        author_name: "A", comment: "Bad", created_at: "2026-01-01", triage_status: "non_concur",
-        responses_count: 0, reactions: { up: 0, down: 0, mine: null } },
+      {
+        id: 1,
+        rule_id: 100,
+        rule_displayed_name: "R1",
+        section: "check_content",
+        author_name: "A",
+        comment: "Bad",
+        created_at: "2026-01-01",
+        triage_status: "non_concur",
+        responses_count: 0,
+        reactions: { up: 0, down: 0, mine: null },
+      },
     ];
     const w = mount(CommentsByRule, { propsData: { rows } });
     w.vm.toggleRule("R1");
@@ -129,9 +147,18 @@ describe("CommentsByRule", () => {
 
   it("does not apply triage-bg class to pending comments", () => {
     const allPending = [
-      { id: 1, rule_id: 100, rule_displayed_name: "R1", section: "check_content",
-        author_name: "A", comment: "C1", created_at: "2026-01-01", triage_status: "pending",
-        responses_count: 0, reactions: { up: 0, down: 0, mine: null } },
+      {
+        id: 1,
+        rule_id: 100,
+        rule_displayed_name: "R1",
+        section: "check_content",
+        author_name: "A",
+        comment: "C1",
+        created_at: "2026-01-01",
+        triage_status: "pending",
+        responses_count: 0,
+        reactions: { up: 0, down: 0, mine: null },
+      },
     ];
     const w = mount(CommentsByRule, { propsData: { rows: allPending } });
     w.vm.toggleRule("R1");
@@ -145,12 +172,30 @@ describe("CommentsByRule", () => {
 
   it("shows pending/total split when mixed statuses present", () => {
     const rows = [
-      { id: 1, rule_id: 100, rule_displayed_name: "R1", section: "check_content",
-        author_name: "A", comment: "C1", created_at: "2026-01-01", triage_status: "pending",
-        responses_count: 0, reactions: { up: 0, down: 0, mine: null } },
-      { id: 2, rule_id: 100, rule_displayed_name: "R1", section: "check_content",
-        author_name: "B", comment: "C2", created_at: "2026-01-01", triage_status: "concur",
-        responses_count: 0, reactions: { up: 0, down: 0, mine: null } },
+      {
+        id: 1,
+        rule_id: 100,
+        rule_displayed_name: "R1",
+        section: "check_content",
+        author_name: "A",
+        comment: "C1",
+        created_at: "2026-01-01",
+        triage_status: "pending",
+        responses_count: 0,
+        reactions: { up: 0, down: 0, mine: null },
+      },
+      {
+        id: 2,
+        rule_id: 100,
+        rule_displayed_name: "R1",
+        section: "check_content",
+        author_name: "B",
+        comment: "C2",
+        created_at: "2026-01-01",
+        triage_status: "concur",
+        responses_count: 0,
+        reactions: { up: 0, down: 0, mine: null },
+      },
     ];
     const w = mount(CommentsByRule, { propsData: { rows } });
     const header = w.find("[data-testid='rule-group-header']");
@@ -160,12 +205,30 @@ describe("CommentsByRule", () => {
 
   it("shows pending/total even when all comments are pending (consistent format)", () => {
     const allPending = [
-      { id: 1, rule_id: 100, rule_displayed_name: "R1", section: "check_content",
-        author_name: "A", comment: "C1", created_at: "2026-01-01", triage_status: "pending",
-        responses_count: 0, reactions: { up: 0, down: 0, mine: null } },
-      { id: 2, rule_id: 100, rule_displayed_name: "R1", section: "fixtext",
-        author_name: "B", comment: "C2", created_at: "2026-01-01", triage_status: "pending",
-        responses_count: 0, reactions: { up: 0, down: 0, mine: null } },
+      {
+        id: 1,
+        rule_id: 100,
+        rule_displayed_name: "R1",
+        section: "check_content",
+        author_name: "A",
+        comment: "C1",
+        created_at: "2026-01-01",
+        triage_status: "pending",
+        responses_count: 0,
+        reactions: { up: 0, down: 0, mine: null },
+      },
+      {
+        id: 2,
+        rule_id: 100,
+        rule_displayed_name: "R1",
+        section: "fixtext",
+        author_name: "B",
+        comment: "C2",
+        created_at: "2026-01-01",
+        triage_status: "pending",
+        responses_count: 0,
+        reactions: { up: 0, down: 0, mine: null },
+      },
     ];
     const w = mount(CommentsByRule, { propsData: { rows: allPending } });
     const header = w.find("[data-testid='rule-group-header']");

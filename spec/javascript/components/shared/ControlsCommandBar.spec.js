@@ -333,7 +333,8 @@ describe("ControlsCommandBar", () => {
       wrapper = createWrapper({
         component: { ...defaultComponent, releasable: false },
       });
-      const releaseItem = wrapper.findAllComponents({ name: "BDropdownItem" })
+      const releaseItem = wrapper
+        .findAllComponents({ name: "BDropdownItem" })
         .wrappers.find((w) => w.text().includes("Release"));
       expect(releaseItem.props("disabled")).toBe(true);
     });
@@ -342,14 +343,16 @@ describe("ControlsCommandBar", () => {
       wrapper = createWrapper({
         component: { ...defaultComponent, released: true },
       });
-      const releaseItem = wrapper.findAllComponents({ name: "BDropdownItem" })
+      const releaseItem = wrapper
+        .findAllComponents({ name: "BDropdownItem" })
         .wrappers.find((w) => w.text().includes("Release"));
       expect(releaseItem.props("disabled")).toBe(true);
     });
 
     it("emits release event when clicked", async () => {
       wrapper = createWrapper();
-      const releaseItem = wrapper.findAllComponents({ name: "BDropdownItem" })
+      const releaseItem = wrapper
+        .findAllComponents({ name: "BDropdownItem" })
         .wrappers.find((w) => w.text().includes("Release"));
       await releaseItem.vm.$emit("click");
       expect(wrapper.emitted("release")).toBeTruthy();
@@ -369,7 +372,8 @@ describe("ControlsCommandBar", () => {
 
     it("emits download event when Download item clicked", async () => {
       wrapper = createWrapper();
-      const downloadItem = wrapper.findAllComponents({ name: "BDropdownItem" })
+      const downloadItem = wrapper
+        .findAllComponents({ name: "BDropdownItem" })
         .wrappers.find((w) => w.text().includes("Download"));
       await downloadItem.vm.$emit("click");
       expect(wrapper.emitted("download")).toBeTruthy();

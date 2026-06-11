@@ -151,10 +151,13 @@ describe("EditUserModal", () => {
 
       await wrapper.vm.onSubmit({ preventDefault: vi.fn() });
 
-      expect(updateUser).toHaveBeenCalledWith(42, expect.objectContaining({
-        name: "Updated",
-        email: "updated@test.com",
-      }));
+      expect(updateUser).toHaveBeenCalledWith(
+        42,
+        expect.objectContaining({
+          name: "Updated",
+          email: "updated@test.com",
+        }),
+      );
     });
 
     it("emits user-updated on success", async () => {
@@ -179,7 +182,9 @@ describe("EditUserModal", () => {
 
     it("calls generate_reset_link endpoint", async () => {
       const resetUrl = "http://localhost:3000/users/password/edit?reset_password_token=abc123";
-      generateResetLink.mockResolvedValue({ data: { toast: "Link generated.", reset_url: resetUrl } });
+      generateResetLink.mockResolvedValue({
+        data: { toast: "Link generated.", reset_url: resetUrl },
+      });
 
       await wrapper.vm.generateResetLink();
 
@@ -188,7 +193,9 @@ describe("EditUserModal", () => {
 
     it("stores the returned reset URL", async () => {
       const resetUrl = "http://localhost:3000/users/password/edit?reset_password_token=abc123";
-      generateResetLink.mockResolvedValue({ data: { toast: "Link generated.", reset_url: resetUrl } });
+      generateResetLink.mockResolvedValue({
+        data: { toast: "Link generated.", reset_url: resetUrl },
+      });
 
       await wrapper.vm.generateResetLink();
 

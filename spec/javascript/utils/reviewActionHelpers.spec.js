@@ -84,7 +84,7 @@ describe("buildReviewActions", () => {
 
       expect(findAction(actions, "request_review").name).toBe(labels.requestReview.name);
       expect(findAction(actions, "request_review").description).toBe(
-        labels.requestReview.description
+        labels.requestReview.description,
       );
       expect(findAction(actions, "lock_control").name).toBe(labels.lock.name);
     });
@@ -100,7 +100,7 @@ describe("buildReviewActions", () => {
       const rule = makeRule({ review_requestor_id: 5 });
       const actions = buildReviewActions(rule, false, "author", 1);
       expect(findAction(actions, "request_review").disabledTooltip).toBe(
-        REVIEW_ACTION_LABELS.requestReview.alreadyUnderReview
+        REVIEW_ACTION_LABELS.requestReview.alreadyUnderReview,
       );
     });
 
@@ -108,7 +108,7 @@ describe("buildReviewActions", () => {
       const rule = makeRule({ locked: true });
       const actions = buildReviewActions(rule, false, "author", 1);
       expect(findAction(actions, "request_review").disabledTooltip).toBe(
-        REVIEW_ACTION_LABELS.requestReview.isLocked
+        REVIEW_ACTION_LABELS.requestReview.isLocked,
       );
     });
 
@@ -116,7 +116,7 @@ describe("buildReviewActions", () => {
       const rule = makeRule({ review_requestor_id: 5, locked: true });
       const actions = buildReviewActions(rule, false, "author", 1);
       expect(findAction(actions, "request_review").disabledTooltip).toBe(
-        REVIEW_ACTION_LABELS.requestReview.alreadyUnderReview
+        REVIEW_ACTION_LABELS.requestReview.alreadyUnderReview,
       );
     });
   });
@@ -138,14 +138,14 @@ describe("buildReviewActions", () => {
       const rule = makeRule({ review_requestor_id: 5 });
       const actions = buildReviewActions(rule, false, "author", 99);
       expect(findAction(actions, "revoke_review_request").disabledTooltip).toBe(
-        REVIEW_ACTION_LABELS.revokeReview.notAllowed
+        REVIEW_ACTION_LABELS.revokeReview.notAllowed,
       );
     });
 
     it("is disabled when rule is not under review (even if admin)", () => {
       const actions = buildReviewActions(makeRule(), false, "admin", 1);
       expect(findAction(actions, "revoke_review_request").disabledTooltip).toBe(
-        REVIEW_ACTION_LABELS.revokeReview.notUnderReview
+        REVIEW_ACTION_LABELS.revokeReview.notUnderReview,
       );
     });
 
@@ -153,7 +153,7 @@ describe("buildReviewActions", () => {
       const rule = makeRule({ review_requestor_id: 42 });
       const actions = buildReviewActions(rule, true, "admin", 42);
       expect(findAction(actions, "revoke_review_request").disabledTooltip).toBe(
-        REVIEW_ACTION_LABELS.revokeReview.notAllowed
+        REVIEW_ACTION_LABELS.revokeReview.notAllowed,
       );
     });
   });
@@ -175,14 +175,14 @@ describe("buildReviewActions", () => {
       const rule = makeRule({ review_requestor_id: 5 });
       const actions = buildReviewActions(rule, false, "author", 1);
       expect(findAction(actions, "request_changes").disabledTooltip).toBe(
-        REVIEW_ACTION_LABELS.requestChanges.notAllowed
+        REVIEW_ACTION_LABELS.requestChanges.notAllowed,
       );
     });
 
     it("is disabled when rule is not under review", () => {
       const actions = buildReviewActions(makeRule(), false, "admin", 1);
       expect(findAction(actions, "request_changes").disabledTooltip).toBe(
-        REVIEW_ACTION_LABELS.requestChanges.notUnderReview
+        REVIEW_ACTION_LABELS.requestChanges.notUnderReview,
       );
     });
   });
@@ -204,14 +204,14 @@ describe("buildReviewActions", () => {
       const rule = makeRule({ review_requestor_id: 5 });
       const actions = buildReviewActions(rule, false, "author", 1);
       expect(findAction(actions, "approve").disabledTooltip).toBe(
-        REVIEW_ACTION_LABELS.approve.notAllowed
+        REVIEW_ACTION_LABELS.approve.notAllowed,
       );
     });
 
     it("is disabled when rule is not under review", () => {
       const actions = buildReviewActions(makeRule(), false, "reviewer", 1);
       expect(findAction(actions, "approve").disabledTooltip).toBe(
-        REVIEW_ACTION_LABELS.approve.notUnderReview
+        REVIEW_ACTION_LABELS.approve.notUnderReview,
       );
     });
   });
@@ -225,7 +225,7 @@ describe("buildReviewActions", () => {
     it("is disabled when user is not admin", () => {
       const actions = buildReviewActions(makeRule(), false, "reviewer", 1);
       expect(findAction(actions, "lock_control").disabledTooltip).toBe(
-        REVIEW_ACTION_LABELS.lock.notAllowed
+        REVIEW_ACTION_LABELS.lock.notAllowed,
       );
     });
 
@@ -233,7 +233,7 @@ describe("buildReviewActions", () => {
       const rule = makeRule({ review_requestor_id: 5 });
       const actions = buildReviewActions(rule, false, "admin", 1);
       expect(findAction(actions, "lock_control").disabledTooltip).toBe(
-        REVIEW_ACTION_LABELS.lock.underReview
+        REVIEW_ACTION_LABELS.lock.underReview,
       );
     });
 
@@ -241,7 +241,7 @@ describe("buildReviewActions", () => {
       const rule = makeRule({ locked: true });
       const actions = buildReviewActions(rule, false, "admin", 1);
       expect(findAction(actions, "lock_control").disabledTooltip).toBe(
-        REVIEW_ACTION_LABELS.lock.alreadyLocked
+        REVIEW_ACTION_LABELS.lock.alreadyLocked,
       );
     });
 
@@ -252,7 +252,7 @@ describe("buildReviewActions", () => {
       });
       const actions = buildReviewActions(rule, false, "admin", 1);
       expect(findAction(actions, "lock_control").disabledTooltip).toBe(
-        REVIEW_ACTION_LABELS.lock.mitigationRequired
+        REVIEW_ACTION_LABELS.lock.mitigationRequired,
       );
     });
 
@@ -272,7 +272,7 @@ describe("buildReviewActions", () => {
       });
       const actions = buildReviewActions(rule, false, "admin", 1);
       expect(findAction(actions, "lock_control").disabledTooltip).toBe(
-        REVIEW_ACTION_LABELS.lock.artifactRequired
+        REVIEW_ACTION_LABELS.lock.artifactRequired,
       );
     });
 
@@ -283,7 +283,7 @@ describe("buildReviewActions", () => {
       });
       const actions = buildReviewActions(rule, false, "admin", 1);
       expect(findAction(actions, "lock_control").disabledTooltip).toBe(
-        REVIEW_ACTION_LABELS.lock.artifactRequired
+        REVIEW_ACTION_LABELS.lock.artifactRequired,
       );
     });
 
@@ -301,14 +301,14 @@ describe("buildReviewActions", () => {
       const rule = makeRule({ review_requestor_id: 5, locked: true });
       const actions = buildReviewActions(rule, false, "reviewer", 1);
       expect(findAction(actions, "lock_control").disabledTooltip).toBe(
-        REVIEW_ACTION_LABELS.lock.notAllowed
+        REVIEW_ACTION_LABELS.lock.notAllowed,
       );
     });
 
     it("is disabled when readOnly even with admin permissions", () => {
       const actions = buildReviewActions(makeRule(), true, "admin", 1);
       expect(findAction(actions, "lock_control").disabledTooltip).toBe(
-        REVIEW_ACTION_LABELS.lock.notAllowed
+        REVIEW_ACTION_LABELS.lock.notAllowed,
       );
     });
   });
@@ -324,14 +324,14 @@ describe("buildReviewActions", () => {
       const rule = makeRule({ locked: true });
       const actions = buildReviewActions(rule, false, "reviewer", 1);
       expect(findAction(actions, "unlock_control").disabledTooltip).toBe(
-        REVIEW_ACTION_LABELS.unlock.notAllowed
+        REVIEW_ACTION_LABELS.unlock.notAllowed,
       );
     });
 
     it("is disabled when rule is not locked", () => {
       const actions = buildReviewActions(makeRule(), false, "admin", 1);
       expect(findAction(actions, "unlock_control").disabledTooltip).toBe(
-        REVIEW_ACTION_LABELS.unlock.notLocked
+        REVIEW_ACTION_LABELS.unlock.notLocked,
       );
     });
   });
@@ -343,23 +343,23 @@ describe("buildReviewActions", () => {
 
       // Admin-only actions should be disabled
       expect(findAction(actions, "lock_control").disabledTooltip).toBe(
-        REVIEW_ACTION_LABELS.lock.notAllowed
+        REVIEW_ACTION_LABELS.lock.notAllowed,
       );
       expect(findAction(actions, "unlock_control").disabledTooltip).toBe(
-        REVIEW_ACTION_LABELS.unlock.notAllowed
+        REVIEW_ACTION_LABELS.unlock.notAllowed,
       );
 
       // Reviewer actions should be disabled
       expect(findAction(actions, "request_changes").disabledTooltip).toBe(
-        REVIEW_ACTION_LABELS.requestChanges.notAllowed
+        REVIEW_ACTION_LABELS.requestChanges.notAllowed,
       );
       expect(findAction(actions, "approve").disabledTooltip).toBe(
-        REVIEW_ACTION_LABELS.approve.notAllowed
+        REVIEW_ACTION_LABELS.approve.notAllowed,
       );
 
       // Requestor actions should be disabled (readOnly negates requestor)
       expect(findAction(actions, "revoke_review_request").disabledTooltip).toBe(
-        REVIEW_ACTION_LABELS.revokeReview.notAllowed
+        REVIEW_ACTION_LABELS.revokeReview.notAllowed,
       );
     });
   });

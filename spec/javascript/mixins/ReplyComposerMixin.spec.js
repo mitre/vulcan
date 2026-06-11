@@ -136,12 +136,15 @@ describe("ReplyComposerMixin", () => {
     await w.vm.$nextTick();
     w.vm.onComposerPosted();
     expect(w.vm.composerState.mode).toBe(null);
-    expect(afterSpy).toHaveBeenCalledWith(42, expect.objectContaining({
-      mode: "reply",
-      reviewId: 42,
-      ruleId: 10,
-      componentId: 8,
-    }));
+    expect(afterSpy).toHaveBeenCalledWith(
+      42,
+      expect.objectContaining({
+        mode: "reply",
+        reviewId: 42,
+        ruleId: 10,
+        componentId: 8,
+      }),
+    );
   });
 
   it("calls afterComposerPosted with null reviewId for component mode", async () => {
@@ -150,10 +153,13 @@ describe("ReplyComposerMixin", () => {
     w.vm.openComponentComposer(8);
     await w.vm.$nextTick();
     w.vm.onComposerPosted();
-    expect(afterSpy).toHaveBeenCalledWith(null, expect.objectContaining({
-      mode: "component",
-      componentId: 8,
-    }));
+    expect(afterSpy).toHaveBeenCalledWith(
+      null,
+      expect.objectContaining({
+        mode: "component",
+        componentId: 8,
+      }),
+    );
   });
 
   it("calls afterComposerPosted with null when composer was never opened", () => {

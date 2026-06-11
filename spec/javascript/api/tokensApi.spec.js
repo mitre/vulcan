@@ -45,10 +45,9 @@ describe("tokensApi", () => {
   it("adminRevokeToken calls DELETE /personal_access_tokens/:id/admin_revoke with audit comment", async () => {
     api.delete.mockResolvedValue({ data: {} });
     await adminRevokeToken(7, "Suspicious activity");
-    expect(api.delete).toHaveBeenCalledWith(
-      "/personal_access_tokens/7/admin_revoke",
-      { data: { audit_comment: "Suspicious activity" } }
-    );
+    expect(api.delete).toHaveBeenCalledWith("/personal_access_tokens/7/admin_revoke", {
+      data: { audit_comment: "Suspicious activity" },
+    });
   });
 
   it("adminListTokens calls GET /personal_access_tokens with user_id param", async () => {

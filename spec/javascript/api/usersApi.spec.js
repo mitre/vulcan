@@ -110,7 +110,9 @@ describe("usersApi", () => {
   it("unlinkIdentity accepts current_password payload", async () => {
     api.post.mockResolvedValue({ data: {} });
     await unlinkIdentity({ current_password: "secret123" });
-    expect(api.post).toHaveBeenCalledWith("/users/unlink_identity", { current_password: "secret123" });
+    expect(api.post).toHaveBeenCalledWith("/users/unlink_identity", {
+      current_password: "secret123",
+    });
   });
 
   it("getUserComments calls GET /users/:id/comments with params", async () => {

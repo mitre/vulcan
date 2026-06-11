@@ -135,7 +135,7 @@ describe("CommentItem", () => {
         localVue,
         propsData: { comment: baseComment },
         scopedSlots: {
-          body: '<blockquote>{{ props.comment.text }}</blockquote>',
+          body: "<blockquote>{{ props.comment.text }}</blockquote>",
         },
       });
       expect(w.find("blockquote").exists()).toBe(true);

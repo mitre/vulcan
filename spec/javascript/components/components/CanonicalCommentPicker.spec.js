@@ -60,9 +60,12 @@ describe("CanonicalCommentPicker", () => {
       propsData: { componentId: 8, excludeReviewId: 50 },
     });
     await flushAll(w);
-    expect(getComments).toHaveBeenCalledWith(8, expect.objectContaining({
-      triage_status: "all",
-    }));
+    expect(getComments).toHaveBeenCalledWith(
+      8,
+      expect.objectContaining({
+        triage_status: "all",
+      }),
+    );
   });
 
   it("excludes the review being marked from the candidate list", async () => {

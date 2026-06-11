@@ -38,7 +38,9 @@ describe("UpdateMetadataModal", () => {
   };
 
   beforeEach(() => vi.resetAllMocks());
-  afterEach(() => { if (wrapper) wrapper.destroy(); });
+  afterEach(() => {
+    if (wrapper) wrapper.destroy();
+  });
 
   it("updateMetadata calls updateComponent with component id and payload", async () => {
     const { updateComponent } = await import("@/api/componentsApi");
@@ -47,10 +49,13 @@ describe("UpdateMetadataModal", () => {
     wrapper = createWrapper();
     wrapper.vm.updateMetadata();
 
-    expect(updateComponent).toHaveBeenCalledWith(7, expect.objectContaining({
-      component_metadata_attributes: expect.objectContaining({
-        data: { env: "production" },
+    expect(updateComponent).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({
+        component_metadata_attributes: expect.objectContaining({
+          data: { env: "production" },
+        }),
       }),
-    }));
+    );
   });
 });

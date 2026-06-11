@@ -216,11 +216,46 @@ describe("TriageRuleSidebar", () => {
 
   it("preserves section-ordered input from sortedRows", () => {
     const sectionComments = [
-      { id: 78, rule_id: 10, rule_displayed_name: "CNTR-01-000001", section: null, triage_status: "pending", comment: "Overall" },
-      { id: 171, rule_id: 10, rule_displayed_name: "CNTR-01-000001", section: "title", triage_status: "pending", comment: "Title" },
-      { id: 168, rule_id: 10, rule_displayed_name: "CNTR-01-000001", section: "vuln_discussion", triage_status: "pending", comment: "Vuln" },
-      { id: 42, rule_id: 10, rule_displayed_name: "CNTR-01-000001", section: "check_content", triage_status: "pending", comment: "Check" },
-      { id: 43, rule_id: 10, rule_displayed_name: "CNTR-01-000001", section: "fixtext", triage_status: "pending", comment: "Fix" },
+      {
+        id: 78,
+        rule_id: 10,
+        rule_displayed_name: "CNTR-01-000001",
+        section: null,
+        triage_status: "pending",
+        comment: "Overall",
+      },
+      {
+        id: 171,
+        rule_id: 10,
+        rule_displayed_name: "CNTR-01-000001",
+        section: "title",
+        triage_status: "pending",
+        comment: "Title",
+      },
+      {
+        id: 168,
+        rule_id: 10,
+        rule_displayed_name: "CNTR-01-000001",
+        section: "vuln_discussion",
+        triage_status: "pending",
+        comment: "Vuln",
+      },
+      {
+        id: 42,
+        rule_id: 10,
+        rule_displayed_name: "CNTR-01-000001",
+        section: "check_content",
+        triage_status: "pending",
+        comment: "Check",
+      },
+      {
+        id: 43,
+        rule_id: 10,
+        rule_displayed_name: "CNTR-01-000001",
+        section: "fixtext",
+        triage_status: "pending",
+        comment: "Fix",
+      },
     ];
     const w = mount(TriageRuleSidebar, {
       localVue,

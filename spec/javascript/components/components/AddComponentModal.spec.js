@@ -45,7 +45,9 @@ describe("AddComponentModal", () => {
   };
 
   beforeEach(() => vi.resetAllMocks());
-  afterEach(() => { if (wrapper) wrapper.destroy(); });
+  afterEach(() => {
+    if (wrapper) wrapper.destroy();
+  });
 
   it("addComponent calls createComponentInProject with project id and payload", async () => {
     const { createComponentInProject } = await import("@/api/componentsApi");

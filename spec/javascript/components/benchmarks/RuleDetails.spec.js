@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import RuleDetails from "@/components/benchmarks/RuleDetails.vue";
@@ -182,9 +182,8 @@ describe("RuleDetails", () => {
   // ==========================================
   describe("null/undefined rule handling", () => {
     it("accepts null selectedRule without Vue warnings", () => {
-      const errors = [];
-      const originalError = console.error;
-      console.error = (...args) => errors.push(args.join(" "));
+      // spy (not manual reassignment) — restored via mockRestore below
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
       wrapper = shallowMount(RuleDetails, {
         localVue,
@@ -194,11 +193,10 @@ describe("RuleDetails", () => {
         },
       });
 
-      console.error = originalError;
-
-      const propErrors = errors.filter(
-        (e) => e.includes("Invalid prop") || e.includes("type check failed"),
-      );
+      const propErrors = errorSpy.mock.calls
+        .map((args) => args.join(" "))
+        .filter((e) => e.includes("Invalid prop") || e.includes("type check failed"));
+      errorSpy.mockRestore();
       expect(propErrors.length).toBe(0);
     });
 

@@ -49,8 +49,14 @@ describe("triageBgClass", () => {
 
   it("handles all statuses from triageVocabulary (except pending)", () => {
     const expected = [
-      "concur", "concur_with_comment", "non_concur", "duplicate",
-      "informational", "needs_clarification", "withdrawn", "addressed_by",
+      "concur",
+      "concur_with_comment",
+      "non_concur",
+      "duplicate",
+      "informational",
+      "needs_clarification",
+      "withdrawn",
+      "addressed_by",
     ];
     expected.forEach((status) => {
       expect(triageBgClass(status)).toBe(`triage-bg--${status}`);

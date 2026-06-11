@@ -30,7 +30,10 @@ describe("BenchmarkUpload", () => {
         ...props,
       },
       stubs: {
-        BModal: { template: "<div><slot /><slot name='modal-footer' /></div>", methods: { show: vi.fn(), hide: vi.fn() } },
+        BModal: {
+          template: "<div><slot /><slot name='modal-footer' /></div>",
+          methods: { show: vi.fn(), hide: vi.fn() },
+        },
         BButton: true,
         BSpinner: true,
       },
@@ -38,7 +41,9 @@ describe("BenchmarkUpload", () => {
   };
 
   beforeEach(() => vi.resetAllMocks());
-  afterEach(() => { if (wrapper) wrapper.destroy(); });
+  afterEach(() => {
+    if (wrapper) wrapper.destroy();
+  });
 
   it("submitUpload calls uploadBenchmark with path and formData", async () => {
     const { uploadBenchmark } = await import("@/api/projectsApi");
