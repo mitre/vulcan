@@ -14,7 +14,7 @@ module ApplicationHelper
       { icon: 'clipboard-check', name: 'STIGs', link: stigs_path },
       { icon: 'clipboard', name: 'SRGs', link: srgs_path },
       { icon: 'journal-bookmark-fill', name: 'Resources', children: [
-        { icon: 'book', name: 'DISA Process Guide', link: disa_guide_path }
+        { icon: 'book', name: 'DISA Process Guide', link: disa_guide_path(page: 'vendor-stig-process-guide') }
       ] }
     ]
   end
