@@ -354,7 +354,7 @@ describe("CommentThread", () => {
     });
   });
 
-  // ── v2-05f.62.5.2: useCommentThread composable integration ──────────
+  // ── useCommentThread composable integration ─────────────────────────
 
   describe("composable integration", () => {
     it("uses useCommentReactions composable (not ReactionToggleMixin)", () => {

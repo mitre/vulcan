@@ -1,7 +1,7 @@
 <script>
 // Mixin that allows re-use of the display function for components.
 // Superseded by composables/useDisplayedComponent.js (kept in lockstep
-// until the mixins/ directory is removed in v2-0re.10).
+// until the mixins/ directory is removed).
 export default {
   methods: {
     // Display component version and release if present:

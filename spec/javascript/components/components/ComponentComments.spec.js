@@ -684,7 +684,7 @@ describe("ComponentComments", () => {
     });
     const wrapper = mount(ComponentComments, {
       propsData: { componentId: 42 },
-        provide: { effectivePermissions: "author" },
+      provide: { effectivePermissions: "author" },
     });
     await flushPromises(wrapper);
     expect(wrapper.text()).toContain(longComment);
@@ -1051,7 +1051,7 @@ describe("ComponentComments", () => {
   it("adds ml-auto to export button in split mode", async () => {
     const wrapper = mount(ComponentComments, {
       propsData: { componentId: 42 },
-        provide: { effectivePermissions: "author" },
+      provide: { effectivePermissions: "author" },
       stubs: SHARED_STUBS,
     });
     await flushPromises(wrapper);
@@ -1064,7 +1064,7 @@ describe("ComponentComments", () => {
   it("adds ml-auto to comment button when export hidden in split mode", async () => {
     const wrapper = mount(ComponentComments, {
       propsData: { componentId: 42 },
-        provide: { effectivePermissions: "viewer" },
+      provide: { effectivePermissions: "viewer" },
       stubs: SHARED_STUBS,
     });
     await flushPromises(wrapper);
@@ -1156,7 +1156,7 @@ describe("ComponentComments", () => {
     });
   });
 
-  // ── v2-6gq.4: b-alert migration ─────────────────────────────────────
+  // ── b-alert migration ───────────────────────────────────────────────
 
   describe("satisfied-by-parent notice uses b-alert", () => {
     it("renders a b-alert (not a raw div.alert) for the parent redirect notice", async () => {
@@ -1178,13 +1178,13 @@ describe("ComponentComments", () => {
     });
   });
 
-  // ── v2-0re.13.4: composable contracts ───────────────────────────────
+  // ── composable contracts ────────────────────────────────────────────
   // REQUIREMENTS: permissions arrive via provide/inject (usePermissions),
   // dates render via useDateFormat, and the reply composer state machine
   // flows through useReplyComposer with the onOpen/afterPosted bridge —
   // no non-Alert mixins remain.
 
-  describe("composable contracts (v2-0re.13.4)", () => {
+  describe("composable contracts", () => {
     beforeEach(() => vi.clearAllMocks());
 
     it("sources permissions from provide via usePermissions — author sees the select column", async () => {

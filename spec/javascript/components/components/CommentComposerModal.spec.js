@@ -427,7 +427,7 @@ describe("CommentComposerModal", () => {
     });
   });
 
-  // ── v2-6gq.4: b-alert migration ─────────────────────────────────────
+  // ── b-alert migration ───────────────────────────────────────────────
 
   describe("success message uses b-alert", () => {
     it("renders a b-alert with variant=success (not a raw div.alert) after posting", async () => {

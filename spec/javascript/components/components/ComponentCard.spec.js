@@ -128,7 +128,7 @@ describe("ComponentCard", () => {
     });
   });
 
-  // REQUIREMENT (v2-8lb): the footer toolbar degrades cleanly at narrow card
+  // REQUIREMENT: the footer toolbar degrades cleanly at narrow card
   // widths — the primary button label never splits across lines, and the
   // admin buttons wrap below as a left-aligned group instead of squeezing
   // the primary button (outer container must wrap). Gaps come from scoped

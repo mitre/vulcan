@@ -26,7 +26,7 @@ describe("createVulcanApp", () => {
   // resulting "runtime-only build" warning so it is ASSERTED, not leaked —
   // and any OTHER warning fails the test.
   //
-  // WHY the alias MUST stay on vue/dist/vue.runtime.common.js (v2-avw root
+  // WHY the alias MUST stay on vue/dist/vue.runtime.common.js (root
   // cause): the vitest alias only applies to vite-processed code (specs +
   // app/javascript). Externalized node_modules deps (bootstrap-vue, VTU)
   // resolve bare "vue" through Node — always dist/vue.runtime.common.js
@@ -60,7 +60,7 @@ describe("createVulcanApp", () => {
   // deps). If either assertion fails, the vitest Vue alias was changed —
   // revert it. Breaking this invariant silently kills BModal/BTooltip/
   // BPopover portal rendering (see divergence comment above).
-  describe("test environment Vue build invariants (v2-avw)", () => {
+  describe("test environment Vue build invariants", () => {
     it("uses the runtime-only Vue build (no template compiler)", () => {
       expect(Vue.compile).toBeUndefined();
     });

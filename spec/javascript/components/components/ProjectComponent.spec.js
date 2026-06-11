@@ -592,14 +592,14 @@ describe("ProjectComponent", () => {
     });
   });
 
-  // ── v2-0re.13.5: composable contracts ───────────────────────────────
+  // ── composable contracts ────────────────────────────────────────────
   // REQUIREMENTS: rule ordering flows through useSortRules, the release
   // confirmation through useConfirmRelease (declarative modal, error keeps
   // dialog open), and the reply composer through useReplyComposer with the
   // onOpen/afterPosted bridge. ProjectComponent stays the PROVIDER for
   // effectivePermissions (no self-inject).
 
-  describe("composable contracts (v2-0re.13.5)", () => {
+  describe("composable contracts", () => {
     beforeEach(() => vi.clearAllMocks());
 
     it("wires useSortRules — rules render sorted by rule_id", async () => {

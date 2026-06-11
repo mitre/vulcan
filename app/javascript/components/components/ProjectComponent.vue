@@ -297,7 +297,7 @@ export default {
     // options-API instance ($bvModal.show, getRule refresh), which setup()
     // cannot reach in Vue 2.7 without getCurrentInstance (anti-pattern).
     // The bridge object is filled in created() — late binding, same
-    // contract. Pattern established in ComponentComments (.13.4).
+    // contract. Pattern established in ComponentComments.
     const composerBridge = { onOpen: null, afterPosted: null };
     const composer = useReplyComposer({
       onOpen: () => composerBridge.onOpen && composerBridge.onOpen(),

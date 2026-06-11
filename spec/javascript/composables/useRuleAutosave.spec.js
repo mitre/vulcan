@@ -212,7 +212,7 @@ describe("useRuleAutosave", () => {
     });
   });
 
-  describe("rule switch safety (v2-05f.65 regression)", () => {
+  describe("rule switch safety regression", () => {
     it("skips autosave when user switches to a different rule before timer fires", async () => {
       const childRule = ref({ id: 100, status: "Applicable - Configurable", locked: false });
       const autosave = useRuleAutosave(childRule, { componentId: 1 });

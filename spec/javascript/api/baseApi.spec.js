@@ -29,7 +29,7 @@ describe("baseApi", () => {
     expect(api._client).toBe("ky");
   });
 
-  // ── v2-7r3: expired-session 401 handling ──────────────────────────
+  // ── expired-session 401 handling ───────────────────────────────────
   // REQUIREMENT: a 401 on ajax means the session died (timeout, or the
   // user signed in elsewhere via session_limitable). The page must
   // RELOAD — a navigational request lets Devise's FailureApp set the
