@@ -32,6 +32,25 @@ function getCsrfToken() {
   return document.querySelector('meta[name="csrf-token"]')?.content;
 }
 
+/**
+ * afterResponse hook: a 401 on ajax means the session died — Devise
+ * timeoutable expiry, or session_limitable kicked this session when the
+ * same user signed in elsewhere. RELOAD the page instead of jumping to
+ * the sign-in path: the reload is a NAVIGATIONAL request, so Devise's
+ * FailureApp sets the cause-specific flash ("session expired" vs
+ * "signed in elsewhere" vs "sign in to continue") and stores
+ * user_return_to for the post-login redirect. Exported for testability —
+ * `loc` is injectable (defaults to window.location).
+ *
+ * @param {{response: Response}} hookArg - ky afterResponse argument.
+ * @param {Location} [loc=window.location] - injectable location.
+ */
+export function handleSessionExpired({ response }, loc = window.location) {
+  if (response.status === 401 && !loc.pathname.startsWith("/users/sign_in")) {
+    loc.reload();
+  }
+}
+
 const client = ky.create({
   credentials: "same-origin",
   headers: { Accept: "application/json" },
@@ -42,14 +61,7 @@ const client = ky.create({
         if (token) request.headers.set("X-CSRF-Token", token);
       },
     ],
-    afterResponse: [
-      ({ response }) => {
-        if (response.status === 401 && !window.location.pathname.startsWith("/users/sign_in")) {
-          window.location.href = "/users/sign_in";
-          return new Response(null, { status: 401 });
-        }
-      },
-    ],
+    afterResponse: [(hookArg) => handleSessionExpired(hookArg)],
   },
 });
 
