@@ -19,7 +19,7 @@
           :show-filter-toggle="true"
           :filter-bar-visible="filterBarVisible"
           :active-filter-count="activeFilterCount"
-          @release="confirmComponentRelease"
+          @release="requestRelease(component)"
           @open-members="$bvModal.show(`members-modal-${component.id}`)"
           @toggle-panel="togglePanel"
           @toggle-filter-bar="toggleFilterBar"
@@ -116,6 +116,22 @@
           @hidden="onComposerHidden"
         />
 
+        <!-- Release confirmation (declarative — useConfirmRelease owns the state) -->
+        <b-modal
+          v-model="showModal"
+          :title="releaseModal.title"
+          :ok-title="releaseModal.okTitle"
+          :ok-variant="releaseModal.okVariant"
+          :cancel-title="releaseModal.cancelTitle"
+          :busy="isReleasing"
+          size="md"
+          centered
+          @ok="onConfirmRelease"
+          @cancel="cancel"
+        >
+          <p>{{ releaseModal.body }}</p>
+        </b-modal>
+
         <!-- Purpose + Format radios.
              Disposition matrix piggybacks into the Working Copy CSV/Excel
              outputs when comments exist (Steps 3+4). -->
@@ -153,11 +169,10 @@ import { ref, computed, provide } from "vue";
 import { getComponent, patchComponent } from "../../api/componentsApi";
 import { getRule } from "../../api/rulesApi";
 import { exportProjectData } from "../../api/projectsApi";
-import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
-import SortRulesMixin from "../../mixins/SortRulesMixin.vue";
-import ConfirmComponentReleaseMixin from "../../mixins/ConfirmComponentReleaseMixin.vue";
+import { useSortRules } from "../../composables/useSortRules";
+import { useConfirmRelease, RELEASE_CONFIRM_COPY } from "../../composables/useConfirmRelease";
+import { useReplyComposer } from "../../composables/useReplyComposer";
 import { useRuleFilters, useSidebar } from "../../composables";
 import { useRuleSelectionStore } from "../../stores/ruleSelection";
 import { getFirstVisibleRule } from "../../utils/ruleSelectionUtils";
@@ -175,7 +190,6 @@ import RelatedRulesModal from "../rules/RelatedRulesModal.vue";
 import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
 import CommentComposerModal from "./CommentComposerModal.vue";
 import ExportModal from "../shared/ExportModal.vue";
-import ReplyComposerMixin from "../../mixins/ReplyComposerMixin.vue";
 
 export default {
   name: "ProjectComponent",
@@ -192,14 +206,11 @@ export default {
     CommentComposerModal,
     ExportModal,
   },
-  mixins: [
-    DateFormatMixinVue,
-    AlertMixinVue,
-    RoleComparisonMixin,
-    ConfirmComponentReleaseMixin,
-    SortRulesMixin,
-    ReplyComposerMixin,
-  ],
+  // AlertMixin migrates in 0re.9 (useToast). DateFormatMixin and
+  // RoleComparisonMixin were dead imports here — this component is the
+  // PROVIDER for effectivePermissions (gates read the raw prop value) and
+  // renders no dates itself.
+  mixins: [AlertMixinVue],
   // Provide the component's comment_phase (and a derived `commentsClosed`
   // boolean) to the rule-editor subtree so SectionCommentIcon can disable
   // the comment affordance when the window isn't open. Function form
@@ -270,6 +281,30 @@ export default {
     );
     const { activePanel, togglePanel, closePanel } = useSidebar();
 
+    const { compareRules } = useSortRules();
+
+    // Release confirmation — declarative modal pattern, second consumer
+    // after ComponentCard (.13.1). Copy from RELEASE_CONFIRM_COPY.
+    const {
+      showModal,
+      isReleasing,
+      requestRelease,
+      cancel,
+      confirm: confirmRelease,
+    } = useConfirmRelease();
+
+    // Bridge: useReplyComposer's onOpen/afterPosted callbacks need the
+    // options-API instance ($bvModal.show, getRule refresh), which setup()
+    // cannot reach in Vue 2.7 without getCurrentInstance (anti-pattern).
+    // The bridge object is filled in created() — late binding, same
+    // contract. Pattern established in ComponentComments (.13.4).
+    const composerBridge = { onOpen: null, afterPosted: null };
+    const composer = useReplyComposer({
+      onOpen: () => composerBridge.onOpen && composerBridge.onOpen(),
+      afterPosted: (parentReviewId, snapshot) =>
+        composerBridge.afterPosted && composerBridge.afterPosted(parentReviewId, snapshot),
+    });
+
     const updateFilter = (filterName, value) => {
       setFilter(filterName, value);
       localStorage.setItem(`ruleNavigatorFilters-${componentId}`, JSON.stringify(filters.value));
@@ -300,6 +335,15 @@ export default {
       activePanel,
       togglePanel,
       closePanel,
+      compareRules,
+      showModal,
+      isReleasing,
+      requestRelease,
+      cancel,
+      confirmRelease,
+      releaseModal: RELEASE_CONFIRM_COPY,
+      composerBridge,
+      ...composer,
     };
   },
   data() {
@@ -348,6 +392,11 @@ export default {
     rulePanels() {
       return ["satisfies", "rule-reviews", "rule-history"];
     },
+  },
+  created() {
+    this.composerBridge.onOpen = () => this.$bvModal.show("comment-composer-modal");
+    this.composerBridge.afterPosted = (parentReviewId, snapshot) =>
+      this.afterComposerPosted(parentReviewId, snapshot);
   },
   mounted() {
     this.ruleStore.init(this.$router, this.component.id);
@@ -453,6 +502,16 @@ export default {
     },
     onOpenComponentComposer() {
       this.openComponentComposer(this.component.id);
+    },
+    async onConfirmRelease(bvModalEvt) {
+      if (bvModalEvt && bvModalEvt.preventDefault) bvModalEvt.preventDefault();
+      const { success, response, error } = await this.confirmRelease();
+      if (success) {
+        this.alertOrNotifyResponse(response);
+        this.$emit("projectUpdated");
+      } else if (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     openCommentsPanel() {
       globalThis.location.href = `/components/${this.component.id}/triage`;

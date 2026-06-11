@@ -31,6 +31,15 @@ vi.mock("@/api/projectsApi", () => ({
   exportProjectData: vi.fn(() => Promise.resolve("/projects/1/export/csv?component_ids=41")),
 }));
 
+// Spy-wrap (real implementations preserved) so tests can pin that sorting,
+// the release confirmation, and the reply composer flow through composables.
+vi.mock("@/composables/useSortRules", { spy: true });
+vi.mock("@/composables/useConfirmRelease", { spy: true });
+vi.mock("@/composables/useReplyComposer", { spy: true });
+import { useSortRules } from "@/composables/useSortRules";
+import { useConfirmRelease } from "@/composables/useConfirmRelease";
+import { useReplyComposer } from "@/composables/useReplyComposer";
+
 describe("ProjectComponent", () => {
   let wrapper;
 
@@ -127,7 +136,6 @@ describe("ProjectComponent", () => {
         RuleReviews: true,
         RuleHistories: true,
         RelatedRulesModal: true,
-        MembersModal: true,
         BSidebar: true,
         BModal: true,
         BIcon: true,
@@ -581,6 +589,80 @@ describe("ProjectComponent", () => {
       );
       errorSpy.mockRestore();
       expect(propWarnings).toEqual([]);
+    });
+  });
+
+  // ── v2-0re.13.5: composable contracts ───────────────────────────────
+  // REQUIREMENTS: rule ordering flows through useSortRules, the release
+  // confirmation through useConfirmRelease (declarative modal, error keeps
+  // dialog open), and the reply composer through useReplyComposer with the
+  // onOpen/afterPosted bridge. ProjectComponent stays the PROVIDER for
+  // effectivePermissions (no self-inject).
+
+  describe("composable contracts (v2-0re.13.5)", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("wires useSortRules — rules render sorted by rule_id", async () => {
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+      expect(useSortRules).toHaveBeenCalled();
+      expect(wrapper.vm.rules.map((r) => r.rule_id)).toEqual(["001", "002"]);
+    });
+
+    it("requestRelease opens the declarative dialog for a releasable component", async () => {
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+      expect(useConfirmRelease).toHaveBeenCalled();
+      expect(wrapper.vm.showModal).toBe(false);
+      wrapper.vm.requestRelease(wrapper.vm.component);
+      expect(wrapper.vm.showModal).toBe(true);
+    });
+
+    it("requestRelease refuses to open for a non-releasable component (mixin guard parity)", async () => {
+      wrapper = createWrapper({
+        initialComponentState: { ...defaultProps.initialComponentState, releasable: false },
+      });
+      await flushPromises(wrapper);
+      wrapper.vm.requestRelease(wrapper.vm.component);
+      expect(wrapper.vm.showModal).toBe(false);
+    });
+
+    it("onConfirmRelease patches released:true and emits projectUpdated on success", async () => {
+      patchComponent.mockResolvedValueOnce({ data: { toast: { message: ["Released"] } } });
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+      wrapper.vm.requestRelease(wrapper.vm.component);
+      await wrapper.vm.onConfirmRelease({ preventDefault: () => {} });
+      expect(patchComponent).toHaveBeenCalledWith(41, { released: true });
+      expect(wrapper.emitted("projectUpdated")).toBeTruthy();
+      expect(wrapper.vm.showModal).toBe(false);
+    });
+
+    it("wires useReplyComposer — reply opens composer state and shows the modal via the bridge", async () => {
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+      expect(useReplyComposer).toHaveBeenCalled();
+
+      const showSpy = vi.spyOn(wrapper.vm.$bvModal, "show").mockImplementation(() => {});
+      wrapper.vm.onOpenReplyComposer(99);
+      expect(wrapper.vm.composerState.mode).toBe("reply");
+      expect(wrapper.vm.composerState.reviewId).toBe(99);
+      await wrapper.vm.$nextTick();
+      expect(showSpy).toHaveBeenCalledWith("comment-composer-modal");
+    });
+
+    it("afterPosted bridge refreshes the posted rule via getRule", async () => {
+      getRule.mockResolvedValueOnce({ data: { ...mockRules[0], title: "updated" } });
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+
+      wrapper.vm.selectRule(1);
+      wrapper.vm.onOpenReplyComposer(99);
+      wrapper.vm.onComposerPosted();
+      await flushPromises(wrapper);
+
+      expect(getRule).toHaveBeenCalledWith(1);
+      expect(wrapper.vm.composerActive).toBe(false);
     });
   });
 });
