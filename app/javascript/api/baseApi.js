@@ -83,7 +83,7 @@ async function parseBody(response) {
  *     with `error.response = { data, status, headers }`.
  *
  * This keeps the response contract identical to the legacy axios shape that
- * AlertMixin.alertOrNotifyResponse and 38+ `.catch()` callers rely on.
+ * useToast's alertOrNotifyResponse and 38+ `.catch()` callers rely on.
  *
  * @param {Promise<Response>} promise - ky request promise.
  * @returns {Promise<{data: *, status: number}>}
@@ -95,10 +95,13 @@ async function normalizeResponse(promise) {
     return { data: await parseBody(response), status: response.status };
   } catch (error) {
     if (error.name === "HTTPError") {
-      const data = await parseBody(error.response).catch(() => null);
       const normalized = new Error(error.message);
       normalized.response = {
-        data,
+        // ky v2 pre-parses the error body into error.data and CONSUMES the
+        // Response body doing it — error.response.json() would reject with
+        // "Body has already been read". Re-parsing here silently nulled the
+        // server's canonical {toast} payload for every 4xx/5xx.
+        data: error.data ?? null,
         status: error.response.status,
         headers: error.response.headers,
       };
