@@ -55,7 +55,7 @@ class ApplicationController < ActionController::Base
   rescue_from NotAuthorizedError, with: :not_authorized
 
   # toast helper. The Vue frontend's
-  # alertOrNotifyResponse mixin reads `{ toast: { title, message, variant } }`
+  # alertOrNotifyResponse (useToast) reads `{ toast: { title, message, variant } }`
   # from JSON responses and renders a Bootstrap-Vue toast. Pre-fix the JSON
   # shape was hand-written at ~45 sites in reviews_controller alone — typos
   # in `variant:` (e.g. 'unprocessable_content' instead of 'warning') shipped
@@ -246,6 +246,15 @@ class ApplicationController < ActionController::Base
   end
 
   private
+
+  # Devise hook (documented override point): land on the sign-in page
+  # directly after sign-out. The default (root) triggers a second auth
+  # redirect that consumes the "Signed out successfully." flash before the
+  # sign-in page renders, so the Toaster never shows it — flash survives
+  # exactly one redirect. AC-12(02) requires the explicit logoff message.
+  def after_sign_out_path_for(_resource_or_scope)
+    new_user_session_path
+  end
 
   # Parses duration strings like "1h", "30m", "24h", "3600" into seconds.
   def parse_duration(value)

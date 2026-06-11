@@ -59,11 +59,27 @@ RSpec.describe 'Sessions' do
 
         delete '/users/sign_out'
 
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(new_user_session_path)
 
         # Verify user is actually logged out by checking they can't create a project
         post '/projects', params: { project: { name: 'Test' } }
         expect(response).to have_http_status(:redirect) # Should redirect to login
+      end
+
+      # The sign-in page must be ONE redirect away so the signed-out flash
+      # survives to render. Devise's default after_sign_out path (root)
+      # triggers a second auth redirect that consumes the flash before the
+      # sign-in page renders — the Toaster never shows the confirmation.
+      it 'redirects straight to the sign-in page with the signed-out flash intact' do
+        user = create(:user)
+        sign_in user
+
+        delete '/users/sign_out'
+
+        expect(response).to redirect_to(new_user_session_path)
+        follow_redirect!
+        expect(response).to have_http_status(:ok)
+        expect(flash[:notice]).to eq('Signed out successfully.')
       end
     end
 
@@ -103,7 +119,7 @@ RSpec.describe 'Sessions' do
 
         delete '/users/sign_out'
 
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(new_user_session_path)
       end
     end
 
