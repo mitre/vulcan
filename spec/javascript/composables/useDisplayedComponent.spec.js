@@ -10,22 +10,22 @@ describe("useDisplayedComponent", () => {
     expect(result[0].displayed).toBe("Test (Version 1, Release R1)");
   });
 
-  it("adds displayed name with version only", () => {
+  it("adds displayed name with version only — no comma artifact", () => {
     const components = [{ name: "Test", version: "2", release: "" }];
     const result = addDisplayNameToComponents(components);
-    expect(result[0].displayed).toBe("Test (Version 2, )");
+    expect(result[0].displayed).toBe("Test (Version 2)");
   });
 
-  it("adds displayed name with release only", () => {
+  it("adds displayed name with release only — no comma artifact", () => {
     const components = [{ name: "Test", version: "", release: "R3" }];
     const result = addDisplayNameToComponents(components);
-    expect(result[0].displayed).toBe("Test (, Release R3)");
+    expect(result[0].displayed).toBe("Test (Release R3)");
   });
 
-  it("adds displayed name without version or release", () => {
+  it("uses the bare name when neither version nor release — no trailing space", () => {
     const components = [{ name: "Test", version: "", release: "" }];
     const result = addDisplayNameToComponents(components);
-    expect(result[0].displayed).toBe("Test ");
+    expect(result[0].displayed).toBe("Test");
   });
 
   it("handles multiple components", () => {

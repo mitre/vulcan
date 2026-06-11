@@ -11,14 +11,10 @@ import DisplayedComponentMixin from "@/mixins/DisplayedComponentMixin.vue";
  * addDisplayNameToComponents(components):
  * - Adds a `displayed` property to each component in the array
  * - Format when both version and release: "Name (Version X, Release Y)"
- * - Format when only version: "Name (Version X, )"
- * - Format when only release: "Name (, Release Y)"
- * - Format when neither: "Name "
+ * - Format when only version: "Name (Version X)"
+ * - Format when only release: "Name (Release Y)"
+ * - Format when neither: "Name"
  * - Mutates and returns the input array
- *
- * NOTE: The current implementation produces trailing/leading comma artifacts
- * when only one of version/release is present, and a trailing space when
- * neither is present. Tests document actual behavior.
  */
 
 const HostComponent = {
@@ -47,40 +43,37 @@ describe("DisplayedComponentMixin", () => {
     // ==========================================
     // ONLY VERSION
     // ==========================================
-    it("includes version with trailing comma artifact when only version present", () => {
+    it('formats "Name (Version X)" when only version present — no comma artifact', () => {
       const wrapper = createWrapper();
       const components = [{ name: "RHEL 9 STIG", version: "3", release: null }];
 
       const result = wrapper.vm.addDisplayNameToComponents(components);
 
-      // Current implementation joins ["Version 3", ""] with ", " -> "Version 3, "
-      expect(result[0].displayed).toBe("RHEL 9 STIG (Version 3, )");
+      expect(result[0].displayed).toBe("RHEL 9 STIG (Version 3)");
     });
 
     // ==========================================
     // ONLY RELEASE
     // ==========================================
-    it("includes release with leading comma artifact when only release present", () => {
+    it('formats "Name (Release Y)" when only release present — no comma artifact', () => {
       const wrapper = createWrapper();
       const components = [{ name: "RHEL 9 STIG", version: null, release: "5" }];
 
       const result = wrapper.vm.addDisplayNameToComponents(components);
 
-      // Current implementation joins ["", "Release 5"] with ", " -> ", Release 5"
-      expect(result[0].displayed).toBe("RHEL 9 STIG (, Release 5)");
+      expect(result[0].displayed).toBe("RHEL 9 STIG (Release 5)");
     });
 
     // ==========================================
     // NEITHER VERSION NOR RELEASE
     // ==========================================
-    it("shows just name with trailing space when neither version nor release", () => {
+    it("shows the bare name when neither version nor release — no trailing space", () => {
       const wrapper = createWrapper();
       const components = [{ name: "Custom Component", version: null, release: null }];
 
       const result = wrapper.vm.addDisplayNameToComponents(components);
 
-      // Outer ternary evaluates to "" but template literal adds space: "Name "
-      expect(result[0].displayed).toBe("Custom Component ");
+      expect(result[0].displayed).toBe("Custom Component");
     });
 
     // ==========================================
@@ -113,7 +106,7 @@ describe("DisplayedComponentMixin", () => {
       expect(result).toHaveLength(3);
       expect(result[0].displayed).toBe("Component A (Version 1, Release 2)");
       expect(result[1].displayed).toBe("Component B (Version 3, Release 4)");
-      expect(result[2].displayed).toBe("Component C ");
+      expect(result[2].displayed).toBe("Component C");
     });
 
     it("handles empty array", () => {
@@ -148,7 +141,7 @@ describe("DisplayedComponentMixin", () => {
 
       const result = wrapper.vm.addDisplayNameToComponents(components);
 
-      expect(result[0].displayed).toBe("Test (, Release 2)");
+      expect(result[0].displayed).toBe("Test (Release 2)");
     });
 
     it("treats empty string version as falsy", () => {
@@ -157,9 +150,7 @@ describe("DisplayedComponentMixin", () => {
 
       const result = wrapper.vm.addDisplayNameToComponents(components);
 
-      // '' || '2' = '2' (truthy), enters the ternary
-      // ['' ? "Version " : "", "Release 2"] -> ["", "Release 2"]
-      expect(result[0].displayed).toBe("Test (, Release 2)");
+      expect(result[0].displayed).toBe("Test (Release 2)");
     });
   });
 });

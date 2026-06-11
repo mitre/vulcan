@@ -20,7 +20,7 @@
       <!-- Searchable projects -->
       <b-form @submit.prevent>
         <input
-          id="NewProjectAuthenticityToken"
+          id="NewComponentAuthenticityToken"
           type="hidden"
           name="authenticity_token"
           :value="authenticityToken"
@@ -179,9 +179,9 @@
 <script>
 import { getSrgs, getProjects, getProject } from "../../api/projectsApi";
 import { detectSrg, createComponentInProject } from "../../api/componentsApi";
-import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import DisplayedComponentMixin from "../../mixins/DisplayedComponentMixin.vue";
+import { useAuthToken } from "../../composables/useAuthToken";
+import { useDisplayedComponent } from "../../composables/useDisplayedComponent";
 import VueMultiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
 
@@ -190,7 +190,8 @@ export default {
   components: {
     VueMultiselect,
   },
-  mixins: [AlertMixinVue, FormMixinVue, DisplayedComponentMixin],
+  // AlertMixin migrates in 0re.9 (useToast)
+  mixins: [AlertMixinVue],
   props: {
     spreadsheet_import: {
       type: Boolean,
@@ -226,6 +227,13 @@ export default {
       type: Boolean,
       default: false,
     },
+  },
+  // setup() runs before data(), so the setup-returned
+  // addDisplayNameToComponents is available to data() below.
+  setup() {
+    const { authenticityToken } = useAuthToken();
+    const { addDisplayNameToComponents } = useDisplayedComponent();
+    return { authenticityToken, addDisplayNameToComponents };
   },
   data: function () {
     return {

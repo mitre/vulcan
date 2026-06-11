@@ -1,5 +1,5 @@
 import { ref, computed } from "vue";
-import { defineStore, acceptHMRUpdate } from "pinia";
+import { defineStore } from "pinia";
 import { getComments } from "../api/componentsApi";
 import { getProjectComments } from "../api/projectsApi";
 import { getUserComments } from "../api/usersApi";
@@ -229,7 +229,3 @@ export const useCommentsStore = defineStore("comments", () => {
     $reset,
   };
 });
-
-if (import.meta.hot) {
-  import.meta.hot.accept(acceptHMRUpdate(useCommentsStore, import.meta.hot));
-}

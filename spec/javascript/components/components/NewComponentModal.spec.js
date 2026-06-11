@@ -26,6 +26,13 @@ vi.mock("@/api/projectsApi", () => ({
   getProject: vi.fn(() => Promise.resolve({ data: {} })),
 }));
 
+// Spy-wrap (real implementations preserved) so tests can pin that the hidden
+// form token and component display names flow through the composables.
+vi.mock("@/composables/useAuthToken", { spy: true });
+vi.mock("@/composables/useDisplayedComponent", { spy: true });
+import { useAuthToken } from "@/composables/useAuthToken";
+import { useDisplayedComponent } from "@/composables/useDisplayedComponent";
+
 /**
  * NewComponentModal Contract Tests
  *
@@ -330,6 +337,58 @@ describe("NewComponentModal", () => {
       // Clear the file
       await wrapper.setData({ file: null });
       expect(wrapper.vm.srgAutoDetected).toBe(false);
+    });
+  });
+
+  // ==========================================
+  // HIDDEN AUTHENTICITY TOKEN (useAuthToken) +
+  // DISPLAY NAMES (useDisplayedComponent)
+  // REQUIREMENT: the in-modal form carries the CSRF token as a hidden
+  // input, sourced from the useAuthToken composable (single source of
+  // truth). Copy-component options get "Name (Version X, Release Y)"
+  // display names via useDisplayedComponent — which data() consumes,
+  // so the setup-returned method must exist before data initializes.
+  // ==========================================
+  describe("composable contracts", () => {
+    const ModalStub = { template: "<div><slot></slot></div>" };
+
+    const createMountedWrapper = (props = {}) => {
+      return mount(NewComponentModal, {
+        localVue,
+        propsData: { ...defaultProps, ...props },
+        stubs: { "b-modal": ModalStub, VueMultiselect: true },
+      });
+    };
+
+    it("renders the hidden authenticity_token input with the CSRF meta value", () => {
+      wrapper = createMountedWrapper();
+      const input = wrapper.find('input[name="authenticity_token"]');
+      expect(input.exists()).toBe(true);
+      // setup.js sets the csrf-token meta to "test-csrf-token"
+      expect(input.element.value).toBe("test-csrf-token");
+    });
+
+    it("sources the token from the useAuthToken composable", () => {
+      useAuthToken.mockReturnValueOnce({ authenticityToken: "composable-sentinel-token" });
+      wrapper = createMountedWrapper();
+      expect(useAuthToken).toHaveBeenCalled();
+      const input = wrapper.find('input[name="authenticity_token"]');
+      expect(input.element.value).toBe("composable-sentinel-token");
+    });
+
+    it("builds copy-component display names via useDisplayedComponent during data()", () => {
+      wrapper = createMountedWrapper({
+        copy_component: true,
+        project: {
+          id: 1,
+          name: "Test Project",
+          components: [{ id: 7, name: "Comp", version: "1", release: "2" }],
+          users: [],
+        },
+      });
+      expect(useDisplayedComponent).toHaveBeenCalled();
+      // data() maps project.components through the setup-returned method
+      expect(wrapper.vm.components[0].displayed).toBe("Comp (Version 1, Release 2)");
     });
   });
 

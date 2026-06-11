@@ -18,7 +18,7 @@
     >
       <b-form @submit.prevent="handleOk">
         <input
-          id="NewProjectAuthenticityToken"
+          id="LockControlsAuthenticityToken"
           type="hidden"
           name="authenticity_token"
           :value="authenticityToken"
@@ -77,19 +77,24 @@
 
 <script>
 import { lockComponent, lockSections as lockSectionsApi } from "../../api/componentsApi";
-import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { useAuthToken } from "../../composables/useAuthToken";
 import { MESSAGE_LABELS } from "../../constants/terminology";
 import { LOCKABLE_SECTIONS } from "../../composables/ruleFieldConfig";
 
 export default {
   name: "LockControlsModal",
-  mixins: [AlertMixinVue, FormMixinVue],
+  // AlertMixin migrates in 0re.9 (useToast)
+  mixins: [AlertMixinVue],
   props: {
     component_id: {
       type: Number,
       required: true,
     },
+  },
+  setup() {
+    const { authenticityToken } = useAuthToken();
+    return { authenticityToken };
   },
   data: function () {
     return {
