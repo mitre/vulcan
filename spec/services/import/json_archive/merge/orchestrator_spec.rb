@@ -158,7 +158,7 @@ RSpec.describe Import::JsonArchive::Merge::Orchestrator, type: :service do
     end
   end
 
-  describe '#call — SignatureGate integration (v2-480.9)' do
+  describe '#call — SignatureGate integration' do
     it 'returns a failed MergeResult with step :signature when the gate is on and no signature is present' do
       allow(Import::JsonArchive::Merge::SignatureGate).to receive(:required?).and_return(true)
       bytes = zip_bytes_from(component) # manifest has no signature field

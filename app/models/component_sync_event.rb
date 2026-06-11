@@ -41,7 +41,7 @@ class ComponentSyncEvent < ApplicationRecord
             if: -> { archive_hash.present? && status == 'applied' }
   # rubocop:enable Rails/I18nLocaleTexts
 
-  # v2-480.40 status state machine. Lifecycle progresses forward only:
+  # Status state machine. Lifecycle progresses forward only:
   #   pending  → {analyzed, applied, failed}
   #   analyzed → {applied, failed}
   #   applied  → {undone}

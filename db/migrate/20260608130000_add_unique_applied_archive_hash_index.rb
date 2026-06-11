@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# v2-480.29: same archive bytes can't be applied to the same component
+# Same archive bytes can't be applied to the same component
 # twice. Partial unique index on (component_id, archive_hash) WHERE
 # archive_hash IS NOT NULL AND status='applied' prevents literal-byte
 # replays. Note: this does NOT catch two different exports of identical

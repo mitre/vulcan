@@ -28,7 +28,7 @@ module Import
         # statement-timeout settings. Counted as inbound + receiving so
         # the matcher's worst-case Hash allocation is bounded.
         REVIEW_CEILING = 10_000
-        # Companion ceilings for v2-480.35 — same defense-in-depth
+        # Companion ceilings — same defense-in-depth
         # rationale, scaled to realistic STIG/component sizes.
         RULES_CEILING = 50_000
         SATISFACTIONS_CEILING = 50_000
@@ -67,7 +67,7 @@ module Import
         # could trip over (memory, read-time data integrity). The
         # comment_phase == 'closed' guarantee is intent-coupled — it only
         # matters when actually writing — so it lives on the applier
-        # (Phase 2, v2-480.8), NOT here. sync:preview is a read-only
+        # (Phase 2), NOT here. sync:preview is a read-only
         # delta and must work regardless of phase.
         def validate_preconditions!
           require_review_ceiling!
@@ -286,7 +286,7 @@ module Import
 
         # Surface one-sided nested rows (Check/DisaRuleDescription on ours
         # XOR theirs) as resolution_log entries instead of silently dropping
-        # them. v2-480.34 — Phase 1 doesn't insert/delete nested rows;
+        # them. Phase 1 doesn't insert/delete nested rows;
         # operators see the diagnostic but the merge continues.
         def record_nested_one_sided(plan, rule_id, one_sided_records)
           return if one_sided_records.blank?

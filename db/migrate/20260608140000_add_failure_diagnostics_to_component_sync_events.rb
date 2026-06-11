@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# v2-480.36: durable diagnostic trail on a failed merge. When the apply
+# Durable diagnostic trail on a failed merge. When the apply
 # txn rolls back (PreconditionError, SerializationFailure, StandardError),
 # the Applier captures exception class+message + structured_errors +
 # warnings into this column so operators can SELECT and triage 5 minutes

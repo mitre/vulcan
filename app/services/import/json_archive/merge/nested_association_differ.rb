@@ -22,7 +22,7 @@ module Import
         # theirs, or vice versa). Phase 1 surfaces these as warnings via
         # Analyzer → MergePlan.resolution_log rather than silently dropping
         # or aborting; Phase 2c may extend MergePlan with only_*_nested
-        # partitions if a real insert/delete pass is needed (v2-480.34).
+        # partitions if a real insert/delete pass is needed.
         attr_reader :one_sided_records
 
         def initialize(ours_rule:, theirs_rule_hash:, strategy:)

@@ -96,7 +96,7 @@ RSpec.describe Import::JsonArchive::Merge::MergePlanFormatter, type: :service do
     end
   end
 
-  describe '#render (v2-480.35: review collisions section)' do
+  describe '#render (review collisions section)' do
     it 'renders a "Review collisions" section when present' do
       plan.add_review_collisions([
                                    { key: 'rule-V-1::same-text::2026-06-08T12:00:00Z', members: %w[r1 r2] },

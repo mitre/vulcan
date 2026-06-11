@@ -23,7 +23,7 @@ module Import
         # :skip behaves as :auto_ours (keep our value, drop theirs).
         # Unmapped verbs (:newer, :manual, :conflict, unknowns) collapse
         # to :conflict so a human has to weigh in.
-        # v2-480.39: derived from Strategy::VERB_TRANSLATION single source
+        # Derived from Strategy::VERB_TRANSLATION single source
         # of truth; kept here as a derived constant for the existing
         # consumers (Applier source_for delegation, spec readability).
         STRATEGY_VERB_MAP = Strategy::VERB_TRANSLATION

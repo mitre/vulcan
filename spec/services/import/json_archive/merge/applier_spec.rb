@@ -101,7 +101,7 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
     end
   end
 
-  describe '#call (failure_diagnostics_json v2-480.36)' do
+  describe '#call (failure_diagnostics_json)' do
     it 'populates failure_diagnostics on a StandardError apply failure' do
       applier = described_class.new(merge_plan: plan, component: component, source: 'theirs', archive_bytes: archive_bytes)
       allow(applier).to receive(:apply_all).and_raise(ActiveRecord::StatementInvalid.new('boom'))
@@ -177,12 +177,12 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
       expect(ComponentSyncEvent.last.archive_hash).to be_nil
     end
 
-    it 'calls SnapshotManager.rotate_snapshots after a successful apply (v2-480.38)' do
+    it 'calls SnapshotManager.rotate_snapshots after a successful apply' do
       expect(Import::JsonArchive::Merge::SnapshotManager).to receive(:rotate_snapshots).with(component)
       described_class.new(merge_plan: plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
     end
 
-    it 'does NOT call SnapshotManager.rotate_snapshots on a failed apply (v2-480.38)' do
+    it 'does NOT call SnapshotManager.rotate_snapshots on a failed apply' do
       applier = described_class.new(merge_plan: plan, component: component, source: 'theirs', archive_bytes: archive_bytes)
       allow(applier).to receive(:apply_all).and_raise(StandardError, 'spec abort')
       expect(Import::JsonArchive::Merge::SnapshotManager).not_to receive(:rotate_snapshots)
@@ -1022,7 +1022,7 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
     end
   end
 
-  describe '#call (review-conflict skip audit + idempotency v2-480.40)' do
+  describe '#call (review-conflict skip audit + idempotency)' do
     let(:target_rule) { component.rules.first }
     let(:existing_review) do
       create(:review, rule: target_rule, user: create(:user, email: 'cc@example.com'),
@@ -1063,7 +1063,7 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
       expect(op.new_value).to eq('non_concur')
     end
 
-    it 'a second apply against the same already-applied satisfaction does NOT log a duplicate insert (v2-480.40)' do
+    it 'a second apply against the same already-applied satisfaction does NOT log a duplicate insert' do
       anchor = component.rules.first
       satisfier = component.rules.second
       sat_hash = { 'rule_id' => anchor.rule_id, 'satisfied_by_rule_id' => satisfier.rule_id }
@@ -1179,7 +1179,7 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
     end
   end
 
-  describe '#call (actor attribution v2-480.37)' do
+  describe '#call (actor attribution)' do
     include_context 'with auditing'
 
     let(:target_rule) { component.rules.first }

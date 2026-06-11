@@ -13,7 +13,7 @@ module Import
       class Strategy
         VALID_STRATEGY_RESOLUTIONS = %i[ours theirs newer conflict union skip manual].freeze
 
-        # v2-480.39 — single source of truth for verb → {resolution, source}.
+        # Single source of truth for verb → {resolution, source}.
         # RuleFieldDiffer / NestedAssociationDiffer consult :resolution to
         # build FieldChange; Applier consults :source to stamp MergeOperation.
         # Verbs not in this map are programmer errors (Strategy validates
@@ -48,7 +48,7 @@ module Import
         # - review triage_status defaults to :ours because triage state is
         #   instance-local
         #
-        # Note (v2-480.41): the merge engine only diffs/merges rule fields +
+        # Note: the merge engine only diffs/merges rule fields +
         # nested associations (checks, disa_rule_descriptions) + reviews +
         # satisfactions + memberships. Component-level metadata (comment_phase,
         # closed_reason, metadata, additional_questions, etc.) round-trips

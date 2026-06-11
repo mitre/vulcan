@@ -12,7 +12,7 @@ RSpec.describe Import::JsonArchive::Merge::Strategy, type: :service do
       expect(strategy.for_field(:rule, 'vuln_discussion')).to eq(:conflict)
     end
 
-    it 'falls back to :conflict for unknown :component-level fields (v2-480.41: component meta does not participate in merge)' do
+    it 'falls back to :conflict for unknown :component-level fields (component meta does not participate in merge)' do
       expect(strategy.for_field(:component, 'description')).to eq(:conflict)
     end
 
@@ -72,7 +72,7 @@ RSpec.describe Import::JsonArchive::Merge::Strategy, type: :service do
     end
   end
 
-  describe '.resolve_verb (v2-480.39 VERB_TRANSLATION single source of truth)' do
+  describe '.resolve_verb (VERB_TRANSLATION single source of truth)' do
     it 'maps :ours to auto_ours + ours' do
       expect(described_class.resolve_verb(:ours)).to eq(resolution: :auto_ours, source: 'ours')
     end
@@ -103,7 +103,7 @@ RSpec.describe Import::JsonArchive::Merge::Strategy, type: :service do
     end
   end
 
-  describe '#validate_resolutions! (v2-480.39 :union rejection for scalar fields)' do
+  describe '#validate_resolutions! (:union rejection for scalar fields)' do
     it 'rejects :union for a rule scalar field' do
       expect do
         described_class.new(overrides: { rule: { 'fixtext' => :union } })

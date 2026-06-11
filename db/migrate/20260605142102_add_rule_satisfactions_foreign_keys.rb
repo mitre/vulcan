@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# v2-480.13 / expert review finding F2 — pass 1 of 2 (Strong Migrations
+# Expert review finding F2 — pass 1 of 2 (Strong Migrations
 # canonical pattern). Adds FK constraints to rule_satisfactions on both
 # join-column directions with `validate: false`, so the table is not
 # held under ACCESS EXCLUSIVE while existing rows are checked. The

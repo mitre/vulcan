@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# v2-480.13 / expert review finding F2 — pass 2 of 2 (Strong Migrations
+# Expert review finding F2 — pass 2 of 2 (Strong Migrations
 # canonical pattern). Validates the FKs added in 20260605142102 outside
 # a DDL transaction so existing-row validation does not hold ACCESS
 # EXCLUSIVE on rule_satisfactions for the duration of the scan.

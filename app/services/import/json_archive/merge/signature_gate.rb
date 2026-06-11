@@ -17,7 +17,7 @@ module Import
       # verification (HMAC over the canonicalized manifest payload) is a
       # follow-up and is intentionally NOT performed here. Treat a passing
       # gate as "the archive claims to be signed", not "the signature is
-      # valid". See v2-480.x signature verification card for the follow-up.
+      # valid". Signature verification is tracked as a follow-up on the board.
       class SignatureGate
         # Raised when +require_signed_archives+ is on and the manifest
         # arrives without a +signature+ field. Orchestrator should catch

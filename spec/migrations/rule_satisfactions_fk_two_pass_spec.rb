@@ -7,7 +7,7 @@ require 'rails_helper'
 # constraints (db/migrate/20211103190520_create_rule_satisfactions.rb),
 # so a satisfaction row referencing a non-existent rule on either side
 # could persist as a dangling bigint — silently mis-routed during
-# component sync merge (see v2-480.13 / expert review finding F2).
+# component sync merge (expert review finding F2).
 #
 # Both columns get FKs with on_delete: :cascade. Unlike reviews
 # (vulcan-cascade-rails-owns), this is a join-table modeled as HABTM

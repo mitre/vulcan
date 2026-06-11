@@ -11,7 +11,6 @@ class Review < ApplicationRecord
   # immutable post-creation. Mirrors Rule::MERGEABLE_FIELDS as the
   # canonical single source of truth — Applier, BackupSerializer
   # review-projection, and ReviewBuilder consult this list.
-  # v2-480.39.
   MERGEABLE_FIELDS = %w[
     triage_status triage_set_by_imported_email triage_set_by_imported_name
     adjudicated_at adjudicated_by_imported_email adjudicated_by_imported_name

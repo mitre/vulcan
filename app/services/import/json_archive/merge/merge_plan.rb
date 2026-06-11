@@ -71,7 +71,7 @@ module Import
 
         # Read-side access to the field-changes index. Returns a frozen
         # Hash{rule_id => [FieldChange]} so callers (Applier) iterate
-        # directly without resorting to instance_variable_get. v2-480.42.
+        # directly without resorting to instance_variable_get.
         def field_changes_by_rule_id
           @field_changes.transform_values { |list| list.dup.freeze }.freeze
         end

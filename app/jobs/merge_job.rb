@@ -10,7 +10,7 @@
 # enqueues this job with the path, and returns { job_id:, sync_event_id: }
 # to the client. The Tempfile is deleted by the job after the orchestrator
 # reads it so the upload doesn't linger on disk if the job fails or is
-# retried. v2-480.9.
+# retried.
 class MergeJob < ApplicationJob
   queue_as :merge
 

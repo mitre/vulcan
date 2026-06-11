@@ -142,7 +142,7 @@ RSpec.describe 'sync rake tasks' do
     end
   end
 
-  describe 'locked-section regression (v2-dqx)' do
+  describe 'locked-section regression' do
     it 'exits 1 with :locked_conflict on the rake CLI when Check section is locked and check content diverges' do
       target_rule = component.rules.first
       target_rule.update_columns(locked_fields: { 'Check' => true })

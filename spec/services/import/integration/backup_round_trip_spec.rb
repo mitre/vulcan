@@ -275,7 +275,7 @@ RSpec.describe 'JSON Archive Backup Round-Trip' do
       expect(imported_comment.reactions.size).to eq(2)
     end
 
-    it 'preserves locked_fields JSONB shape through round-trip (v2-480.41)' do
+    it 'preserves locked_fields JSONB shape through round-trip' do
       # locked_fields is a JSONB hash keyed by SECTION name (not column).
       # Set on source, export, import, and assert the target rule carries
       # the identical shape so operators can rely on lock persistence.

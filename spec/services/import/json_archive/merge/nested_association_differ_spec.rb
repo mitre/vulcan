@@ -113,7 +113,7 @@ RSpec.describe Import::JsonArchive::Merge::NestedAssociationDiffer, type: :servi
     end
   end
 
-  describe '#diff (v2-480.34: nested rows present on only one side)' do
+  describe '#diff (nested rows present on only one side)' do
     it 'captures a ours-only Check.system into one_sided_records' do
       ours_rule.checks.create!(system: 'C.ONLY-OURS', content: 'only on ours')
       ours_rule.reload
@@ -153,7 +153,7 @@ RSpec.describe Import::JsonArchive::Merge::NestedAssociationDiffer, type: :servi
     end
   end
 
-  describe "#diff (v2-480.33: locking 'Severity' blocks severity_override_guidance)" do
+  describe "#diff (locking 'Severity' blocks severity_override_guidance)" do
     it "yields resolution=:locked_conflict when 'Severity' is locked and severity_override_guidance diverges" do
       ours_rule.update!(locked_fields: { 'Severity' => true })
       theirs = theirs_for(ours_rule)

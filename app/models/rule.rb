@@ -162,8 +162,8 @@ class Rule < BaseRule
       # Section names mirror RuleConstants::SECTION_FIELDS so locking a
       # section here matches the locking semantics on the rule-level
       # field path. severity_override_guidance lives under 'Severity'
-      # (matching SECTION_FIELDS), NOT 'DISA Metadata' — closes the
-      # v2-dqx-class lock bypass on governance-sensitive content (v2-480.33).
+      # (matching SECTION_FIELDS), NOT 'DISA Metadata' — closes a
+      # lock-bypass class on governance-sensitive content.
       fields_by_section: {
         'Severity' => %w[severity_override_guidance],
         'Vulnerability Discussion' => %w[vuln_discussion],

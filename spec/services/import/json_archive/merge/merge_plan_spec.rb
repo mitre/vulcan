@@ -112,7 +112,7 @@ RSpec.describe Import::JsonArchive::Merge::MergePlan, type: :service do
     end
   end
 
-  describe 'field_changes_by_rule_id read-side accessors (v2-480.42)' do
+  describe 'field_changes_by_rule_id read-side accessors' do
     let(:plan) do
       described_class.new(component_id: 1, strategy: 'default', manifest: { 'backup_format_version' => '1.1' })
     end

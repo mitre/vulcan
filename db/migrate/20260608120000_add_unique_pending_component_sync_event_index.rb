@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# v2-480.30: only one pending ComponentSyncEvent per component at a time.
+# Only one pending ComponentSyncEvent per component at a time.
 # Backstops the applier's pg_advisory_xact_lock + reload-locked precondition
 # pattern — two operators racing sync:apply both see comment_phase='closed'
 # and try to create a pending event; the loser is rejected at this constraint.

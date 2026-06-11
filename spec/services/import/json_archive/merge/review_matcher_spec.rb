@@ -169,7 +169,7 @@ RSpec.describe Import::JsonArchive::Merge::ReviewMatcher, type: :service do
     end
   end
 
-  describe 'manifest v1.1 microsecond precision (v2-480.26)' do
+  describe 'manifest v1.1 microsecond precision' do
     it 'does NOT collide two reviews 100ms apart with identical rule_id and comment into pair_degenerate' do
       ours = [
         base_review.merge('external_id' => 1, 'created_at' => '2026-06-08T15:00:00.100000'),

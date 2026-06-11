@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-# v2-480.39: Mirrors rule_mergeable_fields_spec.rb. The merge engine
+# Mirrors rule_mergeable_fields_spec.rb. The merge engine
 # (Applier#apply_review_field_updates) reads this constant; BackupSerializer
 # review-projection and ReviewBuilder allowlist should also align.
 RSpec.describe Review do

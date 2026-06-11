@@ -7,7 +7,7 @@ module Import
     class ManifestValidator
       # 1.0 — original format (second-precision review timestamps).
       # 1.1 — microsecond-precision review created_at/updated_at + the
-      #       compatible matcher path (v2-480.26).
+      #       compatible matcher path.
       SUPPORTED_VERSIONS = %w[1.0 1.1].freeze
 
       def initialize(manifest, project, component_filter: nil, dry_run: false, merge: false)
@@ -79,7 +79,7 @@ module Import
           existing = @project.components.find_by(name: entry['name'])
           next unless existing
 
-          # merge: true (v2-480.9) takes precedence — merge mode WANTS the
+          # merge: true takes precedence — merge mode WANTS the
           # name collision because that's how it finds the receiving component.
           if @merge
             result.add_warning(

@@ -80,7 +80,7 @@ RSpec.describe Import::JsonArchive::Merge::SnapshotManager do
     end
   end
 
-  describe 'v2-480.38: atomic write + ENOSPC cleanup' do
+  describe 'atomic write + ENOSPC cleanup' do
     it 'writes via *.tmp then mv (no .tmp leftovers on success)' do
       path = described_class.create_snapshot(component)
       dir = File.dirname(path)

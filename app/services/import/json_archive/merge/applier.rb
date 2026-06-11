@@ -19,7 +19,7 @@ module Import
         VALID_SOURCES = %w[theirs ours auto_merge].freeze
 
         # The merge-mergeable surface for Review lives on the Review model
-        # as the canonical single source of truth (v2-480.39). Aliased here
+        # as the canonical single source of truth. Aliased here
         # for callsite legibility; never define a divergent list locally.
         REVIEW_MERGEABLE_FIELDS = Review::MERGEABLE_FIELDS
 
@@ -47,7 +47,7 @@ module Import
         #   bulk-insert with this actor + comment=audit_comment_for_merge.
         #   Stamped on Membership.create! audit_comment too. When nil for
         #   source='theirs'/'auto_merge' the apply emits a structured
-        #   warning — the Phase 2c controller MUST pass actor. v2-480.37.
+        #   warning — the Phase 2c controller MUST pass actor.
         def initialize(merge_plan:, component:, source:, archive_bytes: nil, actor: nil)
           @merge_plan = merge_plan
           @component = component
@@ -84,7 +84,7 @@ module Import
             mark_event_status('applied')
             # Bounded storage: keep the most recent N snapshots. Runs after
             # status='applied' so a rotate failure can't accidentally mark
-            # the merge as failed. v2-480.38.
+            # the merge as failed.
             rotate_snapshots_safely!
           rescue PreconditionError => e
             apply_exception = e
@@ -124,7 +124,7 @@ module Import
           recalculate_rules_count
           import_new_reviews
           apply_review_field_updates
-          # Scoped to this component's rules (v2-480.38) so the merge
+          # Scoped to this component's rules so the merge
           # never touches reviews on other tenants. Mirrors the
           # ReviewBuilder pattern at review_builder.rb:74.
           Review.where(rule_id: @component.rules.select(:id))
@@ -136,7 +136,7 @@ module Import
 
         # Eager-loaded rules indexed by rule_id, memoized for one apply pass.
         # Shared by apply_rule_field_changes + record_skipped_conflicts so the
-        # eager-load (nested associations for v2-480.23 routing) happens once.
+        # eager-load (nested associations for section routing) happens once.
         def ours_rules_by_id
           @ours_rules_by_id ||= ours_rules_eager_loaded.index_by(&:rule_id)
         end
@@ -388,7 +388,7 @@ module Import
         # comment=audit_comment_for_merge. Mirrors the
         # VulcanAudit.create_initial_rule_audit_from_mapping bulk-bypass
         # pattern. No-op when actor is nil — caller-side warning emitted
-        # via warn_when_actor_missing_for_inbound_source!. v2-480.37.
+        # via warn_when_actor_missing_for_inbound_source!.
         def bulk_insert_review_audits(external_to_new_id)
           return if @actor.nil?
           return if external_to_new_id.empty?
@@ -517,7 +517,7 @@ module Import
 
         # Capture a review-field divergence that the applier skipped because
         # the resolution was not :theirs/:ours. Mirrors log_skipped_conflict
-        # for rule fields. v2-480.40.
+        # for rule fields.
         def log_skipped_review_conflict(review, field, old_value, new_value)
           MergeOperation.create!(
             component_sync_event: @sync_event,
@@ -547,7 +547,7 @@ module Import
         end
 
         def source_for_verb(verb)
-          # v2-480.39: consult the central VERB_TRANSLATION instead of
+          # Consult the central VERB_TRANSLATION instead of
           # falling through to 'auto_merge' for :conflict/:newer/:manual —
           # those resolutions are NOT auto-merges and must label the
           # MergeOperation row honestly.
@@ -583,8 +583,8 @@ module Import
           # rubocop:disable Rails/SkipsModelValidations -- RuleSatisfaction
           # is an empty join-table stub (no validations, no callbacks);
           # upsert_all + on_duplicate: :skip is the correct idempotent
-          # write per the design doc and v2-480.13 FK convention.
-          # v2-480.40: returning: %w[...] makes the result array empty
+          # write per the design doc and the satisfactions FK convention.
+          # returning: %w[...] makes the result array empty
           # when the row already existed, so log_satisfaction_insert no
           # longer double-counts on re-apply of the same plan.
           inserted = RuleSatisfaction.upsert_all(
@@ -733,7 +733,6 @@ module Import
         # per-record audit trail carries who-authorized attribution. Until
         # that gate lands, emit a structured warning instead of raising so
         # existing test callers (no actor needed) keep working.
-        # v2-480.37.
         def warn_when_actor_missing_for_inbound_source!
           return unless @actor.nil?
           return unless %w[theirs auto_merge].include?(@source)
@@ -815,7 +814,7 @@ module Import
         end
 
         # Captures the current state of the receiving component as a
-        # zip + checksum so disaster-recovery (v2-480.10) can restore it
+        # zip + checksum so disaster-recovery can restore it
         # if a merge is reverted. Snapshot path recorded on the sync event.
         # Runs inside the locked apply transaction so the captured state
         # reflects the actual apply pre-state (post-lock, pre-write).
@@ -877,7 +876,7 @@ module Import
         # warnings into ComponentSyncEvent.failure_diagnostics_json so the
         # operator can SELECT and triage 5 minutes later without re-running
         # the merge. Runs AFTER drain_quarantine_buffer! so quarantine
-        # warnings (added during drain) are included. v2-480.36.
+        # warnings (added during drain) are included.
         def finalize_failed_event!(exception)
           return if @sync_event.nil?
 

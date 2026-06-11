@@ -34,7 +34,7 @@ RSpec.describe ComponentSyncEvent do
     end
   end
 
-  describe 'status state machine (v2-480.40)' do
+  describe 'status state machine' do
     let(:event) { described_class.create!(valid_attrs(status: 'pending')) }
 
     # Same-state (X → X) is a no-op — status_changed? returns false so the

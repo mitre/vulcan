@@ -55,7 +55,7 @@ RSpec.describe Import::JsonArchive::ManifestValidator do
         expect(result.warnings.join).to include("'Conflicting' already exists")
       end
 
-      it 'warns in merge mode with an informative message (v2-480.9)' do
+      it 'warns in merge mode with an informative message' do
         described_class.new(manifest(component_name: 'Conflicting'), project, merge: true).validate(result)
         expect(result).to be_success
         expect(result.errors).to be_empty

@@ -33,7 +33,7 @@ RSpec.describe Import::JsonArchive::Merge::Analyzer, type: :service do
         .to raise_error(Import::JsonArchive::Merge::PreconditionError, /10_?000|ceiling/i)
     end
 
-    it 'raises PreconditionError when rules.size > RULES_CEILING (v2-480.35)' do
+    it 'raises PreconditionError when rules.size > RULES_CEILING' do
       huge_archive = base_archive.merge('rules' => Array.new(50_001) { |i| { 'rule_id' => "V-#{i}" } })
       huge_input = Import::JsonArchive::Merge::MergeInput.from_json_archive(huge_archive, manifest: manifest)
       analyzer = described_class.new(merge_input: huge_input, component: component,
@@ -42,7 +42,7 @@ RSpec.describe Import::JsonArchive::Merge::Analyzer, type: :service do
         .to raise_error(Import::JsonArchive::Merge::PreconditionError, /rules\.size.*ceiling/i)
     end
 
-    it 'raises PreconditionError when satisfactions.size > SATISFACTIONS_CEILING (v2-480.35)' do
+    it 'raises PreconditionError when satisfactions.size > SATISFACTIONS_CEILING' do
       huge_archive = base_archive.merge(
         'satisfactions' => Array.new(50_001) { |i| { 'rule_id' => 'V-1', 'satisfied_by_rule_id' => "V-#{i}" } }
       )
@@ -53,7 +53,7 @@ RSpec.describe Import::JsonArchive::Merge::Analyzer, type: :service do
         .to raise_error(Import::JsonArchive::Merge::PreconditionError, /satisfactions\.size.*ceiling/i)
     end
 
-    it 'raises PreconditionError when memberships.size > MEMBERSHIPS_CEILING (v2-480.35)' do
+    it 'raises PreconditionError when memberships.size > MEMBERSHIPS_CEILING' do
       huge_memberships = Array.new(10_001) { |i| { 'email' => "u#{i}@x" } }
       huge_input = Import::JsonArchive::Merge::MergeInput.from_json_archive(
         base_archive, manifest: manifest, memberships: huge_memberships
@@ -152,7 +152,7 @@ RSpec.describe Import::JsonArchive::Merge::Analyzer, type: :service do
     end
   end
 
-  describe 'v2-480.35: review collisions forwarded into MergePlan' do
+  describe 'review collisions forwarded into MergePlan' do
     it 'populates plan.review_collisions when ReviewMatcher emits degenerate groups' do
       target_rule = component.rules.first
       now = Time.zone.local(2026, 6, 8, 12, 0).iso8601(6)
@@ -176,7 +176,7 @@ RSpec.describe Import::JsonArchive::Merge::Analyzer, type: :service do
     end
   end
 
-  describe 'v2-480.34: nested-only-side records surface to resolution_log' do
+  describe 'nested-only-side records surface to resolution_log' do
     it 'adds a nested_one_sided resolution_log entry for a Check on theirs only' do
       target_rule = component.rules.first
       theirs_data = base_archive.deep_stringify_keys

@@ -13,7 +13,7 @@ class MergeOperation < ApplicationRecord
   validates :entity_type, :entity_id, :entity_key, :operation, :source, presence: true
   # entity_id is a live PK on the receiving instance — surgical undo
   # (§17.3) needs it to locate the affected row. A 0 / negative value
-  # would silently break undo. Catches the v2-480.31 regression where
+  # would silently break undo. Catches the regression where
   # log_review_insert hardcoded entity_id: 0.
   validates :entity_id, numericality: { only_integer: true, greater_than: 0 }
   validates :operation, inclusion: { in: OPERATIONS }
