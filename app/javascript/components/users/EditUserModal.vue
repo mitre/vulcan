@@ -255,7 +255,6 @@ import {
   setPassword,
 } from "../../api/usersApi";
 import { adminListTokens, adminRevokeToken as apiAdminRevoke } from "../../api/tokensApi";
-import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import PasswordField from "../shared/PasswordField.vue";
 import { EVENTS, dispatch } from "../../utils/notificationEvents";
@@ -263,7 +262,9 @@ import { EVENTS, dispatch } from "../../utils/notificationEvents";
 export default {
   name: "EditUserModal",
   components: { PasswordField },
-  mixins: [FormMixinVue, AlertMixinVue],
+  // AlertMixin migrates with the toast architecture (useToast). FormMixin
+  // was a dead import — authenticityToken was never consumed.
+  mixins: [AlertMixinVue],
   model: {
     prop: "visible",
     event: "update:visible",

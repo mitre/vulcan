@@ -177,9 +177,8 @@
 
 <script>
 import { deleteProject } from "../../api/projectsApi";
-import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import FormMixin from "../../mixins/FormMixin.vue";
+import { useDateFormat } from "../../composables/useDateFormat";
 import UpdateProjectDetailsModal from "./UpdateProjectDetailsModal.vue";
 import ConfirmDeleteModal from "../shared/ConfirmDeleteModal.vue";
 import InfoTooltip from "../shared/InfoTooltip.vue";
@@ -189,12 +188,10 @@ import { useDeleteConfirmation } from "../../composables";
 export default {
   name: "ProjectsTable",
   components: { UpdateProjectDetailsModal, ConfirmDeleteModal, InfoTooltip, TableActionButtons },
-  // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because
-  // each esbuild pack has its own axios singleton (bundle isolation) — the
-  // navbar pack's FormMixin doesn't reach the consuming pack. The DELETE
-  // /projects/:id.json call would 422 on CSRF in a pack that lacks
-  // pack-level CSRF setup.
-  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixin],
+  // AlertMixin migrates with the toast architecture (useToast). FormMixin
+  // was a dead import — its stale comment claimed axios-era CSRF setup,
+  // but CSRF is handled by baseApi hooks since the ky migration.
+  mixins: [AlertMixinVue],
   props: {
     projects: {
       type: Array,
@@ -214,6 +211,7 @@ export default {
       cancel: cancelDelete,
       confirm: confirmDeleteAction,
     } = useDeleteConfirmation();
+    const { friendlyDateTime } = useDateFormat();
 
     return {
       showDeleteModal,
@@ -222,6 +220,7 @@ export default {
       openDeleteModal,
       cancelDelete,
       confirmDeleteAction,
+      friendlyDateTime,
     };
   },
   data: function () {

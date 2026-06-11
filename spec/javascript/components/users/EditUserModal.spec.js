@@ -409,4 +409,14 @@ describe("EditUserModal", () => {
       expect(wrapper.vm.localUser.name).toBe("Other");
     });
   });
+
+  // ── mixin contract ──────────────────────────────────────────────────
+  // REQUIREMENT: only AlertMixin remains (until the toast migration).
+  // FormMixin was verified dead — authenticityToken never referenced.
+  describe("mixin contract", () => {
+    it("declares only AlertMixin", () => {
+      expect(EditUserModal.mixins).toHaveLength(1);
+      expect(EditUserModal.mixins[0].methods.alertOrNotifyResponse).toBeDefined();
+    });
+  });
 });

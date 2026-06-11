@@ -36,6 +36,9 @@ vi.mock("@/api/componentsApi", () => ({
   getComments: vi.fn(() => Promise.resolve({ data: { rows: [], pagination: { total: 0 } } })),
 }));
 
+vi.mock("@/composables/usePermissions", { spy: true });
+import { usePermissions } from "@/composables/usePermissions";
+
 const ruleContent1 = {
   rule_displayed_name: "CNTR-01-000001",
   title: "The container platform must limit privileges",
@@ -110,9 +113,19 @@ function baseProps(overrides = {}) {
     rows,
     initialCommentId: 1,
     componentId: 5,
-    effectivePermissions: "admin",
     ...overrides,
   };
+}
+
+// Permissions arrive via provide/inject (usePermissions) — the page root
+// provides; this view injects. Default to admin so every behavior test
+// sees the full UI; role-gating tests pass the second arg.
+function mountView(propOverrides = {}, permissions = "admin") {
+  return mount(TriageSplitView, {
+    localVue,
+    propsData: baseProps(propOverrides),
+    provide: { effectivePermissions: permissions },
+  });
 }
 
 describe("TriageSplitView", () => {
@@ -124,14 +137,14 @@ describe("TriageSplitView", () => {
   // ── Separator below nav bar ────────────────────────────────────────
 
   it("renders a separator between nav bar and three-column layout", () => {
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     expect(w.find("[data-testid='nav-separator']").exists()).toBe(true);
   });
 
   // ── Reactivity: activeCommentId as data, object via computed ────────
 
   it("derives activeComment from activeCommentId via computed", () => {
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     expect(w.vm.activeCommentId).toBe(1);
     expect(w.vm.activeComment).not.toBeNull();
     expect(w.vm.activeComment.id).toBe(1);
@@ -139,7 +152,7 @@ describe("TriageSplitView", () => {
   });
 
   it("updates activeComment when activeCommentId changes", async () => {
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     w.vm.activeCommentId = 2;
     await w.vm.$nextTick();
     expect(w.vm.activeComment.id).toBe(2);
@@ -149,7 +162,7 @@ describe("TriageSplitView", () => {
   // ── Rule content passed to RuleContextPanel ────────────────────────
 
   it("passes rule_content and ruleDisplayedName to RuleContextPanel", () => {
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     const panel = w.findComponent({ name: "RuleContextPanel" });
     expect(panel.exists()).toBe(true);
     expect(panel.props("ruleContent")).not.toBeNull();
@@ -158,13 +171,13 @@ describe("TriageSplitView", () => {
   });
 
   it("passes ruleStatus from the active comment's rule_content.status", () => {
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     const panel = w.findComponent({ name: "RuleContextPanel" });
     expect(panel.props("ruleStatus")).toBe("Applicable - Configurable");
   });
 
   it("passes focusedSection from the active comment's section", () => {
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     const panel = w.findComponent({ name: "RuleContextPanel" });
     expect(panel.props("focusedSection")).toBe("check_content");
   });
@@ -172,7 +185,7 @@ describe("TriageSplitView", () => {
   // ── CommentTriageForm integration ──────────────────────────────────
 
   it("renders CommentTriageForm for the active comment", () => {
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     const form = w.findComponent({ name: "CommentTriageForm" });
     expect(form.exists()).toBe(true);
     expect(form.props("review").id).toBe(1);
@@ -181,7 +194,7 @@ describe("TriageSplitView", () => {
   // ── Three-column layout with TriageRuleSidebar ─────────────────────
 
   it("renders TriageRuleSidebar in the left column", () => {
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     const sidebar = w.findComponent({ name: "TriageRuleSidebar" });
     expect(sidebar.exists()).toBe(true);
     expect(sidebar.props("currentId")).toBe(1);
@@ -189,7 +202,7 @@ describe("TriageSplitView", () => {
   });
 
   it("uses a three-column layout with sidebar, context, and triage panes", () => {
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     const cols = w.findAll(".col-lg-2, .col-lg-5");
     expect(cols.length).toBe(3);
   });
@@ -198,7 +211,7 @@ describe("TriageSplitView", () => {
 
   it("prompts before switching when form is dirty", async () => {
     window.confirm = vi.fn().mockReturnValue(false);
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     w.vm.isDirty = true;
     w.vm.onQueueSelect(2);
     expect(window.confirm).toHaveBeenCalled();
@@ -207,7 +220,7 @@ describe("TriageSplitView", () => {
 
   it("switches when form is dirty and user confirms", async () => {
     window.confirm = vi.fn().mockReturnValue(true);
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     w.vm.isDirty = true;
     w.vm.onQueueSelect(2);
     expect(w.vm.activeCommentId).toBe(2);
@@ -215,7 +228,7 @@ describe("TriageSplitView", () => {
 
   it("switches without prompting when form is clean", () => {
     window.confirm = vi.fn();
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     w.vm.isDirty = false;
     w.vm.onQueueSelect(2);
     expect(window.confirm).not.toHaveBeenCalled();
@@ -228,7 +241,7 @@ describe("TriageSplitView", () => {
     triageReview.mockResolvedValue({
       data: { review: { ...rows[0], triage_status: "concur" } },
     });
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     await w.vm.onTriageSave({ triage_status: "concur" });
     await flushPromises(w);
     expect(triageReview).toHaveBeenCalledWith(
@@ -244,7 +257,7 @@ describe("TriageSplitView", () => {
     triageReview.mockResolvedValue({
       data: { review: { ...rows[0], triage_status: "concur" } },
     });
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     await w.vm.onTriageSave({ triage_status: "concur" });
     await flushPromises(w);
     const payload = w.emitted("triaged");
@@ -256,7 +269,7 @@ describe("TriageSplitView", () => {
 
   it("sets saving=true during pending request", async () => {
     triageReview.mockImplementation(() => new Promise(() => {}));
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     w.vm.onTriageSave({ triage_status: "concur" });
     await w.vm.$nextTick();
     expect(w.vm.saving).toBe(true);
@@ -268,7 +281,7 @@ describe("TriageSplitView", () => {
     triageReview.mockRejectedValue({
       response: { status: 409, data: { error: "Record was modified" } },
     });
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     await w.vm.onTriageSave({ triage_status: "concur" });
     await flushPromises(w);
     expect(w.vm.conflictAlert).toBe(true);
@@ -279,7 +292,7 @@ describe("TriageSplitView", () => {
     triageReview.mockRejectedValue({
       response: { status: 422, data: { error: "Non-concur requires a response" } },
     });
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     const alertSpy = vi.spyOn(w.vm, "alertOrNotifyResponse").mockImplementation(() => {});
     await w.vm.onTriageSave({ triage_status: "non_concur" });
     await flushPromises(w);
@@ -290,7 +303,7 @@ describe("TriageSplitView", () => {
   // ── Filter resilience: stay in split-pane when rows change ─────────
 
   it("selects first available row when active comment is filtered out but rows remain", async () => {
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     expect(w.vm.activeCommentId).toBe(1);
     await w.setProps({ rows: rows.filter((r) => r.id !== 1) });
     await w.vm.$nextTick();
@@ -299,14 +312,14 @@ describe("TriageSplitView", () => {
   });
 
   it("emits exit only when ALL rows are removed (empty result set)", async () => {
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     await w.setProps({ rows: [] });
     await w.vm.$nextTick();
     expect(w.emitted("exit")).toBeTruthy();
   });
 
   it("does not exit when rows change to a different filtered set", async () => {
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     const filteredRows = [rows[2]];
     await w.setProps({ rows: filteredRows });
     await w.vm.$nextTick();
@@ -318,6 +331,7 @@ describe("TriageSplitView", () => {
     const w = mount(TriageSplitView, {
       localVue,
       propsData: baseProps(),
+      provide: { effectivePermissions: "admin" },
       attachTo: document.body,
     });
     await w.vm.$nextTick();
@@ -331,7 +345,7 @@ describe("TriageSplitView", () => {
   // ── Cancel emits exit ──────────────────────────────────────────────
 
   it("emits exit on cancel", () => {
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     w.vm.onCancel();
     expect(w.emitted("exit")).toBeTruthy();
   });
@@ -340,10 +354,7 @@ describe("TriageSplitView", () => {
 
   it("sorts rows by id ascending so sidebar position matches table order", () => {
     const reversed = [...rows].reverse();
-    const w = mount(TriageSplitView, {
-      localVue,
-      propsData: baseProps({ rows: reversed, initialCommentId: 1 }),
-    });
+    const w = mountView({ rows: reversed, initialCommentId: 1 });
     expect(w.vm.sortedRows[0].id).toBe(1);
     expect(w.vm.sortedRows[1].id).toBe(2);
     expect(w.vm.sortedRows[2].id).toBe(3);
@@ -354,26 +365,20 @@ describe("TriageSplitView", () => {
   // ── Role gating: viewer cannot see triage form ─────────────────────
 
   it("hides CommentTriageForm for viewer role", () => {
-    const w = mount(TriageSplitView, {
-      localVue,
-      propsData: baseProps({ effectivePermissions: "viewer" }),
-    });
+    const w = mountView({}, "viewer");
     expect(w.findComponent({ name: "CommentTriageForm" }).exists()).toBe(false);
     expect(w.text()).toContain("Read-only");
   });
 
   it("shows CommentTriageForm for author role", () => {
-    const w = mount(TriageSplitView, {
-      localVue,
-      propsData: baseProps({ effectivePermissions: "author" }),
-    });
+    const w = mountView({}, "author");
     expect(w.findComponent({ name: "CommentTriageForm" }).exists()).toBe(true);
   });
 
   // ── Reply thread integration ───────────────────────────────────────
 
   it("renders CommentThread for inline replies", () => {
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     const thread = w.findComponent({ name: "CommentThread" });
     expect(thread.exists()).toBe(true);
     expect(thread.props("parentReviewId")).toBe(1);
@@ -382,19 +387,13 @@ describe("TriageSplitView", () => {
   // ── Admin actions (migrated from modal) ────────────────────────────
 
   it("renders inline admin actions for admin users", () => {
-    const w = mount(TriageSplitView, {
-      localVue,
-      propsData: baseProps({ effectivePermissions: "admin" }),
-    });
+    const w = mountView({}, "admin");
     expect(w.find("[data-testid='admin-actions-inline']").exists()).toBe(true);
     expect(w.find("[data-testid='admin-action-force-withdraw']").exists()).toBe(true);
   });
 
   it("hides admin actions for non-admin users", () => {
-    const w = mount(TriageSplitView, {
-      localVue,
-      propsData: baseProps({ effectivePermissions: "author" }),
-    });
+    const w = mountView({}, "author");
     expect(w.find("[data-testid='admin-actions-inline']").exists()).toBe(false);
   });
 
@@ -402,7 +401,7 @@ describe("TriageSplitView", () => {
     adminWithdrawReview.mockResolvedValue({
       data: { review: { ...rows[0], triage_status: "withdrawn" } },
     });
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     w.vm.adminAction = "force-withdraw";
     w.vm.adminAuditComment = "spam content";
     await w.vm.doSubmitAdminAction();
@@ -415,7 +414,7 @@ describe("TriageSplitView", () => {
     moveReviewToRule.mockResolvedValue({
       data: { review: { ...rows[0], rule_id: 42 } },
     });
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     w.vm.adminAction = "move-to-rule";
     w.vm.adminAuditComment = "wrong rule";
     w.vm.adminTargetRuleId = 42;
@@ -427,7 +426,7 @@ describe("TriageSplitView", () => {
 
   it("calls adminDestroyReview for hard-delete with typed-id confirmation", async () => {
     adminDestroyReview.mockResolvedValue({ data: { ok: true } });
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     w.vm.adminAction = "hard-delete";
     w.vm.adminAuditComment = "PII removed";
     w.vm.adminConfirmationId = "1";
@@ -439,7 +438,7 @@ describe("TriageSplitView", () => {
   });
 
   it("canSubmitAdminAction requires audit comment", () => {
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     w.vm.adminAction = "force-withdraw";
     w.vm.adminAuditComment = "";
     expect(w.vm.canSubmitAdminAction).toBe(false);
@@ -448,7 +447,7 @@ describe("TriageSplitView", () => {
   });
 
   it("canSubmitAdminAction for hard-delete requires typed-id match", () => {
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     w.vm.adminAction = "hard-delete";
     w.vm.adminAuditComment = "reason";
     w.vm.adminConfirmationId = "wrong";
@@ -469,10 +468,7 @@ describe("TriageSplitView", () => {
         rule_updated_at: "2026-06-01T00:00:00.000Z",
       },
     }));
-    const w = mount(TriageSplitView, {
-      localVue,
-      propsData: baseProps({ rows: staleRows, initialCommentId: 1 }),
-    });
+    const w = mountView({ rows: staleRows, initialCommentId: 1 });
     expect(w.find("[data-testid='staleness-badge']").exists()).toBe(true);
   });
 
@@ -484,20 +480,14 @@ describe("TriageSplitView", () => {
         rule_updated_at: "2026-01-01T00:00:00.000Z",
       },
     }));
-    const w = mount(TriageSplitView, {
-      localVue,
-      propsData: baseProps({ rows: freshRows, initialCommentId: 1 }),
-    });
+    const w = mountView({ rows: freshRows, initialCommentId: 1 });
     expect(w.find("[data-testid='staleness-badge']").exists()).toBe(false);
   });
 
   // ── Reaction buttons ──────────────────────────────────────────────
 
   it("renders ReactionButtons for the active comment", async () => {
-    const w = mount(TriageSplitView, {
-      localVue,
-      propsData: baseProps({ initialCommentId: 1 }),
-    });
+    const w = mountView({ initialCommentId: 1 });
     await flushPromises(w);
     const reactionBtns = w.findComponent({ name: "ReactionButtons" });
     expect(reactionBtns.exists()).toBe(true);
@@ -511,10 +501,7 @@ describe("TriageSplitView", () => {
       data: { review: { id: 1, triage_status: "concur" } },
     });
 
-    const w = mount(TriageSplitView, {
-      localVue,
-      propsData: baseProps({ initialCommentId: 1 }),
-    });
+    const w = mountView({ initialCommentId: 1 });
     await flushPromises(w);
 
     await w.vm.doSave({ triage_status: "concur" }, false);
@@ -532,10 +519,7 @@ describe("TriageSplitView", () => {
       data: { review: { id: 1, triage_status: "concur", adjudicated_at: "2026-05-20" } },
     });
 
-    const w = mount(TriageSplitView, {
-      localVue,
-      propsData: baseProps({ initialCommentId: 1 }),
-    });
+    const w = mountView({ initialCommentId: 1 });
     await flushPromises(w);
 
     await w.vm.doSave({ triage_status: "concur" }, true);
@@ -548,27 +532,27 @@ describe("TriageSplitView", () => {
   // ── ARIA landmarks + focus management ──────────────────────────────
 
   it("wraps sidebar in nav[aria-label='Comment triage queue']", () => {
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     const nav = w.find("nav[aria-label='Comment triage queue']");
     expect(nav.exists()).toBe(true);
     expect(nav.findComponent({ name: "TriageRuleSidebar" }).exists()).toBe(true);
   });
 
   it("wraps content pane in region with aria-label 'Comment details'", () => {
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     const main = w.find("[role='main'][aria-label='Comment details']");
     expect(main.exists()).toBe(true);
     expect(main.findComponent({ name: "RuleContextPanel" }).exists()).toBe(true);
   });
 
   it("wraps action pane in region with aria-label 'Triage decision'", () => {
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     const aside = w.find("[role='complementary'][aria-label='Triage decision']");
     expect(aside.exists()).toBe(true);
   });
 
   it("renders skip links for keyboard users", () => {
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     const skipLinks = w.findAll(".sr-only-focusable, .skip-link");
     expect(skipLinks.length).toBeGreaterThanOrEqual(2);
     const hrefs = skipLinks.wrappers.map((s) => s.attributes("href"));
@@ -580,6 +564,7 @@ describe("TriageSplitView", () => {
     const w = mount(TriageSplitView, {
       localVue,
       propsData: baseProps(),
+      provide: { effectivePermissions: "admin" },
       attachTo: document.body,
     });
     await w.vm.$nextTick();
@@ -600,6 +585,7 @@ describe("TriageSplitView", () => {
     const w = mount(TriageSplitView, {
       localVue,
       propsData: baseProps(),
+      provide: { effectivePermissions: "admin" },
       attachTo: document.body,
     });
     await w.vm.doSave({ triage_status: "concur" }, true);
@@ -613,10 +599,7 @@ describe("TriageSplitView", () => {
       data: { review: { id: 1, triage_status: "withdrawn" } },
     });
 
-    const w = mount(TriageSplitView, {
-      localVue,
-      propsData: baseProps({ initialCommentId: 1 }),
-    });
+    const w = mountView({ initialCommentId: 1 });
     await flushPromises(w);
 
     await w.vm.doSave({ triage_status: "withdrawn" }, true);
@@ -629,28 +612,22 @@ describe("TriageSplitView", () => {
   // ── Author email + divider in triage form ─────────────────────────
 
   it("passes author email to UserBadge for popover display", () => {
-    const w = mount(TriageSplitView, {
-      localVue,
-      propsData: baseProps(),
-    });
+    const w = mountView();
     const badge = w.findComponent({ name: "UserBadge" });
     expect(badge.exists()).toBe(true);
     expect(badge.props("email")).toBe("viewer@example.com");
   });
 
   it("renders a divider between author info and comment blockquote", () => {
-    const w = mount(TriageSplitView, {
-      localVue,
-      propsData: baseProps(),
-    });
+    const w = mountView();
     expect(w.find("[data-testid='comment-divider']").exists()).toBe(true);
   });
 
-  // ── 05f.28.5: doSave payload variants ────────────────────────────
+  // ── doSave payload variants ──────────────────────────────────────
 
   it("includes response_comment in triage PATCH when provided", async () => {
     triageReview.mockResolvedValue({ data: { review: { id: 1, triage_status: "concur" } } });
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     await w.vm.doSave({ triage_status: "concur", response_comment: "Thanks!" }, false);
     await flushPromises(w);
     const call = triageReview.mock.calls[triageReview.mock.calls.length - 1];
@@ -659,30 +636,53 @@ describe("TriageSplitView", () => {
 
   it("includes duplicate_of_review_id when status is duplicate", async () => {
     triageReview.mockResolvedValue({ data: { review: { id: 1, triage_status: "duplicate" } } });
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     await w.vm.doSave({ triage_status: "duplicate", duplicate_of_review_id: 99 }, false);
     await flushPromises(w);
     const call = triageReview.mock.calls[triageReview.mock.calls.length - 1];
     expect(call[1].duplicate_of_review_id).toBe(99);
   });
 
-  // ── 05f.28.5: advanceToNext boundary ────────────────────────────
+  // ── advanceToNext boundary ───────────────────────────────────────
 
   it("stays on last comment when advanceToNext at end of list", async () => {
-    const w = mount(TriageSplitView, {
-      localVue,
-      propsData: baseProps({ initialCommentId: 3 }),
-    });
+    const w = mountView({ initialCommentId: 3 });
     const before = w.vm.activeCommentId;
     w.vm.advanceToNext();
     expect(w.vm.activeCommentId).toBe(before);
   });
 
-  // ── 05f.28.5: exitSplitMode via ComponentComments ─────────────
+  // ── exitSplitMode via ComponentComments ──────────────────────────
 
   it("emits exit when cancel is called", () => {
-    const w = mount(TriageSplitView, { localVue, propsData: baseProps() });
+    const w = mountView();
     w.vm.onCancel();
     expect(w.emitted("exit")).toBeTruthy();
+  });
+
+  // ── composable contracts ────────────────────────────────────────────
+  // REQUIREMENTS: permissions arrive via provide/inject (usePermissions —
+  // the effectivePermissions prop is GONE); canTriage/canAdminAct derive
+  // from the shared role helpers. DateFormatMixin + FormMixin were
+  // verified dead; AlertMixin stays until the toast migration.
+  describe("composable contracts", () => {
+    it("sources permissions from provide via usePermissions — author triages, not admin-acts", () => {
+      const w = mountView({}, "author");
+      expect(usePermissions).toHaveBeenCalled();
+      expect(w.vm.canTriage).toBe(true);
+      expect(w.vm.canAdminAct).toBe(false);
+    });
+
+    it("viewer can neither triage nor admin-act", () => {
+      const w = mountView({}, "viewer");
+      expect(w.vm.canTriage).toBe(false);
+      expect(w.vm.canAdminAct).toBe(false);
+    });
+
+    it("admin can triage and admin-act", () => {
+      const w = mountView({}, "admin");
+      expect(w.vm.canTriage).toBe(true);
+      expect(w.vm.canAdminAct).toBe(true);
+    });
   });
 });

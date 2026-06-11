@@ -230,10 +230,9 @@
 
 <script>
 import AlertMixin from "../../mixins/AlertMixin.vue";
-import FormMixin from "../../mixins/FormMixin.vue";
-import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import { SINGLE_BUTTON_STATUSES } from "../../constants/triageVocabulary";
 import { useCommentTriage } from "../../composables/mutations/useCommentTriage";
+import { usePermissions } from "../../composables/usePermissions";
 import { useCommentsStore } from "../../stores/comments";
 import SectionLabel from "../shared/SectionLabel.vue";
 import CommentThread from "../shared/CommentThread.vue";
@@ -246,7 +245,6 @@ import ReactionButtons from "../shared/ReactionButtons.vue";
 import CommentAuthorLine from "../shared/CommentAuthorLine.vue";
 import PanelLayout from "../shared/PanelLayout.vue";
 import { useCommentReactions } from "../../composables/useCommentReactions";
-import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
 import { triageBgClass } from "../../utils/triageBgClass";
 import { compareBySectionOrder } from "../../utils/sectionSortOrder";
 
@@ -264,13 +262,12 @@ export default {
     CommentAuthorLine,
     PanelLayout,
   },
-  mixins: [AlertMixin, FormMixin, RoleComparisonMixin, DateFormatMixin],
+  mixins: [AlertMixin],
   props: {
     rows: { type: Array, required: true },
     initialCommentId: { type: [Number, String], default: null },
     componentId: { type: [Number, String], required: true },
     projectId: { type: [Number, String], default: null },
-    effectivePermissions: { type: String, default: null },
     adminPanelOpen: { type: Boolean, default: false },
     contextMode: { type: String, default: "commented" },
   },
@@ -278,7 +275,10 @@ export default {
     const { toggle: toggleReactionApi } = useCommentReactions();
     const triageComposable = useCommentTriage();
     const commentsStore = useCommentsStore();
-    return { toggleReactionApi, triageComposable, commentsStore };
+    // Permissions arrive via provide/inject — the page root provides;
+    // canEdit gates triage, canAdmin gates the inline admin actions.
+    const { canEdit, canAdmin } = usePermissions();
+    return { toggleReactionApi, triageComposable, commentsStore, canEdit, canAdmin };
   },
   data() {
     return {
@@ -318,7 +318,7 @@ export default {
       return this.sortedRows.find((r) => r.id === this.activeCommentId) || null;
     },
     canTriage() {
-      return this.role_gte_to(this.effectivePermissions, "author");
+      return this.canEdit;
     },
     isContentStale() {
       if (!this.activeComment?.rule_content?.rule_updated_at) return false;
@@ -344,7 +344,7 @@ export default {
       return counts;
     },
     canAdminAct() {
-      return this.effectivePermissions === "admin";
+      return this.canAdmin;
     },
     canRestore() {
       return !!this.activeComment?.adjudicated_at;

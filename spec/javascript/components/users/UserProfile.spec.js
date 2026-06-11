@@ -219,4 +219,14 @@ describe("UserProfile", () => {
       expect(globalThis.location.href).toBe("/");
     });
   });
+
+  // ── mixin contract ──────────────────────────────────────────────────
+  // REQUIREMENT: only AlertMixin remains (until the toast migration).
+  // FormMixin was verified dead — authenticityToken never referenced.
+  describe("mixin contract", () => {
+    it("declares only AlertMixin", () => {
+      expect(UserProfile.mixins).toHaveLength(1);
+      expect(UserProfile.mixins[0].methods.alertOrNotifyResponse).toBeDefined();
+    });
+  });
 });

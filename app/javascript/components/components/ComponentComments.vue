@@ -132,13 +132,13 @@
 
     <!-- Split-pane triage view. Replaces table+modal with side-by-side
          rule content + triage form. Entered by clicking "Triage" on a row. -->
+    <!-- Permissions flow via provide/inject (usePermissions) -->
     <TriageSplitView
       v-if="splitMode"
       :rows="rows"
       :initial-comment-id="splitCommentId"
       :component-id="componentId"
       :project-id="projectId"
-      :effective-permissions="effectivePermissions"
       :admin-panel-open="adminPanelOpen"
       :context-mode="contextMode"
       @update:contextMode="$emit('update:contextMode', $event)"

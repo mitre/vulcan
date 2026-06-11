@@ -141,13 +141,14 @@
 import { updateProfile, deleteAccount, unlinkIdentity } from "../../api/usersApi";
 import BaseCommandBar from "../shared/BaseCommandBar.vue";
 import ConfirmDeleteModal from "../shared/ConfirmDeleteModal.vue";
-import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 
 export default {
   name: "UserProfile",
   components: { BaseCommandBar, ConfirmDeleteModal },
-  mixins: [FormMixinVue, AlertMixinVue],
+  // AlertMixin migrates with the toast architecture (useToast). FormMixin
+  // was a dead import — authenticityToken was never consumed.
+  mixins: [AlertMixinVue],
   props: {
     user: {
       type: Object,

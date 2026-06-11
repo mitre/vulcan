@@ -207,4 +207,14 @@ describe("UsersTable", () => {
       expect(wrapper.emitted("user-deleted")[0][0].id).toBe(2);
     });
   });
+
+  // ── mixin contract ──────────────────────────────────────────────────
+  // REQUIREMENT: only AlertMixin remains (until the toast migration).
+  // FormMixin was verified dead — authenticityToken never referenced.
+  describe("mixin contract", () => {
+    it("declares only AlertMixin", () => {
+      expect(UsersTable.mixins).toHaveLength(1);
+      expect(UsersTable.mixins[0].methods.alertOrNotifyResponse).toBeDefined();
+    });
+  });
 });

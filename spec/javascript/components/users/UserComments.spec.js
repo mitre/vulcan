@@ -1,9 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { setActivePinia, createPinia } from "pinia";
-import { flushPromises } from "@test/testHelper";
+import { localVue, flushPromises } from "@test/testHelper";
 import UserComments from "@/components/users/UserComments.vue";
 import { getUserComments } from "@/api/usersApi";
+
+vi.mock("@/composables/useDateFormat", { spy: true });
+vi.mock("@/composables/useReplyComposer", { spy: true });
+import { useDateFormat } from "@/composables/useDateFormat";
+import { useReplyComposer } from "@/composables/useReplyComposer";
 
 vi.mock("@/api/baseApi", () => ({
   default: {
@@ -185,5 +190,66 @@ describe("UserComments", () => {
     await wrapper.vm.fetch();
     expect(alertSpy).toHaveBeenCalled();
     alertSpy.mockRestore();
+  });
+
+  // ── composable contracts ────────────────────────────────────────────
+  // REQUIREMENTS: posted/activity dates render via useDateFormat and the
+  // reply composer state machine flows through useReplyComposer with the
+  // onOpen/afterPosted bridge — no DateFormatMixin or ReplyComposerMixin
+  // remains (AlertMixin stays until the toast migration). localVue
+  // installs BootstrapVue so the real $bvModal injection is spied on.
+  // CommentThread/CommentComposerModal are stubbed so the spy calls are
+  // attributable to UserComments itself, not to children rendering dates.
+  describe("composable contracts", () => {
+    const mountWithBv = () =>
+      mount(UserComments, {
+        localVue,
+        propsData: { userId: 7 },
+        stubs: [...SHARED_STUBS, "CommentThread", "CommentComposerModal"],
+      });
+
+    it("renders posted dates via useDateFormat", async () => {
+      vi.clearAllMocks();
+      getUserComments.mockResolvedValue(mockResponse);
+      const wrapper = mountWithBv();
+      await flushPromises();
+      expect(useDateFormat).toHaveBeenCalled();
+      // moment "lll" renders the month name, never the raw ISO string
+      expect(wrapper.vm.friendlyDateTime("2026-04-29T19:10:59Z")).toContain("Apr 29, 2026");
+    });
+
+    it("wires useReplyComposer — reply from a row opens the modal via the bridge", async () => {
+      const wrapper = mountWithBv();
+      await flushPromises();
+      expect(useReplyComposer).toHaveBeenCalled();
+
+      const showSpy = vi.spyOn(wrapper.vm.$bvModal, "show").mockImplementation(() => {});
+      wrapper.vm.openReplyComposerFromRow({
+        id: 142,
+        rule_id: 17,
+        component_id: 8,
+        rule_displayed_name: "CNTR-01-000003",
+      });
+      expect(wrapper.vm.composerState.mode).toBe("reply");
+      expect(wrapper.vm.composerState.reviewId).toBe(142);
+      expect(wrapper.vm.composerState.ruleName).toBe("CNTR-01-000003");
+      expect(wrapper.vm.composerActive).toBe(true);
+      await wrapper.vm.$nextTick();
+      expect(showSpy).toHaveBeenCalledWith("comment-composer-modal");
+    });
+
+    it("afterPosted bridge refetches the rows and clears the composer", async () => {
+      const wrapper = mountWithBv();
+      await flushPromises();
+      vi.spyOn(wrapper.vm.$bvModal, "show").mockImplementation(() => {});
+      getUserComments.mockClear();
+
+      wrapper.vm.openReplyComposerFromRow({ id: 142, rule_id: 17, component_id: 8 });
+      wrapper.vm.onComposerPosted();
+      await flushPromises();
+
+      expect(getUserComments).toHaveBeenCalledTimes(1);
+      expect(wrapper.vm.composerActive).toBe(false);
+    });
   });
 });

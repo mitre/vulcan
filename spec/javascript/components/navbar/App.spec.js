@@ -298,4 +298,11 @@ describe("Navbar dropdown viewport containment", () => {
     expect(bellToggle.classes()).toContain("position-relative");
     expect(dropdowns.at(0).find(".badge-danger").exists()).toBe(true);
   });
+
+  // ── mixin contract ──────────────────────────────────────────────────
+  // REQUIREMENT: the navbar app carries no mixins at all. FormMixin was
+  // verified dead — authenticityToken never referenced.
+  it("declares no mixins", () => {
+    expect(App.mixins).toBeUndefined();
+  });
 });

@@ -3,6 +3,9 @@ import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import ProjectsTable from "@/components/projects/ProjectsTable.vue";
 
+vi.mock("@/composables/useDateFormat", { spy: true });
+import { useDateFormat } from "@/composables/useDateFormat";
+
 vi.mock("@/api/baseApi", () => ({
   default: {
     get: vi.fn(() => Promise.resolve({ data: {} })),
@@ -396,6 +399,22 @@ describe("ProjectsTable", () => {
       await wrapper.vm.confirmDelete();
 
       expect(wrapper.vm.projectToDelete).toBe(null);
+    });
+  });
+
+  // ── composable contracts ────────────────────────────────────────────
+  // REQUIREMENT: the updated-at column renders via useDateFormat — no
+  // DateFormatMixin remains. FormMixin was verified dead (its stale
+  // comment claimed axios-era CSRF setup; baseApi hooks own CSRF now).
+  // AlertMixin stays until the toast migration.
+  describe("composable contracts", () => {
+    it("renders the updated-at column via useDateFormat", () => {
+      vi.clearAllMocks();
+      wrapper = createWrapper();
+      expect(useDateFormat).toHaveBeenCalled();
+      // moment "lll" renders the month name, never the raw ISO string
+      expect(wrapper.text()).toContain("Jan 15, 2024");
+      expect(wrapper.text()).not.toContain("2024-01-15T10:00:00Z");
     });
   });
 });

@@ -126,13 +126,13 @@ import { useCommentsStore } from "../../stores/comments";
 import { buildStatusFilterOptions } from "../../constants/triageVocabulary";
 import { ruleHref as buildRuleHref, rowTriageClass } from "../../utils/commentTableHelpers";
 import AlertMixin from "../../mixins/AlertMixin.vue";
-import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
+import { useDateFormat } from "../../composables/useDateFormat";
+import { useReplyComposer } from "../../composables/useReplyComposer";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import SectionLabel from "../shared/SectionLabel.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
 import CommentThread from "../shared/CommentThread.vue";
 import CommentComposerModal from "../components/CommentComposerModal.vue";
-import ReplyComposerMixin from "../../mixins/ReplyComposerMixin.vue";
 
 export default {
   name: "UserComments",
@@ -143,13 +143,27 @@ export default {
     CommentThread,
     CommentComposerModal,
   },
-  mixins: [AlertMixin, DateFormatMixin, ReplyComposerMixin],
+  mixins: [AlertMixin],
   props: {
     userId: { type: [Number, String], required: true },
   },
   setup() {
     const commentsStore = useCommentsStore();
-    return { commentsStore };
+    const { friendlyDateTime } = useDateFormat();
+
+    // Bridge: useReplyComposer's onOpen/afterPosted callbacks need the
+    // options-API instance ($bvModal.show, fetch), which setup() cannot
+    // reach in Vue 2.7 without getCurrentInstance (anti-pattern). The
+    // bridge object is filled in created() — late binding, same contract.
+    // Pattern established in ComponentComments and ProjectComponent.
+    const composerBridge = { onOpen: null, afterPosted: null };
+    const composer = useReplyComposer({
+      onOpen: () => composerBridge.onOpen && composerBridge.onOpen(),
+      afterPosted: (parentReviewId, snapshot) =>
+        composerBridge.afterPosted && composerBridge.afterPosted(parentReviewId, snapshot),
+    });
+
+    return { commentsStore, friendlyDateTime, composerBridge, ...composer };
   },
   data() {
     return {
@@ -178,6 +192,10 @@ export default {
     statusOptions() {
       return buildStatusFilterOptions();
     },
+  },
+  created() {
+    this.composerBridge.onOpen = () => this.$bvModal.show("comment-composer-modal");
+    this.composerBridge.afterPosted = () => this.afterComposerPosted();
   },
   mounted() {
     this.fetch();

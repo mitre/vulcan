@@ -138,7 +138,6 @@
 <script>
 import { signOut } from "../../api/authApi";
 import semver from "semver";
-import FormMixinVue from "../../mixins/FormMixin.vue";
 import NavbarItem from "./NavbarItem.vue";
 import GlobalSearch from "./GlobalSearch.vue";
 import ConsentModal from "../shared/ConsentModal.vue";
@@ -149,7 +148,6 @@ import { useThemeStore } from "../../stores/theme";
 export default {
   name: "Navbar",
   components: { NavbarItem, GlobalSearch, ConsentModal, UserBadge },
-  mixins: [FormMixinVue],
   props: {
     navigation: {
       type: Array,

@@ -64,12 +64,13 @@
 
 <script>
 import { createProject } from "../../api/projectsApi";
-import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 
 export default {
   name: "NewProjectModal",
-  mixins: [FormMixinVue, AlertMixinVue],
+  // AlertMixin migrates with the toast architecture (useToast). FormMixin
+  // was a dead import — authenticityToken was never consumed.
+  mixins: [AlertMixinVue],
   model: {
     prop: "visible",
     event: "update:visible",

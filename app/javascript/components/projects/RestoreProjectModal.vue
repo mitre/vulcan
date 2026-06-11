@@ -105,14 +105,15 @@
 
 <script>
 import { createFromBackup } from "../../api/projectsApi";
-import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import BackupPreview from "../shared/BackupPreview.vue";
 
 export default {
   name: "RestoreProjectModal",
   components: { BackupPreview },
-  mixins: [FormMixinVue, AlertMixinVue],
+  // AlertMixin migrates with the toast architecture (useToast). FormMixin
+  // was a dead import — authenticityToken was never consumed.
+  mixins: [AlertMixinVue],
   data() {
     return {
       modalShow: false,

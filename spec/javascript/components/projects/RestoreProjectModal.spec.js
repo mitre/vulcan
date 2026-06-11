@@ -307,4 +307,14 @@ describe("RestoreProjectModal", () => {
       expect(wrapper.vm.file).toBe(null);
     });
   });
+
+  // ── mixin contract ──────────────────────────────────────────────────
+  // REQUIREMENT: only AlertMixin remains (until the toast migration).
+  // FormMixin was verified dead — authenticityToken never referenced.
+  describe("mixin contract", () => {
+    it("declares only AlertMixin", () => {
+      expect(RestoreProjectModal.mixins).toHaveLength(1);
+      expect(RestoreProjectModal.mixins[0].methods.alertOrNotifyResponse).toBeDefined();
+    });
+  });
 });
