@@ -125,8 +125,8 @@
 import { useCommentsStore } from "../../stores/comments";
 import { buildStatusFilterOptions } from "../../constants/triageVocabulary";
 import { ruleHref as buildRuleHref, rowTriageClass } from "../../utils/commentTableHelpers";
-import AlertMixin from "../../mixins/AlertMixin.vue";
 import { useDateFormat } from "../../composables/useDateFormat";
+import { useToast } from "../../composables/useToast";
 import { useReplyComposer } from "../../composables/useReplyComposer";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import SectionLabel from "../shared/SectionLabel.vue";
@@ -143,7 +143,6 @@ export default {
     CommentThread,
     CommentComposerModal,
   },
-  mixins: [AlertMixin],
   props: {
     userId: { type: [Number, String], required: true },
   },
@@ -163,7 +162,9 @@ export default {
         composerBridge.afterPosted && composerBridge.afterPosted(parentReviewId, snapshot),
     });
 
-    return { commentsStore, friendlyDateTime, composerBridge, ...composer };
+    const { alertOrNotifyResponse } = useToast();
+
+    return { commentsStore, friendlyDateTime, alertOrNotifyResponse, composerBridge, ...composer };
   },
   data() {
     return {

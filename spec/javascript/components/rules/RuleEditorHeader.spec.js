@@ -177,7 +177,7 @@ describe("RuleEditorHeader", () => {
   // ── composable contracts ────────────────────────────────────────────
   // REQUIREMENTS: dates render via useDateFormat (no DateFormatMixin),
   // and admin-only controls stay admin-gated across the ==/=== fix.
-  // AlertMixin stays until the toast migration; FormMixin was verified dead.
+  // Toasts come from the useToast composable; FormMixin was verified dead.
   describe("composable contracts", () => {
     it("renders the created date via useDateFormat", () => {
       wrapper = createWrapper();

@@ -19,8 +19,8 @@ vi.mock("@/api/baseApi", () => ({
  *
  * REQUIREMENTS:
  * - Renders the change-password page for the given user.
- * - Carries only AlertMixin (FormMixin was verified dead —
- *   authenticityToken never referenced).
+ * - Carries no mixins — toasts come from the useToast composable
+ *   (FormMixin was verified dead; authenticityToken never referenced).
  */
 describe("UserPasswordPage", () => {
   let wrapper;
@@ -45,11 +45,12 @@ describe("UserPasswordPage", () => {
   });
 
   // ── mixin contract ──────────────────────────────────────────────────
-  // REQUIREMENT: only AlertMixin remains (until the toast migration).
+  // REQUIREMENT: no mixins remain; toasts come from the useToast composable.
   describe("mixin contract", () => {
-    it("declares only AlertMixin", () => {
-      expect(UserPasswordPage.mixins).toHaveLength(1);
-      expect(UserPasswordPage.mixins[0].methods.alertOrNotifyResponse).toBeDefined();
+    it("declares no mixins and gets alertOrNotifyResponse from useToast", () => {
+      expect(UserPasswordPage.mixins).toBeUndefined();
+      wrapper = createWrapper();
+      expect(typeof wrapper.vm.alertOrNotifyResponse).toBe("function");
     });
   });
 });

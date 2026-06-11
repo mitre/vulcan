@@ -363,7 +363,7 @@ describe("CommentComposerModal", () => {
     expect(w.vm.canSubmit).toBe(true);
   });
 
-  it("surfaces server errors via AlertMixin without crashing", async () => {
+  it("surfaces server errors via the toast handler without crashing", async () => {
     createRuleReview.mockRejectedValueOnce({ response: { status: 422, data: {} } });
     const w = mount(CommentComposerModal, {
       localVue,

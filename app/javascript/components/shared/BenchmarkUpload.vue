@@ -39,13 +39,10 @@
 
 <script>
 import { uploadBenchmark } from "../../api/projectsApi";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { useToast } from "../../composables/useToast";
 
 export default {
   name: "BenchmarkUpload",
-  // AlertMixin migrates with the toast architecture (useToast). FormMixin was a dead import —
-  // authenticityToken was never consumed; CSRF is handled by baseApi hooks.
-  mixins: [AlertMixinVue],
   props: {
     value: {
       type: Boolean,
@@ -55,6 +52,10 @@ export default {
       type: String,
       default: null,
     },
+  },
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
   },
   data: function () {
     return {

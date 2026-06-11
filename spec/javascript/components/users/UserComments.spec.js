@@ -196,7 +196,7 @@ describe("UserComments", () => {
   // REQUIREMENTS: posted/activity dates render via useDateFormat and the
   // reply composer state machine flows through useReplyComposer with the
   // onOpen/afterPosted bridge — no DateFormatMixin or ReplyComposerMixin
-  // remains (AlertMixin stays until the toast migration). localVue
+  // remains (toasts come from the useToast composable). localVue
   // installs BootstrapVue so the real $bvModal injection is spied on.
   // CommentThread/CommentComposerModal are stubbed so the spy calls are
   // attributable to UserComments itself, not to children rendering dates.

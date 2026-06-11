@@ -77,15 +77,13 @@
 
 <script>
 import { lockComponent, lockSections as lockSectionsApi } from "../../api/componentsApi";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import { useAuthToken } from "../../composables/useAuthToken";
+import { useToast } from "../../composables/useToast";
 import { MESSAGE_LABELS } from "../../constants/terminology";
 import { LOCKABLE_SECTIONS } from "../../composables/ruleFieldConfig";
 
 export default {
   name: "LockControlsModal",
-  // AlertMixin migrates with the toast architecture (useToast)
-  mixins: [AlertMixinVue],
   props: {
     component_id: {
       type: Number,
@@ -94,7 +92,8 @@ export default {
   },
   setup() {
     const { authenticityToken } = useAuthToken();
-    return { authenticityToken };
+    const { alertOrNotifyResponse } = useToast();
+    return { authenticityToken, alertOrNotifyResponse };
   },
   data: function () {
     return {

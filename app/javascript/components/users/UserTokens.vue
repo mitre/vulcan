@@ -112,12 +112,15 @@
 import { listTokens, revokeToken } from "../../api/tokensApi";
 import CreateTokenModal from "./CreateTokenModal.vue";
 import ConfirmDeleteModal from "../shared/ConfirmDeleteModal.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { useToast } from "../../composables/useToast";
 
 export default {
   name: "UserTokens",
   components: { CreateTokenModal, ConfirmDeleteModal },
-  mixins: [AlertMixinVue],
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
+  },
   data() {
     return {
       tokens: [],

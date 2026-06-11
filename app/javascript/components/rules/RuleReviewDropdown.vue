@@ -58,12 +58,11 @@
 
 <script>
 import { createRuleReview } from "../../api/reviewsApi";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { useToast } from "../../composables/useToast";
 import { buildReviewActions } from "../../utils/reviewActionHelpers";
 
 export default {
   name: "RuleReviewDropdown",
-  mixins: [AlertMixinVue],
   props: {
     rule: {
       type: Object,
@@ -81,6 +80,10 @@ export default {
       type: Boolean,
       default: false,
     },
+  },
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
   },
   data() {
     return {

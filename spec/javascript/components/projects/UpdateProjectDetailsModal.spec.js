@@ -25,8 +25,8 @@ vi.mock("@/api/projectsApi", () => ({
  * - Seeds its form from the given project.
  * - Renders the opener visibly DISABLED with a tooltip (never hidden)
  *   when the user lacks permission — the disable-not-hide UX rule.
- * - Carries only AlertMixin (FormMixin was verified dead —
- *   authenticityToken never referenced).
+ * - Carries no mixins — toasts come from the useToast composable
+ *   (FormMixin was verified dead; authenticityToken never referenced).
  */
 describe("UpdateProjectDetailsModal", () => {
   let wrapper;
@@ -60,11 +60,12 @@ describe("UpdateProjectDetailsModal", () => {
   });
 
   // ── mixin contract ──────────────────────────────────────────────────
-  // REQUIREMENT: only AlertMixin remains (until the toast migration).
+  // REQUIREMENT: no mixins remain; toasts come from the useToast composable.
   describe("mixin contract", () => {
-    it("declares only AlertMixin", () => {
-      expect(UpdateProjectDetailsModal.mixins).toHaveLength(1);
-      expect(UpdateProjectDetailsModal.mixins[0].methods.alertOrNotifyResponse).toBeDefined();
+    it("declares no mixins and gets alertOrNotifyResponse from useToast", () => {
+      expect(UpdateProjectDetailsModal.mixins).toBeUndefined();
+      wrapper = createWrapper();
+      expect(typeof wrapper.vm.alertOrNotifyResponse).toBe("function");
     });
   });
 });

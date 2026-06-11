@@ -229,8 +229,8 @@
 </template>
 
 <script>
-import AlertMixin from "../../mixins/AlertMixin.vue";
 import { SINGLE_BUTTON_STATUSES } from "../../constants/triageVocabulary";
+import { useToast } from "../../composables/useToast";
 import { useCommentTriage } from "../../composables/mutations/useCommentTriage";
 import { usePermissions } from "../../composables/usePermissions";
 import { useCommentsStore } from "../../stores/comments";
@@ -262,7 +262,6 @@ export default {
     CommentAuthorLine,
     PanelLayout,
   },
-  mixins: [AlertMixin],
   props: {
     rows: { type: Array, required: true },
     initialCommentId: { type: [Number, String], default: null },
@@ -278,7 +277,15 @@ export default {
     // Permissions arrive via provide/inject — the page root provides;
     // canEdit gates triage, canAdmin gates the inline admin actions.
     const { canEdit, canAdmin } = usePermissions();
-    return { toggleReactionApi, triageComposable, commentsStore, canEdit, canAdmin };
+    const { alertOrNotifyResponse } = useToast();
+    return {
+      toggleReactionApi,
+      triageComposable,
+      commentsStore,
+      canEdit,
+      canAdmin,
+      alertOrNotifyResponse,
+    };
   },
   data() {
     return {

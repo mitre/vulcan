@@ -155,7 +155,7 @@
 
 <script>
 import { updateMembership, deleteMembership, deleteAccessRequest } from "../../api/membershipsApi";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { useToast } from "../../composables/useToast";
 import NewMembership from "./NewMembership.vue";
 import UserBadge from "../shared/UserBadge.vue";
 import { EVENTS, dispatch } from "../../utils/notificationEvents";
@@ -163,10 +163,6 @@ import { EVENTS, dispatch } from "../../utils/notificationEvents";
 export default {
   name: "MembershipsTable",
   components: { NewMembership, UserBadge },
-  // AlertMixin migrates with the toast architecture (useToast). FormMixin and RoleComparisonMixin
-  // were dead imports — authenticityToken/role_gte_to consumed nowhere here
-  // (editing is gated by the `editable` prop from the parent).
-  mixins: [AlertMixinVue],
   props: {
     memberships: {
       type: Array,
@@ -206,6 +202,10 @@ export default {
       type: String,
       default: "Members",
     },
+  },
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
   },
   data: function () {
     return {

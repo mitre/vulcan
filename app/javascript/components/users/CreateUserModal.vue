@@ -101,15 +101,12 @@
 
 <script>
 import { createUser } from "../../api/usersApi";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { useToast } from "../../composables/useToast";
 import PasswordField from "../shared/PasswordField.vue";
 
 export default {
   name: "CreateUserModal",
   components: { PasswordField },
-  // AlertMixin migrates with the toast architecture (useToast). FormMixin
-  // was a dead import — authenticityToken was never consumed.
-  mixins: [AlertMixinVue],
   model: {
     prop: "visible",
     event: "update:visible",
@@ -127,6 +124,10 @@ export default {
       type: Object,
       default: null,
     },
+  },
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
   },
   data() {
     return {

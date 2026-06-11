@@ -184,8 +184,8 @@ describe("RuleRevertModal", () => {
   // ── composable contracts ────────────────────────────────────────────
   // REQUIREMENTS: the auditable type humanizes via useHumanizedTypes and
   // the change timestamp renders via useDateFormat — no DateFormatMixin
-  // or HumanizedTypesMixIn remains (AlertMixin stays until the toast
-  // migration).
+  // or HumanizedTypesMixIn remains (toasts come from the useToast
+  // composable).
   describe("composable contracts", () => {
     it("humanizes the auditable type via useHumanizedTypes", () => {
       wrapper = createWrapper({

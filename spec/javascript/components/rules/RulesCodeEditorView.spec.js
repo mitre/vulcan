@@ -370,7 +370,7 @@ describe("RulesCodeEditorView", () => {
   // the effectivePermissions prop is GONE), and the comment composer state
   // machine flows through useReplyComposer with the onOpen/afterPosted
   // bridge. DateFormatMixin + RoleComparisonMixin were verified dead;
-  // AlertMixin stays until the toast migration.
+  // toasts come from the useToast composable.
   describe("composable contracts", () => {
     beforeEach(() => vi.clearAllMocks());
 

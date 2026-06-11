@@ -34,7 +34,7 @@
 
 <script>
 import { updateProject } from "../../api/projectsApi";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { useToast } from "../../composables/useToast";
 
 function initialState(project) {
   return {
@@ -46,14 +46,15 @@ function initialState(project) {
 
 export default {
   name: "UpdateMetadataModal",
-  // AlertMixin migrates with the toast architecture (useToast). FormMixin was a dead import —
-  // authenticityToken was never consumed; CSRF is handled by baseApi hooks.
-  mixins: [AlertMixinVue],
   props: {
     project: {
       type: Object,
       required: true,
     },
+  },
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
   },
   data: function () {
     return initialState(this.project);

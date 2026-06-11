@@ -191,11 +191,9 @@
 
 <script>
 import { previewSpreadsheetUpdate, applySpreadsheetUpdate } from "../../api/componentsApi";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
 
 export default {
   name: "UpdateFromSpreadsheetModal",
-  mixins: [AlertMixinVue],
   props: {
     component: {
       type: Object,

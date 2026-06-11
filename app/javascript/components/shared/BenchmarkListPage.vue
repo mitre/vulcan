@@ -54,7 +54,7 @@
 
 <script>
 import { getBenchmarkList } from "../../api/projectsApi";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { useToast } from "../../composables/useToast";
 import BaseCommandBar from "./BaseCommandBar.vue";
 import BenchmarkTable from "./BenchmarkTable.vue";
 import BenchmarkUpload from "./BenchmarkUpload.vue";
@@ -83,11 +83,14 @@ const CONFIG = {
 export default {
   name: "BenchmarkListPage",
   components: { BaseCommandBar, BenchmarkTable, BenchmarkUpload, ExportModal },
-  mixins: [AlertMixinVue],
   props: {
     type: { type: String, required: true, validator: (v) => v in CONFIG },
     givenItems: { type: Array, required: true },
     isAdmin: { type: Boolean, required: true },
+  },
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
   },
   data() {
     return {

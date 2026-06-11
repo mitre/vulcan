@@ -23,8 +23,8 @@ vi.mock("@/api/projectsApi", () => ({
  *
  * REQUIREMENTS:
  * - Renders the new-project modal with an empty form.
- * - Carries only AlertMixin (FormMixin was verified dead —
- *   authenticityToken never referenced).
+ * - Carries no mixins — toasts come from the useToast composable
+ *   (FormMixin was verified dead; authenticityToken never referenced).
  */
 describe("NewProjectModal", () => {
   let wrapper;
@@ -47,11 +47,12 @@ describe("NewProjectModal", () => {
   });
 
   // ── mixin contract ──────────────────────────────────────────────────
-  // REQUIREMENT: only AlertMixin remains (until the toast migration).
+  // REQUIREMENT: no mixins remain; toasts come from the useToast composable.
   describe("mixin contract", () => {
-    it("declares only AlertMixin", () => {
-      expect(NewProjectModal.mixins).toHaveLength(1);
-      expect(NewProjectModal.mixins[0].methods.alertOrNotifyResponse).toBeDefined();
+    it("declares no mixins and gets alertOrNotifyResponse from useToast", () => {
+      expect(NewProjectModal.mixins).toBeUndefined();
+      wrapper = createWrapper();
+      expect(typeof wrapper.vm.alertOrNotifyResponse).toBe("function");
     });
   });
 });

@@ -102,7 +102,7 @@
 
 <script>
 import { deleteUser } from "../../api/usersApi";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { useToast } from "../../composables/useToast";
 import ConfirmDeleteModal from "../shared/ConfirmDeleteModal.vue";
 import TableActionButtons from "../shared/TableActionButtons.vue";
 import UserBadge from "../shared/UserBadge.vue";
@@ -112,9 +112,6 @@ import { useTableSearch } from "../../composables/useTableSearch";
 export default {
   name: "UsersTable",
   components: { ConfirmDeleteModal, TableActionButtons, UserBadge },
-  // AlertMixin migrates with the toast architecture (useToast). FormMixin
-  // was a dead import — authenticityToken was never consumed.
-  mixins: [AlertMixinVue],
   props: {
     users: {
       type: Array,
@@ -145,6 +142,8 @@ export default {
         (user.email || "").toLowerCase().includes(q) || (user.name || "").toLowerCase().includes(q),
     );
 
+    const { alertOrNotifyResponse } = useToast();
+
     return {
       showDeleteModal,
       userToDelete,
@@ -157,6 +156,7 @@ export default {
       currentPage,
       searchedUsers: filteredItems,
       rows: totalRows,
+      alertOrNotifyResponse,
     };
   },
   data: function () {

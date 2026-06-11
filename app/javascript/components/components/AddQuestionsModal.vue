@@ -58,7 +58,7 @@
 
 <script>
 import { updateComponent } from "../../api/componentsApi";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { useToast } from "../../composables/useToast";
 
 function initialState(component) {
   return {
@@ -74,14 +74,15 @@ function initialState(component) {
 
 export default {
   name: "AddQuestionsToComponentModal",
-  // AlertMixin migrates with the toast architecture (useToast). FormMixin was a dead import —
-  // authenticityToken was never consumed; CSRF is handled by baseApi hooks.
-  mixins: [AlertMixinVue],
   props: {
     component: {
       type: Object,
       required: true,
     },
+  },
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
   },
   data: function () {
     return initialState(this.component);

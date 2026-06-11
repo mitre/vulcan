@@ -77,20 +77,21 @@
 
 <script>
 import { importBackup } from "../../api/projectsApi";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { useToast } from "../../composables/useToast";
 import BackupPreview from "../shared/BackupPreview.vue";
 
 export default {
   name: "RestoreBackupModal",
   components: { BackupPreview },
-  // AlertMixin migrates with the toast architecture (useToast). FormMixin was a dead import —
-  // authenticityToken was never consumed; CSRF is handled by baseApi hooks.
-  mixins: [AlertMixinVue],
   props: {
     project_id: {
       type: Number,
       required: true,
     },
+  },
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
   },
   data() {
     return {

@@ -181,8 +181,8 @@ describe("FindAndReplace", () => {
 
   // ── composable contracts ────────────────────────────────────────────
   // REQUIREMENT: the find/replace engine flows through useFindAndReplace
-  // — no FindAndReplaceMixin remains (AlertMixin stays until the toast
-  // migration).
+  // — no FindAndReplaceMixin remains (toasts come from the useToast
+  // composable).
   describe("composable contracts", () => {
     it("groups find results via useFindAndReplace with highlighted segments", async () => {
       const { findInComponent } = await import("@/api/rulesApi");

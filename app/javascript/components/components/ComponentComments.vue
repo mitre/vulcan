@@ -362,8 +362,8 @@ import { reopenReview } from "../../api/reviewsApi";
 import { useCommentsStore } from "../../stores/comments";
 import { useCommentTriage } from "../../composables/mutations/useCommentTriage";
 import { SECTION_LABELS, buildStatusFilterOptions } from "../../constants/triageVocabulary";
-import AlertMixin from "../../mixins/AlertMixin.vue";
 import { useDateFormat } from "../../composables/useDateFormat";
+import { useToast } from "../../composables/useToast";
 import { usePermissions } from "../../composables/usePermissions";
 import { useReplyComposer } from "../../composables/useReplyComposer";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
@@ -400,12 +400,6 @@ export default {
     MergeCommentsModal,
     Highlighter,
   },
-  // AlertMixin migrates with the toast architecture (useToast). FormMixin was removed as a dead
-  // import: its old comment claimed axios.defaults CSRF setup was required
-  // here — true in the axios era, but the ky migration (447ca1e6) replaced
-  // that with a per-request beforeRequest hook in baseApi that reads the
-  // CSRF meta tag. authenticityToken is consumed nowhere in this component.
-  mixins: [AlertMixin],
   props: {
     // Either componentId (single-component scope) or projectId (aggregate
     // scope) is required — but not both. The scope prop disambiguates and
@@ -431,6 +425,7 @@ export default {
     // authorize_author_project gates.
     const { effectivePermissions, canEdit, canAdmin } = usePermissions();
     const { friendlyDateTime } = useDateFormat();
+    const { alertOrNotifyResponse } = useToast();
     // Bridge: useReplyComposer's onOpen/afterPosted callbacks need the
     // options-API instance ($bvModal.show, fetch), which setup() cannot
     // reach in Vue 2.7 without getCurrentInstance (anti-pattern). The
@@ -448,6 +443,7 @@ export default {
       canEdit,
       canAdmin,
       friendlyDateTime,
+      alertOrNotifyResponse,
       composerBridge,
       ...composer,
     };

@@ -72,17 +72,18 @@
 import { updateProfile } from "../../api/usersApi";
 import BaseCommandBar from "../shared/BaseCommandBar.vue";
 import PasswordField from "../shared/PasswordField.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { useToast } from "../../composables/useToast";
 
 export default {
   name: "UserPasswordPage",
   components: { BaseCommandBar, PasswordField },
-  // AlertMixin migrates with the toast architecture (useToast). FormMixin
-  // was a dead import — authenticityToken was never consumed.
-  mixins: [AlertMixinVue],
   props: {
     user: { type: Object, required: true },
     passwordPolicy: { type: Object, default: null },
+  },
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
   },
   data() {
     return {

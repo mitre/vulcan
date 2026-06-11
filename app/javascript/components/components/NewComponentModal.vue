@@ -179,8 +179,8 @@
 <script>
 import { getSrgs, getProjects, getProject } from "../../api/projectsApi";
 import { detectSrg, createComponentInProject } from "../../api/componentsApi";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import { useAuthToken } from "../../composables/useAuthToken";
+import { useToast } from "../../composables/useToast";
 import { useDisplayedComponent } from "../../composables/useDisplayedComponent";
 import VueMultiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
@@ -190,8 +190,6 @@ export default {
   components: {
     VueMultiselect,
   },
-  // AlertMixin migrates with the toast architecture (useToast)
-  mixins: [AlertMixinVue],
   props: {
     spreadsheet_import: {
       type: Boolean,
@@ -233,7 +231,8 @@ export default {
   setup() {
     const { authenticityToken } = useAuthToken();
     const { addDisplayNameToComponents } = useDisplayedComponent();
-    return { authenticityToken, addDisplayNameToComponents };
+    const { alertOrNotifyResponse } = useToast();
+    return { authenticityToken, addDisplayNameToComponents, alertOrNotifyResponse };
   },
   data: function () {
     return {

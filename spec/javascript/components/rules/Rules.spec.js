@@ -66,7 +66,7 @@ describe("Rules", () => {
   // ── composable contracts ────────────────────────────────────────────
   // REQUIREMENT: the initial rule list sorts by rule_id via useSortRules
   // (setup-before-data — data() reads this.compareRules). FormMixin was
-  // verified dead and removed; AlertMixin stays until the toast migration.
+  // verified dead and removed; toasts come from the useToast composable.
   describe("composable contracts", () => {
     beforeEach(() => vi.clearAllMocks());
 

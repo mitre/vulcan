@@ -241,7 +241,7 @@ import { useReplyComposer } from "../../composables/useReplyComposer";
 import { useRuleSelectionStore } from "../../stores/ruleSelection";
 import { getFirstVisibleRule } from "../../utils/ruleSelectionUtils";
 import { useRuleAutosave } from "../../composables/useRuleAutosave";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { useToast } from "../../composables/useToast";
 import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
 import { MESSAGE_LABELS } from "../../constants/terminology";
 import { scrollToField } from "../../utils/searchHighlight";
@@ -263,7 +263,6 @@ export default {
     ControlsSidepanels,
     CommentComposerModal,
   },
-  mixins: [AlertMixinVue],
   provide() {
     return {
       getCommentPhase: () => this.component.comment_phase || "open",
@@ -368,8 +367,11 @@ export default {
       }
     }
 
+    const { alertOrNotifyResponse } = useToast();
+
     return {
       effectivePermissions,
+      alertOrNotifyResponse,
       composerBridge,
       ...composer,
       ruleStore,

@@ -221,12 +221,12 @@ describe("UserProfile", () => {
   });
 
   // ── mixin contract ──────────────────────────────────────────────────
-  // REQUIREMENT: only AlertMixin remains (until the toast migration).
-  // FormMixin was verified dead — authenticityToken never referenced.
+  // REQUIREMENT: no mixins remain; toasts come from the useToast composable.
   describe("mixin contract", () => {
-    it("declares only AlertMixin", () => {
-      expect(UserProfile.mixins).toHaveLength(1);
-      expect(UserProfile.mixins[0].methods.alertOrNotifyResponse).toBeDefined();
+    it("declares no mixins and gets alertOrNotifyResponse from useToast", () => {
+      expect(UserProfile.mixins).toBeUndefined();
+      wrapper = createWrapper();
+      expect(typeof wrapper.vm.alertOrNotifyResponse).toBe("function");
     });
   });
 });

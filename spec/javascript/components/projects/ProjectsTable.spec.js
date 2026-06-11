@@ -406,7 +406,7 @@ describe("ProjectsTable", () => {
   // REQUIREMENT: the updated-at column renders via useDateFormat — no
   // DateFormatMixin remains. FormMixin was verified dead (its stale
   // comment claimed axios-era CSRF setup; baseApi hooks own CSRF now).
-  // AlertMixin stays until the toast migration.
+  // Toasts come from the useToast composable.
   describe("composable contracts", () => {
     it("renders the updated-at column via useDateFormat", () => {
       vi.clearAllMocks();

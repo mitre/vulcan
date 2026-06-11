@@ -147,8 +147,8 @@ import { provide } from "vue";
 import _ from "lodash";
 import { getProject, updateProject, exportProjectData } from "../../api/projectsApi";
 import { deleteComponent } from "../../api/componentsApi";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import { useSidebar } from "../../composables";
+import { useToast } from "../../composables/useToast";
 import { roleGteTo } from "../../utils/roleComparison";
 import ComponentCard from "../components/ComponentCard.vue";
 import AddComponentModal from "../components/AddComponentModal.vue";
@@ -175,11 +175,6 @@ export default {
     ComponentActionPicker,
     RestoreBackupModal,
   },
-  // AlertMixin migrates with the toast architecture (useToast). DateFormat/Form mixins were dead
-  // imports (friendlyDateTime/authenticityToken never consumed here);
-  // RoleComparison is replaced by the roleGteTo util in setup — Project.vue
-  // is the permissions PROVIDER and cannot inject its own provide.
-  mixins: [AlertMixinVue],
   props: {
     initialProjectState: {
       type: Object,
@@ -207,7 +202,16 @@ export default {
     // usePermissions; Project.vue itself derives gates from the same util.
     const canAdmin = roleGteTo(effective_permissions, "admin");
 
-    return { activePanel, togglePanel, closePanel, effective_permissions, canAdmin };
+    const { alertOrNotifyResponse } = useToast();
+
+    return {
+      activePanel,
+      togglePanel,
+      closePanel,
+      effective_permissions,
+      canAdmin,
+      alertOrNotifyResponse,
+    };
   },
   data: function () {
     return {

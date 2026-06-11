@@ -84,16 +84,17 @@
 
 <script>
 import { createToken } from "../../api/tokensApi";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { useToast } from "../../composables/useToast";
 
 export default {
   name: "CreateTokenModal",
-  // AlertMixin migrates with the toast architecture (useToast). FormMixin
-  // was a dead import — authenticityToken was never consumed.
-  mixins: [AlertMixinVue],
   props: {
     visible: { type: Boolean, default: false },
     maxLifetimeDays: { type: Number, default: 365 },
+  },
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
   },
   data() {
     return {

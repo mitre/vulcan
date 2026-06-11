@@ -61,7 +61,6 @@ import ExportModal from "./ExportModal.vue";
 import RuleList from "../benchmarks/RuleList.vue";
 import RuleDetails from "../benchmarks/RuleDetails.vue";
 import RuleOverview from "../benchmarks/RuleOverview.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import { useBenchmarkViewer } from "../../composables";
 import { STIG_CSV_COLUMNS, SRG_CSV_COLUMNS } from "../../constants/csvColumns";
 
@@ -74,7 +73,6 @@ export default {
     RuleDetails,
     RuleOverview,
   },
-  mixins: [AlertMixinVue],
   props: {
     benchmark: {
       type: Object,

@@ -181,8 +181,8 @@
 <script>
 import { updateRule } from "../../api/rulesApi";
 import { createRuleReview } from "../../api/reviewsApi";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import { useDateFormat } from "../../composables/useDateFormat";
+import { useToast } from "../../composables/useToast";
 import CommentModal from "../shared/CommentModal.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
 import { RULE_TERM, MESSAGE_LABELS, REVIEW_ACTION_LABELS } from "../../constants/terminology";
@@ -190,7 +190,6 @@ import { RULE_TERM, MESSAGE_LABELS, REVIEW_ACTION_LABELS } from "../../constants
 export default {
   name: "RuleEditorHeader",
   components: { CommentModal, NewRuleModalForm },
-  mixins: [AlertMixinVue],
   props: {
     effectivePermissions: {
       type: String,
@@ -219,7 +218,8 @@ export default {
   },
   setup() {
     const { friendlyDateTime } = useDateFormat();
-    return { friendlyDateTime };
+    const { alertOrNotifyResponse } = useToast();
+    return { friendlyDateTime, alertOrNotifyResponse };
   },
   data: function () {
     return {

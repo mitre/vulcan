@@ -23,13 +23,12 @@ import {
   addSatisfaction,
   removeSatisfaction,
 } from "../../api/rulesApi";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import RulesCodeEditorView from "./RulesCodeEditorView.vue";
 import { useSortRules } from "../../composables/useSortRules";
+import { useToast } from "../../composables/useToast";
 export default {
   name: "Rules",
   components: { RulesCodeEditorView },
-  mixins: [AlertMixinVue],
   props: {
     current_user_id: {
       type: Number,
@@ -61,7 +60,8 @@ export default {
     provide("effectivePermissions", effective_permissions);
     // setup-before-data: data() reads this.compareRules for the initial sort
     const { compareRules } = useSortRules();
-    return { effective_permissions, compareRules };
+    const { alertOrNotifyResponse } = useToast();
+    return { effective_permissions, compareRules, alertOrNotifyResponse };
   },
   data: function () {
     return {

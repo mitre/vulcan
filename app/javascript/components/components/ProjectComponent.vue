@@ -169,8 +169,8 @@ import { ref, computed, provide } from "vue";
 import { getComponent, patchComponent } from "../../api/componentsApi";
 import { getRule } from "../../api/rulesApi";
 import { exportProjectData } from "../../api/projectsApi";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import { useSortRules } from "../../composables/useSortRules";
+import { useToast } from "../../composables/useToast";
 import { useConfirmRelease, RELEASE_CONFIRM_COPY } from "../../composables/useConfirmRelease";
 import { useReplyComposer } from "../../composables/useReplyComposer";
 import { useRuleFilters, useSidebar } from "../../composables";
@@ -206,11 +206,6 @@ export default {
     CommentComposerModal,
     ExportModal,
   },
-  // AlertMixin migrates with the toast architecture (useToast). DateFormatMixin and
-  // RoleComparisonMixin were dead imports here — this component is the
-  // PROVIDER for effectivePermissions (gates read the raw prop value) and
-  // renders no dates itself.
-  mixins: [AlertMixinVue],
   // Provide the component's comment_phase (and a derived `commentsClosed`
   // boolean) to the rule-editor subtree so SectionCommentIcon can disable
   // the comment affordance when the window isn't open. Function form
@@ -282,6 +277,7 @@ export default {
     const { activePanel, togglePanel, closePanel } = useSidebar();
 
     const { compareRules } = useSortRules();
+    const { alertOrNotifyResponse } = useToast();
 
     // Release confirmation — declarative modal pattern, second consumer
     // after ComponentCard (.13.1). Copy from RELEASE_CONFIRM_COPY.
@@ -336,6 +332,7 @@ export default {
       togglePanel,
       closePanel,
       compareRules,
+      alertOrNotifyResponse,
       showModal,
       isReleasing,
       requestRelease,

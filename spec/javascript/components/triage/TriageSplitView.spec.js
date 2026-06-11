@@ -288,7 +288,7 @@ describe("TriageSplitView", () => {
     expect(w.vm.saving).toBe(false);
   });
 
-  it("surfaces 422 errors via AlertMixin", async () => {
+  it("surfaces 422 errors via the toast handler", async () => {
     triageReview.mockRejectedValue({
       response: { status: 422, data: { error: "Non-concur requires a response" } },
     });
@@ -664,7 +664,7 @@ describe("TriageSplitView", () => {
   // REQUIREMENTS: permissions arrive via provide/inject (usePermissions —
   // the effectivePermissions prop is GONE); canTriage/canAdminAct derive
   // from the shared role helpers. DateFormatMixin + FormMixin were
-  // verified dead; AlertMixin stays until the toast migration.
+  // verified dead; toasts come from the useToast composable.
   describe("composable contracts", () => {
     it("sources permissions from provide via usePermissions — author triages, not admin-acts", () => {
       const w = mountView({}, "author");

@@ -210,8 +210,8 @@
 </template>
 
 <script>
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import { usePermissions } from "../../composables/usePermissions";
+import { useToast } from "../../composables/useToast";
 import { useConfirmRelease, RELEASE_CONFIRM_COPY } from "../../composables/useConfirmRelease";
 import LockControlsModal from "../components/LockControlsModal.vue";
 import NewComponentModal from "../components/NewComponentModal.vue";
@@ -225,9 +225,6 @@ export default {
     NewComponentModal,
     UserBadge,
   },
-  // AlertMixin migrates with the toast architecture (useToast). FormMixin was a dead import —
-  // authenticityToken was never consumed; CSRF is handled by baseApi hooks.
-  mixins: [AlertMixinVue],
   props: {
     // Indicate if the card is for "read-only" or can take actions against it
     actionable: {
@@ -245,9 +242,11 @@ export default {
     // Declarative release confirmation (replaces the imperative
     // $bvModal.msgBoxConfirm mixin) — the modal renders in this template.
     const { showModal, isReleasing, requestRelease, cancel, confirm } = useConfirmRelease();
+    const { alertOrNotifyResponse } = useToast();
     return {
       canAdmin,
       canReview,
+      alertOrNotifyResponse,
       showModal,
       isReleasing,
       requestRelease,

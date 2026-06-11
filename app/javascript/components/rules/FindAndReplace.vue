@@ -118,8 +118,8 @@
 
 <script>
 import { updateRule, findInComponent } from "../../api/rulesApi";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import { useFindAndReplace } from "../../composables/useFindAndReplace";
+import { useToast } from "../../composables/useToast";
 import CommentModal from "../shared/CommentModal.vue";
 import FindAndReplaceResult from "./FindAndReplaceResult.vue";
 
@@ -137,7 +137,6 @@ const CONTROL_FIELDS = [
 export default {
   name: "FindAndReplace",
   components: { CommentModal, FindAndReplaceResult },
-  mixins: [AlertMixinVue],
   props: {
     componentId: {
       type: Number,
@@ -160,7 +159,8 @@ export default {
     // getSegments stays internal to the engine — only the two entry points
     // the template/methods call are bound.
     const { groupFindResults, replaceTextInRule } = useFindAndReplace();
-    return { groupFindResults, replaceTextInRule };
+    const { alertOrNotifyResponse } = useToast();
+    return { groupFindResults, replaceTextInRule, alertOrNotifyResponse };
   },
   data: function () {
     return {

@@ -61,8 +61,8 @@
 
 <script>
 import { createComponentInProject } from "../../api/componentsApi";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import { useAuthToken } from "../../composables/useAuthToken";
+import { useToast } from "../../composables/useToast";
 import { useDisplayedComponent } from "../../composables/useDisplayedComponent";
 import ComponentCard from "../components/ComponentCard.vue";
 import VueMultiselect from "vue-multiselect";
@@ -81,8 +81,6 @@ export default {
     VueMultiselect,
     ComponentCard,
   },
-  // AlertMixin migrates with the toast architecture (useToast)
-  mixins: [AlertMixinVue],
   props: {
     project_id: {
       type: Number,
@@ -100,7 +98,8 @@ export default {
   setup() {
     const { authenticityToken } = useAuthToken();
     const { addDisplayNameToComponents } = useDisplayedComponent();
-    return { authenticityToken, addDisplayNameToComponents };
+    const { alertOrNotifyResponse } = useToast();
+    return { authenticityToken, addDisplayNameToComponents, alertOrNotifyResponse };
   },
   data: function () {
     return initialState();

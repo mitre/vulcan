@@ -139,7 +139,7 @@
 import _ from "lodash";
 import { searchBasedOnSameSrg, compareComponents } from "../../api/componentsApi";
 import MonacoEditor from "vue-monaco";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { useToast } from "../../composables/useToast";
 import FilterDropdown from "../shared/FilterDropdown.vue";
 
 export default {
@@ -148,12 +148,15 @@ export default {
     MonacoEditor,
     FilterDropdown,
   },
-  mixins: [AlertMixinVue],
   props: {
     project: {
       type: Object,
       required: true,
     },
+  },
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
   },
   data: function () {
     return {

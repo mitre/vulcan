@@ -177,8 +177,8 @@
 
 <script>
 import { deleteProject } from "../../api/projectsApi";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import { useDateFormat } from "../../composables/useDateFormat";
+import { useToast } from "../../composables/useToast";
 import UpdateProjectDetailsModal from "./UpdateProjectDetailsModal.vue";
 import ConfirmDeleteModal from "../shared/ConfirmDeleteModal.vue";
 import InfoTooltip from "../shared/InfoTooltip.vue";
@@ -188,10 +188,6 @@ import { useDeleteConfirmation } from "../../composables";
 export default {
   name: "ProjectsTable",
   components: { UpdateProjectDetailsModal, ConfirmDeleteModal, InfoTooltip, TableActionButtons },
-  // AlertMixin migrates with the toast architecture (useToast). FormMixin
-  // was a dead import — its stale comment claimed axios-era CSRF setup,
-  // but CSRF is handled by baseApi hooks since the ky migration.
-  mixins: [AlertMixinVue],
   props: {
     projects: {
       type: Array,
@@ -212,6 +208,7 @@ export default {
       confirm: confirmDeleteAction,
     } = useDeleteConfirmation();
     const { friendlyDateTime } = useDateFormat();
+    const { alertOrNotifyResponse } = useToast();
 
     return {
       showDeleteModal,
@@ -221,6 +218,7 @@ export default {
       cancelDelete,
       confirmDeleteAction,
       friendlyDateTime,
+      alertOrNotifyResponse,
     };
   },
   data: function () {

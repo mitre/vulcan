@@ -82,7 +82,7 @@
 </template>
 <script>
 import { deleteBenchmark } from "../../api/projectsApi";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { useToast } from "../../composables/useToast";
 import { formatDate as formatDateUtil } from "../../utils/dateFormatter";
 import { abbreviateSrgName as abbreviateSrgNameUtil } from "../../utils/srgNameAbbreviator";
 import SeverityBadges from "./SeverityBadges.vue";
@@ -94,9 +94,6 @@ import { useTableSearch } from "../../composables/useTableSearch";
 export default {
   name: "BenchmarkTable",
   components: { SeverityBadges, ConfirmDeleteModal, TableActionButtons },
-  // AlertMixin migrates with the toast architecture (useToast). FormMixin was a dead import —
-  // authenticityToken was never consumed; CSRF is handled by baseApi hooks.
-  mixins: [AlertMixinVue],
   props: {
     srgs: {
       type: Array,
@@ -133,6 +130,8 @@ export default {
       filterFn,
     );
 
+    const { alertOrNotifyResponse } = useToast();
+
     return {
       showDeleteModal,
       itemToDelete,
@@ -145,6 +144,7 @@ export default {
       currentPage,
       searchedCollection: filteredItems,
       rows: totalRows,
+      alertOrNotifyResponse,
     };
   },
   data: function () {
