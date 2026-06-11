@@ -306,3 +306,24 @@ describe("Navbar dropdown viewport containment", () => {
     expect(App.mixins).toBeUndefined();
   });
 });
+
+// ── sign-out ──────────────────────────────────────────────────────────
+// REQUIREMENT (AC-12(02)): sign-out must run Devise's NAVIGATIONAL flow so
+// the "Signed out successfully." flash renders on the sign-in page. An ajax
+// JSON DELETE returns 204 with no flash (JSON is not a flashing format) and
+// a client-side jump to "/" triggers a second auth redirect — the message
+// is never shown. rails-ujs (started globally in the application pack)
+// turns a data-method="delete" link into a real HTML DELETE form submit.
+describe("Navbar sign-out", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
+  it("renders Sign Out as a navigational DELETE link handled by rails-ujs", () => {
+    const wrapper = mount(App, { localVue, propsData: baseProps });
+    const signOutLink = wrapper.findAll("a").wrappers.find((a) => a.text().trim() === "Sign Out");
+    expect(signOutLink).toBeDefined();
+    expect(signOutLink.attributes("href")).toBe("/sign_out");
+    expect(signOutLink.attributes("data-method")).toBe("delete");
+  });
+});

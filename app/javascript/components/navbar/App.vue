@@ -68,7 +68,11 @@
           </b-dropdown-item>
           <b-dropdown-item v-if="users_path" :href="users_path"> Manage Users </b-dropdown-item>
           <b-dropdown-divider />
-          <b-dropdown-item @click.prevent="signOut">Sign Out</b-dropdown-item>
+          <!-- Navigational DELETE (rails-ujs data-method): Devise's HTML flow
+               sets the signed-out flash and redirects straight to the sign-in
+               page, where the Toaster shows it. An ajax DELETE returns 204
+               with no flash — the AC-12(02) logoff message never appears. -->
+          <b-dropdown-item :href="sign_out_path" data-method="delete">Sign Out</b-dropdown-item>
         </b-nav-item-dropdown>
       </b-navbar-nav>
 
@@ -136,7 +140,6 @@
 </template>
 
 <script>
-import { signOut } from "../../api/authApi";
 import semver from "semver";
 import NavbarItem from "./NavbarItem.vue";
 import GlobalSearch from "./GlobalSearch.vue";
@@ -268,15 +271,6 @@ export default {
         .catch(() => {
           this.latestRelease = "";
         });
-    },
-    async signOut() {
-      try {
-        await signOut(this.sign_out_path);
-      } catch {
-        // Sign-out may return a redirect (302) which axios treats as an error.
-        // Either way, navigate to the root to complete sign-out.
-      }
-      globalThis.location.assign("/");
     },
     checkUpdateAvailable() {
       if (!this.latestRelease || this.latestRelease.trim() === "") return false;
