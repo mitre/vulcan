@@ -31,14 +31,13 @@
 </template>
 
 <script>
-import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
+import { useFormFeedback } from "../../../composables/useFormFeedback";
 import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
 import InfoTooltip from "../../shared/InfoTooltip.vue";
 
 export default {
   name: "RuleDescriptionForm",
   components: { MarkdownTextarea, InfoTooltip },
-  mixins: [FormFeedbackMixinVue],
   // `rule` and `index` are necessary if edits are to be made
   props: {
     description: {
@@ -56,6 +55,20 @@ export default {
       type: Boolean,
       required: true,
     },
+    validFeedback: {
+      type: Object,
+      required: false,
+      default: () => ({}),
+    },
+    invalidFeedback: {
+      type: Object,
+      required: false,
+      default: () => ({}),
+    },
+  },
+  setup(props) {
+    const { inputClass, hasValidFeedback, hasInvalidFeedback } = useFormFeedback(props);
+    return { inputClass, hasValidFeedback, hasInvalidFeedback };
   },
   data: function () {
     return {

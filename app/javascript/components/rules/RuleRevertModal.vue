@@ -114,8 +114,8 @@
 import { revertRule } from "../../api/rulesApi";
 
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
-import HumanizedTypesMixInVue from "../../mixins/HumanizedTypesMixIn.vue";
+import { useDateFormat } from "../../composables/useDateFormat";
+import { useHumanizedTypes } from "../../composables/useHumanizedTypes";
 import { MESSAGE_LABELS } from "../../constants/terminology";
 import InfoTooltip from "../shared/InfoTooltip.vue";
 import UserBadge from "../shared/UserBadge.vue";
@@ -123,7 +123,7 @@ import UserBadge from "../shared/UserBadge.vue";
 export default {
   name: "RuleRevertModal",
   components: { InfoTooltip, UserBadge },
-  mixins: [AlertMixinVue, DateFormatMixinVue, HumanizedTypesMixInVue],
+  mixins: [AlertMixinVue],
   props: {
     rule: {
       type: Object,
@@ -141,6 +141,11 @@ export default {
       type: Object,
       required: true,
     },
+  },
+  setup() {
+    const { friendlyDateTime } = useDateFormat();
+    const { humanizedType } = useHumanizedTypes();
+    return { friendlyDateTime, humanizedType };
   },
   data: function () {
     return {

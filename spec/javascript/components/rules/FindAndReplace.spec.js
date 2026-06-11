@@ -1,7 +1,10 @@
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { shallowMount } from "@vue/test-utils";
-import { localVue } from "@test/testHelper";
+import { localVue, flushPromises } from "@test/testHelper";
 import FindAndReplace from "@/components/rules/FindAndReplace.vue";
+
+vi.mock("@/composables/useFindAndReplace", { spy: true });
+import { useFindAndReplace } from "@/composables/useFindAndReplace";
 
 vi.mock("@/api/baseApi", () => ({
   default: {
@@ -67,9 +70,12 @@ describe("FindAndReplace", () => {
 
   describe("results section visibility", () => {
     it("shows hr and button section when find_results has entries", () => {
-      wrapper = createWrapper({}, {
-        find_results: { "1": { rule_id: "000010", results: [] } },
-      });
+      wrapper = createWrapper(
+        {},
+        {
+          find_results: { 1: { rule_id: "000010", results: [] } },
+        },
+      );
       const hrs = wrapper.findAll("hr");
       expect(hrs.length).toBeGreaterThanOrEqual(2);
     });
@@ -106,7 +112,9 @@ describe("FindAndReplace", () => {
 
     it("replace_one() calls updateRule with rule id and payload", async () => {
       const { updateRule, findInComponent } = await import("@/api/rulesApi");
-      updateRule.mockResolvedValueOnce({ data: { toast: { title: "ok", message: [], variant: "success" } } });
+      updateRule.mockResolvedValueOnce({
+        data: { toast: { title: "ok", message: [], variant: "success" } },
+      });
       findInComponent.mockResolvedValueOnce({ data: [] });
 
       const mockRule = {
@@ -118,36 +126,85 @@ describe("FindAndReplace", () => {
       const result = { field: "fixtext", segments: [{ text: "old", highlighted: true }] };
       wrapper.vm.replace_one(42, result, "audit comment");
 
-      expect(updateRule).toHaveBeenCalledWith(42, expect.objectContaining({
-        audit_comment: "audit comment",
-      }));
+      expect(updateRule).toHaveBeenCalledWith(
+        42,
+        expect.objectContaining({
+          audit_comment: "audit comment",
+        }),
+      );
     });
 
     it("replace_all() calls updateRule for each rule in results", async () => {
       const { updateRule, findInComponent } = await import("@/api/rulesApi");
-      updateRule.mockResolvedValue({ data: { toast: { title: "ok", message: [], variant: "success" } } });
+      updateRule.mockResolvedValue({
+        data: { toast: { title: "ok", message: [], variant: "success" } },
+      });
       findInComponent.mockResolvedValue({ data: [] });
 
       const mockRules = [
         { id: 10, rule_id: "001", status: "NYD" },
         { id: 20, rule_id: "002", status: "NYD" },
       ];
-      wrapper = createWrapper({ rules: mockRules }, {
-        find_results: {
-          "10": { rule_id: "001", results: [{ field: "fixtext", segments: [{ text: "x", highlighted: true }] }] },
-          "20": { rule_id: "002", results: [{ field: "fixtext", segments: [{ text: "x", highlighted: true }] }] },
+      wrapper = createWrapper(
+        { rules: mockRules },
+        {
+          find_results: {
+            10: {
+              rule_id: "001",
+              results: [{ field: "fixtext", segments: [{ text: "x", highlighted: true }] }],
+            },
+            20: {
+              rule_id: "002",
+              results: [{ field: "fixtext", segments: [{ text: "x", highlighted: true }] }],
+            },
+          },
         },
-      });
+      );
 
       wrapper.vm.replace_all("bulk comment");
 
       expect(updateRule).toHaveBeenCalledTimes(2);
-      expect(updateRule).toHaveBeenCalledWith("10", expect.objectContaining({
-        audit_comment: "bulk comment",
-      }));
-      expect(updateRule).toHaveBeenCalledWith("20", expect.objectContaining({
-        audit_comment: "bulk comment",
-      }));
+      expect(updateRule).toHaveBeenCalledWith(
+        "10",
+        expect.objectContaining({
+          audit_comment: "bulk comment",
+        }),
+      );
+      expect(updateRule).toHaveBeenCalledWith(
+        "20",
+        expect.objectContaining({
+          audit_comment: "bulk comment",
+        }),
+      );
+    });
+  });
+
+  // ── composable contracts ────────────────────────────────────────────
+  // REQUIREMENT: the find/replace engine flows through useFindAndReplace
+  // — no FindAndReplaceMixin remains (AlertMixin stays until the toast
+  // migration).
+  describe("composable contracts", () => {
+    it("groups find results via useFindAndReplace with highlighted segments", async () => {
+      const { findInComponent } = await import("@/api/rulesApi");
+      findInComponent.mockResolvedValueOnce({
+        data: [{ id: 7, rule_id: "000010", title: "Ensure SSH uses FIPS ciphers" }],
+      });
+
+      wrapper = createWrapper();
+      expect(useFindAndReplace).toHaveBeenCalled();
+
+      wrapper.vm.fr.find = "ssh";
+      wrapper.vm.find();
+      await flushPromises(wrapper);
+
+      // grouped by rule DB id, keyed results carry the matched field
+      expect(wrapper.vm.find_results[7].rule_id).toBe("000010");
+      expect(wrapper.vm.find_results[7].results[0].field).toBe("Title");
+      // case-insensitive match highlights the ORIGINAL casing
+      const segments = wrapper.vm.find_results[7].results[0].segments;
+      expect(segments.find((s) => s.highlighted).text).toBe("SSH");
+      expect(wrapper.vm.total_results_match).toBe(1);
+      expect(wrapper.vm.total_results_control).toBe(1);
     });
   });
 });

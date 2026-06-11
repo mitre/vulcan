@@ -438,7 +438,7 @@
 
 <script>
 import { toRef } from "vue";
-import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
+import { useFormFeedback } from "../../../composables/useFormFeedback";
 import { useCommentIconHost } from "../../../composables/useCommentIconHost";
 import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
 import RuleFormGroup from "../../shared/RuleFormGroup.vue";
@@ -446,7 +446,6 @@ import InfoTooltip from "../../shared/InfoTooltip.vue";
 export default {
   name: "DisaRuleDescriptionForm",
   components: { MarkdownTextarea, RuleFormGroup, InfoTooltip },
-  mixins: [FormFeedbackMixinVue],
   // `rule` and `index` are necessary if edits are to be made
   props: {
     description: {
@@ -504,13 +503,24 @@ export default {
         };
       },
     },
+    validFeedback: {
+      type: Object,
+      required: false,
+      default: () => ({}),
+    },
+    invalidFeedback: {
+      type: Object,
+      required: false,
+      default: () => ({}),
+    },
   },
   setup(props, { emit }) {
     const { commentIconListeners, commentIconProps } = useCommentIconHost({
       rule: toRef(props, "rule"),
       emit,
     });
-    return { commentIconListeners, commentIconProps };
+    const { inputClass } = useFormFeedback(props);
+    return { commentIconListeners, commentIconProps, inputClass };
   },
   computed: {
     formGroupPropsWithCommentIcon() {

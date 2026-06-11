@@ -22,6 +22,9 @@ vi.mock("@/api/reviewsApi", () => ({
   createRuleReview: vi.fn(() => Promise.resolve({ data: {} })),
 }));
 
+vi.mock("@/composables/useDateFormat", { spy: true });
+import { useDateFormat } from "@/composables/useDateFormat";
+
 describe("RuleEditorHeader", () => {
   let wrapper;
   const mockRules = [
@@ -171,6 +174,27 @@ describe("RuleEditorHeader", () => {
     });
   });
 
+  // ── composable contracts ────────────────────────────────────────────
+  // REQUIREMENTS: dates render via useDateFormat (no DateFormatMixin),
+  // and admin-only controls stay admin-gated across the ==/=== fix.
+  // AlertMixin stays until the toast migration; FormMixin was verified dead.
+  describe("composable contracts", () => {
+    it("renders the created date via useDateFormat", () => {
+      wrapper = createWrapper();
+      expect(useDateFormat).toHaveBeenCalled();
+      // moment "lll" renders the month name, never the raw date string
+      expect(wrapper.text()).toContain("Jan 1, 2024");
+    });
+
+    it("delete button is admin-only — strict role check", () => {
+      wrapper = createWrapper({ effectivePermissions: "admin" });
+      expect(wrapper.find("b-button-stub[variant='danger']").exists()).toBe(true);
+      wrapper.destroy();
+      wrapper = createWrapper({ effectivePermissions: "author" });
+      expect(wrapper.find("b-button-stub[variant='danger']").exists()).toBe(false);
+    });
+  });
+
   describe("API calls use domain modules", () => {
     it("saveRule calls updateRule with rule id and payload", async () => {
       const { updateRule } = await import("@/api/rulesApi");
@@ -179,9 +203,12 @@ describe("RuleEditorHeader", () => {
       wrapper = createWrapper();
       wrapper.vm.saveRule("audit comment");
 
-      expect(updateRule).toHaveBeenCalledWith(1, expect.objectContaining({
-        audit_comment: "audit comment",
-      }));
+      expect(updateRule).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({
+          audit_comment: "audit comment",
+        }),
+      );
     });
 
     it("commentFormSubmitted calls createRuleReview with rule id", async () => {
@@ -192,7 +219,8 @@ describe("RuleEditorHeader", () => {
       wrapper.vm.commentFormSubmitted("test comment");
 
       expect(createRuleReview).toHaveBeenCalledWith(1, {
-        action: "comment", comment: "test comment",
+        action: "comment",
+        comment: "test comment",
       });
     });
 

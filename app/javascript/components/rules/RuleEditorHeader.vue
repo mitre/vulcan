@@ -46,7 +46,7 @@
         <!-- Disable and enable save & delete buttons based on locked state of rule -->
         <template v-if="rule.locked || rule.review_requestor_id ? true : false">
           <span
-            v-if="effectivePermissions == 'admin'"
+            v-if="effectivePermissions === 'admin'"
             v-b-tooltip.hover
             class="d-inline-block"
             :title="msg.cannotDeleteLocked"
@@ -60,7 +60,7 @@
         <template v-else>
           <!-- Delete rule -->
           <b-button
-            v-if="effectivePermissions == 'admin'"
+            v-if="effectivePermissions === 'admin'"
             v-b-modal.delete-rule-modal
             variant="danger"
           >
@@ -181,9 +181,8 @@
 <script>
 import { updateRule } from "../../api/rulesApi";
 import { createRuleReview } from "../../api/reviewsApi";
-import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import FormMixinVue from "../../mixins/FormMixin.vue";
+import { useDateFormat } from "../../composables/useDateFormat";
 import CommentModal from "../shared/CommentModal.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
 import { RULE_TERM, MESSAGE_LABELS, REVIEW_ACTION_LABELS } from "../../constants/terminology";
@@ -191,7 +190,7 @@ import { RULE_TERM, MESSAGE_LABELS, REVIEW_ACTION_LABELS } from "../../constants
 export default {
   name: "RuleEditorHeader",
   components: { CommentModal, NewRuleModalForm },
-  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
+  mixins: [AlertMixinVue],
   props: {
     effectivePermissions: {
       type: String,
@@ -218,6 +217,10 @@ export default {
       default: false,
     },
   },
+  setup() {
+    const { friendlyDateTime } = useDateFormat();
+    return { friendlyDateTime };
+  },
   data: function () {
     return {
       term: RULE_TERM,
@@ -238,8 +241,8 @@ export default {
     },
     reviewActions: function () {
       // Set some helper variables for readability
-      const isAdmin = !this.readOnly && this.effectivePermissions == "admin";
-      const isReviewer = !this.readOnly && this.effectivePermissions == "reviewer";
+      const isAdmin = !this.readOnly && this.effectivePermissions === "admin";
+      const isReviewer = !this.readOnly && this.effectivePermissions === "reviewer";
       const isRequestor = !this.readOnly && this.currentUserId == this.rule.review_requestor_id;
       const isUnderReview = this.rule.review_requestor_id != null;
       const labels = this.reviewLabels;

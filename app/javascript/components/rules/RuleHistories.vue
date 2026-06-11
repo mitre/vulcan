@@ -16,15 +16,12 @@
 </template>
 
 <script>
-import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import History from "../shared/History.vue";
-import HistoryGroupingMixinVue from "../../mixins/HistoryGroupingMixin.vue";
+import { useHistoryGrouping } from "../../composables/useHistoryGrouping";
 
 export default {
   name: "RuleHistories",
   components: { History },
-  mixins: [DateFormatMixinVue, AlertMixinVue, HistoryGroupingMixinVue],
   props: {
     rule: {
       type: Object,
@@ -39,8 +36,9 @@ export default {
       required: true,
     },
   },
-  data: function () {
-    return {};
+  setup() {
+    const { groupHistories } = useHistoryGrouping();
+    return { groupHistories };
   },
   computed: {
     groupedRuleHistories() {

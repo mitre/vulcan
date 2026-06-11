@@ -21,6 +21,9 @@ vi.mock("@/api/rulesApi", () => ({
   removeSatisfaction: vi.fn(() => Promise.resolve({ data: {} })),
 }));
 
+vi.mock("@/composables/useSortRules", { spy: true });
+import { useSortRules } from "@/composables/useSortRules";
+
 describe("Rules", () => {
   const createWrapper = (rulesOverrides = []) => {
     const defaultRule = {
@@ -56,6 +59,38 @@ describe("Rules", () => {
     it("root element has vulcan-editor-layout class for flex chain continuity", () => {
       const wrapper = createWrapper();
       expect(wrapper.classes()).toContain("vulcan-editor-layout");
+      wrapper.destroy();
+    });
+  });
+
+  // ── composable contracts ────────────────────────────────────────────
+  // REQUIREMENT: the initial rule list sorts by rule_id via useSortRules
+  // (setup-before-data — data() reads this.compareRules). FormMixin was
+  // verified dead and removed; AlertMixin stays until the toast migration.
+  describe("composable contracts", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("sorts the initial rules by rule_id via useSortRules", () => {
+      const base = {
+        component_id: 100,
+        status: "Not Yet Determined",
+        satisfied_by: [],
+        satisfies: [],
+        disa_rule_descriptions_attributes: [],
+        checks_attributes: [],
+        rule_descriptions_attributes: [],
+      };
+      const wrapper = createWrapper([
+        { ...base, id: 3, rule_id: "000030" },
+        { ...base, id: 1, rule_id: "000010" },
+        { ...base, id: 2, rule_id: "000020" },
+      ]);
+      expect(useSortRules).toHaveBeenCalled();
+      expect(wrapper.vm.reactiveRules.map((r) => r.rule_id)).toEqual([
+        "000010",
+        "000020",
+        "000030",
+      ]);
       wrapper.destroy();
     });
   });

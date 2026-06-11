@@ -31,6 +31,11 @@ vi.mock("@/api/componentsApi", () => ({
   patchComponent: vi.fn(() => Promise.resolve({ data: {} })),
 }));
 
+vi.mock("@/composables/usePermissions", { spy: true });
+vi.mock("@/composables/useReplyComposer", { spy: true });
+import { usePermissions } from "@/composables/usePermissions";
+import { useReplyComposer } from "@/composables/useReplyComposer";
+
 describe("RulesCodeEditorView", () => {
   let wrapper;
 
@@ -77,7 +82,6 @@ describe("RulesCodeEditorView", () => {
   ];
 
   const defaultProps = {
-    effectivePermissions: "admin",
     currentUserId: 1,
     project: { id: 1, name: "Test Project" },
     component: {
@@ -99,7 +103,7 @@ describe("RulesCodeEditorView", () => {
 
   let pinia;
 
-  const createWrapper = (props = {}) => {
+  const createWrapper = (props = {}, permissions = "admin") => {
     pinia = createPinia();
     setActivePinia(pinia);
     const router = createTestRouter([
@@ -110,6 +114,9 @@ describe("RulesCodeEditorView", () => {
       localVue,
       pinia,
       router,
+      // Permissions arrive via provide/inject (usePermissions) — the page
+      // root (Rules.vue) provides; this view injects.
+      provide: { effectivePermissions: permissions },
       propsData: {
         ...defaultProps,
         ...props,
@@ -136,11 +143,8 @@ describe("RulesCodeEditorView", () => {
         BFormGroup: true,
         BIcon: true,
       },
-      mocks: {
-        $root: {
-          $emit: vi.fn(),
-        },
-      },
+      // NOTE: do not try to mock $root here — VTU cannot replace the real
+      // $root; use vi.spyOn(wrapper.vm.$root, "$emit") in tests instead.
     });
   };
 
@@ -351,13 +355,78 @@ describe("RulesCodeEditorView", () => {
 
   describe("computed properties", () => {
     it("isViewerOnly returns true for viewer permissions", () => {
-      wrapper = createWrapper({ effectivePermissions: "viewer" });
+      wrapper = createWrapper({}, "viewer");
       expect(wrapper.vm.isViewerOnly).toBe(true);
     });
 
     it("isViewerOnly returns false for admin permissions", () => {
-      wrapper = createWrapper({ effectivePermissions: "admin" });
+      wrapper = createWrapper({}, "admin");
       expect(wrapper.vm.isViewerOnly).toBe(false);
+    });
+  });
+
+  // ── composable contracts ────────────────────────────────────────────
+  // REQUIREMENTS: permissions arrive via provide/inject (usePermissions —
+  // the effectivePermissions prop is GONE), and the comment composer state
+  // machine flows through useReplyComposer with the onOpen/afterPosted
+  // bridge. DateFormatMixin + RoleComparisonMixin were verified dead;
+  // AlertMixin stays until the toast migration.
+  describe("composable contracts", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("sources permissions from provide via usePermissions", () => {
+      wrapper = createWrapper({}, "viewer");
+      expect(usePermissions).toHaveBeenCalled();
+      expect(wrapper.vm.effectivePermissions).toBe("viewer");
+      expect(wrapper.vm.isViewerOnly).toBe(true);
+    });
+
+    it("wires useReplyComposer — section composer opens via the bridge", async () => {
+      wrapper = createWrapper();
+      expect(useReplyComposer).toHaveBeenCalled();
+
+      const showSpy = vi.spyOn(wrapper.vm.$bvModal, "show").mockImplementation(() => {});
+      wrapper.vm.selectRule(1);
+      await wrapper.vm.$nextTick();
+      wrapper.vm.onOpenComposer("check_content");
+
+      expect(wrapper.vm.composerState.mode).toBe("new-comment");
+      expect(wrapper.vm.composerState.section).toBe("check_content");
+      expect(wrapper.vm.composerState.ruleName).toBe("TEST-001");
+      expect(wrapper.vm.composerActive).toBe(true);
+      await wrapper.vm.$nextTick();
+      expect(showSpy).toHaveBeenCalledWith("comment-composer-modal");
+    });
+
+    it("afterPosted bridge refreshes the selected rule and clears the composer", async () => {
+      wrapper = createWrapper();
+      vi.spyOn(wrapper.vm.$bvModal, "show").mockImplementation(() => {});
+      wrapper.vm.selectRule(1);
+      await wrapper.vm.$nextTick();
+      const rootEmitSpy = vi.spyOn(wrapper.vm.$root, "$emit");
+
+      wrapper.vm.onOpenComposer("check_content");
+      wrapper.vm.onComposerPosted();
+
+      expect(rootEmitSpy).toHaveBeenCalledWith("refresh:rule", 1, "all");
+      expect(wrapper.vm.composerActive).toBe(false);
+    });
+
+    it("component-mode posts do NOT trigger a rule refresh", async () => {
+      wrapper = createWrapper();
+      vi.spyOn(wrapper.vm.$bvModal, "show").mockImplementation(() => {});
+      wrapper.vm.selectRule(1);
+      await wrapper.vm.$nextTick();
+      const rootEmitSpy = vi.spyOn(wrapper.vm.$root, "$emit");
+
+      wrapper.vm.onOpenComponentComposer();
+      wrapper.vm.onComposerPosted();
+
+      expect(rootEmitSpy).not.toHaveBeenCalledWith(
+        "refresh:rule",
+        expect.anything(),
+        expect.anything(),
+      );
     });
   });
 

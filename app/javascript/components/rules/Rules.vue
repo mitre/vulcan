@@ -2,12 +2,12 @@
   <div class="vulcan-editor-layout">
     <b-breadcrumb :items="breadcrumbs" />
 
+    <!-- Permissions flow via provide("effectivePermissions") from setup() -->
     <RulesCodeEditorView
       :project="project"
       :component="reactiveComponent"
       :rules="reactiveRules"
       :statuses="statuses"
-      :effective-permissions="effective_permissions"
       :current-user-id="current_user_id"
       :available-roles="available_roles"
     />
@@ -25,12 +25,11 @@ import {
 } from "../../api/rulesApi";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import RulesCodeEditorView from "./RulesCodeEditorView.vue";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import SortRulesMixin from "../../mixins/SortRulesMixin.vue";
+import { useSortRules } from "../../composables/useSortRules";
 export default {
   name: "Rules",
   components: { RulesCodeEditorView },
-  mixins: [AlertMixinVue, FormMixinVue, SortRulesMixin],
+  mixins: [AlertMixinVue],
   props: {
     current_user_id: {
       type: Number,
@@ -60,7 +59,9 @@ export default {
   setup(props) {
     const effective_permissions = props.component?.effective_permissions || null;
     provide("effectivePermissions", effective_permissions);
-    return { effective_permissions };
+    // setup-before-data: data() reads this.compareRules for the initial sort
+    const { compareRules } = useSortRules();
+    return { effective_permissions, compareRules };
   },
   data: function () {
     return {

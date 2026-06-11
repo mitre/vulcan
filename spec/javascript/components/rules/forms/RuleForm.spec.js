@@ -18,12 +18,15 @@
  * R6: Check section rendered when check_fields prop provided
  * R7: Status text reflects satisfied_by
  */
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import { createPinia } from "pinia";
 import { createTestRouter } from "@test/support/routerTestHelper";
 import RuleForm from "@/components/rules/forms/RuleForm.vue";
+
+vi.mock("@/composables/useFormFeedback", { spy: true });
+import { useFormFeedback } from "@/composables/useFormFeedback";
 
 // Lightweight stub — exposes disabled state via native <textarea>
 const MarkdownTextareaStub = {
@@ -513,6 +516,23 @@ describe("RuleForm", () => {
       await wrapper.vm.$nextTick();
       expect(wrapper.emitted("open-composer")).toBeTruthy();
       expect(wrapper.emitted("open-composer")[0]).toEqual(["title"]);
+    });
+  });
+
+  // ── composable contracts ────────────────────────────────────────────
+  // REQUIREMENT: input state classes derive via useFormFeedback — no
+  // FormFeedbackMixin remains. The validFeedback/invalidFeedback props
+  // stay declared on the component (prop API parity with the mixin).
+  describe("composable contracts", () => {
+    it("derives input state classes via useFormFeedback", () => {
+      wrapper = createWrapper({
+        invalidFeedback: { title: "Title is too long" },
+        validFeedback: { fixtext: "Fix text looks good" },
+      });
+      expect(useFormFeedback).toHaveBeenCalled();
+      expect(wrapper.vm.inputClass("title")).toBe("is-invalid");
+      expect(wrapper.vm.inputClass("fixtext")).toBe("is-valid");
+      expect(wrapper.vm.inputClass("vendor_comments")).toBe("");
     });
   });
 });

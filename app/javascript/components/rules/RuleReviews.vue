@@ -85,10 +85,8 @@
 </template>
 
 <script>
-import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import FormMixinVue from "../../mixins/FormMixin.vue";
 import { useCommentReactions } from "../../composables/useCommentReactions";
+import { useDateFormat } from "../../composables/useDateFormat";
 import { ACTION_DESCRIPTIONS } from "../../constants/terminology";
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
 import SectionLabel from "../shared/SectionLabel.vue";
@@ -109,7 +107,6 @@ export default {
     ReactionButtons,
     UserBadge,
   },
-  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
   props: {
     effectivePermissions: {
       type: String,
@@ -140,7 +137,8 @@ export default {
   },
   setup() {
     const { toggle: toggleReactionApi } = useCommentReactions();
-    return { toggleReactionApi };
+    const { friendlyDateTime } = useDateFormat();
+    return { toggleReactionApi, friendlyDateTime };
   },
   data() {
     return {

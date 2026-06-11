@@ -462,7 +462,7 @@
 
 <script>
 import { toRef } from "vue";
-import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
+import { useFormFeedback } from "../../../composables/useFormFeedback";
 import { useCommentIconHost } from "../../../composables/useCommentIconHost";
 import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
 import RuleFormGroup from "../../shared/RuleFormGroup.vue";
@@ -482,7 +482,6 @@ export default {
     RuleFormGroup,
     SatisfiedByIndicator,
   },
-  mixins: [FormFeedbackMixinVue],
   props: {
     rule: {
       type: Object,
@@ -549,13 +548,24 @@ export default {
         };
       },
     },
+    validFeedback: {
+      type: Object,
+      required: false,
+      default: () => ({}),
+    },
+    invalidFeedback: {
+      type: Object,
+      required: false,
+      default: () => ({}),
+    },
   },
   setup(props, { emit }) {
     const { commentIconListeners, commentIconProps } = useCommentIconHost({
       rule: toRef(props, "rule"),
       emit,
     });
-    return { commentIconListeners, commentIconProps };
+    const { inputClass } = useFormFeedback(props);
+    return { commentIconListeners, commentIconProps, inputClass };
   },
   data: function () {
     return {

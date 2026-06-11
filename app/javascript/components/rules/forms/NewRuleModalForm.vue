@@ -10,12 +10,10 @@
   </div>
 </template>
 <script>
-import FormMixinVue from "../../../mixins/FormMixin.vue";
 import { useRuleSelectionStore } from "../../../stores/ruleSelection";
 
 export default {
   name: "NewRuleModalForm",
-  mixins: [FormMixinVue],
   props: {
     idPrefix: {
       type: String,

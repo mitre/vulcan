@@ -10,7 +10,6 @@
       <ControlsCommandBar
         :component="component"
         :selected-rule="selectedRule"
-        :effective-permissions="effectivePermissions"
         :active-panel="activePanel"
         :read-only="false"
         :show-filter-toggle="true"
@@ -235,15 +234,14 @@ import ControlsCommandBar from "../shared/ControlsCommandBar.vue";
 import ControlsPageLayout from "./ControlsPageLayout.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
 import CommentComposerModal from "../components/CommentComposerModal.vue";
-import ReplyComposerMixin from "../../mixins/ReplyComposerMixin.vue";
 import { useRuleFilters, useSidebar } from "../../composables";
 import { useRuleNavigation } from "../../composables/useRuleNavigation";
+import { usePermissions } from "../../composables/usePermissions";
+import { useReplyComposer } from "../../composables/useReplyComposer";
 import { useRuleSelectionStore } from "../../stores/ruleSelection";
 import { getFirstVisibleRule } from "../../utils/ruleSelectionUtils";
 import { useRuleAutosave } from "../../composables/useRuleAutosave";
-import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
 import { MESSAGE_LABELS } from "../../constants/terminology";
 import { scrollToField } from "../../utils/searchHighlight";
@@ -265,7 +263,7 @@ export default {
     ControlsSidepanels,
     CommentComposerModal,
   },
-  mixins: [DateFormatMixinVue, AlertMixinVue, RoleComparisonMixin, ReplyComposerMixin],
+  mixins: [AlertMixinVue],
   provide() {
     return {
       getCommentPhase: () => this.component.comment_phase || "open",
@@ -274,10 +272,6 @@ export default {
     };
   },
   props: {
-    effectivePermissions: {
-      type: String,
-      default: null,
-    },
     currentUserId: {
       type: Number,
       required: true,
@@ -307,6 +301,24 @@ export default {
     const rulesRef = toRef(props, "rules");
     const componentId = props.component.id;
     const ruleStore = useRuleSelectionStore();
+
+    // Permissions arrive via provide/inject — Rules.vue (page root) provides;
+    // the raw string is still passed down to prop-based children (RuleEditor,
+    // RuleReviewModal) until their own migration.
+    const { effectivePermissions } = usePermissions();
+
+    // Bridge: useReplyComposer's onOpen/afterPosted callbacks need the
+    // options-API instance ($bvModal.show, $root refresh emits), which
+    // setup() cannot reach in Vue 2.7 without getCurrentInstance
+    // (anti-pattern). The bridge object is filled in created() — late
+    // binding, same contract. Pattern established in ComponentComments
+    // and ProjectComponent.
+    const composerBridge = { onOpen: null, afterPosted: null };
+    const composer = useReplyComposer({
+      onOpen: () => composerBridge.onOpen && composerBridge.onOpen(),
+      afterPosted: (parentReviewId, snapshot) =>
+        composerBridge.afterPosted && composerBridge.afterPosted(parentReviewId, snapshot),
+    });
 
     const selectedRuleId = computed(() => ruleStore.selectedRuleId);
     const selectedRule = computed(() => {
@@ -357,6 +369,9 @@ export default {
     }
 
     return {
+      effectivePermissions,
+      composerBridge,
+      ...composer,
       ruleStore,
       selectedRuleId,
       selectedRule,
@@ -419,6 +434,11 @@ export default {
     isViewerOnly() {
       return this.effectivePermissions === "viewer";
     },
+  },
+  created() {
+    this.composerBridge.onOpen = () => this.$bvModal.show("comment-composer-modal");
+    this.composerBridge.afterPosted = (parentReviewId, snapshot) =>
+      this.afterComposerPosted(parentReviewId, snapshot);
   },
   mounted() {
     this.ruleStore.init(this.$router, this.component.id);

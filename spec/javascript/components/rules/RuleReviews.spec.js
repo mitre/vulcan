@@ -6,10 +6,16 @@ import RuleReviews from "@/components/rules/RuleReviews.vue";
 vi.mock("@/api/baseApi", () => ({
   default: {
     get: vi.fn(() => Promise.resolve({ data: { rows: [] } })),
-    post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
     defaults: { headers: { common: {} } },
   },
 }));
+
+vi.mock("@/composables/useDateFormat", { spy: true });
+import { useDateFormat } from "@/composables/useDateFormat";
 
 /**
  * REQUIREMENTS:
@@ -135,6 +141,34 @@ describe("RuleReviews", () => {
     it("starts with numShownReviews=2 (pre-existing pagination)", () => {
       const w = mountWith(reviewsWithLifecycle);
       expect(w.vm.numShownReviews).toBe(2);
+    });
+  });
+
+  // ── composable contracts ────────────────────────────────────────────
+  // REQUIREMENT: timestamps render via useDateFormat — no DateFormatMixin
+  // remains (AlertMixin + FormMixin were verified dead and removed).
+  // Children are stubbed so the spy call is attributable to RuleReviews
+  // itself, not to CommentThread/UserBadge rendering their own dates.
+  describe("composable contracts", () => {
+    it("renders comment timestamps via useDateFormat", () => {
+      vi.clearAllMocks();
+      const w = mount(RuleReviews, {
+        localVue,
+        propsData: { rule: { reviews: reviewsWithLifecycle } },
+        stubs: {
+          CommentThread: true,
+          UserBadge: true,
+          ReactionButtons: true,
+          TriageStatusBadge: true,
+          SectionLabel: true,
+          FilterDropdown: true,
+        },
+      });
+      expect(useDateFormat).toHaveBeenCalled();
+      // moment "lll" renders the month name, never the raw ISO string —
+      // line comes from RuleReviews' own template (children are stubs)
+      expect(w.text()).toContain("Apr 27, 2026");
+      expect(w.text()).not.toContain("2026-04-27T10:00:00Z");
     });
   });
 });

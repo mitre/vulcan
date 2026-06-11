@@ -1,7 +1,10 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import RuleCommandBar from "@/components/rules/RuleCommandBar.vue";
+
+vi.mock("@/composables/useDateFormat", { spy: true });
+import { useDateFormat } from "@/composables/useDateFormat";
 
 /**
  * RuleCommandBar Component Tests
@@ -107,6 +110,21 @@ describe("RuleCommandBar", () => {
 
   // Panel buttons moved to RuleActionsToolbar.spec.js
   // (Related, Satisfies, History, Reviews are now with rule actions)
+
+  // ── composable contracts ────────────────────────────────────────────
+  // REQUIREMENT: the updated-at timestamp renders via useDateFormat —
+  // no DateFormatMixin remains.
+  describe("composable contracts", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("renders the updated timestamp via useDateFormat", () => {
+      wrapper = createWrapper();
+      expect(useDateFormat).toHaveBeenCalled();
+      // moment "lll" renders the month name, never the raw ISO string
+      expect(wrapper.text()).toContain("Jan 15, 2024");
+      expect(wrapper.text()).not.toContain("2024-01-15T10:00:00Z");
+    });
+  });
 
   describe("computed properties", () => {
     it("computes lastEditor from histories", () => {

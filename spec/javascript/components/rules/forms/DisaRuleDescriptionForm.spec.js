@@ -1,7 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import DisaRuleDescriptionForm from "@/components/rules/forms/DisaRuleDescriptionForm.vue";
+
+vi.mock("@/composables/useFormFeedback", { spy: true });
+import { useFormFeedback } from "@/composables/useFormFeedback";
 
 describe("DisaRuleDescriptionForm", () => {
   const createWrapper = (propsOverrides = {}) => {
@@ -358,6 +361,23 @@ describe("DisaRuleDescriptionForm", () => {
         'textarea, [id^="ruleEditor-disa_rule_description-severity_override_guidance-"]',
       );
       expect(textarea.exists()).toBe(true);
+    });
+  });
+
+  // ── composable contracts ────────────────────────────────────────────
+  // REQUIREMENT: input state classes derive via useFormFeedback — no
+  // FormFeedbackMixin remains. The validFeedback/invalidFeedback props
+  // stay declared on the component (prop API parity with the mixin).
+  describe("composable contracts", () => {
+    it("derives input state classes via useFormFeedback", () => {
+      const wrapper = createWrapper({
+        invalidFeedback: { vuln_discussion: "Discussion is required" },
+        validFeedback: { mitigations: "Mitigations look good" },
+      });
+      expect(useFormFeedback).toHaveBeenCalled();
+      expect(wrapper.vm.inputClass("vuln_discussion")).toBe("is-invalid");
+      expect(wrapper.vm.inputClass("mitigations")).toBe("is-valid");
+      expect(wrapper.vm.inputClass("poam")).toBe("");
     });
   });
 });

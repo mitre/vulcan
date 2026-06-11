@@ -18,6 +18,11 @@ vi.mock("@/api/rulesApi", () => ({
   revertRule: vi.fn(() => Promise.resolve({ data: { toast: "Reverted" } })),
 }));
 
+vi.mock("@/composables/useDateFormat", { spy: true });
+vi.mock("@/composables/useHumanizedTypes", { spy: true });
+import { useDateFormat } from "@/composables/useDateFormat";
+import { useHumanizedTypes } from "@/composables/useHumanizedTypes";
+
 /**
  * RuleRevertModal — Two-phase revert flow (C4)
  *
@@ -173,6 +178,32 @@ describe("RuleRevertModal", () => {
       await wrapper.vm.revertSuccess({ data: { toast: "Reverted" } });
 
       expect(wrapper.vm.showDetailsModal).toBe(false);
+    });
+  });
+
+  // ── composable contracts ────────────────────────────────────────────
+  // REQUIREMENTS: the auditable type humanizes via useHumanizedTypes and
+  // the change timestamp renders via useDateFormat — no DateFormatMixin
+  // or HumanizedTypesMixIn remains (AlertMixin stays until the toast
+  // migration).
+  describe("composable contracts", () => {
+    it("humanizes the auditable type via useHumanizedTypes", () => {
+      wrapper = createWrapper({
+        history: { ...defaultHistory, auditable_type: "DisaRuleDescription" },
+      });
+      expect(useHumanizedTypes).toHaveBeenCalled();
+      // mapped label, never the raw class name
+      expect(wrapper.text()).toContain("Rule Description was Updated...");
+      expect(wrapper.text()).not.toContain("DisaRuleDescription");
+    });
+
+    it("renders the change timestamp via useDateFormat", () => {
+      wrapper = createWrapper();
+      expect(useDateFormat).toHaveBeenCalled();
+      // BModal portals its body out of wrapper in jsdom — assert the bound
+      // formatter directly. moment "lll" renders the month name, never the
+      // raw ISO string.
+      expect(wrapper.vm.friendlyDateTime(defaultHistory.created_at)).toContain("Mar 30, 2026");
     });
   });
 
