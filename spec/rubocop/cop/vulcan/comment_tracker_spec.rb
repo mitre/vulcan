@@ -82,10 +82,50 @@ RSpec.describe RuboCop::Cop::Vulcan::CommentTracker, :config do
     RUBY
   end
 
+  it 'registers offense for short board-prefix reference and strips it' do
+    expect_offense(<<~RUBY)
+      # v2-abc.12: derived from the single source of truth
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{msg}
+    RUBY
+
+    expect_correction(<<~RUBY)
+      # derived from the single source of truth
+    RUBY
+  end
+
+  it 'strips trailing short board-prefix reference after period' do
+    expect_offense(<<~RUBY)
+      # the operation is retried. v2-foo.9.
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{msg}
+    RUBY
+
+    expect_correction(<<~RUBY)
+      # the operation is retried.
+    RUBY
+  end
+
+  it 'strips parenthesized short board-prefix reference with letters-only id' do
+    expect_offense(<<~RUBY)
+      # closes a lock-bypass class (v2-xyz).
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{msg}
+    RUBY
+
+    expect_correction(<<~RUBY)
+      # closes a lock-bypass class.
+    RUBY
+  end
+
   it 'does not flag normal comments' do
     expect_no_offenses(<<~RUBY)
       # This is a normal comment
       x = 1 # another normal comment
+    RUBY
+  end
+
+  it 'does not flag version strings without a card id' do
+    expect_no_offenses(<<~RUBY)
+      # manifest format v2 carries microsecond precision
+      # works on Bootstrap v4.6 and v5
     RUBY
   end
 

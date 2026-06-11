@@ -24,8 +24,20 @@
 //------------------------------------------------------------------------------
 
 /**
+ * Tracker reference source pattern — legacy long-form board prefixes
+ * (vulcan-clean-, vulcan-v2.x-, vulcan-v3.x-) AND the current
+ * short-form board prefix (v2-, v3-), followed by a card identifier.
+ * ONE source string so the matcher and the three strip patterns below
+ * cannot drift. Update here when the board prefix changes or when
+ * adopting this rule in other projects.
+ *
+ * @type {string}
+ */
+const TRACKER_SRC =
+  "\\b(?:vulcan-(?:v3\\.x|v2\\.x|clean)|v[23])-[\\w.]+(?:\\s*§[\\d.]+)?";
+
+/**
  * Matches internal tracker prefixes followed by a card identifier.
- * Add new prefixes here when adopting this rule in other projects.
  *
  * @example
  * // All matched:
@@ -33,11 +45,11 @@
  * // vulcan-clean-abc123
  * // vulcan-v2.x-def
  * // vulcan-v3.x-480.6 §18.4
+ * // v2-abc.12
  *
  * @type {RegExp}
  */
-const TRACKER_RE =
-  /vulcan-(?:v3\.x|v2\.x|clean)-[\w.]+(?:\s*§[\d.]+)?/g;
+const TRACKER_RE = new RegExp(TRACKER_SRC, "g");
 
 //------------------------------------------------------------------------------
 // Helpers
@@ -53,18 +65,9 @@ const TRACKER_RE =
  */
 function stripTracker(text) {
   return text
-    .replace(
-      /\s*\(vulcan-(?:v3\.x|v2\.x|clean)-[\w.]+(?:\s*§[\d.]+)?\)/g,
-      ""
-    )
-    .replace(
-      /vulcan-(?:v3\.x|v2\.x|clean)-[\w.]+(?:\s*§[\d.]+)?[,:]\s*/g,
-      ""
-    )
-    .replace(
-      /\s*vulcan-(?:v3\.x|v2\.x|clean)-[\w.]+(?:\s*§[\d.]+)?\.?/g,
-      ""
-    )
+    .replace(new RegExp("\\s*\\(" + TRACKER_SRC + "\\)", "g"), "")
+    .replace(new RegExp(TRACKER_SRC + "[,:]\\s*", "g"), "")
+    .replace(new RegExp("\\s*" + TRACKER_SRC + "\\.?", "g"), "")
     .replace(/  +/g, " ")
     .trimEnd();
 }

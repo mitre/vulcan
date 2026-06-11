@@ -63,8 +63,11 @@ module RuboCop
         MSG = 'Do not reference tracker IDs in source comments.'
 
         # Matches internal tracker prefixes followed by a card identifier.
-        # Add new prefixes here when adopting this cop in other projects.
-        TRACKER_RE = /vulcan-(?:v3\.x|v2\.x|clean)-[\w.]+(?:\s*§[\d.]+)?/
+        # Covers the legacy long-form board prefixes (vulcan-clean-,
+        # vulcan-v2.x-, vulcan-v3.x-) AND the current short-form board
+        # prefix (v2-, v3-). Add new prefixes here when the board prefix
+        # changes or when adopting this cop in other projects.
+        TRACKER_RE = /\b(?:vulcan-(?:v3\.x|v2\.x|clean)|v[23])-[\w.]+(?:\s*§[\d.]+)?/
 
         # Called once per file before AST walking. Comments are not AST
         # nodes, so we iterate +processed_source.comments+ directly —

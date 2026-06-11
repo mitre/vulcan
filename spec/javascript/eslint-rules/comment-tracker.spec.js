@@ -17,6 +17,8 @@ ruleTester.run("comment-tracker", rule, {
     "const x = 1; // another normal comment",
     "// vulcan_audited tracks changes",
     "// See vulcan.default.yml for settings",
+    "// manifest format v2 carries microsecond precision",
+    "// works on Bootstrap v4.6 and v5",
   ],
 
   invalid: [
@@ -48,6 +50,22 @@ ruleTester.run("comment-tracker", rule, {
     {
       code: "// vulcan-v3.x-480.7",
       output: "",
+      errors: [{ messageId: "trackerRef" }],
+    },
+    // Short-form board prefix (current board) — synthetic ids
+    {
+      code: "// v2-abc.12: derived from the single source of truth",
+      output: "// derived from the single source of truth",
+      errors: [{ messageId: "trackerRef" }],
+    },
+    {
+      code: "// the operation is retried. v2-foo.9.",
+      output: "// the operation is retried.",
+      errors: [{ messageId: "trackerRef" }],
+    },
+    {
+      code: "// closes a lock-bypass class (v2-xyz).",
+      output: "// closes a lock-bypass class.",
       errors: [{ messageId: "trackerRef" }],
     },
   ],
