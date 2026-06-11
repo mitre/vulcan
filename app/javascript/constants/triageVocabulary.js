@@ -99,12 +99,45 @@ export const CLOSED_REASON_LABELS = Object.freeze({
   finalized: "Finalized",
 });
 
+// Help copy for each phase/reason state. The settings page renders its radio
+// options AND its explanatory bullets from these constants — one source of
+// truth, so the two lists cannot drift when a phase or reason changes.
+export const COMMENT_PHASE_HELP = Object.freeze({
+  open: "commenters can post. End date is optional — when set, it surfaces a banner with a countdown.",
+  closed: "commenting is paused without commitment to a workflow stage.",
+});
+
+export const CLOSED_REASON_HELP = Object.freeze({
+  adjudicating: "window is closed but triage continues.",
+  finalized: "disposition published — the component is frozen for writes.",
+});
+
 // Render "Open" / "Closed" / "Closed (Adjudicating)" / "Closed (Finalized)".
 export function commentPhaseStatusText(phase, reason) {
   const phaseLabel = COMMENT_PHASE_LABELS[phase] || phase;
   if (phase !== "closed" || !reason) return phaseLabel;
   const reasonLabel = CLOSED_REASON_LABELS[reason] || reason;
   return `${phaseLabel} (${reasonLabel})`;
+}
+
+// One help item per selectable state: Open, Closed (each reason), and the
+// reasonless Closed fallback. Labels compose via commentPhaseStatusText so
+// they always match the inline status badges; `suffix` carries unbolded
+// qualifier text.
+export function commentPhaseHelpItems() {
+  return [
+    { label: COMMENT_PHASE_LABELS.open, suffix: "", description: COMMENT_PHASE_HELP.open },
+    ...Object.keys(CLOSED_REASON_LABELS).map((reason) => ({
+      label: commentPhaseStatusText("closed", reason),
+      suffix: "",
+      description: CLOSED_REASON_HELP[reason],
+    })),
+    {
+      label: COMMENT_PHASE_LABELS.closed,
+      suffix: " (no reason)",
+      description: COMMENT_PHASE_HELP.closed,
+    },
+  ];
 }
 
 // Tooltip copy for a disabled comment-related affordance, parameterized

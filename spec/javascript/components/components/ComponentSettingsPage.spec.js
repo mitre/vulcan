@@ -11,6 +11,7 @@ import { localVue } from "@test/testHelper";
 import ComponentSettingsPage from "@/components/components/ComponentSettingsPage.vue";
 import { updateComponent } from "@/api/componentsApi";
 import { searchUsers } from "@/api/usersApi";
+import { commentPhaseHelpItems } from "@/constants/triageVocabulary";
 
 vi.mock("@/api/baseApi", () => ({
   default: {
@@ -151,6 +152,40 @@ describe("ComponentSettingsPage", () => {
       wrapper = createWrapper({ comment_phase: "closed", closed_reason: "adjudicating" });
       wrapper.vm.onPhaseChange("open");
       expect(wrapper.vm.form.closed_reason).toBeNull();
+    });
+  });
+
+  // ── comment-period help card ────────────────────────────────────────
+  // REQUIREMENT: the help card explains every selectable phase/reason
+  // state, and its bullets come from the SAME vocabulary source as the
+  // radio options so the two lists can never drift apart. The exact copy
+  // is pinned here as the canonical rendering.
+  describe("comment-period help card", () => {
+    const bulletTexts = () =>
+      wrapper.findAll(".alert-info li").wrappers.map((li) => li.text().replace(/\s+/g, " ").trim());
+
+    it("renders one bullet per phase/reason state with the canonical copy", () => {
+      wrapper = createWrapper();
+      expect(bulletTexts()).toEqual([
+        "Open: commenters can post. End date is optional — when set, it surfaces a banner with a countdown.",
+        "Closed (Adjudicating): window is closed but triage continues.",
+        "Closed (Finalized): disposition published — the component is frozen for writes.",
+        "Closed (no reason): commenting is paused without commitment to a workflow stage.",
+      ]);
+    });
+
+    it("bolds the state label in each bullet", () => {
+      wrapper = createWrapper();
+      const strongs = wrapper.findAll(".alert-info li strong").wrappers.map((s) => s.text());
+      expect(strongs).toEqual(["Open", "Closed (Adjudicating)", "Closed (Finalized)", "Closed"]);
+    });
+
+    it("derives the bullets 1:1 from commentPhaseHelpItems (drift guard)", () => {
+      wrapper = createWrapper();
+      const expected = commentPhaseHelpItems().map((item) =>
+        `${item.label}${item.suffix}: ${item.description}`.replace(/\s+/g, " ").trim(),
+      );
+      expect(bulletTexts()).toEqual(expected);
     });
   });
 

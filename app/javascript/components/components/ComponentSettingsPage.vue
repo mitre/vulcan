@@ -79,22 +79,13 @@
                 </b-form-group>
               </b-col>
             </b-form-row>
+            <!-- Bullets derive from the same triageVocabulary constants as the
+                 radio options above — the two lists cannot drift apart. -->
             <b-alert show variant="info" class="mb-0 small">
               <ul class="mb-0 pl-3">
-                <li>
-                  <strong>Open</strong>: commenters can post. End date is optional — when set, it
-                  surfaces a banner with a countdown.
-                </li>
-                <li>
-                  <strong>Closed (Adjudicating)</strong>: window is closed but triage continues.
-                </li>
-                <li>
-                  <strong>Closed (Finalized)</strong>: disposition published — the component is
-                  frozen for writes.
-                </li>
-                <li>
-                  <strong>Closed</strong> (no reason): commenting is paused without commitment to a
-                  workflow stage.
+                <li v-for="item in phaseHelpItems" :key="item.label + item.suffix">
+                  <strong>{{ item.label }}</strong
+                  >{{ item.suffix }}: {{ item.description }}
                 </li>
               </ul>
             </b-alert>
@@ -229,8 +220,12 @@ import { searchUsers } from "../../api/usersApi";
 import debounce from "lodash/debounce";
 import VueMultiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import { COMMENT_PHASE_LABELS, CLOSED_REASON_LABELS } from "../../constants/triageVocabulary";
+import { useToast } from "../../composables/useToast";
+import {
+  COMMENT_PHASE_LABELS,
+  CLOSED_REASON_LABELS,
+  commentPhaseHelpItems,
+} from "../../constants/triageVocabulary";
 
 const PAYLOAD_KEYS = [
   "name",
@@ -258,9 +253,6 @@ function isoToDate(value) {
 export default {
   name: "ComponentSettingsPage",
   components: { VueMultiselect },
-  // AlertMixin migrates with the toast architecture (useToast). FormMixin was a dead import —
-  // authenticityToken was never consumed; CSRF is handled by baseApi hooks.
-  mixins: [AlertMixinVue],
   props: {
     initialComponentState: { type: Object, required: true },
     project: { type: Object, required: true },
@@ -269,7 +261,8 @@ export default {
   setup(props) {
     const effectivePermissions = props.initialComponentState?.effective_permissions || null;
     provide("effectivePermissions", effectivePermissions);
-    return { effectivePermissions };
+    const { alertOrNotifyResponse } = useToast();
+    return { effectivePermissions, alertOrNotifyResponse };
   },
   data() {
     return {
@@ -298,6 +291,9 @@ export default {
         { value: null, text: "(none — closed without commitment to a stage)" },
         ...Object.entries(CLOSED_REASON_LABELS).map(([value, text]) => ({ value, text })),
       ];
+    },
+    phaseHelpItems() {
+      return commentPhaseHelpItems();
     },
   },
   methods: {
