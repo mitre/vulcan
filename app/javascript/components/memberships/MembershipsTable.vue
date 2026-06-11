@@ -155,8 +155,6 @@
 
 <script>
 import { updateMembership, deleteMembership, deleteAccessRequest } from "../../api/membershipsApi";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import NewMembership from "./NewMembership.vue";
 import UserBadge from "../shared/UserBadge.vue";
@@ -165,7 +163,10 @@ import { EVENTS, dispatch } from "../../utils/notificationEvents";
 export default {
   name: "MembershipsTable",
   components: { NewMembership, UserBadge },
-  mixins: [FormMixinVue, RoleComparisonMixin, AlertMixinVue],
+  // AlertMixin migrates in 0re.9 (useToast). FormMixin and RoleComparisonMixin
+  // were dead imports — authenticityToken/role_gte_to consumed nowhere here
+  // (editing is gated by the `editable` prop from the parent).
+  mixins: [AlertMixinVue],
   props: {
     memberships: {
       type: Array,

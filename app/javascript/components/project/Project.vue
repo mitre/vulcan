@@ -43,7 +43,6 @@
               <b-col v-for="component in sortedRegularComponents()" :key="component.id">
                 <ComponentCard
                   :component="component"
-                  :effective-permissions="effective_permissions"
                   @deleteComponent="deleteComponent($event)"
                   @projectUpdated="refreshProject"
                 />
@@ -59,7 +58,6 @@
               <b-col v-for="component in sortedOverlayComponents()" :key="component.id">
                 <ComponentCard
                   :component="component"
-                  :effective-permissions="effective_permissions"
                   @deleteComponent="deleteComponent($event)"
                   @projectUpdated="refreshProject"
                 />

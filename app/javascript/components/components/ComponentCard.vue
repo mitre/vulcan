@@ -110,7 +110,7 @@
             class="component-card-admin-actions d-flex align-items-center flex-wrap"
           >
             <b-button
-              v-if="effectivePermissions == 'admin'"
+              v-if="canAdmin"
               v-b-tooltip.hover
               :href="`/components/${component.id}/settings`"
               variant="outline-secondary"
@@ -122,7 +122,7 @@
             </b-button>
 
             <LockControlsModal
-              v-if="role_gte_to(effectivePermissions, 'reviewer')"
+              v-if="canReview"
               :component_id="component.id"
               @projectUpdated="$emit('projectUpdated')"
             >
@@ -139,7 +139,7 @@
             </LockControlsModal>
 
             <NewComponentModal
-              v-if="effectivePermissions == 'admin'"
+              v-if="canAdmin"
               :component_to_duplicate="component.id"
               :project_id="component.project_id"
               :predetermined_prefix="component.prefix"
@@ -162,7 +162,7 @@
             </NewComponentModal>
 
             <span
-              v-if="effectivePermissions == 'admin' && !component.released"
+              v-if="canAdmin && !component.released"
               v-b-tooltip.hover
               :title="releaseComponentTooltip"
             >
@@ -170,14 +170,14 @@
                 variant="outline-success"
                 size="sm"
                 :disabled="!component.releasable"
-                @click="confirmComponentRelease"
+                @click="requestRelease(component)"
               >
                 <b-icon icon="patch-check" font-scale="0.9" /> Release
               </b-button>
             </span>
 
             <b-button
-              v-if="effectivePermissions == 'admin'"
+              v-if="canAdmin"
               v-b-tooltip.hover
               variant="outline-danger"
               size="sm"
@@ -189,15 +189,30 @@
           </div>
         </div>
       </div>
+
+      <!-- Release confirmation (declarative — useConfirmRelease owns the state) -->
+      <b-modal
+        v-model="showModal"
+        :title="releaseModal.title"
+        :ok-title="releaseModal.okTitle"
+        :ok-variant="releaseModal.okVariant"
+        :cancel-title="releaseModal.cancelTitle"
+        :busy="isReleasing"
+        size="md"
+        centered
+        @ok="onConfirmRelease"
+        @cancel="cancel"
+      >
+        <p>{{ releaseModal.body }}</p>
+      </b-modal>
     </b-card>
   </b-overlay>
 </template>
 
 <script>
-import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import ConfirmComponentReleaseMixin from "../../mixins/ConfirmComponentReleaseMixin.vue";
-import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
+import { usePermissions } from "../../composables/usePermissions";
+import { useConfirmRelease, RELEASE_CONFIRM_COPY } from "../../composables/useConfirmRelease";
 import LockControlsModal from "../components/LockControlsModal.vue";
 import NewComponentModal from "../components/NewComponentModal.vue";
 import UserBadge from "../shared/UserBadge.vue";
@@ -210,21 +225,36 @@ export default {
     NewComponentModal,
     UserBadge,
   },
-  mixins: [AlertMixinVue, FormMixinVue, ConfirmComponentReleaseMixin, RoleComparisonMixin],
+  // AlertMixin migrates in 0re.9 (useToast). FormMixin was a dead import —
+  // authenticityToken was never consumed; CSRF is handled by baseApi hooks.
+  mixins: [AlertMixinVue],
   props: {
     // Indicate if the card is for "read-only" or can take actions against it
     actionable: {
       type: Boolean,
       default: true,
     },
-    effectivePermissions: {
-      type: String,
-      required: false,
-    },
     component: {
       type: Object,
       required: true,
     },
+  },
+  setup() {
+    // Permissions are provided by the page root (Project.vue) — see usePermissions.
+    const { canAdmin, canReview } = usePermissions();
+    // Declarative release confirmation (replaces the imperative
+    // $bvModal.msgBoxConfirm mixin) — the modal renders in this template.
+    const { showModal, isReleasing, requestRelease, cancel, confirm } = useConfirmRelease();
+    return {
+      canAdmin,
+      canReview,
+      showModal,
+      isReleasing,
+      requestRelease,
+      cancel,
+      confirmRelease: confirm,
+      releaseModal: RELEASE_CONFIRM_COPY,
+    };
   },
   data: function () {
     return {
@@ -247,6 +277,18 @@ export default {
   },
   methods: {
     ruleCountLabel,
+    // Confirm handler for the release modal. preventDefault keeps the modal
+    // open so the composable controls closing (stays open on error for retry).
+    async onConfirmRelease(bvModalEvt) {
+      if (bvModalEvt && bvModalEvt.preventDefault) bvModalEvt.preventDefault();
+      const { success, response, error } = await this.confirmRelease();
+      if (success) {
+        this.alertOrNotifyResponse(response);
+        this.$emit("projectUpdated");
+      } else if (error) {
+        this.alertOrNotifyResponse(error);
+      }
+    },
     confirmDelete() {
       this.isDeleting = true;
       this.$emit("deleteComponent", this.component.id);

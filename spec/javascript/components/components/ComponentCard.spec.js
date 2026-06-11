@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import ComponentCard from "@/components/components/ComponentCard.vue";
+import { patchComponent } from "@/api/componentsApi";
 
 vi.mock("@/api/baseApi", () => ({
   default: {
@@ -12,6 +13,11 @@ vi.mock("@/api/baseApi", () => ({
     delete: vi.fn(),
     defaults: { headers: { common: {} } },
   },
+}));
+
+// useConfirmRelease calls patchComponent directly
+vi.mock("@/api/componentsApi", () => ({
+  patchComponent: vi.fn(() => Promise.resolve({ data: {} })),
 }));
 
 /**
@@ -68,12 +74,14 @@ describe("ComponentCard", () => {
     project_id: 5,
   };
 
-  const createWrapper = (props = {}) => {
+  // Permissions come from the page-root provide (usePermissions inject),
+  // matching production: Project.vue provides "effectivePermissions".
+  const createWrapper = (props = {}, permissions = "admin") => {
     return mount(ComponentCard, {
       localVue,
+      provide: { effectivePermissions: permissions },
       propsData: {
         component: defaultComponent,
-        effectivePermissions: "admin",
         ...props,
       },
       stubs: {
@@ -87,6 +95,37 @@ describe("ComponentCard", () => {
     if (wrapper) {
       wrapper.destroy();
     }
+  });
+
+  // REQUIREMENT: releasing a component is confirmed via the declarative
+  // useConfirmRelease dialog (the imperative $bvModal.msgBoxConfirm mixin is
+  // gone). Confirm releases via PATCH {released: true} and notifies the
+  // parent; the dialog opens only for releasable components.
+  describe("release confirmation flow (useConfirmRelease)", () => {
+    it("opens the declarative confirm dialog when Release is clicked", async () => {
+      wrapper = createWrapper();
+      const releaseBtn = wrapper
+        .findAll("button")
+        .wrappers.find((b) => b.text().includes("Release"));
+      await releaseBtn.trigger("click");
+      expect(wrapper.vm.showModal).toBe(true);
+    });
+
+    it("does not open the dialog for a non-releasable component", () => {
+      wrapper = createWrapper({
+        component: { ...defaultComponent, releasable: false },
+      });
+      wrapper.vm.requestRelease(wrapper.vm.component);
+      expect(wrapper.vm.showModal).toBe(false);
+    });
+
+    it("releases on confirm and emits projectUpdated", async () => {
+      wrapper = createWrapper();
+      wrapper.vm.requestRelease(wrapper.vm.component);
+      await wrapper.vm.onConfirmRelease({ preventDefault: vi.fn() });
+      expect(patchComponent).toHaveBeenCalledWith(1, { released: true });
+      expect(wrapper.emitted("projectUpdated")).toBeTruthy();
+    });
   });
 
   // REQUIREMENT (v2-8lb): the footer toolbar degrades cleanly at narrow card
@@ -291,36 +330,40 @@ describe("ComponentCard", () => {
   // ==========================================
   describe("admin action buttons with labels", () => {
     it("shows Lock button with icon and text for reviewer+", () => {
-      wrapper = createWrapper({ effectivePermissions: "reviewer" });
+      wrapper = createWrapper({}, "reviewer");
       expect(wrapper.findComponent({ name: "LockControlsModal" }).exists()).toBe(true);
       // Button should have text label, not just tooltip
       expect(wrapper.text()).toContain("Lock");
     });
 
     it("shows Duplicate button with icon and text for admin", () => {
-      wrapper = createWrapper({ effectivePermissions: "admin" });
+      wrapper = createWrapper({}, "admin");
       expect(wrapper.findAllComponents({ name: "NewComponentModal" }).length).toBeGreaterThan(0);
       expect(wrapper.text()).toContain("Duplicate");
     });
 
     it("shows Release button with icon and text for admin when releasable", () => {
-      wrapper = createWrapper({
-        effectivePermissions: "admin",
-        component: { ...defaultComponent, releasable: true, released: false },
-      });
+      wrapper = createWrapper(
+        {
+          component: { ...defaultComponent, releasable: true, released: false },
+        },
+        "admin",
+      );
       expect(wrapper.text()).toContain("Release");
     });
 
     it("shows Delete button with icon and text for admin", () => {
-      wrapper = createWrapper({ effectivePermissions: "admin" });
+      wrapper = createWrapper({}, "admin");
       expect(wrapper.text()).toContain("Delete");
     });
 
     it("disables Release button when not releasable", () => {
-      wrapper = createWrapper({
-        effectivePermissions: "admin",
-        component: { ...defaultComponent, releasable: false },
-      });
+      wrapper = createWrapper(
+        {
+          component: { ...defaultComponent, releasable: false },
+        },
+        "admin",
+      );
       const releaseBtn = wrapper
         .findAll("button")
         .wrappers.find((b) => b.text().includes("Release"));
@@ -328,19 +371,23 @@ describe("ComponentCard", () => {
     });
 
     it("hides admin actions for non-admin users", () => {
-      wrapper = createWrapper({
-        effectivePermissions: "viewer",
-        component: { ...defaultComponent, id: 1 },
-      });
+      wrapper = createWrapper(
+        {
+          component: { ...defaultComponent, id: 1 },
+        },
+        "viewer",
+      );
       // Should not show Delete button text
       expect(wrapper.text()).not.toContain("Delete");
     });
 
     it("shows a Settings link to admins that points to the component settings page", () => {
-      wrapper = createWrapper({
-        effectivePermissions: "admin",
-        component: { ...defaultComponent, id: 42 },
-      });
+      wrapper = createWrapper(
+        {
+          component: { ...defaultComponent, id: 42 },
+        },
+        "admin",
+      );
       const link = wrapper.find('[data-test="component-card-settings-link"]');
       expect(link.exists()).toBe(true);
       expect(link.attributes("href")).toBe("/components/42/settings");
@@ -348,15 +395,17 @@ describe("ComponentCard", () => {
     });
 
     it("hides the Settings link for non-admins", () => {
-      wrapper = createWrapper({
-        effectivePermissions: "author",
-        component: { ...defaultComponent, id: 42 },
-      });
+      wrapper = createWrapper(
+        {
+          component: { ...defaultComponent, id: 42 },
+        },
+        "author",
+      );
       expect(wrapper.find('[data-test="component-card-settings-link"]').exists()).toBe(false);
     });
 
     it("action buttons are in a flex container for visual consistency", () => {
-      wrapper = createWrapper({ effectivePermissions: "admin" });
+      wrapper = createWrapper({}, "admin");
       // Actions should be in a flex container with gap for consistent spacing
       const actionsContainer = wrapper.find(".d-flex.align-items-center.flex-wrap");
       expect(actionsContainer.exists()).toBe(true);
@@ -368,7 +417,7 @@ describe("ComponentCard", () => {
   // ==========================================
   describe("delete confirmation workflow", () => {
     it("shows delete confirmation overlay when delete clicked", async () => {
-      wrapper = createWrapper({ effectivePermissions: "admin" });
+      wrapper = createWrapper({}, "admin");
       expect(wrapper.vm.showDeleteConfirmation).toBe(false);
 
       const deleteBtn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Delete"));
@@ -378,7 +427,7 @@ describe("ComponentCard", () => {
     });
 
     it("shows spinner when delete is confirmed", async () => {
-      wrapper = createWrapper({ effectivePermissions: "admin" });
+      wrapper = createWrapper({}, "admin");
       wrapper.vm.showDeleteConfirmation = true;
 
       wrapper.vm.confirmDelete();
@@ -387,7 +436,7 @@ describe("ComponentCard", () => {
     });
 
     it("emits deleteComponent with component id when confirmed", () => {
-      wrapper = createWrapper({ effectivePermissions: "admin" });
+      wrapper = createWrapper({}, "admin");
       wrapper.vm.confirmDelete();
 
       expect(wrapper.emitted("deleteComponent")).toBeTruthy();
@@ -397,7 +446,7 @@ describe("ComponentCard", () => {
     it("resets isDeleting when delete fails", async () => {
       // REQUIREMENT: If the parent's delete operation fails, the card must
       // exit the "Removing..." spinner state so the user can retry or cancel.
-      wrapper = createWrapper({ effectivePermissions: "admin" });
+      wrapper = createWrapper({}, "admin");
       wrapper.vm.confirmDelete();
       expect(wrapper.vm.isDeleting).toBe(true);
 
