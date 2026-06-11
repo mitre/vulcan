@@ -63,7 +63,6 @@
 
 <script>
 import AlertMixin from "../../mixins/AlertMixin.vue";
-import FormMixin from "../../mixins/FormMixin.vue";
 import { useCommentComposer } from "../../composables/mutations/useCommentComposer";
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
 import CommentDedupBanner from "./CommentDedupBanner.vue";
@@ -75,12 +74,13 @@ const COMPONENT_SECTION_VALUE = "__component__";
 export default {
   name: "CommentComposerModal",
   components: { CommentDedupBanner, FilterDropdown },
-  // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because
-  // each esbuild pack has its own axios singleton (bundle isolation) — the
-  // navbar pack's FormMixin doesn't reach the consuming pack. Without this
-  // the modal's POST /rules/:id/reviews call would 422 on CSRF in a pack
-  // that lacks pack-level CSRF setup.
-  mixins: [AlertMixin, FormMixin],
+  // AlertMixin migrates in 0re.9 (useToast). FormMixin was removed as a dead
+  // import: the comment that used to live here claimed it set
+  // axios.defaults X-CSRF-Token on mount — true in the axios era, but the ky
+  // migration (447ca1e6) replaced that with a per-request beforeRequest hook
+  // in baseApi that reads the CSRF meta tag. authenticityToken is consumed
+  // nowhere in this component.
+  mixins: [AlertMixin],
   props: {
     componentId: { type: [Number, String], required: true },
     ruleId: { type: [Number, String], default: null },

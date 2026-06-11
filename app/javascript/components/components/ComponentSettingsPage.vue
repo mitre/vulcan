@@ -229,7 +229,6 @@ import { searchUsers } from "../../api/usersApi";
 import debounce from "lodash/debounce";
 import VueMultiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
-import FormMixinVue from "../../mixins/FormMixin.vue";
 import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import { COMMENT_PHASE_LABELS, CLOSED_REASON_LABELS } from "../../constants/triageVocabulary";
 
@@ -259,7 +258,9 @@ function isoToDate(value) {
 export default {
   name: "ComponentSettingsPage",
   components: { VueMultiselect },
-  mixins: [AlertMixinVue, FormMixinVue],
+  // AlertMixin migrates in 0re.9 (useToast). FormMixin was a dead import —
+  // authenticityToken was never consumed; CSRF is handled by baseApi hooks.
+  mixins: [AlertMixinVue],
   props: {
     initialComponentState: { type: Object, required: true },
     project: { type: Object, required: true },
