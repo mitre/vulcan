@@ -118,6 +118,14 @@ If an admin already exists from `admin:bootstrap`, the demo admin is skipped and
 | `VULCAN_OIDC_CLIENT_SECRET` | OIDC client secret | ✅ | `secret_key_here` |
 | `VULCAN_OIDC_REDIRECT_URI` | OIDC redirect URI | ✅ | `https://vulcan.example.com/users/auth/oidc/callback` |
 
+> **Provider registration**: register TWO URIs in your identity provider's
+> app — the sign-in callback above, AND the sign-out landing
+> `<app_url>/users/signed_out` (built from `VULCAN_APP_URL`). Without the
+> sign-out entry, providers reject Vulcan's logout with
+> `400 invalid_request`. See the
+> [Okta/OIDC setup guide](docs/deployment/auth/oidc-okta.md) for the full
+> settings tables.
+
 #### Optional Configuration
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|

@@ -199,14 +199,22 @@ bundle exec bundler-audit
 
 ### OIDC/OKTA Setup (Auto-Discovery)
 
-Vulcan v2.2+ includes automatic OIDC endpoint discovery, requiring only 4 configuration variables:
+Vulcan v2.2+ includes automatic OIDC endpoint discovery — the essential configuration:
 
 ```bash
 VULCAN_ENABLE_OIDC=true
-VULCAN_OIDC_ISSUER_URL=https://your-domain.okta.com
+VULCAN_APP_URL=https://your-vulcan-app.com
+VULCAN_OIDC_ISSUER_URL=https://your-domain.okta.com/oauth2/default
 VULCAN_OIDC_CLIENT_ID=your-client-id
 VULCAN_OIDC_CLIENT_SECRET=your-client-secret
+VULCAN_OIDC_REDIRECT_URI=https://your-vulcan-app.com/users/auth/oidc/callback
 ```
+
+Register **two** URIs in your provider's app settings:
+- Sign-in: `<app_url>/users/auth/oidc/callback`
+- Sign-out: `<app_url>/users/signed_out` (required — providers reject Vulcan's logout without it)
+
+See the [Okta/OIDC setup guide](https://mitre.github.io/vulcan/deployment/auth/oidc-okta) for the full settings tables, verification checklist, and troubleshooting.
 
 Supported providers:
 - **Okta**
