@@ -262,6 +262,32 @@ RSpec.describe 'Users endpoint contracts', type: :request do
     end
   end
 
+  # ── PUT /users (own profile) ──
+
+  describe 'PUT /users (profile update)' do
+    it 'returns ToastResponse for a passwordless non-sensitive save' do
+      put '/users', params: { user: { name: 'Contract Renamed' } },
+                    headers: json_headers, as: :json
+      body = validate_and_parse!
+
+      assert_fields_present body, :toast
+      expect(body.dig('toast', 'title')).to eq('Account updated.')
+      expect(body.dig('toast', 'variant')).to eq('success')
+      expect(body.dig('toast', 'message')).to eq(['Profile updated successfully.'])
+    end
+
+    it 'returns 422 danger toast when an email change has no current password' do
+      put '/users', params: { user: { name: admin.name, email: 'contract-change@example.com' } },
+                    headers: json_headers, as: :json
+      body = validate_and_parse!(expected_status: :unprocessable_content)
+
+      assert_fields_present body, :toast
+      expect(body.dig('toast', 'title')).to eq('Could not update profile.')
+      expect(body.dig('toast', 'variant')).to eq('danger')
+      expect(body.dig('toast', 'message')).to include("Current password can't be blank")
+    end
+  end
+
   # ── POST /users/unlink_identity ──
 
   describe 'POST /users/unlink_identity' do

@@ -204,17 +204,34 @@ module Users
 
     protected
 
+    # Field-sensitivity split (Devise design + OWASP ASVS re-authentication
+    # for sensitive account changes): non-sensitive fields (name, slack)
+    # save without a password; changing the EMAIL — the login identifier —
+    # requires the current password. Provider-managed users never change
+    # email here: the identity provider owns it.
+    #
+    # With email confirmation disabled (no SMTP), reconfirmable would hold
+    # the new address in unconfirmed_email waiting for a mail that never
+    # sends — skip_reconfirmation! applies it immediately instead (same
+    # pattern as the admin path in UsersController#update).
     def update_resource(resource, params)
-      if resource.provider.nil?
-        super
+      if resource.provider.nil? && email_change?(resource, params)
+        resource.skip_reconfirmation! unless Settings.local_login.email_confirmation
+        resource.update_with_password(params)
       else
-        resource.update_without_password(params)
+        # Provider-managed users (the IdP owns email) and non-sensitive
+        # saves both strip the sensitive params and skip the password.
+        resource.update_without_password(params.except('email', 'current_password'))
       end
+    end
+
+    def email_change?(resource, params)
+      params['email'].present? && params['email'] != resource.email
     end
 
     def configure_permitted_parameters
       devise_parameter_sanitizer.permit(:sign_up, keys: %i[name slack_user_id])
-      devise_parameter_sanitizer.permit(:account_update, keys: %i[name slack_user_id])
+      devise_parameter_sanitizer.permit(:account_update, keys: %i[name slack_user_id email current_password])
     end
   end
 end

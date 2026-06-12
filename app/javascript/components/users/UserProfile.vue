@@ -67,7 +67,11 @@
               </b-form-group>
             </b-col>
             <b-col md="6">
-              <b-form-group label="Email" label-for="user-email">
+              <b-form-group
+                label="Email"
+                label-for="user-email"
+                :description="isProviderManaged ? 'Managed by your identity provider.' : null"
+              >
                 <b-form-input
                   id="user-email"
                   v-model="form.email"
@@ -79,6 +83,22 @@
               </b-form-group>
             </b-col>
           </b-form-row>
+          <!-- Email is the login identifier — changing it requires the current
+               password (OWASP re-auth for sensitive changes). The field only
+               appears when the email actually differs. -->
+          <b-form-group
+            v-if="emailChanged"
+            label="Current Password"
+            label-for="profile-current-password"
+            description="Required to change your email address."
+          >
+            <PasswordField
+              id="profile-current-password"
+              v-model="form.current_password"
+              name="user[current_password]"
+              autocomplete="current-password"
+            />
+          </b-form-group>
           <b-form-group
             label="Slack User ID (Optional)"
             label-for="user-slack"
@@ -141,11 +161,12 @@
 import { updateProfile, deleteAccount, unlinkIdentity } from "../../api/usersApi";
 import BaseCommandBar from "../shared/BaseCommandBar.vue";
 import ConfirmDeleteModal from "../shared/ConfirmDeleteModal.vue";
+import PasswordField from "../shared/PasswordField.vue";
 import { useToast } from "../../composables/useToast";
 
 export default {
   name: "UserProfile",
-  components: { BaseCommandBar, ConfirmDeleteModal },
+  components: { BaseCommandBar, ConfirmDeleteModal, PasswordField },
   props: {
     user: {
       type: Object,
@@ -166,7 +187,13 @@ export default {
         name: this.user.name || "",
         email: this.user.email || "",
         slack_user_id: this.user.slack_user_id || "",
+        current_password: "",
       },
+      // Tracks the email the SERVER currently has — rebased after each
+      // successful save so a follow-up change (e.g. back to the original
+      // address) still prompts for the password. The user prop is the
+      // initial page render and goes stale after in-page saves.
+      baselineEmail: this.user.email || "",
       unlinkForm: { current_password: "" },
       showUnlinkModal: false,
       isUnlinking: false,
@@ -189,6 +216,11 @@ export default {
     isPendingConfirmation() {
       return !!(this.user.unconfirmed_email && this.user.unconfirmed_email.length > 0);
     },
+    // Email change is the only field needing re-authentication; provider
+    // users can't change email at all (the input is disabled).
+    emailChanged() {
+      return !this.isProviderManaged && this.form.email !== this.baselineEmail;
+    },
   },
   methods: {
     humanizeProvider(provider) {
@@ -205,7 +237,17 @@ export default {
       if (this.saving) return;
       this.saving = true;
       try {
-        const response = await updateProfile(this.form);
+        const payload = {
+          name: this.form.name,
+          email: this.form.email,
+          slack_user_id: this.form.slack_user_id,
+        };
+        if (this.emailChanged) {
+          payload.current_password = this.form.current_password;
+        }
+        const response = await updateProfile(payload);
+        this.form.current_password = "";
+        this.baselineEmail = this.form.email;
         this.alertOrNotifyResponse(response);
       } catch (error) {
         this.alertOrNotifyResponse(error);

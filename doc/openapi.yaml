@@ -4078,6 +4078,96 @@ paths:
           $ref: '#/components/responses/Forbidden'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
+    put:
+      operationId: updateProfile
+      tags:
+        - Users
+      summary: Update the signed-in user's own profile
+      description: 'Updates the current user''s profile (Devise registration update). Field-sensitivity policy: name and slack_user_id save without a password; changing the email — the login identifier — requires current_password (re-authentication for sensitive changes). When email confirmation is enabled, an email change is held in unconfirmed_email until the confirmation link is followed; otherwise it applies immediately. Provider-managed users (OIDC/LDAP) cannot change email here — the identity provider owns it and the parameter is ignored.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user
+              properties:
+                user:
+                  type: object
+                  description: Profile fields to update.
+                  properties:
+                    name:
+                      type: string
+                      description: Display name.
+                      example: Jane Doe
+                    email:
+                      type: string
+                      format: email
+                      description: New login email. Requires current_password when it differs from the current address. Ignored for provider-managed users.
+                      example: jane@example.com
+                    slack_user_id:
+                      type: string
+                      description: Slack user ID for notifications.
+                      example: U123456
+                    current_password:
+                      type: string
+                      description: The user's current password — required only when changing the email.
+                      example: MyCurrentP@ssw0rd!
+            examples:
+              rename:
+                summary: Passwordless non-sensitive save
+                value:
+                  user:
+                    name: Jane Doe
+                    slack_user_id: U123456
+              email_change:
+                summary: Email change with re-authentication
+                value:
+                  user:
+                    email: new-address@example.com
+                    current_password: MyCurrentP@ssw0rd!
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+              examples:
+                updated:
+                  summary: Successful update
+                  value:
+                    toast:
+                      title: Account updated.
+                      message:
+                        - Profile updated successfully.
+                      variant: success
+                confirmation_pending:
+                  summary: Email change held for confirmation
+                  value:
+                    toast:
+                      title: Account updated.
+                      message:
+                        - A confirmation link has been sent to new-address@example.com. Please follow the link to verify your new email address.
+                      variant: success
+        '422':
+          description: Validation failed (e.g. email change without the current password)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+              examples:
+                missing_password:
+                  summary: Email change without current password
+                  value:
+                    toast:
+                      title: Could not update profile.
+                      message:
+                        - Current password can't be blank
+                      variant: danger
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
   /users/{userId}:
     parameters:
       - $ref: '#/components/parameters/UserId'

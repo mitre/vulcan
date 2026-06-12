@@ -59,6 +59,108 @@ describe("UserProfile", () => {
     vi.unstubAllGlobals();
   });
 
+  // ── email change requires current password ──────────────────────────
+  // REQUIREMENT (field-sensitivity policy — Devise design + OWASP ASVS):
+  // name/Slack save without a password; changing the EMAIL (the login
+  // identifier) requires the current password. The password field appears
+  // only when the email differs from the original, and the payload carries
+  // current_password only in that case.
+  describe("email change password gate", () => {
+    it("hides the current-password field while the email is unchanged", () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.emailChanged).toBe(false);
+      expect(wrapper.find("#profile-current-password").exists()).toBe(false);
+    });
+
+    it("shows the current-password field when the email differs", async () => {
+      wrapper = createWrapper();
+      wrapper.vm.form.email = "changed@example.com";
+      await wrapper.vm.$nextTick();
+      expect(wrapper.vm.emailChanged).toBe(true);
+      expect(wrapper.find("#profile-current-password").exists()).toBe(true);
+    });
+
+    it("never shows the password field for provider-managed users (email read-only)", async () => {
+      wrapper = createWrapper({
+        user: { ...defaultProps.user, provider: "oidc" },
+      });
+      wrapper.vm.form.email = "changed@example.com";
+      await wrapper.vm.$nextTick();
+      expect(wrapper.find("#profile-current-password").exists()).toBe(false);
+    });
+
+    it("omits current_password from the payload when the email is unchanged", async () => {
+      const { updateProfile } = await import("@/api/usersApi");
+      wrapper = createWrapper();
+      wrapper.vm.form.name = "Renamed";
+
+      await wrapper.vm.saveProfile();
+
+      expect(updateProfile).toHaveBeenCalledWith({
+        name: "Renamed",
+        email: "test@example.com",
+        slack_user_id: "",
+      });
+    });
+
+    it("includes current_password in the payload when the email changed", async () => {
+      const { updateProfile } = await import("@/api/usersApi");
+      wrapper = createWrapper();
+      wrapper.vm.form.email = "changed@example.com";
+      wrapper.vm.form.current_password = "hunter2!Hunter2!";
+
+      await wrapper.vm.saveProfile();
+
+      expect(updateProfile).toHaveBeenCalledWith({
+        name: "Test User",
+        email: "changed@example.com",
+        slack_user_id: "",
+        current_password: "hunter2!Hunter2!",
+      });
+    });
+
+    it("clears the password field after a successful save", async () => {
+      wrapper = createWrapper();
+      wrapper.vm.form.email = "changed@example.com";
+      wrapper.vm.form.current_password = "hunter2!Hunter2!";
+
+      await wrapper.vm.saveProfile();
+
+      expect(wrapper.vm.form.current_password).toBe("");
+    });
+
+    it("rebases the email baseline after a successful change so a follow-up change re-prompts", async () => {
+      // Without rebasing, changing BACK to the original address would hide
+      // the password field while the server (comparing against the DB)
+      // still requires it — the save would 422 with no password input.
+      wrapper = createWrapper();
+      wrapper.vm.form.email = "changed@example.com";
+      wrapper.vm.form.current_password = "hunter2!Hunter2!";
+
+      await wrapper.vm.saveProfile();
+
+      expect(wrapper.vm.emailChanged).toBe(false);
+      wrapper.vm.form.email = "test@example.com"; // back to the original
+      await wrapper.vm.$nextTick();
+      expect(wrapper.vm.emailChanged).toBe(true);
+      expect(wrapper.find("#profile-current-password").exists()).toBe(true);
+    });
+
+    it("does not rebase the baseline when the save fails", async () => {
+      const { updateProfile } = await import("@/api/usersApi");
+      updateProfile.mockRejectedValueOnce(
+        Object.assign(new Error("422"), { response: { status: 422, data: {} } }),
+      );
+      wrapper = createWrapper();
+      wrapper.vm.form.email = "changed@example.com";
+      wrapper.vm.form.current_password = "wrong";
+
+      await wrapper.vm.saveProfile();
+
+      expect(wrapper.vm.emailChanged).toBe(true);
+    });
+  });
+
   describe("layout", () => {
     it("renders Profile Information as a single card section", () => {
       wrapper = createWrapper();
@@ -85,19 +187,22 @@ describe("UserProfile", () => {
   });
 
   describe("form fields", () => {
-    it("seeds the form with name, email, and slack_user_id only", () => {
+    it("seeds the form with profile fields and an empty email-gate password", () => {
       wrapper = createWrapper();
       expect(wrapper.vm.form).toEqual({
         name: "Test User",
         email: "test@example.com",
         slack_user_id: "",
+        current_password: "",
       });
     });
 
-    it("does not carry password fields (moved to UserPasswordPage)", () => {
+    it("does not carry password-change fields (moved to UserPasswordPage)", () => {
+      // current_password exists only as the email-change re-auth gate;
+      // changing the password itself lives in UserPasswordPage.
       wrapper = createWrapper();
       expect(wrapper.vm.form.password).toBeUndefined();
-      expect(wrapper.vm.form.current_password).toBeUndefined();
+      expect(wrapper.vm.form.password_confirmation).toBeUndefined();
     });
   });
 

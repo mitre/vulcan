@@ -196,22 +196,22 @@ RSpec.describe 'User Registrations' do
       sign_in existing_user
     end
 
-    it 'makes sure can not update without password' do
+    # Email is the login identifier — changing it requires the current
+    # password (field-sensitivity policy; full matrix in
+    # registrations_profile_update_spec.rb).
+    it 'rejects an email change when current_password is blank' do
       put '/users', params: {
         user: {
           name: new_user_data.name,
-          email: existing_user.email,
-          password: existing_user.password,
-          password_confirmation: existing_user.password,
+          email: 'takeover-attempt@example.com',
           current_password: ''
         }
       }
 
-      # When current_password is wrong, Devise should not update the user
       expect(response).to have_http_status(:unprocessable_content).or have_http_status(:ok)
       existing_user.reload
+      expect(existing_user.email).not_to eq('takeover-attempt@example.com')
       expect(existing_user.name).not_to eq(new_user_data.name)
-      # The key test is that the name didn't change due to wrong password
     end
   end
 
@@ -390,8 +390,10 @@ RSpec.describe 'User Registrations' do
 
     before { sign_in user }
 
-    context 'reconfirmation flash message (71q.3)' do
-      it 'shows confirmation-sent flash when email changes' do
+    context 'reconfirmation flash message' do
+      it 'shows confirmation-sent flash when email changes with confirmation enabled' do
+        allow(Settings.local_login).to receive(:email_confirmation).and_return(true)
+
         put '/users', params: {
           user: {
             email: 'newemail@example.com',
