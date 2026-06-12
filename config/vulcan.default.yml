@@ -89,7 +89,10 @@ defaults: &defaults
         token_endpoint: <%= ENV['VULCAN_OIDC_TOKEN_URL'] %>
         userinfo_endpoint: <%= ENV['VULCAN_OIDC_USERINFO_URL'] %>
         jwks_uri: <%= ENV['VULCAN_OIDC_JWKS_URI'] %>
-        post_logout_redirect_uri: '/'
+        # NOTE: no post-logout redirect here — SessionsController#destroy
+        # builds the RP-initiated logout URL itself and always lands on
+        # /users/signed_out (register it with the provider as a sign-out
+        # redirect URI; see docs/deployment/auth/oidc-okta.md).
   banner:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_BANNER_ENABLED']) || false %>
     text: <%= ENV['VULCAN_BANNER_TEXT'] || '' %>

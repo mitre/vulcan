@@ -21,6 +21,11 @@ Rails.application.routes.draw do
   # Unlink an external identity (OIDC/LDAP/GitHub) from the current user account.
   # Requires current password. See Users::RegistrationsController#unlink_identity.
   devise_scope :user do
+    # RP-initiated logout landing: the OIDC provider redirects here after
+    # ending its session; the action sets the AC-12(02) signed-out flash and
+    # forwards to the sign-in page. Must be registered with the provider as
+    # an allowed post-logout redirect URI. See SessionsController#signed_out.
+    get '/users/signed_out', to: 'sessions#signed_out', as: :signed_out
     post '/users/unlink_identity', to: 'users/registrations#unlink_identity', as: :unlink_identity
     post '/users/initiate_link', to: 'users/registrations#initiate_link', as: :initiate_link
     # Settings shell sub-pages — each section gets its own URL so it's
