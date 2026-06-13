@@ -63,6 +63,11 @@ defaults: &defaults
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_OIDC']) || false %>
     strategy: :openid_connect
     title: <%= ENV['VULCAN_OIDC_PROVIDER_TITLE'] || 'OIDC Provider' %>
+    # Multi-provider registry (ADR docs/decisions/adr-multi-provider-oidc.md §1).
+    # One entry per VULCAN_OIDC_PROVIDERS key, or a single `oidc` provider from
+    # the unprefixed legacy vars when the registry is unset. Built by the tested
+    # OidcProviderRegistry and embedded as JSON (valid YAML flow).
+    providers: <%= ::OidcProviderRegistry.from_env.to_json %>
     args:
       name: :oidc
       scope:

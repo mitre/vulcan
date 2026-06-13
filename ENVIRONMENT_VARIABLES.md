@@ -126,11 +126,45 @@ If an admin already exists from `admin:bootstrap`, the demo admin is skipped and
 > [Okta/OIDC setup guide](docs/deployment/auth/oidc-okta.md) for the full
 > settings tables.
 
+#### Multiple OIDC Providers (Registry — v2.3+)
+
+To offer **several OIDC providers simultaneously** (e.g. Okta **and** login.gov
+on one login page), set a registry and give each provider its own variable
+family. See [ADR: Multi-Provider OIDC](docs/decisions/adr-multi-provider-oidc.md).
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `VULCAN_OIDC_PROVIDERS` | Comma-separated registry of provider keys (lowercase snake_case). Each key becomes the strategy name, the `/users/auth/<key>/callback` path, and the stored provider value. | `okta,login_gov` |
+
+Every variable in the single-provider tables above has a **per-provider form**
+`VULCAN_OIDC_<KEY>_<FIELD>` — e.g. for `okta,login_gov`:
+
+```
+VULCAN_OIDC_OKTA_ISSUER_URL=https://org.okta.com/oauth2/default
+VULCAN_OIDC_OKTA_CLIENT_ID=...
+VULCAN_OIDC_OKTA_CLIENT_SECRET=...
+VULCAN_OIDC_OKTA_TITLE=Okta
+
+VULCAN_OIDC_LOGIN_GOV_ISSUER_URL=https://idp.int.identitysandbox.gov
+VULCAN_OIDC_LOGIN_GOV_CLIENT_ID=urn:gov:gsa:openidconnect:...
+VULCAN_OIDC_LOGIN_GOV_CLIENT_AUTH_METHOD=jwt_bearer        # login.gov: private_key_jwt
+VULCAN_OIDC_LOGIN_GOV_PRIVATE_KEY_PATH=/path/to/key.pem    # or _PRIVATE_KEY (inline PEM)
+VULCAN_OIDC_LOGIN_GOV_ACR_VALUES=urn:acr.login.gov:auth-only
+VULCAN_OIDC_LOGIN_GOV_TITLE=login.gov
+```
+
+- `VULCAN_OIDC_<KEY>_CLIENT_AUTH_METHOD` accepts `secret` (default) or
+  `jwt_bearer` (login.gov's private_key_jwt). `jwt_bearer` requires
+  `_PRIVATE_KEY` (inline PEM) or `_PRIVATE_KEY_PATH`.
+- **Backward compatible:** when `VULCAN_OIDC_PROVIDERS` is **unset**, the
+  unprefixed `VULCAN_OIDC_*` variables above define a single provider named
+  `oidc` — existing deployments need no change.
+
 #### Optional Configuration
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
 | `VULCAN_OIDC_DISCOVERY` | Enable automatic endpoint discovery | `true` | `false` (to disable) |
-| `VULCAN_OIDC_PROVIDER_TITLE` | Display name for OIDC provider | `OIDC Provider` | `Okta` |
+| `VULCAN_OIDC_PROVIDER_TITLE` | Display name for the legacy single OIDC provider | `OIDC Provider` | `Okta` |
 | `VULCAN_OIDC_PROMPT` | OIDC prompt parameter | - | `login` (forces re-authentication) |
 | `VULCAN_OIDC_CLIENT_SIGNING_ALG` | OIDC signing algorithm | `RS256` | `RS256` |
 
