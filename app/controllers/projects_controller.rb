@@ -335,6 +335,8 @@ class ProjectsController < ApplicationController
       return
     end
 
+    return enqueue_merge(file) if ActiveModel::Type::Boolean.new.cast(params[:merge])
+
     dry_run = params[:dry_run] == 'true'
     include_reviews = params[:include_reviews] != 'false'
     include_memberships = params[:include_memberships] == 'true'
@@ -577,5 +579,65 @@ class ProjectsController < ApplicationController
 
   def project_visibility_changed?(current_project_visibility)
     project_params[:visibility].present? && project_params[:visibility] != current_project_visibility
+  end
+
+  # rubocop:disable Lint/UselessConstantScoping -- private section organizes related helpers
+  MERGE_UPLOAD_DIR = Rails.root.join('storage/merge_uploads').freeze
+  # rubocop:enable Lint/UselessConstantScoping
+
+  # Merge branch of #import_backup. Persists the upload to disk and
+  # enqueues MergeJob; the engine writes a ComponentSyncEvent that the
+  # caller polls via /components/:id/merge_status.
+  def enqueue_merge(file)
+    component_id = params[:component_id]
+    return render_merge_bad_request('component_id is required when merge=true') if component_id.blank?
+
+    component = @project.components.find_by(id: component_id)
+    return render_merge_not_found("Component #{component_id} not found in this project.") unless component
+
+    overrides = parse_merge_strategy_overrides
+    return render_merge_bad_request('strategy_overrides must be a JSON object.') if overrides == :invalid
+
+    path = persist_merge_upload(file)
+    job = MergeJob.perform_later(
+      component_id: component.id,
+      archive_path: path,
+      actor_id: current_user.id,
+      strategy_overrides: overrides
+    )
+
+    render json: {
+      job_id: job.job_id,
+      component_id: component.id,
+      status: 'queued',
+      message: 'Merge enqueued. Poll GET /components/:id/merge_status for progress.'
+    }, status: :accepted
+  end
+
+  def parse_merge_strategy_overrides
+    raw = params[:strategy_overrides]
+    return nil if raw.blank?
+
+    parsed = raw.is_a?(String) ? JSON.parse(raw) : raw
+    parsed.is_a?(Hash) ? parsed.deep_symbolize_keys : :invalid
+  rescue JSON::ParserError
+    :invalid
+  end
+
+  def persist_merge_upload(file)
+    FileUtils.mkdir_p(MERGE_UPLOAD_DIR, mode: 0o700) unless MERGE_UPLOAD_DIR.exist?
+    File.chmod(0o700, MERGE_UPLOAD_DIR)
+    path = MERGE_UPLOAD_DIR.join("#{SecureRandom.hex(12)}.zip").to_s
+    File.binwrite(path, file.read)
+    File.chmod(0o600, path)
+    path
+  end
+
+  def render_merge_bad_request(message)
+    render json: { error: message }, status: :bad_request
+  end
+
+  def render_merge_not_found(message)
+    render json: { error: message }, status: :not_found
   end
 end

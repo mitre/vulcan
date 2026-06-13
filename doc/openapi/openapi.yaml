@@ -100,6 +100,8 @@ paths:
     $ref: paths/components_{componentId}_lock_sections.yaml
   /components/{componentId}/histories:
     $ref: paths/components_{componentId}_histories.yaml
+  /components/{componentId}/merge_status:
+    $ref: paths/components_{componentId}_merge_status.yaml
   /components/{componentId}/rules:
     $ref: paths/components_{componentId}_rules.yaml
   /components/{componentId}/rules_picker:

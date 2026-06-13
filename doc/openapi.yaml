@@ -1174,8 +1174,10 @@ paths:
       operationId: importBackup
       tags:
         - Projects
-      summary: Import components from a JSON archive backup
-      description: Imports components, rules, reviews, and memberships from a JSON archive (.zip) into an existing project. Requires admin role on the project. The archive must have been created by the json_archive export format. Merges imported data with existing project content.
+      summary: Import or merge a JSON archive backup
+      description: |-
+        Default mode (merge unset / false): imports components, rules, reviews, and memberships from a JSON archive (.zip) into the project, replacing or augmenting existing content. Returns 200 with a toast + summary.
+        Merge mode (merge=true with component_id): enqueues a MergeJob that runs the analyzer + applier against a single existing component and returns 202 with a job_id. Poll GET /components/{componentId}/merge_status for progress. Requires admin role on the project. The archive must have been created by the json_archive export format.
       requestBody:
         required: true
         content:
@@ -1189,9 +1191,24 @@ paths:
                   type: string
                   format: binary
                   description: JSON archive .zip file from a previous export.
+                merge:
+                  type: string
+                  enum:
+                    - 'true'
+                    - 'false'
+                  description: When 'true', enqueues a MergeJob against an existing component (component_id required) instead of running the standard import. Returns 202 + job_id.
+                  example: 'true'
+                component_id:
+                  type: integer
+                  description: Target component id when merge=true. Must belong to this project. Ignored when merge is unset / false.
+                  example: 42
+                strategy_overrides:
+                  type: string
+                  description: Optional JSON object string of MergeStrategy overrides forwarded to the engine. Ignored when merge is unset / false.
+                  example: '{"field:vuln_discussion":"keep_ours"}'
       responses:
         '200':
-          description: Backup imported (or dry-run preview completed)
+          description: Backup imported (default mode) or dry-run preview completed
           content:
             application/json:
               schema:
@@ -1218,6 +1235,20 @@ paths:
                           srg_title: General Purpose Operating System SRG
                           srg_version: V3R3
                     warnings: []
+        '202':
+          description: Merge job enqueued (merge=true mode)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MergeEnqueuedResponse'
+              examples:
+                queued:
+                  summary: Merge job queued
+                  value:
+                    job_id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                    component_id: 42
+                    status: queued
+                    message: Merge enqueued. Poll GET /components/:id/merge_status for progress.
         '422':
           description: Import failed (validation errors)
           content:
@@ -1732,6 +1763,58 @@ paths:
                       action: update
                       user_name: Demo Admin
                       created_at: '2026-05-28T15:00:00Z'
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
+  /components/{componentId}/merge_status:
+    parameters:
+      - name: componentId
+        in: path
+        required: true
+        description: Numeric ID of the target component.
+        schema:
+          type: integer
+        example: 42
+    get:
+      operationId: getComponentMergeStatus
+      tags:
+        - Components
+      summary: Get the latest merge status for a component
+      description: Returns the most recent ComponentSyncEvent for the component, including its status, sync_id, archive hash, snapshot path, and any failure diagnostics. Returns 404 with {"status":"no_sync_yet"} when the component has never been merged. Requires viewer access to the project that owns the component.
+      responses:
+        '200':
+          description: Latest merge event for the component
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MergeStatusResponse'
+              examples:
+                applied:
+                  summary: Most recent merge applied cleanly
+                  value:
+                    sync_event_id: 17
+                    sync_id: 550e8400-e29b-41d4-a716-446655440000
+                    status: applied
+                    source: theirs
+                    direction: inbound
+                    created_at: '2026-06-12T14:30:00Z'
+                    archive_hash: sha256-abc123
+                    snapshot_path: /storage/merge_snapshots/42/550e8400.zip
+                    failure_diagnostics: null
+        '404':
+          description: Component has no sync history yet
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - no_sync_yet
+                    description: Sentinel — component has never been merged.
+                    example: no_sync_yet
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /components/{componentId}/rules:
@@ -6339,6 +6422,33 @@ components:
           items:
             type: string
           example: []
+    MergeEnqueuedResponse:
+      description: Returned by POST /projects/{projectId}/import_backup when called with merge=true. Indicates the merge job has been queued; the actual work runs asynchronously via ActiveJob and updates ComponentSyncEvent rows. Callers poll GET /components/{componentId}/merge_status to track progress.
+      type: object
+      required:
+        - job_id
+        - component_id
+        - status
+        - message
+      properties:
+        job_id:
+          type: string
+          description: ActiveJob job_id (uuid) — useful for log correlation.
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        component_id:
+          type: integer
+          description: Target component id the merge was queued against.
+          example: 42
+        status:
+          type: string
+          enum:
+            - queued
+          description: Always "queued" at enqueue time. Real state lives in ComponentSyncEvent.
+          example: queued
+        message:
+          type: string
+          description: Human-readable next-step hint for the caller.
+          example: Merge enqueued. Poll GET /components/:id/merge_status for progress.
     AuditEntry:
       description: 'A single audit trail entry recording a change to an auditable record. Serialized by VulcanAudit#format. Note: the field is "name" (username), NOT "user_id" — VulcanAudit#format does not expose user IDs.'
       type: object
@@ -7627,6 +7737,75 @@ components:
             concur: 45
             non_concur: 8
             withdrawn: 3
+    MergeStatusResponse:
+      description: Snapshot of the most recent ComponentSyncEvent row for a component. Returned by GET /components/{componentId}/merge_status. Status values follow the ComponentSyncEvent state machine (pending → analyzed → applied / failed / undone).
+      type: object
+      required:
+        - sync_event_id
+        - sync_id
+        - status
+        - source
+        - direction
+        - created_at
+      properties:
+        sync_event_id:
+          type: integer
+          description: Internal ComponentSyncEvent row id.
+          example: 17
+        sync_id:
+          type: string
+          format: uuid
+          description: Stable UUID that correlates audit rows + snapshot file.
+          example: 550e8400-e29b-41d4-a716-446655440000
+        status:
+          type: string
+          enum:
+            - pending
+            - analyzed
+            - applied
+            - failed
+            - undone
+          description: Current state in the ComponentSyncEvent state machine.
+          example: applied
+        source:
+          type: string
+          enum:
+            - theirs
+            - ours
+            - auto_merge
+          description: Provenance label for the merge.
+          example: theirs
+        direction:
+          type: string
+          enum:
+            - inbound
+            - outbound
+          description: inbound = applying an external archive; outbound = exporting.
+          example: inbound
+        created_at:
+          type: string
+          format: date-time
+          description: When the sync event was created.
+          example: '2026-06-12T14:30:00Z'
+        archive_hash:
+          type:
+            - string
+            - 'null'
+          description: SHA-256 of the archive bytes that produced this event.
+          example: sha256-abc123
+        snapshot_path:
+          type:
+            - string
+            - 'null'
+          description: Filesystem path to the atomic backup snapshot taken pre-merge.
+          example: /storage/merge_snapshots/42/550e8400.zip
+        failure_diagnostics:
+          type:
+            - object
+            - 'null'
+          description: When status=failed, hash with step (signature, analyze, apply) and error message. Null on success.
+          additionalProperties: true
+          example: null
     RuleInput:
       description: Input fields for updating a security rule within a component.
       type: object

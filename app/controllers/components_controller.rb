@@ -12,7 +12,7 @@ class ComponentsController < ApplicationController
   CONTROL_NOT_FOUND_TITLE = 'Control not found'
 
   before_action :set_component, only: %i[show update destroy export preview_spreadsheet_update apply_spreadsheet_update triage settings]
-  before_action :set_component_basic, only: %i[find based_on_same_srg histories comments rules_picker]
+  before_action :set_component_basic, only: %i[find based_on_same_srg histories comments rules_picker merge_status]
   before_action :set_project, only: %i[show create history triage settings]
   before_action :set_component_permissions, only: %i[show triage settings]
   before_action :set_rule, only: %i[show]
@@ -22,6 +22,7 @@ class ComponentsController < ApplicationController
   before_action :check_permission_to_update_slackchannel, only: %i[update]
   before_action :check_admin_for_advanced_fields, only: %i[update]
   before_action :authorize_component_access, only: %i[show export find histories comments triage rules_picker]
+  before_action :authorize_viewer_component, only: %i[merge_status]
   before_action :authorize_logged_in, only: %i[search index based_on_same_srg bulk_export detect_srg]
   before_action :authorize_compare_access, only: %i[compare]
   before_action :authorize_viewer_project, only: %i[history]
@@ -452,6 +453,26 @@ class ComponentsController < ApplicationController
     end
 
     render json: history
+  end
+
+  # Status of the most recent component sync/merge — the polling endpoint
+  # paired with POST /projects/:id/import_backup?merge=true&component_id=X.
+  # Returns the latest ComponentSyncEvent row plus failure diagnostics.
+  def merge_status
+    event = ComponentSyncEvent.where(component: @component).order(created_at: :desc).first
+    return render json: { status: 'no_sync_yet' }, status: :not_found if event.nil?
+
+    render json: {
+      sync_event_id: event.id,
+      sync_id: event.sync_id,
+      status: event.status,
+      source: event.source,
+      direction: event.direction,
+      created_at: event.created_at,
+      archive_hash: event.archive_hash,
+      snapshot_path: event.snapshot_path,
+      failure_diagnostics: event.failure_diagnostics_json
+    }
   end
 
   def detect_srg

@@ -1,0 +1,64 @@
+description: >-
+  Snapshot of the most recent ComponentSyncEvent row for a component.
+  Returned by GET /components/{componentId}/merge_status. Status values
+  follow the ComponentSyncEvent state machine (pending → analyzed →
+  applied / failed / undone).
+type: object
+required:
+  - sync_event_id
+  - sync_id
+  - status
+  - source
+  - direction
+  - created_at
+properties:
+  sync_event_id:
+    type: integer
+    description: Internal ComponentSyncEvent row id.
+    example: 17
+  sync_id:
+    type: string
+    format: uuid
+    description: Stable UUID that correlates audit rows + snapshot file.
+    example: "550e8400-e29b-41d4-a716-446655440000"
+  status:
+    type: string
+    enum: [pending, analyzed, applied, failed, undone]
+    description: Current state in the ComponentSyncEvent state machine.
+    example: applied
+  source:
+    type: string
+    enum: [theirs, ours, auto_merge]
+    description: Provenance label for the merge.
+    example: theirs
+  direction:
+    type: string
+    enum: [inbound, outbound]
+    description: inbound = applying an external archive; outbound = exporting.
+    example: inbound
+  created_at:
+    type: string
+    format: date-time
+    description: When the sync event was created.
+    example: "2026-06-12T14:30:00Z"
+  archive_hash:
+    type:
+      - string
+      - 'null'
+    description: SHA-256 of the archive bytes that produced this event.
+    example: "sha256-abc123"
+  snapshot_path:
+    type:
+      - string
+      - 'null'
+    description: Filesystem path to the atomic backup snapshot taken pre-merge.
+    example: "/storage/merge_snapshots/42/550e8400.zip"
+  failure_diagnostics:
+    type:
+      - object
+      - 'null'
+    description: >-
+      When status=failed, hash with step (signature, analyze, apply) and
+      error message. Null on success.
+    additionalProperties: true
+    example: null

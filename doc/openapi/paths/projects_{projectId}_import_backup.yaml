@@ -4,12 +4,17 @@ post:
   operationId: importBackup
   tags:
     - Projects
-  summary: Import components from a JSON archive backup
+  summary: Import or merge a JSON archive backup
   description: >-
-    Imports components, rules, reviews, and memberships from a JSON archive
-    (.zip) into an existing project. Requires admin role on the project.
-    The archive must have been created by the json_archive export format.
-    Merges imported data with existing project content.
+    Default mode (merge unset / false): imports components, rules, reviews,
+    and memberships from a JSON archive (.zip) into the project, replacing
+    or augmenting existing content. Returns 200 with a toast + summary.
+
+    Merge mode (merge=true with component_id): enqueues a MergeJob that
+    runs the analyzer + applier against a single existing component and
+    returns 202 with a job_id. Poll GET /components/{componentId}/merge_status
+    for progress. Requires admin role on the project. The archive must
+    have been created by the json_archive export format.
   requestBody:
     required: true
     content:
@@ -23,9 +28,29 @@ post:
               type: string
               format: binary
               description: JSON archive .zip file from a previous export.
+            merge:
+              type: string
+              enum: ['true', 'false']
+              description: >-
+                When 'true', enqueues a MergeJob against an existing
+                component (component_id required) instead of running the
+                standard import. Returns 202 + job_id.
+              example: 'true'
+            component_id:
+              type: integer
+              description: >-
+                Target component id when merge=true. Must belong to this
+                project. Ignored when merge is unset / false.
+              example: 42
+            strategy_overrides:
+              type: string
+              description: >-
+                Optional JSON object string of MergeStrategy overrides
+                forwarded to the engine. Ignored when merge is unset / false.
+              example: '{"field:vuln_discussion":"keep_ours"}'
   responses:
     '200':
-      description: Backup imported (or dry-run preview completed)
+      description: Backup imported (default mode) or dry-run preview completed
       content:
         application/json:
           schema:
@@ -52,6 +77,20 @@ post:
                       srg_title: "General Purpose Operating System SRG"
                       srg_version: "V3R3"
                 warnings: []
+    '202':
+      description: Merge job enqueued (merge=true mode)
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/MergeEnqueuedResponse.yaml
+          examples:
+            queued:
+              summary: Merge job queued
+              value:
+                job_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                component_id: 42
+                status: queued
+                message: "Merge enqueued. Poll GET /components/:id/merge_status for progress."
     '422':
       description: Import failed (validation errors)
       content:

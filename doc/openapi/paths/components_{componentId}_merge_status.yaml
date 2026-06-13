@@ -1,0 +1,55 @@
+parameters:
+  - name: componentId
+    in: path
+    required: true
+    description: Numeric ID of the target component.
+    schema:
+      type: integer
+    example: 42
+get:
+  operationId: getComponentMergeStatus
+  tags:
+    - Components
+  summary: Get the latest merge status for a component
+  description: >-
+    Returns the most recent ComponentSyncEvent for the component, including
+    its status, sync_id, archive hash, snapshot path, and any failure
+    diagnostics. Returns 404 with {"status":"no_sync_yet"} when the
+    component has never been merged. Requires viewer access to the
+    project that owns the component.
+  responses:
+    '200':
+      description: Latest merge event for the component
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/MergeStatusResponse.yaml
+          examples:
+            applied:
+              summary: Most recent merge applied cleanly
+              value:
+                sync_event_id: 17
+                sync_id: "550e8400-e29b-41d4-a716-446655440000"
+                status: applied
+                source: theirs
+                direction: inbound
+                created_at: "2026-06-12T14:30:00Z"
+                archive_hash: "sha256-abc123"
+                snapshot_path: "/storage/merge_snapshots/42/550e8400.zip"
+                failure_diagnostics: null
+    '404':
+      description: Component has no sync history yet
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - status
+            properties:
+              status:
+                type: string
+                enum: [no_sync_yet]
+                description: Sentinel — component has never been merged.
+                example: no_sync_yet
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
