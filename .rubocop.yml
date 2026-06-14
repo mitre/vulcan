@@ -95,6 +95,7 @@ Style/OpenStructUse:
 Rails/SkipsModelValidations:
   Exclude:
     - spec/**/*
+    - lib/tasks/**/*
 # FactoryBot/FactoryAssociationWithStrategy changes build vs create behavior —
 # fixing requires verifying all tests still pass with implicit associations.
 # TODO: Fix factories to use implicit associations in dedicated session.
