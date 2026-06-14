@@ -2,5 +2,5 @@
 -# Locals: provider (symbol), action (e.g. "Sign in", "Register"), variant ("light", "outline-primary")
 - title = oauth_provider_title(provider)
 = link_to omniauth_authorize_path(resource_name, provider), class: "btn btn-block btn-#{variant || 'light'} border mb-2 d-flex align-items-center justify-content-center", method: :post do
-  = image_tag oauth_provider_icon(provider), class: "align-middle mr-2", style: "height: 28px; width: auto"
+  = image_tag oauth_provider_icon(provider), class: "align-middle mr-2 provider-logo", style: "height: 28px; width: auto"
   #{action || 'Sign in'} with #{title}
