@@ -23,7 +23,8 @@ RSpec.describe UserBlueprint do
 
     it 'includes fields needed by profile and password pages' do
       expect(result.keys).to match_array(%w[id name email provider slack_user_id unconfirmed_email
-                                            identities connectable_providers])
+                                            identities connectable_providers
+                                            password_automatically_set])
     end
 
     it 'does NOT include admin status or sign-in tracking' do

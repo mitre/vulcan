@@ -255,6 +255,7 @@ class User < ApplicationRecord
       name: auth.info.name.presence || "#{provider} user",
       password: Devise.friendly_token
     )
+    user.password_automatically_set = true
     user.skip_confirmation!
     user.save!
     user.link_identity!(provider: provider, uid: uid, email: email.downcase, audit_reason: "New user via #{provider}")

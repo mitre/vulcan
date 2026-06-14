@@ -83,24 +83,25 @@ RSpec.describe 'Sessions' do
   # session[:id_token] is populated exactly as production does, then
   # exercises SessionsController#destroy's provider-logout branch.
   describe 'DELETE /users/sign_out with an OIDC session' do
-    let(:user) { create(:user, provider: 'oidc', uid: 'okta-123') }
+    let(:oidc_provider) { Devise.omniauth_providers.first }
+    let(:user) { create(:user, provider: oidc_provider.to_s, uid: 'okta-123') }
 
     def sign_in_via_oidc(user)
       OmniAuth.config.test_mode = true
-      OmniAuth.config.mock_auth[:oidc] = OmniAuth::AuthHash.new(
-        provider: 'oidc',
+      OmniAuth.config.mock_auth[oidc_provider] = OmniAuth::AuthHash.new(
+        provider: oidc_provider.to_s,
         uid: user.uid,
         info: { name: user.name, email: user.email },
         credentials: { id_token: 'fake-id-token' },
         extra: { raw_info: {} }
       )
-      post '/users/auth/oidc'
-      follow_redirect! # callback — stores session[:id_token]
+      post "/users/auth/#{oidc_provider}"
+      follow_redirect!
     end
 
     after do
       OmniAuth.config.test_mode = false
-      OmniAuth.config.mock_auth[:oidc] = nil
+      OmniAuth.config.mock_auth[oidc_provider] = nil
     end
 
     it 'redirects to the discovered end_session_endpoint when the provider publishes one' do
@@ -149,23 +150,25 @@ RSpec.describe 'Sessions' do
   end
 
   describe 'OIDC logout URL shape' do
-    let(:user) { create(:user, provider: 'oidc', uid: 'okta-url-test') }
+    let(:user) { create(:user, provider: Devise.omniauth_providers.first.to_s, uid: 'okta-url-test') }
 
     def sign_in_via_oidc(user)
+      provider = Devise.omniauth_providers.first
       OmniAuth.config.test_mode = true
-      OmniAuth.config.mock_auth[:oidc] = OmniAuth::AuthHash.new(
-        provider: 'oidc', uid: user.uid,
+      OmniAuth.config.mock_auth[provider] = OmniAuth::AuthHash.new(
+        provider: provider.to_s, uid: user.uid,
         info: { name: user.name, email: user.email },
         credentials: { id_token: 'fake-id-token' },
         extra: { raw_info: {} }
       )
-      post '/users/auth/oidc'
+      post "/users/auth/#{provider}"
       follow_redirect!
     end
 
     after do
+      provider = Devise.omniauth_providers.first
       OmniAuth.config.test_mode = false
-      OmniAuth.config.mock_auth[:oidc] = nil
+      OmniAuth.config.mock_auth[provider] = nil
     end
 
     it 'includes post_logout_redirect_uri pointing at /users/signed_out' do

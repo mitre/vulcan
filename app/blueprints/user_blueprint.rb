@@ -9,7 +9,7 @@ class UserBlueprint < Blueprinter::Base
   fields :name, :email
 
   view :profile do
-    fields :provider, :slack_user_id, :unconfirmed_email
+    fields :provider, :slack_user_id, :unconfirmed_email, :password_automatically_set
 
     field :identities do |user|
       user.identities.order(last_sign_in_at: :desc).map do |i|

@@ -199,14 +199,21 @@ module Users
     # sends — skip_reconfirmation! applies it immediately instead (same
     # pattern as the admin path in UsersController#update).
     def update_resource(resource, params)
-      if resource.provider.nil? && email_change?(resource, params)
+      if resource.password_automatically_set && password_change?(params)
+        resource.password_automatically_set = false
+        resource.update(params.except('current_password'))
+      elsif resource.provider.nil? && email_change?(resource, params)
         resource.skip_reconfirmation! unless Settings.local_login.email_confirmation
         resource.update_with_password(params)
+      elsif password_change?(params)
+        resource.update_with_password(params)
       else
-        # Provider-managed users (the IdP owns email) and non-sensitive
-        # saves both strip the sensitive params and skip the password.
         resource.update_without_password(params.except('email', 'current_password'))
       end
+    end
+
+    def password_change?(params)
+      params['password'].present?
     end
 
     def email_change?(resource, params)
