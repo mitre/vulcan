@@ -136,6 +136,30 @@ If an admin already exists from `admin:bootstrap`, the demo admin is skipped and
 | `VULCAN_OIDC_USERINFO_URL` | OIDC userinfo endpoint | `https://dev-12345.okta.com/oauth2/default/v1/userinfo` |
 | `VULCAN_OIDC_JWKS_URI` | OIDC JWKS endpoint | `https://dev-12345.okta.com/oauth2/default/v1/keys` |
 
+#### Multiple OIDC Providers (Registry)
+
+**New in v2.4+**: Run N OIDC providers simultaneously (e.g., Okta + Login.gov on one login page).
+
+Set `VULCAN_OIDC_PROVIDERS` to a comma-separated list of provider keys. Each key becomes the strategy name, callback path (`/users/auth/<key>/callback`), and stored provider value. Per-provider vars follow `VULCAN_OIDC_<KEY>_<FIELD>`:
+
+```bash
+VULCAN_OIDC_PROVIDERS=okta,login_gov
+
+VULCAN_OIDC_OKTA_ISSUER_URL=https://your-domain.okta.com/oauth2/default
+VULCAN_OIDC_OKTA_CLIENT_ID=...
+VULCAN_OIDC_OKTA_CLIENT_SECRET=...
+VULCAN_OIDC_OKTA_TITLE=Okta
+
+VULCAN_OIDC_LOGIN_GOV_ISSUER_URL=https://idp.int.identitysandbox.gov/
+VULCAN_OIDC_LOGIN_GOV_CLIENT_ID=urn:gov:gsa:openidconnect:...
+VULCAN_OIDC_LOGIN_GOV_CLIENT_AUTH_METHOD=jwt_bearer
+VULCAN_OIDC_LOGIN_GOV_PRIVATE_KEY_PATH=/path/to/key.pem
+VULCAN_OIDC_LOGIN_GOV_ACR_VALUES=urn:acr.login.gov:auth-only
+VULCAN_OIDC_LOGIN_GOV_TITLE=Login.gov
+```
+
+**Backward compatible:** When `VULCAN_OIDC_PROVIDERS` is unset, the unprefixed `VULCAN_OIDC_*` variables above define a single provider named `oidc`. See [Login.gov Setup](/deployment/auth/login-gov) for login.gov-specific details.
+
 #### Deprecated Variables
 *These variables are no longer needed with auto-discovery enabled*
 

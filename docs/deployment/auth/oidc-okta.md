@@ -6,9 +6,10 @@ all built in. **You configure two things and nothing else: the application in
 your identity provider, and Vulcan's environment variables.** You never write
 or modify application code to enable SSO.
 
-This guide uses Okta names for settings; any OIDC-compliant provider
-(Keycloak, Azure AD/Entra, Auth0, login.gov) needs the same values under its
-own labels.
+This guide covers Okta specifically. For other providers:
+- **Login.gov** (PIV/CAC): See [Login.gov Setup Guide](login-gov.md)
+- **Keycloak, Azure AD/Entra, Auth0**: Follow this guide, substituting your provider's admin console names
+- **Multiple providers simultaneously**: Configure `VULCAN_OIDC_PROVIDERS` — see `ENVIRONMENT_VARIABLES.md`
 
 ## Quick Setup
 

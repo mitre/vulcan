@@ -92,7 +92,8 @@ export default defineConfig({
           {
             text: "Authentication",
             items: [
-              { text: "OIDC/OKTA", link: "/deployment/auth/oidc-okta" },
+              { text: "OIDC/Okta", link: "/deployment/auth/oidc-okta" },
+              { text: "Login.gov (PIV/CAC)", link: "/deployment/auth/login-gov" },
               { text: "LDAP", link: "/deployment/auth/ldap" },
               { text: "GitHub OAuth", link: "/deployment/auth/github" },
             ],
@@ -240,7 +241,8 @@ export default defineConfig({
         {
           text: "Authentication Setup",
           items: [
-            { text: "OIDC/OKTA", link: "/deployment/auth/oidc-okta" },
+            { text: "OIDC/Okta", link: "/deployment/auth/oidc-okta" },
+            { text: "Login.gov (PIV/CAC)", link: "/deployment/auth/login-gov" },
             { text: "LDAP", link: "/deployment/auth/ldap" },
             { text: "GitHub OAuth", link: "/deployment/auth/github" },
           ],
