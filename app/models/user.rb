@@ -196,7 +196,7 @@ class User < ApplicationRecord
     identity = Identity.find_by(provider: provider, uid: uid)
     if identity
       Rails.logger.info "Re-authenticating user from OmniAuth: email=#{email}, provider=#{provider}"
-      sync_identity_sign_in(identity, provider, uid)
+      identity.user.link_identity!(provider: provider, uid: uid, email: email, audit_reason: "Re-authenticated via #{provider}")
       return identity.user
     end
 
@@ -205,8 +205,7 @@ class User < ApplicationRecord
     user = find_by(provider: provider, uid: uid)
     if user
       Rails.logger.info "Re-authenticating user (legacy, no identity row): email=#{email}, provider=#{provider}"
-      identity = upsert_identity(user, provider, uid, email)
-      sync_identity_sign_in(identity, provider, uid)
+      user.link_identity!(provider: provider, uid: uid, email: email, audit_reason: "Re-authenticated via #{provider} (backfill)")
       return user
     end
 
@@ -218,10 +217,7 @@ class User < ApplicationRecord
       # Same provider, different uid — provider re-issued identity
       if user.provider.to_s == provider
         Rails.logger.info "Updating uid for #{user.email}: provider=#{provider}"
-        user.uid = uid
-        user.save!
-        identity = upsert_identity(user, provider, uid, email)
-        sync_identity_sign_in(identity, provider, uid)
+        user.link_identity!(provider: provider, uid: uid, email: email, audit_reason: "UID reissue for #{provider}")
         return user
       end
 
@@ -236,11 +232,7 @@ class User < ApplicationRecord
         end
 
         Rails.logger.info "AUDIT: Auto-linked local account #{user.email} to #{provider}"
-        user.provider = provider
-        user.uid = uid
-        user.audit_comment = "Linked #{provider.upcase} identity to local account"
-        user.save!
-        upsert_identity(user, provider, uid, email)
+        user.link_identity!(provider: provider, uid: uid, email: email, audit_reason: "Auto-linked #{provider} to local account")
         user.just_auto_linked = true
         return user
       end
@@ -265,7 +257,7 @@ class User < ApplicationRecord
     )
     user.skip_confirmation!
     user.save!
-    upsert_identity(user, provider, uid, email)
+    user.link_identity!(provider: provider, uid: uid, email: email.downcase, audit_reason: "New user via #{provider}")
     Rails.logger.info "User #{user.email} successfully authenticated via #{provider}"
     user
   end
@@ -390,27 +382,5 @@ class User < ApplicationRecord
       update_column(:admin, true) # rubocop:disable Rails/SkipsModelValidations -- intentional: avoid callback loop inside after_create
       Rails.logger.info "First user #{email} promoted to admin (VULCAN_FIRST_USER_ADMIN=true)"
     end
-  end
-
-  # Creates or finds an Identity row for a (provider, uid) and returns it.
-  # Used by every from_omniauth path to ensure the identities table always
-  # reflects the current auth state.
-  private_class_method def self.upsert_identity(user, provider, uid, email)
-    identity = Identity.find_or_initialize_by(provider: provider, user: user)
-    identity.uid = uid
-    identity.email = email
-    identity.last_sign_in_at = Time.current
-    identity.save!
-    identity
-  end
-
-  # Updates last_sign_in_at on the matched identity and syncs the denormalized
-  # users.provider/uid to match. Called on every successful re-auth.
-  private_class_method def self.sync_identity_sign_in(identity, provider, uid)
-    identity.update!(last_sign_in_at: Time.current)
-    user = identity.user
-    return if user.provider == provider && user.uid == uid
-
-    user.update_columns(provider: provider, uid: uid) # rubocop:disable Rails/SkipsModelValidations -- denorm cache sync, not a domain mutation; callbacks/validations not relevant for this write
   end
 end
