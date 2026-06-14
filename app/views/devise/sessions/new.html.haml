@@ -15,7 +15,7 @@
       .col-lg-6.offset-lg-1
         #login
           - if any_oauth_providers_enabled? || any_form_providers_enabled?
-            %b-card{"no-body" => "", "class" => "shadow-sm"}
+            %b-card{"no-body" => "", "class" => "shadow border"}
               %b-tabs{:card => "", :fill => "", :pills => ""}
                 - if oidc_enabled?
                   - non_ldap_oauth_providers.each do |provider|
