@@ -46,6 +46,7 @@ class User < ApplicationRecord
   before_create :skip_confirmation!, unless: -> { Settings.local_login.email_confirmation }
   after_create :promote_first_user_to_admin
 
+  has_many :identities, dependent: :destroy
   has_many :reviews, dependent: :nullify
   has_many :reactions, dependent: :destroy
   has_many :memberships, dependent: :destroy
@@ -149,10 +150,21 @@ class User < ApplicationRecord
     provider = auth.provider.to_s
     uid = auth.uid.to_s
 
-    # LOOKUP 1: Exact identity match by provider + uid (most reliable)
+    # LOOKUP 1: Identity-first — find by (provider, uid) on the identities table.
+    identity = Identity.find_by(provider: provider, uid: uid)
+    if identity
+      Rails.logger.info "Re-authenticating user from OmniAuth: email=#{email}, provider=#{provider}"
+      sync_identity_sign_in(identity, provider, uid)
+      return identity.user
+    end
+
+    # LOOKUP 1b: Legacy fallback — find by denormalized users.provider/uid for
+    # users who haven't been backfilled to the identities table yet.
     user = find_by(provider: provider, uid: uid)
     if user
-      Rails.logger.info "Re-authenticating user from OmniAuth: email=#{email}, provider=#{provider}"
+      Rails.logger.info "Re-authenticating user (legacy, no identity row): email=#{email}, provider=#{provider}"
+      identity = upsert_identity(user, provider, uid, email)
+      sync_identity_sign_in(identity, provider, uid)
       return user
     end
 
@@ -166,16 +178,13 @@ class User < ApplicationRecord
         Rails.logger.info "Updating uid for #{user.email}: provider=#{provider}"
         user.uid = uid
         user.save!
+        identity = upsert_identity(user, provider, uid, email)
+        sync_identity_sign_in(identity, provider, uid)
         return user
       end
 
       # Different provider — check global auto-link setting
       if existing_provider == 'local' && Settings.auto_link_user
-        # SECURITY: If the provider explicitly asserts the email is NOT verified,
-        # refuse to auto-link. Prevents rogue/misconfigured providers from claiming
-        # arbitrary emails to take over local accounts. If the claim is absent,
-        # we trust the admin's decision to enable auto_link_user.
-        # Cast to boolean to guard against providers sending "false" (string) instead of false
         if auth.info.respond_to?(:email_verified) &&
            ActiveModel::Type::Boolean.new.cast(auth.info.email_verified) == false
           Rails.logger.warn "BLOCKED: Auto-link refused for #{user.email} — #{provider} asserted email not verified"
@@ -189,6 +198,7 @@ class User < ApplicationRecord
         user.uid = uid
         user.audit_comment = "Linked #{provider.upcase} identity to local account"
         user.save!
+        upsert_identity(user, provider, uid, email)
         user.just_auto_linked = true
         return user
       end
@@ -198,10 +208,11 @@ class User < ApplicationRecord
                         "but account exists with provider '#{existing_provider}'"
       human_provider = existing_provider == 'local' ? 'email and password' : existing_provider.upcase
       raise ProviderConflictError,
-            "An account with this email already exists using #{human_provider} sign-in."
+            "An account with this email already exists using #{human_provider} sign-in. " \
+            'Please sign in with your existing method and connect this provider from your profile settings.'
     end
 
-    # LOOKUP 3: No existing account — create new user
+    # LOOKUP 3: No existing account — create new user + identity
     Rails.logger.info "Creating new user from OmniAuth: email=#{email}, provider=#{provider}"
     user = new(
       email: email.downcase,
@@ -212,6 +223,7 @@ class User < ApplicationRecord
     )
     user.skip_confirmation!
     user.save!
+    upsert_identity(user, provider, uid, email)
     Rails.logger.info "User #{user.email} successfully authenticated via #{provider}"
     user
   end
@@ -327,5 +339,27 @@ class User < ApplicationRecord
       update_column(:admin, true) # rubocop:disable Rails/SkipsModelValidations -- intentional: avoid callback loop inside after_create
       Rails.logger.info "First user #{email} promoted to admin (VULCAN_FIRST_USER_ADMIN=true)"
     end
+  end
+
+  # Creates or finds an Identity row for a (provider, uid) and returns it.
+  # Used by every from_omniauth path to ensure the identities table always
+  # reflects the current auth state.
+  private_class_method def self.upsert_identity(user, provider, uid, email)
+    identity = Identity.find_or_initialize_by(provider: provider, user: user)
+    identity.uid = uid
+    identity.email = email
+    identity.last_sign_in_at = Time.current
+    identity.save!
+    identity
+  end
+
+  # Updates last_sign_in_at on the matched identity and syncs the denormalized
+  # users.provider/uid to match. Called on every successful re-auth.
+  private_class_method def self.sync_identity_sign_in(identity, provider, uid)
+    identity.update!(last_sign_in_at: Time.current)
+    user = identity.user
+    return if user.provider == provider && user.uid == uid
+
+    user.update_columns(provider: provider, uid: uid) # rubocop:disable Rails/SkipsModelValidations -- denorm cache sync, not a domain mutation; callbacks/validations not relevant for this write
   end
 end
