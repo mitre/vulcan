@@ -124,11 +124,22 @@ module Users
     end
 
     def omniauth_provider_conflict(exception)
-      Rails.logger.warn "Provider conflict: #{exception.message}"
-      flash.alert = "#{exception.message} " \
-                    'Please sign in using your existing account, ' \
-                    'or contact an administrator to link your accounts.'
-      redirect_to new_user_session_path
+      auth = request.env['omniauth.auth']
+      if auth
+        session[:pending_link] = {
+          provider: auth.provider.to_s,
+          uid: auth.uid.to_s,
+          email: auth.info.email,
+          name: auth.info.name
+        }
+        Rails.logger.info "Provider conflict — pending link stored for #{auth.info.email} via #{auth.provider}"
+        flash.alert = exception.message
+        redirect_to new_user_session_path(link_pending: true)
+      else
+        Rails.logger.warn "Provider conflict (no auth data): #{exception.message}"
+        flash.alert = exception.message
+        redirect_to new_user_session_path
+      end
     end
 
     def omniauth_validation_error(exception)

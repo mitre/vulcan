@@ -9,7 +9,7 @@ class SessionsController < Devise::SessionsController
 
   # The RP-initiated logout landing must work for the signed-out browser
   # the OIDC provider sends back — narrow skip, this action only.
-  skip_before_action :authenticate_user!, only: :signed_out
+  skip_before_action :authenticate_user!, only: %i[signed_out complete_link]
 
   # AC-8: Preserve consent acknowledgment across Devise's session reset.
   # Devise calls reset_session on login (session fixation protection).
@@ -63,6 +63,44 @@ class SessionsController < Devise::SessionsController
   # safe for direct unauthenticated hits: it reads no session state.
   def signed_out
     redirect_to new_user_session_path, notice: t('devise.sessions.signed_out')
+  end
+
+  def complete_link
+    pending = session[:pending_link]
+    unless pending
+      flash.alert = 'No pending account link. Please try signing in again.'
+      redirect_to new_user_session_path and return
+    end
+
+    user = User.find_by('LOWER(email) = ?', pending['email'].to_s.downcase)
+    unless user
+      session.delete(:pending_link)
+      flash.alert = 'Account not found. Please try signing in again.'
+      redirect_to new_user_session_path and return
+    end
+
+    unless user.valid_for_authentication? { user.valid_password?(params[:current_password].to_s) }
+      if user.access_locked?
+        session.delete(:pending_link)
+        flash.alert = 'Your account has been locked due to too many failed attempts. Please try again later.'
+      else
+        flash.alert = 'Incorrect password. Please enter your existing account password to link.'
+      end
+      redirect_to new_user_session_path(link_pending: true) and return
+    end
+
+    title = OidcProviderRegistry.title_for(pending['provider'])
+    user.link_identity!(
+      provider: pending['provider'],
+      uid: pending['uid'],
+      email: pending['email'],
+      audit_reason: "Linked #{title} via account verification"
+    )
+    session.delete(:pending_link)
+
+    sign_in(user)
+    flash.notice = "Your account has been linked to #{title} and you are now signed in."
+    redirect_to root_path
   end
 
   private

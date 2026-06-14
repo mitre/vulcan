@@ -28,6 +28,7 @@ Rails.application.routes.draw do
     get '/users/signed_out', to: 'sessions#signed_out', as: :signed_out
     post '/users/unlink_identity', to: 'users/registrations#unlink_identity', as: :unlink_identity
     post '/users/initiate_link', to: 'users/registrations#initiate_link', as: :initiate_link
+    post '/users/complete_link', to: 'sessions#complete_link', as: :complete_link
     # Settings shell sub-pages — each section gets its own URL so it's
     # bookmarkable and can be linked to directly from notifications,
     # navbar dropdowns, etc. /users/edit (Devise's default) renders the
