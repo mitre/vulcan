@@ -47,3 +47,8 @@ properties:
       - 'null'
     description: Timestamp when the account was locked due to excessive failed attempts. Null if not locked. Blueprinter format.
     example: null
+  identities:
+    type: array
+    description: Linked external identities for this user (provider, email, last sign-in). Present in admin and profile views.
+    items:
+      $ref: ./IdentitySummary.yaml

@@ -22,7 +22,8 @@ RSpec.describe UserBlueprint do
     subject(:result) { described_class.render_as_json(user, view: :profile) }
 
     it 'includes fields needed by profile and password pages' do
-      expect(result.keys).to match_array(%w[id name email provider slack_user_id unconfirmed_email])
+      expect(result.keys).to match_array(%w[id name email provider slack_user_id unconfirmed_email
+                                            identities connectable_providers])
     end
 
     it 'does NOT include admin status or sign-in tracking' do
@@ -36,7 +37,7 @@ RSpec.describe UserBlueprint do
 
     it 'includes all admin-visible fields' do
       expect(result.keys).to match_array(%w[id name email provider admin last_sign_in_at
-                                            failed_attempts locked_at])
+                                            failed_attempts locked_at identities])
     end
 
     it 'does NOT include Devise internals' do

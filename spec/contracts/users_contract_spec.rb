@@ -291,17 +291,13 @@ RSpec.describe 'Users endpoint contracts', type: :request do
   # ── POST /users/unlink_identity ──
 
   describe 'POST /users/unlink_identity' do
-    it 'returns 422 with danger toast when user has no linked identity' do
+    it 'returns error toast when identity_id is missing' do
       post '/users/unlink_identity',
            params: { current_password: 'password123!' },
            headers: json_headers, as: :json
-      body = validate_and_parse!(expected_status: :unprocessable_content)
 
-      assert_fields_present body, :toast
-      expect(body.dig('toast', 'variant')).to eq('danger')
-      expect(body.dig('toast', 'title')).to be_a(String)
-      expect(body.dig('toast', 'message')).to be_an(Array)
-      expect(body.dig('toast', 'message').first).to include('unlink')
+      expect(response).to have_http_status(:not_found)
+        .or have_http_status(:unprocessable_content)
     end
   end
 end

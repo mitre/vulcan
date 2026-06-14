@@ -8468,6 +8468,42 @@ components:
               description: All rules in this STIG, each with full DISA metadata and check content.
               items:
                 $ref: '#/components/schemas/StigRuleSummary'
+    IdentitySummary:
+      description: A linked external identity (provider + uid) for a user account.
+      type: object
+      required:
+        - provider
+        - title
+      properties:
+        id:
+          type: integer
+          description: Unique identity record identifier.
+          example: 7
+        provider:
+          type: string
+          description: Registry key of the authentication provider (e.g. okta, login_gov, oidc, ldap, github).
+          example: okta
+        email:
+          type:
+            - string
+            - 'null'
+          format: email
+          description: Email address asserted by this provider. For display/audit only — not the link key.
+          example: jane@example.com
+        title:
+          type: string
+          description: Human-facing display name for the provider, from the OIDC registry or titleized fallback.
+          example: Okta
+        last_sign_in_at:
+          type:
+            - string
+            - 'null'
+          description: ISO 8601 timestamp of the most recent sign-in via this identity. Null if never used.
+          example: '2026-06-14T13:29:15Z'
+        can_unlink:
+          type: boolean
+          description: Whether this identity can be unlinked (false when it is the user's only sign-in method). Only present in the profile view.
+          example: true
     UserSummary:
       description: Summary of a user account for admin management views.
       type: object
@@ -8518,6 +8554,11 @@ components:
             - 'null'
           description: Timestamp when the account was locked due to excessive failed attempts. Null if not locked. Blueprinter format.
           example: null
+        identities:
+          type: array
+          description: Linked external identities for this user (provider, email, last sign-in). Present in admin and profile views.
+          items:
+            $ref: '#/components/schemas/IdentitySummary'
     UserToastResponse:
       description: Combined response containing a toast notification and the updated user. Used by PUT /users/:id, POST /users/:id/lock, POST /users/:id/unlock.
       type: object
