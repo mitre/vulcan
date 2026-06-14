@@ -10,7 +10,7 @@ RSpec.describe 'Sessions' do
   end
 
   # Helper method to mock OIDC settings
-  def mock_oidc_settings(enabled:, issuer: nil, client_id: nil, discovery: true)
+  def mock_oidc_settings(enabled:, issuer: nil, client_id: nil, discovery: true, provider_name: 'oidc')
     oidc_settings = double('oidc_settings')
     allow(oidc_settings).to receive_messages(enabled: enabled, discovery: discovery)
 
@@ -19,7 +19,12 @@ RSpec.describe 'Sessions' do
       client_options_mock = double('client_options')
       allow(client_options_mock).to receive(:identifier).and_return(client_id)
       allow(args_mock).to receive_messages(issuer: issuer, client_options: client_options_mock)
-      allow(oidc_settings).to receive(:args).and_return(args_mock)
+      allow(oidc_settings).to receive_messages(
+        args: args_mock,
+        providers: [{ 'name' => provider_name, 'issuer' => issuer, 'client_id' => client_id }]
+      )
+    else
+      allow(oidc_settings).to receive(:providers).and_return([])
     end
 
     allow(Settings).to receive_messages(oidc: oidc_settings, app_url: base_url)
@@ -143,22 +148,40 @@ RSpec.describe 'Sessions' do
     end
   end
 
-  describe 'OIDC logout URL' do
-    it 'points post_logout_redirect_uri at the signed_out landing' do
+  describe 'OIDC logout URL shape' do
+    let(:user) { create(:user, provider: 'oidc', uid: 'okta-url-test') }
+
+    def sign_in_via_oidc(user)
+      OmniAuth.config.test_mode = true
+      OmniAuth.config.mock_auth[:oidc] = OmniAuth::AuthHash.new(
+        provider: 'oidc', uid: user.uid,
+        info: { name: user.name, email: user.email },
+        credentials: { id_token: 'fake-id-token' },
+        extra: { raw_info: {} }
+      )
+      post '/users/auth/oidc'
+      follow_redirect!
+    end
+
+    after do
+      OmniAuth.config.test_mode = false
+      OmniAuth.config.mock_auth[:oidc] = nil
+    end
+
+    it 'includes post_logout_redirect_uri pointing at /users/signed_out' do
       mock_oidc_settings(enabled: true, issuer: 'https://example.okta.com', client_id: 'test-client-id')
       mock_http_response(
         success: true,
         body: { 'end_session_endpoint' => 'https://example.okta.com/oauth2/v1/logout' }.to_json
       )
+      sign_in_via_oidc(user)
 
-      controller = SessionsController.new
-      controller.request = ActionDispatch::TestRequest.create
-      endpoint = controller.send(:fetch_oidc_logout_endpoint)
-      url = controller.send(:build_oidc_logout_url, endpoint, 'fake-id-token')
+      delete '/users/sign_out'
 
-      expect(url).to start_with('https://example.okta.com/oauth2/v1/logout?')
-      expect(url).to include(CGI.escape("#{base_url}/users/signed_out"))
-      expect(url).to include('id_token_hint=fake-id-token')
+      expect(response.location).to start_with('https://example.okta.com/oauth2/v1/logout?')
+      expect(response.location).to include(CGI.escape('/users/signed_out'))
+      expect(response.location).to include('id_token_hint=fake-id-token')
+      expect(response.location).to include('client_id=test-client-id')
     end
   end
 
