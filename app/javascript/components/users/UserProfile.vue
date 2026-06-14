@@ -17,29 +17,8 @@
     <b-alert show :variant="isProviderManaged ? 'info' : 'success'" class="mb-3">
       <b-icon icon="shield-check" /> Signed in via
       <strong>{{ currentSessionMethod }}</strong>
-      <span v-if="linkedProvider && sessionAuthMethod === 'local'">
-        &middot; Account also linked to <strong>{{ linkedProvider }}</strong>
-        <b-button
-          data-test="unlink-identity-button"
-          size="sm"
-          variant="outline-danger"
-          class="ml-2"
-          @click="openUnlinkIdentity"
-        >
-          <b-icon icon="link-45deg" /> Unlink
-        </b-button>
-      </span>
-      <span v-else-if="linkedProvider">
+      <span v-if="isProviderManaged">
         &middot; Some settings are managed by your identity provider and cannot be changed here.
-        <b-button
-          data-test="unlink-identity-button"
-          size="sm"
-          variant="outline-danger"
-          class="ml-2"
-          @click="openUnlinkIdentity"
-        >
-          <b-icon icon="link-45deg" /> Unlink {{ linkedProvider }}
-        </b-button>
       </span>
     </b-alert>
 
@@ -115,6 +94,69 @@
       </b-card-body>
     </b-card>
 
+    <b-card no-body class="mt-3">
+      <b-card-header>
+        <h5 class="mb-0"><b-icon icon="link-45deg" class="mr-1" /> Connected Accounts</h5>
+      </b-card-header>
+      <b-card-body>
+        <b-table-simple v-if="user.identities && user.identities.length" small hover responsive>
+          <b-thead>
+            <b-tr>
+              <b-th>Provider</b-th>
+              <b-th>Email</b-th>
+              <b-th>Last Sign-In</b-th>
+              <b-th class="text-right">Actions</b-th>
+            </b-tr>
+          </b-thead>
+          <b-tbody>
+            <b-tr v-for="identity in user.identities" :key="identity.id">
+              <b-td>{{ identity.title }}</b-td>
+              <b-td>{{ identity.email || "—" }}</b-td>
+              <b-td>{{
+                identity.last_sign_in_at
+                  ? new Date(identity.last_sign_in_at).toLocaleString()
+                  : "Never"
+              }}</b-td>
+              <b-td class="text-right">
+                <b-button
+                  v-if="identity.can_unlink"
+                  size="sm"
+                  variant="outline-danger"
+                  :disabled="isUnlinking"
+                  @click="openUnlinkIdentity(identity)"
+                >
+                  <b-icon icon="x-circle" /> Unlink
+                </b-button>
+                <span
+                  v-else
+                  v-b-tooltip.hover
+                  title="Cannot unlink — this is your only sign-in method"
+                >
+                  <b-button size="sm" variant="outline-secondary" disabled>
+                    <b-icon icon="lock" /> Unlink
+                  </b-button>
+                </span>
+              </b-td>
+            </b-tr>
+          </b-tbody>
+        </b-table-simple>
+        <p v-else class="text-muted mb-0">No external identities linked.</p>
+
+        <div v-if="user.connectable_providers && user.connectable_providers.length" class="mt-3">
+          <b-button
+            v-for="provider in user.connectable_providers"
+            :key="provider.name"
+            size="sm"
+            variant="outline-primary"
+            class="mr-2"
+            @click="connectProvider(provider.name)"
+          >
+            <b-icon icon="plus-circle" /> Connect {{ provider.title }}
+          </b-button>
+        </div>
+      </b-card-body>
+    </b-card>
+
     <b-modal
       id="unlink-identity-modal"
       v-model="showUnlinkModal"
@@ -127,8 +169,8 @@
       @hidden="resetUnlinkForm"
     >
       <p>
-        You are about to unlink <strong>{{ linkedProvider }}</strong> from your account. After
-        unlinking, you can only sign in with your email and password.
+        You are about to unlink <strong>{{ unlinkTarget ? unlinkTarget.title : "" }}</strong> from
+        your account.
       </p>
       <p class="text-muted small">
         Enter your current password to confirm you can still access this account.
@@ -195,6 +237,7 @@ export default {
       // initial page render and goes stale after in-page saves.
       baselineEmail: this.user.email || "",
       unlinkForm: { current_password: "" },
+      unlinkTarget: null,
       showUnlinkModal: false,
       isUnlinking: false,
       saving: false,
@@ -268,18 +311,21 @@ export default {
         this.isDeleting = false;
       }
     },
-    openUnlinkIdentity() {
+    openUnlinkIdentity(identity) {
+      this.unlinkTarget = identity;
       this.showUnlinkModal = true;
     },
     resetUnlinkForm() {
       this.unlinkForm.current_password = "";
+      this.unlinkTarget = null;
       this.isUnlinking = false;
     },
     async submitUnlink() {
-      if (this.isUnlinking) return;
+      if (this.isUnlinking || !this.unlinkTarget) return;
       this.isUnlinking = true;
       try {
         const response = await unlinkIdentity({
+          identity_id: this.unlinkTarget.id,
           current_password: this.unlinkForm.current_password,
         });
         this.alertOrNotifyResponse(response);
@@ -288,6 +334,26 @@ export default {
         this.alertOrNotifyResponse(error);
         this.isUnlinking = false;
       }
+    },
+    connectProvider(providerName) {
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = `/users/initiate_link`;
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+      if (csrfToken) {
+        const tokenInput = document.createElement("input");
+        tokenInput.type = "hidden";
+        tokenInput.name = "authenticity_token";
+        tokenInput.value = csrfToken;
+        form.appendChild(tokenInput);
+      }
+      const providerInput = document.createElement("input");
+      providerInput.type = "hidden";
+      providerInput.name = "provider";
+      providerInput.value = providerName;
+      form.appendChild(providerInput);
+      document.body.appendChild(form);
+      form.submit();
     },
   },
 };
