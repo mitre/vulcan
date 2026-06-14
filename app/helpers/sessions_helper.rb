@@ -27,6 +27,16 @@ module SessionsHelper
     OidcProviderRegistry.title_for(provider)
   end
 
+  def oauth_provider_icon(provider)
+    base = "#{provider.to_s.tr('_', '-')}-logo"
+    %w[.svg .png].each do |ext|
+      return ActionController::Base.helpers.asset_path("#{base}#{ext}")
+    rescue Propshaft::MissingAssetError
+      next
+    end
+    ActionController::Base.helpers.asset_path('oidc-lock-icon.png')
+  end
+
   def local_login_enabled?
     Settings.local_login.enabled
   end

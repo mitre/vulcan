@@ -17,8 +17,8 @@
               - non_ldap_oauth_providers.each do |provider|
                 %b-tab{:title => oauth_provider_title(provider)}
                   %b-card-text
-                    = link_to omniauth_authorize_path(resource_name, provider), class: "btn btn-block btn-light border", method: :post do
-                      = image_tag asset_path("oidc-lock-icon.png"), style: "vertical-align: middle; margin-right: 10px", height: 40, width: 40
+                    = link_to omniauth_authorize_path(resource_name, provider), class: "btn btn-block btn-light border d-flex align-items-center justify-content-center", method: :post do
+                      = image_tag oauth_provider_icon(provider), class: "align-middle mr-2", style: "height: 28px; width: auto"
                       Sign in with #{oauth_provider_title(provider)}
             - if ldap_enabled?
               %b-tab{:title => Settings.ldap.servers.values.first['title']}
@@ -33,8 +33,8 @@
                 %b-card-text
                   - if oidc_enabled?
                     - non_ldap_oauth_providers.each do |provider|
-                      = link_to omniauth_authorize_path(resource_name, provider), class: "btn btn-block btn-outline-primary border mb-2", method: :post do
-                        = image_tag asset_path("oidc-lock-icon.png"), style: "vertical-align: middle; margin-right: 10px", height: 30, width: 30
+                      = link_to omniauth_authorize_path(resource_name, provider), class: "btn btn-block btn-outline-primary border mb-2 d-flex align-items-center justify-content-center", method: :post do
+                        = image_tag oauth_provider_icon(provider), class: "align-middle mr-2", style: "height: 24px; width: auto"
                         Register with #{oauth_provider_title(provider)}
                     %p.text-center.text-muted.my-2 — or register with email and password —
                   = render 'devise/registrations/form'
