@@ -28,9 +28,9 @@ RSpec.describe 'Users::RegistrationsController#initiate_link' do
       end
     end
 
-    context 'when user already has a linked provider (JSON)' do
+    context 'when user already has this provider linked (JSON)' do
       before do
-        local_user.update_columns(provider: 'oidc', uid: 'already-linked')
+        create(:identity, user: local_user, provider: 'oidc', uid: 'already-linked')
         sign_in local_user
       end
 
@@ -40,13 +40,13 @@ RSpec.describe 'Users::RegistrationsController#initiate_link' do
              headers: { 'Accept' => 'application/json' }
 
         expect(response).to have_http_status(:unprocessable_content)
-        expect(response.parsed_body.dig('toast', 'message')).to include(match(/already has a linked identity/i))
+        expect(response.parsed_body.dig('toast', 'message')).to include(match(/already have a linked/i))
       end
     end
 
-    context 'when user already has a linked provider (HTML)' do
+    context 'when user already has this provider linked (HTML)' do
       before do
-        local_user.update_columns(provider: 'oidc', uid: 'already-linked')
+        create(:identity, user: local_user, provider: 'oidc', uid: 'already-linked')
         sign_in local_user
       end
 
@@ -54,7 +54,7 @@ RSpec.describe 'Users::RegistrationsController#initiate_link' do
         post '/users/initiate_link', params: { provider: 'oidc' }
 
         expect(response).to have_http_status(:found)
-        expect(flash.alert).to match(/already has a linked identity/i)
+        expect(flash.alert).to match(/already have a linked/i)
       end
     end
 
@@ -66,16 +66,12 @@ RSpec.describe 'Users::RegistrationsController#initiate_link' do
       end
     end
 
-    context 'when provider is not enabled (JSON)' do
-      before do
-        sign_in local_user
-        allow(Settings.oidc).to receive(:enabled).and_return(false)
-        allow(Settings.ldap).to receive(:enabled).and_return(false)
-      end
+    context 'when provider is not registered (JSON)' do
+      before { sign_in local_user }
 
-      it 'returns 422 with error' do
+      it 'returns 422 with error for an unregistered provider' do
         post '/users/initiate_link',
-             params: { provider: 'oidc' },
+             params: { provider: 'nonexistent_provider' },
              headers: { 'Accept' => 'application/json' }
 
         expect(response).to have_http_status(:unprocessable_content)

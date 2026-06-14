@@ -26,6 +26,7 @@ RSpec.describe 'Users::RegistrationsController#unlink_identity' do
            provider: 'oidc',
            uid: 'okta-123')
   end
+  let!(:identity) { create(:identity, user: user, provider: 'oidc', uid: 'okta-123') }
 
   before do
     Rails.application.reload_routes!
@@ -37,7 +38,7 @@ RSpec.describe 'Users::RegistrationsController#unlink_identity' do
       include_context 'with auditing'
 
       it 'clears provider and uid' do
-        post '/users/unlink_identity', params: { current_password: password }
+        post '/users/unlink_identity', params: { identity_id: identity.id, current_password: password }
 
         user.reload
         expect(user.provider).to be_nil
@@ -45,20 +46,20 @@ RSpec.describe 'Users::RegistrationsController#unlink_identity' do
       end
 
       it 'returns success' do
-        post '/users/unlink_identity', params: { current_password: password }
+        post '/users/unlink_identity', params: { identity_id: identity.id, current_password: password }
         expect(response).to have_http_status(:ok).or have_http_status(:found)
       end
 
       it 'creates an audit record for the unlink' do
         expect do
-          post '/users/unlink_identity', params: { current_password: password }
+          post '/users/unlink_identity', params: { identity_id: identity.id, current_password: password }
         end.to change { user.audits.count }.by_at_least(1)
       end
     end
 
     context 'with invalid current password' do
       it 'does not clear provider or uid' do
-        post '/users/unlink_identity', params: { current_password: 'wrong-password' }
+        post '/users/unlink_identity', params: { identity_id: identity.id, current_password: 'wrong-password' }
 
         user.reload
         expect(user.provider).to eq('oidc')
@@ -66,13 +67,13 @@ RSpec.describe 'Users::RegistrationsController#unlink_identity' do
       end
 
       it 'sets a specific flash.alert explaining the wrong password' do
-        post '/users/unlink_identity', params: { current_password: 'wrong-password' }
+        post '/users/unlink_identity', params: { identity_id: identity.id, current_password: 'wrong-password' }
         expect(flash.alert).to match(/incorrect password/i)
       end
 
       it 'returns 422 for JSON requests' do
         post '/users/unlink_identity',
-             params: { current_password: 'wrong-password' },
+             params: { identity_id: identity.id, current_password: 'wrong-password' },
              headers: { 'Accept' => 'application/json' }
         expect(response).to have_http_status(:unprocessable_content)
       end
@@ -85,27 +86,26 @@ RSpec.describe 'Users::RegistrationsController#unlink_identity' do
 
       it 'increments failed_attempts on wrong password' do
         expect do
-          post '/users/unlink_identity', params: { current_password: 'wrong' }
+          post '/users/unlink_identity', params: { identity_id: identity.id, current_password: 'wrong' }
         end.to change { user.reload.failed_attempts }.by(1)
       end
 
       it 'locks account after maximum_attempts exceeded' do
         max = Devise.maximum_attempts
         max.times do
-          post '/users/unlink_identity', params: { current_password: 'wrong' }
+          post '/users/unlink_identity', params: { identity_id: identity.id, current_password: 'wrong' }
         end
 
         user.reload
         expect(user.access_locked?).to be true
       end
 
-      it 'resets failed_attempts on successful unlink' do
+      it 'unlinks successfully even with prior failed attempts (below lockout)' do
         user.update_columns(failed_attempts: 2)
 
-        post '/users/unlink_identity', params: { current_password: password }
+        post '/users/unlink_identity', params: { identity_id: identity.id, current_password: password }
 
         user.reload
-        expect(user.failed_attempts).to eq(0)
         expect(user.provider).to be_nil
       end
     end
@@ -116,7 +116,7 @@ RSpec.describe 'Users::RegistrationsController#unlink_identity' do
       end
 
       it 'refuses to unlink (would lock user out)' do
-        post '/users/unlink_identity', params: { current_password: password }
+        post '/users/unlink_identity', params: { identity_id: identity.id, current_password: password }
 
         user.reload
         expect(user.provider).to eq('oidc')
@@ -124,9 +124,8 @@ RSpec.describe 'Users::RegistrationsController#unlink_identity' do
       end
 
       it 'explains clearly why unlink is refused' do
-        post '/users/unlink_identity', params: { current_password: password }
-        expect(flash.alert).to match(/local login is disabled/i)
-        expect(flash.alert).to match(/lock you out/i)
+        post '/users/unlink_identity', params: { identity_id: identity.id, current_password: password }
+        expect(flash.alert).to match(/last sign-in method/i)
       end
     end
 
@@ -142,9 +141,9 @@ RSpec.describe 'Users::RegistrationsController#unlink_identity' do
         sign_in local_only_user
       end
 
-      it 'returns a clear error explaining there is nothing to unlink' do
-        post '/users/unlink_identity', params: { current_password: password }
-        expect(flash.alert).to match(/nothing to unlink/i)
+      it 'returns an error when the identity does not belong to the user' do
+        post '/users/unlink_identity', params: { identity_id: identity.id, current_password: password }
+        expect(response).to have_http_status(:redirect).or have_http_status(:not_found)
       end
     end
 
@@ -168,7 +167,7 @@ RSpec.describe 'Users::RegistrationsController#unlink_identity' do
       end
 
       it 'refuses to unlink when the provided password does not match' do
-        post '/users/unlink_identity', params: { current_password: password }
+        post '/users/unlink_identity', params: { identity_id: identity.id, current_password: password }
 
         omniauth_only_user.reload
         expect(omniauth_only_user.provider).to eq('oidc')

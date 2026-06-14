@@ -112,41 +112,31 @@ module Users
     #   2. Prove the user can still authenticate after unlink (prevents lockout)
     # Refused when local login is globally disabled (no fallback auth method).
     def unlink_identity
-      user = current_user
+      identity = current_user.identities.find_by(id: params[:identity_id])
+      return respond_with_error('Identity not found.', :not_found) unless identity
 
-      return respond_with_error('Nothing to unlink — this account has no linked identity.', :unprocessable_content) if user.provider.blank?
-
-      unless Settings.local_login.enabled
-        return respond_with_error(
-          'Cannot unlink: local login is disabled on this instance. ' \
-          'Unlinking would lock you out of your account.',
-          :unprocessable_content
-        )
-      end
-
-      unless user.valid_for_authentication? { user.valid_password?(params[:current_password].to_s) }
-        return respond_with_error('Your account has been locked due to too many failed attempts. Please try again later.', :locked) if user.access_locked?
+      unless current_user.valid_for_authentication? { current_user.valid_password?(params[:current_password].to_s) }
+        return respond_with_error('Your account has been locked due to too many failed attempts. Please try again later.', :locked) if current_user.access_locked?
 
         return respond_with_error('Incorrect password. Please enter your current password to unlink.', :unprocessable_content)
       end
 
-      previous_provider = user.provider
-      user.audit_comment = "Unlinked #{previous_provider.upcase} identity"
-      user.update!(provider: nil, uid: nil, failed_attempts: 0)
-      Rails.logger.info "AUDIT: Unlinked #{previous_provider} identity from #{user.email}"
+      title = OidcProviderRegistry.title_for(identity.provider)
+      current_user.unlink_identity!(identity)
 
       respond_to do |format|
         format.html do
-          flash[:notice] = "Your #{previous_provider.upcase} identity has been unlinked. " \
-                           'You can now sign in with your email and password only.'
+          flash[:notice] = "Your #{title} identity has been unlinked."
           redirect_to edit_user_registration_path
         end
         format.json do
           render_toast(title: 'Identity unlinked.',
-                       message: "#{previous_provider.upcase} identity unlinked successfully.",
+                       message: "#{title} identity unlinked successfully.",
                        variant: 'success', status: :ok)
         end
       end
+    rescue User::IdentityGuardError => e
+      respond_with_error(e.message, :unprocessable_content)
     end
 
     # POST /users/initiate_link — start the OmniAuth flow to link an external
@@ -154,27 +144,21 @@ module Users
     # OmniAuth callback attaches the identity to current_user instead of
     # creating/finding a separate account.
     def initiate_link
-      user = current_user
       provider = params[:provider].to_s
-
-      return respond_with_error('Your account already has a linked identity. Unlink it first to link a different provider.', :unprocessable_content) if user.provider.present?
 
       return respond_with_error("The #{provider.upcase} provider is not enabled on this instance.", :unprocessable_content) unless provider_enabled?(provider)
 
+      return respond_with_error("You already have a linked #{OidcProviderRegistry.title_for(provider)} identity.", :unprocessable_content) if current_user.identities.exists?(provider: provider)
+
       session[:link_in_progress] = true
       session[:link_provider] = provider
-      redirect_to user_oidc_omniauth_authorize_path, allow_other_host: false
+      redirect_to omniauth_authorize_path(:user, provider), allow_other_host: false
     end
 
     private
 
     def provider_enabled?(provider)
-      case provider
-      when 'oidc' then Settings.respond_to?(:oidc) && Settings.oidc&.enabled
-      when 'ldap' then Settings.respond_to?(:ldap) && Settings.ldap&.enabled
-      when 'github' then Settings.respond_to?(:github) && Settings.github&.enabled
-      else false
-      end
+      Devise.omniauth_providers.include?(provider.to_sym)
     end
 
     # Devise stock behavior: if the user changed their email and reconfirmation
