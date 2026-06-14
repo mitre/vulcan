@@ -42,9 +42,22 @@ class OidcProviderRegistry
   #     stores its own per-request nonce (new_nonce); there is no :nonce option,
   #     so passing one is dead config.
   #
-  # The private-key material for client_auth_method :jwt_bearer is wired
-  # separately; here we only pass the method name through.
   def self.omniauth_args(provider)
+    client_opts = {
+      port: provider['port'],
+      scheme: provider['scheme'],
+      host: provider['host'],
+      identifier: provider['client_id'],
+      secret: provider['client_secret'],
+      redirect_uri: provider['redirect_uri'],
+      authorization_endpoint: provider['authorization_endpoint'],
+      token_endpoint: provider['token_endpoint'],
+      userinfo_endpoint: provider['userinfo_endpoint'],
+      jwks_uri: provider['jwks_uri']
+    }
+
+    client_opts[:private_key] = load_private_key(provider) if provider['client_auth_method'] == 'jwt_bearer'
+
     {
       name: provider['name'].to_sym,
       strategy_class: OmniAuth::Strategies::OpenIDConnect,
@@ -58,20 +71,26 @@ class OidcProviderRegistry
       send_nonce: true,
       prompt: provider['prompt']&.to_sym,
       acr_values: provider['acr_values'],
-      client_options: {
-        port: provider['port'],
-        scheme: provider['scheme'],
-        host: provider['host'],
-        identifier: provider['client_id'],
-        secret: provider['client_secret'],
-        redirect_uri: provider['redirect_uri'],
-        authorization_endpoint: provider['authorization_endpoint'],
-        token_endpoint: provider['token_endpoint'],
-        userinfo_endpoint: provider['userinfo_endpoint'],
-        jwks_uri: provider['jwks_uri']
-      }
+      client_options: client_opts
     }
   end
+
+  def self.load_private_key(provider)
+    name = provider['name']
+    pem = provider['private_key'] || (provider['private_key_path'] && File.read(provider['private_key_path']))
+
+    unless pem
+      raise ArgumentError,
+            "Provider #{name}: client_auth_method is jwt_bearer but no private key configured. " \
+            "Set VULCAN_OIDC_#{name.upcase}_PRIVATE_KEY (inline PEM) or _PRIVATE_KEY_PATH."
+    end
+
+    OpenSSL::PKey::RSA.new(pem)
+  rescue OpenSSL::PKey::RSAError => e
+    raise ArgumentError, "Provider #{name}: failed to parse private key — #{e.message}"
+  end
+
+  private_class_method :load_private_key
 
   # Resolves a provider's human-facing title from the live registry
   # (Settings.oidc.providers). One source of truth shared by the login buttons

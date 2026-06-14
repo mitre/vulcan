@@ -181,11 +181,13 @@ RSpec.describe OidcProviderRegistry do
         'VULCAN_OIDC_PROVIDERS' => 'login_gov',
         'VULCAN_OIDC_LOGIN_GOV_ISSUER_URL' => 'https://idp.int.identitysandbox.gov',
         'VULCAN_OIDC_LOGIN_GOV_CLIENT_AUTH_METHOD' => 'jwt_bearer',
+        'VULCAN_OIDC_LOGIN_GOV_PRIVATE_KEY' => OpenSSL::PKey::RSA.generate(2048).to_pem,
         'VULCAN_OIDC_LOGIN_GOV_ACR_VALUES' => 'urn:gov:gsa:ac:classes:sp:PasswordProtectedTransport:duo'
       ).first
       args = described_class.omniauth_args(login_gov)
       expect(args[:client_auth_method]).to eq(:jwt_bearer)
       expect(args[:acr_values]).to eq('urn:gov:gsa:ac:classes:sp:PasswordProtectedTransport:duo')
+      expect(args[:client_options][:private_key]).to be_a(OpenSSL::PKey::RSA)
     end
   end
 
