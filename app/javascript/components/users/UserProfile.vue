@@ -142,18 +142,33 @@
         </b-table-simple>
         <p v-else class="text-muted mb-0">No external identities linked.</p>
 
-        <div v-if="user.connectable_providers && user.connectable_providers.length" class="mt-3">
-          <b-button
+        <p v-if="user.identities && user.identities.length" class="text-muted small mt-2 mb-0">
+          Connect additional accounts to sign in with multiple methods.
+        </p>
+
+        <b-dropdown
+          v-if="user.connectable_providers && user.connectable_providers.length"
+          size="sm"
+          variant="outline-primary"
+          class="mt-3"
+        >
+          <template #button-content>
+            <b-icon icon="plus-circle" class="mr-1" />
+            Add Account
+          </template>
+          <b-dropdown-item
             v-for="provider in user.connectable_providers"
             :key="provider.name"
-            size="sm"
-            variant="outline-primary"
-            class="mr-2"
             @click="connectProvider(provider.name)"
           >
-            <b-icon icon="plus-circle" /> Connect {{ provider.title }}
-          </b-button>
-        </div>
+            <b-icon icon="shield-lock" class="mr-2 text-muted" />
+            <strong>{{ provider.title }}</strong>
+            <br />
+            <small class="text-muted ml-4">{{
+              provider.description || `Sign in with ${provider.title}`
+            }}</small>
+          </b-dropdown-item>
+        </b-dropdown>
       </b-card-body>
     </b-card>
 

@@ -26,7 +26,10 @@ class UserBlueprint < Blueprinter::Base
         name = p.to_s
         next if linked.include?(name)
 
-        { name: name, title: OidcProviderRegistry.title_for(name) }
+        provider_config = Array(Settings.oidc&.providers).find { |pr| pr['name'] == name }
+        { name: name,
+          title: OidcProviderRegistry.title_for(name),
+          description: provider_config&.dig('description') }
       end
     end
   end
