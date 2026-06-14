@@ -31,6 +31,12 @@
             - if user_registration_enabled?
               %b-tab{"v-bind:active" => params[:active_tab].eql?('registration') ? "true" : "false", :title => "Register"}
                 %b-card-text
+                  - if oidc_enabled?
+                    - non_ldap_oauth_providers.each do |provider|
+                      = link_to omniauth_authorize_path(resource_name, provider), class: "btn btn-block btn-outline-primary border mb-2", method: :post do
+                        = image_tag asset_path("oidc-lock-icon.png"), style: "vertical-align: middle; margin-right: 10px", height: 30, width: 30
+                        Register with #{oauth_provider_title(provider)}
+                    %p.text-center.text-muted.my-2 — or register with email and password —
                   = render 'devise/registrations/form'
 
     %br/
