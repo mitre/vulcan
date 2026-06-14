@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_10_230621) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_14_140000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -201,6 +201,18 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_10_230621) do
     t.boolean "poam_available"
     t.text "poam"
     t.index ["base_rule_id"], name: "index_disa_rule_descriptions_on_base_rule_id"
+  end
+
+  create_table "identities", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "provider", null: false
+    t.string "uid", null: false
+    t.string "email"
+    t.datetime "last_sign_in_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["provider", "uid"], name: "index_identities_on_provider_and_uid", unique: true
+    t.index ["user_id"], name: "index_identities_on_user_id"
   end
 
   create_table "memberships", force: :cascade do |t|
@@ -499,6 +511,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_10_230621) do
   add_foreign_key "base_rules", "users", column: "review_requestor_id"
   add_foreign_key "component_sync_events", "components"
   add_foreign_key "components", "components"
+  add_foreign_key "identities", "users", on_delete: :cascade
   add_foreign_key "memberships", "users"
   add_foreign_key "merge_operations", "component_sync_events"
   add_foreign_key "merge_quarantine", "component_sync_events"
