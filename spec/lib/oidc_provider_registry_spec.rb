@@ -194,6 +194,35 @@ RSpec.describe OidcProviderRegistry do
   # Resolves a provider's display title from the live registry. One source of
   # truth shared by the login buttons and the OmniAuth callback flashes so a
   # configured title is shown consistently instead of an upcased strategy name.
+  describe '.provider_origins' do
+    before do
+      allow(Settings).to receive(:oidc).and_return(
+        double(
+          'oidc',
+          providers: [
+            { 'name' => 'okta', 'issuer' => 'https://org.okta.com/oauth2/default' },
+            { 'name' => 'login_gov', 'issuer' => 'https://idp.int.identitysandbox.gov' },
+            { 'name' => 'dup', 'issuer' => 'https://org.okta.com/another' }
+          ]
+        )
+      )
+    end
+
+    it 'returns deduplicated scheme://host origins for all configured providers' do
+      expect(described_class.provider_origins).to contain_exactly(
+        'https://org.okta.com',
+        'https://idp.int.identitysandbox.gov'
+      )
+    end
+
+    it 'skips providers with nil/blank issuers' do
+      allow(Settings).to receive(:oidc).and_return(
+        double('oidc', providers: [{ 'name' => 'blank', 'issuer' => nil }])
+      )
+      expect(described_class.provider_origins).to eq([])
+    end
+  end
+
   describe '.title_for' do
     before do
       allow(Settings).to receive(:oidc).and_return(

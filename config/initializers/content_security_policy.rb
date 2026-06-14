@@ -13,15 +13,7 @@
 
 Rails.application.configure do
   config.content_security_policy do |policy|
-    # Derive OIDC provider origin from issuer URL when OIDC is enabled.
-    # OmniAuth redirects the browser to the provider's authorization endpoint
-    # via form POST (requires form-action). The navbar also checks GitHub for
-    # release updates (requires connect-src).
-    oidc_origin = begin
-      URI.parse(Settings.oidc.args.issuer).then { |u| "#{u.scheme}://#{u.host}" } if Settings.oidc&.enabled
-    rescue URI::InvalidURIError, NoMethodError
-      nil
-    end
+    oidc_origins = Settings.oidc&.enabled ? OidcProviderRegistry.provider_origins : []
 
     policy.default_src :self
     policy.font_src    :self, :data, 'https://fonts.scalar.com'
@@ -31,9 +23,9 @@ Rails.application.configure do
     policy.style_src   :self, :unsafe_inline, 'https://cdn.jsdelivr.net'
     policy.connect_src :self, 'https://api.github.com', 'https://cdn.jsdelivr.net',
                        'https://api.scalar.com', 'https://registry.scalar.com',
-                       'https://vulcan.mitre.org', *[oidc_origin].compact
+                       'https://vulcan.mitre.org', *oidc_origins
     policy.frame_src   :none
     policy.base_uri    :self
-    policy.form_action :self, *[oidc_origin].compact
+    policy.form_action :self, *oidc_origins
   end
 end

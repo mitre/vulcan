@@ -42,6 +42,18 @@ class OidcProviderRegistry
   #     stores its own per-request nonce (new_nonce); there is no :nonce option,
   #     so passing one is dead config.
   #
+  # Returns the deduplicated scheme://host origins of all configured providers'
+  # issuers. Used by the CSP (form-action / connect-src) and health checks to
+  # include every provider's origin, not just the legacy singular one.
+  def self.provider_origins
+    Array(Settings.oidc&.providers).filter_map do |p|
+      uri = URI.parse(p['issuer'].to_s)
+      "#{uri.scheme}://#{uri.host}" if uri.host
+    rescue URI::InvalidURIError
+      nil
+    end.uniq
+  end
+
   def self.omniauth_args(provider)
     client_opts = {
       port: provider['port'],
