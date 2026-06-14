@@ -122,4 +122,96 @@ RSpec.describe OidcProviderRegistry do
       expect(off['discovery']).to be(false)
     end
   end
+
+  # Transforms a flat provider config into the nested args omniauth_openid_connect
+  # expects. The flat shape is what build/Settings.oidc.providers store; devise.rb
+  # passes the result straight to config.omniauth :openid_connect. Best-practice
+  # details verified against devise-5.0.4 + omniauth_openid_connect-0.6.1 source:
+  # explicit name:/strategy_class: (the multi-instance pattern), and the strategy
+  # self-generates the nonce via send_nonce (there is no :nonce option).
+  describe '.omniauth_args' do
+    let(:okta) do
+      described_class.from_env(
+        'VULCAN_OIDC_PROVIDERS' => 'okta',
+        'VULCAN_OIDC_OKTA_ISSUER_URL' => 'https://org.okta.com/oauth2/default',
+        'VULCAN_OIDC_OKTA_CLIENT_ID' => 'okta-id',
+        'VULCAN_OIDC_OKTA_CLIENT_SECRET' => 'okta-secret',
+        'VULCAN_OIDC_OKTA_HOST' => 'org.okta.com',
+        'VULCAN_OIDC_OKTA_REDIRECT_URI' => 'https://vulcan.example/users/auth/okta/callback',
+        'VULCAN_OIDC_OKTA_TOKEN_URL' => 'https://org.okta.com/oauth2/v1/token'
+      ).first
+    end
+
+    it 'pins the strategy with an explicit per-provider name and strategy_class' do
+      args = described_class.omniauth_args(okta)
+      expect(args).to include(
+        name: :okta,
+        strategy_class: OmniAuth::Strategies::OpenIDConnect,
+        scope: %i[openid email profile],
+        uid_field: 'sub',
+        response_type: :code,
+        discovery: true,
+        issuer: 'https://org.okta.com/oauth2/default',
+        client_auth_method: :secret,
+        client_signing_alg: :RS256
+      )
+    end
+
+    it 'nests connection settings (identifier/secret/host/endpoints) under client_options' do
+      client_options = described_class.omniauth_args(okta)[:client_options]
+      expect(client_options).to include(
+        identifier: 'okta-id',
+        secret: 'okta-secret',
+        host: 'org.okta.com',
+        scheme: 'https',
+        port: 443,
+        redirect_uri: 'https://vulcan.example/users/auth/okta/callback',
+        token_endpoint: 'https://org.okta.com/oauth2/v1/token'
+      )
+    end
+
+    it 'relies on the strategy-generated nonce (send_nonce) and omits the dead :nonce option' do
+      args = described_class.omniauth_args(okta)
+      expect(args[:send_nonce]).to be(true)
+      expect(args).not_to have_key(:nonce)
+    end
+
+    it 'passes login.gov jwt_bearer + acr_values through for per-provider client auth' do
+      login_gov = described_class.from_env(
+        'VULCAN_OIDC_PROVIDERS' => 'login_gov',
+        'VULCAN_OIDC_LOGIN_GOV_ISSUER_URL' => 'https://idp.int.identitysandbox.gov',
+        'VULCAN_OIDC_LOGIN_GOV_CLIENT_AUTH_METHOD' => 'jwt_bearer',
+        'VULCAN_OIDC_LOGIN_GOV_ACR_VALUES' => 'urn:gov:gsa:ac:classes:sp:PasswordProtectedTransport:duo'
+      ).first
+      args = described_class.omniauth_args(login_gov)
+      expect(args[:client_auth_method]).to eq(:jwt_bearer)
+      expect(args[:acr_values]).to eq('urn:gov:gsa:ac:classes:sp:PasswordProtectedTransport:duo')
+    end
+  end
+
+  # Resolves a provider's display title from the live registry. One source of
+  # truth shared by the login buttons and the OmniAuth callback flashes so a
+  # configured title is shown consistently instead of an upcased strategy name.
+  describe '.title_for' do
+    before do
+      allow(Settings).to receive(:oidc).and_return(
+        double(
+          'oidc',
+          providers: [
+            { 'name' => 'okta', 'title' => 'Okta SSO' },
+            { 'name' => 'login_gov', 'title' => 'login.gov' }
+          ]
+        )
+      )
+    end
+
+    it 'returns the configured title for a known provider given a string or symbol' do
+      expect(described_class.title_for('okta')).to eq('Okta SSO')
+      expect(described_class.title_for(:login_gov)).to eq('login.gov')
+    end
+
+    it 'falls back to a titleized name for a provider outside the OIDC registry' do
+      expect(described_class.title_for(:github)).to eq('Github')
+    end
+  end
 end

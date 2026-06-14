@@ -308,5 +308,14 @@ Devise.setup do |config|
   # We are defining OmniAuth strategy authenticating with OpenID Connect providers.
   # With the configuration below users can sign in with an OpenID Connect provider to
   # access protected resources in the vulcan app.
-  config.omniauth Settings.oidc.strategy, Settings.oidc.args if Settings.oidc.enabled
+  # Register one OmniAuth OpenID Connect strategy per configured provider
+  # (Settings.oidc.providers — a single legacy `oidc` entry when no registry is
+  # set). Each provider gets its own /users/auth/<name> route via the explicit
+  # name: in omniauth_args, and strategy_class is pinned so Devise resolves the
+  # OpenIDConnect constant directly rather than via the fragile camelize lookup.
+  if Settings.oidc.enabled
+    Settings.oidc.providers.each do |provider|
+      config.omniauth :openid_connect, OidcProviderRegistry.omniauth_args(provider)
+    end
+  end
 end

@@ -15,11 +15,11 @@
           %b-tabs{:card => "", :fill => "", :pills => ""}
             - if oidc_enabled?
               - non_ldap_oauth_providers.each do |provider|
-                %b-tab{:title => oidc_title_text}
+                %b-tab{:title => oauth_provider_title(provider)}
                   %b-card-text
                     = link_to omniauth_authorize_path(resource_name, provider), class: "btn btn-block btn-light border", method: :post do
                       = image_tag asset_path("oidc-lock-icon.png"), style: "vertical-align: middle; margin-right: 10px", height: 40, width: 40
-                      Sign in with #{oidc_title_text}
+                      Sign in with #{oauth_provider_title(provider)}
             - if ldap_enabled?
               %b-tab{:title => Settings.ldap.servers.values.first['title']}
                 %b-card-text

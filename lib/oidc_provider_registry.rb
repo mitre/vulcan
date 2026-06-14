@@ -27,6 +27,63 @@ class OidcProviderRegistry
     new(env).build
   end
 
+  # Transforms a provider config (as built by .from_env / stored in
+  # Settings.oidc.providers) into the nested options hash that
+  # omniauth_openid_connect expects, ready for
+  # `config.omniauth :openid_connect, omniauth_args(provider)` in devise.rb.
+  #
+  # Two best-practice choices, verified against devise-5.0.4 and
+  # omniauth_openid_connect-0.6.1 source:
+  #   * Explicit name: and strategy_class: — Devise keys the omniauth config by
+  #     options[:name] (so each provider gets its own /users/auth/<name> route)
+  #     and uses strategy_class directly, sidestepping the fragile camelize()
+  #     lookup of the OpenIDConnect constant. This is the multi-instance pattern.
+  #   * send_nonce: true instead of a static nonce: — the strategy generates and
+  #     stores its own per-request nonce (new_nonce); there is no :nonce option,
+  #     so passing one is dead config.
+  #
+  # The private-key material for client_auth_method :jwt_bearer is wired
+  # separately; here we only pass the method name through.
+  def self.omniauth_args(provider)
+    {
+      name: provider['name'].to_sym,
+      strategy_class: OmniAuth::Strategies::OpenIDConnect,
+      scope: %i[openid email profile],
+      uid_field: 'sub',
+      response_type: :code,
+      discovery: provider['discovery'],
+      issuer: provider['issuer'],
+      client_auth_method: provider['client_auth_method']&.to_sym,
+      client_signing_alg: provider['client_signing_alg']&.to_sym,
+      send_nonce: true,
+      prompt: provider['prompt']&.to_sym,
+      acr_values: provider['acr_values'],
+      client_options: {
+        port: provider['port'],
+        scheme: provider['scheme'],
+        host: provider['host'],
+        identifier: provider['client_id'],
+        secret: provider['client_secret'],
+        redirect_uri: provider['redirect_uri'],
+        authorization_endpoint: provider['authorization_endpoint'],
+        token_endpoint: provider['token_endpoint'],
+        userinfo_endpoint: provider['userinfo_endpoint'],
+        jwks_uri: provider['jwks_uri']
+      }
+    }
+  end
+
+  # Resolves a provider's human-facing title from the live registry
+  # (Settings.oidc.providers). One source of truth shared by the login buttons
+  # and the OmniAuth callback flashes, so a configured title (e.g. "Okta") is
+  # shown consistently. Falls back to a titleized name for a provider outside
+  # the OIDC registry (e.g. :github) or when none is configured.
+  def self.title_for(name)
+    key = name.to_s
+    entry = Array(Settings.oidc&.providers).find { |provider| provider['name'].to_s == key }
+    entry ? entry['title'] : key.titleize
+  end
+
   def initialize(env = ENV)
     @env = env
   end

@@ -64,9 +64,14 @@ module Users
       sign_in_and_redirect(user) && return
     end
 
-    alias ldap all
-    alias github all
-    alias oidc all
+    # Devise routes /users/auth/<provider>/callback to the action named
+    # <provider>. The `all` implementation is provider-agnostic, so alias every
+    # registered OmniAuth provider (ldap, github, and each OIDC provider) to it.
+    # Deriving from Devise.omniauth_providers (populated at boot from the devise
+    # initializer) keeps this in sync with what is actually registered and avoids
+    # reading Settings at class-load time, which test stubs of Settings.oidc
+    # would otherwise break.
+    Devise.omniauth_providers.each { |provider| alias_method provider, :all }
 
     private
 
