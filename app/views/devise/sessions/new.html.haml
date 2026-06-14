@@ -13,6 +13,22 @@
         - if Settings['welcome_text'].present?
           %p.text-muted= Settings['welcome_text']
       .col-lg-6.offset-lg-1
+        - if params[:link_pending] && session[:pending_link]
+          %b-card.shadow.border.mb-3{"no-body" => ""}
+            %b-card-header.bg-warning.text-dark
+              %h5.mb-0
+                %b-icon{:icon => "link-45deg", :class => "mr-1"}
+                Link Existing Account
+            %b-card-body
+              %p
+                An account with this email already exists. Enter your password to link
+                %strong= OidcProviderRegistry.title_for(session[:pending_link]['provider'])
+                to your account.
+              = form_tag complete_link_path, method: :post do
+                .form-group
+                  %label{:for => "link-current-password"} Current Password
+                  %input#link-current-password.form-control{:type => "password", :name => "current_password", :autocomplete => "current-password", :required => true}
+                = submit_tag "Link Account & Sign In", class: "btn btn-warning btn-block"
         #login
           - if any_oauth_providers_enabled? || any_form_providers_enabled?
             %b-card{"no-body" => "", "class" => "shadow border"}
