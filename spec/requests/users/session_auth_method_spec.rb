@@ -59,12 +59,13 @@ RSpec.describe 'Session auth method tracking' do
     # directly. With multi-provider OIDC the callback sets session[:auth_method]
     # from auth.provider, which is the per-provider strategy name (:okta,
     # :login_gov, ...) — verified at the model level in user_multi_provider_spec.
-    let(:user) { create(:user, provider: 'oidc', uid: 'oidc-session-uid') }
+    let(:provider) { Devise.omniauth_providers.first }
+    let(:user) { create(:user, provider: provider.to_s, uid: 'oidc-session-uid') }
 
     before do
       OmniAuth.config.test_mode = true
-      OmniAuth.config.mock_auth[:oidc] = OmniAuth::AuthHash.new(
-        provider: 'oidc',
+      OmniAuth.config.mock_auth[provider] = OmniAuth::AuthHash.new(
+        provider: provider.to_s,
         uid: user.uid,
         info: { name: user.name, email: user.email },
         credentials: { id_token: 'fake-id-token' },
@@ -73,15 +74,15 @@ RSpec.describe 'Session auth method tracking' do
     end
 
     after do
-      OmniAuth.config.mock_auth[:oidc] = nil
+      OmniAuth.config.mock_auth[provider] = nil
       OmniAuth.config.test_mode = false
     end
 
     it 'sets session[:auth_method] to the provider name after the OIDC callback' do
-      post '/users/auth/oidc'
+      post "/users/auth/#{provider}"
       follow_redirect!
 
-      expect(session[:auth_method]).to eq(:oidc)
+      expect(session[:auth_method]).to eq(provider)
     end
   end
 end
