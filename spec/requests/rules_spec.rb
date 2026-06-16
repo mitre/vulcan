@@ -26,12 +26,8 @@ RSpec.describe 'Rules' do
     context 'component data contract' do
       it 'includes histories in component JSON for sidebar display' do
         # Create a review which generates history via audited gem
-        Review.create!(
-          user: user,
-          rule: rule,
-          action: 'comment',
-          comment: 'Test review comment for history'
-        )
+        create(:review, :comment, user: user, rule: rule,
+                                  comment: 'Test review comment for history')
 
         get "/components/#{component.id}/edit"
 
@@ -43,12 +39,8 @@ RSpec.describe 'Rules' do
 
       it 'includes reviews in component JSON for sidebar display' do
         # Create a review on a rule in this component
-        Review.create!(
-          user: user,
-          rule: rule,
-          action: 'comment',
-          comment: 'Test sidebar review'
-        )
+        create(:review, :comment, user: user, rule: rule,
+                                  comment: 'Test sidebar review')
 
         get "/components/#{component.id}/edit"
 
@@ -71,6 +63,13 @@ RSpec.describe 'Rules' do
         # Verify the actual metadata values are included
         expect(response.body).to include('Production')
         expect(response.body).to include('Security')
+      end
+
+      it 'includes effective_permissions in component JSON (provide/inject source)' do
+        get "/components/#{component.id}/edit"
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('&quot;effective_permissions&quot;:&quot;admin&quot;')
       end
 
       it 'does NOT include all_users in component JSON (information disclosure regression guard)' do
@@ -276,7 +275,7 @@ RSpec.describe 'Rules' do
       end
 
       it 'cleans up associated records' do
-        Review.create!(user: user, rule: rule, action: 'comment', comment: 'test')
+        create(:review, :comment, user: user, rule: rule, comment: 'test')
         expect(rule.reviews.count).to eq(1)
 
         delete "/rules/#{rule.id}"
@@ -298,7 +297,7 @@ RSpec.describe 'Rules' do
         # destroy_all on associations one-by-one with no transaction. A failure
         # in any destroy_all left the rule soft-deleted with orphan dependents.
         rule_id = rule.id
-        Review.create!(user: user, rule: rule, action: 'comment', comment: 'test')
+        create(:review, :comment, user: user, rule: rule, comment: 'test')
         review_count_before = Review.where(rule_id: rule_id).count
         expect(review_count_before).to eq(1)
 
@@ -310,7 +309,7 @@ RSpec.describe 'Rules' do
 
         delete "/rules/#{rule_id}"
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         # Critical: rule must NOT be soft-deleted (deleted_at stays nil)
         expect(Rule.unscoped.find(rule_id).deleted_at).to be_nil
         # And reviews stay intact

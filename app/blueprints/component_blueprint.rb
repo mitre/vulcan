@@ -37,12 +37,17 @@ class ComponentBlueprint < Blueprinter::Base
     counts[component.id] || 0
   end
 
-  # === Index view: listing page ===
-  # rules_count drives ComponentCard's controls badge; component_id
-  # drives the (Overlaid) tag. Without these the card silently hides
-  # the badges (the "Not Configured" bug Aaron flagged).
+  # === Index view: listing page (ComponentCard) ===
+  # Every field ComponentCard.vue reads must be present here or it
+  # silently renders as undefined. Verified against grep of
+  # component.X property access in ComponentCard.vue.
   view :index do
-    fields :updated_at, :released, :rules_count, :component_id
+    fields :updated_at, :released, :rules_count, :component_id, :project_id,
+           :security_requirements_guide_id, :admin_name, :admin_email, :description
+
+    field :releasable do |component, _options|
+      component.releasable
+    end
   end
 
   # === Related view: related_rules parents (includes project for display name) ===
@@ -50,7 +55,7 @@ class ComponentBlueprint < Blueprinter::Base
     fields :updated_at, :released
 
     field :project do |component, _options|
-      ProjectBlueprint.render_as_hash(component.project)
+      ProjectBlueprint.render_as_json(component.project)
     end
   end
 
@@ -59,12 +64,16 @@ class ComponentBlueprint < Blueprinter::Base
     fields :title, :description, :admin_name, :admin_email, :released, :updated_at,
            :comment_phase, :closed_reason, :comment_period_starts_at, :comment_period_ends_at
 
+    field :effective_permissions do |component, options|
+      options[:current_user]&.effective_permissions(component)
+    end
+
     association :rules, blueprint: RuleBlueprint, view: :viewer do |component, _options|
       component.rules
     end
 
-    # Uses Component#reviews method (not ReviewBlueprint) because it returns
-    # pre-formatted hashes with `displayed_rule_name` that ReviewBlueprint lacks.
+    # Component#reviews returns ReviewBlueprint-serialized hashes with
+    # rule_displayed_name injected via options[:rule_names].
     field :reviews do |component, _options|
       component.reviews
     end
@@ -79,12 +88,30 @@ class ComponentBlueprint < Blueprinter::Base
            :rules_count, :updated_at, :created_at,
            :comment_phase, :closed_reason, :comment_period_starts_at, :comment_period_ends_at
 
+    field :effective_permissions do |component, options|
+      options[:current_user]&.effective_permissions(component)
+    end
+
     field :releasable do |component, _options|
       component.releasable
     end
 
     field :status_counts do |component, _options|
       component.status_counts
+    end
+
+    field :srg_is_latest do |component, _options|
+      component.based_on&.latest? || false
+    end
+
+    field :srg_latest_version do |component, _options|
+      srg = component.based_on
+      srg&.latest? ? nil : srg&.latest_for_family&.version
+    end
+
+    field :srg_latest_id do |component, _options|
+      srg = component.based_on
+      srg&.latest? ? nil : srg&.latest_for_family&.id
     end
 
     field :additional_questions do |component, _options|
@@ -96,8 +123,8 @@ class ComponentBlueprint < Blueprinter::Base
       component.rules
     end
 
-    # Uses Component#reviews method (not ReviewBlueprint) because it returns
-    # pre-formatted hashes with `displayed_rule_name` that ReviewBlueprint lacks.
+    # Component#reviews returns ReviewBlueprint-serialized hashes with
+    # rule_displayed_name injected via options[:rule_names].
     field :reviews do |component, _options|
       component.reviews
     end

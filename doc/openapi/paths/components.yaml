@@ -1,0 +1,36 @@
+get:
+  operationId: listComponents
+  tags:
+    - Components
+  summary: List released components
+  description: >-
+    Returns all released (published) components visible to the current user.
+    Released components are read-only snapshots that have been through the
+    DISA review process. Requires authentication.
+  responses:
+    '200':
+      description: Released components
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/ComponentIndexResponse.yaml
+          examples:
+            components:
+              summary: Two released components
+              value:
+                - id: 29
+                  name: Container SRG
+                  prefix: CNTR
+                  version: "1"
+                  release: "1"
+                  released: true
+                - id: 30
+                  name: Photon OS 3
+                  prefix: PHOS-03
+                  version: "1"
+                  release: "1"
+                  released: true
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

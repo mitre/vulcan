@@ -1,0 +1,107 @@
+post:
+  operationId: adminCreateUser
+  tags:
+    - Users
+  summary: Create a new user (admin only)
+  description: >-
+    Creates a new user account. Requires admin role. Three modes based on
+    password and SMTP config: (1) password provided — user can sign in
+    immediately, (2) no password + SMTP enabled — sends setup email via
+    Devise, (3) no password + no SMTP — returns a reset URL the admin
+    delivers manually. Skips email confirmation.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            user:
+              type: object
+              required:
+                - email
+              properties:
+                name:
+                  type: string
+                  description: Display name for the new user.
+                  example: Jane Doe
+                email:
+                  type: string
+                  format: email
+                  description: Login email address. Must be unique.
+                  example: jane.doe@example.org
+                admin:
+                  type: boolean
+                  description: Whether to grant admin privileges.
+                  example: false
+                password:
+                  type: string
+                  description: Initial password. If omitted, a reset link is generated.
+                  example: SecureP@ssw0rd2026!
+        examples:
+          with_password:
+            summary: Create with explicit password
+            value:
+              user:
+                name: Jane Doe
+                email: jane.doe@example.org
+                admin: false
+                password: SecureP@ssw0rd2026!
+          without_password:
+            summary: Create without password (reset link generated)
+            value:
+              user:
+                name: Jane Doe
+                email: jane.doe@example.org
+  responses:
+    '200':
+      description: User created (response varies by mode)
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminCreateResponse.yaml
+          examples:
+            with_password:
+              summary: Created with provided password
+              value:
+                toast:
+                  title: User created.
+                  message:
+                    - "User jane.doe@example.org created with the provided password."
+                  variant: success
+                user:
+                  id: 42
+                  name: Jane Doe
+                  email: jane.doe@example.org
+                  admin: false
+            no_smtp:
+              summary: Created without SMTP — reset URL returned
+              value:
+                toast:
+                  title: User created.
+                  message:
+                    - "User jane.doe@example.org created. Deliver the reset link to the user."
+                  variant: success
+                user:
+                  id: 42
+                  name: Jane Doe
+                  email: jane.doe@example.org
+                  admin: false
+                reset_url: "https://vulcan.example.org/users/password/edit?reset_password_token=abc123"
+    '422':
+      description: Validation error (duplicate email, invalid fields)
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            duplicate:
+              summary: Email already taken
+              value:
+                toast:
+                  title: Could not create user.
+                  message:
+                    - Email has already been taken
+                  variant: danger
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

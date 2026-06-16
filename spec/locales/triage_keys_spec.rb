@@ -14,10 +14,7 @@ RSpec.describe 'Triage vocabulary parity (en.yml ↔ triageVocabulary.js)' do
     Rails.root.join('app/javascript/constants/triageVocabulary.js').read
   end
 
-  let(:expected_statuses) do
-    %w[pending concur concur_with_comment non_concur
-       duplicate informational needs_clarification withdrawn]
-  end
+  let(:expected_statuses) { Review::TRIAGE_STATUSES }
 
   it 'has all expected status keys in en.yml' do
     expect(yml['status'].keys).to match_array(expected_statuses)

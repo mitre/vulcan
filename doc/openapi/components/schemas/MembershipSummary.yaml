@@ -1,0 +1,51 @@
+description: Project or component membership linking a user to a role.
+type: object
+required:
+  - id
+  - user_id
+  - role
+  - membership_type
+  - membership_id
+additionalProperties: false
+properties:
+  id:
+    type: integer
+    description: Unique membership identifier.
+    example: 15
+  user_id:
+    type: integer
+    description: ID of the member user.
+    example: 42
+  role:
+    type: string
+    description: Access level for this membership.
+    enum:
+      - viewer
+      - author
+      - reviewer
+      - admin
+    example: author
+  membership_type:
+    type: string
+    description: Type of resource this membership belongs to.
+    enum:
+      - Project
+      - Component
+    example: Project
+  membership_id:
+    type: integer
+    description: ID of the project or component this membership belongs to.
+    example: 4
+  name:
+    type:
+      - string
+      - 'null'
+    description: Display name of the member (delegated from User).
+    example: Jane Doe
+  email:
+    type:
+      - string
+      - 'null'
+    format: email
+    description: Email address of the member (delegated from User).
+    example: jane.doe@example.org

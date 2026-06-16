@@ -2,6 +2,7 @@
   "name": "vulcan-docs",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "Vulcan documentation site",
   "scripts": {
     "dev": "vitepress dev .",
@@ -9,6 +10,7 @@
     "preview": "vitepress preview ."
   },
   "devDependencies": {
+    "sharp": "0.33.5",
     "svgo": "^4.0.0",
     "vite-plugin-image-optimizer": "^2.0.2",
     "vitepress": "2.0.0-alpha.11",
@@ -16,6 +18,7 @@
   },
   "dependencies": {
     "lucide-vue-next": "^0.562.0",
-    "mermaid": "^10.9.3"
+    "mermaid": "^10.9.3",
+    "vitepress-openapi": "^0.2.0"
   }
 }

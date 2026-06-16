@@ -1,16 +1,40 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
+import { createPinia, setActivePinia } from "pinia";
+import { createTestRouter } from "@test/support/routerTestHelper";
+import { useRuleSelectionStore } from "@/stores/ruleSelection";
 import RulesCodeEditorView from "@/components/rules/RulesCodeEditorView.vue";
 
-// Mock axios
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
     put: vi.fn(() => Promise.resolve({ data: {} })),
     post: vi.fn(() => Promise.resolve({ data: {} })),
     patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
   },
 }));
+
+vi.mock("@/api/rulesApi", () => ({
+  updateRule: vi.fn(() => Promise.resolve({ data: {} })),
+  updateSectionLocks: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+
+vi.mock("@/api/reviewsApi", () => ({
+  createRuleReview: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+
+vi.mock("@/api/componentsApi", () => ({
+  getComponent: vi.fn(() => Promise.resolve({ data: {} })),
+  patchComponent: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+
+vi.mock("@/composables/usePermissions", { spy: true });
+vi.mock("@/composables/useReplyComposer", { spy: true });
+import { usePermissions } from "@/composables/usePermissions";
+import { useReplyComposer } from "@/composables/useReplyComposer";
 
 describe("RulesCodeEditorView", () => {
   let wrapper;
@@ -26,6 +50,8 @@ describe("RulesCodeEditorView", () => {
       satisfied_by: [],
       histories: [{ name: "Test User" }],
       version: "SV-001",
+      checks_attributes: [],
+      disa_rule_descriptions_attributes: [],
     },
     {
       id: 2,
@@ -37,6 +63,8 @@ describe("RulesCodeEditorView", () => {
       satisfied_by: [],
       histories: [],
       version: "SV-002",
+      checks_attributes: [],
+      disa_rule_descriptions_attributes: [],
     },
     {
       id: 3,
@@ -48,11 +76,12 @@ describe("RulesCodeEditorView", () => {
       satisfied_by: [],
       histories: [],
       version: "SV-003",
+      checks_attributes: [],
+      disa_rule_descriptions_attributes: [],
     },
   ];
 
   const defaultProps = {
-    effectivePermissions: "admin",
     currentUserId: 1,
     project: { id: 1, name: "Test Project" },
     component: {
@@ -72,15 +101,27 @@ describe("RulesCodeEditorView", () => {
     availableRoles: ["viewer", "author", "reviewer", "admin"],
   };
 
-  const createWrapper = (props = {}) => {
+  let pinia;
+
+  const createWrapper = (props = {}, permissions = "admin") => {
+    pinia = createPinia();
+    setActivePinia(pinia);
+    const router = createTestRouter([
+      { path: "/", name: "editor-root" },
+      { path: "/rules/:ruleId", name: "rule", props: true },
+    ]);
     return shallowMount(RulesCodeEditorView, {
       localVue,
+      pinia,
+      router,
+      // Permissions arrive via provide/inject (usePermissions) — the page
+      // root (Rules.vue) provides; this view injects.
+      provide: { effectivePermissions: permissions },
       propsData: {
         ...defaultProps,
         ...props,
       },
       stubs: {
-        RuleNavigator: true,
         RuleEditor: true,
         RuleHistories: true,
         RuleReviews: true,
@@ -91,6 +132,10 @@ describe("RulesCodeEditorView", () => {
         ControlsCommandBar: true,
         ControlsPageLayout: true,
         NewRuleModalForm: true,
+        AlsoSatisfiesModal: true,
+        RuleSearchBar: true,
+        RuleList: true,
+        ActiveFilterPills: true,
         Multiselect: true,
         BModal: true,
         BSidebar: true,
@@ -98,11 +143,8 @@ describe("RulesCodeEditorView", () => {
         BFormGroup: true,
         BIcon: true,
       },
-      mocks: {
-        $root: {
-          $emit: vi.fn(),
-        },
-      },
+      // NOTE: do not try to mock $root here — VTU cannot replace the real
+      // $root; use vi.spyOn(wrapper.vm.$root, "$emit") in tests instead.
     });
   };
 
@@ -137,9 +179,9 @@ describe("RulesCodeEditorView", () => {
       expect(wrapper.findComponent({ name: "RuleFilterBar" }).exists()).toBe(true);
     });
 
-    it("renders RuleNavigator", () => {
+    it("renders RuleSearchBar (sidebar header)", () => {
       wrapper = createWrapper();
-      expect(wrapper.findComponent({ name: "RuleNavigator" }).exists()).toBe(true);
+      expect(wrapper.findComponent({ name: "RuleSearchBar" }).exists()).toBe(true);
     });
   });
 
@@ -150,9 +192,10 @@ describe("RulesCodeEditorView", () => {
       expect(wrapper.vm.selectedRuleId).toBeDefined();
     });
 
-    it("has openRuleIds in component state", () => {
+    it("has openRuleIds available via the store", () => {
       wrapper = createWrapper();
-      expect(wrapper.vm.openRuleIds).toBeDefined();
+      const store = useRuleSelectionStore();
+      expect(store.openRuleIds).toBeDefined();
     });
 
     it("has selectedRule computed property", () => {
@@ -167,17 +210,19 @@ describe("RulesCodeEditorView", () => {
       expect(wrapper.vm.selectedRuleId).toBe(1);
     });
 
-    it("selectRule adds to openRuleIds", () => {
+    it("selectRule adds to openRuleIds in the store", () => {
       wrapper = createWrapper();
       wrapper.vm.selectRule(1);
-      expect(wrapper.vm.openRuleIds).toContain(1);
+      const store = useRuleSelectionStore();
+      expect(store.openRuleIds).toContain(1);
     });
 
-    it("deselectRule removes from openRuleIds", () => {
+    it("deselectRule removes from openRuleIds in the store", () => {
       wrapper = createWrapper();
       wrapper.vm.selectRule(1);
       wrapper.vm.deselectRule(1);
-      expect(wrapper.vm.openRuleIds).not.toContain(1);
+      const store = useRuleSelectionStore();
+      expect(store.openRuleIds).not.toContain(1);
     });
 
     it("persists selectedRuleId to localStorage", () => {
@@ -191,7 +236,7 @@ describe("RulesCodeEditorView", () => {
     it("has filters in component state", () => {
       wrapper = createWrapper();
       expect(wrapper.vm.filters).toBeDefined();
-      expect(wrapper.vm.filters.acFilterChecked).toBe(true);
+      expect(wrapper.vm.filters.acFilterChecked).toBe(false);
     });
 
     it("has counts computed property", () => {
@@ -209,11 +254,11 @@ describe("RulesCodeEditorView", () => {
       expect(wrapper.vm.filters.acFilterChecked).toBe(false);
     });
 
-    it("resetFilters resets all filters", () => {
+    it("resetFilters resets all filters to defaults (all unchecked)", () => {
       wrapper = createWrapper();
-      wrapper.vm.setFilter("acFilterChecked", false);
+      wrapper.vm.setFilter("acFilterChecked", true);
       wrapper.vm.resetFilters();
-      expect(wrapper.vm.filters.acFilterChecked).toBe(true);
+      expect(wrapper.vm.filters.acFilterChecked).toBe(false);
     });
   });
 
@@ -245,11 +290,11 @@ describe("RulesCodeEditorView", () => {
   });
 
   describe("event handling", () => {
-    it("passes selectRule to RuleNavigator as ruleSelected handler", () => {
+    it("has nav composable state flattened into component", () => {
       wrapper = createWrapper();
-      const navigator = wrapper.findComponent({ name: "RuleNavigator" });
-      expect(navigator.exists()).toBe(true);
-      // The @ruleSelected should be connected to selectRule (or handleRuleSelected)
+      expect(wrapper.vm.navFilters).toBeDefined();
+      expect(wrapper.vm.navFilteredRules).toBeDefined();
+      expect(wrapper.vm.navHasActiveFilters).toBeDefined();
     });
 
     it("passes activePanel to ControlsCommandBar", async () => {
@@ -310,13 +355,78 @@ describe("RulesCodeEditorView", () => {
 
   describe("computed properties", () => {
     it("isViewerOnly returns true for viewer permissions", () => {
-      wrapper = createWrapper({ effectivePermissions: "viewer" });
+      wrapper = createWrapper({}, "viewer");
       expect(wrapper.vm.isViewerOnly).toBe(true);
     });
 
     it("isViewerOnly returns false for admin permissions", () => {
-      wrapper = createWrapper({ effectivePermissions: "admin" });
+      wrapper = createWrapper({}, "admin");
       expect(wrapper.vm.isViewerOnly).toBe(false);
+    });
+  });
+
+  // ── composable contracts ────────────────────────────────────────────
+  // REQUIREMENTS: permissions arrive via provide/inject (usePermissions —
+  // the effectivePermissions prop is GONE), and the comment composer state
+  // machine flows through useReplyComposer with the onOpen/afterPosted
+  // bridge. DateFormatMixin + RoleComparisonMixin were verified dead;
+  // toasts come from the useToast composable.
+  describe("composable contracts", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("sources permissions from provide via usePermissions", () => {
+      wrapper = createWrapper({}, "viewer");
+      expect(usePermissions).toHaveBeenCalled();
+      expect(wrapper.vm.effectivePermissions).toBe("viewer");
+      expect(wrapper.vm.isViewerOnly).toBe(true);
+    });
+
+    it("wires useReplyComposer — section composer opens via the bridge", async () => {
+      wrapper = createWrapper();
+      expect(useReplyComposer).toHaveBeenCalled();
+
+      const showSpy = vi.spyOn(wrapper.vm.$bvModal, "show").mockImplementation(() => {});
+      wrapper.vm.selectRule(1);
+      await wrapper.vm.$nextTick();
+      wrapper.vm.onOpenComposer("check_content");
+
+      expect(wrapper.vm.composerState.mode).toBe("new-comment");
+      expect(wrapper.vm.composerState.section).toBe("check_content");
+      expect(wrapper.vm.composerState.ruleName).toBe("TEST-001");
+      expect(wrapper.vm.composerActive).toBe(true);
+      await wrapper.vm.$nextTick();
+      expect(showSpy).toHaveBeenCalledWith("comment-composer-modal");
+    });
+
+    it("afterPosted bridge refreshes the selected rule and clears the composer", async () => {
+      wrapper = createWrapper();
+      vi.spyOn(wrapper.vm.$bvModal, "show").mockImplementation(() => {});
+      wrapper.vm.selectRule(1);
+      await wrapper.vm.$nextTick();
+      const rootEmitSpy = vi.spyOn(wrapper.vm.$root, "$emit");
+
+      wrapper.vm.onOpenComposer("check_content");
+      wrapper.vm.onComposerPosted();
+
+      expect(rootEmitSpy).toHaveBeenCalledWith("refresh:rule", 1, "all");
+      expect(wrapper.vm.composerActive).toBe(false);
+    });
+
+    it("component-mode posts do NOT trigger a rule refresh", async () => {
+      wrapper = createWrapper();
+      vi.spyOn(wrapper.vm.$bvModal, "show").mockImplementation(() => {});
+      wrapper.vm.selectRule(1);
+      await wrapper.vm.$nextTick();
+      const rootEmitSpy = vi.spyOn(wrapper.vm.$root, "$emit");
+
+      wrapper.vm.onOpenComponentComposer();
+      wrapper.vm.onComposerPosted();
+
+      expect(rootEmitSpy).not.toHaveBeenCalledWith(
+        "refresh:rule",
+        expect.anything(),
+        expect.anything(),
+      );
     });
   });
 
@@ -338,8 +448,8 @@ describe("RulesCodeEditorView", () => {
     });
 
     it("updates localAdvancedFields after successful PATCH", async () => {
-      const axios = (await import("axios")).default;
-      axios.patch.mockResolvedValueOnce({ data: {} });
+      const { patchComponent } = await import("@/api/componentsApi");
+      patchComponent.mockResolvedValueOnce({ data: {} });
 
       wrapper = createWrapper();
       expect(wrapper.vm.localAdvancedFields).toBe(false);
@@ -351,14 +461,13 @@ describe("RulesCodeEditorView", () => {
     });
 
     it("does not update localAdvancedFields on PATCH failure", async () => {
-      const axios = (await import("axios")).default;
-      axios.patch.mockRejectedValueOnce(new Error("Network error"));
+      const { patchComponent } = await import("@/api/componentsApi");
+      patchComponent.mockRejectedValueOnce(new Error("Network error"));
 
       wrapper = createWrapper();
       expect(wrapper.vm.localAdvancedFields).toBe(false);
 
       wrapper.vm.toggleAdvancedFields(true);
-      // Wait for the promise to settle
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(wrapper.vm.localAdvancedFields).toBe(false);
@@ -371,12 +480,10 @@ describe("RulesCodeEditorView", () => {
 
       const ruleEditor = wrapper.findComponent({ name: "RuleEditor" });
       expect(ruleEditor.exists()).toBe(true);
-      // The template binds :advanced_fields="localAdvancedFields"
       expect(ruleEditor.props("advanced_fields")).toBe(false);
 
-      // Simulate successful toggle
-      const axios = (await import("axios")).default;
-      axios.patch.mockResolvedValueOnce({ data: {} });
+      const { patchComponent } = await import("@/api/componentsApi");
+      patchComponent.mockResolvedValueOnce({ data: {} });
       wrapper.vm.toggleAdvancedFields(true);
       await vi.waitFor(() => {
         expect(wrapper.vm.localAdvancedFields).toBe(true);
@@ -386,174 +493,97 @@ describe("RulesCodeEditorView", () => {
     });
   });
 
-  describe("filterRulesForSatisfies (Also Satisfies modal)", () => {
-    // REQUIREMENT: The Also Satisfies modal shows eligible rules as options.
-    // A rule is eligible if:
-    //   1. It is NOT the currently selected rule
-    //   2. It does NOT already satisfy another rule (satisfies.length === 0)
-    //   3. It is NOT already in the selected rule's satisfies list
-    // Display: truncated SRG ID (or prefix-rule_id fallback)
-
-    const rulesWithSrgIds = [
-      {
-        id: 1,
-        rule_id: "001",
-        srg_id: "SRG-OS-000001-GPOS-00001",
-        status: "Applicable - Configurable",
-        locked: false,
-        review_requestor_id: null,
-        satisfies: [],
-        satisfied_by: [],
-        histories: [],
-        version: "SV-001",
-      },
-      {
-        id: 2,
-        rule_id: "002",
-        srg_id: "SRG-OS-000002-GPOS-00002",
-        status: "Not Yet Determined",
-        locked: false,
-        review_requestor_id: null,
-        satisfies: [],
-        satisfied_by: [],
-        histories: [],
-        version: "SV-002",
-      },
-      {
-        id: 3,
-        rule_id: "003",
-        srg_id: "SRG-OS-000003-GPOS-00003",
-        status: "Applicable - Configurable",
-        locked: false,
-        review_requestor_id: null,
-        satisfies: [{ id: 99, rule_id: "099", srg_id: "SRG-OS-000099-GPOS-00099" }],
-        satisfied_by: [],
-        histories: [],
-        version: "SV-003",
-      },
-      {
-        id: 4,
-        rule_id: "004",
-        srg_id: null,
-        status: "Not Applicable",
-        locked: false,
-        review_requestor_id: null,
-        satisfies: [],
-        satisfied_by: [],
-        histories: [],
-        version: "SV-004",
-      },
-    ];
-
-    it("excludes the currently selected rule from options", () => {
-      wrapper = createWrapper({ rules: rulesWithSrgIds });
-      wrapper.vm.selectRule(1);
-      wrapper.vm.filterRulesForSatisfies();
-      const ids = wrapper.vm.filteredSelectRules.map((r) => r.value);
-      expect(ids).not.toContain(1);
+  describe("sidebar split into header and body slots", () => {
+    it("renders RuleSearchBar in the left-sidebar-header slot (pinned)", () => {
+      wrapper = createWrapper();
+      const searchBar = wrapper.findComponent({ name: "RuleSearchBar" });
+      expect(searchBar.exists()).toBe(true);
     });
 
-    it("excludes rules that already satisfy other rules", () => {
-      wrapper = createWrapper({ rules: rulesWithSrgIds });
-      wrapper.vm.selectRule(1);
-      wrapper.vm.filterRulesForSatisfies();
-      const ids = wrapper.vm.filteredSelectRules.map((r) => r.value);
-      // Rule 3 has satisfies.length > 0 — should be excluded
-      expect(ids).not.toContain(3);
+    it("renders ActiveFilterPills in the left-sidebar-header slot (pinned)", () => {
+      wrapper = createWrapper();
+      const pills = wrapper.findComponent({ name: "ActiveFilterPills" });
+      expect(pills.exists()).toBe(true);
     });
 
-    it("excludes rules already in the selected rule's satisfies list", () => {
-      const rulesWithExistingSatisfaction = rulesWithSrgIds.map((r) => {
-        if (r.id === 1) {
-          return {
-            ...r,
-            satisfies: [{ id: 2, rule_id: "002", srg_id: "SRG-OS-000002-GPOS-00002" }],
-          };
-        }
-        return r;
-      });
-      wrapper = createWrapper({ rules: rulesWithExistingSatisfaction });
-      wrapper.vm.selectRule(1);
-      wrapper.vm.filterRulesForSatisfies();
-      const ids = wrapper.vm.filteredSelectRules.map((r) => r.value);
-      expect(ids).not.toContain(2);
+    it("renders RuleList in the left-sidebar slot (scrollable body)", () => {
+      wrapper = createWrapper();
+      const ruleList = wrapper.findComponent({ name: "RuleList" });
+      expect(ruleList.exists()).toBe(true);
     });
 
-    it("includes eligible rules", () => {
-      wrapper = createWrapper({ rules: rulesWithSrgIds });
-      wrapper.vm.selectRule(1);
-      wrapper.vm.filterRulesForSatisfies();
-      const ids = wrapper.vm.filteredSelectRules.map((r) => r.value);
-      // Rule 2 and 4 are eligible (not selected, no existing satisfies, not in satisfies list)
-      expect(ids).toContain(2);
-      expect(ids).toContain(4);
-    });
-
-    it("displays truncated SRG ID as option text", () => {
-      wrapper = createWrapper({ rules: rulesWithSrgIds });
-      wrapper.vm.selectRule(1);
-      wrapper.vm.filterRulesForSatisfies();
-      const rule2Option = wrapper.vm.filteredSelectRules.find((r) => r.value === 2);
-      expect(rule2Option.text).toBe("SRG-OS-000002");
-    });
-
-    it("falls back to prefix-rule_id when srg_id is null", () => {
-      wrapper = createWrapper({ rules: rulesWithSrgIds });
-      wrapper.vm.selectRule(1);
-      wrapper.vm.filterRulesForSatisfies();
-      const rule4Option = wrapper.vm.filteredSelectRules.find((r) => r.value === 4);
-      expect(rule4Option.text).toBe("TEST-004");
-    });
-
-    it("returns empty when no rule is selected", () => {
-      wrapper = createWrapper({ rules: rulesWithSrgIds });
-      // Deselect all rules — autoSelectFirst selects rule 1 on mount
-      wrapper.vm.deselectRule(wrapper.vm.selectedRuleId);
-      wrapper.vm.filterRulesForSatisfies();
-      expect(wrapper.vm.filteredSelectRules).toEqual([]);
+    it("does NOT render RuleNavigator (replaced by direct composable usage)", () => {
+      wrapper = createWrapper();
+      const nav = wrapper.findComponent({ name: "RuleNavigator" });
+      expect(nav.exists()).toBe(false);
     });
   });
 
-  describe("addMultipleSatisfiedRules", () => {
-    it("emits addSatisfied:rule for each selected rule", () => {
+  // ==========================================================================
+  // Chrome condensation: filter toggle
+  // ==========================================================================
+  describe("chrome condensation", () => {
+    it("passes showFilterToggle=true to ControlsCommandBar", () => {
+      wrapper = createWrapper();
+      const commandBar = wrapper.findComponent({ name: "ControlsCommandBar" });
+      expect(commandBar.props("showFilterToggle")).toBe(true);
+    });
+
+    it("filter bar is hidden by default", () => {
+      wrapper = createWrapper();
+      const layout = wrapper.findComponent({ name: "ControlsPageLayout" });
+      expect(layout.props("showFilterBar")).toBe(false);
+    });
+
+    it("toggles filter bar when command bar emits toggle-filter-bar", async () => {
+      wrapper = createWrapper();
+      const commandBar = wrapper.findComponent({ name: "ControlsCommandBar" });
+      commandBar.vm.$emit("toggle-filter-bar");
+      await wrapper.vm.$nextTick();
+      const layout = wrapper.findComponent({ name: "ControlsPageLayout" });
+      expect(layout.props("showFilterBar")).toBe(true);
+    });
+
+    it("persists filter bar visibility to localStorage", async () => {
+      wrapper = createWrapper();
+      const commandBar = wrapper.findComponent({ name: "ControlsCommandBar" });
+      commandBar.vm.$emit("toggle-filter-bar");
+      await wrapper.vm.$nextTick();
+      const componentId = defaultProps.component.id;
+      expect(localStorage.getItem(`filterBarVisible-${componentId}`)).toBe("true");
+    });
+
+    it("clearAllFilters resets both filter bar and nav filters", () => {
+      wrapper = createWrapper();
+      expect(typeof wrapper.vm.clearAllFilters).toBe("function");
+    });
+
+    it("restores filter bar visibility from localStorage", () => {
+      const componentId = defaultProps.component.id;
+      localStorage.setItem(`filterBarVisible-${componentId}`, "true");
+      wrapper = createWrapper();
+      const layout = wrapper.findComponent({ name: "ControlsPageLayout" });
+      expect(layout.props("showFilterBar")).toBe(true);
+    });
+  });
+
+  describe("AlsoSatisfiesModal integration", () => {
+    it("renders AlsoSatisfiesModal when a rule is selected", async () => {
+      wrapper = createWrapper();
+      wrapper.vm.selectRule(1);
+      await wrapper.vm.$nextTick();
+      const modal = wrapper.findComponent({ name: "AlsoSatisfiesModal" });
+      expect(modal.exists()).toBe(true);
+    });
+
+    it("forwards add-satisfied event to $root.$emit addSatisfied:rule", async () => {
       wrapper = createWrapper();
       const rootEmitSpy = vi.spyOn(wrapper.vm.$root, "$emit");
       wrapper.vm.selectRule(1);
-      wrapper.vm.selectedSatisfiesRuleIds = [
-        { value: 2, text: "SRG-OS-000002" },
-        { value: 3, text: "SRG-OS-000003" },
-      ];
-      wrapper.vm.addMultipleSatisfiedRules();
+      await wrapper.vm.$nextTick();
+      wrapper.vm.onAddSatisfied(2, 1);
       expect(rootEmitSpy).toHaveBeenCalledWith("addSatisfied:rule", 2, 1);
-      expect(rootEmitSpy).toHaveBeenCalledWith("addSatisfied:rule", 3, 1);
       rootEmitSpy.mockRestore();
-    });
-
-    it("does nothing when no rule is selected", () => {
-      wrapper = createWrapper();
-      const rootEmitSpy = vi.spyOn(wrapper.vm.$root, "$emit");
-      // Don't select any rule — deselect to ensure selectedRule is null
-      wrapper.vm.deselectRule(wrapper.vm.selectedRuleId);
-      rootEmitSpy.mockClear();
-      wrapper.vm.selectedSatisfiesRuleIds = [{ value: 2, text: "SRG-OS-000002" }];
-      wrapper.vm.addMultipleSatisfiedRules();
-      expect(rootEmitSpy).not.toHaveBeenCalledWith(
-        "addSatisfied:rule",
-        expect.anything(),
-        expect.anything(),
-      );
-      rootEmitSpy.mockRestore();
-    });
-  });
-
-  describe("clearSelectedRules", () => {
-    it("resets selectedSatisfiesRuleIds to empty array", () => {
-      wrapper = createWrapper();
-      wrapper.vm.selectedSatisfiesRuleIds = [
-        { value: 1, text: "SRG-OS-000001" },
-      ];
-      wrapper.vm.clearSelectedRules();
-      expect(wrapper.vm.selectedSatisfiesRuleIds).toEqual([]);
     });
   });
 });

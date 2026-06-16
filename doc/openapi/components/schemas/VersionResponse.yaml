@@ -1,0 +1,34 @@
+description: Application version and runtime information. No authentication required.
+type: object
+required:
+  - name
+  - version
+  - rails
+  - ruby
+  - environment
+additionalProperties: false
+properties:
+  name:
+    type: string
+    description: Application name.
+    example: Vulcan
+  version:
+    type: string
+    description: Current Vulcan application version.
+    example: 2.3.7
+  rails:
+    type: string
+    description: Rails framework version running the application.
+    example: 8.0.2.1
+  ruby:
+    type: string
+    description: Ruby interpreter version running the application.
+    example: 3.4.9
+  environment:
+    type: string
+    description: Current Rails environment.
+    enum:
+      - development
+      - test
+      - production
+    example: development

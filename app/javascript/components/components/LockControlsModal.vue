@@ -18,7 +18,7 @@
     >
       <b-form @submit.prevent="handleOk">
         <input
-          id="NewProjectAuthenticityToken"
+          id="LockControlsAuthenticityToken"
           type="hidden"
           name="authenticity_token"
           :value="authenticityToken"
@@ -76,20 +76,24 @@
 </template>
 
 <script>
-import axios from "axios";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { lockComponent, lockSections as lockSectionsApi } from "../../api/componentsApi";
+import { useAuthToken } from "../../composables/useAuthToken";
+import { useToast } from "../../composables/useToast";
 import { MESSAGE_LABELS } from "../../constants/terminology";
 import { LOCKABLE_SECTIONS } from "../../composables/ruleFieldConfig";
 
 export default {
   name: "LockControlsModal",
-  mixins: [AlertMixinVue, FormMixinVue],
   props: {
     component_id: {
       type: Number,
       required: true,
     },
+  },
+  setup() {
+    const { authenticityToken } = useAuthToken();
+    const { alertOrNotifyResponse } = useToast();
+    return { authenticityToken, alertOrNotifyResponse };
   },
   data: function () {
     return {
@@ -138,22 +142,18 @@ export default {
     },
     lockControls: function () {
       this.loading = true;
-      axios
-        .post(`/components/${this.component_id}/lock`, {
-          review: { action: "lock_control", comment: this.comment },
-        })
+      lockComponent(this.component_id, { action: "lock_control", comment: this.comment })
         .then(this.lockControlsSuccess)
         .catch(this.alertOrNotifyResponse)
         .finally(this.completeLoading);
     },
     lockSections: function () {
       this.loading = true;
-      axios
-        .patch(`/components/${this.component_id}/lock_sections`, {
-          sections: this.selectedSections,
-          locked: true,
-          comment: this.comment,
-        })
+      lockSectionsApi(this.component_id, {
+        sections: this.selectedSections,
+        locked: true,
+        comment: this.comment,
+      })
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.$refs["LockControlsModal"].hide();

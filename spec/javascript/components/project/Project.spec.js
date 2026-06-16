@@ -1,16 +1,27 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { shallowMount } from "@vue/test-utils";
-import { localVue } from "@test/testHelper";
+import { localVue, flushPromises } from "@test/testHelper";
 import Project from "@/components/project/Project.vue";
 
-// Mock axios - must include defaults.headers.common for FormMixin
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
     get: vi.fn(() => Promise.resolve({ data: {} })),
     put: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
     delete: vi.fn(() => Promise.resolve({ data: {} })),
     defaults: { headers: { common: {} } },
   },
+}));
+
+vi.mock("@/api/projectsApi", () => ({
+  getProject: vi.fn(() => Promise.resolve({ data: {} })),
+  updateProject: vi.fn(() => Promise.resolve({ data: {} })),
+  exportProjectData: vi.fn(() => Promise.resolve("/projects/1/export/csv?component_ids=1")),
+}));
+
+vi.mock("@/api/componentsApi", () => ({
+  deleteComponent: vi.fn(() => Promise.resolve({ data: {} })),
 }));
 
 /**
@@ -43,12 +54,12 @@ describe("Project", () => {
   let wrapper;
 
   const defaultProps = {
-    effective_permissions: "admin",
     initialProjectState: {
       id: 1,
       name: "Test Project",
       description: "Test description",
       visibility: "hidden",
+      effective_permissions: "admin",
       components: [],
       available_components: [],
       memberships: [],
@@ -136,6 +147,58 @@ describe("Project", () => {
   });
 
   // ==========================================
+  // PERMISSIONS VIA PROVIDE (SPA-ready)
+  // ==========================================
+  describe("permissions via provide", () => {
+    it("reads effective_permissions from initialProjectState, not from a separate prop", () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.effective_permissions).toBe("admin");
+    });
+
+    it("derives permissions from initialProjectState data", () => {
+      wrapper = createWrapper({
+        initialProjectState: {
+          ...defaultProps.initialProjectState,
+          effective_permissions: "viewer",
+        },
+      });
+      expect(wrapper.vm.effective_permissions).toBe("viewer");
+    });
+
+    it("exposes canAdmin=true for admin permissions (gates admin-only children)", () => {
+      // Project.vue is the PROVIDER — it cannot inject its own provide, so
+      // canAdmin comes from the roleGteTo util in setup, not usePermissions.
+      wrapper = createWrapper();
+      expect(wrapper.vm.canAdmin).toBe(true);
+    });
+
+    it("exposes canAdmin=false for viewer permissions", () => {
+      wrapper = createWrapper({
+        initialProjectState: {
+          ...defaultProps.initialProjectState,
+          effective_permissions: "viewer",
+        },
+      });
+      expect(wrapper.vm.canAdmin).toBe(false);
+    });
+
+    it("defaults to null when initialProjectState has no permissions", () => {
+      const stateWithout = { ...defaultProps.initialProjectState };
+      delete stateWithout.effective_permissions;
+      // REQUIREMENT: null permissions is the designed non-member contract —
+      // every child prop in the tree must accept it without Vue warnings.
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      wrapper = createWrapper({ initialProjectState: stateWithout });
+      expect(wrapper.vm.effective_permissions).toBeNull();
+      const propWarnings = errorSpy.mock.calls.filter((call) =>
+        String(call[0]).includes('type check failed for prop "effectivePermissions"'),
+      );
+      errorSpy.mockRestore();
+      expect(propWarnings).toEqual([]);
+    });
+  });
+
+  // ==========================================
   // USESIDEBAR COMPOSABLE INTEGRATION
   // ==========================================
   describe("useSidebar composable integration", () => {
@@ -175,10 +238,15 @@ describe("Project", () => {
       expect(commandBar.props("project")).toEqual(defaultProps.initialProjectState);
     });
 
-    it("passes effective-permissions to ProjectCommandBar", () => {
+    it("provides effectivePermissions to descendants instead of prop-passing", () => {
+      // ProjectCommandBar (and the other project/ children) inject
+      // effectivePermissions via usePermissions — the template attribute is
+      // gone. A leftover attr would land in $attrs on the stub, so
+      // attributes() pins the removal.
       wrapper = createWrapper();
       const commandBar = wrapper.findComponent({ name: "ProjectCommandBar" });
-      expect(commandBar.props("effectivePermissions")).toBe("admin");
+      expect(commandBar.attributes("effective-permissions")).toBeUndefined();
+      expect(wrapper.vm.effective_permissions).toBe("admin");
     });
 
     it("passes activePanel to ProjectCommandBar", async () => {
@@ -220,10 +288,11 @@ describe("Project", () => {
       expect(wrapper.vm.showVisibilityModal).toBe(true);
     });
 
-    it("updateVisibility closes modal and makes API call", async () => {
-      const axios = (await import("axios")).default;
-      // Mock axios.get to return valid project structure for refreshProject
-      axios.get.mockResolvedValue({ data: defaultProps.initialProjectState });
+    it("updateVisibility closes modal and calls updateProject", async () => {
+      const { getProject } = await import("@/api/projectsApi");
+      getProject.mockResolvedValue({ data: defaultProps.initialProjectState });
+      const { updateProject } = await import("@/api/projectsApi");
+
       wrapper = createWrapper();
       wrapper.vm.pendingVisibility = true;
       wrapper.vm.showVisibilityModal = true;
@@ -231,9 +300,7 @@ describe("Project", () => {
       wrapper.vm.updateVisibility();
 
       expect(wrapper.vm.showVisibilityModal).toBe(false);
-      expect(axios.put).toHaveBeenCalledWith("/projects/1", {
-        project: { visibility: "discoverable" },
-      });
+      expect(updateProject).toHaveBeenCalledWith(1, { visibility: "discoverable" });
     });
 
     it("cancelVisibilityChange closes modal and resets command bar toggle", () => {
@@ -391,50 +458,26 @@ describe("Project", () => {
       expect(wrapper.vm.showExportModal).toBe(true);
     });
 
-    it("executeExport calls downloadExport with type, componentIds, and mode from event", () => {
+    it("downloadExport calls exportProjectData with project id, type, and options", async () => {
+      const { exportProjectData } = await import("@/api/projectsApi");
+      // window.open is the real side effect (browser performs the download).
+      // Spy + assert so jsdom never receives the un-implemented call (zero-noise).
+      const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+
       wrapper = createWrapper();
-      wrapper.vm.downloadExport = vi.fn();
+      wrapper.vm.downloadExport("csv", [1, 2], "working_copy", true, false, true);
 
-      wrapper.vm.executeExport({
-        type: "excel",
-        mode: "vendor_submission",
-        componentIds: [1, 2, 3],
+      expect(exportProjectData).toHaveBeenCalledWith(1, "csv", {
+        componentIds: [1, 2],
+        mode: "working_copy",
+        includeSrg: true,
+        includeMemberships: false,
+        excludeSatisfiedBy: true,
       });
 
-      expect(wrapper.vm.downloadExport).toHaveBeenCalledWith(
-        "excel",
-        [1, 2, 3],
-        "vendor_submission",
-        undefined,
-        undefined,
-        undefined,
-      );
-    });
-
-    it("executeExport works for all export types with modes", () => {
-      const cases = [
-        { type: "excel", mode: "working_copy" },
-        { type: "excel", mode: "vendor_submission" },
-        { type: "xccdf", mode: "published_stig" },
-        { type: "inspec", mode: "published_stig" },
-        { type: "xccdf", mode: "backup" },
-      ];
-      cases.forEach(({ type, mode }) => {
-        wrapper = createWrapper();
-        wrapper.vm.downloadExport = vi.fn();
-
-        wrapper.vm.executeExport({ type, mode, componentIds: [1] });
-
-        expect(wrapper.vm.downloadExport).toHaveBeenCalledWith(
-          type,
-          [1],
-          mode,
-          undefined,
-          undefined,
-          undefined,
-        );
-        wrapper.destroy();
-      });
+      await flushPromises(wrapper);
+      expect(openSpy).toHaveBeenCalledWith("/projects/1/export/csv?component_ids=1");
+      openSpy.mockRestore();
     });
 
     it("renders ExportModal component", () => {

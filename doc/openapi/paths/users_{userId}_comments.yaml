@@ -1,0 +1,90 @@
+parameters:
+  - $ref: ../components/parameters/UserId.yaml
+get:
+  operationId: getUserComments
+  tags:
+    - Users
+  summary: My Comments page — user's comments across accessible projects
+  description: >-
+    Returns paginated comments authored by the specified user across all
+    projects the requesting user can access. Scoped by project visibility,
+    not identity — this is a filtered view, not a privacy boundary. Supports
+    triage status filtering, project filtering, and pagination.
+  parameters:
+    - $ref: ../components/parameters/TriageStatusFilter.yaml
+    - $ref: ../components/parameters/PageParam.yaml
+    - $ref: ../components/parameters/PerPageParam.yaml
+    - name: project_id
+      in: query
+      required: false
+      description: Filter comments to a specific project.
+      schema:
+        type: integer
+      example: 3
+  responses:
+    '200':
+      description: Paginated user comments with project/component context
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - rows
+              - pagination
+            additionalProperties: false
+            properties:
+              rows:
+                type: array
+                description: Comment rows for the current page.
+                items:
+                  $ref: ../components/schemas/UserCommentRow.yaml
+              pagination:
+                type: object
+                required:
+                  - page
+                  - per_page
+                  - total
+                additionalProperties: false
+                properties:
+                  page:
+                    type: integer
+                    description: Current page number (1-based).
+                    example: 1
+                  per_page:
+                    type: integer
+                    description: Number of comments per page.
+                    example: 25
+                  total:
+                    type: integer
+                    description: Total number of matching comments.
+                    example: 12
+          examples:
+            comments:
+              summary: User's pending comments across projects
+              value:
+                rows:
+                  - id: 29
+                    project_id: 3
+                    project_name: vSphere 7.0
+                    component_id: 4
+                    component_name: Photon OS 3
+                    rule_id: 2397
+                    rule_displayed_name: PHOS-03-000039
+                    commentable_type: BaseRule
+                    section: fixtext
+                    comment: "vSphere 7.0: fix command targets ESXi 6.7 path."
+                    created_at: "2026-05-19 14:08:18 UTC"
+                    triage_status: pending
+                    responses_count: 0
+                    reactions:
+                      up: 0
+                      down: 0
+                      mine: null
+                pagination:
+                  page: 1
+                  per_page: 25
+                  total: 12
+    '404':
+      description: User not found
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

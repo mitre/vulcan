@@ -1,0 +1,265 @@
+# frozen_string_literal: true
+
+# rubocop:disable Metrics/ModuleLength
+module SeedHelpers # rubocop:disable Style/Documentation
+  DEMO_PASSWORD = ENV.fetch('VULCAN_SEED_ADMIN_PASSWORD', '12qwaszx!@QWASZX')
+  DEMO_EMAILS = %w[admin@example.com viewer@example.com author@example.com reviewer@example.com].freeze
+
+  DEMO_ROLE_USERS = {
+    'viewer@example.com' => { name: 'Demo Viewer', role: 'viewer' },
+    'author@example.com' => { name: 'Demo Author', role: 'author' },
+    'reviewer@example.com' => { name: 'Demo Reviewer', role: 'reviewer' }
+  }.freeze
+
+  COMMUNITY_PERSONAS = {
+    'container-sme@example.org' => { name: 'Container Security SME', role: 'viewer' },
+    'platform-eng@example.org' => { name: 'Platform Engineer', role: 'viewer' },
+    'compliance-analyst@example.org' => { name: 'Compliance Analyst', role: 'viewer' },
+    'stig-author@example.org' => { name: 'STIG Author', role: 'author' },
+    'security-reviewer@example.org' => { name: 'Security Reviewer', role: 'reviewer' },
+    'qa-reviewer@example.org' => { name: 'QA Reviewer', role: 'reviewer' },
+    'infra-eng@example.org' => { name: 'Infrastructure Engineer', role: 'viewer' },
+    'devsecops@example.org' => { name: 'DevSecOps Engineer', role: 'author' }
+  }.freeze
+
+  COMMENTER_POOL = (COMMUNITY_PERSONAS.keys + %w[viewer@example.com author@example.com]).freeze
+  TRIAGE_POOL = %w[
+    stig-author@example.org devsecops@example.org
+    author@example.com reviewer@example.com
+    security-reviewer@example.org qa-reviewer@example.org
+  ].freeze
+  ADJUDICATE_POOL = %w[
+    security-reviewer@example.org qa-reviewer@example.org
+    reviewer@example.com admin@example.com
+  ].freeze
+  REPLY_POOL = %w[stig-author@example.org devsecops@example.org author@example.com].freeze
+
+  COMPONENT_POC_PATTERNS = [
+    [/Photon OS/i, { admin_name: 'Photon OS Maintainer', admin_email: 'photon-team@example.com' }],
+    [/vCenter/i, { admin_name: 'vCenter Maintainer', admin_email: 'vcenter-team@example.com' }],
+    [/Container Platform/i,
+     { admin_name: 'Container Platform Maintainer', admin_email: 'platform-team@example.com' }]
+  ].freeze
+  GENERIC_POC = { admin_name: 'QA Test Maintainer', admin_email: 'qa-team@example.com' }.freeze
+
+  def self.quiet
+    prev_deliveries = ActionMailer::Base.perform_deliveries
+    ActionMailer::Base.perform_deliveries = false
+    yield
+  ensure
+    ActionMailer::Base.perform_deliveries = prev_deliveries
+  end
+
+  SYMBOL_VALUE_KEYS = %i[rule author by].freeze
+
+  def self.load_threads(path = Rails.root.join('db/seeds/data/threads.yml'))
+    raw = YAML.safe_load_file(path, permitted_classes: [Symbol])
+    raw.transform_values do |threads|
+      threads.map { |t| normalize_thread(t) }
+    end
+  end
+
+  def self.normalize_thread(hash)
+    result = hash.transform_keys(&:to_sym)
+    SYMBOL_VALUE_KEYS.each { |k| result[k] = result[k]&.to_sym }
+    result[:triage] = normalize_triage(result[:triage]) if result[:triage]
+    result[:replies] = result[:replies]&.map { |r| normalize_reply(r) }
+    result
+  end
+
+  def self.normalize_triage(hash)
+    t = hash.transform_keys(&:to_sym)
+    t[:by] = t[:by]&.to_sym
+    t
+  end
+
+  def self.normalize_reply(hash)
+    r = hash.transform_keys(&:to_sym)
+    r[:author] = r[:author]&.to_sym
+    r
+  end
+  private_class_method :normalize_thread, :normalize_triage, :normalize_reply
+
+  # rubocop:disable Rails/Output
+  def self.seed_xccdf(filepath)
+    xml = File.read(filepath)
+    parsed = Xccdf::Benchmark.parse(xml)
+    title = parsed.try(:title)&.first&.downcase || ''
+
+    is_srg = title.include?('requirements guide') || filepath.to_s.include?('/srgs/')
+    is_stig = title.include?('implementation guide') || title.include?('stig') || filepath.to_s.include?('/stigs/')
+
+    if is_srg
+      record = SecurityRequirementsGuide.from_mapping(parsed)
+      existing = SecurityRequirementsGuide.find_by(srg_id: record.srg_id)
+      if existing
+        puts "  Already exists: #{existing.name} (SecurityRequirementsGuide)"
+        return existing
+      end
+      record.xml = xml
+    elsif is_stig
+      record = Stig.from_mapping(parsed)
+      existing = Stig.find_by(stig_id: record.stig_id)
+      if existing
+        puts "  Already exists: #{existing.name} (Stig)"
+        return existing
+      end
+      record.xml = xml
+    else
+      puts "  Skipping #{File.basename(filepath)} (unrecognized benchmark type)"
+      return nil
+    end
+
+    record.save!
+    puts "  Loaded #{record.name} (#{record.class.name})"
+    record
+  end
+  # rubocop:enable Rails/Output
+
+  def self.seed_component(**opts)
+    project  = opts.fetch(:project)
+    name     = opts.fetch(:name)
+    title    = opts.fetch(:title)
+    prefix   = opts.fetch(:prefix)
+    based_on = opts.fetch(:based_on)
+    version  = opts.fetch(:version, 1)
+    release  = opts.fetch(:release, 1)
+
+    raise ArgumentError, "seed_component: based_on (SRG) is nil for '#{name}'" unless based_on
+
+    c = Component.find_or_initialize_by(project: project, name: name, version: version, release: release)
+    c.title = title
+    c.prefix = prefix
+    c.based_on = based_on
+    extra_keys = opts.keys - %i[project name title prefix based_on version release]
+    extra_keys.each { |k| c.send(:"#{k}=", opts[k]) }
+    c.save!
+    c
+  end
+
+  def self.find_or_seed_review(rule:, user:, section:, comment:, **extra)
+    existing = Review.find_by(action: 'comment', comment: comment, rule: rule)
+    return existing if existing
+
+    Review.create!(
+      user: user, rule: rule, action: 'comment',
+      section: section, comment: comment, **extra
+    )
+  end
+
+  def self.find_or_seed_reply(parent:, user:, comment:)
+    existing = Review.find_by(responding_to_review_id: parent.id, comment: comment)
+    return existing if existing
+
+    attrs = {
+      user: user, action: 'comment',
+      section: parent.section, comment: comment,
+      responding_to_review_id: parent.id
+    }
+    if parent.rule.present?
+      attrs[:rule] = parent.rule
+    else
+      attrs[:commentable] = parent.commentable
+    end
+    Review.create!(attrs)
+  end
+
+  def self.seed_thread(thread, rules:, users:, component:)
+    rule = thread[:rule] ? rules[thread[:rule]] : nil
+    author = users[thread[:author]]
+    return unless author && (rule || component)
+
+    parent = if rule
+               find_or_seed_review(rule: rule, user: author, section: thread[:section], comment: thread[:comment])
+             else
+               find_or_seed_component_comment(component: component, user: author, comment: thread[:comment])
+             end
+
+    if thread[:triage]
+      triage_user = users[thread[:triage][:by]]
+      seed_triage(parent, user: triage_user, status: thread[:triage][:status]) if triage_user
+    end
+
+    (thread[:replies] || []).each do |reply_def|
+      reply_user = users[reply_def[:author]]
+      next unless reply_user
+
+      find_or_seed_reply(parent: parent, user: reply_user, comment: reply_def[:comment])
+    end
+
+    parent
+  end
+
+  def self.find_or_seed_component_comment(component:, user:, comment:)
+    existing = Review.find_by(action: 'comment', comment: comment, commentable: component)
+    return existing if existing
+
+    Review.create!(user: user, commentable: component, action: 'comment', section: nil, comment: comment)
+  end
+
+  def self.cleanup_orphaned_reviews!
+    orphaned = Review.where(commentable_type: 'Component')
+                     .where.not(commentable_id: Component.select(:id))
+    count = orphaned.count
+    orphaned.destroy_all if count.positive?
+    count
+  end
+
+  def self.seed_triage(review, user:, status:)
+    return if review.triage_status == status
+
+    attrs = { triage_status: status, triage_set_by_id: user.id, triage_set_at: Time.current }
+    if Review::TERMINAL_AUTO_ADJUDICATE_STATUSES.include?(status)
+      attrs[:adjudicated_at] = Time.current
+      attrs[:adjudicated_by_id] = status == 'withdrawn' ? review.user_id : user.id
+    end
+    review.update!(attrs)
+  end
+
+  def self.status_report
+    {
+      users: User.count,
+      projects: Project.count,
+      srgs: SecurityRequirementsGuide.count,
+      stigs: Stig.count,
+      components: Component.count,
+      rules: BaseRule.where(type: 'Rule').count,
+      memberships: Membership.count,
+      comments: Review.where(action: 'comment', responding_to_review_id: nil).count,
+      replies: Review.where(action: 'comment').where.not(responding_to_review_id: nil).count
+    }
+  end
+
+  def self.verify!
+    errors = []
+    errors << 'No admin user' unless User.exists?(admin: true)
+    errors << "No projects (expected >= 4, got #{Project.count})" unless Project.count >= 4
+    errors << "No SRGs (expected >= 1, got #{SecurityRequirementsGuide.count})" unless SecurityRequirementsGuide.count >= 1
+    errors << "No components (expected >= 4, got #{Component.count})" unless Component.count >= 4
+
+    expected_roles = %w[viewer author reviewer admin]
+    demo_projects = Project.where(name: ['Photon 3', 'Photon 4', 'vSphere 7.0', 'Container Platform'])
+    demo_projects.find_each do |p|
+      roles = p.memberships.pluck(:role).uniq
+      expected_roles.each do |role|
+        errors << "Project '#{p.name}' missing #{role} membership" unless roles.include?(role)
+      end
+    end
+
+    top_level = Review.where(action: 'comment', responding_to_review_id: nil).count
+    errors << "Too few top-level comments (expected >= 18, got #{top_level})" unless top_level >= 18
+
+    statuses = Review.where(action: 'comment').distinct.pluck(:triage_status).compact
+    %w[pending concur non_concur informational withdrawn].each do |s|
+      errors << "Missing triage status '#{s}' in seed data" unless statuses.include?(s)
+    end
+
+    errors << "No AdditionalQuestions (expected >= 1, got #{AdditionalQuestion.count})" unless AdditionalQuestion.count >= 1
+    errors << "No AdditionalAnswers (expected >= 1, got #{AdditionalAnswer.count})" unless AdditionalAnswer.count >= 1
+    errors << "No RuleDescriptions (expected >= 1, got #{RuleDescription.count})" unless RuleDescription.count >= 1
+    errors << "No ProjectAccessRequests (expected >= 1, got #{ProjectAccessRequest.count})" unless ProjectAccessRequest.count >= 1
+
+    errors
+  end
+end
+# rubocop:enable Metrics/ModuleLength

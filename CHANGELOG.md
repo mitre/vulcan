@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Three-column triage split-pane** — triagers see a persistent rule sidebar (col-2), rule content (col-5), and comment + triage form (col-5) side by side, replacing the prev/next nav + modal workflow. Sidebar shows rules grouped with pending/total counts, search filter, and keyboard navigation. Reuses BenchmarkViewer layout pattern. (PR #731)
+- **Triage progress bar** — summary pills with clickable status filter + thin stacked bar above the comments table. Shows per-status counts (All, Pending, Accepted, Declined, etc.) with "N of M resolved (X%)" summary. Click a pill to filter; click again to reset. Works on both component and project triage pages. (PR #731)
+- **DRY triage color palette** — centralized CSS custom properties in `triage-tints.css` as single source of truth. Colors: green (Accepted), blue (Accepted with Changes — ISO 3864 mandatory-action), red (Declined), yellow (Informational), grey (Pending), purple (Withdrawn — GitHub pattern), teal (Duplicate — Linear pattern). (PR #731)
+- **ARIA landmarks + focus management** — split-pane uses `<nav>`, `role="main"`, `role="complementary"` landmarks. Skip links for keyboard users. Focus lands on content heading on entry and after Save & Next (WAI-ARIA APG content-first pattern). Sidebar is a composite widget (single Tab stop, arrow keys inside). (PR #731)
+- **InfoTooltip + InfoNotice shared components** — consistent (i) icon tooltip pattern (15 instances migrated) and inline info notice pattern (2 instances) across the app. (PR #731)
+- **2D queue navigation** — skip-start/end icons for rule-level nav, chevrons for comment-level, Browse popover panel with search + keyboard nav. (PR #731)
+- **By-rule accordion view** — collapsible groups by rule with pending/total counts, Expand All toggle, auto-expand on filter change. (PR #731)
+- **Staleness badge** — "Section updated since this comment" when rule content changed after comment was posted. (PR #731)
+- **Admin actions inline** — dropdown on triage form button row (replaces sidebar). Force-withdraw, restore, move-to-rule, hard-delete with typed-ID confirmation. (PR #731)
+
+### Changed
+
+- **Show Resolved toggle removed** — replaced by clickable progress bar pills that serve as both status indicators and filter controls. "Pending" pill replaces the default filter; "All" pill shows everything. Eliminates the state model conflict between toggle and pill filters. (PR #731)
+- Renamed "Triage Queue" to "Comments" (heading, breadcrumbs, aria labels). (PR #731)
+- Commented/All toggle moved to rule ID row as simple switch. (PR #731)
+- Locked fields now allow comments (lock prevents editing, not commenting). (PR #731)
+- **Backup format version bumped to 1.1** — exports now declare `backup_format_version: "1.1"` (was 1.0). The format itself is a forward-compatible bump: review `created_at`/`updated_at` carry microsecond precision (already emitted as `iso8601(6)` since v2-480.12), and `ManifestValidator` accepts both `1.0` and `1.1`. The matcher's `legacy_format?` branch (second-precision normalization) now triggers only on `1.0`, so two reviews <1s apart with identical rule_id and comment no longer collapse into `pair_degenerate` on fresh exports. Old 1.0 archives are still importable. (v2-480.26)
+
+### Fixed
+
+- SRG viewer sidebar highlighted all rules instead of first selected — `SrgRuleBlueprint` was missing `identifier :id`. (PR #731)
+- Split-pane exits when filter changes — watcher now selects first available comment instead of exiting when the active comment is filtered out. (PR #731)
+- `doSave` only adjudicates on "Save & next", not "Save decision". (PR #731)
+- Factory traits `after(:build)` DB writes fixed to `before(:create)`. (PR #731)
+
 ## [v2.3.7] - 2026-05-10
 
 ### Added

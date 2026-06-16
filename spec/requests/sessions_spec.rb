@@ -10,7 +10,7 @@ RSpec.describe 'Sessions' do
   end
 
   # Helper method to mock OIDC settings
-  def mock_oidc_settings(enabled:, issuer: nil, client_id: nil, discovery: true)
+  def mock_oidc_settings(enabled:, issuer: nil, client_id: nil, discovery: true, provider_name: 'oidc')
     oidc_settings = double('oidc_settings')
     allow(oidc_settings).to receive_messages(enabled: enabled, discovery: discovery)
 
@@ -19,7 +19,12 @@ RSpec.describe 'Sessions' do
       client_options_mock = double('client_options')
       allow(client_options_mock).to receive(:identifier).and_return(client_id)
       allow(args_mock).to receive_messages(issuer: issuer, client_options: client_options_mock)
-      allow(oidc_settings).to receive(:args).and_return(args_mock)
+      allow(oidc_settings).to receive_messages(
+        args: args_mock,
+        providers: [{ 'name' => provider_name, 'issuer' => issuer, 'client_id' => client_id }]
+      )
+    else
+      allow(oidc_settings).to receive(:providers).and_return([])
     end
 
     allow(Settings).to receive_messages(oidc: oidc_settings, app_url: base_url)
@@ -47,6 +52,142 @@ RSpec.describe 'Sessions' do
     allow(Net::HTTP).to receive_messages(new: mock_http, get_response: mock_response)
   end
 
+  # RP-initiated logout landing: the OIDC provider returns the browser here
+  # after ending its session. The landing produces the AC-12(02) logoff
+  # message locally (a flash set BEFORE the provider hop would die during
+  # the external redirect) and forwards to the sign-in page in ONE redirect
+  # so the flash survives to render.
+  describe 'GET /users/signed_out' do
+    it 'sets the signed-out flash and redirects to the sign-in page (unauthenticated)' do
+      get '/users/signed_out'
+
+      expect(response).to redirect_to(new_user_session_path)
+      expect(flash[:notice]).to eq(I18n.t('devise.sessions.signed_out'))
+      follow_redirect!
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('Signed out successfully.')
+    end
+
+    it 'is idempotent and safe while still signed in (no session state assumed)' do
+      user = create(:user)
+      sign_in user
+
+      get '/users/signed_out'
+
+      expect(response).to redirect_to(new_user_session_path)
+      expect(flash[:notice]).to eq(I18n.t('devise.sessions.signed_out'))
+    end
+  end
+
+  # Real OIDC session sign-out: drives the actual omniauth flow so
+  # session[:id_token] is populated exactly as production does, then
+  # exercises SessionsController#destroy's provider-logout branch.
+  describe 'DELETE /users/sign_out with an OIDC session' do
+    let(:oidc_provider) { Devise.omniauth_providers.first }
+    let(:user) { create(:user, provider: oidc_provider.to_s, uid: 'okta-123') }
+
+    def sign_in_via_oidc(user)
+      OmniAuth.config.test_mode = true
+      OmniAuth.config.mock_auth[oidc_provider] = OmniAuth::AuthHash.new(
+        provider: oidc_provider.to_s,
+        uid: user.uid,
+        info: { name: user.name, email: user.email },
+        credentials: { id_token: 'fake-id-token' },
+        extra: { raw_info: {} }
+      )
+      post "/users/auth/#{oidc_provider}"
+      follow_redirect!
+    end
+
+    after do
+      OmniAuth.config.test_mode = false
+      OmniAuth.config.mock_auth[oidc_provider] = nil
+    end
+
+    it 'redirects to the discovered end_session_endpoint when the provider publishes one' do
+      mock_oidc_settings(enabled: true, issuer: 'https://example.okta.com', client_id: 'test-client-id')
+      mock_http_response(
+        success: true,
+        body: { 'end_session_endpoint' => 'https://example.okta.com/oauth2/v1/logout' }.to_json
+      )
+      sign_in_via_oidc(user)
+
+      delete '/users/sign_out'
+
+      expect(response.location).to start_with('https://example.okta.com/oauth2/v1/logout?')
+      expect(response.location).to include('id_token_hint=fake-id-token')
+      expect(response.location).to include(CGI.escape("#{base_url}/users/signed_out"))
+    end
+
+    it 'falls back to the Okta-shaped logout URL for an Okta issuer when discovery fails' do
+      mock_oidc_settings(enabled: true, issuer: 'https://example.okta.com', client_id: 'test-client-id')
+      mock_http_response(success: false, code: '404', message: 'Not Found')
+      sign_in_via_oidc(user)
+
+      delete '/users/sign_out'
+
+      expect(response.location).to start_with('https://example.okta.com/oauth2/v1/logout?')
+    end
+
+    # RP-initiated logout is OPTIONAL in OIDC. A provider that does not
+    # publish end_session_endpoint gets NO guessed URL — guessing produced
+    # a 404 at the provider (e.g. https://gitlab.com/oauth2/v1/logout).
+    # Local sign-out + the AC-12(02) message still happen.
+    it 'completes locally with the signed-out flash when a non-Okta issuer has no endpoint' do
+      mock_oidc_settings(enabled: true, issuer: 'https://gitlab.example.com', client_id: 'test-client-id')
+      mock_http_response(success: false, code: '404', message: 'Not Found')
+      sign_in_via_oidc(user)
+
+      delete '/users/sign_out'
+
+      expect(response).to redirect_to(new_user_session_path)
+      expect(flash[:notice]).to eq(I18n.t('devise.sessions.signed_out'))
+
+      # Session really ended
+      post '/projects', params: { project: { name: 'Test' } }
+      expect(response).to have_http_status(:redirect)
+    end
+  end
+
+  describe 'OIDC logout URL shape' do
+    let(:user) { create(:user, provider: Devise.omniauth_providers.first.to_s, uid: 'okta-url-test') }
+
+    def sign_in_via_oidc(user)
+      provider = Devise.omniauth_providers.first
+      OmniAuth.config.test_mode = true
+      OmniAuth.config.mock_auth[provider] = OmniAuth::AuthHash.new(
+        provider: provider.to_s, uid: user.uid,
+        info: { name: user.name, email: user.email },
+        credentials: { id_token: 'fake-id-token' },
+        extra: { raw_info: {} }
+      )
+      post "/users/auth/#{provider}"
+      follow_redirect!
+    end
+
+    after do
+      provider = Devise.omniauth_providers.first
+      OmniAuth.config.test_mode = false
+      OmniAuth.config.mock_auth[provider] = nil
+    end
+
+    it 'includes post_logout_redirect_uri pointing at /users/signed_out' do
+      mock_oidc_settings(enabled: true, issuer: 'https://example.okta.com', client_id: 'test-client-id')
+      mock_http_response(
+        success: true,
+        body: { 'end_session_endpoint' => 'https://example.okta.com/oauth2/v1/logout' }.to_json
+      )
+      sign_in_via_oidc(user)
+
+      delete '/users/sign_out'
+
+      expect(response.location).to start_with('https://example.okta.com/oauth2/v1/logout?')
+      expect(response.location).to include(CGI.escape('/users/signed_out'))
+      expect(response.location).to include('id_token_hint=fake-id-token')
+      expect(response.location).to include('client_id=test-client-id')
+    end
+  end
+
   describe 'DELETE /users/sign_out' do
     context 'when OIDC is disabled' do
       before do
@@ -59,11 +200,27 @@ RSpec.describe 'Sessions' do
 
         delete '/users/sign_out'
 
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(new_user_session_path)
 
         # Verify user is actually logged out by checking they can't create a project
         post '/projects', params: { project: { name: 'Test' } }
         expect(response).to have_http_status(:redirect) # Should redirect to login
+      end
+
+      # The sign-in page must be ONE redirect away so the signed-out flash
+      # survives to render. Devise's default after_sign_out path (root)
+      # triggers a second auth redirect that consumes the flash before the
+      # sign-in page renders — the Toaster never shows the confirmation.
+      it 'redirects straight to the sign-in page with the signed-out flash intact' do
+        user = create(:user)
+        sign_in user
+
+        delete '/users/sign_out'
+
+        expect(response).to redirect_to(new_user_session_path)
+        follow_redirect!
+        expect(response).to have_http_status(:ok)
+        expect(flash[:notice]).to eq('Signed out successfully.')
       end
     end
 
@@ -103,7 +260,7 @@ RSpec.describe 'Sessions' do
 
         delete '/users/sign_out'
 
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(new_user_session_path)
       end
     end
 

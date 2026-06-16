@@ -7,18 +7,18 @@
     %link{ rel: 'icon', type: 'image/svg+xml', href: '/saf-logo.svg' }/
     = csrf_meta_tags
     = csp_meta_tag
-    = stylesheet_link_tag 'application', 'data-turbolinks-track': 'reload'
-    = stylesheet_link_tag 'bootstrap-vue', 'data-turbolinks-track': 'reload'
+    = stylesheet_link_tag 'application'
+    = stylesheet_link_tag 'bootstrap-vue'
     %link{ rel: 'stylesheet', href: '/css/font-awesome.min.css' }/
     %link{ rel: 'stylesheet', href: '/css/codicon-local.css' }/
-    = javascript_include_tag 'application', 'data-turbolinks-track': 'reload'
-    = javascript_include_tag 'navbar', 'data-turbolinks-track': 'reload'
-    = javascript_include_tag 'toaster', 'data-turbolinks-track': 'reload'
+    = javascript_include_tag 'application'
+    = javascript_include_tag 'navbar'
+    = javascript_include_tag 'toaster'
 
     / CSS customizations can be added here if needed
 
     = yield :assets
-  %body{ class: (Settings.banner.enabled && Settings.banner.text.present?) ? 'has-classification-banner' : nil }
+  %body{ class: [('has-classification-banner' if Settings.banner.enabled && Settings.banner.text.present?), 'd-flex', 'flex-column', 'vh-100', 'overflow-hidden'].compact.join(' ') }
     - if Settings.banner.enabled && Settings.banner.text.present?
       .classification-banner{ style: "background-color: #{Settings.banner.background_color}; color: #{Settings.banner.text_color};" }
         = Settings.banner.text
@@ -26,13 +26,13 @@
       %navbar{
         'v-bind:navigation': @navigation.to_json,
         'v-bind:signed_in': user_signed_in?.to_json,
-        'v-bind:current_user': (current_user&.slice(:id, :name, :email)).to_json,
+        'v-bind:current_user': (current_user ? UserBlueprint.render(current_user) : 'null'),
         'v-bind:users_path': (current_user&.admin ? users_path : '').to_json,
         'v-bind:profile_path': edit_user_registration_path.to_json,
         'v-bind:sign_out_path': destroy_user_session_path.to_json,
         'v-bind:access_requests': @access_requests.to_json,
         'v-bind:locked_users': @locked_users.to_json,
-        'v-bind:consent_config': Settings.consent.to_h.merge(required: consent_required?).to_json,
+        'v-bind:consent_config': Settings.consent.to_h.merge('required' => consent_required?).to_json,
         'v-bind:app_version': Vulcan::VERSION.to_json
       }
     #Toaster
@@ -40,7 +40,7 @@
         'v-bind:notice': notice.to_json,
         'v-bind:alert': alert.to_json
       }
-    .pt-3.container-fluid{"data-behavior" => "vue"}
+    .pt-3.container-fluid.flex-grow-1.d-flex.flex-column.overflow-auto{"data-behavior" => "vue"}
       = yield
     - if Settings.banner.enabled && Settings.banner.text.present?
       .classification-banner.classification-banner--bottom{ style: "background-color: #{Settings.banner.background_color}; color: #{Settings.banner.text_color};" }

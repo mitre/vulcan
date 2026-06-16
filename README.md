@@ -61,21 +61,12 @@ For detailed release notes, see the [Changelog](./CHANGELOG.md).
 
 ### Working with Documentation
 
-The documentation uses [VitePress](https://vitepress.dev/) and is located in the `docs/` directory.
-
-**Important:** The documentation has its own `package.json` separate from the main application to avoid Vue version conflicts (main app uses Vue 2, VitePress uses Vue 3). This separation will be removed once the main application migrates to Vue 3.
+The documentation uses [VitePress](https://vitepress.dev/) in `docs/` with its own Vue 3 dependencies (isolated from the Rails app's Vue 2). All commands run from the project root:
 
 ```bash
-# Start documentation dev server
-yarn docs:dev  # Runs at http://localhost:5173/vulcan/
-
-# Build documentation (only works in CI/CD currently)
-yarn docs:build
-
-# Work directly in docs directory
-cd docs
-yarn install  # Install docs-specific dependencies
-yarn dev      # Start dev server
+yarn docs:dev      # Dev server at http://localhost:5173/vulcan/
+yarn docs:build    # Build static site
+yarn docs:preview  # Preview production build
 ```
 
 ## 🛠️ Technology Stack
@@ -208,14 +199,22 @@ bundle exec bundler-audit
 
 ### OIDC/OKTA Setup (Auto-Discovery)
 
-Vulcan v2.2+ includes automatic OIDC endpoint discovery, requiring only 4 configuration variables:
+Vulcan v2.2+ includes automatic OIDC endpoint discovery — the essential configuration:
 
 ```bash
 VULCAN_ENABLE_OIDC=true
-VULCAN_OIDC_ISSUER_URL=https://your-domain.okta.com
+VULCAN_APP_URL=https://your-vulcan-app.com
+VULCAN_OIDC_ISSUER_URL=https://your-domain.okta.com/oauth2/default
 VULCAN_OIDC_CLIENT_ID=your-client-id
 VULCAN_OIDC_CLIENT_SECRET=your-client-secret
+VULCAN_OIDC_REDIRECT_URI=https://your-vulcan-app.com/users/auth/oidc/callback
 ```
+
+Register **two** URIs in your provider's app settings:
+- Sign-in: `<app_url>/users/auth/oidc/callback`
+- Sign-out: `<app_url>/users/signed_out` (required — providers reject Vulcan's logout without it)
+
+See the [Okta/OIDC setup guide](https://mitre.github.io/vulcan/deployment/auth/oidc-okta) for the full settings tables, verification checklist, and troubleshooting.
 
 Supported providers:
 - **Okta**

@@ -1,0 +1,15 @@
+description: Authentication required. The request lacks valid session credentials.
+content:
+  application/json:
+    schema:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Human-readable authentication error message.
+          example: You need to sign in or sign up before continuing.
+    examples:
+      not_signed_in:
+        summary: No active session
+        value:
+          error: You need to sign in or sign up before continuing.

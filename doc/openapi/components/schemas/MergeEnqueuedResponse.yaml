@@ -1,0 +1,30 @@
+description: >-
+  Returned by POST /projects/{projectId}/import_backup when called with
+  merge=true. Indicates the merge job has been queued; the actual work
+  runs asynchronously via ActiveJob and updates ComponentSyncEvent rows.
+  Callers poll GET /components/{componentId}/merge_status to track
+  progress.
+type: object
+required:
+  - job_id
+  - component_id
+  - status
+  - message
+properties:
+  job_id:
+    type: string
+    description: ActiveJob job_id (uuid) — useful for log correlation.
+    example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+  component_id:
+    type: integer
+    description: Target component id the merge was queued against.
+    example: 42
+  status:
+    type: string
+    enum: [queued]
+    description: Always "queued" at enqueue time. Real state lives in ComponentSyncEvent.
+    example: queued
+  message:
+    type: string
+    description: Human-readable next-step hint for the caller.
+    example: "Merge enqueued. Poll GET /components/:id/merge_status for progress."

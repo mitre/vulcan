@@ -1,6 +1,6 @@
 # Field Requirements by Status
 
-This page documents DISA's field requirements for each rule status, as defined in the Vendor STIG Process Guide V4R1. These requirements govern what content is expected in the DISA spreadsheet submission.
+This page documents DISA's field requirements for each rule status, as defined in the Vendor STIG Process Guide V4R3. These requirements govern what content is expected in the DISA spreadsheet submission.
 
 ## Requirements Matrix
 

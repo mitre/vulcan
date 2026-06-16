@@ -3,12 +3,19 @@ import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import Projects from "@/components/projects/Projects.vue";
 
-// Mock axios
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
     get: vi.fn(() => Promise.resolve({ data: [] })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
     defaults: { headers: { common: {} } },
   },
+}));
+
+vi.mock("@/api/projectsApi", () => ({
+  getProjects: vi.fn(() => Promise.resolve({ data: [] })),
 }));
 
 /**
@@ -166,6 +173,35 @@ describe("Projects", () => {
     it("does not render RestoreProjectModal when can_create_project is false", () => {
       wrapper = createWrapper({ is_vulcan_admin: false, can_create_project: false });
       expect(wrapper.findComponent({ name: "RestoreProjectModal" }).exists()).toBe(false);
+    });
+  });
+
+  // ==========================================
+  // REFRESH ERROR HANDLING
+  // ==========================================
+  // REQUIREMENT: a failed project refresh must surface a toast. The page
+  // historically referenced this.alertOrNotifyResponse WITHOUT ever mixing
+  // AlertMixin in — the .catch handler was undefined, so failures rethrew
+  // silently. The handler now comes from useToast; these tests guard it.
+  describe("refresh error handling", () => {
+    it("provides alertOrNotifyResponse from useToast (was undefined pre-fix)", () => {
+      wrapper = createWrapper();
+      expect(typeof wrapper.vm.alertOrNotifyResponse).toBe("function");
+    });
+
+    it("routes a failed refresh through the toast handler", async () => {
+      const { getProjects } = await import("@/api/projectsApi");
+      const error = Object.assign(new Error("boom"), {
+        response: { status: 500, data: {} },
+      });
+      getProjects.mockRejectedValueOnce(error);
+      wrapper = createWrapper();
+      const handlerSpy = vi.spyOn(wrapper.vm, "alertOrNotifyResponse").mockImplementation(() => {});
+
+      wrapper.vm.refreshProjects();
+      await new Promise((resolve) => setTimeout(resolve));
+
+      expect(handlerSpy).toHaveBeenCalledWith(error);
     });
   });
 

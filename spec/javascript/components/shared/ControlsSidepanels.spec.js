@@ -10,13 +10,29 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import ControlsSidepanels from "@/components/shared/ControlsSidepanels.vue";
-import axios from "axios";
+import { getHistories } from "@/api/componentsApi";
 
-vi.mock("axios");
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
 
-function createWrapper(props = {}) {
+vi.mock("@/api/componentsApi", () => ({
+  getHistories: vi.fn(() => Promise.resolve({ data: [] })),
+}));
+
+// Permissions come from the page-root provide (usePermissions inject),
+// matching production: ProjectComponent/Rules provide "effectivePermissions".
+function createWrapper(props = {}, permissions = "admin") {
   return shallowMount(ControlsSidepanels, {
     localVue,
+    provide: { effectivePermissions: permissions },
     propsData: {
       component: {
         id: 8,
@@ -31,7 +47,6 @@ function createWrapper(props = {}) {
         metadata: {},
         additional_questions: [],
       },
-      effectivePermissions: "admin",
       ...props,
     },
   });
@@ -43,6 +58,36 @@ describe("ControlsSidepanels", () => {
   afterEach(() => {
     if (wrapper) wrapper.destroy();
     vi.restoreAllMocks();
+  });
+
+  // REQUIREMENT: permissions arrive via the root provide (usePermissions
+  // inject), not a prop. Role gates: admin panels need "admin", authoring
+  // panels need "author" or above (canEdit).
+  describe("permissions via inject (usePermissions)", () => {
+    it("canAdmin is true when admin permissions are provided", () => {
+      wrapper = createWrapper({}, "admin");
+      expect(wrapper.vm.canAdmin).toBe(true);
+    });
+
+    it("canAdmin is false for author permissions", () => {
+      wrapper = createWrapper({}, "author");
+      expect(wrapper.vm.canAdmin).toBe(false);
+    });
+
+    it("canEdit is true for author permissions", () => {
+      wrapper = createWrapper({}, "author");
+      expect(wrapper.vm.canEdit).toBe(true);
+    });
+
+    it("canEdit is false for viewer permissions", () => {
+      wrapper = createWrapper({}, "viewer");
+      expect(wrapper.vm.canEdit).toBe(false);
+    });
+
+    it("exposes the injected effectivePermissions for child prop pass-through", () => {
+      wrapper = createWrapper({}, "reviewer");
+      expect(wrapper.vm.effectivePermissions).toBe("reviewer");
+    });
   });
 
   describe("B5: refresh:activity reactivity", () => {
@@ -62,7 +107,7 @@ describe("ControlsSidepanels", () => {
           created_at: "2026-03-05T00:00:00Z",
         },
       ];
-      axios.get.mockResolvedValueOnce({ data: mockHistories });
+      getHistories.mockResolvedValueOnce({ data: mockHistories });
 
       wrapper = createWrapper();
       wrapper.vm.$root.$emit("refresh:activity");
@@ -71,7 +116,7 @@ describe("ControlsSidepanels", () => {
       await wrapper.vm.$nextTick();
       await new Promise((resolve) => setTimeout(resolve, 10));
 
-      expect(axios.get).toHaveBeenCalledWith("/components/8/histories");
+      expect(getHistories).toHaveBeenCalledWith(8);
     });
 
     it("updates local histories data after fetch", async () => {
@@ -84,7 +129,7 @@ describe("ControlsSidepanels", () => {
           created_at: "2026-03-05T00:00:00Z",
         },
       ];
-      axios.get.mockResolvedValueOnce({ data: mockHistories });
+      getHistories.mockResolvedValueOnce({ data: mockHistories });
 
       wrapper = createWrapper();
       // Initial histories empty

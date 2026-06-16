@@ -1,0 +1,22 @@
+parameters:
+  - $ref: ../components/parameters/ReviewId.yaml
+patch:
+  operationId: adminRestoreReview
+  tags:
+    - Reviews
+  summary: Admin restores a withdrawn comment
+  description: Reverses a withdrawal, resetting the comment to pending status. Requires admin role on the project.
+  responses:
+    '200':
+      description: Review restored
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ReviewWrapper.yaml
+      links:
+        TriageRestoredReview:
+          operationId: triageReview
+          parameters:
+            reviewId: '$response.body#/review/id'
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

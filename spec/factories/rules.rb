@@ -10,5 +10,21 @@ FactoryBot.define do
     version { 'ABCD-00-000001' }
     ident { 'CCI-000366' }
     title { 'Test Rule' }
+
+    trait :locked do
+      locked { true }
+    end
+
+    trait :applicable_configurable do
+      status { 'Applicable - Configurable' }
+    end
+
+    trait :not_applicable do
+      status { 'Not Applicable' }
+    end
+
+    trait :not_yet_determined do
+      status { 'Not Yet Determined' }
+    end
   end
 end

@@ -1,0 +1,900 @@
+# frozen_string_literal: true
+
+require 'securerandom'
+require 'digest'
+
+module Import
+  module JsonArchive
+    module Merge
+      # Phase 2 write-side counterpart to Analyzer. Takes a resolved
+      # MergePlan and applies it to the database under a serializable
+      # transaction with a pre-merge snapshot, capturing every write to
+      # merge_operations + a ComponentSyncEvent row for auditability.
+      #
+      # Phase 1 commit (skeleton): the lifecycle + sync event + transaction
+      # wrapper land here. Per-entity apply logic (rules, reviews,
+      # satisfactions, memberships) lands in subsequent commits.
+      class Applier
+        TRANSACTION_ISOLATION = :serializable
+        VALID_SOURCES = %w[theirs ours auto_merge].freeze
+
+        # The merge-mergeable surface for Review lives on the Review model
+        # as the canonical single source of truth. Aliased here
+        # for callsite legibility; never define a divergent list locally.
+        REVIEW_MERGEABLE_FIELDS = Review::MERGEABLE_FIELDS
+
+        # Memberships imported from theirs always land at the viewer tier
+        # regardless of what role the archive carries. NEVER auto-escalates
+        # — even if theirs says the user is an admin, an existing admin on
+        # the receiving instance must explicitly escalate.
+        MEMBERSHIP_IMPORT_ROLE = 'viewer'
+
+        attr_reader :sync_event
+
+        # @param merge_plan [MergePlan] from Analyzer#call
+        # @param component [Component] the receiving component (live AR)
+        # @param source [String] one of VALID_SOURCES — labels the
+        #   ComponentSyncEvent's source field
+        # @param archive_bytes [String, nil] raw zip bytes hashed (SHA-256)
+        #   for literal-byte replay protection. Same archive can't reach
+        #   status='applied' twice on the same component. NOTE: the hash
+        #   covers raw zip bytes (manifest exported_at + zip mtimes are
+        #   non-deterministic) so two different exports of identical DB
+        #   state produce different hashes — that case is not covered.
+        # @param actor [User, nil] the user authorizing the merge. Passed
+        #   to ReviewBuilder as imported_by: so the Component-level import
+        #   audit row attributes correctly; per-review Audited::Audit rows
+        #   bulk-insert with this actor + comment=audit_comment_for_merge.
+        #   Stamped on Membership.create! audit_comment too. When nil for
+        #   source='theirs'/'auto_merge' the apply emits a structured
+        #   warning — the Phase 2c controller MUST pass actor.
+        def initialize(merge_plan:, component:, source:, archive_bytes: nil, actor: nil)
+          @merge_plan = merge_plan
+          @component = component
+          @source = source
+          @archive_bytes = archive_bytes
+          @actor = actor
+          @result = MergeResult.new
+        end
+
+        def call
+          @result.attach_plan(@merge_plan)
+          @quarantine_buffer = []
+          apply_exception = nil
+
+          warn_when_actor_missing_for_inbound_source!
+
+          begin
+            require_no_prior_applied_with_same_hash!
+            @sync_event = create_sync_event
+            validate_apply_preconditions!
+            # Wrap the entire apply in a VulcanAudit correlation scope so
+            # every audit row produced by an inner save shares one
+            # request_uuid (the sync_id). The merge tag also lands in
+            # audit_comment on each save via #audit_comment_for_merge.
+            VulcanAudit.with_correlation_scope(uuid: @sync_event.sync_id) do
+              with_serializable_transaction do
+                acquire_component_lock!
+                reload_and_revalidate!
+                take_pre_merge_snapshot!
+                apply_all
+              end
+            end
+            update_component_sync_metadata
+            mark_event_status('applied')
+            # Bounded storage: keep the most recent N snapshots. Runs after
+            # status='applied' so a rotate failure can't accidentally mark
+            # the merge as failed.
+            rotate_snapshots_safely!
+          rescue PreconditionError => e
+            apply_exception = e
+            @result.add_structured_error(
+              entity_type: :component, entity_key: @component.id.to_s,
+              step: :precondition, message: e.message
+            )
+          rescue ActiveRecord::SerializationFailure => e
+            apply_exception = e
+            @result.add_structured_error(
+              entity_type: :component, entity_key: @component.id.to_s,
+              step: :apply, message: 'component modified during merge (serialization conflict)'
+            )
+          rescue StandardError => e
+            apply_exception = e
+            @result.add_structured_error(
+              entity_type: :component, entity_key: @component.id.to_s,
+              step: :apply, message: "#{e.class.name}: #{e.message}"
+            )
+          end
+
+          drain_quarantine_buffer!
+          finalize_failed_event!(apply_exception) if apply_exception
+          @result
+        end
+
+        private
+
+        # Per-entity apply pipeline. Each commit fills in one entity.
+        # apply_new_rules MUST land before import_new_reviews and
+        # apply_new_satisfactions so the refreshed rule_id_map carries the
+        # newly inserted rule IDs they depend on.
+        def apply_all
+          apply_rule_field_changes
+          record_skipped_conflicts
+          apply_new_rules
+          recalculate_rules_count
+          import_new_reviews
+          apply_review_field_updates
+          # Scoped to this component's rules so the merge
+          # never touches reviews on other tenants. Mirrors the
+          # ReviewBuilder pattern at review_builder.rb:74.
+          Review.where(rule_id: @component.rules.select(:id))
+                .where(commentable_id: nil).where.not(rule_id: nil)
+                .repair_missing_commentable!
+          apply_new_satisfactions
+          apply_new_memberships
+        end
+
+        # Eager-loaded rules indexed by rule_id, memoized for one apply pass.
+        # Shared by apply_rule_field_changes + record_skipped_conflicts so the
+        # eager-load (nested associations for section routing) happens once.
+        def ours_rules_by_id
+          @ours_rules_by_id ||= ours_rules_eager_loaded.index_by(&:rule_id)
+        end
+
+        def ours_rules_eager_loaded
+          return @component.rules unless @component.is_a?(Component)
+
+          @ours_rules_eager_loaded ||= @component.rules.includes(
+            Export::Modes::Backup.new.eager_load_associations
+          )
+        end
+
+        # Archive rule_id -> live BaseRule.id. Memoized so import_new_reviews
+        # and apply_new_satisfactions share a single pluck.
+        def rule_id_map
+          @rule_id_map ||= @component.rules.pluck(:rule_id, :id).to_h
+        end
+
+        # Iterate the plan's auto-resolved FieldChange records, write them
+        # to the matching rule via assign + save (hash comparison only —
+        # we already vetted the values in RuleFieldDiffer / Analyzer with
+        # F14-safe semantics), then capture each effective change as a
+        # MergeOperation row.
+        def apply_rule_field_changes
+          @merge_plan.auto_merged_by_rule_id.each do |rule_id, rule_changes|
+            rule = ours_rules_by_id[rule_id]
+            next if rule.nil? # defensive: matched bucket should never carry an unknown rule_id
+
+            apply_changes_to_rule(rule, rule_changes)
+          end
+        end
+
+        def apply_changes_to_rule(rule, changes)
+          changes.each do |change|
+            winning_value = winning_value_for(change)
+
+            if nested_change?(change)
+              apply_one_nested_change(rule, change, winning_value)
+            else
+              next if winning_value == rule.public_send(change.field)
+
+              apply_one_rule_change(rule, change, winning_value)
+            end
+          end
+        end
+
+        def nested_change?(change)
+          change.respond_to?(:target_association) &&
+            !change.target_association.nil? &&
+            change.target_association != :rule
+        end
+
+        # Each field write is wrapped in a savepoint so a validation failure
+        # on one change quarantines that record and lets the rest of the
+        # merge proceed instead of aborting the entire serializable txn.
+        def apply_one_rule_change(rule, change, winning_value)
+          old_value = rule.public_send(change.field)
+          ActiveRecord::Base.transaction(requires_new: true) do
+            rule.assign_attributes(change.field => winning_value)
+            rule.audit_comment = audit_comment_for_merge
+            rule.save!
+            log_field_change(rule, change, old_value, winning_value)
+          end
+        rescue ActiveRecord::RecordInvalid => e
+          enqueue_quarantine(
+            entity_type: 'rule', entity_key: "#{rule.rule_id}::#{change.field}",
+            reason: 'rule validation failed during apply',
+            original: { 'rule_id' => rule.rule_id, 'field' => change.field, 'new_value' => winning_value.to_s },
+            errors: e
+          )
+        end
+
+        # Route a nested-association FieldChange (Check#content,
+        # DisaRuleDescription#vuln_discussion, etc.) to the correct nested
+        # record. target_identity disambiguates when N exist per rule
+        # (e.g. multiple Check rows keyed by system); nil means positional.
+        def apply_one_nested_change(rule, change, winning_value)
+          nested = resolve_nested_record(rule, change.target_association, change.target_identity)
+          if nested.nil?
+            @result.add_warning(
+              "Rule #{rule.rule_id}: nested record on #{change.target_association} " \
+              "matching identity #{change.target_identity.inspect} not found — " \
+              "field '#{change.field}' skipped"
+            )
+            return
+          end
+          return if winning_value == nested.public_send(change.field)
+
+          old_value = nested.public_send(change.field)
+          ActiveRecord::Base.transaction(requires_new: true) do
+            nested.assign_attributes(change.field => winning_value)
+            nested.save!
+            log_nested_change(rule, nested, change, old_value, winning_value)
+          end
+        rescue ActiveRecord::RecordInvalid => e
+          enqueue_quarantine(
+            entity_type: change.target_association.to_s,
+            entity_key: "#{rule.rule_id}::#{change.field}",
+            reason: 'nested record validation failed during apply',
+            original: { 'rule_id' => rule.rule_id, 'assoc' => change.target_association,
+                        'field' => change.field, 'new_value' => winning_value.to_s },
+            errors: e
+          )
+        end
+
+        def resolve_nested_record(rule, assoc, identity)
+          records = rule.public_send(assoc)
+          return records.first if identity.blank?
+
+          records.find do |r|
+            identity.all? { |k, v| r.public_send(k).to_s == v.to_s }
+          end
+        end
+
+        def log_nested_change(rule, nested, change, old_value, new_value)
+          MergeOperation.create!(
+            component_sync_event: @sync_event,
+            entity_type: change.target_association.to_s,
+            entity_id: nested.id,
+            entity_key: rule.rule_id,
+            operation: 'update',
+            field_name: change.field,
+            old_value: old_value.to_s,
+            new_value: new_value.to_s,
+            source: source_for(change.resolution)
+          )
+        end
+
+        # For auto_theirs the incoming value wins; for everything else
+        # (auto_ours, auto_merged, and the defensive default if a
+        # caller leaks a :conflict through) ours stays.
+        def winning_value_for(change)
+          change.resolution == :auto_theirs ? change.to : change.from
+        end
+
+        def log_field_change(rule, change, old_value, new_value)
+          MergeOperation.create!(
+            component_sync_event: @sync_event,
+            entity_type: 'rule',
+            entity_id: rule.id,
+            entity_key: rule.rule_id,
+            operation: 'update',
+            field_name: change.field,
+            old_value: old_value.to_s,
+            new_value: new_value.to_s,
+            source: source_for(change.resolution)
+          )
+        end
+
+        def source_for(resolution)
+          case resolution
+          when :auto_ours then 'ours'
+          when :auto_theirs then 'theirs'
+          when :auto_merged then 'auto_merge'
+          else 'conflict_resolved'
+          end
+        end
+
+        # Conflicts (:conflict, :locked_conflict) are NEVER auto-applied —
+        # by contract they require a human decision. We still record each
+        # one as a merge_operations row with operation=skip so the audit
+        # trail captures "we saw this divergence, didn't act on it" and
+        # the UI / undo path can replay decisions if needed.
+        # Insert rules present only in theirs via RuleBuilder (same two-pass
+        # logic as a fresh import). Merges the resulting rule_id_map back
+        # into the applier's memoized lookup so downstream import_new_reviews
+        # and apply_new_satisfactions can reference the new IDs.
+        def apply_new_rules
+          new_rules = @merge_plan.only_theirs_rules
+          return if new_rules.empty?
+
+          builder_result = Import::Result.new
+          new_rule_id_map = RuleBuilder.new(new_rules, @component, builder_result).build_all
+          builder_result.warnings.each { |w| @result.add_warning(w) }
+          builder_result.errors.each { |e| @result.add_warning(e) }
+
+          # Invalidate the cached rule_id_map so import_new_reviews /
+          # apply_new_satisfactions re-pluck including the newly inserted
+          # rules. Same for ours_rules_by_id used by record_skipped_conflicts.
+          @rule_id_map = nil
+          @ours_rules_by_id = nil
+          @ours_rules_eager_loaded = nil
+
+          new_rule_id_map.each { |rule_id_str, new_db_id| log_rule_insert(rule_id_str, new_db_id) }
+        end
+
+        def log_rule_insert(rule_id_str, new_db_id)
+          MergeOperation.create!(
+            component_sync_event: @sync_event,
+            entity_type: 'rule',
+            entity_id: new_db_id,
+            entity_key: rule_id_str,
+            operation: 'insert',
+            field_name: nil,
+            old_value: nil,
+            new_value: nil,
+            source: 'theirs'
+          )
+        end
+
+        def record_skipped_conflicts
+          @merge_plan.conflicts_by_rule_id.each do |rule_id, changes|
+            rule = ours_rules_by_id[rule_id]
+            next if rule.nil?
+
+            changes.each { |change| log_skipped_conflict(rule, change) }
+          end
+        end
+
+        def log_skipped_conflict(rule, change)
+          MergeOperation.create!(
+            component_sync_event: @sync_event,
+            entity_type: 'rule',
+            entity_id: rule.id,
+            entity_key: rule.rule_id,
+            operation: 'skip',
+            field_name: change.field,
+            old_value: change.from.to_s,
+            new_value: change.to.to_s,
+            source: 'conflict_resolved'
+          )
+        end
+
+        # Reviews that exist only on theirs side need to be imported into
+        # the receiving component. Delegate to the existing ReviewBuilder
+        # two-pass — it already handles user-resolution, threaded-reply
+        # relinking, and the post-import commentable repair pass.
+        # Each successful insert is logged as a merge_operations row for
+        # parity with the rule-field-change records.
+        def import_new_reviews
+          new_reviews = @merge_plan.only_theirs_reviews
+          return if new_reviews.empty?
+
+          builder_result = Import::Result.new
+
+          builder = ReviewBuilder.new(
+            new_reviews, rule_id_map, builder_result,
+            component: @component, manifest: @merge_plan.manifest, imported_by: @actor
+          )
+          builder.build_all
+
+          log_review_inserts(builder.external_to_new_id, new_reviews)
+          bulk_insert_review_audits(builder.external_to_new_id)
+          builder_result.warnings.each { |w| @result.add_warning(w) }
+        end
+
+        # Bulk-insert per-review Audited::Audit rows so imported reviews
+        # land in the per-record audit history with a non-nil user_id and
+        # comment=audit_comment_for_merge. Mirrors the
+        # VulcanAudit.create_initial_rule_audit_from_mapping bulk-bypass
+        # pattern. No-op when actor is nil — caller-side warning emitted
+        # via warn_when_actor_missing_for_inbound_source!.
+        def bulk_insert_review_audits(external_to_new_id)
+          return if @actor.nil?
+          return if external_to_new_id.empty?
+
+          surviving_ids = Review.where(id: external_to_new_id.values).pluck(:id).to_set
+          rows = surviving_ids.map do |new_id|
+            {
+              auditable_type: 'Review', auditable_id: new_id,
+              action: 'create',
+              user_id: @actor.id, user_type: @actor.class.name,
+              request_uuid: @sync_event.sync_id,
+              comment: audit_comment_for_merge,
+              created_at: Time.current
+            }
+          end
+          # rubocop:disable Rails/SkipsModelValidations -- bulk audit insert mirrors the design doc pattern
+          Audited.audit_class.insert_all(rows)
+          # rubocop:enable Rails/SkipsModelValidations
+        end
+
+        # Walk ReviewBuilder.external_to_new_id and emit one MergeOperation
+        # row per actually-inserted Review, with entity_id = new Review.id
+        # and entity_key = external_id. Filters out rows ReviewBuilder
+        # dropped post-insert via drop_invalid_reviews so audit row count
+        # matches DB row count one-for-one.
+        def log_review_inserts(external_to_new_id, new_reviews)
+          return if external_to_new_id.empty?
+
+          surviving_ids = Review.where(id: external_to_new_id.values).pluck(:id).to_set
+          review_index = new_reviews.index_by { |r| r['external_id'] }
+
+          external_to_new_id.each do |external_id, new_id|
+            next unless surviving_ids.include?(new_id)
+
+            review_hash = review_index[external_id]
+            next if review_hash.nil?
+
+            log_review_insert(new_id, review_hash)
+          end
+        end
+
+        # For each {ours:, theirs:} review pair in the matched bucket,
+        # walk REVIEW_MERGEABLE_FIELDS and update any divergence per
+        # Strategy. Dual-write commentable_type/id on every save to keep
+        # the comment-triage read paths consistent. The post-loop
+        # repair_missing_commentable! is a defensive net (callbacks
+        # should set commentable, but bulk paths historically have not).
+        def apply_review_field_updates
+          @merge_plan.matched_reviews.each do |pair|
+            ours = pair[:ours] || pair['ours']
+            theirs = pair[:theirs] || pair['theirs']
+            next if ours.nil? || theirs.nil?
+
+            update_one_review(ours, theirs)
+          end
+        end
+
+        def update_one_review(ours_hash, theirs_hash)
+          review_id = ours_hash['external_id']
+          return if review_id.nil?
+
+          review = Review.find_by(id: review_id)
+          return if review.nil?
+
+          REVIEW_MERGEABLE_FIELDS.each do |field|
+            next unless theirs_hash.key?(field)
+
+            verb = @merge_plan.strategy.for_field(:review, field)
+            next if verb == :skip
+
+            apply_review_field(review, ours_hash, theirs_hash, field, verb)
+          end
+        end
+
+        def apply_review_field(review, ours_hash, theirs_hash, field, verb)
+          new_value = case verb
+                      when :theirs then theirs_hash[field]
+                      when :ours then ours_hash[field]
+                      else
+                        # :conflict / :newer / :manual / :union — Phase 1 does
+                        # not auto-merge. Log the skip so the audit trail
+                        # captures the divergence operators must reconcile.
+                        log_skipped_review_conflict(review, field, ours_hash[field], theirs_hash[field])
+                        return
+                      end
+
+          # addressed_by_rule_id is a bigint FK; theirs carries the archive
+          # rule_id STRING. Remap via rule_id_map or warn+skip. ours_hash
+          # never serializes this field (Analyzer#review_to_hash is sparse)
+          # so the :ours path is a no-op to avoid blanking the live FK.
+          if field == 'addressed_by_rule_id'
+            return if verb == :ours
+            return if new_value.blank?
+
+            remapped = rule_id_map[new_value]
+            if remapped.nil?
+              @result.add_warning(
+                "Review #{review.id}: addressed_by_rule_id '#{new_value}' not present " \
+                'on receiving component — skipped'
+              )
+              return
+            end
+            new_value = remapped
+          end
+
+          current = review.public_send(field)
+          return if current == new_value
+
+          ActiveRecord::Base.transaction(requires_new: true) do
+            review.assign_attributes(field => new_value)
+            # Defensive dual-write — should be a no-op since rule_id isn't
+            # changing here, but the design doc flags it as MUST FIX.
+            review.commentable_type ||= 'BaseRule'
+            review.commentable_id ||= review.rule_id
+            review.audit_comment = audit_comment_for_merge if review.respond_to?(:audit_comment=)
+            review.save!
+            log_review_update(review, field, current, new_value, verb)
+          end
+        rescue ActiveRecord::RecordInvalid => e
+          enqueue_quarantine(
+            entity_type: 'review', entity_key: review.id.to_s,
+            reason: 'review validation failed during update',
+            original: ours_hash, errors: e
+          )
+        end
+
+        # Capture a review-field divergence that the applier skipped because
+        # the resolution was not :theirs/:ours. Mirrors log_skipped_conflict
+        # for rule fields.
+        def log_skipped_review_conflict(review, field, old_value, new_value)
+          MergeOperation.create!(
+            component_sync_event: @sync_event,
+            entity_type: 'review',
+            entity_id: review.id,
+            entity_key: review.id.to_s,
+            operation: 'skip',
+            field_name: field,
+            old_value: old_value.to_s,
+            new_value: new_value.to_s,
+            source: 'conflict_resolved'
+          )
+        end
+
+        def log_review_update(review, field, old_value, new_value, verb)
+          MergeOperation.create!(
+            component_sync_event: @sync_event,
+            entity_type: 'review',
+            entity_id: review.id,
+            entity_key: review.id.to_s,
+            operation: 'update',
+            field_name: field,
+            old_value: old_value.to_s,
+            new_value: new_value.to_s,
+            source: source_for_verb(verb)
+          )
+        end
+
+        def source_for_verb(verb)
+          # Consult the central VERB_TRANSLATION instead of
+          # falling through to 'auto_merge' for :conflict/:newer/:manual —
+          # those resolutions are NOT auto-merges and must label the
+          # MergeOperation row honestly.
+          (Strategy.resolve_verb(verb) || {})[:source] || 'conflict_resolved'
+        end
+
+        # Insert any only_theirs satisfactions, resolving the archive
+        # rule_id strings to live DB ids. Idempotent: re-running the
+        # applier against the same plan does NOT duplicate rows because
+        # we use upsert_all + on_duplicate: :skip against the natural
+        # uniqueness constraint on (rule_id, satisfied_by_rule_id).
+        # Missing rule_id targets get a structured warning rather than
+        # erroring the whole apply.
+        def apply_new_satisfactions
+          new_sats = @merge_plan.only_theirs_satisfactions
+          return if new_sats.empty?
+
+          new_sats.each { |sat| insert_one_satisfaction(sat, rule_id_map) }
+        end
+
+        def insert_one_satisfaction(sat, rule_id_map)
+          rule_db_id = rule_id_map[sat['rule_id']]
+          satisfier_db_id = rule_id_map[sat['satisfied_by_rule_id']]
+
+          if rule_db_id.nil? || satisfier_db_id.nil?
+            missing = rule_db_id.nil? ? sat['rule_id'] : sat['satisfied_by_rule_id']
+            @result.add_warning(
+              "Satisfaction: rule_id '#{missing}' not present on receiving component — skipped"
+            )
+            return
+          end
+
+          # rubocop:disable Rails/SkipsModelValidations -- RuleSatisfaction
+          # is an empty join-table stub (no validations, no callbacks);
+          # upsert_all + on_duplicate: :skip is the correct idempotent
+          # write per the design doc and the satisfactions FK convention.
+          # returning: %w[...] makes the result array empty
+          # when the row already existed, so log_satisfaction_insert no
+          # longer double-counts on re-apply of the same plan.
+          inserted = RuleSatisfaction.upsert_all(
+            [{ rule_id: rule_db_id, satisfied_by_rule_id: satisfier_db_id }],
+            unique_by: %i[rule_id satisfied_by_rule_id],
+            on_duplicate: :skip,
+            returning: %w[rule_id satisfied_by_rule_id]
+          )
+          # rubocop:enable Rails/SkipsModelValidations
+
+          log_satisfaction_insert(sat, rule_db_id, satisfier_db_id) if inserted.any?
+        end
+
+        def apply_new_memberships
+          new_memberships = @merge_plan.only_theirs_memberships
+          return if new_memberships.empty?
+
+          new_memberships.each { |membership| insert_one_membership(membership) }
+        end
+
+        def insert_one_membership(membership_hash)
+          email = membership_hash['email']
+          user = User.find_by(email: email)
+          if user.nil?
+            @result.add_warning(
+              "Membership: user '#{email}' not present on receiving instance — skipped (archive did not auto-create the account)"
+            )
+            return
+          end
+
+          # Skip if already a member at any role (matched bucket should
+          # cover this, but defensive against partition drift).
+          existing = Membership.find_by(user: user, membership: @component.project)
+          return if existing
+
+          ActiveRecord::Base.transaction(requires_new: true) do
+            Membership.create!(
+              user: user, membership: @component.project, role: MEMBERSHIP_IMPORT_ROLE,
+              audit_comment: audit_comment_for_merge
+            )
+            log_membership_insert(membership_hash, user)
+          end
+        rescue ActiveRecord::RecordInvalid => e
+          enqueue_quarantine(
+            entity_type: 'membership', entity_key: membership_hash['email'].to_s,
+            reason: 'membership validation failed', original: membership_hash, errors: e
+          )
+        end
+
+        # When a per-record save fails validation mid-apply, the offending
+        # record + diagnostics are BUFFERED for post-txn persistence so the
+        # outer txn rolling back (SerializationFailure, StandardError, etc.)
+        # does NOT also discard the diagnostic trail. drain_quarantine_buffer!
+        # writes the rows AFTER the outer rescue, in autocommit / RSpec-txn
+        # mode — preserving the "retry via sync:retry_quarantined" contract.
+        def enqueue_quarantine(entity_type:, entity_key:, reason:, original:, errors:)
+          @quarantine_buffer << {
+            entity_type: entity_type, entity_key: entity_key.to_s, reason: reason,
+            original: original, errors: errors
+          }
+        end
+
+        # Persist buffered quarantine intents after the outer txn closes
+        # (committed or rolled back). Each create! runs in whatever
+        # transaction scope the caller is in — production: autocommit (the
+        # outer with_serializable_transaction has closed); tests: RSpec's
+        # wrapping fixture txn (still visible to the test).
+        def drain_quarantine_buffer!
+          return if @quarantine_buffer.blank?
+          return if @sync_event.nil?
+
+          @quarantine_buffer.each do |q|
+            begin
+              MergeQuarantineRecord.create!(
+                component_sync_event: @sync_event,
+                entity_type: q[:entity_type],
+                entity_key: q[:entity_key],
+                quarantine_reason: q[:reason],
+                original_archive_data: q[:original],
+                validation_errors: { 'message' => q[:errors].message, 'class' => q[:errors].class.name }
+              )
+            rescue StandardError => e
+              @result.add_warning(
+                "Failed to persist quarantine for #{q[:entity_type]} '#{q[:entity_key]}': #{e.message}"
+              )
+              next
+            end
+            @result.add_warning(
+              "#{q[:entity_type]}: '#{q[:entity_key]}' quarantined — #{q[:errors].message} " \
+              '(see merge_quarantine for diagnostics)'
+            )
+          end
+        end
+
+        def log_membership_insert(membership_hash, user)
+          MergeOperation.create!(
+            component_sync_event: @sync_event,
+            entity_type: 'membership',
+            entity_id: user.id,
+            entity_key: membership_hash['email'].to_s,
+            operation: 'insert',
+            field_name: 'role',
+            old_value: nil,
+            new_value: MEMBERSHIP_IMPORT_ROLE,
+            source: 'theirs'
+          )
+        end
+
+        def log_satisfaction_insert(sat, rule_db_id, satisfier_db_id)
+          MergeOperation.create!(
+            component_sync_event: @sync_event,
+            entity_type: 'satisfaction',
+            entity_id: rule_db_id,
+            entity_key: "#{sat['rule_id']}::#{sat['satisfied_by_rule_id']}",
+            operation: 'insert',
+            field_name: nil,
+            old_value: nil,
+            new_value: satisfier_db_id.to_s,
+            source: 'theirs'
+          )
+        end
+
+        def log_review_insert(new_id, review_hash)
+          MergeOperation.create!(
+            component_sync_event: @sync_event,
+            entity_type: 'review',
+            entity_id: new_id,
+            entity_key: review_hash['external_id'].to_s,
+            operation: 'insert',
+            field_name: nil,
+            old_value: nil,
+            new_value: review_hash['comment'].to_s,
+            source: 'theirs'
+          )
+        end
+
+        # Counter cache safety net: the component's rules_count column can
+        # drift if any apply path bypasses callbacks. Recalc from the
+        # source of truth (rules with deleted_at IS NULL) after rule writes.
+        def recalculate_rules_count
+          fresh_count = @component.rules.where(deleted_at: nil).count
+          @component.update_columns(rules_count: fresh_count) # rubocop:disable Rails/SkipsModelValidations -- counter cache repair only
+        end
+
+        # Phase 2c controller MUST pass actor for any inbound merge so the
+        # per-record audit trail carries who-authorized attribution. Until
+        # that gate lands, emit a structured warning instead of raising so
+        # existing test callers (no actor needed) keep working.
+        def warn_when_actor_missing_for_inbound_source!
+          return unless @actor.nil?
+          return unless %w[theirs auto_merge].include?(@source)
+
+          @result.add_warning(
+            "Applier: actor not provided for source='#{@source}' — imported " \
+            'review/membership audit rows will lack who-authorized attribution. ' \
+            'Phase 2c controller must pass actor:.'
+          )
+        end
+
+        # Reject any apply whose archive_hash already lives on a successful
+        # ComponentSyncEvent for this component — that archive has already
+        # been merged, so re-applying would reflood audit + PII. Backed
+        # by index_component_sync_events_on_applied_archive_hash; this
+        # pre-create check produces an operator-readable PreconditionError
+        # instead of an opaque RecordNotUnique.
+        def require_no_prior_applied_with_same_hash!
+          return if @archive_bytes.blank?
+
+          hash = Digest::SHA256.hexdigest(@archive_bytes)
+          return unless ComponentSyncEvent
+                        .exists?(component: @component, archive_hash: hash, status: 'applied')
+
+          raise PreconditionError,
+                'archive already applied to this component (matched archive_hash on a prior ' \
+                "successful ComponentSyncEvent: #{hash[0, 12]}…)"
+        end
+
+        def create_sync_event
+          ComponentSyncEvent.create!(
+            component: @component,
+            sync_id: SecureRandom.uuid,
+            source: @source,
+            direction: 'inbound',
+            status: 'pending',
+            resolution_log_json: @merge_plan.resolution_log,
+            archive_hash: @archive_bytes && Digest::SHA256.hexdigest(@archive_bytes)
+          )
+        rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
+          raise PreconditionError,
+                'another sync is already in progress on this component (a pending ' \
+                'ComponentSyncEvent exists — wait for it to complete or fail)'
+        end
+
+        # Session-scoped advisory lock keyed on component.id. Two operators
+        # racing sync:apply serialize here; auto-released at outer txn
+        # commit/rollback. Different components merge concurrently.
+        def acquire_component_lock!
+          ActiveRecord::Base.connection.execute(
+            "SELECT pg_advisory_xact_lock(#{@component.id.to_i})"
+          )
+        end
+
+        # Inside the locked txn, re-read the component under SELECT FOR
+        # UPDATE and re-validate preconditions against the just-read row.
+        # Catches: (a) component destroyed between pre-check and apply,
+        # (b) comment_phase reopened mid-flight by another operator.
+        def reload_and_revalidate!
+          @component.lock!
+          validate_apply_preconditions!
+        rescue ActiveRecord::RecordNotFound
+          raise PreconditionError, 'component was destroyed during merge'
+        end
+
+        # The apply path requires concurrent-edit protection — the
+        # receiving component must be in 'closed' comment_phase so no one
+        # is mid-write while we apply theirs. Analyzer (read-only) does
+        # not require this. Called once before opening the txn (fast-fail)
+        # and again after acquiring the advisory + row lock inside the txn.
+        # Raises PreconditionError on failure so the same exception class
+        # is used uniformly across the analyze + apply boundary.
+        def validate_apply_preconditions!
+          return if @component.comment_phase == Analyzer::COMMENT_PHASE_REQUIRED
+
+          raise PreconditionError,
+                "component.comment_phase must be '#{Analyzer::COMMENT_PHASE_REQUIRED}' to apply " \
+                "(got '#{@component.comment_phase}')"
+        end
+
+        # Captures the current state of the receiving component as a
+        # zip + checksum so disaster-recovery can restore it
+        # if a merge is reverted. Snapshot path recorded on the sync event.
+        # Runs inside the locked apply transaction so the captured state
+        # reflects the actual apply pre-state (post-lock, pre-write).
+        def take_pre_merge_snapshot!
+          path = SnapshotManager.create_snapshot(@component)
+          @sync_event.update!(snapshot_path: path)
+        end
+
+        # Rotate older snapshots after successful apply. Any failure here
+        # is logged as a warning but does NOT change the apply status —
+        # disk-full rotation can't roll back a successful merge.
+        def rotate_snapshots_safely!
+          SnapshotManager.rotate_snapshots(@component)
+        rescue StandardError => e
+          @result.add_warning("Snapshot rotation failed: #{e.class}: #{e.message}")
+        end
+
+        # When the applier is invoked outside an existing transaction (the
+        # production controller / rake path), request serializable
+        # isolation explicitly so concurrent writers are caught via
+        # SerializationFailure. When already inside a transaction (test
+        # fixtures, or a caller that already opened one), join it — PG
+        # only allows isolation to be set on the outermost transaction.
+        def with_serializable_transaction(&)
+          if ActiveRecord::Base.connection.transaction_open?
+            ActiveRecord::Base.transaction(&)
+          else
+            ActiveRecord::Base.transaction(isolation: TRANSACTION_ISOLATION, &)
+          end
+        end
+
+        # Stamp the receiving component with the sync event details so
+        # the UI / audit history can show "last synced from <source> at
+        # <time>" for operators. Only runs on a successful apply — the
+        # ensure block in #call does NOT update these on failure so
+        # operators can see the still-pending sync state and retry.
+        def update_component_sync_metadata
+          @component.update_columns( # rubocop:disable Rails/SkipsModelValidations -- sync metadata is internal bookkeeping, no validations apply
+            last_sync_id: @sync_event.sync_id,
+            last_sync_at: Time.current,
+            last_sync_source: @source
+          )
+        end
+
+        # Tag every save with the merge sync_id so audit history can group
+        # all rows from one merge. Paired with the correlation-scope
+        # request_uuid; comment text is the human-readable lookup.
+        def audit_comment_for_merge
+          "merge:#{@sync_event.sync_id}"
+        end
+
+        def mark_event_status(status)
+          return if @sync_event.nil?
+
+          @sync_event.update!(status: status)
+        end
+
+        # On any failure path, capture exception + structured_errors +
+        # warnings into ComponentSyncEvent.failure_diagnostics_json so the
+        # operator can SELECT and triage 5 minutes later without re-running
+        # the merge. Runs AFTER drain_quarantine_buffer! so quarantine
+        # warnings (added during drain) are included.
+        def finalize_failed_event!(exception)
+          return if @sync_event.nil?
+
+          @sync_event.update!(
+            status: 'failed',
+            failure_diagnostics_json: build_failure_diagnostics(exception)
+          )
+        end
+
+        def build_failure_diagnostics(exception)
+          {
+            'exception_class' => exception.class.name,
+            'exception_message' => exception.message,
+            'structured_errors' => @result.structured_errors.map(&:to_h),
+            'warnings' => @result.warnings.to_a
+          }
+        end
+      end
+    end
+  end
+end

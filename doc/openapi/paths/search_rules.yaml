@@ -1,0 +1,43 @@
+get:
+  operationId: searchRulesLegacy
+  tags:
+    - Search
+  summary: Legacy rule search by SRG version
+  description: >-
+    Searches rules by SRG version identifier across all components the user
+    can access. Returns compact tuples [id, rule_id, component_id, prefix]
+    for the rule picker and related-rules UI. Requires authentication.
+    This is a legacy search endpoint — prefer /api/search/global for new integrations.
+  parameters:
+    - name: q
+      in: query
+      required: true
+      description: SRG version identifier to search for.
+      schema:
+        type: string
+      example: "SRG-OS-000001-GPOS-00001"
+  responses:
+    '200':
+      description: Matching rules as compact tuples
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - rules
+            properties:
+              rules:
+                type: array
+                description: Each item is a tuple [rule_id, rule_id_string, component_id, prefix].
+                items:
+                  type: array
+                  items: {}
+          examples:
+            results:
+              summary: Rules matching SRG version
+              value:
+                rules:
+                  - [1786, "000001", 1, "PHOS-03"]
+                  - [2500, "000001", 5, "CNTR-01"]
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

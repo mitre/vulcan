@@ -1,5 +1,6 @@
 import { ref } from "vue";
-import axios from "axios";
+import { updateRule, deleteRule as deleteRuleApi, duplicateRule } from "../api/rulesApi";
+import { createRuleReview } from "../api/reviewsApi";
 
 /**
  * Composable for rule API actions.
@@ -28,12 +29,10 @@ export function useRuleActions(componentId) {
     lastError.value = null;
 
     try {
-      const response = await axios.post(`/rules/${rule.id}/reviews`, {
-        review: {
-          component_id: componentId,
-          action: action,
-          comment: comment.trim(),
-        },
+      const response = await createRuleReview(rule.id, {
+        component_id: componentId,
+        action: action,
+        comment: comment.trim(),
       });
       return response.data;
     } catch (error) {
@@ -105,9 +104,7 @@ export function useRuleActions(componentId) {
     lastError.value = null;
 
     try {
-      const response = await axios.put(`/rules/${rule.id}`, {
-        rule: ruleData,
-      });
+      const response = await updateRule(rule.id, ruleData);
       return response.data;
     } catch (error) {
       lastError.value = error.message;
@@ -129,7 +126,7 @@ export function useRuleActions(componentId) {
     lastError.value = null;
 
     try {
-      const response = await axios.delete(`/rules/${rule.id}`);
+      const response = await deleteRuleApi(rule.id);
       return response.data;
     } catch (error) {
       lastError.value = error.message;
@@ -151,9 +148,7 @@ export function useRuleActions(componentId) {
     lastError.value = null;
 
     try {
-      const response = await axios.post(`/rules/${rule.id}/duplicate`, {
-        rule: cloneData,
-      });
+      const response = await duplicateRule(componentId, rule.id);
       return response.data;
     } catch (error) {
       lastError.value = error.message;

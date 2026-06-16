@@ -81,11 +81,19 @@ AGENT-STATUS/
 /app/assets/builds/*
 !/app/assets/builds/.keep
 .beads/recovery-context.md
+.beads/recovery-prompt.md
+.beads/dolt-backup*
 
 # Beads / Dolt files (added by bd init)
 .dolt/
 *.db
 .beads-credential-key
-# Beads auto-exports the entire issues database to issues.jsonl on each
-# bd write — local-only artifact, not meant for git.
+# Beads auto-exports to issues.jsonl on each bd write.
+# The .beads/ copy is tracked for team visibility.
 issues.jsonl
+!.beads/issues.jsonl
+# interactions.jsonl is session-local chat history — not shared
+.beads/interactions.jsonl
+
+# Local build / tool caches (yarn, corepack, node) when running outside Docker
+/.cache/

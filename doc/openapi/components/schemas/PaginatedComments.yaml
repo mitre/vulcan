@@ -1,0 +1,47 @@
+description: Paginated list of comments with pagination metadata and triage status counts.
+type: object
+required:
+  - rows
+  - pagination
+  - status_counts
+properties:
+  rows:
+    type: array
+    description: Comment rows for the current page.
+    items:
+      $ref: ./CommentRow.yaml
+  pagination:
+    type: object
+    description: Pagination metadata for the comment listing.
+    required:
+      - page
+      - per_page
+      - total
+      - total_comments
+    properties:
+      page:
+        type: integer
+        description: Current page number (1-based).
+        example: 1
+      per_page:
+        type: integer
+        description: Number of comments per page.
+        example: 25
+      total:
+        type: integer
+        description: Total number of pages available.
+        example: 4
+      total_comments:
+        type: integer
+        description: Total number of comments across all pages.
+        example: 87
+  status_counts:
+    type: object
+    description: Count of comments grouped by triage status.
+    additionalProperties:
+      type: integer
+    example:
+      pending: 12
+      concur: 45
+      non_concur: 8
+      withdrawn: 3

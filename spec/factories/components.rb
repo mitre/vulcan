@@ -29,6 +29,29 @@ FactoryBot.define do
       released { true }
     end
 
+    trait :open_comment_period do
+      comment_phase { 'open' }
+      comment_period_starts_at { 1.day.ago }
+      comment_period_ends_at { 14.days.from_now }
+    end
+
+    trait :closed_comment_phase do
+      comment_phase { 'closed' }
+      closed_reason { 'adjudicating' }
+    end
+
+    trait :with_poc do
+      admin_name { 'Test Maintainer' }
+      admin_email { 'maintainer@example.com' }
+    end
+
+    trait :released do
+      released { true }
+      after(:create) do |component|
+        component.rules.update_all(locked: true)
+      end
+    end
+
     factory :released_component, traits: [:released_component]
   end
 end

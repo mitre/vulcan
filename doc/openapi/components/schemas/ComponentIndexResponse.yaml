@@ -1,0 +1,25 @@
+description: >-
+  Component listing entry for project pages. Serialized by ComponentBlueprint :index view.
+  Extends ComponentSummary (default fields) with index-specific fields.
+allOf:
+  - $ref: ./ComponentSummary.yaml
+  - type: object
+    properties:
+      updated_at:
+        type: string
+        description: Timestamp when the component was last modified. Format is "YYYY-MM-DD HH:MM:SS UTC" (Blueprinter default).
+        example: "2026-05-29 15:36:06 UTC"
+      released:
+        type: boolean
+        description: Whether this component has been marked as released (finalized).
+        example: true
+      rules_count:
+        type: integer
+        description: Number of rules (security controls) in this component.
+        example: 203
+      component_id:
+        type:
+          - integer
+          - 'null'
+        description: ID of the source component if this is an overlay. Null for original components.
+        example: null

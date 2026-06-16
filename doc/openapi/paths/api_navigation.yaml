@@ -1,0 +1,61 @@
+get:
+  operationId: getNavigation
+  tags:
+    - System
+  summary: App shell navigation data
+  description: >-
+    Returns navbar links, pending access request notifications, and
+    locked user alerts for the authenticated user. Used by the SPA
+    app shell on every page load after authentication.
+  responses:
+    '200':
+      description: Navigation data for app shell
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/NavigationResponse.yaml
+          examples:
+            admin:
+              summary: Admin user with pending requests
+              value:
+                nav_links:
+                  - icon: folder2-open
+                    name: Projects
+                    link: /projects
+                  - icon: patch-check-fill
+                    name: Released Components
+                    link: /components
+                access_requests:
+                  - id: 1
+                    user:
+                      id: 42
+                      name: Jane Doe
+                      email: jane@example.com
+                    project:
+                      id: 7
+                      name: RHEL 9 STIG
+                locked_users:
+                  - id: 99
+                    name: Locked User
+                    email: locked@example.com
+            regular:
+              summary: Non-admin user
+              value:
+                nav_links:
+                  - icon: folder2-open
+                    name: Projects
+                    link: /projects
+                access_requests: []
+                locked_users: []
+    '401':
+      description: Not authenticated
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Unauthorized
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

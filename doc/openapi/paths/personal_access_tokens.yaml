@@ -1,0 +1,130 @@
+get:
+  operationId: listPersonalAccessTokens
+  tags:
+    - Personal Access Tokens
+  summary: List current user's API tokens
+  description: >-
+    Returns all personal access tokens for the authenticated user, ordered
+    by creation date (newest first). Admins can pass user_id to list another
+    user's tokens. Token digests are never exposed. Session auth only —
+    token-authenticated requests receive 403.
+  security:
+    - cookieAuth: []
+  parameters:
+    - name: user_id
+      in: query
+      required: false
+      description: Admin-only. List tokens for this user instead of the current user.
+      schema:
+        type: integer
+      example: 42
+  responses:
+    '200':
+      description: Token list
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - personal_access_tokens
+            additionalProperties: false
+            properties:
+              personal_access_tokens:
+                type: array
+                items:
+                  $ref: ../components/schemas/PersonalAccessTokenSummary.yaml
+          examples:
+            with_tokens:
+              summary: User has two active tokens
+              value:
+                personal_access_tokens:
+                  - id: 1
+                    name: CI Pipeline
+                    token_prefix: vulcan_a
+                    scopes: [read, write]
+                    expires_at: '2026-08-30'
+                    last_used_at: '2026-05-30 14:22:01 UTC'
+                    revoked_at: null
+                    allowed_ips: null
+                    created_at: '2026-05-30 10:00:00 UTC'
+    '403':
+      description: Token auth rejected (session required) or non-admin tried user_id param
+    '404':
+      description: API tokens feature is disabled
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+post:
+  operationId: createPersonalAccessToken
+  tags:
+    - Personal Access Tokens
+  summary: Create a new API token
+  description: >-
+    Creates a personal access token. The raw token is returned ONCE in the
+    response — it is never stored or retrievable after this. Requires current
+    password for session hijack protection. Session auth only. Max 20 active
+    tokens per user, max 365-day lifetime.
+  security:
+    - cookieAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - personal_access_token
+          properties:
+            personal_access_token:
+              type: object
+              required:
+                - name
+                - scopes
+                - current_password
+              properties:
+                name:
+                  type: string
+                  example: CI Pipeline
+                scopes:
+                  type: array
+                  items:
+                    type: string
+                    enum: [read, write, admin]
+                  example: [read, write]
+                expires_at:
+                  type: string
+                  format: date
+                  example: '2026-08-30'
+                allowed_ips:
+                  type: array
+                  items:
+                    type: string
+                  example: ['10.0.0.0/8']
+                current_password:
+                  type: string
+                  description: Required for session hijack protection.
+                user_id:
+                  type: integer
+                  description: Admin-only. Create token for this user.
+  responses:
+    '201':
+      description: Token created — raw token shown once
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/PersonalAccessTokenCreateResponse.yaml
+      links:
+        RevokeCreatedToken:
+          operationId: revokePersonalAccessToken
+          parameters:
+            tokenId: '$response.body#/personal_access_token/id'
+          description: Revoke the newly created token.
+    '401':
+      description: Incorrect password
+    '422':
+      description: Validation failed (invalid scopes, max tokens reached, etc.)
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

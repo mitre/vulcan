@@ -1,6 +1,875 @@
 @import "bootstrap/scss/bootstrap";
 @import "bootstrap-vue/src/index.scss";
 
+// ── Vulcan Design System: Layer 1 ──────────────────────────────────────
+// Bridge Bootstrap 4 Sass variables to CSS custom properties so Vue
+// components can reference the palette at runtime. Bootstrap 4 compiles
+// Sass to hardcoded hex — these variables make the palette available
+// as design tokens for dynamic coloring (triage badges, status pills,
+// progress bars, row tints).
+//
+// Convention: --vulcan-{color} (base), --vulcan-{color}-tint (15% bg),
+// --vulcan-{color}-text (contrast text). Triage and other semantic layers
+// reference these via var() — see triage-tints.css Layer 2.
+:root {
+  // Core Bootstrap theme colors
+  --vulcan-primary: #{$primary};
+  --vulcan-primary-tint: #{rgba($primary, 0.10)};
+  --vulcan-primary-text: #{color-yiq($primary)};
+
+  --vulcan-secondary: #{$secondary};
+  --vulcan-secondary-tint: #{rgba($secondary, 0.08)};
+  --vulcan-secondary-text: #{color-yiq($secondary)};
+
+  --vulcan-success: #{$success};
+  --vulcan-success-tint: #{rgba($success, 0.15)};
+  --vulcan-success-text: #{color-yiq($success)};
+
+  --vulcan-danger: #{$danger};
+  --vulcan-danger-tint: #{rgba($danger, 0.08)};
+  --vulcan-danger-text: #{color-yiq($danger)};
+
+  --vulcan-warning: #{$warning};
+  --vulcan-warning-tint: #{rgba($warning, 0.08)};
+  --vulcan-warning-text: #{color-yiq($warning)};
+
+  --vulcan-info: #{$info};
+  --vulcan-info-tint: #{rgba($info, 0.08)};
+  --vulcan-info-text: #{color-yiq($info)};
+
+  --vulcan-light: #{$light};
+  --vulcan-light-tint: #{rgba($light, 0.15)};
+  --vulcan-light-text: #{color-yiq($light)};
+
+  --vulcan-dark: #{$dark};
+  --vulcan-dark-tint: #{rgba($dark, 0.08)};
+  --vulcan-dark-text: #{color-yiq($dark)};
+
+  // Extended palette — Bootstrap raw colors not in the theme map
+  --vulcan-purple: #{$purple};
+  --vulcan-purple-tint: #{rgba($purple, 0.08)};
+  --vulcan-purple-text: #{color-yiq($purple)};
+
+  --vulcan-teal: #{$teal};
+  --vulcan-teal-tint: #{rgba($teal, 0.08)};
+  --vulcan-teal-text: #{color-yiq($teal)};
+
+  --vulcan-indigo: #{$indigo};
+  --vulcan-indigo-tint: #{rgba($indigo, 0.08)};
+  --vulcan-indigo-text: #{color-yiq($indigo)};
+
+  // Gray scale — Bootstrap 4 $gray-100 through $gray-900
+  --vulcan-gray-100: #{$gray-100};
+  --vulcan-gray-200: #{$gray-200};
+  --vulcan-gray-300: #{$gray-300};
+  --vulcan-gray-400: #{$gray-400};
+  --vulcan-gray-500: #{$gray-500};
+  --vulcan-gray-600: #{$gray-600};
+  --vulcan-gray-700: #{$gray-700};
+  --vulcan-gray-800: #{$gray-800};
+  --vulcan-gray-900: #{$gray-900};
+
+  // Body-level semantic tokens — Bootstrap 5.3 three-tier bg hierarchy
+  --vulcan-body-bg: #{$body-bg};
+  --vulcan-body-color: #{$body-color};
+  --vulcan-text: #{$body-color};
+  --vulcan-secondary-bg: #{$gray-100};       // elevated surfaces (cards, sidebars)
+  --vulcan-tertiary-bg: #{$gray-200};        // inset/recessed areas
+  --vulcan-bg-light: #{$gray-100};
+  --vulcan-border-light: #{$gray-200};
+  --vulcan-border-color: #{$gray-300};
+  --vulcan-border-subtle: #{$gray-200};      // subtle borders (dividers, table lines)
+  --vulcan-link-color: #{$link-color};
+  --vulcan-component-bg: #fff;               // alias for backwards compat
+  --vulcan-component-bg-alt: #{$gray-100};
+  --vulcan-emphasis-color: #{$gray-900};
+
+  // Active state — selection indicator
+  --vulcan-active-bg: #{rgba($primary, 0.10)};
+  --vulcan-active-border: #{$primary};
+
+  // Semantic highlight colors for diffs, search results, validation
+  --vulcan-highlight-selected: #cce5ff;
+  --vulcan-highlight-added: #abd5ac;
+  --vulcan-highlight-removed: #e39d9b;
+  --vulcan-highlight-error: #f5c6cb;
+  --vulcan-highlight-success: #a3cfbb;
+  --vulcan-input-focus-border: #80bdff;
+  --vulcan-disabled-bg: #{$gray-200};
+
+  // Interaction states — hover/focus tints (ported from Bootstrap 5.3 pattern)
+  --vulcan-hover-bg: #{rgba($gray-600, 0.08)};
+  --vulcan-hover-bg-light: #{rgba($gray-600, 0.04)};
+  --vulcan-active-tint: #{rgba($primary, 0.10)};
+
+  // Text tiers — Bootstrap 5.3 three-tier text hierarchy
+  --vulcan-secondary-color: #{rgba($body-color, 0.75)};
+  --vulcan-tertiary-color: #{rgba($body-color, 0.5)};
+  --vulcan-text-muted: #{$gray-600};
+
+  // Border aliases — normalize naming across components
+  --vulcan-divider: #{$gray-200};
+  --vulcan-border-color-translucent: #{rgba(black, 0.175)};
+
+  // Form controls — Bootstrap 5.3 wires these to global vars so forms auto-adapt
+  --vulcan-input-bg: var(--vulcan-body-bg);
+  --vulcan-input-color: var(--vulcan-body-color);
+  --vulcan-input-border-color: var(--vulcan-border-color);
+  --vulcan-input-placeholder-color: var(--vulcan-secondary-color);
+  --vulcan-input-disabled-bg: var(--vulcan-secondary-bg);
+
+  // Typography — native HTML element colors (BS 5.3 ports)
+  --vulcan-code-color: #{$code-color};           // <code> inline text (pink)
+  --vulcan-kbd-bg: #{$gray-900};                 // <kbd> background
+  --vulcan-kbd-color: #{$white};                 // <kbd> text
+  --vulcan-pre-color: #{$gray-900};              // <pre> text
+  --vulcan-mark-bg: #fcf8e3;                     // <mark> highlight background
+  --vulcan-mark-color: #{$body-color};           // <mark> text
+  --vulcan-heading-color: inherit;               // heading text override
+  --vulcan-hr-color: #{rgba(black, 0.1)};        // <hr> border color
+
+  // Form validation — BS 5.3 dark mode ports
+  --vulcan-form-valid-color: #{$success};
+  --vulcan-form-valid-border-color: #{$success};
+  --vulcan-form-invalid-color: #{$danger};
+  --vulcan-form-invalid-border-color: #{$danger};
+
+  // Link colors
+  --vulcan-link-hover-color: #{darken($link-color, 15%)};
+
+  // Triage-specific interaction colors (moved from triage-tints.css)
+  --vulcan-primary-dark: #0056b3;
+  --vulcan-active-tint-hover: rgba(0, 123, 255, 0.15);
+  --vulcan-focus-tint: rgba(0, 123, 255, 0.04);
+
+  // Shadows and overlays — bridged from Bootstrap 4 $box-shadow-* variables
+  --vulcan-shadow-sm: #{$box-shadow-sm};
+  --vulcan-shadow: #{$box-shadow};
+  --vulcan-shadow-lg: #{$box-shadow-lg};
+  --vulcan-shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --vulcan-shadow-lifted: 0 -2px 6px rgba(0, 0, 0, 0.08);
+  --vulcan-overlay-light: rgba(0, 0, 0, 0.08);
+  --vulcan-overlay-medium: rgba(0, 0, 0, 0.12);
+  --vulcan-diff-removed-bg: rgba(66, 50, 50, 0.09);
+  --vulcan-border-transparent: rgba(0, 0, 0, 0);
+  --vulcan-focus-ring-warning: 0 0 0 3px rgba(255, 193, 7, 0.8);
+}
+
+// ── Dark mode: Override Layer 1 variables ──────────────────────────────
+// Mirrors Bootstrap 5.3's [data-bs-theme="dark"] pattern. Components
+// that reference --vulcan-* variables automatically adapt. Uses Sass
+// shade-color()/tint-color() for consistent darkening.
+[data-bs-theme="dark"] {
+  color-scheme: dark;
+
+  // Sass locals — lightened colors for dark mode readability
+  // Bootstrap 4 has no tint-color(); use mix(white, $color, %)
+  $primary-dark: mix(white, $primary, 20%);
+  $success-dark: mix(white, $success, 20%);
+  $danger-dark: mix(white, $danger, 20%);
+  $warning-dark: mix(white, $warning, 20%);
+  $info-dark: mix(white, $info, 20%);
+  $purple-dark: mix(white, $purple, 30%);
+  $teal-dark: mix(white, $teal, 30%);
+  $indigo-dark: mix(white, $indigo, 30%);
+
+  // Body — Bootstrap 5.3 three-tier background hierarchy
+  --vulcan-body-bg: #{$gray-900};            // page background (#212529)
+  --vulcan-body-color: #{$gray-300};         // body text (#dee2e6)
+  --vulcan-secondary-bg: #{$gray-800};       // elevated surfaces: cards, sidebars (#343a40)
+  --vulcan-tertiary-bg: #2b3035;             // inset/recessed areas (BS 5.3 value)
+  --vulcan-border-color: #{$gray-600};       // visible borders (#6c757d — brighter than gray-700)
+  --vulcan-border-subtle: #{$gray-700};      // subtle borders (dividers, table lines)
+  --vulcan-link-color: #{$primary-dark};
+  --vulcan-component-bg: #{$gray-800};       // alias for secondary-bg (backwards compat)
+  --vulcan-component-bg-alt: #{$gray-700};
+  --vulcan-emphasis-color: #{$white};
+
+  // Active state — clear selection indicator
+  --vulcan-active-bg: #{rgba($primary-dark, 0.20)};
+  --vulcan-active-border: #{$primary-dark};
+
+  --vulcan-primary: #{$primary-dark};
+  --vulcan-primary-tint: #{rgba($primary-dark, 0.22)};
+  --vulcan-success: #{$success-dark};
+  --vulcan-success-tint: #{rgba($success-dark, 0.22)};
+  --vulcan-danger: #{$danger-dark};
+  --vulcan-danger-tint: #{rgba($danger-dark, 0.22)};
+  --vulcan-warning: #{$warning-dark};
+  --vulcan-warning-tint: #{rgba($warning-dark, 0.18)};
+  --vulcan-info: #{$info-dark};
+  --vulcan-info-tint: #{rgba($info-dark, 0.22)};
+  --vulcan-secondary: #{$gray-500};
+  --vulcan-secondary-tint: #{rgba($gray-500, 0.18)};
+
+  // Extended palette — lighter + tints for triage row tints
+  --vulcan-purple: #{$purple-dark};
+  --vulcan-purple-tint: #{rgba($purple-dark, 0.22)};
+  --vulcan-teal: #{$teal-dark};
+  --vulcan-teal-tint: #{rgba($teal-dark, 0.22)};
+  --vulcan-indigo: #{$indigo-dark};
+  --vulcan-indigo-tint: #{rgba($indigo-dark, 0.22)};
+
+  // Gray scale inverts
+  --vulcan-gray-100: #{$gray-900};
+  --vulcan-gray-200: #{$gray-800};
+  --vulcan-gray-300: #{$gray-700};
+  --vulcan-gray-400: #{$gray-600};
+  --vulcan-gray-500: #{$gray-500};
+  --vulcan-gray-600: #{$gray-400};
+  --vulcan-gray-700: #{$gray-300};
+  --vulcan-gray-800: #{$gray-200};
+  --vulcan-gray-900: #{$gray-100};
+
+  // UI palette overrides
+  --vulcan-text: #{$gray-300};
+  --vulcan-text-muted: #{$gray-500};
+  --vulcan-dark: #{$gray-200};
+  --vulcan-bg-light: #{$gray-800};
+  --vulcan-border-light: #{$gray-700};
+
+  // Interaction states — dark mode
+  --vulcan-hover-bg: #{rgba($gray-400, 0.12)};
+  --vulcan-hover-bg-light: #{rgba($gray-400, 0.06)};
+  --vulcan-active-tint: #{rgba($primary-dark, 0.12)};
+
+  // Text tiers — dark mode (Bootstrap 5.3 values)
+  --vulcan-secondary-color: #{rgba($gray-300, 0.75)};
+  --vulcan-tertiary-color: #{rgba($gray-300, 0.5)};
+
+  // Border aliases — dark mode
+  --vulcan-divider: #{$gray-700};
+  --vulcan-border-color-translucent: #{rgba(white, 0.15)};
+
+  // Form controls — auto-adapt via global vars (same references, different resolved values)
+  --vulcan-input-bg: var(--vulcan-body-bg);
+  --vulcan-input-color: var(--vulcan-body-color);
+  --vulcan-input-border-color: var(--vulcan-border-color);
+  --vulcan-input-placeholder-color: var(--vulcan-secondary-color);
+  --vulcan-input-disabled-bg: var(--vulcan-secondary-bg);
+
+  // Typography — native HTML element colors (BS 5.3 dark mode values)
+  --vulcan-code-color: #{mix(white, $pink, 40%)};   // lightened for readability
+  --vulcan-kbd-bg: #{$gray-700};
+  --vulcan-kbd-color: #{$gray-100};
+  --vulcan-pre-color: #{$gray-300};
+  --vulcan-mark-bg: #{mix($gray-800, $yellow, 20%)};  // BS 5.3: $yellow-800
+  --vulcan-mark-color: #{$gray-300};
+  --vulcan-heading-color: inherit;
+  --vulcan-hr-color: #{rgba(white, 0.15)};
+
+  // Form validation — BS 5.3 uses lighter green/red in dark mode
+  --vulcan-form-valid-color: #{mix(white, $success, 40%)};
+  --vulcan-form-valid-border-color: #{mix(white, $success, 40%)};
+  --vulcan-form-invalid-color: #{mix(white, $danger, 40%)};
+  --vulcan-form-invalid-border-color: #{mix(white, $danger, 40%)};
+
+  // Link colors — Bootstrap 5.3 lightens links in dark mode
+  --vulcan-link-hover-color: #{mix(white, $primary, 60%)};
+
+  // Semantic highlights — desaturated for dark bg per Material Design
+  --vulcan-highlight-selected: #{rgba($primary-dark, 0.25)};
+  --vulcan-highlight-added: #{rgba($success-dark, 0.25)};
+  --vulcan-highlight-removed: #{rgba($danger-dark, 0.25)};
+  --vulcan-highlight-error: #{rgba($danger-dark, 0.20)};
+  --vulcan-highlight-success: #{rgba($success-dark, 0.20)};
+  --vulcan-input-focus-border: #{$primary-dark};
+  --vulcan-disabled-bg: #{$gray-700};
+
+  // Triage interaction colors — dark variants
+  --vulcan-primary-dark: #{$primary-dark};
+  --vulcan-active-tint-hover: #{rgba($primary-dark, 0.20)};
+  --vulcan-focus-tint: #{rgba($primary-dark, 0.08)};
+
+  // Apply body colors — must target body explicitly because Bootstrap 4
+  // compiles body { background-color: #fff; color: #212529 } as hardcoded
+  // values that override the html element's dark mode properties.
+  color: var(--vulcan-body-color);
+  background-color: var(--vulcan-body-bg);
+
+  body {
+    background-color: var(--vulcan-body-bg);
+    color: var(--vulcan-body-color);
+  }
+
+  // ── Variant tints — Bootstrap 5.3 pattern ──────────────────────────
+  // ONE @each loop for outline buttons + badges. BS5.3 formula:
+  //   text-emphasis-dark: tint-color($color, 40%)  → mix(white, $color, 40%)
+  //   bg-subtle-dark:     shade-color($color, 80%) → mix(black, $color, 80%)
+  //   border-subtle-dark: shade-color($color, 40%) → mix(black, $color, 40%)
+  // Ref: https://getbootstrap.com/docs/5.3/customize/color-modes/
+  $dark-variants: (
+    primary: $primary,
+    secondary: $secondary,
+    success: $success,
+    danger: $danger,
+    warning: $warning,
+    info: $info,
+  );
+
+  @each $variant, $color in $dark-variants {
+    $dark-text: mix(white, $color, 40%);
+    $dark-bg: mix(black, $color, 60%);
+
+    .btn-outline-#{$variant} {
+      color: $dark-text;
+      border-color: $dark-text;
+    }
+
+    .badge-#{$variant} {
+      background-color: $dark-bg;
+      color: $dark-text;
+    }
+  }
+
+  // ── fad.2: Component backgrounds ─────────────────────────────────
+  .card,
+  .list-group-item,
+  .modal-content,
+  .popover,
+  .dropdown-menu {
+    background-color: var(--vulcan-component-bg) !important;
+    color: var(--vulcan-body-color) !important;
+  }
+
+  .card {
+    border-color: var(--vulcan-border-color);
+  }
+
+  .modal-content {
+    border-color: var(--vulcan-border-color);
+  }
+
+  .dropdown-menu {
+    border-color: var(--vulcan-border-color);
+  }
+
+  .dropdown-item {
+    color: var(--vulcan-body-color);
+
+    &:hover,
+    &:focus {
+      background-color: var(--vulcan-component-bg-alt);
+      color: var(--vulcan-emphasis-color);
+    }
+  }
+
+  .dropdown-divider {
+    border-color: var(--vulcan-border-color);
+  }
+
+  .list-group-item {
+    border-color: var(--vulcan-border-color);
+  }
+
+  .popover-header {
+    background-color: var(--vulcan-component-bg-alt);
+    border-color: var(--vulcan-border-color);
+  }
+
+  .popover-body {
+    color: var(--vulcan-body-color);
+  }
+
+  .tooltip-inner {
+    background-color: var(--vulcan-gray-800);
+    color: var(--vulcan-gray-100);
+  }
+
+  .bs-tooltip-top .arrow::before {
+    border-top-color: var(--vulcan-gray-800);
+  }
+
+  .bs-tooltip-bottom .arrow::before {
+    border-bottom-color: var(--vulcan-gray-800);
+  }
+
+  .bs-tooltip-left .arrow::before {
+    border-left-color: var(--vulcan-gray-800);
+  }
+
+  .bs-tooltip-right .arrow::before {
+    border-right-color: var(--vulcan-gray-800);
+  }
+
+  // bg-light and bg-white utilities
+  .bg-light {
+    background-color: var(--vulcan-component-bg-alt) !important;
+  }
+
+  .bg-white {
+    background-color: var(--vulcan-component-bg) !important;
+  }
+
+  // btn-light / btn-dark — inverted for dark mode (OIDC sign-in, etc.)
+  .btn-light {
+    background-color: var(--vulcan-component-bg-alt) !important;
+    color: var(--vulcan-body-color) !important;
+    border-color: var(--vulcan-border-color) !important;
+  }
+
+  // Text utilities
+  .text-dark {
+    color: var(--vulcan-emphasis-color) !important;
+  }
+
+  .text-body {
+    color: var(--vulcan-body-color) !important;
+  }
+
+  // Border utility
+  .border {
+    border-color: var(--vulcan-border-color) !important;
+  }
+
+  // ── Dark mode variant tints ────────────────────────────────
+  // ONE loop for alerts AND toasts. Bootstrap 5.3 uses subtle-bg/border
+  // variables; we replicate with mix(white, $color, 20%) at low opacity.
+  @each $variant, $color in (success: $success, danger: $danger, warning: $warning, info: $info) {
+    $dark-tint-bg: mix($gray-800, $color, 85%);
+    $dark-tint-border: rgba(mix(white, $color, 20%), 0.25);
+    $dark-tint-color: mix(white, $color, 60%);
+
+    .alert-#{$variant} {
+      background-color: #{$dark-tint-bg};
+      border-color: #{$dark-tint-border};
+      color: #{$dark-tint-color};
+    }
+
+    .b-toast-#{$variant} .toast,
+    .b-toast-#{$variant}.b-toast-solid .toast {
+      background-color: #{$dark-tint-bg};
+      border-color: #{$dark-tint-border};
+
+      .toast-header {
+        background-color: #{mix($gray-900, $color, 80%)};
+        color: #{$dark-tint-color};
+      }
+      .toast-body { color: var(--vulcan-body-color); }
+    }
+  }
+
+  // Base toast — match BootstrapVue's .b-toast .toast (0,2,0) selector.
+  // [data-bs-theme="dark"] adds (0,1,0) → total (0,3,0), beats BV's (0,2,0).
+  .b-toast .toast {
+    background-color: var(--vulcan-secondary-bg);
+    border-color: var(--vulcan-border-color);
+    color: var(--vulcan-body-color);
+  }
+
+  .b-toast .toast-header {
+    background-color: var(--vulcan-tertiary-bg);
+    border-bottom-color: var(--vulcan-border-color);
+    color: var(--vulcan-emphasis-color);
+
+    .close {
+      color: var(--vulcan-emphasis-color);
+      text-shadow: none;
+    }
+  }
+
+  .b-toast .toast-body {
+    color: var(--vulcan-body-color);
+  }
+
+  // Links
+  a:not(.btn):not(.nav-link):not(.dropdown-item):not(.navbar-brand) {
+    color: var(--vulcan-link-color);
+  }
+
+  // ── fad.3: Form controls, tables, input groups ───────────────────
+  .form-control,
+  .custom-select {
+    background-color: var(--vulcan-component-bg) !important;
+    color: var(--vulcan-body-color) !important;
+    border-color: var(--vulcan-border-color) !important;
+
+    &::placeholder {
+      color: var(--vulcan-text-muted);
+    }
+
+    &:focus {
+      background-color: var(--vulcan-component-bg) !important;
+      color: var(--vulcan-body-color) !important;
+      border-color: var(--vulcan-link-color);
+    }
+
+    &:disabled,
+    &[readonly] {
+      background-color: var(--vulcan-component-bg-alt) !important;
+      color: var(--vulcan-text-muted) !important;
+    }
+  }
+
+  .input-group-text {
+    background-color: var(--vulcan-component-bg-alt);
+    color: var(--vulcan-body-color);
+    border-color: var(--vulcan-border-color);
+  }
+
+  .table {
+    color: var(--vulcan-body-color);
+
+    th,
+    td {
+      border-color: var(--vulcan-border-color);
+    }
+
+    thead th {
+      background-color: var(--vulcan-tertiary-bg);
+      border-color: var(--vulcan-border-subtle);
+      border-bottom: 2px solid var(--vulcan-border-color);
+      color: var(--vulcan-emphasis-color);
+    }
+  }
+
+  .table-hover tbody tr:hover {
+    color: var(--vulcan-emphasis-color);
+    background-color: var(--vulcan-hover-bg);
+  }
+
+  .table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(255, 255, 255, 0.03);
+  }
+
+  // b-table Bootstrap-Vue specific
+  .b-table-sticky-header {
+    background-color: var(--vulcan-component-bg);
+  }
+
+  // Pagination
+  .page-link {
+    background-color: var(--vulcan-component-bg);
+    border-color: var(--vulcan-border-color);
+    color: var(--vulcan-link-color);
+  }
+
+  .page-item.active .page-link {
+    background-color: var(--vulcan-primary);
+    border-color: var(--vulcan-primary);
+  }
+
+  .page-item.disabled .page-link {
+    background-color: var(--vulcan-component-bg-alt);
+    border-color: var(--vulcan-border-color);
+    color: var(--vulcan-text-muted);
+  }
+
+  // Custom checkbox/radio/switch
+  .custom-control-label::before {
+    background-color: var(--vulcan-component-bg);
+    border-color: var(--vulcan-border-color);
+  }
+
+  // Custom file input (b-form-file) — 5 consumers across project/component modals
+  .custom-file-label {
+    background-color: var(--vulcan-component-bg);
+    color: var(--vulcan-body-color);
+    border-color: var(--vulcan-border-color);
+
+    &::after {
+      background-color: var(--vulcan-component-bg-alt);
+      color: var(--vulcan-body-color);
+      border-color: var(--vulcan-border-color);
+    }
+  }
+
+  // vue-multiselect — 7 consumers (membership, component, SRG modals)
+  .multiselect__tags {
+    background: var(--vulcan-component-bg);
+    border-color: var(--vulcan-border-color);
+    color: var(--vulcan-body-color);
+  }
+
+  .multiselect__input,
+  .multiselect__single {
+    background: var(--vulcan-component-bg);
+    color: var(--vulcan-body-color);
+  }
+
+  .multiselect__content-wrapper {
+    background: var(--vulcan-component-bg);
+    border-color: var(--vulcan-border-color);
+  }
+
+  .multiselect__option {
+    color: var(--vulcan-body-color);
+  }
+
+  .multiselect__option--highlight {
+    background: var(--vulcan-primary);
+    color: #fff;
+  }
+
+  .multiselect__option--selected {
+    background: var(--vulcan-component-bg-alt);
+    color: var(--vulcan-body-color);
+  }
+
+  .multiselect__option--disabled {
+    background: var(--vulcan-component-bg) !important;
+    color: var(--vulcan-text-muted) !important;
+  }
+
+  .multiselect__spinner {
+    background: var(--vulcan-component-bg);
+  }
+
+  .multiselect__placeholder {
+    color: var(--vulcan-text-muted);
+  }
+
+  .multiselect {
+    color: var(--vulcan-body-color);
+  }
+
+  // ── fad.4: Navbar, sidebar, breadcrumbs, tabs ────────────────────
+  .breadcrumb {
+    background-color: var(--vulcan-component-bg-alt);
+
+    .breadcrumb-item + .breadcrumb-item::before {
+      color: var(--vulcan-text-muted);
+    }
+
+    .breadcrumb-item.active {
+      color: var(--vulcan-body-color);
+    }
+  }
+
+  .nav-tabs {
+    border-color: var(--vulcan-border-color);
+
+    .nav-link {
+      color: var(--vulcan-link-color);
+
+      &:hover,
+      &:focus {
+        border-color: var(--vulcan-border-color);
+      }
+
+      &.active {
+        background-color: var(--vulcan-component-bg);
+        border-color: var(--vulcan-border-color);
+        border-bottom-color: var(--vulcan-component-bg);
+        color: var(--vulcan-emphasis-color);
+      }
+    }
+  }
+
+  .nav-pills .nav-link.active {
+    background-color: var(--vulcan-primary);
+  }
+
+  // ── fad.8.3: Navbar link legibility + table header differentiation ──
+  // BS5.3 uses --bs-navbar-active-color: rgba(255,255,255,0.9) and
+  // --bs-nav-link-color: rgba(255,255,255,0.75). BS4 default is 0.5.
+  .navbar-dark .nav-link {
+    color: rgba(255, 255, 255, 0.75);
+
+    &:hover,
+    &:focus {
+      color: rgba(255, 255, 255, 0.9);
+    }
+  }
+
+  .navbar-dark .nav-link.active,
+  .navbar-dark .navbar-nav .active > .nav-link {
+    color: rgba(255, 255, 255, 1);
+  }
+
+  // Table header: elevated surface per Material Design (2dp = +7% white)
+  thead th {
+    background-color: var(--vulcan-component-bg-alt);
+  }
+
+  // Sidebar (rule navigator)
+  // #sidebar-wrapper is the SRG viewer sidebar; .left-sidebar-column
+  // is the component editor sidebar — different markup, same purpose.
+  #sidebar-wrapper,
+  .left-sidebar-column {
+    background-color: var(--vulcan-component-bg);
+    border-color: var(--vulcan-border-color);
+  }
+
+  // Close button
+  .close {
+    color: var(--vulcan-body-color);
+    text-shadow: none;
+  }
+
+  // Jumbotron (if used)
+  .jumbotron {
+    background-color: var(--vulcan-component-bg-alt);
+  }
+
+  // hr elements
+  hr {
+    border-color: var(--vulcan-border-color);
+  }
+
+  // ── fad.5: EasyMDE + Monaco editor dark themes ───────────────────
+  // EasyMDE (CodeMirror 5 underneath)
+  .CodeMirror {
+    background-color: var(--vulcan-component-bg) !important;
+    color: var(--vulcan-body-color) !important;
+    border-color: var(--vulcan-border-color) !important;
+  }
+
+  .CodeMirror-cursor {
+    border-left-color: var(--vulcan-body-color) !important;
+  }
+
+  .CodeMirror-gutters {
+    background-color: var(--vulcan-component-bg-alt) !important;
+    border-color: var(--vulcan-border-color) !important;
+  }
+
+  .CodeMirror-linenumber {
+    color: var(--vulcan-text-muted) !important;
+  }
+
+  .CodeMirror-selected {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .editor-toolbar {
+    background-color: var(--vulcan-component-bg-alt) !important;
+    border-color: var(--vulcan-border-color) !important;
+
+    a {
+      color: var(--vulcan-body-color) !important;
+
+      &:hover,
+      &.active {
+        background-color: var(--vulcan-hover-bg) !important;
+      }
+    }
+
+    &.disabled-for-preview a:not(.no-disable) {
+      opacity: 0.4;
+    }
+  }
+
+  .editor-toolbar.fullscreen,
+  .CodeMirror-fullscreen {
+    background-color: var(--vulcan-body-bg) !important;
+  }
+
+  // EasyMDE preview
+  .editor-preview,
+  .editor-preview-side {
+    background-color: var(--vulcan-component-bg) !important;
+    color: var(--vulcan-body-color) !important;
+  }
+
+  // EasyMDE status bar
+  .editor-statusbar {
+    color: var(--vulcan-text-muted);
+  }
+
+  // Monaco — theme auto-switches via InspecControlEditor
+  // (no CSS overrides needed; Monaco's vs-dark theme is self-contained)
+
+  // ── fad.6: Triage workspace + custom component overrides ─────────
+  // Row tints need higher opacity on dark backgrounds to be visible
+  .triage-bg[data-triage] {
+    --status-tint: rgba(var(--status-color), 0.18);
+  }
+
+  // Triage split-pane panels — backgrounds now inherited from PanelLayout's
+  // bgTier system. Do NOT set explicit bg on these components or the
+  // three-tier hierarchy (body/secondary/tertiary) becomes invisible.
+
+  // Markdown preview in dark
+  .markdown-preview {
+    color: var(--vulcan-body-color);
+  }
+
+  // ── fad.8.6: Triage badge desaturation (Google Material Design) ───
+  // Saturated badge colors cause optical vibrations on dark surfaces.
+  // Override --status-color to use shade-color 60% bg with tinted text.
+  [data-triage="concur"] {
+    --status-color: #{mix(black, $success, 40%)};
+    --status-pill-fg: #{mix(white, $success, 40%)};
+  }
+
+  [data-triage="concur_with_comment"] {
+    --status-color: #{mix(black, $primary, 40%)};
+    --status-pill-fg: #{mix(white, $primary, 40%)};
+  }
+
+  [data-triage="non_concur"] {
+    --status-color: #{mix(black, $danger, 40%)};
+    --status-pill-fg: #{mix(white, $danger, 40%)};
+  }
+
+  [data-triage="informational"],
+  [data-triage="needs_clarification"] {
+    --status-color: #{mix(black, $warning, 40%)};
+    --status-pill-fg: #{mix(white, $warning, 40%)};
+  }
+
+  [data-triage="pending"] {
+    --status-color: #{mix(black, $secondary, 20%)};
+    --status-pill-fg: #{mix(white, $secondary, 40%)};
+  }
+
+  [data-triage="withdrawn"] {
+    --status-color: #{mix(black, $purple, 40%)};
+    --status-pill-fg: #{mix(white, $purple, 40%)};
+  }
+
+  [data-triage="duplicate"] {
+    --status-color: #{mix(black, $teal, 40%)};
+    --status-pill-fg: #{mix(white, $teal, 40%)};
+  }
+
+  [data-triage="addressed_by"] {
+    --status-color: #{mix(black, $indigo, 40%)};
+    --status-pill-fg: #{mix(white, $indigo, 40%)};
+  }
+
+  // Text muted overrides for readability
+  .text-muted {
+    color: var(--vulcan-text-muted) !important;
+  }
+}
+
+// OS preference fallback (no JS needed)
+@media (prefers-color-scheme: dark) {
+  :root:not([data-bs-theme="light"]):not([data-bs-theme="dark"]) {
+    // Only apply if user hasn't explicitly chosen — initTheme() sets
+    // the attribute, so this only fires before JS loads or if JS is disabled.
+    color-scheme: dark;
+  }
+}
+
+@import "./styles/triage-tints.css";
+
+// ── Vulcan Layout Utilities ──────────────────────────────────────────
+// Viewport-locked editor layout pattern (VS Code / GitHub / Linear style).
+//
+// MANDATORY: Every element in the chain MUST have this class.
+// A plain <div> without it breaks the chain silently — no error,
+// no warning, just an expanded layout with no scroll. Per CSS Flexbox
+// spec §4.5, overflow:hidden resets min-height:auto to 0, enabling
+// shrink. One missing link and all downstream scroll containers
+// expand to content height. Regression tests guard each level
+// (Rules.spec, ProjectComponent.spec, ControlsPageLayout.spec).
+//
+// Chain (all required):
+//   HAML wrapper:     #projectcomponent.vulcan-editor-layout
+//   Vue page root:    <div class="vulcan-editor-layout">   (Rules.vue, ProjectComponent.vue)
+//   Layout comp:      <div class="vulcan-editor-layout">   (ControlsPageLayout.vue)
+//   Scroll boundary:  PanelLayout b-card (flex-grow-1 overflow-hidden)
+//   Scroll regions:   .panel-layout__body (flex-grow-1 overflow-auto)
+.vulcan-editor-layout {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow: hidden;
+}
+
 // Bootstrap Icons are included via the IconsPlugin in Vue
 // No need to import separate icon CSS files
 // Font Awesome 4 is served from public/css/ and public/fonts/ (see layout)
@@ -19,7 +888,6 @@
 .unselectable {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
-  -khtml-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
@@ -109,3 +977,418 @@ body.has-classification-banner {
     }
   }
 }
+
+// ── Global: Rule/Benchmark form field spacing ─────────────────────────
+// ALL form fields get the same padding regardless of lock state.
+// Field-state classes add ONLY border + background tint — NOT different
+// padding. This prevents layout shift when lock state changes.
+.rule-form-field {
+  padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+  border-radius: 0.25rem;
+}
+
+// Bootstrap 4 lacks this utility. Required for flex-column + overflow-auto
+// to work on nested flex children (flex items default to min-height: auto).
+.min-height-0 {
+  min-height: 0 !important;
+}
+
+// ── Native HTML element styling (BS 5.3 dark mode ports) ────
+// These elements have hardcoded colors in Bootstrap 4's _reboot.scss and
+// _type.scss that don't adapt to dark mode. We override them with
+// --vulcan-* variables so they auto-adapt.
+code {
+  color: var(--vulcan-code-color);
+}
+
+kbd {
+  background-color: var(--vulcan-kbd-bg);
+  color: var(--vulcan-kbd-color);
+}
+
+pre {
+  color: var(--vulcan-pre-color);
+}
+
+mark,
+.mark {
+  background-color: var(--vulcan-mark-bg);
+  color: var(--vulcan-mark-color);
+}
+
+hr {
+  border-color: var(--vulcan-hr-color);
+}
+
+// ── Native <details> element ────────────────────────────────
+// Used by VitePress ::: details blocks (rendered as <details> in-app
+// via DisaGuideController) and anywhere else native disclosure widgets
+// appear. Styled with --vulcan-* variables so it auto-adapts to dark mode.
+details {
+  margin: 1.25rem 0;
+  border: 1px solid var(--vulcan-border-color);
+  border-radius: 0.375rem;
+  overflow: hidden;
+
+  summary {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    background-color: var(--vulcan-tertiary-bg);
+    color: var(--vulcan-emphasis-color);
+    user-select: none;
+
+    &:hover {
+      background-color: var(--vulcan-hover-bg);
+    }
+
+    &::marker {
+      color: var(--vulcan-secondary-color);
+    }
+  }
+
+  &[open] summary {
+    border-bottom: 1px solid var(--vulcan-border-subtle);
+  }
+
+  > :not(summary) {
+    padding: 0.875rem 1rem;
+  }
+
+  p:last-child {
+    margin-bottom: 0;
+  }
+}
+
+// ── DISA Guide ──────────────────────────────────────────────
+// Three-panel doc layout: left nav (fixed) | content (scrolls) | right TOC (fixed).
+// Content pane is the ONLY scroll container — sidebars stay in place.
+.disa-guide-page {
+  --disa-header-height: 3.25rem;
+  --disa-sidebar-width: 14rem;
+  --disa-toc-width: 13rem;
+  scroll-behavior: smooth;
+}
+
+.disa-guide-layout {
+  display: flex;
+  min-height: calc(100vh - 5rem);
+  border: 1px solid var(--vulcan-border-color);
+  border-radius: 0.5rem;
+  margin: 0.75rem 1rem;
+}
+
+// ── Left sidebar ────────────────────────────────────────────
+.disa-guide-sidebar {
+  width: var(--disa-sidebar-width);
+  flex-shrink: 0;
+  background-color: var(--vulcan-secondary-bg);
+  border-right: 1px solid var(--vulcan-border-color);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    height: var(--disa-header-height);
+    padding: 0 1.25rem;
+    border-bottom: 1px solid var(--vulcan-border-subtle);
+    color: var(--vulcan-emphasis-color);
+    font-weight: 700;
+    position: sticky;
+    top: 0;
+    background-color: var(--vulcan-secondary-bg);
+    z-index: 1;
+  }
+}
+
+.disa-guide-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0 1rem;
+
+  &__section {
+    padding-top: 0.75rem;
+
+    &:first-child {
+      padding-top: 0.25rem;
+    }
+  }
+
+  &__label {
+    display: block;
+    padding: 0.375rem 1.25rem 0.25rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--vulcan-text-muted);
+  }
+
+  &__link {
+    display: block;
+    padding: 0.4rem 1.25rem;
+    font-size: 0.85rem;
+    color: var(--vulcan-body-color);
+    text-decoration: none;
+    border-left: 3px solid transparent;
+    transition: background-color 0.1s ease;
+
+    &:hover:not(.active) {
+      background: var(--vulcan-hover-bg);
+      color: var(--vulcan-emphasis-color);
+      text-decoration: none;
+    }
+
+    &.active {
+      background: var(--vulcan-active-bg);
+      border-left-color: var(--vulcan-active-border);
+      color: var(--vulcan-emphasis-color);
+      font-weight: 600;
+    }
+  }
+}
+
+// ── Center content ──────────────────────────────────────────
+.disa-guide-main {
+  flex: 1;
+  min-width: 0;
+  background-color: var(--vulcan-body-bg);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    height: var(--disa-header-height);
+    padding: 0 1.5rem;
+    border-bottom: 1px solid var(--vulcan-border-subtle);
+    background-color: var(--vulcan-secondary-bg);
+    color: var(--vulcan-emphasis-color);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+}
+
+// ── Right TOC panel ─────────────────────────────────────────
+.disa-guide-toc-panel {
+  width: var(--disa-toc-width);
+  flex-shrink: 0;
+  background-color: var(--vulcan-secondary-bg);
+  border-left: 1px solid var(--vulcan-border-color);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    height: var(--disa-header-height);
+    padding: 0 1rem;
+    border-bottom: 1px solid var(--vulcan-border-subtle);
+    color: var(--vulcan-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.65rem;
+    position: sticky;
+    top: 0;
+    background-color: var(--vulcan-secondary-bg);
+    z-index: 1;
+  }
+}
+
+.disa-guide-toc {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0 1rem;
+
+  &__link {
+    display: block;
+    padding: 0.35rem 1rem;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--vulcan-secondary-color);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: background-color 0.1s ease;
+
+    &:hover {
+      color: var(--vulcan-emphasis-color);
+      background: var(--vulcan-hover-bg);
+      text-decoration: none;
+      border-left-color: var(--vulcan-border-color);
+    }
+
+    &.toc-level-3 {
+      padding-left: 1.5rem;
+      font-size: 0.75rem;
+    }
+  }
+}
+
+.disa-guide-content {
+  padding: 1.5rem 2rem;
+  color: var(--vulcan-body-color);
+  line-height: 1.7;
+
+  h1, h2, h3, h4, h5, h6 {
+    scroll-margin-top: 1rem;
+  }
+
+
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--vulcan-emphasis-color);
+    margin-top: 0;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--vulcan-primary);
+  }
+
+  h2 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--vulcan-emphasis-color);
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid var(--vulcan-border-color);
+  }
+
+  h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--vulcan-emphasis-color);
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-left: 3px solid var(--vulcan-primary);
+    background-color: var(--vulcan-tertiary-bg);
+    border-radius: 0 0.25rem 0.25rem 0;
+  }
+
+  h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--vulcan-body-color);
+    margin-top: 1.25rem;
+    margin-bottom: 0.5rem;
+    padding: 0.35rem 0.6rem;
+    background-color: var(--vulcan-secondary-bg);
+    border-radius: 0.25rem;
+    border-left: 2px solid var(--vulcan-border-color);
+  }
+
+  h5 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--vulcan-secondary-color);
+    margin-top: 1rem;
+    margin-bottom: 0.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  h6 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--vulcan-text-muted);
+    margin-top: 1rem;
+    margin-bottom: 0.4rem;
+  }
+
+  table {
+    width: 100%;
+    margin-bottom: 1rem;
+    color: var(--vulcan-body-color);
+    border-collapse: collapse;
+
+    th, td {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--vulcan-border-color);
+    }
+
+    th {
+      background-color: var(--vulcan-tertiary-bg);
+      font-weight: 600;
+    }
+
+    tr:nth-child(even) td {
+      background-color: var(--vulcan-secondary-bg);
+    }
+  }
+
+  blockquote {
+    padding: 0.75rem 1rem;
+    margin: 1rem 0;
+    border-left: 4px solid var(--vulcan-primary);
+    background-color: var(--vulcan-tertiary-bg);
+    color: var(--vulcan-secondary-color);
+  }
+
+  code {
+    padding: 0.15em 0.4em;
+    background-color: var(--vulcan-tertiary-bg);
+    border-radius: 0.2rem;
+    font-size: 0.875em;
+  }
+
+  pre {
+    padding: 1rem;
+    background-color: var(--vulcan-tertiary-bg);
+    color: var(--vulcan-body-color);
+    border: 1px solid var(--vulcan-border-color);
+    border-radius: 0.375rem;
+    overflow-x: auto;
+
+    code {
+      padding: 0;
+      background-color: transparent;
+      color: inherit;
+    }
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+    margin: 1rem 0;
+    border-radius: 0.375rem;
+  }
+
+  a {
+    color: var(--vulcan-link-color);
+  }
+
+  .disa-guide-callout {
+    border: 1px solid transparent;
+    border-left-width: 4px;
+    border-radius: 0.375rem;
+    margin: 1.25rem 0;
+    padding: 0.875rem 1.125rem;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+
+    strong {
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    p:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  ul, ol {
+    padding-left: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  li {
+    margin-bottom: 0.25rem;
+  }
+}
+

@@ -10,7 +10,11 @@ module RuleConstants
     'Not Applicable'
   ].freeze
 
+  STATUS_NYD = 'Not Yet Determined'
   STATUS_APPLICABLE_CONFIGURABLE = 'Applicable - Configurable'
+  STATUS_APPLICABLE_IM = 'Applicable - Inherently Meets'
+  STATUS_APPLICABLE_DNM = 'Applicable - Does Not Meet'
+  STATUS_NOT_APPLICABLE = 'Not Applicable'
 
   SEVERITIES_MAP = {
     'low' => 'CAT III',

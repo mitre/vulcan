@@ -78,7 +78,7 @@
           <p class="text-muted">No metadata defined.</p>
         </div>
         <UpdateMetadataModal
-          v-if="canAuthor"
+          v-if="canEdit"
           :component="component"
           @componentUpdated="$emit('component-updated')"
         />
@@ -114,7 +114,7 @@
           <p class="text-muted">No additional questions defined.</p>
         </div>
         <AddQuestionsModal
-          v-if="canAuthor"
+          v-if="canEdit"
           :component="component"
           @componentUpdated="$emit('component-updated')"
         />
@@ -152,10 +152,8 @@
         <RuleSatisfactions
           :component="component"
           :rule="selectedRule"
-          :selected-rule-id="selectedRuleId"
           :project-prefix="component.prefix"
           :read-only="readOnly"
-          @ruleSelected="$emit('rule-selected', $event)"
         />
       </div>
     </b-sidebar>
@@ -177,6 +175,7 @@
           :effective-permissions="effectivePermissions"
           :current-user-id="currentUserId"
           :comments-closed="commentsClosed"
+          :initial-section-filter="reviewsSectionFilter"
           @open-reply-composer="$emit('open-reply-composer', $event)"
         />
       </div>
@@ -201,9 +200,8 @@
 </template>
 
 <script>
-import axios from "axios";
-import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
-import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
+import { getHistories } from "../../api/componentsApi";
+import { usePermissions } from "../../composables/usePermissions";
 import { SIDEBAR_TITLES } from "../../constants/terminology";
 import History from "./History.vue";
 import RuleSatisfactions from "../rules/RuleSatisfactions.vue";
@@ -222,7 +220,6 @@ export default {
     UpdateMetadataModal,
     AddQuestionsModal,
   },
-  mixins: [RoleComparisonMixin, DateFormatMixinVue],
   props: {
     component: {
       type: Object,
@@ -240,10 +237,6 @@ export default {
       type: String,
       default: null,
     },
-    effectivePermissions: {
-      type: String,
-      required: true,
-    },
     currentUserId: {
       type: Number,
       default: null,
@@ -256,6 +249,17 @@ export default {
       type: Boolean,
       default: false,
     },
+    reviewsSectionFilter: {
+      type: String,
+      default: "all",
+    },
+  },
+  setup() {
+    // Permissions are provided by the page root (ProjectComponent / Rules) —
+    // see usePermissions. effectivePermissions is exposed for child prop
+    // pass-through (RuleReviews still declares it as a prop).
+    const { effectivePermissions, canAdmin, canEdit } = usePermissions();
+    return { effectivePermissions, canAdmin, canEdit };
   },
   data() {
     return {
@@ -276,12 +280,6 @@ export default {
     commentsClosed() {
       return (this.component?.comment_phase || "open") !== "open";
     },
-    canAdmin() {
-      return this.role_gte_to(this.effectivePermissions, "admin");
-    },
-    canAuthor() {
-      return this.role_gte_to(this.effectivePermissions, "author");
-    },
     // Use local histories if available (refreshed via event), otherwise fall back to prop
     displayedHistories() {
       return this.localHistories.length > 0 ? this.localHistories : this.component.histories;
@@ -295,8 +293,7 @@ export default {
   },
   methods: {
     refreshHistories() {
-      axios
-        .get(`/components/${this.component.id}/histories`)
+      getHistories(this.component.id)
         .then((response) => {
           this.localHistories = response.data;
         })

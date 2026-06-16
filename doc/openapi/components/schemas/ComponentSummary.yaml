@@ -1,0 +1,66 @@
+description: >-
+  Base component fields shared by all views. Serialized by ComponentBlueprint (default view).
+  View-specific schemas (ComponentEditorResponse, ComponentIndexResponse) extend this with additional fields.
+type: object
+required:
+  - id
+  - name
+  - prefix
+properties:
+  id:
+    type: integer
+    description: Unique component identifier.
+    example: 1
+  name:
+    type: string
+    description: Human-readable component name.
+    example: Photon OS 3
+  prefix:
+    type: string
+    description: Short alphanumeric prefix used to construct rule IDs (e.g. PHOS-03 in PHOS-03-000010).
+    example: PHOS-03
+  version:
+    type:
+      - integer
+      - 'null'
+    description: Version number of the component. Null if not yet set.
+    example: 1
+  release:
+    type:
+      - integer
+      - 'null'
+    description: Release number of the component. Null if not yet set.
+    example: 1
+  based_on_title:
+    type:
+      - string
+      - 'null'
+    description: Title of the SRG this component is based on. Null if the SRG has no title or component has no SRG.
+    example: VMware vSphere 7.0 STIG Readiness Guide
+  based_on_version:
+    type:
+      - string
+      - 'null'
+    description: Version of the SRG this component is based on. Null if no SRG.
+    example: "1"
+  severity_counts:
+    type: object
+    description: Count of rules at each severity level within this component.
+    properties:
+      high:
+        type: integer
+        example: 20
+      medium:
+        type: integer
+        example: 173
+      low:
+        type: integer
+        example: 10
+    example:
+      high: 20
+      medium: 173
+      low: 10
+  pending_comment_count:
+    type: integer
+    description: Number of pending (untriaged) top-level comments on this component. Pre-batched via Component.pending_comment_counts.
+    example: 3

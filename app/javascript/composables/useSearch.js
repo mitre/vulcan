@@ -1,5 +1,5 @@
 import { ref, computed } from "vue";
-import axios from "axios";
+import { globalSearch } from "../api/searchApi";
 
 /**
  * Composable for global search functionality.
@@ -82,9 +82,7 @@ export function useSearch(options = {}) {
     error.value = null;
 
     try {
-      const response = await axios.get("/api/search/global", {
-        params: { q: query, limit },
-      });
+      const response = await globalSearch({ q: query, limit });
 
       // Update results
       projects.value = response.data.projects || [];

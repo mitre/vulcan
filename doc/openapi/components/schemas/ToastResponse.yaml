@@ -1,0 +1,10 @@
+description: >-
+  Canonical mutation response returned by all POST/PUT/PATCH/DELETE endpoints
+  that return only a toast notification (no additional data).
+type: object
+required:
+  - toast
+additionalProperties: false
+properties:
+  toast:
+    $ref: ./ToastObject.yaml

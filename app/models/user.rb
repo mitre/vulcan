@@ -46,12 +46,16 @@ class User < ApplicationRecord
   before_create :skip_confirmation!, unless: -> { Settings.local_login.email_confirmation }
   after_create :promote_first_user_to_admin
 
+  class IdentityGuardError < StandardError; end
+
+  has_many :identities, dependent: :destroy
   has_many :reviews, dependent: :nullify
   has_many :reactions, dependent: :destroy
   has_many :memberships, dependent: :destroy
   has_many :projects, through: :memberships, source: :membership, source_type: 'Project'
   has_many :components, through: :memberships, source: :membership, source_type: 'Component'
   has_many :access_requests, class_name: 'ProjectAccessRequest', dependent: :destroy
+  has_many :personal_access_tokens, dependent: :destroy
 
   # preserve commenter
   # attribution on the user's reviews before the FK gets nullified.
@@ -89,6 +93,46 @@ class User < ApplicationRecord
       super
     end
   end
+
+  # --- Identity mutation API (single source of truth) ---
+
+  def link_identity!(provider:, uid:, email:, audit_reason: nil)
+    existing = Identity.find_by(provider: provider, uid: uid)
+    if existing && existing.user_id != id
+      raise ProviderConflictError,
+            "This #{OidcProviderRegistry.title_for(provider)} identity is already linked to another account."
+    end
+
+    identity = identities.find_or_initialize_by(provider: provider)
+    identity.uid = uid
+    identity.email = email
+    identity.last_sign_in_at = Time.current
+    identity.save!
+
+    sync_denorm_identity!
+    self.audit_comment = audit_reason || "Linked #{OidcProviderRegistry.title_for(provider)} identity"
+    save!
+
+    identity
+  end
+
+  def unlink_identity!(identity)
+    raise IdentityGuardError, 'Cannot unlink your last sign-in method.' unless can_unlink?(identity)
+
+    self.audit_comment = "Unlinked #{OidcProviderRegistry.title_for(identity.provider)} identity"
+    identity.destroy!
+    identities.reload
+    sync_denorm_identity!
+    save!
+  end
+
+  def can_unlink?(identity)
+    has_password = encrypted_password.present? && Settings.local_login&.enabled
+    has_other_identity = identities.where.not(id: identity.id).exists?
+    has_password || has_other_identity
+  end
+
+  # --- end Identity mutation API ---
 
   def available_projects
     admin ? Project.all : Project.where(id: projects.pluck(:id)).or(Project.discoverable).distinct
@@ -148,10 +192,20 @@ class User < ApplicationRecord
     provider = auth.provider.to_s
     uid = auth.uid.to_s
 
-    # LOOKUP 1: Exact identity match by provider + uid (most reliable)
+    # LOOKUP 1: Identity-first — find by (provider, uid) on the identities table.
+    identity = Identity.find_by(provider: provider, uid: uid)
+    if identity
+      Rails.logger.info "Re-authenticating user from OmniAuth: email=#{email}, provider=#{provider}"
+      identity.user.link_identity!(provider: provider, uid: uid, email: email, audit_reason: "Re-authenticated via #{provider}")
+      return identity.user
+    end
+
+    # LOOKUP 1b: Legacy fallback — find by denormalized users.provider/uid for
+    # users who haven't been backfilled to the identities table yet.
     user = find_by(provider: provider, uid: uid)
     if user
-      Rails.logger.info "Re-authenticating user from OmniAuth: email=#{email}, provider=#{provider}"
+      Rails.logger.info "Re-authenticating user (legacy, no identity row): email=#{email}, provider=#{provider}"
+      user.link_identity!(provider: provider, uid: uid, email: email, audit_reason: "Re-authenticated via #{provider} (backfill)")
       return user
     end
 
@@ -163,18 +217,12 @@ class User < ApplicationRecord
       # Same provider, different uid — provider re-issued identity
       if user.provider.to_s == provider
         Rails.logger.info "Updating uid for #{user.email}: provider=#{provider}"
-        user.uid = uid
-        user.save!
+        user.link_identity!(provider: provider, uid: uid, email: email, audit_reason: "UID reissue for #{provider}")
         return user
       end
 
       # Different provider — check global auto-link setting
       if existing_provider == 'local' && Settings.auto_link_user
-        # SECURITY: If the provider explicitly asserts the email is NOT verified,
-        # refuse to auto-link. Prevents rogue/misconfigured providers from claiming
-        # arbitrary emails to take over local accounts. If the claim is absent,
-        # we trust the admin's decision to enable auto_link_user.
-        # Cast to boolean to guard against providers sending "false" (string) instead of false
         if auth.info.respond_to?(:email_verified) &&
            ActiveModel::Type::Boolean.new.cast(auth.info.email_verified) == false
           Rails.logger.warn "BLOCKED: Auto-link refused for #{user.email} — #{provider} asserted email not verified"
@@ -184,10 +232,7 @@ class User < ApplicationRecord
         end
 
         Rails.logger.info "AUDIT: Auto-linked local account #{user.email} to #{provider}"
-        user.provider = provider
-        user.uid = uid
-        user.audit_comment = "Linked #{provider.upcase} identity to local account"
-        user.save!
+        user.link_identity!(provider: provider, uid: uid, email: email, audit_reason: "Auto-linked #{provider} to local account")
         user.just_auto_linked = true
         return user
       end
@@ -197,10 +242,11 @@ class User < ApplicationRecord
                         "but account exists with provider '#{existing_provider}'"
       human_provider = existing_provider == 'local' ? 'email and password' : existing_provider.upcase
       raise ProviderConflictError,
-            "An account with this email already exists using #{human_provider} sign-in."
+            "An account with this email already exists using #{human_provider} sign-in. " \
+            'Please sign in with your existing method and connect this provider from your profile settings.'
     end
 
-    # LOOKUP 3: No existing account — create new user
+    # LOOKUP 3: No existing account — create new user + identity
     Rails.logger.info "Creating new user from OmniAuth: email=#{email}, provider=#{provider}"
     user = new(
       email: email.downcase,
@@ -209,8 +255,10 @@ class User < ApplicationRecord
       name: auth.info.name.presence || "#{provider} user",
       password: Devise.friendly_token
     )
+    user.password_automatically_set = true
     user.skip_confirmation!
     user.save!
+    user.link_identity!(provider: provider, uid: uid, email: email.downcase, audit_reason: "New user via #{provider}")
     Rails.logger.info "User #{user.email} successfully authenticated via #{provider}"
     user
   end
@@ -287,6 +335,15 @@ class User < ApplicationRecord
   end
 
   private
+
+  def sync_denorm_identity!
+    latest = identities.order(last_sign_in_at: :desc).first
+    new_provider = latest&.provider
+    new_uid = latest&.uid
+    return if provider == new_provider && uid == new_uid
+
+    update_columns(provider: new_provider, uid: new_uid) # rubocop:disable Rails/SkipsModelValidations -- denorm cache sync
+  end
 
   # rubocop:disable Naming/PredicateMethod -- the explicit `true` return
   # below is for Sonar S7887 (callbacks must not implicitly return :abort

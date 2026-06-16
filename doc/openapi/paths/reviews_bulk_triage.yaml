@@ -1,0 +1,68 @@
+patch:
+  operationId: bulkTriageReviews
+  tags:
+    - Reviews
+  summary: Triage multiple reviews at once
+  description: >-
+    Applies the same triage status to all specified reviews in a single
+    request. All reviews must belong to the same component (enforced
+    server-side). Optionally creates a response comment on each triaged
+    review. Requires author+ role on the component's project.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - review_ids
+            - triage_status
+          properties:
+            review_ids:
+              type: array
+              items:
+                type: integer
+              description: IDs of the reviews to triage.
+              example: [10, 11, 12]
+            triage_status:
+              type: string
+              description: The triage status to apply to all selected reviews.
+              enum:
+                - concur
+                - concur_with_comment
+                - non_concur
+                - informational
+                - needs_clarification
+                - duplicate
+                - addressed_by
+              example: concur
+            response_comment:
+              type: string
+              description: Optional response comment to attach to each triaged review.
+              example: "Accepted — will update check_content in next release."
+  responses:
+    '200':
+      description: All reviews triaged successfully
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/BulkTriageResponse.yaml
+          examples:
+            triaged:
+              summary: Three reviews accepted
+              value:
+                reviews:
+                  - id: 10
+                    action: comment
+                    comment: "Original comment 1"
+                    triage_status: concur
+                    rule_id: 100
+                    created_at: "2026-05-19 14:08:17 UTC"
+                    reactions: { up: 0, down: 0, mine: null }
+                response_reviews: []
+    '422':
+      description: Validation error (invalid triage status, reviews from different components)
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml

@@ -36,6 +36,10 @@ Every production deployment needs:
 
 See [Configuration](/getting-started/configuration) for the full "What You Must Provide" checklist.
 
+## Upgrading
+
+See [Upgrade Guide](upgrade-guide) for version-specific instructions, the automated upgrade system, and multi-version jump support.
+
 ## Authentication Setup
 
 All deployment methods support the same authentication providers:

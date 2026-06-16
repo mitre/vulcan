@@ -1,0 +1,64 @@
+patch:
+  operationId: mergeReviews
+  tags:
+    - Reviews
+  summary: Merge duplicate reviews into one survivor
+  description: >-
+    Combines multiple same-author reviews within one component into a
+    designated survivor. Non-survivor reviews are marked as duplicates
+    (triage_status=duplicate, duplicate_of_review_id=survivor). Requires
+    admin role on the component's project.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - review_ids
+            - survivor_id
+          properties:
+            review_ids:
+              type: array
+              items:
+                type: integer
+              description: IDs of all reviews to merge (including the survivor).
+              example: [10, 11, 12]
+            survivor_id:
+              type: integer
+              description: ID of the review that absorbs the others.
+              example: 10
+  responses:
+    '200':
+      description: Reviews merged successfully
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/MergeResponse.yaml
+          examples:
+            merged:
+              summary: Two duplicates merged into survivor
+              value:
+                survivor:
+                  id: 10
+                  action: comment
+                  comment: "The original comment"
+                  triage_status: pending
+                  rule_id: 100
+                  created_at: "2026-05-19 14:08:17 UTC"
+                  reactions: { up: 0, down: 0, mine: null }
+                duplicates:
+                  - id: 11
+                    action: comment
+                    comment: "Duplicate of 10"
+                    triage_status: duplicate
+                    duplicate_of_review_id: 10
+                    rule_id: 100
+                    created_at: "2026-05-19 14:10:00 UTC"
+                    reactions: { up: 0, down: 0, mine: null }
+    '422':
+      description: Validation error (reviews from different components, different authors, etc.)
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml

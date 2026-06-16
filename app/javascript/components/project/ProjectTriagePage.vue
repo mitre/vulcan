@@ -4,7 +4,7 @@
     <div class="px-3">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-          <h1 class="h3 mb-1">Project Triage Queue</h1>
+          <h1 class="h3 mb-1">Project Comments</h1>
           <p class="text-muted mb-0">
             All public-comment-review activity across {{ project.name }} components.
           </p>
@@ -15,16 +15,14 @@
           </b-button>
         </div>
       </div>
-      <ComponentComments
-        scope="project"
-        :project-id="project.id"
-        :effective-permissions="effectivePermissions"
-      />
+      <!-- Permissions arrive via the provide("effectivePermissions") above -->
+      <ComponentComments scope="project" :project-id="project.id" />
     </div>
   </div>
 </template>
 
 <script>
+import { provide } from "vue";
 import ComponentComments from "../components/ComponentComments.vue";
 
 export default {
@@ -32,15 +30,19 @@ export default {
   components: { ComponentComments },
   props: {
     project: { type: Object, required: true },
-    effectivePermissions: { type: String, default: null },
     currentUserId: { type: Number, required: true },
+  },
+  setup(props) {
+    const effectivePermissions = props.project?.effective_permissions || null;
+    provide("effectivePermissions", effectivePermissions);
+    return { effectivePermissions };
   },
   computed: {
     breadcrumbs() {
       return [
         { text: "Projects", href: "/projects" },
         { text: this.project.name, href: `/projects/${this.project.id}` },
-        { text: "Triage", active: true },
+        { text: "Comments", active: true },
       ];
     },
   },

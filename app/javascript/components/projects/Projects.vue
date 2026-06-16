@@ -52,7 +52,8 @@ import ProjectsTable from "./ProjectsTable.vue";
 import BaseCommandBar from "../shared/BaseCommandBar.vue";
 import NewProjectModal from "./NewProjectModal.vue";
 import RestoreProjectModal from "./RestoreProjectModal.vue";
-import axios from "axios";
+import { getProjects } from "../../api/projectsApi";
+import { useToast } from "../../composables/useToast";
 
 export default {
   name: "Projects",
@@ -72,6 +73,13 @@ export default {
       required: false,
       default: false,
     },
+  },
+  // alertOrNotifyResponse was referenced here without the legacy alert mixin
+  // ever being mixed in — a failed refresh used to rethrow with no toast.
+  // Wiring the composable fixes that silent failure.
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
   },
   data: function () {
     return {
@@ -96,8 +104,7 @@ export default {
       this.refreshProjects();
     },
     refreshProjects: function () {
-      axios
-        .get("/projects")
+      getProjects()
         .then((response) => {
           this.projectlist = response.data;
         })

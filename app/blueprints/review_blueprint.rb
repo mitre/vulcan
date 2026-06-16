@@ -14,7 +14,17 @@ class ReviewBlueprint < Blueprinter::Base
   # fields the frontend modal needs
   # to refresh in place after a triage/adjudicate/withdraw/update
   # mutation, eliminating the post-mutation refetch round trip.
-  fields :rule_id, :section, :responding_to_review_id, :duplicate_of_review_id, :triage_set_by_id
+  fields :rule_id, :section, :responding_to_review_id, :duplicate_of_review_id,
+         :addressed_by_rule_id, :triage_set_by_id, :commentable_type
+
+  field :responses_count do |review, _options|
+    review.responses.size
+  end
+
+  field :rule_displayed_name do |review, options|
+    rule_names = options[:rule_names] || {}
+    rule_names[review.rule_id]
+  end
 
   # Delegated from user — avoids N+1 when user is eager-loaded
   field :name do |review, _options|
@@ -32,7 +42,7 @@ class ReviewBlueprint < Blueprinter::Base
   # response omits it (a public-comment endpoint exposing every
   # commenter's email enables scraping during open comment windows).
   # Admin-tier surfaces (admin actions disclosure, disposition export)
-  # opt in via `render_as_hash(review, include_email: true)`. Mirrors
+  # opt in via `render_as_json(review, include_email: true)`. Mirrors
   # the disposition-export include_email pattern in
   # app/lib/disposition_matrix_export.rb.
   field :author_email,
@@ -54,8 +64,13 @@ class ReviewBlueprint < Blueprinter::Base
   attribution_fields :adjudicator
   attribution_fields :commenter
 
+  field :commenter_email,
+        if: ->(_field, _review, options) { options && options[:include_email] } do |review, _options|
+    review.user&.email
+  end
+
   # Controllers pass `reactions_summary: Reaction.summary(ids, current_user.id)`
-  # via render_as_hash options. Falls back to zeros + nil mine when the
+  # via render_as_json options. Falls back to zeros + nil mine when the
   # option isn't supplied so older callers don't break.
   field :reactions do |review, options|
     summary = options[:reactions_summary] || {}

@@ -22,11 +22,14 @@ const entryPoints = {
   srg: "app/javascript/packs/srg.js",
   stig: "app/javascript/packs/stig.js",
   stigs: "app/javascript/packs/stigs.js",
+  disa_guide: "app/javascript/packs/disa_guide.js",
   users: "app/javascript/packs/users.js",
   user_profile: "app/javascript/packs/user_profile.js",
   user_password: "app/javascript/packs/user_password.js",
   user_activity: "app/javascript/packs/user_activity.js",
   user_comments: "app/javascript/packs/user_comments.js",
+  user_tokens: "app/javascript/packs/user_tokens.js",
+  api_docs: "app/javascript/packs/api_docs.js",
 };
 
 // Check if we're in watch mode

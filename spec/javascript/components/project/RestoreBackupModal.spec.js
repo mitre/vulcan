@@ -1,10 +1,23 @@
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
-import axios from "axios";
 import RestoreBackupModal from "@/components/project/RestoreBackupModal.vue";
+import { importBackup } from "@/api/projectsApi";
 
-vi.mock("axios");
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/api/projectsApi", () => ({
+  importBackup: vi.fn(() => Promise.resolve({ data: {} })),
+}));
 
 /**
  * RestoreBackupModal - Upload JSON archive ZIP to restore components
@@ -146,7 +159,7 @@ describe("RestoreBackupModal", () => {
   // ==========================================
   describe("dry run", () => {
     it("calls dry-run endpoint with correct params", async () => {
-      axios.post.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
+      importBackup.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
       wrapper = createWrapper();
       wrapper.vm.showModal();
 
@@ -156,23 +169,16 @@ describe("RestoreBackupModal", () => {
 
       await wrapper.vm.submitDryRun();
 
-      expect(axios.post).toHaveBeenCalledWith(
-        `/projects/${PROJECT_ID}/import_backup`,
-        expect.any(FormData),
-        expect.objectContaining({
-          headers: { "Content-Type": "multipart/form-data" },
-        }),
-      );
+      expect(importBackup).toHaveBeenCalledWith(PROJECT_ID, expect.any(FormData));
 
-      // Verify FormData contents
-      const formData = axios.post.mock.calls[0][1];
+      const formData = importBackup.mock.calls[0][1];
       expect(formData.get("dry_run")).toBe("true");
       expect(formData.get("include_reviews")).toBe("true");
       expect(formData.get("file")).toBeTruthy();
     });
 
     it("moves to preview step on successful dry-run", async () => {
-      axios.post.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
+      importBackup.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
       wrapper = createWrapper();
       wrapper.vm.showModal();
       wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
@@ -184,7 +190,7 @@ describe("RestoreBackupModal", () => {
     });
 
     it("shows summary counts in preview step", async () => {
-      axios.post.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
+      importBackup.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
       wrapper = createWrapper();
       wrapper.vm.showModal();
       wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
@@ -204,7 +210,7 @@ describe("RestoreBackupModal", () => {
           warnings: ["User john@example.com not found, skipping 3 reviews"],
         },
       };
-      axios.post.mockResolvedValue(responseWithWarnings);
+      importBackup.mockResolvedValue(responseWithWarnings);
       wrapper = createWrapper();
       wrapper.vm.showModal();
       wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
@@ -216,7 +222,7 @@ describe("RestoreBackupModal", () => {
     });
 
     it("stays on upload step on dry-run error", async () => {
-      axios.post.mockRejectedValue({
+      importBackup.mockRejectedValue({
         response: {
           data: {
             toast: { title: "Import failed", message: "Invalid ZIP", variant: "danger" },
@@ -238,7 +244,7 @@ describe("RestoreBackupModal", () => {
   // ==========================================
   describe("import", () => {
     it("calls real endpoint with dry_run=false", async () => {
-      axios.post.mockResolvedValue(MOCK_IMPORT_RESPONSE);
+      importBackup.mockResolvedValue(MOCK_IMPORT_RESPONSE);
       wrapper = createWrapper();
       wrapper.vm.showModal();
       wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
@@ -248,12 +254,12 @@ describe("RestoreBackupModal", () => {
 
       await wrapper.vm.submitImport();
 
-      const formData = axios.post.mock.calls[0][1];
+      const formData = importBackup.mock.calls[0][1];
       expect(formData.get("dry_run")).toBe("false");
     });
 
     it("emits projectUpdated on successful import", async () => {
-      axios.post.mockResolvedValue(MOCK_IMPORT_RESPONSE);
+      importBackup.mockResolvedValue(MOCK_IMPORT_RESPONSE);
       wrapper = createWrapper();
       wrapper.vm.showModal();
       wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
@@ -267,7 +273,7 @@ describe("RestoreBackupModal", () => {
     });
 
     it("closes modal on successful import", async () => {
-      axios.post.mockResolvedValue(MOCK_IMPORT_RESPONSE);
+      importBackup.mockResolvedValue(MOCK_IMPORT_RESPONSE);
       wrapper = createWrapper();
       wrapper.vm.showModal();
       wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
@@ -321,7 +327,7 @@ describe("RestoreBackupModal", () => {
   // ==========================================
   describe("include reviews", () => {
     it("sends include_reviews=false when unchecked", async () => {
-      axios.post.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
+      importBackup.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
       wrapper = createWrapper();
       wrapper.vm.showModal();
       wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
@@ -329,7 +335,7 @@ describe("RestoreBackupModal", () => {
 
       await wrapper.vm.submitDryRun();
 
-      const formData = axios.post.mock.calls[0][1];
+      const formData = importBackup.mock.calls[0][1];
       expect(formData.get("include_reviews")).toBe("false");
     });
   });
@@ -356,7 +362,7 @@ describe("RestoreBackupModal", () => {
     };
 
     const setupPreviewWithDetails = async () => {
-      axios.post.mockResolvedValue(MOCK_DRY_RUN_WITH_DETAILS);
+      importBackup.mockResolvedValue(MOCK_DRY_RUN_WITH_DETAILS);
       wrapper = createWrapper();
       wrapper.vm.showModal();
       wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
@@ -385,7 +391,7 @@ describe("RestoreBackupModal", () => {
 
     it("sends component_filter JSON in FormData on import", async () => {
       await setupPreviewWithDetails();
-      axios.post.mockResolvedValue({
+      importBackup.mockResolvedValue({
         data: { toast: "Backup restored successfully." },
       });
 
@@ -400,7 +406,7 @@ describe("RestoreBackupModal", () => {
 
       await wrapper.vm.submitImport();
 
-      const formData = axios.post.mock.calls[1][1]; // second call (first was dry-run)
+      const formData = importBackup.mock.calls[1][1]; // second call (first was dry-run)
       const filter = JSON.parse(formData.get("component_filter"));
       expect(filter["Component A"]).toBe("Component A");
       expect(filter["Component B"]).toBe("Component B (restored)");
@@ -424,7 +430,7 @@ describe("RestoreBackupModal", () => {
 
     it("does not show component rows when component_details absent", async () => {
       // Use the standard dry-run response (no component_details)
-      axios.post.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
+      importBackup.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
       wrapper = createWrapper();
       wrapper.vm.showModal();
       wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
@@ -451,19 +457,19 @@ describe("RestoreBackupModal", () => {
     });
 
     it("sends include_memberships=false by default", async () => {
-      axios.post.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
+      importBackup.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
       wrapper = createWrapper();
       wrapper.vm.showModal();
       wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
 
       await wrapper.vm.submitDryRun();
 
-      const formData = axios.post.mock.calls[0][1];
+      const formData = importBackup.mock.calls[0][1];
       expect(formData.get("include_memberships")).toBe("false");
     });
 
     it("sends include_memberships=true when checked", async () => {
-      axios.post.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
+      importBackup.mockResolvedValue(MOCK_DRY_RUN_RESPONSE);
       wrapper = createWrapper();
       wrapper.vm.showModal();
       wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
@@ -471,7 +477,7 @@ describe("RestoreBackupModal", () => {
 
       await wrapper.vm.submitDryRun();
 
-      const formData = axios.post.mock.calls[0][1];
+      const formData = importBackup.mock.calls[0][1];
       expect(formData.get("include_memberships")).toBe("true");
     });
 
@@ -496,7 +502,7 @@ describe("RestoreBackupModal", () => {
           },
         },
       };
-      axios.post.mockResolvedValue(responseWithMemberships);
+      importBackup.mockResolvedValue(responseWithMemberships);
       wrapper = createWrapper();
       wrapper.vm.showModal();
       wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });

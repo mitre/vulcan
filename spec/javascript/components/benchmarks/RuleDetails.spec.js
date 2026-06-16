@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import RuleDetails from "@/components/benchmarks/RuleDetails.vue";
@@ -121,37 +121,40 @@ describe("RuleDetails", () => {
   });
 
   // ==========================================
-  // FORM COMPONENTS
+  // CONSISTENT FIELD RENDERING
+  // All fields must render through RuleFormGroup directly —
+  // the viewer must NOT reuse editor wrapper components.
   // ==========================================
-  describe("form components", () => {
-    it("passes disabled=true to DisaRuleDescriptionForm", () => {
+  describe("consistent field rendering", () => {
+    it("renders all four content fields through RuleFormGroup directly", () => {
       wrapper = createWrapper();
-      const disaForm = wrapper.findComponent({ name: "DisaRuleDescriptionForm" });
-      expect(disaForm.exists()).toBe(true);
-      expect(disaForm.props("disabled")).toBe(true);
+      const groups = wrapper.findAllComponents({ name: "RuleFormGroup" });
+      const fieldNames = groups.wrappers.map((w) => w.props("fieldName"));
+      expect(fieldNames).toContain("vuln_discussion");
+      expect(fieldNames).toContain("content");
+      expect(fieldNames).toContain("fixtext");
+      expect(fieldNames).toContain("vendor_comments");
     });
 
-    it("passes disabled=true to CheckForm", () => {
+    it("does not use editor wrapper components", () => {
       wrapper = createWrapper();
-      const checkForm = wrapper.findComponent({ name: "CheckForm" });
-      expect(checkForm.exists()).toBe(true);
-      expect(checkForm.props("disabled")).toBe(true);
+      expect(wrapper.findComponent({ name: "DisaRuleDescriptionForm" }).exists()).toBe(false);
+      expect(wrapper.findComponent({ name: "CheckForm" }).exists()).toBe(false);
     });
 
-    it("configures disaDescriptionFormFields correctly", () => {
+    it("passes disabled and readOnly to all RuleFormGroup instances", () => {
       wrapper = createWrapper();
-      expect(wrapper.vm.disaDescriptionFormFields).toEqual({
-        displayed: ["vuln_discussion"],
-        disabled: [],
+      const groups = wrapper.findAllComponents({ name: "RuleFormGroup" });
+      groups.wrappers.forEach((g) => {
+        expect(g.props("disabled")).toBe(true);
+        expect(g.props("readOnly")).toBe(true);
       });
     });
 
-    it("configures checkFormFields correctly", () => {
+    it("renders all text fields through MarkdownTextarea", () => {
       wrapper = createWrapper();
-      expect(wrapper.vm.checkFormFields).toEqual({
-        displayed: ["content"],
-        disabled: [],
-      });
+      const textareas = wrapper.findAllComponents({ name: "MarkdownTextarea" });
+      expect(textareas.length).toBe(4);
     });
   });
 
@@ -179,9 +182,8 @@ describe("RuleDetails", () => {
   // ==========================================
   describe("null/undefined rule handling", () => {
     it("accepts null selectedRule without Vue warnings", () => {
-      const errors = [];
-      const originalError = console.error;
-      console.error = (...args) => errors.push(args.join(" "));
+      // spy (not manual reassignment) — restored via mockRestore below
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
       wrapper = shallowMount(RuleDetails, {
         localVue,
@@ -191,11 +193,10 @@ describe("RuleDetails", () => {
         },
       });
 
-      console.error = originalError;
-
-      const propErrors = errors.filter(
-        (e) => e.includes("Invalid prop") || e.includes("type check failed"),
-      );
+      const propErrors = errorSpy.mock.calls
+        .map((args) => args.join(" "))
+        .filter((e) => e.includes("Invalid prop") || e.includes("type check failed"));
+      errorSpy.mockRestore();
       expect(propErrors.length).toBe(0);
     });
 

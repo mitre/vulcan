@@ -12,7 +12,7 @@ class ComponentsController < ApplicationController
   CONTROL_NOT_FOUND_TITLE = 'Control not found'
 
   before_action :set_component, only: %i[show update destroy export preview_spreadsheet_update apply_spreadsheet_update triage settings]
-  before_action :set_component_basic, only: %i[find based_on_same_srg histories comments]
+  before_action :set_component_basic, only: %i[find based_on_same_srg histories comments rules_picker merge_status]
   before_action :set_project, only: %i[show create history triage settings]
   before_action :set_component_permissions, only: %i[show triage settings]
   before_action :set_rule, only: %i[show]
@@ -21,7 +21,8 @@ class ComponentsController < ApplicationController
   before_action :authorize_author_component, only: %i[update preview_spreadsheet_update apply_spreadsheet_update]
   before_action :check_permission_to_update_slackchannel, only: %i[update]
   before_action :check_admin_for_advanced_fields, only: %i[update]
-  before_action :authorize_component_access, only: %i[show export find histories comments triage]
+  before_action :authorize_component_access, only: %i[show export find histories comments triage rules_picker]
+  before_action :authorize_viewer_component, only: %i[merge_status]
   before_action :authorize_logged_in, only: %i[search index based_on_same_srg bulk_export detect_srg]
   before_action :authorize_compare_access, only: %i[compare]
   before_action :authorize_viewer_project, only: %i[history]
@@ -32,9 +33,10 @@ class ComponentsController < ApplicationController
                           .eager_load(:based_on)
                           .where(released: true)
 
+    @components_json = ComponentBlueprint.render(components, view: :index)
     respond_to do |format|
-      format.html { @components_json = ComponentBlueprint.render(components, view: :index) }
-      format.json { @components_json = components } # Jbuilder uses the relation
+      format.html
+      format.json { render body: @components_json, content_type: 'application/json' }
     end
   end
 
@@ -65,16 +67,9 @@ class ComponentsController < ApplicationController
         @project_json = @component.project.to_json
       end
       format.json do
-        if @effective_permissions
-          # Editor refresh: use blueprint directly so the refreshComponent() response
-          # shape exactly matches the initial render and nothing drifts (e.g.,
-          # memberships losing their MembershipBlueprint name/email decoration).
-          render json: ComponentBlueprint.render(@component, view: :editor, **blueprint_render_options)
-        else
-          # Non-member: jbuilder produces a BenchmarkViewer-specific lightweight
-          # rule shape that the :show blueprint view does not.
-          render :show
-        end
+        view = @effective_permissions ? :editor : :show
+        render body: ComponentBlueprint.render(@component, view: view, **blueprint_render_options),
+               content_type: 'application/json'
       end
     end
   end
@@ -88,15 +83,13 @@ class ComponentsController < ApplicationController
     # original audit history is copied in bulk by duplicate_reviews_and_history.
     # This avoids creating 200+ redundant audit records per rule.
     is_duplicate = component_create_params[:duplicate] || component_create_params[:copy_component]
-    Audited.auditing_enabled = false if is_duplicate
-    begin
+    save_block = lambda {
       if component.errors.empty? && component.save
-        Audited.auditing_enabled = true
         component.admin_name = component_create_params[:admin_name].presence || current_user.name
         component.admin_email = component_create_params[:admin_email].presence || current_user.email
         component.duplicate_reviews_and_history(component_create_params[:id])
         component.create_rule_satisfactions if component_create_params[:file]
-        component.rules_count = component.rules.where(deleted_at: nil).size
+        Component.reset_counters(component.id, :rules)
         if component_create_params[:slack_channel_id].present?
           component.component_metadata_attributes = { data: {
             'Slack Channel ID' => component_create_params[:slack_channel_id]
@@ -109,15 +102,18 @@ class ComponentsController < ApplicationController
                      variant: 'success', status: :ok)
       else
         render json: {
-          toast: {
+          toast: Toast.new(
             title: 'Could not add component to project.',
             message: component.errors.full_messages,
             variant: 'danger'
-          }
-        }, status: :unprocessable_entity
+          )
+        }, status: :unprocessable_content
       end
-    ensure
-      Audited.auditing_enabled = true
+    }
+    if is_duplicate
+      Component.without_auditing(&save_block)
+    else
+      save_block.call
     end
   end
 
@@ -128,12 +124,12 @@ class ComponentsController < ApplicationController
                    variant: 'success', status: :ok)
     else
       render json: {
-        toast: {
+        toast: Toast.new(
           title: 'Could not update component.',
           message: @component.errors.full_messages,
           variant: 'danger'
-        }
-      }, status: :unprocessable_entity
+        )
+      }, status: :unprocessable_content
     end
   end
 
@@ -164,14 +160,15 @@ class ComponentsController < ApplicationController
     render_toast(title: 'Component removed.',
                  message: 'Successfully removed component from project.',
                  variant: 'success', status: :ok)
-  rescue StandardError
+  rescue ActiveRecord::StatementInvalid, ActiveRecord::RecordNotDestroyed => e
+    Rails.logger.error("[ComponentsController#destroy] Failed to remove component #{@component.id}: #{e.class} — #{e.message}")
     render json: {
-      toast: {
+      toast: Toast.new(
         title: 'Error',
-        message: 'Could not remove component from project.',
+        message: ["Could not remove component: #{e.message.truncate(200)}"],
         variant: 'danger'
-      }
-    }, status: :unprocessable_entity
+      )
+    }, status: :unprocessable_content
   end
 
   def export
@@ -180,11 +177,11 @@ class ComponentsController < ApplicationController
     # Other export types will be included in the future
     unless %i[csv inspec xccdf json_archive disposition_csv].include?(export_type)
       render json: {
-        toast: {
+        toast: Toast.new(
           title: EXPORT_ERROR_TITLE,
           message: "Unsupported export type: #{export_type}",
           variant: 'danger'
-        }
+        )
       }, status: :bad_request
       return
     end
@@ -193,7 +190,7 @@ class ComponentsController < ApplicationController
     # Task 29). Viewers must NOT be able to export PII-adjacent data even
     # though they can read it in the in-app triage table.
     if export_type == :disposition_csv && !current_user.can_author_project?(@component.project)
-      head :forbidden
+      render json: { error: 'Forbidden' }, status: :forbidden
       return
     end
 
@@ -239,11 +236,11 @@ class ComponentsController < ApplicationController
 
     unless %i[csv xccdf inspec].include?(export_type)
       render json: {
-        toast: {
+        toast: Toast.new(
           title: EXPORT_ERROR_TITLE,
           message: "Unsupported export type: #{export_type}",
           variant: 'danger'
-        }
+        )
       }, status: :bad_request
       return
     end
@@ -251,11 +248,11 @@ class ComponentsController < ApplicationController
     component_ids = params[:component_ids]&.split(',')&.map(&:to_i)
     if component_ids.blank?
       render json: {
-        toast: {
+        toast: Toast.new(
           title: EXPORT_ERROR_TITLE,
           message: 'No components selected for export.',
           variant: 'danger'
-        }
+        )
       }, status: :bad_request
       return
     end
@@ -281,7 +278,7 @@ class ComponentsController < ApplicationController
             zip_filename: 'components_inspec.zip'
           )
         else
-          head :unprocessable_entity
+          render json: { error: 'Unprocessable entity' }, status: :unprocessable_content
         end
       end
       format.json { render json: { status: :ok } }
@@ -289,7 +286,7 @@ class ComponentsController < ApplicationController
   end
 
   def histories
-    return head :not_found unless @component
+    return render_not_found unless @component
 
     render json: @component.histories(50)
   end
@@ -305,7 +302,7 @@ class ComponentsController < ApplicationController
   def triage
     respond_to do |format|
       format.html do
-        @component_json = ComponentBlueprint.render(@component, view: :show)
+        @component_json = ComponentBlueprint.render(@component, view: :show, current_user: current_user)
         @project_json = @component.project.to_json
       end
       # Explicit 406 for non-HTML formats so the catch-all StandardError
@@ -337,32 +334,45 @@ class ComponentsController < ApplicationController
   #
   # Sets Cache-Control: no-store so concurrent triagers cannot get a stale
   # snapshot from a browser/proxy cache during a public-comment window.
+  def rules_picker
+    return render_not_found unless @component
+
+    rules = @component.rules.includes(:satisfied_by, :satisfies)
+    render json: { rules: RuleBlueprint.render_as_json(rules, view: :picker) }
+  end
+
   def comments
-    return head :not_found unless @component
+    return render_not_found unless @component
 
-    result = @component.paginated_comments(
-      triage_status: params[:triage_status].presence || 'pending',
-      section: params[:section].presence,
-      rule_id: params[:rule_id].presence,
-      author_id: params[:author_id].presence,
-      query: params[:q].presence,
-      page: params[:page].presence || 1,
-      per_page: params[:per_page].presence || 25,
-      resolved: params[:resolved].presence || 'all',
-      commentable_type: params[:commentable_type].presence
-    )
+    respond_to do |format|
+      format.html { redirect_to "/components/#{@component.id}/triage" }
+      format.json do
+        result = @component.paginated_comments(
+          triage_status: params[:triage_status].presence || 'pending',
+          section: params[:section].presence,
+          rule_id: params[:rule_id].presence,
+          author_id: params[:author_id].presence,
+          query: params[:q].presence,
+          page: params[:page].presence || 1,
+          per_page: params[:per_page].presence || 25,
+          resolved: params[:resolved].presence || 'all',
+          commentable_type: params[:commentable_type].presence,
+          include_rule_content: ActiveModel::Type::Boolean.new.cast(params[:include_rule_content])
+        )
 
-    inject_reactions_mine!(result[:rows])
-    response.headers['Cache-Control'] = 'no-store'
-    render json: result
+        inject_reactions_mine!(result[:rows])
+        response.headers['Cache-Control'] = 'no-store'
+        render json: result
+      end
+    end
   end
 
   def based_on_same_srg
-    return head :not_found unless @component&.based_on
+    return render_not_found unless @component&.based_on
 
     srg_title = @component.based_on.title
     accessible_project_ids = current_user.available_projects.ids
-    render json: Component.where(based_on: SecurityRequirementsGuide.where(title: srg_title))
+    components = Component.where(based_on: SecurityRequirementsGuide.where(title: srg_title))
                           .where.not(id: params[:id])
                           .where(project_id: accessible_project_ids)
                           .or(Component.where(based_on: SecurityRequirementsGuide.where(title: srg_title))
@@ -373,18 +383,31 @@ class ComponentsController < ApplicationController
                           .joins(:project)
                           .select('components.id, components.name, components.version, components.prefix, ' \
                                   'components.release, components.project_id, projects.name AS project_name')
-                          .map(&:attributes)
+    # Explicit allowlist — `.map(&:attributes)` leaked all AR columns
+    # (timestamps, internal FKs) for any consumer that bypassed the SELECT.
+    render json: components.map { |c|
+      { id: c.id, name: c.name, version: c.version, prefix: c.prefix,
+        release: c.release, project_id: c.project_id, project_name: c.project_name }
+    }
   end
 
+  # reads peer ids from query params and returns an envelope
+  # with data + meta (base_id/diff_id/rules_count). Wired at GET
+  # /api/components/compare?base_id=&diff_id=.
   def compare
-    base_component = Component.find_by(id: params[:id])
+    base_component = Component.find_by(id: params[:base_id])
     diff_component = Component.find_by(id: params[:diff_id])
-    return head :not_found unless base_component && diff_component
+    return render_not_found unless base_component && diff_component
 
     base = base_component.rules.pluck(:rule_id, :inspec_control_file).to_h
     diff = diff_component.rules.pluck(:rule_id, :inspec_control_file).to_h
-    render json: base.keys.union(diff.keys).sort.index_with { |rule_id|
+    rule_ids = base.keys.union(diff.keys).sort
+    data = rule_ids.index_with do |rule_id|
       { base: base[rule_id], diff: diff[rule_id], changed: base[rule_id] != diff[rule_id] }
+    end
+    render json: {
+      data: data,
+      meta: { base_id: base_component.id, diff_id: diff_component.id, rules_count: rule_ids.size }
     }
   end
 
@@ -420,28 +443,48 @@ class ComponentsController < ApplicationController
         end
 
         history << {
-          baseComponent: prev_component,
-          diffComponent: component,
+          base_component: ComponentBlueprint.render_as_json(prev_component),
+          diff_component: ComponentBlueprint.render_as_json(component),
           changes: changes
         }
       end
 
-      history << { component: component }
+      history << { component: ComponentBlueprint.render_as_json(component) }
     end
 
     render json: history
   end
 
+  # Status of the most recent component sync/merge — the polling endpoint
+  # paired with POST /projects/:id/import_backup?merge=true&component_id=X.
+  # Returns the latest ComponentSyncEvent row plus failure diagnostics.
+  def merge_status
+    event = ComponentSyncEvent.where(component: @component).order(created_at: :desc).first
+    return render json: { status: 'no_sync_yet' }, status: :not_found if event.nil?
+
+    render json: {
+      sync_event_id: event.id,
+      sync_id: event.sync_id,
+      status: event.status,
+      source: event.source,
+      direction: event.direction,
+      created_at: event.created_at,
+      archive_hash: event.archive_hash,
+      snapshot_path: event.snapshot_path,
+      failure_diagnostics: event.failure_diagnostics_json
+    }
+  end
+
   def detect_srg
     file = params[:file]
     unless file
-      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_entity
+      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_content
       return
     end
 
     srg_ids = SpreadsheetParser.peek_srg_ids(file)
     if srg_ids.empty?
-      render json: { error: 'No SRG IDs found in spreadsheet' }, status: :unprocessable_entity
+      render json: { error: 'No SRG IDs found in spreadsheet' }, status: :unprocessable_content
       return
     end
 
@@ -451,11 +494,11 @@ class ComponentsController < ApplicationController
 
     if srgs.empty?
       render json: { error: 'Could not identify a matching SRG for the IDs in this spreadsheet' },
-             status: :unprocessable_entity
+             status: :unprocessable_content
     elsif srgs.size > 1
       names = srgs.map { |s| "#{s.title} (#{s.version})" }.join(', ')
       render json: { error: "SRG IDs map to multiple SRGs: #{names}. Please select manually." },
-             status: :unprocessable_entity
+             status: :unprocessable_content
     else
       srg = srgs.first
       render json: { id: srg.id, srg_id: srg.srg_id, title: srg.title, version: srg.version }
@@ -465,13 +508,13 @@ class ComponentsController < ApplicationController
   def preview_spreadsheet_update
     file = params[:file]
     unless file
-      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_entity
+      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_content
       return
     end
 
     result = @component.update_from_spreadsheet(file)
     if result[:error]
-      render json: { error: result[:error] }, status: :unprocessable_entity
+      render json: { error: result[:error] }, status: :unprocessable_content
     else
       render json: result
     end
@@ -480,7 +523,7 @@ class ComponentsController < ApplicationController
   def apply_spreadsheet_update
     file = params[:file]
     unless file
-      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_entity
+      render json: { error: NO_FILE_PROVIDED }, status: :unprocessable_content
       return
     end
 
@@ -490,12 +533,12 @@ class ComponentsController < ApplicationController
                    message: "Successfully updated #{result[:count]} rules from spreadsheet.",
                    variant: 'success', status: :ok)
     elsif result[:error]
-      render json: { error: result[:error] }, status: :unprocessable_entity
+      render json: { error: result[:error] }, status: :unprocessable_content
     end
   end
 
   def find
-    find_param = params.require(:find).downcase
+    find_param = ActiveRecord::Base.sanitize_sql_like(params.require(:find).downcase)
     component_id = params.require(:id)
 
     rules = Component.find_by(id: component_id).rules
@@ -514,7 +557,7 @@ class ComponentsController < ApplicationController
     )
                  .order(:rule_id)
 
-    render json: RuleBlueprint.render_as_hash(rules, view: :editor)
+    render json: RuleBlueprint.render_as_json(rules, view: :editor)
   end
 
   private
@@ -549,9 +592,26 @@ class ComponentsController < ApplicationController
   # pending_comment_count + pending_comment_counts so the page header
   # banner (CommentPeriodBanner) and any per-rule callouts have the
   # accurate count. Without this, the blueprint defaults to zero.
+  #
+  # Reaction summaries are scoped to the most recent REACTION_SUMMARY_LIMIT
+  # reviews. The editor renders at most ~25 visible
+  # reviews per page; 100 gives ample headroom and stops the two
+  # 3000+ row GROUP BYs that used to fire on every editor refresh.
+  # rubocop:disable Lint/UselessConstantScoping -- co-located with sole consumer
+  REACTION_SUMMARY_LIMIT = 100
+  # rubocop:enable Lint/UselessConstantScoping
+
   def blueprint_render_options
-    review_ids = @component ? Review.joins(:rule).merge(Rule.where(component_id: @component.id)).pluck(:id) : []
+    review_ids = if @component
+                   Review.joins(:rule).merge(Rule.where(component_id: @component.id))
+                         .order(created_at: :desc)
+                         .limit(REACTION_SUMMARY_LIMIT)
+                         .pluck(:id)
+                 else
+                   []
+                 end
     {
+      current_user: current_user,
       pending_comment_counts: Component.pending_comment_counts([@component.id]),
       reactions_summary: Reaction.summary(review_ids, current_user&.id)
     }
@@ -606,11 +666,11 @@ class ComponentsController < ApplicationController
       # Return a JSON response with a toast message if request formt is JSON.
       format.json do
         render json: {
-          toast: {
+          toast: Toast.new(
             title: CONTROL_NOT_FOUND_TITLE,
             message: message,
             variant: 'danger'
-          }
+          )
         }, status: :not_found
       end
     end
@@ -645,11 +705,11 @@ class ComponentsController < ApplicationController
           # Render a json response in a toast message format
           # as well as setting status code of the response to not_found (404)
           render json: {
-            toast: {
+            toast: Toast.new(
               title: CONTROL_NOT_FOUND_TITLE,
               message: message,
               variant: 'danger'
-            }
+            )
           }, status: :not_found
         end
       end
@@ -673,7 +733,7 @@ class ComponentsController < ApplicationController
       end
       format.json do
         render json: {
-          toast: { title: CONTROL_NOT_FOUND_TITLE, message: message, variant: 'danger' }
+          toast: Toast.new(title: CONTROL_NOT_FOUND_TITLE, message: message, variant: 'danger')
         }, status: :not_found
       end
     end
@@ -699,7 +759,9 @@ class ComponentsController < ApplicationController
 
   # Authorize access to both components in a compare operation
   def authorize_compare_access
-    base = Component.find_by(id: params[:id])
+    # peer params (base_id/diff_id) instead of the old
+    # sub-resource :id/:diff_id.
+    base = Component.find_by(id: params[:base_id])
     diff = Component.find_by(id: params[:diff_id])
 
     [base, diff].each do |component|

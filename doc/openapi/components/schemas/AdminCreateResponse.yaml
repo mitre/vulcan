@@ -1,0 +1,19 @@
+description: >-
+  Response from admin user creation. Success includes toast, user, and optional reset_url.
+  Error includes only the toast (no user key).
+type: object
+required:
+  - toast
+properties:
+  toast:
+    $ref: ./ToastObject.yaml
+  user:
+    description: The created user (present on success, absent on error).
+    $ref: ./UserSummary.yaml
+  reset_url:
+    type: string
+    format: uri
+    description: >-
+      One-time password reset URL. Present only when SMTP is unavailable
+      and no password was provided — the admin must deliver this link manually.
+    example: "https://vulcan.example.org/users/password/edit?reset_password_token=abc123def456"

@@ -12,14 +12,14 @@
       />
     </div>
     <p v-if="triageHref" class="mb-2 small">
-      <a :href="triageHref" data-turbolinks="false">
+      <a :href="triageHref">
         <b-icon icon="kanban" class="mr-1" /> Open triage queue for this component
       </a>
     </p>
 
     <div v-for="parent in topLevelFilteredVisible" :key="parent.id" class="mb-3">
       <p class="mb-0 d-flex flex-wrap align-items-center">
-        <strong>{{ parent.name }}</strong>
+        <UserBadge :name="parent.name" :email="parent.email" :show-name="true" />
         <small class="text-muted ml-2">{{ actionDescriptions[parent.action] }}</small>
         <SectionLabel
           v-if="parent.action === 'comment'"
@@ -31,6 +31,8 @@
           :status="parent.triage_status"
           :adjudicated-at="parent.adjudicated_at"
           :duplicate-of-id="parent.duplicate_of_review_id"
+          :addressed-by-rule-id="parent.addressed_by_rule_id"
+          :addressed-by-rule-name="parent.addressed_by_rule_name"
           class="ml-2"
         />
       </p>
@@ -83,24 +85,28 @@
 </template>
 
 <script>
-import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
+import { useCommentReactions } from "../../composables/useCommentReactions";
+import { useDateFormat } from "../../composables/useDateFormat";
 import { ACTION_DESCRIPTIONS } from "../../constants/terminology";
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
 import SectionLabel from "../shared/SectionLabel.vue";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
 import CommentThread from "../shared/CommentThread.vue";
+import UserBadge from "../shared/UserBadge.vue";
 import ReactionButtons from "../shared/ReactionButtons.vue";
-import axios from "axios";
 import { commentsClosedTooltip } from "../../constants/triageVocabulary";
 
 export default {
   name: "RuleReviews",
-  components: { SectionLabel, TriageStatusBadge, FilterDropdown, CommentThread, ReactionButtons },
-  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue, ReactionToggleMixin],
+  components: {
+    SectionLabel,
+    TriageStatusBadge,
+    FilterDropdown,
+    CommentThread,
+    ReactionButtons,
+    UserBadge,
+  },
   props: {
     effectivePermissions: {
       type: String,
@@ -124,12 +130,21 @@ export default {
       type: String,
       default: null,
     },
+    initialSectionFilter: {
+      type: String,
+      default: "all",
+    },
+  },
+  setup() {
+    const { toggle: toggleReactionApi } = useCommentReactions();
+    const { friendlyDateTime } = useDateFormat();
+    return { toggleReactionApi, friendlyDateTime };
   },
   data() {
     return {
       numShownReviews: 2,
       actionDescriptions: ACTION_DESCRIPTIONS,
-      sectionFilter: "all",
+      sectionFilter: this.initialSectionFilter,
     };
   },
   computed: {
@@ -175,6 +190,11 @@ export default {
       return commentsClosedTooltip(this.closedReason);
     },
   },
+  watch: {
+    initialSectionFilter(val) {
+      this.sectionFilter = val;
+    },
+  },
   methods: {
     // Count replies known locally on rule.reviews. CommentThread also fetches
     // the canonical list via /reviews/:id/responses on expand; this count
@@ -188,9 +208,9 @@ export default {
     toggleReaction(review, kind) {
       const prev = { ...review.reactions };
       const apply = (reactions) => {
-        this.$set(review, "reactions", reactions);
+        review.reactions = reactions;
       };
-      this.submitReactionToggle({ reviewId: review.id, prev, kind, apply });
+      this.toggleReactionApi(review.id, kind, prev, apply);
     },
   },
 };

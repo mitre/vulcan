@@ -1,0 +1,46 @@
+parameters:
+  - $ref: ../components/parameters/ReviewId.yaml
+patch:
+  operationId: reopenReview
+  tags:
+    - Reviews
+  summary: Re-open an adjudicated review
+  description: >-
+    Reverts the adjudication on a closed review, clearing adjudicated_at and
+    adjudicated_by_id so the triage decision can be revised. Requires author
+    role or higher on the parent project. Returns 422 warning toast if the
+    review has not been adjudicated or was withdrawn by the commenter.
+  responses:
+    '200':
+      description: Review re-opened
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ReviewWrapper.yaml
+      links:
+        TriageReopenedReview:
+          operationId: triageReview
+          parameters:
+            reviewId: '$response.body#/review/id'
+        UpdateReopenedReview:
+          operationId: updateReview
+          parameters:
+            reviewId: '$response.body#/review/id'
+      examples:
+            reopened:
+              summary: Successfully re-opened
+              value:
+                review:
+                  id: 44
+                  action: comment
+                  comment: "This requirement needs clarification."
+                  triage_status: pending
+                  adjudicated_at: null
+    '422':
+      description: Cannot re-open (not adjudicated or withdrawn)
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

@@ -1,12 +1,5 @@
 <template>
-  <b-modal
-    id="comment-composer-modal"
-    :title="modalTitle"
-    size="lg"
-    centered
-    no-close-on-backdrop
-    @hidden="onHidden"
-  >
+  <b-modal id="comment-composer-modal" :title="modalTitle" size="lg" centered @hidden="onHidden">
     <p class="mb-2">
       <strong>{{ scopeLabel }}</strong>
       <template v-if="!currentReplyToId && ruleId">
@@ -26,16 +19,29 @@
       </template>
     </p>
 
+    <div v-if="parentRuleId" class="parent-redirect-notice alert alert-info py-2 mb-2">
+      <small>
+        <b-icon icon="info-circle" class="mr-1" />
+        This requirement is satisfied by <strong>{{ parentRuleName }}</strong
+        >. Your comment will be posted there.
+      </small>
+    </div>
+
     <CommentDedupBanner
       v-if="!currentReplyToId"
       :component-id="componentId"
-      :rule-id="ruleId"
+      :rule-id="effectiveRuleId"
       :section="section"
       :component-scoped="isComponentScoped"
       @reply="onReplyClicked"
     />
 
-    <b-form-group :description="charCount" class="mb-0">
+    <b-alert v-if="successMessage" show variant="success" class="py-2 mb-2">
+      <b-icon icon="check-circle" class="mr-1" />
+      {{ successMessage }}
+    </b-alert>
+
+    <b-form-group v-if="!successMessage" :description="charCount" class="mb-0">
       <b-form-textarea
         v-model="commentText"
         rows="4"
@@ -56,9 +62,8 @@
 </template>
 
 <script>
-import axios from "axios";
-import AlertMixin from "../../mixins/AlertMixin.vue";
-import FormMixin from "../../mixins/FormMixin.vue";
+import { useCommentComposer } from "../../composables/mutations/useCommentComposer";
+import { useToast } from "../../composables/useToast";
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
 import CommentDedupBanner from "./CommentDedupBanner.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
@@ -69,12 +74,6 @@ const COMPONENT_SECTION_VALUE = "__component__";
 export default {
   name: "CommentComposerModal",
   components: { CommentDedupBanner, FilterDropdown },
-  // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because
-  // each esbuild pack has its own axios singleton (bundle isolation) — the
-  // navbar pack's FormMixin doesn't reach the consuming pack. Without this
-  // the modal's POST /rules/:id/reviews call would 422 on CSRF in a pack
-  // that lacks pack-level CSRF setup.
-  mixins: [AlertMixin, FormMixin],
   props: {
     componentId: { type: [Number, String], required: true },
     ruleId: { type: [Number, String], default: null },
@@ -82,6 +81,13 @@ export default {
     componentDisplayedName: { type: String, default: "" },
     initialSection: { type: String, default: null },
     replyToReviewId: { type: [Number, String], default: null },
+    parentRuleId: { type: [Number, String], default: null },
+    parentRuleName: { type: String, default: null },
+  },
+  setup() {
+    const composer = useCommentComposer();
+    const { alertOrNotifyResponse } = useToast();
+    return { composer, alertOrNotifyResponse };
   },
   data() {
     return {
@@ -93,6 +99,8 @@ export default {
       section: this.initialSection,
       currentReplyToId: this.replyToReviewId,
       commentText: "",
+      successMessage: null,
+      autoCloseTimerId: null,
     };
   },
   computed: {
@@ -110,6 +118,9 @@ export default {
     },
     placeholder() {
       return this.currentReplyToId ? "Reply to this comment..." : "Type your comment...";
+    },
+    effectiveRuleId() {
+      return this.parentRuleId || this.ruleId;
     },
     textState() {
       if (!this.commentText) return null;
@@ -139,33 +150,38 @@ export default {
       this.currentReplyToId = newVal;
     },
   },
+  beforeDestroy() {
+    if (this.autoCloseTimerId) clearTimeout(this.autoCloseTimerId);
+  },
   methods: {
     async submit() {
-      const payload = {
-        review: {
-          action: "comment",
-          comment: this.commentText.trim(),
-          component_id: this.componentId,
-        },
+      const data = {
+        action: "comment",
+        comment: this.commentText.trim(),
+        component_id: this.componentId,
       };
-      if (this.section && !this.isComponentScoped) payload.review.section = this.section;
+      if (this.section && !this.isComponentScoped) data.section = this.section;
       if (this.currentReplyToId) {
-        payload.review.responding_to_review_id = this.currentReplyToId;
+        data.responding_to_review_id = this.currentReplyToId;
       }
 
-      const url = this.isComponentScoped
-        ? `/components/${this.componentId}/reviews`
-        : `/rules/${this.ruleId}/reviews`;
       try {
-        const res = await axios.post(url, payload);
-        // confirm to the commenter that the
-        // post landed. ReviewsController#create returns the canonical
-        // toast object; AlertMixin renders it identically to the other
-        // success-toast endpoints in the app.
-        this.alertOrNotifyResponse(res);
+        const res = this.isComponentScoped
+          ? await this.composer.postComponentComment(this.componentId, data)
+          : await this.composer.postComment(this.componentId, this.ruleId, data);
+        const toast = res?.toast;
+        const msg = toast?.message;
+        const fallback = this.parentRuleId
+          ? `Comment posted on parent control ${this.parentRuleName}.`
+          : "Comment posted.";
+        this.successMessage = Array.isArray(msg) && msg[0] ? msg.join(" ") : fallback;
         this.$emit("posted");
-        this.$bvModal.hide("comment-composer-modal");
-        this.commentText = "";
+        this.autoCloseTimerId = setTimeout(() => {
+          this.autoCloseTimerId = null;
+          this.$bvModal.hide("comment-composer-modal");
+          this.commentText = "";
+          this.successMessage = null;
+        }, 3000);
       } catch (error) {
         this.alertOrNotifyResponse(error);
       }

@@ -60,6 +60,21 @@ RSpec.describe Import::JsonArchive::ReviewBuilder do
       expect(Review.where(comment: 'clean comment').count).to eq(1)
     end
 
+    # Regression: insert! bypasses sync_commentable_from_rule, so the importer
+    # must dual-write commentable_type/commentable_id itself. Without them the
+    # comment is counted (count joins rule_id) but never listed (paginated_comments
+    # filters commentable_*) — the "imported comments invisible in triage" bug.
+    it 'dual-writes the polymorphic commentable so imported comments are listable' do
+      # Unambiguous single-rule map: component and other_component share an SRG,
+      # so their rules' rule_id values collide in the shared rule_id_map.
+      data = [review_attrs(external_id: 3001, comment: 'commentable-backfill sample')]
+      described_class.new(data, { rule_a.rule_id => rule_a.id }, result).build_all
+      review = Review.find_by(comment: 'commentable-backfill sample')
+      expect(review.commentable_type).to eq('BaseRule')
+      expect(review.commentable_id).to eq(rule_a.id)
+      expect(component.paginated_comments[:rows].pluck('id')).to include(review.id)
+    end
+
     it 'warns and removes a duplicate-status review with no target' do
       data = [review_attrs(
         external_id: 2001,
@@ -101,6 +116,19 @@ RSpec.describe Import::JsonArchive::ReviewBuilder do
       expect(count).to eq(2)
       expect(result.warnings.size).to eq(1)
       expect(result.warnings.first).to match(/5002/)
+    end
+
+    it 'deletes children before parents when both are invalid (FK RESTRICT safety)' do
+      data = [
+        review_attrs(external_id: 6001, comment: 'invalid parent',
+                     triage_status: 'duplicate', duplicate_of_external_id: nil),
+        review_attrs(external_id: 6002, comment: 'reply to invalid parent',
+                     responding_to_external_id: 6001)
+      ]
+      expect { described_class.new(data, rule_id_map, result).build_all }.not_to raise_error
+      expect(Review.where(comment: 'invalid parent')).to be_empty
+      expect(Review.where(comment: 'reply to invalid parent')).to be_empty
+      expect(result.warnings.size).to be >= 1
     end
   end
 
@@ -261,6 +289,104 @@ RSpec.describe Import::JsonArchive::ReviewBuilder do
       expect(count).to eq(0)
       expect(Review.where(comment: 'no attribution at all')).to be_empty
       expect(result.warnings).to include(a_string_matching(/8004.*no commenter attribution/i))
+    end
+  end
+
+  # relink_threaded_refs originally ran one
+  # update_all per review (N+1). Fix consolidates into a single CASE UPDATE
+  # per column, so 2N relink edits become at most 2 UPDATE statements.
+  describe '#build_all relink batching' do
+    it 'relinks parent + duplicate refs with at most 2 SQL UPDATEs (not N)' do
+      data = [
+        review_attrs(external_id: 5001, comment: 'parent on A',     rule_id: rule_a.rule_id),
+        review_attrs(external_id: 5002, comment: 'dup target on A', rule_id: rule_a.rule_id),
+        review_attrs(external_id: 5003, comment: 'reply 1 on A',    rule_id: rule_a.rule_id,
+                     responding_to_external_id: 5001),
+        review_attrs(external_id: 5004, comment: 'reply 2 on A',    rule_id: rule_a.rule_id,
+                     responding_to_external_id: 5001),
+        review_attrs(external_id: 5005, comment: 'dup 1 on A',      rule_id: rule_a.rule_id,
+                     triage_status: 'duplicate',
+                     duplicate_of_external_id: 5002),
+        review_attrs(external_id: 5006, comment: 'dup 2 on A',      rule_id: rule_a.rule_id,
+                     triage_status: 'duplicate',
+                     duplicate_of_external_id: 5002)
+      ]
+
+      relink_updates = []
+      callback = lambda do |_, _, _, _, payload|
+        sql = payload[:sql].to_s
+        relink_updates << sql if sql.match?(/UPDATE\s+["']?reviews/i) &&
+                                 sql.match?(/responding_to_review_id|duplicate_of_review_id/)
+      end
+
+      ActiveSupport::Notifications.subscribed(callback, 'sql.active_record') do
+        described_class.new(data, rule_id_map, result).build_all
+      end
+
+      expect(relink_updates.size).to be <= 2,
+                                     "Expected ≤ 2 batched UPDATEs (one CASE per column), got #{relink_updates.size}:\n#{relink_updates.join("\n")}"
+
+      # Functional correctness: the relinking still works.
+      parent = Review.find_by(comment: 'parent on A')
+      reply1 = Review.find_by(comment: 'reply 1 on A')
+      reply2 = Review.find_by(comment: 'reply 2 on A')
+      target = Review.find_by(comment: 'dup target on A')
+      dup1   = Review.find_by(comment: 'dup 1 on A')
+      dup2   = Review.find_by(comment: 'dup 2 on A')
+      expect(reply1.responding_to_review_id).to eq(parent.id)
+      expect(reply2.responding_to_review_id).to eq(parent.id)
+      expect(dup1.duplicate_of_review_id).to eq(target.id)
+      expect(dup2.duplicate_of_review_id).to eq(target.id)
+    end
+  end
+
+  # (merge prerequisite): lifecycle_attrs originally ignored
+  # addressed_by_rule_id, so importing a review with triage_status='addressed_by'
+  # failed the addressed_by_status_requires_rule validation in drop_invalid_reviews.
+  # The archive carries the stable rule_id string; the importer must remap to
+  # the new local BaseRule.id via rule_id_map (same pattern as original_rule_id).
+  describe '#build_all addressed_by support' do
+    it 'imports review with triage_status addressed_by and maps addressed_by_rule_id via rule_id_map' do
+      data = [review_attrs(
+        external_id: 4001,
+        comment: 'addressed by rule B',
+        triage_status: 'addressed_by',
+        addressed_by_rule_id: rule_b.rule_id
+      )]
+      count = described_class.new(data, rule_id_map, result).build_all
+      expect(count).to eq(1)
+      expect(result.warnings).to be_empty
+
+      review = Review.find_by(comment: 'addressed by rule B')
+      expect(review).to be_present
+      expect(review.triage_status).to eq('addressed_by')
+      expect(review.addressed_by_rule_id).to eq(rule_b.id)
+    end
+  end
+
+  # Bulk Review.insert! bypasses default_triage_status_for_new_top_level_comment,
+  # so the builder must apply the same default — otherwise an untriaged
+  # top-level comment imports as NULL and falls out of every status bucket.
+  describe 'triage_status defaulting for imported comments' do
+    it 'defaults an untriaged top-level comment to pending' do
+      data = [review_attrs(external_id: 7001, comment: 'untriaged top-level')]
+      described_class.new(data, rule_id_map, result).build_all
+      expect(Review.find_by(comment: 'untriaged top-level').triage_status).to eq('pending')
+    end
+
+    it 'preserves an explicit triage_status from the archive' do
+      data = [review_attrs(external_id: 7002, comment: 'already triaged', triage_status: 'informational')]
+      described_class.new(data, rule_id_map, result).build_all
+      expect(Review.find_by(comment: 'already triaged').triage_status).to eq('informational')
+    end
+
+    it 'leaves replies with a NULL triage_status' do
+      data = [
+        review_attrs(external_id: 7003, comment: 'parent comment'),
+        review_attrs(external_id: 7004, comment: 'a reply', responding_to_external_id: 7003)
+      ]
+      described_class.new(data, rule_id_map, result).build_all
+      expect(Review.find_by(comment: 'a reply').triage_status).to be_nil
     end
   end
 end

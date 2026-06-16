@@ -22,12 +22,12 @@
 <script>
 import { marked } from "marked";
 import DOMPurify from "dompurify";
-import axios from "axios";
-import FormMixinVue from "../../mixins/FormMixin.vue";
+import { acknowledgeConsent } from "../../api/authApi";
 
 export default {
   name: "ConsentModal",
-  mixins: [FormMixinVue],
+  // FormMixin was imported here but its authenticityToken computed was never
+  // consumed — CSRF is handled by the ky baseApi hooks (acknowledgeConsent).
   props: {
     config: {
       type: Object,
@@ -63,7 +63,7 @@ export default {
   methods: {
     async onAgree() {
       try {
-        await axios.post("/consent/acknowledge");
+        await acknowledgeConsent();
         this.acknowledged = true;
         this.showModal = false;
       } catch {

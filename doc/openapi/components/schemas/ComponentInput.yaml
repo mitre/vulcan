@@ -1,0 +1,31 @@
+description: Input fields for creating or updating a STIG component within a project.
+type: object
+required:
+  - name
+  - prefix
+  - title
+properties:
+  name:
+    type: string
+    description: Human-readable component name.
+    example: Container SRG
+  prefix:
+    type: string
+    description: Short alphanumeric prefix used to construct rule IDs (e.g. CNTR in CNTR-00-000050).
+    example: CNTR
+  version:
+    type: string
+    description: Version number of the component.
+    example: "1"
+  release:
+    type: string
+    description: Release number of the component.
+    example: "1"
+  title:
+    type: string
+    description: Full official title of the component.
+    example: Container Platform Security Technical Implementation Guide
+  description:
+    type: string
+    description: Optional longer description of the component scope and purpose.
+    example: STIG guidance for container orchestration platform deployments.

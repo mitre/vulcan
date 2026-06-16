@@ -12,6 +12,18 @@ class StigBlueprint < Blueprinter::Base
     stig.severity_counts_hash
   end
 
+  field :is_latest do |stig, _options|
+    stig.latest?
+  end
+
+  field :latest_available_version do |stig, _options|
+    stig.latest? ? nil : stig.latest_for_family&.version
+  end
+
+  field :latest_available_id do |stig, _options|
+    stig.latest? ? nil : stig.latest_for_family&.id
+  end
+
   # === Index view: listing page ===
   view :index do
     # Default fields + severity_counts are sufficient

@@ -1,0 +1,41 @@
+parameters:
+  - $ref: ../components/parameters/RuleId.yaml
+patch:
+  operationId: updateSectionLocks
+  tags:
+    - Rules
+  summary: Lock or unlock a single section on a rule
+  description: >-
+    Locks or unlocks a single section (e.g., fixtext, check_content) on a rule.
+    Requires reviewer role or higher on the parent component. Creates an audit entry.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - section
+            - locked
+          properties:
+            section:
+              type: string
+              description: Section name to lock or unlock.
+              example: fixtext
+            locked:
+              type: boolean
+              description: Whether to lock (true) or unlock (false).
+              example: true
+            comment:
+              type: string
+              description: Optional audit comment.
+              example: "Locking fixtext for final review"
+  responses:
+    '200':
+      description: Section locks updated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/RuleSectionLockResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

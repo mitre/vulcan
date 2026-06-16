@@ -22,16 +22,16 @@ RSpec.describe DispositionMatrixExport do
   let(:rule) { component.rules.first }
 
   let!(:c1) do
-    Review.create!(rule: rule, user: commenter, action: 'comment',
-                   section: 'check_content', comment: 'check text issue',
-                   triage_status: 'concur_with_comment',
-                   triage_set_by: author, triage_set_at: 1.day.ago,
-                   adjudicated_at: 12.hours.ago, adjudicated_by: author)
+    create(:review, :comment, :concur_with_comment, :adjudicated,
+           rule: rule, user: commenter, comment: 'check text issue',
+           triage_set_by: author, triage_set_at: 1.day.ago,
+           adjudicated_at: 12.hours.ago, adjudicated_by: author)
   end
   let!(:reply) do
-    Review.create!(rule: rule, user: author, action: 'comment',
-                   responding_to_review_id: c1.id,
-                   comment: 'will fix in next revision')
+    create(:review, :comment,
+           rule: rule, user: author,
+           responding_to_review_id: c1.id,
+           comment: 'will fix in next revision')
   end
 
   describe 'reactions in Thread Replies cell' do
@@ -103,8 +103,8 @@ RSpec.describe DispositionMatrixExport do
     end
 
     it 'filters by triage_status when provided' do
-      Review.create!(rule: rule, user: commenter, action: 'comment',
-                     comment: 'pending one', triage_status: 'pending')
+      create(:review, :comment, rule: rule, user: commenter,
+                                comment: 'pending one', triage_status: 'pending')
       filtered = described_class.generate(component: component, triage_status_filter: 'pending')
       parsed = CSV.parse(filtered, headers: true)
       expect(parsed.length).to eq(1)
@@ -148,13 +148,11 @@ RSpec.describe DispositionMatrixExport do
       u
     end
     let!(:evil_review) do
-      Review.create!(
-        rule: component.rules.second,
-        user: evil_user,
-        action: 'comment',
-        comment: '=HYPERLINK("http://evil/x", "Click me")',
-        triage_status: 'pending'
-      )
+      create(:review, :comment,
+             rule: component.rules.second,
+             user: evil_user,
+             comment: '=HYPERLINK("http://evil/x", "Click me")',
+             triage_status: 'pending')
     end
     let(:rows) { CSV.parse(described_class.generate(component: component, include_email: true), headers: true) }
     let(:evil_row) { rows.find { |r| r['Comment ID'] == evil_review.id.to_s } }
@@ -175,19 +173,16 @@ RSpec.describe DispositionMatrixExport do
 
     it 'defangs comments starting with each Excel formula trigger character' do
       %w[+ - @].each do |char|
-        Review.create!(
-          rule: component.rules.first, user: commenter, action: 'comment',
-          comment: "#{char}danger", triage_status: 'pending'
-        )
+        create(:review, :comment,
+               rule: component.rules.first, user: commenter,
+               comment: "#{char}danger", triage_status: 'pending')
       end
-      Review.create!(
-        rule: component.rules.first, user: commenter, action: 'comment',
-        comment: "\tTAB-leading", triage_status: 'pending'
-      )
-      Review.create!(
-        rule: component.rules.first, user: commenter, action: 'comment',
-        comment: "\rCR-leading", triage_status: 'pending'
-      )
+      create(:review, :comment,
+             rule: component.rules.first, user: commenter,
+             comment: "\tTAB-leading", triage_status: 'pending')
+      create(:review, :comment,
+             rule: component.rules.first, user: commenter,
+             comment: "\rCR-leading", triage_status: 'pending')
       out = CSV.parse(described_class.generate(component: component), headers: true)
       # rubocop:disable Rails/Pluck -- CSV::Table rows are not ActiveRecord
       comments = out.map { |r| r['Comment'] }
@@ -198,11 +193,10 @@ RSpec.describe DispositionMatrixExport do
     end
 
     it 'leaves legitimate text content unchanged (no leading defang character)' do
-      legit = Review.create!(
-        rule: component.rules.first, user: commenter, action: 'comment',
-        comment: 'Plain English with no formulas — totally fine.',
-        triage_status: 'pending'
-      )
+      legit = create(:review, :comment,
+                     rule: component.rules.first, user: commenter,
+                     comment: 'Plain English with no formulas — totally fine.',
+                     triage_status: 'pending')
       out = CSV.parse(described_class.generate(component: component), headers: true)
       legit_row = out.find { |r| r['Comment ID'] == legit.id.to_s }
       expect(legit_row['Comment']).to eq('Plain English with no formulas — totally fine.')
@@ -229,15 +223,17 @@ RSpec.describe DispositionMatrixExport do
     end
 
     it 'defangs each individual reply within the joined Thread Replies cell' do
-      parent = Review.create!(rule: component.rules.first, user: commenter,
-                              action: 'comment', comment: 'parent question',
-                              triage_status: 'pending')
-      Review.create!(rule: component.rules.first, user: author,
-                     action: 'comment', responding_to_review_id: parent.id,
-                     comment: '=DANGER_REPLY')
-      Review.create!(rule: component.rules.first, user: author,
-                     action: 'comment', responding_to_review_id: parent.id,
-                     comment: 'normal reply')
+      parent = create(:review, :comment,
+                      rule: component.rules.first, user: commenter,
+                      comment: 'parent question', triage_status: 'pending')
+      create(:review, :comment,
+             rule: component.rules.first, user: author,
+             responding_to_review_id: parent.id,
+             comment: '=DANGER_REPLY')
+      create(:review, :comment,
+             rule: component.rules.first, user: author,
+             responding_to_review_id: parent.id,
+             comment: 'normal reply')
       out = CSV.parse(described_class.generate(component: component), headers: true)
       parent_row = out.find { |r| r['Comment ID'] == parent.id.to_s }
       expect(parent_row['Thread Replies']).to include("'=DANGER_REPLY")
@@ -252,15 +248,16 @@ RSpec.describe DispositionMatrixExport do
   # triaged in the deliverable. Annotation marks the row as imported.
   describe 'imported-attribution fallback in Triaged By / Adjudicated By cells' do
     let!(:imported_review) do
-      Review.create!(rule: rule, user: commenter, action: 'comment',
-                     comment: 'cross-instance review',
-                     triage_status: 'concur',
-                     triage_set_at: 1.day.ago,
-                     adjudicated_at: 12.hours.ago,
-                     triage_set_by_imported_email: 'alice@example.com',
-                     triage_set_by_imported_name: 'Alice External',
-                     adjudicated_by_imported_email: 'bob@example.com',
-                     adjudicated_by_imported_name: 'Bob External')
+      create(:review, :comment,
+             rule: rule, user: commenter,
+             comment: 'cross-instance review',
+             triage_status: 'concur',
+             triage_set_at: 1.day.ago,
+             adjudicated_at: 12.hours.ago,
+             triage_set_by_imported_email: 'alice@example.com',
+             triage_set_by_imported_name: 'Alice External',
+             adjudicated_by_imported_email: 'bob@example.com',
+             adjudicated_by_imported_name: 'Bob External')
     end
     let(:rows) { CSV.parse(described_class.generate(component: component), headers: true) }
     let(:imported_row) { rows.find { |r| r['Comment ID'] == imported_review.id.to_s } }
@@ -274,11 +271,11 @@ RSpec.describe DispositionMatrixExport do
     end
 
     it 'uses the resolved User name when triage_set_by_id is present' do
-      author_review = Review.create!(rule: rule, user: commenter, action: 'comment',
-                                     comment: 'normal triaged review',
-                                     triage_status: 'concur',
-                                     triage_set_by: author, triage_set_at: 1.day.ago,
-                                     adjudicated_at: 12.hours.ago, adjudicated_by: author)
+      author_review = create(:review, :comment, :concur, :adjudicated,
+                             rule: rule, user: commenter,
+                             comment: 'normal triaged review',
+                             triage_set_by: author, triage_set_at: 1.day.ago,
+                             adjudicated_at: 12.hours.ago, adjudicated_by: author)
       out = CSV.parse(described_class.generate(component: component), headers: true)
       row = out.find { |r| r['Comment ID'] == author_review.id.to_s }
       expect(row['Triaged By']).to eq('Aaron Lippold')
@@ -286,8 +283,9 @@ RSpec.describe DispositionMatrixExport do
     end
 
     it 'leaves the cell blank when both FK and imported_* are nil (legacy)' do
-      legacy = Review.create!(rule: rule, user: commenter, action: 'comment',
-                              comment: 'legacy untriaged', triage_status: 'pending')
+      legacy = create(:review, :comment,
+                      rule: rule, user: commenter,
+                      comment: 'legacy untriaged', triage_status: 'pending')
       out = CSV.parse(described_class.generate(component: component), headers: true)
       row = out.find { |r| r['Comment ID'] == legacy.id.to_s }
       expect(row['Triaged By']).to be_blank
@@ -365,8 +363,8 @@ RSpec.describe DispositionMatrixExport do
     end
 
     it 'forwards triage_status_filter through' do
-      Review.create!(rule: rule, user: commenter, action: 'comment',
-                     comment: 'pending one', triage_status: 'pending')
+      create(:review, :comment, rule: rule, user: commenter,
+                                comment: 'pending one', triage_status: 'pending')
       filtered = described_class.rows_and_headers(component: component, triage_status_filter: 'pending')
       expect(filtered[:rows].length).to eq(1)
       status_index = filtered[:headers].index('Triage Status')
@@ -377,8 +375,9 @@ RSpec.describe DispositionMatrixExport do
   describe '.generate_for_project' do
     let!(:second_component) do
       c = create(:component, project: project, based_on: srg, prefix: 'XYZW-99', name: 'Second component')
-      Review.create!(rule: c.rules.first, user: commenter, action: 'comment',
-                     comment: 'on second component', triage_status: 'pending')
+      create(:review, :comment,
+             rule: c.rules.first, user: commenter,
+             comment: 'on second component', triage_status: 'pending')
       c
     end
 
@@ -423,8 +422,9 @@ RSpec.describe DispositionMatrixExport do
 
   describe 'component-scoped reviews (issue #725)' do
     let!(:component_level_comment) do
-      Review.create!(commentable: component, user: commenter, action: 'comment',
-                     comment: 'overall feedback on this component')
+      create(:review, :component_comment,
+             commentable: component, user: commenter,
+             comment: 'overall feedback on this component')
     end
 
     it 'includes a row whose Rule cell is the (component) sentinel and Section reads Overall Component' do
@@ -438,8 +438,46 @@ RSpec.describe DispositionMatrixExport do
 
     it 'records_exist? is true for a component with only component-scoped comments' do
       isolated = create(:component, project: project, based_on: srg)
-      Review.create!(commentable: isolated, user: commenter, action: 'comment', comment: 'iso')
+      create(:review, :component_comment,
+             commentable: isolated, user: commenter, comment: 'iso')
       expect(described_class.records_exist?(isolated)).to be(true)
+    end
+  end
+
+  describe 'soft-redirected comment provenance' do
+    let(:child_rule) { component.rules.second }
+    let(:parent_rule) { component.rules.first }
+
+    let!(:redirected_comment) do
+      create(:review, :comment,
+             rule: parent_rule, user: commenter,
+             comment: 'This check is too vendor-specific',
+             original_commentable_id: child_rule.id)
+    end
+
+    it 'places redirected comment on original child requirement row' do
+      out = CSV.parse(described_class.generate(component: component), headers: true)
+      row = out.find { |r| r['Comment ID'] == redirected_comment.id.to_s }
+
+      expect(row['Rule']).to eq("#{component.prefix}-#{child_rule.rule_id}")
+    end
+
+    it 'shows original child SRG ID not parent SRG ID' do
+      out = CSV.parse(described_class.generate(component: component), headers: true)
+      row = out.find { |r| r['Comment ID'] == redirected_comment.id.to_s }
+
+      expect(row['SRG ID']).to eq(child_rule.version)
+    end
+
+    it 'shows parent rule for non-redirected comments' do
+      direct = create(:review, :comment,
+                      rule: parent_rule, user: commenter,
+                      comment: 'Direct comment on parent')
+
+      out = CSV.parse(described_class.generate(component: component), headers: true)
+      row = out.find { |r| r['Comment ID'] == direct.id.to_s }
+
+      expect(row['Rule']).to eq("#{component.prefix}-#{parent_rule.rule_id}")
     end
   end
 end

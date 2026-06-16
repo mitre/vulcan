@@ -17,26 +17,16 @@ This document lists all environment variables that can be used to configure Vulc
 | `DATABASE_PORT` | PostgreSQL client connection port (used by database.yml) | `5432` | `5435` |
 | `DATABASE_HOST` | PostgreSQL host (used by database.yml) | `127.0.0.1` | `localhost` |
 | `DATABASE_GSSENCMODE` | GSSAPI encryption mode (set to `disable` on macOS with Kerberos) | `prefer` | `disable` |
-| `DB_SUFFIX` | Database name suffix for worktree isolation (development only) | - | `_v2`, `_v3` |
+| `DATABASE_NAME` | Override database name (dev + production only; test is hardcoded) | `vulcan_development` / `vulcan_production` | `vulcan_staging` |
 | `POSTGRES_PORT` | Docker host-side port mapping (should match DATABASE_PORT) | `5432` | `5435` |
 | `POSTGRES_USER` | PostgreSQL username (Docker init + database.yml) | `postgres` | `vulcan_user` |
 | `POSTGRES_PASSWORD` | PostgreSQL password (Docker init + database.yml) | `postgres` | `secure_password` |
-| `POSTGRES_DB` | PostgreSQL database name (Docker init + production database.yml) | `vulcan_postgres_production` | `vulcan_prod` |
+| `POSTGRES_DB` | PostgreSQL database name (Docker container init only, not used by database.yml) | `vulcan_production` | `vulcan_prod` |
 | `PORT` | Application server (Puma) listen port | `3000` | `3001` |
 
 **Note:** `DATABASE_URL` takes precedence when set (recommended for Heroku, Kubernetes). Individual variables (`POSTGRES_USER`, `POSTGRES_PASSWORD`, etc.) are used as fallback.
 
-**Worktree Isolation**: When developing with multiple git worktrees (e.g., v2.x and v3.x), set `DB_SUFFIX` in each worktree's `.env` to give each branch its own database. This prevents migration conflicts when branches have diverging schemas. Not needed in production — each deployment has its own database.
-
-```bash
-# v2.x worktree .env
-DB_SUFFIX=_v2    # → vulcan_vue_development_v2, vulcan_vue_test_v2
-
-# v3.x worktree .env
-DB_SUFFIX=_v3    # → vulcan_vue_development_v3, vulcan_vue_test_v3
-```
-
-**Deprecated:** `VULCAN_VUE_DATABASE_PASSWORD` is deprecated. Use `POSTGRES_PASSWORD` instead.
+**Deprecated:** `VULCAN_VUE_DATABASE_PASSWORD` and `DB_SUFFIX` are removed. Use `POSTGRES_PASSWORD` and `DATABASE_NAME` respectively. `POSTGRES_DB` is no longer read by database.yml — use `DATABASE_NAME` for all environments. Test database name (`vulcan_test`) is hardcoded to prevent collision with development.
 
 **Multi-Project Development**: See [docs/development/port-registry.md](docs/development/port-registry.md) for recommended port assignments when running multiple projects simultaneously.
 
@@ -128,11 +118,53 @@ If an admin already exists from `admin:bootstrap`, the demo admin is skipped and
 | `VULCAN_OIDC_CLIENT_SECRET` | OIDC client secret | ✅ | `secret_key_here` |
 | `VULCAN_OIDC_REDIRECT_URI` | OIDC redirect URI | ✅ | `https://vulcan.example.com/users/auth/oidc/callback` |
 
+> **Provider registration**: register TWO URIs in your identity provider's
+> app — the sign-in callback above, AND the sign-out landing
+> `<app_url>/users/signed_out` (built from `VULCAN_APP_URL`). Without the
+> sign-out entry, providers reject Vulcan's logout with
+> `400 invalid_request`. See the
+> [Okta/OIDC setup guide](docs/deployment/auth/oidc-okta.md) for the full
+> settings tables.
+
+#### Multiple OIDC Providers (Registry — v2.3+)
+
+To offer **several OIDC providers simultaneously** (e.g. Okta **and** login.gov
+on one login page), set a registry and give each provider its own variable
+family. See [ADR: Multi-Provider OIDC](docs/decisions/adr-multi-provider-oidc.md).
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `VULCAN_OIDC_PROVIDERS` | Comma-separated registry of provider keys (lowercase snake_case). Each key becomes the strategy name, the `/users/auth/<key>/callback` path, and the stored provider value. | `okta,login_gov` |
+
+Every variable in the single-provider tables above has a **per-provider form**
+`VULCAN_OIDC_<KEY>_<FIELD>` — e.g. for `okta,login_gov`:
+
+```
+VULCAN_OIDC_OKTA_ISSUER_URL=https://org.okta.com/oauth2/default
+VULCAN_OIDC_OKTA_CLIENT_ID=...
+VULCAN_OIDC_OKTA_CLIENT_SECRET=...
+VULCAN_OIDC_OKTA_TITLE=Okta
+
+VULCAN_OIDC_LOGIN_GOV_ISSUER_URL=https://idp.int.identitysandbox.gov
+VULCAN_OIDC_LOGIN_GOV_CLIENT_ID=urn:gov:gsa:openidconnect:...
+VULCAN_OIDC_LOGIN_GOV_CLIENT_AUTH_METHOD=jwt_bearer        # login.gov: private_key_jwt
+VULCAN_OIDC_LOGIN_GOV_PRIVATE_KEY_PATH=/path/to/key.pem    # or _PRIVATE_KEY (inline PEM)
+VULCAN_OIDC_LOGIN_GOV_ACR_VALUES=urn:acr.login.gov:auth-only
+VULCAN_OIDC_LOGIN_GOV_TITLE=login.gov
+```
+
+- `VULCAN_OIDC_<KEY>_CLIENT_AUTH_METHOD` accepts `secret` (default) or
+  `jwt_bearer` (login.gov's private_key_jwt). `jwt_bearer` requires
+  `_PRIVATE_KEY` (inline PEM) or `_PRIVATE_KEY_PATH`.
+- **Backward compatible:** when `VULCAN_OIDC_PROVIDERS` is **unset**, the
+  unprefixed `VULCAN_OIDC_*` variables above define a single provider named
+  `oidc` — existing deployments need no change.
+
 #### Optional Configuration
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
 | `VULCAN_OIDC_DISCOVERY` | Enable automatic endpoint discovery | `true` | `false` (to disable) |
-| `VULCAN_OIDC_PROVIDER_TITLE` | Display name for OIDC provider | `OIDC Provider` | `Okta` |
+| `VULCAN_OIDC_PROVIDER_TITLE` | Display name for the legacy single OIDC provider | `OIDC Provider` | `Okta` |
 | `VULCAN_OIDC_PROMPT` | OIDC prompt parameter | - | `login` (forces re-authentication) |
 | `VULCAN_OIDC_CLIENT_SIGNING_ALG` | OIDC signing algorithm | `RS256` | `RS256` |
 
@@ -207,6 +239,26 @@ VULCAN_OIDC_REDIRECT_URI=https://vulcan.example.com/users/auth/oidc/callback
 | `VULCAN_SMTP_OPENSSL_VERIFY_MODE` | OpenSSL verify mode for SMTP | - | `none` |
 | `VULCAN_SMTP_TLS` | Use TLS for SMTP | - | `true` or `false` |
 | `VULCAN_SMTP_ENABLE_STARTTLS_AUTO` | Enable STARTTLS auto | - | `true` or `false` |
+
+## API Tokens (Personal Access Tokens)
+
+Personal access tokens enable programmatic API access via `Authorization: Token vulcan_xxx` header. Tokens are SHA-256 hashed (never stored in plaintext), support scoped permissions (read/write/admin), IP allowlisting, and automatic idle revocation.
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `VULCAN_API_TOKENS_ENABLED` | Enable/disable the PAT feature entirely | `true` | `false` |
+| `VULCAN_API_TOKENS_MAX_PER_USER` | Maximum active tokens per user | `20` | `10` |
+| `VULCAN_API_TOKENS_MAX_LIFETIME_DAYS` | Maximum token lifetime in days | `365` | `90` |
+| `VULCAN_API_TOKENS_AUTO_REVOKE_IDLE_DAYS` | Auto-revoke tokens unused for this many days | `90` | `30` |
+
+**Maintenance tasks** (recommended via cron):
+```bash
+# Revoke idle tokens (unused for configured days)
+bundle exec rake api_tokens:revoke_idle
+
+# Revoke expired tokens (past expires_at date)
+bundle exec rake api_tokens:revoke_expired
+```
 
 ## Slack Integration
 
@@ -333,8 +385,11 @@ complete field-to-setting mapping.
 For local development, create a `.env` file in the project root with your settings:
 
 ```bash
-# Database
-DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/vulcan_vue_development
+# Database (see docs/development/port-registry.md for multi-project ports)
+DATABASE_PORT=5435
+POSTGRES_PORT=5435
+DATABASE_HOST=127.0.0.1
+DATABASE_GSSENCMODE=disable
 
 # Enable OIDC (example for Okta)
 VULCAN_ENABLE_OIDC=true

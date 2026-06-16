@@ -1,0 +1,56 @@
+# Vulcan Upgrade Path Manifest
+#
+# Declares version milestones, required stops, and infrastructure changes.
+# Read by Upgrade::Preflight to detect current state and plan upgrade actions.
+#
+# Pattern: GitLab CE config/upgrade_path.yml
+# See: https://docs.gitlab.com/ee/update/#upgrade-paths
+#
+# Rules:
+#   - Versions MUST be semver (X.Y.Z)
+#   - migration_floor: the EARLIEST migration timestamp that proves this version is installed
+#   - required_stop: true means upgrades MUST pass through this version (can't skip it)
+#   - infrastructure: pre-boot changes (DB renames, env var migrations) — run before Rails
+#   - data: post-migration data fixes (backfills, cleanups) — run after schema is current
+#
+# To add a new version:
+#   1. Add an entry below with migration_floor = your version's first migration timestamp
+#   2. List any infrastructure or data changes
+#   3. Set required_stop: true if skipping this version would break upgrades
+
+# Initial release — migration floor is the earliest migration in the repo
+2.0.0:
+  migration_floor: '20200511155346'
+
+# OIDC provider conflict fix, auth UX, account lockout, classification banner
+2.3.1:
+  migration_floor: '20250219042932'
+
+# Blueprinter adoption, query performance hardening
+2.3.4:
+  migration_floor: '20250322160000'
+
+# Public comment review system (PR #717)
+2.3.7:
+  migration_floor: '20260526130100'
+
+# Database naming standardization + PAT auth + port registry
+# REQUIRED STOP: database names change, DB_SUFFIX removed
+2.4.0:
+  migration_floor: '20260530010000'
+  required_stop: true
+  infrastructure:
+    - type: db_rename
+      from: vulcan_vue_development
+      to: vulcan_development
+    - type: db_rename
+      from: vulcan_vue_test
+      to: vulcan_test
+    - type: db_rename
+      from: vulcan_postgres_production
+      to: vulcan_production
+    - type: env_removed
+      var: DB_SUFFIX
+      replacement: DATABASE_NAME
+  # Data backfill (NULL visibility → hidden) handled by migration 20260530020000.
+  # Do not add executable SQL here — use Rails migrations for data fixes.

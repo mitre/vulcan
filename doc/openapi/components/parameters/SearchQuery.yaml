@@ -1,0 +1,8 @@
+name: q
+in: query
+required: true
+description: Search query string (minimum 2 characters).
+schema:
+  type: string
+  minLength: 2
+example: container platform

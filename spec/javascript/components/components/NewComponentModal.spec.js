@@ -2,16 +2,36 @@ import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { shallowMount, mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import NewComponentModal from "@/components/components/NewComponentModal.vue";
-import axios from "axios";
+import { detectSrg, createComponentInProject } from "@/api/componentsApi";
 
-// Mock axios (used by fetchData, createComponent, detectSrg)
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
     get: vi.fn(() => Promise.resolve({ data: [] })),
     post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
     defaults: { headers: { common: {} } },
   },
 }));
+
+vi.mock("@/api/componentsApi", () => ({
+  detectSrg: vi.fn(() => Promise.resolve({ data: {} })),
+  createComponentInProject: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+
+vi.mock("@/api/projectsApi", () => ({
+  getSrgs: vi.fn(() => Promise.resolve({ data: [] })),
+  getProjects: vi.fn(() => Promise.resolve({ data: [] })),
+  getProject: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+
+// Spy-wrap (real implementations preserved) so tests can pin that the hidden
+// form token and component display names flow through the composables.
+vi.mock("@/composables/useAuthToken", { spy: true });
+vi.mock("@/composables/useDisplayedComponent", { spy: true });
+import { useAuthToken } from "@/composables/useAuthToken";
+import { useDisplayedComponent } from "@/composables/useDisplayedComponent";
 
 /**
  * NewComponentModal Contract Tests
@@ -38,7 +58,7 @@ describe("NewComponentModal", () => {
 
   const defaultProps = {
     project_id: 1,
-    project: { id: 1, name: "Test Project" },
+    project: { id: 1, name: "Test Project", components: [], users: [] },
   };
 
   const createWrapper = (props = {}) => {
@@ -233,24 +253,20 @@ describe("NewComponentModal", () => {
       const detectResponse = {
         data: { id: 42, srg_id: "SRG-APP-000001", title: "App SRG", version: "V3R3" },
       };
-      axios.post.mockResolvedValueOnce(detectResponse);
+      detectSrg.mockResolvedValueOnce(detectResponse);
 
       wrapper = createMountedWrapper();
       await wrapper.setData({ file: mockFile });
       await vi.dynamicImportSettled();
 
-      expect(axios.post).toHaveBeenCalledWith(
-        "/components/detect_srg",
-        expect.any(FormData),
-        expect.objectContaining({ headers: { "Content-Type": "multipart/form-data" } }),
-      );
+      expect(detectSrg).toHaveBeenCalledWith(expect.any(FormData));
     });
 
     it("auto-populates SRG when detection succeeds", async () => {
       const detectResponse = {
         data: { id: 42, srg_id: "SRG-APP-000001", title: "App SRG", version: "V3R3" },
       };
-      axios.post.mockResolvedValueOnce(detectResponse);
+      detectSrg.mockResolvedValueOnce(detectResponse);
 
       wrapper = createMountedWrapper();
       await wrapper.setData({ file: mockFile });
@@ -263,7 +279,7 @@ describe("NewComponentModal", () => {
     });
 
     it("falls back silently when detection fails", async () => {
-      axios.post.mockRejectedValueOnce(new Error("422"));
+      detectSrg.mockRejectedValueOnce(new Error("422"));
 
       wrapper = createMountedWrapper();
       await wrapper.setData({ file: mockFile });
@@ -276,7 +292,7 @@ describe("NewComponentModal", () => {
 
     it("sets detecting=true while request is in flight", async () => {
       let resolveDetect;
-      axios.post.mockReturnValueOnce(
+      detectSrg.mockReturnValueOnce(
         new Promise((resolve) => {
           resolveDetect = resolve;
         }),
@@ -305,15 +321,11 @@ describe("NewComponentModal", () => {
       await new Promise((r) => setTimeout(r, 10));
 
       // Only the fetchData calls — no detect_srg POST
-      expect(axios.post).not.toHaveBeenCalledWith(
-        "/components/detect_srg",
-        expect.anything(),
-        expect.anything(),
-      );
+      expect(detectSrg).not.toHaveBeenCalled();
     });
 
     it("resets srgAutoDetected when file is cleared", async () => {
-      axios.post.mockResolvedValueOnce({
+      detectSrg.mockResolvedValueOnce({
         data: { id: 42, title: "SRG", version: "V1R1" },
       });
 
@@ -325,6 +337,58 @@ describe("NewComponentModal", () => {
       // Clear the file
       await wrapper.setData({ file: null });
       expect(wrapper.vm.srgAutoDetected).toBe(false);
+    });
+  });
+
+  // ==========================================
+  // HIDDEN AUTHENTICITY TOKEN (useAuthToken) +
+  // DISPLAY NAMES (useDisplayedComponent)
+  // REQUIREMENT: the in-modal form carries the CSRF token as a hidden
+  // input, sourced from the useAuthToken composable (single source of
+  // truth). Copy-component options get "Name (Version X, Release Y)"
+  // display names via useDisplayedComponent — which data() consumes,
+  // so the setup-returned method must exist before data initializes.
+  // ==========================================
+  describe("composable contracts", () => {
+    const ModalStub = { template: "<div><slot></slot></div>" };
+
+    const createMountedWrapper = (props = {}) => {
+      return mount(NewComponentModal, {
+        localVue,
+        propsData: { ...defaultProps, ...props },
+        stubs: { "b-modal": ModalStub, VueMultiselect: true },
+      });
+    };
+
+    it("renders the hidden authenticity_token input with the CSRF meta value", () => {
+      wrapper = createMountedWrapper();
+      const input = wrapper.find('input[name="authenticity_token"]');
+      expect(input.exists()).toBe(true);
+      // setup.js sets the csrf-token meta to "test-csrf-token"
+      expect(input.element.value).toBe("test-csrf-token");
+    });
+
+    it("sources the token from the useAuthToken composable", () => {
+      useAuthToken.mockReturnValueOnce({ authenticityToken: "composable-sentinel-token" });
+      wrapper = createMountedWrapper();
+      expect(useAuthToken).toHaveBeenCalled();
+      const input = wrapper.find('input[name="authenticity_token"]');
+      expect(input.element.value).toBe("composable-sentinel-token");
+    });
+
+    it("builds copy-component display names via useDisplayedComponent during data()", () => {
+      wrapper = createMountedWrapper({
+        copy_component: true,
+        project: {
+          id: 1,
+          name: "Test Project",
+          components: [{ id: 7, name: "Comp", version: "1", release: "2" }],
+          users: [],
+        },
+      });
+      expect(useDisplayedComponent).toHaveBeenCalled();
+      // data() maps project.components through the setup-returned method
+      expect(wrapper.vm.components[0].displayed).toBe("Comp (Version 1, Release 2)");
     });
   });
 
@@ -360,11 +424,10 @@ describe("NewComponentModal", () => {
     });
 
     it("does NOT call preventDefault when validation passes (modal closes naturally)", async () => {
-      wrapper = createWrapper();
+      wrapper = createWrapper({ component_to_duplicate: 1 });
       wrapper.vm.name = "Test Component";
       wrapper.vm.prefix = "TST-01";
       wrapper.vm.security_requirements_guide_id = 1;
-      wrapper.vm.component_to_duplicate = 1;
 
       const mockEvent = { preventDefault: vi.fn() };
       wrapper.vm.createComponent(mockEvent);
@@ -372,6 +435,21 @@ describe("NewComponentModal", () => {
       // preventDefault should NOT be called — modal closes via default @ok
       expect(mockEvent.preventDefault).not.toHaveBeenCalled();
       expect(wrapper.vm.loading).toBe(true);
+    });
+  });
+
+  describe("project_id prop", () => {
+    it("accepts undefined project_id without error", () => {
+      const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+      wrapper = createWrapper({ project_id: undefined });
+      const propWarnings = spy.mock.calls.filter((c) => c[0]?.toString().includes("project_id"));
+      expect(propWarnings).toHaveLength(0);
+      spy.mockRestore();
+    });
+
+    it("defaults selected_project_id to null when project_id not provided", () => {
+      wrapper = createWrapper({ project_id: undefined });
+      expect(wrapper.vm.selected_project_id).toBeNull();
     });
   });
 });

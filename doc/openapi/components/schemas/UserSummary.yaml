@@ -1,0 +1,54 @@
+description: Summary of a user account for admin management views.
+type: object
+required:
+  - id
+  - email
+  - admin
+additionalProperties: false
+properties:
+  id:
+    type: integer
+    description: Unique user identifier.
+    example: 42
+  name:
+    type:
+      - string
+      - 'null'
+    description: Display name chosen by the user. Null if not yet set.
+    example: Jane Doe
+  email:
+    type: string
+    format: email
+    description: Login email address.
+    example: jane.doe@example.org
+  provider:
+    type:
+      - string
+      - 'null'
+    description: Authentication provider used for this account (local, github, ldap, or oidc). Null for local accounts.
+    example: local
+  admin:
+    type: boolean
+    description: Whether the user has administrator privileges.
+    example: false
+  last_sign_in_at:
+    type:
+      - string
+      - 'null'
+    description: Timestamp of the most recent successful sign-in. Null if the user has never signed in. Blueprinter format.
+    example: "2026-05-28 15:00:00 UTC"
+  failed_attempts:
+    type: integer
+    description: Number of consecutive failed login attempts since last successful sign-in.
+    example: 0
+  locked_at:
+    type:
+      - string
+      - 'null'
+    description: Timestamp when the account was locked due to excessive failed attempts. Null if not locked. Blueprinter format.
+    example: null
+  identities:
+    type: array
+    description: Linked external identities for this user (provider, email, last sign-in). Present in admin and profile views.
+    items:
+      $ref: ./IdentitySummary.yaml

@@ -1,0 +1,43 @@
+get:
+  operationId: searchComponentsLegacy
+  tags:
+    - Search
+  summary: Legacy component search by SRG ID
+  description: >-
+    Searches components by SRG identifier across accessible projects.
+    Returns compact tuples [id, name]. This is a legacy search endpoint
+    — prefer /api/search/global for new integrations.
+  parameters:
+    - name: q
+      in: query
+      required: true
+      description: SRG identifier to search for.
+      schema:
+        type: string
+      example: "Container_Platform_SRG"
+  responses:
+    '200':
+      description: Matching components as compact tuples
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - components
+            additionalProperties: false
+            properties:
+              components:
+                type: array
+                description: Each item is a tuple [id, name].
+                items:
+                  type: array
+                  items: {}
+          examples:
+            results:
+              summary: Components matching SRG
+              value:
+                components:
+                  - [1, "Photon OS 3"]
+                  - [8, "Container Platform"]
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

@@ -4,7 +4,7 @@
     <template #left>
       <!-- New Component Button (admin only) -->
       <b-button
-        v-if="isAdmin"
+        v-if="canAdmin"
         variant="primary"
         size="sm"
         class="mr-2"
@@ -48,7 +48,7 @@
       </b-button>
 
       <!-- Visibility Toggle (admin only) - placed last for better responsive wrapping -->
-      <div v-if="isAdmin" data-testid="visibility-toggle">
+      <div v-if="canAdmin" data-testid="visibility-toggle">
         <b-form-checkbox v-model="localVisibility" switch size="sm" @change="onVisibilityToggle">
           <small>{{ localVisibility ? "Discoverable" : "Hidden" }}</small>
         </b-form-checkbox>
@@ -74,13 +74,13 @@
           :variant="isPanelActive('proj-history') ? 'secondary' : 'outline-secondary'"
           @click="$emit('toggle-panel', 'proj-history')"
         >
-          <b-icon icon="clock-history" /> Activity
+          <b-icon icon="clock-history" /> Changelog
         </b-button>
         <b-button
           :variant="isPanelActive('proj-revision-history') ? 'secondary' : 'outline-secondary'"
           @click="$emit('toggle-panel', 'proj-revision-history')"
         >
-          <b-icon icon="journal-text" /> Revisions
+          <b-icon icon="journal-text" /> Version Comparison
         </b-button>
       </b-button-group>
     </template>
@@ -88,20 +88,15 @@
 </template>
 
 <script>
-import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
+import { usePermissions } from "../../composables/usePermissions";
 import BaseCommandBar from "../shared/BaseCommandBar.vue";
 
 export default {
   name: "ProjectCommandBar",
   components: { BaseCommandBar },
-  mixins: [RoleComparisonMixin],
   props: {
     project: {
       type: Object,
-      required: true,
-    },
-    effectivePermissions: {
-      type: String,
       required: true,
     },
     activePanel: {
@@ -109,16 +104,16 @@ export default {
       default: null,
     },
   },
+  setup() {
+    // Permissions are provided by the page root (Project.vue) — see usePermissions.
+    const { canAdmin } = usePermissions();
+    return { canAdmin };
+  },
   data() {
     return {
       // Local state for visibility toggle - syncs with prop
       localVisibility: this.project.visibility === "discoverable",
     };
-  },
-  computed: {
-    isAdmin() {
-      return this.effectivePermissions === "admin";
-    },
   },
   watch: {
     // Sync local state when prop changes (after API success)
@@ -149,7 +144,7 @@ export default {
   top: 0;
   z-index: 100;
   border-radius: 0.375rem;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--vulcan-gray-300);
 }
 
 .command-bar > div {

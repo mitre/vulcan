@@ -3,6 +3,7 @@
     :text="currentLabel"
     :variant="variant"
     :size="size"
+    :disabled="disabled"
     :menu-class="menuClass"
     :toggle-attrs="{ 'aria-label': ariaLabel }"
     :class="dropdownClass"
@@ -52,6 +53,7 @@ export default {
     size: { type: String, default: "sm" },
     variant: { type: String, default: "outline-secondary" },
     placeholder: { type: String, default: "Select..." },
+    disabled: { type: Boolean, default: false },
     maxWidthPx: { type: Number, default: null },
     dropdownClass: { type: [String, Array, Object], default: null },
     menuClass: { type: [String, Array, Object], default: null },

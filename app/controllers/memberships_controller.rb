@@ -32,12 +32,12 @@ class MembershipsController < ApplicationController
         end
         format.json do
           render json: {
-            toast: {
+            toast: Toast.new(
               title: 'Could not create membership.',
               message: membership.errors.full_messages,
               variant: 'danger'
-            }
-          }, status: :unprocessable_entity
+            )
+          }, status: :unprocessable_content
         end
       end
     end
@@ -66,12 +66,12 @@ class MembershipsController < ApplicationController
         end
         format.json do
           render json: {
-            toast: {
+            toast: Toast.new(
               title: 'Could not update membership.',
               message: @membership.errors.full_messages,
               variant: 'danger'
-            }
-          }, status: :unprocessable_entity
+            )
+          }, status: :unprocessable_content
         end
       end
     end
@@ -100,12 +100,12 @@ class MembershipsController < ApplicationController
         end
         format.json do
           render json: {
-            toast: {
+            toast: Toast.new(
               title: 'Could not remove membership.',
               message: @membership.errors.full_messages,
               variant: 'danger'
-            }
-          }, status: :unprocessable_entity
+            )
+          }, status: :unprocessable_content
         end
       end
     end

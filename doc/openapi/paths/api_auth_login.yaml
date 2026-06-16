@@ -1,0 +1,69 @@
+post:
+  operationId: postAuthLogin
+  tags:
+    - Auth
+  security: []
+  summary: Authenticate with email and password
+  description: >-
+    Creates a session for local (email/password) authentication. Returns the
+    authenticated user identity on success. Sets a session cookie for subsequent
+    requests. OIDC and LDAP providers use their own OAuth callback flows.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - email
+            - password
+          properties:
+            email:
+              type: string
+              format: email
+              description: User's login email address.
+              example: jane@example.com
+            password:
+              type: string
+              format: password
+              description: User's password.
+              example: "••••••••••••••••"
+        examples:
+          login:
+            summary: Local login
+            value:
+              email: jane@example.com
+              password: "S3cure!#Pass001"
+  responses:
+    '200':
+      description: Authentication successful — session created
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/CurrentUserResponse.yaml
+          examples:
+            success:
+              summary: Successful login
+              value:
+                id: 42
+                name: Jane Doe
+                email: jane@example.com
+                admin: false
+                provider: null
+    '401':
+      description: Invalid email or password
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Invalid email or password
+          examples:
+            invalid:
+              summary: Bad credentials
+              value:
+                error: Invalid email or password
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

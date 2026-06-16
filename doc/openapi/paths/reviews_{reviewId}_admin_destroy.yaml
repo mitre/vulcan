@@ -1,0 +1,25 @@
+parameters:
+  - $ref: ../components/parameters/ReviewId.yaml
+delete:
+  operationId: adminDestroyReview
+  tags:
+    - Reviews
+  summary: Admin permanently deletes a comment (irreversible)
+  description: Hard-deletes a comment and all its replies. Requires typed-ID confirmation and an audit comment. This action cannot be undone.
+  requestBody:
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            audit_comment:
+              type: string
+  responses:
+    '200':
+      description: Review destroyed
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminDestroyResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

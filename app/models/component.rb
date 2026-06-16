@@ -68,6 +68,11 @@ class Component < ApplicationRecord
 
   has_many :additional_questions, dependent: :destroy
 
+  # component sync/merge audit trail. Each merge writes one
+  # ComponentSyncEvent plus N MergeOperation rows reachable through it.
+  has_many :component_sync_events, dependent: :destroy
+  has_many :merge_operations, through: :component_sync_events
+
   accepts_nested_attributes_for :rules, :component_metadata, :additional_questions, allow_destroy: true
 
   after_create :import_srg_rules
@@ -139,13 +144,19 @@ class Component < ApplicationRecord
   # Returns a hash of rule counts grouped by status.
   # Used by the frontend export modal to warn about NYD-only components.
   def status_counts
-    counts = rules.where(deleted_at: nil).group(:status).count
+    counts = if association_cached?(:rules)
+               # In-memory grouping: set_component already
+               # preloaded rules for the editor; don't re-query base_rules.
+               rules.reject(&:deleted_at).group_by(&:status).transform_values(&:size)
+             else
+               rules.where(deleted_at: nil).group(:status).count
+             end
     {
-      not_yet_determined: counts['Not Yet Determined'] || 0,
+      not_yet_determined: counts[STATUS_NYD] || 0,
       applicable_configurable: counts[STATUS_APPLICABLE_CONFIGURABLE] || 0,
-      applicable_inherently_meets: counts['Applicable - Inherently Meets'] || 0,
-      applicable_does_not_meet: counts['Applicable - Does Not Meet'] || 0,
-      not_applicable: counts['Not Applicable'] || 0
+      applicable_inherently_meets: counts[STATUS_APPLICABLE_IM] || 0,
+      applicable_does_not_meet: counts[STATUS_APPLICABLE_DNM] || 0,
+      not_applicable: counts[STATUS_NOT_APPLICABLE] || 0
     }
   end
 
@@ -291,8 +302,13 @@ class Component < ApplicationRecord
     # If already released, then it cannot be released again
     return false if released_was
 
-    # If all rules are locked, then component may be released
-    rules.where(locked: false).empty?
+    # If all rules are locked, then component may be released. Prefer the
+    # in-memory rules collection when preloaded.
+    if association_cached?(:rules)
+      rules.none? { |r| !r.locked }
+    else
+      rules.where(locked: false).empty?
+    end
   end
 
   # Duplicate this component. The returned component has auditing suppressed
@@ -428,11 +444,16 @@ class Component < ApplicationRecord
       "JOIN rule_map ON a.auditable_id = rule_map.orig_id WHERE a.auditable_type = 'BaseRule'"
     )
 
-    # 4. Copy reviews from original rules
+    # 4. Copy reviews from original rules. Dual-write the polymorphic
+    # commentable target (BaseRule + new rule id) — this raw INSERT bypasses
+    # sync_commentable_from_rule, and the triage read paths filter on
+    # commentable_*, so omitting them hides the copied comments.
     conn.exec_insert(
       "WITH #{mapping_cte} " \
-      'INSERT INTO reviews (user_id, rule_id, action, comment, created_at, updated_at) ' \
-      'SELECT r.user_id, rule_map.new_id, r.action, r.comment, r.created_at, r.updated_at ' \
+      'INSERT INTO reviews (user_id, rule_id, commentable_type, commentable_id, ' \
+      'action, comment, created_at, updated_at) ' \
+      "SELECT r.user_id, rule_map.new_id, 'BaseRule', rule_map.new_id, " \
+      'r.action, r.comment, r.created_at, r.updated_at ' \
       'FROM reviews r JOIN rule_map ON r.rule_id = rule_map.orig_id'
     )
   end
@@ -536,8 +557,9 @@ class Component < ApplicationRecord
     if id.nil?
       rules.collect { |rule| rule.rule_id.to_i }.max
     else
-      Rule.connection.execute("SELECT MAX(TO_NUMBER(rule_id, '999999')) FROM base_rules
-                              WHERE component_id = #{id}")&.values&.flatten&.first.to_i
+      # component_id flows through bind params via .where; only the trusted
+      # TO_NUMBER literal is wrapped in Arel.sql for safe integer sorting.
+      Rule.unscoped.where(component_id: id).maximum(Arel.sql("TO_NUMBER(rule_id, '999999')")).to_i
     end
   end
 
@@ -582,11 +604,22 @@ class Component < ApplicationRecord
   end
 
   def reviews
-    rule_names = rules.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
-    Review.where(rule_id: rule_names.keys).order(created_at: :desc).limit(20).as_json.map do |review|
-      review['displayed_rule_name'] = rule_names[review['rule_id'].to_i]
-      review
-    end
+    rule_names = if association_cached?(:rules)
+                   rules.each_with_object({}) { |r, h| h[r.id] = "#{prefix}-#{r.rule_id}" }
+                 else
+                   rules.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
+                 end
+
+    review_records = if association_cached?(:rules) &&
+                        rules.all? { |r| r.association(:reviews).loaded? }
+                       rules.flat_map(&:reviews).sort_by(&:created_at).last(20).reverse
+                     else
+                       Review.where(rule_id: rule_names.keys)
+                             .preload(:user, :responses)
+                             .order(created_at: :desc).limit(20)
+                     end
+
+    ReviewBlueprint.render_as_json(review_records, rule_names: rule_names)
   end
 
   # Paginated, filterable accessor for top-level comment Reviews scoped to
@@ -602,7 +635,7 @@ class Component < ApplicationRecord
   def self.pending_comment_counts(component_ids)
     return {} if component_ids.blank?
 
-    Review.where(action: 'comment',
+    Review.where(action: Review::ACTION_COMMENT,
                  responding_to_review_id: nil,
                  triage_status: 'pending')
           .joins(:rule)
@@ -618,106 +651,15 @@ class Component < ApplicationRecord
   # The frontend translates to friendly labels via triageVocabulary.js.
   def paginated_comments(triage_status: 'all', section: nil, rule_id: nil, # rubocop:disable Metrics/ParameterLists
                          author_id: nil, query: nil, page: 1, per_page: 25,
-                         resolved: 'all', commentable_type: nil)
-    page = [page.to_i, 1].max
-    per_page = per_page.to_i.clamp(1, 100)
-
-    # Polymorphic union: rule-scoped reviews on this component's rules OR
-    # component-scoped reviews on this component (backfill in 20260508210000).
-    rule_id_subquery = rules.select(:id)
-    rule_scoped = Review.top_level_comments
-                        .where(commentable_type: 'BaseRule', commentable_id: rule_id_subquery)
-    component_scoped = Review.top_level_comments
-                             .where(commentable_type: 'Component', commentable_id: id)
-    scope = case commentable_type.to_s.downcase
-            when 'component' then component_scoped
-            when 'rule'      then rule_scoped
-            else                  rule_scoped.or(component_scoped)
-            end
-    scope = scope.preload(:user, :triage_set_by, :adjudicated_by, :commentable)
-
-    scope = scope.where(triage_status: triage_status) unless triage_status == 'all'
-    scope = scope.where(section: section) if section.present? && section != 'all'
-    scope = scope.where(commentable_type: 'BaseRule', commentable_id: rule_id) if rule_id.present?
-    scope = scope.where(user_id: author_id) if author_id.present?
-
-    case resolved.to_s
-    when 'true'  then scope = scope.where.not(adjudicated_at: nil)
-    when 'false' then scope = scope.where(adjudicated_at: nil)
-    end
-
-    if query.present?
-      escaped = ActiveRecord::Base.sanitize_sql_like(query.to_s)
-      scope = scope.where('reviews.comment ILIKE ?', "%#{escaped}%")
-    end
-
-    total = scope.count
-
-    # Total-including-replies drives the dedup banner header.
-    rule_replies = Review.where(action: 'comment',
-                                commentable_type: 'BaseRule',
-                                commentable_id: rule_id_subquery)
-    component_replies = Review.where(action: 'comment',
-                                     commentable_type: 'Component',
-                                     commentable_id: id)
-    total_comments_scope = case commentable_type.to_s.downcase
-                           when 'component' then component_replies
-                           when 'rule'      then rule_replies
-                           else                  rule_replies.or(component_replies)
-                           end
-    total_comments_scope = total_comments_scope.where(commentable_type: 'BaseRule', commentable_id: rule_id) if rule_id.present?
-    total_comments_scope = total_comments_scope.where(section: section) if section.present? && section != 'all'
-    if query.present?
-      escaped = ActiveRecord::Base.sanitize_sql_like(query.to_s)
-      total_comments_scope = total_comments_scope.where('reviews.comment ILIKE ?', "%#{escaped}%")
-    end
-    total_comments = total_comments_scope.count
-
-    rule_id_to_displayed = rules.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
-
-    page_records = scope.order(created_at: :desc)
-                        .offset((page - 1) * per_page)
-                        .limit(per_page)
-                        .to_a
-
-    page_review_ids = page_records.map(&:id)
-    responses_count_lookup = Review.where(responding_to_review_id: page_review_ids)
-                                   .group(:responding_to_review_id)
-                                   .count
-    reaction_counts = Reaction.where(review_id: page_review_ids).group(:review_id, :kind).count
-
-    rows = page_records.map do |r|
-      component_scoped_row = r.commentable_type == 'Component'
-      {
-        id: r.id,
-        rule_id: component_scoped_row ? nil : r.rule_id,
-        rule_displayed_name: component_scoped_row ? '(component)' : rule_id_to_displayed[r.rule_id],
-        commentable_type: r.commentable_type,
-        section: r.section,
-        author_name: r.user&.name,
-        # email omitted — see comment-endpoint PII guard.
-        comment: r.comment,
-        created_at: r.created_at,
-        triage_status: r.triage_status,
-        triage_set_at: r.triage_set_at,
-        adjudicated_at: r.adjudicated_at,
-        duplicate_of_review_id: r.duplicate_of_review_id,
-        triager_display_name: r.triager_display_name,
-        triager_imported: r.triager_imported?,
-        adjudicator_display_name: r.adjudicator_display_name,
-        adjudicator_imported: r.adjudicator_imported?,
-        commenter_display_name: r.commenter_display_name,
-        commenter_imported: r.commenter_imported?,
-        responses_count: responses_count_lookup[r.id] || 0,
-        reactions: { up: reaction_counts[[r.id, 'up']] || 0,
-                     down: reaction_counts[[r.id, 'down']] || 0 }
-      }
-    end
-
-    {
-      rows: rows,
-      pagination: { page: page, per_page: per_page, total: total, total_comments: total_comments }
-    }
+                         resolved: 'all', commentable_type: nil,
+                         include_rule_content: false)
+    CommentQueryService.new(
+      self,
+      triage_status: triage_status, section: section, rule_id: rule_id,
+      author_id: author_id, query: query, page: page, per_page: per_page,
+      resolved: resolved, commentable_type: commentable_type,
+      include_rule_content: include_rule_content
+    ).call
   end
 
   def csv_export
@@ -1008,4 +950,45 @@ class Component < ApplicationRecord
 
     errors.add(:base, 'Cannot release a component that contains rules that are not yet locked')
   end
+
+  def serialize_rule_content(review, component_scoped)
+    return nil if component_scoped
+
+    rule = review.commentable
+    disa = rule&.disa_rule_descriptions&.first
+    check = rule&.checks&.first
+    {
+      title: rule&.title,
+      rule_severity: rule&.rule_severity,
+      status: rule&.status,
+      fixtext: rule&.fixtext,
+      status_justification: rule&.status_justification,
+      vendor_comments: rule&.vendor_comments,
+      artifact_description: rule&.artifact_description,
+      fix_id: rule&.fix_id,
+      fixtext_fixref: rule&.fixtext_fixref,
+      version: rule&.version,
+      rule_weight: rule&.rule_weight,
+      ident: rule&.ident,
+      ident_system: rule&.ident_system,
+      vuln_discussion: disa&.vuln_discussion,
+      documentable: disa&.documentable,
+      false_positives: disa&.false_positives,
+      false_negatives: disa&.false_negatives,
+      mitigations_available: disa&.mitigations_available,
+      mitigations: disa&.mitigations,
+      poam_available: disa&.poam_available,
+      poam: disa&.poam,
+      potential_impacts: disa&.potential_impacts,
+      third_party_tools: disa&.third_party_tools,
+      mitigation_control: disa&.mitigation_control,
+      responsibility: disa&.responsibility,
+      ia_controls: disa&.ia_controls,
+      severity_override_guidance: disa&.severity_override_guidance,
+      check_content: check&.content,
+      locked: rule&.locked,
+      rule_updated_at: rule&.updated_at&.iso8601
+    }
+  end
+  public :serialize_rule_content
 end

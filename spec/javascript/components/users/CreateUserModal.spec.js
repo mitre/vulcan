@@ -1,9 +1,22 @@
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import CreateUserModal from "@/components/users/CreateUserModal.vue";
-import axios from "axios";
+import { createUser } from "@/api/usersApi";
 
-vi.mock("axios");
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/api/usersApi", () => ({
+  createUser: vi.fn(() => Promise.resolve({ data: {} })),
+}));
 
 // BModal renders content outside the wrapper in jsdom.
 // Test via wrapper.vm (data/methods) and document.querySelector for DOM.
@@ -66,15 +79,17 @@ describe("CreateUserModal", () => {
         admin: false,
         provider: null,
       };
-      axios.post.mockResolvedValue({ data: { toast: "User created.", user: userData } });
+      createUser.mockResolvedValue({ data: { toast: "User created.", user: userData } });
 
       wrapper.vm.form.name = "Jane";
       wrapper.vm.form.email = "jane@test.com";
 
       await wrapper.vm.onSubmit({ preventDefault: vi.fn() });
 
-      expect(axios.post).toHaveBeenCalledWith("/users/admin_create", {
-        user: { name: "Jane", email: "jane@test.com", admin: false },
+      expect(createUser).toHaveBeenCalledWith({
+        name: "Jane",
+        email: "jane@test.com",
+        admin: false,
       });
     });
 
@@ -86,7 +101,7 @@ describe("CreateUserModal", () => {
         admin: false,
         provider: null,
       };
-      axios.post.mockResolvedValue({ data: { toast: "User created.", user: userData } });
+      createUser.mockResolvedValue({ data: { toast: "User created.", user: userData } });
 
       await wrapper.vm.onSubmit({ preventDefault: vi.fn() });
 
@@ -95,7 +110,7 @@ describe("CreateUserModal", () => {
     });
 
     it("emits update:visible false on success", async () => {
-      axios.post.mockResolvedValue({ data: { toast: "OK", user: {} } });
+      createUser.mockResolvedValue({ data: { toast: "OK", user: {} } });
 
       await wrapper.vm.onSubmit({ preventDefault: vi.fn() });
 
@@ -105,7 +120,7 @@ describe("CreateUserModal", () => {
     });
 
     it("handles error response without emitting user-created", async () => {
-      axios.post.mockRejectedValue({
+      createUser.mockRejectedValue({
         response: {
           data: { toast: { title: "Error", message: ["Bad email"], variant: "danger" } },
         },
@@ -128,7 +143,7 @@ describe("CreateUserModal", () => {
         admin: false,
         provider: null,
       };
-      axios.post.mockResolvedValue({ data: { toast: "Created.", user: userData } });
+      createUser.mockResolvedValue({ data: { toast: "Created.", user: userData } });
 
       wrapper.vm.form.name = "Jane";
       wrapper.vm.form.email = "jane@test.com";
@@ -137,8 +152,11 @@ describe("CreateUserModal", () => {
 
       await wrapper.vm.onSubmit({ preventDefault: vi.fn() });
 
-      expect(axios.post).toHaveBeenCalledWith("/users/admin_create", {
-        user: { name: "Jane", email: "jane@test.com", admin: false, password: "N3wSecure!!Pass99" },
+      expect(createUser).toHaveBeenCalledWith({
+        name: "Jane",
+        email: "jane@test.com",
+        admin: false,
+        password: "N3wSecure!!Pass99",
       });
     });
 
@@ -150,7 +168,7 @@ describe("CreateUserModal", () => {
 
       await wrapper.vm.onSubmit({ preventDefault: vi.fn() });
 
-      expect(axios.post).not.toHaveBeenCalled();
+      expect(createUser).not.toHaveBeenCalled();
     });
 
     it("stores reset_url from response when no password provided", async () => {
@@ -162,7 +180,7 @@ describe("CreateUserModal", () => {
         provider: null,
       };
       const resetUrl = "http://localhost:3000/users/password/edit?reset_password_token=abc123";
-      axios.post.mockResolvedValue({
+      createUser.mockResolvedValue({
         data: { toast: "Created.", user: userData, reset_url: resetUrl },
       });
 
@@ -181,6 +199,16 @@ describe("CreateUserModal", () => {
       expect(wrapper.vm.form.name).toBe("");
       expect(wrapper.vm.form.email).toBe("");
       expect(wrapper.vm.form.admin).toBe(false);
+    });
+  });
+
+  // ── mixin contract ──────────────────────────────────────────────────
+  // REQUIREMENT: no mixins remain; toasts come from the useToast composable.
+  describe("mixin contract", () => {
+    it("declares no mixins and gets alertOrNotifyResponse from useToast", () => {
+      expect(CreateUserModal.mixins).toBeUndefined();
+      mountModal();
+      expect(typeof wrapper.vm.alertOrNotifyResponse).toBe("function");
     });
   });
 });

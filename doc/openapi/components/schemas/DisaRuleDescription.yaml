@@ -1,0 +1,98 @@
+description: DISA rule description fields — vulnerability discussion, mitigations, and related metadata.
+type: object
+required:
+  - id
+additionalProperties: false
+properties:
+  id:
+    type: integer
+    description: Unique description record identifier.
+    example: 300
+  vuln_discussion:
+    type:
+      - string
+      - 'null'
+    description: Vulnerability discussion explaining why this requirement matters.
+    example: "Without verification, containers may execute untrusted code..."
+  false_positives:
+    type:
+      - string
+      - 'null'
+    description: Known false positive scenarios for this check.
+    example: null
+  false_negatives:
+    type:
+      - string
+      - 'null'
+    description: Known false negative scenarios for this check.
+    example: null
+  documentable:
+    type:
+      - boolean
+      - 'null'
+    description: Whether this requirement is documentable.
+    example: false
+  mitigations:
+    type:
+      - string
+      - 'null'
+    description: Available mitigations if the requirement cannot be met directly.
+    example: null
+  severity_override_guidance:
+    type:
+      - string
+      - 'null'
+    description: Guidance for when severity may be overridden by the assessor.
+    example: null
+  potential_impacts:
+    type:
+      - string
+      - 'null'
+    description: Potential impacts of non-compliance.
+    example: null
+  third_party_tools:
+    type:
+      - string
+      - 'null'
+    description: Third-party tools that can assist with compliance checking.
+    example: null
+  mitigation_control:
+    type:
+      - string
+      - 'null'
+    description: Compensating controls that mitigate the risk.
+    example: null
+  responsibility:
+    type:
+      - string
+      - 'null'
+    description: Who is responsible for implementing this requirement.
+    example: null
+  ia_controls:
+    type:
+      - string
+      - 'null'
+    description: Information assurance controls associated with this requirement.
+    example: null
+  mitigations_available:
+    type:
+      - string
+      - 'null'
+    description: Whether mitigations are available for this requirement.
+    example: null
+  poam_available:
+    type:
+      - string
+      - 'null'
+    description: Whether a Plan of Action and Milestones is available.
+    example: null
+  poam:
+    type:
+      - string
+      - 'null'
+    description: Plan of Action and Milestones content.
+    example: null
+  _destroy:
+    type: boolean
+    description: Nested attributes destroy flag (always false in read responses).
+    example: false

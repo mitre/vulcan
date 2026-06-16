@@ -102,6 +102,8 @@ module ExportHelper # rubocop:todo Metrics/ModuleLength
     when 'Not Applicable'
       attrs['Mitigation'] = nil
       attrs[FIELD_ARTIFACT_DESCRIPTION] = nil
+      attrs['VulDiscussion'] = nil
+      attrs['Severity'] = nil
     else # rubocop:disable Style/EmptyElse -- SonarCloud requires default clause
       # No field blanking required for other statuses (e.g., Does Not Meet, Not Yet Determined)
       nil

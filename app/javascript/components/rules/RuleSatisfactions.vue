@@ -23,6 +23,10 @@
         <em>Edit mode required to modify</em>
       </p>
 
+      <b-form-checkbox v-model="showRuleIds" switch size="sm" class="mb-2">
+        Show Rule IDs
+      </b-form-checkbox>
+
       <div
         v-for="satisfies in rule.satisfies"
         :key="satisfies.id"
@@ -35,7 +39,7 @@
           class="clickable"
           @click="ruleSelected(satisfies)"
         >
-          {{ truncateId(satisfies.srg_id) }}
+          {{ showRuleIds ? `${projectPrefix}-${satisfies.rule_id}` : truncateId(satisfies.srg_id) }}
         </span>
         <b-button
           v-b-modal.unmark-satisfies-modal
@@ -82,6 +86,10 @@
         <em>Edit mode required to modify</em>
       </p>
 
+      <b-form-checkbox v-model="showRuleIds" switch size="sm" class="mb-2">
+        Show Rule IDs
+      </b-form-checkbox>
+
       <div
         v-for="satisfied_by in rule.satisfied_by"
         :key="satisfied_by.id"
@@ -94,7 +102,11 @@
           class="clickable"
           @click="ruleSelected(satisfied_by)"
         >
-          {{ truncateId(satisfied_by.srg_id) }}
+          {{
+            showRuleIds
+              ? `${projectPrefix}-${satisfied_by.rule_id}`
+              : truncateId(satisfied_by.srg_id)
+          }}
         </span>
         <b-button
           v-b-modal.unmark-satisfied-by-modal
@@ -131,15 +143,8 @@
 
 <script>
 import { truncateId } from "../../utils/idFormatter";
+import { useRuleSelectionStore } from "../../stores/ruleSelection";
 
-//
-// Expect component to emit `ruleSelected` event when
-// a rule is selected from the list. This event means that
-// the user wants to edit that specific rule.
-// this.$emit('ruleSelected', rule)
-//
-// <RuleSatisfactions @ruleSelected="handleRuleSelected($event)" ... />
-//
 export default {
   name: "RuleSatisfactions",
   props: {
@@ -153,7 +158,7 @@ export default {
     },
     selectedRuleId: {
       type: Number,
-      required: false,
+      default: null,
     },
     projectPrefix: {
       type: String,
@@ -164,10 +169,15 @@ export default {
       required: false,
     },
   },
+  setup() {
+    const ruleStore = useRuleSelectionStore();
+    return { ruleStore };
+  },
   data: function () {
     return {
       satisfies_rule: null,
       satisfied_by_rule: null,
+      showRuleIds: false,
       truncateId, // Expose utility for template
     };
   },
@@ -176,12 +186,12 @@ export default {
       if (!rule.histories) {
         this.$root.$emit("refresh:rule", rule.id);
       }
-      this.$emit("ruleSelected", rule.id);
+      this.ruleStore.selectRule(rule.id);
     },
     ruleRowClass: function (rule) {
       return {
         ruleRow: true,
-        selectedRuleRow: this.selectedRuleId == rule.id,
+        selectedRuleRow: this.ruleStore.selectedRuleId == rule.id,
       };
     },
   },
@@ -194,17 +204,18 @@ export default {
 }
 
 .ruleRow:hover {
-  background: rgb(0, 0, 0, 0.12);
+  background: var(--vulcan-overlay-medium);
 }
 
 .selectedRuleRow {
-  background: rgba(66, 50, 50, 0.09);
+  background: var(--vulcan-active-bg);
+  border-left: 3px solid var(--vulcan-active-border);
 }
 
 .closeRuleButton {
   color: red;
   padding: 0.1em;
-  border: 1px solid rgb(0, 0, 0, 0);
+  border: 1px solid var(--vulcan-border-transparent);
   box-sizing: border-box;
 }
 

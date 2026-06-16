@@ -133,13 +133,7 @@ export const STATUS_FIELD_CONFIG = {
 
   "Not Applicable": {
     rule: {
-      displayed: [
-        "status",
-        "rule_severity",
-        "status_justification",
-        "artifact_description",
-        "vendor_comments",
-      ],
+      displayed: ["status", "rule_severity", "status_justification", "vendor_comments"],
       disabled: ["rule_severity"],
       advancedDisplayed: [],
       advancedDisabled: [],
@@ -156,6 +150,85 @@ export const STATUS_FIELD_CONFIG = {
     },
   },
 };
+
+// Canonical field-key-to-label mapping. Single source of truth for all
+// consumers: rule editor, triage context panel, export headers.
+// The "content" alias resolves to "check_content" at the registry level
+// so consumers never need to normalize manually.
+export const FIELD_LABELS = Object.freeze({
+  title: "Title",
+  rule_severity: "Severity",
+  status: "Status",
+  fixtext: "Fix",
+  check_content: "Check",
+  content: "Check",
+  vuln_discussion: "Vulnerability Discussion",
+  status_justification: "Status Justification",
+  vendor_comments: "Vendor Comments",
+  artifact_description: "Artifact Description",
+  fix_id: "Fix ID",
+  fixtext_fixref: "Fix Text Reference",
+  version: "Version",
+  rule_weight: "Rule Weight",
+  ident: "Identifier",
+  ident_system: "Identifier System",
+  documentable: "Documentable",
+  false_positives: "False Positives",
+  false_negatives: "False Negatives",
+  mitigations_available: "Mitigations Available",
+  mitigations: "Mitigations",
+  poam_available: "POA&M Available",
+  poam: "POA&M",
+  potential_impacts: "Potential Impacts",
+  third_party_tools: "Third Party Tools",
+  mitigation_control: "Mitigation Control",
+  responsibility: "Responsibility",
+  ia_controls: "IA Controls",
+  severity_override_guidance: "Severity Override Guidance",
+});
+
+// Canonical visual rendering order — matches the RuleForm.vue template layout.
+// ONE array for ALL statuses. STATUS_FIELD_CONFIG controls VISIBILITY (which
+// fields appear), this array controls ORDER (where they appear).
+// If the editor template order changes, update this array — RuleContextPanel
+// and comment sorting follow automatically.
+export const FIELD_DISPLAY_ORDER = Object.freeze([
+  // Section 1: Policy Decision
+  "status",
+  "rule_severity",
+  "severity_override_guidance",
+  // Section 3: Content Authoring
+  "title",
+  // DISA block (DisaRuleDescriptionForm template order)
+  "documentable",
+  "vuln_discussion",
+  "false_positives",
+  "false_negatives",
+  "mitigations_available",
+  "mitigations",
+  "poam_available",
+  "poam",
+  "potential_impacts",
+  "third_party_tools",
+  "mitigation_control",
+  "responsibility",
+  "ia_controls",
+  // Check block
+  "check_content",
+  // Fix
+  "fixtext",
+  // Section 4: Justification & Evidence
+  "status_justification",
+  "artifact_description",
+  "vendor_comments",
+  // Section 5: XCCDF Metadata (Advanced)
+  "version",
+  "fix_id",
+  "fixtext_fixref",
+  "rule_weight",
+  "ident",
+  "ident_system",
+]);
 
 // Statuses where severity is editable (can be changed from SRG default)
 export const SEVERITY_EDITABLE_STATUSES = [

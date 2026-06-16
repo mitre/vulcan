@@ -6,7 +6,7 @@
       :class="buttonClass"
       :size="buttonSize"
       :disabled="buttonDisabled"
-      :title="buttonDisabled ? 'Cannot replace on read only mode' : ''"
+      :title="buttonDisabled ? 'Cannot replace on read only mode' : buttonTooltip"
       @click="$bvModal.show(`comment-modal-${mod}`)"
     >
       <b-icon v-if="buttonIcon" :icon="buttonIcon" /> {{ buttonText }}
@@ -73,6 +73,10 @@ export default {
     buttonDisabled: {
       type: Boolean,
       default: false,
+    },
+    buttonTooltip: {
+      type: String,
+      default: "",
     },
     wrapperClass: {
       type: String,

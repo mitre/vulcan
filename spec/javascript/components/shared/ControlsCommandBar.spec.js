@@ -61,13 +61,13 @@ describe("ControlsCommandBar", () => {
     updated_at: "2024-01-15T10:00:00Z",
   };
 
-  const createWrapper = (props = {}) => {
+  const createWrapper = (props = {}, permissions = "admin") => {
     return mount(ControlsCommandBar, {
       localVue,
+      provide: { effectivePermissions: permissions },
       propsData: {
         component: defaultComponent,
         selectedRule: null,
-        effectivePermissions: "admin",
         activePanel: null,
         readOnly: true,
         ...props,
@@ -94,12 +94,181 @@ describe("ControlsCommandBar", () => {
   });
 
   // ==========================================
+  // TOOLBAR LAYOUT — 3 zones + overflow menu
+  // Left: primary actions + overflow
+  // Center: status indicator (comment chip)
+  // Right: view toggle (filters)
+  // Below toolbar: panel toggles row
+  // ==========================================
+  describe("toolbar layout", () => {
+    it("left zone contains Edit and Comment as visible actions", () => {
+      wrapper = createWrapper();
+      const leftZone = wrapper.find("[data-testid='toolbar-actions']");
+      expect(leftZone.exists()).toBe(true);
+      expect(leftZone.text()).toContain("Edit");
+      expect(leftZone.text()).toContain("Comment");
+    });
+
+    it("overflow menu is in the panel toggles row after Settings", () => {
+      wrapper = createWrapper();
+      const panelRow = wrapper.find("[data-testid='panel-toggles']");
+      expect(panelRow.find("[data-testid='toolbar-overflow']").exists()).toBe(true);
+    });
+
+    it("center zone contains CommentStatusChip", () => {
+      const futureDate = new Date(Date.now() + 7 * 86400000).toISOString();
+      wrapper = createWrapper({
+        component: {
+          ...defaultComponent,
+          comment_phase: "open",
+          comment_period_ends_at: futureDate,
+          pending_comment_count: 5,
+        },
+      });
+      const centerZone = wrapper.find("[data-testid='toolbar-status']");
+      expect(centerZone.exists()).toBe(true);
+      expect(centerZone.findComponent({ name: "CommentStatusChip" }).exists()).toBe(true);
+    });
+
+    it("filter toggle is in the panel toggles row (right-aligned)", () => {
+      wrapper = createWrapper({ showFilterToggle: true });
+      const panelRow = wrapper.find("[data-testid='panel-toggles']");
+      expect(panelRow.find("[data-testid='filter-toggle-btn']").exists()).toBe(true);
+    });
+
+    it("panel toggles are in a separate row below the toolbar", () => {
+      wrapper = createWrapper();
+      const panelGroup = wrapper.find("[data-testid='panel-toggles']");
+      expect(panelGroup.exists()).toBe(true);
+      expect(panelGroup.text()).toContain("Details");
+      expect(panelGroup.text()).toContain("Metadata");
+    });
+
+    it("overflow dropdown contains Download", async () => {
+      wrapper = createWrapper();
+      const overflowBtn = wrapper.find("[data-testid='toolbar-overflow']");
+      expect(overflowBtn.exists()).toBe(true);
+      const dropdown = wrapper.findComponent({ name: "BDropdown" });
+      expect(dropdown.exists()).toBe(true);
+      expect(dropdown.text()).toContain("Download");
+    });
+
+    it("overflow dropdown contains Release for admin", () => {
+      wrapper = createWrapper({}, "admin");
+      const dropdown = wrapper.findComponent({ name: "BDropdown" });
+      expect(dropdown.text()).toContain("Release");
+    });
+
+    it("overflow dropdown hides Release for non-admin", () => {
+      wrapper = createWrapper({}, "viewer");
+      const dropdown = wrapper.findComponent({ name: "BDropdown" });
+      expect(dropdown.text()).not.toContain("Release");
+    });
+
+    it("shows Clear Filters button when activeFilterCount > 0", () => {
+      wrapper = createWrapper({ showFilterToggle: true, activeFilterCount: 3 });
+      const clearBtn = wrapper.find("[data-testid='clear-filters-btn']");
+      expect(clearBtn.exists()).toBe(true);
+      expect(clearBtn.text()).toContain("Clear Filters");
+    });
+
+    it("hides Clear Filters button when activeFilterCount is 0", () => {
+      wrapper = createWrapper({ showFilterToggle: true, activeFilterCount: 0 });
+      const clearBtn = wrapper.find("[data-testid='clear-filters-btn']");
+      expect(clearBtn.exists()).toBe(false);
+    });
+
+    it("emits clear-filters when Clear Filters clicked", async () => {
+      wrapper = createWrapper({ showFilterToggle: true, activeFilterCount: 2 });
+      await wrapper.find("[data-testid='clear-filters-btn']").trigger("click");
+      expect(wrapper.emitted("clear-filters")).toBeTruthy();
+    });
+
+    it("overflow button has a tooltip listing its contents", () => {
+      wrapper = createWrapper();
+      const dropdown = wrapper.find("[data-testid='toolbar-overflow']");
+      expect(dropdown.attributes("title")).toBe("Download, Upload, Release");
+    });
+  });
+
+  // ==========================================
+  // TOOLTIPS — discoverability for all buttons
+  // ==========================================
+  describe("tooltips", () => {
+    it("Edit button has tooltip", () => {
+      wrapper = createWrapper({ readOnly: true });
+      const btn = wrapper.find('a[href="/components/41/edit"]');
+      expect(btn.attributes("title")).toBe("Switch to edit mode");
+    });
+
+    it("View button has tooltip", () => {
+      wrapper = createWrapper({ readOnly: false });
+      const btn = wrapper.find('a[href="/components/41"]');
+      expect(btn.attributes("title")).toBe("Switch to view mode");
+    });
+
+    it("Comment button has tooltip", () => {
+      wrapper = createWrapper();
+      const btn = wrapper.find("[data-testid='comment-on-component-btn']");
+      expect(btn.attributes("title")).toBe("Post a comment on this component");
+    });
+
+    it("Filters toggle has tooltip", () => {
+      wrapper = createWrapper({ showFilterToggle: true });
+      const btn = wrapper.find("[data-testid='filter-toggle-btn']");
+      expect(btn.attributes("title")).toBe("Show or hide the filter bar");
+    });
+
+    it("Details button has tooltip", () => {
+      wrapper = createWrapper();
+      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Details"));
+      expect(btn.attributes("title")).toBe("Component details panel");
+    });
+
+    it("Metadata button has tooltip", () => {
+      wrapper = createWrapper();
+      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Metadata"));
+      expect(btn.attributes("title")).toBe("Component metadata panel");
+    });
+
+    it("Questions button has tooltip", () => {
+      wrapper = createWrapper();
+      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Questions"));
+      expect(btn.attributes("title")).toBe("Additional questions panel");
+    });
+
+    it("Changelog button has tooltip", () => {
+      wrapper = createWrapper();
+      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Changelog"));
+      expect(btn.attributes("title")).toBe("Component changelog — who changed what");
+    });
+
+    it("Triage button has tooltip", () => {
+      wrapper = createWrapper();
+      const btn = wrapper.find("[data-testid='triage-btn']");
+      expect(btn.attributes("title")).toBe("Open comment triage page");
+    });
+
+    it("Settings button has tooltip", () => {
+      wrapper = createWrapper();
+      const btn = wrapper.findAll("a.btn").wrappers.find((b) => b.text().includes("Settings"));
+      expect(btn.attributes("title")).toBe("Component settings");
+    });
+
+    it("Clear Filters button has tooltip", () => {
+      wrapper = createWrapper({ showFilterToggle: true, activeFilterCount: 2 });
+      const btn = wrapper.find("[data-testid='clear-filters-btn']");
+      expect(btn.attributes("title")).toBe("Reset all active filters");
+    });
+  });
+
+  // ==========================================
   // MODE BEHAVIOR (VIEW vs EDIT)
   // ==========================================
   describe("mode behavior", () => {
     describe("VIEW mode (readOnly=true)", () => {
       it("shows Edit button", () => {
-        wrapper = createWrapper({ readOnly: true, effectivePermissions: "admin" });
+        wrapper = createWrapper({ readOnly: true }, "admin");
         expect(wrapper.text()).toContain("Edit");
         expect(wrapper.text()).not.toContain("View");
       });
@@ -113,7 +282,7 @@ describe("ControlsCommandBar", () => {
 
     describe("EDIT mode (readOnly=false)", () => {
       it("shows View button", () => {
-        wrapper = createWrapper({ readOnly: false, effectivePermissions: "admin" });
+        wrapper = createWrapper({ readOnly: false }, "admin");
         expect(wrapper.text()).toContain("View");
       });
 
@@ -130,135 +299,95 @@ describe("ControlsCommandBar", () => {
   // ==========================================
   describe("Edit/View button permissions", () => {
     it("shows Edit button for admin", () => {
-      wrapper = createWrapper({ effectivePermissions: "admin", readOnly: true });
+      wrapper = createWrapper({ readOnly: true }, "admin");
       expect(wrapper.text()).toContain("Edit");
     });
 
     it("shows Edit button for author", () => {
-      wrapper = createWrapper({ effectivePermissions: "author", readOnly: true });
+      wrapper = createWrapper({ readOnly: true }, "author");
       expect(wrapper.text()).toContain("Edit");
     });
 
     it("hides Edit button for viewer", () => {
-      wrapper = createWrapper({ effectivePermissions: "viewer", readOnly: true });
+      wrapper = createWrapper({ readOnly: true }, "viewer");
       const buttons = wrapper.findAll("a.btn");
       const editButton = buttons.wrappers.find((b) => b.text().includes("Edit"));
       expect(editButton).toBeUndefined();
     });
   });
 
-  describe("Release button", () => {
-    it("shows Release button for admin", () => {
-      wrapper = createWrapper({ effectivePermissions: "admin" });
-      expect(wrapper.text()).toContain("Release");
+  describe("Release (in overflow menu)", () => {
+    it("shows Release item in overflow for admin", () => {
+      wrapper = createWrapper({}, "admin");
+      const dropdown = wrapper.findComponent({ name: "BDropdown" });
+      expect(dropdown.text()).toContain("Release");
     });
 
-    it("hides Release button for non-admin", () => {
-      wrapper = createWrapper({ effectivePermissions: "author" });
-      const buttons = wrapper.findAll("button");
-      const releaseButton = buttons.wrappers.find((b) => b.text().includes("Release"));
-      expect(releaseButton).toBeUndefined();
+    it("hides Release item for non-admin", () => {
+      wrapper = createWrapper({}, "author");
+      const dropdown = wrapper.findComponent({ name: "BDropdown" });
+      expect(dropdown.text()).not.toContain("Release");
     });
 
-    it("disables Release button when component not releasable", () => {
+    it("disables Release item when component not releasable", () => {
       wrapper = createWrapper({
         component: { ...defaultComponent, releasable: false },
       });
-      const releaseButton = wrapper
-        .findAll("button")
-        .wrappers.find((b) => b.text().includes("Release"));
-      expect(releaseButton.attributes("disabled")).toBe("disabled");
+      const releaseItem = wrapper
+        .findAllComponents({ name: "BDropdownItem" })
+        .wrappers.find((w) => w.text().includes("Release"));
+      expect(releaseItem.props("disabled")).toBe(true);
     });
 
-    it("disables Release button when component already released", () => {
+    it("disables Release item when component already released", () => {
       wrapper = createWrapper({
         component: { ...defaultComponent, released: true },
       });
-      const releaseButton = wrapper
-        .findAll("button")
-        .wrappers.find((b) => b.text().includes("Release"));
-      expect(releaseButton.attributes("disabled")).toBe("disabled");
+      const releaseItem = wrapper
+        .findAllComponents({ name: "BDropdownItem" })
+        .wrappers.find((w) => w.text().includes("Release"));
+      expect(releaseItem.props("disabled")).toBe(true);
     });
 
     it("emits release event when clicked", async () => {
       wrapper = createWrapper();
-      const releaseButton = wrapper
-        .findAll("button")
-        .wrappers.find((b) => b.text().includes("Release"));
-      await releaseButton.trigger("click");
+      const releaseItem = wrapper
+        .findAllComponents({ name: "BDropdownItem" })
+        .wrappers.find((w) => w.text().includes("Release"));
+      await releaseItem.vm.$emit("click");
       expect(wrapper.emitted("release")).toBeTruthy();
     });
   });
 
   // Advanced Fields toggle moved to RuleEditor (per-component setting)
 
-  describe("Release button (moved to right side)", () => {
-    it("shows Release button for admin when releasable", () => {
-      wrapper = createWrapper({
-        effectivePermissions: "admin",
-        component: { ...defaultComponent, releasable: true, released: false },
-      });
-      const releaseBtn = wrapper
-        .findAll("button")
-        .wrappers.find((b) => b.text().includes("Release"));
-      expect(releaseBtn).toBeDefined();
-    });
+  // Release button tests consolidated into "Release (in overflow menu)" above
 
-    it("disables Release button when not releasable", () => {
-      wrapper = createWrapper({
-        effectivePermissions: "admin",
-        component: { ...defaultComponent, releasable: false, released: false },
-      });
-      const releaseBtn = wrapper
-        .findAll("button")
-        .wrappers.find((b) => b.text().includes("Release"));
-      expect(releaseBtn.attributes("disabled")).toBeDefined();
-    });
-
-    it("emits release event when clicked", async () => {
-      wrapper = createWrapper({
-        effectivePermissions: "admin",
-        component: { ...defaultComponent, releasable: true, released: false },
-      });
-      const releaseBtn = wrapper
-        .findAll("button")
-        .wrappers.find((b) => b.text().includes("Release"));
-      await releaseBtn.trigger("click");
-      expect(wrapper.emitted("release")).toBeTruthy();
-    });
-  });
-
-  // ==========================================================================
-  // per-component Download button. ProjectComponent.vue had
-  // no Download surface — users had to leave the editor to grab the export.
-  // ==========================================================================
-  describe("Download button", () => {
-    it("renders a Download button in the command bar", () => {
+  describe("Download (in overflow menu)", () => {
+    it("renders Download in the overflow dropdown", () => {
       wrapper = createWrapper();
-      const downloadBtn = wrapper
-        .findAll("button")
-        .wrappers.find((b) => b.text().includes("Download"));
-      expect(downloadBtn).toBeDefined();
+      const dropdown = wrapper.findComponent({ name: "BDropdown" });
+      expect(dropdown.text()).toContain("Download");
     });
 
-    it("emits download event when clicked", async () => {
+    it("emits download event when Download item clicked", async () => {
       wrapper = createWrapper();
-      const downloadBtn = wrapper
-        .findAll("button")
-        .wrappers.find((b) => b.text().includes("Download"));
-      await downloadBtn.trigger("click");
+      const downloadItem = wrapper
+        .findAllComponents({ name: "BDropdownItem" })
+        .wrappers.find((w) => w.text().includes("Download"));
+      await downloadItem.vm.$emit("click");
       expect(wrapper.emitted("download")).toBeTruthy();
     });
 
-    it("renders the Download button in BOTH view (readOnly=true) and edit modes", () => {
+    it("Download is available in BOTH view and edit modes", () => {
       wrapper = createWrapper({ readOnly: true });
-      const viewBtn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Download"));
-      expect(viewBtn).toBeDefined();
+      let dropdown = wrapper.findComponent({ name: "BDropdown" });
+      expect(dropdown.text()).toContain("Download");
       wrapper.destroy();
 
       wrapper = createWrapper({ readOnly: false });
-      const editBtn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Download"));
-      expect(editBtn).toBeDefined();
+      dropdown = wrapper.findComponent({ name: "BDropdown" });
+      expect(dropdown.text()).toContain("Download");
     });
   });
 
@@ -413,6 +542,121 @@ describe("ControlsCommandBar", () => {
         .findAll("button")
         .wrappers.find((b) => b.text().includes("Details"));
       expect(detailsButton.classes()).toContain("btn-outline-secondary");
+    });
+  });
+
+  // ==========================================
+  // FILTER TOGGLE BUTTON
+  // ==========================================
+  describe("filter toggle button", () => {
+    it("renders filter toggle button when showFilterToggle is true", () => {
+      wrapper = createWrapper({ showFilterToggle: true });
+      const btn = wrapper.find("[data-testid='filter-toggle-btn']");
+      expect(btn.exists()).toBe(true);
+    });
+
+    it("does not render filter toggle button when showFilterToggle is false (default)", () => {
+      wrapper = createWrapper();
+      const btn = wrapper.find("[data-testid='filter-toggle-btn']");
+      expect(btn.exists()).toBe(false);
+    });
+
+    it("shows active filter count badge when activeFilterCount > 0", () => {
+      wrapper = createWrapper({ showFilterToggle: true, activeFilterCount: 3 });
+      const badge = wrapper.find("[data-testid='filter-toggle-btn'] .badge");
+      expect(badge.exists()).toBe(true);
+      expect(badge.text()).toBe("3");
+    });
+
+    it("hides badge when activeFilterCount is 0", () => {
+      wrapper = createWrapper({ showFilterToggle: true, activeFilterCount: 0 });
+      const badge = wrapper.find("[data-testid='filter-toggle-btn'] .badge");
+      expect(badge.exists()).toBe(false);
+    });
+
+    it("emits toggle-filter-bar when clicked", async () => {
+      wrapper = createWrapper({ showFilterToggle: true });
+      await wrapper.find("[data-testid='filter-toggle-btn']").trigger("click");
+      expect(wrapper.emitted("toggle-filter-bar")).toBeTruthy();
+    });
+
+    it("uses secondary variant when filterBarVisible is true", () => {
+      wrapper = createWrapper({ showFilterToggle: true, filterBarVisible: true });
+      const btn = wrapper.find("[data-testid='filter-toggle-btn']");
+      expect(btn.classes()).toContain("btn-secondary");
+    });
+
+    it("uses outline-secondary variant when filterBarVisible is false", () => {
+      wrapper = createWrapper({ showFilterToggle: true, filterBarVisible: false });
+      const btn = wrapper.find("[data-testid='filter-toggle-btn']");
+      expect(btn.classes()).toContain("btn-outline-secondary");
+    });
+  });
+
+  // ==========================================
+  // BREADCRUMBS
+  // ==========================================
+  describe("breadcrumbs", () => {
+    it("renders breadcrumb items when provided", () => {
+      const items = [
+        { text: "Projects", href: "/projects" },
+        { text: "My Project", href: "/projects/1" },
+        { text: "Component V1R1", active: true },
+      ];
+      wrapper = createWrapper({ breadcrumbs: items });
+      expect(wrapper.find("[data-testid='command-bar-breadcrumbs']").exists()).toBe(true);
+      expect(wrapper.text()).toContain("Projects");
+      expect(wrapper.text()).toContain("My Project");
+      expect(wrapper.text()).toContain("Component V1R1");
+    });
+
+    it("does not render breadcrumbs when not provided", () => {
+      wrapper = createWrapper();
+      expect(wrapper.find("[data-testid='command-bar-breadcrumbs']").exists()).toBe(false);
+    });
+
+    it("renders breadcrumbs with links", () => {
+      const items = [
+        { text: "Projects", href: "/projects" },
+        { text: "Component", active: true },
+      ];
+      wrapper = createWrapper({ breadcrumbs: items });
+      const link = wrapper.find("[data-testid='command-bar-breadcrumbs'] a");
+      expect(link.exists()).toBe(true);
+      expect(link.attributes("href")).toBe("/projects");
+    });
+  });
+
+  // ==========================================
+  // COMMENT STATUS CHIP
+  // ==========================================
+  describe("comment status chip", () => {
+    it("renders CommentStatusChip when component has comment phase data", () => {
+      const futureDate = new Date(Date.now() + 7 * 86400000).toISOString();
+      wrapper = createWrapper({
+        component: {
+          ...defaultComponent,
+          comment_phase: "open",
+          comment_period_ends_at: futureDate,
+          pending_comment_count: 5,
+        },
+      });
+      expect(wrapper.findComponent({ name: "CommentStatusChip" }).exists()).toBe(true);
+    });
+
+    it("forwards open-comments-panel event from chip", async () => {
+      const futureDate = new Date(Date.now() + 7 * 86400000).toISOString();
+      wrapper = createWrapper({
+        component: {
+          ...defaultComponent,
+          comment_phase: "open",
+          comment_period_ends_at: futureDate,
+          pending_comment_count: 5,
+        },
+      });
+      const chip = wrapper.findComponent({ name: "CommentStatusChip" });
+      chip.vm.$emit("open-comments-panel");
+      expect(wrapper.emitted("open-comments-panel")).toBeTruthy();
     });
   });
 });

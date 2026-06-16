@@ -48,15 +48,21 @@ module Api
     def search_projects(limit)
       return [] unless current_user
 
-      current_user.available_projects
-                  .where(*build_ilike_conditions(%w[name description]))
-                  .limit(limit)
-                  .map do |project|
+      projects = current_user.available_projects
+                             .where(*build_ilike_conditions(%w[name description]))
+                             .limit(limit)
+                             .to_a
+
+      # Batch the per-project components_count via one GROUP BY.
+      counts = Component.where(project_id: projects.map(&:id))
+                        .group(:project_id).count
+
+      projects.map do |project|
         {
           id: project.id,
           name: project.name,
           description: project.description,
-          components_count: project.components.count
+          components_count: counts[project.id] || 0
         }
       end
     end
@@ -94,12 +100,16 @@ module Api
     def search_rules(limit)
       return [] unless current_user
 
-      # Get components from user's available projects
       project_ids = current_user.available_projects.ids
-      component_ids = Component.where(project_id: project_ids).ids
+      component_ids = if params[:component_id].present?
+                        comp = Component.where(id: params[:component_id], project_id: project_ids).first
+                        return [] unless comp
 
-      # Use phrase search (websearch_to_tsquery) for quoted phrases
-      # Otherwise use pg_search with word matching
+                        [comp.id]
+                      else
+                        Component.where(project_id: project_ids).ids
+                      end
+
       rules_scope = Rule.where(component_id: component_ids)
 
       rules_scope = if @has_phrases
@@ -111,9 +121,17 @@ module Api
                       rules_scope.search_content(search_term)
                     end
 
-      rules_scope.includes(:component, :disa_rule_descriptions, :checks)
-                 .limit(limit)
-                 .map do |rule|
+      rules = rules_scope.includes(:component, :disa_rule_descriptions, :checks, :satisfied_by)
+                         .limit(limit)
+                         .to_a
+
+      # Batch the per-rule comment_count via one GROUP BY.
+      comment_counts = Review.where(rule_id: rules.map(&:id), action: Review::ACTION_COMMENT)
+                             .group(:rule_id).count
+
+      rules.map do |rule|
+        snippet_data = generate_snippet_with_field(rule, @query[:normalized])
+        parent = rule.satisfied_by.first
         {
           id: rule.id,
           rule_id: rule.rule_id,
@@ -121,7 +139,11 @@ module Api
           status: rule.status,
           component_id: rule.component_id,
           component_prefix: rule.component&.prefix,
-          snippet: generate_snippet(rule, @query[:normalized])
+          snippet: snippet_data[:snippet],
+          matched_field: snippet_data[:matched_field],
+          comment_count: comment_counts[rule.id] || 0,
+          parent_rule_id: parent&.id,
+          parent_display_name: parent ? "#{rule.component&.prefix}-#{parent.rule_id}" : nil
         }
       end
     end
@@ -322,7 +344,7 @@ module Api
     # Generate a snippet showing context around the search match
     # Searches through title, fixtext, vuln_discussion, and check content
     #
-    def generate_snippet(rule, query)
+    def generate_snippet_with_field(rule, query)
       searchable_fields = [
         { field: 'title', content: rule.title },
         { field: 'fixtext', content: rule.fixtext },
@@ -330,7 +352,6 @@ module Api
         { field: 'check', content: rule.checks.first&.content }
       ]
 
-      # Find which field contains the match
       query_words = query.downcase.split(/\s+/)
 
       match = searchable_fields.find do |field_info|
@@ -341,9 +362,10 @@ module Api
         query_words.all? { |word| content_lower.include?(word) }
       end
 
-      return nil unless match
+      return { snippet: nil, matched_field: nil } unless match
 
-      extract_snippet(match[:content].to_s, query_words.first, match[:field])
+      snippet = extract_snippet(match[:content].to_s, query_words.first, match[:field])
+      { snippet: snippet, matched_field: match[:field] }
     end
 
     ##

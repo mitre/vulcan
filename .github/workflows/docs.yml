@@ -7,6 +7,8 @@ on:
       - main
     paths:
       - 'docs/**'
+      - 'doc/openapi.yaml'
+      - 'doc/openapi/**'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
@@ -38,13 +40,20 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
 
+      - name: Install root dependencies (for redocly CLI)
+        run: yarn install --frozen-lockfile
+
+      - name: Generate OpenAPI JSON for docs
+        run: yarn openapi:docs
+
       - name: Install and build docs
         env:
           GITHUB_DEPLOY: "true"  # Tell VitePress to use / base for custom domain
         run: |
-          # DO NOT install main dependencies - they cause Vue 2/3 conflict
+          # Docs have their own package.json with Vue 3 deps (isolated from
+          # the Rails app's Vue 2). Install only docs deps in CI.
           cd docs
-          yarn install
+          yarn install --frozen-lockfile
           yarn build
 
       - name: Upload artifact

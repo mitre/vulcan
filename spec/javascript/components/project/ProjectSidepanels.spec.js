@@ -48,13 +48,15 @@ describe("ProjectSidepanels", () => {
         total: 62,
       },
     },
-    effectivePermissions: "admin",
     activePanel: null,
   };
 
-  const createWrapper = (props = {}) => {
+  // Permissions come from the page-root provide (usePermissions inject),
+  // matching production: Project.vue provides "effectivePermissions".
+  const createWrapper = (props = {}, permissions = "admin") => {
     return shallowMount(ProjectSidepanels, {
       localVue,
+      provide: { effectivePermissions: permissions },
       propsData: {
         ...defaultProps,
         ...props,
@@ -73,6 +75,31 @@ describe("ProjectSidepanels", () => {
     if (wrapper) {
       wrapper.destroy();
     }
+  });
+
+  // REQUIREMENT: permissions arrive via the root provide (usePermissions
+  // inject). Details edit modal needs admin (canAdmin); Metadata edit modal
+  // needs author or above (canEdit).
+  describe("permissions via inject (usePermissions)", () => {
+    it("canAdmin is true when admin permissions are provided", () => {
+      wrapper = createWrapper({}, "admin");
+      expect(wrapper.vm.canAdmin).toBe(true);
+    });
+
+    it("canAdmin is false for author permissions", () => {
+      wrapper = createWrapper({}, "author");
+      expect(wrapper.vm.canAdmin).toBe(false);
+    });
+
+    it("canEdit is true for author permissions", () => {
+      wrapper = createWrapper({}, "author");
+      expect(wrapper.vm.canEdit).toBe(true);
+    });
+
+    it("canEdit is false for viewer permissions", () => {
+      wrapper = createWrapper({}, "viewer");
+      expect(wrapper.vm.canEdit).toBe(false);
+    });
   });
 
   // ==========================================

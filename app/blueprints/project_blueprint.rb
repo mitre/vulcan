@@ -14,6 +14,10 @@ class ProjectBlueprint < Blueprinter::Base
   end
 
   view :show do
+    field :effective_permissions do |project, options|
+      options[:current_user]&.effective_permissions(project)
+    end
+
     # Aggregate of pending comments across this project's components — sum
     # of the per-component counts passed in via options[:pending_comment_counts].
     # Renders a project-level discovery banner near the page header.
@@ -53,10 +57,8 @@ class ProjectBlueprint < Blueprinter::Base
       project.users
     end
 
-    field :access_requests do |project, _options|
-      project.access_requests.eager_load(:user, :project).map do |ar|
-        { id: ar.id, user: UserBlueprint.render_as_hash(ar.user), project_id: ar.project_id }
-      end
+    association :access_requests, blueprint: ProjectAccessRequestBlueprint do |project, _options|
+      project.access_requests.eager_load(:user, :project)
     end
   end
 end

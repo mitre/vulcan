@@ -6,49 +6,11 @@ RSpec.describe Review do
   let(:status_applicable) { 'Applicable - Configurable' }
   let(:satisfies_prefix) { 'Satisfies: ' }
 
-  # Expensive setup: SRG parse + component creation — do once
-  let_it_be(:shared_srg) do
-    srg_xml = Rails.root.join('db/seeds/srgs/U_GPOS_SRG_V3R3_Manual-xccdf.xml').read
-    parsed_benchmark = Xccdf::Benchmark.parse(srg_xml)
-    srg = SecurityRequirementsGuide.from_mapping(parsed_benchmark)
-    srg.xml = srg_xml
-    srg.save!
-    srg
-  end
-  let_it_be(:shared_p1) { Project.create(name: 'Photon OS 3') }
-  let_it_be(:shared_p2) { Project.create(name: 'Photon OS 3.1') }
-  let_it_be(:shared_component, refind: true) do
-    Component.create!(project: shared_p1, name: 'Photon OS 3', title: 'Photon OS 3 STIG',
-                      version: 'Photon OS 3 V1R1', prefix: 'PHOS-03', based_on: shared_srg)
-  end
-  let_it_be(:shared_p_admin) { create(:user) }
-  let_it_be(:shared_p_reviewer) { create(:user) }
-  let_it_be(:shared_p_author) { create(:user) }
-  let_it_be(:shared_other_p_admin) { create(:user) }
-  let_it_be(:shared_rule, refind: true) do
-    Rule.create(component: shared_component, rule_id: 'P1-R1',
-                status: 'Applicable - Configurable', rule_severity: 'medium',
-                srg_rule: shared_srg.srg_rules.first)
-  end
-
-  before do
-    Membership.create(user: shared_p_admin, membership: shared_p1, role: 'admin')
-    Membership.create(user: shared_p_reviewer, membership: shared_p1, role: 'reviewer')
-    Membership.create(user: shared_p_author, membership: shared_p1, role: 'author')
-    Membership.create(user: shared_other_p_admin, membership: shared_p2, role: 'admin')
-    @p1 = shared_p1
-    @p2 = shared_p2
-    @p1_c1 = shared_component
-    @p_admin = shared_p_admin
-    @p_reviewer = shared_p_reviewer
-    @p_author = shared_p_author
-    @other_p_admin = shared_other_p_admin
-    @p1r1 = shared_rule
-  end
+  include_context 'srg model base setup'
 
   context 'rule duplication' do
     it 'properly duplicated rule and required associated records' do
-      original_rule = @p1.rules.first
+      original_rule = project.rules.first
 
       # Clear any pre-existing associated records from SRG import
       original_rule.checks.destroy_all
@@ -102,15 +64,15 @@ RSpec.describe Review do
       RuleDescription.create(base_rule: original_rule, description: 'this is a test')
 
       # Add some reviews
-      Review.create(rule: original_rule, user: @p_admin, action: 'request_review', comment: '...')
-      Review.create(rule: original_rule, user: @p_admin, action: 'revoke_review_request', comment: '...')
-      Review.create(rule: original_rule, user: @p_admin, action: 'comment', comment: '...')
-      Review.create(rule: original_rule, user: @p_admin, action: 'request_review', comment: '...')
-      Review.create(rule: original_rule, user: @p_admin, action: 'approve', comment: '...')
-      Review.create(rule: original_rule, user: @p_admin, action: 'unlock_control', comment: '...')
+      Review.create(rule: original_rule, user: p_admin, action: 'request_review', comment: '...')
+      Review.create(rule: original_rule, user: p_admin, action: 'revoke_review_request', comment: '...')
+      Review.create(rule: original_rule, user: p_admin, action: 'comment', comment: '...')
+      Review.create(rule: original_rule, user: p_admin, action: 'request_review', comment: '...')
+      Review.create(rule: original_rule, user: p_admin, action: 'approve', comment: '...')
+      Review.create(rule: original_rule, user: p_admin, action: 'unlock_control', comment: '...')
 
       [
-        { review_requestor_id: @p_admin.id, locked: false },
+        { review_requestor_id: p_admin.id, locked: false },
         { review_requestor_id: nil, locked: true }
       ].each do |original_rule_update_attributes|
         original_rule.update(original_rule_update_attributes)
@@ -186,65 +148,65 @@ RSpec.describe Review do
 
   context 'custom validations' do
     it 'properly validates cannot_be_locked_and_under_review' do
-      expect(@p1r1.valid?).to be(true)
+      expect(rule.valid?).to be(true)
 
-      @p1r1.review_requestor_id = @p_admin.id
-      @p1r1.locked = false
-      expect(@p1r1.save).to be(true)
+      rule.review_requestor_id = p_admin.id
+      rule.locked = false
+      expect(rule.save).to be(true)
 
-      @p1r1.review_requestor_id = nil
-      @p1r1.locked = true
-      expect(@p1r1.save).to be(true)
+      rule.review_requestor_id = nil
+      rule.locked = true
+      expect(rule.save).to be(true)
 
-      @p1r1.review_requestor_id = @p_admin.id
-      @p1r1.locked = true
-      expect(@p1r1.save).to be(false)
-      expect(@p1r1.errors[:base]).to include('Control cannot be under review and locked at the same time.')
+      rule.review_requestor_id = p_admin.id
+      rule.locked = true
+      expect(rule.save).to be(false)
+      expect(rule.errors[:base]).to include('Control cannot be under review and locked at the same time.')
     end
 
     it 'properly validates prevent_destroy_if_under_review_or_locked when under review' do
-      @p1r1.update(review_requestor_id: @p_admin.id)
-      @p1r1.reload
-      @p1r1.destroy
-      expect(@p1r1.errors[:base]).to include('Control is under review and cannot be destroyed')
+      rule.update(review_requestor_id: p_admin.id)
+      rule.reload
+      rule.destroy
+      expect(rule.errors[:base]).to include('Control is under review and cannot be destroyed')
     end
 
     it 'properly validates prevent_destroy_if_under_review_or_locked when under locked' do
-      @p1r1.update(locked: true)
-      @p1r1.reload
-      @p1r1.destroy
-      expect(@p1r1.errors[:base]).to include('Control is locked and cannot be destroyed')
-      expect(Rule.find_by(id: @p1r1.id)).not_to be_nil
+      rule.update(locked: true)
+      rule.reload
+      rule.destroy
+      expect(rule.errors[:base]).to include('Control is locked and cannot be destroyed')
+      expect(Rule.find_by(id: rule.id)).not_to be_nil
     end
 
     it 'properly validates review_fields_cannot_change_with_other_fields' do
-      @p1r1.review_requestor_id = @p_admin.id
-      expect(@p1r1.valid?).to be(true)
-      @p1r1.reload
+      rule.review_requestor_id = p_admin.id
+      expect(rule.valid?).to be(true)
+      rule.reload
 
-      @p1r1.locked = true
-      expect(@p1r1.valid?).to be(true)
-      @p1r1.reload
+      rule.locked = true
+      expect(rule.valid?).to be(true)
+      rule.reload
 
-      @p1r1.status_justification = '...'
-      expect(@p1r1.valid?).to be(true)
-      @p1r1.reload
+      rule.status_justification = '...'
+      expect(rule.valid?).to be(true)
+      rule.reload
 
-      @p1r1.review_requestor_id = @p_admin.id
-      @p1r1.status_justification = '...'
-      expect(@p1r1.valid?).to be(false)
-      expect(@p1r1.errors[:base]).to include(
+      rule.review_requestor_id = p_admin.id
+      rule.status_justification = '...'
+      expect(rule.valid?).to be(false)
+      expect(rule.errors[:base]).to include(
         'Cannot update review-related attributes with other non-review-related attributes'
       )
-      @p1r1.reload
+      rule.reload
     end
   end
 
   context 'rule with multiple ident' do
     it 'has a unique string list of cci sorted in ascending order' do
-      @p1r1.ident = 'CCI-000068, CCI-000054, CCI-000054'
-      @p1r1.save!
-      expect(@p1r1.ident).to eq('CCI-000054, CCI-000068')
+      rule.ident = 'CCI-000068, CCI-000054, CCI-000054'
+      rule.save!
+      expect(rule.ident).to eq('CCI-000054, CCI-000068')
     end
   end
 
@@ -255,90 +217,89 @@ RSpec.describe Review do
 
     before do
       # Get a different SRG rule from the same SRG
-      srg = SecurityRequirementsGuide.find(@p1_c1.security_requirements_guide_id)
-      second_srg_rule = srg.srg_rules.where.not(id: @p1r1.srg_rule_id).first
+      srg = SecurityRequirementsGuide.find(component.security_requirements_guide_id)
+      second_srg_rule = srg.srg_rules.where.not(id: rule.srg_rule_id).first
 
       # Create a second rule with a different SRG rule
       @p1r2 = Rule.create!(
-        component: @p1_c1,
+        component: component,
         rule_id: 'P1-R2',
         status: status_applicable,
         rule_severity: 'high',
         srg_rule: second_srg_rule
       )
-      # Create satisfaction: @p1r1 satisfies @p1r2
-      @p1r1.satisfies << @p1r2
+      # Create satisfaction: rule satisfies @p1r2
+      rule.satisfies << @p1r2
     end
 
     it 'includes srg_id in the satisfies array' do
-      json = RuleBlueprint.render_as_hash(@p1r1, view: :editor)
-      satisfies_list = json[:satisfies]
+      json = RuleBlueprint.render_as_json(rule, view: :editor)
+      satisfies_list = json['satisfies']
       expect(satisfies_list).to be_an(Array)
       expect(satisfies_list.size).to eq(1)
 
       satisfied = satisfies_list.first
-      expect(satisfied[:id]).to eq(@p1r2.id)
-      expect(satisfied[:rule_id]).to eq('P1-R2')
-      expect(satisfied[:srg_id]).to eq(@p1r2.srg_rule.version)
+      expect(satisfied['id']).to eq(@p1r2.id)
+      expect(satisfied['rule_id']).to eq('P1-R2')
+      expect(satisfied['srg_id']).to eq(@p1r2.srg_rule.version)
     end
 
     it 'includes srg_id in the satisfied_by array' do
       @p1r2.reload
-      json = RuleBlueprint.render_as_hash(@p1r2, view: :editor)
-      satisfied_by_list = json[:satisfied_by]
+      json = RuleBlueprint.render_as_json(@p1r2, view: :editor)
+      satisfied_by_list = json['satisfied_by']
       expect(satisfied_by_list).to be_an(Array)
       expect(satisfied_by_list.size).to eq(1)
 
       satisfier = satisfied_by_list.first
-      expect(satisfier[:id]).to eq(@p1r1.id)
-      expect(satisfier[:rule_id]).to eq('P1-R1')
-      expect(satisfier[:srg_id]).to eq(@p1r1.srg_rule.version)
+      expect(satisfier['id']).to eq(rule.id)
+      expect(satisfier['rule_id']).to eq('P1-R1')
+      expect(satisfier['srg_id']).to eq(rule.srg_rule.version)
     end
 
     it 'includes srg_id derived from srg_rule.version' do
-      json = RuleBlueprint.render_as_hash(@p1r1, view: :editor)
-      # Blueprinter uses symbol keys consistently
-      expect(json).to have_key(:srg_id)
-      expect(json[:srg_id]).to eq(@p1r1.srg_rule.version)
+      json = RuleBlueprint.render_as_json(rule, view: :editor)
+      expect(json).to have_key('srg_id')
+      expect(json['srg_id']).to eq(rule.srg_rule.version)
     end
 
     it 'does NOT include version in satisfaction objects (frontend uses srg_id)' do
-      json = RuleBlueprint.render_as_hash(@p1r1, view: :editor)
-      satisfies_list = json[:satisfies]
+      json = RuleBlueprint.render_as_json(rule, view: :editor)
+      satisfies_list = json['satisfies']
       satisfied = satisfies_list.first
 
       # CRITICAL CONTRACT: Frontend RuleNavigator uses srg_id for display.
       # If version were included, it would mask the bug where template
       # references satisfies.version instead of satisfies.srg_id.
-      expect(satisfied).to have_key(:srg_id)
-      expect(satisfied).not_to have_key(:version)
-      expect(satisfied.keys).to match_array(%i[id rule_id srg_id])
+      expect(satisfied).to have_key('srg_id')
+      expect(satisfied).not_to have_key('version')
+      expect(satisfied.keys).to match_array(%w[id rule_id srg_id])
     end
 
     it 'does NOT include version in satisfied_by objects (frontend uses srg_id)' do
       @p1r2.reload
-      json = RuleBlueprint.render_as_hash(@p1r2, view: :editor)
-      satisfied_by_list = json[:satisfied_by]
+      json = RuleBlueprint.render_as_json(@p1r2, view: :editor)
+      satisfied_by_list = json['satisfied_by']
       satisfier = satisfied_by_list.first
 
-      expect(satisfier).to have_key(:srg_id)
-      expect(satisfier).not_to have_key(:version)
-      expect(satisfier.keys).to match_array(%i[id rule_id fixtext srg_id])
+      expect(satisfier).to have_key('srg_id')
+      expect(satisfier).not_to have_key('version')
+      expect(satisfier.keys).to match_array(%w[id rule_id fixtext srg_id component_prefix])
     end
 
     it 'handles satisfaction with nil srg_rule gracefully' do
       # belongs_to :srg_rule is required, so build (not create) to test edge case
       rule_no_srg = Rule.new(
-        component: @p1_c1,
+        component: component,
         rule_id: 'NO-SRG-002',
         status: status_applicable,
         rule_severity: 'medium',
         srg_rule: nil
       )
       # Verify blueprint handles nil srg_rule without error
-      json = RuleBlueprint.render_as_hash(rule_no_srg, view: :editor)
-      expect(json[:srg_id]).to be_nil
-      expect(json[:satisfies]).to eq([])
+      json = RuleBlueprint.render_as_json(rule_no_srg, view: :editor)
+      expect(json['srg_id']).to be_nil
+      expect(json['satisfies']).to eq([])
     end
   end
 
@@ -348,27 +309,27 @@ RSpec.describe Review do
     # Used by: XCCDF export (VulnDiscussion), CSV export (separate column), InSpec (tag).
 
     before do
-      srg = SecurityRequirementsGuide.find(@p1_c1.security_requirements_guide_id)
-      second_srg_rule = srg.srg_rules.where.not(id: @p1r1.srg_rule_id).first
-      third_srg_rule = srg.srg_rules.where.not(id: [@p1r1.srg_rule_id, second_srg_rule.id]).first
+      srg = SecurityRequirementsGuide.find(component.security_requirements_guide_id)
+      second_srg_rule = srg.srg_rules.where.not(id: rule.srg_rule_id).first
+      third_srg_rule = srg.srg_rules.where.not(id: [rule.srg_rule_id, second_srg_rule.id]).first
 
       @p1r2 = Rule.create!(
-        component: @p1_c1, rule_id: 'P1-R2',
+        component: component, rule_id: 'P1-R2',
         status: status_applicable, rule_severity: 'high',
         srg_rule: second_srg_rule
       )
       @p1r3 = Rule.create!(
-        component: @p1_c1, rule_id: 'P1-R3',
+        component: component, rule_id: 'P1-R3',
         status: status_applicable, rule_severity: 'medium',
         srg_rule: third_srg_rule
       )
-      # @p1r1 satisfies both @p1r2 and @p1r3
-      @p1r1.satisfies << @p1r2
-      @p1r1.satisfies << @p1r3
+      # rule satisfies both @p1r2 and @p1r3
+      rule.satisfies << @p1r2
+      rule.satisfies << @p1r3
     end
 
     it 'generates SRG-format satisfaction text with full sorted IDs' do
-      text = @p1r1.satisfaction_text(format: :srg, direction: :satisfies)
+      text = rule.satisfaction_text(format: :srg, direction: :satisfies)
       expect(text).to start_with(satisfies_prefix)
       ids = text.sub(satisfies_prefix, '').split(', ')
       expect(ids.size).to eq(2)
@@ -379,7 +340,7 @@ RSpec.describe Review do
     end
 
     it 'generates STIG-format satisfaction text with component prefix' do
-      text = @p1r1.satisfaction_text(format: :stig, direction: :satisfies)
+      text = rule.satisfaction_text(format: :stig, direction: :satisfies)
       expect(text).to start_with(satisfies_prefix)
       ids = text.sub(satisfies_prefix, '').split(', ')
       expect(ids.size).to eq(2)
@@ -391,15 +352,15 @@ RSpec.describe Review do
       @p1r2.reload
       text = @p1r2.satisfaction_text(format: :srg, direction: :satisfied_by)
       expect(text).to start_with('Satisfied By: ')
-      expect(text).to include(@p1r1.srg_rule.version)
+      expect(text).to include(rule.srg_rule.version)
     end
 
     it 'returns nil when no relationships exist' do
       # @p1r3 has no satisfies of its own (only satisfied_by)
       rule_no_rels = Rule.create!(
-        component: @p1_c1, rule_id: 'P1-LONE',
+        component: component, rule_id: 'P1-LONE',
         status: status_applicable, rule_severity: 'low',
-        srg_rule: @p1r1.srg_rule
+        srg_rule: rule.srg_rule
       )
       expect(rule_no_rels.satisfaction_text(format: :srg, direction: :satisfies)).to be_nil
     end
@@ -407,7 +368,7 @@ RSpec.describe Review do
     it 'deduplicates IDs' do
       # Adding same rule twice should not create duplicate text
       # HABTM has unique index so this tests the text output
-      text = @p1r1.satisfaction_text(format: :srg, direction: :satisfies)
+      text = rule.satisfaction_text(format: :srg, direction: :satisfies)
       ids = text.sub(satisfies_prefix, '').split(', ')
       expect(ids).to eq(ids.uniq)
     end
@@ -418,26 +379,26 @@ RSpec.describe Review do
     # plus dynamically generated satisfaction text. Never duplicates.
 
     before do
-      srg = SecurityRequirementsGuide.find(@p1_c1.security_requirements_guide_id)
-      second_srg_rule = srg.srg_rules.where.not(id: @p1r1.srg_rule_id).first
+      srg = SecurityRequirementsGuide.find(component.security_requirements_guide_id)
+      second_srg_rule = srg.srg_rules.where.not(id: rule.srg_rule_id).first
 
       @p1r2 = Rule.create!(
-        component: @p1_c1, rule_id: 'P1-R2',
+        component: component, rule_id: 'P1-R2',
         status: status_applicable, rule_severity: 'high',
         srg_rule: second_srg_rule
       )
-      @p1r1.satisfies << @p1r2
+      rule.satisfies << @p1r2
     end
 
     it 'includes user-authored vendor comments' do
-      @p1r1.update!(vendor_comments: 'User wrote this comment.')
-      text = @p1r1.export_vendor_comments
+      rule.update!(vendor_comments: 'User wrote this comment.')
+      text = rule.export_vendor_comments
       expect(text).to include('User wrote this comment.')
     end
 
     it 'strips stale satisfaction text from raw vendor_comments' do
-      @p1r1.update!(vendor_comments: 'User comment. Satisfies: CNTR-00-001234, CNTR-00-001235.')
-      text = @p1r1.export_vendor_comments
+      rule.update!(vendor_comments: 'User comment. Satisfies: CNTR-00-001234, CNTR-00-001235.')
+      text = rule.export_vendor_comments
       # Should NOT contain the old stale satisfaction text
       expect(text).not_to include('CNTR-00-001234')
       # Should contain the fresh dynamically generated satisfaction
@@ -446,16 +407,16 @@ RSpec.describe Review do
     end
 
     it 'generates exactly one Satisfies line' do
-      @p1r1.update!(vendor_comments: 'Some comment. Satisfies: OLD-001. Satisfied By: OLD-002.')
-      text = @p1r1.export_vendor_comments
+      rule.update!(vendor_comments: 'Some comment. Satisfies: OLD-001. Satisfied By: OLD-002.')
+      text = rule.export_vendor_comments
       expect(text.scan('Satisfies:').count).to eq(1)
     end
 
     it 'returns empty string when no comments and no relationships' do
       rule_clean = Rule.create!(
-        component: @p1_c1, rule_id: 'CLEAN-R1',
+        component: component, rule_id: 'CLEAN-R1',
         status: status_applicable, rule_severity: 'low',
-        srg_rule: @p1r1.srg_rule
+        srg_rule: rule.srg_rule
       )
       expect(rule_clean.export_vendor_comments).to eq('')
     end
@@ -464,16 +425,16 @@ RSpec.describe Review do
   context 'RuleBlueprint with missing SRG data' do
     it 'handles rule with nil srg_rule gracefully' do
       rule_without_srg = Rule.create(
-        component: @p1_c1,
+        component: component,
         rule_id: 'NO-SRG-001',
         status: status_applicable,
         rule_severity: 'medium',
         srg_rule: nil
       )
       json = nil
-      expect { json = RuleBlueprint.render_as_hash(rule_without_srg, view: :editor) }.not_to raise_error
-      expect(json[:srg_rule_attributes]).to be_nil
-      expect(json[:srg_info][:version]).to be_nil
+      expect { json = RuleBlueprint.render_as_json(rule_without_srg, view: :editor) }.not_to raise_error
+      expect(json['srg_rule_attributes']).to be_nil
+      expect(json['srg_info']['version']).to be_nil
     end
 
     it 'handles rule with srg_rule but nil security_requirements_guide_id' do
@@ -483,23 +444,144 @@ RSpec.describe Review do
         security_requirements_guide_id: nil
       )
       rule_with_orphan_srg = Rule.create(
-        component: @p1_c1,
+        component: component,
         rule_id: 'ORPHAN-SRG-001',
         status: status_applicable,
         rule_severity: 'medium',
         srg_rule: orphan_srg_rule
       )
       json = nil
-      expect { json = RuleBlueprint.render_as_hash(rule_with_orphan_srg, view: :editor) }.not_to raise_error
-      expect(json[:srg_info][:version]).to be_nil
+      expect { json = RuleBlueprint.render_as_json(rule_with_orphan_srg, view: :editor) }.not_to raise_error
+      expect(json['srg_info']['version']).to be_nil
     end
 
     it 'returns correct SRG version when all data is present' do
-      # Use the existing @p1r1 which has a valid srg_rule
-      json = RuleBlueprint.render_as_hash(@p1r1, view: :editor)
-      expect(json[:srg_info][:version]).not_to be_nil
-      srg = @p1r1.srg_rule.security_requirements_guide
-      expect(json[:srg_info][:version]).to eq(srg.version)
+      # Use the existing rule which has a valid srg_rule
+      json = RuleBlueprint.render_as_json(rule, view: :editor)
+      expect(json['srg_info']['version']).not_to be_nil
+      srg = rule.srg_rule.security_requirements_guide
+      expect(json['srg_info']['version']).to eq(srg.version)
+    end
+  end
+
+  describe 'update_inspec_code (after_save callback)' do
+    it 'regenerates inspec_control_file after title change' do
+      rule.update!(title: 'Updated title for InSpec test', audit_comment: 'test')
+      rule.reload
+      expect(rule.inspec_control_file).to include('Updated title for InSpec test')
+    end
+
+    it 'regenerates inspec_control_file after fixtext change' do
+      rule.update!(fixtext: 'New fix text content here', audit_comment: 'test')
+      rule.reload
+      expect(rule.inspec_control_file).to include('New fix text content here')
+    end
+
+    it 'uses update_column — no recursion guard needed' do
+      rule.update!(title: 'No flag test', audit_comment: 'test')
+      expect(rule).not_to respond_to(:skip_update_inspec_code)
+    end
+
+    it 'handles rule with no disa_rule_descriptions gracefully' do
+      rule.disa_rule_descriptions.destroy_all
+      rule.update!(title: 'No desc test', audit_comment: 'test')
+      rule.reload
+      expect(rule.inspec_control_file).to include('No desc test')
+      expect(rule.inspec_control_file).not_to include('vuln_discussion')
+    end
+
+    it 'includes inspec_control_body when present' do
+      rule.update!(
+        inspec_control_body: "describe service('sshd') do\n  it { should be_running }\nend",
+        audit_comment: 'test'
+      )
+      rule.reload
+      expect(rule.inspec_control_file).to include("describe service('sshd')")
+    end
+
+    it 'update_column rolls back with the parent transaction on error' do
+      rule.update!(title: 'Rollback test title', audit_comment: 'test')
+      rule.reload
+      new_file = rule.inspec_control_file
+      expect(new_file).to include('Rollback test title')
+
+      begin
+        Rule.transaction do
+          rule.update!(title: 'Should be rolled back', audit_comment: 'rollback')
+          raise ActiveRecord::Rollback
+        end
+      rescue ActiveRecord::Rollback
+        # expected
+      end
+
+      rule.reload
+      expect(rule.title).to eq('Rollback test title')
+      expect(rule.inspec_control_file).to eq(new_file)
+    end
+
+    it 'does not update updated_at (derived column — no false cache invalidation)' do
+      rule.reload
+      original_updated_at = rule.updated_at
+      rule.update!(title: 'Timestamp check', audit_comment: 'test')
+      rule.reload
+      expect(rule.updated_at).to be > original_updated_at
+      saved_updated_at = rule.updated_at
+
+      rule.update_inspec_code
+      rule.reload
+      expect(rule.updated_at).to eq(saved_updated_at)
+    end
+  end
+
+  describe 'status getter/setter — no custom override (regression guard)' do
+    let(:parent_rule) { component.rules.second }
+    let(:child_rule) { rule }
+
+    before do
+      child_rule.satisfied_by << parent_rule unless child_rule.satisfied_by.include?(parent_rule)
+    end
+
+    after do
+      child_rule.satisfied_by.delete(parent_rule)
+    end
+
+    it 'status returns the actual DB value for a child with satisfied_by' do
+      expect(child_rule.satisfied_by.size).to be > 0
+
+      child_rule.update!(status: 'Applicable - Does Not Meet', audit_comment: 'regression')
+      child_rule.reload
+
+      expect(child_rule.status).to eq('Applicable - Does Not Meet')
+      expect(child_rule[:status]).to eq(child_rule.status)
+    end
+
+    it 'status= persists on child rules (setter is not a no-op)' do
+      expect(child_rule.satisfied_by.size).to be > 0
+
+      child_rule.status = 'Not Applicable'
+      child_rule.audit_comment = 'regression'
+      child_rule.save!
+      child_rule.reload
+
+      expect(child_rule.status).to eq('Not Applicable')
+    end
+
+    it 'apply_nesting_status! sets ADNM and reads back correctly' do
+      child_rule.apply_nesting_status!(parent_rule)
+      child_rule.reload
+
+      expect(child_rule.status).to eq('Applicable - Does Not Meet')
+      expect(child_rule[:status]).to eq('Applicable - Does Not Meet')
+    end
+
+    it 'fixtext returns the child own text, not the parent (export_fixtext delegates)' do
+      child_rule.update!(fixtext: 'Child-specific fix text', audit_comment: 'regression')
+      parent_rule.update!(fixtext: 'Parent fix text', audit_comment: 'regression')
+      child_rule.reload
+
+      expect(child_rule.fixtext).to eq('Child-specific fix text')
+      expect(child_rule.send(:export_fixtext)).to eq('Parent fix text')
+      expect(child_rule.fixtext).not_to eq(child_rule.send(:export_fixtext))
     end
   end
 end

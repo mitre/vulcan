@@ -1,0 +1,27 @@
+parameters:
+  - $ref: ../components/parameters/RuleId.yaml
+delete:
+  operationId: removeSatisfaction
+  tags:
+    - Rules
+  summary: Remove a satisfaction relationship
+  description: Removes the parent-child satisfaction link and reverts ADNM status on the child rule.
+  requestBody:
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            rule_id:
+              type: integer
+            satisfied_by_rule_id:
+              type: integer
+  responses:
+    '200':
+      description: Satisfaction removed
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

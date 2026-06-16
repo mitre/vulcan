@@ -9,7 +9,7 @@
       id-prefix="ruleEditor-disa_rule_description"
       :tooltip="tooltips['documentable']"
       @toggle-section-lock="$emit('toggle-section-lock', $event)"
-      @open-composer="bubbleOpenComposer"
+      v-on="commentIconListeners"
     >
       <template #default="{ isDisabled }">
         <b-form-checkbox
@@ -25,12 +25,7 @@
           "
         >
           Documentable
-          <b-icon
-            v-if="tooltips['documentable']"
-            v-b-tooltip.hover.html="tooltips['documentable']"
-            icon="info-circle"
-            aria-hidden="true"
-          />
+          <InfoTooltip v-if="tooltips['documentable']" :text="tooltips['documentable']" />
         </b-form-checkbox>
       </template>
     </RuleFormGroup>
@@ -46,7 +41,7 @@
         () => fields.displayed.includes('vuln_discussion') || rule.status == 'Not Yet Determined'
       "
       @toggle-section-lock="$emit('toggle-section-lock', $event)"
-      @open-composer="bubbleOpenComposer"
+      v-on="commentIconListeners"
     >
       <template #default="{ inputId, isDisabled }">
         <MarkdownTextarea
@@ -442,14 +437,15 @@
 </template>
 
 <script>
-import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
-import CommentIconHostMixin from "../../../mixins/CommentIconHostMixin.vue";
+import { toRef } from "vue";
+import { useFormFeedback } from "../../../composables/useFormFeedback";
+import { useCommentIconHost } from "../../../composables/useCommentIconHost";
 import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
 import RuleFormGroup from "../../shared/RuleFormGroup.vue";
+import InfoTooltip from "../../shared/InfoTooltip.vue";
 export default {
   name: "DisaRuleDescriptionForm",
-  components: { MarkdownTextarea, RuleFormGroup },
-  mixins: [FormFeedbackMixinVue, CommentIconHostMixin],
+  components: { MarkdownTextarea, RuleFormGroup, InfoTooltip },
   // `rule` and `index` are necessary if edits are to be made
   props: {
     description: {
@@ -507,8 +503,29 @@ export default {
         };
       },
     },
+    validFeedback: {
+      type: Object,
+      required: false,
+      default: () => ({}),
+    },
+    invalidFeedback: {
+      type: Object,
+      required: false,
+      default: () => ({}),
+    },
+  },
+  setup(props, { emit }) {
+    const { commentIconListeners, commentIconProps } = useCommentIconHost({
+      rule: toRef(props, "rule"),
+      emit,
+    });
+    const { inputClass } = useFormFeedback(props);
+    return { commentIconListeners, commentIconProps, inputClass };
   },
   computed: {
+    formGroupPropsWithCommentIcon() {
+      return { ...this.formGroupProps, ...this.commentIconProps };
+    },
     formGroupProps() {
       return {
         fields: this.fields,

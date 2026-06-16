@@ -1,6 +1,9 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
+import { createPinia, setActivePinia } from "pinia";
+import { createTestRouter } from "@test/support/routerTestHelper";
+import { useRuleSelectionStore } from "@/stores/ruleSelection";
 import RuleSatisfactions from "@/components/rules/RuleSatisfactions.vue";
 
 /**
@@ -47,8 +50,19 @@ const defaultProps = {
 // --- Helpers ---
 
 const createWrapper = (propsOverrides = {}) => {
+  const pinia = createPinia();
+  setActivePinia(pinia);
+  const router = createTestRouter([
+    { path: "/", name: "editor-root" },
+    { path: "/rules/:ruleId", name: "rule", props: true },
+  ]);
+  const store = useRuleSelectionStore();
+  store.init(router, 1);
+
   const wrapper = mount(RuleSatisfactions, {
     localVue,
+    pinia,
+    router,
     propsData: {
       ...defaultProps,
       ...propsOverrides,
@@ -322,26 +336,26 @@ describe("RuleSatisfactions", () => {
   // Requirement 9: Click navigation
   // ---------------------------------------------------------------
   describe("click navigation", () => {
-    it("emits ruleSelected with rule ID when clicking a satisfies entry", async () => {
+    it("calls store.selectRule when clicking a satisfies entry", async () => {
       ({ wrapper, rootEmit } = createWrapper({
         rule: { ...baseRule, satisfies: [sat1], satisfied_by: [] },
       }));
 
       await wrapper.find(".clickable").trigger("click");
 
-      expect(wrapper.emitted("ruleSelected")).toBeTruthy();
-      expect(wrapper.emitted("ruleSelected")[0]).toEqual([sat1.id]);
+      const store = useRuleSelectionStore();
+      expect(store.selectedRuleId).toBe(sat1.id);
     });
 
-    it("emits ruleSelected with rule ID when clicking a satisfied_by entry", async () => {
+    it("calls store.selectRule when clicking a satisfied_by entry", async () => {
       ({ wrapper, rootEmit } = createWrapper({
         rule: { ...baseRule, satisfied_by: [sat2] },
       }));
 
       await wrapper.find(".clickable").trigger("click");
 
-      expect(wrapper.emitted("ruleSelected")).toBeTruthy();
-      expect(wrapper.emitted("ruleSelected")[0]).toEqual([sat2.id]);
+      const store = useRuleSelectionStore();
+      expect(store.selectedRuleId).toBe(sat2.id);
     });
 
     it("emits refresh:rule via $root when satisfaction has no histories", async () => {
@@ -363,8 +377,8 @@ describe("RuleSatisfactions", () => {
       await wrapper.find(".clickable").trigger("click");
 
       expect(rootEmit).not.toHaveBeenCalledWith("refresh:rule", expect.anything());
-      // ruleSelected should still emit
-      expect(wrapper.emitted("ruleSelected")).toBeTruthy();
+      const store = useRuleSelectionStore();
+      expect(store.selectedRuleId).toBe(satWithHistories.id);
     });
   });
 
@@ -381,11 +395,13 @@ describe("RuleSatisfactions", () => {
       expect(row.classes()).toContain("selectedRuleRow");
     });
 
-    it("does not apply selectedRuleRow class when selectedRuleId does not match", () => {
+    it("does not apply selectedRuleRow class when store.selectedRuleId does not match", async () => {
       ({ wrapper } = createWrapper({
         rule: { ...baseRule, satisfies: [sat1], satisfied_by: [] },
-        selectedRuleId: 999,
       }));
+      const store = useRuleSelectionStore();
+      store.selectRule(999);
+      await wrapper.vm.$nextTick();
       const row = wrapper.find(".ruleRow");
       expect(row.classes()).not.toContain("selectedRuleRow");
     });

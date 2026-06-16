@@ -6,7 +6,7 @@
       title="Status"
       :items="statusItems"
       :disabled="disabledStatus"
-      @update:items="onStatusUpdate"
+      @update:items="onGroupUpdate"
       @reset="onStatusReset"
     />
 
@@ -16,7 +16,7 @@
       title="Display"
       :items="displayItems"
       :disabled="disabledDisplay"
-      @update:items="onDisplayUpdate"
+      @update:items="onGroupUpdate"
       @reset="onDisplayReset"
     />
 
@@ -26,7 +26,7 @@
       title="Review"
       :items="reviewItems"
       :disabled="disabledReview"
-      @update:items="onReviewUpdate"
+      @update:items="onGroupUpdate"
       @reset="onReviewReset"
     />
   </div>
@@ -77,6 +77,12 @@ export default {
     statusItems() {
       return [
         {
+          key: "nydFilterChecked",
+          label: "Not Yet Determined",
+          count: this.counts.nyd,
+          checked: this.filters.nydFilterChecked,
+        },
+        {
           key: "acFilterChecked",
           label: "Applicable - Configurable",
           count: this.counts.ac,
@@ -99,12 +105,6 @@ export default {
           label: "Not Applicable",
           count: this.counts.na,
           checked: this.filters.naFilterChecked,
-        },
-        {
-          key: "nydFilterChecked",
-          label: "Not Yet Determined",
-          count: this.counts.nyd,
-          checked: this.filters.nydFilterChecked,
         },
       ];
     },
@@ -147,6 +147,11 @@ export default {
           label: "Sort SRG",
           checked: this.filters.sortBySRGIdChecked,
         },
+        {
+          key: "openCommentsOnly",
+          label: "Open Comments Only",
+          checked: this.filters.openCommentsOnly,
+        },
       ];
     },
   },
@@ -155,21 +160,7 @@ export default {
       const newFilters = { ...this.filters, ...updates };
       this.$emit("update:filters", newFilters);
     },
-    onStatusUpdate(items) {
-      const updates = {};
-      items.forEach((item) => {
-        updates[item.key] = item.checked;
-      });
-      this.emitUpdatedFilters(updates);
-    },
-    onReviewUpdate(items) {
-      const updates = {};
-      items.forEach((item) => {
-        updates[item.key] = item.checked;
-      });
-      this.emitUpdatedFilters(updates);
-    },
-    onDisplayUpdate(items) {
+    onGroupUpdate(items) {
       const updates = {};
       items.forEach((item) => {
         updates[item.key] = item.checked;
@@ -200,6 +191,7 @@ export default {
         nestSatisfiedRulesChecked: defaults.nestSatisfiedRulesChecked,
         showSRGIdChecked: defaults.showSRGIdChecked,
         sortBySRGIdChecked: defaults.sortBySRGIdChecked,
+        openCommentsOnly: defaults.openCommentsOnly,
       });
     },
   },
@@ -210,8 +202,8 @@ export default {
 .filter-bar {
   gap: 0.75rem;
   align-items: stretch; /* Unify heights */
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
+  background-color: var(--vulcan-gray-100);
+  border: 1px solid var(--vulcan-gray-300);
   border-radius: 0.375rem;
   padding: 0.75rem;
 }

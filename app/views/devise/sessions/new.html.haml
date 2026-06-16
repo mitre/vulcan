@@ -1,36 +1,56 @@
 - content_for :assets do
   = javascript_include_tag 'login'
 
-.row
-  .col-md-12
-    %h1 Welcome to Vulcan
-    %br/
-.row
-  .col-md-5.order-2.order-md-1
-    = render 'devise/shared/what_is_vulcan'
-  .col-md.offset-md-0.offset-lg-1.order-1.order-md-2
-    #login
-      - if any_oauth_providers_enabled? || any_form_providers_enabled?
-        %b-card{"no-body" => ""}
-          %b-tabs{:card => "", :fill => "", :pills => ""}
-            - if oidc_enabled?
-              - non_ldap_oauth_providers.each do |provider|
-                %b-tab{:title => oidc_title_text}
-                  %b-card-text
-                    = link_to omniauth_authorize_path(resource_name, provider), class: "btn btn-block btn-light border", method: :post do
-                      = image_tag asset_path("oidc-lock-icon.png"), style: "vertical-align: middle; margin-right: 10px", height: 40, width: 40
-                      Sign in with #{oidc_title_text}
-            - if ldap_enabled?
-              %b-tab{:title => Settings.ldap.servers.values.first['title']}
-                %b-card-text
-                  = render 'devise/sessions/ldap'
-            - if local_login_enabled?
-              %b-tab{"v-bind:active" => params[:active_tab].eql?('local') ? "true" : "false", :title => "Local Login"}
-                %b-card-text
-                  = render 'devise/sessions/local'
-            - if user_registration_enabled?
-              %b-tab{"v-bind:active" => params[:active_tab].eql?('registration') ? "true" : "false", :title => "Register"}
-                %b-card-text
-                  = render 'devise/registrations/form'
-
-    %br/
+.d-flex.align-items-center.justify-content-center.py-4{"style" => "min-height: calc(100vh - 120px)"}
+  .container
+    .row.align-items-center
+      .col-lg-5.mb-4.mb-lg-0
+        %h1.mb-3 Welcome to Vulcan
+        %p.lead
+          Vulcan helps Subject Matter Experts (SMEs) apply Security Requirements Guides (SRGs) to
+          author Security Technical Implementation Guides (STIGs) &amp; corresponding InSpec Profiles
+          as security testing content.
+        - if Settings['welcome_text'].present?
+          %p.text-muted= Settings['welcome_text']
+      .col-lg-6.offset-lg-1
+        - if params[:link_pending] && session[:pending_link]
+          %b-card.shadow.border.mb-3{"no-body" => ""}
+            %b-card-header.bg-warning.text-dark
+              %h5.mb-0
+                %b-icon{:icon => "link-45deg", :class => "mr-1"}
+                Link Existing Account
+            %b-card-body
+              %p
+                An account with this email already exists. Enter your password to link
+                %strong= OidcProviderRegistry.title_for(session[:pending_link]['provider'])
+                to your account.
+              = form_tag complete_link_path, method: :post do
+                .form-group
+                  %label{:for => "link-current-password"} Current Password
+                  %input#link-current-password.form-control{:type => "password", :name => "current_password", :autocomplete => "current-password", :required => true}
+                = submit_tag "Link Account & Sign In", class: "btn btn-warning btn-block"
+        #login
+          - if any_oauth_providers_enabled? || any_form_providers_enabled?
+            %b-card{"no-body" => "", "class" => "shadow border"}
+              %b-tabs{:card => "", :fill => "", :pills => ""}
+                - if oidc_enabled?
+                  - non_ldap_oauth_providers.each do |provider|
+                    %b-tab{:title => oauth_provider_title(provider)}
+                      %b-card-text
+                        = render 'devise/shared/provider_button', provider: provider, action: 'Sign in', variant: 'light'
+                - if ldap_enabled?
+                  %b-tab{:title => Settings.ldap.servers.values.first['title']}
+                    %b-card-text
+                      = render 'devise/sessions/ldap'
+                - if local_login_enabled?
+                  %b-tab{"v-bind:active" => params[:active_tab].eql?('local') ? "true" : "false", :title => "Local Login"}
+                    %b-card-text
+                      = render 'devise/sessions/local'
+                - if user_registration_enabled?
+                  %b-tab{"v-bind:active" => params[:active_tab].eql?('registration') ? "true" : "false", :title => "Register"}
+                    %b-card-text
+                      - if oidc_enabled?
+                        - non_ldap_oauth_providers.each do |provider|
+                          = render 'devise/shared/provider_button', provider: provider, action: 'Register', variant: 'outline-primary'
+                        %p.text-center.text-muted.my-2 — or register with email and password —
+                      = render 'devise/registrations/form'

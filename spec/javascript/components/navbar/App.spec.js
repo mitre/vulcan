@@ -1,5 +1,6 @@
 import { mount } from "@vue/test-utils";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { setActivePinia, createPinia } from "pinia";
 import { localVue } from "@test/testHelper";
 import App from "@/components/navbar/App.vue";
 import { EVENTS, dispatch } from "@/utils/notificationEvents";
@@ -20,6 +21,10 @@ const baseProps = {
 };
 
 describe("Navbar locked user notifications", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
   it("shows locked user count in badge when locked_users present", () => {
     const wrapper = mount(App, {
       localVue,
@@ -52,9 +57,7 @@ describe("Navbar locked user notifications", () => {
       localVue,
       propsData: {
         ...baseProps,
-        access_requests: [
-          { project_id: 1, user: { name: "Requester" }, project: { name: "Proj" } },
-        ],
+        access_requests: [{ user: { name: "Requester" }, project: { id: 1, name: "Proj" } }],
         locked_users: [{ id: 1, name: "Locked", email: "locked@example.com" }],
       },
     });
@@ -133,6 +136,22 @@ describe("Navbar profile dropdown", () => {
     current_user: { id: 42, name: "Casey Tester", email: "casey@example.com", ...overrides },
   });
 
+  // REQUIREMENT: the utility nav (bell / theme toggle / user menu) never
+  // collapses, so its dropdown menus must overlay the page content at EVERY
+  // viewport width — not expand the navbar in-flow. Bootstrap only restores
+  // dropdown position: absolute above the navbar's expand breakpoint (xl);
+  // the .utility-nav hook re-applies Bootstrap's own expanded-navbar rule to
+  // this always-expanded nav (the same rule the bare .navbar-expand pattern
+  // on Bootstrap's docs site uses). jsdom loads no CSS, so this pins the
+  // class hook; Playwright verifies the rendered behavior.
+  it("marks the always-visible utility nav with the dropdown-overlay hook", () => {
+    const wrapper = mount(App, { localVue, propsData: userProps() });
+    const utilityNav = wrapper.find(".utility-nav");
+    expect(utilityNav.exists()).toBe(true);
+    // Both utility dropdowns (notifications + user menu) live inside it
+    expect(utilityNav.findAll(".dropdown-menu").length).toBe(2);
+  });
+
   it("shows the user's name next to the profile icon when current_user is provided", () => {
     const wrapper = mount(App, { localVue, propsData: userProps() });
     expect(wrapper.text()).toContain("Casey Tester");
@@ -171,11 +190,27 @@ describe("Navbar profile dropdown", () => {
   });
 });
 
+describe("Navbar access request link", () => {
+  it("links access request notification to /projects/:id using project.id", () => {
+    const wrapper = mount(App, {
+      localVue,
+      propsData: {
+        ...baseProps,
+        access_requests: [
+          { id: 10, user: { name: "Jane Doe" }, project: { id: 42, name: "Container Platform" } },
+        ],
+      },
+    });
+    const items = wrapper.findAll(".dropdown-item");
+    const arItem = items.wrappers.find((w) => w.text().includes("Jane Doe"));
+    expect(arItem).toBeTruthy();
+    expect(arItem.attributes("href")).toBe("/projects/42?members=1");
+  });
+});
+
 describe("Navbar access request reactivity", () => {
   it("initializes localAccessRequests from prop", () => {
-    const requests = [
-      { id: 10, project_id: 1, user: { name: "Requester" }, project: { name: "Proj" } },
-    ];
+    const requests = [{ id: 10, user: { name: "Requester" }, project: { id: 1, name: "Proj" } }];
     const wrapper = mount(App, {
       localVue,
       propsData: { ...baseProps, access_requests: requests },
@@ -186,8 +221,8 @@ describe("Navbar access request reactivity", () => {
 
   it("removes access request on ACCESS_REQUEST_CHANGED (resolved)", async () => {
     const requests = [
-      { id: 10, project_id: 1, user: { name: "Requester" }, project: { name: "Proj" } },
-      { id: 11, project_id: 2, user: { name: "Other" }, project: { name: "Proj2" } },
+      { id: 10, user: { name: "Requester" }, project: { id: 1, name: "Proj" } },
+      { id: 11, user: { name: "Other" }, project: { id: 2, name: "Proj2" } },
     ];
     const wrapper = mount(App, {
       localVue,
@@ -204,9 +239,7 @@ describe("Navbar access request reactivity", () => {
   });
 
   it("decrements badge count when access request resolved", async () => {
-    const requests = [
-      { id: 10, project_id: 1, user: { name: "Requester" }, project: { name: "Proj" } },
-    ];
+    const requests = [{ id: 10, user: { name: "Requester" }, project: { id: 1, name: "Proj" } }];
     const wrapper = mount(App, {
       localVue,
       propsData: { ...baseProps, access_requests: requests },
@@ -218,5 +251,79 @@ describe("Navbar access request reactivity", () => {
     await wrapper.vm.$nextTick();
 
     expect(wrapper.find(".badge-danger").exists()).toBe(false);
+  });
+});
+
+describe("Navbar non-signed-in (login page)", () => {
+  const loginProps = { ...baseProps, signed_in: false };
+
+  it("renders the dark mode toggle when not signed in", () => {
+    const w = mount(App, { localVue, propsData: loginProps });
+    const toggleNav = w
+      .findAll(".navbar-nav")
+      .wrappers.find((nav) => nav.find("[aria-label='Toggle dark mode']").exists());
+    expect(toggleNav).toBeTruthy();
+  });
+
+  it("right-aligns the dark mode toggle with order-xl-last", () => {
+    const w = mount(App, { localVue, propsData: loginProps });
+    const toggleNav = w
+      .findAll(".navbar-nav")
+      .wrappers.find((nav) => nav.find("[aria-label='Toggle dark mode']").exists());
+    expect(toggleNav.classes()).toContain("ml-auto");
+    expect(toggleNav.classes()).toContain("order-xl-last");
+  });
+});
+
+describe("Navbar dropdown viewport containment", () => {
+  // The old tests here pinned boundary="viewport" — a NO-OP inside navbars:
+  // BootstrapVue never instantiates Popper in a navbar (mixins/dropdown.js
+  // "Only instantiate Popper.js when dropdown is not in <b-navbar>"), and
+  // boundary only configures Popper. Containment is CSS: menus anchor to the
+  // .utility-nav (li is position: static — Bootstrap's documented
+  // dropdown-parent pattern) and are width-capped, so wide notification
+  // menus cannot overflow the left viewport edge on small screens.
+  it("keeps the bell badge anchored to the toggle link, not the li", () => {
+    const w = mount(App, {
+      localVue,
+      propsData: {
+        ...baseProps,
+        access_requests: [{ user: { name: "Req" }, project: { id: 1, name: "P" } }],
+      },
+    });
+    const dropdowns = w.findAllComponents({ name: "BNavItemDropdown" });
+    const bellToggle = dropdowns.at(0).find(".nav-link");
+    // The li must stay position: static (CSS) so the badge needs its
+    // positioning context on the toggle link itself.
+    expect(bellToggle.classes()).toContain("position-relative");
+    expect(dropdowns.at(0).find(".badge-danger").exists()).toBe(true);
+  });
+
+  // ── mixin contract ──────────────────────────────────────────────────
+  // REQUIREMENT: the navbar app carries no mixins at all. FormMixin was
+  // verified dead — authenticityToken never referenced.
+  it("declares no mixins", () => {
+    expect(App.mixins).toBeUndefined();
+  });
+});
+
+// ── sign-out ──────────────────────────────────────────────────────────
+// REQUIREMENT (AC-12(02)): sign-out must run Devise's NAVIGATIONAL flow so
+// the "Signed out successfully." flash renders on the sign-in page. An ajax
+// JSON DELETE returns 204 with no flash (JSON is not a flashing format) and
+// a client-side jump to "/" triggers a second auth redirect — the message
+// is never shown. rails-ujs (started globally in the application pack)
+// turns a data-method="delete" link into a real HTML DELETE form submit.
+describe("Navbar sign-out", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
+  it("renders Sign Out as a navigational DELETE link handled by rails-ujs", () => {
+    const wrapper = mount(App, { localVue, propsData: baseProps });
+    const signOutLink = wrapper.findAll("a").wrappers.find((a) => a.text().trim() === "Sign Out");
+    expect(signOutLink).toBeDefined();
+    expect(signOutLink.attributes("href")).toBe("/sign_out");
+    expect(signOutLink.attributes("data-method")).toBe("delete");
   });
 });

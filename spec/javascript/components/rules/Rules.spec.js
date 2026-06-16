@@ -2,9 +2,27 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import Rules from "@/components/rules/Rules.vue";
-import axios from "axios";
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
 
-vi.mock("axios");
+vi.mock("@/api/rulesApi", () => ({
+  getRule: vi.fn(() => Promise.resolve({ data: {} })),
+  deleteRule: vi.fn(() => Promise.resolve({ data: {} })),
+  createRuleInComponent: vi.fn(() => Promise.resolve({ data: {} })),
+  addSatisfaction: vi.fn(() => Promise.resolve({ data: {} })),
+  removeSatisfaction: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+
+vi.mock("@/composables/useSortRules", { spy: true });
+import { useSortRules } from "@/composables/useSortRules";
 
 describe("Rules", () => {
   const createWrapper = (rulesOverrides = []) => {
@@ -36,6 +54,46 @@ describe("Rules", () => {
       },
     });
   };
+
+  describe("viewport-locked layout", () => {
+    it("root element has vulcan-editor-layout class for flex chain continuity", () => {
+      const wrapper = createWrapper();
+      expect(wrapper.classes()).toContain("vulcan-editor-layout");
+      wrapper.destroy();
+    });
+  });
+
+  // ── composable contracts ────────────────────────────────────────────
+  // REQUIREMENT: the initial rule list sorts by rule_id via useSortRules
+  // (setup-before-data — data() reads this.compareRules). FormMixin was
+  // verified dead and removed; toasts come from the useToast composable.
+  describe("composable contracts", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("sorts the initial rules by rule_id via useSortRules", () => {
+      const base = {
+        component_id: 100,
+        status: "Not Yet Determined",
+        satisfied_by: [],
+        satisfies: [],
+        disa_rule_descriptions_attributes: [],
+        checks_attributes: [],
+        rule_descriptions_attributes: [],
+      };
+      const wrapper = createWrapper([
+        { ...base, id: 3, rule_id: "000030" },
+        { ...base, id: 1, rule_id: "000010" },
+        { ...base, id: 2, rule_id: "000020" },
+      ]);
+      expect(useSortRules).toHaveBeenCalled();
+      expect(wrapper.vm.reactiveRules.map((r) => r.rule_id)).toEqual([
+        "000010",
+        "000020",
+        "000030",
+      ]);
+      wrapper.destroy();
+    });
+  });
 
   describe("addSatisfiedRule", () => {
     beforeEach(() => {
@@ -74,13 +132,12 @@ describe("Rules", () => {
       // Simulate local status change (user changes status but hasn't saved yet)
       wrapper.vm.reactiveRules[0].status = "Applicable - Configurable";
 
-      // Mock successful satisfaction creation
-      axios.post.mockResolvedValue({
+      const { addSatisfaction, getRule } = await import("@/api/rulesApi");
+      addSatisfaction.mockResolvedValue({
         data: { toast: "Successfully marked as satisfied" },
       });
 
-      // Mock the refresh that returns the OLD server data (status still 'Not Yet Determined')
-      axios.get.mockResolvedValue({
+      getRule.mockResolvedValue({
         data: {
           id: 1,
           component_id: 100,
@@ -140,8 +197,8 @@ describe("Rules", () => {
 
       const wrapper = createWrapper([rule1, rule2]);
 
-      // Mock successful satisfaction creation that returns updated relationship data
-      axios.post.mockResolvedValue({
+      const { addSatisfaction } = await import("@/api/rulesApi");
+      addSatisfaction.mockResolvedValue({
         data: {
           toast: "Successfully marked as satisfied",
           rule: { ...rule1, satisfied_by: [rule2] },
@@ -195,8 +252,8 @@ describe("Rules", () => {
       // Simulate local status change (user changes status but hasn't saved yet)
       wrapper.vm.reactiveRules[0].status = "Not Applicable";
 
-      // Mock successful satisfaction removal
-      axios.delete.mockResolvedValue({
+      const { removeSatisfaction } = await import("@/api/rulesApi");
+      removeSatisfaction.mockResolvedValue({
         data: { toast: "Successfully removed satisfaction" },
       });
 

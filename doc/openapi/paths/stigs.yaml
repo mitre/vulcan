@@ -1,0 +1,84 @@
+get:
+  operationId: listStigs
+  tags:
+    - Benchmarks
+  summary: List uploaded STIGs
+  description: >-
+    Returns all uploaded STIGs sorted by title. Requires authentication.
+    STIGs are published security guidance that can be used as reference
+    when authoring Components.
+  responses:
+    '200':
+      description: All STIGs
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/StigSummary.yaml
+          examples:
+            stigs:
+              summary: Two STIGs
+              value:
+                - id: 1
+                  stig_id: Application_Security_Development_STIG
+                  name: "Application Security Development STIG - Ver 6, Rel 4"
+                  title: Application Security and Development Security Technical Implementation Guide
+                  version: V6R4
+                  benchmark_date: "2025-10-01"
+                  severity_counts:
+                    high: 34
+                    medium: 230
+                    low: 22
+                - id: 2
+                  stig_id: Crunchy_Data_PostgreSQL_STIG
+                  name: "Crunchy Data PostgreSQL STIG - Ver 3, Rel 1"
+                  title: Crunchy Data PostgreSQL Security Technical Implementation Guide
+                  version: V3R1
+                  benchmark_date: "2025-09-15"
+                  severity_counts:
+                    high: 10
+                    medium: 85
+                    low: 5
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+post:
+  operationId: uploadStig
+  tags:
+    - Benchmarks
+  summary: Upload a STIG XCCDF XML file
+  description: >-
+    Parses and imports a published STIG from an XCCDF XML file. Requires
+    admin role. Extracts all rules, CCIs, and metadata. Duplicate STIGs
+    (same title + version) are rejected.
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          required:
+            - file
+          properties:
+            file:
+              type: string
+              format: binary
+              description: DISA XCCDF XML file (.xml) containing the STIG.
+  responses:
+    '200':
+      description: STIG uploaded and parsed
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            added:
+              summary: STIG imported
+              value:
+                toast:
+                  title: STIG added.
+                  message:
+                    - "Successfully added Application Security and Development Security Technical Implementation Guide."
+                  variant: success
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

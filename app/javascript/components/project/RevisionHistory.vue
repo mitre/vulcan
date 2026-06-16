@@ -37,13 +37,13 @@
             class="ml-3"
           >
             <p v-if="history.changes[rule_id].change === 'added'" class="mb-1">
-              {{ history.diffComponent.prefix }}-{{ rule_id }} was added
+              {{ history.diff_component.prefix }}-{{ rule_id }} was added
             </p>
             <p v-if="history.changes[rule_id].change === 'removed'" class="mb-1">
-              {{ history.baseComponent.prefix }}-{{ rule_id }} was removed
+              {{ history.base_component.prefix }}-{{ rule_id }} was removed
             </p>
             <p v-if="history.changes[rule_id].change === 'updated'" class="mb-1">
-              {{ history.baseComponent.prefix }}-{{ rule_id }} was updated
+              {{ history.base_component.prefix }}-{{ rule_id }} was updated
             </p>
           </div>
         </div>
@@ -54,15 +54,14 @@
 
 <script>
 import _ from "lodash";
-import axios from "axios";
+import { getComponentHistory } from "../../api/componentsApi";
 import MonacoEditor from "vue-monaco";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { useToast } from "../../composables/useToast";
 import FilterDropdown from "../shared/FilterDropdown.vue";
 
 export default {
   name: "RevisionHistory",
   components: { FilterDropdown },
-  mixins: [AlertMixinVue],
   props: {
     project: {
       type: Object,
@@ -72,6 +71,10 @@ export default {
       type: Array,
       required: true,
     },
+  },
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
   },
   data: function () {
     return {
@@ -89,11 +92,10 @@ export default {
     fetchRevisionHistory: function () {
       if (this.componentName) {
         this.loading = true;
-        axios
-          .post(`/components/history`, {
-            project_id: this.project.id,
-            name: this.componentName,
-          })
+        getComponentHistory({
+          project_id: this.project.id,
+          name: this.componentName,
+        })
           .then((response) => {
             this.revisionHistory = response.data;
           })

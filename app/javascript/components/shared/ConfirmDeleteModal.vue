@@ -24,8 +24,8 @@
     <div v-else>
       <p class="mb-2">{{ displayConfirmMessage }}</p>
       <p v-if="itemName" class="mb-0 font-weight-bold">"{{ itemName }}"</p>
-      <p v-if="warningMessage" class="text-muted mt-3 mb-0">
-        <small><b-icon icon="info-circle" class="mr-1" />{{ warningMessage }}</small>
+      <p v-if="warningMessage" class="mt-3 mb-0">
+        <InfoNotice :text="warningMessage" />
       </p>
     </div>
 
@@ -82,8 +82,11 @@
  *   - cancel: User cancelled
  *   - update:visible: For v-model support
  */
+import InfoNotice from "./InfoNotice.vue";
+
 export default {
   name: "ConfirmDeleteModal",
+  components: { InfoNotice },
   model: {
     prop: "visible",
     event: "update:visible",
@@ -165,7 +168,7 @@ export default {
 <style>
 /* Warning border for delete confirmation modal */
 .confirm-delete-modal .modal-content {
-  border: 2px solid #ffc107 !important; /* Bootstrap 4 warning color */
+  border: 2px solid var(--vulcan-warning) !important; /* Bootstrap 4 warning color */
   border-radius: 0.5rem;
 }
 </style>

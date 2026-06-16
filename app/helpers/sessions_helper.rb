@@ -20,8 +20,21 @@ module SessionsHelper
     Settings.oidc.enabled
   end
 
-  def oidc_title_text
-    Settings.oidc.title
+  # Per-provider button label. Resolves a provider's title from the registry
+  # (Settings.oidc.providers) so each provider on the login page is labeled with
+  # its own configured title. The view passes Devise.omniauth_providers symbols.
+  def oauth_provider_title(provider)
+    OidcProviderRegistry.title_for(provider)
+  end
+
+  def oauth_provider_icon(provider)
+    base = "#{provider.to_s.tr('_', '-')}-logo"
+    %w[.svg .png].each do |ext|
+      return ActionController::Base.helpers.asset_path("#{base}#{ext}")
+    rescue Propshaft::MissingAssetError
+      next
+    end
+    ActionController::Base.helpers.asset_path('oidc-lock-icon.png')
   end
 
   def local_login_enabled?

@@ -28,13 +28,13 @@ RSpec.describe 'GET /projects/:id/comments' do
     # cross-project comment used to assert query-level isolation below.
     Membership.find_or_create_by!(user: viewer, membership: other_project) { |m| m.role = 'viewer' }
 
-    Review.create!(action: 'comment', user: viewer, rule: component_a.rules.first,
-                   comment: 'on a', section: 'check_content')
-    Review.create!(action: 'comment', user: viewer, rule: component_b.rules.first,
-                   comment: 'on b', section: 'fixtext')
+    create(:review, :comment, user: viewer, rule: component_a.rules.first,
+                              comment: 'on a', section: 'check_content')
+    create(:review, :comment, user: viewer, rule: component_b.rules.first,
+                              comment: 'on b', section: 'fixtext')
     # Cross-project — must NOT appear in project's aggregate
-    Review.create!(action: 'comment', user: viewer, rule: other_component.rules.first,
-                   comment: 'cross-project leak attempt', section: nil)
+    create(:review, :comment, user: viewer, rule: other_component.rules.first,
+                              comment: 'cross-project leak attempt', section: nil)
   end
 
   before { Rails.application.reload_routes! }
@@ -124,6 +124,7 @@ RSpec.describe 'GET /projects/:id/comments' do
         next unless sql.is_a?(String)
         next unless sql.match?(/FROM\s+"?base_rules"?/i)
         next if sql.match?(/INNER JOIN/i) # row-fetch joins, not the lookup
+        next if sql.match?(/GROUP BY/i) # aggregate counts (status_counts), not the lookup
 
         captured_rule_lookup_sql = sql
       end

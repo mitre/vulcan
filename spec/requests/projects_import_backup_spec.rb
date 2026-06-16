@@ -82,7 +82,7 @@ RSpec.describe 'Project Import Backup' do
 
       body = response.parsed_body
       expect(body['toast']['title']).to eq('Import error')
-      expect(body['toast']['message']).to eq('No file provided')
+      expect(body['toast']['message']).to eq(['No file provided.'])
     end
   end
 
@@ -97,7 +97,9 @@ RSpec.describe 'Project Import Backup' do
 
       expect(response).to have_http_status(:success)
       body = response.parsed_body
-      expect(body['toast']).to eq('Backup restored successfully.')
+      expect(body['toast']['title']).to eq('Backup restored.')
+      expect(body['toast']['message']).to include(a_string_including('Backup restored'))
+      expect(body['toast']['variant']).to eq('success')
       expect(body['summary']['components_imported']).to eq(1)
       expect(body['summary']['rules_imported']).to eq(source_component.rules.count)
     end
@@ -131,7 +133,9 @@ RSpec.describe 'Project Import Backup' do
            params: { file: uploaded_file, dry_run: 'true' }
 
       body = response.parsed_body
-      expect(body['toast']).to eq('Dry run complete. No records were created.')
+      expect(body['toast']['title']).to eq('Dry run complete.')
+      expect(body['toast']['message']).to include(a_string_including('No records were created'))
+      expect(body['toast']['variant']).to eq('success')
       expect(body['summary']['dry_run']).to be true
     end
   end
@@ -143,7 +147,7 @@ RSpec.describe 'Project Import Backup' do
       sign_in admin_user
       # Add a review to the source component
       rule = source_component.rules.first
-      Review.create!(user: admin_user, rule: rule, action: 'request_review', comment: 'Test')
+      create(:review, user: admin_user, rule: rule, comment: 'Test')
     end
 
     it 'includes reviews by default' do
@@ -223,9 +227,9 @@ RSpec.describe 'Project Import Backup' do
       post "/projects/#{project.id}/import_backup",
            params: { file: invalid_file }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       body = response.parsed_body
-      expect(body['toast']['title']).to eq('Import failed')
+      expect(body['toast']['title']).to eq('Import failed.')
       expect(body['toast']['variant']).to eq('danger')
     end
 
@@ -237,9 +241,9 @@ RSpec.describe 'Project Import Backup' do
       post "/projects/#{project.id}/import_backup",
            params: { file: uploaded_file }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       body = response.parsed_body
-      expect(body['toast']['message']).to match(/already exists/)
+      expect(body['toast']['message']).to include(a_string_matching(/already exists/))
     end
   end
 end

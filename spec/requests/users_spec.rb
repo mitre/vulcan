@@ -13,6 +13,21 @@ RSpec.describe 'Users' do
   let(:regular_user) { create(:user, admin: false) }
   let(:target_user) { create(:user, admin: false) }
 
+  describe 'GET /users JSON format' do
+    before { sign_in admin_user }
+
+    it 'includes locked_at, failed_attempts, and last_sign_in_at in response' do
+      get '/users', headers: { 'Accept' => 'application/json' }
+      expect(response).to have_http_status(:ok)
+
+      body = response.parsed_body
+      user_keys = body.first.keys
+      expect(user_keys).to include('locked_at')
+      expect(user_keys).to include('failed_attempts')
+      expect(user_keys).to include('last_sign_in_at')
+    end
+  end
+
   describe 'PUT /users/:id HTML format with admin user' do
     before { sign_in admin_user }
 
@@ -173,7 +188,7 @@ RSpec.describe 'Users' do
 
       delete "/users/#{user_to_delete.id}", headers: json_headers
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.content_type).to include('application/json')
       json = response.parsed_body
       expect(json['toast']['title']).to include('Could not remove')
@@ -199,7 +214,7 @@ RSpec.describe 'Users' do
       it 'returns 422 via JSON' do
         put "/users/#{admin_user.id}", params: { user: { admin: false } }.to_json, headers: json_headers
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = response.parsed_body
         expect(json['toast']['title']).to include('Cannot remove admin')
       end
@@ -217,7 +232,7 @@ RSpec.describe 'Users' do
       it 'returns 422 via JSON' do
         delete "/users/#{admin_user.id}", headers: json_headers
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = response.parsed_body
         expect(json['toast']['title']).to include('Cannot delete')
       end
@@ -266,7 +281,7 @@ RSpec.describe 'Users' do
 
         expect(response).to have_http_status(:ok)
         json = response.parsed_body
-        expect(json['toast']).to include('newuser@example.com')
+        expect(json['toast']['message']).to include(a_string_including('newuser@example.com'))
         expect(json['user']['email']).to eq('newuser@example.com')
         expect(json['user']['name']).to eq('New User')
       end
@@ -292,7 +307,7 @@ RSpec.describe 'Users' do
         post '/users/admin_create', params: { user: { name: 'Dup', email: admin_user.email } }.to_json,
                                     headers: json_headers
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = response.parsed_body
         expect(json['toast']['variant']).to eq('danger')
       end
@@ -301,7 +316,7 @@ RSpec.describe 'Users' do
         post '/users/admin_create', params: { user: { name: '', email: 'valid@example.com' } }.to_json,
                                     headers: json_headers
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
 
@@ -398,7 +413,7 @@ RSpec.describe 'Users' do
 
         post "/users/#{target_user.id}/send_password_reset", headers: json_headers
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = response.parsed_body
         expect(json['toast']['title']).to include('SMTP not configured')
       end
@@ -515,7 +530,7 @@ RSpec.describe 'Users' do
              params: { user: { password: '' } }.to_json,
              headers: json_headers
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it 'returns 422 for non-compliant password' do
@@ -523,7 +538,7 @@ RSpec.describe 'Users' do
              params: { user: { password: 'short' } }.to_json,
              headers: json_headers
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = response.parsed_body
         expect(json['toast']['variant']).to eq('danger')
       end
@@ -583,15 +598,15 @@ RSpec.describe 'Users' do
       Membership.find_or_create_by!(user: viewer, membership: other_project) { |m| m.role = 'viewer' }
       Membership.find_or_create_by!(user: other_viewer, membership: my_project) { |m| m.role = 'viewer' }
 
-      @my_c1 = Review.create!(action: 'comment', comment: 'one', user: viewer,
-                              rule: my_component.rules.first, section: 'check_content')
-      @my_c2 = Review.create!(action: 'comment', comment: 'two', user: viewer,
-                              rule: other_component.rules.first, section: nil)
-      @other_users_c = Review.create!(action: 'comment', comment: 'theirs', user: other_viewer,
-                                      rule: my_component.rules.first)
-      @my_reply = Review.create!(action: 'comment', comment: 'reply', user: viewer,
-                                 rule: my_component.rules.first,
-                                 responding_to_review_id: @other_users_c.id)
+      @my_c1 = create(:review, :comment, comment: 'one', user: viewer,
+                                         rule: my_component.rules.first, section: 'check_content')
+      @my_c2 = create(:review, :comment, comment: 'two', user: viewer,
+                                         rule: other_component.rules.first, section: nil)
+      @other_users_c = create(:review, :comment, comment: 'theirs', user: other_viewer,
+                                                 rule: my_component.rules.first)
+      @my_reply = create(:review, :comment, comment: 'reply', user: viewer,
+                                            rule: my_component.rules.first,
+                                            responding_to_review_id: @other_users_c.id)
     end
 
     context 'as the viewer requesting their own comments' do
@@ -641,8 +656,8 @@ RSpec.describe 'Users' do
       before { sign_in viewer }
 
       let!(:my_component_comment) do
-        Review.create!(action: 'comment', comment: 'overall component', user: viewer,
-                       commentable: my_component)
+        create(:review, :component_comment, comment: 'overall component', user: viewer,
+                                            commentable: my_component)
       end
 
       it "includes the user's component-scoped reviews alongside rule-scoped ones" do

@@ -57,9 +57,8 @@
 </template>
 
 <script>
-import axios from "axios";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { updateComponent } from "../../api/componentsApi";
+import { useToast } from "../../composables/useToast";
 
 function initialState(component) {
   return {
@@ -75,12 +74,15 @@ function initialState(component) {
 
 export default {
   name: "AddQuestionsToComponentModal",
-  mixins: [AlertMixinVue, FormMixinVue],
   props: {
     component: {
       type: Object,
       required: true,
     },
+  },
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
   },
   data: function () {
     return initialState(this.component);
@@ -102,13 +104,9 @@ export default {
     },
     updateQuestions: function () {
       this.$refs["addQuestionsToComponentModal"].hide();
-      let payload = {
-        component: {
-          additional_questions_attributes: this.questions.concat(this.deleted_questions),
-        },
-      };
-      axios
-        .put(`/components/${this.component.id}`, payload)
+      updateComponent(this.component.id, {
+        additional_questions_attributes: this.questions.concat(this.deleted_questions),
+      })
         .then(this.updateAdditionalQuestionsSuccess)
         .catch(this.alertOrNotifyResponse);
     },

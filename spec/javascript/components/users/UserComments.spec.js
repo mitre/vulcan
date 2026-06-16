@@ -1,20 +1,35 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
-import axios from "axios";
+import { setActivePinia, createPinia } from "pinia";
+import { localVue, flushPromises } from "@test/testHelper";
 import UserComments from "@/components/users/UserComments.vue";
+import { getUserComments } from "@/api/usersApi";
 
-vi.mock("axios");
+vi.mock("@/composables/useDateFormat", { spy: true });
+vi.mock("@/composables/useReplyComposer", { spy: true });
+import { useDateFormat } from "@/composables/useDateFormat";
+import { useReplyComposer } from "@/composables/useReplyComposer";
+
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/api/usersApi", () => ({
+  getUserComments: vi.fn(() => Promise.resolve({ data: { rows: [], pagination: { total: 0 } } })),
+}));
 
 // REQUIREMENT: My Comments — every commenter (including industry
 // reviewers using only the viewer role) must be able to see the
 // status of comments they posted, where they sit in the triage
 // pipeline, and the latest activity. Backed by GET /users/:id/comments
 // (Task 09 — already shipped) and consumed by UserProfile.vue.
-
-const flushPromises = async (wrapper) => {
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  if (wrapper) await wrapper.vm.$nextTick();
-};
 
 const SHARED_STUBS = [
   "b-table",
@@ -75,7 +90,18 @@ const mockResponse = {
 
 describe("UserComments", () => {
   beforeEach(() => {
-    axios.get.mockResolvedValue(mockResponse);
+    setActivePinia(createPinia());
+    getUserComments.mockResolvedValue(mockResponse);
+  });
+
+  it("uses commentsStore for data fetching (store integration)", async () => {
+    const wrapper = mount(UserComments, {
+      propsData: { userId: 7 },
+      stubs: SHARED_STUBS,
+    });
+    await flushPromises();
+    expect(wrapper.vm.commentsStore).toBeDefined();
+    expect(typeof wrapper.vm.commentsStore.fetchUserComments).toBe("function");
   });
 
   it("fetches /users/:id/comments on mount", async () => {
@@ -84,12 +110,7 @@ describe("UserComments", () => {
       stubs: SHARED_STUBS,
     });
     await flushPromises();
-    expect(axios.get).toHaveBeenCalledWith(
-      "/users/7/comments",
-      expect.objectContaining({
-        params: expect.objectContaining({ page: 1 }),
-      }),
-    );
+    expect(getUserComments).toHaveBeenCalledWith(7, expect.objectContaining({ page: 1 }));
   });
 
   it("renders a row for each comment with rule + project context", async () => {
@@ -106,7 +127,7 @@ describe("UserComments", () => {
   });
 
   it("renders an empty-state message when there are no comments", async () => {
-    axios.get.mockResolvedValueOnce({
+    getUserComments.mockResolvedValueOnce({
       data: { rows: [], pagination: { page: 1, per_page: 25, total: 0 } },
     });
     const wrapper = mount(UserComments, {
@@ -146,28 +167,89 @@ describe("UserComments", () => {
       stubs: SHARED_STUBS,
     });
     await flushPromises();
-    axios.get.mockClear();
+    getUserComments.mockClear();
     wrapper.vm.filterStatus = "pending";
     wrapper.vm.onFilterChanged();
     await flushPromises();
-    expect(axios.get).toHaveBeenCalledWith(
-      "/users/7/comments",
+    expect(getUserComments).toHaveBeenCalledWith(
+      7,
       expect.objectContaining({
-        params: expect.objectContaining({ triage_status: "pending" }),
+        triage_status: "pending",
       }),
     );
   });
 
   it("surfaces fetch errors via alertOrNotifyResponse", async () => {
-    axios.get.mockRejectedValueOnce({ response: { status: 500, data: {} } });
+    getUserComments.mockRejectedValueOnce({ response: { status: 500, data: {} } });
     const wrapper = mount(UserComments, {
       propsData: { userId: 7 },
       stubs: SHARED_STUBS,
     });
     const alertSpy = vi.spyOn(wrapper.vm, "alertOrNotifyResponse").mockImplementation(() => {});
-    axios.get.mockRejectedValueOnce({ response: { status: 500, data: {} } });
+    getUserComments.mockRejectedValueOnce({ response: { status: 500, data: {} } });
     await wrapper.vm.fetch();
     expect(alertSpy).toHaveBeenCalled();
     alertSpy.mockRestore();
+  });
+
+  // ── composable contracts ────────────────────────────────────────────
+  // REQUIREMENTS: posted/activity dates render via useDateFormat and the
+  // reply composer state machine flows through useReplyComposer with the
+  // onOpen/afterPosted bridge — no DateFormatMixin or ReplyComposerMixin
+  // remains (toasts come from the useToast composable). localVue
+  // installs BootstrapVue so the real $bvModal injection is spied on.
+  // CommentThread/CommentComposerModal are stubbed so the spy calls are
+  // attributable to UserComments itself, not to children rendering dates.
+  describe("composable contracts", () => {
+    const mountWithBv = () =>
+      mount(UserComments, {
+        localVue,
+        propsData: { userId: 7 },
+        stubs: [...SHARED_STUBS, "CommentThread", "CommentComposerModal"],
+      });
+
+    it("renders posted dates via useDateFormat", async () => {
+      vi.clearAllMocks();
+      getUserComments.mockResolvedValue(mockResponse);
+      const wrapper = mountWithBv();
+      await flushPromises();
+      expect(useDateFormat).toHaveBeenCalled();
+      // moment "lll" renders the month name, never the raw ISO string
+      expect(wrapper.vm.friendlyDateTime("2026-04-29T19:10:59Z")).toContain("Apr 29, 2026");
+    });
+
+    it("wires useReplyComposer — reply from a row opens the modal via the bridge", async () => {
+      const wrapper = mountWithBv();
+      await flushPromises();
+      expect(useReplyComposer).toHaveBeenCalled();
+
+      const showSpy = vi.spyOn(wrapper.vm.$bvModal, "show").mockImplementation(() => {});
+      wrapper.vm.openReplyComposerFromRow({
+        id: 142,
+        rule_id: 17,
+        component_id: 8,
+        rule_displayed_name: "CNTR-01-000003",
+      });
+      expect(wrapper.vm.composerState.mode).toBe("reply");
+      expect(wrapper.vm.composerState.reviewId).toBe(142);
+      expect(wrapper.vm.composerState.ruleName).toBe("CNTR-01-000003");
+      expect(wrapper.vm.composerActive).toBe(true);
+      await wrapper.vm.$nextTick();
+      expect(showSpy).toHaveBeenCalledWith("comment-composer-modal");
+    });
+
+    it("afterPosted bridge refetches the rows and clears the composer", async () => {
+      const wrapper = mountWithBv();
+      await flushPromises();
+      vi.spyOn(wrapper.vm.$bvModal, "show").mockImplementation(() => {});
+      getUserComments.mockClear();
+
+      wrapper.vm.openReplyComposerFromRow({ id: 142, rule_id: 17, component_id: 8 });
+      wrapper.vm.onComposerPosted();
+      await flushPromises();
+
+      expect(getUserComments).toHaveBeenCalledTimes(1);
+      expect(wrapper.vm.composerActive).toBe(false);
+    });
   });
 });

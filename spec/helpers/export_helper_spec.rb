@@ -99,6 +99,45 @@ RSpec.describe ExportHelper do
     end
   end
 
+  describe '#apply_disa_content_rules!' do
+    let(:attrs) do
+      {
+        'Check' => 'original check',
+        'Fix' => 'original fix',
+        'Status Justification' => 'justification text',
+        'Mitigation' => 'mitigation text',
+        ExportHelper::FIELD_ARTIFACT_DESCRIPTION => 'artifact text',
+        'VulDiscussion' => 'vuln discussion text',
+        'Severity' => 'high'
+      }
+    end
+
+    it 'blanks VulnDiscussion for Not Applicable status (V4R3 §4.1.8)' do
+      apply_disa_content_rules!(attrs, 'Not Applicable')
+      expect(attrs['VulDiscussion']).to be_nil
+    end
+
+    it 'blanks Severity for Not Applicable status (V4R3 §4.1.14)' do
+      apply_disa_content_rules!(attrs, 'Not Applicable')
+      expect(attrs['Severity']).to be_nil
+    end
+
+    it 'does NOT blank VulnDiscussion for Applicable - Configurable' do
+      apply_disa_content_rules!(attrs, 'Applicable - Configurable')
+      expect(attrs['VulDiscussion']).to eq('vuln discussion text')
+    end
+
+    it 'does NOT blank Severity for Applicable - Configurable' do
+      apply_disa_content_rules!(attrs, 'Applicable - Configurable')
+      expect(attrs['Severity']).to eq('high')
+    end
+
+    it 'does NOT blank VulnDiscussion for Applicable - Does Not Meet' do
+      apply_disa_content_rules!(attrs, 'Applicable - Does Not Meet')
+      expect(attrs['VulDiscussion']).to eq('vuln discussion text')
+    end
+  end
+
   describe '#export_xccdf_project' do
     let(:zip_data) { export_xccdf_project(project).string }
 

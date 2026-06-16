@@ -14,6 +14,14 @@ import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import RevisionHistory from "@/components/project/RevisionHistory.vue";
 
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: [] })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
 describe("RevisionHistory — Task 28 FilterDropdown migration", () => {
   const mountIt = (overrides = {}) =>
     mount(RevisionHistory, {

@@ -1,5 +1,10 @@
 <template>
-  <span data-test="badge" :class="['triage-status', cssClass]" :title="tooltip">
+  <span
+    data-test="badge"
+    :class="['triage-status', cssClass]"
+    :data-triage="status"
+    :title="tooltip"
+  >
     <span data-test="glyph" aria-hidden="true">{{ glyph }}</span>
     <span data-test="label">{{ displayLabel }}</span>
   </span>
@@ -20,6 +25,8 @@ export default {
     status: { type: String, required: true },
     adjudicatedAt: { type: [String, Date], default: null },
     duplicateOfId: { type: [Number, String], default: null },
+    addressedByRuleId: { type: [Number, String], default: null },
+    addressedByRuleName: { type: String, default: null },
   },
   computed: {
     isAdjudicated() {
@@ -32,6 +39,9 @@ export default {
     displayLabel() {
       if (this.status === "duplicate" && this.duplicateOfId) {
         return `Duplicate of #${this.duplicateOfId}`;
+      }
+      if (this.status === "addressed_by" && (this.addressedByRuleName || this.addressedByRuleId)) {
+        return `Addressed by ${this.addressedByRuleName || `#${this.addressedByRuleId}`}`;
       }
       if (this.isAdjudicated) {
         return `${ADJUDICATED_LABEL} (${TRIAGE_LABELS[this.status] || this.status})`;
@@ -56,11 +66,31 @@ export default {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   white-space: nowrap;
+  padding: 0.2em 0.5em;
+  border-radius: 0.25rem;
+  font-weight: 600;
 }
+
 .triage-status > [data-test="glyph"] {
   font-size: 1em;
   line-height: 1;
+}
+
+/* Color comes from data-triage attribute → intermediate CSS vars (Layer 3) */
+.triage-status[data-triage] {
+  color: var(--status-pill-fg, #fff);
+  background-color: var(--status-color);
+}
+
+/* Semantic decorations — unique per-status, NOT color */
+.triage-status--withdrawn,
+.triage-status--duplicate {
+  text-decoration: line-through;
+}
+
+.triage-status--adjudicated {
+  font-style: italic;
 }
 </style>

@@ -1,0 +1,28 @@
+parameters:
+  - $ref: ../components/parameters/ReviewId.yaml
+patch:
+  operationId: moveReviewToRule
+  tags:
+    - Reviews
+  summary: Admin moves a comment thread to a different rule
+  description: Reassigns the comment and all its replies to a different rule. Walks parent-first to satisfy validators. Requires admin role.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            target_rule_id:
+              type: integer
+            audit_comment:
+              type: string
+  responses:
+    '200':
+      description: Review moved
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ReviewWrapper.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

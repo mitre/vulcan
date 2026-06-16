@@ -3,14 +3,18 @@ import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import ReactionButtons from "@/components/shared/ReactionButtons.vue";
 
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
     get: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
     defaults: { headers: { common: {} } },
   },
 }));
 
-import axios from "axios";
+import api from "@/api/baseApi";
 
 const baseProps = (overrides = {}) => ({
   reviewId: 42,
@@ -20,7 +24,7 @@ const baseProps = (overrides = {}) => ({
 
 describe("ReactionButtons", () => {
   beforeEach(() => {
-    axios.get.mockReset();
+    api.get.mockReset();
   });
 
   it("renders both up and down buttons with counts", () => {
@@ -100,7 +104,7 @@ describe("ReactionButtons", () => {
   });
 
   it("calls fetch on first popover show and caches the result", async () => {
-    axios.get.mockResolvedValue({
+    api.get.mockResolvedValue({
       data: {
         up: [{ name: "Alice" }, { name: "Bob" }],
         down: [{ name: "Carol" }],
@@ -112,47 +116,45 @@ describe("ReactionButtons", () => {
     });
 
     await w.vm.onPopoverShow();
-    expect(axios.get).toHaveBeenCalledTimes(1);
-    expect(axios.get).toHaveBeenCalledWith("/reviews/42/reactions", {
-      headers: { Accept: "application/json" },
-    });
+    expect(api.get).toHaveBeenCalledTimes(1);
+    expect(api.get).toHaveBeenCalledWith("/reviews/42/reactions", { params: undefined });
     expect(w.vm.reactors.up.map((r) => r.name)).toEqual(["Alice", "Bob"]);
     expect(w.vm.reactors.down.map((r) => r.name)).toEqual(["Carol"]);
 
     await w.vm.onPopoverShow();
-    expect(axios.get).toHaveBeenCalledTimes(1);
+    expect(api.get).toHaveBeenCalledTimes(1);
   });
 
   it("invalidates cache when reviewId changes", async () => {
-    axios.get.mockResolvedValue({ data: { up: [{ name: "X" }], down: [] } });
+    api.get.mockResolvedValue({ data: { up: [{ name: "X" }], down: [] } });
     const w = mount(ReactionButtons, {
       localVue,
       propsData: baseProps({ reactions: { up: 1, down: 0, mine: null } }),
     });
     await w.vm.onPopoverShow();
-    expect(axios.get).toHaveBeenCalledTimes(1);
+    expect(api.get).toHaveBeenCalledTimes(1);
 
     await w.setProps({ reviewId: 99 });
     await w.vm.onPopoverShow();
-    expect(axios.get).toHaveBeenCalledTimes(2);
+    expect(api.get).toHaveBeenCalledTimes(2);
   });
 
   it("invalidates cache when reactions.mine changes (switch vote bug fix)", async () => {
-    axios.get.mockResolvedValue({ data: { up: [{ name: "X" }], down: [] } });
+    api.get.mockResolvedValue({ data: { up: [{ name: "X" }], down: [] } });
     const w = mount(ReactionButtons, {
       localVue,
       propsData: baseProps({ reactions: { up: 1, down: 0, mine: "up" } }),
     });
     await w.vm.onPopoverShow();
-    expect(axios.get).toHaveBeenCalledTimes(1);
+    expect(api.get).toHaveBeenCalledTimes(1);
 
     await w.setProps({ reactions: { up: 0, down: 1, mine: "down" } });
     await w.vm.onPopoverShow();
-    expect(axios.get).toHaveBeenCalledTimes(2);
+    expect(api.get).toHaveBeenCalledTimes(2);
   });
 
   it("renders an error state when the fetch fails", async () => {
-    axios.get.mockRejectedValueOnce(new Error("boom"));
+    api.get.mockRejectedValueOnce(new Error("boom"));
     const w = mount(ReactionButtons, {
       localVue,
       propsData: baseProps({ reactions: { up: 1, down: 0, mine: null } }),

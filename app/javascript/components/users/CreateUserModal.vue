@@ -100,15 +100,13 @@
 </template>
 
 <script>
-import axios from "axios";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { createUser } from "../../api/usersApi";
+import { useToast } from "../../composables/useToast";
 import PasswordField from "../shared/PasswordField.vue";
 
 export default {
   name: "CreateUserModal",
   components: { PasswordField },
-  mixins: [FormMixinVue, AlertMixinVue],
   model: {
     prop: "visible",
     event: "update:visible",
@@ -126,6 +124,10 @@ export default {
       type: Object,
       default: null,
     },
+  },
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
   },
   data() {
     return {
@@ -167,9 +169,7 @@ export default {
       }
 
       try {
-        const response = await axios.post("/users/admin_create", {
-          user: payload,
-        });
+        const response = await createUser(payload);
         this.alertOrNotifyResponse(response);
         this.$emit("user-created", response.data.user);
 

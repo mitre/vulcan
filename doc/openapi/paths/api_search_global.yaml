@@ -1,0 +1,53 @@
+get:
+  operationId: globalSearch
+  tags:
+    - Search
+  summary: Search across all resource types
+  description: >-
+    Searches projects, components, rules, SRGs, and STIGs by name or title.
+    Results are grouped by type and limited per group. Rules can be scoped
+    to a specific component via the component_id parameter. Requires
+    authentication — returns 401 if not signed in.
+  parameters:
+    - $ref: ../components/parameters/SearchQuery.yaml
+    - name: limit
+      in: query
+      description: Maximum results per resource type.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 20
+        default: 5
+      example: 5
+    - name: component_id
+      in: query
+      description: Scope rule search to a specific component.
+      schema:
+        type: integer
+      example: 29
+  responses:
+    '200':
+      description: Search results grouped by type
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/GlobalSearchResponse.yaml
+          examples:
+            results:
+              summary: Search for "container"
+              value:
+                projects:
+                  - id: 4
+                    name: Container Platform
+                components:
+                  - id: 29
+                    name: Container SRG
+                rules: []
+                srgs:
+                  - id: 1
+                    title: Container Platform Security Requirements Guide
+                stigs: []
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

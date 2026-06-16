@@ -12,10 +12,10 @@ pre-commit:
       run: bundle exec rubocop --autocorrect --display-cop-names --force-exclusion {staged_files}
       stage_fixed: true
     eslint:
-      # Match CI's lint:ci scope exactly — only files under app/javascript.
+      # Match CI's lint:ci scope exactly — app/javascript AND spec/javascript.
       # VitePress docs/ files are handled separately and would trip
       # --max-warnings 0 as "file ignored" warnings if linted here.
-      glob: "app/javascript/**/*.{js,vue}"
+      glob: "{app,spec}/javascript/**/*.{js,vue}"
       # No --fix on purpose: matches the CI lint:ci behavior so prettier
       # and lint errors fail the commit instead of being silently fixed.
       # Run `yarn lint` manually to apply autofixes.
@@ -28,6 +28,10 @@ pre-commit:
     json-syntax:
       glob: "*.json"
       run: ruby -e "require 'json'; ARGV.each { |f| JSON.parse(File.read(f)) }" {staged_files}
+    openapi-bundle-check:
+      glob: "doc/openapi/**/*.{yaml,yml}"
+      run: yarn openapi:bundle && git diff --exit-code doc/openapi.yaml
+      fail_text: "OpenAPI bundle is stale. Run: yarn openapi:bundle && git add doc/openapi.yaml"
     merge-conflicts:
       run: git diff --staged --check
 
@@ -53,6 +57,9 @@ pre-push:
       run: yarn lint:ci
     brakeman:
       run: bundle exec brakeman --quiet --no-pager
+    openapi-bundle-check:
+      run: yarn openapi:bundle && git diff --exit-code doc/openapi.yaml
+      fail_text: "OpenAPI bundle is stale. Run: yarn openapi:bundle && git add doc/openapi.yaml"
 
 post-checkout:
   commands:

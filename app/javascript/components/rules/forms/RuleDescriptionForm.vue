@@ -5,12 +5,7 @@
       <b-form-group :id="`ruleEditor-rule_description-group-${mod}`">
         <label :for="`ruleEditor-rule_description-${mod}`">
           Rule Description
-          <b-icon
-            v-if="tooltips['rule_description']"
-            v-b-tooltip.hover.html="tooltips['rule_description']"
-            icon="info-circle"
-            aria-hidden="true"
-          />
+          <InfoTooltip v-if="tooltips['rule_description']" :text="tooltips['rule_description']" />
         </label>
         <MarkdownTextarea
           :id="`ruleEditor-rule_description-${mod}`"
@@ -36,13 +31,13 @@
 </template>
 
 <script>
-import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
+import { useFormFeedback } from "../../../composables/useFormFeedback";
 import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
+import InfoTooltip from "../../shared/InfoTooltip.vue";
 
 export default {
   name: "RuleDescriptionForm",
-  components: { MarkdownTextarea },
-  mixins: [FormFeedbackMixinVue],
+  components: { MarkdownTextarea, InfoTooltip },
   // `rule` and `index` are necessary if edits are to be made
   props: {
     description: {
@@ -60,6 +55,20 @@ export default {
       type: Boolean,
       required: true,
     },
+    validFeedback: {
+      type: Object,
+      required: false,
+      default: () => ({}),
+    },
+    invalidFeedback: {
+      type: Object,
+      required: false,
+      default: () => ({}),
+    },
+  },
+  setup(props) {
+    const { inputClass, hasValidFeedback, hasInvalidFeedback } = useFormFeedback(props);
+    return { inputClass, hasValidFeedback, hasInvalidFeedback };
   },
   data: function () {
     return {

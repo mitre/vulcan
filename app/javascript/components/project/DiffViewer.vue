@@ -36,14 +36,56 @@
         </div>
       </b-col>
       <b-col md="10">
+        <!-- Visual stepper -->
+        <div class="diff-stepper d-flex align-items-center my-3">
+          <div class="text-center">
+            <div
+              class="step-circle rounded-circle d-inline-flex align-items-center justify-content-center"
+              :class="baseComponentId ? 'bg-success text-white' : 'bg-primary text-white'"
+              style="width: 36px; height: 36px; font-weight: 600"
+            >
+              <b-icon v-if="baseComponentId" icon="check-lg" class="bi-check-lg" />
+              <span v-else>1</span>
+            </div>
+            <div
+              class="small mt-1"
+              :class="baseComponentId ? 'text-success' : 'text-primary font-weight-bold'"
+            >
+              Select base
+            </div>
+          </div>
+          <div
+            class="flex-grow-0 mx-2"
+            :class="baseComponentId ? 'bg-success' : 'bg-secondary'"
+            style="width: 80px; height: 2px"
+          />
+          <div class="text-center">
+            <div
+              class="step-circle rounded-circle d-inline-flex align-items-center justify-content-center"
+              :class="baseComponentId ? 'bg-primary text-white' : 'bg-light text-muted border'"
+              style="width: 36px; height: 36px; font-weight: 600"
+            >
+              2
+            </div>
+            <div
+              class="small mt-1"
+              :class="baseComponentId ? 'text-primary font-weight-bold' : 'text-muted'"
+            >
+              Compare
+            </div>
+          </div>
+        </div>
+        <!-- Selection controls -->
         <b-input-group size="sm" class="mb-2">
           <b-input-group-prepend>
             <b-input-group-text class="rounded-0">Base (older)</b-input-group-text>
           </b-input-group-prepend>
           <FilterDropdown
             id="baseComponent"
+            ref="baseDropdown"
             v-model="baseComponentId"
             :options="componentOptions"
+            placeholder="Pick the older version"
             aria-label="Base component for diff"
             @input="updateCompareList"
           />
@@ -52,8 +94,11 @@
           </b-input-group-prepend>
           <FilterDropdown
             id="diffComponent"
+            ref="compareDropdown"
             v-model="diffComponentId"
             :options="compareListOptions"
+            :disabled="!baseComponentId"
+            :placeholder="baseComponentId ? 'Pick the newer version' : 'Select a base first'"
             aria-label="Compare component for diff"
             @input="compareComponents"
           />
@@ -92,9 +137,9 @@
 
 <script>
 import _ from "lodash";
-import axios from "axios";
+import { searchBasedOnSameSrg, compareComponents } from "../../api/componentsApi";
 import MonacoEditor from "vue-monaco";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { useToast } from "../../composables/useToast";
 import FilterDropdown from "../shared/FilterDropdown.vue";
 
 export default {
@@ -103,12 +148,15 @@ export default {
     MonacoEditor,
     FilterDropdown,
   },
-  mixins: [AlertMixinVue],
   props: {
     project: {
       type: Object,
       required: true,
     },
+  },
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
   },
   data: function () {
     return {
@@ -141,7 +189,7 @@ export default {
   computed: {
     sidebarStyle: function () {
       return {
-        "max-height": `calc(100vh - ${this.sidebarOffset}px)`,
+        "max-height": `calc(100vh - ${this.sidebarOffset}px - 20px)`,
       };
     },
     baseComponent() {
@@ -245,8 +293,7 @@ export default {
     updateCompareList: function () {
       this.ruleDeselected();
       if (this.baseComponent) {
-        axios
-          .get(`/components/${this.baseComponent.id}/search/based_on_same_srg`)
+        searchBasedOnSameSrg(this.baseComponent.id)
           .then((response) => {
             this.compareList = response.data;
           })
@@ -260,10 +307,10 @@ export default {
         this.diffComponent &&
         this.baseComponent.id !== this.diffComponent.id
       ) {
-        axios
-          .get(`/components/${this.baseComponent.id}/compare/${this.diffComponent.id}`)
+        compareComponents(this.baseComponent.id, this.diffComponent.id)
           .then((response) => {
-            this.ruleDiffs = response.data;
+            // Response is { data: {…}, meta: {…} }; unwrap.
+            this.ruleDiffs = response.data.data;
           })
           .catch(this.alertOrNotifyResponse);
       }
@@ -312,11 +359,12 @@ export default {
 }
 
 .ruleRow:hover {
-  background: rgb(0, 0, 0, 0.12);
+  background: var(--vulcan-overlay-medium);
 }
 
 .selectedRuleRow {
-  background: rgba(66, 50, 50, 0.09);
+  background: var(--vulcan-active-bg);
+  border-left: 3px solid var(--vulcan-active-border);
 }
 
 .diff-icon {

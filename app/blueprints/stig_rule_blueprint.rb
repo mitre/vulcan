@@ -7,7 +7,7 @@ class StigRuleBlueprint < Blueprinter::Base
 
   fields :rule_id, :title, :version, :rule_severity, :rule_weight,
          :ident, :ident_system, :fixtext, :fixtext_fixref, :fix_id,
-         :vuln_id, :legacy_ids
+         :srg_id, :vuln_id, :legacy_ids, :vendor_comments
 
   association :disa_rule_descriptions_attributes, blueprint: DisaRuleDescriptionBlueprint,
                                                   name: :disa_rule_descriptions_attributes do |rule, _options|

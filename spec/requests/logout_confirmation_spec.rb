@@ -22,18 +22,25 @@ RSpec.describe 'Logout confirmation message' do
     get '/projects'
     expect(response).to have_http_status(:success)
 
-    # Log out (Devise uses DELETE for sign_out per best practices)
+    # Log out (Devise uses DELETE for sign_out per best practices).
+    # after_sign_out_path_for sends us STRAIGHT to the sign-in page —
+    # flash survives exactly one redirect, so a second (auth) redirect
+    # through root would consume the notice before anything rendered.
+    # The pre-fix version of this test followed TWO redirects and only
+    # checked that the prop NAME existed, which passed while the message
+    # itself was lost — the assertion below pins the rendered VALUE.
     delete destroy_user_session_path
-    expect(response).to redirect_to(root_path)
+    expect(response).to redirect_to(new_user_session_path)
 
     # Verify Devise sets the flash notice for the Toaster to display
     expect(flash[:notice]).to eq(I18n.t('devise.sessions.signed_out'))
 
-    # Verify the flash is passed to the Toaster component as a prop in the layout
-    follow_redirect! # root -> login (unauthenticated redirect)
-    follow_redirect! # -> login page rendered
-    # The layout passes notice as a Vue prop: 'v-bind:notice': notice.to_json
+    # Verify the message itself reaches the rendered page as the Toaster's
+    # notice prop ('v-bind:notice': notice.to_json in the layout).
+    follow_redirect!
+    expect(response).to have_http_status(:ok)
     expect(response.body).to include('v-bind:notice')
+    expect(response.body).to include('Signed out successfully.')
   end
 
   it 'invalidates the session so subsequent requests require login' do

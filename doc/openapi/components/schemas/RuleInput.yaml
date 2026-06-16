@@ -1,0 +1,37 @@
+description: Input fields for updating a security rule within a component.
+type: object
+properties:
+  status:
+    type: string
+    description: Applicability status of the rule indicating whether and how it applies to the technology.
+    enum:
+      - Not Yet Determined
+      - Applicable - Configurable
+      - Applicable - Inherently Meets
+      - Applicable - Does Not Meet
+      - Not Applicable
+    example: Applicable - Configurable
+  title:
+    type: string
+    description: Title of the security control.
+    example: The container platform must enforce approved authorizations for access.
+  fixtext:
+    type: string
+    description: Remediation instructions describing how to fix a non-compliant finding.
+    example: Configure the container platform to enforce approved authorizations for logical access.
+  vendor_comments:
+    type: string
+    description: Vendor-provided comments or implementation notes for this rule.
+    example: This requirement is met by default when using the recommended container runtime configuration.
+  status_justification:
+    type: string
+    description: Justification text required when setting status to Not Applicable or Does Not Meet.
+    example: The container platform inherently meets this requirement through its architecture.
+  artifact_description:
+    type: string
+    description: Description of artifacts or evidence supporting the rule implementation.
+    example: Screenshot of the container platform access control configuration panel.
+  locked:
+    type: boolean
+    description: Whether the rule is locked from further edits pending review.
+    example: false

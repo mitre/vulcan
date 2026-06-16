@@ -1,0 +1,48 @@
+parameters:
+  - $ref: ../components/parameters/ComponentId.yaml
+post:
+  operationId: lockComponent
+  tags:
+    - Components
+  summary: Lock all unlocked rules in a component
+  description: >-
+    Locks every currently-unlocked rule in the component, preventing further
+    edits. Optionally accepts a comment for the audit trail. Requires admin
+    role on the parent project. Already-locked rules are unaffected.
+  requestBody:
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            review:
+              type: object
+              properties:
+                comment:
+                  type: string
+                  description: Audit trail comment explaining why the component was locked.
+                  example: "Locking for DISA submission review."
+        examples:
+          lock:
+            summary: Lock with audit comment
+            value:
+              review:
+                comment: "Locking for DISA submission review."
+  responses:
+    '200':
+      description: All rules locked
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            locked:
+              summary: Component locked
+              value:
+                toast:
+                  title: Controls locked.
+                  message:
+                    - "264 rules locked."
+                  variant: success
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

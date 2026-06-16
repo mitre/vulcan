@@ -26,29 +26,29 @@ RSpec.describe 'Leaf Blueprints' do
     let(:check) { rule.checks.first }
 
     it 'includes check fields and _destroy flag' do
-      json = CheckBlueprint.render_as_hash(check)
+      json = CheckBlueprint.render_as_json(check)
 
-      expect(json).to have_key(:id)
-      expect(json).to have_key(:system)
-      expect(json).to have_key(:content_ref_name)
-      expect(json).to have_key(:content_ref_href)
-      expect(json).to have_key(:content)
-      expect(json).to have_key(:_destroy)
-      expect(json[:_destroy]).to be false
+      expect(json).to have_key('id')
+      expect(json).to have_key('system')
+      expect(json).to have_key('content_ref_name')
+      expect(json).to have_key('content_ref_href')
+      expect(json).to have_key('content')
+      expect(json).to have_key('_destroy')
+      expect(json['_destroy']).to be false
     end
 
     it 'excludes check timestamps and base_rule_id' do
-      json = CheckBlueprint.render_as_hash(check)
+      json = CheckBlueprint.render_as_json(check)
 
-      expect(json).not_to have_key(:created_at)
-      expect(json).not_to have_key(:updated_at)
-      expect(json).not_to have_key(:base_rule_id)
+      expect(json).not_to have_key('created_at')
+      expect(json).not_to have_key('updated_at')
+      expect(json).not_to have_key('base_rule_id')
     end
 
     it 'matches the shape of the current as_json output' do
-      blueprint_output = CheckBlueprint.render_as_hash(check)
-      legacy_output = check.as_json.merge(_destroy: false).symbolize_keys
-      legacy_output = legacy_output.except(:created_at, :updated_at, :base_rule_id)
+      blueprint_output = CheckBlueprint.render_as_json(check)
+      legacy_output = check.as_json.merge('_destroy' => false)
+      legacy_output = legacy_output.except('created_at', 'updated_at', 'base_rule_id')
 
       expect(blueprint_output.keys.sort).to eq(legacy_output.keys.sort)
     end
@@ -58,22 +58,22 @@ RSpec.describe 'Leaf Blueprints' do
     let(:drd) { rule.disa_rule_descriptions.first }
 
     it 'includes DISA description fields and _destroy flag' do
-      json = DisaRuleDescriptionBlueprint.render_as_hash(drd)
+      json = DisaRuleDescriptionBlueprint.render_as_json(drd)
 
-      expect(json).to have_key(:id)
-      expect(json).to have_key(:vuln_discussion)
-      expect(json).to have_key(:mitigations)
-      expect(json).to have_key(:documentable)
-      expect(json).to have_key(:severity_override_guidance)
-      expect(json).to have_key(:_destroy)
+      expect(json).to have_key('id')
+      expect(json).to have_key('vuln_discussion')
+      expect(json).to have_key('mitigations')
+      expect(json).to have_key('documentable')
+      expect(json).to have_key('severity_override_guidance')
+      expect(json).to have_key('_destroy')
     end
 
     it 'excludes DISA description timestamps and base_rule_id' do
-      json = DisaRuleDescriptionBlueprint.render_as_hash(drd)
+      json = DisaRuleDescriptionBlueprint.render_as_json(drd)
 
-      expect(json).not_to have_key(:created_at)
-      expect(json).not_to have_key(:updated_at)
-      expect(json).not_to have_key(:base_rule_id)
+      expect(json).not_to have_key('created_at')
+      expect(json).not_to have_key('updated_at')
+      expect(json).not_to have_key('base_rule_id')
     end
   end
 
@@ -84,19 +84,19 @@ RSpec.describe 'Leaf Blueprints' do
     end
 
     it 'includes rule description fields and _destroy flag' do
-      json = RuleDescriptionBlueprint.render_as_hash(rd)
+      json = RuleDescriptionBlueprint.render_as_json(rd)
 
-      expect(json).to have_key(:id)
-      expect(json).to have_key(:description)
-      expect(json).to have_key(:_destroy)
+      expect(json).to have_key('id')
+      expect(json).to have_key('description')
+      expect(json).to have_key('_destroy')
     end
 
     it 'excludes rule description timestamps and base_rule_id' do
-      json = RuleDescriptionBlueprint.render_as_hash(rd)
+      json = RuleDescriptionBlueprint.render_as_json(rd)
 
-      expect(json).not_to have_key(:created_at)
-      expect(json).not_to have_key(:updated_at)
-      expect(json).not_to have_key(:base_rule_id)
+      expect(json).not_to have_key('created_at')
+      expect(json).not_to have_key('updated_at')
+      expect(json).not_to have_key('base_rule_id')
     end
   end
 
@@ -117,19 +117,19 @@ RSpec.describe 'Leaf Blueprints' do
     end
 
     it 'includes expected fields' do
-      json = AdditionalAnswerBlueprint.render_as_hash(answer)
+      json = AdditionalAnswerBlueprint.render_as_json(answer)
 
-      expect(json).to have_key(:id)
-      expect(json).to have_key(:additional_question_id)
-      expect(json).to have_key(:answer)
+      expect(json).to have_key('id')
+      expect(json).to have_key('additional_question_id')
+      expect(json).to have_key('answer')
     end
 
     it 'excludes rule_id and timestamps (matches current as_json.except pattern)' do
-      json = AdditionalAnswerBlueprint.render_as_hash(answer)
+      json = AdditionalAnswerBlueprint.render_as_json(answer)
 
-      expect(json).not_to have_key(:rule_id)
-      expect(json).not_to have_key(:created_at)
-      expect(json).not_to have_key(:updated_at)
+      expect(json).not_to have_key('rule_id')
+      expect(json).not_to have_key('created_at')
+      expect(json).not_to have_key('updated_at')
     end
   end
 end

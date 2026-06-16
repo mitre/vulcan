@@ -27,7 +27,7 @@ RSpec.describe 'ProjectIndexBlueprint pending_comment_link' do
   let(:targets) { { project_single.id => single_component.id } }
 
   def render_project(project)
-    ProjectIndexBlueprint.render_as_hash(
+    ProjectIndexBlueprint.render_as_json(
       project,
       comment_counts: counts,
       pending_comment_target_components: targets
@@ -35,38 +35,38 @@ RSpec.describe 'ProjectIndexBlueprint pending_comment_link' do
   end
 
   it 'links directly to the only component when one component has pending' do
-    expect(render_project(project_single)[:pending_comment_link])
+    expect(render_project(project_single)['pending_comment_link'])
       .to eq("/components/#{single_component.id}/triage")
   end
 
   it 'falls back to the project page when multiple components have pending' do
-    expect(render_project(project_multi)[:pending_comment_link])
+    expect(render_project(project_multi)['pending_comment_link'])
       .to eq("/projects/#{project_multi.id}/triage")
   end
 
   it 'links to the project page when total > 0 but pending = 0 (closed-only view)' do
-    expect(render_project(project_closed_only)[:pending_comment_link])
+    expect(render_project(project_closed_only)['pending_comment_link'])
       .to eq("/projects/#{project_closed_only.id}/triage")
   end
 
   it 'returns nil when the project has zero comments at all' do
-    expect(render_project(project_zero)[:pending_comment_link]).to be_nil
+    expect(render_project(project_zero)['pending_comment_link']).to be_nil
   end
 
   it 'returns nil when no options are passed (defensive default)' do
-    json = ProjectIndexBlueprint.render_as_hash(project_single)
-    expect(json[:pending_comment_link]).to be_nil
+    json = ProjectIndexBlueprint.render_as_json(project_single)
+    expect(json['pending_comment_link']).to be_nil
   end
 
   it 'exposes pending_comment_count and total_comment_count alongside the link' do
     json = render_project(project_multi)
-    expect(json[:pending_comment_count]).to eq(2)
-    expect(json[:total_comment_count]).to eq(5)
+    expect(json['pending_comment_count']).to eq(2)
+    expect(json['total_comment_count']).to eq(5)
   end
 
   it 'falls back to 0/0 when a project is missing from the counts hash' do
     json = render_project(project_zero)
-    expect(json[:pending_comment_count]).to eq(0)
-    expect(json[:total_comment_count]).to eq(0)
+    expect(json['pending_comment_count']).to eq(0)
+    expect(json['total_comment_count']).to eq(0)
   end
 end

@@ -61,9 +61,9 @@
         </small>
         <small v-else>No results found.</small>
       </span>
-      <hr v-if="!Object.keys(find_results).length == 0" />
+      <hr v-if="Object.keys(find_results).length > 0" />
       <div
-        v-if="!Object.keys(find_results).length == 0"
+        v-if="Object.keys(find_results).length > 0"
         class="d-flex justify-content-end align-items-center"
       >
         <b-button variant="primary" :disabled="fr.find == '' || loading" class="mr-4" @click="find"
@@ -80,7 +80,7 @@
           @comment="replace_all($event)"
         />
       </div>
-      <hr v-if="!Object.keys(find_results).length == 0" />
+      <hr v-if="Object.keys(find_results).length > 0" />
       <div v-for="[id, find_result] in sortFindResults()" :key="`${find_results_ver}-${id}`">
         <b-card :title="formatRuleId(find_result.rule_id)" class="mb-3">
           <b-card-text>
@@ -117,16 +117,26 @@
 </template>
 
 <script>
-import axios from "axios";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import FindAndReplaceMixinVue from "../../mixins/FindAndReplaceMixin.vue";
+import { updateRule, findInComponent } from "../../api/rulesApi";
+import { useFindAndReplace } from "../../composables/useFindAndReplace";
+import { useToast } from "../../composables/useToast";
 import CommentModal from "../shared/CommentModal.vue";
 import FindAndReplaceResult from "./FindAndReplaceResult.vue";
+
+const CONTROL_FIELDS = [
+  "Artifact Description",
+  "Check",
+  "Fix",
+  "Mitigations",
+  "Status Justification",
+  "Title",
+  "Vendor Comments",
+  "Vulnerability Discussion",
+];
 
 export default {
   name: "FindAndReplace",
   components: { CommentModal, FindAndReplaceResult },
-  mixins: [AlertMixinVue, FindAndReplaceMixinVue],
   props: {
     componentId: {
       type: Number,
@@ -145,26 +155,24 @@ export default {
       default: false,
     },
   },
+  setup() {
+    // getSegments stays internal to the engine — only the two entry points
+    // the template/methods call are bound.
+    const { groupFindResults, replaceTextInRule } = useFindAndReplace();
+    const { alertOrNotifyResponse } = useToast();
+    return { groupFindResults, replaceTextInRule, alertOrNotifyResponse };
+  },
   data: function () {
     return {
       allFieldsSelected: true,
       indeterminate: false,
-      controlFields: [
-        "Artifact Description",
-        "Check",
-        "Fix",
-        "Mitigations",
-        "Status Justification",
-        "Title",
-        "Vendor Comments",
-        "Vulnerability Discussion",
-      ],
+      controlFields: CONTROL_FIELDS,
       loading: false,
       fr: {
         find: "",
         replace: "",
         matchCase: false,
-        fields: this.controlFields,
+        fields: CONTROL_FIELDS.slice(),
       },
       find_text: "",
       find_results: {},
@@ -205,7 +213,7 @@ export default {
         find: "",
         replace: "",
         matchCase: false,
-        fields: this.controlFields,
+        fields: CONTROL_FIELDS.slice(),
       };
       this.find_text = "";
       this.find_results = {};
@@ -216,19 +224,17 @@ export default {
     find: function () {
       this.loading = true;
       this.find_text = this.fr.find;
-      axios
-        .post(`/components/${this.componentId}/find`, { find: this.find_text })
-        .then((response) => {
-          this.find_results = this.groupFindResults(
-            response.data,
-            this.find_text,
-            this.fr.matchCase,
-            this.fr.fields,
-          );
-          this.find_results_ver += 1;
-          this.countTotalResults();
-          this.loading = false;
-        });
+      findInComponent(this.componentId, this.find_text).then((response) => {
+        this.find_results = this.groupFindResults(
+          response.data,
+          this.find_text,
+          this.fr.matchCase,
+          this.fr.fields,
+        );
+        this.find_results_ver += 1;
+        this.countTotalResults();
+        this.loading = false;
+      });
     },
     countTotalResults: function () {
       const resultValues = Object.values(this.find_results);
@@ -250,14 +256,7 @@ export default {
       this.loading = true;
       const original_rule = this.rules.find((rule) => rule.id == rule_id);
       this.replaceTextInRule(original_rule, result.field, result.segments, this.fr.replace);
-      const payload = {
-        rule: {
-          ...original_rule,
-          audit_comment: comment,
-        },
-      };
-      return axios
-        .put(`/rules/${rule_id}`, payload)
+      return updateRule(rule_id, { ...original_rule, audit_comment: comment })
         .then((response) => {
           this.saveRuleSuccess(response, rule_id);
         })
@@ -275,15 +274,8 @@ export default {
         find_results.results.forEach(function (result) {
           self.replaceTextInRule(original_rule, result.field, result.segments, self.fr.replace);
         });
-        const payload = {
-          rule: {
-            ...original_rule,
-            audit_comment: comment,
-          },
-        };
         promises.push(
-          axios
-            .put(`/rules/${rule_id}`, payload)
+          updateRule(rule_id, { ...original_rule, audit_comment: comment })
             .then((response) => {
               self.saveRuleSuccess(response, rule_id);
             })

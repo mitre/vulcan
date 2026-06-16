@@ -1,16 +1,44 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { shallowMount } from "@vue/test-utils";
-import { localVue } from "@test/testHelper";
-import axios from "axios";
+import { localVue, flushPromises } from "@test/testHelper";
+import { createPinia } from "pinia";
+import { createTestRouter } from "@test/support/routerTestHelper";
 import ProjectComponent from "@/components/components/ProjectComponent.vue";
+import { getComponent, patchComponent } from "@/api/componentsApi";
+import { getRule } from "@/api/rulesApi";
 
-// Mock axios
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
     get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
     patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
   },
 }));
+
+vi.mock("@/api/componentsApi", () => ({
+  getComponent: vi.fn(() => Promise.resolve({ data: {} })),
+  patchComponent: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+
+vi.mock("@/api/rulesApi", () => ({
+  getRule: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+
+vi.mock("@/api/projectsApi", () => ({
+  exportProjectData: vi.fn(() => Promise.resolve("/projects/1/export/csv?component_ids=41")),
+}));
+
+// Spy-wrap (real implementations preserved) so tests can pin that sorting,
+// the release confirmation, and the reply composer flow through composables.
+vi.mock("@/composables/useSortRules", { spy: true });
+vi.mock("@/composables/useConfirmRelease", { spy: true });
+vi.mock("@/composables/useReplyComposer", { spy: true });
+import { useSortRules } from "@/composables/useSortRules";
+import { useConfirmRelease } from "@/composables/useConfirmRelease";
+import { useReplyComposer } from "@/composables/useReplyComposer";
 
 describe("ProjectComponent", () => {
   let wrapper;
@@ -27,6 +55,8 @@ describe("ProjectComponent", () => {
       histories: [{ name: "Test User" }],
       reviews: [],
       version: "SV-001",
+      checks_attributes: [],
+      disa_rule_descriptions_attributes: [],
     },
     {
       id: 2,
@@ -39,14 +69,16 @@ describe("ProjectComponent", () => {
       histories: [],
       reviews: [],
       version: "SV-002",
+      checks_attributes: [],
+      disa_rule_descriptions_attributes: [],
     },
   ];
 
   const defaultProps = {
-    effective_permissions: "admin",
     current_user_id: 1,
     project: { id: 1, name: "Test Project" },
     initialComponentState: {
+      effective_permissions: "admin",
       id: 41,
       name: "Test Component",
       prefix: "TEST",
@@ -80,8 +112,14 @@ describe("ProjectComponent", () => {
   };
 
   const createWrapper = (props = {}) => {
+    const router = createTestRouter([
+      { path: "/", name: "editor-root" },
+      { path: "/rules/:ruleId", name: "rule", props: true },
+    ]);
     return shallowMount(ProjectComponent, {
       localVue,
+      pinia: createPinia(),
+      router,
       propsData: {
         ...defaultProps,
         ...props,
@@ -90,13 +128,14 @@ describe("ProjectComponent", () => {
         ControlsPageLayout: true,
         ControlsCommandBar: true,
         ControlsSidepanels: true,
-        RuleNavigator: true,
+        RuleSearchBar: true,
+        RuleList: true,
+        ActiveFilterPills: true,
         RuleEditor: true,
         RuleSatisfactions: true,
         RuleReviews: true,
         RuleHistories: true,
         RelatedRulesModal: true,
-        MembersModal: true,
         BSidebar: true,
         BModal: true,
         BIcon: true,
@@ -130,9 +169,24 @@ describe("ProjectComponent", () => {
       expect(wrapper.findComponent({ name: "ControlsCommandBar" }).exists()).toBe(true);
     });
 
-    it("renders RuleNavigator", () => {
+    it("renders RuleSearchBar in sidebar header (pinned)", () => {
       wrapper = createWrapper();
-      expect(wrapper.findComponent({ name: "RuleNavigator" }).exists()).toBe(true);
+      expect(wrapper.findComponent({ name: "RuleSearchBar" }).exists()).toBe(true);
+    });
+
+    it("renders ActiveFilterPills in sidebar header (pinned)", () => {
+      wrapper = createWrapper();
+      expect(wrapper.findComponent({ name: "ActiveFilterPills" }).exists()).toBe(true);
+    });
+
+    it("renders RuleList in sidebar body (scrollable)", () => {
+      wrapper = createWrapper();
+      expect(wrapper.findComponent({ name: "RuleList" }).exists()).toBe(true);
+    });
+
+    it("does NOT render RuleNavigator (replaced by composable)", () => {
+      wrapper = createWrapper();
+      expect(wrapper.findComponent({ name: "RuleNavigator" }).exists()).toBe(false);
     });
   });
 
@@ -303,25 +357,22 @@ describe("ProjectComponent", () => {
     // the component properties in-place for Vue reactivity.
 
     it("fetches component data as JSON", async () => {
-      const axios = (await import("axios")).default;
       wrapper = createWrapper();
 
       // Call refreshComponent
       wrapper.vm.refreshComponent();
 
-      // Verify axios.get was called with .json extension
-      expect(axios.get).toHaveBeenCalledWith("/components/41.json");
+      expect(getComponent).toHaveBeenCalledWith(41);
     });
 
     it("updates component properties in-place on successful fetch", async () => {
-      const axios = (await import("axios")).default;
       const updatedData = {
         id: 41,
         name: "Updated Component Name",
         title: "Updated Title",
         description: "Updated Description",
       };
-      axios.get.mockResolvedValueOnce({ data: updatedData });
+      getComponent.mockResolvedValueOnce({ data: updatedData });
 
       wrapper = createWrapper();
 
@@ -337,8 +388,7 @@ describe("ProjectComponent", () => {
     });
 
     it("does NOT reload the page", async () => {
-      const axios = (await import("axios")).default;
-      axios.get.mockResolvedValueOnce({ data: { id: 41, name: "Test" } });
+      getComponent.mockResolvedValueOnce({ data: { id: 41, name: "Test" } });
 
       // Mock location.reload to track if it's called
       const originalReload = globalThis.location.reload;
@@ -355,6 +405,83 @@ describe("ProjectComponent", () => {
 
       // Restore
       globalThis.location.reload = originalReload;
+    });
+  });
+
+  // ==========================================================================
+  // Chrome condensation: breadcrumbs, banner chip, filter toggle
+  // ==========================================================================
+  describe("chrome condensation", () => {
+    it("root element has vulcan-editor-layout class for flex chain continuity", () => {
+      wrapper = createWrapper();
+      expect(wrapper.classes()).toContain("vulcan-editor-layout");
+    });
+
+    it("does NOT render a standalone b-breadcrumb row", () => {
+      wrapper = createWrapper();
+      expect(wrapper.findComponent({ name: "BBreadcrumb" }).exists()).toBe(false);
+    });
+
+    it("passes breadcrumbs to ControlsCommandBar", () => {
+      wrapper = createWrapper();
+      const commandBar = wrapper.findComponent({ name: "ControlsCommandBar" });
+      const breadcrumbs = commandBar.props("breadcrumbs");
+      expect(breadcrumbs).toBeDefined();
+      expect(breadcrumbs.length).toBe(3);
+      expect(breadcrumbs[0].text).toBe("Projects");
+      expect(breadcrumbs[0].href).toBe("/projects");
+      expect(breadcrumbs[2].active).toBe(true);
+    });
+
+    it("does NOT render a standalone CommentPeriodBanner", () => {
+      wrapper = createWrapper();
+      expect(wrapper.findComponent({ name: "CommentPeriodBanner" }).exists()).toBe(false);
+    });
+
+    it("passes showFilterToggle=true to ControlsCommandBar", () => {
+      wrapper = createWrapper();
+      const commandBar = wrapper.findComponent({ name: "ControlsCommandBar" });
+      expect(commandBar.props("showFilterToggle")).toBe(true);
+    });
+
+    it("filter bar is hidden by default", () => {
+      wrapper = createWrapper();
+      const layout = wrapper.findComponent({ name: "ControlsPageLayout" });
+      expect(layout.props("showFilterBar")).toBe(false);
+    });
+
+    it("toggles filter bar visibility when command bar emits toggle-filter-bar", async () => {
+      wrapper = createWrapper();
+      const commandBar = wrapper.findComponent({ name: "ControlsCommandBar" });
+      commandBar.vm.$emit("toggle-filter-bar");
+      await wrapper.vm.$nextTick();
+      const layout = wrapper.findComponent({ name: "ControlsPageLayout" });
+      expect(layout.props("showFilterBar")).toBe(true);
+    });
+
+    it("persists filter bar visibility to localStorage", async () => {
+      wrapper = createWrapper();
+      const commandBar = wrapper.findComponent({ name: "ControlsCommandBar" });
+      commandBar.vm.$emit("toggle-filter-bar");
+      await wrapper.vm.$nextTick();
+      expect(localStorage.getItem("filterBarVisible-41")).toBe("true");
+    });
+
+    it("restores filter bar visibility from localStorage", () => {
+      localStorage.setItem("filterBarVisible-41", "true");
+      wrapper = createWrapper();
+      const layout = wrapper.findComponent({ name: "ControlsPageLayout" });
+      expect(layout.props("showFilterBar")).toBe(true);
+    });
+
+    it("has openCommentsPanel method for command bar event forwarding", () => {
+      wrapper = createWrapper();
+      expect(typeof wrapper.vm.openCommentsPanel).toBe("function");
+    });
+
+    it("clearAllFilters resets both filter bar and nav filters", () => {
+      wrapper = createWrapper();
+      expect(typeof wrapper.vm.clearAllFilters).toBe("function");
     });
   });
 
@@ -387,18 +514,30 @@ describe("ProjectComponent", () => {
       expect(wrapper.vm.showExportModal).toBe(false);
     });
 
-    it("executeExport hits the project export route with the component_id", () => {
+    it("executeExport calls exportProjectData with project id, type, and options", async () => {
+      const { exportProjectData } = await import("@/api/projectsApi");
+      // window.open is the real side effect (browser performs the download).
+      // Spy + assert so jsdom never receives the un-implemented call (zero-noise).
+      const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+
       wrapper = createWrapper();
-      axios.get.mockClear();
       wrapper.vm.executeExport({
         type: "csv",
         mode: "working_copy",
         componentIds: [41],
       });
-      expect(axios.get).toHaveBeenCalledTimes(1);
-      const calledUrl = axios.get.mock.calls[0][0];
-      expect(calledUrl).toContain("/projects/1/export/csv?component_ids=41");
-      expect(calledUrl).toContain("mode=working_copy");
+
+      expect(exportProjectData).toHaveBeenCalledWith(1, "csv", {
+        componentIds: [41],
+        mode: "working_copy",
+        includeSrg: undefined,
+        includeMemberships: undefined,
+        excludeSatisfiedBy: undefined,
+      });
+
+      await flushPromises(wrapper);
+      expect(openSpy).toHaveBeenCalledWith("/projects/1/export/csv?component_ids=41");
+      openSpy.mockRestore();
     });
 
     it("passes the available Working Copy / Vendor Submission / Publish Draft / Backup modes to ExportModal", () => {
@@ -418,6 +557,112 @@ describe("ProjectComponent", () => {
       expect(modal.props("hideComponentSelection")).toBe(true);
       expect(modal.props("components").length).toBe(1);
       expect(modal.props("components")[0].id).toBe(41);
+    });
+  });
+
+  describe("permissions via provide", () => {
+    it("reads effective_permissions from initialComponentState", () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.effective_permissions).toBe("admin");
+    });
+
+    it("derives viewer permissions from initialComponentState", () => {
+      wrapper = createWrapper({
+        initialComponentState: {
+          ...defaultProps.initialComponentState,
+          effective_permissions: "viewer",
+        },
+      });
+      expect(wrapper.vm.effective_permissions).toBe("viewer");
+    });
+
+    it("defaults to null when initialComponentState has no permissions", () => {
+      const stateWithout = { ...defaultProps.initialComponentState };
+      delete stateWithout.effective_permissions;
+      // REQUIREMENT: null permissions is the designed non-member contract —
+      // every child prop in the tree must accept it without Vue warnings.
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      wrapper = createWrapper({ initialComponentState: stateWithout });
+      expect(wrapper.vm.effective_permissions).toBeNull();
+      const propWarnings = errorSpy.mock.calls.filter((call) =>
+        String(call[0]).includes('type check failed for prop "effectivePermissions"'),
+      );
+      errorSpy.mockRestore();
+      expect(propWarnings).toEqual([]);
+    });
+  });
+
+  // ── composable contracts ────────────────────────────────────────────
+  // REQUIREMENTS: rule ordering flows through useSortRules, the release
+  // confirmation through useConfirmRelease (declarative modal, error keeps
+  // dialog open), and the reply composer through useReplyComposer with the
+  // onOpen/afterPosted bridge. ProjectComponent stays the PROVIDER for
+  // effectivePermissions (no self-inject).
+
+  describe("composable contracts", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("wires useSortRules — rules render sorted by rule_id", async () => {
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+      expect(useSortRules).toHaveBeenCalled();
+      expect(wrapper.vm.rules.map((r) => r.rule_id)).toEqual(["001", "002"]);
+    });
+
+    it("requestRelease opens the declarative dialog for a releasable component", async () => {
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+      expect(useConfirmRelease).toHaveBeenCalled();
+      expect(wrapper.vm.showModal).toBe(false);
+      wrapper.vm.requestRelease(wrapper.vm.component);
+      expect(wrapper.vm.showModal).toBe(true);
+    });
+
+    it("requestRelease refuses to open for a non-releasable component (mixin guard parity)", async () => {
+      wrapper = createWrapper({
+        initialComponentState: { ...defaultProps.initialComponentState, releasable: false },
+      });
+      await flushPromises(wrapper);
+      wrapper.vm.requestRelease(wrapper.vm.component);
+      expect(wrapper.vm.showModal).toBe(false);
+    });
+
+    it("onConfirmRelease patches released:true and emits projectUpdated on success", async () => {
+      patchComponent.mockResolvedValueOnce({ data: { toast: { message: ["Released"] } } });
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+      wrapper.vm.requestRelease(wrapper.vm.component);
+      await wrapper.vm.onConfirmRelease({ preventDefault: () => {} });
+      expect(patchComponent).toHaveBeenCalledWith(41, { released: true });
+      expect(wrapper.emitted("projectUpdated")).toBeTruthy();
+      expect(wrapper.vm.showModal).toBe(false);
+    });
+
+    it("wires useReplyComposer — reply opens composer state and shows the modal via the bridge", async () => {
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+      expect(useReplyComposer).toHaveBeenCalled();
+
+      const showSpy = vi.spyOn(wrapper.vm.$bvModal, "show").mockImplementation(() => {});
+      wrapper.vm.onOpenReplyComposer(99);
+      expect(wrapper.vm.composerState.mode).toBe("reply");
+      expect(wrapper.vm.composerState.reviewId).toBe(99);
+      await wrapper.vm.$nextTick();
+      expect(showSpy).toHaveBeenCalledWith("comment-composer-modal");
+    });
+
+    it("afterPosted bridge refreshes the posted rule via getRule", async () => {
+      getRule.mockResolvedValueOnce({ data: { ...mockRules[0], title: "updated" } });
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+
+      wrapper.vm.selectRule(1);
+      wrapper.vm.onOpenReplyComposer(99);
+      wrapper.vm.onComposerPosted();
+      await flushPromises(wrapper);
+
+      expect(getRule).toHaveBeenCalledWith(1);
+      expect(wrapper.vm.composerActive).toBe(false);
     });
   });
 });

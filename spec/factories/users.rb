@@ -8,6 +8,15 @@ FactoryBot.define do
     confirmed_at { Time.zone.now }
     confirmation_token { nil }
 
+    # Suppress audit INSERTs during factory creation to prevent deadlocks
+    # in parallel tests (audits + users cross-table lock contention with
+    # the advisory lock in promote_first_user_to_admin).
+    # Uses to_create to wrap save! in without_auditing block — ensure-based
+    # cleanup even if save! raises (unlike before/after callback split).
+    to_create do |instance|
+      User.without_auditing { instance.save! }
+    end
+
     transient do
       project_role { 'viewer' }
       project { nil }

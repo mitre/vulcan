@@ -13,7 +13,11 @@
       "note": "False positive: Integer() cast ensures only PKs from ActiveRecord are interpolated"
     },
     {
-      "fingerprint": "e3022938a2983ce21a1353d0258ec15035becb12d873e64398e25e9c4f87d5c7",
+      "fingerprint": "72cc37cd3ae6ceea6a66798716561b2e063981ac19506ac9b7f8a31ed4bd27cb",
+      "note": "False positive: Integer() cast ensures only PKs from ActiveRecord are interpolated"
+    },
+    {
+      "fingerprint": "56e3ecaf8e52eefd007f145d409f62c1d48e443e4b6b06d45b3b0c86d9fce4df",
       "note": "False positive: Integer() cast ensures only PKs from ActiveRecord are interpolated"
     },
     {
@@ -21,10 +25,10 @@
       "note": "False positive: search terms sanitized via sanitize_sql_like in build_ilike_conditions"
     },
     {
-      "fingerprint": "d6f5de8057188556c6d5c117546394a482caa88436622c512ceb21a3a1e2e184",
+      "fingerprint": "67a915d17e2ebb4d1a83016b683cdf09d6e1553033eb2bcb4f6fd110051e054d",
       "note": "False positive: File.basename strips path traversal; only serves files from fixed attachments directory"
     }
   ],
-  "updated": "2026-04-02",
+  "updated": "2026-06-04",
   "brakeman_version": "7.1.0"
 }

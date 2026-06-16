@@ -2,7 +2,7 @@
   <ControlsPageLayout
     :has-selected-rule="!!selectedRule"
     :show-command-bar="true"
-    :show-filter-bar="true"
+    :show-filter-bar="filterBarVisible"
     :sidebar-width="2"
   >
     <!-- Command Bar -->
@@ -10,11 +10,15 @@
       <ControlsCommandBar
         :component="component"
         :selected-rule="selectedRule"
-        :effective-permissions="effectivePermissions"
         :active-panel="activePanel"
         :read-only="false"
+        :show-filter-toggle="true"
+        :filter-bar-visible="filterBarVisible"
+        :active-filter-count="activeFilterCount"
         @open-members="$bvModal.show(`members-modal-${component.id}`)"
         @toggle-panel="togglePanel"
+        @toggle-filter-bar="toggleFilterBar"
+        @clear-filters="clearAllFilters"
         @open-component-composer="onOpenComponentComposer"
       />
 
@@ -33,24 +37,44 @@
     <template #filter-bar>
       <RuleFilterBar
         :filters="filters"
-        :counts="ruleStatusCounts"
+        :counts="counts"
         @update:filter="updateFilter"
         @reset="resetFilters"
       />
     </template>
 
-    <!-- Left Sidebar -->
-    <template #left-sidebar>
-      <RuleNavigator
+    <!-- Left Sidebar Header (pinned — search, filter pills) -->
+    <template #left-sidebar-header>
+      <RuleSearchBar
+        ref="sidebarSearchBar"
         :component-id="component.id"
-        :rules="rules"
-        :selected-rule-id="selectedRuleId"
         :project-prefix="component.prefix"
-        :effective-permissions="effectivePermissions"
-        :open-rule-ids="openRuleIds"
-        :external-filters="filters"
-        @ruleSelected="handleRuleSelected($event)"
-        @ruleDeselected="handleRuleDeselected($event)"
+        :rules="rules"
+        :read-only="false"
+        :search-value="navFilters.search"
+        @search-updated="navOnSearchUpdated"
+        @clear-filters="onClearNavFilters"
+        @search-result-selected="onNavSearchResultSelected"
+      />
+      <ActiveFilterPills
+        :filters="navFilters"
+        @remove-filter="onRemoveNavFilter"
+        @clear-all="onClearNavFilters"
+      />
+    </template>
+
+    <!-- Left Sidebar Body (scrollable — rule list) -->
+    <template #left-sidebar>
+      <RuleList
+        :filtered-rules="navFilteredRules"
+        :all-rules="rules"
+        :component-id="component.id"
+        :project-prefix="component.prefix"
+        :read-only="false"
+        :nest-satisfied-rules-checked="navFilters.nestSatisfiedRulesChecked"
+        :show-s-r-g-id-checked="navFilters.showSRGIdChecked"
+        :has-active-filters="navHasActiveFilters"
+        @reset-filters="onClearNavFilters"
       />
     </template>
 
@@ -63,7 +87,6 @@
           :for-duplicate="true"
           :selected-rule-id="selectedRule.id"
           :selected-rule-text="`${component.prefix}-${selectedRule.rule_id}`"
-          @ruleSelected="handleRuleSelected($event.id)"
         />
 
         <b-modal
@@ -87,49 +110,14 @@
           </template>
         </b-modal>
 
-        <!-- Also Satisfies Modal (multi-select) -->
-        <b-modal
-          id="also-satisfies-modal"
-          title="Also Satisfies"
-          centered
-          size="lg"
-          @ok="addMultipleSatisfiedRules"
-          @hidden="clearSelectedRules"
-        >
-          <b-form-group :label="msg.satisfiesPrompt">
-            <multiselect
-              v-model="selectedSatisfiesRuleIds"
-              :options="filteredSelectRules"
-              :multiple="true"
-              :close-on-select="false"
-              :clear-on-select="false"
-              :preserve-search="true"
-              :placeholder="msg.satisfiesPlaceholder"
-              label="text"
-              track-by="value"
-              :preselect-first="false"
-            >
-              <template slot="selection" slot-scope="{ values, isOpen }">
-                <span v-if="values.length && !isOpen" class="multiselect__single">
-                  {{ selectedCountLabel(values.length) }}
-                </span>
-              </template>
-            </multiselect>
-          </b-form-group>
-          <div class="mt-2 text-muted">
-            <small>{{ selectedCountLabel(selectedSatisfiesRuleIds.length) }}</small>
-          </div>
-          <template #modal-footer="{ cancel, ok }">
-            <b-button @click="cancel()">Cancel</b-button>
-            <b-button
-              variant="info"
-              :disabled="selectedSatisfiesRuleIds.length === 0"
-              @click="ok()"
-            >
-              Add {{ selectedSatisfiesRuleIds.length }} {{ term.plural }}
-            </b-button>
-          </template>
-        </b-modal>
+        <!-- Also Satisfies Modal -->
+        <AlsoSatisfiesModal
+          :rules="rules"
+          :selected-rule="selectedRule"
+          :component-prefix="component.prefix"
+          :show-s-r-g-id-checked="filters.showSRGIdChecked"
+          @add-satisfied="onAddSatisfied"
+        />
       </template>
 
       <!-- Related Rules Modal -->
@@ -194,6 +182,7 @@
           @open-review-modal="$bvModal.show('review-modal')"
           @open-related-modal="$bvModal.show('related-rules-modal')"
           @open-composer="onOpenComposer"
+          @view-comments="onViewComments"
           @toggle-panel="togglePanel"
           @toggle-advanced-fields="toggleAdvancedFields"
           @toggle-section-lock="toggleSectionLock"
@@ -209,28 +198,18 @@
         :selected-rule="selectedRule"
         :selected-rule-id="selectedRuleId"
         :active-panel="activePanel"
-        :effective-permissions="effectivePermissions"
         :current-user-id="currentUserId"
         :statuses="statuses"
+        :reviews-section-filter="reviewsSectionFilter"
         @close-panel="closePanel"
         @component-updated="refreshComponent"
-        @rule-selected="handleRuleSelected"
         @open-reply-composer="onOpenReplyComposer"
       />
 
-      <!-- Comment composer modal. Opens via onOpenComposer
-           when a SectionCommentIcon emits open-composer. Lives in the
-           right-panels slot but b-modal portals to the document body. -->
       <CommentComposerModal
-        v-if="selectedRule || componentComposerActive"
-        :component-id="component.id"
-        :rule-id="componentComposerActive ? null : selectedRule.id"
-        :rule-displayed-name="
-          componentComposerActive ? '' : `${component.prefix}-${selectedRule.rule_id}`
-        "
+        v-if="composerActive"
+        v-bind="composerProps"
         :component-displayed-name="component.name"
-        :initial-section="composerSection"
-        :reply-to-review-id="composerReplyToId"
         @posted="onComposerPosted"
         @hidden="onComposerHidden"
       />
@@ -239,10 +218,15 @@
 </template>
 
 <script>
-import { toRef } from "vue";
-import axios from "axios";
+import { toRef, computed } from "vue";
+import { updateRule, updateSectionLocks } from "../../api/rulesApi";
+import { createRuleReview } from "../../api/reviewsApi";
+import { getComponent, patchComponent } from "../../api/componentsApi";
 import RuleEditor from "./RuleEditor.vue";
-import RuleNavigator from "./RuleNavigator.vue";
+import RuleSearchBar from "./RuleSearchBar.vue";
+import RuleList from "./RuleList.vue";
+import ActiveFilterPills from "./ActiveFilterPills.vue";
+import AlsoSatisfiesModal from "./AlsoSatisfiesModal.vue";
 import RelatedRulesModal from "./RelatedRulesModal.vue";
 import RuleReviewModal from "./RuleReviewModal.vue";
 import RuleFilterBar from "./RuleFilterBar.vue";
@@ -250,36 +234,35 @@ import ControlsCommandBar from "../shared/ControlsCommandBar.vue";
 import ControlsPageLayout from "./ControlsPageLayout.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
 import CommentComposerModal from "../components/CommentComposerModal.vue";
-import { useRuleSelection, useRuleFilters, useSidebar } from "../../composables";
+import { useRuleFilters, useSidebar } from "../../composables";
+import { useRuleNavigation } from "../../composables/useRuleNavigation";
+import { usePermissions } from "../../composables/usePermissions";
+import { useReplyComposer } from "../../composables/useReplyComposer";
+import { useRuleSelectionStore } from "../../stores/ruleSelection";
+import { getFirstVisibleRule } from "../../utils/ruleSelectionUtils";
 import { useRuleAutosave } from "../../composables/useRuleAutosave";
-import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
-import Multiselect from "vue-multiselect";
+import { useToast } from "../../composables/useToast";
 import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
-import "vue-multiselect/dist/vue-multiselect.min.css";
-import { RULE_TERM, MESSAGE_LABELS, selectedCountLabel } from "../../constants/terminology";
-import { truncateId } from "../../utils/idFormatter";
+import { MESSAGE_LABELS } from "../../constants/terminology";
+import { scrollToField } from "../../utils/searchHighlight";
 
 export default {
   name: "RulesCodeEditorView",
   components: {
-    RuleNavigator,
+    RuleSearchBar,
+    RuleList,
+    ActiveFilterPills,
     RuleEditor,
+    AlsoSatisfiesModal,
     RelatedRulesModal,
     RuleReviewModal,
     RuleFilterBar,
     ControlsCommandBar,
     ControlsPageLayout,
     NewRuleModalForm,
-    Multiselect,
     ControlsSidepanels,
     CommentComposerModal,
   },
-  mixins: [DateFormatMixinVue, AlertMixinVue, RoleComparisonMixin],
-  // Mirror ProjectComponent's provide chain so SectionCommentIcon and
-  // RuleActionsToolbar can read the component's comment_phase from
-  // either host page.
   provide() {
     return {
       getCommentPhase: () => this.component.comment_phase || "open",
@@ -288,10 +271,6 @@ export default {
     };
   },
   props: {
-    effectivePermissions: {
-      type: String,
-      required: true,
-    },
     currentUserId: {
       type: Number,
       required: true,
@@ -318,151 +297,127 @@ export default {
     },
   },
   setup(props) {
-    // Convert props to refs for composables
     const rulesRef = toRef(props, "rules");
     const componentId = props.component.id;
+    const ruleStore = useRuleSelectionStore();
 
-    // Use composables
-    const {
-      selectedRuleId,
-      openRuleIds,
-      selectedRule,
-      lastEditor,
-      selectRule,
-      deselectRule,
-      closeAllRules,
-      isRuleOpen,
-    } = useRuleSelection(rulesRef, componentId, { autoSelectFirst: true });
+    // Permissions arrive via provide/inject — Rules.vue (page root) provides;
+    // the raw string is still passed down to prop-based children (RuleEditor,
+    // RuleReviewModal) until their own migration.
+    const { effectivePermissions } = usePermissions();
 
-    const {
-      filters,
-      counts,
-      filteredRules,
-      allStatusFiltersEnabled,
-      allReviewFiltersEnabled,
-      toggleFilter,
-      setFilter,
-      resetFilters,
-    } = useRuleFilters(rulesRef, componentId);
+    // Bridge: useReplyComposer's onOpen/afterPosted callbacks need the
+    // options-API instance ($bvModal.show, $root refresh emits), which
+    // setup() cannot reach in Vue 2.7 without getCurrentInstance
+    // (anti-pattern). The bridge object is filled in created() — late
+    // binding, same contract. Pattern established in ComponentComments
+    // and ProjectComponent.
+    const composerBridge = { onOpen: null, afterPosted: null };
+    const composer = useReplyComposer({
+      onOpen: () => composerBridge.onOpen && composerBridge.onOpen(),
+      afterPosted: (parentReviewId, snapshot) =>
+        composerBridge.afterPosted && composerBridge.afterPosted(parentReviewId, snapshot),
+    });
 
-    const { activePanel, togglePanel, openPanel, closePanel, isPanelActive } = useSidebar();
+    const selectedRuleId = computed(() => ruleStore.selectedRuleId);
+    const selectedRule = computed(() => {
+      if (ruleStore.selectedRuleId === null) return null;
+      return rulesRef.value.find((r) => r.id === ruleStore.selectedRuleId) || null;
+    });
 
-    // Autosave (F3)
-    const autosaveOptions = { componentId, onAutoSave: null };
-    const autosave = useRuleAutosave(selectedRule, autosaveOptions);
+    const { filters, counts, setFilter, resetFilters, activeFilterCount } = useRuleFilters(
+      rulesRef,
+      componentId,
+    );
+    const nav = useRuleNavigation(rulesRef, props.component.prefix, componentId, filters);
+    const { activePanel, togglePanel, openPanel, closePanel } = useSidebar();
+    const autosave = useRuleAutosave(selectedRule, { componentId, onAutoSave: null });
 
-    // Backward compatibility: handleRuleSelected/handleRuleDeselected aliases
-    const handleRuleSelected = selectRule;
-    const handleRuleDeselected = deselectRule;
-
-    // Backward compatibility: updateFilter wraps setFilter with localStorage persistence
     const updateFilter = (filterName, value) => {
       setFilter(filterName, value);
-      // Persist to localStorage for RuleNavigator sync
       localStorage.setItem(`ruleNavigatorFilters-${componentId}`, JSON.stringify(filters.value));
       localStorage.setItem(`showSRGIdChecked-${componentId}`, filters.value.showSRGIdChecked);
     };
 
-    // Load filters from localStorage on init
-    // Only load status/review filters - display options use code defaults
-    const loadFiltersFromStorage = () => {
-      const saved = localStorage.getItem(`ruleNavigatorFilters-${componentId}`);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          // Restore all user-set filter preferences
-          const restorableKeys = [
-            "search",
-            "acFilterChecked",
-            "aimFilterChecked",
-            "adnmFilterChecked",
-            "naFilterChecked",
-            "nydFilterChecked",
-            "nurFilterChecked",
-            "urFilterChecked",
-            "lckFilterChecked",
-            "showSRGIdChecked",
-            "sortBySRGIdChecked",
-            "nestSatisfiedRulesChecked",
-          ];
-          restorableKeys.forEach((key) => {
-            if (key in parsed && key in filters.value) {
-              filters.value[key] = parsed[key];
-            }
-          });
-        } catch (e) {
-          // Use defaults — saved filter data is corrupt or invalid JSON
-          // eslint-disable-next-line no-console
-          console.error("Failed to load saved filters from localStorage:", e);
-        }
+    const saved = localStorage.getItem(`ruleNavigatorFilters-${componentId}`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const restorableKeys = [
+          "search",
+          "acFilterChecked",
+          "aimFilterChecked",
+          "adnmFilterChecked",
+          "naFilterChecked",
+          "nydFilterChecked",
+          "nurFilterChecked",
+          "urFilterChecked",
+          "lckFilterChecked",
+          "showSRGIdChecked",
+          "sortBySRGIdChecked",
+          "nestSatisfiedRulesChecked",
+        ];
+        restorableKeys.forEach((key) => {
+          if (key in parsed && key in filters.value) {
+            filters.value[key] = parsed[key];
+          }
+        });
+      } catch (e) {
+        // Use defaults
       }
-    };
+    }
 
-    // Initialize filters from storage
-    loadFiltersFromStorage();
+    const { alertOrNotifyResponse } = useToast();
 
     return {
-      // Rule selection (from useRuleSelection)
+      effectivePermissions,
+      alertOrNotifyResponse,
+      composerBridge,
+      ...composer,
+      ruleStore,
       selectedRuleId,
-      openRuleIds,
       selectedRule,
-      lastEditor,
-      selectRule,
-      deselectRule,
-      closeAllRules,
-      isRuleOpen,
-      handleRuleSelected,
-      handleRuleDeselected,
-
-      // Filters (from useRuleFilters)
+      selectRule: (ruleId) => ruleStore.selectRule(ruleId),
+      deselectRule: (ruleId) => ruleStore.deselectRule(ruleId),
+      navFilters: nav.filters,
+      navFilteredRules: nav.filteredRules,
+      navHasActiveFilters: nav.hasActiveFilters,
+      navClearFilters: nav.clearFilters,
+      navRemoveFilter: nav.removeFilter,
+      navOnSearchUpdated: nav.onSearchUpdated,
       filters,
       counts,
-      filteredRules,
-      allStatusFiltersEnabled,
-      allReviewFiltersEnabled,
-      toggleFilter,
+      activeFilterCount,
       setFilter,
       resetFilters,
       updateFilter,
-
-      // Sidebar (from useSidebar)
       activePanel,
       togglePanel,
       openPanel,
       closePanel,
-      isPanelActive,
-
-      // Autosave (F3)
       autosaveEnabled: autosave.enabled,
       autosaveDirty: autosave.isDirty,
       toggleAutosave: autosave.toggle,
       markAutosaveDirty: autosave.markDirty,
       resetAutosaveTimer: autosave.resetTimer,
       destroyAutosave: autosave.destroy,
-      autosaveOptions,
+      autosaveOptions: { componentId, onAutoSave: null },
     };
   },
   data() {
+    const componentId = this.component.id;
+    const savedFilterBar = localStorage.getItem(`filterBarVisible-${componentId}`);
     return {
       localAdvancedFields: this.component.advanced_fields,
+      filterBarVisible: savedFilterBar === "true",
       sectionLockModal: {
         visible: false,
         section: null,
         isLocking: false,
         comment: "",
       },
-      term: RULE_TERM,
       msg: MESSAGE_LABELS,
-      filteredSelectRules: [],
-      selectedSatisfiesRuleIds: [],
-      showSRGIdChecked: null,
-      // section pre-selected on the comment composer when a
-      // SectionCommentIcon click bubbles open-composer up to here.
-      composerSection: null,
-      // top-level review id when the composer is opened in reply mode
-      // via CommentThread's "Reply" buttons.
-      composerReplyToId: null,
-      componentComposerActive: false,
+      reviewsSectionFilter: "all",
     };
   },
   computed: {
@@ -481,21 +436,19 @@ export default {
     isViewerOnly() {
       return this.effectivePermissions === "viewer";
     },
-    // Backward compatibility alias
-    ruleStatusCounts() {
-      return this.counts;
-    },
   },
-  watch: {
-    selectedRuleId: {
-      handler() {
-        this.filterRulesForSatisfies();
-      },
-      immediate: true,
-    },
+  created() {
+    this.composerBridge.onOpen = () => this.$bvModal.show("comment-composer-modal");
+    this.composerBridge.afterPosted = (parentReviewId, snapshot) =>
+      this.afterComposerPosted(parentReviewId, snapshot);
   },
   mounted() {
-    // Wire autosave callback to refresh rule history after auto-save
+    this.ruleStore.init(this.$router, this.component.id);
+    if (this.ruleStore.selectedRuleId === null && this.rules.length > 0) {
+      const firstVisible = getFirstVisibleRule(this.rules);
+      if (firstVisible) this.ruleStore.selectRule(firstVisible.id);
+    }
+
     this.autosaveOptions.onAutoSave = (ruleId) => {
       this.$root.$emit("refresh:rule", ruleId);
     };
@@ -504,17 +457,12 @@ export default {
         this.$root.$emit("refresh:rule", this.selectedRuleId);
       }, 1);
     }
-    this.updateShowSRGIdChecked();
-    // F3: Mark autosave dirty when any rule field changes
     this.$root.$on("update:rule", this.markAutosaveDirty);
     this.$root.$on("update:check", this.markAutosaveDirty);
     this.$root.$on("update:description", this.markAutosaveDirty);
     this.$root.$on("update:disaDescription", this.markAutosaveDirty);
   },
   beforeDestroy() {
-    if (this.showSRGIdCheckedInterval) {
-      clearInterval(this.showSRGIdCheckedInterval);
-    }
     this.$root.$off("update:rule", this.markAutosaveDirty);
     this.$root.$off("update:check", this.markAutosaveDirty);
     this.$root.$off("update:description", this.markAutosaveDirty);
@@ -522,90 +470,93 @@ export default {
     this.destroyAutosave();
   },
   methods: {
-    selectedCountLabel,
-    /**
-     * open the comment composer with a pre-selected section.
-     * Triggered when SectionCommentIcon emits open-composer; the event
-     * bubbles up RuleFormGroup → RuleForm/CheckForm/DisaRuleDescriptionForm
-     * → UnifiedRuleForm → RuleEditor → here.
-     */
+    toggleFilterBar() {
+      this.filterBarVisible = !this.filterBarVisible;
+      localStorage.setItem(`filterBarVisible-${this.component.id}`, String(this.filterBarVisible));
+    },
+    clearAllFilters() {
+      this.resetFilters();
+      this.navClearFilters();
+      this.$nextTick(() => {
+        if (this.$refs.sidebarSearchBar) {
+          this.$refs.sidebarSearchBar.setSearchValue("");
+        }
+      });
+    },
+    onNavSearchResultSelected(result) {
+      const rule = this.rules.find((r) => r.id === result.id);
+      if (rule) {
+        if (!rule.histories) {
+          this.$root.$emit("refresh:rule", rule.id);
+        }
+        this.ruleStore.selectRule(rule.id);
+        if (result.matched_field) {
+          this.$nextTick(() => {
+            scrollToField(result.matched_field, result.searchQuery);
+          });
+        }
+      }
+    },
+    onClearNavFilters() {
+      this.navClearFilters();
+      this.$nextTick(() => {
+        if (this.$refs.sidebarSearchBar) {
+          this.$refs.sidebarSearchBar.setSearchValue("");
+        }
+      });
+    },
+    onRemoveNavFilter(key) {
+      this.navRemoveFilter(key);
+      if (key === "search") {
+        this.$nextTick(() => {
+          if (this.$refs.sidebarSearchBar) {
+            this.$refs.sidebarSearchBar.setSearchValue("");
+          }
+        });
+      }
+    },
+    onViewComments(section) {
+      this.reviewsSectionFilter = section || "all";
+      this.togglePanel("rule-reviews");
+    },
     onOpenComposer(section) {
-      this.composerSection = section;
-      this.composerReplyToId = null;
-      this.$bvModal.show("comment-composer-modal");
+      const rule = this.selectedRule;
+      const parent = rule?.satisfied_by?.[0];
+      this.openSectionComposer({
+        ruleId: rule?.id,
+        componentId: this.component.id,
+        section,
+        ruleName: rule ? `${this.component.prefix}-${rule.rule_id}` : null,
+        parentRuleId: parent?.id || null,
+        parentRuleName: parent ? `${this.component.prefix}-${parent.rule_id}` : null,
+      });
     },
     onOpenReplyComposer(reviewId) {
-      this.composerSection = null;
-      this.composerReplyToId = reviewId;
-      this.$bvModal.show("comment-composer-modal");
+      this.openReplyComposer({
+        reviewId,
+        ruleId: this.selectedRule?.id,
+        componentId: this.component.id,
+        ruleName: this.selectedRule
+          ? `${this.component.prefix}-${this.selectedRule.rule_id}`
+          : null,
+      });
     },
-    /**
-     * after a comment is posted, refresh the rule so the
-     * thread + per-section pending-count badge update without a reload.
-     */
-    onComposerPosted() {
-      if (this.selectedRule && !this.componentComposerActive) {
+    afterComposerPosted(parentReviewId, snapshot) {
+      if (this.selectedRule && snapshot.mode !== "component") {
         this.$root.$emit("refresh:rule", this.selectedRule.id, "all");
       }
-      this.composerReplyToId = null;
-      this.componentComposerActive = false;
-    },
-    onComposerHidden() {
-      this.composerReplyToId = null;
-      this.componentComposerActive = false;
     },
     onOpenComponentComposer() {
-      this.composerSection = null;
-      this.composerReplyToId = null;
-      this.componentComposerActive = true;
-      this.$nextTick(() => this.$bvModal.show("comment-composer-modal"));
+      this.openComponentComposer(this.component.id);
     },
-    updateShowSRGIdChecked() {
-      const componentId = this.component.id;
-      this.showSRGIdChecked = localStorage.getItem(`showSRGIdChecked-${componentId}`);
-      this.showSRGIdCheckedInterval = setInterval(() => {
-        const newValue = localStorage.getItem(`showSRGIdChecked-${componentId}`);
-        if (newValue !== this.showSRGIdChecked) {
-          this.showSRGIdChecked = newValue;
-          this.filterRulesForSatisfies();
-        }
-      }, 1000);
-    },
-    filterRulesForSatisfies() {
-      const rule = this.selectedRule;
-      if (!rule) {
-        this.filteredSelectRules = [];
-        return;
-      }
-      this.filteredSelectRules = this.rules
-        .filter((r) => {
-          return (
-            r.id !== rule.id &&
-            r.satisfies.length === 0 &&
-            !rule.satisfies.some((s) => s.id === r.id)
-          );
-        })
-        .map((r) => {
-          return {
-            value: r.id,
-            // Satisfaction relationships ALWAYS show SRG requirements (semantic requirement)
-            text: truncateId(r.srg_id) || `${this.component.prefix}-${r.rule_id}`,
-          };
-        });
+    onAddSatisfied(ruleId, parentRuleId) {
+      this.$root.$emit("addSatisfied:rule", ruleId, parentRuleId);
     },
     saveRule(comment) {
       const rule = this.selectedRule;
       if (!rule) return;
-      // Reset autosave timer — manual save takes priority
       this.resetAutosaveTimer();
-      const payload = {
-        rule: {
-          ...rule,
-          audit_comment: comment,
-        },
-      };
-      axios
-        .put(`/rules/${rule.id}`, payload)
+      updateRule(rule.id, { ...rule, audit_comment: comment })
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.$root.$emit("refresh:rule", rule.id);
@@ -616,13 +567,7 @@ export default {
       if (!comment.trim()) return;
       const rule = this.selectedRule;
       if (!rule) return;
-      axios
-        .post(`/rules/${rule.id}/reviews`, {
-          review: {
-            action: "comment",
-            comment: comment,
-          },
-        })
+      createRuleReview(rule.id, { action: "comment", comment: comment })
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.$root.$emit("refresh:rule", rule.id, "all");
@@ -656,12 +601,11 @@ export default {
       const rule = this.selectedRule;
       if (!rule) return;
       this.sectionLockModal.visible = false;
-      axios
-        .patch(`/rules/${rule.id}/section_locks`, {
-          section,
-          locked: isLocking,
-          comment: comment.trim() || undefined,
-        })
+      updateSectionLocks(rule.id, {
+        section,
+        locked: isLocking,
+        comment: comment.trim() || undefined,
+      })
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.$root.$emit("refresh:rule", rule.id, "all");
@@ -672,17 +616,9 @@ export default {
       this.sectionLockModal.visible = false;
     },
     toggleAdvancedFields(advancedFields) {
-      // Confirmation is now handled in RuleEditor component
-      const payload = {
-        component: {
-          advanced_fields: advancedFields,
-        },
-      };
-      axios
-        .patch(`/components/${this.component.id}`, payload)
+      patchComponent(this.component.id, { advanced_fields: advancedFields })
         .then((response) => {
           this.alertOrNotifyResponse(response);
-          // Update local data property (not prop) for proper reactivity through slots
           this.localAdvancedFields = advancedFields;
         })
         .catch(this.alertOrNotifyResponse);
@@ -690,14 +626,11 @@ export default {
     lockRule(comment) {
       const rule = this.selectedRule;
       if (!rule) return;
-      axios
-        .post(`/rules/${rule.id}/reviews`, {
-          review: {
-            component_id: rule.component_id,
-            action: "lock_control",
-            comment: (comment || "").trim() || "Locked",
-          },
-        })
+      createRuleReview(rule.id, {
+        component_id: rule.component_id,
+        action: "lock_control",
+        comment: (comment || "").trim() || "Locked",
+      })
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.$root.$emit("refresh:rule", rule.id, "all");
@@ -707,37 +640,20 @@ export default {
     unlockRule(comment) {
       const rule = this.selectedRule;
       if (!rule) return;
-      axios
-        .post(`/rules/${rule.id}/reviews`, {
-          review: {
-            component_id: rule.component_id,
-            action: "unlock_control",
-            comment: (comment || "").trim() || "Unlocked",
-          },
-        })
+      createRuleReview(rule.id, {
+        component_id: rule.component_id,
+        action: "unlock_control",
+        comment: (comment || "").trim() || "Unlocked",
+      })
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.$root.$emit("refresh:rule", rule.id, "all");
         })
         .catch(this.alertOrNotifyResponse);
     },
-    addMultipleSatisfiedRules() {
-      const rule = this.selectedRule;
-      if (!rule) return;
-      this.selectedSatisfiesRuleIds.forEach((item) => {
-        const ruleId = typeof item === "object" ? item.value : item;
-        this.$root.$emit("addSatisfied:rule", ruleId, rule.id);
-      });
-    },
-    clearSelectedRules() {
-      this.selectedSatisfiesRuleIds = [];
-    },
     refreshComponent() {
-      axios
-        .get(`/components/${this.component.id}.json`)
+      getComponent(this.component.id)
         .then((response) => {
-          // Use $set for each key to ensure Vue 2 reactivity detects changes
-          // (Object.assign can miss nested object replacements)
           Object.keys(response.data).forEach((key) => {
             this.$set(this.component, key, response.data[key]);
           });
@@ -749,8 +665,6 @@ export default {
 </script>
 
 <style scoped>
-/* Command bar styles are in ControlsCommandBar.vue */
-
 .white-space-pre-wrap {
   white-space: pre-wrap;
 }

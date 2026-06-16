@@ -6,16 +6,20 @@ module Import
     # Links each rule to its SRG rule by version match.
     # Returns a mapping of { rule_id_string => new_db_id } for satisfaction rebuilding.
     class RuleBuilder
-      # base_rules columns that map directly from the serialized data.
-      # Excludes timestamps (restored separately) and nested records.
-      DIRECT_COLUMNS = %w[
-        locked locked_fields status status_justification artifact_description vendor_comments
-        rule_id rule_severity rule_weight version title ident ident_system
-        fixtext fixtext_fixref fix_id changes_requested
-        inspec_control_body inspec_control_file
-        inspec_control_body_lang inspec_control_file_lang
-        deleted_at srg_id vuln_id legacy_ids
-      ].freeze
+      # base_rules columns assigned directly from serialized archive data.
+      # Excludes timestamps (restored separately by restore_timestamps)
+      # and nested records (associations, see build_nested_records).
+      #
+      # Derives from Rule::MERGEABLE_FIELDS (the canonical content list)
+      # plus identity columns (rule_id, srg_id), lifecycle columns
+      # (locked, locked_fields, deleted_at), and derived columns
+      # (inspec_control_file — hydrated from the archive then regenerated
+      # by Rule#update_inspec_code after_save).
+      DIRECT_COLUMNS = (
+        Rule::MERGEABLE_FIELDS +
+        %w[rule_id srg_id locked locked_fields deleted_at] +
+        Rule::DERIVED_COLUMNS
+      ).freeze
 
       def initialize(rules_data, component, result)
         @rules_data = rules_data
@@ -52,7 +56,6 @@ module Import
         srg_rule = resolve_srg_rule(rule_data)
 
         rule = @component.rules.new
-        rule.skip_update_inspec_code = true
 
         assign_direct_columns(rule, rule_data)
         rule.srg_rule_id = srg_rule&.id

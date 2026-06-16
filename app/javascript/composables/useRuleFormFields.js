@@ -44,13 +44,12 @@ function getStatusConfig(status) {
 export function useRuleFormFields(rule, advancedMode, options = {}) {
   const readOnly = options.readOnly || { value: false };
 
-  // ─── Effective status (satisfied_by forces Configurable) ───
+  // ─── Effective status ───
+  // Status is set by the backend: ADNM when satisfied-by (per DISA V4R3
+  // §4.1.9), NYD on removal. No frontend override needed — the DB value
+  // drives STATUS_FIELD_CONFIG field visibility.
   const effectiveStatus = computed(() => {
-    const r = rule.value;
-    if (r.satisfied_by && r.satisfied_by.length > 0) {
-      return "Applicable - Configurable";
-    }
-    return r.status;
+    return rule.value.status;
   });
 
   // ─── Form-level disabled ───────────────────────────────────

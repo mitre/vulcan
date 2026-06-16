@@ -17,12 +17,12 @@ module Api
     skip_before_action :setup_navigation
     skip_before_action :check_access_request_notifications
 
-    # Override Devise's authentication failure behavior
-    # Return 401 JSON instead of redirecting to login page
     def authenticate_user!(*)
-      return head :unauthorized unless user_signed_in?
-
-      super
+      if api_token_request? || user_signed_in?
+        super
+      else
+        render json: { error: 'Unauthorized' }, status: :unauthorized
+      end
     end
 
     # Standardized JSON error responses with correct HTTP semantics
@@ -35,6 +35,12 @@ module Api
     # 404 Not Found - Resource doesn't exist
     rescue_from ActiveRecord::RecordNotFound do |_exception|
       render json: { error: 'Not found' }, status: :not_found
+    end
+
+    # 400 Bad Request - Pagination page out of range
+    rescue_from Pagy::RangeError do |exception|
+      render json: { error: "Page #{exception.pagy.page} is out of range (1..#{exception.pagy.last})" },
+             status: :bad_request
     end
 
     # 403 Forbidden - Authenticated but not authorized

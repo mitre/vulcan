@@ -1,7 +1,28 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import LockControlsModal from "@/components/components/LockControlsModal.vue";
+
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/api/componentsApi", () => ({
+  lockComponent: vi.fn(() => Promise.resolve({ data: {} })),
+  lockSections: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+
+// Spy-wrap (real implementation preserved) so tests can pin that the hidden
+// form token flows through the useAuthToken composable — one source of truth.
+vi.mock("@/composables/useAuthToken", { spy: true });
+import { useAuthToken } from "@/composables/useAuthToken";
 
 /**
  * LockControlsModal - Component-level lock controls
@@ -105,9 +126,81 @@ describe("LockControlsModal", () => {
 
     it("has sectionOptions available from ruleFieldConfig", () => {
       wrapper = createWrapper();
-      // sectionOptions should be populated with lockable section names
       expect(Array.isArray(wrapper.vm.sectionOptions)).toBe(true);
       expect(wrapper.vm.sectionOptions.length).toBeGreaterThan(0);
+    });
+  });
+
+  // ==========================================
+  // HIDDEN AUTHENTICITY TOKEN (useAuthToken)
+  // REQUIREMENT: the in-modal form carries the CSRF token as a hidden
+  // input so a non-ajax submit would authenticate. The value must come
+  // from the useAuthToken composable (single source of truth), not a
+  // per-component computed.
+  // ==========================================
+  describe("hidden authenticity_token field", () => {
+    // b-modal renders content lazily/in a portal — stub it to render
+    // its default slot inline so the form is findable in jsdom.
+    const ModalStub = { template: "<div><slot /></div>" };
+
+    const createMountedWrapper = (props = {}) => {
+      return mount(LockControlsModal, {
+        localVue,
+        propsData: { component_id: 1, ...props },
+        stubs: { "b-modal": ModalStub },
+      });
+    };
+
+    beforeEach(() => vi.clearAllMocks());
+
+    it("renders the hidden authenticity_token input with the CSRF meta value", () => {
+      wrapper = createMountedWrapper();
+      const input = wrapper.find('input[name="authenticity_token"]');
+      expect(input.exists()).toBe(true);
+      // setup.js sets the csrf-token meta to "test-csrf-token"
+      expect(input.element.value).toBe("test-csrf-token");
+    });
+
+    it("sources the token from the useAuthToken composable", () => {
+      useAuthToken.mockReturnValueOnce({ authenticityToken: "composable-sentinel-token" });
+      wrapper = createMountedWrapper();
+      expect(useAuthToken).toHaveBeenCalledTimes(1);
+      const input = wrapper.find('input[name="authenticity_token"]');
+      expect(input.element.value).toBe("composable-sentinel-token");
+    });
+  });
+
+  describe("API calls use domain modules", () => {
+    beforeEach(() => vi.resetAllMocks());
+
+    it("lockControls calls lockComponent with component_id and payload", async () => {
+      const { lockComponent } = await import("@/api/componentsApi");
+      lockComponent.mockResolvedValueOnce({ data: {} });
+
+      wrapper = createWrapper();
+      wrapper.vm.comment = "Locking all";
+      wrapper.vm.lockControls();
+
+      expect(lockComponent).toHaveBeenCalledWith(1, {
+        action: "lock_control",
+        comment: "Locking all",
+      });
+    });
+
+    it("lockSections calls lockSections with component_id and payload", async () => {
+      const { lockSections } = await import("@/api/componentsApi");
+      lockSections.mockResolvedValueOnce({ data: {} });
+
+      wrapper = createWrapper();
+      wrapper.vm.comment = "Locking sections";
+      wrapper.vm.selectedSections = ["check_content", "fixtext"];
+      wrapper.vm.lockSections();
+
+      expect(lockSections).toHaveBeenCalledWith(1, {
+        sections: ["check_content", "fixtext"],
+        locked: true,
+        comment: "Locking sections",
+      });
     });
   });
 });

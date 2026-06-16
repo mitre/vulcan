@@ -20,7 +20,7 @@
       <!-- Searchable projects -->
       <b-form @submit.prevent>
         <input
-          id="NewProjectAuthenticityToken"
+          id="NewComponentAuthenticityToken"
           type="hidden"
           name="authenticity_token"
           :value="authenticityToken"
@@ -177,10 +177,11 @@
 </template>
 
 <script>
-import axios from "axios";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import DisplayedComponentMixin from "../../mixins/DisplayedComponentMixin.vue";
+import { getSrgs, getProjects, getProject } from "../../api/projectsApi";
+import { detectSrg, createComponentInProject } from "../../api/componentsApi";
+import { useAuthToken } from "../../composables/useAuthToken";
+import { useToast } from "../../composables/useToast";
+import { useDisplayedComponent } from "../../composables/useDisplayedComponent";
 import VueMultiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
 
@@ -189,7 +190,6 @@ export default {
   components: {
     VueMultiselect,
   },
-  mixins: [AlertMixinVue, FormMixinVue, DisplayedComponentMixin],
   props: {
     spreadsheet_import: {
       type: Boolean,
@@ -205,7 +205,7 @@ export default {
     },
     project_id: {
       type: Number,
-      required: true,
+      default: null,
     },
     project: {
       type: Object,
@@ -226,6 +226,14 @@ export default {
       default: false,
     },
   },
+  // setup() runs before data(), so the setup-returned
+  // addDisplayNameToComponents is available to data() below.
+  setup() {
+    const { authenticityToken } = useAuthToken();
+    const { addDisplayNameToComponents } = useDisplayedComponent();
+    const { alertOrNotifyResponse } = useToast();
+    return { authenticityToken, addDisplayNameToComponents, alertOrNotifyResponse };
+  },
   data: function () {
     return {
       loading: false,
@@ -244,7 +252,7 @@ export default {
       slackChannelId: "",
       projects: [],
       components: this.copy_component
-        ? this.addDisplayNameToComponents(this.project.components)
+        ? this.addDisplayNameToComponents(this.project?.components || [])
         : [],
       srgs: [],
       displayedSrgs: [],
@@ -252,7 +260,7 @@ export default {
       detecting: false,
       srgAutoDetected: false,
       componentKey: 0,
-      potentialPocs: this.project ? this.project.users : [],
+      potentialPocs: this.project?.users || [],
       admin_name: "",
       admin_email: "",
       selectedProjectObj: null,
@@ -303,10 +311,7 @@ export default {
       this.srgAutoDetected = false;
       let formData = new FormData();
       formData.append("file", file);
-      axios
-        .post("/components/detect_srg", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        })
+      detectSrg(formData)
         .then((response) => {
           const detected = response.data;
           this.security_requirements_guide_id = detected.id;
@@ -350,13 +355,13 @@ export default {
       this.admin_name = user.name;
     },
     fetchData: function (_bvModalEvt) {
-      axios.get("/srgs").then((response) => {
+      getSrgs().then((response) => {
         this.srgs = response.data;
         this.srgs.forEach((srg) => {
           srg.displayed = `${srg.title} (${srg.version})`;
         });
       });
-      axios.get("/projects").then((response) => {
+      getProjects().then((response) => {
         this.projects = response.data;
       });
     },
@@ -366,7 +371,7 @@ export default {
         this.selected_component_id = null;
         this.security_requirements_guide_id = null;
         this.security_requirements_guide_displayed = null;
-        axios.get(`/projects/${project.id}`).then((response) => {
+        getProject(project.id).then((response) => {
           this.components = this.addDisplayNameToComponents(response.data.components);
           this.componentKey += 1;
         });
@@ -490,12 +495,7 @@ export default {
         formData.append("component[slack_channel_id]", this.slackChannelId);
       }
 
-      axios
-        .post(`/projects/${this.project_id}/components`, formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        })
+      createComponentInProject(this.project_id, formData)
         .then(this.addComponentSuccess)
         .catch(this.alertOrNotifyResponse)
         .finally(this.completeLoading);

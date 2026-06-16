@@ -1,0 +1,201 @@
+description: >-
+  A review action recorded on a rule. Serialized by ReviewBlueprint (default view).
+  The user_id field is intentionally excluded as a public-comment correlation guard.
+type: object
+required:
+  - id
+  - action
+  - comment
+  - rule_id
+  - created_at
+  - triage_status
+  - reactions
+additionalProperties: false
+properties:
+  id:
+    type: integer
+    description: Unique review identifier.
+    example: 1
+  action:
+    type: string
+    description: The type of review action that was performed.
+    enum:
+      - comment
+      - request_review
+      - revoke_review_request
+      - approve
+      - lock
+    example: comment
+  comment:
+    type: string
+    description: The comment text accompanying this review action.
+    example: "The check says \"verify that TLS 1.2 or greater is being used\" but does not specify HOW to verify."
+  created_at:
+    type: string
+    description: Timestamp when the review was created. Format is "YYYY-MM-DD HH:MM:SS UTC" (Blueprinter default).
+    example: "2026-05-19 14:08:17 UTC"
+  triage_status:
+    type:
+      - string
+      - 'null'
+    description: Current triage disposition of the comment.
+    enum:
+      - pending
+      - concur
+      - concur_with_comment
+      - non_concur
+      - duplicate
+      - informational
+      - needs_clarification
+      - withdrawn
+      - addressed_by
+      - null
+    example: pending
+  triage_set_at:
+    type:
+      - string
+      - 'null'
+    description: Timestamp when the triage status was last changed. Null if still pending.
+    example: null
+  adjudicated_at:
+    type:
+      - string
+      - 'null'
+    description: Timestamp when the comment reached a terminal triage state. Null if not yet adjudicated.
+    example: null
+  rule_id:
+    type:
+      - integer
+      - 'null'
+    description: ID of the rule this review is attached to. Null for component-scoped reviews.
+    example: 2976
+  section:
+    type:
+      - string
+      - 'null'
+    description: Rule section the comment applies to (e.g. fixtext, check_content, vuln_discussion). Null for general comments.
+    example: check_content
+  responding_to_review_id:
+    type:
+      - integer
+      - 'null'
+    description: ID of the parent review if this is a threaded reply. Null for top-level reviews.
+    example: null
+  duplicate_of_review_id:
+    type:
+      - integer
+      - 'null'
+    description: ID of the review this is marked as a duplicate of. Null if not a duplicate.
+    example: null
+  addressed_by_rule_id:
+    type:
+      - integer
+      - 'null'
+    description: ID of the rule that addresses this comment. Set when triage_status is addressed_by. Null otherwise.
+    example: null
+  triage_set_by_id:
+    type:
+      - integer
+      - 'null'
+    description: ID of the user who last changed the triage status. Null if still pending.
+    example: null
+  name:
+    type:
+      - string
+      - 'null'
+    description: Display name of the review author (delegated from User).
+    example: Demo Viewer
+  author_name:
+    type:
+      - string
+      - 'null'
+    description: Display name of the review author (explicit field, same value as name).
+    example: Demo Viewer
+  triager_display_name:
+    type:
+      - string
+      - 'null'
+    description: Display name of the user who triaged this comment. Null if not yet triaged. Uses ImportedAttribution resolution (DB user name → imported name → imported email).
+    example: null
+  triager_imported:
+    type: boolean
+    description: Whether the triager attribution came from an import (no matching DB user).
+    example: false
+  adjudicator_display_name:
+    type:
+      - string
+      - 'null'
+    description: Display name of the user who adjudicated this comment. Null if not yet adjudicated.
+    example: null
+  adjudicator_imported:
+    type: boolean
+    description: Whether the adjudicator attribution came from an import.
+    example: false
+  commenter_display_name:
+    type:
+      - string
+      - 'null'
+    description: Display name of the comment author. Uses ImportedAttribution resolution.
+    example: Demo Viewer
+  commenter_imported:
+    type: boolean
+    description: Whether the commenter attribution came from an import.
+    example: false
+  commentable_type:
+    type:
+      - string
+      - 'null'
+    description: Polymorphic type — BaseRule for rule-scoped, Component for component-scoped.
+    example: BaseRule
+  responses_count:
+    type: integer
+    description: Number of direct replies to this review.
+    example: 0
+  rule_displayed_name:
+    type:
+      - string
+      - 'null'
+    description: >-
+      Human-readable rule label (PREFIX-RULE_ID). Populated when the
+      serializer is called with rule_names option. Null otherwise.
+    example: PHOS-03-000001
+  author_email:
+    type:
+      - string
+      - 'null'
+    format: email
+    description: >-
+      Author's email. Only present when include_email option is true
+      (admin-tier surfaces). Null or absent for public endpoints.
+    example: null
+  commenter_email:
+    type:
+      - string
+      - 'null'
+    format: email
+    description: >-
+      Commenter's email (same as author_email but follows the commenter attribution
+      naming convention). Only present when include_email option is true. Null for
+      imported reviews with no matching DB user.
+    example: null
+  reactions:
+    type: object
+    description: Aggregate reaction counts and current user's reaction for this review.
+    required:
+      - up
+      - down
+    properties:
+      up:
+        type: integer
+        description: Number of upvote reactions.
+        example: 1
+      down:
+        type: integer
+        description: Number of downvote reactions.
+        example: 0
+      mine:
+        type:
+          - string
+          - 'null'
+        description: The current user's reaction type (up or down). Null if no active reaction.
+        example: null

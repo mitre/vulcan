@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_08_210000) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_14_170000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -97,6 +97,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_08_210000) do
     t.string "legacy_ids"
     t.jsonb "locked_fields", default: {}
     t.index ["component_id", "deleted_at", "rule_severity"], name: "index_base_rules_on_component_deleted_severity"
+    t.index ["component_id", "deleted_at", "status"], name: "index_base_rules_on_component_deleted_status"
+    t.index ["component_id", "locked", "review_requestor_id"], name: "index_base_rules_on_component_locked_requestor"
     t.index ["component_id"], name: "index_base_rules_on_component_id"
     t.index ["deleted_at"], name: "index_base_rules_on_deleted_at"
     t.index ["review_requestor_id"], name: "index_base_rules_on_review_requestor_id"
@@ -121,11 +123,29 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_08_210000) do
   end
 
   create_table "component_metadata", force: :cascade do |t|
-    t.json "data", null: false
+    t.jsonb "data", null: false
     t.bigint "component_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["component_id"], name: "by_component_id", unique: true
+  end
+
+  create_table "component_sync_events", force: :cascade do |t|
+    t.bigint "component_id", null: false
+    t.uuid "sync_id", null: false
+    t.uuid "parent_sync_id"
+    t.string "source", null: false
+    t.string "direction", null: false
+    t.jsonb "resolution_log_json"
+    t.string "snapshot_path"
+    t.string "archive_hash"
+    t.string "status", default: "pending", null: false
+    t.datetime "created_at", null: false
+    t.jsonb "failure_diagnostics_json"
+    t.index ["component_id", "archive_hash"], name: "index_component_sync_events_on_applied_archive_hash", unique: true, where: "((archive_hash IS NOT NULL) AND ((status)::text = 'applied'::text))"
+    t.index ["component_id"], name: "index_component_sync_events_on_component_id"
+    t.index ["component_id"], name: "index_component_sync_events_on_pending_component", unique: true, where: "((status)::text = 'pending'::text)"
+    t.index ["sync_id"], name: "index_component_sync_events_on_sync_id", unique: true
   end
 
   create_table "components", force: :cascade do |t|
@@ -150,6 +170,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_08_210000) do
     t.datetime "comment_period_starts_at"
     t.datetime "comment_period_ends_at"
     t.string "closed_reason"
+    t.uuid "last_sync_id"
+    t.datetime "last_sync_at"
+    t.string "last_sync_source"
     t.index ["closed_reason"], name: "index_components_on_closed_reason"
     t.index ["comment_period_starts_at", "comment_period_ends_at"], name: "index_components_on_comment_period_dates"
     t.index ["comment_phase"], name: "index_components_on_comment_phase"
@@ -180,6 +203,18 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_08_210000) do
     t.index ["base_rule_id"], name: "index_disa_rule_descriptions_on_base_rule_id"
   end
 
+  create_table "identities", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "provider", null: false
+    t.string "uid", null: false
+    t.string "email"
+    t.datetime "last_sign_in_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["provider", "uid"], name: "index_identities_on_provider_and_uid", unique: true
+    t.index ["user_id"], name: "index_identities_on_user_id"
+  end
+
   create_table "memberships", force: :cascade do |t|
     t.bigint "user_id"
     t.bigint "membership_id"
@@ -190,6 +225,50 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_08_210000) do
     t.index ["membership_id"], name: "index_memberships_on_membership_id"
     t.index ["user_id", "membership_type", "membership_id"], name: "by_user_and_membership", unique: true
     t.index ["user_id"], name: "index_memberships_on_user_id"
+  end
+
+  create_table "merge_operations", force: :cascade do |t|
+    t.bigint "component_sync_event_id", null: false
+    t.string "entity_type", null: false
+    t.bigint "entity_id", null: false
+    t.string "entity_key", null: false
+    t.string "operation", null: false
+    t.string "field_name"
+    t.text "old_value"
+    t.text "new_value"
+    t.string "source", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["component_sync_event_id"], name: "index_merge_operations_on_component_sync_event_id"
+  end
+
+  create_table "merge_quarantine", force: :cascade do |t|
+    t.bigint "component_sync_event_id", null: false
+    t.string "entity_type", null: false
+    t.string "entity_key", null: false
+    t.string "quarantine_reason", null: false
+    t.jsonb "original_archive_data", null: false
+    t.jsonb "validation_errors"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["component_sync_event_id"], name: "index_merge_quarantine_on_component_sync_event_id"
+  end
+
+  create_table "personal_access_tokens", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "name", null: false
+    t.string "token_digest", null: false
+    t.string "token_prefix", limit: 12
+    t.text "scopes", default: "[]", null: false
+    t.date "expires_at"
+    t.datetime "last_used_at"
+    t.datetime "revoked_at"
+    t.text "allowed_ips"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["token_digest"], name: "index_personal_access_tokens_on_token_digest", unique: true
+    t.index ["user_id", "revoked_at"], name: "index_pats_on_user_id_and_active"
+    t.index ["user_id"], name: "index_personal_access_tokens_on_user_id"
   end
 
   create_table "project_access_requests", force: :cascade do |t|
@@ -203,7 +282,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_08_210000) do
   end
 
   create_table "project_metadata", force: :cascade do |t|
-    t.json "data", null: false
+    t.jsonb "data", null: false
     t.bigint "project_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -278,7 +357,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_08_210000) do
     t.string "commenter_imported_name"
     t.string "commentable_type"
     t.bigint "commentable_id"
+    t.bigint "original_commentable_id"
+    t.bigint "addressed_by_rule_id"
     t.index ["action", "triage_status"], name: "index_reviews_on_action_and_triage_status"
+    t.index ["addressed_by_rule_id"], name: "index_reviews_on_addressed_by_rule_id"
+    t.index ["commentable_type", "commentable_id", "action", "triage_status", "responding_to_review_id"], name: "index_reviews_on_commentable_action_triage_responding"
     t.index ["commentable_type", "commentable_id"], name: "index_reviews_on_commentable"
     t.index ["duplicate_of_review_id"], name: "index_reviews_on_duplicate_of_review_id"
     t.index ["responding_to_review_id"], name: "index_reviews_on_responding_to_review_id"
@@ -286,6 +369,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_08_210000) do
     t.index ["rule_id"], name: "index_reviews_on_rule_id"
     t.index ["triage_status", "created_at"], name: "idx_reviews_top_level_triage_recent", where: "(((action)::text = 'comment'::text) AND (responding_to_review_id IS NULL))"
     t.index ["user_id"], name: "index_reviews_on_user_id"
+    t.check_constraint "NOT triage_status::text IS DISTINCT FROM 'addressed_by'::text OR addressed_by_rule_id IS NULL", name: "chk_review_addressed_by_fk_consistency"
+    t.check_constraint "NOT triage_status::text IS DISTINCT FROM 'duplicate'::text OR duplicate_of_review_id IS NULL", name: "chk_review_duplicate_fk_consistency"
   end
 
   create_table "rule_descriptions", force: :cascade do |t|
@@ -370,6 +455,18 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_08_210000) do
     t.index ["title"], name: "index_stigs_on_title_trigram", opclass: :gin_trgm_ops, using: :gin
   end
 
+  create_table "triage_response_templates", force: :cascade do |t|
+    t.bigint "project_id", null: false
+    t.bigint "created_by_id", null: false
+    t.string "name", limit: 200, null: false
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_by_id"], name: "index_triage_response_templates_on_created_by_id"
+    t.index ["project_id", "name"], name: "idx_triage_templates_unique_name_per_project", unique: true
+    t.index ["project_id"], name: "index_triage_response_templates_on_project_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
@@ -397,6 +494,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_08_210000) do
     t.integer "failed_attempts", default: 0, null: false
     t.string "unlock_token"
     t.datetime "locked_at"
+    t.boolean "password_automatically_set", default: false, null: false
     t.index ["confirmation_token"], name: "index_users_on_confirmation_token", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["provider", "uid"], name: "index_users_on_provider_and_uid", unique: true, where: "((provider IS NOT NULL) AND (uid IS NOT NULL))"
@@ -412,17 +510,27 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_08_210000) do
   add_foreign_key "base_rules", "security_requirements_guides"
   add_foreign_key "base_rules", "stigs"
   add_foreign_key "base_rules", "users", column: "review_requestor_id"
+  add_foreign_key "component_sync_events", "components"
   add_foreign_key "components", "components"
+  add_foreign_key "identities", "users", on_delete: :cascade
   add_foreign_key "memberships", "users"
+  add_foreign_key "merge_operations", "component_sync_events"
+  add_foreign_key "merge_quarantine", "component_sync_events"
+  add_foreign_key "personal_access_tokens", "users"
   add_foreign_key "project_access_requests", "projects"
   add_foreign_key "project_access_requests", "users"
   add_foreign_key "reactions", "reviews", on_delete: :cascade
   add_foreign_key "reactions", "users", on_delete: :cascade
+  add_foreign_key "reviews", "base_rules", column: "addressed_by_rule_id", on_delete: :restrict
   add_foreign_key "reviews", "base_rules", column: "rule_id", on_delete: :restrict
   add_foreign_key "reviews", "reviews", column: "duplicate_of_review_id", on_delete: :nullify
   add_foreign_key "reviews", "reviews", column: "responding_to_review_id", on_delete: :restrict
   add_foreign_key "reviews", "users", column: "adjudicated_by_id", on_delete: :nullify
   add_foreign_key "reviews", "users", column: "triage_set_by_id", on_delete: :nullify
   add_foreign_key "reviews", "users", on_delete: :nullify
+  add_foreign_key "rule_satisfactions", "base_rules", column: "rule_id", on_delete: :cascade
+  add_foreign_key "rule_satisfactions", "base_rules", column: "satisfied_by_rule_id", on_delete: :cascade
   add_foreign_key "search_abbreviations", "users", column: "created_by_id"
+  add_foreign_key "triage_response_templates", "projects"
+  add_foreign_key "triage_response_templates", "users", column: "created_by_id"
 end

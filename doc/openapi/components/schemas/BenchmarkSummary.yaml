@@ -1,0 +1,44 @@
+description: >-
+  DEPRECATED — this schema conflated SRG and STIG which have different date field names.
+  Use SrgSummary.yaml for SRGs (release_date) and StigSummary.yaml for STIGs (benchmark_date).
+  Kept for backwards compatibility with any existing $refs during migration.
+type: object
+required:
+  - id
+  - severity_counts
+properties:
+  id:
+    type: integer
+    description: Unique benchmark identifier.
+    example: 1
+  name:
+    type:
+      - string
+      - 'null'
+    description: Short name of the benchmark.
+    example: Container Platform SRG - Ver 2, Rel 4
+  title:
+    type:
+      - string
+      - 'null'
+    description: Full official title of the benchmark.
+    example: Container Platform Security Requirements Guide
+  version:
+    type:
+      - string
+      - 'null'
+    description: Version string (e.g. V2R4).
+    example: V2R4
+  severity_counts:
+    type: object
+    description: Count of rules at each severity level.
+    properties:
+      high:
+        type: integer
+        example: 8
+      medium:
+        type: integer
+        example: 177
+      low:
+        type: integer
+        example: 3

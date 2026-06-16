@@ -20,20 +20,20 @@ RSpec.describe Component do
       create(:membership, user: viewer, membership: project, role: 'viewer')
 
       # Component A: 2 pending top-level + 1 reply (excluded) + 1 already-triaged (excluded)
-      Review.create!(action: 'comment', comment: 'a-pending-1', user: viewer,
-                     rule: component_a.rules.first)
-      Review.create!(action: 'comment', comment: 'a-pending-2', user: viewer,
-                     rule: component_a.rules.first)
-      parent = Review.create!(action: 'comment', comment: 'a-parent', user: viewer,
-                              rule: component_a.rules.first)
-      Review.create!(action: 'comment', comment: 'a-reply', user: viewer,
-                     rule: component_a.rules.first,
-                     responding_to_review_id: parent.id)
+      create(:review, :comment, comment: 'a-pending-1', user: viewer,
+                                rule: component_a.rules.first)
+      create(:review, :comment, comment: 'a-pending-2', user: viewer,
+                                rule: component_a.rules.first)
+      parent = create(:review, :comment, comment: 'a-parent', user: viewer,
+                                         rule: component_a.rules.first)
+      create(:review, :comment, comment: 'a-reply', user: viewer,
+                                rule: component_a.rules.first,
+                                responding_to_review_id: parent.id)
       parent.update!(triage_status: 'concur', triage_set_by_id: author.id, triage_set_at: Time.current)
 
       # Component B: 1 pending top-level
-      Review.create!(action: 'comment', comment: 'b-pending', user: viewer,
-                     rule: component_b.rules.first)
+      create(:review, :comment, comment: 'b-pending', user: viewer,
+                                rule: component_b.rules.first)
 
       # Component C: zero pending — should be omitted from result
     end

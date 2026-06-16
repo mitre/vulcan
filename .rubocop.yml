@@ -1,3 +1,7 @@
+require:
+  - ./lib/rubocop/cop/vulcan/comment_tracker
+  - ./lib/rubocop/cop/vulcan/let_it_be_refind
+
 plugins:
   - rubocop-rails
   - rubocop-performance
@@ -19,6 +23,7 @@ AllCops:
     - "vendor/**/*"
     - tmp/**/*
     - downloads/**/*
+    - "**/*.haml"
 # DISABLED: Following Standard Ruby - line length auto-correction is destructive
 # It can corrupt code when combined with other cops (e.g., Rails/FilePath path duplication)
 # See: https://github.com/standardrb/standard
@@ -90,6 +95,7 @@ Style/OpenStructUse:
 Rails/SkipsModelValidations:
   Exclude:
     - spec/**/*
+    - lib/tasks/**/*
 # FactoryBot/FactoryAssociationWithStrategy changes build vs create behavior —
 # fixing requires verifying all tests still pass with implicit associations.
 # TODO: Fix factories to use implicit associations in dedicated session.
@@ -175,10 +181,10 @@ RSpec/LetSetup:
 RSpec/MessageChain:
   Enabled: false
 
-# Repeated examples flagged in components_spec are intentional parametric tests
+# Repeated examples flagged in components satisfaction spec are intentional parametric tests
 RSpec/RepeatedExample:
   Exclude:
-    - spec/models/components_spec.rb
+    - spec/models/components_satisfactions_spec.rb
 
 # Test let statements with numbers in names
 RSpec/IndexedLet:

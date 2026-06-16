@@ -1,0 +1,74 @@
+description: >-
+  A single audit trail entry recording a change to an auditable record.
+  Serialized by VulcanAudit#format. Note: the field is "name" (username),
+  NOT "user_id" — VulcanAudit#format does not expose user IDs.
+type: object
+required:
+  - id
+  - action
+  - auditable_type
+  - auditable_id
+  - created_at
+  - audited_changes
+additionalProperties: false
+properties:
+  id:
+    type: integer
+    description: Unique audit entry identifier.
+    example: 224
+  action:
+    type: string
+    description: Type of change that was made.
+    enum:
+      - create
+      - update
+      - destroy
+    example: update
+  auditable_type:
+    type: string
+    description: Rails model class name of the audited record.
+    example: Component
+  auditable_id:
+    type: integer
+    description: Primary key of the audited record.
+    example: 1
+  name:
+    type:
+      - string
+      - 'null'
+    description: Display name of the user who made the change. Null for system-initiated changes or seed data.
+    example: Demo Admin
+  audited_name:
+    type:
+      - string
+      - 'null'
+    description: Display name of the audited record's owner. Null when not applicable.
+    example: null
+  comment:
+    type:
+      - string
+      - 'null'
+    description: Audit comment text (e.g. reason for admin action). Null for most changes.
+    example: null
+  created_at:
+    type: string
+    description: Timestamp when the audit entry was recorded.
+    example: "2026-05-19 14:07:49 UTC"
+  audited_changes:
+    type: array
+    description: Array of changed attributes with before/after values. Each entry has a field name, previous value, and new value.
+    items:
+      type: object
+      required:
+        - field
+      properties:
+        field:
+          type: string
+          description: Name of the changed attribute. For AdditionalAnswer changes, this is the question name rather than the column name.
+          example: released
+        prev_value:
+          description: Previous value before the change. Null for create actions.
+          example: false
+        new_value:
+          description: New value after the change.
+          example: true

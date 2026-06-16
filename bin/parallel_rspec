@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 # Wrapper for parallel_rspec that sets sane defaults.
-# Caps at 8 processors to prevent CPU contention flaky failures.
+#
+# Processor cap: 8 workers max, matching the number of test databases
+# created by parallel:create. The bare gem auto-detects CPU cores and
+# exceeds the DB count on 10+ core machines → NoDatabaseError on workers 9+.
 # See: https://makandracards.com/makandra/495461
+#
+# Runtime balancing: .rspec_parallel configures RuntimeLogger to write
+# per-file timings to tmp/parallel_runtime_rspec.log. parallel_tests
+# automatically groups by runtime when this log exists, falling back to
+# filesize on the first run (no manual --group-by needed).
+# See: https://github.com/grosser/parallel_tests#even-test-group-runtimes
 export PARALLEL_TEST_PROCESSORS="${PARALLEL_TEST_PROCESSORS:-8}"
 exec bundle exec parallel_rspec "$@"

@@ -1,0 +1,45 @@
+parameters:
+  - name: tokenId
+    in: path
+    required: true
+    description: Numeric ID of the personal access token to admin-revoke.
+    schema:
+      type: integer
+    example: 1
+delete:
+  operationId: adminRevokePersonalAccessToken
+  tags:
+    - Personal Access Tokens
+  summary: Admin revoke any user's token
+  description: >-
+    Admin-only endpoint. Revokes any user's token with a required audit
+    comment explaining the reason (e.g. compromised credentials). The
+    audit comment is recorded in the audit trail. Session auth only.
+  security:
+    - cookieAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - audit_comment
+          properties:
+            audit_comment:
+              type: string
+              description: Reason for admin revocation (recorded in audit trail).
+              example: Compromised credentials reported by user.
+  responses:
+    '200':
+      description: Token revoked by admin
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    '403':
+      description: Not an admin
+    '404':
+      description: Token not found
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

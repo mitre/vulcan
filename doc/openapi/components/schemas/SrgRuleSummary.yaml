@@ -1,0 +1,123 @@
+description: SRG rule — the original SRG requirement that a component rule implements.
+type: object
+required:
+  - id
+  - rule_id
+  - title
+additionalProperties: false
+properties:
+  id:
+    type: integer
+    description: Unique SRG rule identifier.
+    example: 500
+  rule_id:
+    type: string
+    description: DISA rule identifier (e.g., SV-222xxx_rule).
+    example: "SV-222396r857506_rule"
+  title:
+    type: string
+    description: Requirement title.
+    example: "The container platform must enforce approved authorizations for access."
+  version:
+    type:
+      - string
+      - 'null'
+    description: SRG version identifier.
+    example: "CNTR-00-000050"
+  rule_severity:
+    type:
+      - string
+      - 'null'
+    description: Severity level.
+    enum:
+      - low
+      - medium
+      - high
+    example: medium
+  rule_weight:
+    type:
+      - string
+      - 'null'
+    description: Rule weight for scoring.
+    example: "10.0"
+  ident:
+    type:
+      - string
+      - 'null'
+    description: CCI identifiers (comma-separated).
+    example: "CCI-000213"
+  ident_system:
+    type:
+      - string
+      - 'null'
+    description: Identifier system URI.
+    example: "http://cyber.mil/cci"
+  fixtext:
+    type:
+      - string
+      - 'null'
+    description: Fix text describing how to remediate.
+    example: "Configure the container platform to enforce approved authorizations..."
+  fixtext_fixref:
+    type:
+      - string
+      - 'null'
+    description: Fix reference identifier.
+    example: "F-25073r857505_fix"
+  fix_id:
+    type:
+      - string
+      - 'null'
+    description: Fix identifier.
+    example: "F-25073r857505_fix"
+  inspec_control_body:
+    type:
+      - string
+      - 'null'
+    description: InSpec control Ruby source code.
+    example: null
+  inspec_control_file:
+    type:
+      - string
+      - 'null'
+    description: InSpec control file path.
+    example: null
+  inspec_control_body_lang:
+    type:
+      - string
+      - 'null'
+    description: Language of the InSpec control body (usually ruby).
+    example: null
+  inspec_control_file_lang:
+    type:
+      - string
+      - 'null'
+    description: Language of the InSpec control file.
+    example: null
+  vuln_id:
+    type:
+      - string
+      - 'null'
+    description: Vulnerability identifier (V-number).
+    example: "V-222396"
+  legacy_ids:
+    type:
+      - string
+      - 'null'
+    description: Legacy rule identifiers from previous STIG versions (comma-separated string).
+    example: "SV-42474, V-32157"
+  rule_descriptions_attributes:
+    type: array
+    description: Rule description records.
+    items:
+      $ref: ./RuleDescriptionSummary.yaml
+  disa_rule_descriptions_attributes:
+    type: array
+    description: DISA rule description records (vuln discussion, mitigations, etc.).
+    items:
+      $ref: ./DisaRuleDescription.yaml
+  checks_attributes:
+    type: array
+    description: Check content records.
+    items:
+      $ref: ./CheckSummary.yaml

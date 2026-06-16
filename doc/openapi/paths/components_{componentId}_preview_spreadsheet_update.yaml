@@ -1,0 +1,142 @@
+parameters:
+  - $ref: ../components/parameters/ComponentId.yaml
+post:
+  operationId: previewSpreadsheetUpdate
+  tags:
+    - Components
+  summary: Preview changes from a spreadsheet import
+  description: >-
+    Parses an uploaded spreadsheet (CSV/XLSX) and returns a diff of what
+    would change if applied, without modifying any data. Returns four
+    arrays: updated (rules with changes), unchanged (no diff), skipped_locked
+    (locked rules or inherited rules), and warnings (SRG IDs not found).
+    Requires author role on the component.
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          required:
+            - file
+          properties:
+            file:
+              type: string
+              format: binary
+              description: CSV or XLSX spreadsheet file containing rule updates.
+  responses:
+    '200':
+      description: Preview of changes grouped by outcome
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - updated
+              - unchanged
+              - skipped_locked
+              - warnings
+            properties:
+              updated:
+                type: array
+                description: Rules with detected changes.
+                items:
+                  type: object
+                  properties:
+                    rule_id:
+                      type: string
+                      example: "000050"
+                    srg_id:
+                      type:
+                        - string
+                        - 'null'
+                      example: "SRG-APP-000014-CTR-000035"
+                    changes:
+                      type: object
+                      description: Changed fields with [old_value, new_value] pairs.
+                      additionalProperties:
+                        type: array
+                        items: {}
+              unchanged:
+                type: array
+                description: Rules with no differences from spreadsheet.
+                items:
+                  type: object
+                  properties:
+                    rule_id:
+                      type: string
+                    srg_id:
+                      type:
+                        - string
+                        - 'null'
+                    reason:
+                      type: string
+                      example: "no changes"
+              skipped_locked:
+                type: array
+                description: Rules skipped because they are locked or inherited.
+                items:
+                  type: object
+                  properties:
+                    rule_id:
+                      type: string
+                    srg_id:
+                      type:
+                        - string
+                        - 'null'
+                    reason:
+                      type: string
+                      enum:
+                        - locked
+                        - inherited
+                        - section locked
+                      example: locked
+                    skipped_fields:
+                      type: array
+                      description: Fields that were locked (present only for section-locked skips).
+                      items:
+                        type: string
+              warnings:
+                type: array
+                description: SRG IDs from the spreadsheet that were not found in the component.
+                items:
+                  type: string
+                example:
+                  - "SRG ID SRG-APP-999999 not found in component"
+          examples:
+            preview:
+              summary: Mixed preview with updates, unchanged, and skipped rules
+              value:
+                updated:
+                  - rule_id: "000050"
+                    srg_id: "SRG-APP-000014-CTR-000035"
+                    changes:
+                      fixtext:
+                        - "Old fix text"
+                        - "Updated fix text"
+                unchanged:
+                  - rule_id: "000051"
+                    srg_id: "SRG-APP-000023-CTR-000040"
+                    reason: "no changes"
+                skipped_locked:
+                  - rule_id: "000001"
+                    srg_id: "SRG-APP-000001-CTR-000001"
+                    reason: locked
+                warnings: []
+    '422':
+      description: No file provided or parse error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                description: Error message.
+          examples:
+            no_file:
+              summary: No file uploaded
+              value:
+                error: No file was provided. Please upload a CSV or XLSX file.
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

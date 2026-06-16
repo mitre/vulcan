@@ -8,10 +8,29 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
-import axios from "axios";
 import ComponentSettingsPage from "@/components/components/ComponentSettingsPage.vue";
+import { updateComponent } from "@/api/componentsApi";
+import { searchUsers } from "@/api/usersApi";
+import { commentPhaseHelpItems } from "@/constants/triageVocabulary";
 
-vi.mock("axios");
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: { toast: "ok" } })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/api/componentsApi", () => ({
+  updateComponent: vi.fn(() => Promise.resolve({ data: { toast: "ok" } })),
+}));
+
+vi.mock("@/api/usersApi", () => ({
+  searchUsers: vi.fn(() => Promise.resolve({ data: { users: [] } })),
+}));
 
 const baseComponent = {
   id: 8,
@@ -31,9 +50,12 @@ const createWrapper = (componentOverrides = {}) =>
   mount(ComponentSettingsPage, {
     localVue,
     propsData: {
-      initialComponentState: { ...baseComponent, ...componentOverrides },
+      initialComponentState: {
+        ...baseComponent,
+        effective_permissions: "admin",
+        ...componentOverrides,
+      },
       project: baseProject,
-      effectivePermissions: "admin",
       currentUserId: 1,
     },
     stubs: {
@@ -46,8 +68,8 @@ describe("ComponentSettingsPage", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    axios.put.mockResolvedValue({ data: { toast: "ok" } });
-    axios.get.mockResolvedValue({ data: { users: [] } });
+    updateComponent.mockResolvedValue({ data: { toast: "ok" } });
+    searchUsers.mockResolvedValue({ data: { users: [] } });
   });
 
   afterEach(() => {
@@ -133,6 +155,40 @@ describe("ComponentSettingsPage", () => {
     });
   });
 
+  // ── comment-period help card ────────────────────────────────────────
+  // REQUIREMENT: the help card explains every selectable phase/reason
+  // state, and its bullets come from the SAME vocabulary source as the
+  // radio options so the two lists can never drift apart. The exact copy
+  // is pinned here as the canonical rendering.
+  describe("comment-period help card", () => {
+    const bulletTexts = () =>
+      wrapper.findAll(".alert-info li").wrappers.map((li) => li.text().replace(/\s+/g, " ").trim());
+
+    it("renders one bullet per phase/reason state with the canonical copy", () => {
+      wrapper = createWrapper();
+      expect(bulletTexts()).toEqual([
+        "Open: commenters can post. End date is optional — when set, it surfaces a banner with a countdown.",
+        "Closed (Adjudicating): window is closed but triage continues.",
+        "Closed (Finalized): disposition published — the component is frozen for writes.",
+        "Closed (no reason): commenting is paused without commitment to a workflow stage.",
+      ]);
+    });
+
+    it("bolds the state label in each bullet", () => {
+      wrapper = createWrapper();
+      const strongs = wrapper.findAll(".alert-info li strong").wrappers.map((s) => s.text());
+      expect(strongs).toEqual(["Open", "Closed (Adjudicating)", "Closed (Finalized)", "Closed"]);
+    });
+
+    it("derives the bullets 1:1 from commentPhaseHelpItems (drift guard)", () => {
+      wrapper = createWrapper();
+      const expected = commentPhaseHelpItems().map((item) =>
+        `${item.label}${item.suffix}: ${item.description}`.replace(/\s+/g, " ").trim(),
+      );
+      expect(bulletTexts()).toEqual(expected);
+    });
+  });
+
   describe("Identity field seeding", () => {
     it("seeds the form from the prop (name, prefix, title)", () => {
       wrapper = createWrapper();
@@ -163,9 +219,9 @@ describe("ComponentSettingsPage", () => {
       wrapper.vm.form.comment_period_ends_at = "2026-05-14";
       await wrapper.vm.save();
 
-      const [url, payload] = axios.put.mock.calls[0];
-      expect(url).toBe("/components/8");
-      expect(payload.component).toMatchObject({
+      const [componentId, data] = updateComponent.mock.calls[0];
+      expect(componentId).toBe(8);
+      expect(data).toMatchObject({
         name: "Container Platform",
         prefix: "CNTR-01",
         comment_phase: "open",
@@ -197,7 +253,7 @@ describe("ComponentSettingsPage", () => {
       wrapper.vm.form.closed_reason = null;
       await wrapper.vm.save();
 
-      expect(axios.put).not.toHaveBeenCalled();
+      expect(updateComponent).not.toHaveBeenCalled();
     });
 
     it("proceeds with the save when the user confirms", async () => {
@@ -207,8 +263,8 @@ describe("ComponentSettingsPage", () => {
       wrapper.vm.form.closed_reason = null;
       await wrapper.vm.save();
 
-      expect(axios.put).toHaveBeenCalled();
-      expect(axios.put.mock.calls[0][1].component.comment_phase).toBe("open");
+      expect(updateComponent).toHaveBeenCalled();
+      expect(updateComponent.mock.calls[0][1].comment_phase).toBe("open");
     });
 
     it("does NOT show the confirmation when the phase is unchanged", async () => {
@@ -218,7 +274,7 @@ describe("ComponentSettingsPage", () => {
       await wrapper.vm.save();
 
       expect(wrapper.vm.$bvModal.msgBoxConfirm).not.toHaveBeenCalled();
-      expect(axios.put).toHaveBeenCalled();
+      expect(updateComponent).toHaveBeenCalled();
     });
 
     it("does NOT show the confirmation moving from closed+adjudicating to open", async () => {
@@ -230,7 +286,7 @@ describe("ComponentSettingsPage", () => {
       await wrapper.vm.save();
 
       expect(wrapper.vm.$bvModal.msgBoxConfirm).not.toHaveBeenCalled();
-      expect(axios.put).toHaveBeenCalled();
+      expect(updateComponent).toHaveBeenCalled();
     });
   });
 });

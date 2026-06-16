@@ -6,6 +6,7 @@ class SecurityRequirementsGuide < ApplicationRecord
   include SeverityCounts
   include XccdfParseable
   include BenchmarkCsvExport
+  include VersionSortable
 
   has_many :components, dependent: :restrict_with_error
   has_many :srg_rules, dependent: :destroy
@@ -22,6 +23,16 @@ class SecurityRequirementsGuide < ApplicationRecord
             length: { maximum: ->(_r) { Settings.input_limits.short_string } }
   validates :title, length: { maximum: ->(_r) { Settings.input_limits.benchmark_title } }
   validates :name, length: { maximum: ->(_r) { Settings.input_limits.benchmark_name } }, allow_nil: true
+
+  def self.srg_info_for_components(components)
+    latest_ids = latest_versions.pluck(:id).to_set
+    components.each_with_object({}) do |c, map|
+      srg = c.based_on
+      next unless srg
+
+      map[c.id] = { title: srg.title, version: srg.version, is_latest: latest_ids.include?(srg.id) }
+    end
+  end
 
   # Since an SRG is top-level, the parameter is the entire parsed benchmark
   def self.from_mapping(benchmark_mapping)
@@ -61,16 +72,7 @@ class SecurityRequirementsGuide < ApplicationRecord
   end
 
   def self.latest
-    query = <<-SQL.squish
-      SELECT id, title, version
-      FROM security_requirements_guides
-      WHERE version IN (
-          SELECT MAX(version)
-          FROM security_requirements_guides
-          GROUP BY title
-      )
-    SQL
-    SecurityRequirementsGuide.connection.execute(Arel.sql(query)).to_a
+    latest_versions.select(:id, :title, :version).to_a
   end
 
   def full_title

@@ -1,13 +1,23 @@
 <template>
   <div>
     <b-form>
+      <!-- Satisfied-by indicator: shows parent relationship for child rules -->
+      <SatisfiedByIndicator
+        v-if="rule.satisfied_by && rule.satisfied_by.length > 0"
+        :parent-rules="rule.satisfied_by"
+        :component-prefix="rule.component_prefix || ''"
+        @navigate="$emit('navigate-to-rule', $event)"
+      >
+        Content fields are hidden — edit on the parent rule.
+      </SatisfiedByIndicator>
+
       <!-- ============================================================ -->
       <!-- SECTION 1: Policy Decision (Status + Severity)               -->
       <!-- User's first action: decide the status and severity          -->
       <!-- ============================================================ -->
       <div
         v-if="fields.displayed.includes('status') || fields.displayed.includes('rule_severity')"
-        class="row"
+        class="form-row"
       >
         <!-- status -->
         <RuleFormGroup
@@ -15,9 +25,9 @@
           field-name="status"
           label="Status"
           :tooltip="tooltips['status']"
-          extra-class="col-md-8"
+          extra-class="col-md-6"
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
-          @open-composer="bubbleOpenComposer"
+          v-on="commentIconListeners"
         >
           <template #default="{ inputId, isDisabled }">
             <b-form-select
@@ -37,9 +47,9 @@
           field-name="rule_severity"
           label="Severity"
           :tooltip="tooltips['rule_severity']"
-          extra-class="col-md-4"
+          extra-class="col-md-6"
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
-          @open-composer="bubbleOpenComposer"
+          v-on="commentIconListeners"
         >
           <template #default="{ inputId, isDisabled }">
             <b-form-select
@@ -93,7 +103,11 @@
       <!-- SECTION 2: Reference Context (read-only SRG info)            -->
       <!-- User reads the SRG requirement context before writing        -->
       <!-- ============================================================ -->
-      <div v-if="rule.nist_control_family || rule.ident" class="row" data-testid="ia-control-cci">
+      <div
+        v-if="rule.nist_control_family || rule.ident"
+        class="form-row"
+        data-testid="ia-control-cci"
+      >
         <RuleFormGroup
           v-bind="formGroupProps"
           field-name="nist_control_family"
@@ -140,7 +154,7 @@
         label="Title"
         :tooltip="tooltips['title']"
         @toggle-section-lock="$emit('toggle-section-lock', $event)"
-        @open-composer="bubbleOpenComposer"
+        v-on="commentIconListeners"
       >
         <template #default="{ inputId, isDisabled }">
           <MarkdownTextarea
@@ -170,7 +184,7 @@
           :field-state-class-fn="fieldStateClassFn"
           :fields="disa_fields"
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
-          @open-composer="bubbleOpenComposer"
+          v-on="commentIconListeners"
         />
       </template>
 
@@ -187,7 +201,7 @@
           :show-section-locks="showSectionLocks"
           :field-state-class-fn="fieldStateClassFn"
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
-          @open-composer="bubbleOpenComposer"
+          v-on="commentIconListeners"
         />
       </template>
 
@@ -198,12 +212,24 @@
         label="Fix"
         :tooltip="tooltips['fixtext']"
         @toggle-section-lock="$emit('toggle-section-lock', $event)"
-        @open-composer="bubbleOpenComposer"
+        v-on="commentIconListeners"
       >
         <template #default="{ inputId, isDisabled }">
+          <b-alert
+            v-if="rule.satisfied_by && rule.satisfied_by.length > 0"
+            show
+            variant="info"
+            class="mb-2 py-1 px-2 small"
+          >
+            Inherited fix from {{ rule.satisfied_by[0].displayed_name || "parent rule" }}:
+            <em
+              >{{ (rule.satisfied_by[0].fixtext || "").substring(0, 200)
+              }}{{ (rule.satisfied_by[0].fixtext || "").length > 200 ? "…" : "" }}</em
+            >
+          </b-alert>
           <MarkdownTextarea
             :id="inputId"
-            :value="rule.satisfied_by.length > 0 ? rule.satisfied_by[0].fixtext : rule.fixtext"
+            :value="rule.fixtext"
             :input-class="inputClass('fixtext')"
             placeholder=""
             :disabled="isDisabled"
@@ -248,7 +274,7 @@
         label="Artifact Description"
         :tooltip="tooltips['artifact_description']"
         @toggle-section-lock="$emit('toggle-section-lock', $event)"
-        @open-composer="bubbleOpenComposer"
+        v-on="commentIconListeners"
       >
         <template #default="{ inputId, isDisabled }">
           <MarkdownTextarea
@@ -271,7 +297,7 @@
         label="Vendor Comments"
         :tooltip="tooltips['vendor_comments']"
         @toggle-section-lock="$emit('toggle-section-lock', $event)"
-        @open-composer="bubbleOpenComposer"
+        v-on="commentIconListeners"
       >
         <template #default="{ inputId, isDisabled }">
           <MarkdownTextarea
@@ -306,7 +332,7 @@
         label="Version"
         :tooltip="tooltips['version']"
         @toggle-section-lock="$emit('toggle-section-lock', $event)"
-        @open-composer="bubbleOpenComposer"
+        v-on="commentIconListeners"
       >
         <template #default="{ inputId, isDisabled }">
           <b-form-input
@@ -320,7 +346,7 @@
         </template>
       </RuleFormGroup>
 
-      <div class="row">
+      <div class="form-row">
         <!-- fix_id -->
         <RuleFormGroup
           v-bind="formGroupProps"
@@ -364,7 +390,7 @@
         </RuleFormGroup>
       </div>
 
-      <div class="row">
+      <div class="form-row">
         <!-- rule_weight -->
         <RuleFormGroup
           v-bind="formGroupProps"
@@ -387,7 +413,7 @@
         </RuleFormGroup>
       </div>
 
-      <div class="row">
+      <div class="form-row">
         <!-- ident -->
         <RuleFormGroup
           v-bind="formGroupProps"
@@ -435,10 +461,12 @@
 </template>
 
 <script>
-import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
-import CommentIconHostMixin from "../../../mixins/CommentIconHostMixin.vue";
+import { toRef } from "vue";
+import { useFormFeedback } from "../../../composables/useFormFeedback";
+import { useCommentIconHost } from "../../../composables/useCommentIconHost";
 import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
 import RuleFormGroup from "../../shared/RuleFormGroup.vue";
+import SatisfiedByIndicator from "../../shared/SatisfiedByIndicator.vue";
 import DisaRuleDescriptionForm from "./DisaRuleDescriptionForm";
 import AdditionalQuestions from "./AdditionalQuestions";
 import CheckForm from "./CheckForm";
@@ -452,8 +480,8 @@ export default {
     AdditionalQuestions,
     MarkdownTextarea,
     RuleFormGroup,
+    SatisfiedByIndicator,
   },
-  mixins: [FormFeedbackMixinVue, CommentIconHostMixin],
   props: {
     rule: {
       type: Object,
@@ -520,6 +548,24 @@ export default {
         };
       },
     },
+    validFeedback: {
+      type: Object,
+      required: false,
+      default: () => ({}),
+    },
+    invalidFeedback: {
+      type: Object,
+      required: false,
+      default: () => ({}),
+    },
+  },
+  setup(props, { emit }) {
+    const { commentIconListeners, commentIconProps } = useCommentIconHost({
+      rule: toRef(props, "rule"),
+      emit,
+    });
+    const { inputClass } = useFormFeedback(props);
+    return { commentIconListeners, commentIconProps, inputClass };
   },
   data: function () {
     return {
@@ -527,8 +573,9 @@ export default {
     };
   },
   computed: {
-    // formGroupPropsWithCommentIcon and bubbleOpenComposer are provided by
-    // CommentIconHostMixin — keep this list focused on RuleForm-specific.
+    formGroupPropsWithCommentIcon() {
+      return { ...this.formGroupProps, ...this.commentIconProps };
+    },
     formGroupProps() {
       return {
         fields: this.fields,
@@ -545,7 +592,7 @@ export default {
       return SEVERITY_OPTIONS;
     },
     status_text: function () {
-      return this.rule.satisfied_by.length > 0 ? "Applicable - Configurable" : this.rule.status;
+      return this.rule.status;
     },
     nydTooltip() {
       if (this.rule.status !== "Not Yet Determined") return null;

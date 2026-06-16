@@ -1,7 +1,12 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import NewMembership from "@/components/memberships/NewMembership.vue";
+
+// Spy-wrap (real implementation preserved) so tests can pin that the hidden
+// form token flows through the useAuthToken composable — one source of truth.
+vi.mock("@/composables/useAuthToken", { spy: true });
+import { useAuthToken } from "@/composables/useAuthToken";
 
 /**
  * NewMembership Component Requirements:
@@ -241,6 +246,15 @@ describe("NewMembership", () => {
       expect(field.exists()).toBe(true);
       // setup.js sets csrf-token to "test-csrf-token"
       expect(field.element.value).toBe("test-csrf-token");
+    });
+
+    it("sources the token from the useAuthToken composable (no local computed)", () => {
+      vi.clearAllMocks(); // earlier mounts in this file also call the composable
+      useAuthToken.mockReturnValueOnce({ authenticityToken: "composable-sentinel-token" });
+      wrapper = createWrapper();
+      expect(useAuthToken).toHaveBeenCalledTimes(1);
+      const field = wrapper.find("#NewProjectMemberAuthenticityToken");
+      expect(field.element.value).toBe("composable-sentinel-token");
     });
 
     it("contains access_request_id hidden field", () => {

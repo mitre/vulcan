@@ -1,0 +1,236 @@
+openapi: 3.2.0
+info:
+  title: Vulcan API
+  version: 2.3.7
+  description: >
+    REST API for Vulcan — STIG-ready security guidance authoring platform.
+
+    All endpoints require session-based authentication via cookie unless noted
+    otherwise.
+
+    Mutation endpoints return a canonical `{toast: {title, message, variant}}`
+    object.
+  contact:
+    name: MITRE SAF Team
+    url: https://github.com/mitre/vulcan
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+servers:
+  - url: /
+    description: Same-origin (session cookie auth)
+security:
+  - cookieAuth: []
+  - tokenAuth: []
+tags:
+  - name: Projects
+    description: Project CRUD, export, import, and member management
+  - name: Components
+    description: Component CRUD, spreadsheet import, export, and locking
+  - name: Rules
+    description: Rule CRUD, revert, section locks, and satisfaction relationships
+  - name: Reviews
+    description: Review lifecycle — create, triage, adjudicate, withdraw, admin actions
+  - name: Reactions
+    description: Thumbs up/down reactions on comment reviews
+  - name: Memberships
+    description: Project and component membership management
+  - name: Search
+    description: Global search across projects, components, rules, SRGs, and STIGs
+  - name: Users
+    description: User management and admin operations
+  - name: Benchmarks
+    description: SRG and STIG upload, listing, export, and deletion
+  - name: Auth
+    description: Session authentication — login, logout, current user identity
+  - name: Personal Access Tokens
+    description: Personal Access Token CRUD and admin revocation
+  - name: System
+    description: Version and health check endpoints
+paths:
+  /api/auth/me:
+    $ref: paths/api_auth_me.yaml
+  /api/auth/login:
+    $ref: paths/api_auth_login.yaml
+  /api/auth/logout:
+    $ref: paths/api_auth_logout.yaml
+  /api/navigation:
+    $ref: paths/api_navigation.yaml
+  /api/settings:
+    $ref: paths/api_settings.yaml
+  /api/version:
+    $ref: paths/api_version.yaml
+  /api/search/global:
+    $ref: paths/api_search_global.yaml
+  /api/users/search:
+    $ref: paths/api_users_search.yaml
+  /search/rules:
+    $ref: paths/search_rules.yaml
+  /search/components:
+    $ref: paths/search_components.yaml
+  /search/projects:
+    $ref: paths/search_projects.yaml
+  /projects:
+    $ref: paths/projects.yaml
+  /projects/{projectId}:
+    $ref: paths/projects_{projectId}.yaml
+  /projects/{projectId}/comments:
+    $ref: paths/projects_{projectId}_comments.yaml
+  /projects/{projectId}/export/{type}:
+    $ref: paths/projects_{projectId}_export_{type}.yaml
+  /projects/create_from_backup:
+    $ref: paths/projects_create_from_backup.yaml
+  /projects/{projectId}/import_backup:
+    $ref: paths/projects_{projectId}_import_backup.yaml
+  /projects/{projectId}/histories:
+    $ref: paths/projects_{projectId}_histories.yaml
+  /components:
+    $ref: paths/components.yaml
+  /projects/{projectId}/components:
+    $ref: paths/projects_{projectId}_components.yaml
+  /components/{componentId}:
+    $ref: paths/components_{componentId}.yaml
+  /components/{componentId}/comments:
+    $ref: paths/components_{componentId}_comments.yaml
+  /components/{componentId}/export/{type}:
+    $ref: paths/components_{componentId}_export_{type}.yaml
+  /components/{componentId}/lock:
+    $ref: paths/components_{componentId}_lock.yaml
+  /components/{componentId}/lock_sections:
+    $ref: paths/components_{componentId}_lock_sections.yaml
+  /components/{componentId}/histories:
+    $ref: paths/components_{componentId}_histories.yaml
+  /components/{componentId}/merge_status:
+    $ref: paths/components_{componentId}_merge_status.yaml
+  /components/{componentId}/rules:
+    $ref: paths/components_{componentId}_rules.yaml
+  /components/{componentId}/rules_picker:
+    $ref: paths/components_{componentId}_rules_picker.yaml
+  /components/detect_srg:
+    $ref: paths/components_detect_srg.yaml
+  /components/history:
+    $ref: paths/components_history.yaml
+  /components/{componentId}/related:
+    $ref: paths/components_{componentId}_related.yaml
+  /components/{componentId}/find:
+    $ref: paths/components_{componentId}_find.yaml
+  /components/{componentId}/preview_spreadsheet_update:
+    $ref: paths/components_{componentId}_preview_spreadsheet_update.yaml
+  /components/{componentId}/apply_spreadsheet_update:
+    $ref: paths/components_{componentId}_apply_spreadsheet_update.yaml
+  /components/bulk_export/{type}:
+    $ref: paths/components_bulk_export_{type}.yaml
+  /api/components/compare:
+    $ref: paths/api_components_compare.yaml
+  /rules/{ruleId}:
+    $ref: paths/rules_{ruleId}.yaml
+  /rules/{ruleId}/revert:
+    $ref: paths/rules_{ruleId}_revert.yaml
+  /rules/{ruleId}/section_locks:
+    $ref: paths/rules_{ruleId}_section_locks.yaml
+  /rules/{ruleId}/bulk_section_locks:
+    $ref: paths/rules_{ruleId}_bulk_section_locks.yaml
+  /rules/{ruleId}/search/related_rules:
+    $ref: paths/rules_{ruleId}_related_rules.yaml
+  /rule_satisfactions:
+    $ref: paths/rule_satisfactions.yaml
+  /rule_satisfactions/{ruleId}:
+    $ref: paths/rule_satisfactions_{ruleId}.yaml
+  /rules/{ruleId}/reviews:
+    $ref: paths/rules_{ruleId}_reviews.yaml
+  /components/{componentId}/reviews:
+    $ref: paths/components_{componentId}_reviews.yaml
+  /reviews/bulk_triage:
+    $ref: paths/reviews_bulk_triage.yaml
+  /reviews/merge:
+    $ref: paths/reviews_merge.yaml
+  /reviews/{reviewId}:
+    $ref: paths/reviews_{reviewId}.yaml
+  /reviews/{reviewId}/triage:
+    $ref: paths/reviews_{reviewId}_triage.yaml
+  /reviews/{reviewId}/adjudicate:
+    $ref: paths/reviews_{reviewId}_adjudicate.yaml
+  /reviews/{reviewId}/withdraw:
+    $ref: paths/reviews_{reviewId}_withdraw.yaml
+  /reviews/{reviewId}/admin_withdraw:
+    $ref: paths/reviews_{reviewId}_admin_withdraw.yaml
+  /reviews/{reviewId}/admin_restore:
+    $ref: paths/reviews_{reviewId}_admin_restore.yaml
+  /reviews/{reviewId}/move_to_rule:
+    $ref: paths/reviews_{reviewId}_move_to_rule.yaml
+  /reviews/{reviewId}/admin_destroy:
+    $ref: paths/reviews_{reviewId}_admin_destroy.yaml
+  /reviews/{reviewId}/responses:
+    $ref: paths/reviews_{reviewId}_responses.yaml
+  /reviews/{reviewId}/reactions:
+    $ref: paths/reviews_{reviewId}_reactions.yaml
+  /reviews/{reviewId}/reopen:
+    $ref: paths/reviews_{reviewId}_reopen.yaml
+  /reviews/{reviewId}/section:
+    $ref: paths/reviews_{reviewId}_section.yaml
+  /memberships:
+    $ref: paths/memberships.yaml
+  /memberships/{membershipId}:
+    $ref: paths/memberships_{membershipId}.yaml
+  /srgs:
+    $ref: paths/srgs.yaml
+  /srgs/{id}:
+    $ref: paths/srgs_{id}.yaml
+  /srgs/{id}/export/{type}:
+    $ref: paths/srgs_{id}_export_{type}.yaml
+  /stigs:
+    $ref: paths/stigs.yaml
+  /stigs/{id}:
+    $ref: paths/stigs_{id}.yaml
+  /stigs/{id}/export/{type}:
+    $ref: paths/stigs_{id}_export_{type}.yaml
+  /users:
+    $ref: paths/users.yaml
+  /users/{userId}:
+    $ref: paths/users_{userId}.yaml
+  /users/{userId}/comments:
+    $ref: paths/users_{userId}_comments.yaml
+  /users/unlink_identity:
+    $ref: paths/users_unlink_identity.yaml
+  /users/admin_create:
+    $ref: paths/users_admin_create.yaml
+  /users/{userId}/send_password_reset:
+    $ref: paths/users_{userId}_send_password_reset.yaml
+  /users/{userId}/generate_reset_link:
+    $ref: paths/users_{userId}_generate_reset_link.yaml
+  /users/{userId}/set_password:
+    $ref: paths/users_{userId}_set_password.yaml
+  /users/{userId}/lock:
+    $ref: paths/users_{userId}_lock.yaml
+  /users/{userId}/unlock:
+    $ref: paths/users_{userId}_unlock.yaml
+  /consent/acknowledge:
+    $ref: paths/consent_acknowledge.yaml
+  /projects/{projectId}/project_access_requests:
+    $ref: paths/projects_{projectId}_project_access_requests.yaml
+  /projects/{projectId}/project_access_requests/{requestId}:
+    $ref: paths/projects_{projectId}_project_access_requests_{requestId}.yaml
+  /projects/{projectId}/triage_response_templates:
+    $ref: paths/projects_{projectId}_triage_response_templates.yaml
+  /projects/{projectId}/triage_response_templates/{id}:
+    $ref: paths/projects_{projectId}_triage_response_templates_{id}.yaml
+  /personal_access_tokens:
+    $ref: paths/personal_access_tokens.yaml
+  /personal_access_tokens/{tokenId}:
+    $ref: paths/personal_access_tokens_{tokenId}.yaml
+  /personal_access_tokens/{tokenId}/admin_revoke:
+    $ref: paths/personal_access_tokens_{tokenId}_admin_revoke.yaml
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: _vulcan_session
+    tokenAuth:
+      type: http
+      scheme: token
+      description: >-
+        Personal access token authentication. Send via Authorization header:
+        `Authorization: Token vulcan_xxx`. Tokens are SHA-256 hashed server-side
+        (never stored in plaintext). Scopes: read (GET), write (mutations),
+        admin (everything). Create tokens via Settings → API Tokens in the web UI.

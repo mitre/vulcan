@@ -68,7 +68,7 @@
       :tooltip="tooltips['content']"
       id-prefix="ruleEditor-check"
       @toggle-section-lock="$emit('toggle-section-lock', $event)"
-      @open-composer="bubbleOpenComposer"
+      v-on="commentIconListeners"
     >
       <MarkdownTextarea
         :id="inputId"
@@ -85,15 +85,15 @@
 </template>
 
 <script>
-import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
-import CommentIconHostMixin from "../../../mixins/CommentIconHostMixin.vue";
+import { toRef } from "vue";
+import { useFormFeedback } from "../../../composables/useFormFeedback";
+import { useCommentIconHost } from "../../../composables/useCommentIconHost";
 import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
 import RuleFormGroup from "../../shared/RuleFormGroup.vue";
 
 export default {
   name: "CheckForm",
   components: { MarkdownTextarea, RuleFormGroup },
-  mixins: [FormFeedbackMixinVue, CommentIconHostMixin],
   // `rule` and `index` are necessary if edits are to be made
   props: {
     rule: {
@@ -132,6 +132,24 @@ export default {
         };
       },
     },
+    validFeedback: {
+      type: Object,
+      required: false,
+      default: () => ({}),
+    },
+    invalidFeedback: {
+      type: Object,
+      required: false,
+      default: () => ({}),
+    },
+  },
+  setup(props, { emit }) {
+    const { commentIconListeners, commentIconProps } = useCommentIconHost({
+      rule: toRef(props, "rule"),
+      emit,
+    });
+    const { inputClass } = useFormFeedback(props);
+    return { commentIconListeners, commentIconProps, inputClass };
   },
   computed: {
     check: function () {
@@ -177,8 +195,9 @@ export default {
         invalidFeedback: this.invalidFeedback || {},
       };
     },
-    // formGroupPropsWithCommentIcon and bubbleOpenComposer come from
-    // CommentIconHostMixin.
+    formGroupPropsWithCommentIcon() {
+      return { ...this.formGroupProps, ...this.commentIconProps };
+    },
   },
 };
 </script>

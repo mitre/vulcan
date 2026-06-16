@@ -59,10 +59,10 @@ Vulcan provides three ways to create the initial admin:
 # Pull the latest image
 docker pull mitre/vulcan:latest
 
-# Run with PostgreSQL
+# Run with PostgreSQL (use -p ${PORT}:3000 to change host port)
 docker run -d \
   --name vulcan \
-  -p 3000:3000 \
+  -p ${VULCAN_PORT:-3000}:3000 \
   -e DATABASE_URL="postgresql://user:pass@host/vulcan" \
   -e SECRET_KEY_BASE="your-secret-key" \
   mitre/vulcan:latest
@@ -221,10 +221,10 @@ docker logs -f vulcan
 
 ```bash
 # Backup
-docker compose exec db pg_dump -U postgres vulcan_vue_production > backup.sql
+docker compose exec db pg_dump -U postgres vulcan_production > backup.sql
 
 # Restore
-docker compose exec -T db psql -U postgres vulcan_vue_production < backup.sql
+docker compose exec -T db psql -U postgres vulcan_production < backup.sql
 ```
 
 ### Application Data

@@ -15,7 +15,7 @@
     >
       <!-- History Metadata -->
       <p class="mb-0">
-        <strong>{{ history.name }}</strong>
+        <UserBadge :name="history.name" :show-name="true" />
       </p>
       <p class="mb-0">
         <small>{{ friendlyDateTime(history.created_at) }}</small>
@@ -37,25 +37,15 @@
           <!-- Custom Header for prev_value -->
           <template #head(prev_value)="">
             Changed From
-            <b-icon
-              v-b-tooltip.hover.html="
-                'This is the state of the record before the author made the change.<br>When a row is selected, the record will revert to this value.'
-              "
-              icon="info-circle"
-              aria-hidden="true"
+            <InfoTooltip
+              text="This is the state of the record before the author made the change. When a row is selected, the record will revert to this value."
             />
           </template>
 
           <!-- Custom Header for new_value -->
           <template #head(new_value)="">
             Changed To
-            <b-icon
-              v-b-tooltip.hover.html="
-                'This is the state of the record after the author made the change.'
-              "
-              icon="info-circle"
-              aria-hidden="true"
-            />
+            <InfoTooltip text="This is the state of the record after the author made the change." />
           </template>
 
           <!-- Selected Column -->
@@ -121,16 +111,18 @@
 </template>
 
 <script>
-import axios from "axios";
+import { revertRule } from "../../api/rulesApi";
 
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
-import HumanizedTypesMixInVue from "../../mixins/HumanizedTypesMixIn.vue";
+import { useDateFormat } from "../../composables/useDateFormat";
+import { useHumanizedTypes } from "../../composables/useHumanizedTypes";
+import { useToast } from "../../composables/useToast";
 import { MESSAGE_LABELS } from "../../constants/terminology";
+import InfoTooltip from "../shared/InfoTooltip.vue";
+import UserBadge from "../shared/UserBadge.vue";
 
 export default {
   name: "RuleRevertModal",
-  mixins: [AlertMixinVue, DateFormatMixinVue, HumanizedTypesMixInVue],
+  components: { InfoTooltip, UserBadge },
   props: {
     rule: {
       type: Object,
@@ -148,6 +140,12 @@ export default {
       type: Object,
       required: true,
     },
+  },
+  setup() {
+    const { friendlyDateTime } = useDateFormat();
+    const { humanizedType } = useHumanizedTypes();
+    const { alertOrNotifyResponse } = useToast();
+    return { friendlyDateTime, humanizedType, alertOrNotifyResponse };
   },
   data: function () {
     return {
@@ -206,10 +204,7 @@ export default {
         fields: this.selectedRevertFields,
         audit_comment: comment,
       };
-      axios
-        .post(`/rules/${this.rule.id}/revert`, payload)
-        .then(this.revertSuccess)
-        .catch(this.alertOrNotifyResponse);
+      revertRule(this.rule.id, payload).then(this.revertSuccess).catch(this.alertOrNotifyResponse);
     },
     revertSuccess: function (response) {
       this.alertOrNotifyResponse(response);

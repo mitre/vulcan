@@ -35,7 +35,7 @@ class ProjectsController < ApplicationController
     # one component with pending comments, the row link goes straight to
     # that component (one click → triage panel — no intermediate-page bounce).
     pending_comment_targets = Project.pending_comment_target_components(project_ids)
-    @projects = ProjectIndexBlueprint.render_as_hash(
+    @projects = ProjectIndexBlueprint.render_as_json(
       projects,
       current_user: current_user,
       access_requests_by_project: ar_by_project,
@@ -72,6 +72,7 @@ class ProjectsController < ApplicationController
     @project_json = ProjectBlueprint.render(
       @project,
       view: :show,
+      current_user: current_user,
       pending_comment_counts: pending_comment_counts
     )
     respond_to do |format|
@@ -81,7 +82,7 @@ class ProjectsController < ApplicationController
   end
 
   def histories
-    return head :not_found unless @project
+    return render_not_found unless @project
 
     render json: @project.histories(50)
   end
@@ -97,7 +98,7 @@ class ProjectsController < ApplicationController
     respond_to do |format|
       format.html do
         @project.current_user = current_user
-        @project_json = ProjectBlueprint.render(@project, view: :show)
+        @project_json = ProjectBlueprint.render(@project, view: :show, current_user: current_user)
       end
       format.any { head :not_acceptable }
     end
@@ -111,21 +112,26 @@ class ProjectsController < ApplicationController
   # Sets Cache-Control: no-store so concurrent triagers cannot get a
   # stale snapshot from a browser/proxy cache.
   def comments
-    return head :not_found unless @project
+    return render_not_found unless @project
 
-    result = @project.paginated_comments(
-      triage_status: params[:triage_status].presence || 'pending',
-      section: params[:section].presence,
-      component_id: params[:component_id].presence,
-      author_id: params[:author_id].presence,
-      query: params[:q].presence,
-      page: params[:page].presence || 1,
-      per_page: params[:per_page].presence || 25,
-      resolved: params[:resolved].presence || 'all'
-    )
-    inject_reactions_mine!(result[:rows])
-    response.headers['Cache-Control'] = 'no-store'
-    render json: result
+    respond_to do |format|
+      format.html { redirect_to "/projects/#{@project.id}/triage" }
+      format.json do
+        result = @project.paginated_comments(
+          triage_status: params[:triage_status].presence || 'pending',
+          section: params[:section].presence,
+          component_id: params[:component_id].presence,
+          author_id: params[:author_id].presence,
+          query: params[:q].presence,
+          page: params[:page].presence || 1,
+          per_page: params[:per_page].presence || 25,
+          resolved: params[:resolved].presence || 'all'
+        )
+        inject_reactions_mine!(result[:rows])
+        response.headers['Cache-Control'] = 'no-store'
+        render json: result
+      end
+    end
   end
 
   def create
@@ -148,7 +154,7 @@ class ProjectsController < ApplicationController
           # redirect_url). Inline the canonical toast object since
           # render_toast doesn't support piggybacking extra response keys.
           render json: {
-            toast: { title: 'Project created.', message: ['Successfully created project.'], variant: 'success' },
+            toast: Toast.new(title: 'Project created.', message: ['Successfully created project.'], variant: 'success'),
             redirect_url: project_path(project)
           }
         end
@@ -161,12 +167,12 @@ class ProjectsController < ApplicationController
         end
         format.json do
           render json: {
-            toast: {
+            toast: Toast.new(
               title: 'Could not create project.',
               message: project.errors.full_messages,
               variant: 'danger'
-            }
-          }, status: :unprocessable_entity
+            )
+          }, status: :unprocessable_content
         end
       end
     end
@@ -188,12 +194,12 @@ class ProjectsController < ApplicationController
                    variant: 'success', status: :ok)
     else
       render json: {
-        toast: {
+        toast: Toast.new(
           title: 'Could not update project.',
           message: @project.errors.full_messages,
           variant: 'danger'
-        }
-      }, status: :unprocessable_entity
+        )
+      }, status: :unprocessable_content
     end
   end
 
@@ -219,12 +225,12 @@ class ProjectsController < ApplicationController
         end
         format.json do
           render json: {
-            toast: {
+            toast: Toast.new(
               title: 'Could not remove project.',
               message: @project.errors.full_messages,
               variant: 'danger'
-            }
-          }, status: :unprocessable_entity
+            )
+          }, status: :unprocessable_content
         end
       end
     end
@@ -247,18 +253,18 @@ class ProjectsController < ApplicationController
 
     unless %i[csv excel xccdf inspec json_archive disposition_csv].include?(export_type)
       render json: {
-        toast: {
+        toast: Toast.new(
           title: 'Export error',
           message: "Unsupported export type: #{export_type}",
           variant: 'danger'
-        }
+        )
       }, status: :bad_request
       return
     end
 
     # disposition_csv: author-tier+ only (PII-adjacent data; mirrors per-component endpoint).
     if export_type == :disposition_csv && !current_user.can_author_project?(@project)
-      head :forbidden
+      render json: { error: 'Forbidden' }, status: :forbidden
       return
     end
 
@@ -324,10 +330,12 @@ class ProjectsController < ApplicationController
     file = params[:file]
     unless file
       render json: {
-        toast: { title: IMPORT_ERROR_TITLE, message: 'No file provided', variant: 'danger' }
+        toast: Toast.new(title: IMPORT_ERROR_TITLE, message: ['No file provided.'], variant: 'danger')
       }, status: :bad_request
       return
     end
+
+    return enqueue_merge(file) if ActiveModel::Type::Boolean.new.cast(params[:merge])
 
     dry_run = params[:dry_run] == 'true'
     include_reviews = params[:include_reviews] != 'false'
@@ -337,7 +345,7 @@ class ProjectsController < ApplicationController
       begin
         component_filter = JSON.parse(params[:component_filter])
       rescue JSON::ParserError
-        render json: { toast: { title: 'Invalid request', message: 'component_filter must be valid JSON', variant: 'danger' } },
+        render json: { toast: Toast.new(title: 'Invalid request.', message: ['component_filter must be valid JSON.'], variant: 'danger') },
                status: :bad_request
         return
       end
@@ -353,20 +361,21 @@ class ProjectsController < ApplicationController
     ).call
 
     if result.success?
+      message = dry_run ? 'Dry run complete. No records were created.' : 'Backup restored successfully.'
       render json: {
-        toast: dry_run ? 'Dry run complete. No records were created.' : 'Backup restored successfully.',
+        toast: Toast.new(title: dry_run ? 'Dry run complete.' : 'Backup restored.', message: [message], variant: 'success'),
         summary: result.summary,
         warnings: result.warnings
       }
     else
       render json: {
-        toast: {
-          title: 'Import failed',
-          message: result.errors.join('; '),
+        toast: Toast.new(
+          title: 'Import failed.',
+          message: result.errors,
           variant: 'danger'
-        },
+        ),
         warnings: result.warnings
-      }, status: :unprocessable_entity
+      }, status: :unprocessable_content
     end
   end
 
@@ -374,7 +383,7 @@ class ProjectsController < ApplicationController
     file = params[:file]
     unless file
       render json: {
-        toast: { title: IMPORT_ERROR_TITLE, message: 'No file provided', variant: 'danger' }
+        toast: Toast.new(title: IMPORT_ERROR_TITLE, message: ['No file provided.'], variant: 'danger')
       }, status: :bad_request
       return
     end
@@ -418,14 +427,14 @@ class ProjectsController < ApplicationController
       }
     else
       render json: {
-        toast: {
+        toast: Toast.new(
           title: 'Preview failed',
-          message: result.errors.join('; '),
+          message: result.errors,
           variant: 'danger'
-        },
+        ),
         warnings: result.warnings,
         project_defaults: project_defaults
-      }, status: :unprocessable_entity
+      }, status: :unprocessable_content
     end
   end
 
@@ -433,8 +442,8 @@ class ProjectsController < ApplicationController
                                  project_name, project_description, project_visibility)
     unless project_name
       render json: {
-        toast: { title: IMPORT_ERROR_TITLE, message: 'Project name is required', variant: 'danger' }
-      }, status: :unprocessable_entity
+        toast: Toast.new(title: IMPORT_ERROR_TITLE, message: ['Project name is required.'], variant: 'danger')
+      }, status: :unprocessable_content
       return
     end
 
@@ -466,19 +475,19 @@ class ProjectsController < ApplicationController
       render json: {
         redirect_url: project_path(project),
         summary: result.summary,
-        toast: { title: 'Project imported.',
-                 message: ['Project created from backup successfully.'],
-                 variant: 'success' }
+        toast: Toast.new(title: 'Project imported.',
+                         message: ['Project created from backup successfully.'],
+                         variant: 'success')
       }
     else
       render json: {
-        toast: {
-          title: 'Import failed',
-          message: result&.errors&.join('; ') || 'Unknown error',
+        toast: Toast.new(
+          title: 'Import failed.',
+          message: result&.errors || ['Unknown error'],
           variant: 'danger'
-        },
+        ),
         warnings: result&.warnings || []
-      }, status: :unprocessable_entity
+      }, status: :unprocessable_content
     end
   end
 
@@ -570,5 +579,65 @@ class ProjectsController < ApplicationController
 
   def project_visibility_changed?(current_project_visibility)
     project_params[:visibility].present? && project_params[:visibility] != current_project_visibility
+  end
+
+  # rubocop:disable Lint/UselessConstantScoping -- private section organizes related helpers
+  MERGE_UPLOAD_DIR = Rails.root.join('storage/merge_uploads').freeze
+  # rubocop:enable Lint/UselessConstantScoping
+
+  # Merge branch of #import_backup. Persists the upload to disk and
+  # enqueues MergeJob; the engine writes a ComponentSyncEvent that the
+  # caller polls via /components/:id/merge_status.
+  def enqueue_merge(file)
+    component_id = params[:component_id]
+    return render_merge_bad_request('component_id is required when merge=true') if component_id.blank?
+
+    component = @project.components.find_by(id: component_id)
+    return render_merge_not_found("Component #{component_id} not found in this project.") unless component
+
+    overrides = parse_merge_strategy_overrides
+    return render_merge_bad_request('strategy_overrides must be a JSON object.') if overrides == :invalid
+
+    path = persist_merge_upload(file)
+    job = MergeJob.perform_later(
+      component_id: component.id,
+      archive_path: path,
+      actor_id: current_user.id,
+      strategy_overrides: overrides
+    )
+
+    render json: {
+      job_id: job.job_id,
+      component_id: component.id,
+      status: 'queued',
+      message: 'Merge enqueued. Poll GET /components/:id/merge_status for progress.'
+    }, status: :accepted
+  end
+
+  def parse_merge_strategy_overrides
+    raw = params[:strategy_overrides]
+    return nil if raw.blank?
+
+    parsed = raw.is_a?(String) ? JSON.parse(raw) : raw
+    parsed.is_a?(Hash) ? parsed.deep_symbolize_keys : :invalid
+  rescue JSON::ParserError
+    :invalid
+  end
+
+  def persist_merge_upload(file)
+    FileUtils.mkdir_p(MERGE_UPLOAD_DIR, mode: 0o700) unless MERGE_UPLOAD_DIR.exist?
+    File.chmod(0o700, MERGE_UPLOAD_DIR)
+    path = MERGE_UPLOAD_DIR.join("#{SecureRandom.hex(12)}.zip").to_s
+    File.binwrite(path, file.read)
+    File.chmod(0o600, path)
+    path
+  end
+
+  def render_merge_bad_request(message)
+    render json: { error: message }, status: :bad_request
+  end
+
+  def render_merge_not_found(message)
+    render json: { error: message }, status: :not_found
   end
 end

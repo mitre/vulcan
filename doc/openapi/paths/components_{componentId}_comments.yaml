@@ -1,0 +1,76 @@
+parameters:
+  - $ref: ../components/parameters/ComponentId.yaml
+get:
+  operationId: getComponentComments
+  tags:
+    - Components
+  summary: Paginated triage table for component comments
+  description: >-
+    Returns paginated public comments on this component's rules, with triage
+    status counts and filtering. Powers the triage page table and split-pane
+    views. Supports filtering by status, section, rule, author, text search,
+    and resolution state. Requires project membership.
+  parameters:
+    - $ref: ../components/parameters/TriageStatusFilter.yaml
+    - $ref: ../components/parameters/PageParam.yaml
+    - $ref: ../components/parameters/PerPageParam.yaml
+    - name: section
+      in: query
+      description: Filter by requirement section (fixtext, check_content, etc.).
+      schema:
+        type: string
+      example: fixtext
+    - name: rule_id
+      in: query
+      description: Filter to comments on a specific rule.
+      schema:
+        type: integer
+      example: 100
+    - name: author_id
+      in: query
+      description: Filter to comments by a specific author.
+      schema:
+        type: integer
+      example: 42
+    - name: q
+      in: query
+      description: Full-text search across comment content.
+      schema:
+        type: string
+      example: "container image"
+    - name: include_rule_content
+      in: query
+      description: Include rule content fields for split-pane triage view.
+      schema:
+        type: string
+        enum:
+          - 'true'
+  responses:
+    '200':
+      description: Paginated comment rows with status counts
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/PaginatedComments.yaml
+          examples:
+            comments:
+              summary: Pending comments on Container SRG
+              value:
+                rows:
+                  - id: 44
+                    rule_displayed_name: "CNTR-00-000050"
+                    section: fixtext
+                    author_name: John Osborne
+                    author_email: josborne@example.org
+                    comment: "This requirement needs clarification..."
+                    triage_status: pending
+                    created_at: "2026-05-19T16:15:00Z"
+                pagination:
+                  page: 1
+                  per_page: 25
+                  total: 10
+                status_counts:
+                  pending: 10
+                  concur: 2
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

@@ -16,29 +16,15 @@
       </button>
     </b-alert>
     <ul v-show="expanded" :id="listId" class="list-unstyled mb-0 pl-3">
-      <li v-for="row in rows" :key="row.id" class="mb-2">
-        <div class="text-break">
-          <strong>{{ row.author_name }}</strong>
-          <SectionLabel v-if="row.section" :section="row.section" class="badge badge-light ml-1" />
-          <TriageStatusBadge
-            v-if="row.triage_status"
-            :status="row.triage_status"
-            :adjudicated-at="row.adjudicated_at"
-            :duplicate-of-id="row.duplicate_of_review_id"
-            class="ml-1"
-          />
-          ({{ relativeTime(row.created_at) }}) — &quot;{{ row.comment }}&quot;
-        </div>
-        <ReactionButtons
-          v-if="row.reactions"
-          :review-id="row.id"
-          :reactions="row.reactions"
-          @toggle="(kind) => toggleReaction(row, kind)"
-        />
-        <CommentThread
-          :parent-review-id="row.id"
-          :responses-count="row.responses_count || 0"
-          :can-reply="true"
+      <li
+        v-for="row in rows"
+        :key="row.id"
+        class="mb-2 rounded px-2 py-1"
+        :class="{ 'dedup-dimmed': isDimmed(row) }"
+      >
+        <CommentItem
+          :comment="row"
+          @toggle-reaction="(kind) => toggleReaction(row, kind)"
           @reply="$emit('reply', $event)"
         />
       </li>
@@ -47,24 +33,24 @@
 </template>
 
 <script>
-import axios from "axios";
 import { sectionLabel } from "../../constants/triageVocabulary";
-import SectionLabel from "../shared/SectionLabel.vue";
-import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
-import CommentThread from "../shared/CommentThread.vue";
-import ReactionButtons from "../shared/ReactionButtons.vue";
-import AlertMixin from "../../mixins/AlertMixin.vue";
-import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
+import CommentItem from "../shared/CommentItem.vue";
+import { useCommentReactions } from "../../composables/useCommentReactions";
+import { useCommentsStore } from "../../stores/comments";
 
 export default {
   name: "CommentDedupBanner",
-  components: { SectionLabel, TriageStatusBadge, CommentThread, ReactionButtons },
-  mixins: [AlertMixin, ReactionToggleMixin],
+  components: { CommentItem },
   props: {
     componentId: { type: [Number, String], required: true },
     ruleId: { type: [Number, String], default: null },
     section: { type: String, default: null },
     componentScoped: { type: Boolean, default: false },
+  },
+  setup() {
+    const { toggle: toggleReactionApi } = useCommentReactions();
+    const store = useCommentsStore();
+    return { toggleReactionApi, store };
   },
   data() {
     return { rows: [], total: 0, totalComments: 0, expanded: false };
@@ -96,14 +82,12 @@ export default {
     componentScoped: "fetch",
   },
   methods: {
-    relativeTime(iso) {
-      return iso ? new Date(iso).toLocaleDateString() : "";
+    isDimmed(row) {
+      if (!this.section || this.componentScoped) return false;
+      return row.section !== this.section;
     },
     async fetch() {
       try {
-        // Fetch all comments at the current scope (rule-level or
-        // component-level) so the commenter sees prior conversation across
-        // sections. Section-scoped count is computed client-side via inSection.
         const params = { triage_status: "all" };
         if (this.componentScoped) {
           params.commentable_type = "component";
@@ -115,12 +99,10 @@ export default {
           this.totalComments = 0;
           return;
         }
-        const { data } = await axios.get(`/components/${this.componentId}/comments`, {
-          params,
-        });
-        this.rows = data.rows.slice(0, 5);
-        this.total = data.pagination.total;
-        this.totalComments = data.pagination.total_comments ?? data.pagination.total;
+        const result = await this.store.fetchComments(this.componentId, params);
+        this.rows = (result.rows ?? []).slice(0, 5);
+        this.total = result.pagination?.total ?? 0;
+        this.totalComments = result.pagination?.total_comments ?? result.pagination?.total ?? 0;
       } catch {
         this.rows = [];
         this.total = 0;
@@ -134,8 +116,19 @@ export default {
       const apply = (reactions) => {
         this.$set(this.rows, idx, { ...this.rows[idx], reactions });
       };
-      this.submitReactionToggle({ reviewId: row.id, prev, kind, apply });
+      this.toggleReactionApi(row.id, kind, prev, apply);
     },
   },
 };
 </script>
+
+<style scoped>
+.dedup-dimmed {
+  opacity: 0.45;
+  transition: opacity 0.15s ease;
+}
+
+.dedup-dimmed:hover {
+  opacity: 0.85;
+}
+</style>

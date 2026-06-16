@@ -1,0 +1,28 @@
+parameters:
+  - $ref: ../components/parameters/ReviewId.yaml
+get:
+  operationId: getReviewResponses
+  tags:
+    - Reviews
+  summary: List replies to a review
+  description: >-
+    Returns threaded replies to a parent review, ordered by creation time.
+    Each reply is serialized via ReviewBlueprint with commenter attribution,
+    reaction counts, and the current user's reaction.
+  responses:
+    '200':
+      description: Reply thread
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - rows
+            properties:
+              rows:
+                type: array
+                description: Reply rows ordered by created_at.
+                items:
+                  $ref: ../components/schemas/ReviewSummary.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

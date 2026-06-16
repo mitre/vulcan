@@ -1,38 +1,47 @@
 <template>
-  <div class="controls-page-layout">
-    <!-- Command Bar - Full Width -->
-    <template v-if="showCommandBar">
+  <div class="controls-page-layout vulcan-editor-layout">
+    <!-- Command Bar - Fixed at top, never scrolls -->
+    <div v-if="showCommandBar" class="flex-shrink-0">
       <slot name="command-bar" />
-    </template>
+    </div>
 
-    <!-- Filter Bar - Full Width -->
-    <div v-if="showFilterBar" class="filter-bar-wrapper mb-3">
+    <!-- Filter Bar - Fixed below command bar, never scrolls -->
+    <div v-if="showFilterBar" class="filter-bar-wrapper flex-shrink-0 mb-3">
       <slot name="filter-bar" />
     </div>
 
-    <!-- Two-Column Layout -->
-    <div class="row">
-      <!-- Left Sidebar -->
-      <div :class="['left-sidebar-column', 'pr-0', sidebarColumnClass]">
+    <!-- Two-Column Layout — fills remaining viewport, each panel scrolls independently -->
+    <PanelLayout :panels="layoutPanels" class="flex-grow-1 overflow-hidden">
+      <!-- Sidebar pinned header (search, filter, open rules) -->
+      <template v-if="$slots['left-sidebar-header']" #left-header>
+        <slot name="left-sidebar-header" />
+      </template>
+
+      <!-- Sidebar scrollable body (all rules list) -->
+      <template #left>
         <slot name="left-sidebar" />
-      </div>
+      </template>
 
-      <!-- Main Content -->
-      <template v-if="hasSelectedRule">
-        <div :class="['main-content-column', 'mb-5', mainColumnClass]">
+      <!-- Main panel pinned header (rule context, toolbar, tabs) -->
+      <template v-if="$slots['main-content-header']" #center-header>
+        <slot name="main-content-header" />
+      </template>
+
+      <!-- Main panel scrollable body (rule editor fields) -->
+      <template #center>
+        <template v-if="hasSelectedRule">
           <slot name="main-content" />
+        </template>
+        <div
+          v-else
+          class="empty-state d-flex flex-column align-items-center justify-content-center text-muted"
+        >
+          <b-icon icon="file-earmark-text" font-scale="3" class="mb-3" />
+          <p class="mb-1 font-weight-bold">No control currently selected</p>
+          <p class="small mb-0">{{ emptyStateMessage }}</p>
         </div>
       </template>
-
-      <!-- Empty State -->
-      <template v-else>
-        <div :class="['main-content-column', mainColumnClass]">
-          <p class="text-center text-muted mt-4">
-            No control currently selected. {{ emptyStateMessage }}
-          </p>
-        </div>
-      </template>
-    </div>
+    </PanelLayout>
 
     <!-- Modals - Always rendered -->
     <slot name="modals" />
@@ -43,8 +52,11 @@
 </template>
 
 <script>
+import PanelLayout from "../shared/PanelLayout.vue";
+
 export default {
   name: "ControlsPageLayout",
+  components: { PanelLayout },
   props: {
     hasSelectedRule: {
       type: Boolean,
@@ -69,25 +81,18 @@ export default {
     },
   },
   computed: {
-    sidebarColumnClass() {
-      // Mobile: full width, Desktop: configured width
-      return `col-12 col-md-${this.sidebarWidth}`;
-    },
-    mainColumnClass() {
-      // Mobile: full width, Desktop: remaining width
-      return `col-12 col-md-${12 - this.sidebarWidth}`;
+    layoutPanels() {
+      return [
+        { name: "left", cols: this.sidebarWidth, bgTier: "secondary" },
+        { name: "center", cols: 12 - this.sidebarWidth, bgTier: "body" },
+      ];
     },
   },
 };
 </script>
 
 <style scoped>
-.controls-page-layout {
-  /* Container for the entire controls page */
-}
-
-/* Ensure left sidebar has no right padding for flush edges */
-.left-sidebar-column {
-  padding-right: 0;
+.empty-state {
+  min-height: 50vh;
 }
 </style>

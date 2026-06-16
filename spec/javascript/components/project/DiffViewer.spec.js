@@ -141,6 +141,52 @@ describe("DiffViewer", () => {
     });
   });
 
+  // ─── Visual stepper UX ───────────────────────────────
+  describe("visual stepper UX", () => {
+    it("renders a stepper with two numbered steps", () => {
+      wrapper = createWrapper();
+      const stepper = wrapper.find(".diff-stepper");
+      expect(stepper.exists()).toBe(true);
+      const circles = stepper.findAll(".step-circle");
+      expect(circles.length).toBe(2);
+    });
+
+    it("step 1 is active and step 2 is muted on initial load", () => {
+      wrapper = createWrapper();
+      const circles = wrapper.findAll(".step-circle");
+      expect(circles.at(0).classes()).toContain("bg-primary");
+      expect(circles.at(1).classes()).toContain("bg-light");
+    });
+
+    it("step 1 shows checkmark and step 2 activates after Base is selected", async () => {
+      wrapper = createWrapper();
+      await wrapper.setData({
+        baseComponentId: 1,
+        compareList: [{ id: 2, name: "Comp B", version: 1, release: 2 }],
+      });
+      const circles = wrapper.findAll(".step-circle");
+      expect(circles.at(0).find(".bi-check-lg").exists()).toBe(true);
+      expect(circles.at(1).classes()).toContain("bg-primary");
+    });
+
+    it("Compare dropdown is disabled when no Base is selected", () => {
+      wrapper = createWrapper();
+      const compare = wrapper.findComponent({ ref: "compareDropdown" });
+      expect(compare.exists()).toBe(true);
+      expect(compare.props("disabled")).toBe(true);
+    });
+
+    it("Compare dropdown enables after Base is selected", async () => {
+      wrapper = createWrapper();
+      await wrapper.setData({
+        baseComponentId: 1,
+        compareList: [{ id: 2, name: "Comp B", version: 1, release: 2 }],
+      });
+      const compare = wrapper.findComponent({ ref: "compareDropdown" });
+      expect(compare.props("disabled")).toBe(false);
+    });
+  });
+
   // ─── Inline/Side-by-Side toggle ──────────────────────────
   describe("inline/side-by-side toggle", () => {
     it("toggles renderSideBySide", () => {

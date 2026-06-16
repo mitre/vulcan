@@ -59,8 +59,13 @@ class Membership < ApplicationRecord
       PROJECT_MEMBER_ROLES.index(membership.role) <= PROJECT_MEMBER_ROLES.index(role)
     end
 
-    # Delete those memberships that are of equal or lesser permissions
-    component_memberships.each(&:destroy)
+    # Sorted by ID for deterministic lock ordering (deadlock prevention
+    # when concurrent project membership creates overlap on components).
+    # destroy! for fail-fast — silent destroy swallows failures.
+    # No Membership.transaction wrapper — after_save already runs inside
+    # the parent save's transaction; an explicit wrapper just creates a
+    # redundant SAVEPOINT.
+    component_memberships.sort_by(&:id).each(&:destroy!)
   end
 
   ##

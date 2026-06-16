@@ -67,15 +67,14 @@
 </template>
 
 <script>
-import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
-import HumanizedTypesMixInVue from "../../mixins/HumanizedTypesMixIn.vue";
+import { useDateFormat } from "../../composables/useDateFormat";
+import { useHumanizedTypes } from "../../composables/useHumanizedTypes";
+import { useHistoryGrouping } from "../../composables/useHistoryGrouping";
 import RuleRevertModal from "./../rules/RuleRevertModal.vue";
-import HistoryGroupingMixinVue from "../../mixins/HistoryGroupingMixin.vue";
 
 export default {
   name: "History",
   components: { RuleRevertModal },
-  mixins: [DateFormatMixinVue, HumanizedTypesMixInVue, HistoryGroupingMixinVue],
   props: {
     histories: {
       type: Array,
@@ -101,6 +100,12 @@ export default {
       type: String,
       required: false,
     },
+  },
+  setup() {
+    const { friendlyDateTime } = useDateFormat();
+    const { humanizedType } = useHumanizedTypes();
+    const { groupHistories } = useHistoryGrouping();
+    return { friendlyDateTime, humanizedType, groupHistories };
   },
   computed: {
     groupedHistories() {

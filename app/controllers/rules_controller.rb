@@ -20,7 +20,11 @@ class RulesController < ApplicationController
                                          { satisfies: :srg_rule, satisfied_by: :srg_rule },
                                          srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
     @rules_json = RuleBlueprint.render(@rules, view: :editor)
-    @component_json = ComponentBlueprint.render(@component, view: :editor)
+    @component_json = ComponentBlueprint.render(@component, view: :editor, current_user: current_user)
+    respond_to do |format|
+      format.html
+      format.json { render body: @rules_json, content_type: 'application/json' }
+    end
   end
 
   def search
@@ -44,7 +48,7 @@ class RulesController < ApplicationController
 
   def show
     summary = Reaction.summary(@rule.reviews.map(&:id), current_user&.id)
-    render json: RuleBlueprint.render_as_hash(@rule, view: :editor, reactions_summary: summary)
+    render json: RuleBlueprint.render_as_json(@rule, view: :editor, reactions_summary: summary)
   end
 
   def related_rules
@@ -54,14 +58,14 @@ class RulesController < ApplicationController
     )
     stig_rules = StigRule.where(srg_id: srg_id).eager_load(:disa_rule_descriptions, :checks, :stig)
     rules = rules.filter { |r| r.component.all_users.include?(current_user) } unless current_user.admin?
-    stig_parents = StigBlueprint.render_as_hash(stig_rules.map(&:stig).uniq, view: :index)
+    stig_parents = StigBlueprint.render_as_json(stig_rules.map(&:stig).uniq, view: :index)
     components = rules.map(&:component).uniq
     ActiveRecord::Associations::Preloader.new(records: components, associations: :project).call
-    component_parents = ComponentBlueprint.render_as_hash(components, view: :related)
+    component_parents = ComponentBlueprint.render_as_json(components, view: :related)
     parents = (stig_parents + component_parents)
 
-    all_rules = StigRuleBlueprint.render_as_hash(stig_rules) +
-                RuleBlueprint.render_as_hash(rules, view: :editor)
+    all_rules = StigRuleBlueprint.render_as_json(stig_rules) +
+                RuleBlueprint.render_as_json(rules, view: :editor)
 
     render json: { rules: all_rules, parents: parents }
   end
@@ -73,17 +77,17 @@ class RulesController < ApplicationController
       # data). Inline the canonical toast object since render_toast
       # doesn't support piggybacking extra response keys.
       render json: {
-        toast: { title: 'Control created.', message: ['Successfully created control.'], variant: 'success' },
-        data: RuleBlueprint.render_as_hash(rule, view: :editor)
+        toast: Toast.new(title: 'Control created.', message: ['Successfully created control.'], variant: 'success'),
+        data: RuleBlueprint.render_as_json(rule, view: :editor)
       }
     else
       render json: {
-        toast: {
+        toast: Toast.new(
           title: 'Could not create control.',
           message: rule.errors.full_messages,
           variant: 'danger'
-        }
-      }, status: :unprocessable_entity
+        )
+      }, status: :unprocessable_content
     end
   end
 
@@ -94,12 +98,12 @@ class RulesController < ApplicationController
                    variant: 'success', status: :ok)
     else
       render json: {
-        toast: {
+        toast: Toast.new(
           title: 'Could not update control.',
           message: @rule.errors.full_messages,
           variant: 'danger'
-        }
-      }, status: :unprocessable_entity
+        )
+      }, status: :unprocessable_content
     end
   end
 
@@ -132,12 +136,12 @@ class RulesController < ApplicationController
   rescue ActiveRecord::RecordInvalid, ActiveRecord::StatementInvalid => e
     Rails.logger.error("Rule destroy failed for rule_id=#{@rule.id} user=#{current_user.id}: #{e.message}")
     render json: {
-      toast: {
+      toast: Toast.new(
         title: 'Could not delete control.',
         message: 'A database error prevented the delete from completing. The control was not modified.',
         variant: 'danger'
-      }
-    }, status: :unprocessable_entity
+      )
+    }, status: :unprocessable_content
   end
 
   def revert
@@ -149,12 +153,12 @@ class RulesController < ApplicationController
                  variant: 'success', status: :ok)
   rescue RuleRevertError => e
     render json: {
-      toast: {
+      toast: Toast.new(
         title: 'Could not revert history.',
         message: e.message,
         variant: 'danger'
-      }
-    }, status: :unprocessable_entity
+      )
+    }, status: :unprocessable_content
   end
 
   def section_locks
@@ -162,7 +166,7 @@ class RulesController < ApplicationController
     locked = ActiveModel::Type::Boolean.new.cast(params[:locked])
     comment = params[:comment]
 
-    return render json: { error: "Invalid section: #{section}" }, status: :unprocessable_entity unless RuleConstants::LOCKABLE_SECTION_NAMES.include?(section)
+    return render json: { error: "Invalid section: #{section}" }, status: :unprocessable_content unless RuleConstants::LOCKABLE_SECTION_NAMES.include?(section)
 
     fields = @rule.locked_fields.dup
     if locked
@@ -176,10 +180,10 @@ class RulesController < ApplicationController
 
     # multi-key response (rule + toast).
     render json: {
-      rule: RuleBlueprint.render_as_hash(@rule, view: :editor),
-      toast: { title: locked ? 'Section locked.' : 'Section unlocked.',
-               message: ["#{section} #{locked ? 'locked' : 'unlocked'}"],
-               variant: 'success' }
+      rule: RuleBlueprint.render_as_json(@rule, view: :editor),
+      toast: Toast.new(title: locked ? 'Section locked.' : 'Section unlocked.',
+                       message: ["#{section} #{locked ? 'locked' : 'unlocked'}"],
+                       variant: 'success')
     }
   end
 
@@ -189,7 +193,7 @@ class RulesController < ApplicationController
     comment = params[:comment]
 
     invalid = sections - RuleConstants::LOCKABLE_SECTION_NAMES
-    return render json: { error: "Invalid sections: #{invalid.join(', ')}" }, status: :unprocessable_entity if invalid.any?
+    return render json: { error: "Invalid sections: #{invalid.join(', ')}" }, status: :unprocessable_content if invalid.any?
 
     fields = @rule.locked_fields.dup
     sections.each do |section|
@@ -206,10 +210,10 @@ class RulesController < ApplicationController
 
     # multi-key response (rule + toast).
     render json: {
-      rule: RuleBlueprint.render_as_hash(@rule, view: :editor),
-      toast: { title: "Sections #{action_word.downcase}.",
-               message: ["#{action_word} #{sections.size} sections"],
-               variant: 'success' }
+      rule: RuleBlueprint.render_as_json(@rule, view: :editor),
+      toast: Toast.new(title: "Sections #{action_word.downcase}.",
+                       message: ["#{action_word} #{sections.size} sections"],
+                       variant: 'success')
     }
   end
 
@@ -237,7 +241,7 @@ class RulesController < ApplicationController
         component: @component,
         srg_rule: db_srg_rule,
         rule_id: (@component.rules.order(:rule_id).pluck(:rule_id).last.to_i + 1).to_s.rjust(6, '0'),
-        status: 'Not Yet Determined',
+        status: RuleConstants::STATUS_NYD,
         rule_severity: 'unknown',
         rule_weight: db_srg_rule&.rule_weight || '10.0',
         version: db_srg_rule&.version,

@@ -2,7 +2,7 @@
 
 module Export
   module Modes
-    # VendorSubmission mode: strict DISA-compliant export per Vendor STIG Process Guide V4R1.
+    # VendorSubmission mode: strict DISA-compliant export per Vendor STIG Process Guide V4R3.
     #
     # - Exactly 17 columns (Table 8-1)
     # - STIGID blank (DISA fills during finalization)

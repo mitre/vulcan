@@ -1,9 +1,14 @@
+const rulesDirPlugin = require("eslint-plugin-rulesdir");
+
+rulesDirPlugin.RULES_DIR = "eslint-rules";
+
 module.exports = {
   env: {
     browser: true,
     es6: true,
     node: true,
   },
+  plugins: ["rulesdir"],
   extends: ["plugin:vue/recommended", "prettier", "plugin:prettier/recommended"],
   ignorePatterns: [
     "docs/.vitepress/cache/**",
@@ -16,6 +21,7 @@ module.exports = {
     "no-console": "warn",
     "no-return-await": "warn",
     "no-throw-literal": "warn",
+    "rulesdir/comment-tracker": "error",
     "vue/require-default-prop": "off",
     "vue/prop-name-casing": "off",
     "vue/multi-word-component-names": "off",

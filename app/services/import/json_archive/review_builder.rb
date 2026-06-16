@@ -21,6 +21,12 @@ module Import
       # remediation .10 (admin_destroy → re-import via Review.insert!
       # bypasses audited; the Component-level row preserves the recovery
       # trail).
+      #
+      # external_to_new_id is populated during build_all and exposed to
+      # callers (Applier) that need per-row audit linkage between the
+      # archive's external_id and the actual new Review.id.
+      attr_reader :external_to_new_id
+
       def initialize(reviews_data, rule_id_map, result, component: nil, manifest: nil, imported_by: nil)
         @reviews_data = reviews_data
         @rule_id_map = rule_id_map
@@ -28,6 +34,7 @@ module Import
         @component = component
         @manifest = manifest
         @imported_by = imported_by
+        @external_to_new_id = {}
       end
 
       def build_all
@@ -40,7 +47,6 @@ module Import
         # pass 2 (relink) or pass 3 (drop_invalid + audit) raises.
         Review.transaction do
           # Pass 1: insert every review, capture external_id → new DB id map
-          external_to_new_id = {}
           count = 0
           @reviews_data.each do |review_data|
             rule_db_id = @rule_id_map[review_data['rule_id']]
@@ -54,24 +60,30 @@ module Import
 
             new_id = insert_review(review_data, rule_db_id, commenter)
             external_id = review_data['external_id']
-            external_to_new_id[external_id] = new_id if external_id
+            @external_to_new_id[external_id] = new_id if external_id
+            build_reactions(new_id, review_data['reactions']) if review_data['action'] == Review::ACTION_COMMENT
             count += 1
           end
 
           # Pass 2: patch responding_to_review_id + duplicate_of_review_id using
           # the external_id → new_id map. Backups without these refs short-circuit.
-          relink_threaded_refs(external_to_new_id)
+          relink_threaded_refs(@external_to_new_id)
 
           # Review.insert! bypasses model
           # validators. Re-load each inserted record and run `valid?`; on
           # failure, warn + delete the row. Children of removed parents
           # cascade-delete via the FK semantics on responding_to_review_id.
-          dropped = drop_invalid_reviews(external_to_new_id)
+          dropped = drop_invalid_reviews(@external_to_new_id)
+
+          # Defensive net: insert_review dual-writes commentable, but guard
+          # against any future insert!/raw-SQL path that forgets it so the
+          # triage read paths never silently hide imported comments.
+          Review.where(id: @external_to_new_id.values).repair_missing_commentable!
 
           # write a Component-level audit row
           # listing imported external_ids + archive identifier. Recovery
           # trail for admin_destroy → re-import scenarios.
-          write_import_audit(external_to_new_id)
+          write_import_audit(@external_to_new_id)
 
           count - dropped
         end
@@ -79,10 +91,56 @@ module Import
 
       private
 
+      # Bulk-insert reactions for a freshly imported comment-action Review.
+      # Mirrors the rest of the bulk-insert path (bypasses callbacks).
+      # User resolved by email; kind validated against Reaction::KINDS;
+      # idempotent via the (review_id, user_id) unique index.
+      def build_reactions(review_db_id, reactions_data)
+        return if reactions_data.blank?
+
+        rows = reactions_data.filter_map { |r| build_reaction_row(review_db_id, r) }
+        return if rows.empty?
+
+        # rubocop:disable Rails/SkipsModelValidations -- bulk insert mirrors insert_review path
+        Reaction.insert_all(rows, unique_by: %i[review_id user_id])
+        # rubocop:enable Rails/SkipsModelValidations
+      end
+
+      def build_reaction_row(review_db_id, reaction_data)
+        kind = reaction_data['kind']
+        unless Reaction::KINDS.include?(kind)
+          @result.add_warning(
+            "Reaction on review #{review_db_id}: kind '#{kind}' not in #{Reaction::KINDS.inspect} — skipped"
+          )
+          return nil
+        end
+
+        email = reaction_data['user_email']
+        user = User.find_by(email: email) if email.present?
+        if user.nil?
+          @result.add_warning(
+            "Reaction on review #{review_db_id}: user '#{email}' not present on receiving instance — skipped"
+          )
+          return nil
+        end
+
+        created_at = parse_time(reaction_data['created_at']) || Time.current
+        {
+          review_id: review_db_id, user_id: user.id, kind: kind,
+          created_at: created_at, updated_at: created_at
+        }
+      end
+
       def insert_review(review_data, rule_db_id, commenter)
         created_at = parse_time(review_data['created_at']) || Time.current
         attrs = {
           rule_id: rule_db_id,
+          # Dual-write the polymorphic target. insert! skips
+          # sync_commentable_from_rule, and the triage read paths filter on
+          # commentable_type/commentable_id — without these the imported
+          # comments are counted but never listed.
+          commentable_type: 'BaseRule',
+          commentable_id: rule_db_id,
           action: review_data['action'],
           comment: review_data['comment'],
           created_at: created_at,
@@ -90,6 +148,7 @@ module Import
         }
         attrs.merge!(commenter)
         attrs.merge!(lifecycle_attrs(review_data))
+        attrs.merge!(provenance_attrs(review_data))
 
         # rubocop:disable Rails/SkipsModelValidations
         # Direct INSERT bypasses model callbacks (same pattern as
@@ -133,8 +192,25 @@ module Import
         attrs = {}
         attrs[:section] = review_data['section'] if review_data.key?('section')
         attrs[:triage_status] = review_data['triage_status'] if review_data['triage_status'].present?
+        # insert! bypasses Review#default_triage_status_for_new_top_level_comment,
+        # so apply the same default here: an untriaged top-level comment is
+        # 'pending'. Replies (responding_to_external_id present) must stay NULL.
+        if attrs[:triage_status].blank? &&
+           review_data['action'] == Review::ACTION_COMMENT &&
+           review_data['responding_to_external_id'].blank?
+          attrs[:triage_status] = 'pending'
+        end
         attrs[:triage_set_at] = parse_time(review_data['triage_set_at']) if review_data['triage_set_at']
         attrs[:adjudicated_at] = parse_time(review_data['adjudicated_at']) if review_data['adjudicated_at']
+
+        # Cross-instance FK remap: archive carries the stable rule_id string;
+        # look up the new local BaseRule.id via rule_id_map. If the addressing
+        # rule isn't in the archive, leave nil — addressed_by_status_requires_rule
+        # will drop the row via drop_invalid_reviews with an actionable warning.
+        if review_data['addressed_by_rule_id'].present?
+          mapped = @rule_id_map[review_data['addressed_by_rule_id']]
+          attrs[:addressed_by_rule_id] = mapped if mapped
+        end
 
         attrs.merge!(attribution_attrs(review_data, 'triage_set_by'))
         attrs.merge!(attribution_attrs(review_data, 'adjudicated_by'))
@@ -194,15 +270,8 @@ module Import
         return 0 if external_to_new_id.empty?
 
         new_id_to_external = external_to_new_id.invert
-        removed = 0
+        invalid_ids = []
         Review.where(id: external_to_new_id.values).find_each do |review|
-          # `:import_integrity` is a Rails custom validation context. Per
-          # Rails Guides §7.3, calling valid?(:custom) runs (a) validators
-          # tagged on: :custom AND (b) validators with no on: option;
-          # validators tagged on: %i[create update] are skipped. Review's
-          # user-action permission validators are tagged on: %i[create update]
-          # so the import context runs ONLY data-integrity validators
-          # (cross-rule references, status enums, FK invariants).
           next if review.valid?(:import_integrity)
 
           ext = new_id_to_external[review.id] || review.id
@@ -210,37 +279,90 @@ module Import
             "Review #{ext}: failed validation on import — " \
             "#{review.errors.full_messages.join('; ')}. Removed to preserve DB integrity."
           )
-          # delete (not destroy) to skip after_destroy + audit-on-destroy.
-          # The row was never user-facing on this instance — no audit-trail
-          # value to preserve. FK on_delete: :cascade still removes children.
-          review.delete
-          removed += 1
+          invalid_ids << review.id
         end
-        removed
+
+        return 0 if invalid_ids.empty?
+
+        # Delete children before parents to respect FK RESTRICT on
+        # responding_to_review_id. Collect the full tree of descendants
+        # then delete leaves-first.
+        all_ids_to_delete = Set.new(invalid_ids)
+        queue = invalid_ids.dup
+        until queue.empty?
+          child_ids = Review.where(responding_to_review_id: queue).pluck(:id)
+          new_children = child_ids.reject { |id| all_ids_to_delete.include?(id) }
+          all_ids_to_delete.merge(new_children)
+          queue = new_children
+        end
+
+        # Topological delete: deepest children first
+        remaining = all_ids_to_delete.to_a
+        until remaining.empty?
+          parents_of_remaining = Review.where(responding_to_review_id: remaining)
+                                       .where(id: remaining).pluck(:responding_to_review_id)
+          leaves = remaining.reject { |id| parents_of_remaining.include?(id) }
+          leaves = remaining if leaves.empty?
+          Review.where(id: leaves).delete_all
+          remaining -= leaves
+        end
+
+        all_ids_to_delete.size
       end
 
       def relink_threaded_refs(external_to_new_id)
         return if external_to_new_id.empty?
 
+        responding = {}
+        duplicate = {}
         @reviews_data.each do |review_data|
           new_id = external_to_new_id[review_data['external_id']]
           next unless new_id
 
-          updates = {}
-          parent_external = review_data['responding_to_external_id']
-          if parent_external && (mapped = external_to_new_id[parent_external])
-            updates[:responding_to_review_id] = mapped
+          if (parent_external = review_data['responding_to_external_id']) &&
+             (mapped = external_to_new_id[parent_external])
+            responding[new_id] = mapped
           end
 
-          dup_external = review_data['duplicate_of_external_id']
-          if dup_external && (mapped = external_to_new_id[dup_external])
-            updates[:duplicate_of_review_id] = mapped
+          if (dup_external = review_data['duplicate_of_external_id']) &&
+             (mapped = external_to_new_id[dup_external])
+            duplicate[new_id] = mapped
           end
-
-          # rubocop:disable Rails/SkipsModelValidations
-          Review.where(id: new_id).update_all(updates) if updates.any?
-          # rubocop:enable Rails/SkipsModelValidations
         end
+
+        bulk_relink(responding, duplicate)
+      end
+
+      # Single CASE-based UPDATE per affected column.
+      # Replaces an N+1 of per-review update_all calls. All interpolated values
+      # are Integer()-cast PKs (matches the existing Brakeman-ignored pattern
+      # in Component#duplicate_reviews_and_history).
+      def bulk_relink(responding, duplicate)
+        return if responding.empty? && duplicate.empty?
+
+        ids = (responding.keys + duplicate.keys).uniq.map { |i| Integer(i) }
+        sets = []
+        sets << case_set('responding_to_review_id', responding) if responding.any?
+        sets << case_set('duplicate_of_review_id',  duplicate)  if duplicate.any?
+
+        Review.connection.exec_update(
+          "UPDATE reviews SET #{sets.join(', ')} WHERE id IN (#{ids.join(', ')})"
+        )
+      end
+
+      def case_set(column, mapping)
+        whens = mapping.map { |k, v| "WHEN #{Integer(k)} THEN #{Integer(v)}" }.join(' ')
+        "#{column} = CASE id #{whens} ELSE #{column} END"
+      end
+
+      def provenance_attrs(review_data)
+        original_rule_id_str = review_data['original_rule_id']
+        return {} if original_rule_id_str.blank?
+
+        original_db_id = @rule_id_map[original_rule_id_str]
+        return {} unless original_db_id
+
+        { original_commentable_id: original_db_id }
       end
 
       def parse_time(raw)

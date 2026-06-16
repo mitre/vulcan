@@ -76,31 +76,41 @@
 
       <p class="mt-4">
         <span v-if="component.admin_name">
-          PoC: {{ component.admin_name }}
-          {{ component.admin_email ? `(${component.admin_email})` : "" }}
+          PoC:
+          <UserBadge
+            :name="component.admin_name"
+            :email="component.admin_email"
+            :show-name="true"
+          />
         </span>
         <em v-else>No Component Admin</em>
       </p>
       <!-- Component actions -->
       <div class="mt-3 pt-3 border-top">
-        <!-- Primary Actions Row -->
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <!-- Primary Action Button -->
-            <b-button :href="`/components/${component.id}`" variant="primary" size="sm">
-              <b-icon icon="box-arrow-up-right" class="mr-1" />
-              Open Component
-            </b-button>
-          </div>
+        <!-- Toolbar: primary + admin group share one row when space allows;
+             at narrow card widths the admin group wraps BELOW as a
+             left-aligned unit instead of squeezing the primary button. -->
+        <div
+          class="component-card-actions d-flex flex-wrap justify-content-between align-items-center"
+        >
+          <!-- Primary Action Button -->
+          <b-button
+            :href="`/components/${component.id}`"
+            variant="primary"
+            size="sm"
+            class="text-nowrap"
+          >
+            <b-icon icon="box-arrow-up-right" class="mr-1" />
+            Open Component
+          </b-button>
 
           <!-- Admin Actions -->
           <div
             v-if="actionable && component.id"
-            class="d-flex align-items-center flex-wrap"
-            style="gap: 0.25rem"
+            class="component-card-admin-actions d-flex align-items-center flex-wrap"
           >
             <b-button
-              v-if="effectivePermissions == 'admin'"
+              v-if="canAdmin"
               v-b-tooltip.hover
               :href="`/components/${component.id}/settings`"
               variant="outline-secondary"
@@ -112,7 +122,7 @@
             </b-button>
 
             <LockControlsModal
-              v-if="role_gte_to(effectivePermissions, 'reviewer')"
+              v-if="canReview"
               :component_id="component.id"
               @projectUpdated="$emit('projectUpdated')"
             >
@@ -129,7 +139,7 @@
             </LockControlsModal>
 
             <NewComponentModal
-              v-if="effectivePermissions == 'admin'"
+              v-if="canAdmin"
               :component_to_duplicate="component.id"
               :project_id="component.project_id"
               :predetermined_prefix="component.prefix"
@@ -152,7 +162,7 @@
             </NewComponentModal>
 
             <span
-              v-if="effectivePermissions == 'admin' && !component.released"
+              v-if="canAdmin && !component.released"
               v-b-tooltip.hover
               :title="releaseComponentTooltip"
             >
@@ -160,14 +170,14 @@
                 variant="outline-success"
                 size="sm"
                 :disabled="!component.releasable"
-                @click="confirmComponentRelease"
+                @click="requestRelease(component)"
               >
                 <b-icon icon="patch-check" font-scale="0.9" /> Release
               </b-button>
             </span>
 
             <b-button
-              v-if="effectivePermissions == 'admin'"
+              v-if="canAdmin"
               v-b-tooltip.hover
               variant="outline-danger"
               size="sm"
@@ -179,17 +189,33 @@
           </div>
         </div>
       </div>
+
+      <!-- Release confirmation (declarative — useConfirmRelease owns the state) -->
+      <b-modal
+        v-model="showModal"
+        :title="releaseModal.title"
+        :ok-title="releaseModal.okTitle"
+        :ok-variant="releaseModal.okVariant"
+        :cancel-title="releaseModal.cancelTitle"
+        :busy="isReleasing"
+        size="md"
+        centered
+        @ok="onConfirmRelease"
+        @cancel="cancel"
+      >
+        <p>{{ releaseModal.body }}</p>
+      </b-modal>
     </b-card>
   </b-overlay>
 </template>
 
 <script>
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import ConfirmComponentReleaseMixin from "../../mixins/ConfirmComponentReleaseMixin.vue";
-import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
+import { usePermissions } from "../../composables/usePermissions";
+import { useToast } from "../../composables/useToast";
+import { useConfirmRelease, RELEASE_CONFIRM_COPY } from "../../composables/useConfirmRelease";
 import LockControlsModal from "../components/LockControlsModal.vue";
 import NewComponentModal from "../components/NewComponentModal.vue";
+import UserBadge from "../shared/UserBadge.vue";
 import { ruleCountLabel } from "../../constants/terminology";
 
 export default {
@@ -197,22 +223,37 @@ export default {
   components: {
     LockControlsModal,
     NewComponentModal,
+    UserBadge,
   },
-  mixins: [AlertMixinVue, FormMixinVue, ConfirmComponentReleaseMixin, RoleComparisonMixin],
   props: {
     // Indicate if the card is for "read-only" or can take actions against it
     actionable: {
       type: Boolean,
       default: true,
     },
-    effectivePermissions: {
-      type: String,
-      required: false,
-    },
     component: {
       type: Object,
       required: true,
     },
+  },
+  setup() {
+    // Permissions are provided by the page root (Project.vue) — see usePermissions.
+    const { canAdmin, canReview } = usePermissions();
+    // Declarative release confirmation (replaces the imperative
+    // $bvModal.msgBoxConfirm mixin) — the modal renders in this template.
+    const { showModal, isReleasing, requestRelease, cancel, confirm } = useConfirmRelease();
+    const { alertOrNotifyResponse } = useToast();
+    return {
+      canAdmin,
+      canReview,
+      alertOrNotifyResponse,
+      showModal,
+      isReleasing,
+      requestRelease,
+      cancel,
+      confirmRelease: confirm,
+      releaseModal: RELEASE_CONFIRM_COPY,
+    };
   },
   data: function () {
     return {
@@ -235,6 +276,18 @@ export default {
   },
   methods: {
     ruleCountLabel,
+    // Confirm handler for the release modal. preventDefault keeps the modal
+    // open so the composable controls closing (stays open on error for retry).
+    async onConfirmRelease(bvModalEvt) {
+      if (bvModalEvt && bvModalEvt.preventDefault) bvModalEvt.preventDefault();
+      const { success, response, error } = await this.confirmRelease();
+      if (success) {
+        this.alertOrNotifyResponse(response);
+        this.$emit("projectUpdated");
+      } else if (error) {
+        this.alertOrNotifyResponse(error);
+      }
+    },
     confirmDelete() {
       this.isDeleting = true;
       this.$emit("deleteComponent", this.component.id);
@@ -248,6 +301,17 @@ export default {
 </script>
 
 <style scoped>
+/* Footer toolbar spacing — gap classes instead of inline styles (Bootstrap 4
+   has no gap utilities; same approach as ProjectCommandBar). The row gap
+   keeps wrapped rows breathing; the admin group keeps tighter button gaps. */
+.component-card-actions {
+  gap: 0.5rem;
+}
+
+.component-card-admin-actions {
+  gap: 0.25rem;
+}
+
 .inspec-icon {
   background: url("data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPHN2ZyB3aWR0aD0iMzJweCIgaGVpZ2h0PSIzMnB4IiB2aWV3Qm94PSIwIDAgMzIgMzIiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8dGl0bGU+QXJ0Ym9hcmQ8L3RpdGxlPgogIDxkZXNjPkNyZWF0ZWQgd2l0aCBTa2V0Y2guPC9kZXNjPgogIDxnIGlkPSJBcnRib2FyZCIgc3Ryb2tlPSJub25lIiBzdHJva2Utd2lkdGg9IjEiIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+CiAgICA8ZyBpZD0iR3JvdXAtMyIgZmlsbD0iIzQ0OUJCQiI+CiAgICAgIDxwYXRoIGQ9Ik02LjQ5MjkyNzkzLDI4Ljg3MDQ0OTUgTDExLjg5MTQzODcsMjQuMDA5NjA4NyBDMTMuMTIzMTM2NSwyNC42NDI2ODU4IDE0LjUxOTg0MDcsMjUgMTYsMjUgQzIwLjk3MDU2MjcsMjUgMjUsMjAuOTcwNTYyNyAyNSwxNiBDMjUsMTEuMDI5NDM3MyAyMC45NzA1NjI3LDcgMTYsNyBDMTEuMDI5NDM3Myw3IDcsMTEuMDI5NDM3MyA3LDE2IEM3LDE3LjY2Njg0NzYgNy40NTMxMzIzMiwxOS4yMjc4NjA0IDguMjQyOTMyODYsMjAuNTY2NTc0NCBMMi45ODE2NDIzNywyNS4zMDM4NjE2IEMxLjEwNDcxMzgzLDIyLjY4MjI2MDIgMCwxOS40NzAxNCAwLDE2IEMwLDcuMTYzNDQ0IDcuMTYzNDQ0LDAgMTYsMCBDMjQuODM2NTU2LDAgMzIsNy4xNjM0NDQgMzIsMTYgQzMyLDI0LjgzNjU1NiAyNC44MzY1NTYsMzIgMTYsMzIgQzEyLjQzOTY2ODEsMzIgOS4xNTA5NDI1NCwzMC44MzcxMTUgNi40OTI5Mjc5MywyOC44NzA0NDk1IFoiIGlkPSJDb21iaW5lZC1TaGFwZSIgc3R5bGU9ImZpbGw6IHJnYmEoMCwgMCwgMCwgMC44KTsiLz4KICAgICAgPGNpcmNsZSBpZD0iT3ZhbCIgY3g9IjE2IiBjeT0iMTYiIHI9IjUuMjUiIHN0eWxlPSJmaWxsOiByZ2JhKDAsIDAsIDAsIDAuOCk7Ii8+CiAgICA8L2c+CiAgPC9nPgo8L3N2Zz4=");
   background-size: 100%;

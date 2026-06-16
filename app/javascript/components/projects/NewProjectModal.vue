@@ -63,13 +63,11 @@
 </template>
 
 <script>
-import axios from "axios";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { createProject } from "../../api/projectsApi";
+import { useToast } from "../../composables/useToast";
 
 export default {
   name: "NewProjectModal",
-  mixins: [FormMixinVue, AlertMixinVue],
   model: {
     prop: "visible",
     event: "update:visible",
@@ -79,6 +77,10 @@ export default {
       type: Boolean,
       default: false,
     },
+  },
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
   },
   data() {
     return {
@@ -108,9 +110,7 @@ export default {
       if (event) event.preventDefault();
 
       try {
-        const response = await axios.post("/projects", {
-          project: this.form,
-        });
+        const response = await createProject(this.form);
         this.alertOrNotifyResponse(response);
         this.$emit("project-created");
         this.$emit("update:visible", false);

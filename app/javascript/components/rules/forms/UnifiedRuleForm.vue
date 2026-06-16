@@ -24,8 +24,8 @@
           style="
             width: 12px;
             height: 12px;
-            border-left: 3px solid #ffc107;
-            background: rgba(255, 193, 7, 0.15);
+            border-left: 3px solid var(--vulcan-warning, #ffc107);
+            background: var(--vulcan-warning-tint, rgba(255, 193, 7, 0.15));
           "
         />
         Section locked
@@ -39,8 +39,8 @@
           style="
             width: 12px;
             height: 12px;
-            border-left: 3px solid #17a2b8;
-            background: rgba(23, 162, 184, 0.15);
+            border-left: 3px solid var(--vulcan-info, #17a2b8);
+            background: var(--vulcan-info-tint, rgba(23, 162, 184, 0.15));
           "
         />
         Under review
@@ -54,15 +54,27 @@
           style="
             width: 12px;
             height: 12px;
-            border-left: 3px solid #6c757d;
-            background: rgba(108, 117, 125, 0.15);
+            border-left: 3px solid var(--vulcan-secondary, #6c757d);
+            background: var(--vulcan-secondary-tint, rgba(108, 117, 125, 0.15));
           "
         />
         Locked
       </span>
     </div>
 
-    <b-form>
+    <!-- Status hint: above form so user sees it before the fields -->
+    <b-alert
+      v-if="effectiveStatus !== 'Applicable - Configurable'"
+      variant="info"
+      show
+      class="py-2 mb-2"
+      data-testid="fields-hidden-alert"
+    >
+      <b-icon icon="info-circle-fill" class="mr-1" />
+      Some fields are hidden due to the control's status.
+    </b-alert>
+
+    <b-form data-testid="rule-form-wrapper">
       <RuleForm
         :rule="rule"
         :statuses="statuses"
@@ -78,6 +90,7 @@
         :additional_questions="additional_questions"
         @toggle-section-lock="onToggleSectionLock"
         @open-composer="$emit('open-composer', $event)"
+        @view-comments="$emit('view-comments', $event)"
       />
     </b-form>
 
@@ -87,14 +100,6 @@
       :cci="rule.ident"
       :srg_info="rule.srg_info"
     />
-
-    <!-- Status hint -->
-    <div v-if="effectiveStatus !== 'Applicable - Configurable'">
-      <hr />
-      <p>
-        <small>Some fields are hidden due to the control's status.</small>
-      </p>
-    </div>
   </div>
 </template>
 
@@ -172,12 +177,13 @@ export default {
       return this.rule.locked_fields || {};
     },
     showSectionLocks() {
-      if (this.readOnly || this.rule.locked || this.rule.review_requestor_id) return false;
-      return ["admin", "reviewer"].includes(this.effectivePermissions);
+      if (this.rule.locked || this.rule.review_requestor_id) return false;
+      return ["admin", "reviewer"].includes(this.effectivePermissions) || this.readOnly;
     },
     canManageSectionLocks() {
+      if (this.readOnly) return false;
       if (!this.showSectionLocks) return false;
-      return this.rule.status !== "Not Yet Determined";
+      return true;
     },
   },
   methods: {

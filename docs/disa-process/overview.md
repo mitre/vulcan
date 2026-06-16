@@ -6,9 +6,13 @@ Overview of the DISA Security Technical Implementation Guide (STIG) development 
 
 The DISA Vendor STIG process follows a defined sequence:
 
-```
-Intent Form → DISA Approval → Questionnaire → SRG Template → Authoring → Review → Publication
-```
+1. **Intent Form** — Vendor declares intent to DISA
+2. **DISA Approval** — DISA reviews and decides to proceed
+3. **Questionnaire** — Determine applicable SRGs
+4. **SRG Template** — DISA provides template (Stage 1, 2 weeks)
+5. **Authoring** — Vendor develops STIG content (Stages 2–4, 90 days)
+6. **Review** — DISA validates Check/Fix, reviews documents
+7. **Publication** — AO approval, public STIG + CUI package
 
 ### Step 0: Intent Form
 
@@ -67,7 +71,7 @@ After the vendor completes development:
    - **Public STIG**: Only Applicable - Configurable rules (published on Cyber Exchange)
    - **Confidential package (CUI)**: NA, AIM, ADNM rules with compliance report (available to Authorizing Officials upon request)
 
-**Source:** U_Vendor_STIG_Process_Guide_V4R1_20220815.pdf, Sections 3 and 5-6 — available from [DISA Vendor Process page](https://public.cyber.mil/stigs/) (requires CAC)
+**Source:** U_Vendor_STIG_Process_Guide_V4R3, Sections 3 and 5-6 — available from [DISA Vendor Process page](https://public.cyber.mil/stigs/) (requires CAC)
 
 ## Rule Statuses
 
@@ -118,7 +122,7 @@ For security features that don't align with any SRG requirement, use CCI-000366 
 
 | Document | Version | Description |
 |---|---|---|
-| Vendor STIG Process Guide | V4R1 (2022-08-15) | Full process lifecycle, field requirements, review stages |
+| Vendor STIG Process Guide | V4R3 (2025-04-08) | Full process lifecycle, field requirements, review stages |
 | STIG Applicability Questionnaire | V4.3 (2017-11) | Determines which SRGs apply to a product |
 | Vendor STIG Intent Form | Current | Initial declaration of intent to create a STIG |
 

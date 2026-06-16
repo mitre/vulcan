@@ -53,6 +53,11 @@ describe("ControlsPageLayout", () => {
       expect(wrapper.find(".controls-page-layout").exists()).toBe(true);
     });
 
+    it("root element has vulcan-editor-layout class for flex chain continuity", () => {
+      wrapper = createWrapper();
+      expect(wrapper.classes()).toContain("vulcan-editor-layout");
+    });
+
     it("renders the two-column row", () => {
       wrapper = createWrapper();
       expect(wrapper.find(".row").exists()).toBe(true);
@@ -170,29 +175,24 @@ describe("ControlsPageLayout", () => {
     });
   });
 
-  describe("responsive column widths", () => {
-    it("uses default sidebar width of 2 columns on desktop", () => {
+  describe("responsive column widths via PanelLayout", () => {
+    it("passes default sidebar width of 2 columns to PanelLayout", () => {
       wrapper = createWrapper({ hasSelectedRule: true });
-      const sidebar = wrapper.find(".left-sidebar-column");
-      const main = wrapper.find(".main-content-column");
+      const panelLayout = wrapper.findComponent({ name: "PanelLayout" });
+      expect(panelLayout.exists()).toBe(true);
 
-      // Mobile: full width
-      expect(sidebar.classes()).toContain("col-12");
-      expect(main.classes()).toContain("col-12");
-
-      // Desktop: 2 + 10 = 12 columns
-      expect(sidebar.classes()).toContain("col-md-2");
-      expect(main.classes()).toContain("col-md-10");
+      const panels = panelLayout.props("panels");
+      expect(panels[0].cols).toBe(2);
+      expect(panels[1].cols).toBe(10);
     });
 
-    it("uses custom sidebarWidth when provided", () => {
+    it("passes custom sidebarWidth to PanelLayout", () => {
       wrapper = createWrapper({ hasSelectedRule: true, sidebarWidth: 3 });
-      const sidebar = wrapper.find(".left-sidebar-column");
-      const main = wrapper.find(".main-content-column");
+      const panelLayout = wrapper.findComponent({ name: "PanelLayout" });
 
-      // Desktop: 3 + 9 = 12 columns
-      expect(sidebar.classes()).toContain("col-md-3");
-      expect(main.classes()).toContain("col-md-9");
+      const panels = panelLayout.props("panels");
+      expect(panels[0].cols).toBe(3);
+      expect(panels[1].cols).toBe(9);
     });
 
     it("validates sidebarWidth is between 1 and 6", () => {

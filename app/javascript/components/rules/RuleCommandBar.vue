@@ -33,11 +33,10 @@
 </template>
 
 <script>
-import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
+import { useDateFormat } from "../../composables/useDateFormat";
 
 export default {
   name: "RuleCommandBar",
-  mixins: [DateFormatMixinVue],
   props: {
     rule: {
       type: Object,
@@ -47,6 +46,10 @@ export default {
       type: String,
       required: true,
     },
+  },
+  setup() {
+    const { friendlyDateTime } = useDateFormat();
+    return { friendlyDateTime };
   },
   computed: {
     ruleDisplayId() {
@@ -71,7 +74,7 @@ export default {
   top: 0;
   z-index: 100;
   border-radius: 0.375rem;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--vulcan-gray-300);
 }
 
 .command-group {

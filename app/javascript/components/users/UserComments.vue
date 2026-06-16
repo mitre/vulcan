@@ -32,6 +32,7 @@
         :busy="loading"
         :sort-by.sync="sortBy"
         :sort-desc.sync="sortDesc"
+        :tbody-tr-class="rowTriageClass"
         primary-key="id"
         hover
         striped
@@ -42,19 +43,13 @@
         aria-label="My comments"
       >
         <template #cell(rule_displayed_name)="{ item }">
-          <!-- data-turbolinks="false" forces a full page load so the rule
-               editor's project_component pack registers its turbolinks:load
-               listener before the event fires (otherwise Vue never mounts
-               and the rule editor is blank). -->
           <span v-if="item.commentable_type === 'Component'" class="text-muted font-italic">
             {{ item.rule_displayed_name }}
           </span>
-          <a v-else :href="ruleHref(item)" data-turbolinks="false">{{
-            item.rule_displayed_name
-          }}</a>
+          <a v-else :href="ruleHref(item)">{{ item.rule_displayed_name }}</a>
         </template>
         <template #cell(component_name)="{ item }">
-          <a :href="`/components/${item.component_id}`" data-turbolinks="false">
+          <a :href="`/components/${item.component_id}`">
             {{ item.component_name }}
           </a>
           <small class="text-muted d-block">{{ item.project_name }}</small>
@@ -63,21 +58,27 @@
           <SectionLabel :section="value" :commentable-type="item.commentable_type" />
         </template>
         <template #cell(comment)="{ item, value }">
-          <div :title="value">{{ truncate(value, 80) }}</div>
+          <div class="text-truncate" style="max-width: 300px" :title="value">{{ value }}</div>
           <CommentThread
             :ref="`thread-${item.id}`"
             :parent-review-id="item.id"
             :responses-count="item.responses_count || 0"
             :can-reply="true"
             class="mt-1"
-            @reply="openReplyComposer(item)"
+            @reply="openReplyComposerFromRow(item)"
           />
         </template>
         <template #cell(created_at)="{ value }">
           {{ friendlyDateTime(value) }}
         </template>
         <template #cell(triage_status)="{ item }">
-          <TriageStatusBadge :status="item.triage_status" :adjudicated-at="item.adjudicated_at" />
+          <TriageStatusBadge
+            :status="item.triage_status"
+            :adjudicated-at="item.adjudicated_at"
+            :duplicate-of-id="item.duplicate_of_review_id"
+            :addressed-by-rule-id="item.addressed_by_rule_id"
+            :addressed-by-rule-name="item.addressed_by_rule_name"
+          />
         </template>
         <template #cell(latest_activity_at)="{ value }">
           <span v-if="value">{{ friendlyDateTime(value) }}</span>
@@ -111,11 +112,8 @@
            emitted reply. componentId/ruleId/ruleDisplayedName come from
            the row payload (carried in /users/:id/comments). -->
       <CommentComposerModal
-        v-if="composerReplyRow"
-        :component-id="composerReplyRow.component_id"
-        :rule-id="composerReplyRow.rule_id"
-        :rule-displayed-name="composerReplyRow.rule_displayed_name"
-        :reply-to-review-id="composerReplyRow.id"
+        v-if="composerActive"
+        v-bind="composerProps"
         @posted="onComposerPosted"
         @hidden="onComposerHidden"
       />
@@ -124,10 +122,12 @@
 </template>
 
 <script>
-import axios from "axios";
-import { TRIAGE_LABELS } from "../../constants/triageVocabulary";
-import AlertMixin from "../../mixins/AlertMixin.vue";
-import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
+import { useCommentsStore } from "../../stores/comments";
+import { buildStatusFilterOptions } from "../../constants/triageVocabulary";
+import { ruleHref as buildRuleHref, rowTriageClass } from "../../utils/commentTableHelpers";
+import { useDateFormat } from "../../composables/useDateFormat";
+import { useToast } from "../../composables/useToast";
+import { useReplyComposer } from "../../composables/useReplyComposer";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import SectionLabel from "../shared/SectionLabel.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
@@ -143,9 +143,28 @@ export default {
     CommentThread,
     CommentComposerModal,
   },
-  mixins: [AlertMixin, DateFormatMixin],
   props: {
     userId: { type: [Number, String], required: true },
+  },
+  setup() {
+    const commentsStore = useCommentsStore();
+    const { friendlyDateTime } = useDateFormat();
+
+    // Bridge: useReplyComposer's onOpen/afterPosted callbacks need the
+    // options-API instance ($bvModal.show, fetch), which setup() cannot
+    // reach in Vue 2.7 without getCurrentInstance (anti-pattern). The
+    // bridge object is filled in created() — late binding, same contract.
+    // Pattern established in ComponentComments and ProjectComponent.
+    const composerBridge = { onOpen: null, afterPosted: null };
+    const composer = useReplyComposer({
+      onOpen: () => composerBridge.onOpen && composerBridge.onOpen(),
+      afterPosted: (parentReviewId, snapshot) =>
+        composerBridge.afterPosted && composerBridge.afterPosted(parentReviewId, snapshot),
+    });
+
+    const { alertOrNotifyResponse } = useToast();
+
+    return { commentsStore, friendlyDateTime, alertOrNotifyResponse, composerBridge, ...composer };
   },
   data() {
     return {
@@ -159,7 +178,6 @@ export default {
       // when the user clicks a column header.
       sortBy: "created_at",
       sortDesc: true,
-      composerReplyRow: null,
       fields: [
         { key: "rule_displayed_name", label: "Rule", sortable: true },
         { key: "component_name", label: "Component / Project", sortable: true },
@@ -173,52 +191,35 @@ export default {
   },
   computed: {
     statusOptions() {
-      const friendly = Object.entries(TRIAGE_LABELS)
-        .filter(([value]) => value !== "pending")
-        .map(([value, text]) => ({ value, text }));
-      return [
-        { value: "all", text: "All statuses" },
-        { value: "pending", text: "Pending" },
-        ...friendly,
-      ];
+      return buildStatusFilterOptions();
     },
+  },
+  created() {
+    this.composerBridge.onOpen = () => this.$bvModal.show("comment-composer-modal");
+    this.composerBridge.afterPosted = () => this.afterComposerPosted();
   },
   mounted() {
     this.fetch();
   },
   methods: {
-    truncate(text, n) {
-      if (!text) return "";
-      return text.length > n ? `${text.slice(0, n)}…` : text;
-    },
-    // Deep link to the rule editor with the rule selected. Encode the
-    // rule name segment so unusual characters can't break out of the
-    // path (mirrors ComponentComments#ruleHref).
+    rowTriageClass,
     ruleHref(row) {
-      return `/components/${row.component_id}/${encodeURIComponent(row.rule_displayed_name)}`;
+      return buildRuleHref(row);
     },
     onFilterChanged() {
       this.page = 1;
       this.fetch();
     },
-    openReplyComposer(row) {
-      this.composerReplyRow = row;
-      this.$nextTick(() => this.$bvModal.show("comment-composer-modal"));
+    openReplyComposerFromRow(row) {
+      this.openReplyComposer({
+        reviewId: row.id,
+        ruleId: row.rule_id,
+        componentId: row.component_id,
+        ruleName: row.rule_displayed_name,
+      });
     },
-    onComposerPosted() {
-      const id = this.composerReplyRow?.id;
-      this.composerReplyRow = null;
+    afterComposerPosted() {
       this.fetch();
-      if (id) {
-        this.$nextTick(() => {
-          const ref = this.$refs[`thread-${id}`];
-          const thread = Array.isArray(ref) ? ref[0] : ref;
-          thread?.refresh?.();
-        });
-      }
-    },
-    onComposerHidden() {
-      this.composerReplyRow = null;
     },
     async fetch() {
       this.loading = true;
@@ -227,16 +228,9 @@ export default {
         if (this.filterStatus && this.filterStatus !== "all") {
           params.triage_status = this.filterStatus;
         }
-        // Explicit Accept header — the user_comments pack has its own
-        // axios singleton (esbuild bundle isolation) and doesn't pull in
-        // FormMixin's defaults setup, so without this Rails serves the
-        // HTML view of the same /users/:id/comments route.
-        const { data } = await axios.get(`/users/${this.userId}/comments`, {
-          params,
-          headers: { Accept: "application/json" },
-        });
-        this.rows = data.rows;
-        this.total = data.pagination.total;
+        const result = await this.commentsStore.fetchUserComments(this.userId, params);
+        this.rows = result.rows;
+        this.total = result.pagination.total;
       } catch (error) {
         this.alertOrNotifyResponse(error);
       } finally {

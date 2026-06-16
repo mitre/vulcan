@@ -4,8 +4,6 @@
 # Controller for application users.
 #
 class UsersController < ApplicationController
-  USER_JSON_FIELDS = %i[id name email provider admin failed_attempts locked_at].freeze
-
   before_action :authorize_admin, except: %i[comments]
   before_action :authorize_logged_in, only: %i[comments]
   before_action :set_user, only: %i[update destroy send_password_reset generate_reset_link set_password lock unlock]
@@ -13,11 +11,16 @@ class UsersController < ApplicationController
   def index
     @users = User.alphabetical.select(:id, :name, :email, :provider, :admin, :last_sign_in_at,
                                       :failed_attempts, :locked_at)
-    @histories = Audited.audit_class.includes(:auditable, :user)
-                        .where(auditable_type: 'User')
-                        .order(created_at: :desc)
-                        .limit(200)
-                        .map(&:format)
+    @histories = AuditBlueprint.render_as_json(
+      Audited.audit_class.includes(:auditable, :user)
+             .where(auditable_type: 'User')
+             .order(created_at: :desc)
+             .limit(200)
+    )
+    respond_to do |format|
+      format.html
+      format.json { render json: UserBlueprint.render(@users, view: :admin) }
+    end
   end
 
   def admin_create
@@ -29,25 +32,25 @@ class UsersController < ApplicationController
       (password_params[:password].presence || generate_compliant_password)
 
     if user.save
-      result = { user: user.as_json(only: USER_JSON_FIELDS) }
+      user.reload
+      result = { user: UserBlueprint.render_as_json(user, view: :admin) }
 
       if password_params[:password].present?
-        result[:toast] = "User #{user.email} created with the provided password."
+        result[:toast] = { title: 'User created.', message: ["User #{user.email} created with the provided password."], variant: 'success' }
       elsif Settings.smtp.enabled
         user.send_reset_password_instructions
-        result[:toast] = "User #{user.email} created. Setup email sent."
+        result[:toast] = { title: 'User created.', message: ["User #{user.email} created. Setup email sent."], variant: 'success' }
       else
-        # No SMTP + no password provided — generate a reset link for the admin to deliver
         reset_url = generate_reset_url(user)
-        result[:toast] = "User #{user.email} created. Deliver the reset link to the user."
+        result[:toast] = { title: 'User created.', message: ["User #{user.email} created. Deliver the reset link to the user."], variant: 'success' }
         result[:reset_url] = reset_url
       end
 
       render json: result
     else
       render json: {
-        toast: { title: 'Could not create user.', message: user.errors.full_messages, variant: 'danger' }
-      }, status: :unprocessable_entity
+        toast: Toast.new(title: 'Could not create user.', message: user.errors.full_messages, variant: 'danger')
+      }, status: :unprocessable_content
     end
   end
 
@@ -61,8 +64,8 @@ class UsersController < ApplicationController
         end
         format.json do
           render json: {
-            toast: { title: 'Cannot remove admin.', message: ['You are the only admin. Promote another user first.'], variant: 'danger' }
-          }, status: :unprocessable_entity
+            toast: Toast.new(title: 'Cannot remove admin.', message: ['You are the only admin. Promote another user first.'], variant: 'danger')
+          }, status: :unprocessable_content
         end
       end
     end
@@ -88,8 +91,8 @@ class UsersController < ApplicationController
         # doesn't support piggybacking extra response keys.
         format.json do
           render json: {
-            toast: { title: 'User updated.', message: ['Successfully updated user.'], variant: 'success' },
-            user: @user.as_json(only: USER_JSON_FIELDS)
+            toast: Toast.new(title: 'User updated.', message: ['Successfully updated user.'], variant: 'success'),
+            user: UserBlueprint.render_as_json(@user, view: :admin)
           }
         end
       end
@@ -101,12 +104,12 @@ class UsersController < ApplicationController
         end
         format.json do
           render json: {
-            toast: {
+            toast: Toast.new(
               title: 'Could not update user.',
               message: @user.errors.full_messages,
               variant: 'danger'
-            }
-          }, status: :unprocessable_entity
+            )
+          }, status: :unprocessable_content
         end
       end
     end
@@ -122,8 +125,8 @@ class UsersController < ApplicationController
         end
         format.json do
           render json: {
-            toast: { title: 'Cannot delete user.', message: ['This is the only admin. Promote another user first.'], variant: 'danger' }
-          }, status: :unprocessable_entity
+            toast: Toast.new(title: 'Cannot delete user.', message: ['This is the only admin. Promote another user first.'], variant: 'danger')
+          }, status: :unprocessable_content
         end
       end
     end
@@ -148,12 +151,12 @@ class UsersController < ApplicationController
         end
         format.json do
           render json: {
-            toast: {
+            toast: Toast.new(
               title: 'Could not remove user.',
               message: @user.errors.full_messages,
               variant: 'danger'
-            }
-          }, status: :unprocessable_entity
+            )
+          }, status: :unprocessable_content
         end
       end
     end
@@ -163,8 +166,8 @@ class UsersController < ApplicationController
   def send_password_reset
     unless Settings.smtp.enabled
       return render json: {
-        toast: { title: 'SMTP not configured.', message: ['Email delivery is not available. Use "Generate Reset Link" instead.'], variant: 'danger' }
-      }, status: :unprocessable_entity
+        toast: Toast.new(title: 'SMTP not configured.', message: ['Email delivery is not available. Use "Generate Reset Link" instead.'], variant: 'danger')
+      }, status: :unprocessable_content
     end
 
     @user.send_reset_password_instructions
@@ -174,7 +177,7 @@ class UsersController < ApplicationController
   rescue StandardError => e
     Rails.logger.error "send_password_reset failed for user #{@user.id}: #{e.class}: #{e.message}\n#{e.backtrace&.first(5)&.join("\n")}"
     render json: {
-      toast: { title: 'Could not send password reset.', message: ['An internal error occurred. Please try again or contact an administrator.'], variant: 'danger' }
+      toast: Toast.new(title: 'Could not send password reset.', message: ['An internal error occurred. Please try again or contact an administrator.'], variant: 'danger')
     }, status: :internal_server_error
   end
 
@@ -185,9 +188,9 @@ class UsersController < ApplicationController
     # Inline the canonical toast object since render_toast doesn't piggyback
     # extra response keys.
     render json: {
-      toast: { title: 'Reset link generated.',
-               message: ['Reset link generated. Copy it and deliver to the user.'],
-               variant: 'success' },
+      toast: Toast.new(title: 'Reset link generated.',
+                       message: ['Reset link generated. Copy it and deliver to the user.'],
+                       variant: 'success'),
       reset_url: reset_url
     }
   end
@@ -196,8 +199,8 @@ class UsersController < ApplicationController
   def lock
     if @user == current_user
       return render json: {
-        toast: { title: 'Cannot lock yourself.', message: ['You cannot lock your own account.'], variant: 'danger' }
-      }, status: :unprocessable_entity
+        toast: Toast.new(title: 'Cannot lock yourself.', message: ['You cannot lock your own account.'], variant: 'danger')
+      }, status: :unprocessable_content
     end
 
     @user.lock_access!(send_instructions: false)
@@ -205,10 +208,10 @@ class UsersController < ApplicationController
                          user: current_user, comment: "Account locked by #{current_user.name}")
     # multi-key response (toast + user).
     render json: {
-      toast: { title: 'Account locked.',
-               message: ["Account #{@user.email} locked."],
-               variant: 'success' },
-      user: @user.as_json(only: USER_JSON_FIELDS)
+      toast: Toast.new(title: 'Account locked.',
+                       message: ["Account #{@user.email} locked."],
+                       variant: 'success'),
+      user: UserBlueprint.render_as_json(@user, view: :admin)
     }
   end
 
@@ -220,10 +223,10 @@ class UsersController < ApplicationController
                          user: current_user, comment: "Account unlocked by #{current_user.name}")
     # multi-key response (toast + user).
     render json: {
-      toast: { title: 'Account unlocked.',
-               message: ["Account #{@user.email} unlocked."],
-               variant: 'success' },
-      user: @user.as_json(only: USER_JSON_FIELDS)
+      toast: Toast.new(title: 'Account unlocked.',
+                       message: ["Account #{@user.email} unlocked."],
+                       variant: 'success'),
+      user: UserBlueprint.render_as_json(@user, view: :admin)
     }
   end
 
@@ -231,8 +234,8 @@ class UsersController < ApplicationController
   def set_password
     if password_params[:password].blank?
       return render json: {
-        toast: { title: 'Password required.', message: ['Password cannot be blank.'], variant: 'danger' }
-      }, status: :unprocessable_entity
+        toast: Toast.new(title: 'Password required.', message: ['Password cannot be blank.'], variant: 'danger')
+      }, status: :unprocessable_content
     end
 
     @user.password = @user.password_confirmation = password_params[:password]
@@ -242,13 +245,13 @@ class UsersController < ApplicationController
                    variant: 'success', status: :ok)
     else
       render json: {
-        toast: { title: 'Could not set password.', message: @user.errors.full_messages, variant: 'danger' }
-      }, status: :unprocessable_entity
+        toast: Toast.new(title: 'Could not set password.', message: @user.errors.full_messages, variant: 'danger')
+      }, status: :unprocessable_content
     end
   rescue StandardError => e
     Rails.logger.error "set_password failed for user #{@user.id}: #{e.class}: #{e.message}\n#{e.backtrace&.first(5)&.join("\n")}"
     render json: {
-      toast: { title: 'Could not set password.', message: ['An internal error occurred. Please try again or contact an administrator.'], variant: 'danger' }
+      toast: Toast.new(title: 'Could not set password.', message: ['An internal error occurred. Please try again or contact an administrator.'], variant: 'danger')
     }, status: :internal_server_error
   end
 
@@ -266,7 +269,7 @@ class UsersController < ApplicationController
   # frontend translates via triageVocabulary.js.
   def comments
     @target_user = User.find_by(id: params[:id])
-    return head :not_found unless @target_user
+    return render_not_found unless @target_user
 
     respond_to do |format|
       format.html
@@ -304,39 +307,42 @@ class UsersController < ApplicationController
     responses_count = response_aggregates.to_h { |id, _max_at, count| [id, count] }
     reaction_counts = Reaction.where(review_id: page_review_ids).group(:review_id, :kind).count
 
-    rows = page_records.map do |r|
-      comment_row_for(r, latest_response_at[r.id], responses_count[r.id] || 0, reaction_counts)
+    rule_display_map = {}
+    seen_components = {}
+    page_records.each do |r|
+      next if r.commentable_type == 'Component'
+
+      rule = r.rule || r.commentable
+      next unless rule
+
+      component = rule.respond_to?(:component) ? rule.component : nil
+      next unless component
+
+      rule_display_map[r.rule_id] = "#{component.prefix}-#{rule.rule_id}"
+      seen_components[component.id] ||= component
     end
+
+    srg_info_map = SecurityRequirementsGuide.srg_info_for_components(seen_components.values)
+
+    rule_ids = rule_display_map.keys
+    child_to_parent = RuleSatisfaction.where(rule_id: rule_ids)
+                                      .pluck(:rule_id, :satisfied_by_rule_id).to_h
+    parent_rule_map = child_to_parent.transform_values { |pid| rule_display_map[pid] }
+
+    blueprint_options = {
+      view: :user,
+      rule_display_map: rule_display_map,
+      srg_info_map: srg_info_map,
+      parent_rule_map: parent_rule_map,
+      responses_counts: responses_count,
+      reaction_counts: reaction_counts,
+      latest_response_at: latest_response_at
+    }
+
+    rows = page_records.map { |r| CommentRowBlueprint.render_as_json(r, **blueprint_options) }
     inject_reactions_mine!(rows)
 
     { rows: rows, pagination: { page: page, per_page: per_page, total: total } }
-  end
-
-  def comment_row_for(review, latest_response, responses_count, reaction_counts)
-    component_scoped = review.commentable_type == 'Component'
-    rule      = component_scoped ? nil : (review.rule || review.commentable)
-    component = component_scoped ? review.commentable : rule&.component
-    project   = component&.project
-    {
-      id: review.id,
-      project_id: project&.id,
-      project_name: project&.name,
-      component_id: component&.id,
-      component_name: component&.name,
-      rule_id: rule&.id,
-      rule_displayed_name: rule ? "#{component&.prefix}-#{rule.rule_id}" : '(component)',
-      commentable_type: review.commentable_type,
-      section: review.section,
-      comment: review.comment,
-      created_at: review.created_at,
-      triage_status: review.triage_status,
-      triage_set_at: review.triage_set_at,
-      adjudicated_at: review.adjudicated_at,
-      latest_activity_at: [review.triage_set_at, review.adjudicated_at, latest_response].compact.max,
-      responses_count: responses_count,
-      reactions: { up: reaction_counts[[review.id, 'up']] || 0,
-                   down: reaction_counts[[review.id, 'down']] || 0 }
-    }
   end
 
   def set_user

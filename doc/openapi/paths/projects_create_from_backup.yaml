@@ -1,0 +1,98 @@
+post:
+  operationId: createFromBackup
+  tags:
+    - Projects
+  summary: Create a new project from a JSON archive backup
+  description: >-
+    Creates a new project by restoring from a JSON archive (.zip). The archive
+    must have been created by the json_archive export. Optionally override the
+    project name. The creating user becomes the project admin. Requires
+    authentication.
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          required:
+            - file
+          properties:
+            file:
+              type: string
+              format: binary
+              description: JSON archive .zip file from a previous export.
+            name:
+              type: string
+              description: Override project name. Uses the archived name if omitted.
+              example: "Restored Container Platform"
+  responses:
+    '200':
+      description: >-
+        Dry-run returns preview (summary + warnings + project_defaults).
+        Real create returns redirect URL + summary + toast.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/CreateFromBackupDryRunResponse.yaml
+              - $ref: ../components/schemas/CreateFromBackupResponse.yaml
+          examples:
+            dry_run:
+              summary: Preview of what would be imported
+              value:
+                summary:
+                  dry_run: true
+                  components_imported: 2
+                  rules_imported: 264
+                  component_details:
+                    - name: "Photon OS 3"
+                      rule_count: 132
+                warnings: []
+                project_defaults:
+                  name: "My Original Project"
+                  description: "A test project"
+                  visibility: "discoverable"
+            created:
+              summary: Project created from archive
+              value:
+                redirect_url: "/projects/123"
+                summary:
+                  components_imported: 2
+                  rules_imported: 264
+                toast:
+                  title: Project imported.
+                  message:
+                    - "Project created from backup successfully."
+                  variant: success
+    '422':
+      description: Import or preview failed
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - toast
+            properties:
+              toast:
+                $ref: ../components/schemas/ToastObject.yaml
+              warnings:
+                type: array
+                items:
+                  type: string
+              project_defaults:
+                type: object
+                properties:
+                  name:
+                    type:
+                      - string
+                      - 'null'
+                  description:
+                    type:
+                      - string
+                      - 'null'
+                  visibility:
+                    type:
+                      - string
+                      - 'null'
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

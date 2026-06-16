@@ -1,8 +1,12 @@
 <template>
   <div>
-    <!-- Filter row. Uses shared FilterDropdown so menus stay in viewport
-         even in narrow panels / slideovers (native <select> ignores
-         boundary props and clips at viewport edges). -->
+    <CommentProgressBar
+      v-if="hasStatusCounts"
+      :status-counts="statusCounts"
+      :active-filter="filterStatus"
+      class="mb-2"
+      @filter="onPillFilter"
+    />
     <div class="d-flex flex-wrap align-items-center mb-2" style="gap: 0.5rem">
       <FilterDropdown
         v-model="filterStatus"
@@ -11,12 +15,14 @@
         @input="onFilterChanged"
       />
       <FilterDropdown
+        v-if="splitModeFilterVisible"
         v-model="filterSection"
         :options="sectionOptions"
         aria-label="Filter by section"
         @input="onFilterChanged"
       />
       <b-form-input
+        v-if="splitModeFilterVisible"
         v-model="filterText"
         placeholder="Search comments..."
         debounce="300"
@@ -25,6 +31,16 @@
         style="max-width: 240px"
         @update="onFilterChanged"
       />
+      <b-button
+        v-b-tooltip.hover
+        variant="outline-secondary"
+        size="sm"
+        aria-label="Search comments (Cmd+K)"
+        title="Search comments (Cmd+K)"
+        @click="$bvModal.show('component-search-modal')"
+      >
+        <b-icon icon="search" />
+      </b-button>
       <b-button
         v-b-tooltip.hover
         variant="outline-secondary"
@@ -41,29 +57,122 @@
         :href="dispositionExportUrl"
         variant="outline-secondary"
         size="sm"
+        :class="{ 'ml-auto': splitMode }"
         aria-label="Export disposition matrix CSV"
         title="Export DISA disposition matrix (CSV) — passes through the active status filter"
       >
         <b-icon icon="download" /> Export CSV
       </b-button>
+      <b-form-checkbox
+        v-if="viewMode === 'by-rule' && !splitMode"
+        v-model="allExpanded"
+        switch
+        size="sm"
+        class="ml-auto mr-3"
+        data-testid="expand-all"
+      >
+        <small class="text-muted">
+          Expand All
+          <InfoTooltip text="Expand or collapse all rule groups" />
+        </small>
+      </b-form-checkbox>
+      <b-button-group
+        v-if="!splitMode && scope === 'component'"
+        size="sm"
+        :class="{ 'ml-auto': viewMode !== 'by-rule' }"
+      >
+        <b-button
+          v-b-tooltip.hover
+          :variant="viewMode === 'table' ? 'secondary' : 'outline-secondary'"
+          title="Table view"
+          aria-label="Table view"
+          data-testid="view-mode-table"
+          @click="setViewMode('table')"
+        >
+          <b-icon icon="table" />
+        </b-button>
+        <b-button
+          v-b-tooltip.hover
+          :variant="viewMode === 'by-rule' ? 'secondary' : 'outline-secondary'"
+          title="Group by rule"
+          aria-label="Group by rule"
+          data-testid="view-mode-by-rule"
+          @click="setViewMode('by-rule')"
+        >
+          <b-icon icon="list-nested" />
+        </b-button>
+      </b-button-group>
       <b-button
         v-if="canCommentOnComponent"
         variant="primary"
         size="sm"
+        :class="{ 'ml-auto': splitMode && !canExportDisposition }"
         aria-label="Add component-level comment"
-        @click="openComponentComposer"
+        @click="openComponentComposerLocal"
       >
         <b-icon icon="chat-left-text" /> Comment
       </b-button>
     </div>
 
+    <div v-if="filterRuleId" class="mb-2">
+      <b-badge variant="info" class="p-2">
+        Showing: {{ filterRuleDisplayName }}
+        <b-icon icon="x-circle" class="ml-1 clickable" @click="clearRuleFilter" />
+      </b-badge>
+      <b-alert v-if="filterParentRuleId && rows.length === 0" show variant="info" class="py-2 mt-2">
+        <b-icon icon="info-circle" class="mr-1" />
+        This rule is satisfied by
+        <strong>{{ filterParentDisplayName }}</strong
+        >. Comments are posted on the parent.
+        <a href="#" class="alert-link" @click.prevent="viewParentComments">
+          View parent comments
+        </a>
+      </b-alert>
+    </div>
+
+    <!-- Split-pane triage view. Replaces table+modal with side-by-side
+         rule content + triage form. Entered by clicking "Triage" on a row. -->
+    <!-- Permissions flow via provide/inject (usePermissions) -->
+    <TriageSplitView
+      v-if="splitMode"
+      :rows="rows"
+      :initial-comment-id="splitCommentId"
+      :component-id="componentId"
+      :project-id="projectId"
+      :admin-panel-open="adminPanelOpen"
+      :context-mode="contextMode"
+      @update:contextMode="$emit('update:contextMode', $event)"
+      @exit="exitSplitMode"
+      @triaged="onTriaged"
+      @adjudicated="onAdjudicated"
+      @response-posted="onTriageResponsePosted"
+      @destroyed="onDestroyed"
+      @reaction-updated="updateRowInPlace"
+      @open-reply-composer="openReplyComposerFromRow"
+      @admin-panel-close="$emit('admin-panel-close')"
+    />
+
+    <!-- By-rule grouped view -->
+    <CommentsByRule
+      v-else-if="viewMode === 'by-rule'"
+      :rows="rows"
+      :all-expanded="allExpanded"
+      :selectable="canTriage"
+      :selected-ids="selectedIds"
+      @reaction-updated="updateRowInPlace"
+      @triage="openTriageFor($event)"
+      @toggle-select="onToggleSelect"
+    />
+
     <!-- Table -->
     <b-table
+      v-else
       :items="rows"
       :fields="fields"
       :busy="loading"
       :sort-by.sync="sortBy"
       :sort-desc.sync="sortDesc"
+      :tbody-tr-class="rowTriageClass"
       primary-key="id"
       hover
       striped
@@ -71,22 +180,40 @@
       stacked="md"
       show-empty
       role="table"
-      aria-label="Component comments triage queue"
+      aria-label="Component comments table"
     >
+      <template #head(select)>
+        <b-form-checkbox
+          :checked="allVisibleSelected"
+          :disabled="selectableRowIds.length === 0"
+          aria-label="Select all comments on this page"
+          @change="toggleSelectAllVisible"
+        />
+      </template>
+      <template #cell(select)="{ item }">
+        <b-form-checkbox
+          v-if="!item.adjudicated_at"
+          v-model="selectedIds"
+          :value="item.id"
+          :aria-label="`Select comment ${item.id}`"
+        />
+      </template>
       <template #cell(rule_displayed_name)="{ item }">
-        <!-- data-turbolinks="false" forces a full page load. Without it,
-             turbolinks navigates to the rule editor but the project_component
-             pack registers its turbolinks:load listener after the event has
-             already fired, so Vue never mounts and the page is blank. -->
         <span v-if="item.commentable_type === 'Component'" class="text-muted font-italic">
           {{ item.rule_displayed_name }}
         </span>
-        <a v-else :href="ruleHref(item)" data-turbolinks="false">
-          {{ item.rule_displayed_name }}
-        </a>
+        <template v-else>
+          <a :href="ruleHref(item)">
+            {{ item.rule_displayed_name }}
+          </a>
+          <small v-if="item.srg_info" class="d-block text-muted text-truncate">
+            <VersionCurrencyDot :is-latest="item.srg_info.is_latest" class="mr-1" />
+            {{ item.srg_info.title }} {{ item.srg_info.version }}
+          </small>
+        </template>
       </template>
       <template #cell(component_name)="{ item }">
-        <a :href="`/components/${item.component_id}/triage`" data-turbolinks="false">
+        <a :href="`/components/${item.component_id}/triage`">
           {{ item.component_name }}
         </a>
       </template>
@@ -95,15 +222,43 @@
              comment is clearly identified rather than looking like missing data. -->
         <SectionLabel :section="value" :commentable-type="item.commentable_type" />
       </template>
+      <template #cell(author_name)="{ item }">
+        <CommentAuthorLine
+          :name="item.author_name"
+          :commenter-display-name="item.commenter_display_name"
+          :email="item.author_email"
+          layout="cell"
+        />
+      </template>
       <template #cell(comment)="{ item, value }">
-        <div :title="value">{{ truncate(value, 80) }}</div>
+        <div class="comment-cell">
+          <div v-if="value && value.length > 200 && !commentSearchActive" class="comment-text">
+            {{ commentExpanded[item.id] ? value : value.substring(0, 200) + "…" }}
+            <a
+              href="#"
+              class="comment-toggle text-primary ml-1"
+              @click.prevent="$set(commentExpanded, item.id, !commentExpanded[item.id])"
+            >
+              {{ commentExpanded[item.id] ? "show less" : "show more" }}
+            </a>
+          </div>
+          <div v-else-if="commentSearchActive" class="comment-text">
+            <Highlighter
+              highlight-class-name="search-term-mark"
+              :search-words="commentSearchWords"
+              :auto-escape="true"
+              :text-to-highlight="value || ''"
+            />
+          </div>
+          <div v-else class="comment-text">{{ value }}</div>
+        </div>
         <CommentThread
           :ref="`thread-${item.id}`"
           :parent-review-id="item.id"
           :responses-count="item.responses_count || 0"
           :can-reply="canReply"
           class="mt-1"
-          @reply="openReplyComposer(item)"
+          @reply="openReplyComposerFromRow(item)"
         />
       </template>
       <template #cell(created_at)="{ value }">
@@ -114,6 +269,8 @@
           :status="item.triage_status"
           :adjudicated-at="item.adjudicated_at"
           :duplicate-of-id="item.duplicate_of_review_id"
+          :addressed-by-rule-id="item.addressed_by_rule_id"
+          :addressed-by-rule-name="item.addressed_by_rule_name"
         />
       </template>
       <template #cell(actions)="{ item }">
@@ -156,8 +313,29 @@
       </template>
     </b-table>
 
-    <!-- Pagination -->
-    <div v-if="total > perPage" class="d-flex justify-content-center mt-2">
+    <div v-if="canTriage && selectedIds.length" class="fixed-bottom bulk-triage-wrapper">
+      <b-collapse :visible="selectedIds.length > 0">
+        <BulkTriageBar
+          :count="selectedIds.length"
+          :can-merge="canMerge"
+          @apply="applyBulkTriage"
+          @merge="openMergeModal"
+          @clear="clearSelection"
+        />
+      </b-collapse>
+    </div>
+
+    <MergeCommentsModal
+      v-if="canMerge"
+      :selected-reviews="selectedMergeReviews"
+      @submit="applyMerge"
+    />
+
+    <!-- Pagination (hidden in by-rule view — all comments loaded for grouping) -->
+    <div
+      v-if="total > perPage && viewMode === 'table' && !splitMode"
+      class="d-flex justify-content-center mt-2"
+    >
       <b-pagination
         v-model="page"
         :total-rows="total"
@@ -167,87 +345,121 @@
       />
     </div>
 
-    <!-- Triage modal — fully implemented in Task 15. componentId is passed
-         through so the duplicate-of picker (Task 24) can scope its candidate
-         search to the right component, both in component-scope (componentId
-         prop on this view) and project-scope (selectedRow.component_id). -->
-    <CommentTriageModal
-      :review="selectedRow"
-      :component-id="modalComponentId"
-      :effective-permissions="effectivePermissions"
-      @triaged="onTriaged"
-      @adjudicated="onAdjudicated"
-      @response-posted="onTriageResponsePosted"
-      @destroyed="onDestroyed"
-      @open-reply-composer="onTriageModalReplyRequested"
-      @hidden="selectedRow = null"
-    />
-
-    <!-- Composer. Reply mode (composerReplyRow set) or new component-level
-         comment mode (composerNewComponent set). -->
     <CommentComposerModal
-      v-if="composerReplyRow || composerNewComponent"
-      :component-id="composerReplyRow ? composerReplyRow.component_id || componentId : componentId"
-      :rule-id="composerReplyRow ? composerReplyRow.rule_id : null"
-      :rule-displayed-name="composerReplyRow ? composerReplyRow.rule_displayed_name : ''"
-      :component-displayed-name="composerNewComponent ? componentDisplayedName : ''"
-      :reply-to-review-id="composerReplyRow ? composerReplyRow.id : null"
+      v-if="composerActive"
+      v-bind="composerProps"
+      :component-displayed-name="composerState.mode === 'component' ? componentDisplayedName : ''"
       @posted="onComposerPosted"
       @hidden="onComposerHidden"
+    />
+
+    <ComponentSearchModal
+      v-if="componentId"
+      :component-id="componentId"
+      :project-prefix="componentPrefix"
+      search-type="comments"
+      @selected="onCommentSearchResultSelected"
     />
   </div>
 </template>
 
 <script>
-import axios from "axios";
-import { TRIAGE_LABELS, SECTION_LABELS } from "../../constants/triageVocabulary";
-import AlertMixin from "../../mixins/AlertMixin.vue";
-import DateFormatMixin from "../../mixins/DateFormatMixin.vue";
-import FormMixin from "../../mixins/FormMixin.vue";
-import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
+import { reopenReview } from "../../api/reviewsApi";
+import { useCommentsStore } from "../../stores/comments";
+import { useCommentTriage } from "../../composables/mutations/useCommentTriage";
+import { SECTION_LABELS, buildStatusFilterOptions } from "../../constants/triageVocabulary";
+import { useDateFormat } from "../../composables/useDateFormat";
+import { useToast } from "../../composables/useToast";
+import { usePermissions } from "../../composables/usePermissions";
+import { useReplyComposer } from "../../composables/useReplyComposer";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import SectionLabel from "../shared/SectionLabel.vue";
+import VersionCurrencyDot from "../shared/VersionCurrencyDot.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
 import CommentThread from "../shared/CommentThread.vue";
-import CommentTriageModal from "./CommentTriageModal.vue";
+import TriageSplitView from "../triage/TriageSplitView.vue";
 import CommentComposerModal from "./CommentComposerModal.vue";
+import CommentsByRule from "./CommentsByRule.vue";
+import InfoTooltip from "../shared/InfoTooltip.vue";
+import CommentProgressBar from "../triage/CommentProgressBar.vue";
+import CommentAuthorLine from "../shared/CommentAuthorLine.vue";
+import ComponentSearchModal from "../shared/ComponentSearchModal.vue";
+import BulkTriageBar from "../triage/BulkTriageBar.vue";
+import MergeCommentsModal from "../triage/MergeCommentsModal.vue";
+import Highlighter from "vue-highlight-words";
+import { ruleHref as buildRuleHref, rowTriageClass } from "../../utils/commentTableHelpers";
 
 export default {
   name: "ComponentComments",
   components: {
     TriageStatusBadge,
     SectionLabel,
+    VersionCurrencyDot,
     FilterDropdown,
     CommentThread,
-    CommentTriageModal,
+    TriageSplitView,
     CommentComposerModal,
+    CommentsByRule,
+    InfoTooltip,
+    CommentProgressBar,
+    CommentAuthorLine,
+    ComponentSearchModal,
+    BulkTriageBar,
+    MergeCommentsModal,
+    Highlighter,
   },
-  // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because
-  // each esbuild pack has its own axios singleton (bundle isolation) — the
-  // navbar pack's FormMixin doesn't reach the consuming pack. The reopen
-  // PATCH would 422 on CSRF in a pack that lacks pack-level CSRF setup.
-  mixins: [AlertMixin, DateFormatMixin, FormMixin, RoleComparisonMixin],
   props: {
     // Either componentId (single-component scope) or projectId (aggregate
     // scope) is required — but not both. The scope prop disambiguates and
     // selects the correct backend endpoint.
     componentId: { type: [Number, String], default: null },
     componentDisplayedName: { type: String, default: "" },
+    componentPrefix: { type: String, default: "" },
     projectId: { type: [Number, String], default: null },
     scope: {
       type: String,
       default: "component",
       validator: (v) => ["component", "project"].includes(v),
     },
-    // Server-resolved role on this project/component. Viewers see the
-    // triage queue but cannot mutate — author+ can triage / adjudicate
-    // / re-open. Mirrors the backend authorize_author_project gates.
-    effectivePermissions: { type: String, default: null },
+    adminPanelOpen: { type: Boolean, default: false },
+    contextMode: { type: String, default: "commented" },
+  },
+  setup() {
+    const commentsStore = useCommentsStore();
+    const triageComposable = useCommentTriage();
+    // Server-resolved role, provided by the page root (ProjectTriagePage /
+    // ComponentTriagePage). Viewers see the triage queue but cannot mutate —
+    // author+ can triage / adjudicate / re-open. Mirrors the backend
+    // authorize_author_project gates.
+    const { effectivePermissions, canEdit, canAdmin } = usePermissions();
+    const { friendlyDateTime } = useDateFormat();
+    const { alertOrNotifyResponse } = useToast();
+    // Bridge: useReplyComposer's onOpen/afterPosted callbacks need the
+    // options-API instance ($bvModal.show, fetch), which setup() cannot
+    // reach in Vue 2.7 without getCurrentInstance (anti-pattern). The
+    // bridge object is filled in created() — late binding, same contract.
+    const composerBridge = { onOpen: null, afterPosted: null };
+    const composer = useReplyComposer({
+      onOpen: () => composerBridge.onOpen && composerBridge.onOpen(),
+      afterPosted: (parentReviewId, snapshot) =>
+        composerBridge.afterPosted && composerBridge.afterPosted(parentReviewId, snapshot),
+    });
+    return {
+      commentsStore,
+      triageComposable,
+      effectivePermissions,
+      canEdit,
+      canAdmin,
+      friendlyDateTime,
+      alertOrNotifyResponse,
+      composerBridge,
+      ...composer,
+    };
   },
   data() {
     const persisted = this.loadPersistedFilters();
     const fields = [
-      { key: "id", label: "#", sortable: false },
+      { key: "id", label: "#", sortable: true },
       { key: "rule_displayed_name", label: "Rule", sortable: true },
     ];
     // Project-scope view spans multiple components — show a Component
@@ -263,8 +475,17 @@ export default {
       { key: "triage_status", label: "Status", sortable: true },
       { key: "actions", label: "Action", sortable: false, tdClass: "text-nowrap" },
     );
+    // canEdit (author+) is setup-returned, so it is available before data()
+    if (this.canEdit) {
+      fields.unshift({ key: "select", label: "", sortable: false, thStyle: { width: "2.5rem" } });
+    }
     return {
       rows: [],
+      selectedIds: [],
+      // Snapshot of full review objects fed into MergeCommentsModal — taken
+      // at "Merge…" click time so a background reload doesn't drop the
+      // selection mid-modal.
+      selectedMergeReviews: [],
       total: 0,
       page: 1,
       perPage: 25,
@@ -272,26 +493,46 @@ export default {
       filterText: persisted.filterText,
       filterStatus: persisted.filterStatus,
       filterSection: persisted.filterSection,
+      filterRuleId: null,
+      filterRuleDisplayName: "",
+      filterParentRuleId: null,
+      filterParentDisplayName: "",
       // .sync-bound to b-table so column-header clicks update state and
       // the active sort-direction arrow renders. BootstrapVue 2 only
       // shows the arrow when sortBy/sortDesc are controlled.
-      sortBy: "created_at",
-      sortDesc: true,
-      selectedRow: null,
-      // Row that the inline reply composer is open against. Null when
-      // the composer is not open. Populated when a row's CommentThread
-      // emits 'reply' (or the triage modal asks for a reply composer).
-      composerReplyRow: null,
-      composerNewComponent: false,
+      sortBy: "id",
+      sortDesc: false,
+      statusCounts: {},
+      commentExpanded: {},
+      splitMode: false,
+      splitCommentId: null,
+      viewMode: this.loadPersistedViewMode(),
+      allExpanded: false,
       fields,
     };
   },
   computed: {
-    // Triagers (author+) get the mutating action buttons; viewers get
-    // a read-only label. Server enforces the same gate via
-    // authorize_author_project on the /reviews/:id/* endpoints.
+    commentSearchWords() {
+      const term = (this.filterText || "").trim();
+      if (!term) return [];
+      return term.split(/\s+/).filter((w) => w.length >= 2);
+    },
+    commentSearchActive() {
+      return this.commentSearchWords.length > 0;
+    },
+    hasStatusCounts() {
+      return Object.values(this.statusCounts).some((n) => n > 0);
+    },
+    // Domain aliases over the injected permission tiers — triage needs
+    // author+ (canEdit), merge is admin-only (canAdmin).
     canTriage() {
-      return this.role_gte_to(this.effectivePermissions, "author");
+      return this.canEdit;
+    },
+    canMerge() {
+      return this.canAdmin;
+    },
+    splitModeFilterVisible() {
+      return !this.splitMode;
     },
     // Anyone authenticated with project visibility can reply during an
     // open comment window. Server enforces via reject_if_comments_closed
@@ -320,21 +561,22 @@ export default {
       if (!this.filterStatus || this.filterStatus === "all") return base;
       return `${base}?triage_status=${encodeURIComponent(this.filterStatus)}`;
     },
-    modalComponentId() {
-      // Component-scope: this view's componentId. Project-aggregate scope:
-      // selectedRow carries component_id per row (different rows can be on
-      // different components). Picker (Task 24) needs the right one.
-      return this.componentId || this.selectedRow?.component_id || null;
+    // Top-level comments still open to triage (not yet adjudicated) — the
+    // rows that bear a selection checkbox.
+    selectableRowIds() {
+      return this.rows.filter((r) => !r.adjudicated_at).map((r) => r.id);
+    },
+    selectedIdsSet() {
+      return new Set(this.selectedIds);
+    },
+    allVisibleSelected() {
+      return (
+        this.selectableRowIds.length > 0 &&
+        this.selectableRowIds.every((id) => this.selectedIdsSet.has(id))
+      );
     },
     statusOptions() {
-      const friendly = Object.entries(TRIAGE_LABELS)
-        .filter(([value]) => value !== "pending")
-        .map(([value, text]) => ({ value, text }));
-      return [
-        { value: "all", text: "All statuses" },
-        { value: "pending", text: "Pending" },
-        ...friendly,
-      ];
+      return buildStatusFilterOptions();
     },
     sectionOptions() {
       const friendly = Object.entries(SECTION_LABELS).map(([value, text]) => ({ value, text }));
@@ -345,10 +587,44 @@ export default {
       ];
     },
   },
+  created() {
+    this.composerBridge.onOpen = () => this.$bvModal.show("comment-composer-modal");
+    this.composerBridge.afterPosted = () => this.fetch();
+  },
   mounted() {
     this.fetch();
   },
   methods: {
+    onCommentSearchResultSelected(result) {
+      if (result.searchQuery) {
+        this.filterText = result.searchQuery;
+      }
+      if (result.rule_id) {
+        this.filterRuleId = result.rule_id;
+        this.filterRuleDisplayName = result.rule_displayed_name || "";
+        this.filterParentRuleId = null;
+        this.filterParentDisplayName = "";
+      }
+      this.page = 1;
+      this.persistFilters();
+      this.fetch();
+    },
+    viewParentComments() {
+      this.filterRuleId = this.filterParentRuleId;
+      this.filterRuleDisplayName = this.filterParentDisplayName;
+      this.filterParentRuleId = null;
+      this.filterParentDisplayName = "";
+      this.page = 1;
+      this.fetch();
+    },
+    clearRuleFilter() {
+      this.filterRuleId = null;
+      this.filterRuleDisplayName = "";
+      this.filterParentRuleId = null;
+      this.filterParentDisplayName = "";
+      this.page = 1;
+      this.fetch();
+    },
     // Identifier used for localStorage filter persistence. Disambiguates
     // component-scope vs project-scope so a user's filter on component 42
     // doesn't override their filter on project 42 (different IDs, different
@@ -358,11 +634,38 @@ export default {
       const id = this.scope === "project" ? this.projectId : this.componentId;
       return `${this.scope}-${id}`;
     },
+    viewModeKey() {
+      return `commentTriageViewMode-${this.scopeKey()}`;
+    },
+    loadPersistedViewMode() {
+      try {
+        const mode = localStorage.getItem(this.viewModeKey());
+        return mode === "by-rule" ? "by-rule" : "table";
+      } catch {
+        return "table";
+      }
+    },
+    setViewMode(mode) {
+      const wasByRule = this.viewMode === "by-rule";
+      const isNowByRule = mode === "by-rule";
+      this.viewMode = mode;
+      try {
+        localStorage.setItem(this.viewModeKey(), mode);
+      } catch {
+        // Non-fatal
+      }
+      if (wasByRule !== isNowByRule) this.fetch();
+    },
     persistKey() {
       return `commentTriageFilters-${this.scopeKey()}`;
     },
     loadPersistedFilters() {
-      const fallback = { filterStatus: "pending", filterSection: null, filterText: "" };
+      // Default to "all" so a triager who bulk-updates pending comments
+      // can still see the freshly-decided rows in place (otherwise they
+      // vanish from view the instant the action succeeds — confusing).
+      // Users who previously set a different filter keep their saved
+      // choice; this only changes the first-visit default.
+      const fallback = { filterStatus: "all", filterSection: null, filterText: "" };
       try {
         const raw = localStorage.getItem(this.persistKey());
         if (!raw) return fallback;
@@ -395,34 +698,44 @@ export default {
         console.warn("ComponentComments: filter persistence failed", e);
       }
     },
-    truncate(text, n) {
-      if (!text) return "";
-      return text.length > n ? `${text.slice(0, n)}…` : text;
-    },
+    rowTriageClass,
     onFilterChanged() {
       this.page = 1;
+      if (this.viewMode === "by-rule") this.allExpanded = true;
       this.persistFilters();
       this.fetch();
     },
+    onPillFilter(status) {
+      this.filterStatus = status;
+      if (this.viewMode === "by-rule") this.allExpanded = true;
+      this.onFilterChanged();
+    },
     async fetch() {
       this.loading = true;
+      this.selectedIds = [];
       try {
+        const loadAll = this.viewMode === "by-rule" || this.splitMode;
         const params = {
-          page: this.page,
-          per_page: this.perPage,
+          page: loadAll ? 1 : this.page,
+          per_page: loadAll ? 1000 : this.perPage,
           triage_status: this.filterStatus,
         };
+        if (this.splitMode) params.include_rule_content = true;
         if (this.filterText) params.q = this.filterText;
+        if (this.filterRuleId) params.rule_id = this.filterRuleId;
         if (this.filterSection && this.filterSection !== "(general)") {
           params.section = this.filterSection;
         }
-        const url =
+        if (this.scope !== "project" && this.componentId) {
+          this.commentsStore.invalidateCache(this.componentId);
+        }
+        const result =
           this.scope === "project"
-            ? `/projects/${this.projectId}/comments`
-            : `/components/${this.componentId}/comments`;
-        const { data } = await axios.get(url, { params });
-        this.rows = data.rows;
-        this.total = data.pagination.total;
+            ? await this.commentsStore.fetchProjectComments(this.projectId, params)
+            : await this.commentsStore.fetchComments(this.componentId, params);
+        this.rows = result.rows;
+        this.total = result.pagination.total;
+        if (result.status_counts) this.statusCounts = result.status_counts;
       } catch (error) {
         this.alertOrNotifyResponse(error);
       } finally {
@@ -434,12 +747,23 @@ export default {
     // Encode the rule name segment so that unusual characters can't break
     // out of the path or silently navigate elsewhere.
     ruleHref(row) {
-      const compId = this.scope === "project" ? row.component_id : this.componentId;
-      return `/components/${compId}/${encodeURIComponent(row.rule_displayed_name)}`;
+      return buildRuleHref(row, this.componentId);
     },
     openTriageFor(row) {
-      this.selectedRow = row;
-      this.$bvModal.show("comment-triage-modal");
+      if (this.scope === "project" && row.component_id) {
+        window.location.href = `/components/${row.component_id}/triage?comment=${row.id}`;
+        return;
+      }
+      this.splitCommentId = row.id;
+      this.splitMode = true;
+      this.$emit("split-mode-changed", true);
+      this.fetch();
+    },
+    exitSplitMode() {
+      this.splitMode = false;
+      this.splitCommentId = null;
+      this.$emit("split-mode-changed", false);
+      this.fetch();
     },
     // Button label clarifies the lifecycle stage: pending → triage,
     // already-triaged but not yet adjudicated → "Edit / Close" makes
@@ -451,7 +775,7 @@ export default {
     },
     async openReopen(row) {
       try {
-        const { data } = await axios.patch(`/reviews/${row.id}/reopen`);
+        const { data } = await reopenReview(row.id);
         // Server returns the updated Review hash on the `review` key.
         if (data && data.review) {
           this.alertOrNotifyResponse({
@@ -490,30 +814,87 @@ export default {
         this.fetch();
         return;
       }
-      this.rows.splice(idx, 1, { ...this.rows[idx], ...updatedReview });
+      const normalized = this.commentsStore.normalizeComment(updatedReview);
+      this.rows.splice(idx, 1, { ...this.rows[idx], ...normalized });
     },
     onTriaged(payload) {
       this.updateRowInPlace(payload);
+    },
+    toggleSelectAllVisible(checked) {
+      this.selectedIds = checked ? [...this.selectableRowIds] : [];
+    },
+    onToggleSelect(id) {
+      const idx = this.selectedIds.indexOf(id);
+      if (idx >= 0) this.selectedIds.splice(idx, 1);
+      else this.selectedIds.push(id);
+    },
+    clearSelection() {
+      this.selectedIds = [];
+    },
+    async applyBulkTriage(payload) {
+      const ids = [...this.selectedIds];
+      if (ids.length === 0) return;
+      try {
+        const componentId = this.scope === "project" ? null : this.componentId;
+        await this.triageComposable.bulkTriage(ids, payload, componentId);
+        this.clearSelection();
+        await this.fetch();
+        this.alertOrNotifyResponse({
+          data: {
+            toast: {
+              title: "Bulk triage applied",
+              message: `Triaged ${ids.length} comment${ids.length === 1 ? "" : "s"}.`,
+              variant: "success",
+            },
+          },
+        });
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
+    },
+    openMergeModal() {
+      const selected = new Set(this.selectedIds);
+      this.selectedMergeReviews = this.rows.filter((r) => selected.has(r.id));
+      this.$bvModal.show("merge-comments-modal");
+    },
+    async applyMerge(payload) {
+      try {
+        await this.commentsStore.mergeComments(
+          this.componentId,
+          payload.review_ids,
+          payload.survivor_id,
+        );
+        this.clearSelection();
+        this.selectedMergeReviews = [];
+        await this.fetch();
+        this.alertOrNotifyResponse({
+          data: {
+            toast: {
+              title: "Comments merged",
+              message: `Merged ${payload.review_ids.length - 1} duplicate${payload.review_ids.length === 2 ? "" : "s"} into the survivor.`,
+              variant: "success",
+            },
+          },
+        });
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     onAdjudicated(payload) {
       this.updateRowInPlace(payload);
     },
     // Fired after a triage decision that included a response_comment —
     // server creates a child Review atomically. Bump the parent row's
-    // responses_count so the inline thread badge updates, and refresh
-    // the open thread (responsesCount watcher in CommentThread will fire).
+    // responses_count so CommentThread's watcher auto-refreshes.
     onTriageResponsePosted({ parentId }) {
       const idx = this.rows.findIndex((r) => r.id === parentId);
       if (idx < 0) return;
       const row = this.rows[idx];
+      const newCount = (row.responses_count ?? 0) + 1;
       this.rows.splice(idx, 1, {
         ...row,
-        responses_count: (row.responses_count || 0) + 1,
-      });
-      this.$nextTick(() => {
-        const ref = this.$refs[`thread-${parentId}`];
-        const thread = Array.isArray(ref) ? ref[0] : ref;
-        thread?.refresh?.();
+        responses_count: newCount,
+        responsesCount: newCount,
       });
     },
     // admin hard-delete destroys the review entirely;
@@ -521,38 +902,35 @@ export default {
     onDestroyed() {
       this.fetch();
     },
-    // Open the composer in reply mode for `row`. Reached either from the
-    // row's CommentThread (inline) or from the triage modal's Reply button.
-    openReplyComposer(row) {
-      this.composerReplyRow = row;
-      this.$nextTick(() => this.$bvModal.show("comment-composer-modal"));
+    openReplyComposerFromRow(row) {
+      this.openReplyComposer({
+        reviewId: row.id,
+        ruleId: row.rule_id,
+        componentId: row.component_id || this.componentId,
+        ruleName: row.rule_displayed_name,
+      });
     },
-    onTriageModalReplyRequested(row) {
-      this.$bvModal.hide("comment-triage-modal");
-      this.openReplyComposer(row);
-    },
-    openComponentComposer() {
-      this.composerReplyRow = null;
-      this.composerNewComponent = true;
-      this.$nextTick(() => this.$bvModal.show("comment-composer-modal"));
-    },
-    onComposerPosted() {
-      const id = this.composerReplyRow?.id;
-      this.composerReplyRow = null;
-      this.composerNewComponent = false;
-      this.fetch();
-      if (id) {
-        this.$nextTick(() => {
-          const ref = this.$refs[`thread-${id}`];
-          const thread = Array.isArray(ref) ? ref[0] : ref;
-          thread?.refresh?.();
-        });
-      }
-    },
-    onComposerHidden() {
-      this.composerReplyRow = null;
-      this.composerNewComponent = false;
+    openComponentComposerLocal() {
+      this.openComponentComposer(this.componentId);
     },
   },
 };
 </script>
+
+<style>
+.search-term-mark {
+  background-color: var(--vulcan-warning-tint);
+  color: var(--vulcan-warning-text);
+  padding: 0 2px;
+  border-radius: 2px;
+  font-weight: 600;
+}
+
+.bulk-triage-wrapper {
+  z-index: 1020;
+}
+
+body.has-classification-banner .bulk-triage-wrapper {
+  bottom: 20px;
+}
+</style>

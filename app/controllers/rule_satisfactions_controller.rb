@@ -12,9 +12,9 @@ class RuleSatisfactionsController < ApplicationController
     Rule.transaction do
       raise ActiveRecord::Rollback unless @rule.satisfies.empty? && (@rule.satisfied_by << @satisfied_by_rule)
 
-      # Save the rule to trigger callbacks (update inspec). Inside the
-      # transaction so a save failure rolls back the join-table insert.
-      @satisfied_by_rule.save!
+      @rule.apply_nesting_status!(@satisfied_by_rule)
+
+      @satisfied_by_rule.update_inspec_code
       success = true
     end
 
@@ -35,9 +35,9 @@ class RuleSatisfactionsController < ApplicationController
     Rule.transaction do
       raise ActiveRecord::Rollback unless @rule.satisfied_by.delete(@satisfied_by_rule)
 
-      # Save the rule to trigger callbacks (update inspec). Inside the
-      # transaction so a save failure rolls back the join-table delete.
-      @satisfied_by_rule.save!
+      @rule.revert_nesting_status!
+
+      @satisfied_by_rule.update_inspec_code
       success = true
     end
 
@@ -57,12 +57,12 @@ class RuleSatisfactionsController < ApplicationController
 
   def render_satisfaction_failure(verb, message)
     render json: {
-      toast: {
+      toast: Toast.new(
         title: "Could not #{verb} #{@rule.version} as satisfied by #{@satisfied_by_rule.version}.",
         message: message,
         variant: 'danger'
-      }
-    }, status: :unprocessable_entity
+      )
+    }, status: :unprocessable_content
   end
 
   def set_component_and_rules

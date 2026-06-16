@@ -1,0 +1,10 @@
+description: Simple health check response indicating the service is running.
+type: object
+required:
+  - status
+additionalProperties: false
+properties:
+  status:
+    type: string
+    description: Service health status.
+    example: ok

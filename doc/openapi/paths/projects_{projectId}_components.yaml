@@ -1,0 +1,57 @@
+parameters:
+  - $ref: ../components/parameters/ProjectId.yaml
+post:
+  operationId: createComponent
+  tags:
+    - Components
+  summary: Create or duplicate a component in a project
+  description: >-
+    Creates a new component in the project from an SRG, duplicates an existing
+    component, or imports from an uploaded XCCDF/CSV file. Requires admin role
+    on the project. The component is initialized with all rules from the
+    selected SRG baseline.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            component:
+              $ref: ../components/schemas/ComponentInput.yaml
+        examples:
+          from_srg:
+            summary: Create from an SRG baseline
+            value:
+              component:
+                name: Container SRG
+                prefix: CNTR
+                version: 1
+                release: 1
+                based_on_id: 1
+      multipart/form-data:
+        schema:
+          type: object
+          properties:
+            file:
+              type: string
+              format: binary
+              description: XCCDF XML or CSV file to import as a component.
+  responses:
+    '200':
+      description: Component created
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            created:
+              summary: Component created from SRG
+              value:
+                toast:
+                  title: Component created.
+                  message:
+                    - "Successfully created component Container SRG."
+                  variant: success
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

@@ -1,0 +1,41 @@
+parameters:
+  - $ref: ../components/parameters/StigId.yaml
+  - name: type
+    in: path
+    required: true
+    description: Export format. STIGs support CSV and XCCDF only (InSpec export is Components-only).
+    schema:
+      type: string
+      enum:
+        - csv
+        - xccdf
+    example: xccdf
+get:
+  operationId: exportStig
+  tags:
+    - Benchmarks
+  summary: Export STIG in the specified format
+  description: >-
+    Downloads the STIG as CSV or XCCDF XML. Requires authentication.
+    CSV exports all rules in a flat table. XCCDF exports the original
+    DISA XML format.
+  responses:
+    '200':
+      description: Binary file download
+      content:
+        text/csv:
+          schema:
+            type: string
+            format: binary
+        application/xml:
+          schema:
+            type: string
+            format: binary
+    '400':
+      description: Unsupported export type
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

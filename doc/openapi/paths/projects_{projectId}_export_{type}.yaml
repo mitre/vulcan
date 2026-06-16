@@ -1,0 +1,86 @@
+parameters:
+  - $ref: ../components/parameters/ProjectId.yaml
+  - name: type
+    in: path
+    required: true
+    description: Export format.
+    schema:
+      type: string
+      enum:
+        - csv
+        - xccdf
+        - inspec
+        - json_archive
+    example: xccdf
+get:
+  operationId: exportProject
+  tags:
+    - Projects
+  summary: Export project data in the specified format
+  description: >-
+    Exports selected components from the project as CSV, XCCDF XML, InSpec
+    profile, or JSON archive. Supports mode selection (working copy, vendor
+    submission, published STIG) and optional SRG/membership inclusion.
+    Returns a binary file download. Requires project membership.
+  parameters:
+    - name: component_ids
+      in: query
+      required: true
+      description: Comma-separated IDs of components to include in the export.
+      schema:
+        type: string
+      example: "29,30"
+    - name: mode
+      in: query
+      description: Export mode controlling which fields and rules are included.
+      schema:
+        type: string
+        enum:
+          - working_copy
+          - vendor_submission
+          - published_stig
+      example: working_copy
+    - name: include_srg
+      in: query
+      description: Include the source SRG in the export package.
+      schema:
+        type: string
+        enum:
+          - 'true'
+    - name: include_memberships
+      in: query
+      description: Include project membership data in the export.
+      schema:
+        type: string
+        enum:
+          - 'true'
+          - 'false'
+    - name: exclude_satisfied_by
+      in: query
+      description: Exclude rules that are satisfied by another rule.
+      schema:
+        type: string
+        enum:
+          - 'true'
+  responses:
+    '200':
+      description: Binary file download (CSV, XML, ZIP, or JSON)
+      content:
+        text/csv:
+          schema:
+            type: string
+            format: binary
+        application/xml:
+          schema:
+            type: string
+            format: binary
+        application/zip:
+          schema:
+            type: string
+            format: binary
+        application/json:
+          schema:
+            type: string
+            format: binary
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

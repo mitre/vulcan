@@ -61,7 +61,7 @@ class ReactionsController < ApplicationController
 
   def set_review
     @review = Review.find_by(id: params[:review_id])
-    return deny_existence! unless @review && @review.action == 'comment'
+    return deny_existence! unless @review && @review.action == Review::ACTION_COMMENT
 
     @project = @review.component&.project
   end
@@ -75,9 +75,9 @@ class ReactionsController < ApplicationController
       error: 'permission_denied',
       message: "The requested comment isn't available.",
       admins: [],
-      toast: { title: 'Not available.',
-               message: "The requested comment isn't available.",
-               variant: 'danger' }
+      toast: Toast.new(title: 'Not available.',
+                       message: ["The requested comment isn't available."],
+                       variant: 'danger')
     }, status: :forbidden
   end
 

@@ -40,15 +40,15 @@ describe("useRuleFormFields", () => {
       expect(effectiveStatus.value).toBe("Not Applicable");
     });
 
-    it('forces "Applicable - Configurable" when satisfied_by is non-empty', () => {
+    it("returns rule.status as-is when satisfied_by is non-empty (backend sets ADNM)", () => {
       const rule = ref(
         makeRule({
-          status: "Not Yet Determined",
+          status: "Applicable - Does Not Meet",
           satisfied_by: [{ id: 1, fixtext: "parent fix" }],
         }),
       );
       const { effectiveStatus } = useRuleFormFields(rule, ref(false));
-      expect(effectiveStatus.value).toBe("Applicable - Configurable");
+      expect(effectiveStatus.value).toBe("Applicable - Does Not Meet");
     });
   });
 
@@ -262,7 +262,7 @@ describe("useRuleFormFields", () => {
       expect(ruleFormFields.value.disabled).toEqual([]);
     });
 
-    it("Not Applicable: shows status, rule_severity, status_justification, artifact_description, vendor_comments; disables rule_severity", () => {
+    it("Not Applicable: shows status, rule_severity, status_justification, vendor_comments; disables rule_severity; NO artifact_description (AIM only per §4.1.16)", () => {
       const rule = ref(makeRule({ status: "Not Applicable" }));
       const { ruleFormFields } = useRuleFormFields(rule, advancedMode);
       expect(ruleFormFields.value.displayed).toEqual(
@@ -270,10 +270,10 @@ describe("useRuleFormFields", () => {
           "status",
           "rule_severity",
           "status_justification",
-          "artifact_description",
           "vendor_comments",
         ]),
       );
+      expect(ruleFormFields.value.displayed).not.toContain("artifact_description");
       expect(ruleFormFields.value.disabled).toEqual(expect.arrayContaining(["rule_severity"]));
     });
   });
@@ -340,7 +340,7 @@ describe("useRuleFormFields", () => {
       );
     });
 
-    it("Not Applicable: same as basic in advanced mode", () => {
+    it("Not Applicable: same as basic in advanced mode (no artifact_description per §4.1.16)", () => {
       const rule = ref(makeRule({ status: "Not Applicable" }));
       const { ruleFormFields } = useRuleFormFields(rule, advancedMode);
       expect(ruleFormFields.value.displayed).toEqual(
@@ -348,10 +348,10 @@ describe("useRuleFormFields", () => {
           "status",
           "rule_severity",
           "status_justification",
-          "artifact_description",
           "vendor_comments",
         ]),
       );
+      expect(ruleFormFields.value.displayed).not.toContain("artifact_description");
       expect(ruleFormFields.value.disabled).toEqual(expect.arrayContaining(["rule_severity"]));
     });
   });
@@ -590,42 +590,51 @@ describe("useRuleFormFields", () => {
       expect(checkFormFields.value.displayed).toEqual([]);
     });
 
-    it("satisfied_by: shows content (effective status is Configurable)", () => {
+    it("satisfied_by: hides check content (effective status is ADNM)", () => {
       const rule = ref(
         makeRule({
-          status: "Not Yet Determined",
+          status: "Applicable - Does Not Meet",
           satisfied_by: [{ id: 1 }],
         }),
       );
       const { checkFormFields } = useRuleFormFields(rule, ref(false));
-      expect(checkFormFields.value.displayed).toEqual(["content"]);
+      expect(checkFormFields.value.displayed).toEqual([]);
     });
   });
 
   // ─── satisfied_by behavior (R3) ────────────────────────────
+  // Backend sets status to ADNM when satisfied_by. Frontend shows ADNM fields.
   describe("satisfied_by behavior (R3)", () => {
-    it("uses Configurable field set when satisfied_by is set", () => {
+    it("uses ADNM field set when satisfied_by is set (backend sets ADNM)", () => {
       const rule = ref(
         makeRule({
-          status: "Not Yet Determined",
+          status: "Applicable - Does Not Meet",
           satisfied_by: [{ id: 1, fixtext: "parent fix" }],
         }),
       );
       const { ruleFormFields } = useRuleFormFields(rule, ref(false));
       expect(ruleFormFields.value.displayed).toEqual(
-        expect.arrayContaining(["status", "rule_severity", "title", "fixtext", "vendor_comments"]),
+        expect.arrayContaining([
+          "status",
+          "rule_severity",
+          "status_justification",
+          "vendor_comments",
+        ]),
       );
     });
 
-    it("disables title and fixtext when satisfied_by is set", () => {
+    it("does not disable title/fixtext (they are simply not displayed for ADNM)", () => {
       const rule = ref(
         makeRule({
-          status: "Not Yet Determined",
+          status: "Applicable - Does Not Meet",
           satisfied_by: [{ id: 1 }],
         }),
       );
       const { ruleFormFields } = useRuleFormFields(rule, ref(false));
-      expect(ruleFormFields.value.disabled).toEqual(expect.arrayContaining(["title", "fixtext"]));
+      // ADNM doesn't show title/fixtext at all — they're not in displayed
+      expect(ruleFormFields.value.displayed).not.toEqual(
+        expect.arrayContaining(["title", "fixtext"]),
+      );
     });
 
     it("does NOT disable the entire form (isFormDisabled stays false)", () => {
@@ -876,13 +885,7 @@ describe("useRuleFormFields", () => {
       "Not Applicable": {
         basic: {
           rule: {
-            displayed: [
-              "status",
-              "rule_severity",
-              "status_justification",
-              "artifact_description",
-              "vendor_comments",
-            ],
+            displayed: ["status", "rule_severity", "status_justification", "vendor_comments"],
             disabled: ["rule_severity"],
           },
           disa: { displayed: [], disabled: [] },
@@ -890,13 +893,7 @@ describe("useRuleFormFields", () => {
         },
         advanced: {
           rule: {
-            displayed: [
-              "status",
-              "rule_severity",
-              "status_justification",
-              "artifact_description",
-              "vendor_comments",
-            ],
+            displayed: ["status", "rule_severity", "status_justification", "vendor_comments"],
             disabled: ["rule_severity"],
           },
           disa: { displayed: [], disabled: [] },

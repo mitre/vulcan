@@ -67,7 +67,25 @@ AUTHENTICATE_ONLY_ACTIONS = {
   # UserSearchController uses custom authorization in authorize_search before_action:
   # admin-only for non-member searches; any member for scope=members (PoC selection).
   'api/user_search#index' => 'Custom authorization in before_action: admin-only for non-member ' \
-                             'searches; any member for scope=members'
+                             'searches; any member for scope=members',
+  # PersonalAccessTokensController is session-only (require_session_auth rejects token auth).
+  # Ownership-scoped: index/create/destroy operate on current_user.personal_access_tokens.
+  # admin_revoke checks current_user.admin? in-action (raises NotAuthorizedError otherwise).
+  'personal_access_tokens#index' => 'Ownership-scoped: current_user tokens only; session-only via require_session_auth',
+  'personal_access_tokens#create' => 'Ownership-scoped: builds on current_user; password re-entry required; session-only',
+  'personal_access_tokens#destroy' => 'Ownership-scoped: finds via current_user.personal_access_tokens; session-only',
+  'personal_access_tokens#admin_revoke' => 'Admin-gated in action body (current_user.admin? else NotAuthorizedError); session-only',
+  # ApiDocsController serves the Scalar API docs browser and the OpenAPI spec YAML.
+  # Static documentation — any authenticated user can view.
+  'api_docs#show' => 'Static API docs page — any authenticated user',
+  'api_docs#spec' => 'Static OpenAPI spec file (YAML) — any authenticated user',
+  'api_docs#spec_json' => 'Static OpenAPI spec file (JSON) — any authenticated user',
+  'api/auth#me' => 'Returns current session user — ownership-scoped by definition',
+  'api/auth#login' => 'Public login endpoint — skip_before_action :authenticate_user!',
+  'api/auth#logout' => 'Session teardown — ownership-scoped by definition',
+  'api/settings#show' => 'Public pre-auth UI config — skip_before_action :authenticate_user!',
+  'api/navigation#show' => 'App shell data scoped to current_user session',
+  'api/projects#index' => 'Paginated project listing — data-scoped via Project.all (future: user-visible only)'
 }.freeze
 
 RSpec.describe 'Authorization coverage' do

@@ -12,7 +12,7 @@ TIMESTAMP_PATTERN = /\A\d{4}-\d{2}-\d{2}T/
 
 RSpec.describe Export::Serializers::BackupSerializer do
   let_it_be(:project) { create(:project) }
-  let_it_be(:component, refind: true) { create(:component, project: project) }
+  let_it_be(:component) { create(:component, project: project) }
   let(:serializer) { described_class.new(component) }
 
   describe '#serialize' do
@@ -39,8 +39,10 @@ RSpec.describe Export::Serializers::BackupSerializer do
       end
 
       it 'includes timestamps as ISO8601 strings' do
-        expect(comp_data[:created_at]).to eq(component.created_at.iso8601)
-        expect(comp_data[:updated_at]).to eq(component.updated_at.iso8601)
+        # Microsecond precision contract — see 'timestamp precision contract'
+        # describe block below for the round-trip rationale.
+        expect(comp_data[:created_at]).to eq(component.created_at.iso8601(6))
+        expect(comp_data[:updated_at]).to eq(component.updated_at.iso8601(6))
       end
 
       it 'includes based_on SRG reference' do
@@ -159,7 +161,7 @@ RSpec.describe Export::Serializers::BackupSerializer do
 
       before do
         rule = component.rules.first
-        Review.create!(user: user, rule: rule, action: 'request_review', comment: 'Looks good')
+        create(:review, user: user, rule: rule, comment: 'Looks good')
       end
 
       it 'includes reviews with user attribution' do
@@ -179,6 +181,46 @@ RSpec.describe Export::Serializers::BackupSerializer do
       it 'includes review timestamp as ISO8601' do
         expect(data[:reviews].first[:created_at]).to match(TIMESTAMP_PATTERN)
       end
+
+      # merge ordering needs sub-second resolution to
+      # compare review states across instances.
+      it 'includes updated_at with microsecond precision (iso8601(6))' do
+        expect(data[:reviews].first[:updated_at]).to match(/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}/)
+      end
+
+      it 'includes an empty reactions array when the review has no reactions' do
+        expect(data[:reviews].first[:reactions]).to eq([])
+      end
+    end
+
+    # reactions round-trip — backup must carry the
+    # full set of 👍/👎 reactions per comment review so the merge pipeline
+    # can reconcile them. Reactions are only valid on comment-action reviews.
+    describe 'review reactions serialization' do
+      let(:commenter)  { create(:user, name: 'React Commenter') }
+      let(:up_voter)   { create(:user, name: 'Up Voter') }
+      let(:down_voter) { create(:user, name: 'Down Voter') }
+
+      before do
+        Membership.find_or_create_by!(user: commenter, membership: project) { |m| m.role = 'viewer' }
+        Membership.find_or_create_by!(user: up_voter, membership: project) { |m| m.role = 'viewer' }
+        Membership.find_or_create_by!(user: down_voter, membership: project) { |m| m.role = 'viewer' }
+        rule = component.rules.first
+        review = create(:review, :comment, user: commenter, rule: rule, comment: 'reacted')
+        Reaction.create!(review: review, user: up_voter, kind: 'up')
+        Reaction.create!(review: review, user: down_voter, kind: 'down')
+      end
+
+      it 'includes reactions array with id, user_email, kind, created_at' do
+        reacted = data[:reviews].find { |r| r[:comment] == 'reacted' }
+        expect(reacted[:reactions].size).to eq(2)
+        kinds = reacted[:reactions].pluck(:kind)
+        expect(kinds).to contain_exactly('up', 'down')
+        reacted[:reactions].each do |r|
+          expect(r.keys).to include(:id, :user_email, :kind, :created_at)
+          expect(r[:created_at]).to match(/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}/)
+        end
+      end
     end
 
     # public-comment review workflow round-trip support. Backups
@@ -193,7 +235,7 @@ RSpec.describe Export::Serializers::BackupSerializer do
 
       before do
         # Reviews validate that the user has project access; seed memberships so
-        # the per-test Review.create! calls pass the cross-scope validator.
+        # the per-test create(:review, ...) calls pass the cross-scope validator.
         Membership.find_or_create_by!(user: commenter, membership: project) { |m| m.role = 'viewer' }
         Membership.find_or_create_by!(user: triager, membership: project) { |m| m.role = 'author' }
       end
@@ -223,17 +265,18 @@ RSpec.describe Export::Serializers::BackupSerializer do
 
       describe 'review lifecycle fields' do # rubocop:disable RSpec/NestedGroups
         let!(:top_level) do
-          Review.create!(user: commenter, rule: rule, action: 'comment',
-                         comment: 'TLS 1.2 EOL concern',
-                         section: 'check_content',
-                         triage_status: 'concur_with_comment',
-                         triage_set_by: triager, triage_set_at: 1.day.ago,
-                         adjudicated_at: 12.hours.ago, adjudicated_by: triager)
+          create(:review, :comment, :concur_with_comment, :adjudicated,
+                 user: commenter, rule: rule,
+                 comment: 'TLS 1.2 EOL concern',
+                 section: 'check_content',
+                 triage_set_by: triager, triage_set_at: 1.day.ago,
+                 adjudicated_at: 12.hours.ago, adjudicated_by: triager)
         end
         let!(:reply) do
-          Review.create!(user: triager, rule: rule, action: 'comment',
-                         responding_to_review_id: top_level.id,
-                         comment: 'will fix in next revision')
+          create(:review, :comment,
+                 user: triager, rule: rule,
+                 responding_to_review_id: top_level.id,
+                 comment: 'will fix in next revision')
         end
 
         it 'preserves triage_status' do
@@ -274,14 +317,14 @@ RSpec.describe Export::Serializers::BackupSerializer do
 
       describe 'duplicate-of cross-link' do # rubocop:disable RSpec/NestedGroups
         let!(:original) do
-          Review.create!(user: commenter, rule: rule, action: 'comment',
-                         comment: 'duplicate target')
+          create(:review, :comment, user: commenter, rule: rule,
+                                    comment: 'duplicate target')
         end
         let!(:dup) do
-          Review.create!(user: commenter, rule: rule, action: 'comment',
-                         comment: 'duplicate source',
-                         duplicate_of_review_id: original.id,
-                         triage_status: 'duplicate')
+          create(:review, :comment, user: commenter, rule: rule,
+                                    comment: 'duplicate source',
+                                    duplicate_of_review_id: original.id,
+                                    triage_status: 'duplicate')
         end
 
         it 'encodes duplicate_of as external_id' do
@@ -306,6 +349,79 @@ RSpec.describe Export::Serializers::BackupSerializer do
         expect(answers.size).to eq(1)
         expect(answers.first[:question_name]).to eq('Test Question')
         expect(answers.first[:answer]).to eq('Test answer')
+      end
+    end
+
+    # Round-trip data fidelity: any timestamp that flows through backup
+    # serialize → archive zip → JsonArchiveImporter must preserve full
+    # microsecond precision stored in the DB. Otherwise the round-trip
+    # is lossy and ReviewMatcher's composite key (which depends on
+    # iso8601(6) created_at) cannot distinguish reviews posted within
+    # the same second on different instances. CSV / UI / API serializers
+    # stay at iso8601 (second precision) — different contracts.
+    describe 'timestamp precision contract — iso8601(6) for all round-trip surfaces' do
+      microsecond = /\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}/
+
+      it 'component.created_at uses microsecond precision' do
+        expect(data[:component][:created_at]).to match(microsecond)
+      end
+
+      it 'component.updated_at uses microsecond precision' do
+        expect(data[:component][:updated_at]).to match(microsecond)
+      end
+
+      it 'component.comment_period_starts_at uses microsecond precision when set' do
+        component.update!(comment_period_starts_at: 1.day.ago)
+        expect(data[:component][:comment_period_starts_at]).to match(microsecond)
+      end
+
+      it 'component.comment_period_ends_at uses microsecond precision when set' do
+        component.update!(comment_period_ends_at: 1.day.from_now)
+        expect(data[:component][:comment_period_ends_at]).to match(microsecond)
+      end
+
+      it 'rule.created_at uses microsecond precision' do
+        expect(data[:rules].first[:created_at]).to match(microsecond)
+      end
+
+      it 'rule.updated_at uses microsecond precision' do
+        expect(data[:rules].first[:updated_at]).to match(microsecond)
+      end
+
+      it 'rule.deleted_at uses microsecond precision when soft-deleted' do
+        # rules in the serialized output are sorted by rule_id, which may
+        # differ from component.rules ordering — update the one we assert.
+        component.rules.min_by(&:rule_id).update!(deleted_at: Time.current)
+        expect(data[:rules].first[:deleted_at]).to match(microsecond)
+      end
+
+      it 'review.created_at uses microsecond precision' do
+        seed_review_for_precision_check
+        expect(data[:reviews].first[:created_at]).to match(microsecond)
+      end
+
+      it 'review.triage_set_at uses microsecond precision when set' do
+        seed_review_for_precision_check
+        expect(data[:reviews].first[:triage_set_at]).to match(microsecond)
+      end
+
+      it 'review.adjudicated_at uses microsecond precision when set' do
+        seed_review_for_precision_check
+        expect(data[:reviews].first[:adjudicated_at]).to match(microsecond)
+      end
+
+      def seed_review_for_precision_check
+        user = create(:user)
+        component.rules.first.reviews.create!(
+          user: user,
+          action: 'comment',
+          comment: 'precision check',
+          triage_status: 'concur',
+          triage_set_by: user,
+          triage_set_at: Time.current,
+          adjudicated_by: user,
+          adjudicated_at: Time.current
+        )
       end
     end
   end

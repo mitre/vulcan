@@ -9,6 +9,8 @@ Comprehensive guide for testing Vulcan application code, including unit tests, i
 - **FactoryBot** - Test data factories
 - **SimpleCov** - Code coverage reporting
 - **DatabaseCleaner** - Test database management
+- **test-prof** - Test profiling and optimization (let_it_be, before_all, TagProf, EventProf, FactoryProf)
+- **climate_control** - Scoped ENV variable mutation for parallel-safe tests
 
 ## Running Tests
 
@@ -43,6 +45,35 @@ bundle exec rspec -e "should validate presence"
 > plus PostgreSQL causes CPU contention that produces flaky failures. The
 > `rake spec:parallel` task and `bin/parallel_rspec` binstub cap at 8, leaving
 > headroom for the database and OS.
+
+### Runtime-Balanced Distribution
+
+Parallel tests distribute spec files across workers. Without timing data, files are
+split by filesize — which often puts several heavy specs on one worker while others
+finish early and sit idle.
+
+**How it works:**
+
+1. `.rspec_parallel` configures `ParallelTests::RSpec::RuntimeLogger` to write
+   per-file timings to `tmp/parallel_runtime_rspec.log` after each run.
+2. On subsequent runs, `parallel_tests` reads the log and groups files so each
+   worker gets roughly equal total runtime.
+3. The first run (no log yet) falls back to filesize-based distribution.
+
+**Files involved:**
+
+| File | Purpose |
+|------|---------|
+| `.rspec_parallel` | RSpec options for parallel runs (runtime logger config) |
+| `bin/parallel_rspec` | Wrapper that caps processors at 8 |
+| `tmp/parallel_runtime_rspec.log` | Auto-generated timing data (gitignored, machine-specific) |
+| `lib/tasks/parallel_sync.rake` | Auto-syncs test DB schema after migrations |
+
+**If tests seem slow or unbalanced:** Delete `tmp/parallel_runtime_rspec.log` and
+run the suite once to regenerate it. The log becomes stale when spec files are
+added, removed, or significantly change in runtime.
+
+See the [parallel_tests README](https://github.com/grosser/parallel_tests#even-test-group-runtimes) for details.
 
 ### Test Types
 
@@ -255,30 +286,89 @@ describe('ProjectCard', () => {
 
 ## Test Helpers
 
-### FactoryBot
+### FactoryBot — Available Traits
+
+Vulcan factories are in `spec/factories/`. Every model that appears in seeds or tests has a factory with traits covering all real-world states.
+
+#### User
 
 ```ruby
-# spec/factories/users.rb
-FactoryBot.define do
-  factory :user do
-    sequence(:email) { |n| "user#{n}@example.com" }
-    password { 'S3cure!#Pass001' }
-    first_name { Faker::Name.first_name }
-    last_name { Faker::Name.last_name }
-    confirmed_at { Time.now }
-
-    trait :admin do
-      admin { true }
-    end
-
-    trait :unconfirmed do
-      confirmed_at { nil }
-    end
-
-    factory :admin_user, traits: [:admin]
-  end
-end
+create(:user)                              # Basic confirmed user
+create(:user, :admin)                      # Site admin
+create(:user, :viewer, :with_membership)   # Viewer on auto-created project
+create(:user, :author, :with_membership, project: my_project)  # Author on specific project
+create(:user, :reviewer, :with_membership) # Reviewer
+create(:ldap_user)                         # LDAP-authenticated user
 ```
+
+#### Project
+
+```ruby
+create(:project)                           # Empty project
+create(:project, :with_admin)              # Project with 1 admin membership
+create(:project, :with_admin, admin_user: existing_user)  # Specific admin
+create(:project, :with_members)            # All 4 role tiers (viewer/author/reviewer/admin)
+```
+
+#### Component
+
+```ruby
+create(:component)                         # Full component with SRG rules imported (~500ms)
+create(:component, :skip_rules)            # Lightweight — no SRG rule import (fast)
+create(:component, :skip_rules, :open_comment_period)  # Active comment window
+create(:component, :skip_rules, :with_poc) # Has admin_name + admin_email
+create(:component, :released)              # Released with all rules locked
+```
+
+#### Rule
+
+```ruby
+create(:rule)                              # Default: Not Yet Determined, unlocked
+create(:rule, :locked)                     # Locked rule
+create(:rule, :applicable_configurable)    # Status: Applicable - Configurable
+create(:rule, :not_applicable)             # Status: Not Applicable
+create(:rule, :not_yet_determined)         # Status: Not Yet Determined (explicit)
+```
+
+#### Membership
+
+```ruby
+create(:membership)                        # Default: viewer on a project
+create(:membership, :viewer)               # Explicit viewer
+create(:membership, :author)               # Author role
+create(:membership, :reviewer)             # Reviewer role
+create(:membership, :admin)                # Admin role
+create(:membership, :for_component)        # Component-level membership
+```
+
+#### Review (comments, triage, workflow)
+
+```ruby
+# Comments
+create(:review, :comment)                  # Top-level comment (auto-pending triage)
+create(:review, :reply)                    # Reply linked to auto-created parent
+create(:review, :component_comment)        # Comment on a Component (not a Rule)
+
+# Triage statuses (compose with :comment)
+create(:review, :comment, :concur)         # Triaged as concur
+create(:review, :comment, :non_concur)     # Triaged as non-concur
+create(:review, :comment, :concur_with_comment)
+create(:review, :comment, :needs_clarification)
+create(:review, :comment, :informational)  # Terminal — auto-adjudicated
+create(:review, :comment, :withdrawn)      # Terminal — auto-adjudicated
+create(:review, :comment, :duplicate)      # Terminal — requires duplicate_of target
+
+# Lifecycle
+create(:review, :comment, :triaged)        # Has triage_set_by + triage_set_at
+create(:review, :comment, :concur, :adjudicated)  # Fully closed
+
+# Workflow actions
+create(:review)                            # Default: request_review action
+```
+
+> **Note:** The Review factory automatically creates a Membership linking the user
+> to the rule's project with the minimum required role for the action. You don't
+> need to manually wire up permissions in tests.
 
 ### Custom Matchers
 
@@ -326,12 +416,10 @@ end
 # config/database.yml
 test:
   <<: *default
-  database: vulcan_vue_test<%= ENV['DB_SUFFIX'] %><%= ENV['TEST_ENV_NUMBER'] %>
+  database: <%= ENV.fetch('DATABASE_NAME', 'vulcan_test') %><%= ENV['TEST_ENV_NUMBER'] %>
 ```
 
-`TEST_ENV_NUMBER` is set automatically by `parallel_tests` — each worker gets a suffix (blank, 2, 3, ..., N) creating databases `vulcan_vue_test`, `vulcan_vue_test2`, etc.
-
-`DB_SUFFIX` is optional, used for worktree isolation (e.g., `_v2` → `vulcan_vue_test_v2`).
+`TEST_ENV_NUMBER` is set automatically by `parallel_tests` — each worker gets a suffix (blank, 2, 3, ..., N) creating databases `vulcan_test`, `vulcan_test2`, etc.
 
 ### Initial Setup (One-Time)
 
@@ -473,6 +561,152 @@ end
 ```
 
 
+## test-prof: Profiling and Optimization
+
+[test-prof](https://test-prof.evilmartians.io/) provides profiling tools and performance recipes. All profiling is ENV-var-activated with zero overhead when disabled.
+
+### `let_it_be` — Share Records Across Examples
+
+`let_it_be` creates records once per example group (via `before_all`) instead of once per example. Significant speedup for expensive setup like SRG XML parsing.
+
+```ruby
+# SLOW — creates a new SRG + component + 250 rules for EVERY example
+let(:component) { create(:component) }
+
+# FAST — creates once, reuses across all examples in the describe block
+let_it_be(:component) { create(:component) }
+```
+
+### Global `refind: true` (MANDATORY)
+
+Configured in `rails_helper.rb`. Every `let_it_be` record gets a fresh ActiveRecord instance per example via `Model.unscoped.find(id)`.
+
+**Why:** `let_it_be` shares a single Ruby object across examples. Transactional fixtures roll back the DB row, but the in-memory object retains mutated attributes and cached associations. Without `refind`, Test A's mutations leak into Test B's in-memory state.
+
+```ruby
+# rails_helper.rb — already configured
+TestProf::LetItBe.configure do |config|
+  config.default_modifiers[:refind] = true
+end
+```
+
+- **`reload: true`** refreshes columns but preserves cached associations — NOT sufficient
+- **`refind: true`** returns a brand-new AR instance — correct
+- **`refind: false`** overrides the global default — blocked by `Vulcan/LetItBeRefind` RuboCop cop
+- Per-declaration `refind: true` is redundant — the global handles it
+
+### Profiling Commands
+
+```bash
+# Profile by test type — find the slowest categories
+TAG_PROF=type bundle exec rspec
+
+# Profile with factory + SQL event tracking
+TAG_PROF=type TAG_PROF_EVENT=sql.active_record,factory.create bundle exec rspec
+
+# Factory cascade detection — find factories that trigger excessive creates
+FPROF=1 bundle exec rspec
+FPROF=flamegraph bundle exec rspec  # generates tmp/test_prof/factory-flame.html
+
+# SQL query profiling — find tests with excessive queries
+EVENT_PROF=sql.active_record bundle exec rspec
+
+# Factory usage profiling — find tests that create too many records
+EVENT_PROF=factory.create bundle exec rspec
+```
+
+### Shared Contexts
+
+Shared contexts live in `spec/support/shared_contexts/`. Rules:
+
+1. **Minimal** — only include records that 2+ consumer files actually use
+2. **No `@ivar` aliases** — use `let_it_be` names directly
+3. **Use `create!`** (or FactoryBot `create`) — never `create` without bang
+4. **No name collisions** — prefix if multiple contexts exist: `reviews_srg`, `components_srg`
+5. **Membership in `let_it_be`** — not in `before` blocks (avoids transactional fixture dependency)
+
+## Spec File Organization
+
+### Size Standards
+
+| Lines | Action |
+|-------|--------|
+| ≤ 300 | Ideal — no action |
+| 301–500 | Acceptable — monitor |
+| 501–800 | Split when touching the file |
+| 800+ | Split immediately |
+
+Target: **~300 lines per file.** Each file should have a single cohesive domain theme findable by filename.
+
+### Naming Convention
+
+Flat naming — no subdirectories within `spec/requests/` or `spec/models/`:
+
+```
+spec/requests/reviews_triage_spec.rb      # ✅ flat, domain-clear
+spec/requests/reviews/triage_spec.rb      # ❌ subdirectory
+spec/requests/reviews_spec.rb             # ❌ monolith
+```
+
+### When NOT to Split
+
+- **Single integration test** with expensive shared setup (e.g., `backup_round_trip_spec.rb`)
+- **Parametric test files** where a loop generates many examples from one describe block
+- **Contract test files** that mirror an OpenAPI spec structure
+
+Document WHY the file is large with a comment at the top.
+
+### Splitting Process
+
+Use the `/spec-split-review` skill which provides a full checklist:
+
+1. Audit the file structure (map describe blocks to domains)
+2. Capture coverage baseline
+3. Extract shared context
+4. Create domain files (copy test code exactly — zero logic changes)
+5. Verify example count matches and coverage not reduced
+6. Expert review with domain-matched agents
+7. Card every finding with `/project-card`
+
+## Parallel Test Safety
+
+### Rules
+
+| Pattern | Risk | Fix |
+|---------|------|-----|
+| `ENV['X'] = value` in before/after | Leaks to other tests in same worker | Use `climate_control` gem |
+| `Record.last` for identity | Fragile if setup creates extra records | Use scoped query or response ID |
+| `Audited.auditing_enabled = false` | Global class state mutation | Use `Model.without_auditing { }` |
+| `ensure { record.update_columns(...) }` on `let_it_be` | Exception in ensure leaks state | Use local record or before/after pair |
+| `update_all` in `before_all` | Permanent for the example group | Only use in `before` (per-example, rolled back) |
+
+### ENV Variable Isolation
+
+Use `climate_control` for any test that sets ENV variables:
+
+```ruby
+require 'climate_control'
+
+it 'reads admin email from ENV' do
+  ClimateControl.modify(VULCAN_ADMIN_EMAIL: 'admin@example.com') do
+    expect(Settings.admin_email).to eq('admin@example.com')
+  end
+  # ENV automatically restored after the block
+end
+```
+
+### Detecting Flaky Tests
+
+```bash
+# Run 3x with different seeds to catch ordering-dependent flakes
+bundle exec rspec spec/path/to/file_spec.rb --seed 12345
+bundle exec rspec spec/path/to/file_spec.rb --seed 54321
+bundle exec rspec spec/path/to/file_spec.rb --seed 99999
+
+# If failures are seed-dependent, find the minimum failing combination
+bundle exec rspec spec/path/to/file_spec.rb --bisect
+```
+
 ## CI/CD Testing
 
 ### GitHub Actions Configuration
@@ -519,6 +753,8 @@ jobs:
       
       - name: Setup database
         env:
+          # CI uses default port 5432 (isolated runner, no multi-project conflict).
+          # Local dev uses DATABASE_PORT from .env — see docs/development/port-registry.md.
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/test
         run: |
           bundle exec rails db:create
@@ -620,6 +856,21 @@ it 'does something' do
   # test code
 end
 ```
+
+## Known Build Warnings
+
+### PostCSS plugin deprecation (`postcss.plugin was deprecated`)
+
+During `yarn build`, you will see warnings like:
+
+```
+trim: postcss.plugin was deprecated. Migration guide:
+https://evilmartians.com/chronicles/postcss-8-plugin-migration
+add-id: postcss.plugin was deprecated. Migration guide:
+https://evilmartians.com/chronicles/postcss-8-plugin-migration
+```
+
+These come from `@vue/component-compiler-utils` which uses the legacy PostCSS 8 plugin API for Vue 2 SFC scoped style processing (the `trim` and `add-id` internal plugins). This package is end-of-life and will never be updated. The warnings are **build-time only with zero runtime impact**. They will disappear when the project migrates to Vue 3.
 
 ## Resources
 

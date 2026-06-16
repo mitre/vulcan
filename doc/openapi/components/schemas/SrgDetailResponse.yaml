@@ -1,0 +1,12 @@
+description: >-
+  Full SRG detail with nested rules. Serialized by SrgBlueprint :show view.
+  Extends SrgSummary with srg_rules array.
+allOf:
+  - $ref: ./SrgSummary.yaml
+  - type: object
+    properties:
+      srg_rules:
+        type: array
+        description: All rules in this SRG, each with full DISA metadata and check content.
+        items:
+          $ref: ./SrgRuleSummary.yaml

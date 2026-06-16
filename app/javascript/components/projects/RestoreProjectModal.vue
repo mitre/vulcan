@@ -104,15 +104,17 @@
 </template>
 
 <script>
-import axios from "axios";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { createFromBackup } from "../../api/projectsApi";
+import { useToast } from "../../composables/useToast";
 import BackupPreview from "../shared/BackupPreview.vue";
 
 export default {
   name: "RestoreProjectModal",
   components: { BackupPreview },
-  mixins: [FormMixinVue, AlertMixinVue],
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
+  },
   data() {
     return {
       modalShow: false,
@@ -160,9 +162,7 @@ export default {
         formData.append("include_reviews", String(this.includeReviews));
         formData.append("include_memberships", String(this.includeMemberships));
 
-        const response = await axios.post("/projects/create_from_backup", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        const response = await createFromBackup(formData);
 
         this.summary = response.data.summary;
         this.warnings = response.data.warnings || [];
@@ -197,9 +197,7 @@ export default {
         formData.append("include_reviews", String(this.includeReviews));
         formData.append("include_memberships", String(this.includeMemberships));
 
-        const response = await axios.post("/projects/create_from_backup", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        const response = await createFromBackup(formData);
 
         if (response.data.redirect_url) {
           globalThis.location = response.data.redirect_url;

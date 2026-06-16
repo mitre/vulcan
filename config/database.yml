@@ -1,7 +1,5 @@
-# PostgreSQL configuration
-# All connection settings are configurable via environment variables.
-# Defaults work for single-project development on standard ports.
-# For multi-project setups, set DATABASE_PORT/DATABASE_HOST in your .env file.
+# PostgreSQL configuration — 12-factor: all settings via environment variables.
+# See docs/development/port-registry.md for multi-project port assignments.
 #
 default: &default
   adapter: postgresql
@@ -11,18 +9,17 @@ default: &default
   username: <%= ENV.fetch('POSTGRES_USER', 'postgres') %>
   password: <%= ENV.fetch('POSTGRES_PASSWORD', 'postgres') %>
   gssencmode: <%= ENV.fetch('DATABASE_GSSENCMODE', 'prefer') %>
-  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 3 } %>
+  pool: <%= ENV.fetch('RAILS_MAX_THREADS', 3) %>
 
 development:
   <<: *default
-  database: vulcan_vue_development<%= ENV['DB_SUFFIX'] %>
+  database: <%= ENV.fetch('DATABASE_NAME', 'vulcan_development') %>
 
 test:
   <<: *default
-  database: vulcan_vue_test<%= ENV['DB_SUFFIX'] %><%= ENV['TEST_ENV_NUMBER'] %>
+  database: vulcan_test<%= ENV['TEST_ENV_NUMBER'] %>
 
 production:
   <<: *default
-  # DATABASE_URL takes precedence (12-factor standard)
   url: <%= ENV['DATABASE_URL'] %>
-  database: <%= ENV.fetch('POSTGRES_DB', 'vulcan_postgres_production') %>
+  database: <%= ENV.fetch('DATABASE_NAME', 'vulcan_production') %>

@@ -50,11 +50,10 @@
 </template>
 
 <script>
-import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
+import { useFormFeedback } from "../../../composables/useFormFeedback";
 
 export default {
   name: "AdditionalAnswerForm",
-  mixins: [FormFeedbackMixinVue],
   props: {
     rule: {
       type: Object,
@@ -68,6 +67,20 @@ export default {
       type: Boolean,
       default: false,
     },
+    validFeedback: {
+      type: Object,
+      required: false,
+      default: () => ({}),
+    },
+    invalidFeedback: {
+      type: Object,
+      required: false,
+      default: () => ({}),
+    },
+  },
+  setup(props) {
+    const { inputClass } = useFormFeedback(props);
+    return { inputClass };
   },
   data: function () {
     return {

@@ -3,6 +3,9 @@ import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import AdditionalAnswerForm from "@/components/rules/forms/AdditionalAnswerForm.vue";
 
+vi.mock("@/composables/useFormFeedback", { spy: true });
+import { useFormFeedback } from "@/composables/useFormFeedback";
+
 /**
  * AdditionalAnswerForm — B1 defensive init tests
  *
@@ -120,6 +123,29 @@ describe("AdditionalAnswerForm", () => {
       wrapper = createWrapper({ question: urlQuestion });
       wrapper.vm.addOrUpdateAnswer("", 2);
       expect(wrapper.vm.validurl).toBe(true);
+    });
+  });
+
+  // ── composable contracts ────────────────────────────────────────────
+  // REQUIREMENT: input state classes derive via useFormFeedback — no
+  // FormFeedbackMixin remains. The validFeedback/invalidFeedback props
+  // stay declared on the component (prop API parity with the mixin).
+  describe("composable contracts", () => {
+    it("derives input state classes via useFormFeedback", () => {
+      wrapper = createWrapper({
+        invalidFeedback: { "Test Question": "An answer is required" },
+      });
+      expect(useFormFeedback).toHaveBeenCalled();
+      expect(wrapper.vm.inputClass("Test Question")).toBe("is-invalid");
+      expect(wrapper.vm.inputClass("Unrelated Question")).toBe("");
+    });
+
+    it("invalid feedback wins over valid feedback for the same field", () => {
+      wrapper = createWrapper({
+        validFeedback: { "Test Question": "Looks good" },
+        invalidFeedback: { "Test Question": "Still required" },
+      });
+      expect(wrapper.vm.inputClass("Test Question")).toBe("is-invalid");
     });
   });
 });

@@ -1,0 +1,38 @@
+description: STIG check content — how to verify a security requirement is met.
+type: object
+required:
+  - id
+additionalProperties: false
+properties:
+  id:
+    type: integer
+    description: Unique check identifier.
+    example: 200
+  system:
+    type:
+      - string
+      - 'null'
+    description: Check system identifier (e.g., C-OVAL for automated checks).
+    example: C-56947r840354_chk
+  content_ref_name:
+    type:
+      - string
+      - 'null'
+    description: Reference name for the check content.
+    example: M
+  content_ref_href:
+    type:
+      - string
+      - 'null'
+    description: URL reference for the check content.
+    example: DPMS_XCCDF-Container_Platform_SRG.xml
+  content:
+    type:
+      - string
+      - 'null'
+    description: The check procedure text — steps to verify compliance.
+    example: "Verify the container platform restricts access to container images..."
+  _destroy:
+    type: boolean
+    description: Nested attributes destroy flag (always false in read responses).
+    example: false

@@ -18,6 +18,18 @@ RSpec.describe 'DISA Guide' do
       expect(response.body).to include('DISA Process Guide')
     end
 
+    it 'renders the vendor STIG process guide page' do
+      get '/disa-guide/vendor-stig-process-guide'
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Vendor STIG Process Guide')
+    end
+
+    it 'redirects the old V4R1 slug to the generic page' do
+      get '/disa-guide/vendor-stig-process-guide-v4r1'
+      expect(response).to have_http_status(:found)
+      expect(response).to redirect_to('/disa-guide/vendor-stig-process-guide')
+    end
+
     it 'renders the field-requirements page' do
       get '/disa-guide/field-requirements'
       expect(response).to have_http_status(:success)

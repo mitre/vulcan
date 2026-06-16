@@ -1,0 +1,12 @@
+description: >-
+  Response from section lock/unlock. Toast notification plus the updated rule.
+  Used by PATCH /rules/:id/section_locks and PATCH /rules/:id/bulk_section_locks.
+type: object
+required:
+  - rule
+  - toast
+properties:
+  rule:
+    $ref: ./RuleEditorResponse.yaml
+  toast:
+    $ref: ./ToastObject.yaml

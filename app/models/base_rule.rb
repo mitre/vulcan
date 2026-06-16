@@ -59,7 +59,7 @@ class BaseRule < ApplicationRecord
   def self.from_mapping(rule_class, rule_mapping)
     rule = rule_class.new(
       rule_id: rule_mapping.id,
-      status: rule_mapping.status.first&.status || 'Not Yet Determined',
+      status: rule_mapping.status.first&.status || RuleConstants::STATUS_NYD,
       rule_severity: rule_mapping.severity || 'medium',
       rule_weight: rule_mapping.weight || '10.0',
       version: rule_mapping.version.first&.version,

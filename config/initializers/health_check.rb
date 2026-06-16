@@ -31,18 +31,24 @@ HealthCheck.setup do |config|
     end
   end
 
-  # Custom check for OIDC connectivity (if enabled)
+  # Custom check for OIDC connectivity — checks ALL configured providers
   config.add_custom_check('oidc') do
     if Settings.oidc&.enabled
-      begin
-        uri = URI.parse(Settings.oidc.args.issuer)
-        response = Net::HTTP.get_response(uri)
-        response.is_a?(Net::HTTPSuccess) || response.is_a?(Net::HTTPRedirection) ? '' : "OIDC issuer returned #{response.code}"
-      rescue StandardError => e
-        "OIDC connection failed: #{e.message}"
+      errors = Array(Settings.oidc.providers).filter_map do |provider|
+        issuer = provider['issuer']
+        next if issuer.blank?
+
+        begin
+          uri = URI.parse(issuer)
+          response = Net::HTTP.get_response(uri)
+          "#{provider['name']}: issuer returned #{response.code}" unless response.is_a?(Net::HTTPSuccess) || response.is_a?(Net::HTTPRedirection)
+        rescue StandardError => e
+          "#{provider['name']}: #{e.message}"
+        end
       end
+      errors.join('; ')
     else
-      '' # Skip check if OIDC not enabled
+      ''
     end
   end
 

@@ -1,0 +1,144 @@
+parameters:
+  - $ref: ../components/parameters/ProjectId.yaml
+get:
+  operationId: getProject
+  tags:
+    - Projects
+  summary: Project detail with component list and stats
+  description: >-
+    Returns full project details including components, membership count,
+    comment counts, and project metadata. Requires membership in the project
+    or admin role.
+  responses:
+    '200':
+      description: Project detail with components
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ProjectShowResponse.yaml
+          examples:
+            project:
+              summary: Photon 3 project detail
+              value:
+                id: 1
+                name: Photon 3
+                memberships_count: 16
+                pending_comment_count: 1
+                components:
+                  - id: 1
+                    name: Photon OS 3
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+patch:
+  operationId: patchProject
+  tags:
+    - Projects
+  summary: Partial update of project attributes
+  description: >-
+    Partial update — send only changed fields. Updates the project name,
+    description, or visibility. Requires admin role on the project.
+    Returns a canonical toast response.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            project:
+              $ref: ../components/schemas/ProjectInput.yaml
+        examples:
+          rename:
+            summary: Rename a project
+            value:
+              project:
+                name: Container Platform v2
+  responses:
+    '200':
+      description: Project updated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            updated:
+              summary: Project renamed
+              value:
+                toast:
+                  title: Project updated.
+                  message:
+                    - Successfully updated project.
+                  variant: success
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+put:
+  operationId: updateProject
+  tags:
+    - Projects
+  summary: Full replacement of project attributes
+  description: >-
+    Full replacement — all fields required. Updates the project name,
+    description, or visibility. Requires admin role on the project.
+    Returns a canonical toast response.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            project:
+              $ref: ../components/schemas/ProjectInput.yaml
+        examples:
+          rename:
+            summary: Rename a project
+            value:
+              project:
+                name: Container Platform v2
+  responses:
+    '200':
+      description: Project updated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            updated:
+              summary: Project renamed
+              value:
+                toast:
+                  title: Project updated.
+                  message:
+                    - Successfully updated project.
+                  variant: success
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+delete:
+  operationId: deleteProject
+  tags:
+    - Projects
+  summary: Delete a project and all its components
+  description: >-
+    Permanently deletes the project, all its components, rules, reviews,
+    and memberships. Requires admin role on the project. This action cannot
+    be undone. Returns 403 for non-admin users.
+  responses:
+    '200':
+      description: Project deleted
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            deleted:
+              summary: Project deleted
+              value:
+                toast:
+                  title: Project deleted.
+                  message:
+                    - Successfully deleted project.
+                  variant: success
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

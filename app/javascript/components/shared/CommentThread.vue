@@ -32,18 +32,14 @@
         <b-button size="sm" variant="link" class="p-0" @click="fetch">Retry</b-button>
       </div>
       <div v-else-if="replies.length === 0" class="text-muted small ml-3">No replies yet.</div>
-      <div
-        v-for="reply in replies"
-        v-else
-        :key="reply.id"
-        class="ml-3 mt-2 pl-3 border-left border-info"
-      >
+      <b-media v-for="reply in replies" v-else :key="reply.id" class="mt-2 comment-thread__reply">
+        <template #aside>
+          <UserBadge :name="reply.authorName" :email="reply.authorEmail" />
+        </template>
         <p class="mb-0 d-flex flex-wrap align-items-center">
-          <strong>{{ reply.commenter_display_name || "—" }}</strong>
-          <b-badge v-if="reply.commenter_imported" variant="warning" class="ml-1">
-            imported
-          </b-badge>
-          <small class="text-muted ml-2">{{ relativeTime(reply.created_at) }}</small>
+          <strong>{{ reply.authorName || "—" }}</strong>
+          <b-badge v-if="reply.isImported" variant="warning" class="ml-1"> imported </b-badge>
+          <small class="text-muted ml-2">{{ friendlyDateTime(reply.createdAt) }}</small>
           <b-button
             v-if="canReply"
             size="sm"
@@ -55,7 +51,7 @@
             <b-icon icon="reply" /> Reply
           </b-button>
         </p>
-        <p class="mb-1 white-space-pre-wrap">{{ reply.comment }}</p>
+        <p class="mb-1 white-space-pre-wrap">{{ reply.text }}</p>
         <ReactionButtons
           v-if="reply.reactions"
           :review-id="reply.id"
@@ -64,22 +60,23 @@
           :closed-message="closedMessage"
           @toggle="(kind) => toggleReaction(reply, kind)"
         />
-      </div>
+      </b-media>
     </div>
   </div>
 </template>
 
 <script>
-import axios from "axios";
 import ReactionButtons from "./ReactionButtons.vue";
-import AlertMixin from "../../mixins/AlertMixin.vue";
-import ReactionToggleMixin from "../../mixins/ReactionToggleMixin.vue";
+import UserBadge from "./UserBadge.vue";
+import { useDateFormat } from "../../composables/useDateFormat";
+import { useCommentReactions } from "../../composables/useCommentReactions";
+import { useCommentThread } from "../../composables/useCommentThread";
 
 export default {
   name: "CommentThread",
-  components: { ReactionButtons },
-  mixins: [AlertMixin, ReactionToggleMixin],
+  components: { ReactionButtons, UserBadge },
   props: {
+    componentId: { type: [Number, String], default: null },
     parentReviewId: { type: [Number, String], required: true },
     responsesCount: { type: Number, default: 0 },
     canReply: { type: Boolean, default: true },
@@ -91,15 +88,14 @@ export default {
       default: "Reactions are closed for this component.",
     },
   },
+  setup(props) {
+    const thread = useCommentThread(props.componentId, props.parentReviewId);
+    const { toggle: toggleReactionApi } = useCommentReactions();
+    const { friendlyDateTime } = useDateFormat();
+    return { ...thread, toggleReactionApi, friendlyDateTime };
+  },
   data() {
-    return {
-      expanded: this.initiallyExpanded,
-      replies: [],
-      loaded: false,
-      loading: false,
-      loadError: false,
-      fetchToken: 0,
-    };
+    return {};
   },
   computed: {
     listId() {
@@ -128,8 +124,7 @@ export default {
     // expanded, refetch immediately so the visible thread updates.
     responsesCount(newVal, oldVal) {
       if (newVal === oldVal) return;
-      this.loaded = false;
-      if (this.expanded) this.fetch();
+      this.refresh();
     },
   },
   mounted() {
@@ -138,47 +133,14 @@ export default {
     }
   },
   methods: {
-    toggle() {
-      this.expanded = !this.expanded;
-      if (this.expanded && !this.loaded && !this.loading) {
-        this.fetch();
-      }
-    },
-    relativeTime(iso) {
-      if (!iso) return "";
-      return new Date(iso).toLocaleString();
-    },
-    async fetch() {
-      this.loading = true;
-      this.loadError = false;
-      const token = ++this.fetchToken;
-      try {
-        const { data } = await axios.get(`/reviews/${this.parentReviewId}/responses`, {
-          headers: { Accept: "application/json" },
-        });
-        if (token !== this.fetchToken) return;
-        this.replies = data.rows || [];
-        this.loaded = true;
-      } catch {
-        if (token !== this.fetchToken) return;
-        this.loadError = true;
-      } finally {
-        if (token === this.fetchToken) this.loading = false;
-      }
-    },
-    refresh() {
-      this.loaded = false;
-      this.replies = [];
-      if (this.expanded) this.fetch();
-    },
     toggleReaction(reply, kind) {
       const idx = this.replies.findIndex((r) => r.id === reply.id);
       if (idx < 0) return;
       const prev = { ...reply.reactions };
       const apply = (reactions) => {
-        this.$set(this.replies, idx, { ...this.replies[idx], reactions });
+        this.replies[idx] = { ...this.replies[idx], reactions };
       };
-      this.submitReactionToggle({ reviewId: reply.id, prev, kind, apply });
+      this.toggleReactionApi(reply.id, kind, prev, apply);
     },
   },
 };
@@ -187,5 +149,26 @@ export default {
 <style scoped>
 .white-space-pre-wrap {
   white-space: pre-wrap;
+}
+
+.thread-replies {
+  margin-left: 1rem;
+}
+
+@media (min-width: 768px) {
+  .thread-replies {
+    margin-left: 2.5rem;
+  }
+}
+
+.comment-thread__reply {
+  border-left: 2px solid var(--vulcan-info);
+  padding-left: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .comment-thread__reply {
+    padding-left: 0.75rem;
+  }
 }
 </style>

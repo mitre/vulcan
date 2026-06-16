@@ -29,6 +29,8 @@ module Users
         Rails.logger.debug { "Full auth hash: #{auth.to_h.inspect}" }
       end
 
+      return handle_identity_link(auth) if session.delete(:link_in_progress) && current_user
+
       user = User.from_omniauth(auth)
 
       # Notify user when their local account was auto-linked to an external provider.
@@ -62,9 +64,37 @@ module Users
       sign_in_and_redirect(user) && return
     end
 
-    alias ldap all
-    alias github all
-    alias oidc all
+    # Devise routes /users/auth/<provider>/callback to the action named
+    # <provider>. The `all` implementation is provider-agnostic, so alias every
+    # registered OmniAuth provider (ldap, github, and each OIDC provider) to it.
+    # Deriving from Devise.omniauth_providers (populated at boot from the devise
+    # initializer) keeps this in sync with what is actually registered and avoids
+    # reading Settings at class-load time, which test stubs of Settings.oidc
+    # would otherwise break.
+    Devise.omniauth_providers.each { |provider| alias_method provider, :all }
+
+    private
+
+    def handle_identity_link(auth)
+      session.delete(:link_provider)
+      provider = auth.provider.to_s
+      title = OidcProviderRegistry.title_for(provider)
+
+      current_user.link_identity!(
+        provider: provider,
+        uid: auth.uid.to_s,
+        email: auth.info.email,
+        audit_reason: "Linked #{title} identity via profile"
+      )
+
+      flash.notice = "Your account has been linked to #{title}."
+      redirect_to edit_user_registration_path
+    rescue User::ProviderConflictError
+      flash.alert = "This #{title} identity is already linked to another account. Please contact an administrator."
+      redirect_to edit_user_registration_path
+    end
+
+    public
 
     def oauth_error(exception)
       # Log full details server-side for debugging.
@@ -94,11 +124,22 @@ module Users
     end
 
     def omniauth_provider_conflict(exception)
-      Rails.logger.warn "Provider conflict: #{exception.message}"
-      flash.alert = "#{exception.message} " \
-                    'Please sign in using your existing account, ' \
-                    'or contact an administrator to link your accounts.'
-      redirect_to new_user_session_path
+      auth = request.env['omniauth.auth']
+      if auth
+        session[:pending_link] = {
+          provider: auth.provider.to_s,
+          uid: auth.uid.to_s,
+          email: auth.info.email,
+          name: auth.info.name
+        }
+        Rails.logger.info "Provider conflict — pending link stored for #{auth.info.email} via #{auth.provider}"
+        flash.alert = exception.message
+        redirect_to new_user_session_path(link_pending: true)
+      else
+        Rails.logger.warn "Provider conflict (no auth data): #{exception.message}"
+        flash.alert = exception.message
+        redirect_to new_user_session_path
+      end
     end
 
     def omniauth_validation_error(exception)

@@ -1,0 +1,65 @@
+parameters:
+  - $ref: ../components/parameters/RuleId.yaml
+get:
+  operationId: getRelatedRules
+  tags:
+    - Rules
+  summary: Find rules sharing the same SRG requirement
+  description: >-
+    Returns rules from other components and published STIGs that implement the
+    same SRG requirement (matched by version/srg_id). Results are scoped to
+    components the current user can access unless the user is an admin.
+    The rules array is a mix of RuleEditorResponse (component rules) and
+    StigRuleSummary (published STIG rules). The parents array is a mix of
+    ComponentBlueprint :related and StigBlueprint :index for grouping.
+  responses:
+    '200':
+      description: Related rules with parent containers
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - rules
+              - parents
+            properties:
+              rules:
+                type: array
+                description: >-
+                  Mixed array of component rules (RuleEditorResponse, 38 fields)
+                  and published STIG rules (StigRuleSummary, 16 fields).
+                items: {}
+              parents:
+                type: array
+                description: >-
+                  Mixed array of parent containers: ComponentBlueprint :related
+                  (with nested project) and StigBlueprint :index (with severity_counts).
+                items: {}
+          examples:
+            related:
+              summary: Rules from another component and a published STIG
+              value:
+                rules:
+                  - id: 200
+                    rule_id: "SV-222387r960735_rule"
+                    title: "The application must limit logon sessions"
+                    version: "APSC-DV-000010"
+                    rule_severity: medium
+                  - id: 1800
+                    rule_id: "000001"
+                    title: "The operating system must provide automated mechanisms"
+                    status: "Not Yet Determined"
+                    component_id: 1
+                parents:
+                  - id: 1
+                    stig_id: "Application_Security_Development_STIG"
+                    name: "Application Security Development STIG - Ver 6, Rel 4"
+                    title: "Application Security and Development STIG"
+                  - id: 1
+                    name: "Photon OS 3"
+                    prefix: "PHOS-03"
+                    project:
+                      id: 1
+                      name: "Photon 3"
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

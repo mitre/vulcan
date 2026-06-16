@@ -5,13 +5,17 @@ module Import
     # Validates the manifest.json from a backup archive.
     # Checks format version, SRG dependencies, and name conflicts.
     class ManifestValidator
-      SUPPORTED_VERSIONS = ['1.0'].freeze
+      # 1.0 — original format (second-precision review timestamps).
+      # 1.1 — microsecond-precision review created_at/updated_at + the
+      #       compatible matcher path.
+      SUPPORTED_VERSIONS = %w[1.0 1.1].freeze
 
-      def initialize(manifest, project, component_filter: nil, dry_run: false)
+      def initialize(manifest, project, component_filter: nil, dry_run: false, merge: false)
         @manifest = manifest
         @project = project
         @component_filter = component_filter
         @dry_run = dry_run
+        @merge = merge
       end
 
       def validate(result)
@@ -75,8 +79,14 @@ module Import
           existing = @project.components.find_by(name: entry['name'])
           next unless existing
 
-          # During dry-run or with component_filter, conflicts are warnings (user can deselect/rename)
-          if @component_filter || @dry_run
+          # merge: true takes precedence — merge mode WANTS the
+          # name collision because that's how it finds the receiving component.
+          if @merge
+            result.add_warning(
+              "Component name conflict in merge mode: '#{entry['name']}' will be merged into existing component."
+            )
+          elsif @component_filter || @dry_run
+            # During dry-run or with component_filter, conflicts are warnings (user can deselect/rename)
             result.add_warning(
               "Component name conflict: '#{entry['name']}' already exists in project '#{@project.name}'."
             )

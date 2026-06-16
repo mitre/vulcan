@@ -45,7 +45,7 @@ class ProjectAccessRequestsController < ApplicationController
         # multi-key response (toast + id).
         format.json do
           render json: {
-            toast: { title: 'Access request submitted.', message: [toast], variant: 'success' },
+            toast: Toast.new(title: 'Access request submitted.', message: [toast], variant: 'success'),
             id: @access_request.id
           }
         end
@@ -56,7 +56,7 @@ class ProjectAccessRequestsController < ApplicationController
           flash.alert = @access_request.errors.full_messages.to_sentence
           redirect_back(fallback_location: root_path)
         end
-        format.json { render json: { error: @access_request.errors.full_messages.to_sentence }, status: :unprocessable_entity }
+        format.json { render json: { error: @access_request.errors.full_messages.to_sentence }, status: :unprocessable_content }
       end
     end
   end

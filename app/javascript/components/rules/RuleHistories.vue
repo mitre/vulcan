@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="mb-2">
-      <strong>Revision History</strong>
+      <strong>Changelog</strong>
       <b-badge v-if="rule.histories" pill variant="info" class="ml-1">{{
         groupedRuleHistories.length
       }}</b-badge>
@@ -16,15 +16,12 @@
 </template>
 
 <script>
-import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
 import History from "../shared/History.vue";
-import HistoryGroupingMixinVue from "../../mixins/HistoryGroupingMixin.vue";
+import { useHistoryGrouping } from "../../composables/useHistoryGrouping";
 
 export default {
   name: "RuleHistories",
   components: { History },
-  mixins: [DateFormatMixinVue, AlertMixinVue, HistoryGroupingMixinVue],
   props: {
     rule: {
       type: Object,
@@ -39,8 +36,9 @@ export default {
       required: true,
     },
   },
-  data: function () {
-    return {};
+  setup() {
+    const { groupHistories } = useHistoryGrouping();
+    return { groupHistories };
   },
   computed: {
     groupedRuleHistories() {
@@ -52,8 +50,8 @@ export default {
 
 <style scoped>
 .historyChangeText {
-  background: rgb(0, 0, 0, 0.1);
-  border: 1px solid rgb(0, 0, 0, 0);
+  background: var(--vulcan-overlay-medium);
+  border: 1px solid var(--vulcan-border-transparent);
   border-radius: 0.25em;
 }
 </style>

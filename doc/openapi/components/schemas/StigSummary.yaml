@@ -1,0 +1,73 @@
+description: >-
+  Security Technical Implementation Guide (STIG) listing entry. Serialized by StigBlueprint (default/index view).
+  STIGs use benchmark_date (not release_date — that is SRGs).
+type: object
+required:
+  - id
+  - stig_id
+  - severity_counts
+properties:
+  id:
+    type: integer
+    description: Unique STIG identifier.
+    example: 1
+  stig_id:
+    type:
+      - string
+      - 'null'
+    description: DISA STIG identifier string.
+    example: Application_Security_Development_STIG
+  name:
+    type:
+      - string
+      - 'null'
+    description: Short name including version and release.
+    example: "Application Security Development STIG - Ver 6, Rel 4"
+  title:
+    type:
+      - string
+      - 'null'
+    description: Full official title.
+    example: Application Security and Development Security Technical Implementation Guide
+  version:
+    type:
+      - string
+      - 'null'
+    description: Version string (e.g. V6R4).
+    example: V6R4
+  benchmark_date:
+    type:
+      - string
+      - 'null'
+    format: date
+    description: Date the STIG benchmark was published by DISA.
+    example: "2025-10-01"
+  is_latest:
+    type: boolean
+    description: Whether this is the latest available version of this STIG family.
+    example: true
+  latest_available_version:
+    type:
+      - string
+      - 'null'
+    description: Version string of the latest available STIG in this family. Null when is_latest=true.
+    example: null
+  latest_available_id:
+    type:
+      - integer
+      - 'null'
+    description: ID of the latest available STIG for linking. Null when is_latest=true.
+    example: null
+  severity_counts:
+    type: object
+    description: Count of rules at each severity level within this STIG.
+    properties:
+      high:
+        type: integer
+        example: 34
+      medium:
+        type: integer
+        example: 230
+      low:
+        type: integer
+        example: 22

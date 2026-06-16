@@ -1,0 +1,101 @@
+parameters:
+  - $ref: ../components/parameters/RuleId.yaml
+get:
+  operationId: getRule
+  tags:
+    - Rules
+  summary: Rule detail
+  description: Returns the full rule editor payload including checks, descriptions, satisfactions, and review history.
+  responses:
+    '200':
+      description: Rule data
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/RuleEditorResponse.yaml
+      links:
+        UpdateThisRule:
+          operationId: updateRule
+          parameters:
+            ruleId: '$response.body#/id'
+        DeleteThisRule:
+          operationId: deleteRule
+          parameters:
+            ruleId: '$response.body#/id'
+        RevertThisRule:
+          operationId: revertRule
+          parameters:
+            ruleId: '$response.body#/id'
+        CreateReviewOnRule:
+          operationId: createRuleReview
+          parameters:
+            ruleId: '$response.body#/id'
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+patch:
+  operationId: patchRule
+  tags:
+    - Rules
+  summary: Partial update of rule attributes
+  description: >-
+    Partial update — send only changed fields. Updates one or more rule
+    fields. Requires author or admin role on the component.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            rule:
+              $ref: ../components/schemas/RuleInput.yaml
+  responses:
+    '200':
+      description: Rule updated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+put:
+  operationId: updateRule
+  tags:
+    - Rules
+  summary: Full replacement of rule attributes
+  description: >-
+    Full replacement — all fields required. Updates rule fields.
+    Requires author or admin role on the component.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            rule:
+              $ref: ../components/schemas/RuleInput.yaml
+  responses:
+    '200':
+      description: Rule updated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+delete:
+  operationId: deleteRule
+  tags:
+    - Rules
+  summary: Soft-delete a rule
+  description: Marks the rule as deleted. Requires admin role on the component.
+  responses:
+    '200':
+      description: Rule deleted
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

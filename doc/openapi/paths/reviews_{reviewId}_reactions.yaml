@@ -1,0 +1,49 @@
+parameters:
+  - $ref: ../components/parameters/ReviewId.yaml
+get:
+  operationId: listReactions
+  tags:
+    - Reactions
+  summary: List reactions on a review
+  description: Returns aggregate reaction counts and the current user's reaction for the specified review.
+  responses:
+    '200':
+      description: Reactions list
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ReactionsSummary.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+post:
+  operationId: createReaction
+  tags:
+    - Reactions
+  summary: Add a reaction (up/down) to a comment review
+  description: Toggles a thumbs-up or thumbs-down reaction. If the user already reacted with the same kind, the reaction is removed.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            reaction:
+              type: object
+              properties:
+                kind:
+                  type: string
+                  enum:
+                    - up
+                    - down
+  responses:
+    '200':
+      description: Reaction created
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ReactionToggleResponse.yaml
+    '422':
+      $ref: ../components/responses/UnprocessableEntity.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

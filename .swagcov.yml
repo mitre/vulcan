@@ -1,0 +1,98 @@
+# Swagcov — OpenAPI documentation coverage for Rails routes.
+# Ensures every JSON API route has a matching OpenAPI path spec.
+# Run: bundle exec swagcov
+# CI exit code 1 = undocumented routes found.
+
+docs:
+  paths:
+    - doc/openapi.yaml
+
+routes:
+  paths:
+    ignore:
+      # Devise authentication views (HTML pages, not JSON API)
+      - /users/sign_in:
+        - GET
+        - POST
+      - /users/sign_out:
+        - DELETE
+      - /users/cancel:
+        - GET
+      - /users/edit:
+        - GET
+        - PUT
+        - PATCH
+      - /users/edit/password:
+        - GET
+      - /users/edit/activity:
+        - GET
+      - /users/edit/tokens:
+        - GET
+      - /users/password:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+      - /users/confirmation:
+        - GET
+        - POST
+      - /users/unlock:
+        - GET
+        - POST
+      # OAuth callbacks (browser redirect flow)
+      - /users/auth/oidc:
+        - POST
+      - /users/auth/oidc/callback:
+        - GET
+        - POST
+      # HTML page renders (Turbolinks navigation, not API)
+      - /:
+        - GET
+      - /components/:id:
+        - GET
+      - /components/:id/edit:
+        - GET
+      - /components/:id/triage:
+        - GET
+      - /components/:id/settings:
+        - GET
+      - /components/:id/:stig_id:
+        - GET
+      - /projects/:id:
+        - GET
+      - /projects/:id/triage:
+        - GET
+      # DISA guide (static documentation pages)
+      - /disa-guide:
+        - GET
+      - /disa-guide/attachments/:filename:
+        - GET
+      # API docs viewer (HTML page, not API)
+      - /api/docs:
+        - GET
+      - /api/docs/spec:
+        - GET
+      # Consent (returns head :ok, no JSON body)
+      - /consent/acknowledge:
+        - POST
+      # Health check + Rails internals (infrastructure, not API)
+      - /health_check
+      - /up:
+        - GET
+      # Devise registration (HTML form submissions)
+      - /users:
+        - POST
+        - PATCH
+        - PUT
+        - DELETE
+      - /users/sign_up:
+        - GET
+      # Component HTML pages
+      - /components/:id/controls:
+        - GET
+      # API docs file download
+      - /api/docs/openapi.yaml:
+        - GET
+      # Rule comments (alias — documented under component comments)
+      - /rules/:rule_id/comments:
+        - POST

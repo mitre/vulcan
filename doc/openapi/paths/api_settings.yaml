@@ -1,0 +1,57 @@
+get:
+  operationId: getSettings
+  tags:
+    - System
+  security: []
+  summary: Public pre-auth UI configuration
+  description: >-
+    Returns application settings needed before authentication: banner,
+    consent modal, auth provider flags, password policy, and registration
+    status. No authentication required — the login page and consent
+    banner need this data before the user signs in.
+  responses:
+    '200':
+      description: Public settings for SPA pre-auth UI
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/SettingsResponse.yaml
+          examples:
+            default:
+              summary: Typical deployment
+              value:
+                banner:
+                  enabled: true
+                  text: "UNCLASSIFIED"
+                  background_color: "#007a33"
+                  text_color: "#ffffff"
+                consent:
+                  enabled: false
+                  version: "1"
+                  title: Terms of Use
+                  content: ""
+                  ttl: "0"
+                local_login:
+                  enabled: true
+                user_registration:
+                  enabled: true
+                ldap:
+                  enabled: false
+                  title: null
+                oidc:
+                  enabled: false
+                  title: null
+                smtp:
+                  enabled: false
+                password:
+                  min_length: 15
+                  min_uppercase: 2
+                  min_lowercase: 2
+                  min_number: 2
+                  min_special: 2
+                lockout:
+                  enabled: true
+                  maximum_attempts: 3
+                  last_attempt_warning: true
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

@@ -5,6 +5,14 @@
 class ApplicationController < ActionController::Base
   helper :all
   include SlackNotificationsHelper
+  include ApiTokenAuthenticatable
+
+  # Explicit CSRF protection. Rails 8 (load_defaults 8.0) enables this by
+  # default, but declaring it explicitly makes the security posture auditable
+  # and documents that ApiTokenAuthenticatable#handle_unverified_request
+  # intentionally exempts token-authenticated (stateless) requests while
+  # session requests stay protected. Verified by api_token_auth_spec.
+  protect_from_forgery with: :exception
 
   before_action :setup_navigation, :authenticate_user!
   before_action :check_access_request_notifications
@@ -36,13 +44,21 @@ class ApplicationController < ActionController::Base
   # so NotAuthorizedError must be declared AFTER StandardError.
   rescue_from StandardError, with: :helpful_errors unless Rails.env.development?
 
+  rescue_from ActiveRecord::RecordNotFound do |_e|
+    respond_to do |format|
+      format.json { render json: { error: 'Not found' }, status: :not_found }
+      format.html { render plain: 'Not Found', status: :not_found }
+      format.any  { render json: { error: 'Not found' }, status: :not_found }
+    end
+  end
+
   rescue_from NotAuthorizedError, with: :not_authorized
 
   # toast helper. The Vue frontend's
-  # alertOrNotifyResponse mixin reads `{ toast: { title, message, variant } }`
+  # alertOrNotifyResponse (useToast) reads `{ toast: { title, message, variant } }`
   # from JSON responses and renders a Bootstrap-Vue toast. Pre-fix the JSON
   # shape was hand-written at ~45 sites in reviews_controller alone — typos
-  # in `variant:` (e.g. 'unprocessable_entity' instead of 'warning') shipped
+  # in `variant:` (e.g. 'unprocessable_content' instead of 'warning') shipped
   # silently and broke the toast styling. This single helper centralizes
   # the contract.
   #
@@ -52,17 +68,12 @@ class ApplicationController < ActionController::Base
   # `variant` defaults to 'danger' (the most common case). Caller can
   # override to 'warning' / 'success' / 'info'.
   #
-  # `status` defaults to :unprocessable_entity (matches the most common
+  # `status` defaults to :unprocessable_content (matches the most common
   # caller — a validation rejection). Caller overrides for 200 success
   # toasts (e.g. idempotent reopen returning the current state).
-  def render_toast(title:, message:, variant: 'danger', status: :unprocessable_entity)
-    render json: {
-      toast: {
-        title: title,
-        message: Array(message),
-        variant: variant
-      }
-    }, status: status
+  def render_toast(title:, message:, variant: 'danger', status: :unprocessable_content, **extra)
+    render json: { toast: Toast.new(title: title, message: message, variant: variant), **extra },
+           status: status
   end
 
   # generic RecordInvalid handler. Each
@@ -95,6 +106,10 @@ class ApplicationController < ActionController::Base
 
   def self.record_invalid_titles(map)
     self.record_invalid_titles_map = map.transform_keys(&:to_sym).freeze
+  end
+
+  def render_not_found
+    render json: { error: 'Not found' }, status: :not_found
   end
 
   def set_project_permissions
@@ -232,6 +247,15 @@ class ApplicationController < ActionController::Base
 
   private
 
+  # Devise hook (documented override point): land on the sign-in page
+  # directly after sign-out. The default (root) triggers a second auth
+  # redirect that consumes the "Signed out successfully." flash before the
+  # sign-in page renders, so the Toaster never shows it — flash survives
+  # exactly one redirect. AC-12(02) requires the explicit logoff message.
+  def after_sign_out_path_for(_resource_or_scope)
+    new_user_session_path
+  end
+
   # Parses duration strings like "1h", "30m", "24h", "3600" into seconds.
   def parse_duration(value)
     str = value.to_s.strip
@@ -309,11 +333,11 @@ class ApplicationController < ActionController::Base
       end
       format.json do
         render json: {
-          toast: {
+          toast: Toast.new(
             title: 'An error occurred processing your request.',
             message: message,
             variant: 'danger'
-          }
+          )
         }, status: :internal_server_error
       end
     end
@@ -356,11 +380,11 @@ class ApplicationController < ActionController::Base
       error: 'permission_denied',
       message: exception.message,
       admins: admins,
-      toast: {
+      toast: Toast.new(
         title: 'Not Authorized.',
         message: exception.message,
         variant: 'danger'
-      }
+      )
     }
   end
 
@@ -393,23 +417,16 @@ class ApplicationController < ActionController::Base
                                              .eager_load(:user, :project)
                        end
 
-    @access_requests = pending_requests.map do |ar|
-      {
-        id: ar.id,
-        user: UserBlueprint.render_as_hash(ar.user),
-        project: { id: ar.project.id, name: ar.project.name }
-      }
-    end
+    @access_requests = ProjectAccessRequestBlueprint.render_as_json(pending_requests)
   end
 
   def check_locked_user_notifications
     @locked_users = []
     return unless user_signed_in? && current_user.admin? && Settings.lockout&.enabled
 
-    @locked_users = User.where.not(locked_at: nil)
-                        .limit(100)
-                        .select(:id, :name, :email)
-                        .as_json(only: %i[id name email])
+    @locked_users = UserBlueprint.render_as_json(
+      User.where.not(locked_at: nil).limit(100)
+    )
   end
 
   # Mutates each row hash by adding `mine: 'up' | 'down' | nil` inside
@@ -417,7 +434,7 @@ class ApplicationController < ActionController::Base
   # full { up:0, down:0, mine: } injected. Callers pass the array of
   # rows (any iterable producing hashes) and the row id key (defaults
   # to :id). Single batched query for current_user's reactions.
-  def inject_reactions_mine!(rows, id_key: :id)
+  def inject_reactions_mine!(rows, id_key: 'id')
     return rows if rows.blank? || current_user.nil?
 
     ids = rows.filter_map { |row| row[id_key] }
@@ -425,8 +442,8 @@ class ApplicationController < ActionController::Base
 
     mine = Reaction.where(review_id: ids, user_id: current_user.id).pluck(:review_id, :kind).to_h
     rows.each do |row|
-      row[:reactions] ||= { up: 0, down: 0 }
-      row[:reactions][:mine] = mine[row[id_key]]
+      row['reactions'] ||= { 'up' => 0, 'down' => 0 }
+      row['reactions']['mine'] = mine[row[id_key]]
     end
   end
 end

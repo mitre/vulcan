@@ -12,7 +12,7 @@ RSpec.describe 'Reactions' do
   let_it_be(:outsider) { create(:user) }
   let(:rule) { component.rules.first }
   let(:comment_review) do
-    Review.create!(action: 'comment', comment: 'a comment', user: viewer, rule: rule)
+    create(:review, :comment, comment: 'a comment', user: viewer, rule: rule)
   end
 
   before do
@@ -68,13 +68,13 @@ RSpec.describe 'Reactions' do
 
       it 'rejects an unknown kind with 422' do
         post "/reviews/#{comment_review.id}/reactions", params: { kind: 'meh' }, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.parsed_body.dig('toast', 'message').join).to match(/invalid/i)
       end
 
       it 'allows reacting to a reply (Decision 7)' do
-        reply = Review.create!(action: 'comment', comment: 'reply', user: viewer, rule: rule,
-                               responding_to_review_id: comment_review.id)
+        reply = create(:review, :comment, comment: 'reply', user: viewer, rule: rule,
+                                          responding_to_review_id: comment_review.id)
         expect do
           post "/reviews/#{reply.id}/reactions", params: { kind: 'up' }, as: :json
         end.to change(Reaction, :count).by(1)
@@ -92,7 +92,7 @@ RSpec.describe 'Reactions' do
       it 'returns the soft 403 for a nonexistent review id' do
         post '/reviews/9999999/reactions', params: { kind: 'up' }, as: :json
         expect(response).to have_http_status(:forbidden)
-        expect(response.parsed_body.dig('toast', 'message')).to match(/isn't available/i)
+        expect(response.parsed_body.dig('toast', 'message')).to include(a_string_matching(/isn't available/i))
       end
 
       it 'rejects when the component is closed (comment_phase=closed)' do
@@ -100,7 +100,7 @@ RSpec.describe 'Reactions' do
         expect do
           post "/reviews/#{comment_review.id}/reactions", params: { kind: 'up' }, as: :json
         end.not_to change(Reaction, :count)
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.parsed_body.dig('toast', 'message').join).to match(/finalized/i)
       end
 

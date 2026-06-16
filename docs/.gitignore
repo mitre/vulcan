@@ -1,0 +1,6 @@
+node_modules/
+.vitepress/dist/
+.vitepress/cache/
+
+# Generated at build time from doc/openapi.yaml — do not commit
+data/openapi.json

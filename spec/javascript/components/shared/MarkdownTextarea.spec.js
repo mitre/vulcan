@@ -87,6 +87,47 @@ describe("MarkdownTextarea", () => {
     });
   });
 
+  describe("plain text mode (disabled + plainText)", () => {
+    it("renders text without markdown interpretation", () => {
+      wrapper = createWrapper({
+        disabled: true,
+        plainText: true,
+        value: "log_timezone\n-----------\nUTC\n(1 row)",
+      });
+
+      const preview = wrapper.find(".markdown-preview");
+      expect(preview.exists()).toBe(true);
+      // Should NOT contain heading tags — dashes are NOT setext headings
+      expect(preview.html()).not.toContain("<h");
+      // Should preserve the raw text
+      expect(preview.text()).toContain("log_timezone");
+      expect(preview.text()).toContain("-----------");
+    });
+
+    it("preserves line breaks in plain text mode", () => {
+      wrapper = createWrapper({
+        disabled: true,
+        plainText: true,
+        value: "line one\nline two\nline three",
+      });
+
+      const preview = wrapper.find(".markdown-preview");
+      // Should use pre-wrap to preserve whitespace
+      expect(preview.element.style.whiteSpace).toBe("pre-wrap");
+    });
+
+    it("still shows No content placeholder when value is empty", () => {
+      wrapper = createWrapper({
+        disabled: true,
+        plainText: true,
+        value: "",
+      });
+
+      const preview = wrapper.find(".markdown-preview");
+      expect(preview.text()).toContain("No content");
+    });
+  });
+
   describe("edit mode (disabled=false)", () => {
     it("renders the editor wrapper with textarea", () => {
       wrapper = createWrapper({

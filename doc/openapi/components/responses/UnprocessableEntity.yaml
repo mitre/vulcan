@@ -1,0 +1,36 @@
+description: Validation errors prevented the request from being processed.
+content:
+  application/json:
+    schema:
+      type: object
+      properties:
+        toast:
+          type: object
+          description: Toast notification containing validation error details.
+          properties:
+            title:
+              type: string
+              description: Short error summary.
+              example: Unable to save changes.
+            message:
+              type: array
+              description: Specific validation error messages.
+              items:
+                type: string
+              example:
+                - "Name can't be blank."
+                - "Prefix format is invalid."
+            variant:
+              type: string
+              description: Bootstrap alert variant (always danger for validation errors).
+              example: danger
+    examples:
+      validation_failure:
+        summary: Component creation with missing fields
+        value:
+          toast:
+            title: Unable to save changes.
+            message:
+              - "Name can't be blank."
+              - "Prefix format is invalid."
+            variant: danger

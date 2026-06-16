@@ -1,0 +1,178 @@
+description: >-
+  Full component for the editing page. Serialized by ComponentBlueprint :editor view.
+  35 total fields including nested rules, memberships, histories, reviews.
+  Used by GET /components/:id (member), GET /components/:id/rules (via index).
+allOf:
+  - $ref: ./ComponentSummary.yaml
+  - type: object
+    properties:
+      effective_permissions:
+        type:
+          - string
+          - 'null'
+        description: >-
+          Current user's role on this component's project (admin, reviewer,
+          author, viewer). Null when user is not a member. System admins
+          always get 'admin'.
+        enum:
+          - admin
+          - reviewer
+          - author
+          - viewer
+          - null
+        example: admin
+      title:
+        type:
+          - string
+          - 'null'
+        description: Full official title of the component.
+        example: "Photon OS 3 STIG Readiness Guide"
+      description:
+        type:
+          - string
+          - 'null'
+        description: Optional longer description.
+        example: null
+      admin_name:
+        type:
+          - string
+          - 'null'
+        description: Point of contact name.
+        example: "Photon OS Maintainer"
+      admin_email:
+        type:
+          - string
+          - 'null'
+        format: email
+        description: Point of contact email.
+        example: "photon-team@example.org"
+      released:
+        type: boolean
+        description: Whether finalized.
+        example: true
+      advanced_fields:
+        type: boolean
+        description: Whether advanced DISA fields are shown in the editor.
+        example: false
+      project_id:
+        type: integer
+        description: ID of the parent project.
+        example: 1
+      component_id:
+        type:
+          - integer
+          - 'null'
+        description: ID of the source component if this is an overlay. Null for originals.
+        example: null
+      security_requirements_guide_id:
+        type: integer
+        description: ID of the SRG this component is based on.
+        example: 3
+      memberships_count:
+        type: integer
+        description: Number of direct memberships on this component.
+        example: 0
+      rules_count:
+        type: integer
+        description: Number of rules in this component.
+        example: 203
+      updated_at:
+        type: string
+        description: Last modified timestamp. Blueprinter format.
+        example: "2026-05-29 15:36:06 UTC"
+      created_at:
+        type: string
+        description: Creation timestamp. Blueprinter format.
+        example: "2026-05-19 14:07:48 UTC"
+      comment_phase:
+        type:
+          - string
+          - 'null'
+        description: Current comment period phase.
+        enum:
+          - draft
+          - open
+          - closed
+          - null
+        example: open
+      closed_reason:
+        type:
+          - string
+          - 'null'
+        description: Reason the comment period was closed.
+        example: null
+      comment_period_starts_at:
+        type:
+          - string
+          - 'null'
+        description: Start of the public comment period.
+        example: null
+      comment_period_ends_at:
+        type:
+          - string
+          - 'null'
+        description: End of the public comment period.
+        example: null
+      releasable:
+        type: boolean
+        description: Whether all rules meet release criteria.
+        example: false
+      srg_is_latest:
+        type: boolean
+        description: Whether the component's based_on SRG is the latest version of its family.
+        example: true
+      srg_latest_version:
+        type:
+          - string
+          - 'null'
+        description: Version string of the latest SRG in the same family. Null when srg_is_latest=true.
+        example: null
+      srg_latest_id:
+        type:
+          - integer
+          - 'null'
+        description: ID of the latest SRG for linking. Null when srg_is_latest=true.
+        example: null
+      status_counts:
+        type: object
+        description: Count of rules by applicability status.
+        example:
+          Not Yet Determined: 200
+          Applicable - Configurable: 2
+          Not Applicable: 1
+      additional_questions:
+        type: array
+        description: Component-level custom questions for rule authors.
+        items:
+          type: object
+      rules:
+        type: array
+        description: All rules via RuleBlueprint :editor view.
+        items:
+          $ref: ./RuleEditorResponse.yaml
+      reviews:
+        type: array
+        description: Recent reviews (last 20, hand-built hashes with displayed_rule_name).
+        items:
+          type: object
+      histories:
+        type: array
+        description: Audit trail entries (last 50).
+        items:
+          type: object
+      memberships:
+        type: array
+        description: Direct component memberships.
+        items:
+          $ref: ./MembershipSummary.yaml
+      metadata:
+        type:
+          - object
+          - 'null'
+        description: Component metadata key-value pairs.
+        example: null
+      inherited_memberships:
+        type: array
+        description: Memberships inherited from the parent project.
+        items:
+          $ref: ./MembershipSummary.yaml

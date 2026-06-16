@@ -40,14 +40,13 @@
           :for-duplicate="true"
           :selected-rule-id="rule.id"
           :selected-rule-text="`${projectPrefix}-${rule.rule_id}`"
-          @ruleSelected="$emit('ruleSelected', $event.id)"
         />
         <b-button v-b-modal.duplicate-rule-modal variant="info">{{ msg.cloneTitle }}</b-button>
 
         <!-- Disable and enable save & delete buttons based on locked state of rule -->
         <template v-if="rule.locked || rule.review_requestor_id ? true : false">
           <span
-            v-if="effectivePermissions == 'admin'"
+            v-if="effectivePermissions === 'admin'"
             v-b-tooltip.hover
             class="d-inline-block"
             :title="msg.cannotDeleteLocked"
@@ -61,7 +60,7 @@
         <template v-else>
           <!-- Delete rule -->
           <b-button
-            v-if="effectivePermissions == 'admin'"
+            v-if="effectivePermissions === 'admin'"
             v-b-modal.delete-rule-modal
             variant="danger"
           >
@@ -180,10 +179,10 @@
 </template>
 
 <script>
-import axios from "axios";
-import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import FormMixinVue from "../../mixins/FormMixin.vue";
+import { updateRule } from "../../api/rulesApi";
+import { createRuleReview } from "../../api/reviewsApi";
+import { useDateFormat } from "../../composables/useDateFormat";
+import { useToast } from "../../composables/useToast";
 import CommentModal from "../shared/CommentModal.vue";
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
 import { RULE_TERM, MESSAGE_LABELS, REVIEW_ACTION_LABELS } from "../../constants/terminology";
@@ -191,7 +190,6 @@ import { RULE_TERM, MESSAGE_LABELS, REVIEW_ACTION_LABELS } from "../../constants
 export default {
   name: "RuleEditorHeader",
   components: { CommentModal, NewRuleModalForm },
-  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue],
   props: {
     effectivePermissions: {
       type: String,
@@ -218,6 +216,11 @@ export default {
       default: false,
     },
   },
+  setup() {
+    const { friendlyDateTime } = useDateFormat();
+    const { alertOrNotifyResponse } = useToast();
+    return { friendlyDateTime, alertOrNotifyResponse };
+  },
   data: function () {
     return {
       term: RULE_TERM,
@@ -238,8 +241,8 @@ export default {
     },
     reviewActions: function () {
       // Set some helper variables for readability
-      const isAdmin = !this.readOnly && this.effectivePermissions == "admin";
-      const isReviewer = !this.readOnly && this.effectivePermissions == "reviewer";
+      const isAdmin = !this.readOnly && this.effectivePermissions === "admin";
+      const isReviewer = !this.readOnly && this.effectivePermissions === "reviewer";
       const isRequestor = !this.readOnly && this.currentUserId == this.rule.review_requestor_id;
       const isUnderReview = this.rule.review_requestor_id != null;
       const labels = this.reviewLabels;
@@ -343,14 +346,7 @@ export default {
   },
   methods: {
     saveRule(comment) {
-      const payload = {
-        rule: {
-          ...this.rule,
-          audit_comment: comment,
-        },
-      };
-      axios
-        .put(`/rules/${this.rule.id}`, payload)
+      updateRule(this.rule.id, { ...this.rule, audit_comment: comment })
         .then(this.saveRuleSuccess)
         .catch(this.alertOrNotifyResponse);
     },
@@ -367,32 +363,25 @@ export default {
         return;
       }
 
-      axios
-        .post(`/rules/${this.rule.id}/reviews`, {
-          review: {
-            action: "comment",
-            comment: comment,
-          },
-        })
+      createRuleReview(this.rule.id, {
+        action: "comment",
+        comment: comment,
+      })
         .then(this.reviewSubmitSuccess)
         .catch(this.alertOrNotifyResponse);
     },
     reviewFormSubmitted: function (event) {
       event.preventDefault();
 
-      // guard against invalid comment body
       if (!this.reviewComment.trim() || !this.selectedReviewAction) {
         return;
       }
 
-      axios
-        .post(`/rules/${this.rule.id}/reviews`, {
-          review: {
-            component_id: this.rule.component_id,
-            action: this.selectedReviewAction,
-            comment: this.reviewComment.trim(),
-          },
-        })
+      createRuleReview(this.rule.id, {
+        component_id: this.rule.component_id,
+        action: this.selectedReviewAction,
+        comment: this.reviewComment.trim(),
+      })
         .then(this.reviewSubmitSuccess)
         .catch(this.alertOrNotifyResponse);
     },

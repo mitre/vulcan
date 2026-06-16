@@ -5,10 +5,11 @@ module Users
   # login is disabled.
   class RegistrationsController < Devise::RegistrationsController
     before_action :configure_permitted_parameters
-    # Devise's stock `authenticate_scope!` only guards :edit / :update /
-    # :destroy. The settings-shell sub-pages we add (#edit_password,
-    # #edit_activity) need the same protection.
-    prepend_before_action :authenticate_scope!, only: %i[edit_password edit_activity]
+    # Devise's base class guards :edit/:update/:destroy with authenticate_scope!
+    # (which calls authenticate_user!(force: true) for stale-session protection).
+    # We must INCLUDE those originals when adding our custom settings-shell actions,
+    # because prepend_before_action replaces — not extends — the parent's registration.
+    prepend_before_action :authenticate_scope!, only: %i[edit update destroy edit_password edit_activity edit_tokens]
 
     def edit
       super
@@ -26,13 +27,18 @@ module Users
     # requires filtering on BOTH user_id AND user_type to avoid matching
     # non-User actors that share a numeric id, e.g. 'System' background
     # job entries).
+    def edit_tokens
+      self.resource = current_user
+    end
+
     def edit_activity
       self.resource = current_user
-      @histories = Audited.audit_class.includes(:user)
-                          .where(user_id: current_user.id, user_type: 'User')
-                          .order(created_at: :desc)
-                          .limit(50)
-                          .map(&:format)
+      @histories = AuditBlueprint.render_as_json(
+        Audited.audit_class.includes(:user)
+               .where(user_id: current_user.id, user_type: 'User')
+               .order(created_at: :desc)
+               .limit(50)
+      )
     end
 
     def create
@@ -72,12 +78,12 @@ module Users
           end
           format.json do
             render json: {
-              toast: {
+              toast: Toast.new(
                 title: 'Could not update profile.',
                 message: resource.errors.full_messages,
                 variant: 'danger'
-              }
-            }, status: :unprocessable_entity
+              )
+            }, status: :unprocessable_content
           end
         end
       end
@@ -106,47 +112,54 @@ module Users
     #   2. Prove the user can still authenticate after unlink (prevents lockout)
     # Refused when local login is globally disabled (no fallback auth method).
     def unlink_identity
-      user = current_user
+      identity = current_user.identities.find_by(id: params[:identity_id])
+      return respond_with_error('Identity not found.', :not_found) unless identity
 
-      return respond_with_error('Nothing to unlink — this account has no linked identity.', :unprocessable_entity) if user.provider.blank?
+      unless current_user.valid_for_authentication? { current_user.valid_password?(params[:current_password].to_s) }
+        return respond_with_error('Your account has been locked due to too many failed attempts. Please try again later.', :locked) if current_user.access_locked?
 
-      unless Settings.local_login.enabled
-        return respond_with_error(
-          'Cannot unlink: local login is disabled on this instance. ' \
-          'Unlinking would lock you out of your account.',
-          :unprocessable_entity
-        )
+        return respond_with_error('Incorrect password. Please enter your current password to unlink.', :unprocessable_content)
       end
 
-      # NOTE: valid_password? has a hidden side-effect — if the user's password is stored
-      # with bcrypt (legacy), Devise transparently rehashes it to PBKDF2 on successful
-      # verification. This is intentional (transparent migration) but worth knowing.
-      return respond_with_error('Incorrect password. Please enter your current password to unlink.', :unprocessable_entity) unless user.valid_password?(params[:current_password].to_s)
-
-      previous_provider = user.provider
-      # Atomic update: both fields must be cleared together to satisfy the
-      # partial unique index on (provider, uid) WHERE both are not null.
-      # audit_comment is captured by the `audited` gem and used as the human-readable
-      # label in the activity panel instead of the raw "provider was updated..." text.
-      user.audit_comment = "Unlinked #{previous_provider.upcase} identity"
-      user.update!(provider: nil, uid: nil)
-      Rails.logger.info "AUDIT: Unlinked #{previous_provider} identity from #{user.email}"
+      title = OidcProviderRegistry.title_for(identity.provider)
+      current_user.unlink_identity!(identity)
 
       respond_to do |format|
         format.html do
-          flash[:notice] = "Your #{previous_provider.upcase} identity has been unlinked. " \
-                           'You can now sign in with your email and password only.'
+          flash[:notice] = "Your #{title} identity has been unlinked."
           redirect_to edit_user_registration_path
         end
         format.json do
           render_toast(title: 'Identity unlinked.',
-                       message: "#{previous_provider.upcase} identity unlinked successfully.",
+                       message: "#{title} identity unlinked successfully.",
                        variant: 'success', status: :ok)
         end
       end
+    rescue User::IdentityGuardError => e
+      respond_with_error(e.message, :unprocessable_content)
+    end
+
+    # POST /users/initiate_link — start the OmniAuth flow to link an external
+    # provider to the current local-only account. Sets a session flag so the
+    # OmniAuth callback attaches the identity to current_user instead of
+    # creating/finding a separate account.
+    def initiate_link
+      provider = params[:provider].to_s
+
+      return respond_with_error("The #{provider.upcase} provider is not enabled on this instance.", :unprocessable_content) unless provider_enabled?(provider)
+
+      return respond_with_error("You already have a linked #{OidcProviderRegistry.title_for(provider)} identity.", :unprocessable_content) if current_user.identities.exists?(provider: provider)
+
+      session[:link_in_progress] = true
+      session[:link_provider] = provider
+      redirect_to omniauth_authorize_path(:user, provider), allow_other_host: false
     end
 
     private
+
+    def provider_enabled?(provider)
+      Devise.omniauth_providers.include?(provider.to_sym)
+    end
 
     # Devise stock behavior: if the user changed their email and reconfirmation
     # is required, tell them a confirmation link was sent. Otherwise, generic message.
@@ -167,7 +180,7 @@ module Users
           redirect_to edit_user_registration_path
         end
         format.json do
-          render json: { toast: { title: 'Cannot unlink', message: [message], variant: 'danger' } },
+          render json: { toast: Toast.new(title: 'Cannot unlink', message: [message], variant: 'danger') },
                  status: status
         end
       end
@@ -175,17 +188,41 @@ module Users
 
     protected
 
+    # Field-sensitivity split (Devise design + OWASP ASVS re-authentication
+    # for sensitive account changes): non-sensitive fields (name, slack)
+    # save without a password; changing the EMAIL — the login identifier —
+    # requires the current password. Provider-managed users never change
+    # email here: the identity provider owns it.
+    #
+    # With email confirmation disabled (no SMTP), reconfirmable would hold
+    # the new address in unconfirmed_email waiting for a mail that never
+    # sends — skip_reconfirmation! applies it immediately instead (same
+    # pattern as the admin path in UsersController#update).
     def update_resource(resource, params)
-      if resource.provider.nil?
-        super
+      if resource.password_automatically_set && password_change?(params)
+        resource.password_automatically_set = false
+        resource.update(params.except('current_password'))
+      elsif resource.provider.nil? && email_change?(resource, params)
+        resource.skip_reconfirmation! unless Settings.local_login.email_confirmation
+        resource.update_with_password(params)
+      elsif password_change?(params)
+        resource.update_with_password(params)
       else
-        resource.update_without_password(params)
+        resource.update_without_password(params.except('email', 'current_password'))
       end
+    end
+
+    def password_change?(params)
+      params['password'].present?
+    end
+
+    def email_change?(resource, params)
+      params['email'].present? && params['email'] != resource.email
     end
 
     def configure_permitted_parameters
       devise_parameter_sanitizer.permit(:sign_up, keys: %i[name slack_user_id])
-      devise_parameter_sanitizer.permit(:account_update, keys: %i[name slack_user_id])
+      devise_parameter_sanitizer.permit(:account_update, keys: %i[name slack_user_id email current_password])
     end
   end
 end

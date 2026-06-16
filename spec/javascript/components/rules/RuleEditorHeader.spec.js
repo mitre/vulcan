@@ -3,18 +3,27 @@ import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import RuleEditorHeader from "@/components/rules/RuleEditorHeader.vue";
 
-// Mock axios with defaults structure for FormMixin
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
     post: vi.fn(() => Promise.resolve({ data: {} })),
     put: vi.fn(() => Promise.resolve({ data: {} })),
-    defaults: {
-      headers: {
-        common: {},
-      },
-    },
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
   },
 }));
+
+vi.mock("@/api/rulesApi", () => ({
+  updateRule: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+
+vi.mock("@/api/reviewsApi", () => ({
+  createRuleReview: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+
+vi.mock("@/composables/useDateFormat", { spy: true });
+import { useDateFormat } from "@/composables/useDateFormat";
 
 describe("RuleEditorHeader", () => {
   let wrapper;
@@ -161,8 +170,74 @@ describe("RuleEditorHeader", () => {
   describe("readOnly mode", () => {
     it("hides action buttons when readOnly is true", () => {
       wrapper = createWrapper({ readOnly: true });
-      // The entire action section is v-if="!readOnly"
       expect(wrapper.find("b-button-stub[variant='info']").exists()).toBe(false);
+    });
+  });
+
+  // ── composable contracts ────────────────────────────────────────────
+  // REQUIREMENTS: dates render via useDateFormat (no DateFormatMixin),
+  // and admin-only controls stay admin-gated across the ==/=== fix.
+  // Toasts come from the useToast composable; FormMixin was verified dead.
+  describe("composable contracts", () => {
+    it("renders the created date via useDateFormat", () => {
+      wrapper = createWrapper();
+      expect(useDateFormat).toHaveBeenCalled();
+      // moment "lll" renders the month name, never the raw date string
+      expect(wrapper.text()).toContain("Jan 1, 2024");
+    });
+
+    it("delete button is admin-only — strict role check", () => {
+      wrapper = createWrapper({ effectivePermissions: "admin" });
+      expect(wrapper.find("b-button-stub[variant='danger']").exists()).toBe(true);
+      wrapper.destroy();
+      wrapper = createWrapper({ effectivePermissions: "author" });
+      expect(wrapper.find("b-button-stub[variant='danger']").exists()).toBe(false);
+    });
+  });
+
+  describe("API calls use domain modules", () => {
+    it("saveRule calls updateRule with rule id and payload", async () => {
+      const { updateRule } = await import("@/api/rulesApi");
+      updateRule.mockResolvedValueOnce({ data: {} });
+
+      wrapper = createWrapper();
+      wrapper.vm.saveRule("audit comment");
+
+      expect(updateRule).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({
+          audit_comment: "audit comment",
+        }),
+      );
+    });
+
+    it("commentFormSubmitted calls createRuleReview with rule id", async () => {
+      const { createRuleReview } = await import("@/api/reviewsApi");
+      createRuleReview.mockResolvedValueOnce({ data: {} });
+
+      wrapper = createWrapper();
+      wrapper.vm.commentFormSubmitted("test comment");
+
+      expect(createRuleReview).toHaveBeenCalledWith(1, {
+        action: "comment",
+        comment: "test comment",
+      });
+    });
+
+    it("reviewFormSubmitted calls createRuleReview with action and comment", async () => {
+      const { createRuleReview } = await import("@/api/reviewsApi");
+      createRuleReview.mockResolvedValueOnce({ data: {} });
+
+      wrapper = createWrapper();
+      wrapper.vm.selectedReviewAction = "request_review";
+      wrapper.vm.reviewComment = "please review";
+      wrapper.vm.reviewFormSubmitted({ preventDefault: vi.fn() });
+
+      expect(createRuleReview).toHaveBeenCalledWith(1, {
+        component_id: 10,
+        action: "request_review",
+        comment: "please review",
+      });
     });
   });
 });

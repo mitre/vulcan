@@ -54,7 +54,7 @@
       </b-form-group>
 
       <!-- FILTER RESULTS BY FIELDS  & SEARCH KEYWORD -->
-      <div class="row">
+      <div class="form-row">
         <div class="col-6">
           <b-form-group>
             <template #label>
@@ -185,7 +185,12 @@
                     </b-button>
                     <div
                       class="border p-2 overflow-auto"
-                      style="background: #e9ecef; opacity: 1; height: 375px; line-height: 1.5"
+                      style="
+                        background: var(--vulcan-disabled-bg, #e9ecef);
+                        opacity: 1;
+                        height: 375px;
+                        line-height: 1.5;
+                      "
                       v-html="
                         formatAndHighlightSearchWord(
                           relatedRule.disa_rule_descriptions_attributes[0].vuln_discussion,
@@ -211,7 +216,12 @@
                     </b-button>
                     <div
                       class="border p-2 overflow-auto"
-                      style="background: #e9ecef; opacity: 1; height: 375px; line-height: 1.5"
+                      style="
+                        background: var(--vulcan-disabled-bg, #e9ecef);
+                        opacity: 1;
+                        height: 375px;
+                        line-height: 1.5;
+                      "
                       v-html="
                         formatAndHighlightSearchWord(relatedRule.checks_attributes[0].content)
                       "
@@ -233,7 +243,12 @@
                     </b-button>
                     <div
                       class="border p-2 overflow-auto"
-                      style="background: #e9ecef; opacity: 1; height: 375px; line-height: 1.5"
+                      style="
+                        background: var(--vulcan-disabled-bg, #e9ecef);
+                        opacity: 1;
+                        height: 375px;
+                        line-height: 1.5;
+                      "
                       v-html="formatAndHighlightSearchWord(relatedRule.fixtext)"
                     />
                   </b-card-text>
@@ -247,7 +262,8 @@
   </div>
 </template>
 <script>
-import axios from "axios";
+import { getRelatedRules } from "../../api/searchApi";
+import DOMPurify from "dompurify";
 import VueMultiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
 export default {
@@ -356,7 +372,7 @@ export default {
   methods: {
     getRelatedRules: async function () {
       this.resetModal();
-      axios.get(`/rules/${this.rule.id}/search/related_rules`).then((response) => {
+      getRelatedRules(this.rule.id).then((response) => {
         this.fields = this.controlFields;
         this.relatedRules = response.data.rules;
         this.relatedRulesParents = response.data.parents;
@@ -448,7 +464,7 @@ export default {
 
     formatAndHighlightSearchWord: function (text) {
       if (!text) return;
-      let formattedText = this.escapeHtml(text);
+      let formattedText = DOMPurify.sanitize(text, { ALLOWED_TAGS: [] });
       if (this.keywordList.length) {
         const words = this.keywordList.map((w) => w.toLowerCase());
         for (let word of words) {
@@ -458,16 +474,10 @@ export default {
           });
         }
       }
-      return formattedText.replace(/\n/g, "<br />");
-    },
-    escapeHtml: function (text) {
-      if (!text) return;
-      return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+      return DOMPurify.sanitize(formattedText.replace(/\n/g, "<br />"), {
+        ALLOWED_TAGS: ["mark", "br"],
+        ALLOWED_ATTR: ["class"],
+      });
     },
     copyCheckContentToRule: function (root, checkContent) {
       const check = this.rule.checks_attributes[0];
@@ -519,10 +529,10 @@ export default {
 <style scoped>
 .keyword-bubble {
   display: inline-block;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  margin: 5px;
+  padding: 0.625rem;
+  border: 1px solid var(--vulcan-border-color, #ccc);
+  border-radius: 0.625rem;
+  margin: 0.3125rem;
   width: 50px;
   height: 5px;
   font-size: xx-small;

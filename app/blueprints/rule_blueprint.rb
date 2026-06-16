@@ -57,6 +57,23 @@ class RuleBlueprint < Blueprinter::Base
     # Default fields are sufficient for navigator
   end
 
+  # === Picker view: RulePicker dropdown ===
+  # Navigator defaults + satisfaction relationship IDs for parent/child badges.
+  # No text blobs, no reviews, no checks — just enough for the picker UI.
+  view :picker do
+    field :displayed_name do |rule, _options|
+      rule.displayed_name
+    end
+
+    association :satisfies, blueprint: SatisfactionBlueprint do |rule, _options|
+      rule.satisfies
+    end
+
+    association :satisfied_by, blueprint: SatisfactionBlueprint do |rule, _options|
+      rule.satisfied_by
+    end
+  end
+
   # === Viewer view: read-only detail ===
   view :viewer do
     fields :rule_weight, :fixtext, :fixtext_fixref, :ident, :ident_system,
@@ -99,6 +116,10 @@ class RuleBlueprint < Blueprinter::Base
            :inspec_control_body_lang, :inspec_control_file_lang,
            :fix_id
 
+    field :histories do |rule, _options|
+      rule.histories
+    end
+
     association :rule_descriptions_attributes, blueprint: RuleDescriptionBlueprint,
                                                name: :rule_descriptions_attributes do |rule, _options|
       rule.rule_descriptions
@@ -114,7 +135,7 @@ class RuleBlueprint < Blueprinter::Base
     end
 
     field :srg_rule_attributes do |rule, _options|
-      SrgRuleBlueprint.render_as_hash(rule.srg_rule) if rule.srg_rule
+      SrgRuleBlueprint.render_as_json(rule.srg_rule) if rule.srg_rule
     end
 
     field :srg_info do |rule, _options|

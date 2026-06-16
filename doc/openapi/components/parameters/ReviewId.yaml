@@ -1,0 +1,7 @@
+name: reviewId
+in: path
+required: true
+description: Numeric ID of the target review.
+schema:
+  type: integer
+example: 44

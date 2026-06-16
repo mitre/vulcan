@@ -169,6 +169,26 @@ RSpec.describe 'Api::Search' do
         expect(json['rules'][0]['title']).to eq('Xylophone Configuration Requirements')
       end
 
+      it 'returns matched_field indicating which field matched' do
+        get search_path, params: { q: 'Xylophone' }
+
+        expect(response).to have_http_status(:success)
+        json = response.parsed_body
+        rule_result = json['rules'].find { |r| r['title'] == 'Xylophone Configuration Requirements' }
+        expect(rule_result).not_to be_nil
+        expect(rule_result['matched_field']).to eq('title')
+      end
+
+      it 'returns matched_field for fixtext matches' do
+        get search_path, params: { q: 'strict policy' }
+
+        expect(response).to have_http_status(:success)
+        json = response.parsed_body
+        rule_result = json['rules'].find { |r| r['rule_id'] == rule1.rule_id }
+        expect(rule_result).not_to be_nil
+        expect(rule_result['matched_field']).to eq('fixtext')
+      end
+
       it 'only returns rules from accessible components' do
         # Update a rule in component2 (which user doesn't have access to)
         rule2 = component2.rules.first
@@ -657,6 +677,141 @@ RSpec.describe 'Api::Search' do
       expect(response).to have_http_status(:success)
       expect(xml_queries).to be_empty,
                              'Search loaded srgs.xml — should use .select() to exclude xml'
+    end
+
+    # search_rules ran `rule.reviews.where(...).size` per
+    # result row (N queries for N rules), and search_projects ran
+    # `project.components.count` per row. Replace both with one GROUP BY COUNT
+    # batched lookup per kind.
+    context 'N+1 prevention' do
+      before { sign_in user }
+
+      let!(:rules_with_comments) do
+        rules = component1.rules.first(3)
+        rules.each_with_index do |rule, i|
+          rule.update!(title: "Wallaby Unique Result #{i}")
+          2.times { |c| create(:review, rule: rule, action: 'comment', comment: "c#{i}-#{c}") }
+        end
+        rules
+      end
+
+      it 'search_rules returns comment_count without N+1' do
+        per_rule_counts = []
+        cb = lambda do |_, _, _, _, payload|
+          sql = payload[:sql].to_s
+          # Per-rule N+1 form is COUNT(*) ... WHERE rule_id = ? AND action = ?
+          # (no GROUP BY, no IN). The batched form uses GROUP BY rule_id with IN.
+          if sql.match?(/COUNT.*FROM\s+["']?reviews/i) &&
+             sql.match?(/rule_id["']?\s*=/i) && !sql.match?(/GROUP\s+BY/i)
+            per_rule_counts << sql
+          end
+        end
+
+        ActiveSupport::Notifications.subscribed(cb, 'sql.active_record') do
+          get search_path, params: { q: 'Wallaby' }
+        end
+
+        expect(per_rule_counts).to be_empty,
+                                   "expected 0 per-rule COUNT queries (batched via GROUP BY); got #{per_rule_counts.size}:\n#{per_rule_counts.join("\n")}"
+
+        # Functional check: counts still correct.
+        json = response.parsed_body
+        rules_with_comments.each do |rule|
+          row = json['rules'].find { |r| r['rule_id'] == rule.rule_id }
+          expect(row['comment_count']).to eq(2)
+        end
+      end
+
+      it 'search_projects returns components_count without N+1' do
+        # Make sure project1 matches by name so it lands in the results.
+        per_project_counts = []
+        cb = lambda do |_, _, _, _, payload|
+          sql = payload[:sql].to_s
+          if sql.match?(/COUNT.*FROM\s+["']?components/i) &&
+             sql.match?(/project_id["']?\s*=/i) && !sql.match?(/GROUP\s+BY/i)
+            per_project_counts << sql
+          end
+        end
+
+        ActiveSupport::Notifications.subscribed(cb, 'sql.active_record') do
+          get search_path, params: { q: 'Security' }
+        end
+
+        expect(per_project_counts).to be_empty,
+                                      "expected 0 per-project COUNT queries (batched via GROUP BY); got #{per_project_counts.size}:\n#{per_project_counts.join("\n")}"
+      end
+    end
+
+    context 'result metadata (comment_count + parent_info)' do
+      before { sign_in user }
+
+      let!(:rule_with_comments) do
+        rule = component1.rules.first
+        rule.update!(title: 'Quokka Unique Metadata Test')
+        create(:review, rule: rule, action: 'comment', comment: 'Test comment')
+        create(:review, rule: rule, action: 'comment', comment: 'Another comment')
+        rule
+      end
+
+      it 'returns comment_count for each rule result' do
+        get search_path, params: { q: 'Quokka' }
+
+        json = response.parsed_body
+        result = json['rules'].find { |r| r['rule_id'] == rule_with_comments.rule_id }
+        expect(result).not_to be_nil
+        expect(result['comment_count']).to eq(2)
+      end
+
+      it 'returns null parent_rule_id for standalone rules' do
+        get search_path, params: { q: 'Quokka' }
+
+        json = response.parsed_body
+        result = json['rules'].find { |r| r['rule_id'] == rule_with_comments.rule_id }
+        expect(result).to have_key('parent_rule_id')
+        expect(result['parent_rule_id']).to be_nil
+        expect(result).to have_key('parent_display_name')
+        expect(result['parent_display_name']).to be_nil
+      end
+    end
+
+    context 'component-scoped search' do
+      before { sign_in user }
+
+      let!(:rule_scoped) do
+        rule = component1.rules.first
+        rule.update!(title: 'Zeppelin Unique Scoped Title')
+        rule
+      end
+
+      it 'scopes rules to the specified component_id' do
+        get search_path, params: { q: 'Zeppelin', component_id: component1.id }
+
+        expect(response).to have_http_status(:success)
+        json = response.parsed_body
+        expect(json['rules'].length).to be >= 1
+        json['rules'].each do |rule|
+          expect(rule['component_id']).to eq(component1.id)
+        end
+      end
+
+      it 'returns empty when component_id belongs to inaccessible project' do
+        rule2 = component2.rules.first
+        rule2.update!(title: 'Zeppelin Secret Rule')
+
+        get search_path, params: { q: 'Zeppelin', component_id: component2.id }
+
+        expect(response).to have_http_status(:success)
+        json = response.parsed_body
+        expect(json['rules']).to eq([])
+      end
+
+      it 'returns all accessible rules when no component_id provided' do
+        get search_path, params: { q: 'Zeppelin' }
+
+        expect(response).to have_http_status(:success)
+        json = response.parsed_body
+        expect(json['rules'].length).to be >= 1
+      end
     end
   end
 end

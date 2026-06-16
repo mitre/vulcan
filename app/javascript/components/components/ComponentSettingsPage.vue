@@ -79,22 +79,13 @@
                 </b-form-group>
               </b-col>
             </b-form-row>
+            <!-- Bullets derive from the same triageVocabulary constants as the
+                 radio options above — the two lists cannot drift apart. -->
             <b-alert show variant="info" class="mb-0 small">
               <ul class="mb-0 pl-3">
-                <li>
-                  <strong>Open</strong>: commenters can post. End date is optional — when set, it
-                  surfaces a banner with a countdown.
-                </li>
-                <li>
-                  <strong>Closed (Adjudicating)</strong>: window is closed but triage continues.
-                </li>
-                <li>
-                  <strong>Closed (Finalized)</strong>: disposition published — the component is
-                  frozen for writes.
-                </li>
-                <li>
-                  <strong>Closed</strong> (no reason): commenting is paused without commitment to a
-                  workflow stage.
+                <li v-for="item in phaseHelpItems" :key="item.label + item.suffix">
+                  <strong>{{ item.label }}</strong
+                  >{{ item.suffix }}: {{ item.description }}
                 </li>
               </ul>
             </b-alert>
@@ -223,13 +214,18 @@
 </template>
 
 <script>
-import axios from "axios";
+import { updateComponent } from "../../api/componentsApi";
+import { provide } from "vue";
+import { searchUsers } from "../../api/usersApi";
 import debounce from "lodash/debounce";
 import VueMultiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import { COMMENT_PHASE_LABELS, CLOSED_REASON_LABELS } from "../../constants/triageVocabulary";
+import { useToast } from "../../composables/useToast";
+import {
+  COMMENT_PHASE_LABELS,
+  CLOSED_REASON_LABELS,
+  commentPhaseHelpItems,
+} from "../../constants/triageVocabulary";
 
 const PAYLOAD_KEYS = [
   "name",
@@ -257,12 +253,16 @@ function isoToDate(value) {
 export default {
   name: "ComponentSettingsPage",
   components: { VueMultiselect },
-  mixins: [AlertMixinVue, FormMixinVue],
   props: {
     initialComponentState: { type: Object, required: true },
     project: { type: Object, required: true },
-    effectivePermissions: { type: String, default: null },
     currentUserId: { type: Number, required: true },
+  },
+  setup(props) {
+    const effectivePermissions = props.initialComponentState?.effective_permissions || null;
+    provide("effectivePermissions", effectivePermissions);
+    const { alertOrNotifyResponse } = useToast();
+    return { effectivePermissions, alertOrNotifyResponse };
   },
   data() {
     return {
@@ -291,6 +291,9 @@ export default {
         { value: null, text: "(none — closed without commitment to a stage)" },
         ...Object.entries(CLOSED_REASON_LABELS).map(([value, text]) => ({ value, text })),
       ];
+    },
+    phaseHelpItems() {
+      return commentPhaseHelpItems();
     },
   },
   methods: {
@@ -325,13 +328,10 @@ export default {
       }
       this.isPocSearching = true;
       try {
-        const { data } = await axios.get("/api/users/search", {
-          params: {
-            q: query,
-            membership_type: "Component",
-            membership_id: this.component.id,
-            scope: "members",
-          },
+        const { data } = await searchUsers(query, {
+          membership_type: "Component",
+          membership_id: this.component.id,
+          scope: "members",
         });
         this.potentialPocs = data.users;
       } catch {
@@ -370,12 +370,12 @@ export default {
       }
 
       this.saving = true;
-      const payload = { component: {} };
+      const data = {};
       PAYLOAD_KEYS.forEach((key) => {
-        payload.component[key] = this.form[key];
+        data[key] = this.form[key];
       });
       try {
-        const response = await axios.put(`/components/${this.component.id}`, payload);
+        const response = await updateComponent(this.component.id, data);
         this.alertOrNotifyResponse(response);
       } catch (error) {
         this.alertOrNotifyResponse(error);

@@ -16,6 +16,7 @@ class Project < ApplicationRecord
   has_many :components, dependent: :destroy
   has_many :rules, through: :components
   has_many :access_requests, class_name: 'ProjectAccessRequest', dependent: :destroy
+  has_many :triage_response_templates, dependent: :destroy
   has_one :project_metadata, dependent: :destroy
   accepts_nested_attributes_for :project_metadata, :memberships
 
@@ -26,6 +27,10 @@ class Project < ApplicationRecord
             length: { maximum: ->(_r) { Settings.input_limits.short_string } }, allow_nil: true
 
   scope :alphabetical, -> { order(:name) }
+  scope :search, lambda { |q|
+    sanitized = sanitize_sql_like(q)
+    where('projects.name ILIKE :q OR projects.description ILIKE :q', q: "%#{sanitized}%")
+  }
 
   # Inner SELECT body that unions rule-scoped and component-scoped top-level
   # comment Reviews. Two ? placeholders (one per UNION branch) bind the
@@ -123,12 +128,13 @@ class Project < ApplicationRecord
     page = [page.to_i, 1].max
     per_page = per_page.to_i.clamp(1, 100)
 
-    project_components = components.to_a
+    project_components = components.includes(:based_on).to_a
     component_ids_in_project = project_components.map(&:id)
-    return { rows: [], pagination: { page: 1, per_page: per_page, total: 0 } } if component_ids_in_project.empty?
+    empty_result = { rows: [], pagination: { page: 1, per_page: per_page, total: 0 }, status_counts: {} }
+    return empty_result if component_ids_in_project.empty?
 
     scope_components = component_id.present? ? [component_id.to_i] & component_ids_in_project : component_ids_in_project
-    return { rows: [], pagination: { page: 1, per_page: per_page, total: 0 } } if scope_components.empty?
+    return empty_result if scope_components.empty?
 
     rule_id_subquery = Rule.where(component_id: scope_components).select(:id)
     rule_scoped = Review.top_level_comments
@@ -138,6 +144,7 @@ class Project < ApplicationRecord
     scope = rule_scoped.or(component_scoped)
                        .preload(:user, :triage_set_by, :adjudicated_by, :commentable)
 
+    base_scope_for_counts = scope
     scope = scope.where(triage_status: triage_status) unless triage_status == 'all'
     scope = scope.where(section: section) if section.present? && section != 'all'
     scope = scope.where(user_id: author_id) if author_id.present?
@@ -178,42 +185,31 @@ class Project < ApplicationRecord
                                    .count
     reaction_counts = Reaction.where(review_id: page_review_ids).group(:review_id, :kind).count
 
-    rows = page_reviews.map do |r|
-      component_scoped_row = r.commentable_type == 'Component'
-      rule_meta = component_scoped_row ? {} : (rule_lookup[r.rule_id] || {})
-      cid = component_scoped_row ? r.commentable_id : rule_meta[:component_id]
-      {
-        id: r.id,
-        rule_id: component_scoped_row ? nil : r.rule_id,
-        rule_displayed_name: if component_scoped_row
-                               '(component)'
-                             else
-                               (rule_meta[:prefix] ? "#{rule_meta[:prefix]}-#{rule_meta[:rule_id]}" : nil)
-                             end,
-        commentable_type: r.commentable_type,
-        component_id: cid,
-        component_name: component_lookup[cid]&.name,
-        section: r.section,
-        author_name: r.user&.name,
-        # author_email intentionally omitted — see Component#paginated_comments
-        # for rationale (PII scraping during public review windows).
-        comment: r.comment,
-        created_at: r.created_at,
-        triage_status: r.triage_status,
-        triage_set_at: r.triage_set_at,
-        adjudicated_at: r.adjudicated_at,
-        duplicate_of_review_id: r.duplicate_of_review_id,
-        triager_display_name: r.triager_display_name,
-        triager_imported: r.triager_imported?,
-        adjudicator_display_name: r.adjudicator_display_name,
-        adjudicator_imported: r.adjudicator_imported?,
-        responses_count: responses_count_lookup[r.id] || 0,
-        reactions: { up: reaction_counts[[r.id, 'up']] || 0,
-                     down: reaction_counts[[r.id, 'down']] || 0 }
-      }
-    end
+    rule_display_map = rule_lookup.transform_values { |m| m[:prefix] ? "#{m[:prefix]}-#{m[:rule_id]}" : nil }
+    rule_component_map = rule_lookup.transform_values { |m| m[:component_id] }
+    component_name_map = component_lookup.transform_values(&:name)
+    srg_info_map = SecurityRequirementsGuide.srg_info_for_components(component_lookup.values)
 
-    { rows: rows, pagination: { page: page, per_page: per_page, total: total } }
+    child_to_parent = RuleSatisfaction.where(rule_id: page_rule_ids)
+                                      .pluck(:rule_id, :satisfied_by_rule_id).to_h
+    parent_rule_map = child_to_parent.transform_values { |pid| rule_display_map[pid] }
+
+    blueprint_options = {
+      view: :project,
+      rule_display_map: rule_display_map,
+      rule_component_map: rule_component_map,
+      component_name_map: component_name_map,
+      srg_info_map: srg_info_map,
+      parent_rule_map: parent_rule_map,
+      responses_counts: responses_count_lookup,
+      reaction_counts: reaction_counts
+    }
+
+    rows = page_reviews.map { |r| CommentRowBlueprint.render_as_json(r, **blueprint_options) }
+
+    status_counts = base_scope_for_counts.group(:triage_status).count
+
+    { rows: rows, pagination: { page: page, per_page: per_page, total: total }, status_counts: status_counts }
   end
 
   # Helper method to extract data from Project Metadata
@@ -269,11 +265,11 @@ class Project < ApplicationRecord
     ).count
 
     {
-      ac: status_counts['Applicable - Configurable'] || 0,
-      aim: status_counts['Applicable - Inherently Meets'] || 0,
-      adnm: status_counts['Applicable - Does Not Meet'] || 0,
-      na: status_counts['Not Applicable'] || 0,
-      nyd: status_counts['Not Yet Determined'] || 0,
+      ac: status_counts[RuleConstants::STATUS_APPLICABLE_CONFIGURABLE] || 0,
+      aim: status_counts[RuleConstants::STATUS_APPLICABLE_IM] || 0,
+      adnm: status_counts[RuleConstants::STATUS_APPLICABLE_DNM] || 0,
+      na: status_counts[RuleConstants::STATUS_NOT_APPLICABLE] || 0,
+      nyd: status_counts[RuleConstants::STATUS_NYD] || 0,
       nur: review_counts['nur'] || 0,
       ur: review_counts['ur'] || 0,
       lck: lock_counts[true] || 0,
@@ -292,6 +288,7 @@ class Project < ApplicationRecord
     Component.where(released: true).where.not(id: reject_component_ids)
              .select(:id, :name, :prefix, :version, :release, :project_id,
                      :security_requirements_guide_id, :released, :updated_at,
-                     :rules_count, :component_id)
+                     :rules_count, :component_id, :admin_name, :admin_email,
+                     :description)
   end
 end

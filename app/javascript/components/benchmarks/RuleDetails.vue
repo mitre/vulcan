@@ -11,23 +11,52 @@
       <div class="card-body">
         <b-form>
           <!-- Vulnerability Discussion -->
-          <DisaRuleDescriptionForm
+          <RuleFormGroup
             v-if="hasDisaDescription"
-            :rule="selectedRule"
-            :index="0"
-            :description="selectedRule.disa_rule_descriptions_attributes[0]"
+            field-name="vuln_discussion"
+            label="Vulnerability Discussion"
+            tooltip="Description of the vulnerability with details and context"
+            :fields="vulnDiscussionFields"
             :disabled="true"
-            :fields="disaDescriptionFormFields"
-          />
+            read-only
+            id-prefix="rule"
+          >
+            <template #default="{ inputId, isDisabled }">
+              <MarkdownTextarea
+                :id="inputId"
+                :value="selectedRule.disa_rule_descriptions_attributes[0].vuln_discussion"
+                placeholder=""
+                :disabled="isDisabled"
+                rows="1"
+                max-rows="99"
+                plain-text
+              />
+            </template>
+          </RuleFormGroup>
 
           <!-- Check Content -->
-          <CheckForm
+          <RuleFormGroup
             v-if="hasCheck"
-            :rule="selectedRule"
-            :index="0"
+            field-name="content"
+            label="Check"
+            tooltip="Procedure or script to verify system compliance"
+            :fields="checkFields"
             :disabled="true"
-            :fields="checkFormFields"
-          />
+            read-only
+            id-prefix="rule"
+          >
+            <template #default="{ inputId, isDisabled }">
+              <MarkdownTextarea
+                :id="inputId"
+                :value="selectedRule.checks_attributes[0].content"
+                placeholder=""
+                :disabled="isDisabled"
+                rows="1"
+                max-rows="99"
+                plain-text
+              />
+            </template>
+          </RuleFormGroup>
 
           <!-- Fix Text -->
           <RuleFormGroup
@@ -41,13 +70,14 @@
             id-prefix="rule"
           >
             <template #default="{ inputId, isDisabled }">
-              <b-form-textarea
+              <MarkdownTextarea
                 :id="inputId"
                 :value="selectedRule.fixtext"
                 placeholder=""
                 :disabled="isDisabled"
                 rows="1"
                 max-rows="99"
+                plain-text
               />
             </template>
           </RuleFormGroup>
@@ -64,13 +94,14 @@
             id-prefix="rule"
           >
             <template #default="{ inputId, isDisabled }">
-              <b-form-textarea
+              <MarkdownTextarea
                 :id="inputId"
                 :value="selectedRule.vendor_comments"
                 placeholder=""
                 :disabled="isDisabled"
                 rows="1"
                 max-rows="99"
+                plain-text
               />
             </template>
           </RuleFormGroup>
@@ -81,13 +112,12 @@
 </template>
 
 <script>
-import DisaRuleDescriptionForm from "../rules/forms/DisaRuleDescriptionForm";
-import CheckForm from "../rules/forms/CheckForm";
 import RuleFormGroup from "../shared/RuleFormGroup.vue";
+import MarkdownTextarea from "../shared/MarkdownTextarea.vue";
 
 export default {
   name: "RuleDetails",
-  components: { DisaRuleDescriptionForm, CheckForm, RuleFormGroup },
+  components: { RuleFormGroup, MarkdownTextarea },
   props: {
     type: {
       type: String,
@@ -115,10 +145,10 @@ export default {
         this.selectedRule.checks_attributes.length > 0
       );
     },
-    disaDescriptionFormFields() {
+    vulnDiscussionFields() {
       return { displayed: ["vuln_discussion"], disabled: [] };
     },
-    checkFormFields() {
+    checkFields() {
       return { displayed: ["content"], disabled: [] };
     },
     fixtextFields() {

@@ -190,12 +190,10 @@
 </template>
 
 <script>
-import axios from "axios";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { previewSpreadsheetUpdate, applySpreadsheetUpdate } from "../../api/componentsApi";
 
 export default {
   name: "UpdateFromSpreadsheetModal",
-  mixins: [AlertMixinVue],
   props: {
     component: {
       type: Object,
@@ -363,10 +361,7 @@ export default {
       const formData = new FormData();
       formData.append("file", this.selectedFile);
 
-      return axios
-        .post(`/components/${this.component.id}/preview_spreadsheet_update`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        })
+      return previewSpreadsheetUpdate(this.component.id, formData)
         .then((response) => {
           this.previewData = response.data;
           this.step = 2;
@@ -386,10 +381,7 @@ export default {
       const formData = new FormData();
       formData.append("file", this.selectedFile);
 
-      return axios
-        .patch(`/components/${this.component.id}/apply_spreadsheet_update`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        })
+      return applySpreadsheetUpdate(this.component.id, formData)
         .then((response) => {
           this.updateResult = {
             success: true,
@@ -483,12 +475,12 @@ export default {
 
 <style scoped>
 .diff-old {
-  background-color: #f8d7da;
+  background-color: var(--vulcan-danger-tint);
   white-space: pre-wrap;
   word-break: break-word;
 }
 .diff-new {
-  background-color: #d4edda;
+  background-color: var(--vulcan-success-tint);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -497,13 +489,13 @@ export default {
   user-select: none;
 }
 .diff-highlight-old {
-  background-color: #f5c6cb;
+  background-color: var(--vulcan-highlight-error, #f5c6cb);
   font-weight: bold;
   border-radius: 2px;
   padding: 0 1px;
 }
 .diff-highlight-new {
-  background-color: #a3cfbb;
+  background-color: var(--vulcan-highlight-success, #a3cfbb);
   font-weight: bold;
   border-radius: 2px;
   padding: 0 1px;
