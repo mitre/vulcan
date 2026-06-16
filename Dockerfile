@@ -25,7 +25,7 @@ ARG NODE_VERSION=24.14.0
 # =============================================================================
 # BASE STAGE - Common foundation for all stages
 # =============================================================================
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.7 AS base
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.7@sha256:907b68736aa798b2d38255b7aa070b2a70acb90803864a40f05d0ec47556ddd0 AS base
 
 USER 0
 
@@ -117,7 +117,7 @@ RUN microdnf update -y && \
 
 RUN curl -fsSL https://cache.ruby-lang.org/pub/ruby/${RUBY_VERSION%.*}/ruby-${RUBY_VERSION}.tar.gz -o /tmp/ruby.tar.gz && \
     echo "${RUBY_SHA256}  /tmp/ruby.tar.gz" | sha256sum -c - && \
-    tar -xzf /tmp/ruby.tar.gz -C /tmp && \
+    tar --no-same-owner -xzf /tmp/ruby.tar.gz -C /tmp && \
     cd /tmp/ruby-${RUBY_VERSION} && \
     ./configure --prefix=/usr/local \
       --disable-install-doc \
@@ -139,7 +139,7 @@ ARG JEMALLOC_SHA256=2db82d1e7119df3e71b7640219b6dfe84789bc0537983c3b7ac4f7189aec
 RUN curl -fsSL https://github.com/jemalloc/jemalloc/releases/download/${JEMALLOC_VERSION}/jemalloc-${JEMALLOC_VERSION}.tar.bz2 \
       -o /tmp/jemalloc.tar.bz2 && \
     echo "${JEMALLOC_SHA256}  /tmp/jemalloc.tar.bz2" | sha256sum -c - && \
-    tar -xjf /tmp/jemalloc.tar.bz2 -C /tmp && \
+    tar --no-same-owner -xjf /tmp/jemalloc.tar.bz2 -C /tmp && \
     cd /tmp/jemalloc-${JEMALLOC_VERSION} && \
     ./configure --prefix=/usr/local && \
     make -j"$(nproc)" && \
@@ -159,7 +159,7 @@ RUN ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") && \
     curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/SHASUMS256.txt" -o /tmp/node.sha256 && \
     awk -v t="${NODE_TARBALL}" '$2 == t { print $1 "  /tmp/node.tar.xz" }' /tmp/node.sha256 | sha256sum -c - && \
     mkdir -p /opt/node && \
-    tar -xJf /tmp/node.tar.xz -C /opt/node --strip-components=1 && \
+    tar --no-same-owner -xJf /tmp/node.tar.xz -C /opt/node --strip-components=1 && \
     rm -f /tmp/node.tar.xz /tmp/node.sha256 && \
     corepack enable
 
@@ -176,17 +176,15 @@ ENV RAILS_ENV="production" \
     BUNDLE_DEPLOYMENT="1" \
     BUNDLE_WITHOUT="development:test"
 
-COPY --chown=1000:0 --chmod=440 Gemfile Gemfile.lock ./
+COPY --chown=1000:0 . .
+
 RUN --mount=type=cache,target=/usr/local/bundle/cache,uid=1000 \
     bundle install && \
     rm -rf "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
     bundle exec bootsnap precompile --gemfile
 
-COPY --chown=1000:0 --chmod=440 package.json yarn.lock esbuild.config.js ./
 RUN --mount=type=cache,target=/tmp/.yarn-cache,uid=1000 \
     yarn install --frozen-lockfile --production=false --network-timeout 100000 --cache-folder /tmp/.yarn-cache
-
-COPY --chown=1000:0 . .
 
 RUN bundle exec bootsnap precompile app/ lib/ && \
     SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile && \
@@ -235,10 +233,8 @@ ENV RAILS_ENV="development" \
     BUNDLE_DEPLOYMENT="0" \
     LD_PRELOAD="/usr/local/lib/libjemalloc.so"
 
-COPY --chown=1000:0 --chmod=440 Gemfile Gemfile.lock ./
+COPY --chown=1000:0 Gemfile Gemfile.lock package.json yarn.lock esbuild.config.js ./
 RUN bundle install
-
-COPY --chown=1000:0 --chmod=440 package.json yarn.lock esbuild.config.js ./
 RUN yarn install --frozen-lockfile
 
 COPY --chown=1000:0 . .
