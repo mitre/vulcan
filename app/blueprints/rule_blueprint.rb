@@ -116,6 +116,10 @@ class RuleBlueprint < Blueprinter::Base
            :inspec_control_body_lang, :inspec_control_file_lang,
            :fix_id
 
+    field :histories do |rule, _options|
+      rule.histories
+    end
+
     association :rule_descriptions_attributes, blueprint: RuleDescriptionBlueprint,
                                                name: :rule_descriptions_attributes do |rule, _options|
       rule.rule_descriptions

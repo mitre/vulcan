@@ -62,7 +62,19 @@
       </span>
     </div>
 
-    <b-form>
+    <!-- Status hint: above form so user sees it before the fields -->
+    <b-alert
+      v-if="effectiveStatus !== 'Applicable - Configurable'"
+      variant="info"
+      show
+      class="py-2 mb-2"
+      data-testid="fields-hidden-alert"
+    >
+      <b-icon icon="info-circle-fill" class="mr-1" />
+      Some fields are hidden due to the control's status.
+    </b-alert>
+
+    <b-form data-testid="rule-form-wrapper">
       <RuleForm
         :rule="rule"
         :statuses="statuses"
@@ -88,14 +100,6 @@
       :cci="rule.ident"
       :srg_info="rule.srg_info"
     />
-
-    <!-- Status hint -->
-    <div v-if="effectiveStatus !== 'Applicable - Configurable'">
-      <hr />
-      <p>
-        <small>Some fields are hidden due to the control's status.</small>
-      </p>
-    </div>
   </div>
 </template>
 

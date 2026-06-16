@@ -29,7 +29,7 @@ RSpec.describe 'Rules endpoint contracts', type: :request do
   # ── GET /rules/:id ──
 
   describe 'GET /rules/:id (JSON)' do
-    it 'returns RuleEditorResponse with 38 fields from Blueprint :editor' do
+    it 'returns RuleEditorResponse with 39 fields from Blueprint :editor' do
       get "/rules/#{rule.id}", headers: json_headers
       body = validate_and_parse!
 
@@ -41,7 +41,7 @@ RSpec.describe 'Rules endpoint contracts', type: :request do
                             :rule_weight, :fixtext, :ident, :component_id,
                             :locked_fields, :nist_control_family, :srg_id,
                             :disa_rule_descriptions_attributes, :checks_attributes,
-                            :satisfies, :satisfied_by, :reviews,
+                            :satisfies, :satisfied_by, :reviews, :histories,
                             :rule_descriptions_attributes, :additional_answers_attributes,
                             :srg_rule_attributes, :srg_info
 
@@ -50,6 +50,7 @@ RSpec.describe 'Rules endpoint contracts', type: :request do
       expect(body['disa_rule_descriptions_attributes']).to be_an(Array)
       expect(body['checks_attributes']).to be_an(Array)
       expect(body['reviews']).to be_an(Array)
+      expect(body['histories']).to be_an(Array)
       expect(body['locked_fields']).to be_a(Hash)
     end
   end
@@ -69,7 +70,7 @@ RSpec.describe 'Rules endpoint contracts', type: :request do
       assert_fields_present first_rule, :id, :rule_id, :title, :version, :status, :rule_severity,
                             :locked, :comment_summary, :component_id, :locked_fields,
                             :checks_attributes, :disa_rule_descriptions_attributes,
-                            :satisfies, :satisfied_by, :reviews, :srg_rule_attributes
+                            :satisfies, :satisfied_by, :reviews, :histories, :srg_rule_attributes
       expect(first_rule['component_id']).to eq(component.id)
     end
   end

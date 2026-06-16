@@ -69,6 +69,11 @@ RSpec.describe 'RuleBlueprint' do
       end
     end
 
+    it 'includes histories array for rule revision sidebar' do
+      expect(json).to have_key('histories')
+      expect(json['histories']).to be_an(Array)
+    end
+
     it 'includes satisfies and satisfied_by arrays' do
       expect(json).to have_key('satisfies')
       expect(json).to have_key('satisfied_by')

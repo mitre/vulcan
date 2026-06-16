@@ -535,14 +535,28 @@ describe("UnifiedRuleForm", () => {
 
   // ─── Status hint ───────────────────────────────────────────
   describe("status hint", () => {
-    it('shows "fields hidden" hint when status is not Configurable', () => {
+    it('shows "fields hidden" alert when status is not Configurable', () => {
       wrapper = createWrapper({ status: "Not Applicable" });
-      expect(wrapper.text()).toContain("Some fields are hidden");
+      const alert = wrapper.find('[data-testid="fields-hidden-alert"]');
+      expect(alert.exists()).toBe(true);
+      expect(alert.attributes("variant")).toBe("info");
     });
 
-    it("does not show hint when status is Configurable", () => {
+    it("does not show alert when status is Configurable", () => {
       wrapper = createWrapper({ status: "Applicable - Configurable" });
-      expect(wrapper.text()).not.toContain("Some fields are hidden");
+      const alert = wrapper.find('[data-testid="fields-hidden-alert"]');
+      expect(alert.exists()).toBe(false);
+    });
+
+    it("renders alert ABOVE the form, not below", () => {
+      wrapper = createWrapper({ status: "Not Applicable" });
+      const children = wrapper.findAll("[data-testid]");
+      const testIds = children.wrappers.map((w) => w.attributes("data-testid"));
+      const alertIdx = testIds.indexOf("fields-hidden-alert");
+      const formIdx = testIds.indexOf("rule-form-wrapper");
+      expect(alertIdx).toBeGreaterThanOrEqual(0);
+      expect(formIdx).toBeGreaterThanOrEqual(0);
+      expect(alertIdx).toBeLessThan(formIdx);
     });
   });
 

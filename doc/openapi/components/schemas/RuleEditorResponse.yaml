@@ -140,6 +140,11 @@ allOf:
         description: Rules that satisfy this rule (parent-to-child relationships).
         items:
           $ref: ./SatisfiedBySummary.yaml
+      histories:
+        type: array
+        description: Audit trail entries for this rule, ordered by creation time.
+        items:
+          $ref: ./AuditEntry.yaml
       rule_descriptions_attributes:
         type: array
         description: Raw rule description records.

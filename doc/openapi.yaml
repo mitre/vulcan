@@ -7410,6 +7410,11 @@ components:
               description: Rules that satisfy this rule (parent-to-child relationships).
               items:
                 $ref: '#/components/schemas/SatisfiedBySummary'
+            histories:
+              type: array
+              description: Audit trail entries for this rule, ordered by creation time.
+              items:
+                $ref: '#/components/schemas/AuditEntry'
             rule_descriptions_attributes:
               type: array
               description: Raw rule description records.
@@ -7555,6 +7560,22 @@ components:
               type: boolean
               description: Whether all rules meet release criteria.
               example: false
+            srg_is_latest:
+              type: boolean
+              description: Whether the component's based_on SRG is the latest version of its family.
+              example: true
+            srg_latest_version:
+              type:
+                - string
+                - 'null'
+              description: Version string of the latest SRG in the same family. Null when srg_is_latest=true.
+              example: null
+            srg_latest_id:
+              type:
+                - integer
+                - 'null'
+              description: ID of the latest SRG for linking. Null when srg_is_latest=true.
+              example: null
             status_counts:
               type: object
               description: Count of rules by applicability status.
@@ -7702,6 +7723,24 @@ components:
             - 'null'
           description: ID of the rule that addresses this comment (for addressed_by triage status). Null otherwise.
           example: null
+        srg_info:
+          type:
+            - object
+            - 'null'
+          description: SRG baseline metadata for the comment's component — title, version, and whether it's the latest available.
+          properties:
+            title:
+              type: string
+              description: Full title of the SRG.
+              example: General Purpose Operating System Security Requirements Guide
+            version:
+              type: string
+              description: SRG version in DISA V{major}R{minor} format.
+              example: V3R3
+            is_latest:
+              type: boolean
+              description: Whether this SRG version is the latest available for its family. Green dot = true, yellow dot = false.
+              example: true
         addressed_by_rule_name:
           type:
             - string
@@ -8269,6 +8308,22 @@ components:
           format: date
           description: Date the SRG was published by DISA.
           example: '2025-10-28'
+        is_latest:
+          type: boolean
+          description: Whether this is the latest available version of this SRG family.
+          example: true
+        latest_available_version:
+          type:
+            - string
+            - 'null'
+          description: Version string of the latest available SRG in this family. Null when is_latest=true.
+          example: null
+        latest_available_id:
+          type:
+            - integer
+            - 'null'
+          description: ID of the latest available SRG for linking. Null when is_latest=true.
+          example: null
         severity_counts:
           type: object
           description: Count of rules at each severity level within this SRG.
@@ -8336,6 +8391,22 @@ components:
           format: date
           description: Date the STIG benchmark was published by DISA.
           example: '2025-10-01'
+        is_latest:
+          type: boolean
+          description: Whether this is the latest available version of this STIG family.
+          example: true
+        latest_available_version:
+          type:
+            - string
+            - 'null'
+          description: Version string of the latest available STIG in this family. Null when is_latest=true.
+          example: null
+        latest_available_id:
+          type:
+            - integer
+            - 'null'
+          description: ID of the latest available STIG for linking. Null when is_latest=true.
+          example: null
         severity_counts:
           type: object
           description: Count of rules at each severity level within this STIG.
@@ -8691,6 +8762,30 @@ components:
             - integer
             - 'null'
           description: ID of the rule that addresses this comment.
+          example: null
+        srg_info:
+          type:
+            - object
+            - 'null'
+          description: SRG baseline metadata for the comment's component.
+          properties:
+            title:
+              type: string
+              description: Full title of the SRG.
+              example: General Purpose Operating System Security Requirements Guide
+            version:
+              type: string
+              description: SRG version in DISA V{major}R{minor} format.
+              example: V3R3
+            is_latest:
+              type: boolean
+              description: Whether this SRG version is the latest available.
+              example: true
+        parent_rule_displayed_name:
+          type:
+            - string
+            - 'null'
+          description: Display name of the parent rule if this rule is a child via satisfies. Null if no parent.
           example: null
         addressed_by_rule_name:
           type:
