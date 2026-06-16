@@ -104,6 +104,24 @@ properties:
       - 'null'
     description: ID of the rule that addresses this comment (for addressed_by triage status). Null otherwise.
     example: null
+  srg_info:
+    type:
+      - object
+      - 'null'
+    description: SRG baseline metadata for the comment's component — title, version, and whether it's the latest available.
+    properties:
+      title:
+        type: string
+        description: Full title of the SRG.
+        example: General Purpose Operating System Security Requirements Guide
+      version:
+        type: string
+        description: SRG version in DISA V{major}R{minor} format.
+        example: V3R3
+      is_latest:
+        type: boolean
+        description: Whether this SRG version is the latest available for its family. Green dot = true, yellow dot = false.
+        example: true
   addressed_by_rule_name:
     type:
       - string

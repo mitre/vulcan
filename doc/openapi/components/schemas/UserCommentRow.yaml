@@ -122,6 +122,30 @@ properties:
       - 'null'
     description: ID of the rule that addresses this comment.
     example: null
+  srg_info:
+    type:
+      - object
+      - 'null'
+    description: SRG baseline metadata for the comment's component.
+    properties:
+      title:
+        type: string
+        description: Full title of the SRG.
+        example: General Purpose Operating System Security Requirements Guide
+      version:
+        type: string
+        description: SRG version in DISA V{major}R{minor} format.
+        example: V3R3
+      is_latest:
+        type: boolean
+        description: Whether this SRG version is the latest available.
+        example: true
+  parent_rule_displayed_name:
+    type:
+      - string
+      - 'null'
+    description: Display name of the parent rule if this rule is a child via satisfies. Null if no parent.
+    example: null
   addressed_by_rule_name:
     type:
       - string

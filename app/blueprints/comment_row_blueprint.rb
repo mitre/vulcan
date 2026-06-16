@@ -30,6 +30,15 @@ class CommentRowBlueprint < Blueprinter::Base
     end
   end
 
+  field :srg_info do |review, options|
+    cid = if review.commentable_type == 'Component'
+            review.commentable_id
+          else
+            options[:rule_component_map]&.dig(review.rule_id) || review.commentable&.component_id
+          end
+    options[:srg_info_map]&.dig(cid)
+  end
+
   field :addressed_by_rule_name do |review, options|
     review.addressed_by_rule_id ? options[:rule_display_map]&.dig(review.addressed_by_rule_id) : nil
   end
@@ -88,6 +97,14 @@ class CommentRowBlueprint < Blueprinter::Base
     attribution_fields :triager
     attribution_fields :adjudicator
 
+    field :parent_rule_displayed_name do |review, options|
+      if review.commentable_type == 'Component'
+        nil
+      else
+        options[:parent_rule_map]&.dig(review.rule_id)
+      end
+    end
+
     field :component_id do |review, options|
       if review.commentable_type == 'Component'
         review.commentable_id
@@ -108,6 +125,14 @@ class CommentRowBlueprint < Blueprinter::Base
 
   # :user — my-comments view with project + component context
   view :user do
+    field :parent_rule_displayed_name do |review, options|
+      if review.commentable_type == 'Component'
+        nil
+      else
+        options[:parent_rule_map]&.dig(review.rule_id)
+      end
+    end
+
     field :project_id do |review, _options|
       resolve_project(review)&.id
     end

@@ -50,12 +50,15 @@
           @keydown.enter="selectGroup(item.group)"
           @keydown.space.prevent="toggleGroup(item.group)"
         >
-          <strong
-            v-b-tooltip.hover
-            :title="item.group.ruleName"
-            class="flex-grow-1 text-truncate"
-            >{{ item.group.ruleName }}</strong
-          >
+          <span class="flex-grow-1 text-truncate">
+            <strong v-b-tooltip.hover :title="item.group.ruleName">{{
+              item.group.ruleName
+            }}</strong>
+            <small v-if="item.group.srgInfo" class="d-block text-muted text-truncate">
+              <VersionCurrencyDot :is-latest="item.group.srgInfo.is_latest" class="mr-1" />
+              {{ item.group.srgInfo.title }} {{ item.group.srgInfo.version }}
+            </small>
+          </span>
           <span
             v-b-tooltip.hover
             :title="`${item.group.pendingCount} pending / ${item.group.comments.length} total`"
@@ -96,9 +99,11 @@
 
 <script>
 import { groupCommentsByRule } from "../../utils/groupCommentsByRule";
+import VersionCurrencyDot from "../shared/VersionCurrencyDot.vue";
 
 export default {
   name: "TriageRuleSidebar",
+  components: { VersionCurrencyDot },
   props: {
     comments: { type: Array, required: true },
     currentId: { type: [Number, String], default: null },

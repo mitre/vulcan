@@ -17,7 +17,8 @@ RSpec.describe CommentRowBlueprint do
     {
       responses_counts: { review.id => 2 },
       reaction_counts: { [review.id, 'up'] => 3, [review.id, 'down'] => 1 },
-      rule_display_map: { rule.id => "#{component.prefix}-#{rule.rule_id}" }
+      rule_display_map: { rule.id => "#{component.prefix}-#{rule.rule_id}" },
+      srg_info_map: SecurityRequirementsGuide.srg_info_for_components([component])
     }
   end
 
@@ -45,6 +46,13 @@ RSpec.describe CommentRowBlueprint do
 
     it 'includes rule_displayed_name from options map' do
       expect(result['rule_displayed_name']).to eq("#{component.prefix}-#{rule.rule_id}")
+    end
+
+    it 'includes srg_info object with title, version, and is_latest' do
+      expect(result['srg_info']).to be_a(Hash)
+      expect(result['srg_info']['title']).to eq(component.based_on&.title)
+      expect(result['srg_info']['version']).to eq(component.based_on&.version)
+      expect(result['srg_info']).to have_key('is_latest')
     end
 
     it 'does NOT include view-specific fields' do

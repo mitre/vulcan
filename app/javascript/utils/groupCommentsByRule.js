@@ -8,6 +8,7 @@ export function groupCommentsByRule(comments) {
       const group = {
         key,
         ruleName: key,
+        srgInfo: c.srg_info || null,
         comments: [],
         pendingCount: 0,
       };

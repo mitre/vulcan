@@ -202,9 +202,15 @@
         <span v-if="item.commentable_type === 'Component'" class="text-muted font-italic">
           {{ item.rule_displayed_name }}
         </span>
-        <a v-else :href="ruleHref(item)">
-          {{ item.rule_displayed_name }}
-        </a>
+        <template v-else>
+          <a :href="ruleHref(item)">
+            {{ item.rule_displayed_name }}
+          </a>
+          <small v-if="item.srg_info" class="d-block text-muted text-truncate">
+            <VersionCurrencyDot :is-latest="item.srg_info.is_latest" class="mr-1" />
+            {{ item.srg_info.title }} {{ item.srg_info.version }}
+          </small>
+        </template>
       </template>
       <template #cell(component_name)="{ item }">
         <a :href="`/components/${item.component_id}/triage`">
@@ -368,6 +374,7 @@ import { usePermissions } from "../../composables/usePermissions";
 import { useReplyComposer } from "../../composables/useReplyComposer";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import SectionLabel from "../shared/SectionLabel.vue";
+import VersionCurrencyDot from "../shared/VersionCurrencyDot.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
 import CommentThread from "../shared/CommentThread.vue";
 import TriageSplitView from "../triage/TriageSplitView.vue";
@@ -387,6 +394,7 @@ export default {
   components: {
     TriageStatusBadge,
     SectionLabel,
+    VersionCurrencyDot,
     FilterDropdown,
     CommentThread,
     TriageSplitView,

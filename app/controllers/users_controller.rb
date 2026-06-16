@@ -307,19 +307,33 @@ class UsersController < ApplicationController
     responses_count = response_aggregates.to_h { |id, _max_at, count| [id, count] }
     reaction_counts = Reaction.where(review_id: page_review_ids).group(:review_id, :kind).count
 
-    rule_display_map = page_records.each_with_object({}) do |r, map|
+    rule_display_map = {}
+    seen_components = {}
+    page_records.each do |r|
       next if r.commentable_type == 'Component'
 
       rule = r.rule || r.commentable
       next unless rule
 
       component = rule.respond_to?(:component) ? rule.component : nil
-      map[r.rule_id] = "#{component&.prefix}-#{rule.rule_id}" if component
+      next unless component
+
+      rule_display_map[r.rule_id] = "#{component.prefix}-#{rule.rule_id}"
+      seen_components[component.id] ||= component
     end
+
+    srg_info_map = SecurityRequirementsGuide.srg_info_for_components(seen_components.values)
+
+    rule_ids = rule_display_map.keys
+    child_to_parent = RuleSatisfaction.where(rule_id: rule_ids)
+                                      .pluck(:rule_id, :satisfied_by_rule_id).to_h
+    parent_rule_map = child_to_parent.transform_values { |pid| rule_display_map[pid] }
 
     blueprint_options = {
       view: :user,
       rule_display_map: rule_display_map,
+      srg_info_map: srg_info_map,
+      parent_rule_map: parent_rule_map,
       responses_counts: responses_count,
       reaction_counts: reaction_counts,
       latest_response_at: latest_response_at

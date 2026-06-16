@@ -24,6 +24,16 @@ class SecurityRequirementsGuide < ApplicationRecord
   validates :title, length: { maximum: ->(_r) { Settings.input_limits.benchmark_title } }
   validates :name, length: { maximum: ->(_r) { Settings.input_limits.benchmark_name } }, allow_nil: true
 
+  def self.srg_info_for_components(components)
+    latest_ids = latest_versions.pluck(:id).to_set
+    components.each_with_object({}) do |c, map|
+      srg = c.based_on
+      next unless srg
+
+      map[c.id] = { title: srg.title, version: srg.version, is_latest: latest_ids.include?(srg.id) }
+    end
+  end
+
   # Since an SRG is top-level, the parameter is the entire parsed benchmark
   def self.from_mapping(benchmark_mapping)
     # Disabling `Style/RescueModifier` here because the goal is simply just to try and

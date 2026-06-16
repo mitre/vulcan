@@ -130,7 +130,8 @@ class CommentQueryService
       rule_display_map: rule_id_to_displayed,
       parent_rule_map: parent_rule_map,
       responses_counts: responses_counts,
-      reaction_counts: reaction_counts
+      reaction_counts: reaction_counts,
+      srg_info_map: SecurityRequirementsGuide.srg_info_for_components([@component])
     }
 
     page_records.map do |r|

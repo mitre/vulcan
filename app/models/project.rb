@@ -128,7 +128,7 @@ class Project < ApplicationRecord
     page = [page.to_i, 1].max
     per_page = per_page.to_i.clamp(1, 100)
 
-    project_components = components.to_a
+    project_components = components.includes(:based_on).to_a
     component_ids_in_project = project_components.map(&:id)
     empty_result = { rows: [], pagination: { page: 1, per_page: per_page, total: 0 }, status_counts: {} }
     return empty_result if component_ids_in_project.empty?
@@ -188,12 +188,19 @@ class Project < ApplicationRecord
     rule_display_map = rule_lookup.transform_values { |m| m[:prefix] ? "#{m[:prefix]}-#{m[:rule_id]}" : nil }
     rule_component_map = rule_lookup.transform_values { |m| m[:component_id] }
     component_name_map = component_lookup.transform_values(&:name)
+    srg_info_map = SecurityRequirementsGuide.srg_info_for_components(component_lookup.values)
+
+    child_to_parent = RuleSatisfaction.where(rule_id: page_rule_ids)
+                                      .pluck(:rule_id, :satisfied_by_rule_id).to_h
+    parent_rule_map = child_to_parent.transform_values { |pid| rule_display_map[pid] }
 
     blueprint_options = {
       view: :project,
       rule_display_map: rule_display_map,
       rule_component_map: rule_component_map,
       component_name_map: component_name_map,
+      srg_info_map: srg_info_map,
+      parent_rule_map: parent_rule_map,
       responses_counts: responses_count_lookup,
       reaction_counts: reaction_counts
     }
