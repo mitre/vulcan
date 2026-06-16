@@ -3,11 +3,8 @@
   = stylesheet_link_tag 'rules'
 
 #Rules.vulcan-editor-layout
-  %Rules{                                                                           |
-    'v-bind:project': ProjectBlueprint.render(@project),                             |
-    'v-bind:component': @component_json,                                            |
-    'v-bind:rules': @rules_json,                                                    |
-    'v-bind:statuses': RuleConstants::STATUSES.to_json,                             |
-    'v-bind:current_user_id': current_user.id.to_json,                              |
-    'v-bind:available_roles': ProjectMemberConstants::PROJECT_MEMBER_ROLES.to_json  |
+  %Rules{ **common_vue_props,                                |
+    'v-bind:project': ProjectBlueprint.render(@project),     |
+    'v-bind:component': @component_json,                     |
+    'v-bind:rules': @rules_json,                             |
   }
