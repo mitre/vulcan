@@ -67,8 +67,7 @@ describe("terminology constants", () => {
     });
 
     it("component panel labels are concise (no prefix)", () => {
-      // REQUIREMENT: wdower review — "Comp Activity" → "Activity"
-      expect(PANEL_LABELS.compHistory).toBe("Activity");
+      expect(PANEL_LABELS.compHistory).toBe("Changelog");
     });
 
     it("rule labels use RULE_TERM.label", () => {
@@ -351,19 +350,14 @@ describe("terminology constants", () => {
 
   describe("DRY principle verification", () => {
     it("changing RULE_TERM would update all derived labels", () => {
-      // This test documents the expected behavior:
-      // If RULE_TERM.label = 'Rule', then ruleHistory = 'Rule History'
-      // If RULE_TERM.label = 'Req', then ruleHistory = 'Req History'
-      const expectedRuleHistoryPattern = new RegExp(`${RULE_TERM.label}.*History`);
-      const expectedRuleReviewsPattern = new RegExp(`${RULE_TERM.label}.*Reviews`);
+      const expectedRuleHistoryPattern = new RegExp(`${RULE_TERM.label}.*Changelog`);
+      const expectedRuleDiscussionPattern = new RegExp(`${RULE_TERM.label}.*Discussion`);
 
       expect(PANEL_LABELS.ruleHistory).toMatch(expectedRuleHistoryPattern);
-      expect(PANEL_LABELS.ruleReviews).toMatch(expectedRuleReviewsPattern);
+      expect(PANEL_LABELS.ruleReviews).toMatch(expectedRuleDiscussionPattern);
     });
 
     it("component panel labels are independent of COMPONENT_TERM", () => {
-      // REQUIREMENT: Panel label "Activity" is concise — it doesn't
-      // derive from COMPONENT_TERM since the panel context is obvious.
       expect(PANEL_LABELS.compHistory).not.toContain(COMPONENT_TERM.label);
     });
   });

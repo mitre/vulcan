@@ -237,10 +237,10 @@ describe("ControlsCommandBar", () => {
       expect(btn.attributes("title")).toBe("Additional questions panel");
     });
 
-    it("Activity button has tooltip", () => {
+    it("Changelog button has tooltip", () => {
       wrapper = createWrapper();
-      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Activity"));
-      expect(btn.attributes("title")).toBe("Component change history");
+      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Changelog"));
+      expect(btn.attributes("title")).toBe("Component changelog — who changed what");
     });
 
     it("Triage button has tooltip", () => {

@@ -9,7 +9,7 @@ import RuleActionsToolbar from "@/components/rules/RuleActionsToolbar.vue";
  * REQUIREMENTS:
  *
  * 1. BUTTON ORDER (left to right, safe → destructive):
- *    Info/Reference: Related, Satisfies, History, Comment History (read-only panels)
+ *    Info/Reference: Related, Satisfies, Changelog, Discussion (read-only panels)
  *    Collaboration: Comment, Change Review Status (team interaction)
  *    Edit: Save, Clone (modify/create data)
  *    Admin: Delete, Lock/Unlock (destructive/restricted)
@@ -17,8 +17,8 @@ import RuleActionsToolbar from "@/components/rules/RuleActionsToolbar.vue";
  * 2. PANEL BUTTONS (info/reference):
  *    - Related: Opens RelatedRulesModal (always available)
  *    - Satisfies: Opens satisfies panel (always available)
- *    - History: Opens rule history panel (always available)
- *    - Comment History: Opens rule reviews panel (always available)
+ *    - Changelog: Opens rule changelog panel (always available)
+ *    - Discussion: Opens rule discussion panel (always available)
  *
  * 3. ACTION BUTTONS:
  *    - Comment: Always available
@@ -76,12 +76,11 @@ describe("RuleActionsToolbar", () => {
       const buttons = wrapper.findAll("button, .comment-modal-stub");
       const buttonTexts = buttons.wrappers.map((b) => b.text().trim());
 
-      // Expected order: Related, Satisfies, History, Comment History, Comment, Change Review Status, Save, Clone, Delete, Lock
       const expectedOrder = [
         "Related",
         "Satisfies",
-        "History",
-        "Comment History",
+        "Changelog",
+        "Discussion",
         "Comment",
         "Change Review Status",
         "Save",
@@ -110,14 +109,14 @@ describe("RuleActionsToolbar", () => {
       expect(wrapper.text()).toContain("Satisfies");
     });
 
-    it("shows History button", () => {
+    it("shows Changelog button", () => {
       wrapper = createWrapper();
-      expect(wrapper.text()).toContain("History");
+      expect(wrapper.text()).toContain("Changelog");
     });
 
-    it("shows Comment History button", () => {
+    it("shows Discussion button", () => {
       wrapper = createWrapper();
-      expect(wrapper.text()).toContain("Comment History");
+      expect(wrapper.text()).toContain("Discussion");
     });
 
     it("emits open-related-modal when Related clicked", async () => {
@@ -135,19 +134,17 @@ describe("RuleActionsToolbar", () => {
       expect(wrapper.emitted("toggle-panel")[0]).toEqual(["satisfies"]);
     });
 
-    it('emits toggle-panel with "rule-history" when History clicked', async () => {
+    it('emits toggle-panel with "rule-history" when Changelog clicked', async () => {
       wrapper = createWrapper();
-      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("History"));
+      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Changelog"));
       await btn.trigger("click");
       expect(wrapper.emitted("toggle-panel")).toBeTruthy();
       expect(wrapper.emitted("toggle-panel")[0]).toEqual(["rule-history"]);
     });
 
-    it('emits toggle-panel with "rule-reviews" when Comment History clicked', async () => {
+    it('emits toggle-panel with "rule-reviews" when Discussion clicked', async () => {
       wrapper = createWrapper();
-      const btn = wrapper
-        .findAll("button")
-        .wrappers.find((b) => b.text().includes("Comment History"));
+      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Discussion"));
       await btn.trigger("click");
       expect(wrapper.emitted("toggle-panel")).toBeTruthy();
       expect(wrapper.emitted("toggle-panel")[0]).toEqual(["rule-reviews"]);
@@ -163,10 +160,10 @@ describe("RuleActionsToolbar", () => {
         .wrappers.find((b) => b.text().includes("Satisfies"));
       const historyBtn = wrapper
         .findAll("button")
-        .wrappers.find((b) => b.text().includes("History"));
+        .wrappers.find((b) => b.text().includes("Changelog"));
       const reviewsBtn = wrapper
         .findAll("button")
-        .wrappers.find((b) => b.text().includes("Comment History"));
+        .wrappers.find((b) => b.text().includes("Discussion"));
 
       expect(relatedBtn.attributes("disabled")).toBeUndefined();
       expect(satisfiesBtn.attributes("disabled")).toBeUndefined();
@@ -413,20 +410,16 @@ describe("RuleActionsToolbar", () => {
       expect(btn.attributes("title")).toBe("Rules this control satisfies or is satisfied by");
     });
 
-    it("History button has tooltip", () => {
+    it("Changelog button has tooltip", () => {
       wrapper = createWrapper();
-      const btn = wrapper
-        .findAll("button")
-        .wrappers.find((b) => b.text().includes("History") && !b.text().includes("Comment"));
-      expect(btn.attributes("title")).toBe("Rule edit history");
+      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Changelog"));
+      expect(btn.attributes("title")).toBe("Rule changelog — field-level changes");
     });
 
-    it("Comment History button has tooltip", () => {
+    it("Discussion button has tooltip", () => {
       wrapper = createWrapper();
-      const btn = wrapper
-        .findAll("button")
-        .wrappers.find((b) => b.text().includes("Comment History"));
-      expect(btn.attributes("title")).toBe("View comments and reviews on this rule");
+      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Discussion"));
+      expect(btn.attributes("title")).toBe("Comments, reviews, and triage decisions on this rule");
     });
 
     it("DISA Guide button has tooltip", () => {
@@ -457,9 +450,7 @@ describe("RuleActionsToolbar", () => {
 
     it("Comment button has tooltip when enabled", () => {
       wrapper = createWrapper();
-      const btn = wrapper
-        .findAll("button")
-        .wrappers.find((b) => b.text().includes("Comment") && !b.text().includes("History"));
+      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().trim() === "Comment");
       expect(btn.attributes("title")).toBe("Add a general comment on this rule");
     });
 

@@ -72,7 +72,7 @@ describe("ProjectCommandBar", () => {
       wrapper = createWrapper();
       expect(wrapper.text()).toContain("Details");
       expect(wrapper.text()).toContain("Metadata");
-      expect(wrapper.text()).toContain("Activity");
+      expect(wrapper.text()).toContain("Changelog");
     });
   });
 
@@ -195,12 +195,12 @@ describe("ProjectCommandBar", () => {
   // PANEL BUTTONS
   // ==========================================
   describe("panel buttons", () => {
-    it("renders all 4 panel buttons (Details, Metadata, Activity, Revisions)", () => {
+    it("renders all 4 panel buttons (Details, Metadata, Changelog, Version Comparison)", () => {
       wrapper = createWrapper();
       expect(wrapper.text()).toContain("Details");
       expect(wrapper.text()).toContain("Metadata");
-      expect(wrapper.text()).toContain("Activity");
-      expect(wrapper.text()).toContain("Revisions");
+      expect(wrapper.text()).toContain("Changelog");
+      expect(wrapper.text()).toContain("Version Comparison");
     });
 
     it("renders Members as action button (not panel button)", () => {
@@ -224,17 +224,19 @@ describe("ProjectCommandBar", () => {
       expect(wrapper.emitted("toggle-panel")[0]).toEqual(["proj-metadata"]);
     });
 
-    it('emits toggle-panel with "proj-history" when Activity clicked', async () => {
+    it('emits toggle-panel with "proj-history" when Changelog clicked', async () => {
       wrapper = createWrapper();
-      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Activity"));
+      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Changelog"));
       await btn.trigger("click");
       expect(wrapper.emitted("toggle-panel")).toBeTruthy();
       expect(wrapper.emitted("toggle-panel")[0]).toEqual(["proj-history"]);
     });
 
-    it('emits toggle-panel with "proj-revision-history" when Revisions clicked', async () => {
+    it('emits toggle-panel with "proj-revision-history" when Version Comparison clicked', async () => {
       wrapper = createWrapper();
-      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Revisions"));
+      const btn = wrapper
+        .findAll("button")
+        .wrappers.find((b) => b.text().includes("Version Comparison"));
       await btn.trigger("click");
       expect(wrapper.emitted("toggle-panel")).toBeTruthy();
       expect(wrapper.emitted("toggle-panel")[0]).toEqual(["proj-revision-history"]);

@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="mb-2">
-      <strong>Revision History</strong>
+      <strong>Changelog</strong>
       <b-badge v-if="rule.histories" pill variant="info" class="ml-1">{{
         groupedRuleHistories.length
       }}</b-badge>

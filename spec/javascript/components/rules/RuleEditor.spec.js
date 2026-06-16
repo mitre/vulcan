@@ -105,22 +105,22 @@ describe("RuleEditor", () => {
       expect(wrapper.emitted("toggle-panel")[0]).toEqual(["satisfies"]);
     });
 
-    it("forwards toggle-panel event when History button is clicked", async () => {
+    it("forwards toggle-panel event when Changelog button is clicked", async () => {
       wrapper = createWrapper();
       const historyBtn = wrapper
         .findAll("button")
-        .wrappers.find((b) => b.text().includes("History"));
+        .wrappers.find((b) => b.text().includes("Changelog"));
       expect(historyBtn).toBeDefined();
       await historyBtn.trigger("click");
       expect(wrapper.emitted("toggle-panel")).toBeTruthy();
       expect(wrapper.emitted("toggle-panel")[0]).toEqual(["rule-history"]);
     });
 
-    it("forwards toggle-panel event when Comment History button is clicked", async () => {
+    it("forwards toggle-panel event when Discussion button is clicked", async () => {
       wrapper = createWrapper();
       const reviewsBtn = wrapper
         .findAll("button")
-        .wrappers.find((b) => b.text().includes("Comment History"));
+        .wrappers.find((b) => b.text().includes("Discussion"));
       expect(reviewsBtn).toBeDefined();
       await reviewsBtn.trigger("click");
       expect(wrapper.emitted("toggle-panel")).toBeTruthy();

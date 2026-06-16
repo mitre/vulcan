@@ -121,7 +121,7 @@
         </b-button>
         <b-button
           v-b-tooltip.hover
-          title="Component change history"
+          title="Component changelog — who changed what"
           :variant="isPanelActive('comp-history') ? 'secondary' : 'outline-secondary'"
           @click="onTogglePanel('comp-history')"
         >

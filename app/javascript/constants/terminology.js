@@ -54,14 +54,12 @@ export const PANEL_LABELS = {
   details: "Details",
   metadata: "Metadata",
   questions: "Questions",
-  compHistory: "Activity",
-  // compReviews retired in favor of the full-page /components/:id/triage
-  // route — the legacy slideover entry was removed in PR #717.
+  compHistory: "Changelog",
 
   // Rule panels (require selected rule)
   satisfies: "Satisfies",
-  ruleHistory: `${RULE_TERM.label} History`,
-  ruleReviews: `${RULE_TERM.label} Reviews`,
+  ruleHistory: `${RULE_TERM.label} Changelog`,
+  ruleReviews: `${RULE_TERM.label} Discussion`,
 };
 
 // Sidebar titles (used in ControlsSidepanels)
@@ -69,10 +67,10 @@ export const SIDEBAR_TITLES = {
   details: `${COMPONENT_TERM.labelFull} Details`,
   metadata: `${COMPONENT_TERM.labelFull} Metadata`,
   questions: "Additional Questions",
-  compHistory: `${COMPONENT_TERM.labelFull} Activity`,
+  compHistory: `${COMPONENT_TERM.labelFull} Changelog`,
   satisfies: "Also Satisfies",
-  ruleHistory: `${RULE_TERM.singular} History`,
-  ruleReviews: `${RULE_TERM.singular} Reviews`,
+  ruleHistory: `${RULE_TERM.singular} Changelog`,
+  ruleReviews: `${RULE_TERM.singular} Discussion`,
 };
 
 // Action labels (used in RuleActionsToolbar, modals, etc.)

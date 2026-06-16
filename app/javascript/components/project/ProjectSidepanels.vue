@@ -110,11 +110,11 @@
       </div>
     </b-sidebar>
 
-    <!-- Project Activity Sidebar -->
+    <!-- Project Changelog Sidebar -->
     <b-sidebar
       id="proj-history-sidebar"
       data-testid="proj-history-sidebar"
-      title="Project Activity"
+      title="Project Changelog"
       right
       shadow
       backdrop
@@ -126,11 +126,11 @@
       </div>
     </b-sidebar>
 
-    <!-- Project Revisions Sidebar -->
+    <!-- Version Comparison Sidebar -->
     <b-sidebar
       id="proj-revision-history-sidebar"
       data-testid="proj-revision-history-sidebar"
-      title="Component Revisions"
+      title="Version Comparison"
       right
       shadow
       backdrop

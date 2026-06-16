@@ -74,13 +74,13 @@
           :variant="isPanelActive('proj-history') ? 'secondary' : 'outline-secondary'"
           @click="$emit('toggle-panel', 'proj-history')"
         >
-          <b-icon icon="clock-history" /> Activity
+          <b-icon icon="clock-history" /> Changelog
         </b-button>
         <b-button
           :variant="isPanelActive('proj-revision-history') ? 'secondary' : 'outline-secondary'"
           @click="$emit('toggle-panel', 'proj-revision-history')"
         >
-          <b-icon icon="journal-text" /> Revisions
+          <b-icon icon="journal-text" /> Version Comparison
         </b-button>
       </b-button-group>
     </template>

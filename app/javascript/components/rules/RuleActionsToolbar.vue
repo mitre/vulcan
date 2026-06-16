@@ -24,21 +24,21 @@
         </b-button>
         <b-button
           v-b-tooltip.hover
-          title="Rule edit history"
+          title="Rule changelog — field-level changes"
           variant="outline-secondary"
           size="sm"
           @click="$emit('toggle-panel', 'rule-history')"
         >
-          <b-icon icon="clock-history" /> History
+          <b-icon icon="clock-history" /> {{ labels.ruleHistory }}
         </b-button>
         <b-button
           v-b-tooltip.hover
-          title="View comments and reviews on this rule"
+          title="Comments, reviews, and triage decisions on this rule"
           variant="outline-secondary"
           size="sm"
           @click="$emit('toggle-panel', 'rule-reviews')"
         >
-          <b-icon icon="chat-quote" /> Comment History
+          <b-icon icon="chat-quote" /> {{ labels.ruleReviews }}
         </b-button>
         <!-- General Comment — opens the same CommentComposerModal as the
              per-section icons, with no section pre-selected (defaults to
@@ -153,7 +153,7 @@
 
 <script>
 import CommentModal from "../shared/CommentModal.vue";
-import { MESSAGE_LABELS } from "../../constants/terminology";
+import { MESSAGE_LABELS, PANEL_LABELS } from "../../constants/terminology";
 import { commentsClosedTooltip } from "../../constants/triageVocabulary";
 
 export default {
@@ -193,6 +193,9 @@ export default {
     },
     isUnderReview() {
       return !!this.rule.review_requestor_id;
+    },
+    labels() {
+      return PANEL_LABELS;
     },
     commentsClosedForComponent() {
       return this.isCommentsClosed();
