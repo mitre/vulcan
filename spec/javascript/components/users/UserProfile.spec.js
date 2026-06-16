@@ -219,27 +219,40 @@ describe("UserProfile", () => {
   });
 
   describe("unlink identity", () => {
-    it("shows the unlink button when an external identity is linked", () => {
-      wrapper = createWrapper({ user: { ...defaultProps.user, provider: "oidc" } });
-      expect(wrapper.find('[data-test="unlink-identity-button"]').exists()).toBe(true);
+    const identityUser = {
+      ...defaultProps.user,
+      provider: "okta",
+      identities: [
+        { id: 10, title: "Okta", email: "test@okta.com", can_unlink: true, last_sign_in_at: null },
+      ],
+      connectable_providers: [],
+    };
+
+    it("renders identity table with Unlink button when identity has can_unlink=true", () => {
+      wrapper = createWrapper({ user: identityUser });
+      expect(wrapper.text()).toContain("Okta");
+      expect(wrapper.text()).toContain("Unlink");
     });
 
-    it("does not show the unlink button for local-only accounts", () => {
-      wrapper = createWrapper({ user: { ...defaultProps.user, provider: null } });
-      expect(wrapper.find('[data-test="unlink-identity-button"]').exists()).toBe(false);
+    it("does not render identity table for local-only accounts", () => {
+      wrapper = createWrapper({
+        user: { ...defaultProps.user, provider: null, identities: [], connectable_providers: [] },
+      });
+      expect(wrapper.text()).toContain("No external identities linked");
     });
 
-    it("submits the unlink request with current password via unlinkIdentity", async () => {
+    it("submits the unlink request with identity_id + current password", async () => {
       const { unlinkIdentity } = await import("@/api/usersApi");
-      // location.reload() is the real side effect after unlink (fresh session
-      // state). Stub + assert so jsdom never receives the navigation
-      // (zero-noise). Restored by afterEach vi.unstubAllGlobals().
       vi.stubGlobal("location", { reload: vi.fn() });
-      wrapper = createWrapper({ user: { ...defaultProps.user, provider: "oidc" } });
+      wrapper = createWrapper({ user: identityUser });
+      wrapper.vm.unlinkTarget = identityUser.identities[0];
       wrapper.vm.unlinkForm.current_password = "mypassword";
       await wrapper.vm.submitUnlink();
 
-      expect(unlinkIdentity).toHaveBeenCalledWith({ current_password: "mypassword" });
+      expect(unlinkIdentity).toHaveBeenCalledWith({
+        identity_id: 10,
+        current_password: "mypassword",
+      });
       expect(globalThis.location.reload).toHaveBeenCalled();
     });
   });
