@@ -117,6 +117,22 @@ allOf:
         type: boolean
         description: Whether all rules meet release criteria.
         example: false
+      srg_is_latest:
+        type: boolean
+        description: Whether the component's based_on SRG is the latest version of its family.
+        example: true
+      srg_latest_version:
+        type:
+          - string
+          - 'null'
+        description: Version string of the latest SRG in the same family. Null when srg_is_latest=true.
+        example: null
+      srg_latest_id:
+        type:
+          - integer
+          - 'null'
+        description: ID of the latest SRG for linking. Null when srg_is_latest=true.
+        example: null
       status_counts:
         type: object
         description: Count of rules by applicability status.

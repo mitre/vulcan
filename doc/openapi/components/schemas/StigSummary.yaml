@@ -42,6 +42,22 @@ properties:
     format: date
     description: Date the STIG benchmark was published by DISA.
     example: "2025-10-01"
+  is_latest:
+    type: boolean
+    description: Whether this is the latest available version of this STIG family.
+    example: true
+  latest_available_version:
+    type:
+      - string
+      - 'null'
+    description: Version string of the latest available STIG in this family. Null when is_latest=true.
+    example: null
+  latest_available_id:
+    type:
+      - integer
+      - 'null'
+    description: ID of the latest available STIG for linking. Null when is_latest=true.
+    example: null
   severity_counts:
     type: object
     description: Count of rules at each severity level within this STIG.

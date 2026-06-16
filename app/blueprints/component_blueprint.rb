@@ -100,6 +100,20 @@ class ComponentBlueprint < Blueprinter::Base
       component.status_counts
     end
 
+    field :srg_is_latest do |component, _options|
+      component.based_on&.latest? || false
+    end
+
+    field :srg_latest_version do |component, _options|
+      srg = component.based_on
+      srg&.latest? ? nil : srg&.latest_for_family&.version
+    end
+
+    field :srg_latest_id do |component, _options|
+      srg = component.based_on
+      srg&.latest? ? nil : srg&.latest_for_family&.id
+    end
+
     field :additional_questions do |component, _options|
       component.additional_questions.as_json
     end

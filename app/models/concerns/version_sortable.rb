@@ -8,6 +8,20 @@ module VersionSortable
   MAJOR_VERSION_SQL = "CAST(SUBSTRING(version FROM 'V(\\d+)') AS INTEGER) DESC NULLS LAST"
   MINOR_VERSION_SQL = "CAST(SUBSTRING(version FROM 'R(\\d+)') AS INTEGER) DESC NULLS LAST"
 
+  def latest?
+    self.class.latest_versions.exists?(id: id)
+  end
+
+  def latest_for_family
+    self.class
+        .where(title: title)
+        .order(
+          Arel.sql(VersionSortable::MAJOR_VERSION_SQL),
+          Arel.sql(VersionSortable::MINOR_VERSION_SQL)
+        )
+        .first
+  end
+
   class_methods do
     def latest_versions
       id_col = arel_table[:id]

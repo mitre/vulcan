@@ -10,6 +10,18 @@ class SrgBlueprint < Blueprinter::Base
     srg.severity_counts_hash
   end
 
+  field :is_latest do |srg, _options|
+    srg.latest?
+  end
+
+  field :latest_available_version do |srg, _options|
+    srg.latest? ? nil : srg.latest_for_family&.version
+  end
+
+  field :latest_available_id do |srg, _options|
+    srg.latest? ? nil : srg.latest_for_family&.id
+  end
+
   view :index do
     # Default fields + severity_counts
   end

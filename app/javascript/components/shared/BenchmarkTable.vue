@@ -47,18 +47,38 @@
         <b-link :href="`/srgs/${data.item.id}`">{{ data.item.srg_id }}</b-link>
       </template>
       <template v-if="type === 'Component'" #cell(based_on_title)="data">
-        <span
-          v-b-tooltip.hover.html
-          :title="`${data.item.based_on_title} ${data.item.based_on_version}`"
-        >
-          {{ abbreviateSrgName(data.item.based_on_title) }} {{ data.item.based_on_version }}
+        <span class="d-flex align-items-center">
+          <VersionCurrencyDot
+            v-if="data.item.srg_is_latest != null"
+            :is-latest="data.item.srg_is_latest"
+            :latest-version="data.item.srg_latest_version"
+            :latest-id="data.item.srg_latest_id"
+            link-path="/srgs"
+            class="mr-1"
+          />
+          <span
+            v-b-tooltip.hover.html
+            :title="`${data.item.based_on_title} ${data.item.based_on_version}`"
+          >
+            {{ abbreviateSrgName(data.item.based_on_title) }} {{ data.item.based_on_version }}
+          </span>
         </span>
       </template>
       <template v-if="type === 'Component'" #cell(component_version)="data">
         <span class="version-badge">{{ formatVersion(data.item) }}</span>
       </template>
       <template #cell(version)="data">
-        <span class="version-badge">{{ formatVersion(data.item) }}</span>
+        <span class="d-flex align-items-center">
+          <VersionCurrencyDot
+            v-if="data.item.is_latest != null"
+            :is-latest="data.item.is_latest"
+            :latest-version="data.item.latest_available_version"
+            :latest-id="data.item.latest_available_id"
+            :link-path="type === 'SRG' ? '/srgs' : '/stigs'"
+            class="mr-1"
+          />
+          <span class="version-badge">{{ formatVersion(data.item) }}</span>
+        </span>
       </template>
       <template #cell(severity_counts)="data">
         <SeverityBadges :counts="data.item.severity_counts" />
@@ -86,6 +106,7 @@ import { useToast } from "../../composables/useToast";
 import { formatDate as formatDateUtil } from "../../utils/dateFormatter";
 import { abbreviateSrgName as abbreviateSrgNameUtil } from "../../utils/srgNameAbbreviator";
 import SeverityBadges from "./SeverityBadges.vue";
+import VersionCurrencyDot from "./VersionCurrencyDot.vue";
 import ConfirmDeleteModal from "./ConfirmDeleteModal.vue";
 import TableActionButtons from "./TableActionButtons.vue";
 import { useDeleteConfirmation } from "../../composables/useDeleteConfirmation";
@@ -93,7 +114,7 @@ import { useTableSearch } from "../../composables/useTableSearch";
 
 export default {
   name: "BenchmarkTable",
-  components: { SeverityBadges, ConfirmDeleteModal, TableActionButtons },
+  components: { SeverityBadges, VersionCurrencyDot, ConfirmDeleteModal, TableActionButtons },
   props: {
     srgs: {
       type: Array,
