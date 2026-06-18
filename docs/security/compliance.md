@@ -426,7 +426,7 @@ spec:
         
       containers:
       - name: vulcan
-        image: mitre/vulcan:latest
+        image: mitre/vulcan:release-latest
         
         # Security Settings
         securityContext:

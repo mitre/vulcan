@@ -20,8 +20,8 @@ Before installing, you can try Vulcan directly:
 ### 1. Pull and Run with Docker
 
 ```bash
-# Pull the latest Docker image
-docker pull mitre/vulcan:latest
+# Pull the latest released image
+docker pull mitre/vulcan:release-latest
 
 # Or use docker compose for a complete setup
 wget https://raw.githubusercontent.com/mitre/vulcan/master/docker-compose.yml
