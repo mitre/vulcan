@@ -138,6 +138,18 @@ RSpec.describe 'Query performance optimizations' do
       expect(reviews.first['displayed_rule_name']).to eq("#{component.prefix}-000001")
     end
 
+    it 'includes component-scoped reviews with displayed_rule_name "(component)"' do
+      # Component-scoped review (commentable_type='Component', rule_id=nil).
+      # Pre-polymorphic Component#reviews filtered by rule_id IN (...) and
+      # silently dropped these. See DATABASE-COMPLETE-REDESIGN-v2 Problem 13.
+      Review.create!(user: reviewer, commentable: component, action: 'comment', comment: 'overall')
+      reviews = component.reviews
+      component_scoped = reviews.find { |r| r['commentable_type'] == 'Component' }
+      expect(component_scoped).not_to be_nil
+      expect(component_scoped['displayed_rule_name']).to eq('(component)')
+      expect(component_scoped['rule_id']).to be_nil
+    end
+
     it 'limits to 20 reviews' do
       # Already has 1 from before block
       19.times { |i| Review.create!(user: reviewer, rule: rule, action: 'comment', comment: "Comment #{i}") }

@@ -583,10 +583,14 @@ class ComponentsController < ApplicationController
 
   # Defines the set_component method.
   def set_component
-    # Loads a Component object with associated rules, reviews,
-    # descriptions, checks and additional answers where ID is equal to params id.
-    @component = Component.eager_load(
-      rules: [:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
+    # preload (separate queries) NOT eager_load (single LEFT OUTER JOIN). Multiple
+    # sibling has_many's on Rule create a cartesian product per rule — N reviews
+    # x M checks x ... — that scales with comment volume. Nested review authors
+    # (user/triage_set_by/adjudicated_by) avoid an N+1 in ReviewBlueprint via
+    # RuleBlueprint :editor. See docs/plans/DATABASE-COMPLETE-REDESIGN-v2.md Problem 11.
+    @component = Component.preload(
+      rules: [{ reviews: %i[user triage_set_by adjudicated_by] },
+              :disa_rule_descriptions, :rule_descriptions, :checks,
               :additional_answers,
               { satisfies: :srg_rule },
               { satisfied_by: :srg_rule },

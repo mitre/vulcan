@@ -10,6 +10,10 @@ class ApplicationController < ActionController::Base
   before_action :check_access_request_notifications
   before_action :check_locked_user_notifications
 
+  # Upper bound on the pending-access-requests list rendered into the navbar
+  # dropdown on every HTML request. See check_access_request_notifications.
+  NAVBAR_ACCESS_REQUESTS_CAP = 50
+
   # AC-8: Determines if the current user must acknowledge consent.
   # Returns true when consent is enabled and the session has no valid acknowledgment.
   def consent_required?
@@ -380,9 +384,15 @@ class ApplicationController < ActionController::Base
 
     # Single query: find all access requests for projects where current user is admin.
     # Replaces N+1 loop that called can_admin_project? + eager_load per project.
+    # `.limit(NAVBAR_ACCESS_REQUESTS_CAP)` bounds the per-request cost on the super-admin
+    # branch, which previously loaded the whole table on every HTML page (Problem 12
+    # in docs/plans/DATABASE-COMPLETE-REDESIGN-v2.md). Newest-first so the recent
+    # asks the admin would actually action stay visible at the cap.
     pending_requests = if current_user.admin?
                          # Super admins see all pending requests — no need to pluck project IDs
                          ProjectAccessRequest.eager_load(:user, :project)
+                                             .order(created_at: :desc)
+                                             .limit(NAVBAR_ACCESS_REQUESTS_CAP)
                        else
                          admin_project_ids = Membership.where(user_id: current_user.id, role: 'admin',
                                                               membership_type: 'Project')
@@ -391,6 +401,8 @@ class ApplicationController < ActionController::Base
 
                          ProjectAccessRequest.where(project_id: admin_project_ids)
                                              .eager_load(:user, :project)
+                                             .order(created_at: :desc)
+                                             .limit(NAVBAR_ACCESS_REQUESTS_CAP)
                        end
 
     @access_requests = pending_requests.map do |ar|
