@@ -46,6 +46,9 @@ SKIP_CONTROLLER_PREFIXES = %w[
   sessions
   users/registrations
   users/omniauth_callbacks
+  users/passwords
+  users/confirmations
+  users/unlocks
   rails/
   active_storage/
   health_check/

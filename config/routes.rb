@@ -15,7 +15,10 @@ Rails.application.routes.draw do
   devise_for :users, controllers: {
     omniauth_callbacks: 'users/omniauth_callbacks',
     registrations: 'users/registrations',
-    sessions: 'sessions'
+    sessions: 'sessions',
+    passwords: 'users/passwords',
+    confirmations: 'users/confirmations',
+    unlocks: 'users/unlocks'
   }
 
   # Unlink an external identity (OIDC/LDAP/GitHub) from the current user account.

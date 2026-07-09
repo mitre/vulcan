@@ -12,7 +12,13 @@ module Users
     prepend_before_action :authenticate_scope!, only: %i[edit update destroy edit_password edit_activity edit_tokens]
 
     def edit
-      super
+      respond_to do |format|
+        format.html { super }
+        format.json do
+          self.resource = send(:"authenticate_#{resource_name}!", force: true)
+          render json: CurrentUserBlueprint.render(resource), status: :ok
+        end
+      end
     end
 
     # GET /users/edit/password — Change Password sub-page of the
