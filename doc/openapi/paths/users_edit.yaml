@@ -1,0 +1,28 @@
+get:
+  operationId: getProfile
+  tags:
+    - Auth
+  summary: Get current user profile (Devise edit)
+  description: >-
+    Returns the authenticated user's profile as JSON. This is the Devise
+    registration edit endpoint with JSON support. The SPA may prefer
+    GET /api/auth/me which returns the same CurrentUserResponse shape.
+    Requires authentication.
+  responses:
+    '200':
+      description: Current user profile
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/CurrentUserResponse.yaml
+          examples:
+            profile:
+              summary: User profile
+              value:
+                id: 42
+                name: Jane Doe
+                email: jane@example.com
+                admin: false
+                provider: null
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

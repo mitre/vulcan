@@ -1,0 +1,73 @@
+post:
+  operationId: requestUnlockInstructions
+  tags:
+    - Auth
+  security: []
+  summary: Request account unlock instructions
+  description: >-
+    Sends unlock instructions email to the given address. In paranoid mode
+    (default), always returns success — even if the email is not registered
+    or the account is not locked — to prevent email enumeration. Blank
+    email returns 422. Requires lockout to be enabled with an email-based
+    unlock strategy (both or email).
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - user
+          properties:
+            user:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Email address of the locked account.
+                  example: jane@example.com
+        examples:
+          unlock_request:
+            summary: Request unlock
+            value:
+              user:
+                email: jane@example.com
+  responses:
+    '200':
+      description: Instructions sent (or paranoid success)
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            sent:
+              summary: Unlock instructions sent
+              value:
+                toast:
+                  title: Instructions sent.
+                  message:
+                    - >-
+                      If your email address exists in our database, you will
+                      receive an email with instructions for how to unlock
+                      your account in a few minutes.
+                  variant: success
+    '422':
+      description: Validation error (blank email)
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            blank_email:
+              summary: Email is blank
+              value:
+                toast:
+                  title: Could not send instructions.
+                  message:
+                    - Email can't be blank
+                  variant: danger
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

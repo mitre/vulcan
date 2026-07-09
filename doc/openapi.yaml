@@ -4807,6 +4807,387 @@ paths:
                       locked_at: null
         4XX:
           $ref: '#/components/responses/ErrorResponse'
+  /users/edit:
+    get:
+      operationId: getProfile
+      tags:
+        - Auth
+      summary: Get current user profile (Devise edit)
+      description: Returns the authenticated user's profile as JSON. This is the Devise registration edit endpoint with JSON support. The SPA may prefer GET /api/auth/me which returns the same CurrentUserResponse shape. Requires authentication.
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUserResponse'
+              examples:
+                profile:
+                  summary: User profile
+                  value:
+                    id: 42
+                    name: Jane Doe
+                    email: jane@example.com
+                    admin: false
+                    provider: null
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
+  /users/password:
+    post:
+      operationId: requestPasswordReset
+      tags:
+        - Auth
+      security: []
+      summary: Request password reset instructions
+      description: Sends a password reset email to the given address. In paranoid mode (default), always returns success — even if the email is not registered — to prevent email enumeration. Blank email returns 422.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user
+              properties:
+                user:
+                  type: object
+                  required:
+                    - email
+                  properties:
+                    email:
+                      type: string
+                      format: email
+                      description: Email address of the account to reset.
+                      example: jane@example.com
+            examples:
+              reset_request:
+                summary: Request password reset
+                value:
+                  user:
+                    email: jane@example.com
+      responses:
+        '200':
+          description: Instructions sent (or paranoid success)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+              examples:
+                sent:
+                  summary: Reset instructions sent
+                  value:
+                    toast:
+                      title: Instructions sent.
+                      message:
+                        - If your email address exists in our database, you will receive a password recovery link at your email address in a few minutes.
+                      variant: success
+        '422':
+          description: Validation error (blank email)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+              examples:
+                blank_email:
+                  summary: Email is blank
+                  value:
+                    toast:
+                      title: Could not send instructions.
+                      message:
+                        - Email can't be blank
+                      variant: danger
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
+    put:
+      operationId: executePasswordReset
+      tags:
+        - Auth
+      security: []
+      summary: Reset password using token from email
+      description: Resets the user's password using the token from the reset email. On success, signs the user in and returns a success toast. On failure (invalid token, mismatched passwords, complexity violation), returns 422 with error details.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user
+              properties:
+                user:
+                  type: object
+                  required:
+                    - reset_password_token
+                    - password
+                    - password_confirmation
+                  properties:
+                    reset_password_token:
+                      type: string
+                      description: Token from the password reset email link.
+                      example: abc123def456
+                    password:
+                      type: string
+                      format: password
+                      description: New password (must meet complexity requirements).
+                      example: N3wS3cure!#Pass
+                    password_confirmation:
+                      type: string
+                      format: password
+                      description: Must match the new password.
+                      example: N3wS3cure!#Pass
+            examples:
+              reset:
+                summary: Reset with valid token
+                value:
+                  user:
+                    reset_password_token: abc123def456
+                    password: N3wS3cure!#Pass
+                    password_confirmation: N3wS3cure!#Pass
+      responses:
+        '200':
+          description: Password reset successfully — user signed in
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+              examples:
+                reset:
+                  summary: Successful password reset
+                  value:
+                    toast:
+                      title: Password reset.
+                      message:
+                        - Your password has been changed successfully. You are now signed in.
+                      variant: success
+        '422':
+          description: Invalid token, expired token, or password validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+              examples:
+                invalid_token:
+                  summary: Bad reset token
+                  value:
+                    toast:
+                      title: Could not reset password.
+                      message:
+                        - Reset password token is invalid
+                      variant: danger
+                complexity:
+                  summary: Password complexity failure
+                  value:
+                    toast:
+                      title: Could not reset password.
+                      message:
+                        - Password must include at least 2 numbers
+                      variant: danger
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
+  /users/password/edit:
+    get:
+      operationId: validateResetToken
+      tags:
+        - Auth
+      security: []
+      summary: Validate a password reset token
+      description: Checks whether a password reset token is valid and not expired. The SPA calls this when the user follows the reset link to determine whether to show the reset form or an error message. Returns the minimum password length for client-side validation.
+      parameters:
+        - name: reset_password_token
+          in: query
+          required: true
+          description: The raw reset token from the email link.
+          schema:
+            type: string
+          example: abc123def456
+      responses:
+        '200':
+          description: Token is valid
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - valid
+                  - minimum_password_length
+                properties:
+                  valid:
+                    type: boolean
+                    description: Whether the token is valid and not expired.
+                    example: true
+                  minimum_password_length:
+                    type: integer
+                    description: Minimum password length for client-side validation.
+                    example: 15
+              examples:
+                valid:
+                  summary: Valid token
+                  value:
+                    valid: true
+                    minimum_password_length: 15
+        '422':
+          description: Token is invalid, expired, or missing
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - valid
+                  - error
+                properties:
+                  valid:
+                    type: boolean
+                    description: Always false for error responses.
+                    example: false
+                  error:
+                    type: string
+                    description: Human-readable error message.
+                    example: Reset token is invalid or has expired.
+              examples:
+                invalid:
+                  summary: Invalid token
+                  value:
+                    valid: false
+                    error: Reset token is invalid or has expired.
+                missing:
+                  summary: No token provided
+                  value:
+                    valid: false
+                    error: No reset token provided.
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
+  /users/confirmation:
+    post:
+      operationId: resendConfirmation
+      tags:
+        - Auth
+      security: []
+      summary: Resend email confirmation instructions
+      description: Sends a new confirmation email to the given address. In paranoid mode (default), always returns success — even if the email is not registered or already confirmed — to prevent email enumeration. Blank email returns 422.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user
+              properties:
+                user:
+                  type: object
+                  required:
+                    - email
+                  properties:
+                    email:
+                      type: string
+                      format: email
+                      description: Email address to send confirmation to.
+                      example: jane@example.com
+            examples:
+              resend:
+                summary: Resend confirmation
+                value:
+                  user:
+                    email: jane@example.com
+      responses:
+        '200':
+          description: Instructions sent (or paranoid success)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+              examples:
+                sent:
+                  summary: Confirmation instructions sent
+                  value:
+                    toast:
+                      title: Instructions sent.
+                      message:
+                        - If your email address exists in our database, you will receive an email with instructions for how to confirm your email address in a few minutes.
+                      variant: success
+        '422':
+          description: Validation error (blank email)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+              examples:
+                blank_email:
+                  summary: Email is blank
+                  value:
+                    toast:
+                      title: Could not send instructions.
+                      message:
+                        - Email can't be blank
+                      variant: danger
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
+  /users/unlock:
+    post:
+      operationId: requestUnlockInstructions
+      tags:
+        - Auth
+      security: []
+      summary: Request account unlock instructions
+      description: Sends unlock instructions email to the given address. In paranoid mode (default), always returns success — even if the email is not registered or the account is not locked — to prevent email enumeration. Blank email returns 422. Requires lockout to be enabled with an email-based unlock strategy (both or email).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user
+              properties:
+                user:
+                  type: object
+                  required:
+                    - email
+                  properties:
+                    email:
+                      type: string
+                      format: email
+                      description: Email address of the locked account.
+                      example: jane@example.com
+            examples:
+              unlock_request:
+                summary: Request unlock
+                value:
+                  user:
+                    email: jane@example.com
+      responses:
+        '200':
+          description: Instructions sent (or paranoid success)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+              examples:
+                sent:
+                  summary: Unlock instructions sent
+                  value:
+                    toast:
+                      title: Instructions sent.
+                      message:
+                        - If your email address exists in our database, you will receive an email with instructions for how to unlock your account in a few minutes.
+                      variant: success
+        '422':
+          description: Validation error (blank email)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+              examples:
+                blank_email:
+                  summary: Email is blank
+                  value:
+                    toast:
+                      title: Could not send instructions.
+                      message:
+                        - Email can't be blank
+                      variant: danger
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
   /consent/acknowledge:
     post:
       operationId: acknowledgeConsent

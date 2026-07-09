@@ -204,6 +204,16 @@ paths:
     $ref: paths/users_{userId}_lock.yaml
   /users/{userId}/unlock:
     $ref: paths/users_{userId}_unlock.yaml
+  /users/edit:
+    $ref: paths/users_edit.yaml
+  /users/password:
+    $ref: paths/users_password.yaml
+  /users/password/edit:
+    $ref: paths/users_password_edit.yaml
+  /users/confirmation:
+    $ref: paths/users_confirmation.yaml
+  /users/unlock:
+    $ref: paths/users_unlock.yaml
   /consent/acknowledge:
     $ref: paths/consent_acknowledge.yaml
   /projects/{projectId}/project_access_requests:
