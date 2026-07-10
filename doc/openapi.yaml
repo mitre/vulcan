@@ -482,6 +482,124 @@ paths:
                         email: jane.doe@example.org
         4XX:
           $ref: '#/components/responses/ErrorResponse'
+  /api/srgs/latest:
+    get:
+      operationId: latestSrgs
+      tags:
+        - Benchmarks
+      summary: List the latest SRG version per family
+      description: Returns one SRG per family — the numerically highest V{major}R{minor} version — for dropdown population. Public reference data, no authentication required. The q parameter filters families by case-insensitive substring with abbreviation expansion (GPOS matches General Purpose Operating System); queries shorter than 2 characters return no rows.
+      security: []
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: Family filter — case-insensitive substring matched against name, title, and srg_id, with abbreviation expansion (minimum 2 characters).
+          schema:
+            type: string
+          example: GPOS
+      responses:
+        '200':
+          description: Latest SRG per family, ordered by title
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BenchmarkLatestResponse'
+              examples:
+                latest:
+                  summary: Latest SRGs
+                  value:
+                    rows:
+                      - id: 42
+                        srg_id: General_Purpose_Operating_System
+                        title: General Purpose Operating System Security Requirements Guide
+                        version: V3R3
+                        name: General Purpose Operating System - Ver 3, Rel 3
+                      - id: 43
+                        srg_id: Web_Server_SRG
+                        title: Web Server Security Requirements Guide
+                        version: V4R4
+                        name: Web Server SRG - Ver 4, Rel 4
+  /api/stigs/latest:
+    get:
+      operationId: latestStigs
+      tags:
+        - Benchmarks
+      summary: List the latest STIG version per family
+      description: Returns one STIG per family — the numerically highest V{major}R{minor} version — for dropdown population. Public reference data, no authentication required. The q parameter filters families by case-insensitive substring with abbreviation expansion (RHEL matches Red Hat Enterprise Linux); queries shorter than 2 characters return no rows.
+      security: []
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: Family filter — case-insensitive substring matched against name, title, and stig_id, with abbreviation expansion (minimum 2 characters).
+          schema:
+            type: string
+          example: RHEL
+      responses:
+        '200':
+          description: Latest STIG per family, ordered by title
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BenchmarkLatestResponse'
+              examples:
+                latest:
+                  summary: Latest STIGs
+                  value:
+                    rows:
+                      - id: 7
+                        stig_id: RHEL_9_STIG
+                        title: Red Hat Enterprise Linux 9 Security Technical Implementation Guide
+                        version: V2R7
+                        name: RHEL 9 STIG - Ver 2, Rel 7
+  /api/components/latest:
+    get:
+      operationId: latestComponents
+      tags:
+        - Benchmarks
+      summary: List the latest released component per family
+      description: Returns one released component per prefix family — the numerically highest version/release pair — for dropdown population. A component is a STIG in progress; released ones are instance-wide reference data for any authenticated user. Unreleased drafts never appear. The q parameter filters families by case-insensitive substring with abbreviation expansion (RHEL matches Red Hat Enterprise Linux); queries shorter than 2 characters return no rows.
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: Family filter — case-insensitive substring matched against name, prefix, and title, with abbreviation expansion (minimum 2 characters).
+          schema:
+            type: string
+          example: RHEL-09
+      responses:
+        '200':
+          description: Latest released component per family, ordered by prefix
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentLatestResponse'
+              examples:
+                latest:
+                  summary: Latest released components
+                  value:
+                    rows:
+                      - id: 38
+                        prefix: RHEL-09
+                        name: RHEL 9 Hardened Baseline
+                        title: Red Hat Enterprise Linux 9
+                        version: 2
+                        release: 1
+        '401':
+          description: Authentication required — components are not public
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+                    example: Unauthorized
   /search/rules:
     get:
       operationId: searchRulesLegacy
@@ -5364,7 +5482,7 @@ paths:
       tags:
         - Projects
       summary: Request access to a project
-      description: Creates an access request for the current user on the specified project. Project admins are notified via email (if SMTP is enabled). HTML-only response — redirects to root. Not a JSON API endpoint.
+      description: Creates an access request for the current user on the specified project. Project admins are notified via email (if SMTP is enabled). Returns JSON with toast and the new request ID, or an HTML redirect for browser requests. Returns 422 if the user has already requested access.
       parameters:
         - name: projectId
           in: path
@@ -5374,8 +5492,37 @@ paths:
             type: integer
           example: 7
       responses:
-        '302':
-          description: Redirect to root after creating the access request
+        '200':
+          description: Access request created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessRequestToastResponse'
+              examples:
+                submitted:
+                  summary: Access request submitted
+                  value:
+                    toast:
+                      title: Access request submitted.
+                      message:
+                        - Your request for access has been sent.
+                      variant: success
+                    id: 42
+        '422':
+          description: Validation error — the user has already requested access
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+              examples:
+                duplicate_request:
+                  summary: Duplicate access request
+                  value:
+                    toast:
+                      title: Could not request access.
+                      message:
+                        - User has already requested access to this project
+                      variant: danger
   /projects/{projectId}/project_access_requests/{requestId}:
     delete:
       operationId: destroyProjectAccessRequest
@@ -5404,15 +5551,24 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AccessRequestDestroyResponse'
+                $ref: '#/components/schemas/AccessRequestToastResponse'
               examples:
                 denied:
                   summary: Admin denied access request
                   value:
                     toast:
-                      title: Access request submitted.
+                      title: Access request denied.
                       message:
                         - Successfully denied Jane Doe's request to access project.
+                      variant: success
+                    id: 42
+                cancelled:
+                  summary: Requester cancelled their own request
+                  value:
+                    toast:
+                      title: Access request cancelled.
+                      message:
+                        - Your request to access Photon OS 5 has been cancelled.
                       variant: success
                     id: 42
         '422':
@@ -6470,6 +6626,99 @@ components:
                   - 'null'
                 description: Name of the parent SRG.
                 example: Container Platform SRG - Ver 2, Rel 4
+    BenchmarkLatestResponse:
+      description: Latest-version benchmark listing for dropdown population. One row per benchmark family, ranked by numeric V{major}R{minor} version (V10R1 above V4R4). SRG rows carry srg_id; STIG rows carry stig_id.
+      type: object
+      required:
+        - rows
+      additionalProperties: false
+      properties:
+        rows:
+          type: array
+          description: One entry per benchmark family, ordered by title.
+          items:
+            type: object
+            required:
+              - id
+              - title
+              - version
+              - name
+            additionalProperties: false
+            properties:
+              id:
+                type: integer
+                description: Unique benchmark record identifier.
+                example: 42
+              srg_id:
+                type: string
+                description: SRG family identifier. Present only in /api/srgs/latest responses.
+                example: General_Purpose_Operating_System
+              stig_id:
+                type: string
+                description: STIG family identifier. Present only in /api/stigs/latest responses.
+                example: RHEL_9_STIG
+              title:
+                type: string
+                description: Full benchmark title.
+                example: General Purpose Operating System Security Requirements Guide
+              version:
+                type: string
+                description: DISA version string in V{major}R{minor} format.
+                example: V3R3
+              name:
+                type:
+                  - string
+                  - 'null'
+                description: Human-friendly display name with version and release.
+                example: General Purpose Operating System - Ver 3, Rel 3
+    ComponentLatestResponse:
+      description: Latest released component per prefix family for dropdown population. A component is a STIG in progress — released ones are instance-wide reference data. Ranking is numeric on the integer version/release pair; unreleased drafts never appear.
+      type: object
+      required:
+        - rows
+      additionalProperties: false
+      properties:
+        rows:
+          type: array
+          description: One entry per prefix family, ordered by prefix.
+          items:
+            type: object
+            required:
+              - id
+              - prefix
+              - name
+            additionalProperties: false
+            properties:
+              id:
+                type: integer
+                description: Unique component identifier.
+                example: 38
+              prefix:
+                type: string
+                description: STIG ID prefix — the component family identifier.
+                example: RHEL-09
+              name:
+                type: string
+                description: Component name.
+                example: RHEL 9 Hardened Baseline
+              title:
+                type:
+                  - string
+                  - 'null'
+                description: Component title. Null when not set.
+                example: Red Hat Enterprise Linux 9
+              version:
+                type:
+                  - integer
+                  - 'null'
+                description: Component version number.
+                example: 2
+              release:
+                type:
+                  - integer
+                  - 'null'
+                description: Component release number within the version.
+                example: 1
     MembershipSummary:
       description: Project or component membership linking a user to a role.
       type: object
@@ -9396,8 +9645,8 @@ components:
           format: uri
           description: One-time password reset URL to share with the user.
           example: https://vulcan.example.org/users/password/edit?reset_password_token=abc123def456
-    AccessRequestDestroyResponse:
-      description: Response from deleting a project access request (deny or cancel).
+    AccessRequestToastResponse:
+      description: Response from creating or deleting a project access request. The id is the affected access request — newly created on POST, destroyed on DELETE.
       type: object
       required:
         - toast
@@ -9408,7 +9657,7 @@ components:
           $ref: '#/components/schemas/ToastObject'
         id:
           type: integer
-          description: ID of the destroyed access request.
+          description: ID of the affected access request.
           example: 42
     TriageResponseTemplate:
       description: A reusable response template for triage decisions, scoped to a project.

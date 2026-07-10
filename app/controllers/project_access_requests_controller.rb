@@ -12,16 +12,33 @@ class ProjectAccessRequestsController < ApplicationController
     @access_request = ProjectAccessRequest.new(user: current_user, project: @project)
 
     if @access_request.save
-      flash.notice = 'Your request for access has been sent.'
       if Settings.smtp.enabled
         safely_notify('request_access') do
           send_smtp_notification(UserMailer, 'request_access', @access_request.user, @access_request.project)
         end
       end
+
+      respond_to do |format|
+        format.html do
+          flash.notice = 'Your request for access has been sent.'
+          redirect_to root_path
+        end
+        format.json do
+          render_toast(title: 'Access request submitted.', message: ['Your request for access has been sent.'],
+                       variant: 'success', status: :ok, id: @access_request.id)
+        end
+      end
     else
-      flash.alert = @access_request.errors.full_messages.to_sentence
+      respond_to do |format|
+        format.html do
+          flash.alert = @access_request.errors.full_messages.to_sentence
+          redirect_to root_path
+        end
+        format.json do
+          render_toast(title: 'Could not request access.', message: @access_request.errors.full_messages)
+        end
+      end
     end
-    redirect_to root_path
   end
 
   def destroy
@@ -32,22 +49,21 @@ class ProjectAccessRequestsController < ApplicationController
             send_smtp_notification(UserMailer, 'reject_access', @access_request.user, @access_request.project)
           end
         end
-        toast = "Successfully denied #{@access_request.user.name}'s request to access project."
+        title = 'Access request denied.'
+        message = "Successfully denied #{@access_request.user.name}'s request to access project."
       else
-        toast = "Your request to access #{@access_request.project.name} has been cancelled."
+        title = 'Access request cancelled.'
+        message = "Your request to access #{@access_request.project.name} has been cancelled."
       end
 
       respond_to do |format|
         format.html do
-          flash.notice = toast
+          flash.notice = message
           redirect_back(fallback_location: root_path)
         end
         # multi-key response (toast + id).
         format.json do
-          render json: {
-            toast: Toast.new(title: 'Access request submitted.', message: [toast], variant: 'success'),
-            id: @access_request.id
-          }
+          render_toast(title: title, message: [message], variant: 'success', status: :ok, id: @access_request.id)
         end
       end
     else

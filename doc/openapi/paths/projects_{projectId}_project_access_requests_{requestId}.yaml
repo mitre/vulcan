@@ -29,15 +29,24 @@ delete:
       content:
         application/json:
           schema:
-            $ref: ../components/schemas/AccessRequestDestroyResponse.yaml
+            $ref: ../components/schemas/AccessRequestToastResponse.yaml
           examples:
             denied:
               summary: Admin denied access request
               value:
                 toast:
-                  title: Access request submitted.
+                  title: Access request denied.
                   message:
                     - "Successfully denied Jane Doe's request to access project."
+                  variant: success
+                id: 42
+            cancelled:
+              summary: Requester cancelled their own request
+              value:
+                toast:
+                  title: Access request cancelled.
+                  message:
+                    - Your request to access Photon OS 5 has been cancelled.
                   variant: success
                 id: 42
     '422':

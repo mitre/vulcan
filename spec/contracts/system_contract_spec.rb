@@ -22,6 +22,33 @@ RSpec.describe 'System + Access Request endpoint contracts', type: :request do
     end
   end
 
+  # ── POST /projects/:id/project_access_requests ──
+
+  describe 'POST /projects/:id/project_access_requests (JSON)' do
+    let_it_be(:requester) { create(:user) }
+    let_it_be(:project) { create(:project, name: 'Access Request Create Contract Project') }
+
+    before { sign_in requester }
+
+    it 'returns AccessRequestToastResponse with toast + id' do
+      post "/projects/#{project.id}/project_access_requests", headers: json_headers, as: :json
+      body = validate_and_parse!
+
+      assert_fields_present body, :toast, :id
+      expect(body['id']).to eq(ProjectAccessRequest.find_by!(user: requester, project: project).id)
+      expect(body.dig('toast', 'variant')).to eq('success')
+    end
+
+    it 'returns ToastResponse 422 for a duplicate request' do
+      ProjectAccessRequest.create!(user: requester, project: project)
+
+      post "/projects/#{project.id}/project_access_requests", headers: json_headers, as: :json
+      body = validate_and_parse!(expected_status: :unprocessable_content)
+
+      expect(body.dig('toast', 'variant')).to eq('danger')
+    end
+  end
+
   # ── DELETE /projects/:id/project_access_requests/:id ──
 
   describe 'DELETE /projects/:id/project_access_requests/:id (JSON)' do
@@ -36,7 +63,7 @@ RSpec.describe 'System + Access Request endpoint contracts', type: :request do
 
     before { sign_in admin }
 
-    it 'returns AccessRequestDestroyResponse with toast + id' do
+    it 'returns AccessRequestToastResponse with toast + id' do
       access_request = ProjectAccessRequest.create!(user: requester, project: project)
 
       delete "/projects/#{project.id}/project_access_requests/#{access_request.id}",

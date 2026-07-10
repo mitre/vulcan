@@ -1,0 +1,15 @@
+description: >-
+  Response from creating or deleting a project access request. The id is the
+  affected access request — newly created on POST, destroyed on DELETE.
+type: object
+required:
+  - toast
+  - id
+additionalProperties: false
+properties:
+  toast:
+    $ref: ./ToastObject.yaml
+  id:
+    type: integer
+    description: ID of the affected access request.
+    example: 42
