@@ -38,9 +38,12 @@ class User < ApplicationRecord
                    length: { maximum: ->(_r) { Settings.input_limits.user_name } }
   validates :email, length: { maximum: ->(_r) { Settings.input_limits.user_email } }, allow_nil: true
 
-  # AC-10: Skip session limiting when disabled via settings
+  # AC-10: Skip session limiting when disabled via settings.
+  # Also skip for destroyed records — the devise-security before_logout hook
+  # fires during self-delete sign_out, and update_unique_session_id! raises
+  # NotPersistedError on a destroyed user (the row is already gone).
   def skip_session_limitable?
-    !Settings.session_limits&.enabled
+    destroyed? || !Settings.session_limits&.enabled
   end
 
   before_create :skip_confirmation!, unless: -> { Settings.local_login.email_confirmation }
