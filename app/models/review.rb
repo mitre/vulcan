@@ -4,6 +4,7 @@
 class Review < ApplicationRecord
   include VulcanAuditable
   include ImportedAttribution
+  extend PercentageMath
 
   # Lifecycle columns the merge engine may legitimately update on a
   # matched review (triage state, adjudication, addressed_by FK). The
@@ -95,6 +96,36 @@ class Review < ApplicationRecord
     top_level_comments.where(triage_status: %w[concur concur_with_comment non_concur])
                       .where(adjudicated_at: nil)
   }
+
+  # Canonical "top-level comments belonging to these components" scope —
+  # rule-attached (commentable BaseRule via the components' rules) OR
+  # component-attached. Mirrors CommentQueryService#build_base_scope; uses
+  # subqueries (no joins) so it stays .or-composable with other scopes.
+  scope :for_components, lambda { |component_ids|
+    rule_scoped = top_level_comments.where(
+      commentable_type: 'BaseRule',
+      commentable_id: Rule.where(component_id: component_ids).select(:id)
+    )
+    component_scoped = top_level_comments.where(commentable_type: 'Component', commentable_id: component_ids)
+    rule_scoped.or(component_scoped)
+  }
+
+  # Triage aggregates for the dashboard endpoints — one GROUP BY + one
+  # COUNT, no Ruby enumeration over reviews. Every TRIAGE_STATUSES key is
+  # present (zero-filled). adjudication_pct is nil when there are no
+  # top-level comments.
+  def self.triage_summary(component_ids)
+    scope = for_components(component_ids)
+    counts = scope.group(:triage_status).count
+    total = counts.values.sum
+    adjudicated = scope.where.not(adjudicated_at: nil).count
+    {
+      by_triage_status: TRIAGE_STATUSES.index_with { |status| counts[status] || 0 },
+      total: total,
+      adjudicated: adjudicated,
+      adjudication_pct: percentage_of(adjudicated, total)
+    }
+  end
 
   # Rule-scoped reviews whose polymorphic commentable columns were never
   # populated: legacy `rule_id` is set but `commentable_*` is NULL. Bulk

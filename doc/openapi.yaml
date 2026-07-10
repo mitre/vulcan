@@ -928,6 +928,253 @@ paths:
                     type: string
                     description: Error message.
                     example: Not found
+  /api/components/{id}/stats:
+    get:
+      operationId: componentStats
+      tags:
+        - Components
+      summary: Get rule statistics for a component
+      description: 'Returns rule counts by status and severity plus completion and lock percentages, computed as SQL aggregates. Access matches the component show rules: released components are readable by any authenticated user; unreleased ones require viewer permission.'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Numeric ID of the component.
+          schema:
+            type: integer
+          example: 38
+      responses:
+        '200':
+          description: Component rule statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentStatsResponse'
+              examples:
+                stats:
+                  summary: Component stats
+                  value:
+                    rules_by_status:
+                      not_yet_determined: 50
+                      applicable_configurable: 120
+                      applicable_inherently_meets: 15
+                      applicable_does_not_meet: 8
+                      not_applicable: 10
+                    rules_by_severity:
+                      high: 20
+                      medium: 173
+                      low: 10
+                    rule_count: 203
+                    completion_pct: 75.4
+                    lock_pct: 12.3
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+  /api/components/{id}/workflow_state:
+    get:
+      operationId: componentWorkflowState
+      tags:
+        - Components
+      summary: Get workflow readiness for a component
+      description: 'Returns where the component stands across the authoring, lock, review, comment, triage, and export stages — SQL-aggregated counts plus the comment-phase write-guard booleans. Access matches the component show rules: released components are readable by any authenticated user; unreleased ones require viewer permission.'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Numeric ID of the component.
+          schema:
+            type: integer
+          example: 38
+      responses:
+        '200':
+          description: Component workflow state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentWorkflowStateResponse'
+              examples:
+                in_progress:
+                  summary: Component mid-authoring with an open comment period
+                  value:
+                    authoring:
+                      rules_total: 203
+                      rules_determined: 153
+                    locks:
+                      locked: 25
+                      total: 203
+                      all_locked: false
+                    reviews:
+                      under_review: 4
+                    comment:
+                      phase: open
+                      accepting_new_comments: true
+                      triaging_active: true
+                      frozen_for_writes: false
+                      pending_comments: 3
+                    triage:
+                      pending: 3
+                      awaiting_adjudication: 1
+                    export:
+                      released: false
+                      releasable: false
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+  /api/components/{id}/triage_summary:
+    get:
+      operationId: componentTriageSummary
+      tags:
+        - Components
+      summary: Get triage summary for a component
+      description: 'Returns top-level comment counts per triage status plus the adjudication percentage — rule-attached and component-attached comments both count. Access matches the component show rules: released components are readable by any authenticated user; unreleased ones require viewer permission.'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Numeric ID of the component.
+          schema:
+            type: integer
+          example: 38
+      responses:
+        '200':
+          description: Component triage summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TriageSummaryResponse'
+              examples:
+                summary:
+                  summary: Component with comments in triage
+                  value:
+                    by_triage_status:
+                      pending: 3
+                      concur: 1
+                      concur_with_comment: 0
+                      non_concur: 0
+                      duplicate: 0
+                      informational: 1
+                      needs_clarification: 0
+                      withdrawn: 0
+                      addressed_by: 0
+                    total: 5
+                    adjudicated: 1
+                    adjudication_pct: 20
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+  /api/projects/{id}/stats:
+    get:
+      operationId: projectStats
+      tags:
+        - Projects
+      summary: Get rule statistics for a project
+      description: Returns rule statistics aggregated across every component in the project plus a per-component breakdown, computed from grouped SQL queries. Requires viewer permission on the project.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Numeric ID of the project.
+          schema:
+            type: integer
+          example: 7
+      responses:
+        '200':
+          description: Project rule statistics with per-component breakdown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectStatsResponse'
+              examples:
+                stats:
+                  summary: Project with two components
+                  value:
+                    aggregate:
+                      rules_by_status:
+                        not_yet_determined: 53
+                        applicable_configurable: 121
+                        applicable_inherently_meets: 15
+                        applicable_does_not_meet: 8
+                        not_applicable: 11
+                      rules_by_severity:
+                        high: 21
+                        medium: 176
+                        low: 11
+                      rule_count: 208
+                      completion_pct: 74.5
+                      lock_pct: 12
+                    components:
+                      - id: 38
+                        name: RHEL 9 Hardened Baseline
+                        prefix: RHEL-09
+                        rule_count: 203
+                        completion_pct: 75.4
+                        lock_pct: 12.3
+                      - id: 41
+                        name: Photon OS 5 Baseline
+                        prefix: PHTN-50
+                        rule_count: 5
+                        completion_pct: 40
+                        lock_pct: 0
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+  /api/projects/{id}/triage_summary:
+    get:
+      operationId: projectTriageSummary
+      tags:
+        - Projects
+      summary: Get triage summary for a project
+      description: Returns triage metrics aggregated across all of the project's components — top-level comment counts per triage status plus the adjudication percentage. Requires viewer permission on the project.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Numeric ID of the project.
+          schema:
+            type: integer
+          example: 7
+      responses:
+        '200':
+          description: Project-wide triage summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TriageSummaryResponse'
+              examples:
+                summary:
+                  summary: Project with comments in triage
+                  value:
+                    by_triage_status:
+                      pending: 3
+                      concur: 1
+                      concur_with_comment: 0
+                      non_concur: 0
+                      duplicate: 0
+                      informational: 1
+                      needs_clarification: 0
+                      withdrawn: 0
+                      addressed_by: 0
+                    total: 5
+                    adjudicated: 1
+                    adjudication_pct: 20
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
   /search/rules:
     get:
       operationId: searchRulesLegacy
@@ -7362,6 +7609,342 @@ components:
             - 'null'
           description: Days until the comment period ends. Null when comments are not being accepted, no end date is set, or the end date has passed.
           example: 5
+    RulesByStatus:
+      description: Rule counts grouped into the five canonical DISA status buckets (SQL aggregate).
+      type: object
+      required:
+        - not_yet_determined
+        - applicable_configurable
+        - applicable_inherently_meets
+        - applicable_does_not_meet
+        - not_applicable
+      additionalProperties: false
+      properties:
+        not_yet_determined:
+          type: integer
+          description: Rules with status Not Yet Determined.
+          example: 50
+        applicable_configurable:
+          type: integer
+          description: Rules with status Applicable - Configurable.
+          example: 120
+        applicable_inherently_meets:
+          type: integer
+          description: Rules with status Applicable - Inherently Meets.
+          example: 15
+        applicable_does_not_meet:
+          type: integer
+          description: Rules with status Applicable - Does Not Meet.
+          example: 8
+        not_applicable:
+          type: integer
+          description: Rules with status Not Applicable.
+          example: 10
+    SeverityBuckets:
+      description: Rule counts grouped by severity (SQL aggregate).
+      type: object
+      required:
+        - high
+        - medium
+        - low
+      additionalProperties: false
+      properties:
+        high:
+          type: integer
+          description: Count of CAT I (high severity) rules.
+          example: 20
+        medium:
+          type: integer
+          description: Count of CAT II (medium severity) rules.
+          example: 173
+        low:
+          type: integer
+          description: Count of CAT III (low severity) rules.
+          example: 10
+    ComponentStatsResponse:
+      description: 'Rule statistics for one component: counts by status and severity plus completion and lock percentages. Percentages are null when the component has no rules — never a fabricated 0.0.'
+      type: object
+      required:
+        - rules_by_status
+        - rules_by_severity
+        - rule_count
+        - completion_pct
+        - lock_pct
+      additionalProperties: false
+      properties:
+        rules_by_status:
+          $ref: '#/components/schemas/RulesByStatus'
+        rules_by_severity:
+          $ref: '#/components/schemas/SeverityBuckets'
+        rule_count:
+          type: integer
+          description: Total number of rules in the component.
+          example: 203
+        completion_pct:
+          type:
+            - number
+            - 'null'
+          description: Percentage of rules with a determined status (anything other than Not Yet Determined), rounded to one decimal. Null when there are no rules.
+          example: 75.4
+        lock_pct:
+          type:
+            - number
+            - 'null'
+          description: Percentage of locked rules, rounded to one decimal. Null when there are no rules.
+          example: 12.3
+    ComponentWorkflowStateResponse:
+      description: Workflow readiness for a component across the authoring, lock, review, comment, triage, and export stages. Counts are SQL aggregates; the comment booleans mirror the server's write-guards.
+      type: object
+      required:
+        - authoring
+        - locks
+        - reviews
+        - comment
+        - triage
+        - export
+      additionalProperties: false
+      properties:
+        authoring:
+          type: object
+          description: Rule authoring progress.
+          required:
+            - rules_total
+            - rules_determined
+          additionalProperties: false
+          properties:
+            rules_total:
+              type: integer
+              description: Total rules in the component.
+              example: 203
+            rules_determined:
+              type: integer
+              description: Rules with a determined status (not Not Yet Determined).
+              example: 153
+        locks:
+          type: object
+          description: Rule lock progress toward release.
+          required:
+            - locked
+            - total
+            - all_locked
+          additionalProperties: false
+          properties:
+            locked:
+              type: integer
+              description: Number of locked rules.
+              example: 25
+            total:
+              type: integer
+              description: Total rules in the component.
+              example: 203
+            all_locked:
+              type: boolean
+              description: True when every rule is locked and at least one rule exists — the precondition for release.
+              example: false
+        reviews:
+          type: object
+          description: Open review-request workload.
+          required:
+            - under_review
+          additionalProperties: false
+          properties:
+            under_review:
+              type: integer
+              description: Rules currently under review (review requested).
+              example: 4
+        comment:
+          type: object
+          description: Public comment period state (server write-guards).
+          required:
+            - phase
+            - accepting_new_comments
+            - triaging_active
+            - frozen_for_writes
+            - pending_comments
+          additionalProperties: false
+          properties:
+            phase:
+              type: string
+              enum:
+                - open
+                - closed
+              description: Public comment period phase.
+              example: open
+            accepting_new_comments:
+              type: boolean
+              description: Whether new comments are accepted (phase is open).
+              example: true
+            triaging_active:
+              type: boolean
+              description: Whether triage continues (open, or closed while adjudicating).
+              example: true
+            frozen_for_writes:
+              type: boolean
+              description: Whether the component is read-only (closed and finalized).
+              example: false
+            pending_comments:
+              type: integer
+              description: Top-level comments awaiting triage — rule-attached and component-attached both count.
+              example: 3
+        triage:
+          type: object
+          description: Triage and adjudication workload.
+          required:
+            - pending
+            - awaiting_adjudication
+          additionalProperties: false
+          properties:
+            pending:
+              type: integer
+              description: Top-level comments awaiting triage.
+              example: 3
+            awaiting_adjudication:
+              type: integer
+              description: Comments triaged concur/concur_with_comment/non_concur but not yet adjudicated.
+              example: 1
+        export:
+          type: object
+          description: Release/export readiness.
+          required:
+            - released
+            - releasable
+          additionalProperties: false
+          properties:
+            released:
+              type: boolean
+              description: Whether the component has been released.
+              example: false
+            releasable:
+              type: boolean
+              description: Whether the component can be released (all rules locked, not already released).
+              example: false
+    TriageSummaryResponse:
+      description: Triage aggregates over top-level comments — rule-attached and component-attached both count. Served for a single component or aggregated across a project's components. adjudication_pct is null when there are no top-level comments.
+      type: object
+      required:
+        - by_triage_status
+        - total
+        - adjudicated
+        - adjudication_pct
+      additionalProperties: false
+      properties:
+        by_triage_status:
+          type: object
+          description: Count of top-level comments per triage status (every status key present).
+          required:
+            - pending
+            - concur
+            - concur_with_comment
+            - non_concur
+            - duplicate
+            - informational
+            - needs_clarification
+            - withdrawn
+            - addressed_by
+          additionalProperties: false
+          properties:
+            pending:
+              type: integer
+              description: Comments awaiting triage.
+              example: 3
+            concur:
+              type: integer
+              description: Comments triaged as concur.
+              example: 1
+            concur_with_comment:
+              type: integer
+              description: Comments triaged as concur with comment.
+              example: 0
+            non_concur:
+              type: integer
+              description: Comments triaged as non-concur.
+              example: 0
+            duplicate:
+              type: integer
+              description: Comments marked duplicate of another comment.
+              example: 0
+            informational:
+              type: integer
+              description: Comments triaged as informational.
+              example: 1
+            needs_clarification:
+              type: integer
+              description: Comments needing clarification from the author.
+              example: 0
+            withdrawn:
+              type: integer
+              description: Comments withdrawn by their author.
+              example: 0
+            addressed_by:
+              type: integer
+              description: Comments addressed by another rule.
+              example: 0
+        total:
+          type: integer
+          description: Total top-level comments.
+          example: 5
+        adjudicated:
+          type: integer
+          description: Top-level comments with an adjudication timestamp.
+          example: 1
+        adjudication_pct:
+          type:
+            - number
+            - 'null'
+          description: Percentage of top-level comments adjudicated, rounded to one decimal. Null when there are no top-level comments.
+          example: 20
+    ProjectStatsResponse:
+      description: 'Project-level rule statistics: totals aggregated across every component plus a per-component breakdown. Percentages are null when a denominator is zero.'
+      type: object
+      required:
+        - aggregate
+        - components
+      additionalProperties: false
+      properties:
+        aggregate:
+          $ref: '#/components/schemas/ComponentStatsResponse'
+        components:
+          type: array
+          description: Per-component breakdown, ordered by prefix.
+          items:
+            type: object
+            required:
+              - id
+              - name
+              - prefix
+              - rule_count
+              - completion_pct
+              - lock_pct
+            additionalProperties: false
+            properties:
+              id:
+                type: integer
+                description: Component identifier.
+                example: 38
+              name:
+                type: string
+                description: Component name.
+                example: RHEL 9 Hardened Baseline
+              prefix:
+                type: string
+                description: STIG ID prefix.
+                example: RHEL-09
+              rule_count:
+                type: integer
+                description: Rules in this component.
+                example: 203
+              completion_pct:
+                type:
+                  - number
+                  - 'null'
+                description: Percentage of determined rules. Null when the component has no rules.
+                example: 75.4
+              lock_pct:
+                type:
+                  - number
+                  - 'null'
+                description: Percentage of locked rules. Null when the component has no rules.
+                example: 12.3
     MembershipSummary:
       description: Project or component membership linking a user to a role.
       type: object
@@ -10414,6 +10997,22 @@ components:
               summary: No active session
               value:
                 error: You need to sign in or sign up before continuing.
+    Forbidden:
+      description: Insufficient permissions to perform the requested action.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                description: Human-readable authorization error message.
+                example: You are not authorized to perform this action.
+          examples:
+            forbidden:
+              summary: Non-admin attempting admin action
+              value:
+                error: You are not authorized to perform this action.
     UnprocessableEntity:
       description: Validation errors prevented the request from being processed.
       content:
@@ -10451,22 +11050,6 @@ components:
                     - Name can't be blank.
                     - Prefix format is invalid.
                   variant: danger
-    Forbidden:
-      description: Insufficient permissions to perform the requested action.
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                description: Human-readable authorization error message.
-                example: You are not authorized to perform this action.
-          examples:
-            forbidden:
-              summary: Non-admin attempting admin action
-              value:
-                error: You are not authorized to perform this action.
   parameters:
     SearchQuery:
       name: q

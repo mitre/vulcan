@@ -7,6 +7,7 @@ class Project < ApplicationRecord
   enum :visibility, { discoverable: 0, hidden: 1 }
 
   include VulcanAuditable
+  include PercentageMath
 
   vulcan_audited except: %i[id admin_name admin_email memberships_count]
   has_associated_audits
@@ -277,6 +278,22 @@ class Project < ApplicationRecord
     }
   end
 
+  # Dashboard aggregates across all components — grouped SQL (one GROUP BY
+  # per metric), assembled per component from the RESULT ROWS, never by
+  # enumerating rules. Percentages are nil when a denominator is zero.
+  def dashboard_stats
+    comps = components.select(:id, :name, :prefix).order(:prefix)
+    ids = comps.map(&:id)
+    status_rows = Rule.where(component_id: ids).group(:component_id, :status).count
+    severity_rows = Rule.where(component_id: ids).group(:rule_severity).count
+    locked_rows = Rule.where(component_id: ids, locked: true).group(:component_id).count
+
+    {
+      aggregate: dashboard_aggregate(status_rows, severity_rows, locked_rows),
+      components: comps.map { |comp| dashboard_component_row(comp, status_rows, locked_rows) }
+    }
+  end
+
   ##
   # Get a list of projects that can be added as components to this project
   def available_components
@@ -290,5 +307,42 @@ class Project < ApplicationRecord
                      :security_requirements_guide_id, :released, :updated_at,
                      :rules_count, :component_id, :admin_name, :admin_email,
                      :description)
+  end
+
+  private
+
+  # Project-wide totals summed from the per-component GROUP BY rows.
+  def dashboard_aggregate(status_rows, severity_rows, locked_rows)
+    summed = status_rows.each_with_object(Hash.new(0)) { |((_, status), count), acc| acc[status] += count }
+    buckets = Component.status_buckets(summed)
+    total = buckets.values.sum
+    {
+      rules_by_status: buckets,
+      rules_by_severity: {
+        high: severity_rows['high'] || 0,
+        medium: severity_rows['medium'] || 0,
+        low: severity_rows['low'] || 0
+      },
+      rule_count: total,
+      completion_pct: percentage_of(total - buckets[:not_yet_determined], total),
+      lock_pct: percentage_of(locked_rows.values.sum, total)
+    }
+  end
+
+  # One breakdown row per component, built from the shared GROUP BY rows.
+  def dashboard_component_row(comp, status_rows, locked_rows)
+    counts = status_rows.each_with_object({}) do |((component_id, status), count), acc|
+      acc[status] = count if component_id == comp.id
+    end
+    buckets = Component.status_buckets(counts)
+    total = buckets.values.sum
+    {
+      id: comp.id,
+      name: comp.name,
+      prefix: comp.prefix,
+      rule_count: total,
+      completion_pct: percentage_of(total - buckets[:not_yet_determined], total),
+      lock_pct: percentage_of(locked_rows[comp.id] || 0, total)
+    }
   end
 end

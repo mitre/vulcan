@@ -1,0 +1,57 @@
+get:
+  operationId: componentWorkflowState
+  tags:
+    - Components
+  summary: Get workflow readiness for a component
+  description: >-
+    Returns where the component stands across the authoring, lock, review,
+    comment, triage, and export stages — SQL-aggregated counts plus the
+    comment-phase write-guard booleans. Access matches the component show
+    rules: released components are readable by any authenticated user;
+    unreleased ones require viewer permission.
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: Numeric ID of the component.
+      schema:
+        type: integer
+      example: 38
+  responses:
+    '200':
+      description: Component workflow state
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ComponentWorkflowStateResponse.yaml
+          examples:
+            in_progress:
+              summary: Component mid-authoring with an open comment period
+              value:
+                authoring:
+                  rules_total: 203
+                  rules_determined: 153
+                locks:
+                  locked: 25
+                  total: 203
+                  all_locked: false
+                reviews:
+                  under_review: 4
+                comment:
+                  phase: open
+                  accepting_new_comments: true
+                  triaging_active: true
+                  frozen_for_writes: false
+                  pending_comments: 3
+                triage:
+                  pending: 3
+                  awaiting_adjudication: 1
+                export:
+                  released: false
+                  releasable: false
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '404':
+      $ref: ../components/responses/ErrorResponse.yaml

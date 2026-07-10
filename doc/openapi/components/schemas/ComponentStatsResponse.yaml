@@ -1,0 +1,36 @@
+description: >-
+  Rule statistics for one component: counts by status and severity plus
+  completion and lock percentages. Percentages are null when the component
+  has no rules — never a fabricated 0.0.
+type: object
+required:
+  - rules_by_status
+  - rules_by_severity
+  - rule_count
+  - completion_pct
+  - lock_pct
+additionalProperties: false
+properties:
+  rules_by_status:
+    $ref: ./RulesByStatus.yaml
+  rules_by_severity:
+    $ref: ./SeverityBuckets.yaml
+  rule_count:
+    type: integer
+    description: Total number of rules in the component.
+    example: 203
+  completion_pct:
+    type:
+      - number
+      - 'null'
+    description: >-
+      Percentage of rules with a determined status (anything other than
+      Not Yet Determined), rounded to one decimal. Null when there are
+      no rules.
+    example: 75.4
+  lock_pct:
+    type:
+      - number
+      - 'null'
+    description: Percentage of locked rules, rounded to one decimal. Null when there are no rules.
+    example: 12.3

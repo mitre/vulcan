@@ -9,8 +9,8 @@ module Api
   class ComponentsController < BaseController
     include LatestBenchmarkListable
 
-    before_action :set_component, only: %i[summary]
-    before_action :authorize_component_access, only: %i[summary]
+    before_action :set_component, only: %i[summary stats workflow_state triage_summary]
+    before_action :authorize_component_access, only: %i[summary stats workflow_state triage_summary]
 
     latest_listing model: Component, blueprint: ComponentBlueprint,
                    columns: %i[id prefix name title version release], order: :prefix
@@ -27,6 +27,24 @@ module Api
         current_user: current_user,
         pending_comment_counts: Component.pending_comment_counts([@component.id])
       )
+    end
+
+    # GET /api/components/:id/stats — rule counts by status/severity plus
+    # completion and lock percentages, as SQL aggregates.
+    def stats
+      render json: @component.dashboard_stats
+    end
+
+    # GET /api/components/:id/workflow_state — readiness across the
+    # authoring -> lock -> review -> comment -> triage -> export flow.
+    def workflow_state
+      render json: @component.workflow_state
+    end
+
+    # GET /api/components/:id/triage_summary — top-level comment counts per
+    # triage status + adjudication percentage.
+    def triage_summary
+      render json: Review.triage_summary([@component.id])
     end
 
     private

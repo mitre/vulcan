@@ -1,0 +1,20 @@
+description: Rule counts grouped by severity (SQL aggregate).
+type: object
+required:
+  - high
+  - medium
+  - low
+additionalProperties: false
+properties:
+  high:
+    type: integer
+    description: Count of CAT I (high severity) rules.
+    example: 20
+  medium:
+    type: integer
+    description: Count of CAT II (medium severity) rules.
+    example: 173
+  low:
+    type: integer
+    description: Count of CAT III (low severity) rules.
+    example: 10

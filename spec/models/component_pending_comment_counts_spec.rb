@@ -57,6 +57,16 @@ RSpec.describe Component do
       expect(described_class.pending_comment_counts([])).to eq({})
     end
 
+    it 'counts component-level comments (commentable = Component, no rule) alongside rule comments' do
+      create(:review, :component_comment, commentable: component_c, user: viewer)
+
+      counts = described_class.pending_comment_counts(
+        [component_a.id, component_b.id, component_c.id]
+      )
+      expect(counts[component_c.id]).to eq(1)
+      expect(counts[component_a.id]).to eq(2)
+    end
+
     it 'issues a single SQL query (no N+1 across components)' do
       component_ids = [component_a.id, component_b.id, component_c.id]
       query_count = 0

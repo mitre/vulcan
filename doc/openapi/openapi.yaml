@@ -78,6 +78,16 @@ paths:
     $ref: paths/api_components_latest.yaml
   /api/components/{id}/summary:
     $ref: paths/api_components_{id}_summary.yaml
+  /api/components/{id}/stats:
+    $ref: paths/api_components_{id}_stats.yaml
+  /api/components/{id}/workflow_state:
+    $ref: paths/api_components_{id}_workflow_state.yaml
+  /api/components/{id}/triage_summary:
+    $ref: paths/api_components_{id}_triage_summary.yaml
+  /api/projects/{id}/stats:
+    $ref: paths/api_projects_{id}_stats.yaml
+  /api/projects/{id}/triage_summary:
+    $ref: paths/api_projects_{id}_triage_summary.yaml
   /search/rules:
     $ref: paths/search_rules.yaml
   /search/components:

@@ -9,6 +9,7 @@ class Component < ApplicationRecord
   include SeverityCounts
   include XccdfParseable
   include BenchmarkSearchable
+  include PercentageMath
 
   attr_accessor :skip_import_srg_rules
 
@@ -171,12 +172,63 @@ class Component < ApplicationRecord
              else
                rules.where(deleted_at: nil).group(:status).count
              end
+    self.class.status_buckets(counts)
+  end
+
+  # Maps a raw { status string => count } hash into the canonical
+  # five-bucket shape. Shared by status_counts and the project-level
+  # dashboard aggregation (which GROUPs by component + status in one query).
+  def self.status_buckets(counts)
     {
       not_yet_determined: counts[STATUS_NYD] || 0,
       applicable_configurable: counts[STATUS_APPLICABLE_CONFIGURABLE] || 0,
       applicable_inherently_meets: counts[STATUS_APPLICABLE_IM] || 0,
       applicable_does_not_meet: counts[STATUS_APPLICABLE_DNM] || 0,
       not_applicable: counts[STATUS_NOT_APPLICABLE] || 0
+    }
+  end
+
+  # Dashboard aggregates — SQL only (GROUP BY via status_counts /
+  # severity_counts + one COUNT for locks). Percentages are nil when the
+  # component has no rules.
+  def dashboard_stats
+    by_status = status_counts
+    total = by_status.values.sum
+    determined = total - by_status[:not_yet_determined]
+    {
+      rules_by_status: by_status,
+      rules_by_severity: severity_counts,
+      rule_count: total,
+      completion_pct: percentage_of(determined, total),
+      lock_pct: percentage_of(rules.where(locked: true).count, total)
+    }
+  end
+
+  # Workflow readiness for the SPA dashboard: where the component stands
+  # in authoring -> lock -> review -> comment -> triage -> export. Counts
+  # come from SQL aggregates; comment-phase booleans from the state-machine
+  # methods above (single source).
+  def workflow_state
+    by_status = status_counts
+    total = by_status.values.sum
+    locked_count = rules.where(locked: true).count
+    pending = self.class.pending_comment_counts([id])[id] || 0
+    {
+      authoring: { rules_total: total, rules_determined: total - by_status[:not_yet_determined] },
+      locks: { locked: locked_count, total: total, all_locked: total.positive? && locked_count == total },
+      reviews: { under_review: rules.where.not(review_requestor_id: nil).count },
+      comment: {
+        phase: comment_phase,
+        accepting_new_comments: accepting_new_comments?,
+        triaging_active: triaging_active?,
+        frozen_for_writes: frozen_for_writes?,
+        pending_comments: pending
+      },
+      triage: {
+        pending: pending,
+        awaiting_adjudication: Review.awaiting_adjudication.for_components([id]).count
+      },
+      export: { released: released, releasable: releasable }
     }
   end
 
@@ -652,15 +704,30 @@ class Component < ApplicationRecord
   #
   # Returns a sparse hash: { component_id => count } — components with
   # zero pending comments are omitted so callers can `counts[id] || 0`.
+  # LEFT JOIN so component-level comments (commentable = Component, no
+  # rule) survive the join — the old INNER rule join silently undercounted
+  # them. Deleted rules are excluded in the join condition because the raw
+  # join bypasses Rule's default_scope.
+  PENDING_COMMENT_RULE_JOIN = <<~SQL.squish
+    LEFT JOIN base_rules
+      ON reviews.commentable_type = 'BaseRule'
+     AND base_rules.id = reviews.commentable_id
+     AND base_rules.deleted_at IS NULL
+  SQL
+  private_constant :PENDING_COMMENT_RULE_JOIN
+
   def self.pending_comment_counts(component_ids)
     return {} if component_ids.blank?
 
     Review.where(action: Review::ACTION_COMMENT,
                  responding_to_review_id: nil,
                  triage_status: 'pending')
-          .joins(:rule)
-          .merge(Rule.where(component_id: component_ids))
-          .group('base_rules.component_id')
+          .joins(PENDING_COMMENT_RULE_JOIN)
+          .where('base_rules.component_id IN (:ids) OR ' \
+                 "(reviews.commentable_type = 'Component' AND reviews.commentable_id IN (:ids))",
+                 ids: component_ids)
+          .group(Arel.sql("CASE WHEN reviews.commentable_type = 'Component' " \
+                          'THEN reviews.commentable_id ELSE base_rules.component_id END'))
           .count
   end
 

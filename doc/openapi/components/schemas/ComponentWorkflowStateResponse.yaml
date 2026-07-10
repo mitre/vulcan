@@ -1,0 +1,134 @@
+description: >-
+  Workflow readiness for a component across the authoring, lock, review,
+  comment, triage, and export stages. Counts are SQL aggregates; the
+  comment booleans mirror the server's write-guards.
+type: object
+required:
+  - authoring
+  - locks
+  - reviews
+  - comment
+  - triage
+  - export
+additionalProperties: false
+properties:
+  authoring:
+    type: object
+    description: Rule authoring progress.
+    required:
+      - rules_total
+      - rules_determined
+    additionalProperties: false
+    properties:
+      rules_total:
+        type: integer
+        description: Total rules in the component.
+        example: 203
+      rules_determined:
+        type: integer
+        description: Rules with a determined status (not Not Yet Determined).
+        example: 153
+  locks:
+    type: object
+    description: Rule lock progress toward release.
+    required:
+      - locked
+      - total
+      - all_locked
+    additionalProperties: false
+    properties:
+      locked:
+        type: integer
+        description: Number of locked rules.
+        example: 25
+      total:
+        type: integer
+        description: Total rules in the component.
+        example: 203
+      all_locked:
+        type: boolean
+        description: >-
+          True when every rule is locked and at least one rule exists —
+          the precondition for release.
+        example: false
+  reviews:
+    type: object
+    description: Open review-request workload.
+    required:
+      - under_review
+    additionalProperties: false
+    properties:
+      under_review:
+        type: integer
+        description: Rules currently under review (review requested).
+        example: 4
+  comment:
+    type: object
+    description: Public comment period state (server write-guards).
+    required:
+      - phase
+      - accepting_new_comments
+      - triaging_active
+      - frozen_for_writes
+      - pending_comments
+    additionalProperties: false
+    properties:
+      phase:
+        type: string
+        enum:
+          - open
+          - closed
+        description: Public comment period phase.
+        example: open
+      accepting_new_comments:
+        type: boolean
+        description: Whether new comments are accepted (phase is open).
+        example: true
+      triaging_active:
+        type: boolean
+        description: Whether triage continues (open, or closed while adjudicating).
+        example: true
+      frozen_for_writes:
+        type: boolean
+        description: Whether the component is read-only (closed and finalized).
+        example: false
+      pending_comments:
+        type: integer
+        description: >-
+          Top-level comments awaiting triage — rule-attached and
+          component-attached both count.
+        example: 3
+  triage:
+    type: object
+    description: Triage and adjudication workload.
+    required:
+      - pending
+      - awaiting_adjudication
+    additionalProperties: false
+    properties:
+      pending:
+        type: integer
+        description: Top-level comments awaiting triage.
+        example: 3
+      awaiting_adjudication:
+        type: integer
+        description: >-
+          Comments triaged concur/concur_with_comment/non_concur but not
+          yet adjudicated.
+        example: 1
+  export:
+    type: object
+    description: Release/export readiness.
+    required:
+      - released
+      - releasable
+    additionalProperties: false
+    properties:
+      released:
+        type: boolean
+        description: Whether the component has been released.
+        example: false
+      releasable:
+        type: boolean
+        description: Whether the component can be released (all rules locked, not already released).
+        example: false
