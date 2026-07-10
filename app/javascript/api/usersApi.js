@@ -60,8 +60,16 @@ export function updateProfile(userData) {
   return api.put("/users", { user: userData });
 }
 
-/** Delete the currently signed-in user's account (no userId — Devise session). */
-export function deleteAccount() {
+/**
+ * Delete the currently signed-in user's account (no userId — Devise session).
+ * Local-credential users must re-authenticate (ASVS 3.7.1); pass their
+ * current password. Provider-managed accounts omit it.
+ * @param {string} [currentPassword] - required for local-credential users.
+ */
+export function deleteAccount(currentPassword) {
+  if (currentPassword) {
+    return api.delete("/users", { data: { user: { current_password: currentPassword } } });
+  }
   return api.delete("/users");
 }
 

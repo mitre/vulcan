@@ -206,6 +206,7 @@
       item-name="your account"
       item-type="account"
       :is-deleting="isDeleting"
+      :require-password="requiresPasswordForDelete"
       warning-message="This will permanently delete your account and all associated data. This action cannot be undone."
       confirm-button-text="Delete My Account"
       @confirm="confirmDeleteAccount"
@@ -264,6 +265,12 @@ export default {
     isProviderManaged() {
       return !!this.user.provider;
     },
+    // Re-authentication before self-delete (ASVS 3.7.1) applies only where a
+    // usable local credential exists — provider-managed and SSO-created
+    // (auto-password) accounts re-authenticate at their identity provider.
+    requiresPasswordForDelete() {
+      return !this.user.provider && !this.user.password_automatically_set;
+    },
     linkedProvider() {
       if (!this.user.provider) return null;
       return this.humanizeProvider(this.user.provider);
@@ -316,10 +323,10 @@ export default {
     openDeleteAccount() {
       this.showDeleteModal = true;
     },
-    async confirmDeleteAccount() {
+    async confirmDeleteAccount(payload) {
       this.isDeleting = true;
       try {
-        await deleteAccount();
+        await deleteAccount(payload?.currentPassword);
         globalThis.location.href = "/";
       } catch (error) {
         this.alertOrNotifyResponse(error);

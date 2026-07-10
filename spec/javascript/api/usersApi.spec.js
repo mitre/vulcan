@@ -101,6 +101,14 @@ describe("usersApi", () => {
     expect(api.delete).toHaveBeenCalledWith("/users");
   });
 
+  it("deleteAccount sends current_password for local-credential re-authentication", async () => {
+    api.delete.mockResolvedValue({ data: {} });
+    await deleteAccount("MyP@ssw0rd!");
+    expect(api.delete).toHaveBeenCalledWith("/users", {
+      data: { user: { current_password: "MyP@ssw0rd!" } },
+    });
+  });
+
   it("unlinkIdentity calls POST /users/unlink_identity with payload", async () => {
     api.post.mockResolvedValue({ data: {} });
     await unlinkIdentity({ provider: "github" });

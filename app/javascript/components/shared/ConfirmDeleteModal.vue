@@ -27,6 +27,22 @@
       <p v-if="warningMessage" class="mt-3 mb-0">
         <InfoNotice :text="warningMessage" />
       </p>
+      <b-form-group
+        v-if="requirePassword"
+        class="mt-3 mb-0"
+        label="Current password"
+        label-for="confirm-delete-password"
+        description="Re-enter your password to confirm this action."
+      >
+        <PasswordField
+          id="confirm-delete-password"
+          v-model="password"
+          name="user[current_password]"
+          autocomplete="current-password"
+          data-testid="confirm-delete-password"
+          :disabled="isDeleting"
+        />
+      </b-form-group>
     </div>
 
     <!-- Footer -->
@@ -41,7 +57,7 @@
       </b-button>
       <b-button
         variant="danger"
-        :disabled="isDeleting"
+        :disabled="isDeleting || (requirePassword && !password)"
         data-testid="confirm-delete-btn"
         @click="onConfirm"
       >
@@ -76,17 +92,21 @@
  *   - warningMessage: Optional warning text (shown in red)
  *   - confirmButtonText: Optional custom button text (default: "Remove")
  *   - deletingMessage: Optional custom deleting message
+ *   - requirePassword: Require current-password re-entry; confirm emits the
+ *     password and stays disabled until one is typed (ASVS re-authentication)
  *
  * Emits:
- *   - confirm: User confirmed deletion
+ *   - confirm: User confirmed deletion. Payload: { currentPassword } when
+ *     requirePassword is set, otherwise no payload.
  *   - cancel: User cancelled
  *   - update:visible: For v-model support
  */
 import InfoNotice from "./InfoNotice.vue";
+import PasswordField from "./PasswordField.vue";
 
 export default {
   name: "ConfirmDeleteModal",
-  components: { InfoNotice },
+  components: { InfoNotice, PasswordField },
   model: {
     prop: "visible",
     event: "update:visible",
@@ -128,6 +148,15 @@ export default {
       type: String,
       default: null,
     },
+    requirePassword: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  data() {
+    return {
+      password: "",
+    };
   },
   computed: {
     modalTitle() {
@@ -148,15 +177,21 @@ export default {
   },
   methods: {
     onCancel() {
+      this.password = "";
       this.$emit("cancel");
       this.$emit("update:visible", false);
     },
     onConfirm() {
-      this.$emit("confirm");
+      if (this.requirePassword) {
+        this.$emit("confirm", { currentPassword: this.password });
+      } else {
+        this.$emit("confirm");
+      }
     },
     onHidden() {
       // Only emit cancel if not in deleting state (prevents closing during delete)
       if (!this.isDeleting) {
+        this.password = "";
         this.$emit("cancel");
         this.$emit("update:visible", false);
       }

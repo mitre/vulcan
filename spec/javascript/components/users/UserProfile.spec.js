@@ -325,16 +325,38 @@ describe("UserProfile", () => {
       expect(wrapper.vm.showDeleteModal).toBe(true);
     });
 
-    it("confirmDeleteAccount calls deleteAccount and navigates home", async () => {
+    it("confirmDeleteAccount forwards the modal's password to deleteAccount", async () => {
       const { deleteAccount } = await import("@/api/usersApi");
       // Navigation to "/" is the requirement after account deletion. Stub +
       // assert so jsdom never receives the navigation (zero-noise).
       // Restored by afterEach vi.unstubAllGlobals().
       vi.stubGlobal("location", { href: "" });
       wrapper = createWrapper();
-      await wrapper.vm.confirmDeleteAccount();
-      expect(deleteAccount).toHaveBeenCalled();
+      await wrapper.vm.confirmDeleteAccount({ currentPassword: "MyP@ssw0rd!" });
+      expect(deleteAccount).toHaveBeenCalledWith("MyP@ssw0rd!");
       expect(globalThis.location.href).toBe("/");
+    });
+
+    it("confirmDeleteAccount omits the password when the modal sends none (SSO)", async () => {
+      const { deleteAccount } = await import("@/api/usersApi");
+      vi.stubGlobal("location", { href: "" });
+      wrapper = createWrapper();
+      await wrapper.vm.confirmDeleteAccount();
+      expect(deleteAccount).toHaveBeenCalledWith(undefined);
+      expect(globalThis.location.href).toBe("/");
+    });
+
+    // REQUIREMENT (ASVS 3.7.1): re-authentication before self-delete applies
+    // only where a usable local credential exists.
+    it("requires re-authentication only for local-credential users", () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.requiresPasswordForDelete).toBe(true);
+
+      wrapper = createWrapper({ user: { ...defaultProps.user, provider: "oidc" } });
+      expect(wrapper.vm.requiresPasswordForDelete).toBe(false);
+
+      wrapper = createWrapper({ user: { ...defaultProps.user, password_automatically_set: true } });
+      expect(wrapper.vm.requiresPasswordForDelete).toBe(false);
     });
   });
 

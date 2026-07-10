@@ -158,4 +158,61 @@ RSpec.describe 'Devise auth flow contracts', type: :request do
       expect(body.dig('toast', 'title')).to eq('Account updated.')
     end
   end
+
+  describe 'DELETE /users (self-delete)' do
+    it 'matches ToastResponse schema and destroys the account' do
+      doomed = create(:user, password: 'S3lfD3l3te!#Pass')
+      sign_in doomed
+
+      delete '/users',
+             params: { user: { current_password: 'S3lfD3l3te!#Pass' } },
+             headers: json_headers, as: :json
+      body = validate_and_parse!
+
+      expect(body.dig('toast', 'variant')).to eq('success')
+      expect(body.dig('toast', 'title')).to eq('Account deleted.')
+      expect(body.dig('toast', 'message')).to eq(['Account deleted successfully.'])
+      expect(User.exists?(doomed.id)).to be(false)
+    end
+
+    it 'matches ToastResponse schema on wrong-password rejection' do
+      keeper = create(:user, password: 'S3lfD3l3te!#Pass')
+      sign_in keeper
+
+      delete '/users',
+             params: { user: { current_password: 'WrongP@ssw0rd!!' } },
+             headers: json_headers, as: :json
+      body = validate_and_parse!(expected_status: :unprocessable_content)
+
+      expect(body.dig('toast', 'variant')).to eq('danger')
+      expect(body.dig('toast', 'title')).to eq('Cannot delete account.')
+      expect(User.exists?(keeper.id)).to be(true)
+    end
+
+    it 'matches ToastResponse schema on last-admin rejection' do
+      sign_in anchor_admin
+
+      delete '/users', headers: json_headers, as: :json
+      body = validate_and_parse!(expected_status: :unprocessable_content)
+
+      expect(body.dig('toast', 'message').join).to include('only administrator')
+      expect(User.exists?(anchor_admin.id)).to be(true)
+    end
+
+    it 'matches ToastResponse schema on mid-request lockout (423)' do
+      lockable = create(:user, password: 'S3lfD3l3te!#Pass')
+      sign_in lockable
+
+      2.times do
+        delete '/users', params: { user: { current_password: 'WrongP@ssw0rd!!' } },
+                         headers: json_headers, as: :json
+      end
+      delete '/users', params: { user: { current_password: 'WrongP@ssw0rd!!' } },
+                       headers: json_headers, as: :json
+      body = validate_and_parse!(expected_status: :locked)
+
+      expect(body.dig('toast', 'message').join).to include('locked')
+      expect(User.exists?(lockable.id)).to be(true)
+    end
+  end
 end

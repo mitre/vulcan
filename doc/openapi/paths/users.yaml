@@ -146,3 +146,101 @@ put:
                   variant: danger
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
+delete:
+  operationId: deleteOwnAccount
+  tags:
+    - Auth
+  summary: Delete the signed-in user's own account
+  description: >-
+    Permanently deletes the current user's account and signs them out.
+    Local-credential users must re-authenticate with current_password
+    (OWASP ASVS 3.7.1); provider-managed and SSO-created accounts are
+    exempt — their identity provider owns re-authentication. Blocked with
+    422 when the user is the only system administrator. Repeated wrong
+    passwords count toward account lockout and return 423 once locked.
+  requestBody:
+    required: false
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            user:
+              type: object
+              properties:
+                current_password:
+                  type: string
+                  format: password
+                  description: >-
+                    The user's current password. Required for
+                    local-credential accounts; ignored for
+                    provider-managed accounts.
+                  example: MyCurrentP@ssw0rd!
+        examples:
+          local_user:
+            summary: Local-credential user re-authenticates
+            value:
+              user:
+                current_password: MyCurrentP@ssw0rd!
+  responses:
+    '200':
+      description: Account deleted and session ended
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            deleted:
+              summary: Successful self-delete
+              value:
+                toast:
+                  title: Account deleted.
+                  message:
+                    - Account deleted successfully.
+                  variant: success
+    '422':
+      description: Wrong/missing password, or user is the only system administrator
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            wrong_password:
+              summary: Re-authentication failed
+              value:
+                toast:
+                  title: Cannot delete account.
+                  message:
+                    - >-
+                      Incorrect password. Please enter your current password
+                      to delete your account.
+                  variant: danger
+            last_admin:
+              summary: Only system administrator
+              value:
+                toast:
+                  title: Cannot delete account.
+                  message:
+                    - >-
+                      You are the only administrator. Promote another user
+                      to admin before deleting your account.
+                  variant: danger
+    '423':
+      description: Account locked by repeated failed re-authentication attempts
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            locked:
+              summary: Locked mid-request
+              value:
+                toast:
+                  title: Cannot delete account.
+                  message:
+                    - >-
+                      Your account has been locked due to too many failed
+                      attempts. Please try again later.
+                  variant: danger
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

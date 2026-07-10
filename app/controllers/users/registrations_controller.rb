@@ -95,7 +95,31 @@ module Users
       end
     end
 
+    # Self-delete. Guards, in order:
+    #   1. Continuity — the last system admin cannot remove themselves
+    #      (mirrors UsersController#destroy; promote another admin first).
+    #   2. Re-authentication (OWASP ASVS 3.7.1) — local-credential users must
+    #      supply current_password, same as unlink_identity and email changes.
+    #      Provider-managed and auto-password users are exempt: they don't
+    #      know their local password and their IdP owns re-authentication.
     def destroy
+      if resource.admin? && User.where(admin: true).one?
+        return respond_with_error(
+          'You are the only administrator. Promote another user to admin before deleting your account.',
+          :unprocessable_content, title: 'Cannot delete account.'
+        )
+      end
+
+      if password_required_for_destroy? && !reauthenticated_for_destroy?
+        if resource.access_locked?
+          return respond_with_error('Your account has been locked due to too many failed attempts. Please try again later.',
+                                    :locked, title: 'Cannot delete account.')
+        end
+
+        return respond_with_error('Incorrect password. Please enter your current password to delete your account.',
+                                  :unprocessable_content, title: 'Cannot delete account.')
+      end
+
       resource.destroy
       Devise.sign_out_all_scopes ? sign_out : sign_out(resource_name)
 
@@ -179,14 +203,30 @@ module Users
       end
     end
 
-    def respond_with_error(message, status)
+    # Re-authentication applies only where a usable local credential exists.
+    # Provider-managed users (LDAP/OIDC/GitHub) and auto-password accounts
+    # (SSO-created; random password they never saw) re-authenticate at their
+    # identity provider, not here.
+    def password_required_for_destroy?
+      resource.provider.nil? && !resource.password_automatically_set
+    end
+
+    # valid_for_authentication? wraps the password check so wrong attempts
+    # count toward lockout (Devise lockable), same as unlink_identity.
+    def reauthenticated_for_destroy?
+      resource.valid_for_authentication? do
+        resource.valid_password?(params.dig(:user, :current_password).to_s)
+      end
+    end
+
+    def respond_with_error(message, status, title: 'Cannot unlink')
       respond_to do |format|
         format.html do
           flash.alert = message
           redirect_to edit_user_registration_path
         end
         format.json do
-          render json: { toast: Toast.new(title: 'Cannot unlink', message: [message], variant: 'danger') },
+          render json: { toast: Toast.new(title: title, message: [message], variant: 'danger') },
                  status: status
         end
       end
