@@ -238,6 +238,36 @@ RSpec.describe 'Projects endpoint contracts', type: :request do
     end
   end
 
+  # ── last project admin continuity (422s) ──
+
+  describe 'last project admin guard (JSON)' do
+    let!(:solo_project) { create(:project) }
+    let!(:solo_admin_membership) do
+      Membership.create!(user: create(:user), membership: solo_project,
+                         membership_type: 'Project', role: 'admin')
+    end
+
+    it 'DELETE returns ToastResponse 422 when removing the last project admin' do
+      delete "/memberships/#{solo_admin_membership.id}", headers: json_headers, as: :json
+      body = validate_and_parse!(expected_status: :unprocessable_content)
+
+      expect(body.dig('toast', 'variant')).to eq('danger')
+      expect(body.dig('toast', 'message').join).to include('Cannot remove the last admin')
+      expect(Membership.exists?(solo_admin_membership.id)).to be(true)
+    end
+
+    it 'PUT returns ToastResponse 422 when downgrading the last project admin' do
+      put "/memberships/#{solo_admin_membership.id}",
+          params: { membership: { role: 'viewer' } },
+          headers: json_headers, as: :json
+      body = validate_and_parse!(expected_status: :unprocessable_content)
+
+      expect(body.dig('toast', 'variant')).to eq('danger')
+      expect(body.dig('toast', 'message').join).to include('last admin of project')
+      expect(solo_admin_membership.reload.role).to eq('admin')
+    end
+  end
+
   # ── GET /search/projects ──
 
   describe 'GET /search/projects (JSON)' do

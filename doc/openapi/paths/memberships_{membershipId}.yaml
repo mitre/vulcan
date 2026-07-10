@@ -41,6 +41,24 @@ patch:
                   message:
                     - "Jane Doe is now a reviewer."
                   variant: success
+    '422':
+      description: Validation failed — e.g. downgrading the project's last admin
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            last_admin:
+              summary: Last project admin cannot be downgraded
+              value:
+                toast:
+                  title: Could not update membership.
+                  message:
+                    - >-
+                      Role cannot be changed — this user is the last admin of
+                      project 'Photon OS 5'. Transfer the admin role to
+                      another member first.
+                  variant: danger
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
 put:
@@ -84,6 +102,24 @@ put:
                   message:
                     - "Jane Doe is now a reviewer."
                   variant: success
+    '422':
+      description: Validation failed — e.g. downgrading the project's last admin
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            last_admin:
+              summary: Last project admin cannot be downgraded
+              value:
+                toast:
+                  title: Could not update membership.
+                  message:
+                    - >-
+                      Role cannot be changed — this user is the last admin of
+                      project 'Photon OS 5'. Transfer the admin role to
+                      another member first.
+                  variant: danger
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
 delete:
@@ -94,7 +130,8 @@ delete:
   description: >-
     Deletes the membership, revoking the user's access. Requires admin role
     on the parent project. Removed users lose authority over all project-scoped
-    resources including their own pending comments.
+    resources including their own pending comments. The last admin of a
+    project cannot be removed — transfer the admin role first.
   responses:
     '200':
       description: Membership removed
@@ -111,5 +148,22 @@ delete:
                   message:
                     - "Jane Doe removed from project."
                   variant: success
+    '422':
+      description: Removal blocked — the project's last admin
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            last_admin:
+              summary: Last project admin cannot be removed
+              value:
+                toast:
+                  title: Could not remove membership.
+                  message:
+                    - >-
+                      Cannot remove the last admin of project 'Photon OS 5'.
+                      Transfer the admin role to another member first.
+                  variant: danger
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
