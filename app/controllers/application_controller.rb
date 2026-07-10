@@ -319,6 +319,13 @@ class ApplicationController < ActionController::Base
   end
 
   def helpful_errors(exception)
+    # The rescue must never swallow silently — without this log line a 500's
+    # root cause is invisible everywhere (the response body is a generic toast).
+    Rails.logger.error(
+      "[helpful_errors] #{exception.class}: #{exception.message}\n" \
+      "#{exception.backtrace&.first(15)&.join("\n")}"
+    )
+
     # Based on the accepted response type, either send a JSON response with the
     # alert message, or redirect to home and display the alert.
     message = if current_user&.admin?
