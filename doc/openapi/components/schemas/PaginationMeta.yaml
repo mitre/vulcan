@@ -1,0 +1,22 @@
+description: >-
+  Pagination metadata for paginated list endpoints (pagy-backed). Shared by
+  every endpoint returning the canonical { rows, pagination } envelope.
+type: object
+required:
+  - page
+  - per_page
+  - total
+additionalProperties: false
+properties:
+  page:
+    type: integer
+    description: Current page number (1-based).
+    example: 1
+  per_page:
+    type: integer
+    description: Records per page (default 25, maximum 100).
+    example: 25
+  total:
+    type: integer
+    description: Total number of records across all pages.
+    example: 47

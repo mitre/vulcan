@@ -89,6 +89,47 @@ RSpec.describe 'Projects endpoint contracts', type: :request do
     end
   end
 
+  # ── GET /api/projects ──
+
+  describe 'GET /api/projects (JSON)' do
+    it 'matches the paginated projects response schema' do
+      get '/api/projects', headers: json_headers
+      body = validate_and_parse!
+
+      assert_fields_present body, :rows, :pagination
+      assert_nested_fields body, :pagination, :page, :per_page, :total
+      expect(body['pagination']['page']).to eq(1)
+      row = body['rows'].find { |p| p['id'] == project.id }
+      expect(row['name']).to eq('Projects Contract Test')
+    end
+
+    it 'matches the schema with search, sort, and pagination params applied' do
+      get '/api/projects', params: { q: 'Projects Contract', sort: 'name', order: 'asc', per_page: 1, page: 1 },
+                           headers: json_headers
+      body = validate_and_parse!
+
+      expect(body['rows'].size).to eq(1)
+      expect(body['pagination']['per_page']).to eq(1)
+      expect(body['rows'].first['name']).to eq('Projects Contract Test')
+    end
+
+    it 'matches the documented 400 shape for an out-of-range page' do
+      get '/api/projects', params: { page: 9999 }, headers: json_headers
+      body = validate_and_parse!(expected_status: :bad_request)
+
+      expect(body['error']).to match(/out of range/)
+    end
+
+    it 'matches the documented 401 shape when unauthenticated' do
+      sign_out admin
+
+      get '/api/projects', headers: json_headers
+      body = validate_and_parse!(expected_status: :unauthorized)
+
+      expect(body['error']).to eq('Unauthorized')
+    end
+  end
+
   # ── PUT /projects/:id ──
 
   describe 'PUT /projects/:id (JSON)' do

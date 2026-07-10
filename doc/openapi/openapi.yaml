@@ -64,6 +64,8 @@ paths:
     $ref: paths/api_search_global.yaml
   /api/users/search:
     $ref: paths/api_users_search.yaml
+  /api/projects:
+    $ref: paths/api_projects.yaml
   /api/srgs/latest:
     $ref: paths/api_srgs_latest.yaml
   /api/srgs/{id}/stats:
