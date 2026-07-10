@@ -110,6 +110,12 @@ module Users
         )
       end
 
+      # Project admin continuity — same rule as UsersController#destroy:
+      # deleting a project's only admin orphans it for its team.
+      if (block_message = resource.sole_admin_deletion_block_message(subject: 'You are'))
+        return respond_with_error(block_message, :unprocessable_content, title: 'Cannot delete account.')
+      end
+
       if password_required_for_destroy? && !reauthenticated_for_destroy?
         if resource.access_locked?
           return respond_with_error('Your account has been locked due to too many failed attempts. Please try again later.',

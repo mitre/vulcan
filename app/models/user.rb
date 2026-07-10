@@ -141,6 +141,38 @@ class User < ApplicationRecord
     admin ? Project.all : Project.where(id: projects.pluck(:id)).or(Project.discoverable).distinct
   end
 
+  # Projects that would be orphaned if this user were deleted: the user
+  # holds the ONLY admin membership. Shared source of truth for the
+  # user-deletion continuity guard (admin-delete and self-delete paths).
+  # Component memberships never count — project admins govern components
+  # via effective_permissions. Pure SQL, no Ruby enumeration.
+  def solely_administered_projects
+    my_admin_project_ids = memberships.where(membership_type: 'Project', role: 'admin')
+                                      .select(:membership_id)
+    other_admin_project_ids = Membership.where(membership_type: 'Project', role: 'admin')
+                                        .where.not(user_id: id)
+                                        .select(:membership_id)
+    Project.where(id: my_admin_project_ids)
+           .where.not(id: other_admin_project_ids)
+           .order(:name)
+  end
+
+  # Human-readable block reason for user deletion, or nil when deletable.
+  # Single source of the wording for both deletion endpoints (GitLab
+  # transfer-ownership pattern). Lists at most five project names. The
+  # subject reads 'This user is' on the admin path and 'You are' on the
+  # self-delete path.
+  def sole_admin_deletion_block_message(subject: 'This user is')
+    names = solely_administered_projects.limit(6).pluck(:name)
+    return if names.empty?
+
+    shown = names.first(5).map { |n| "'#{n}'" }.join(', ')
+    overflow_count = solely_administered_projects.count - 5
+    overflow = overflow_count.positive? ? " and #{overflow_count} more" : ''
+    "#{subject} the only admin of: #{shown}#{overflow}. " \
+      'Transfer the admin role to another member of each project first.'
+  end
+
   def self.from_omniauth(auth)
     # Extract and validate email from multiple sources
     email = extract_email_from_auth(auth)

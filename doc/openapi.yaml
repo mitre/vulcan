@@ -4218,7 +4218,7 @@ paths:
       tags:
         - Auth
       summary: Delete the signed-in user's own account
-      description: Permanently deletes the current user's account and signs them out. Local-credential users must re-authenticate with current_password (OWASP ASVS 3.7.1); provider-managed and SSO-created accounts are exempt — their identity provider owns re-authentication. Blocked with 422 when the user is the only system administrator. Repeated wrong passwords count toward account lockout and return 423 once locked.
+      description: Permanently deletes the current user's account and signs them out. Local-credential users must re-authenticate with current_password (OWASP ASVS 3.7.1); provider-managed and SSO-created accounts are exempt — their identity provider owns re-authentication. Blocked with 422 when the user is the only system administrator or the only admin of any project (transfer the admin role first). Repeated wrong passwords count toward account lockout and return 423 once locked.
       requestBody:
         required: false
         content:
@@ -4278,6 +4278,14 @@ paths:
                       title: Cannot delete account.
                       message:
                         - You are the only administrator. Promote another user to admin before deleting your account.
+                      variant: danger
+                sole_project_admin:
+                  summary: Only admin of a project
+                  value:
+                    toast:
+                      title: Cannot delete account.
+                      message:
+                        - 'You are the only admin of: ''Photon OS 5''. Transfer the admin role to another member of each project first.'
                       variant: danger
         '423':
           description: Account locked by repeated failed re-authentication attempts
@@ -4438,7 +4446,7 @@ paths:
       tags:
         - Users
       summary: Delete a user (admin only)
-      description: Permanently deletes a user account. Requires admin role. Cannot delete the last remaining admin. All project memberships and associated data are cleaned up via dependent destroy.
+      description: Permanently deletes a user account. Requires admin role. Cannot delete the last remaining site admin, nor a user who is the only admin of any project — transfer the admin role first. All project memberships and associated data are cleaned up via dependent destroy.
       responses:
         '200':
           description: User removed
@@ -4455,6 +4463,29 @@ paths:
                       message:
                         - Successfully removed user.
                       variant: success
+        '422':
+          description: Deletion blocked — the last site admin, or the only admin of one or more projects
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+              examples:
+                last_site_admin:
+                  summary: Only site admin
+                  value:
+                    toast:
+                      title: Cannot delete user.
+                      message:
+                        - This is the only admin. Promote another user first.
+                      variant: danger
+                sole_project_admin:
+                  summary: Only admin of a project
+                  value:
+                    toast:
+                      title: Cannot delete user.
+                      message:
+                        - 'This user is the only admin of: ''Photon OS 5''. Transfer the admin role to another member of each project first.'
+                      variant: danger
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /users/{userId}/comments:

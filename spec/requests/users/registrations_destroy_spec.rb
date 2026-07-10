@@ -109,6 +109,40 @@ RSpec.describe 'Devise Registrations self-delete', openapi: false do
     end
   end
 
+  describe 'sole project admin' do
+    let!(:user) { create(:user, password: password) }
+    let(:project) { create(:project, name: 'Orphan Risk Project') }
+
+    before do
+      create(:membership, user: user, membership: project, role: 'admin')
+      sign_in user
+    end
+
+    it 'blocks self-delete naming the project' do
+      delete '/users',
+             params: { user: { current_password: password } },
+             headers: json_headers, as: :json
+
+      expect(response).to have_http_status(:unprocessable_content)
+      body = response.parsed_body
+      expect(body.dig('toast', 'title')).to eq('Cannot delete account.')
+      expect(body.dig('toast', 'message').join)
+        .to include("the only admin of: 'Orphan Risk Project'")
+      expect(User.exists?(user.id)).to be(true)
+    end
+
+    it 'allows self-delete once another project admin exists' do
+      create(:membership, user: create(:user), membership: project, role: 'admin')
+
+      delete '/users',
+             params: { user: { current_password: password } },
+             headers: json_headers, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(User.exists?(user.id)).to be(false)
+    end
+  end
+
   describe 'last system admin' do
     it 'blocks self-delete when no other admin exists' do
       # anchor_admin is the ONLY admin in this group

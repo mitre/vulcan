@@ -199,6 +199,22 @@ RSpec.describe 'Devise auth flow contracts', type: :request do
       expect(User.exists?(anchor_admin.id)).to be(true)
     end
 
+    it 'matches ToastResponse schema on sole-project-admin rejection' do
+      blocked = create(:user, password: 'S3lfD3l3te!#Pass')
+      orphan_risk = create(:project, name: 'Contract Orphan Project')
+      create(:membership, user: blocked, membership: orphan_risk, role: 'admin')
+      sign_in blocked
+
+      delete '/users',
+             params: { user: { current_password: 'S3lfD3l3te!#Pass' } },
+             headers: json_headers, as: :json
+      body = validate_and_parse!(expected_status: :unprocessable_content)
+
+      expect(body.dig('toast', 'message').join)
+        .to include("You are the only admin of: 'Contract Orphan Project'")
+      expect(User.exists?(blocked.id)).to be(true)
+    end
+
     it 'matches ToastResponse schema on mid-request lockout (423)' do
       lockable = create(:user, password: 'S3lfD3l3te!#Pass')
       sign_in lockable

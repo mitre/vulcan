@@ -151,8 +151,9 @@ delete:
   summary: Delete a user (admin only)
   description: >-
     Permanently deletes a user account. Requires admin role. Cannot delete
-    the last remaining admin. All project memberships and associated data
-    are cleaned up via dependent destroy.
+    the last remaining site admin, nor a user who is the only admin of any
+    project — transfer the admin role first. All project memberships and
+    associated data are cleaned up via dependent destroy.
   responses:
     '200':
       description: User removed
@@ -169,5 +170,32 @@ delete:
                   message:
                     - Successfully removed user.
                   variant: success
+    '422':
+      description: >-
+        Deletion blocked — the last site admin, or the only admin of one or
+        more projects
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            last_site_admin:
+              summary: Only site admin
+              value:
+                toast:
+                  title: Cannot delete user.
+                  message:
+                    - This is the only admin. Promote another user first.
+                  variant: danger
+            sole_project_admin:
+              summary: Only admin of a project
+              value:
+                toast:
+                  title: Cannot delete user.
+                  message:
+                    - >-
+                      This user is the only admin of: 'Photon OS 5'. Transfer
+                      the admin role to another member of each project first.
+                  variant: danger
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

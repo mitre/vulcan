@@ -81,7 +81,7 @@ RSpec.describe Membership do
       expect(described_class.exists?(membership_id)).to be(false)
     end
 
-    it 'allows destroying the user (membership cascade) — user-level guard is the follow-up card' do
+    it 'allows destroying the user at the model layer (the deletion endpoints enforce the user-level guard)' do
       membership_id = admin_membership.id
       expect(user.destroy).to be_truthy
       expect(described_class.exists?(membership_id)).to be(false)

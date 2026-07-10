@@ -131,6 +131,23 @@ class UsersController < ApplicationController
       end
     end
 
+    # Project admin continuity: deleting a project's only admin orphans the
+    # project for its team (GitLab/GitHub transfer-ownership pattern). Same
+    # rule on the self-delete path in Users::RegistrationsController#destroy.
+    if (block_message = @user.sole_admin_deletion_block_message)
+      return respond_to do |format|
+        format.html do
+          flash.alert = block_message
+          redirect_to action: 'index'
+        end
+        format.json do
+          render json: {
+            toast: Toast.new(title: 'Cannot delete user.', message: [block_message], variant: 'danger')
+          }, status: :unprocessable_content
+        end
+      end
+    end
+
     if @user.destroy
       respond_to do |format|
         format.html do

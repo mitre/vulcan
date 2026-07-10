@@ -156,7 +156,8 @@ delete:
     Local-credential users must re-authenticate with current_password
     (OWASP ASVS 3.7.1); provider-managed and SSO-created accounts are
     exempt — their identity provider owns re-authentication. Blocked with
-    422 when the user is the only system administrator. Repeated wrong
+    422 when the user is the only system administrator or the only admin
+    of any project (transfer the admin role first). Repeated wrong
     passwords count toward account lockout and return 423 once locked.
   requestBody:
     required: false
@@ -224,6 +225,16 @@ delete:
                     - >-
                       You are the only administrator. Promote another user
                       to admin before deleting your account.
+                  variant: danger
+            sole_project_admin:
+              summary: Only admin of a project
+              value:
+                toast:
+                  title: Cannot delete account.
+                  message:
+                    - >-
+                      You are the only admin of: 'Photon OS 5'. Transfer the
+                      admin role to another member of each project first.
                   variant: danger
     '423':
       description: Account locked by repeated failed re-authentication attempts

@@ -205,6 +205,36 @@ RSpec.describe 'Users' do
     end
   end
 
+  describe 'sole project admin protection' do
+    let(:json_headers) { { 'Accept' => 'application/json', 'Content-Type' => 'application/json' } }
+    let(:project) { create(:project, name: 'Orphan Risk Project') }
+
+    before do
+      create(:membership, user: target_user, membership: project, role: 'admin')
+      sign_in admin_user
+    end
+
+    it 'returns 422 naming the project and keeps the user' do
+      delete "/users/#{target_user.id}", headers: json_headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      json = response.parsed_body
+      expect(json['toast']['title']).to eq('Cannot delete user.')
+      expect(json['toast']['message'].join)
+        .to include("the only admin of: 'Orphan Risk Project'")
+      expect(User.exists?(target_user.id)).to be(true)
+    end
+
+    it 'allows deletion once another project admin exists' do
+      create(:membership, user: create(:user), membership: project, role: 'admin')
+
+      delete "/users/#{target_user.id}", headers: json_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(User.exists?(target_user.id)).to be(false)
+    end
+  end
+
   describe 'last admin protection' do
     let(:json_headers) { { 'Accept' => 'application/json', 'Content-Type' => 'application/json' } }
 

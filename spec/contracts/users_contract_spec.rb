@@ -89,6 +89,19 @@ RSpec.describe 'Users endpoint contracts', type: :request do
       expect(body.dig('toast', 'variant')).to eq('danger')
       expect(body.dig('toast', 'title')).to include('Cannot')
     end
+
+    it 'returns 422 when deleting the only admin of a project' do
+      orphan_risk = create(:project, name: 'Contract Orphan Project')
+      create(:membership, user: deletable_user, membership: orphan_risk, role: 'admin')
+
+      delete "/users/#{deletable_user.id}", headers: json_headers, as: :json
+      body = validate_and_parse!(expected_status: :unprocessable_content)
+
+      expect(body.dig('toast', 'variant')).to eq('danger')
+      expect(body.dig('toast', 'message').join)
+        .to include("the only admin of: 'Contract Orphan Project'")
+      expect(User.exists?(deletable_user.id)).to be(true)
+    end
   end
 
   # ── GET /users/:id/comments ──
