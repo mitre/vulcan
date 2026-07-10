@@ -189,6 +189,17 @@ class ApplicationController < ActionController::Base
     raise(NotAuthorizedError, 'You are not authorized to perform viewer actions on this component')
   end
 
+  # Read access to a component: released components are instance-wide
+  # reference data for any authenticated user; unreleased ones require
+  # viewer permission. Shared by ComponentsController and the API.
+  def authorize_component_access
+    if @component&.released
+      authorize_logged_in
+    else
+      authorize_viewer_component
+    end
+  end
+
   # Wrap a side-effect notification call (Slack, SMTP, in-app) so a failure
   # does not bubble out and turn a successful state-change action into a 500.
   # The state change has already committed by the time we notify; from the

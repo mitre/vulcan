@@ -329,4 +329,37 @@ RSpec.describe 'Components endpoint contracts', type: :request do
       expect(body.keys).to contain_exactly('components')
     end
   end
+
+  # ── GET /api/components/:id/summary ──
+
+  describe 'GET /api/components/:id/summary (JSON)' do
+    it 'matches ComponentSummaryResponse schema with phase state and no heavy arrays' do
+      get "/api/components/#{component.id}/summary", headers: json_headers
+      body = validate_and_parse!
+
+      assert_fields_present body, :id, :name, :prefix, :severity_counts,
+                            :effective_permissions, :comment_phase,
+                            :accepting_new_comments, :triaging_active,
+                            :frozen_for_writes, :comment_period_days_remaining
+      assert_fields_absent body, :rules, :reviews, :histories
+      expect(body['accepting_new_comments']).to be(true)
+      expect(body['effective_permissions']).to eq('admin')
+    end
+
+    it 'matches the documented 401 shape when unauthenticated' do
+      sign_out admin
+
+      get "/api/components/#{component.id}/summary", headers: json_headers
+      body = validate_and_parse!(expected_status: :unauthorized)
+
+      expect(body['error']).to eq('Unauthorized')
+    end
+
+    it 'matches the documented 404 shape for an unknown component' do
+      get '/api/components/0/summary', headers: json_headers
+      body = validate_and_parse!(expected_status: :not_found)
+
+      expect(body['error']).to eq('Not found')
+    end
+  end
 end

@@ -1,0 +1,179 @@
+description: >-
+  Lightweight component header for SPA triage/settings routes: identity,
+  counts, SRG info, the caller's effective permissions, and the serialized
+  comment-phase state machine. Never includes the rules/reviews/histories
+  arrays — fetch the full component for those. The phase booleans mirror the
+  server's write-guards, so clients can predict rejections without
+  reimplementing phase logic.
+type: object
+required:
+  - id
+  - name
+  - prefix
+  - title
+  - released
+  - project_id
+  - rules_count
+  - severity_counts
+  - comment_phase
+  - accepting_new_comments
+  - triaging_active
+  - frozen_for_writes
+additionalProperties: false
+properties:
+  id:
+    type: integer
+    description: Unique component identifier.
+    example: 38
+  name:
+    type: string
+    description: Component name.
+    example: RHEL 9 Hardened Baseline
+  prefix:
+    type: string
+    description: STIG ID prefix.
+    example: RHEL-09
+  title:
+    type: string
+    description: Component title.
+    example: Red Hat Enterprise Linux 9
+  version:
+    type:
+      - integer
+      - 'null'
+    description: Component version number.
+    example: 2
+  release:
+    type:
+      - integer
+      - 'null'
+    description: Component release number within the version.
+    example: 1
+  released:
+    type: boolean
+    description: Whether the component has been released.
+    example: false
+  project_id:
+    type: integer
+    description: Owning project identifier.
+    example: 7
+  component_id:
+    type:
+      - integer
+      - 'null'
+    description: Parent component identifier when this is an overlay. Null otherwise.
+    example: null
+  security_requirements_guide_id:
+    type: integer
+    description: Identifier of the SRG this component is based on.
+    example: 3
+  based_on_title:
+    type: string
+    description: Title of the SRG this component is based on.
+    example: General Purpose Operating System Security Requirements Guide
+  based_on_version:
+    type: string
+    description: Version of the SRG this component is based on.
+    example: V3R3
+  rules_count:
+    type: integer
+    description: Number of rules in the component.
+    example: 203
+  memberships_count:
+    type: integer
+    description: Number of direct component memberships.
+    example: 4
+  severity_counts:
+    type: object
+    description: Rule counts grouped by severity.
+    required:
+      - high
+      - medium
+      - low
+    additionalProperties: false
+    properties:
+      high:
+        type: integer
+        description: Count of CAT I (high severity) rules.
+        example: 20
+      medium:
+        type: integer
+        description: Count of CAT II (medium severity) rules.
+        example: 173
+      low:
+        type: integer
+        description: Count of CAT III (low severity) rules.
+        example: 10
+  pending_comment_count:
+    type: integer
+    description: Number of pending top-level comments awaiting triage.
+    example: 5
+  effective_permissions:
+    type:
+      - string
+      - 'null'
+    description: >-
+      The caller's effective role on this component (admin, author,
+      reviewer, viewer). Null when the caller has no membership-derived
+      permissions (e.g., reading a released component as a non-member).
+    example: viewer
+  updated_at:
+    type: string
+    format: date-time
+    description: Last update timestamp.
+    example: "2026-07-10T14:07:37.142Z"
+  comment_phase:
+    type: string
+    enum:
+      - open
+      - closed
+    description: Public comment period phase.
+    example: open
+  closed_reason:
+    type:
+      - string
+      - 'null'
+    enum:
+      - adjudicating
+      - finalized
+      - null
+    description: Why the comment period is closed. Null while open or when unset.
+    example: null
+  comment_period_starts_at:
+    type:
+      - string
+      - 'null'
+    format: date-time
+    description: Comment period start timestamp. Null when not scheduled.
+    example: "2026-07-01T00:00:00.000Z"
+  comment_period_ends_at:
+    type:
+      - string
+      - 'null'
+    format: date-time
+    description: Comment period end timestamp. Null when not scheduled.
+    example: "2026-07-15T00:00:00.000Z"
+  accepting_new_comments:
+    type: boolean
+    description: Server write-guard — whether new comments are accepted (phase is open).
+    example: true
+  triaging_active:
+    type: boolean
+    description: >-
+      Server write-guard — whether triage continues (open, or closed while
+      adjudicating).
+    example: true
+  frozen_for_writes:
+    type: boolean
+    description: >-
+      Server write-guard — whether the component is read-only
+      (closed and finalized).
+    example: false
+  comment_period_days_remaining:
+    type:
+      - integer
+      - 'null'
+    description: >-
+      Days until the comment period ends. Null when comments are not being
+      accepted, no end date is set, or the end date has passed.
+    example: 5

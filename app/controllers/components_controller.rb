@@ -742,14 +742,6 @@ class ComponentsController < ApplicationController
   # Authorize access to component based on released status:
   # - Released components: any authenticated user
   # - Unreleased components: must be project/component member
-  def authorize_component_access
-    if @component&.released
-      authorize_logged_in
-    else
-      authorize_viewer_component
-    end
-  end
-
   # Authorize admin for advanced_fields changes on update
   def check_admin_for_advanced_fields
     return if params.dig(:component, :advanced_fields).nil?

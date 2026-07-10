@@ -74,6 +74,8 @@ paths:
     $ref: paths/api_stigs_{id}_stats.yaml
   /api/components/latest:
     $ref: paths/api_components_latest.yaml
+  /api/components/{id}/summary:
+    $ref: paths/api_components_{id}_summary.yaml
   /search/rules:
     $ref: paths/search_rules.yaml
   /search/components:

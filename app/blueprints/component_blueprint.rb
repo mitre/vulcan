@@ -44,6 +44,38 @@ class ComponentBlueprint < Blueprinter::Base
     excludes :based_on_title, :based_on_version, :severity_counts, :pending_comment_count
   end
 
+  # === Summary view: lightweight header for SPA triage/settings routes ===
+  # Identity + counts + srg info + effective_permissions + the serialized
+  # comment-phase state machine. NO rules/reviews/histories arrays.
+  # Phase booleans delegate to the model methods — the single source of
+  # truth for the write-guards — never reimplemented here.
+  view :summary do
+    fields :title, :released, :project_id, :component_id,
+           :security_requirements_guide_id, :rules_count, :memberships_count,
+           :updated_at, :comment_phase, :closed_reason,
+           :comment_period_starts_at, :comment_period_ends_at
+
+    field :effective_permissions do |component, options|
+      options[:current_user]&.effective_permissions(component)
+    end
+
+    field :accepting_new_comments do |component, _options|
+      component.accepting_new_comments?
+    end
+
+    field :triaging_active do |component, _options|
+      component.triaging_active?
+    end
+
+    field :frozen_for_writes do |component, _options|
+      component.frozen_for_writes?
+    end
+
+    field :comment_period_days_remaining do |component, _options|
+      component.comment_period_days_remaining
+    end
+  end
+
   # === Index view: listing page (ComponentCard) ===
   # Every field ComponentCard.vue reads must be present here or it
   # silently renders as undefined. Verified against grep of

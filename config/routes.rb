@@ -197,6 +197,7 @@ Rails.application.routes.draw do
     get 'stigs/latest', to: 'stigs#latest'
     get 'stigs/:id/stats', to: 'stigs#stats'
     get 'components/latest', to: 'components#latest'
+    get 'components/:id/summary', to: 'components#summary'
 
     resources :projects, only: [:index]
     # peer-shaped diff endpoint. Route points at the existing
