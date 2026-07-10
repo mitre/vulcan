@@ -55,6 +55,7 @@ abbreviations:
   # DISA/DoD Terminology
   STIG: "Security Technical Implementation Guide"
   SRG: "Security Requirements Guide"
+  GPOS: "General Purpose Operating System"
   CCI: "Control Correlation Identifier"
   SCAP: "Security Content Automation Protocol"
   XCCDF: "Extensible Configuration Checklist Description Format"

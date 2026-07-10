@@ -192,6 +192,10 @@ Rails.application.routes.draw do
     get 'users/search', to: 'user_search#index'
     get 'version', to: 'version#show'
 
+    get 'srgs/latest', to: 'srgs#latest'
+    get 'stigs/latest', to: 'stigs#latest'
+    get 'components/latest', to: 'components#latest'
+
     resources :projects, only: [:index]
     # peer-shaped diff endpoint. Route points at the existing
     # ComponentsController#compare action (not a new Api::ComponentsController)

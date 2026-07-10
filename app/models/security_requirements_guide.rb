@@ -7,6 +7,11 @@ class SecurityRequirementsGuide < ApplicationRecord
   include XccdfParseable
   include BenchmarkCsvExport
   include VersionSortable
+  include BenchmarkSearchable
+
+  def self.search_columns
+    %w[name title srg_id]
+  end
 
   has_many :components, dependent: :restrict_with_error
   has_many :srg_rules, dependent: :destroy

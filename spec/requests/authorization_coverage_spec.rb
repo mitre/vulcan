@@ -87,6 +87,10 @@ AUTHENTICATE_ONLY_ACTIONS = {
   'api/auth#login' => 'Public login endpoint — skip_before_action :authenticate_user!',
   'api/auth#logout' => 'Session teardown — ownership-scoped by definition',
   'api/settings#show' => 'Public pre-auth UI config — skip_before_action :authenticate_user!',
+  'api/srgs#latest' => 'Public DISA reference data — skip_before_action :authenticate_user!',
+  'api/stigs#latest' => 'Public DISA reference data — skip_before_action :authenticate_user!',
+  'api/components#latest' => 'Data-scoped: released components only — instance-wide reference ' \
+                             'data for any authenticated user (matches components#index)',
   'api/navigation#show' => 'App shell data scoped to current_user session',
   'api/projects#index' => 'Paginated project listing — data-scoped via Project.all (future: user-visible only)'
 }.freeze

@@ -8,8 +8,28 @@ class Component < ApplicationRecord
   include ActionView::Helpers::TextHelper
   include SeverityCounts
   include XccdfParseable
+  include BenchmarkSearchable
 
   attr_accessor :skip_import_srg_rules
+
+  def self.search_columns
+    %w[name prefix title]
+  end
+
+  # One component per prefix family — the numerically highest
+  # (version, release) pair. Unlike SRGs/STIGs (VersionSortable parses
+  # V{major}R{minor} strings), component version/release are integer
+  # columns. Operates on the current relation, so visibility filters
+  # (e.g. released: true) constrain WHICH records compete for latest.
+  def self.latest_versions
+    subquery = reselect(Arel.sql('DISTINCT ON (prefix) components.id'))
+               .reorder(
+                 Arel.sql('prefix'),
+                 Arel.sql('version DESC NULLS LAST'),
+                 Arel.sql('release DESC NULLS LAST')
+               )
+    unscoped.where(id: subquery)
+  end
 
   amoeba do
     include_association :component_metadata

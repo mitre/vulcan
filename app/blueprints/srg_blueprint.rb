@@ -26,6 +26,12 @@ class SrgBlueprint < Blueprinter::Base
     # Default fields + severity_counts
   end
 
+  # === Latest view: dropdown population ===
+  # Reference identity only — no per-record severity/currency queries.
+  view :latest do
+    excludes :severity_counts, :is_latest, :latest_available_version, :latest_available_id, :release_date
+  end
+
   view :show do
     association :srg_rules, blueprint: SrgRuleBlueprint do |srg, _options|
       srg.srg_rules

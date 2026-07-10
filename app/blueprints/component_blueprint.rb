@@ -37,6 +37,13 @@ class ComponentBlueprint < Blueprinter::Base
     counts[component.id] || 0
   end
 
+  # === Latest view: dropdown population ===
+  # Reference identity only — no per-record severity/comment queries.
+  view :latest do
+    fields :title
+    excludes :based_on_title, :based_on_version, :severity_counts, :pending_comment_count
+  end
+
   # === Index view: listing page (ComponentCard) ===
   # Every field ComponentCard.vue reads must be present here or it
   # silently renders as undefined. Verified against grep of

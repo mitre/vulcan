@@ -6,8 +6,13 @@ class Stig < ApplicationRecord
   include XccdfParseable
   include BenchmarkCsvExport
   include VersionSortable
+  include BenchmarkSearchable
 
   has_many :stig_rules, dependent: :destroy
+
+  def self.search_columns
+    %w[name title stig_id]
+  end
 
   validates :stig_id, :title, :name, :version, :xml, presence: true
   validates :stig_id, uniqueness: {

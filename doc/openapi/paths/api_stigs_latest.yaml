@@ -1,0 +1,40 @@
+get:
+  operationId: latestStigs
+  tags:
+    - Benchmarks
+  summary: List the latest STIG version per family
+  description: >-
+    Returns one STIG per family — the numerically highest V{major}R{minor}
+    version — for dropdown population. Public reference data, no
+    authentication required. The q parameter filters families by
+    case-insensitive substring with abbreviation expansion (RHEL matches
+    Red Hat Enterprise Linux); queries shorter than 2 characters return
+    no rows.
+  security: []
+  parameters:
+    - name: q
+      in: query
+      required: false
+      description: >-
+        Family filter — case-insensitive substring matched against name,
+        title, and stig_id, with abbreviation expansion (minimum 2 characters).
+      schema:
+        type: string
+      example: RHEL
+  responses:
+    '200':
+      description: Latest STIG per family, ordered by title
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/BenchmarkLatestResponse.yaml
+          examples:
+            latest:
+              summary: Latest STIGs
+              value:
+                rows:
+                  - id: 7
+                    stig_id: RHEL_9_STIG
+                    title: Red Hat Enterprise Linux 9 Security Technical Implementation Guide
+                    version: V2R7
+                    name: RHEL 9 STIG - Ver 2, Rel 7
