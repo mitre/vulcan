@@ -1,0 +1,48 @@
+get:
+  operationId: stigStats
+  tags:
+    - Benchmarks
+  summary: Get rule counts for a STIG
+  description: >-
+    Returns the STIG's rule count and severity breakdown. Pure reference
+    data — no usage section (components are based on SRGs, not STIGs) —
+    and public like the rest of the STIG catalog.
+  security: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: Numeric ID of the STIG.
+      schema:
+        type: integer
+      example: 4
+  responses:
+    '200':
+      description: STIG rule counts and severity breakdown
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/BenchmarkStatsResponse.yaml
+          examples:
+            stats:
+              summary: STIG stats
+              value:
+                rule_count: 380
+                severity_counts:
+                  high: 40
+                  medium: 300
+                  low: 40
+    '404':
+      description: STIG not found
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - error
+            additionalProperties: false
+            properties:
+              error:
+                type: string
+                description: Error message.
+                example: Not found

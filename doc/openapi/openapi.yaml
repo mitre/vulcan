@@ -66,8 +66,12 @@ paths:
     $ref: paths/api_users_search.yaml
   /api/srgs/latest:
     $ref: paths/api_srgs_latest.yaml
+  /api/srgs/{id}/stats:
+    $ref: paths/api_srgs_{id}_stats.yaml
   /api/stigs/latest:
     $ref: paths/api_stigs_latest.yaml
+  /api/stigs/{id}/stats:
+    $ref: paths/api_stigs_{id}_stats.yaml
   /api/components/latest:
     $ref: paths/api_components_latest.yaml
   /search/rules:

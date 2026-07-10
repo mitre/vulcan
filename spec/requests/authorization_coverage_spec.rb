@@ -88,7 +88,11 @@ AUTHENTICATE_ONLY_ACTIONS = {
   'api/auth#logout' => 'Session teardown — ownership-scoped by definition',
   'api/settings#show' => 'Public pre-auth UI config — skip_before_action :authenticate_user!',
   'api/srgs#latest' => 'Public DISA reference data — skip_before_action :authenticate_user!',
+  'api/srgs#stats' => 'Data-scoped: usage lists only components in caller-visible projects ' \
+                      '(available_projects or released); rule counts are public reference data',
   'api/stigs#latest' => 'Public DISA reference data — skip_before_action :authenticate_user!',
+  'api/stigs#stats' => 'Public DISA reference data (rule counts only, no usage) — ' \
+                       'skip_before_action :authenticate_user!',
   'api/components#latest' => 'Data-scoped: released components only — instance-wide reference ' \
                              'data for any authenticated user (matches components#index)',
   'api/navigation#show' => 'App shell data scoped to current_user session',

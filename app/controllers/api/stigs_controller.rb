@@ -12,5 +12,12 @@ module Api
 
     latest_listing model: Stig, blueprint: StigBlueprint,
                    columns: %i[id stig_id name title version], order: :title
+
+    # GET /api/stigs/:id/stats — rule count and severity breakdown.
+    # Pure reference data (no usage lookup — components are based on SRGs),
+    # public like the rest of the STIG catalog.
+    def stats
+      render json: Stig.find(params[:id]).benchmark_stats
+    end
   end
 end

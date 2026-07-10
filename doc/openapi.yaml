@@ -520,6 +520,76 @@ paths:
                         title: Web Server Security Requirements Guide
                         version: V4R4
                         name: Web Server SRG - Ver 4, Rel 4
+  /api/srgs/{id}/stats:
+    get:
+      operationId: srgStats
+      tags:
+        - Benchmarks
+      summary: Get rule counts and component usage for an SRG
+      description: Returns the SRG's rule count, severity breakdown, and which components are based on it. Usage is scoped to components the caller can see (member projects or released) — the count and list use the same scope, so hidden usage is never revealed. Requires authentication.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Numeric ID of the SRG.
+          schema:
+            type: integer
+          example: 3
+      responses:
+        '200':
+          description: SRG stats with caller-scoped usage
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BenchmarkStatsResponse'
+              examples:
+                stats:
+                  summary: SRG stats
+                  value:
+                    rule_count: 250
+                    severity_counts:
+                      high: 30
+                      medium: 200
+                      low: 20
+                    usage:
+                      count: 2
+                      components:
+                        - id: 38
+                          name: RHEL 9 Hardened Baseline
+                          project_id: 7
+                          project_name: RHEL Hardening
+                        - id: 41
+                          name: Photon OS 5 Baseline
+                          project_id: 9
+                          project_name: Photon OS 5 Hardening
+        '401':
+          description: Authentication required — usage exposes project data
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+                    example: Unauthorized
+        '404':
+          description: SRG not found
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+                    example: Not found
   /api/stigs/latest:
     get:
       operationId: latestStigs
@@ -553,6 +623,52 @@ paths:
                         title: Red Hat Enterprise Linux 9 Security Technical Implementation Guide
                         version: V2R7
                         name: RHEL 9 STIG - Ver 2, Rel 7
+  /api/stigs/{id}/stats:
+    get:
+      operationId: stigStats
+      tags:
+        - Benchmarks
+      summary: Get rule counts for a STIG
+      description: Returns the STIG's rule count and severity breakdown. Pure reference data — no usage section (components are based on SRGs, not STIGs) — and public like the rest of the STIG catalog.
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Numeric ID of the STIG.
+          schema:
+            type: integer
+          example: 4
+      responses:
+        '200':
+          description: STIG rule counts and severity breakdown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BenchmarkStatsResponse'
+              examples:
+                stats:
+                  summary: STIG stats
+                  value:
+                    rule_count: 380
+                    severity_counts:
+                      high: 40
+                      medium: 300
+                      low: 40
+        '404':
+          description: STIG not found
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                    description: Error message.
+                    example: Not found
   /api/components/latest:
     get:
       operationId: latestComponents
@@ -6671,6 +6787,79 @@ components:
                   - 'null'
                 description: Human-friendly display name with version and release.
                 example: General Purpose Operating System - Ver 3, Rel 3
+    BenchmarkStatsResponse:
+      description: Aggregate stats for a benchmark. SRG responses include a usage section — which components are based on the SRG, scoped to components the caller can see (member projects or released). STIG responses carry counts only.
+      type: object
+      required:
+        - rule_count
+        - severity_counts
+      additionalProperties: false
+      properties:
+        rule_count:
+          type: integer
+          description: Total number of rules in the benchmark.
+          example: 250
+        severity_counts:
+          type: object
+          description: Rule counts grouped by severity (SQL aggregate).
+          required:
+            - high
+            - medium
+            - low
+          additionalProperties: false
+          properties:
+            high:
+              type: integer
+              description: Count of CAT I (high severity) rules.
+              example: 30
+            medium:
+              type: integer
+              description: Count of CAT II (medium severity) rules.
+              example: 200
+            low:
+              type: integer
+              description: Count of CAT III (low severity) rules.
+              example: 20
+        usage:
+          type: object
+          description: Components based on this SRG, scoped to the caller's visibility (member projects or released). Present only on SRG stats responses.
+          required:
+            - count
+            - components
+          additionalProperties: false
+          properties:
+            count:
+              type: integer
+              description: Number of caller-visible components based on this SRG.
+              example: 2
+            components:
+              type: array
+              description: Caller-visible components, ordered by prefix.
+              items:
+                type: object
+                required:
+                  - id
+                  - name
+                  - project_id
+                  - project_name
+                additionalProperties: false
+                properties:
+                  id:
+                    type: integer
+                    description: Component identifier.
+                    example: 38
+                  name:
+                    type: string
+                    description: Component name.
+                    example: RHEL 9 Hardened Baseline
+                  project_id:
+                    type: integer
+                    description: Owning project identifier.
+                    example: 7
+                  project_name:
+                    type: string
+                    description: Owning project name.
+                    example: Photon OS 5 Hardening
     ComponentLatestResponse:
       description: Latest released component per prefix family for dropdown population. A component is a STIG in progress — released ones are instance-wide reference data. Ranking is numeric on the integer version/release pair; unreleased drafts never appear.
       type: object

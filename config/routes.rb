@@ -193,7 +193,9 @@ Rails.application.routes.draw do
     get 'version', to: 'version#show'
 
     get 'srgs/latest', to: 'srgs#latest'
+    get 'srgs/:id/stats', to: 'srgs#stats'
     get 'stigs/latest', to: 'stigs#latest'
+    get 'stigs/:id/stats', to: 'stigs#stats'
     get 'components/latest', to: 'components#latest'
 
     resources :projects, only: [:index]

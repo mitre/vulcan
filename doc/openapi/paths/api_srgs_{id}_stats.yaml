@@ -1,0 +1,73 @@
+get:
+  operationId: srgStats
+  tags:
+    - Benchmarks
+  summary: Get rule counts and component usage for an SRG
+  description: >-
+    Returns the SRG's rule count, severity breakdown, and which components
+    are based on it. Usage is scoped to components the caller can see
+    (member projects or released) — the count and list use the same scope,
+    so hidden usage is never revealed. Requires authentication.
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: Numeric ID of the SRG.
+      schema:
+        type: integer
+      example: 3
+  responses:
+    '200':
+      description: SRG stats with caller-scoped usage
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/BenchmarkStatsResponse.yaml
+          examples:
+            stats:
+              summary: SRG stats
+              value:
+                rule_count: 250
+                severity_counts:
+                  high: 30
+                  medium: 200
+                  low: 20
+                usage:
+                  count: 2
+                  components:
+                    - id: 38
+                      name: RHEL 9 Hardened Baseline
+                      project_id: 7
+                      project_name: RHEL Hardening
+                    - id: 41
+                      name: Photon OS 5 Baseline
+                      project_id: 9
+                      project_name: Photon OS 5 Hardening
+    '401':
+      description: Authentication required — usage exposes project data
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - error
+            additionalProperties: false
+            properties:
+              error:
+                type: string
+                description: Error message.
+                example: Unauthorized
+    '404':
+      description: SRG not found
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - error
+            additionalProperties: false
+            properties:
+              error:
+                type: string
+                description: Error message.
+                example: Not found

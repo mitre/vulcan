@@ -9,5 +9,12 @@ FactoryBot.define do
     sequence(:version) { |n| "V#{(n / 10) + 1}R#{(n % 10) + 1}" }
     xml { XML_FILE }
     release_date { Time.zone.today }
+
+    # Lightweight SRG that skips the ~250 rule import from the XML fixture.
+    # Use when tests hand-craft srg_rules (e.g., pinning severity counts).
+    # Same pattern as the stig factory's :skip_rules trait.
+    trait :skip_rules do
+      after(:build) { |srg| srg.define_singleton_method(:import_srg_rules) { nil } }
+    end
   end
 end
