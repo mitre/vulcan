@@ -29,40 +29,47 @@ RSpec.describe 'Rack::Attack throttling' do
   end
 
   describe 'login throttling' do
+    # Rack::Attack uses fixed 60-second buckets; without freeze_time these
+    # tests can split across a bucket boundary in slow runs, never hitting
+    # the throttle limit. Freezing keeps all N requests in the same window.
     it 'allows 5 login attempts then returns 429' do
       # Use unique IP per test run to avoid cross-test contamination
       test_ip = "192.168.#{rand(1..254)}.#{rand(1..254)}"
 
-      5.times do |i|
-        post '/users/sign_in',
-             params: { user: { email: "throttle-ip-#{i}-#{SecureRandom.hex(4)}@example.com", password: 'wrong' } },
-             headers: { 'REMOTE_ADDR' => test_ip }
-        expect(response.status).not_to eq(429), "Request #{i + 1} was throttled unexpectedly"
-      end
+      freeze_time do
+        5.times do |i|
+          post '/users/sign_in',
+               params: { user: { email: "throttle-ip-#{i}-#{SecureRandom.hex(4)}@example.com", password: 'wrong' } },
+               headers: { 'REMOTE_ADDR' => test_ip }
+          expect(response.status).not_to eq(429), "Request #{i + 1} was throttled unexpectedly"
+        end
 
-      # 6th attempt should be throttled
-      post '/users/sign_in',
-           params: { user: { email: "throttle-ip-final-#{SecureRandom.hex(4)}@example.com", password: 'wrong' } },
-           headers: { 'REMOTE_ADDR' => test_ip }
-      expect(response).to have_http_status(:too_many_requests)
-      expect(response.parsed_body.dig('toast', 'title')).to eq('Rate limited')
+        # 6th attempt should be throttled
+        post '/users/sign_in',
+             params: { user: { email: "throttle-ip-final-#{SecureRandom.hex(4)}@example.com", password: 'wrong' } },
+             headers: { 'REMOTE_ADDR' => test_ip }
+        expect(response).to have_http_status(:too_many_requests)
+        expect(response.parsed_body.dig('toast', 'title')).to eq('Rate limited')
+      end
     end
 
     it 'throttles by email independently of IP' do
       # Use unique email per test run to avoid cross-test contamination
       target_email = "throttle-email-#{SecureRandom.hex(6)}@example.com"
 
-      5.times do |i|
+      freeze_time do
+        5.times do |i|
+          post '/users/sign_in',
+               params: { user: { email: target_email, password: 'wrong' } },
+               headers: { 'REMOTE_ADDR' => "172.16.#{rand(1..254)}.#{i + 1}" }
+        end
+
+        # 6th attempt with same email from different IP should be throttled
         post '/users/sign_in',
              params: { user: { email: target_email, password: 'wrong' } },
-             headers: { 'REMOTE_ADDR' => "172.16.#{rand(1..254)}.#{i + 1}" }
+             headers: { 'REMOTE_ADDR' => "172.16.#{rand(1..254)}.99" }
+        expect(response).to have_http_status(:too_many_requests)
       end
-
-      # 6th attempt with same email from different IP should be throttled
-      post '/users/sign_in',
-           params: { user: { email: target_email, password: 'wrong' } },
-           headers: { 'REMOTE_ADDR' => "172.16.#{rand(1..254)}.99" }
-      expect(response).to have_http_status(:too_many_requests)
     end
   end
 
@@ -88,27 +95,32 @@ RSpec.describe 'Rack::Attack throttling' do
       sign_in viewer
     end
 
+    # freeze_time: same 60-second-bucket boundary risk as login throttling.
     it 'allows the first 10 comment posts in a minute' do
-      10.times do |i|
-        post "/rules/#{rule.id}/reviews",
-             params: { review: { action: 'comment', comment: "comment #{i}", component_id: component.id } },
-             as: :json
-        expect(response.status).not_to eq(429), "Request #{i + 1} unexpectedly throttled"
+      freeze_time do
+        10.times do |i|
+          post "/rules/#{rule.id}/reviews",
+               params: { review: { action: 'comment', comment: "comment #{i}", component_id: component.id } },
+               as: :json
+          expect(response.status).not_to eq(429), "Request #{i + 1} unexpectedly throttled"
+        end
       end
     end
 
     it 'throttles the 11th comment post within a minute' do
-      10.times do |i|
-        post "/rules/#{rule.id}/reviews",
-             params: { review: { action: 'comment', comment: "comment #{i}", component_id: component.id } },
-             as: :json
-      end
+      freeze_time do
+        10.times do |i|
+          post "/rules/#{rule.id}/reviews",
+               params: { review: { action: 'comment', comment: "comment #{i}", component_id: component.id } },
+               as: :json
+        end
 
-      post "/rules/#{rule.id}/reviews",
-           params: { review: { action: 'comment', comment: 'eleventh', component_id: component.id } },
-           as: :json
-      expect(response).to have_http_status(:too_many_requests)
-      expect(response.parsed_body.dig('toast', 'title')).to eq('Rate limited')
+        post "/rules/#{rule.id}/reviews",
+             params: { review: { action: 'comment', comment: 'eleventh', component_id: component.id } },
+             as: :json
+        expect(response).to have_http_status(:too_many_requests)
+        expect(response.parsed_body.dig('toast', 'title')).to eq('Rate limited')
+      end
     end
 
     it 'does not throttle non-comment review actions on the same endpoint' do
@@ -117,18 +129,20 @@ RSpec.describe 'Rack::Attack throttling' do
       # update the existing viewer row rather than create a second.
       Membership.find_by!(user: viewer, membership: project).update!(role: 'author')
 
-      # Burn the comment limit
-      10.times do |i|
-        post "/rules/#{rule.id}/reviews",
-             params: { review: { action: 'comment', comment: "spam #{i}", component_id: component.id } },
-             as: :json
-      end
+      freeze_time do
+        # Burn the comment limit
+        10.times do |i|
+          post "/rules/#{rule.id}/reviews",
+               params: { review: { action: 'comment', comment: "spam #{i}", component_id: component.id } },
+               as: :json
+        end
 
-      # request_review on the same endpoint goes through (separate throttle key)
-      post "/rules/#{rule.id}/reviews",
-           params: { review: { action: 'request_review', comment: 'please look', component_id: component.id } },
-           as: :json
-      expect(response).not_to have_http_status(:too_many_requests)
+        # request_review on the same endpoint goes through (separate throttle key)
+        post "/rules/#{rule.id}/reviews",
+             params: { review: { action: 'request_review', comment: 'please look', component_id: component.id } },
+             as: :json
+        expect(response).not_to have_http_status(:too_many_requests)
+      end
     end
   end
 
