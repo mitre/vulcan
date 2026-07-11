@@ -949,13 +949,17 @@ RSpec.describe Import::JsonArchive::Merge::Applier, type: :service do
 
   describe '#call (component sync metadata)' do
     it 'sets component.last_sync_id, last_sync_at, last_sync_source on success' do
-      now = Time.current
+      # Floor to microseconds — Postgres truncates timestamps, so a
+      # nanosecond-precision lower bound could exceed a stamp taken in
+      # the same microsecond.
+      before_call = Time.current.floor(6)
       described_class.new(merge_plan: plan, component: component, source: 'theirs', archive_bytes: archive_bytes).call
+      after_call = Time.current
 
       component.reload
       event = ComponentSyncEvent.last
       expect(component.last_sync_id).to eq(event.sync_id)
-      expect(component.last_sync_at).to be_within(5.seconds).of(now)
+      expect(component.last_sync_at).to be_between(before_call, after_call)
       expect(component.last_sync_source).to eq('theirs')
     end
 
