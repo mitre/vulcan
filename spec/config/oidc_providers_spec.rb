@@ -15,11 +15,24 @@ RSpec.describe 'OIDC provider registry (Settings.oidc.providers)' do
                                   .find { |p| p[:name].to_s == name.to_s }
   end
 
-  after { Settings.reload! } # restore global Settings from the real ENV
+  # Reload Settings inside the modified ENV so examples see the provider
+  # registry, then reload AFTER ClimateControl has restored the real ENV.
+  # An `after` hook cannot do the restore — after-hooks run inside
+  # example.run, i.e. still inside the modify block, so they reload the
+  # MODIFIED values and the poisoned Settings leaks to every later spec
+  # in the worker (the seed-order flake settings_reload_spec pins).
+  def with_provider_env(env)
+    ClimateControl.modify(**env) do
+      Settings.reload!
+      yield
+    end
+  ensure
+    Settings.reload!
+  end
 
   describe 'registry mode — VULCAN_OIDC_PROVIDERS=okta,login_gov' do
     around do |example|
-      ClimateControl.modify(
+      with_provider_env(
         VULCAN_ENABLE_OIDC: 'true',
         VULCAN_OIDC_PROVIDERS: 'okta,login_gov',
         VULCAN_OIDC_OKTA_ISSUER_URL: 'https://org.okta.com/oauth2/default',
@@ -30,7 +43,7 @@ RSpec.describe 'OIDC provider registry (Settings.oidc.providers)' do
         VULCAN_OIDC_LOGIN_GOV_CLIENT_ID: 'urn:gov:gsa:openidconnect:vulcan',
         VULCAN_OIDC_LOGIN_GOV_CLIENT_AUTH_METHOD: 'jwt_bearer',
         VULCAN_OIDC_LOGIN_GOV_TITLE: 'login.gov'
-      ) { Settings.reload! && example.run }
+      ) { example.run }
     end
 
     it 'returns exactly two providers with the registry keys as names' do
@@ -58,13 +71,13 @@ RSpec.describe 'OIDC provider registry (Settings.oidc.providers)' do
 
   describe 'legacy mode — VULCAN_OIDC_PROVIDERS unset, VULCAN_ENABLE_OIDC=true' do
     around do |example|
-      ClimateControl.modify(
+      with_provider_env(
         VULCAN_ENABLE_OIDC: 'true',
         VULCAN_OIDC_PROVIDERS: nil,
         VULCAN_OIDC_ISSUER_URL: 'https://legacy.example.com',
         VULCAN_OIDC_CLIENT_ID: 'legacy-client',
         VULCAN_OIDC_PROVIDER_TITLE: 'Legacy SSO'
-      ) { Settings.reload! && example.run }
+      ) { example.run }
     end
 
     it 'yields exactly one provider named oidc built from the unprefixed vars' do
