@@ -5,7 +5,7 @@ require 'rake'
 
 RSpec.describe 'vulcan:auth:rename_provider' do
   before(:all) do
-    Rails.application.load_tasks
+    load_rake_tasks
   end
 
   let!(:oidc_user) { create(:user, provider: 'oidc', uid: 'oidc-rename-1') }
@@ -16,14 +16,14 @@ RSpec.describe 'vulcan:auth:rename_provider' do
   after { Rake::Task['vulcan:auth:rename_provider'].reenable }
 
   it 'renames provider on both identities and users tables' do
-    Rake::Task['vulcan:auth:rename_provider'].invoke('oidc', 'okta')
+    capture_stdout { Rake::Task['vulcan:auth:rename_provider'].invoke('oidc', 'okta') }
 
     expect(oidc_identity.reload.provider).to eq('okta')
     expect(oidc_user.reload.provider).to eq('okta')
   end
 
   it 'leaves other providers untouched' do
-    Rake::Task['vulcan:auth:rename_provider'].invoke('oidc', 'okta')
+    capture_stdout { Rake::Task['vulcan:auth:rename_provider'].invoke('oidc', 'okta') }
 
     expect(ldap_identity.reload.provider).to eq('ldap')
     expect(ldap_user.reload.provider).to eq('ldap')
@@ -37,14 +37,5 @@ RSpec.describe 'vulcan:auth:rename_provider' do
   it 'refuses blank arguments' do
     expect { Rake::Task['vulcan:auth:rename_provider'].invoke('', 'okta') }
       .to output(/old.*new.*required/i).to_stdout.or raise_error(ArgumentError)
-  end
-
-  def capture_stdout
-    original = $stdout
-    $stdout = StringIO.new
-    yield
-    $stdout.string
-  ensure
-    $stdout = original
   end
 end

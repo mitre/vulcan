@@ -21,6 +21,16 @@ RSpec.describe SeedHelpers do
       expect { described_class.seed_xccdf(srg_path) }
         .not_to change(SecurityRequirementsGuide, :count)
     end
+
+    it 'is silent in the test environment (no progress output floods the suite log)' do
+      expect { described_class.seed_xccdf(srg_path) }.not_to output.to_stdout
+    end
+
+    it 'still reports progress outside the test environment' do
+      allow(Rails.env).to receive(:test?).and_return(false)
+      expect { described_class.seed_xccdf(srg_path) }
+        .to output(/Loaded .+\(SecurityRequirementsGuide\)/).to_stdout
+    end
   end
 
   describe '.seed_component' do

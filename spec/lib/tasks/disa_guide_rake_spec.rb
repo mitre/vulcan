@@ -5,7 +5,7 @@ require 'rake'
 
 RSpec.describe 'disa_guide rake tasks' do
   before(:all) do
-    Rails.application.load_tasks
+    load_rake_tasks
   end
 
   let(:v4r3_docx) { Rails.root.join('docs/disa-process/attachments/U_Vendor_STIG_Process_Guide_V4R3.docx') }
@@ -104,9 +104,9 @@ RSpec.describe 'disa_guide rake tasks' do
         public_attachments = File.join(output_dir, 'public_attachments')
         FileUtils.mkdir_p(public_attachments)
 
-        Rake::Task['disa_guide:update'].invoke(
-          v4r3_docx.to_s, md_path, public_attachments
-        )
+        capture_stdout do
+          Rake::Task['disa_guide:update'].invoke(v4r3_docx.to_s, md_path, public_attachments)
+        end
 
         expect(File.exist?(md_path)).to be true
         content = File.read(md_path)
@@ -122,32 +122,20 @@ RSpec.describe 'disa_guide rake tasks' do
         public_attachments = File.join(output_dir, 'public_attachments')
         FileUtils.mkdir_p(public_attachments)
 
-        Rake::Task['disa_guide:update'].invoke(
-          v4r3_docx.to_s, md_path, public_attachments
-        )
+        capture_stdout do
+          Rake::Task['disa_guide:update'].invoke(v4r3_docx.to_s, md_path, public_attachments)
+        end
         first_content = File.read(md_path)
 
         Rake::Task['disa_guide:update'].reenable
-        Rake::Task['disa_guide:convert'].reenable
 
-        Rake::Task['disa_guide:update'].invoke(
-          v4r3_docx.to_s, md_path, public_attachments
-        )
+        capture_stdout do
+          Rake::Task['disa_guide:update'].invoke(v4r3_docx.to_s, md_path, public_attachments)
+        end
         second_content = File.read(md_path)
 
         expect(first_content).to eq(second_content)
       end
     end
-  end
-
-  private
-
-  def capture_stdout
-    original = $stdout
-    $stdout = StringIO.new
-    yield
-    $stdout.string
-  ensure
-    $stdout = original
   end
 end

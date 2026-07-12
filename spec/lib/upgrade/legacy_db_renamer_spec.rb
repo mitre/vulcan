@@ -19,9 +19,13 @@ RSpec.describe Upgrade::LegacyDbRenamer do
   end
 
   def pg_connect
-    PG.connect(host: db_config[:host], port: db_config[:port],
-               user: db_config[:user], password: db_config[:password],
-               dbname: 'postgres')
+    conn = PG.connect(host: db_config[:host], port: db_config[:port],
+                      user: db_config[:user], password: db_config[:password],
+                      dbname: 'postgres')
+    # Suppress the NOTICE that DROP DATABASE IF EXISTS emits for a
+    # non-existent database; WARNING/ERROR still surface.
+    conn.exec('SET client_min_messages TO warning')
+    conn
   end
 
   def db_exists?(name)
@@ -39,11 +43,17 @@ RSpec.describe Upgrade::LegacyDbRenamer do
   end
 
   def drop_db(name)
+    # Cleanup must always reach the REAL server via the fixed ENV config —
+    # independent of db_config, which some examples override to an
+    # unreachable port to simulate PostgreSQL being down.
     conn = PG.connect(host: ENV.fetch('DATABASE_HOST', '127.0.0.1'),
                       port: ENV.fetch('DATABASE_PORT', '5432').to_i,
                       user: ENV.fetch('POSTGRES_USER', 'postgres'),
                       password: ENV.fetch('POSTGRES_PASSWORD', 'postgres'),
                       dbname: 'postgres')
+    # Suppress the NOTICE that DROP DATABASE IF EXISTS emits for a
+    # non-existent database; WARNING/ERROR still surface.
+    conn.exec('SET client_min_messages TO warning')
     conn.exec("DROP DATABASE IF EXISTS #{conn.escape_identifier(name)}")
   ensure
     conn&.close

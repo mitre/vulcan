@@ -192,7 +192,7 @@ RSpec.describe 'sync rake tasks' do
 
   describe 'rake task wiring' do
     before(:all) do
-      Rails.application.load_tasks unless Rake::Task.task_defined?('sync:diff')
+      load_rake_tasks
     end
 
     it 'sync:diff is a registered task' do

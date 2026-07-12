@@ -9,8 +9,12 @@ RSpec.describe Upgrade::Runner do
   end
 
   def pg_conn
-    PG.connect(host: pg_config[:host], port: pg_config[:port],
-               user: pg_config[:user], password: pg_config[:password], dbname: 'postgres')
+    conn = PG.connect(host: pg_config[:host], port: pg_config[:port],
+                      user: pg_config[:user], password: pg_config[:password], dbname: 'postgres')
+    # Suppress the NOTICE that DROP DATABASE IF EXISTS emits for a
+    # non-existent database; WARNING/ERROR still surface.
+    conn.exec('SET client_min_messages TO warning')
+    conn
   end
 
   def db_exists?(name)

@@ -5,7 +5,7 @@ require 'rake'
 
 RSpec.describe 'rake fix_adnm_status' do
   before(:all) do
-    Rails.application.load_tasks
+    load_rake_tasks
   end
 
   let_it_be(:project) { create(:project) }
@@ -43,7 +43,7 @@ RSpec.describe 'rake fix_adnm_status' do
     end
 
     it 'sets status_justification with parent label' do
-      Rake::Task['fix_adnm_status'].invoke
+      capture_stdout { Rake::Task['fix_adnm_status'].invoke }
 
       child_rule.reload
       expect(child_rule.status_justification).to include(parent_component.prefix)
@@ -51,7 +51,7 @@ RSpec.describe 'rake fix_adnm_status' do
     end
 
     it 'sets mitigations on disa_rule_description' do
-      Rake::Task['fix_adnm_status'].invoke
+      capture_stdout { Rake::Task['fix_adnm_status'].invoke }
 
       child_rule.reload
       drd = child_rule.disa_rule_descriptions.first
@@ -61,7 +61,7 @@ RSpec.describe 'rake fix_adnm_status' do
     end
 
     it 'is idempotent — second run finds zero rules' do
-      Rake::Task['fix_adnm_status'].invoke
+      capture_stdout { Rake::Task['fix_adnm_status'].invoke }
       Rake::Task['fix_adnm_status'].reenable
 
       expect { Rake::Task['fix_adnm_status'].invoke }

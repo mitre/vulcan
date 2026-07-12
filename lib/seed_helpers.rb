@@ -50,6 +50,16 @@ module SeedHelpers # rubocop:disable Style/Documentation
     ActionMailer::Base.perform_deliveries = prev_deliveries
   end
 
+  # Progress output for the seed pipeline. Seeds run inside specs (via
+  # let_it_be / seed contexts), where this progress would flood the suite
+  # log — so stay silent in the test environment unless VERBOSE is set.
+  # Real `rails db:seed` in development/production still prints.
+  def self.announce(message)
+    return if Rails.env.test? && ENV['VERBOSE'].blank?
+
+    $stdout.puts message
+  end
+
   SYMBOL_VALUE_KEYS = %i[rule author by].freeze
 
   def self.load_threads(path = Rails.root.join('db/seeds/data/threads.yml'))
@@ -80,7 +90,6 @@ module SeedHelpers # rubocop:disable Style/Documentation
   end
   private_class_method :normalize_thread, :normalize_triage, :normalize_reply
 
-  # rubocop:disable Rails/Output
   def self.seed_xccdf(filepath)
     xml = File.read(filepath)
     parsed = Xccdf::Benchmark.parse(xml)
@@ -93,7 +102,7 @@ module SeedHelpers # rubocop:disable Style/Documentation
       record = SecurityRequirementsGuide.from_mapping(parsed)
       existing = SecurityRequirementsGuide.find_by(srg_id: record.srg_id)
       if existing
-        puts "  Already exists: #{existing.name} (SecurityRequirementsGuide)"
+        announce "  Already exists: #{existing.name} (SecurityRequirementsGuide)"
         return existing
       end
       record.xml = xml
@@ -101,20 +110,19 @@ module SeedHelpers # rubocop:disable Style/Documentation
       record = Stig.from_mapping(parsed)
       existing = Stig.find_by(stig_id: record.stig_id)
       if existing
-        puts "  Already exists: #{existing.name} (Stig)"
+        announce "  Already exists: #{existing.name} (Stig)"
         return existing
       end
       record.xml = xml
     else
-      puts "  Skipping #{File.basename(filepath)} (unrecognized benchmark type)"
+      announce "  Skipping #{File.basename(filepath)} (unrecognized benchmark type)"
       return nil
     end
 
     record.save!
-    puts "  Loaded #{record.name} (#{record.class.name})"
+    announce "  Loaded #{record.name} (#{record.class.name})"
     record
   end
-  # rubocop:enable Rails/Output
 
   def self.seed_component(**opts)
     project  = opts.fetch(:project)

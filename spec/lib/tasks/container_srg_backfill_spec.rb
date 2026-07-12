@@ -5,7 +5,7 @@ require 'rake'
 
 RSpec.describe 'container_srg:backfill_adnm' do
   before(:all) do
-    Rails.application.load_tasks
+    load_rake_tasks
   end
 
   let_it_be(:srg) do
@@ -81,8 +81,10 @@ RSpec.describe 'container_srg:backfill_adnm' do
 
     stub_const('ENV', ENV.to_h.merge('EXECUTE' => 'true', 'COMPONENT_ID' => component.id.to_s))
 
-    Rake::Task['container_srg:backfill_adnm'].reenable
-    Rake::Task['container_srg:backfill_adnm'].invoke
+    capture_stdout do
+      Rake::Task['container_srg:backfill_adnm'].reenable
+      Rake::Task['container_srg:backfill_adnm'].invoke
+    end
 
     comment.reload
     expect(comment.triage_status).to eq('addressed_by')
@@ -97,8 +99,10 @@ RSpec.describe 'container_srg:backfill_adnm' do
 
     stub_const('ENV', ENV.to_h.merge('EXECUTE' => 'true', 'COMPONENT_ID' => component.id.to_s))
 
-    Rake::Task['container_srg:backfill_adnm'].reenable
-    Rake::Task['container_srg:backfill_adnm'].invoke
+    capture_stdout do
+      Rake::Task['container_srg:backfill_adnm'].reenable
+      Rake::Task['container_srg:backfill_adnm'].invoke
+    end
 
     response = Review.find_by(responding_to_review_id: comment.id)
     expect(response).to be_present

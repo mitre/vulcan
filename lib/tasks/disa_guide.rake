@@ -3,42 +3,17 @@
 namespace :disa_guide do
   desc 'Convert a DISA Vendor STIG Process Guide .docx to cleaned markdown (stdout)'
   task :convert, %i[docx_path] => :environment do |_t, args|
-    unless system('which', 'pandoc', out: File::NULL)
-      warn 'pandoc not found. Install: brew install pandoc (macOS) or apt install pandoc (Linux)'
-      exit 1
-    end
-
-    docx_path = args[:docx_path]
-    if docx_path.blank?
-      warn 'Usage: rake disa_guide:convert[path/to/file.docx]'
-      exit 1
-    end
-
-    unless File.exist?(docx_path)
-      warn "File not found: #{docx_path}"
-      exit 1
-    end
-
-    unless docx_path.end_with?('.docx')
-      warn "Expected a .docx file, got: #{File.extname(docx_path)}"
-      exit 1
-    end
-
-    markdown = convert_docx_to_markdown(docx_path)
-    $stdout.puts markdown
+    docx_path = validated_docx_path(args[:docx_path])
+    $stdout.puts convert_docx_to_markdown(docx_path)
   end
 
   desc 'Full pipeline: convert .docx, write .md, copy .docx to attachment dirs'
   task :update, %i[docx_path md_output public_attachments_dir] => :environment do |_t, args|
-    docx_path = args[:docx_path]
+    docx_path = validated_docx_path(args[:docx_path])
     md_output = args[:md_output] || Rails.root.join('docs/disa-process/vendor-stig-process-guide.md').to_s
     public_attachments = args[:public_attachments_dir] || Rails.root.join('docs/public/attachments').to_s
 
-    Rake::Task['disa_guide:convert'].invoke(docx_path)
-    Rake::Task['disa_guide:convert'].reenable
-
-    markdown = convert_docx_to_markdown(docx_path)
-    File.write(md_output, markdown)
+    File.write(md_output, convert_docx_to_markdown(docx_path))
 
     FileUtils.mkdir_p(public_attachments)
     FileUtils.cp(docx_path, public_attachments)
@@ -46,6 +21,34 @@ namespace :disa_guide do
     puts "Wrote: #{md_output}"
     puts "Copied .docx to: #{public_attachments}"
   end
+end
+
+# Validate the docx argument the same way for both tasks: pandoc present, a
+# non-blank existing .docx path. Returns the path so callers convert exactly
+# once (update no longer re-invokes convert, which used to print the whole
+# guide to stdout and run pandoc twice).
+def validated_docx_path(docx_path)
+  unless system('which', 'pandoc', out: File::NULL)
+    warn 'pandoc not found. Install: brew install pandoc (macOS) or apt install pandoc (Linux)'
+    exit 1
+  end
+
+  if docx_path.blank?
+    warn 'Usage: rake disa_guide:convert[path/to/file.docx]'
+    exit 1
+  end
+
+  unless File.exist?(docx_path)
+    warn "File not found: #{docx_path}"
+    exit 1
+  end
+
+  unless docx_path.end_with?('.docx')
+    warn "Expected a .docx file, got: #{File.extname(docx_path)}"
+    exit 1
+  end
+
+  docx_path
 end
 
 def convert_docx_to_markdown(docx_path)

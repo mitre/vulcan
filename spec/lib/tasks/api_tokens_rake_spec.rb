@@ -5,7 +5,7 @@ require 'rake'
 
 RSpec.describe 'api_tokens rake tasks' do
   before(:all) do
-    Rails.application.load_tasks
+    load_rake_tasks
   end
 
   let_it_be(:user) { create(:user, admin: true) }

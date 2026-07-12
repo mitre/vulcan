@@ -5,7 +5,7 @@ require 'rake'
 
 RSpec.describe 'upgrade rake tasks' do
   before(:all) do
-    Rails.application.load_tasks
+    load_rake_tasks
   end
 
   describe 'upgrade:preflight' do
