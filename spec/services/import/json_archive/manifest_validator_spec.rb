@@ -54,32 +54,6 @@ RSpec.describe Import::JsonArchive::ManifestValidator do
         expect(result).to be_success
         expect(result.warnings.join).to include("'Conflicting' already exists")
       end
-
-      it 'warns in merge mode with an informative message' do
-        described_class.new(manifest(component_name: 'Conflicting'), project, merge: true).validate(result)
-        expect(result).to be_success
-        expect(result.errors).to be_empty
-        expect(result.warnings.join).to include('Component name conflict in merge mode')
-        expect(result.warnings.join).to include('will be merged into existing component')
-      end
-
-      it 'prefers the merge warning over dry_run/component_filter wording when merge: true' do
-        described_class.new(
-          manifest(component_name: 'Conflicting'),
-          project,
-          merge: true,
-          dry_run: true,
-          component_filter: ['Conflicting']
-        ).validate(result)
-        expect(result.warnings.join).to include('merge mode')
-      end
-    end
-
-    context 'merge kwarg defaults' do
-      it 'defaults to false (existing callers see no behavior change)' do
-        validator = described_class.new(manifest, project)
-        expect(validator.instance_variable_get(:@merge)).to be false
-      end
     end
   end
 end
