@@ -14,19 +14,17 @@ RSpec.describe 'Settings reload' do
   # sections — the seed-order flake this file pins down.
 
   # Unset the env vars behind each pinned value so the expected default is
-  # deterministic regardless of the developer's .env; reload inside the
-  # modified ENV. The ensure runs AFTER ClimateControl restores the real
-  # ENV, so the final reload leaves Settings exactly as boot built it.
+  # deterministic regardless of the developer's .env. with_settings_env
+  # reloads Settings inside the modified ENV and restores it afterward, so no
+  # modified state leaks to later specs.
   around do |example|
-    ClimateControl.modify(
+    with_settings_env(
       VULCAN_ENABLE_SMTP: nil,
       VULCAN_CONTACT_EMAIL: nil,
       VULCAN_BANNER_BACKGROUND_COLOR: nil,
       VULCAN_BANNER_TEXT_COLOR: nil,
       VULCAN_CONSENT_CONTENT: nil
     ) { example.run }
-  ensure
-    Settings.reload!
   end
 
   it 'preserves initializer-backfilled defaults across reload!' do

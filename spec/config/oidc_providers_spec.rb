@@ -15,24 +15,9 @@ RSpec.describe 'OIDC provider registry (Settings.oidc.providers)' do
                                   .find { |p| p[:name].to_s == name.to_s }
   end
 
-  # Reload Settings inside the modified ENV so examples see the provider
-  # registry, then reload AFTER ClimateControl has restored the real ENV.
-  # An `after` hook cannot do the restore — after-hooks run inside
-  # example.run, i.e. still inside the modify block, so they reload the
-  # MODIFIED values and the poisoned Settings leaks to every later spec
-  # in the worker (the seed-order flake settings_reload_spec pins).
-  def with_provider_env(env)
-    ClimateControl.modify(**env) do
-      Settings.reload!
-      yield
-    end
-  ensure
-    Settings.reload!
-  end
-
   describe 'registry mode — VULCAN_OIDC_PROVIDERS=okta,login_gov' do
     around do |example|
-      with_provider_env(
+      with_settings_env(
         VULCAN_ENABLE_OIDC: 'true',
         VULCAN_OIDC_PROVIDERS: 'okta,login_gov',
         VULCAN_OIDC_OKTA_ISSUER_URL: 'https://org.okta.com/oauth2/default',
@@ -71,7 +56,7 @@ RSpec.describe 'OIDC provider registry (Settings.oidc.providers)' do
 
   describe 'legacy mode — VULCAN_OIDC_PROVIDERS unset, VULCAN_ENABLE_OIDC=true' do
     around do |example|
-      with_provider_env(
+      with_settings_env(
         VULCAN_ENABLE_OIDC: 'true',
         VULCAN_OIDC_PROVIDERS: nil,
         VULCAN_OIDC_ISSUER_URL: 'https://legacy.example.com',
