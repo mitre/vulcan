@@ -157,26 +157,6 @@ defaults: &defaults
     max_tokens_per_user: <%= ENV.fetch('VULCAN_API_TOKENS_MAX_PER_USER', '20').to_i %>
     max_lifetime_days: <%= ENV.fetch('VULCAN_API_TOKENS_MAX_LIFETIME_DAYS', '365').to_i %>
     auto_revoke_idle_days: <%= ENV.fetch('VULCAN_API_TOKENS_AUTO_REVOKE_IDLE_DAYS', '90').to_i %>
-  sync:
-    # Component sync/merge. Snapshots are pre-merge backup
-    # zips written next to the deployment volume (NOT tmp/ — that vanishes on
-    # container restart). Directory is created 0700 by SnapshotManager.
-    snapshot_path: <%= ENV.fetch('VULCAN_SYNC_SNAPSHOT_PATH', Rails.root.join('storage', 'merge_snapshots').to_s) %>
-    # Per-instance identifier embedded in outbound sync events. Honors
-    # VULCAN_SYNC_INSTANCE_ID env var; falls back to Socket.gethostname so
-    # developer-laptop syncs are still attributable.
-    instance_id: <%= ENV.fetch('VULCAN_SYNC_INSTANCE_ID') { require 'socket'; Socket.gethostname } %>
-    # Per-component snapshot byte budget. Defense-in-depth against a
-    # runaway component filling the merge_snapshots disk partition.
-    # 0 = disabled (default); operators set VULCAN_SYNC_MAX_SNAPSHOT_BYTES
-    # to a positive integer to enforce. v2-480.38.
-    max_snapshot_bytes_per_component: <%= ENV.fetch('VULCAN_SYNC_MAX_SNAPSHOT_BYTES', '0').to_i %>
-    # When true, the merge engine refuses any archive whose manifest does
-    # not carry a 'signature' field. Default false preserves existing
-    # behavior. NOTE (v2-480.9): presence-only stub — full HMAC
-    # verification of the signature is a separate follow-up. Operators
-    # who want the gate today should also restrict who can upload archives.
-    require_signed_archives: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_SYNC_REQUIRE_SIGNED_ARCHIVES']) || false %>
   slack:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_SLACK_COMMS']) || false %>
     api_token: <%= ENV['VULCAN_SLACK_API_TOKEN'] %>
