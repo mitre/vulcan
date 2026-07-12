@@ -31,6 +31,10 @@ variable "VERSION" {
   default = "latest"
 }
 
+variable "TAG_SUFFIXES" {
+  default = "latest"
+}
+
 variable "VULCAN_BUNDLER_VERSION" {
   default = "2.7.2"
 }
@@ -106,6 +110,24 @@ target "production-multiarch" {
 }
 
 // ============================================================================
+// Registry Push - For the release + mainline CI workflows
+// ============================================================================
+// The tag list is supplied by the workflow as a comma-separated TAG_SUFFIXES:
+//   release:  TAG_SUFFIXES="<x.y.z>,release-latest"
+//   mainline: TAG_SUFFIXES="<git sha>,latest"
+// The first suffix is the immutable version and is surfaced as the image label.
+
+target "registry" {
+  inherits = ["production-multiarch"]
+
+  tags = [for s in split(",", TAG_SUFFIXES) : "${REGISTRY}/${IMAGE_NAME}:${trimspace(s)}"]
+
+  labels = {
+    "org.opencontainers.image.version" = trimspace(split(",", TAG_SUFFIXES)[0])
+  }
+}
+
+// ============================================================================
 // Development Target - Full dev environment with all dependencies
 // ============================================================================
 
@@ -150,21 +172,5 @@ target "ci-multiarch" {
   platforms = [
     "linux/amd64",
     "linux/arm64"
-  ]
-}
-
-// ============================================================================
-// Release Build - For tagged releases
-// ============================================================================
-
-target "release" {
-  inherits = ["production-multiarch"]
-
-  // Override tags for release
-  tags = [
-    "${REGISTRY}/${IMAGE_NAME}:${VERSION}",
-    "${REGISTRY}/${IMAGE_NAME}:latest",
-    "ghcr.io/${REGISTRY}/${IMAGE_NAME}:${VERSION}",
-    "ghcr.io/${REGISTRY}/${IMAGE_NAME}:latest"
   ]
 }

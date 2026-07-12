@@ -75,8 +75,8 @@ const involvement = [
 ### Quick Test with Docker
 
 ```bash
-docker pull mitre/vulcan:latest
-docker run -p 3000:3000 mitre/vulcan:latest
+docker pull mitre/vulcan:release-latest
+docker run -p 3000:3000 mitre/vulcan:release-latest
 ```
 
 ### Full Setup with Docker Compose
