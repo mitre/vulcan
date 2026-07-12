@@ -125,14 +125,19 @@ That push triggers everything. No further manual steps are required.
    - Logs in to DockerHub
    - Uses Docker Build Cloud (`mitre/mitre-builder`) for native multi-arch builds
    - Builds `linux/amd64` and `linux/arm64` images
-   - Pushes `mitre/vulcan:v2.3.2` and `mitre/vulcan:latest` to DockerHub
+   - Pushes `mitre/vulcan:v2.3.2` and `mitre/vulcan:release-latest` to DockerHub
    - Generates SBOM (SPDX format) and submits to GitHub dependency graph
+
+> **Tag convention:** `release-latest` is the moving pointer to the most recent
+> stable release; `latest` is the bleeding-edge build of `master` published by
+> `mainline.yml` on every push. Use `release-latest` (or a pinned `vX.Y.Z`) for
+> production; `latest` only for trying the newest unreleased code.
 
 ### 5. Verify the release
 
 1. Check [Actions](https://github.com/mitre/vulcan/actions) — `release.yml` and `ci.yml` runs should both be green
 2. Check [Releases](https://github.com/mitre/vulcan/releases) — new release should exist with changelog populated
-3. Check [DockerHub](https://hub.docker.com/r/mitre/vulcan/tags) — new version tag and `latest` should be present
+3. Check [DockerHub](https://hub.docker.com/r/mitre/vulcan/tags) — new version tag and `release-latest` should be present
 4. Pull and smoke-test the image:
 
 ```bash
