@@ -26,11 +26,13 @@ RSpec.describe 'Reviews' do
       before { sign_in adj_triager }
 
       it 'sets adjudicated_at and adjudicated_by_id' do
+        before_call = Time.current.floor(6)
         patch "/reviews/#{triaged_comment.id}/adjudicate", params: {}, as: :json
+        after_call = Time.current
 
         expect(response).to have_http_status(:ok)
         triaged_comment.reload
-        expect(triaged_comment.adjudicated_at).to be_within(5.seconds).of(Time.current)
+        expect(triaged_comment.adjudicated_at).to be_between(before_call, after_call)
         expect(triaged_comment.adjudicated_by_id).to eq(adj_triager.id)
       end
 

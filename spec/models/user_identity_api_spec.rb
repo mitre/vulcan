@@ -17,14 +17,16 @@ RSpec.describe User do
     let(:user) { create(:user, provider: nil, uid: nil) }
 
     it 'creates an Identity, syncs denorm, and returns the identity' do
+      before_call = Time.current.floor(6)
       identity = user.link_identity!(provider: 'okta', uid: 'okta-1', email: 'u@example.com')
+      after_call = Time.current
 
       expect(identity).to be_a(Identity)
       expect(identity).to be_persisted
       expect(identity.provider).to eq('okta')
       expect(identity.uid).to eq('okta-1')
       expect(identity.email).to eq('u@example.com')
-      expect(identity.last_sign_in_at).to be_within(5.seconds).of(Time.current)
+      expect(identity.last_sign_in_at).to be_between(before_call, after_call)
       expect(user.reload.provider).to eq('okta')
       expect(user.uid).to eq('okta-1')
     end

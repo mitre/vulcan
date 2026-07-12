@@ -125,11 +125,13 @@ RSpec.describe 'API Token Authentication' do
       read_token = create(:personal_access_token, user: user, scopes: %w[read])
       expect(read_token.last_used_at).to be_nil
 
+      before_call = Time.current.floor(6)
       get '/srgs', headers: token_headers(read_token.raw_token).merge('Accept' => 'application/json')
+      after_call = Time.current
       expect(response).to have_http_status(:ok)
 
       read_token.reload
-      expect(read_token.last_used_at).to be_within(5.seconds).of(Time.current)
+      expect(read_token.last_used_at).to be_between(before_call, after_call)
     end
   end
 

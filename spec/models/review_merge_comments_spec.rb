@@ -39,14 +39,16 @@ RSpec.describe Review, '.merge_comments!' do
     dup_b    = cmt(rule: rule_b)
     dup_c    = cmt(rule: rule_c)
 
+    before_call = Time.current.floor(6)
     Review.merge_comments!(survivor: survivor, duplicates: [dup_b, dup_c], merged_by: admin)
+    after_call = Time.current
 
     [dup_b, dup_c].each do |d|
       d.reload
       expect(d.triage_status).to eq('duplicate')
       expect(d.duplicate_of_review_id).to eq(survivor.id)
       expect(d.triage_set_by_id).to eq(admin.id)
-      expect(d.triage_set_at).to be_within(5.seconds).of(Time.current)
+      expect(d.triage_set_at).to be_between(before_call, after_call)
     end
     expect(survivor.reload.triage_status).not_to eq('duplicate') # survivor stays itself
   end
@@ -55,9 +57,11 @@ RSpec.describe Review, '.merge_comments!' do
     survivor = cmt(rule: rule_a)
     dup      = cmt(rule: rule_b)
 
+    before_call = Time.current.floor(6)
     Review.merge_comments!(survivor: survivor, duplicates: [dup], merged_by: admin)
+    after_call = Time.current
 
-    expect(dup.reload.adjudicated_at).to be_within(5.seconds).of(Time.current)
+    expect(dup.reload.adjudicated_at).to be_between(before_call, after_call)
   end
 
   it 'prepends a merged-from marker naming the originating rule labels' do

@@ -24,12 +24,14 @@ RSpec.describe 'Reviews' do
       before { sign_in wd_owner }
 
       it 'sets triage_status=withdrawn and auto-sets adjudicated_at + adjudicated_by_id=self' do
+        before_call = Time.current.floor(6)
         patch "/reviews/#{my_comment.id}/withdraw", as: :json
+        after_call = Time.current
         expect(response).to have_http_status(:ok)
 
         my_comment.reload
         expect(my_comment.triage_status).to eq('withdrawn')
-        expect(my_comment.adjudicated_at).to be_within(5.seconds).of(Time.current)
+        expect(my_comment.adjudicated_at).to be_between(before_call, after_call)
         expect(my_comment.adjudicated_by_id).to eq(wd_owner.id)
       end
     end

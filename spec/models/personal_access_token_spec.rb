@@ -135,8 +135,10 @@ RSpec.describe PersonalAccessToken do
       token = create(:personal_access_token, user: user)
       expect(token.revoked_at).to be_nil
 
+      before_call = Time.current.floor(6)
       token.revoke!
-      expect(token.revoked_at).to be_within(2.seconds).of(Time.current)
+      after_call = Time.current
+      expect(token.revoked_at).to be_between(before_call, after_call)
       expect(token.active?).to be false
     end
   end

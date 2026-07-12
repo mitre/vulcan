@@ -31,16 +31,18 @@ RSpec.describe 'Reviews' do
       before { sign_in triager }
 
       it 'sets triage_status + audit fields and creates a response Review when text is supplied' do
+        before_call = Time.current.floor(6)
         patch "/reviews/#{comment.id}/triage", params: {
           triage_status: 'concur_with_comment',
           response_comment: "Thanks — we'll adopt with stricter regex."
         }, as: :json
+        after_call = Time.current
 
         expect(response).to have_http_status(:ok)
         comment.reload
         expect(comment.triage_status).to eq('concur_with_comment')
         expect(comment.triage_set_by_id).to eq(triager.id)
-        expect(comment.triage_set_at).to be_within(5.seconds).of(Time.current)
+        expect(comment.triage_set_at).to be_between(before_call, after_call)
 
         response_review = Review.find_by(responding_to_review_id: comment.id)
         expect(response_review).to be_present
@@ -85,16 +87,18 @@ RSpec.describe 'Reviews' do
         end
 
         it 'sets triage_status=duplicate + duplicate_of_review_id when valid' do
+          before_call = Time.current.floor(6)
           patch "/reviews/#{dup_target_comment.id}/triage", params: {
             triage_status: 'duplicate',
             duplicate_of_review_id: canonical.id
           }, as: :json
+          after_call = Time.current
 
           expect(response).to have_http_status(:ok)
           dup_target_comment.reload
           expect(dup_target_comment.triage_status).to eq('duplicate')
           expect(dup_target_comment.duplicate_of_review_id).to eq(canonical.id)
-          expect(dup_target_comment.adjudicated_at).to be_within(5.seconds).of(Time.current)
+          expect(dup_target_comment.adjudicated_at).to be_between(before_call, after_call)
         end
 
         it 'rejects self-reference (the existing no_self_duplicate_reference validator)' do
@@ -149,30 +153,34 @@ RSpec.describe 'Reviews' do
       end
 
       it 'allows informational without response_comment + auto-sets adjudicated_at' do
+        before_call = Time.current.floor(6)
         patch "/reviews/#{comment.id}/triage", params: {
           triage_status: 'informational'
         }, as: :json
+        after_call = Time.current
 
         expect(response).to have_http_status(:ok)
         comment.reload
         expect(comment.triage_status).to eq('informational')
-        expect(comment.adjudicated_at).to be_within(5.seconds).of(Time.current)
+        expect(comment.adjudicated_at).to be_between(before_call, after_call)
       end
 
       describe 'addressed_by marking' do # rubocop:disable RSpec/NestedGroups
         let_it_be(:parent_rule) { component.rules.second }
 
         it 'sets triage_status=addressed_by + addressed_by_rule_id + auto-adjudicates' do
+          before_call = Time.current.floor(6)
           patch "/reviews/#{comment.id}/triage", params: {
             triage_status: 'addressed_by',
             addressed_by_rule_id: parent_rule.id
           }, as: :json
+          after_call = Time.current
 
           expect(response).to have_http_status(:ok)
           comment.reload
           expect(comment.triage_status).to eq('addressed_by')
           expect(comment.addressed_by_rule_id).to eq(parent_rule.id)
-          expect(comment.adjudicated_at).to be_within(5.seconds).of(Time.current)
+          expect(comment.adjudicated_at).to be_between(before_call, after_call)
         end
 
         it 'returns addressed_by_rule_id in the JSON response' do

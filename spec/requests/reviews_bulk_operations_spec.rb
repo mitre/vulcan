@@ -32,11 +32,13 @@ RSpec.describe 'Reviews' do
       before { sign_in bulk_triager }
 
       it 'applies triage status to all selected reviews in one request' do
+        before_call = Time.current.floor(6)
         patch '/reviews/bulk_triage', params: {
           review_ids: [comment_a.id, comment_b.id],
           triage_status: 'informational',
           response_comment: 'Acknowledged — no change required.'
         }, as: :json
+        after_call = Time.current
 
         expect(response).to have_http_status(:ok)
 
@@ -44,7 +46,7 @@ RSpec.describe 'Reviews' do
           c.reload
           expect(c.triage_status).to eq('informational')
           expect(c.triage_set_by_id).to eq(bulk_triager.id)
-          expect(c.triage_set_at).to be_within(5.seconds).of(Time.current)
+          expect(c.triage_set_at).to be_between(before_call, after_call)
         end
       end
 
@@ -134,17 +136,19 @@ RSpec.describe 'Reviews' do
       before { sign_in merge_admin }
 
       it 'merges secondaries into the chosen survivor' do
+        before_call = Time.current.floor(6)
         patch '/reviews/merge', params: {
           review_ids: [survivor.id, dup_b.id, dup_c.id],
           survivor_id: survivor.id
         }, as: :json
+        after_call = Time.current
 
         expect(response).to have_http_status(:ok)
         [dup_b, dup_c].each do |d|
           d.reload
           expect(d.triage_status).to eq('duplicate')
           expect(d.duplicate_of_review_id).to eq(survivor.id)
-          expect(d.adjudicated_at).to be_within(5.seconds).of(Time.current)
+          expect(d.adjudicated_at).to be_between(before_call, after_call)
         end
         expect(survivor.reload.comment).to include('[Merged: originally posted on')
       end

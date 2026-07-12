@@ -47,15 +47,17 @@ RSpec.describe User do
     it 'creates both a User and an Identity in one transaction' do
       auth = auth_for(:login_gov, email: 'brand-new@example.com', uid: 'lg-new-1')
 
+      before_call = Time.current.floor(6)
       expect { described_class.from_omniauth(auth) }
         .to change(described_class, :count).by(1)
         .and change(Identity, :count).by(1)
+      after_call = Time.current
 
       user = described_class.find_by(email: 'brand-new@example.com')
       identity = Identity.find_by(provider: 'login_gov', uid: 'lg-new-1')
       expect(identity.user_id).to eq(user.id)
       expect(identity.email).to eq('brand-new@example.com')
-      expect(identity.last_sign_in_at).to be_within(5.seconds).of(Time.current)
+      expect(identity.last_sign_in_at).to be_between(before_call, after_call)
     end
   end
 
