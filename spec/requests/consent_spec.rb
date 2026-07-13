@@ -22,6 +22,12 @@ RSpec.describe 'Consent Acknowledgment (AC-8)' do
     Rails.application.reload_routes!
   end
 
+  # Every example mutates the global Settings.consent singleton (enabled,
+  # ttl, title, content). Reload Settings afterward to restore the full boot
+  # config — including consent.ttl as the Integer the YAML coerces it to — so
+  # no example leaks state (e.g. a String ttl) to a later spec in the worker.
+  after { Settings.reload! }
+
   def consent_config_from_response
     match = response.body.match(/consent_config='([^']+)'/)
     return {} unless match
@@ -44,8 +50,6 @@ RSpec.describe 'Consent Acknowledgment (AC-8)' do
 
       get new_user_session_path
       expect(consent_config_from_response['required']).to be false
-
-      Settings.consent['enabled'] = false
     end
   end
 
@@ -54,10 +58,6 @@ RSpec.describe 'Consent Acknowledgment (AC-8)' do
       Settings.consent['enabled'] = true
       Settings.consent['title'] = 'Terms'
       Settings.consent['content'] = 'Agree.'
-    end
-
-    after do
-      Settings.consent['enabled'] = false
     end
 
     it 'requires consent on login page (blocks access before authentication)' do
@@ -77,10 +77,6 @@ RSpec.describe 'Consent Acknowledgment (AC-8)' do
       Settings.consent['enabled'] = true
       Settings.consent['title'] = 'Terms'
       Settings.consent['content'] = 'Agree.'
-    end
-
-    after do
-      Settings.consent['enabled'] = false
     end
 
     it 'preserves consent acknowledgment after Devise login' do
@@ -115,10 +111,6 @@ RSpec.describe 'Consent Acknowledgment (AC-8)' do
       Settings.consent['content'] = 'Agree to terms.'
     end
 
-    after do
-      Settings.consent['enabled'] = false
-    end
-
     it 'sets required to true' do
       get root_path
       expect(consent_config_from_response['required']).to be true
@@ -131,10 +123,6 @@ RSpec.describe 'Consent Acknowledgment (AC-8)' do
       Settings.consent['enabled'] = true
       Settings.consent['title'] = 'Terms'
       Settings.consent['content'] = 'Agree to terms.'
-    end
-
-    after do
-      Settings.consent['enabled'] = false
     end
 
     it 'sets required to false after acknowledgment' do
@@ -151,11 +139,6 @@ RSpec.describe 'Consent Acknowledgment (AC-8)' do
       Settings.consent['ttl'] = '1h'
       Settings.consent['title'] = 'Terms'
       Settings.consent['content'] = 'Agree to terms.'
-    end
-
-    after do
-      Settings.consent['enabled'] = false
-      Settings.consent['ttl'] = '0'
     end
 
     it 'sets required to false within TTL window' do
@@ -183,10 +166,6 @@ RSpec.describe 'Consent Acknowledgment (AC-8)' do
       Settings.consent['ttl'] = '0'
       Settings.consent['title'] = 'Terms'
       Settings.consent['content'] = 'Agree to terms.'
-    end
-
-    after do
-      Settings.consent['enabled'] = false
     end
 
     it 'sets required to false after acknowledgment (valid for session lifetime)' do

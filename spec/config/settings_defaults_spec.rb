@@ -37,29 +37,46 @@ RSpec.describe 'Settings defaults' do
     end
   end
 
-  describe 'opt-in services default to false when env vars are unset' do
+  describe 'opt-in services default to false when their env vars are unset' do
     # YAML pattern: `ActiveModel::Type::Boolean.new.cast(ENV['...']) || false`
-    # When env var is unset: cast(nil) => nil, nil || false => false
-    # Initializer backup: sets false if value is nil
-
-    it 'ldap is disabled by default' do
-      skip 'VULCAN_ENABLE_LDAP is set in environment' if ENV.fetch('VULCAN_ENABLE_LDAP', nil).present?
-      expect(Settings.ldap['enabled']).to be false
+    # → false when the env var is unset.
+    #
+    # Asserted deterministically: with_settings_env unsets the controlling env
+    # var and reloads Settings, so the assertion RUNS regardless of the dev/CI
+    # environment (and restores Settings afterward). No skip-guards — a test
+    # that passes by skipping asserts nothing.
+    {
+      'ldap' => :VULCAN_ENABLE_LDAP,
+      'oidc' => :VULCAN_ENABLE_OIDC,
+      'smtp' => :VULCAN_ENABLE_SMTP,
+      'slack' => :VULCAN_ENABLE_SLACK_COMMS,
+      'banner' => :VULCAN_BANNER_ENABLED,
+      'consent' => :VULCAN_CONSENT_ENABLED
+    }.each do |section, env_var|
+      it "#{section} is disabled by default" do
+        with_settings_env(env_var => nil) do
+          expect(Settings[section]['enabled']).to be false
+        end
+      end
     end
+  end
 
-    it 'oidc is disabled by default' do
-      skip 'VULCAN_ENABLE_OIDC is set in environment' if ENV.fetch('VULCAN_ENABLE_OIDC', nil).present?
-      expect(Settings.oidc['enabled']).to be false
-    end
-
-    it 'smtp is disabled by default' do
-      skip 'VULCAN_ENABLE_SMTP is set in environment' if ENV.fetch('VULCAN_ENABLE_SMTP', nil).present?
-      expect(Settings.smtp['enabled']).to be false
-    end
-
-    it 'slack is disabled by default' do
-      skip 'VULCAN_ENABLE_SLACK_COMMS is set in environment' if ENV.fetch('VULCAN_ENABLE_SLACK_COMMS', nil).present?
-      expect(Settings.slack['enabled']).to be false
+  describe 'password policy defaults to its documented values when env vars are unset' do
+    # YAML pattern: `ENV.fetch('VULCAN_PASSWORD_MIN_*', '<n>').to_i`.
+    # Asserted deterministically via with_settings_env so a locally-set
+    # VULCAN_PASSWORD_MIN_* cannot mask the default value.
+    {
+      'min_length' => [15, :VULCAN_PASSWORD_MIN_LENGTH],
+      'min_uppercase' => [2, :VULCAN_PASSWORD_MIN_UPPERCASE],
+      'min_lowercase' => [2, :VULCAN_PASSWORD_MIN_LOWERCASE],
+      'min_number' => [2, :VULCAN_PASSWORD_MIN_NUMBER],
+      'min_special' => [2, :VULCAN_PASSWORD_MIN_SPECIAL]
+    }.each do |key, (value, env_var)|
+      it "password.#{key} defaults to #{value}" do
+        with_settings_env(env_var => nil) do
+          expect(Settings.password[key]).to eq(value)
+        end
+      end
     end
   end
 
