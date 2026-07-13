@@ -35,6 +35,14 @@
   backup/revision-guard iterate ALL parents, not `based_on` (§5); SRG
   export is a new mode + fetch + helper guard, not a filter swap
   (§14.7).
+  v7.4 (2026-07-13): consistency review (final of the four-review pass)
+  reconciled the doc with its own corrections — §0.3 row no longer
+  claims the default scope is free; §2.1.3 and §5 no longer contradict
+  §8 v7.3; §13 walkthrough owned by Phase 7 + v7.3 regression specs
+  added; §12 Phase-5 gap stated; cross-ADR export sequencing pinned in
+  §14.7 and the companion; glossary added (§2.2);
+  `target_technology_token` rename (§6). REVIEW PASS COMPLETE — ready
+  to card.
 - **Date:** 2026-07-10 (v2 per 3-agent swarm; v3 folded Aaron's eight fork
   decisions; v4 per readiness swarm; v5 replaced the storage core);
   2026-07-12 (v6 scoping + workflow, Will; v7 review resolutions, Aaron)
@@ -50,7 +58,7 @@
 |---|---|---|
 | 1 | Storage model | **Authored SRG requirements are `SrgRule`s, expanded with component linkage.** The prior Rule+`document_type`-policy design is rejected (§11) — it required a release-time type converter, which was the tell it stored the concept in the wrong type. |
 | 2 | Moved mechanics | ~~`Moved` as a third SRG terminal status~~ **REVISED (v7, Aaron 2026-07-12, resolving §10.5): there is NO `Moved` status.** Relocation is a first-class `requirement_relocations` record (pending = the R4 marker; executed = the move). SRG vocabulary = NYD / Applicable / Not Applicable. Completion = not-NYD over LIVE rows stays uniform — moved rows leave the denominator. See §6. |
-| 3 | Post-move source rule | **Tombstone via the EXISTING soft-delete** (v7): executing a relocation soft-deletes the source row in the same transaction — excluded from export/counts/UI by the existing `deleted_at` default scope (zero new query dimensions). Reviews/comments are preserved frozen on the tombstone (a move is not an erasure). Documented as a removal in that release's readme/changelog (from executed relocation records); unmentioned in the following release. |
+| 3 | Post-move source rule | **Tombstone via soft-delete** (v7): executing a relocation soft-deletes the source row in the same transaction. **v7.4 correction: `Rule`'s `deleted_at` default scope does NOT extend to `SrgRule` — `SrgRule` gains its OWN default scope (§6 v7.1); this is a new, required query dimension, not zero-cost.** Reviews/comments are preserved frozen on the tombstone (a move is not an erasure). Documented as a removal in that release's readme/changelog (from executed relocation records); unmentioned in the following release. |
 | 4 | Parent modeling | **Primary `based_on` + `component_source_srgs` join table.** Multi-parent display is a follow-on card. |
 | 5 | Core recognition | **DB flag** `security_requirements_guides.core`. Provenance: the core SRGs are **not on cyber.mil** — they are working documents of the ~4-person DISA SRG-author community (Aaron is one); they enter Vulcan via **upload**, and the identifiers come from Aaron and the documents themselves. |
 | 6 | Creation modes | **Both, defaulting to full union-import** from all declared cores (every exclusion becomes an audited NA); selective mode = the same import machinery behind a requirement picker, not a second code path. |
@@ -227,7 +235,11 @@ Per requirement the author sets a status from **their profile's vocabulary
 only**, and the form shows the fields that profile's config marks active for
 that status. STIG authors additionally use Satisfied-By; SRG authors
 additionally use the relocation marker. Review, comment, lock, and audit
-behave identically across profiles (§13) — those are document-agnostic.
+behave identically across profiles (§13) **as the target end-state — the
+scoping queries backing these surfaces route through the `Rule` STI
+association today and first require the §8 v7.3 `Component#requirements`
+migration** (until it lands, SRG triage renders empty and lock/release
+cannot function).
 
 ### 2.1.4 Changing your mind
 
@@ -293,6 +305,15 @@ This is a naming and shaping constraint on the implementation, not new
 behavior: the v5 storage core (§3) already supports it, and the STI
 hierarchy carries the *behavioral* variance. The profile table carries the
 *configuration* variance. Keep them distinct.
+
+**Glossary (v7.4)** — these are used throughout and must not be conflated:
+`components.document_type` = the profile key (configuration + routing;
+"kind" is informal shorthand for it); `base_rules.type` = the STI class
+discriminator (behavioral variance — `Rule` vs `SrgRule`); "authoring
+profile" = the registry row keyed by `document_type`; "technology token" =
+CTR/GPOS/DB (the family's ID token, §2.1.2); "family" = the version-group
+of a document line (never the token); `derived_from` = the association
+over the `derived_from_srg_rule_id` FK.
 
 ## 3. Decision (core): expand `SrgRule`; the STI hierarchy IS the seam
 
@@ -409,9 +430,11 @@ JavaScript:
   gated (SRG-only) version would have cost MORE code, and multi-SRG STIGs
   match DISA practice (product STIGs span multiple SRG scopes; today's
   single `based_on` forces authors to drop lineage).
-- `based_on` stays the primary parent for both kinds (zero change to the
-  53 existing read sites; primary-only display until the follow-on
-  display card, which now serves both kinds). **NOT NULL is a migration
+- `based_on` stays the primary parent for both kinds (≈50 of the 53
+  existing read sites unchanged; the 3 correctness sites below — currency,
+  backup, revision guard — must iterate the full parent set, v7.4;
+  primary-only display until the follow-on display card, which now serves
+  both kinds). **NOT NULL is a migration
   step to establish, not a current fact (v7.2):** the column is nullable
   today (schema.rb:139) with no presence validation, and the plain
   create path permits a NULL-based_on component — §12.3 must audit for
@@ -543,7 +566,11 @@ tell of two concepts in one column. The redesign:
 requirement_relocations
   source_rule_id       NOT NULL, FK base_rules   -- dependent: :destroy from
                                                  -- the source rule (v7.2)
-  target_family_token  NOT NULL                  -- 'CTR', 'GPOS', …
+  target_technology_token  NOT NULL              -- 'CTR', 'GPOS', … (v7.4:
+                                                 -- named for §2.1.2/§5
+                                                 -- "technology token";
+                                                 -- "family" stays the
+                                                 -- version-group sense)
   target_rule_id       NULL, FK base_rules       -- filled when landed;
                                                  -- on_delete: :nullify (v7.2)
   requested_by_id      FK users
@@ -566,7 +593,7 @@ requirement_relocations
   cascade/nullify with audit coverage is the same pattern both sides.
 
 - **Pending** (`executed_at` NULL) IS the R4 marker: row badge; per-family
-  backlog = `pending.where(target_family_token:)`; creation/open-time
+  backlog = `pending.where(target_technology_token:)`; creation/open-time
   intake prompt (§0.8). Un-mark = destroy the pending record (audited);
   executed records are immutable.
 - **Executed** = ONE transaction: create/link the target requirement →
@@ -789,7 +816,8 @@ should be settled before their phase is carded:
    structurally impossible (§8.2). v7.1: the copy is NEW machinery —
    `SrgRule`'s amoeba block converts to `Rule` and cannot be reused.**
 8. **Primary-parent selection is undefined for N parents.** `based_on` stays
-   NOT NULL as the primary parent (protecting 53 read sites), but with a
+   NOT NULL as the primary parent (protecting 53 read sites — v7.2 note:
+   NOT NULL is established by the §12.3 migration step, not current), but with a
    multi-select picker (e.g. APP + OS for Container) nothing says which of the
    declared parents becomes primary — user-chosen, or first-selected?
    **RESOLVED (Aaron, 2026-07-12): user designates via a primary radio in
@@ -853,8 +881,10 @@ should be settled before their phase is carded:
    nullable target FK (`on_delete: :nullify`), `executed_at`, unique
    partial index on pending source — one atomic change. No new
    `base_rules` columns, no new status value.
-5. Phase 6: `component_reference_benchmarks`.
-6. `bundle exec rake parallel:prepare` after every migration.
+5. Phase 5: no schema change — the executor is logic over the Phase-4
+   table (v7.4, stated so the gap reads as intentional).
+6. Phase 6: `component_reference_benchmarks`.
+7. `bundle exec rake parallel:prepare` after every migration.
 
 ## 13. Testing strategy
 
@@ -874,8 +904,15 @@ should be settled before their phase is carded:
   prop is the canary).
 - **API/contract**: discriminator `oneOf` with per-branch
   `additionalProperties: false`; 7-layer rule per endpoint.
-- **Live**: full SRG authoring walkthrough (create → import → bucket →
-  mark → release → attach) on the dev server before close (Gate 18).
+- **Live**: the FULL SRG authoring walkthrough (create → import → bucket →
+  mark → release → attach) is **Phase 7's acceptance** — it spans phases
+  2–7 and can only gate the final card (v7.4). Phases 2 and 3 close on
+  scoped partial walkthroughs (2: create + set statuses from the correct
+  vocabulary; 3: pick sources + import).
+- **v7.3 regressions (v7.4)**: an SRG component's comments appear in the
+  triage table (not empty), its dashboard aggregates are populated, and
+  it can be locked and RELEASED — pinned as request specs, since the §8
+  scoping migration is what makes each of these true.
 
 ## 14. Phasing (implementation children of v2-0d2l, carded post-approval)
 
@@ -914,10 +951,17 @@ should be settled before their phase is carded:
    tombstone exclusion; no satisfies/srg_rule eager-loads —
    published_stig.rb:20-36 pulls Rule-only associations), an
    authored-`SrgRule` fetch replacing `component.rules` (export
-   base.rb:195 — the Rule association is EMPTY for an SRG component),
-   and a guard on the `rule.satisfies` call in the export helper
-   (export_helper.rb:286). Plus release readme/changelog removals +
-   local catalog attachment (§8.2). Depends on 2–3.
+   base.rb:195 — the Rule association is EMPTY for an SRG component;
+   **this phase owns that fix**), and guards on ALL THREE Rule-only
+   `rule.satisfies` export/backup sites (xccdf_formatter.rb:124,
+   export_helper.rb:286, backup_serializer.rb:181 — near-duplicate code,
+   a DRY smell the dual-XCCDF rebuild partly retires). Plus release
+   readme/changelog removals + local catalog attachment (§8.2).
+   **Cross-ADR sequencing (v7.4):** the companion dual-XCCDF ADR
+   rebuilds the same formatter (`VersionProfile` + `format_id`) on this
+   same branch — that version-agnostic rebuild lands FIRST and this SRG
+   mode layers onto the rebuilt formatter; the two must not be carded as
+   independent rewrites of one file. Depends on 2–3.
 
 Ordering: 2, 3, 6 independent after 1; 4 after 2; 5 after 4; 7 after 2–3.
 

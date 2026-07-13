@@ -197,6 +197,12 @@ not detached concerns.
 
 1. Extract `VersionProfile` + `format_id`; make `XccdfFormatter` version-agnostic
    (1.1.4 output byte-identical to today). *No behavior change.*
+   **Cross-ADR sequencing (2026-07-13):** this rebuild lands BEFORE the
+   SRG-Component ADR's Phase-7 `Export::Modes::PublishedSrg` — that mode
+   layers onto the rebuilt formatter, and the SRG ADR owns the
+   `component.rules`-empty-for-SRG fetch fix (export base.rb:195) plus the
+   guards on the three Rule-only `rule.satisfies` sites. One rebuild, not
+   two independent rewrites of the same file.
 2. Add `xccdf_version` export option + `V1_2` profile; schema-validate both.
 3. #3 multi-`<ident>` CCIs (conformance fix).
 4. #1 structured `<version time>`/`<status date>` (additive).
