@@ -496,11 +496,13 @@ app/javascript/
 │   └── useCommentTriage.js     # Triage form state + submit
 ├── lib/
 │   └── createVulcanApp.js      # Shared Vue instance factory
-├── mixins/                     # Legacy (freeze, migrate away)
-│   ├── AlertMixin.vue          # → useAlert composable (future)
-│   ├── ReactionToggleMixin.vue # → useCommentReactions
-│   └── DateFormatMixin.vue     # → useDateFormat (future)
+├── utils/
+│   └── normalizeComment.js     # Wire→camelCase comment row normalizer
 └── packs/                      # Entry points (use createVulcanApp)
+
+# The legacy mixins/ directory is GONE — every mixin was migrated to a
+# composable (ReactionToggleMixin → useCommentReactions, AlertMixin →
+# useToast, DateFormatMixin → useDateFormat). Do not reintroduce it.
 ```
 
 ---

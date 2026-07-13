@@ -49,6 +49,25 @@ describe("CommentItem", () => {
       expect(authorLine.exists()).toBe(true);
     });
 
+    it("renders exactly ONE initials avatar — the aside owns it, the author line shows text", () => {
+      const w = mount(CommentItem, {
+        localVue,
+        propsData: { comment: baseComment },
+      });
+      const badges = w.findAllComponents({ name: "UserBadge" });
+      expect(badges.length).toBe(1);
+      expect(w.find("[data-testid='author-name']").text()).toBe("John Doe");
+    });
+
+    it("renders the timestamp exactly once — in the author line, not repeated in the body", () => {
+      const w = mount(CommentItem, {
+        localVue,
+        propsData: { comment: baseComment },
+      });
+      const dates = w.findAll("[data-testid='author-date'], .comment-body small.text-muted");
+      expect(dates.length).toBe(1);
+    });
+
     it("renders SectionLabel when section is present", () => {
       const w = mount(CommentItem, {
         localVue,

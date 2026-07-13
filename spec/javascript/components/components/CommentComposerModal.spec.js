@@ -109,6 +109,8 @@ describe("CommentComposerModal", () => {
       42,
       expect.objectContaining({
         rule_id: 99,
+        // Explicit "all" is load-bearing: the server defaults an omitted
+        // triage_status to "pending", which would hide triaged history.
         triage_status: "all",
       }),
     );

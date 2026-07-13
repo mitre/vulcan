@@ -37,72 +37,58 @@
             :key="comment.id"
             data-testid="comment-entry"
             class="border-left pl-3 py-2 mb-1"
-            :class="triageBgClass(comment.triage_status)"
           >
-            <div class="d-flex justify-content-between align-items-baseline">
-              <div class="d-flex align-items-baseline">
-                <b-form-checkbox
-                  v-if="selectable && !comment.adjudicated_at"
-                  :checked="selectedIds.includes(comment.id)"
-                  class="mr-2"
-                  :aria-label="`Select comment ${comment.id}`"
-                  @change="$emit('toggle-select', comment.id)"
-                />
-                <CommentAuthorLine
-                  :name="comment.author_name"
-                  :commenter-display-name="comment.commenter_display_name"
-                  :email="comment.author_email"
-                  :date="comment.created_at"
-                  layout="inline"
-                />
-              </div>
-              <TriageStatusBadge
-                v-if="comment.triage_status"
-                :status="comment.triage_status"
-                :adjudicated-at="comment.adjudicated_at"
-                :duplicate-of-id="comment.duplicate_of_review_id"
-                :addressed-by-rule-id="comment.addressed_by_rule_id"
-                :addressed-by-rule-name="comment.addressed_by_rule_name"
-              />
-            </div>
-            <small v-if="comment.parent_rule_displayed_name" class="text-muted d-block mb-1">
-              <b-icon icon="arrow-return-right" class="mr-1" />
-              Posted on {{ comment.rule_displayed_name }}
-            </small>
-            <div v-if="comment.comment && comment.comment.length > 200" class="mb-1 mt-1">
-              {{ expanded[comment.id] ? comment.comment : comment.comment.substring(0, 200) + "…" }}
-              <a
-                href="#"
-                class="text-primary ml-1"
-                @click.prevent="$set(expanded, comment.id, !expanded[comment.id])"
-              >
-                {{ expanded[comment.id] ? "show less" : "show more" }}
-              </a>
-            </div>
-            <p v-else class="mb-1 mt-1">{{ comment.comment }}</p>
-            <div class="d-flex align-items-center">
-              <ReactionButtons
-                v-if="comment.reactions"
-                :review-id="comment.id"
-                :reactions="comment.reactions"
-                @toggle="(kind) => toggleCommentReaction(comment, kind)"
-              />
-              <CommentThread
-                v-if="comment.responses_count > 0"
-                :parent-review-id="comment.id"
-                :responses-count="comment.responses_count"
-                :can-reply="false"
-                class="ml-2"
-              />
-              <b-button
-                size="sm"
-                variant="outline-primary"
-                class="ml-auto"
-                @click="$emit('triage', comment)"
-              >
-                Triage
-              </b-button>
-            </div>
+            <CommentItem :comment="normalize(comment)" :can-reply="false">
+              <template #header="{ comment: c }">
+                <div class="d-flex align-items-baseline mb-1">
+                  <b-form-checkbox
+                    v-if="selectable && !c.adjudicatedAt"
+                    :checked="selectedIds.includes(c.id)"
+                    class="mr-2"
+                    :aria-label="`Select comment ${c.id}`"
+                    @change="$emit('toggle-select', c.id)"
+                  />
+                  <CommentAuthorLine
+                    :name="c.authorName"
+                    :commenter-display-name="c.authorName"
+                    :email="c.authorEmail"
+                    :date="c.createdAt"
+                    layout="inline"
+                    :show-badge="false"
+                  />
+                </div>
+                <small v-if="c.parentRuleDisplayedName" class="text-muted d-block mb-1">
+                  <b-icon icon="arrow-return-right" class="mr-1" />
+                  Posted on {{ c.ruleDisplayedName }}
+                </small>
+              </template>
+              <template #actions="{ comment: c }">
+                <div class="d-flex align-items-center">
+                  <ReactionButtons
+                    v-if="c.reactions"
+                    :review-id="c.id"
+                    :reactions="c.reactions"
+                    @toggle="(kind) => toggleCommentReaction(comment, kind)"
+                  />
+                  <CommentThread
+                    v-if="c.responsesCount > 0"
+                    :parent-review-id="c.id"
+                    :responses-count="c.responsesCount"
+                    :can-reply="false"
+                    class="ml-2"
+                  />
+                  <b-button
+                    size="sm"
+                    variant="outline-primary"
+                    class="ml-auto"
+                    data-testid="comment-triage-btn"
+                    @click="$emit('triage', comment)"
+                  >
+                    Triage
+                  </b-button>
+                </div>
+              </template>
+            </CommentItem>
           </div>
         </div>
       </div>
@@ -112,18 +98,18 @@
 
 <script>
 import { useCommentReactions } from "../../composables/useCommentReactions";
-import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
+import CommentItem from "../shared/CommentItem.vue";
 import ReactionButtons from "../shared/ReactionButtons.vue";
 import CommentThread from "../shared/CommentThread.vue";
 import CommentAuthorLine from "../shared/CommentAuthorLine.vue";
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
-import { triageBgClass as getTriageBgClass } from "../../utils/triageBgClass";
 import { sectionIndex } from "../../utils/sectionSortOrder";
 import { groupCommentsByRule } from "../../utils/groupCommentsByRule";
+import { normalizeComment } from "../../utils/normalizeComment";
 
 export default {
   name: "CommentsByRule",
-  components: { TriageStatusBadge, ReactionButtons, CommentThread, CommentAuthorLine },
+  components: { CommentItem, ReactionButtons, CommentThread, CommentAuthorLine },
   props: {
     rows: { type: Array, required: true },
     allExpanded: { type: Boolean, default: false },
@@ -137,7 +123,6 @@ export default {
   data() {
     return {
       expandedGroups: {},
-      expanded: {},
     };
   },
   computed: {
@@ -193,8 +178,8 @@ export default {
         this.$set(this.expandedGroups, g.ruleName, false);
       });
     },
-    triageBgClass(status) {
-      return getTriageBgClass(status);
+    normalize(comment) {
+      return normalizeComment(comment);
     },
     toggleCommentReaction(comment, kind) {
       const prev = { ...comment.reactions };

@@ -213,4 +213,136 @@ describe("CommentList", () => {
       expect(w.find(".pagination-info").text()).toBe("2 total");
     });
   });
+
+  // ── Container capabilities exercised by the first real consumer ──────
+
+  describe("scope filters", () => {
+    it("always sends an explicit triage_status — the server defaults omissions to pending", async () => {
+      mountWithSlot();
+      await new Promise((r) => setTimeout(r, 0));
+      expect(getComments).toHaveBeenCalledWith(
+        38,
+        expect.objectContaining({ triage_status: "all" }),
+      );
+    });
+
+    it("passes filterRuleId as rule_id in fetch params", async () => {
+      mountWithSlot({ filterRuleId: 907 });
+      await new Promise((r) => setTimeout(r, 0));
+      expect(getComments).toHaveBeenCalledWith(38, expect.objectContaining({ rule_id: 907 }));
+    });
+
+    it("passes commentableType as commentable_type in fetch params", async () => {
+      mountWithSlot({ commentableType: "component" });
+      await new Promise((r) => setTimeout(r, 0));
+      expect(getComments).toHaveBeenCalledWith(
+        38,
+        expect.objectContaining({ commentable_type: "component" }),
+      );
+    });
+
+    it("re-fetches when filterRuleId changes", async () => {
+      const w = mountWithSlot({ filterRuleId: 907 });
+      await new Promise((r) => setTimeout(r, 0));
+      await w.setProps({ filterRuleId: 908 });
+      await new Promise((r) => setTimeout(r, 0));
+      expect(getComments).toHaveBeenCalledTimes(2);
+      expect(getComments).toHaveBeenLastCalledWith(38, expect.objectContaining({ rule_id: 908 }));
+    });
+  });
+
+  describe("display cap (maxRows)", () => {
+    it("caps rendered items at maxRows while keeping full totals", async () => {
+      const manyRows = Array.from({ length: 7 }, (_, i) => ({
+        ...mockResponse.data.rows[0],
+        id: 500 + i,
+      }));
+      getComments.mockResolvedValue({
+        data: {
+          rows: manyRows,
+          pagination: { page: 1, per_page: 25, total: 7, total_comments: 9 },
+          status_counts: { pending: 7 },
+        },
+      });
+
+      const w = mountWithSlot(
+        { maxRows: 5 },
+        { header: '<div class="test-header">{{ props.totalComments }} comments</div>' },
+      );
+      await new Promise((r) => setTimeout(r, 0));
+      await w.vm.$nextTick();
+
+      expect(w.findAll(".test-item").length).toBe(5);
+      expect(w.find(".test-header").text()).toBe("9 comments");
+    });
+  });
+
+  describe("#header scoped slot", () => {
+    it("exposes rows, total, and totalComments before the items", async () => {
+      const w = mountWithSlot(
+        {},
+        {
+          header:
+            '<div class="test-header">{{ props.rows.length }}|{{ props.total }}|{{ props.totalComments }}</div>',
+        },
+      );
+      await new Promise((r) => setTimeout(r, 0));
+      await w.vm.$nextTick();
+
+      // total_comments absent in this fixture — falls back to total
+      expect(w.find(".test-header").text()).toBe("2|2|2");
+      const html = w.html();
+      expect(html.indexOf("test-header")).toBeLessThan(html.indexOf("test-item"));
+    });
+  });
+
+  describe("highlight dimming only when it distinguishes", () => {
+    it("dims nothing when NO row matches the highlight section", async () => {
+      // All fixture rows are check_content/fixtext — highlight a section
+      // none of them carry. An all-dimmed list communicates nothing and
+      // reads as a disabled overlay, so dimming must not apply at all.
+      const w = mountWithSlot(
+        { highlightSection: "status" },
+        { item: '<div class="test-item" :data-dimmed="String(props.dimmed)"></div>' },
+      );
+      await new Promise((r) => setTimeout(r, 0));
+      await w.vm.$nextTick();
+
+      const flags = w.findAll(".test-item").wrappers.map((el) => el.attributes("data-dimmed"));
+      expect(flags).toEqual(["false", "false"]);
+    });
+
+    it("dims only the non-matching rows when at least one row matches", async () => {
+      const w = mountWithSlot(
+        { highlightSection: "check_content" },
+        { item: '<div class="test-item" :data-dimmed="String(props.dimmed)"></div>' },
+      );
+      await new Promise((r) => setTimeout(r, 0));
+      await w.vm.$nextTick();
+
+      const flags = w.findAll(".test-item").wrappers.map((el) => el.attributes("data-dimmed"));
+      expect(flags).toEqual(["false", "true"]);
+    });
+  });
+
+  describe("row patching (updateRow)", () => {
+    it("exposes updateRow through the item slot scope and re-renders the patch", async () => {
+      const w = mountWithSlot(
+        {},
+        {
+          item: '<div class="test-item" :data-up="props.comment.reactions.up" :data-fn="typeof props.updateRow"></div>',
+        },
+      );
+      await new Promise((r) => setTimeout(r, 0));
+      await w.vm.$nextTick();
+
+      expect(w.findAll(".test-item").at(0).attributes("data-fn")).toBe("function");
+      expect(w.findAll(".test-item").at(0).attributes("data-up")).toBe("1");
+
+      w.vm.updateRow(142, { reactions: { up: 4, down: 0, mine: "up" } });
+      await w.vm.$nextTick();
+
+      expect(w.findAll(".test-item").at(0).attributes("data-up")).toBe("4");
+    });
+  });
 });

@@ -13,6 +13,7 @@
             :email="comment.authorEmail"
             :date="comment.createdAt"
             layout="inline"
+            :show-badge="false"
           />
           <SectionLabel
             v-if="comment.section"
@@ -34,12 +35,10 @@
         />
       </slot>
 
+      <!-- No created-at here: the default header's author line already
+           shows the timestamp; passing it again renders it twice. -->
       <slot name="body" :comment="comment">
-        <CommentBody
-          :text="comment.text"
-          :created-at="comment.createdAt"
-          :is-imported="comment.isImported"
-        />
+        <CommentBody :text="comment.text" :is-imported="comment.isImported" />
       </slot>
 
       <slot name="actions" :comment="comment">

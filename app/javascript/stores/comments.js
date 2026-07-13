@@ -1,6 +1,7 @@
 import { ref, computed } from "vue";
 import { defineStore } from "pinia";
 import { getComments } from "../api/componentsApi";
+import { normalizeComment } from "../utils/normalizeComment";
 import { getProjectComments } from "../api/projectsApi";
 import { getUserComments } from "../api/usersApi";
 import {
@@ -28,35 +29,6 @@ export const useCommentsStore = defineStore("comments", () => {
   const commentCount = computed(() =>
     Object.values(cache.value).reduce((sum, v) => sum + (v.rows?.length || 0), 0),
   );
-
-  function normalizeComment(raw) {
-    return {
-      ...raw,
-      ruleId: raw.rule_id,
-      authorName: raw.author_name || raw.commenter_display_name || "",
-      authorEmail: raw.commenter_email ?? null,
-      text: raw.comment ?? "",
-      section: raw.section ?? null,
-      triageStatus: raw.triage_status ?? null,
-      createdAt: raw.created_at ?? null,
-      // null (not {}) when absent — {} passes CommentThread's v-if but
-      // fails ReactionButtons' validator. The wire always sends
-      // { up, down, mine } when reaction data exists (Reaction.summary).
-      reactions: raw.reactions ?? null,
-      responsesCount: raw.responses_count ?? 0,
-      isImported: raw.commenter_imported ?? false,
-      duplicateOfReviewId: raw.duplicate_of_review_id ?? null,
-      addressedByRuleId: raw.addressed_by_rule_id ?? null,
-      addressedByRuleName: raw.addressed_by_rule_name ?? null,
-      adjudicatedAt: raw.adjudicated_at ?? null,
-      ruleDisplayedName: raw.rule_displayed_name ?? null,
-      commentableType: raw.commentable_type ?? null,
-      ruleContent: raw.rule_content ?? null,
-      respondingToReviewId: raw.responding_to_review_id ?? null,
-      groupRuleDisplayedName: raw.group_rule_displayed_name ?? null,
-      parentRuleDisplayedName: raw.parent_rule_displayed_name ?? null,
-    };
-  }
 
   function normalizePagination(raw) {
     if (!raw) return raw;

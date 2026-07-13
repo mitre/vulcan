@@ -34,6 +34,15 @@ describe("CommentAuthorLine", () => {
       expect(badge.props("email")).toBe("josborne@chainguard.dev");
     });
 
+    it("hides the UserBadge when show-badge is false (host renders its own avatar)", () => {
+      const wrapper = mount(CommentAuthorLine, {
+        localVue,
+        propsData: { ...baseProps, layout: "inline", showBadge: false },
+      });
+      expect(wrapper.findComponent({ name: "UserBadge" }).exists()).toBe(false);
+      expect(wrapper.text()).toContain("John Osborne");
+    });
+
     it("renders initials in the avatar", () => {
       const wrapper = mount(CommentAuthorLine, {
         localVue,

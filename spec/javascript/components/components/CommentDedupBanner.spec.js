@@ -169,7 +169,7 @@ describe("CommentDedupBanner", () => {
     it("dims comments that do not match the selected section", async () => {
       const w = await mountWith("check_content");
       await w.find("button").trigger("click");
-      const items = w.findAll("li");
+      const items = w.findAll(".dedup-row");
       expect(items.at(0).classes()).not.toContain("dedup-dimmed"); // check_content matches
       expect(items.at(1).classes()).toContain("dedup-dimmed"); // fixtext does not match
       expect(items.at(2).classes()).toContain("dedup-dimmed"); // null does not match
@@ -202,18 +202,19 @@ describe("CommentDedupBanner", () => {
       propsData: { ...baseProps, section: null },
     });
     await flushPromises(w);
-    expect(w.vm.totalComments).toBe(0);
-    expect(w.vm.total).toBe(0);
-    expect(w.vm.rows).toEqual([]);
+    // No alert header (zero comments), no items, no crash.
+    expect(w.find(".alert").exists()).toBe(false);
+    expect(w.findAllComponents({ name: "CommentItem" }).length).toBe(0);
   });
 
-  it("recomputes inSection when section prop changes (no refetch)", async () => {
+  it("recomputes the section count in the header when section changes (no refetch)", async () => {
     const w = await mountWith("check_content");
-    expect(w.vm.inSection).toBe(1); // 1 row in check_content
+    expect(w.find(".alert").text()).toContain("(1 on Check)");
     await w.setProps({ section: "fixtext" });
-    expect(w.vm.inSection).toBe(1); // 1 row in fixtext
+    expect(w.find(".alert").text()).toContain("(1 on Fix)");
     await w.setProps({ section: null });
-    expect(w.vm.inSection).toBe(0); // null section never matches
+    expect(w.find(".alert").text()).not.toMatch(/\(\d+ on /);
+    expect(getComments).toHaveBeenCalledTimes(1); // section changes never refetch
   });
 
   it("fetches via store.fetchComments, not direct getComments API", async () => {
@@ -251,5 +252,38 @@ describe("CommentDedupBanner", () => {
     const first = w.findComponent({ name: "CommentItem" });
     expect(first.props("comment").id).toBe(1);
     expect(first.props("comment").authorName).toBe("John Doe");
+  });
+
+  // ── CommentList container delegation ─────────────────────────────
+
+  describe("CommentList container delegation", () => {
+    it("fetches and renders rows through the CommentList container", async () => {
+      const w = await mountWith("check_content");
+      const list = w.findComponent({ name: "CommentList" });
+      expect(list.exists()).toBe(true);
+      expect(list.props("componentId")).toBe(8);
+      expect(list.props("filterRuleId")).toBe(2976);
+      w.vm.expanded = true;
+      await w.vm.$nextTick();
+      expect(w.findAllComponents({ name: "CommentItem" }).length).toBe(3);
+    });
+
+    it("applies a reaction update through the container's row state", async () => {
+      const baseApi = (await import("@/api/baseApi")).default;
+      baseApi.post.mockResolvedValueOnce({
+        data: { reactions: { up: 1, down: 0, mine: "up" } },
+      });
+
+      const w = await mountWith("check_content");
+      w.vm.expanded = true;
+      await w.vm.$nextTick();
+      const first = w.findComponent({ name: "CommentItem" });
+      expect(first.props("comment").reactions.up).toBe(0);
+
+      first.vm.$emit("toggle-reaction", "up");
+      await flushPromises(w);
+
+      expect(w.findComponent({ name: "CommentItem" }).props("comment").reactions.up).toBe(1);
+    });
   });
 });

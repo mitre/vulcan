@@ -122,7 +122,9 @@ describe("CommentsByRule", () => {
     ];
     const w = mount(CommentsByRule, { propsData: { rows } });
     w.vm.toggleRule("R1");
-    expect(w.find("[data-testid='comment-entry'].triage-bg--concur").exists()).toBe(true);
+    expect(w.find("[data-testid='comment-entry'] .comment-item.triage-bg--concur").exists()).toBe(
+      true,
+    );
   });
 
   it("applies triage-bg--non_concur class to declined comments", () => {
@@ -142,7 +144,9 @@ describe("CommentsByRule", () => {
     ];
     const w = mount(CommentsByRule, { propsData: { rows } });
     w.vm.toggleRule("R1");
-    expect(w.find("[data-testid='comment-entry'].triage-bg--non_concur").exists()).toBe(true);
+    expect(
+      w.find("[data-testid='comment-entry'] .comment-item.triage-bg--non_concur").exists(),
+    ).toBe(true);
   });
 
   it("does not apply triage-bg class to pending comments", () => {
@@ -162,9 +166,10 @@ describe("CommentsByRule", () => {
     ];
     const w = mount(CommentsByRule, { propsData: { rows: allPending } });
     w.vm.toggleRule("R1");
-    const entries = w.findAll("[data-testid='comment-entry']");
-    entries.wrappers.forEach((entry) => {
-      expect(entry.classes().some((c) => c.startsWith("triage-bg--"))).toBe(false);
+    const items = w.findAll("[data-testid='comment-entry'] .comment-item");
+    expect(items.length).toBe(1);
+    items.wrappers.forEach((item) => {
+      expect(item.classes().some((c) => c.startsWith("triage-bg--"))).toBe(false);
     });
   });
 
@@ -273,5 +278,48 @@ describe("CommentsByRule", () => {
 
     await header.trigger("click");
     expect(content.isVisible()).toBe(false);
+  });
+
+  // ── Shared CommentItem adoption ────────────────────────────────────
+
+  describe("CommentItem adoption", () => {
+    it("renders a CommentItem for each comment in the expanded group", async () => {
+      await wrapper.find("[data-testid='rule-group-header']").trigger("click");
+      const firstGroup = wrapper.find("[data-testid='rule-group-content']");
+      const items = firstGroup.findAllComponents({ name: "CommentItem" });
+      expect(items.length).toBe(3);
+    });
+
+    it("emits triage with the row when the Triage button is clicked", async () => {
+      await wrapper.find("[data-testid='rule-group-header']").trigger("click");
+      const btn = wrapper.find("[data-testid='comment-triage-btn']");
+      await btn.trigger("click");
+      expect(wrapper.emitted("triage")).toBeTruthy();
+      expect(wrapper.emitted("triage")[0][0].id).toBe(1);
+    });
+
+    it("emits toggle-select from the selection checkbox when selectable", async () => {
+      const w = mount(CommentsByRule, {
+        propsData: { rows: mockRows, selectable: true, allExpanded: true },
+      });
+      await w.vm.$nextTick();
+      const checkbox = w.find("input[type='checkbox']");
+      expect(checkbox.exists()).toBe(true);
+      await checkbox.trigger("change");
+      expect(w.emitted("toggle-select")).toBeTruthy();
+      expect(w.emitted("toggle-select")[0]).toEqual([1]);
+    });
+
+    it("shows the posted-on note for comments redirected from a child rule", async () => {
+      const rows = [
+        {
+          ...mockRows[0],
+          parent_rule_displayed_name: "CNTR-01-000009",
+        },
+      ];
+      const w = mount(CommentsByRule, { propsData: { rows, allExpanded: true } });
+      await w.vm.$nextTick();
+      expect(w.text()).toContain("Posted on CNTR-01-000001");
+    });
   });
 });

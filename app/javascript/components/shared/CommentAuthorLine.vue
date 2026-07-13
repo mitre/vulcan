@@ -16,7 +16,8 @@
     </template>
 
     <template v-else>
-      <UserBadge :name="displayName" :email="email" />
+      <UserBadge v-if="showBadge" :name="displayName" :email="email" />
+      <span v-else class="font-weight-bold" data-testid="author-name">{{ displayName }}</span>
       <small v-if="date" class="text-muted ml-2" data-testid="author-date">
         {{ friendlyDateTime(date) }}
       </small>
@@ -41,6 +42,10 @@ export default {
       default: "inline",
       validator: (v) => ["inline", "block", "cell"].includes(v),
     },
+    // Hosts that render their own avatar (CommentItem's media aside)
+    // set this false so the inline layout shows the name as text
+    // instead of a second initials badge.
+    showBadge: { type: Boolean, default: true },
   },
   setup() {
     const { friendlyDateTime } = useDateFormat();
