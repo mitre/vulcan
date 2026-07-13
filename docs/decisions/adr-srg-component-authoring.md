@@ -1,25 +1,30 @@
 # ADR: Generalized XCCDF Document Authoring — SRG as the First New Profile
 
-- **Status:** DRAFT v6 — v5 core (authored SRG requirements are **expanded
-  `SrgRule`s**, not `Rule`s behind a policy layer) stands unchanged. v6 adds
-  Will's scoping (§0.1): the framing generalizes from "add SRG support" to
-  "author documents off **any** XCCDF upstream," and the **user workflow**
-  (§2.1) is made explicit. Awaiting Aaron's read + approval.
+- **Status:** DRAFT v7 — v5 core (authored SRG requirements are **expanded
+  `SrgRule`s**, not `Rule`s behind a policy layer) stands unchanged; v6 added
+  Will's scoping (§0.1) + user workflow (§2.1). v7 (Aaron, 2026-07-12)
+  resolves ALL of Will's review items 4–8 (§10): per-profile status
+  vocabularies; **relocation redesigned as a first-class record + soft-delete
+  tombstone — the `Moved` status is REMOVED** (revises §0.2/§0.3, see §4/§6);
+  copy-on-release with a type-scoped XOR constraint (§8.2); primary parent =
+  `based_on` ∈ declared parents (§5); delete-and-recreate accepted with the
+  pre-delete backup mitigation (§2.1.4/§2.1.5). Awaiting Will's review of v7.
 - **Date:** 2026-07-10 (v2 per 3-agent swarm; v3 folded Aaron's eight fork
   decisions; v4 per readiness swarm; v5 replaced the storage core);
-  2026-07-12 (v6 scoping + workflow, Will)
-- **Deciders:** Aaron Lippold (with STIG-lead input, 2026-07-10); Will Dower
-  (scoping + workflow, 2026-07-12)
+  2026-07-12 (v6 scoping + workflow, Will; v7 review resolutions, Aaron)
+- **Deciders:** Aaron Lippold (with STIG-lead input, 2026-07-10; review
+  resolutions 2026-07-12); Will Dower (scoping + workflow, 2026-07-12)
 - **Companion:** `adr-satisfaction-restructuring.md` (v2-ulhw) — two
-  distinct primitives, §9.
+  distinct primitives, §9. `adr-dual-xccdf-export.md` — the export chapter
+  of this initiative (same branch).
 
 ## 0. Decisions (Aaron, 2026-07-10 — all recorded on card v2-0d2l.1)
 
 | # | Fork | Decision |
 |---|---|---|
 | 1 | Storage model | **Authored SRG requirements are `SrgRule`s, expanded with component linkage.** The prior Rule+`document_type`-policy design is rejected (§11) — it required a release-time type converter, which was the tell it stored the concept in the wrong type. |
-| 2 | Moved mechanics | **`Moved` is a third SRG terminal status value**; the marker FK carries the target. Completion = not-NYD stays uniform. |
-| 3 | Post-move source rule | **Tombstone**: stays `Moved` forever in Vulcan; excluded from exported XCCDF; documented as a removal in that release's readme/changelog; unmentioned in the following release. |
+| 2 | Moved mechanics | ~~`Moved` as a third SRG terminal status~~ **REVISED (v7, Aaron 2026-07-12, resolving §10.5): there is NO `Moved` status.** Relocation is a first-class `requirement_relocations` record (pending = the R4 marker; executed = the move). SRG vocabulary = NYD / Applicable / Not Applicable. Completion = not-NYD over LIVE rows stays uniform — moved rows leave the denominator. See §6. |
+| 3 | Post-move source rule | **Tombstone via the EXISTING soft-delete** (v7): executing a relocation soft-deletes the source row in the same transaction — excluded from export/counts/UI by the existing `deleted_at` default scope (zero new query dimensions). Reviews/comments are preserved frozen on the tombstone (a move is not an erasure). Documented as a removal in that release's readme/changelog (from executed relocation records); unmentioned in the following release. |
 | 4 | Parent modeling | **Primary `based_on` + `component_source_srgs` join table.** Multi-parent display is a follow-on card. |
 | 5 | Core recognition | **DB flag** `security_requirements_guides.core`. Provenance: the core SRGs are **not on cyber.mil** — they are working documents of the ~4-person DISA SRG-author community (Aaron is one); they enter Vulcan via **upload**, and the identifiers come from Aaron and the documents themselves. |
 | 6 | Creation modes | **Both, defaulting to full union-import** from all declared cores (every exclusion becomes an audited NA); selective mode = the same import machinery behind a requirement picker, not a second code path. |
@@ -207,11 +212,46 @@ the UI:
 
 - The creation dialog must make the choice legible and hard to get wrong
   (short plain-language description of each, not just two radio buttons).
-- Deleting loses comments/reviews/history on that component.
-- **Open question (§10.6):** is delete-and-recreate acceptable, or does a
-  mis-typed component need a conversion path? Recommend accepting it for v1
-  and revisiting only if it bites — but it must be a *decision*, not an
-  omission.
+- Deleting loses the live component — but the pre-delete backup (§2.1.5)
+  carries its content and reviews/comments out, and restore brings them
+  back, so the practical cost of the remedy is near-zero.
+- **DECIDED (Aaron, 2026-07-12, closing §10.6):** delete-and-recreate is
+  accepted for v1; no conversion path. Revisit only if it bites in
+  practice. Mitigated by §2.1.5.
+
+### 2.1.5 Pre-delete backups (Aaron, 2026-07-12)
+
+A general Vulcan safety feature (own epic — not SRG-specific) that this
+workflow depends on for its remedy. Recorded here because §2.1.4 is its
+motivating case; it applies to every destructive delete.
+
+**Decision: destructive delete actions offer "Create a backup first"
+(default ON). The backup is the EXISTING JSON archive, stored server-side
+with a retention window, restorable through the EXISTING import path.**
+No new serialization format, no new restore machinery — the feature is a
+retention shell around export/import that already round-trips
+(`BackupSerializer` → zip; `create_from_backup` / archive import restore).
+
+| Aspect | Design | Why |
+|---|---|---|
+| Artifact | the existing component/project JSON archive (zip) | already round-trips; one format, one importer; zip-bomb defense already on the import path |
+| Storage | `bytea` column in Postgres (`deletion_backups.archive`) | Heroku ephemeral filesystem rules out disk; multi-MB-in-DB has precedent (`stigs.xml` / `srgs.xml`); rides DB backup/encryption posture |
+| Schema | `deletion_backups`: `archive`, `record_type` (string — no FK/polymorphic association, the target row is gone by design), `record_id`, `metadata` jsonb (name, prefix, version, project name, counts — for listing after the source is gone), `created_by_id`, `expires_at` (indexed), timestamps | list/download/restore must work with zero joins to deleted data |
+| Expiry | `expires_at = created_at + Settings.backups.retention_days.days`; **lazy purge** (`purge_expired!` on admin-list access and on each create) | no background-job dependency — same lazy pattern as PAT idle-revocation; moves to a daily job when SolidQueue lands (v2-l0yx) |
+| Settings | `backups.pre_delete_enabled` (default **true**), `backups.retention_days` (default **60**, min 1) via `VULCAN_BACKUP_RETENTION_DAYS` in `vulcan.default.yml` | operator-tunable; no magic zero values |
+| Scope | Component delete ✅, Project delete ✅. Rule delete ❌ (already a recoverable soft-delete). Catalog SRG/STIG delete ❌ (re-uploadable from source XML). | backups guard the only truly destructive paths |
+| Flow | archive generated **before** destroy; backup row insert + destroy in **one transaction** (destroy fails → backup rolls back too — never a "backup" of a live record). **Fail-closed:** if archive generation fails, the delete ABORTS — the user explicitly asked for a safety net; silently deleting without one is the worst outcome. | correctness over convenience |
+| Access | creator + site admins: list ("Deleted-item backups": name, type, deleted-by, expires-in, size), download (zip), restore (existing import flow, into a chosen project for components), delete-now | matches export-endpoint sensitivity; archives carry full component content |
+| Audit | create / download / restore / delete-now of a backup are audited | deletion-with-backup is a compliance-relevant action |
+
+**Honest limits (stated, not discovered later):** the archive is a
+**content lifeboat, not an identity-preserving undo**. It carries rules,
+descriptions, checks, and reviews/comments; the `audited` trail of the
+deleted record is *not* in the archive — it survives independently in the
+audits table (audited retains rows after destroy), and a restored
+component starts a fresh audit trail. Build-time verify-point: confirm the
+archive's review/history coverage against what §2.1.4 promises before
+closing the implementing card.
 
 ## 2.2 The profile seam (per §0.1 amendment A)
 
@@ -305,24 +345,30 @@ JavaScript:
 - Phase 2 AC: grep for prefix/substring matches on `'Applicable'` that the
   new bare value would wrongly satisfy.
 
-## 4. Status model — ternary state, binary decision (R1)
+## 4. Status model — per-profile vocabularies (R1; v7 resolves §10.4/§10.5)
 
-- New status **values** `Applicable` (Phase 2) and `Moved` (Phase 4,
-  atomic with its target invariant) join `RuleConstants::STATUSES`.
-- **Validation scoping**: `BaseRule` keeps the superset inclusion (all
-  branches; imports unaffected). The SRG-authoring subset —
-  `[NYD, Applicable, Not Applicable, Moved]` — is a **`SrgRule`
-  validation guarded on `component_id` presence** (catalog-imported
-  `SrgRule`s are untouched). `Rule` needs no change at all: STIG statuses
-  remain exactly today's five, enforced as today.
-- **Completion** = not-NYD, uniform across types (dashboards unchanged).
+- **Per-profile status vocabularies (v7, resolving §10.4):** each authoring
+  profile owns its status set in the profile registry (§2.2) — STIG keeps
+  today's five; **SRG = `[NYD, Applicable, Not Applicable]`** (no `Moved` —
+  relocation is a record, not a status; §6). No bare `Applicable` ever
+  joins a shared flat list. Evidence for the guard posture: an audit found
+  **zero substring/prefix status matching in production code** (all
+  comparisons are exact full-string), so per-profile separation is
+  prevention, not rescue; enforcement is exact-match `inclusion`
+  validation per profile, not a source-grep spec.
+- **Validation scoping**: profile-vocabulary validation applies to
+  **component-linked (authored) rows only** — catalog-imported `SrgRule`s
+  keep the legacy superset inclusion so published-XML statuses never break
+  ingest. `Rule` needs no change at all: STIG statuses remain exactly
+  today's five, enforced as today.
+- **Completion** = not-NYD over **live** rows, uniform across types
+  (dashboards unchanged). Relocated (tombstoned) rows leave the
+  denominator — a document is done when every *remaining* requirement is
+  decided.
 - **Buckets**: STIG-kind keeps five; SRG-kind reports
-  `{ not_yet_determined, applicable, not_applicable, moved }`, computed
-  from the component's `SrgRule`s.
-- **Post-move tombstone (Aaron, §0.3):** after the executor runs, the
-  source `SrgRule` stays `Moved` — permanent audited disposition; excluded
-  from XCCDF export; listed as a removal in that release's
-  readme/changelog; silent in the next release.
+  `{ not_yet_determined, applicable, not_applicable }` from live
+  `SrgRule`s, plus a separate `moved_out` count from executed relocation
+  records (it is a lifecycle fact, not a status bucket).
 - **API shape**: add `document_type` to stats/workflow responses;
   `rules_by_status` modeled as **`oneOf` + `document_type` discriminator**
   with `additionalProperties: false` per branch (a type-keyed loose map
@@ -339,6 +385,13 @@ JavaScript:
 - `based_on` stays the primary parent for both kinds (NOT NULL — zero
   change to the 53 existing read sites; primary-only display until the
   follow-on display card, which now serves both kinds).
+- **Primary-parent selection (v7, resolving §10.8): `based_on` IS the
+  designation — no `primary` flag on the join table.** The multi-select
+  picker includes a primary radio, **default = first selected**; the user
+  may change it post-create only among declared parents. One validation
+  ties the mechanisms: `based_on` must be ∈ `component_source_srgs`.
+  Changing primary affects display/family defaults only — imports were
+  unioned at creation and do not re-run.
 - **Invariant — family-level, version-tolerant, both kinds**: every
   requirement's source (`Rule#srg_rule` / authored `SrgRule#derived_from`)
   belongs to a parent-set *family* (exact-record matching is violated by
@@ -413,23 +466,50 @@ Project aggregates report **per-document-type sections**
 type-agnostic numbers (rule_count, completion, locks) stay top-level. No
 cross-type bucket collapse anywhere (`Project#details` included).
 
-## 6. Relocation marker (R4; Aaron §0.2/§0.8)
+## 6. Relocation as a first-class record (R4; v7 REDESIGN resolving §10.5)
 
-- `base_rules.relocation_target_type/_id` — polymorphic
-  (`SecurityRequirementsGuide` = "next release of that family", or
-  `Component` = a specific in-progress document). Columns live on the
-  shared table; **used only by `SrgRule`** (structural + validated).
-- `Moved`⇄target invariant: setting `Moved` requires a target; clearing
-  the target reverts the status (model-enforced).
-- Family resolution: queries resolve the target's family (the identity
-  `VersionSortable` groups by) so markers survive supersession.
+**v7 replaces the marker-columns + `Moved`-status design.** Status answers
+"what did we decide"; relocation answers "where is it going" — Will's §10.5
+was right that fusing them (the two-way `Moved`⇄target invariant) was the
+tell of two concepts in one column. The redesign:
+
+```
+requirement_relocations
+  source_rule_id       NOT NULL, FK base_rules
+  target_family_token  NOT NULL                  -- 'CTR', 'GPOS', …
+  target_rule_id       NULL, FK base_rules       -- filled when landed
+  requested_by_id      FK users
+  executed_at          NULL = pending            -- the lifecycle
+  + unique partial index ON source_rule_id WHERE executed_at IS NULL
+```
+
+- **Pending** (`executed_at` NULL) IS the R4 marker: row badge; per-family
+  backlog = `pending.where(target_family_token:)`; creation/open-time
+  intake prompt (§0.8). Un-mark = destroy the pending record (audited);
+  executed records are immutable.
+- **Executed** = ONE transaction: create/link the target requirement →
+  set `target_rule_id` → stamp `executed_at` → **soft-delete the source
+  row** (the app's existing delete semantics) → recount `rules_count`
+  via `Component.reset_counters` (the counter_cache misses soft-deletes —
+  the standalone bug was found and fixed during this design pass).
+- **Reviews/comments are preserved, frozen** on the tombstoned row (v7
+  decision): they leave active comment views automatically (those joins
+  already exclude `deleted_at`) but survive in the DB and audit trail —
+  a move is not an erasure.
+- **Visibility (v7 decision): history-only.** Moved-out requirements do
+  not appear in the editor list (consistent with delete semantics); the
+  story lives in the relocation backlog/history view and the release
+  changelog. No "Moved out" editor section in v1.
+- The single remaining invariant is **one-directional** (`executed_at` ⇒
+  source soft-deleted), enforced by the executor transaction + model
+  validation — no bidirectional coupling.
 - Dangling targets: nullify + audit note on target destruction; orphan
-  sweep owned by the Phase 4 card.
-- Audit: authored `SrgRule`s get `VulcanAuditable` wiring in Phase 1 (the
-  `Rule` class's except-list pattern), so marker changes ride the trail.
+  sweep owned by the relocation phase card.
+- Audit: authored `SrgRule`s get `VulcanAuditable` wiring in Phase 1;
+  relocation create/un-mark/execute are audited.
 - **Intake (both, §0.8)**: standing per-family backlog view + creation/
   open-time prompt ("N requirements are marked for this family") seeding
-  the Phase 5 executor.
+  the executor phase. SRG components only (source side), per §0.8.
 
 ## 7. Satisfied-By exclusion (R3) — structural
 
@@ -488,11 +568,24 @@ filters client-side; no reference-benchmark concept exists):
 - **Export** (Phase 7): released SRG component → SRG XCCDF for the
   official DISA flow (tombstones excluded; removals in the release
   readme/changelog).
-- **Local catalog attachment on release**: releasing an SRG component
-  creates its catalog entry — a `SecurityRequirementsGuide` row that the
-  component's authored `SrgRule`s attach to (they already ARE the right
-  type; no conversion, just linkage) — so other components can base on it
-  immediately.
+- **Local catalog attachment on release = COPY, never dual-link (v7,
+  resolving §10.7).** Releasing an SRG component creates its catalog
+  `SecurityRequirementsGuide` row, generates the SRG XCCDF via the
+  exporter and stores it on that row (the released entry is shaped
+  identically to an uploaded one — basing, is-latest, and seeds work
+  unchanged), then **amoeba-copies each LIVE authored `SrgRule`** into a
+  fresh catalog row (`security_requirements_guide_id` = catalog,
+  `component_id` = NULL). The existing clone idiom — not new machinery.
+  Authored rows stay component-linked and editable; tombstones are not
+  copied; reviews/comments/history stay on the component.
+- **Integrity constraint (v7):** an `SrgRule` is authored XOR catalog —
+  `CHECK (type <> 'SrgRule' OR (component_id IS NULL) <>
+  (security_requirements_guide_id IS NULL))` — **type-scoped** because
+  `base_rules` is the shared STI table (`Rule` and `StigRule` rows carry
+  neither/other FKs and must be unaffected). `belongs_to
+  :security_requirements_guide` becomes `optional: true`, paired with the
+  check. This makes Will's dual-link hazard structurally impossible, not
+  merely guarded.
 - **Versioning**: component integer `version`/`release` ↔ catalog
   `V{version}R{release}` — one scheme, mapped at release/export.
 
@@ -533,18 +626,26 @@ should be settled before their phase is carded:
    (a set keyed by authoring profile, per §2.2) rather than one shared flat
    array — which is also what amendment A wants anyway. If the flat list is
    kept, this needs a lint/spec guard forbidding substring matching on
-   status, not a grep.
+   status, not a grep. **RESOLVED (Aaron, 2026-07-12): per-profile
+   vocabularies adopted (§4); authored rows only, catalog imports keep the
+   legacy inclusion. Audit found zero substring status matching in
+   production code — prevention, not rescue.**
 5. **`Moved` conflates disposition with routing.** Status answers "what did
    we decide about this requirement"; the relocation marker answers "where is
    it going." Fusing them forces the bidirectional `Moved`⇄target invariant
    (§6), and a needed two-way invariant is usually the tell that two concepts
    share one column. Decided explicitly by Aaron (§0.2) and not overturned
    here — but worth one more pass, since a moved requirement arguably still
-   has a disposition in its target.
+   has a disposition in its target. **RESOLVED (Aaron, 2026-07-12): the one
+   more pass produced a redesign — relocation is a first-class record and
+   the `Moved` status is removed entirely (§0.2/§0.3 revised, §4, §6).
+   Concern accepted and answered structurally rather than as accepted
+   risk.**
 6. **Mis-typed component recovery** (from §2.1.4): `document_type` is
    immutable and the remedy is delete-and-recreate, losing comments/reviews/
    history. Recommend accepting for v1 — but as a recorded decision, not an
-   omission.
+   omission. **RESOLVED (Aaron, 2026-07-12):** accepted for v1, recorded in
+   §2.1.4; cost mitigated by the pre-delete backup feature (§2.1.5).
 7. **Release/catalog aliasing (§8.2) is under-specified.** On release, the
    component's authored `SrgRule`s "attach" to a newly created catalog
    `SecurityRequirementsGuide` — but those rows already carry `component_id`.
@@ -553,11 +654,16 @@ should be settled before their phase is carded:
    entry, and a later revision of the component (duplicate + reconcile, §5)
    would mutate published data. Strongly suspect release must **copy** into
    catalog rows rather than dual-link the same row. Must be settled before
-   Phase 7.
+   Phase 7. **RESOLVED (Aaron, 2026-07-12): copy-on-release via the
+   existing amoeba clone idiom, plus a type-scoped authored-XOR-catalog
+   CHECK constraint making dual-link structurally impossible (§8.2).**
 8. **Primary-parent selection is undefined for N parents.** `based_on` stays
    NOT NULL as the primary parent (protecting 53 read sites), but with a
    multi-select picker (e.g. APP + OS for Container) nothing says which of the
    declared parents becomes primary — user-chosen, or first-selected?
+   **RESOLVED (Aaron, 2026-07-12): user designates via a primary radio in
+   the picker, default = first selected; `based_on` IS the designation and
+   must be ∈ declared parents (§5).**
 
 ## 11. Alternatives considered and rejected
 
