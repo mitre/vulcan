@@ -661,9 +661,14 @@ cross-type call.
   `reviews_controller#lock_controls` (`@component.rules`, :525 —
   lock-all locks nothing, so an SRG component can NEVER satisfy
   `rules_must_be_locked_to_release` and cannot be released), the
-  addressed-by target lookup (`Rule.find_by`, :367), and the
+  addressed-by target lookup (`Rule.find_by`, :367), the
   `parent.rule&.component` call site (:842 — bypasses the correct
-  `Review#component` accessor). Every one migrates to
+  `Review#component` accessor), and — **board-review erratum, 2026-07-13
+  (F1)** — `BackupSerializer#rules_collection`
+  (backup_serializer.rb:117, `@component.rules`): without it an SRG
+  component's pre-delete backup archives ZERO requirements/reviews/
+  comments, silently voiding the §2.1.4 remedy that §2.1.5 exists to
+  provide. Every one migrates to
   `Component#requirements` / a base_rules-scoped subquery
   (`deleted_at IS NULL`). The correct pattern already exists in
   `Component.pending_comment_counts` (component.rb:717, joins
