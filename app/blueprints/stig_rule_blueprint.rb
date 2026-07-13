@@ -11,11 +11,11 @@ class StigRuleBlueprint < Blueprinter::Base
 
   association :disa_rule_descriptions_attributes, blueprint: DisaRuleDescriptionBlueprint,
                                                   name: :disa_rule_descriptions_attributes do |rule, _options|
-    rule.disa_rule_descriptions
+    ApplicationRecord.sorted_by_id(rule.disa_rule_descriptions)
   end
 
   association :checks_attributes, blueprint: CheckBlueprint,
                                   name: :checks_attributes do |rule, _options|
-    rule.checks
+    ApplicationRecord.sorted_by_id(rule.checks)
   end
 end

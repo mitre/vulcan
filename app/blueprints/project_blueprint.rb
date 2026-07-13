@@ -9,7 +9,7 @@ class ProjectBlueprint < Blueprinter::Base
 
   view :index do
     association :memberships, blueprint: MembershipBlueprint do |project, _options|
-      project.memberships
+      ApplicationRecord.sorted_by_id(project.memberships)
     end
   end
 
@@ -39,11 +39,11 @@ class ProjectBlueprint < Blueprinter::Base
     end
 
     association :memberships, blueprint: MembershipBlueprint do |project, _options|
-      project.memberships
+      ApplicationRecord.sorted_by_id(project.memberships)
     end
 
     association :components, blueprint: ComponentBlueprint, view: :index do |project, _options|
-      project.components
+      ApplicationRecord.sorted_by_id(project.components)
     end
 
     association :available_components, blueprint: ComponentBlueprint, view: :index do |project, _options|
@@ -54,11 +54,11 @@ class ProjectBlueprint < Blueprinter::Base
     # to prevent information disclosure of the full user directory
 
     association :users, blueprint: UserBlueprint do |project, _options|
-      project.users
+      ApplicationRecord.sorted_by_id(project.users)
     end
 
     association :access_requests, blueprint: ProjectAccessRequestBlueprint do |project, _options|
-      project.access_requests.eager_load(:user, :project)
+      project.access_requests.eager_load(:user, :project).order(:id)
     end
   end
 end

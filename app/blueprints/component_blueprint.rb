@@ -108,7 +108,7 @@ class ComponentBlueprint < Blueprinter::Base
     end
 
     association :rules, blueprint: RuleBlueprint, view: :viewer do |component, _options|
-      component.rules
+      BaseRule.canonical_sort(component.rules)
     end
 
     # Component#reviews returns ReviewBlueprint-serialized hashes with
@@ -159,7 +159,7 @@ class ComponentBlueprint < Blueprinter::Base
 
     # Rules via RuleBlueprint :editor view
     association :rules, blueprint: RuleBlueprint, view: :editor do |component, _options|
-      component.rules
+      BaseRule.canonical_sort(component.rules)
     end
 
     # Component#reviews returns ReviewBlueprint-serialized hashes with
@@ -174,7 +174,7 @@ class ComponentBlueprint < Blueprinter::Base
 
     # Memberships via MembershipBlueprint (includes name, email from user)
     association :memberships, blueprint: MembershipBlueprint do |component, _options|
-      component.memberships
+      ApplicationRecord.sorted_by_id(component.memberships)
     end
 
     field :metadata do |component, _options|
@@ -182,7 +182,7 @@ class ComponentBlueprint < Blueprinter::Base
     end
 
     association :inherited_memberships, blueprint: MembershipBlueprint do |component, _options|
-      component.inherited_memberships
+      ApplicationRecord.sorted_by_id(component.inherited_memberships)
     end
 
     # available_members removed — now fetched via /api/users/search

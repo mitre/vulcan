@@ -40,7 +40,7 @@ class StigBlueprint < Blueprinter::Base
     field :description
 
     association :stig_rules, blueprint: StigRuleBlueprint do |stig, _options|
-      stig.stig_rules
+      BaseRule.canonical_sort(stig.stig_rules)
     end
   end
 end

@@ -14,6 +14,28 @@ class BaseRule < ApplicationRecord
   include RuleConstants
   include CciMap::Constants
 
+  # Canonical DISA display order for a rule collection: by `version` (the
+  # STIG-ID / SRG-ID — DISA's published document order, zero-padded so a
+  # lexical sort equals the canonical order), then `rule_id`, with `id` as the
+  # unique tiebreaker so the ordering is a deterministic TOTAL order (a
+  # non-unique key alone still leaves ties non-deterministic). Mirrors the
+  # export path (Export::Base uses order(:version, :rule_id)).
+  CANONICAL_ORDER_COLUMNS = %i[version rule_id id].freeze
+
+  # SQL ordering for query paths (lazy loads, pagination, non-serialized use).
+  scope :canonical_order, -> { order(*CANONICAL_ORDER_COLUMNS) }
+
+  # In-memory ordering for ALREADY-loaded collections (the serialization path).
+  # Sorting the eager-loaded records in Ruby reorders them with zero extra
+  # queries — calling the .canonical_order SQL scope on a loaded association
+  # would instead re-query and drop the preload (an N+1). Produces the SAME
+  # order as the SQL scope, including NULLs-last for a nil `version` (Postgres'
+  # default for ORDER BY ASC), so the two primitives never disagree. `rule_id`
+  # is NOT NULL and `id` is always unique, giving a deterministic total order.
+  def self.canonical_sort(rules)
+    rules.sort_by { |rule| [rule.version.nil? ? 1 : 0, rule.version.to_s, rule.rule_id.to_s, rule.id] }
+  end
+
   before_create :ensure_disa_description_exists
   before_create :ensure_check_exists
 

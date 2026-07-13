@@ -34,7 +34,7 @@ class SrgBlueprint < Blueprinter::Base
 
   view :show do
     association :srg_rules, blueprint: SrgRuleBlueprint do |srg, _options|
-      srg.srg_rules
+      BaseRule.canonical_sort(srg.srg_rules)
     end
   end
 end

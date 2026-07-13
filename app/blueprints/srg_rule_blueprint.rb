@@ -14,16 +14,16 @@ class SrgRuleBlueprint < Blueprinter::Base
 
   association :rule_descriptions_attributes, blueprint: RuleDescriptionBlueprint,
                                              name: :rule_descriptions_attributes do |srg_rule, _options|
-    srg_rule.rule_descriptions
+    ApplicationRecord.sorted_by_id(srg_rule.rule_descriptions)
   end
 
   association :disa_rule_descriptions_attributes, blueprint: DisaRuleDescriptionBlueprint,
                                                   name: :disa_rule_descriptions_attributes do |srg_rule, _options|
-    srg_rule.disa_rule_descriptions
+    ApplicationRecord.sorted_by_id(srg_rule.disa_rule_descriptions)
   end
 
   association :checks_attributes, blueprint: CheckBlueprint,
                                   name: :checks_attributes do |srg_rule, _options|
-    srg_rule.checks
+    ApplicationRecord.sorted_by_id(srg_rule.checks)
   end
 end

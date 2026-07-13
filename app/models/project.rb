@@ -307,6 +307,7 @@ class Project < ApplicationRecord
                      :security_requirements_guide_id, :released, :updated_at,
                      :rules_count, :component_id, :admin_name, :admin_email,
                      :description)
+             .order(:id) # deterministic serialized order
   end
 
   private

@@ -12,7 +12,7 @@ class ProjectIndexBlueprint < Blueprinter::Base
          :admin_name, :admin_email, :created_at, :updated_at
 
   association :memberships, blueprint: MembershipBlueprint do |project, _options|
-    project.memberships
+    ApplicationRecord.sorted_by_id(project.memberships)
   end
 
   field :admin do |project, options|

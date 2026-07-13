@@ -66,11 +66,11 @@ class RuleBlueprint < Blueprinter::Base
     end
 
     association :satisfies, blueprint: SatisfactionBlueprint do |rule, _options|
-      rule.satisfies
+      ApplicationRecord.sorted_by_id(rule.satisfies)
     end
 
     association :satisfied_by, blueprint: SatisfactionBlueprint do |rule, _options|
-      rule.satisfied_by
+      ApplicationRecord.sorted_by_id(rule.satisfied_by)
     end
   end
 
@@ -91,20 +91,20 @@ class RuleBlueprint < Blueprinter::Base
 
     association :disa_rule_descriptions_attributes, blueprint: DisaRuleDescriptionBlueprint,
                                                     name: :disa_rule_descriptions_attributes do |rule, _options|
-      rule.disa_rule_descriptions
+      ApplicationRecord.sorted_by_id(rule.disa_rule_descriptions)
     end
 
     association :checks_attributes, blueprint: CheckBlueprint,
                                     name: :checks_attributes do |rule, _options|
-      rule.checks
+      ApplicationRecord.sorted_by_id(rule.checks)
     end
 
     association :satisfies, blueprint: SatisfactionBlueprint do |rule, _options|
-      rule.satisfies
+      ApplicationRecord.sorted_by_id(rule.satisfies)
     end
 
     association :satisfied_by, blueprint: SatisfiedByBlueprint do |rule, _options|
-      rule.satisfied_by
+      ApplicationRecord.sorted_by_id(rule.satisfied_by)
     end
   end
 
@@ -122,16 +122,16 @@ class RuleBlueprint < Blueprinter::Base
 
     association :rule_descriptions_attributes, blueprint: RuleDescriptionBlueprint,
                                                name: :rule_descriptions_attributes do |rule, _options|
-      rule.rule_descriptions
+      ApplicationRecord.sorted_by_id(rule.rule_descriptions)
     end
 
     association :reviews, blueprint: ReviewBlueprint do |rule, _options|
-      rule.reviews
+      ApplicationRecord.chronological(rule.reviews)
     end
 
     association :additional_answers_attributes, blueprint: AdditionalAnswerBlueprint,
                                                 name: :additional_answers_attributes do |rule, _options|
-      rule.additional_answers
+      ApplicationRecord.sorted_by_id(rule.additional_answers)
     end
 
     field :srg_rule_attributes do |rule, _options|

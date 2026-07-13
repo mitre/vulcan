@@ -682,13 +682,16 @@ class Component < ApplicationRecord
                    rules.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
                  end
 
+    # :id breaks created_at ties so the 20 most-recent reviews come out in a
+    # deterministic order (both the cached and DB paths agree: newest first,
+    # higher id first on a tie).
     review_records = if association_cached?(:rules) &&
                         rules.all? { |r| r.association(:reviews).loaded? }
-                       rules.flat_map(&:reviews).sort_by(&:created_at).last(20).reverse
+                       rules.flat_map(&:reviews).sort_by { |r| [r.created_at, r.id] }.last(20).reverse
                      else
                        Review.where(rule_id: rule_names.keys)
                              .preload(:user, :responses)
-                             .order(created_at: :desc).limit(20)
+                             .order(created_at: :desc, id: :desc).limit(20)
                      end
 
     ReviewBlueprint.render_as_json(review_records, rule_names: rule_names)
