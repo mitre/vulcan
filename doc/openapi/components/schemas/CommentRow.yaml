@@ -199,3 +199,11 @@ properties:
       - 'null'
     description: Grouping key — parent_rule_displayed_name if present, otherwise rule_displayed_name. Used for by-rule grouping in the triage table.
     example: PHOS-03-000038
+  rule_content:
+    description: >-
+      Rule content for the split-pane triage view. Present only when the
+      include_rule_content query parameter is true; null for component-level
+      comments.
+    oneOf:
+      - $ref: ./RuleContent.yaml
+      - type: 'null'

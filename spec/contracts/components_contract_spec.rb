@@ -138,6 +138,25 @@ RSpec.describe 'Components endpoint contracts', type: :request do
       assert_fields_present body['pagination'], :page, :per_page, :total, :total_comments
       expect(body['status_counts']).to be_a(Hash)
     end
+
+    it 'validates rule_content with satisfied_by when include_rule_content is requested' do
+      child = create(:rule, component: component, rule_id: '999901')
+      parent = create(:rule, component: component, rule_id: '999902')
+      child_comment = create(:review, user: admin, rule: child, action: 'comment',
+                                      comment: 'Child rule comment', section: 'fixtext')
+      child.satisfied_by << parent
+
+      get "/components/#{component.id}/comments",
+          params: { include_rule_content: 'true' }, headers: json_headers
+      body = validate_and_parse!
+
+      row = body['rows'].find { |r| r['id'] == child_comment.id }
+      expect(row['rule_content']).to be_a(Hash)
+      expect(row['rule_content']['satisfied_by']).to eq(
+        [{ 'id' => parent.id, 'rule_id' => parent.rule_id,
+           'component_prefix' => component.prefix }]
+      )
+    end
   end
 
   # ── GET /components/:id/histories ──

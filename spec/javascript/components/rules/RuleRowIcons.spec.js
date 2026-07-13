@@ -105,4 +105,34 @@ describe("RuleRowIcons", () => {
       expect(icon.exists()).toBe(false);
     });
   });
+
+  describe("satisfied-by indicator", () => {
+    const parents = [
+      { id: 100, rule_id: "000020", component_prefix: "CNTR-00" },
+      { id: 200, rule_id: "000030", component_prefix: "CNTR-00" },
+    ];
+
+    it("renders the satisfied-by icon when satisfied_by is non-empty", () => {
+      wrapper = createWrapper({ rule: { satisfied_by: [parents[0]] } });
+      expect(wrapper.find('[data-test="icon-satisfied-by"]').exists()).toBe(true);
+    });
+
+    it("does not render the satisfied-by icon for standalone rules", () => {
+      wrapper = createWrapper({ rule: { satisfied_by: [] } });
+      expect(wrapper.find('[data-test="icon-satisfied-by"]').exists()).toBe(false);
+    });
+
+    it("tooltip names the parent rule", () => {
+      wrapper = createWrapper({ rule: { satisfied_by: [parents[0]] } });
+      const icon = wrapper.find('[data-test="icon-satisfied-by"]');
+      expect(icon.attributes("title")).toContain("CNTR-00-000020");
+    });
+
+    it("tooltip lists every parent when multiple exist", () => {
+      wrapper = createWrapper({ rule: { satisfied_by: parents } });
+      const icon = wrapper.find('[data-test="icon-satisfied-by"]');
+      expect(icon.attributes("title")).toContain("CNTR-00-000020");
+      expect(icon.attributes("title")).toContain("CNTR-00-000030");
+    });
+  });
 });

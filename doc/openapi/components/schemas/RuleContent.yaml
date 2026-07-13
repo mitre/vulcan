@@ -1,0 +1,213 @@
+description: >-
+  Rule content fields for the split-pane triage view, serialized by
+  Component#serialize_rule_content. Present on comment rows only when the
+  include_rule_content query parameter is true and the comment targets a
+  rule (null for component-level comments).
+type: object
+additionalProperties: false
+properties:
+  title:
+    type:
+      - string
+      - 'null'
+    description: Rule title.
+    example: The container platform must use TLS 1.2 or greater for secure communication.
+  rule_severity:
+    type:
+      - string
+      - 'null'
+    description: Rule severity.
+    example: medium
+  status:
+    type:
+      - string
+      - 'null'
+    description: Applicability status of the rule.
+    example: Applicable - Configurable
+  fixtext:
+    type:
+      - string
+      - 'null'
+    description: Fix text content.
+    example: Configure the container platform to use TLS 1.2 or greater.
+  status_justification:
+    type:
+      - string
+      - 'null'
+    description: Justification for the current status.
+    example: TLS configuration is exposed by the platform and must be set by the operator.
+  vendor_comments:
+    type:
+      - string
+      - 'null'
+    description: Vendor comments.
+    example: Verified against platform version 4.12.
+  artifact_description:
+    type:
+      - string
+      - 'null'
+    description: Artifact description.
+    example: Screenshot of the TLS configuration panel.
+  fix_id:
+    type:
+      - string
+      - 'null'
+    description: XCCDF fix identifier.
+    example: F-59616r921424_fix
+  fixtext_fixref:
+    type:
+      - string
+      - 'null'
+    description: XCCDF fixtext reference.
+    example: F-59616r921424_fix
+  version:
+    type:
+      - string
+      - 'null'
+    description: STIG/SRG identifier of the rule (document order key).
+    example: CNTR-00-000050
+  rule_weight:
+    type:
+      - string
+      - 'null'
+    description: XCCDF rule weight.
+    example: "10.0"
+  ident:
+    type:
+      - string
+      - 'null'
+    description: CCI identifier string.
+    example: CCI-000068
+  ident_system:
+    type:
+      - string
+      - 'null'
+    description: Identifier system URI.
+    example: http://iase.disa.mil/cci
+  vuln_discussion:
+    type:
+      - string
+      - 'null'
+    description: Vulnerability discussion from the DISA rule description.
+    example: Without cryptographic integrity protections, information can be altered in transit.
+  documentable:
+    type:
+      - boolean
+      - 'null'
+    description: Whether the requirement is documentable.
+    example: false
+  false_positives:
+    type:
+      - string
+      - 'null'
+    description: Known false positives.
+    example: null
+  false_negatives:
+    type:
+      - string
+      - 'null'
+    description: Known false negatives.
+    example: null
+  mitigations_available:
+    type:
+      - boolean
+      - 'null'
+    description: Whether mitigations are available.
+    example: false
+  mitigations:
+    type:
+      - string
+      - 'null'
+    description: Mitigation description.
+    example: null
+  poam_available:
+    type:
+      - boolean
+      - 'null'
+    description: Whether a POA&M is available.
+    example: false
+  poam:
+    type:
+      - string
+      - 'null'
+    description: POA&M description.
+    example: null
+  potential_impacts:
+    type:
+      - string
+      - 'null'
+    description: Potential impacts of applying the fix.
+    example: Legacy clients that only support TLS 1.1 will fail to connect.
+  third_party_tools:
+    type:
+      - string
+      - 'null'
+    description: Third-party tooling notes.
+    example: null
+  mitigation_control:
+    type:
+      - string
+      - 'null'
+    description: Mitigation control description.
+    example: null
+  responsibility:
+    type:
+      - string
+      - 'null'
+    description: Responsible party.
+    example: System Administrator
+  ia_controls:
+    type:
+      - string
+      - 'null'
+    description: IA controls reference.
+    example: null
+  severity_override_guidance:
+    type:
+      - string
+      - 'null'
+    description: Guidance for severity overrides.
+    example: null
+  check_content:
+    type:
+      - string
+      - 'null'
+    description: Check procedure content.
+    example: Review the platform TLS configuration and verify the minimum version is 1.2.
+  locked:
+    type:
+      - boolean
+      - 'null'
+    description: Whether the rule is locked.
+    example: false
+  rule_updated_at:
+    type:
+      - string
+      - 'null'
+    description: ISO 8601 timestamp of the rule's last update, for staleness detection.
+    example: "2026-05-19T16:15:00Z"
+  satisfied_by:
+    type: array
+    description: >-
+      Parent rules that satisfy this rule. Empty for standalone rules.
+      Powers the satisfied-by indicator in the triage rule panel.
+    items:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - rule_id
+        - component_prefix
+      properties:
+        id:
+          type: integer
+          description: Parent rule database identifier.
+          example: 1901
+        rule_id:
+          type: string
+          description: Parent rule identifier within the component.
+          example: "000020"
+        component_prefix:
+          type: string
+          description: Component prefix used to build the displayed name.
+          example: CNTR-00

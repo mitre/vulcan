@@ -21,7 +21,7 @@
       v-if="rule.satisfied_by && rule.satisfied_by.length > 0"
       v-b-tooltip.hover
       icon="files"
-      title="Satisfied by other"
+      :title="satisfiedByTooltip"
       aria-hidden="true"
       data-test="icon-satisfied-by"
     />
@@ -63,6 +63,15 @@ export default {
     ruleOpen: {
       type: Number,
       default: 0,
+    },
+  },
+  computed: {
+    satisfiedByTooltip() {
+      const parents = this.rule.satisfied_by || [];
+      const names = parents
+        .map((p) => (p.component_prefix ? `${p.component_prefix}-${p.rule_id}` : p.rule_id))
+        .filter(Boolean);
+      return names.length > 0 ? `Satisfied by ${names.join(", ")}` : "Satisfied by other";
     },
   },
 };

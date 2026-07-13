@@ -9,6 +9,15 @@
         <h5 class="card-title">{{ selectedRule.title }}</h5>
       </div>
       <div class="card-body">
+        <SatisfiedByIndicator
+          v-if="selectedRule.satisfied_by && selectedRule.satisfied_by.length > 0"
+          :parent-rules="selectedRule.satisfied_by"
+        >
+          Covered by its parent requirement in this release.
+          <template #actions>
+            <span />
+          </template>
+        </SatisfiedByIndicator>
         <b-form>
           <!-- Vulnerability Discussion -->
           <RuleFormGroup
@@ -114,10 +123,11 @@
 <script>
 import RuleFormGroup from "../shared/RuleFormGroup.vue";
 import MarkdownTextarea from "../shared/MarkdownTextarea.vue";
+import SatisfiedByIndicator from "../shared/SatisfiedByIndicator.vue";
 
 export default {
   name: "RuleDetails",
-  components: { RuleFormGroup, MarkdownTextarea },
+  components: { RuleFormGroup, MarkdownTextarea, SatisfiedByIndicator },
   props: {
     type: {
       type: String,

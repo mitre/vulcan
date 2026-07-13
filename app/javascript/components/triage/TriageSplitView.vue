@@ -45,6 +45,7 @@
             :rule-content="activeComment.rule_content"
             :rule-displayed-name="activeComment.rule_displayed_name"
             :parent-rule-displayed-name="activeComment.parent_rule_displayed_name"
+            :component-id="resolvedComponentId"
             :rule-status="activeComment.rule_content ? activeComment.rule_content.status : null"
             :focused-section="activeComment.section"
             :context-mode="contextMode"

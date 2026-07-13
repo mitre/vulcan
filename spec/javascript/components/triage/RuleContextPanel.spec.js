@@ -559,4 +559,49 @@ describe("RuleContextPanel", () => {
       expect(title.classes()).not.toContain("rule-title--overall-focused");
     });
   });
+
+  describe("satisfied-by indicator", () => {
+    const satisfiedContent = {
+      ...ruleContent,
+      satisfied_by: [{ id: 100, rule_id: "000020", component_prefix: "CNTR-01" }],
+    };
+
+    it("renders the shared indicator when rule_content carries satisfied_by parents", () => {
+      const w = mount(RuleContextPanel, {
+        localVue,
+        propsData: props({ ruleContent: satisfiedContent, componentId: 7 }),
+      });
+      const indicator = w.find(".satisfied-by-indicator");
+      expect(indicator.exists()).toBe(true);
+      expect(indicator.text()).toContain("CNTR-01-000020");
+    });
+
+    it("links Go to parent to the editor deep link for the parent rule", () => {
+      const w = mount(RuleContextPanel, {
+        localVue,
+        propsData: props({ ruleContent: satisfiedContent, componentId: 7 }),
+      });
+      const link = w.find("[data-testid='triage-go-to-parent']");
+      expect(link.exists()).toBe(true);
+      expect(link.attributes("href")).toBe("/components/7#/rules/100");
+    });
+
+    it("keeps the plain child-of badge when satisfied_by data is absent", () => {
+      const w = mount(RuleContextPanel, {
+        localVue,
+        propsData: props({ parentRuleDisplayedName: "CNTR-01-000020" }),
+      });
+      expect(w.find("[data-testid='child-indicator']").exists()).toBe(true);
+      expect(w.find(".satisfied-by-indicator").exists()).toBe(false);
+    });
+
+    it("renders no indicator for standalone rules", () => {
+      const w = mount(RuleContextPanel, {
+        localVue,
+        propsData: props({ componentId: 7 }),
+      });
+      expect(w.find(".satisfied-by-indicator").exists()).toBe(false);
+      expect(w.find("[data-testid='child-indicator']").exists()).toBe(false);
+    });
+  });
 });

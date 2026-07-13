@@ -11,7 +11,10 @@
  */
 import { describe, it, expect, afterEach } from "vitest";
 import { shallowMount } from "@vue/test-utils";
+import { createPinia, setActivePinia } from "pinia";
 import { localVue } from "@test/testHelper";
+import { createTestRouter } from "@test/support/routerTestHelper";
+import { useRuleSelectionStore } from "@/stores/ruleSelection";
 import UnifiedRuleForm from "@/components/rules/forms/UnifiedRuleForm.vue";
 
 function makeRule(overrides = {}) {
@@ -56,8 +59,11 @@ describe("UnifiedRuleForm", () => {
   ];
 
   const createWrapper = (ruleOverrides = {}, props = {}) => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
     return shallowMount(UnifiedRuleForm, {
       localVue,
+      pinia,
       propsData: {
         rule: makeRule(ruleOverrides),
         statuses: defaultStatuses,
@@ -624,6 +630,34 @@ describe("UnifiedRuleForm", () => {
       const ruleForm = wrapper.findComponent({ name: "RuleForm" });
       expect(ruleForm.props("showSectionLocks")).toBe(true);
       expect(ruleForm.props("canManageSectionLocks")).toBe(true);
+    });
+  });
+
+  describe("satisfied-by parent navigation", () => {
+    it("selects the parent rule in the ruleSelection store on navigate-to-rule", async () => {
+      const pinia = createPinia();
+      setActivePinia(pinia);
+      const router = createTestRouter([
+        { path: "/", name: "editor-root" },
+        { path: "/rules/:ruleId", name: "rule", props: true },
+      ]);
+      const store = useRuleSelectionStore();
+      store.init(router, 1);
+
+      wrapper = shallowMount(UnifiedRuleForm, {
+        localVue,
+        pinia,
+        router,
+        propsData: {
+          rule: makeRule({ satisfied_by: [{ id: 100, rule_id: "000020" }] }),
+          statuses: defaultStatuses,
+        },
+      });
+
+      const ruleForm = wrapper.findComponent({ name: "RuleForm" });
+      ruleForm.vm.$emit("navigate-to-rule", 100);
+      await wrapper.vm.$nextTick();
+      expect(store.selectedRuleId).toBe(100);
     });
   });
 });

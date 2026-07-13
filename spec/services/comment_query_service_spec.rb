@@ -24,6 +24,34 @@ RSpec.describe CommentQueryService do
       expect(result.keys).to match_array(%i[rows pagination status_counts])
     end
 
+    it 'includes satisfied_by parents in rule_content for child rules' do
+      parent = component.rules.second
+      rule.satisfied_by << parent
+
+      result = described_class.new(component, { include_rule_content: true }).call
+
+      content = result[:rows].first['rule_content']
+      expect(content[:satisfied_by]).to eq(
+        [{ id: parent.id, rule_id: parent.rule_id, component_prefix: component.prefix }]
+      )
+    end
+
+    it 'serializes an empty satisfied_by for standalone rules' do
+      result = described_class.new(component, { include_rule_content: true }).call
+      expect(result[:rows].first['rule_content'][:satisfied_by]).to eq([])
+    end
+
+    it 'handles component-level comments through the rule-content preload path' do
+      create(:review, :component_comment, commentable: component, commentable_type: 'Component',
+                                          user: commenter, comment: 'Component-level note')
+
+      result = described_class.new(component, { include_rule_content: true }).call
+
+      component_row = result[:rows].find { |r| r['commentable_type'] == 'Component' }
+      expect(component_row).to be_present
+      expect(component_row['rule_content']).to be_nil
+    end
+
     it 'returns the comment in rows' do
       result = described_class.new(component, {}).call
       expect(result[:rows].length).to eq(1)

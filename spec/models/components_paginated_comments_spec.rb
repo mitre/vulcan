@@ -176,9 +176,10 @@ RSpec.describe Component do
         mitigations_available mitigations poam_available poam
         potential_impacts third_party_tools mitigation_control
         responsibility ia_controls severity_override_guidance
-        check_content locked rule_updated_at
+        check_content locked rule_updated_at satisfied_by
       ]
       expect(rc.keys).to match_array(expected_keys)
+      expect(rc[:satisfied_by]).to eq([])
 
       rule = components_component.rules.find_by(id: @c1.rule_id)
       expect(rc[:title]).to eq(rule.title)

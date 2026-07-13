@@ -50,8 +50,6 @@
 </template>
 
 <script>
-import { useRuleSelectionStore } from "../../stores/ruleSelection";
-
 export default {
   name: "SatisfiedByIndicator",
   props: {
@@ -64,13 +62,9 @@ export default {
       default: "",
     },
   },
-  setup() {
-    const ruleStore = useRuleSelectionStore();
-    return { ruleStore };
-  },
   methods: {
     goToParent(parentId) {
-      this.ruleStore.selectRule(parentId);
+      this.$emit("navigate", parentId);
     },
   },
 };

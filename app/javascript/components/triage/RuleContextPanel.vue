@@ -11,7 +11,7 @@
           />
           {{ ruleDisplayedName }}
           <b-badge
-            v-if="parentRuleDisplayedName"
+            v-if="parentRuleDisplayedName && !satisfiedByParents.length"
             variant="info"
             pill
             class="ml-1 small"
@@ -69,6 +69,24 @@
         </b-button>
       </div>
       <hr class="rule-context-divider mt-4 mb-2" />
+
+      <SatisfiedByIndicator v-if="satisfiedByParents.length" :parent-rules="satisfiedByParents">
+        This requirement is covered by its parent — content is edited there.
+        <template #actions>
+          <a
+            v-for="parent in satisfiedByParents"
+            :key="'triage-nav-' + parent.id"
+            :href="editorLinkFor(parent)"
+            target="_blank"
+            rel="noopener"
+            class="btn btn-sm btn-outline-info"
+            data-testid="triage-go-to-parent"
+          >
+            Go to {{ parent.component_prefix }}-{{ parent.rule_id }} →
+          </a>
+        </template>
+      </SatisfiedByIndicator>
+
       <p
         v-if="ruleContent.title"
         data-testid="rule-title"
@@ -153,6 +171,7 @@ import {
   FIELD_DISPLAY_ORDER,
 } from "../../composables/ruleFieldConfig";
 import InfoTooltip from "../shared/InfoTooltip.vue";
+import SatisfiedByIndicator from "../shared/SatisfiedByIndicator.vue";
 
 const INLINE_SECTIONS = new Set(["status", "rule_severity"]);
 
@@ -162,11 +181,12 @@ function fieldLabel(key) {
 
 export default {
   name: "RuleContextPanel",
-  components: { InfoTooltip },
+  components: { InfoTooltip, SatisfiedByIndicator },
   props: {
     ruleContent: { type: Object, default: null },
     ruleDisplayedName: { type: String, default: null },
     parentRuleDisplayedName: { type: String, default: null },
+    componentId: { type: [Number, String], default: null },
     ruleStatus: { type: String, default: null },
     focusedSection: { type: String, default: null },
     contextMode: {
@@ -186,6 +206,9 @@ export default {
   computed: {
     commentedSectionsSet() {
       return new Set(this.commentedSections);
+    },
+    satisfiedByParents() {
+      return (this.ruleContent && this.ruleContent.satisfied_by) || [];
     },
     visibleFields() {
       if (!this.ruleContent) return [];
@@ -244,6 +267,9 @@ export default {
     },
   },
   methods: {
+    editorLinkFor(parent) {
+      return `/components/${this.componentId}#/rules/${parent.id}`;
+    },
     fallbackSections() {
       if (!this.ruleContent) return [];
       return Object.entries(this.ruleContent)

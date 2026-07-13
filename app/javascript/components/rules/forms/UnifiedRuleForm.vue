@@ -91,6 +91,7 @@
         @toggle-section-lock="onToggleSectionLock"
         @open-composer="$emit('open-composer', $event)"
         @view-comments="$emit('view-comments', $event)"
+        @navigate-to-rule="goToParentRule"
       />
     </b-form>
 
@@ -108,6 +109,7 @@ import { computed } from "vue";
 import RuleForm from "./RuleForm.vue";
 import RuleSecurityRequirementsGuideInformation from "../RuleSecurityRequirementsGuideInformation.vue";
 import { useRuleFormFields } from "../../../composables/useRuleFormFields";
+import { useRuleSelectionStore } from "../../../stores/ruleSelection";
 import "../../../styles/field-states.css";
 
 export default {
@@ -149,9 +151,11 @@ export default {
     const readOnlyRef = computed(() => props.readOnly);
 
     const composable = useRuleFormFields(ruleRef, advancedRef, { readOnly: readOnlyRef });
+    const ruleSelectionStore = useRuleSelectionStore();
 
     return {
       ...composable,
+      ruleSelectionStore,
     };
   },
   data() {
@@ -189,6 +193,9 @@ export default {
   methods: {
     onToggleSectionLock(section) {
       this.$emit("toggle-section-lock", section);
+    },
+    goToParentRule(parentId) {
+      this.ruleSelectionStore.selectRule(parentId);
     },
   },
 };

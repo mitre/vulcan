@@ -1072,7 +1072,10 @@ class Component < ApplicationRecord
       severity_override_guidance: disa&.severity_override_guidance,
       check_content: check&.content,
       locked: rule&.locked,
-      rule_updated_at: rule&.updated_at&.iso8601
+      rule_updated_at: rule&.updated_at&.iso8601,
+      satisfied_by: (rule.respond_to?(:satisfied_by) ? rule.satisfied_by : []).map do |parent|
+        { id: parent.id, rule_id: parent.rule_id, component_prefix: prefix }
+      end
     }
   end
   public :serialize_rule_content

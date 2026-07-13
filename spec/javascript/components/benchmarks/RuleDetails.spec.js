@@ -212,4 +212,26 @@ describe("RuleDetails", () => {
       expect(wrapper.text()).toContain("Select a rule from the list to view details");
     });
   });
+
+  describe("satisfied-by indicator", () => {
+    it("renders the compact indicator when a released rule carries satisfied_by", () => {
+      wrapper = createWrapper({
+        selectedRule: {
+          ...mockRule,
+          satisfied_by: [{ id: 100, rule_id: "000020", component_prefix: "CNTR-00" }],
+        },
+        type: "component",
+      });
+      const indicator = wrapper.findComponent({ name: "SatisfiedByIndicator" });
+      expect(indicator.exists()).toBe(true);
+      expect(indicator.props("parentRules")).toEqual([
+        { id: 100, rule_id: "000020", component_prefix: "CNTR-00" },
+      ]);
+    });
+
+    it("renders no indicator for catalog rules without satisfaction data", () => {
+      wrapper = createWrapper({ selectedRule: mockRule, type: "stig" });
+      expect(wrapper.findComponent({ name: "SatisfiedByIndicator" }).exists()).toBe(false);
+    });
+  });
 });

@@ -51,7 +51,7 @@ class CommentQueryService
             end
 
     commentable_preloads = if @include_rule_content
-                             { commentable: %i[disa_rule_descriptions checks] }
+                             { commentable: %i[disa_rule_descriptions checks satisfied_by] }
                            else
                              :commentable
                            end
