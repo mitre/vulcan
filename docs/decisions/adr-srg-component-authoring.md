@@ -26,6 +26,15 @@
   `derived_from_srg_rule_id` is new (§12.1); `based_on` NOT NULL is an
   ordered §12.3 step (currently nullable, schema.rb:139), not a current
   fact (§5).
+  v7.3 (2026-07-13): collision review (same pass) sized the real blast
+  radius — every comment/triage/lock/release scoping query routes
+  through the `Rule` STI association and must migrate to
+  `Component#requirements` (§8: empty triage table, un-releasable SRG
+  components otherwise); authored requirements need their own editor
+  blueprint (§8 — `RuleBlueprint` calls Rule-only methods); currency/
+  backup/revision-guard iterate ALL parents, not `based_on` (§5); SRG
+  export is a new mode + fetch + helper guard, not a filter swap
+  (§14.7).
 - **Date:** 2026-07-10 (v2 per 3-agent swarm; v3 folded Aaron's eight fork
   decisions; v4 per readiness swarm; v5 replaced the storage core);
   2026-07-12 (v6 scoping + workflow, Will; v7 review resolutions, Aaron)
@@ -424,6 +433,24 @@ JavaScript:
   `based_on` inserts it into `component_source_srgs` atomically (and the
   upgrade path replaces the superseded family member rather than
   appending unbounded). One spec pins the revision flow end-to-end.
+- **Three based_on-only sites are CORRECTNESS under multi-parent, not
+  display (v7.3, collision review)** — "primary-only display until the
+  follow-on card" does not cover them:
+  1. **Currency**: `srg_is_latest = based_on&.latest?`
+     (component_blueprint.rb:143-153) and
+     `SecurityRequirementsGuide.srg_info_for_components`
+     (security_requirements_guide.rb:31-38) check only the primary — a
+     dual-lineage component reports "up to date" while a secondary core
+     has a new version, silently defeating the §5 staleness cascade.
+     Currency iterates ALL of `component_source_srgs`.
+  2. **Backup**: `backup_serializer.rb:54-88` records only `based_on`
+     identity — restore of a multi-parent component loses every
+     secondary parent, breaking the §2.1.5 pre-delete safety net that
+     §2.1.4 delete-and-recreate depends on. The backup format captures
+     the full parent set (backups epic dependency).
+  3. **Revision guard**: `duplicate(new_srg_id:)` short-circuits on a
+     primary-only compare (component.rb:405) — a revision changing a
+     secondary parent is mis-detected. Guard compares the full set.
 - **Invariant — family-level, version-tolerant, both kinds**: every
   requirement's source (`Rule#srg_rule` / authored `SrgRule#derived_from`)
   belongs to a parent-set *family* (exact-record matching is violated by
@@ -595,10 +622,35 @@ cross-type call.
 - **Editor plumbing**: the component editor serves the component's
   requirements — `Rule`s for STIG-kind, authored `SrgRule`s for SRG-kind —
   through a unified accessor (`Component#requirements`, kind-routed).
-  Controllers gain the `SrgRule` branch (reusing the same
-  locking/review/comment flows via the shared columns and polymorphic
-  commentable — component-level comments already prove the
-  non-`Rule`-commentable path).
+- **The scoping-query migration is structural work, not column reuse
+  (v7.3, collision review).** The polymorphic commentable is genuinely
+  `BaseRule`-typed (comments attach to an `SrgRule` fine), but every
+  comment/triage/lock/release SCOPING query routes through the `Rule`
+  STI association and structurally excludes authored `SrgRule`s:
+  `CommentQueryService#build_base_scope` (`@component.rules`,
+  comment_query_service.rb:41/81/114/118 — the triage table renders
+  EMPTY), `Review.for_components` (`Rule.where(component_id:)`,
+  review.rb:95 — dashboard aggregates omit SRG comments),
+  `reviews_controller#lock_controls` (`@component.rules`, :525 —
+  lock-all locks nothing, so an SRG component can NEVER satisfy
+  `rules_must_be_locked_to_release` and cannot be released), the
+  addressed-by target lookup (`Rule.find_by`, :367), and the
+  `parent.rule&.component` call site (:842 — bypasses the correct
+  `Review#component` accessor). Every one migrates to
+  `Component#requirements` / a base_rules-scoped subquery
+  (`deleted_at IS NULL`). The correct pattern already exists in
+  `Component.pending_comment_counts` (component.rb:717, joins
+  base_rules directly). These sites are load-bearing for the in-flight
+  comment/triage work — the migration is Phase 2 scope, explicit.
+- **Authored requirements need their own editor blueprint (v7.3).**
+  `RuleBlueprint`'s viewer/editor/picker views call Rule-only methods —
+  `satisfies`/`satisfied_by` (rule_blueprint.rb:68-74/102-108),
+  `srg_rule` (:88/:137/:141), `additional_answers` (:132) —
+  NoMethodError on an `SrgRule`. The existing `SrgRuleBlueprint` is
+  read-only nested reference data (no status/reviews/locked) and cannot
+  be reused. A dedicated authored-`SrgRule` editor blueprint
+  (status/reviews/locked/comment summary; no satisfies/srg_rule/
+  additional_answers) plus a kind-routed serializer branch.
 - **Field config**: `STATUS_FIELD_CONFIG` gains a document-kind dimension
   (`FIELD_CONFIG_BY_DOCUMENT_TYPE`); both direct consumers
   (`useRuleFormFields`, `RuleContextPanel.vue`) select by the component's
@@ -833,7 +885,11 @@ should be settled before their phase is carded:
    `SrgRule`-scoped validation; editor/controller `SrgRule` branch; the
    full §3.1 [P] gating (Ruby + JS, incl. the consolidations); type-aware
    buckets/dashboards (`oneOf`); SRG field config (STIG-lead content);
-   the cross-type satisfaction request spec (§7).
+   the cross-type satisfaction request spec (§7); **the Rule-association
+   scoping-site migration to `Component#requirements`** (comments/triage/
+   lock/release paths, §8 v7.3 — without it the triage table is empty and
+   an SRG component cannot be released); **the dedicated authored-SrgRule
+   editor blueprint** (§8 v7.3).
 3. **Multi-parent (both kinds, §0.14)** — core flag on upload
    (+ identifiers from Aaron), join table, per-kind parent-eligibility
    validation (SRG ⊆ cores; STIG ⊆ derived), family invariants, dual-mode
@@ -853,12 +909,15 @@ should be settled before their phase is carded:
    picker (creation step + settings) + see-all. (Follow-on, separate +
    optional: the two-stage suggestion engine, gated on hypothesis
    validation.)
-7. **Publication** — SRG XCCDF export mode (delta on the existing
-   `Export::Formatters::XccdfFormatter`, which already emits
-   Component→XCCDF; the STIG mode's Applicable-Configurable-only filter is
-   replaced by SRG terminal filtering + tombstone exclusion) + release
-   readme/changelog removals + local catalog attachment (§8.2). Depends
-   on 2–3.
+7. **Publication** — SRG XCCDF export mode. More than a filter swap
+   (v7.3): a new `Export::Modes::PublishedSrg` (SRG terminal filtering +
+   tombstone exclusion; no satisfies/srg_rule eager-loads —
+   published_stig.rb:20-36 pulls Rule-only associations), an
+   authored-`SrgRule` fetch replacing `component.rules` (export
+   base.rb:195 — the Rule association is EMPTY for an SRG component),
+   and a guard on the `rule.satisfies` call in the export helper
+   (export_helper.rb:286). Plus release readme/changelog removals +
+   local catalog attachment (§8.2). Depends on 2–3.
 
 Ordering: 2, 3, 6 independent after 1; 4 after 2; 5 after 4; 7 after 2–3.
 
