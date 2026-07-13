@@ -8,7 +8,16 @@
   tombstone — the `Moved` status is REMOVED** (revises §0.2/§0.3, see §4/§6);
   copy-on-release with a type-scoped XOR constraint (§8.2); primary parent =
   `based_on` ∈ declared parents (§5); delete-and-recreate accepted with the
-  pre-delete backup mitigation (§2.1.4/§2.1.5). Awaiting Will's review of v7.
+  pre-delete backup mitigation (§2.1.4/§2.1.5). Will approved v7 (2026-07-13).
+  v7.1 (2026-07-13): pre-carding adversarial review corrected five mechanics
+  — all code-verified, no decision changes. Root cause of all five: `SrgRule`
+  inherits `BaseRule`, not `Rule` — the soft-delete default scope, the
+  counter_cache, and the amoeba clone idiom all live on `Rule` only. Fixes:
+  `SrgRule` gains its own `deleted_at` default scope (§6); SRG-kind recount
+  cannot ride `reset_counters(:rules)` (§6); release-copy is NEW machinery,
+  not the amoeba block, which converts to `Rule` (§8.2); authored import
+  cannot reuse `SrgRule.from_mapping` (§5.0); `duplicate(new_srg_id:)` must
+  reconcile the parent join with `based_on` (§5).
 - **Date:** 2026-07-10 (v2 per 3-agent swarm; v3 folded Aaron's eight fork
   decisions; v4 per readiness swarm; v5 replaced the storage core);
   2026-07-12 (v6 scoping + workflow, Will; v7 review resolutions, Aaron)
@@ -393,6 +402,14 @@ JavaScript:
   ties the mechanisms: `based_on` must be ∈ `component_source_srgs`.
   Changing primary affects display/family defaults only — imports were
   unioned at creation and do not re-run.
+- **Join reconciliation on revision (v7.1):** `Component#duplicate`
+  (component.rb:408) reassigns `copied_component.based_on = new_srg` when
+  `new_srg_id:` is supplied, while `include_association` copies the OLD
+  parent set — leaving `based_on` ∉ join and the invariant rejecting the
+  revision save. The model must enforce reconciliation: assigning
+  `based_on` inserts it into `component_source_srgs` atomically (and the
+  upgrade path replaces the superseded family member rather than
+  appending unbounded). One spec pins the revision flow end-to-end.
 - **Invariant — family-level, version-tolerant, both kinds**: every
   requirement's source (`Rule#srg_rule` / authored `SrgRule#derived_from`)
   belongs to a parent-set *family* (exact-record matching is violated by
@@ -456,6 +473,13 @@ Two modes, one machinery:
   today's single-SRG import; cores are disjoint). ~500–600 rows for three
   cores — every exclusion becomes an explicit, audited NA.
 - **Selective**: the same generator behind a requirement picker.
+- **The authored generator is NEW code (v7.1)** — it must NOT reuse
+  `SrgRule.from_mapping` (srg_rule.rb:15 sets
+  `security_requirements_guide_id`, which violates the authored XOR:
+  both FKs set aborts the import at the CHECK). The generator copies
+  content from the catalog row, sets `component_id` +
+  `derived_from_srg_rule_id`, and leaves
+  `security_requirements_guide_id` NULL.
 Both modes: adding a parent later imports (or offers) its requirements;
 `Component#duplicate`/overlay must `include_association` the new join
 tables and, for SRG-kind, validate core-family membership on rebase.
@@ -490,9 +514,23 @@ requirement_relocations
   executed records are immutable.
 - **Executed** = ONE transaction: create/link the target requirement →
   set `target_rule_id` → stamp `executed_at` → **soft-delete the source
-  row** (the app's existing delete semantics) → recount `rules_count`
-  via `Component.reset_counters` (the counter_cache misses soft-deletes —
-  the standalone bug was found and fixed during this design pass).
+  row** → recount the component's requirement counter.
+- **Tombstone visibility requires a `SrgRule` default scope (v7.1).**
+  The `deleted_at` default scope exists ONLY on `Rule` (rule.rb:110) —
+  `BaseRule`/`SrgRule` have none, so without it a tombstoned authored
+  row stays visible in every SrgRule query (editor, buckets, export)
+  and next-release duplication RESURRECTS moved-out rows. Fix:
+  `default_scope { where(deleted_at: nil) }` on `SrgRule` (mirroring
+  `Rule`; behavior-neutral today — no SrgRule row carries `deleted_at`),
+  NOT on `BaseRule` (that would newly filter catalog/StigRule reads).
+  Duplicate/copy association traversals additionally exclude deleted
+  rows explicitly.
+- **SRG-kind recount cannot ride `reset_counters(:rules)` (v7.1)** —
+  `has_many :rules` is class `Rule`, so that call zeroes `rules_count`
+  for an SRG component. Authored requirements need their own counting
+  path (a scoped count over live authored `SrgRule`s, or a dedicated
+  counter column) decided at the Phase 1 card; every recount site is
+  kind-routed through it.
 - **Reviews/comments are preserved, frozen** on the tombstoned row (v7
   decision): they leave active comment views automatically (those joins
   already exclude `deleted_at`) but survive in the DB and audit trail —
@@ -574,11 +612,20 @@ filters client-side; no reference-benchmark concept exists):
   `SecurityRequirementsGuide` row, generates the SRG XCCDF via the
   exporter and stores it on that row (the released entry is shaped
   identically to an uploaded one — basing, is-latest, and seeds work
-  unchanged), then **amoeba-copies each LIVE authored `SrgRule`** into a
-  fresh catalog row (`security_requirements_guide_id` = catalog,
-  `component_id` = NULL). The existing clone idiom — not new machinery.
+  unchanged), then **copies each LIVE authored `SrgRule`** into a fresh
+  catalog row (`security_requirements_guide_id` = catalog,
+  `component_id` = NULL). **The release copy is NEW machinery (v7.1)**:
+  `SrgRule`'s amoeba block is hardwired `set type: Rule` /
+  `become_rule` (srg_rule.rb:5-9) — it exists to turn catalog rows into
+  component `Rule`s at import, and reusing it here would emit a
+  wrong-typed `Rule` row that the type-scoped XOR cannot catch. The
+  release copy dups AS `SrgRule` (explicit attribute copy or a scoped
+  dup that bypasses the amoeba block), asserts the resulting type, and
+  is pinned by a spec that a released row is a catalog `SrgRule`.
   Authored rows stay component-linked and editable; tombstones are not
-  copied; reviews/comments/history stay on the component.
+  copied (enforced by the §6 default scope + an explicit
+  `deleted_at: nil` guard); reviews/comments/history stay on the
+  component.
 - **Integrity constraint (v7):** an `SrgRule` is authored XOR catalog —
   `CHECK (type <> 'SrgRule' OR (component_id IS NULL) <>
   (security_requirements_guide_id IS NULL))` — **type-scoped** because
@@ -655,9 +702,10 @@ should be settled before their phase is carded:
    entry, and a later revision of the component (duplicate + reconcile, §5)
    would mutate published data. Strongly suspect release must **copy** into
    catalog rows rather than dual-link the same row. Must be settled before
-   Phase 7. **RESOLVED (Aaron, 2026-07-12): copy-on-release via the
-   existing amoeba clone idiom, plus a type-scoped authored-XOR-catalog
-   CHECK constraint making dual-link structurally impossible (§8.2).**
+   Phase 7. **RESOLVED (Aaron, 2026-07-12): copy-on-release, plus a
+   type-scoped authored-XOR-catalog CHECK constraint making dual-link
+   structurally impossible (§8.2). v7.1: the copy is NEW machinery —
+   `SrgRule`'s amoeba block converts to `Rule` and cannot be reused.**
 8. **Primary-parent selection is undefined for N parents.** `based_on` stays
    NOT NULL as the primary parent (protecting 53 read sites), but with a
    multi-select picker (e.g. APP + OS for Container) nothing says which of the
@@ -755,8 +803,8 @@ should be settled before their phase is carded:
    creation/open prompt). Depends on 2.
 5. **Relocation executor** — dry-run + the §6 transaction per move
    (create/link target → stamp `executed_at` → soft-delete source →
-   `Component.reset_counters`); reviews preserved frozen; history-only
-   visibility; orphan sweep. Depends on 4.
+   kind-routed requirement recount, §6 v7.1); reviews preserved frozen;
+   history-only visibility; orphan sweep. Depends on 4.
 6. **Related requirements + reference benchmarks** — server-side
    `related_rules` params + same-type SRG catalog branch; reference join +
    picker (creation step + settings) + see-all. (Follow-on, separate +
