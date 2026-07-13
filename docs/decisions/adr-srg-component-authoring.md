@@ -117,8 +117,9 @@ require reopening the schema.
 
 R1. **Same state machine, different terminal buckets.** All requirements
     start `Not Yet Determined` in every document type. Terminal
-    dispositions: STIG → the existing four; SRG → **Applicable**,
-    **Not Applicable**, or the **move marker** edge case (`Moved`).
+    dispositions: STIG → the existing four; SRG → **Applicable** or
+    **Not Applicable**. The **move marker** edge case is a relocation
+    record, not a status (v7, §6).
 
 R2. **Parentage: one or more CORE SRGs.** An SRG component derives from
     1..N of the three core SRGs (Network, OS, Application) — non-public
@@ -167,7 +168,7 @@ Everything below follows from that single answer.
 | Surface | STIG profile | SRG profile |
 |---|---|---|
 | **Source / parent picker** (what you may base the document on) | 1..N **derived (non-core) SRGs** from the catalog — today's single `based_on`, now multi-select (§0.14) | 1..N **core SRGs** (SRG-NET / SRG-OS / SRG-APP) — the non-public author-community documents (§5) |
-| **Per-requirement status options** | today's five: NYD, Applicable-Configurable, Applicable-Inherently Meets, Applicable-Does Not Meet, Not Applicable | NYD, **Applicable**, **Not Applicable**, **Moved** (§4) |
+| **Per-requirement status options** | today's five: NYD, Applicable-Configurable, Applicable-Inherently Meets, Applicable-Does Not Meet, Not Applicable | NYD, **Applicable**, **Not Applicable** (§4; relocation is a record, not a status — §6) |
 | **Per-status field config** (which fields are active/required) | today's `STATUS_FIELD_CONFIG` | SRG field config (content from STIG leads — §10.2) |
 | **Satisfied-By panel** | present | **absent entirely** — not a disabled state (§7) |
 | **Relocation marker** | absent | present (§6) |
@@ -699,13 +700,16 @@ should be settled before their phase is carded:
    optional for component-authored `SrgRule`s; `VulcanAuditable` wiring
    for authored `SrgRule`s. Zero behavior change for every existing
    record; **the full suite passing untouched is the faithfulness proof.**
-2. Phase 2: `Applicable` status value atomic with the `SrgRule`-scoped
-   subset validation and UI gating. `Moved` is NOT introduced here.
+2. Phase 2: `Applicable` status value atomic with the per-profile
+   (authored-`SrgRule`-only) exact-match inclusion validation and UI
+   gating (§4). No relocation machinery lands here.
 3. Phase 3: `component_source_srgs` (backfill from
    `security_requirements_guide_id`); `security_requirements_guides.core`
    flag (set on core-document upload).
-4. Phase 4: marker columns + `Moved` value + `Moved`⇄target invariant +
-   nullify lifecycle — one atomic change.
+4. Phase 4: `requirement_relocations` table (§6) — source FK, target
+   family token, nullable target FK, `executed_at`, unique partial index
+   on pending source — one atomic change. No new `base_rules` columns,
+   no new status value.
 5. Phase 6: `component_reference_benchmarks`.
 6. `bundle exec rake parallel:prepare` after every migration.
 
@@ -718,9 +722,10 @@ should be settled before their phase is carded:
   comments, audit behave identically on authored `SrgRule`s (the
   component-level-comment precedent extended).
 - **Invariants**: parent-set ⊆ core families; derived-from ∈ parent
-  families (family-level, prod-verified before enforcement); marker
-  gating + `Moved`⇄target + nullify lifecycle; `document_type`
-  immutability.
+  families (family-level, prod-verified before enforcement); relocation
+  lifecycle (§6): unique pending per source, executed ⇒ source
+  soft-deleted (one-directional), executed records immutable,
+  dangling-target nullify; `document_type` immutability.
 - **Leak-surface regression**: one spec per §3.1 [P] surface asserting
   SRG rendering/config never contains a STIG-only status (the statuses
   prop is the canary).
@@ -743,11 +748,15 @@ should be settled before their phase is carded:
    validation (SRG ⊆ cores; STIG ⊆ derived), family invariants, dual-mode
    creation import (§5.0) for both kinds, amoeba/duplicate gating
    (+ follow-on: multi-parent display, both kinds).
-4. **Relocation marker + `Moved`** — columns, value, invariant,
-   lifecycle, backlog queries, dashboard visibility, **both intake
-   surfaces** (family backlog view + creation/open prompt). Depends on 2.
-5. **Cross-document move executor** — dry-run + transactional bulk move
-   consuming the backlog. Depends on 4.
+4. **Relocation records (pending intake)** — `requirement_relocations`
+   table (§6); pending record = the R4 marker (row badge, per-family
+   backlog queries, un-mark = audited destroy); `moved_out` count from
+   executed records (§4); **both intake surfaces** (family backlog view +
+   creation/open prompt). Depends on 2.
+5. **Relocation executor** — dry-run + the §6 transaction per move
+   (create/link target → stamp `executed_at` → soft-delete source →
+   `Component.reset_counters`); reviews preserved frozen; history-only
+   visibility; orphan sweep. Depends on 4.
 6. **Related requirements + reference benchmarks** — server-side
    `related_rules` params + same-type SRG catalog branch; reference join +
    picker (creation step + settings) + see-all. (Follow-on, separate +
