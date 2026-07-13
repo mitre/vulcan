@@ -18,6 +18,14 @@
   not the amoeba block, which converts to `Rule` (§8.2); authored import
   cannot reuse `SrgRule.from_mapping` (§5.0); `duplicate(new_srg_id:)` must
   reconcile the parent join with `based_on` (§5).
+  v7.2 (2026-07-13): schema review (same pre-carding pass, all
+  code-verified) hardened the migration plan — relocation FK deletion
+  policy (§6: source `dependent: :destroy` + backup/audit preserve
+  history; target nullify); XOR CHECK co-migrated with optional srg_id +
+  pre-flight guard (§12.1); `component_id` already exists, only
+  `derived_from_srg_rule_id` is new (§12.1); `based_on` NOT NULL is an
+  ordered §12.3 step (currently nullable, schema.rb:139), not a current
+  fact (§5).
 - **Date:** 2026-07-10 (v2 per 3-agent swarm; v3 folded Aaron's eight fork
   decisions; v4 per readiness swarm; v5 replaced the storage core);
   2026-07-12 (v6 scoping + workflow, Will; v7 review resolutions, Aaron)
@@ -392,9 +400,15 @@ JavaScript:
   gated (SRG-only) version would have cost MORE code, and multi-SRG STIGs
   match DISA practice (product STIGs span multiple SRG scopes; today's
   single `based_on` forces authors to drop lineage).
-- `based_on` stays the primary parent for both kinds (NOT NULL — zero
-  change to the 53 existing read sites; primary-only display until the
-  follow-on display card, which now serves both kinds).
+- `based_on` stays the primary parent for both kinds (zero change to the
+  53 existing read sites; primary-only display until the follow-on
+  display card, which now serves both kinds). **NOT NULL is a migration
+  step to establish, not a current fact (v7.2):** the column is nullable
+  today (schema.rb:139) with no presence validation, and the plain
+  create path permits a NULL-based_on component — §12.3 must audit for
+  NULL/dangling rows, decide repair-vs-skip, and add the NOT NULL
+  constraint BEFORE the "based_on ∈ join, ≥1 parent" invariant is
+  enforced.
 - **Primary-parent selection (v7, resolving §10.8): `based_on` IS the
   designation — no `primary` flag on the join table.** The multi-select
   picker includes a primary radio, **default = first selected**; the user
@@ -500,13 +514,29 @@ tell of two concepts in one column. The redesign:
 
 ```
 requirement_relocations
-  source_rule_id       NOT NULL, FK base_rules
+  source_rule_id       NOT NULL, FK base_rules   -- dependent: :destroy from
+                                                 -- the source rule (v7.2)
   target_family_token  NOT NULL                  -- 'CTR', 'GPOS', …
-  target_rule_id       NULL, FK base_rules       -- filled when landed
+  target_rule_id       NULL, FK base_rules       -- filled when landed;
+                                                 -- on_delete: :nullify (v7.2)
   requested_by_id      FK users
   executed_at          NULL = pending            -- the lifecycle
   + unique partial index ON source_rule_id WHERE executed_at IS NULL
 ```
+
+- **Deletion interaction (v7.2, schema review).** Existing base_rules FKs
+  are NO ACTION/:restrict (schema.rb:461, 473-474) — an unspecified
+  relocation FK would BLOCK component delete-and-recreate (§2.1.4) for
+  any SRG component with relocation history, aborting mid-backup. Policy:
+  the source rule gets `has_many` to its relocation records with
+  `dependent: :destroy` — hard-destroy of the source row (component
+  delete, SRG destroy) removes its records, pending and executed alike;
+  the history survives in the §2.1.5 pre-delete backup and the audit
+  trail (relocation events are audited, and audits carry no FK). The
+  target row itself is never touched — it keeps its `derived_from`
+  lineage. Target-side destruction stays nullify + audit note. §6
+  "executed records are immutable" means no user edits; system-side
+  cascade/nullify with audit coverage is the same pattern both sides.
 
 - **Pending** (`executed_at` NULL) IS the R4 marker: row badge; per-family
   backlog = `pending.where(target_family_token:)`; creation/open-time
@@ -743,21 +773,34 @@ should be settled before their phase is carded:
 ## 12. Migration & back-compat (phase-aligned)
 
 1. Phase 1: `components.document_type` (default+backfill `stig`,
-   immutable); `srg_rules.component_id` (nullable FK) +
-   `derived_from_srg_rule_id`; `security_requirements_guide_id` becomes
-   optional for component-authored `SrgRule`s; `VulcanAuditable` wiring
-   for authored `SrgRule`s. Zero behavior change for every existing
-   record; **the full suite passing untouched is the faithfulness proof.**
+   immutable); `derived_from_srg_rule_id` (new FK to the catalog row,
+   indexed) — **`component_id` already exists** on base_rules
+   (schema.rb:83, the shared STI column; do not re-add, v7.2);
+   `security_requirements_guide_id` becomes optional for
+   component-authored `SrgRule`s **in the SAME migration as the §8.2
+   XOR CHECK** (v7.2 — sequencing them separately opens a window where
+   a catalog `SrgRule` saves with NULL srg_id and no compensating
+   constraint; bulk `SrgRule.import` bypasses validations). Precede
+   `ADD CONSTRAINT` with a pre-flight guard proving no existing
+   `SrgRule` row is both-NULL or both-set. `SrgRule` `deleted_at`
+   default scope (§6 v7.1); `VulcanAuditable` wiring for authored
+   `SrgRule`s. Zero behavior change for every existing record; **the
+   full suite passing untouched is the faithfulness proof.**
 2. Phase 2: `Applicable` status value atomic with the per-profile
    (authored-`SrgRule`-only) exact-match inclusion validation and UI
    gating (§4). No relocation machinery lands here.
-3. Phase 3: `component_source_srgs` (backfill from
-   `security_requirements_guide_id`); `security_requirements_guides.core`
-   flag (set on core-document upload).
-4. Phase 4: `requirement_relocations` table (§6) — source FK, target
-   family token, nullable target FK, `executed_at`, unique partial index
-   on pending source — one atomic change. No new `base_rules` columns,
-   no new status value.
+3. Phase 3: ordered steps (v7.2): audit components for NULL/dangling
+   `based_on` → repair-or-decide → `component_source_srgs` (backfill
+   from `based_on`) → NOT NULL on `components.
+   security_requirements_guide_id` → only then enforce the §5
+   "based_on ∈ join, ≥1 parent" invariant.
+   `security_requirements_guides.core` flag (set on core-document
+   upload).
+4. Phase 4: `requirement_relocations` table (§6) — source FK
+   (`dependent: :destroy` from the source rule), target family token,
+   nullable target FK (`on_delete: :nullify`), `executed_at`, unique
+   partial index on pending source — one atomic change. No new
+   `base_rules` columns, no new status value.
 5. Phase 6: `component_reference_benchmarks`.
 6. `bundle exec rake parallel:prepare` after every migration.
 
