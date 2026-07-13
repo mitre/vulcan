@@ -123,6 +123,10 @@ class RulesController < ApplicationController
       @rule.additional_answers.destroy_all
       @rule.reviews.destroy_all
       @rule.satisfied_by.destroy_all
+      # Soft-delete bypasses the counter_cache callbacks (they only track
+      # hard create/destroy), so recount from the association — Rule's
+      # default scope already excludes deleted rows.
+      Component.reset_counters(@rule.component_id, :rules)
     end
 
     Rails.logger.warn("Rule #{@rule.rule_id} (id=#{@rule.id}) deleted by #{current_user.email}: #{warnings.join(' ')}") if warnings.any?

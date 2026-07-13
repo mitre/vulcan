@@ -292,6 +292,12 @@ RSpec.describe 'Rules' do
         expect(Rule.unscoped.find(rule_id)).not_to be_nil
       end
 
+      it 'recalculates the component rules_count (soft-delete skips counter_cache)' do
+        component = rule.component
+        expect { delete "/rules/#{rule.id}" }
+          .to change { component.reload.rules_count }.by(-1)
+      end
+
       it 'rolls back the soft-delete if a dependent destroy raises (no partial writes)' do
         # Pre-fix the controller did update_columns(deleted_at:) FIRST and then
         # destroy_all on associations one-by-one with no transaction. A failure
