@@ -1,11 +1,15 @@
-# ADR: SRG Component Authoring — SRG-Writing as a First-Class Document Type
+# ADR: Generalized XCCDF Document Authoring — SRG as the First New Profile
 
-- **Status:** DRAFT v5 — core reworked per Aaron's architectural correction
-  (2026-07-10, late): authored SRG requirements are **expanded `SrgRule`s**,
-  not `Rule`s behind a policy layer. Awaiting Aaron's read + approval.
+- **Status:** DRAFT v6 — v5 core (authored SRG requirements are **expanded
+  `SrgRule`s**, not `Rule`s behind a policy layer) stands unchanged. v6 adds
+  Will's scoping (§0.1): the framing generalizes from "add SRG support" to
+  "author documents off **any** XCCDF upstream," and the **user workflow**
+  (§2.1) is made explicit. Awaiting Aaron's read + approval.
 - **Date:** 2026-07-10 (v2 per 3-agent swarm; v3 folded Aaron's eight fork
-  decisions; v4 per readiness swarm; v5 replaces the storage core)
-- **Deciders:** Aaron Lippold (with STIG-lead input, 2026-07-10)
+  decisions; v4 per readiness swarm; v5 replaced the storage core);
+  2026-07-12 (v6 scoping + workflow, Will)
+- **Deciders:** Aaron Lippold (with STIG-lead input, 2026-07-10); Will Dower
+  (scoping + workflow, 2026-07-12)
 - **Companion:** `adr-satisfaction-restructuring.md` (v2-ulhw) — two
   distinct primitives, §9.
 
@@ -35,6 +39,40 @@ OS core); per-status SRG field-config content (STIG-lead input at
 implementation); export emit-shape details (pinned by diffing published
 SRG XMLs).
 
+## 0.1 Scoping amendment (Will Dower, 2026-07-12)
+
+Two amendments. Neither overturns a §0 decision; both change what the work
+is *called* and what it must make explicit.
+
+| # | Amendment | Rationale |
+|---|---|---|
+| A | **This is not "adding SRG support." It is generalizing Vulcan to author a document off ANY XCCDF upstream.** SRG authoring is the primary and first-delivered profile; it is not the whole of the capability. | Vulcan's intended trajectory is to scope **beyond the DoD document space** and support authoring against essentially any XCCDF-compliant source document — e.g. organization-specific security policy documents that are neither STIGs nor SRGs. The SRG work builds precisely the machinery that requires: an authored document derived from an upstream benchmark, under its own status vocabulary and field rules. The generalization is therefore free if we take it now, and a rework if we don't — hard-coding the STIG/SRG binary would force a schema reopening the first time a non-DoD upstream shows up. |
+| B | **The user workflow is a first-class requirement, not an implementation detail.** Authoring type is **chosen at component creation**, and that choice gates the source options and the per-requirement status options. Specified in §2.1. | The v5 ADR describes storage exhaustively and the user's path not at all. The creation-time choice had to be established by phone (Will→Aaron, 2026-07-11) rather than read off the document — which is the definition of an under-specified ADR. |
+
+**What amendment A does and does not require.** It does **not** mean building
+a third profile now — scope stays SRG + STIG, and SRG remains the focus. It
+means the seams are *named and shaped* for extension so a third profile is
+additive configuration rather than a schema migration. Concretely, five places
+currently hard-code the binary and should be expressed as **per-profile
+policy** instead (see §2.2):
+
+1. `components.document_type` — an extensible **authoring profile**, not a
+   two-value enum.
+2. Parent eligibility — a per-profile rule, not the mirror-image pair of
+   hard-coded clauses in §5.
+3. `security_requirements_guides.core` — conceptually an upstream **tier**,
+   not an SRG-specific boolean.
+4. `derived_from_srg_rule_id` — conceptually "the upstream requirement this
+   derives from." The FK name bakes in "the upstream is an SRG."
+5. `SecurityRequirementsGuide` as the sole upstream registry.
+
+Items 3–5 are **naming/widening debt, not re-architecture**: the v5 storage
+core (§3) is already general — an authored requirement is a `BaseRule`
+subclass linked to a component and to an upstream requirement. That shape
+serves any XCCDF upstream. Renaming/widening later is a rename + a nullable
+column, not a redesign. We record the debt here so the third profile is a
+known, costed follow-on rather than a surprise.
+
 ## 1. Context
 
 Per Aaron/STIG leads (2026-07-10): DISA publishes all SRGs and STIGs;
@@ -52,6 +90,23 @@ already has the type for an SRG requirement**: `SrgRule`, an STI sibling of
 `Rule` on the shared `base_rules` table. This ADR makes SRG authoring
 first-class by **expanding `SrgRule`** — not by inventing a parallel
 representation.
+
+**The general shape of the problem (Will, 2026-07-12).** STIG-from-SRG and
+SRG-from-core are the same operation at different levels: *author a document
+whose requirements derive from an upstream XCCDF benchmark, under a status
+vocabulary and field policy specific to the kind of document being written.*
+That operation is not exhausted by STIGs and SRGs. Vulcan is intended to
+eventually scope **beyond the DoD document space** — to support authoring
+against essentially any XCCDF-compliant source document, including
+organization-specific security policy documents that are neither STIGs nor
+SRGs. That is the same operation under a third profile.
+
+So the capability being added here is **generalized XCCDF document
+authoring**, of which SRG authoring is the first and primary profile (§0.1
+amendment A). STIG stays exactly as it is; SRG is delivered now; a further
+profile is a costed, deliberate follow-on rather than speculative
+generality — the point is only that the seams are shaped so it does not
+require reopening the schema.
 
 ## 2. Requirements (Aaron + STIG leads, 2026-07-10 — verbatim-faithful)
 
@@ -83,6 +138,95 @@ R4. **Relocation marker**: a requirement can be labeled "needs to move"
 
 R5. **Edit flow and active fields differ per document type.**
 
+R6. **The authoring profile is chosen by the user at component creation, and
+    that choice gates everything downstream** (Aaron, confirmed to Will by
+    phone 2026-07-11). A component is a STIG **or** an SRG — never a
+    component that permits both behaviors and resolves the difference later.
+    Specified in §2.1.
+
+## 2.1 User workflow — the creation choice and what it gates (R6)
+
+This is the section the v5 draft lacked. It is normative: the storage model
+(§3) exists to serve it.
+
+**The choice is made once, at creation, and it is exclusive.** The New
+Component flow asks *"What are you authoring?"* — **STIG** or **SRG** — before
+anything else. We do **not** create a neutral component and let both
+behaviors coexist. The chosen profile is persisted as
+`components.document_type` and is immutable thereafter (§2.1.4).
+
+Everything below follows from that single answer.
+
+### 2.1.1 What the choice gates
+
+| Surface | STIG profile | SRG profile |
+|---|---|---|
+| **Source / parent picker** (what you may base the document on) | 1..N **derived (non-core) SRGs** from the catalog — today's single `based_on`, now multi-select (§0.14) | 1..N **core SRGs** (SRG-NET / SRG-OS / SRG-APP) — the non-public author-community documents (§5) |
+| **Per-requirement status options** | today's five: NYD, Applicable-Configurable, Applicable-Inherently Meets, Applicable-Does Not Meet, Not Applicable | NYD, **Applicable**, **Not Applicable**, **Moved** (§4) |
+| **Per-status field config** (which fields are active/required) | today's `STATUS_FIELD_CONFIG` | SRG field config (content from STIG leads — §10.2) |
+| **Satisfied-By panel** | present | **absent entirely** — not a disabled state (§7) |
+| **Relocation marker** | absent | present (§6) |
+| **Export mode** | STIG XCCDF (+ InSpec, disposition matrix) | SRG XCCDF (§8.2) |
+
+The two lists of source options are **mirror images and mutually exclusive**:
+a core SRG is never a valid STIG base, and a derived SRG is never a valid SRG
+base. Users therefore never see an irrelevant option — the picker is filtered
+by the profile they just chose, not merely validated after the fact.
+
+### 2.1.2 Creation walkthrough (both profiles)
+
+1. **Choose the profile** — STIG or SRG.
+2. **Choose the source document(s)** — the picker is populated per §2.1.1 and
+   is multi-select for both profiles (§0.14).
+3. **Identity** — STIG: the component prefix, as today. SRG: the family
+   **technology token** (CTR, GPOS, DB, …), the SRG-world analogue of the
+   prefix (§5).
+4. **Choose the import mode** — full union-import of every requirement from
+   every declared source (default), or selective via a requirement picker
+   (§5.0). Identical machinery for both profiles.
+5. *(Optional)* **Reference benchmarks** — a searchable catalog pick (§8.1.3).
+
+The component is then created with its requirements already imported, in
+`Not Yet Determined`, and the editor opens in the profile's mode.
+
+### 2.1.3 Authoring loop
+
+Per requirement the author sets a status from **their profile's vocabulary
+only**, and the form shows the fields that profile's config marks active for
+that status. STIG authors additionally use Satisfied-By; SRG authors
+additionally use the relocation marker. Review, comment, lock, and audit
+behave identically across profiles (§13) — those are document-agnostic.
+
+### 2.1.4 Changing your mind
+
+`document_type` is **immutable after creation**. If a user picks the wrong
+profile the supported remedy is **delete and recreate** — there is no
+in-place conversion, because the status vocabularies and the requirement
+types (`Rule` vs `SrgRule`) differ. Consequences to accept and to surface in
+the UI:
+
+- The creation dialog must make the choice legible and hard to get wrong
+  (short plain-language description of each, not just two radio buttons).
+- Deleting loses comments/reviews/history on that component.
+- **Open question (§10.6):** is delete-and-recreate acceptable, or does a
+  mis-typed component need a conversion path? Recommend accepting it for v1
+  and revisiting only if it bites — but it must be a *decision*, not an
+  omission.
+
+## 2.2 The profile seam (per §0.1 amendment A)
+
+The variance above is **per-profile policy**, and should be expressed as such
+rather than as `if stig? … else …` pairs. One table keyed by profile —
+source eligibility, status vocabulary, field config, which panels render,
+export mode — is the seam. Adding the third profile (§1) then means adding a
+row, not migrating a schema or threading a new conditional through every
+call site.
+
+This is a naming and shaping constraint on the implementation, not new
+behavior: the v5 storage core (§3) already supports it, and the STI
+hierarchy carries the *behavioral* variance. The profile table carries the
+*configuration* variance. Keep them distinct.
+
 ## 3. Decision (core): expand `SrgRule`; the STI hierarchy IS the seam
 
 An SRG component's requirements are **`SrgRule` rows linked to the
@@ -100,11 +244,15 @@ null). The type system already separates the two authoring worlds:
   `BaseRule` — nothing to gate): the satisfies graph + ADNM automation,
   InSpec code, vendor-comment/STIG-answer machinery. R3 is satisfied by
   the type system, not by a policy object.
-- **Component kind**: `components.document_type` enum (`stig` default,
-  backfilled; immutable post-create) remains — the component must know its
-  kind before any requirements exist (creation flow, editor routing,
-  aggregate shapes). But the *behavioral* variance rides the STI classes;
-  the column is routing metadata, not a policy dispatcher.
+- **Component kind**: `components.document_type` remains — the component
+  must know its profile before any requirements exist, because the user
+  chooses it first and it gates the source picker and status vocabulary
+  (§2.1). Backfilled `stig`; immutable post-create (§2.1.4). Model it as an
+  **extensible authoring profile**, not a two-value enum (§0.1 A) — the
+  third profile (§1) must be a new row in the profile table (§2.2), not a
+  migration. The *behavioral* variance rides the STI classes; the column is
+  routing metadata plus the key into the profile config — not a policy
+  dispatcher.
 
 What this dissolves from the rejected design (§11): the
 `Component::AuthoringPolicy` dispatcher, per-document-type validation
@@ -201,7 +349,12 @@ JavaScript:
   parent, every parent family must be **core**; STIG-kind — ≥1 parent,
   every parent family must be **derived (non-core)** (mirror-image;
   cores are the authors' non-public raw material and are not valid STIG
-  bases).
+  bases). **Express this as per-profile policy (§2.2), not as a hard-coded
+  mirror-image pair** — it is the rule that a third profile (§1) most
+  obviously breaks, since an arbitrary XCCDF upstream is neither a core nor
+  a derived SRG. The same policy drives the *filtered* source
+  picker the user sees at creation (§2.1.1), so eligibility is enforced by
+  construction rather than validated after the fact.
 - The dual-mode creation import (§5.0) serves both kinds — a multi-parent
   STIG component union-imports (or selectively imports) from all its
   declared SRG parents through the same machinery.
@@ -364,6 +517,48 @@ duplication appears.
    XMLs in `db/seeds/srgs/` against the import model (Phase 7 starting
    task; full implementation is in scope, §0.13).
 
+Raised in review (Will, 2026-07-12) — none blocks the §3 core, but 4 and 7
+should be settled before their phase is carded:
+
+4. **The bare `Applicable` value is a substring footgun — recommend
+   rejecting the flat shared list.** `RuleConstants::STATUSES` today is one
+   flat array containing `Applicable - Configurable`,
+   `Applicable - Inherently Meets`, `Applicable - Does Not Meet`, and
+   `Not Applicable`. Note that **`'Not Applicable'.include?('Applicable')`
+   is already true** — substring logic on this vocabulary is fragile
+   *before* we touch it. Adding a bare `'Applicable'` to the same list makes
+   every prefix/substring check genuinely ambiguous, and §3.1's mitigation
+   ("grep for prefix/substring matches" as a Phase-2 AC) is a one-time sweep,
+   not a structural guard. **Recommend: per-profile status vocabularies**
+   (a set keyed by authoring profile, per §2.2) rather than one shared flat
+   array — which is also what amendment A wants anyway. If the flat list is
+   kept, this needs a lint/spec guard forbidding substring matching on
+   status, not a grep.
+5. **`Moved` conflates disposition with routing.** Status answers "what did
+   we decide about this requirement"; the relocation marker answers "where is
+   it going." Fusing them forces the bidirectional `Moved`⇄target invariant
+   (§6), and a needed two-way invariant is usually the tell that two concepts
+   share one column. Decided explicitly by Aaron (§0.2) and not overturned
+   here — but worth one more pass, since a moved requirement arguably still
+   has a disposition in its target.
+6. **Mis-typed component recovery** (from §2.1.4): `document_type` is
+   immutable and the remedy is delete-and-recreate, losing comments/reviews/
+   history. Recommend accepting for v1 — but as a recorded decision, not an
+   omission.
+7. **Release/catalog aliasing (§8.2) is under-specified.** On release, the
+   component's authored `SrgRule`s "attach" to a newly created catalog
+   `SecurityRequirementsGuide` — but those rows already carry `component_id`.
+   Do they end up holding *both* FKs? If so, one row is simultaneously the
+   component's editable requirement and the immutable published catalog
+   entry, and a later revision of the component (duplicate + reconcile, §5)
+   would mutate published data. Strongly suspect release must **copy** into
+   catalog rows rather than dual-link the same row. Must be settled before
+   Phase 7.
+8. **Primary-parent selection is undefined for N parents.** `based_on` stays
+   NOT NULL as the primary parent (protecting 53 read sites), but with a
+   multi-select picker (e.g. APP + OS for Container) nothing says which of the
+   declared parents becomes primary — user-chosen, or first-selected?
+
 ## 11. Alternatives considered and rejected
 
 - **`Rule` + `document_type` policy seam (the v1–v4 design of this very
@@ -460,3 +655,18 @@ duplication appears.
    on 2–3.
 
 Ordering: 2, 3, 6 independent after 1; 4 after 2; 5 after 4; 7 after 2–3.
+
+**The creation workflow (§2.1) spans phases 2 and 3 and must be carded
+explicitly — it is the user-visible heart of this ADR and the easiest thing
+to lose between two storage phases:**
+
+- Phase 2 owns the **profile picker** ("What are you authoring?" → STIG /
+  SRG), persisting `document_type`, plus the profile-keyed status vocabulary
+  and field config it gates (§2.1.1). The profile config table (§2.2) lands
+  here — it is the seam every later phase reads.
+- Phase 3 owns the **filtered source picker** (multi-select, eligibility by
+  profile — §2.1.1/§5) and the import-mode step (§5.0).
+- Acceptance for the workflow is the §13 Live walkthrough exercised **for
+  both profiles**: create → pick sources → import → set statuses from the
+  correct vocabulary → confirm the wrong profile's options are never
+  offered (not merely rejected).
