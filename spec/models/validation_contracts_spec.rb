@@ -233,7 +233,7 @@ RSpec.describe 'Model validation contracts' do
     describe 'required associations' do
       # belongs_to :user is now
       # optional so reviews can persist with user_id NULL after
-      # User#destroy nullifies the FK (FK on_delete: :nullify, step A3).
+      # User#destroy nullifies the FK (on_delete: :nullify).
       # The original commenter attribution lives on
       # commenter_imported_email/name; commenter_display_name handles
       # the display fallback.

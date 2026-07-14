@@ -2,9 +2,9 @@
 
 require 'rails_helper'
 
-# ADR docs/decisions/adr-multi-provider-oidc.md §1 (config shape) + §7 (legacy
-# backward-compat). Settings.oidc.providers is the single surface the rest of
-# the epic reads: a list of provider configs, one per VULCAN_OIDC_PROVIDERS
+# Multi-provider OIDC config shape + legacy backward-compat.
+# Settings.oidc.providers is the single surface everything else
+# reads: a list of provider configs, one per VULCAN_OIDC_PROVIDERS
 # registry key, OR a single provider named `oidc` from the unprefixed legacy
 # vars when the registry is unset.
 RSpec.describe 'OIDC provider registry (Settings.oidc.providers)' do

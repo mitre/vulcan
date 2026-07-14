@@ -8,7 +8,7 @@ RSpec.describe Review do
   # `reviews` table needs two
   # nullable string columns to preserve original commenter attribution
   # when the User row gets removed (User#destroy → reviews.user_id NULL
-  # via on_delete: :nullify FK in step A3) or when a json_archive import
+  # via the on_delete: :nullify FK) or when a json_archive import
   # carries a commenter email/name that doesn't resolve to a User on the
   # target instance. Mirrors the `_imported_email/_name` columns added in
   # `.8` for triage_set_by + adjudicated_by.

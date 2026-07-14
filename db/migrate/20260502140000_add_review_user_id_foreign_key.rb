@@ -14,8 +14,8 @@
 # Previously there was no FK at all on this column, so direct SQL DELETE
 # orphaned every review and the next save raised `User must exist`. A
 # companion change made `belongs_to :user, optional: true` so the nullified row is
-# valid; original commenter attribution lives on commenter_imported_*
-# columns from step A1.
+# valid; original commenter attribution lives on the commenter_imported_*
+# columns.
 class AddReviewUserIdForeignKey < ActiveRecord::Migration[8.0]
   def change
     add_foreign_key :reviews, :users, column: :user_id,

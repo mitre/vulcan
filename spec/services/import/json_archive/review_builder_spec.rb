@@ -232,9 +232,9 @@ RSpec.describe Import::JsonArchive::ReviewBuilder do
   # pre-fix, when the archive's
   # commenter user_email/user_name didn't resolve to a User on this
   # instance, ReviewBuilder warned + skipped the review entirely. That
-  # destroyed the audit trail / disposition record. Now that step A2
-  # makes belongs_to :user optional and step A1 added
-  # commenter_imported_email/name columns, we can preserve the row with
+  # destroyed the audit trail / disposition record. Now that
+  # belongs_to :user is optional and the
+  # commenter_imported_email/name columns exist, we can preserve the row with
   # user_id NULL + commenter_imported_* populated. Mirrors the existing
   # attribution_attrs pattern used for triage_set_by + adjudicated_by.
   describe '#build_all unresolved commenter' do

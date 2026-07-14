@@ -14,9 +14,9 @@ class Review < ApplicationRecord
   imported_attribution :commenter,   via: :user, column_prefix: :commenter
 
   # optional so reviews.user_id
-  # can be NULL after step A3's FK on_delete: :nullify removes the User.
+  # can be NULL after the FK's on_delete: :nullify removes the User.
   # Original commenter attribution lives on commenter_imported_email/name
-  # columns; #commenter_display_name (step B1) provides the display fallback.
+  # columns; #commenter_display_name provides the display fallback.
   belongs_to :user, optional: true
   # Polymorphic target: a Review can be on a Rule (existing — rule-scoped
   # comments) or a Component (issue #725 — overall component feedback).

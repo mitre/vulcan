@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 # Builds the OIDC provider list for Settings.oidc.providers from environment
-# variables. This is the load-time implementation of the "ERB loop over
-# VULCAN_OIDC_PROVIDERS" in the multi-provider ADR (§1, §7) — extracted to a
+# variables. This is the load-time implementation of the multi-provider
+# "ERB loop over VULCAN_OIDC_PROVIDERS" — extracted to a
 # tested Ruby class instead of raw YAML-ERB so the nested per-provider maps,
 # the legacy backward-compat mapping, and key validation are unit-testable.
 # Settings remains the single config surface: vulcan.default.yml calls

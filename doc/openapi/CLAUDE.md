@@ -213,7 +213,7 @@ rules:
 
 `spec/contracts/` validates real API responses against this spec using the `openapi_first` gem. The test support file at `spec/support/openapi_contract.rb` registers `doc/openapi.yaml` (the bundled output) as the `:vulcan` definition.
 
-**Every endpoint in the spec MUST have a contract test.** No exceptions. A path without a contract test is a path where the schema and actual response can silently diverge (see v2-05f.44 — Devise blacklist stripped fields that the schema claimed were present, undetected for weeks).
+**Every endpoint in the spec MUST have a contract test.** No exceptions. A path without a contract test is a path where the schema and actual response can silently diverge (real incident: a Devise blacklist stripped fields that the schema claimed were present, undetected for weeks).
 
 ### When adding a new endpoint:
 

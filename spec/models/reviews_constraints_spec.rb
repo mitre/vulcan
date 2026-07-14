@@ -100,9 +100,9 @@ RSpec.describe Review do
     end
   end
 
-  # `belongs_to :user` becomes
-  # optional so a Review can persist with `user_id` NULL after step A3
-  # adds the FK with `on_delete: :nullify` (User#destroy nullifies all
+  # `belongs_to :user` is
+  # optional so a Review can persist with `user_id` NULL after the FK's
+  # `on_delete: :nullify` fires (User#destroy nullifies all
   # the user's reviews instead of forcing a cascade). The commenter's
   # original attribution lives in `commenter_imported_*` once nullified;
   # display + export layers fall back to those columns when user_id is nil.
