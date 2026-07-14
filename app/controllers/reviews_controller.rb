@@ -76,7 +76,9 @@ class ReviewsController < ApplicationController
 
   def create
     base = review_params.except('component_id').merge(user: current_user)
-    base = @rule ? base.merge(rule: @rule) : base.merge(commentable: @component, action: Review::ACTION_COMMENT, section: nil)
+    # commentable, not rule: — @rule may be an authored SrgRule; the
+    # dual-write callback still sets rule_id for Rule targets.
+    base = @rule ? base.merge(commentable: @rule) : base.merge(commentable: @component, action: Review::ACTION_COMMENT, section: nil)
     review = Review.new(base)
 
     saved = false
@@ -124,7 +126,7 @@ class ReviewsController < ApplicationController
   # creates a child Review (action='comment', responding_to_review_id) so
   # the response renders inline in the rule's existing thread.
   #
-  # Validation per design §3.5:
+  # Validation:
   #   - triage_status must be one of Review::TRIAGE_STATUSES
   #   - non_concur (Decline) requires response_comment
   #   - duplicate requires duplicate_of_review_id
@@ -364,10 +366,14 @@ class ReviewsController < ApplicationController
                           variant: 'warning')
     end
 
-    target_rule = Rule.find_by(id: target_rule_id)
+    # Requirement rows of any STI type (Rule or authored SrgRule) — a bare
+    # Rule.find_by can't reach SRG-kind targets. Global lookup first so a
+    # cross-component target still gets the explanatory 422 below, not 404.
+    target_rule = BaseRule.where(deleted_at: nil).where.not(component_id: nil)
+                          .find_by(id: target_rule_id)
     return render_not_found unless target_rule
 
-    unless target_rule.component_id == @review.rule.component_id
+    unless target_rule.component_id == @review.requirement.component_id
       return render_toast(title: 'Cannot move.',
                           message: 'Target rule must be in the same component.',
                           variant: 'warning')
@@ -522,7 +528,9 @@ class ReviewsController < ApplicationController
   end
 
   def lock_controls
-    unlocked = @component.rules.where(locked: false)
+    # requirements, not rules: lock-all must reach authored SrgRules on
+    # SRG-kind components or the release gate is unsatisfiable.
+    unlocked = @component.requirements.where(locked: false)
 
     # Identify rules that can't be locked due to incomplete data (B10: warn but proceed)
     skipped_ids = Set.new
@@ -572,7 +580,9 @@ class ReviewsController < ApplicationController
     save_failure_messages = nil
     Review.transaction do
       lockable.each do |rule|
-        review = Review.new(review_params.merge({ user: current_user, rule: rule }))
+        # commentable, not rule: — the polymorphic target reaches authored
+        # SrgRules; the dual-write callback still sets rule_id for Rules.
+        review = Review.new(review_params.merge({ user: current_user, commentable: rule }))
         next if review.save
 
         save_failure_messages = review.errors.full_messages
@@ -609,7 +619,7 @@ class ReviewsController < ApplicationController
                           status: :unprocessable_content)
     end
 
-    rules = @component.rules.where(locked: false)
+    rules = @component.requirements.where(locked: false)
     count = 0
 
     # Wrap the per-rule updates in a single transaction so a failure on
@@ -671,7 +681,9 @@ class ReviewsController < ApplicationController
   end
 
   def set_rule
-    @rule = Rule.find(params[:rule_id])
+    # Requirement rows of any STI type (Rule or authored SrgRule) — a
+    # Rule-classed find would 404 review actions on SRG-kind requirements.
+    @rule = BaseRule.where(deleted_at: nil).where.not(component_id: nil).find(params[:rule_id])
   end
 
   def set_component
@@ -839,7 +851,7 @@ class ReviewsController < ApplicationController
     parent = Review.find_by(id: responding_to_id)
     return false unless parent && parent.action == Review::ACTION_COMMENT
 
-    parent_component = parent.rule&.component || (parent.commentable if parent.commentable_type == 'Component')
+    parent_component = parent.component
     return false unless parent_component&.id == target_component.id
 
     target_component.triaging_active?

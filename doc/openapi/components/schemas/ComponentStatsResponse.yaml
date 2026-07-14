@@ -4,6 +4,7 @@ description: >-
   has no rules — never a fabricated 0.0.
 type: object
 required:
+  - document_type
   - rules_by_status
   - rules_by_severity
   - rule_count
@@ -11,8 +12,24 @@ required:
   - lock_pct
 additionalProperties: false
 properties:
+  document_type:
+    type: string
+    description: >-
+      Authoring profile of the component — tells clients which
+      rules_by_status branch to expect.
+    enum:
+      - stig
+      - srg
+    example: stig
   rules_by_status:
-    $ref: ./RulesByStatus.yaml
+    description: >-
+      Status buckets shaped by the component's document_type: the five
+      STIG buckets or the three SRG buckets. The two branch shapes are
+      disjoint; the component's document_type tells clients which to
+      expect.
+    oneOf:
+      - $ref: ./RulesByStatus.yaml
+      - $ref: ./SrgRulesByStatus.yaml
   rules_by_severity:
     $ref: ./SeverityBuckets.yaml
   rule_count:

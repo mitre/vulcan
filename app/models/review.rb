@@ -37,6 +37,17 @@ class Review < ApplicationRecord
     (commentable || rule)&.component
   end
 
+  # The BaseRule-typed target of a review ACTION (lock/unlock/review-request
+  # mechanics). Prefers the polymorphic commentable — it reaches authored
+  # SrgRules, which the Rule-classed `rule` association structurally
+  # cannot. The rule fallback covers legacy rows whose dual-write callback
+  # never fired.
+  def requirement
+    return commentable if commentable_type == 'BaseRule' && commentable.present?
+
+    rule
+  end
+
   belongs_to :triage_set_by, class_name: 'User', optional: true
   belongs_to :adjudicated_by, class_name: 'User', optional: true
   belongs_to :duplicate_of, class_name: 'Review', foreign_key: 'duplicate_of_review_id',
@@ -92,7 +103,9 @@ class Review < ApplicationRecord
   scope :for_components, lambda { |component_ids|
     rule_scoped = top_level_comments.where(
       commentable_type: 'BaseRule',
-      commentable_id: Rule.where(component_id: component_ids).select(:id)
+      # base_rules-scoped, not Rule: the STI association excludes authored
+      # SrgRules and dashboard aggregates would omit SRG comments.
+      commentable_id: BaseRule.live_for_components(component_ids).select(:id)
     )
     component_scoped = top_level_comments.where(commentable_type: 'Component', commentable_id: component_ids)
     rule_scoped.or(component_scoped)
@@ -471,9 +484,9 @@ class Review < ApplicationRecord
     perms = project_permissions
     if perms != 'admin' && perms != 'reviewer' && perms != 'author'
       errors.add(:base, 'Only admins, reviewers, and authors can request a review')
-    elsif rule.locked
+    elsif requirement.locked
       errors.add(:base, 'Cannot request a review on a locked control')
-    elsif !rule.review_requestor_id.nil?
+    elsif !requirement.review_requestor_id.nil?
       errors.add(:base, 'Control is already under review')
     end
   end
@@ -483,9 +496,9 @@ class Review < ApplicationRecord
   # - current user is admin
   # - OR current user originally requested the review
   def can_revoke_review_request
-    if rule.review_requestor_id.nil?
+    if requirement.review_requestor_id.nil?
       errors.add(:base, 'Control is not currently under review')
-    elsif !(user.id == rule.review_requestor_id || project_permissions == 'admin')
+    elsif !(user.id == requirement.review_requestor_id || project_permissions == 'admin')
       errors.add(:base, 'Only the requestor or an admin can revoke a review request')
     end
   end
@@ -497,11 +510,11 @@ class Review < ApplicationRecord
   # - control is currently under review
   def can_request_changes
     perms = project_permissions
-    if rule.review_requestor_id.nil?
+    if requirement.review_requestor_id.nil?
       errors.add(:base, 'Control is not currently under review')
     elsif perms != 'admin' && perms != 'reviewer'
       errors.add(:base, 'Only admins and reviewers can request changes')
-    elsif perms == 'reviewer' && user.id == rule.review_requestor_id
+    elsif perms == 'reviewer' && user.id == requirement.review_requestor_id
       errors.add(:base, 'Reviewers cannot review their own review requests')
     end
   end
@@ -513,11 +526,11 @@ class Review < ApplicationRecord
   # - control is currently under review
   def can_approve
     perms = project_permissions
-    if rule.review_requestor_id.nil?
+    if requirement.review_requestor_id.nil?
       errors.add(:base, 'Control is not currently under review')
     elsif perms != 'admin' && perms != 'reviewer'
       errors.add(:base, 'Only admins and reviewers can approve')
-    elsif perms == 'reviewer' && user.id == rule.review_requestor_id
+    elsif perms == 'reviewer' && user.id == requirement.review_requestor_id
       errors.add(:base, 'Reviewers cannot review their own review requests')
     end
   end
@@ -530,9 +543,9 @@ class Review < ApplicationRecord
   def can_lock_control
     if project_permissions != 'admin'
       errors.add(:base, 'Only an admin can lock')
-    elsif !rule.review_requestor_id.nil?
+    elsif !requirement.review_requestor_id.nil?
       errors.add(:base, 'Cannot lock a control that is currently under review')
-    elsif rule.locked
+    elsif requirement.locked
       errors.add(:base, 'Control is already locked')
     end
   end
@@ -544,9 +557,9 @@ class Review < ApplicationRecord
   def can_unlock_control
     if project_permissions != 'admin'
       errors.add(:base, 'Only an admin can unlock')
-    elsif !rule.review_requestor_id.nil?
+    elsif !requirement.review_requestor_id.nil?
       errors.add(:base, 'Cannot unlock a control that is currently under review')
-    elsif !rule.locked
+    elsif !requirement.locked
       errors.add(:base, 'Control is already unlocked')
     end
   end
@@ -575,10 +588,10 @@ class Review < ApplicationRecord
   end
 
   def set_rule_review_params(requestor_id:, locked:, changes_requested:)
-    rule.review_requestor_id = requestor_id
-    rule.locked = locked
-    rule.changes_requested = changes_requested
-    rule.save!
+    requirement.review_requestor_id = requestor_id
+    requirement.locked = locked
+    requirement.changes_requested = changes_requested
+    requirement.save!
   end
 
   def duplicate_status_requires_target

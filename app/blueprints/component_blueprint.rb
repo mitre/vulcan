@@ -52,7 +52,7 @@ class ComponentBlueprint < Blueprinter::Base
   view :summary do
     fields :title, :released, :project_id, :component_id,
            :security_requirements_guide_id, :rules_count, :memberships_count,
-           :updated_at, :comment_phase, :closed_reason,
+           :updated_at, :comment_phase, :closed_reason, :document_type,
            :comment_period_starts_at, :comment_period_ends_at
 
     field :effective_permissions do |component, options|
@@ -82,7 +82,8 @@ class ComponentBlueprint < Blueprinter::Base
   # component.X property access in ComponentCard.vue.
   view :index do
     fields :updated_at, :released, :rules_count, :component_id, :project_id,
-           :security_requirements_guide_id, :admin_name, :admin_email, :description
+           :security_requirements_guide_id, :admin_name, :admin_email, :description,
+           :document_type
 
     field :releasable do |component, _options|
       component.releasable
@@ -100,15 +101,25 @@ class ComponentBlueprint < Blueprinter::Base
 
   # === Show view: non-member read-only ===
   view :show do
-    fields :title, :description, :admin_name, :admin_email, :released, :updated_at,
+    fields :title, :description, :admin_name, :admin_email, :released, :updated_at, :document_type,
            :comment_phase, :closed_reason, :comment_period_starts_at, :comment_period_ends_at
 
     field :effective_permissions do |component, options|
       options[:current_user]&.effective_permissions(component)
     end
 
-    association :rules, blueprint: RuleBlueprint, view: :viewer do |component, _options|
-      BaseRule.canonical_sort(component.rules)
+    # Kind-routed: authored SrgRules render through their dedicated
+    # blueprint — RuleBlueprint's views call Rule-only methods. Caller
+    # options pass through (reaction summaries etc.); the outer render's
+    # own view key must not override the nested view.
+    field :rules do |component, options|
+      ordered = BaseRule.canonical_sort(component.requirements)
+      nested = options.except(:view, :view_name, :root, :meta)
+      if component.document_type == 'srg'
+        AuthoredSrgRuleBlueprint.render_as_json(ordered, view: :viewer, **nested)
+      else
+        RuleBlueprint.render_as_json(ordered, view: :viewer, **nested)
+      end
     end
 
     # Component#reviews returns ReviewBlueprint-serialized hashes with
@@ -124,7 +135,7 @@ class ComponentBlueprint < Blueprinter::Base
     fields :title, :description, :admin_name, :admin_email,
            :released, :advanced_fields, :project_id, :component_id,
            :security_requirements_guide_id, :memberships_count,
-           :rules_count, :updated_at, :created_at,
+           :rules_count, :updated_at, :created_at, :document_type,
            :comment_phase, :closed_reason, :comment_period_starts_at, :comment_period_ends_at
 
     field :effective_permissions do |component, options|
@@ -157,9 +168,18 @@ class ComponentBlueprint < Blueprinter::Base
       component.additional_questions.as_json
     end
 
-    # Rules via RuleBlueprint :editor view
-    association :rules, blueprint: RuleBlueprint, view: :editor do |component, _options|
-      BaseRule.canonical_sort(component.rules)
+    # Kind-routed: one editor serving Component#requirements — authored
+    # SrgRules through their dedicated blueprint. Caller options pass
+    # through (reviews' reaction summaries etc.); the outer render's own
+    # view key must not override the nested view.
+    field :rules do |component, options|
+      ordered = BaseRule.canonical_sort(component.requirements)
+      nested = options.except(:view, :view_name, :root, :meta)
+      if component.document_type == 'srg'
+        AuthoredSrgRuleBlueprint.render_as_json(ordered, view: :editor, **nested)
+      else
+        RuleBlueprint.render_as_json(ordered, view: :editor, **nested)
+      end
     end
 
     # Component#reviews returns ReviewBlueprint-serialized hashes with

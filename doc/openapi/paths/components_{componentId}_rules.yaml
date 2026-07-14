@@ -16,8 +16,13 @@ get:
         application/json:
           schema:
             type: array
+            description: >-
+              Items are shaped by the component's document_type: STIG rules
+              or authored SRG requirements.
             items:
-              $ref: ../components/schemas/RuleEditorResponse.yaml
+              oneOf:
+                - $ref: ../components/schemas/RuleEditorResponse.yaml
+                - $ref: ../components/schemas/AuthoredSrgRuleEditorResponse.yaml
           examples:
             rules:
               summary: Two rules

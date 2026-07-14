@@ -582,7 +582,11 @@ class ComponentsController < ApplicationController
 
   def blueprint_render_options
     review_ids = if @component
-                   Review.joins(:rule).merge(Rule.where(component_id: @component.id))
+                   # Reviews on any requirement kind — the old Rule join
+                   # excluded authored SrgRules, emptying SRG reaction
+                   # summaries.
+                   Review.where(commentable_type: 'BaseRule',
+                                commentable_id: BaseRule.live_for_components(@component.id).select(:id))
                          .order(created_at: :desc)
                          .limit(REACTION_SUMMARY_LIMIT)
                          .pluck(:id)
@@ -775,7 +779,8 @@ class ComponentsController < ApplicationController
     params.require(:component).permit(
       :id, :duplicate, :copy_component, :component_id, :project_id,
       :security_requirements_guide_id, :name, :prefix, :version, :release,
-      :title, :description, :admin_name, :admin_email, :file, :slack_channel_id
+      :title, :description, :admin_name, :admin_email, :file, :slack_channel_id,
+      :document_type
     )
     # rubocop:enable Rails/StrongParametersExpect
   end

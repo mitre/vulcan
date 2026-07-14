@@ -2,8 +2,7 @@
 
 require 'rails_helper'
 
-# Storage seam for SRG component authoring (ADR
-# docs/decisions/adr-srg-component-authoring.md §3, §6, §8.2, §12.1).
+# Storage seam for SRG component authoring.
 #
 # REQUIREMENTS these specs verify (not implementation):
 # - An SrgRule is AUTHORED (component-linked, no catalog parent) XOR
@@ -19,7 +18,7 @@ require 'rails_helper'
 #   component.
 RSpec.describe SrgRule do
   let_it_be(:srg) { create(:security_requirements_guide) }
-  let_it_be(:component) { create(:component, :skip_rules) }
+  let_it_be(:component) { create(:component, :skip_rules, document_type: 'srg') }
 
   describe 'authored XOR catalog (model validation)' do
     it 'accepts a catalog SrgRule — catalog parent set, no component' do
@@ -30,7 +29,7 @@ RSpec.describe SrgRule do
     end
 
     it 'accepts an authored SrgRule — component set, no catalog parent' do
-      rule = build(:srg_rule, security_requirements_guide: nil, component: component)
+      rule = build(:srg_rule, :authored, component: component)
 
       expect(rule.security_requirements_guide_id).to be_nil
       expect(rule).to be_valid
@@ -55,14 +54,14 @@ RSpec.describe SrgRule do
 
   describe 'authored XOR catalog (database CHECK — survives validation bypass)' do
     it 'blocks dual-linking an authored row even via update_columns' do
-      rule = create(:srg_rule, security_requirements_guide: nil, component: component)
+      rule = create(:srg_rule, :authored, component: component)
 
       expect { rule.update_columns(security_requirements_guide_id: srg.id) }
         .to raise_error(ActiveRecord::StatementInvalid, /base_rules_srg_authored_xor_catalog/)
     end
 
     it 'blocks orphaning an authored row even via update_columns' do
-      rule = create(:srg_rule, security_requirements_guide: nil, component: component)
+      rule = create(:srg_rule, :authored, component: component)
 
       expect { rule.update_columns(component_id: nil) }
         .to raise_error(ActiveRecord::StatementInvalid, /base_rules_srg_authored_xor_catalog/)
@@ -79,7 +78,7 @@ RSpec.describe SrgRule do
 
   describe 'soft-delete default scope' do
     it 'excludes a soft-deleted SrgRule from default queries but keeps it in unscoped' do
-      rule = create(:srg_rule, security_requirements_guide: nil, component: component)
+      rule = create(:srg_rule, :authored, component: component)
       rule.update_column(:deleted_at, Time.current)
 
       expect(described_class.where(id: rule.id)).to be_empty
@@ -103,19 +102,47 @@ RSpec.describe SrgRule do
     end
   end
 
+  describe 'authored status vocabulary (per-profile)' do
+    it 'accepts every SRG-vocabulary status on an authored row' do
+      ['Not Yet Determined', 'Applicable', 'Not Applicable'].each do |status|
+        rule = build(:srg_rule, :authored, component: component, status: status)
+        expect(rule).to be_valid, "expected authored row with status #{status.inspect} to be valid"
+      end
+    end
+
+    it 'rejects STIG-only statuses on an authored row — exact-match inclusion' do
+      rule = build(:srg_rule, :authored, component: component,
+                                         status: 'Applicable - Configurable')
+
+      expect(rule).not_to be_valid
+      expect(rule.errors[:status])
+        .to include("is not an acceptable value, acceptable values are: 'Not Yet Determined', " \
+                    "'Applicable', 'Not Applicable'")
+    end
+
+    it 'keeps the legacy superset for catalog rows — ingest statuses unchanged' do
+      catalog_rule = build(:srg_rule, security_requirements_guide: srg,
+                                      status: 'Applicable - Configurable')
+      expect(catalog_rule).to be_valid
+
+      bare = build(:srg_rule, security_requirements_guide: srg, status: 'Applicable')
+      expect(bare).not_to be_valid
+    end
+  end
+
   describe '#derived_from' do
     it 'resolves the catalog row an authored requirement was derived from' do
       catalog_rule = create(:srg_rule, security_requirements_guide: srg)
-      authored = create(:srg_rule, security_requirements_guide: nil, component: component,
-                                   derived_from_srg_rule_id: catalog_rule.id)
+      authored = create(:srg_rule, :authored, component: component,
+                                              derived_from_srg_rule_id: catalog_rule.id)
 
       expect(authored.derived_from).to eq(catalog_rule)
     end
 
     it 'nullifies the reference when the catalog row is removed — authored rows survive' do
       catalog_rule = create(:srg_rule, security_requirements_guide: srg)
-      authored = create(:srg_rule, security_requirements_guide: nil, component: component,
-                                   derived_from_srg_rule_id: catalog_rule.id)
+      authored = create(:srg_rule, :authored, component: component,
+                                              derived_from_srg_rule_id: catalog_rule.id)
 
       catalog_rule.delete
 
@@ -128,7 +155,7 @@ RSpec.describe SrgRule do
     include_context 'with auditing'
 
     it 'audits authored SrgRule creation and updates, associated with the component' do
-      authored = create(:srg_rule, security_requirements_guide: nil, component: component)
+      authored = create(:srg_rule, :authored, component: component)
       expect(authored.audits.count).to eq(1)
       expect(authored.audits.first.action).to eq('create')
 

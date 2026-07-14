@@ -25,6 +25,16 @@ class BaseRule < ApplicationRecord
   # SQL ordering for query paths (lazy loads, pagination, non-serialized use).
   scope :canonical_order, -> { order(*CANONICAL_ORDER_COLUMNS) }
 
+  # The LIVE requirement rows of the given component(s), regardless of STI
+  # type — Rules for stig-kind, authored SrgRules for srg-kind. This is the
+  # canonical scoping subquery for comment/triage/lock/release queries:
+  # querying through the Rule STI association structurally excludes
+  # authored SrgRules. BaseRule has no soft-delete default scope, so
+  # deleted_at is excluded explicitly.
+  scope :live_for_components, lambda { |component_ids|
+    where(component_id: component_ids, deleted_at: nil)
+  }
+
   # In-memory ordering for ALREADY-loaded collections (the serialization path).
   # Sorting the eager-loaded records in Ruby reorders them with zero extra
   # queries — calling the .canonical_order SQL scope on a loaded association
@@ -38,18 +48,30 @@ class BaseRule < ApplicationRecord
 
   before_create :ensure_disa_description_exists
   before_create :ensure_check_exists
+  before_destroy :prevent_destroy_if_under_review_or_locked
+
+  # Lock/review-state invariants shared across Rule and authored SrgRule —
+  # locking behaves identically for both. Vacuous for catalog/StigRule
+  # rows, which never carry locked/review state.
+  validate :cannot_be_locked_and_under_review
+  validate :locked_fields_must_be_valid_sections
 
   has_many :rule_descriptions, dependent: :destroy
   has_many :disa_rule_descriptions, dependent: :destroy
   has_many :checks, dependent: :destroy
   has_many :references, dependent: :destroy
+  # Reviews attach to any requirement row (Rule or authored SrgRule) via
+  # the dual-written rule_id column — one shared review machinery.
+  # inverse_of: false — Review#rule is Rule-classed (legacy back-compat)
+  # and must not receive an SrgRule through inverse assignment.
+  has_many :reviews, foreign_key: :rule_id, inverse_of: false, dependent: :destroy
 
   accepts_nested_attributes_for :rule_descriptions, :disa_rule_descriptions, :checks, :references, allow_destroy: true
 
   validates :status, inclusion: {
     in: STATUSES,
     message: "is not an acceptable value, acceptable values are: '#{STATUSES.compact_blank.join("', '")}'"
-  }
+  }, if: :legacy_status_vocabulary?
 
   validates :rule_severity, inclusion: {
     in: SEVERITIES,
@@ -135,7 +157,58 @@ class BaseRule < ApplicationRecord
     end
   end
 
+  # The component-scoped display name (e.g. "SRGX-00-000001"). Meaningful
+  # only for requirement rows (component-linked Rule / authored SrgRule).
+  def displayed_name
+    "#{component[:prefix]}-#{rule_id}"
+  end
+
   private
+
+  def cannot_be_locked_and_under_review
+    return unless locked && review_requestor_id.present?
+
+    errors.add(:base, 'Control cannot be under review and locked at the same time.')
+  end
+
+  def locked_fields_must_be_valid_sections
+    return if locked_fields.blank?
+
+    invalid = locked_fields.keys - LOCKABLE_SECTION_NAMES
+    return if invalid.empty?
+
+    errors.add(:locked_fields, "contains invalid section names: #{invalid.join(', ')}")
+  end
+
+  ##
+  # Requirement rows are never deleted while under review or locked.
+  # Checks *_was to cover the case where an attribute was changed before
+  # attempting to destroy.
+  def prevent_destroy_if_under_review_or_locked
+    # Allow deletion if it is due to the parent being deleted
+    return if destroyed_by_association.present?
+
+    # Abort if under review and trying to delete
+    if review_requestor_id_was.present?
+      errors.add(:base, 'Control is under review and cannot be destroyed')
+      throw(:abort)
+    end
+
+    # Abort if locked and trying to delete
+    return unless locked_was
+
+    errors.add(:base, 'Control is locked and cannot be destroyed')
+    throw(:abort)
+  end
+
+  # Seam for per-profile status vocabularies: subclasses whose
+  # rows are governed by an authoring profile (authored SrgRules) override
+  # this to opt out of the legacy STIG-shaped inclusion and validate
+  # against their profile's vocabulary instead. Rule and catalog rows keep
+  # today's behavior.
+  def legacy_status_vocabulary?
+    true
+  end
 
   def ensure_disa_description_exists
     return unless disa_rule_descriptions.empty?

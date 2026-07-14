@@ -24,6 +24,12 @@ module Export
         value
       end
 
+      # Backups must work for every document kind — an SRG component's
+      # pre-delete archive is its only recovery path after deletion.
+      def supports_srg_kind?
+        true
+      end
+
       def eager_load_associations
         [
           :disa_rule_descriptions, :rule_descriptions, :checks,

@@ -24,10 +24,16 @@ allOf:
         description: Aggregate pending comment count across all components.
         example: 1
       details:
-        type:
-          - object
-          - 'null'
-        description: Project detail statistics (component counts, rule counts, etc.).
+        description: >-
+          Project-wide requirement statistics. Per-document-type sections
+          (stig with the five DISA buckets, srg with the three SRG buckets)
+          never collapse into each other; total, lock, and review-state
+          numbers are type-agnostic and span every kind. The flat
+          ac/aim/adnm/na/nyd keys mirror the stig section and are
+          deprecated in favor of the typed sections.
+        oneOf:
+          - $ref: ./ProjectDetails.yaml
+          - type: 'null'
       histories:
         type: array
         description: Recent audit trail entries (last 50).

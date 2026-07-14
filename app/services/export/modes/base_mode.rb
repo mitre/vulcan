@@ -36,6 +36,22 @@ module Export
         raise NotImplementedError
       end
 
+      # Whether this mode can serve SRG-kind components (authored SrgRules).
+      # Modes that opt in load requirements through srg_eager_load_associations;
+      # everything else stays on the Rule association.
+      def supports_srg_kind?
+        false
+      end
+
+      # The BaseRule-shared association set — authored SrgRules carry none
+      # of the Rule-only associations (satisfies, srg_rule, additional_answers).
+      def srg_eager_load_associations
+        [
+          :disa_rule_descriptions, :rule_descriptions, :checks, :references,
+          :derived_from, { reviews: :user }
+        ]
+      end
+
       # Whether to include the Source column (Direct/Inherited) in Excel exports.
       # Override in modes where inherited row distinction is useful.
       def include_source_column?

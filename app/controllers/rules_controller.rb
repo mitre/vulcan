@@ -15,11 +15,21 @@ class RulesController < ApplicationController
   before_action :authorize_logged_in, only: %i[search]
 
   def index
-    @rules = @component.rules.eager_load(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
-                                         :additional_answers,
-                                         { satisfies: :srg_rule, satisfied_by: :srg_rule },
-                                         srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
-    @rules_json = RuleBlueprint.render(@rules, view: :editor)
+    # Kind-routed: the editor page serves the component's requirements —
+    # authored SrgRules for srg-kind (they carry none of the Rule-only
+    # associations), Rules for stig-kind.
+    if @component.document_type == 'srg'
+      @rules = @component.authored_srg_rules
+                         .eager_load(:reviews, :disa_rule_descriptions, :rule_descriptions,
+                                     :checks, :derived_from)
+      @rules_json = AuthoredSrgRuleBlueprint.render(@rules, view: :editor)
+    else
+      @rules = @component.rules.eager_load(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks,
+                                           :additional_answers,
+                                           { satisfies: :srg_rule, satisfied_by: :srg_rule },
+                                           srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
+      @rules_json = RuleBlueprint.render(@rules, view: :editor)
+    end
     @component_json = ComponentBlueprint.render(@component, view: :editor, current_user: current_user)
     respond_to do |format|
       format.html
@@ -48,10 +58,15 @@ class RulesController < ApplicationController
 
   def show
     summary = Reaction.summary(@rule.reviews.map(&:id), current_user&.id)
-    render json: RuleBlueprint.render_as_json(@rule, view: :editor, reactions_summary: summary)
+    blueprint = @rule.is_a?(SrgRule) ? AuthoredSrgRuleBlueprint : RuleBlueprint
+    render json: blueprint.render_as_json(@rule, view: :editor, reactions_summary: summary)
   end
 
   def related_rules
+    # Related-rule search keys off the Rule's SRG version linkage;
+    # authored requirements have no equivalent surface yet.
+    return render_not_found unless @rule.is_a?(Rule)
+
     srg_id = @rule.version
     rules = Rule.where(version: srg_id).where.not(id: @rule.id).where.not(component_id: @rule.component_id).eager_load(
       :disa_rule_descriptions, :checks, :component
@@ -71,6 +86,19 @@ class RulesController < ApplicationController
   end
 
   def create
+    # SRG-kind components author SrgRules through their own flow — a
+    # class-Rule row here would corrupt the component (counted by
+    # rules_count, invisible to requirements and backups).
+    if @component.document_type == 'srg'
+      return render json: {
+        toast: Toast.new(
+          title: 'Cannot create control.',
+          message: ['SRG components author SRG requirements — STIG controls cannot be added.'],
+          variant: 'danger'
+        )
+      }, status: :unprocessable_content
+    end
+
     rule = create_or_duplicate
     if rule.save
       # multi-key response (toast +
@@ -92,7 +120,11 @@ class RulesController < ApplicationController
   end
 
   def update
-    if @rule.update(rule_update_params)
+    permitted = rule_update_params
+    # Authored SrgRules carry no additional answers; the rest of the
+    # permitted set is shared base_rules content.
+    permitted = permitted.except(:additional_answers_attributes) unless @rule.is_a?(Rule)
+    if @rule.update(permitted)
       render_toast(title: 'Control updated.',
                    message: 'Successfully updated control.',
                    variant: 'success', status: :ok)
@@ -120,13 +152,17 @@ class RulesController < ApplicationController
       # rubocop:disable Rails/SkipsModelValidations -- soft-delete must bypass validations/callbacks
       @rule.update_columns(deleted_at: Time.zone.now, updated_at: Time.zone.now)
       # rubocop:enable Rails/SkipsModelValidations
-      @rule.additional_answers.destroy_all
       @rule.reviews.destroy_all
-      @rule.satisfied_by.destroy_all
-      # Soft-delete bypasses the counter_cache callbacks (they only track
-      # hard create/destroy), so recount from the association — Rule's
-      # default scope already excludes deleted rows.
-      Component.reset_counters(@rule.component_id, :rules)
+      if @rule.is_a?(Rule)
+        # Rule-only dependents and the Rule-only counter cache — authored
+        # SrgRules have neither (their count is a live scoped query).
+        @rule.additional_answers.destroy_all
+        @rule.satisfied_by.destroy_all
+        # Soft-delete bypasses the counter_cache callbacks (they only track
+        # hard create/destroy), so recount from the association — Rule's
+        # default scope already excludes deleted rows.
+        Component.reset_counters(@rule.component_id, :rules)
+      end
     end
 
     Rails.logger.warn("Rule #{@rule.rule_id} (id=#{@rule.id}) deleted by #{current_user.email}: #{warnings.join(' ')}") if warnings.any?
@@ -149,6 +185,10 @@ class RulesController < ApplicationController
   end
 
   def revert
+    # History revert is Rule machinery; no authored-requirement revert
+    # path exists yet.
+    return render_not_found unless @rule.is_a?(Rule)
+
     Rule.revert(@rule, params[:audit_id], params[:fields], params[:audit_comment])
     # Save the rule to trigger callbacks (update inspec)
     @rule.save
@@ -184,7 +224,7 @@ class RulesController < ApplicationController
 
     # multi-key response (rule + toast).
     render json: {
-      rule: RuleBlueprint.render_as_json(@rule, view: :editor),
+      rule: serialized_requirement(@rule),
       toast: Toast.new(title: locked ? 'Section locked.' : 'Section unlocked.',
                        message: ["#{section} #{locked ? 'locked' : 'unlocked'}"],
                        variant: 'success')
@@ -214,7 +254,7 @@ class RulesController < ApplicationController
 
     # multi-key response (rule + toast).
     render json: {
-      rule: RuleBlueprint.render_as_json(@rule, view: :editor),
+      rule: serialized_requirement(@rule),
       toast: Toast.new(title: "Sections #{action_word.downcase}.",
                        message: ["#{action_word} #{sections.size} sections"],
                        variant: 'success')
@@ -300,7 +340,15 @@ class RulesController < ApplicationController
   end
 
   def set_rule
-    @rule = Rule.find(params[:id])
+    # Requirement rows of any STI type (Rule or authored SrgRule) — a
+    # Rule-classed find would 404 reads/updates of authored requirements.
+    @rule = BaseRule.where(deleted_at: nil).where.not(component_id: nil).find(params[:id])
+  end
+
+  # Kind-routed editor serialization for a single requirement row.
+  def serialized_requirement(rule)
+    blueprint = rule.is_a?(SrgRule) ? AuthoredSrgRuleBlueprint : RuleBlueprint
+    blueprint.render_as_json(rule, view: :editor)
   end
 
   def set_component

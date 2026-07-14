@@ -9,7 +9,7 @@ required:
 additionalProperties: false
 properties:
   aggregate:
-    $ref: ./ComponentStatsResponse.yaml
+    $ref: ./ProjectAggregateStats.yaml
   components:
     type: array
     description: Per-component breakdown, ordered by prefix.
@@ -19,6 +19,7 @@ properties:
         - id
         - name
         - prefix
+        - document_type
         - rule_count
         - completion_pct
         - lock_pct
@@ -36,6 +37,13 @@ properties:
           type: string
           description: STIG ID prefix.
           example: RHEL-09
+        document_type:
+          type: string
+          description: Authoring profile of the component — each row carries its own kind.
+          enum:
+            - stig
+            - srg
+          example: stig
         rule_count:
           type: integer
           description: Rules in this component.

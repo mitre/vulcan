@@ -32,6 +32,10 @@ class SrgRule < BaseRule
   default_scope { where(deleted_at: nil) }
 
   validate :authored_xor_catalog
+  # Authored rows validate against their component's profile vocabulary
+  # (exact match); catalog rows keep the legacy superset via BaseRule so
+  # published-XML statuses never break ingest.
+  validate :authored_status_in_profile_vocabulary, if: -> { component_id.present? }
 
   def self.from_mapping(rule_mapping, srg_id)
     rule = super(self, rule_mapping)
@@ -41,6 +45,20 @@ class SrgRule < BaseRule
   end
 
   private
+
+  # Catalog rows opt back into BaseRule's legacy inclusion; authored rows
+  # are governed by the profile vocabulary below.
+  def legacy_status_vocabulary?
+    component_id.nil?
+  end
+
+  def authored_status_in_profile_vocabulary
+    vocabulary = AuthoringProfile.for(component.document_type).statuses
+    return if vocabulary.include?(status)
+
+    errors.add(:status,
+               "is not an acceptable value, acceptable values are: '#{vocabulary.join("', '")}'")
+  end
 
   def authored_xor_catalog
     return if component_id.nil? != security_requirements_guide_id.nil?

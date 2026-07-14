@@ -28,6 +28,9 @@ module Import
           admin_name: @data['admin_name'],
           admin_email: @data['admin_email'],
           advanced_fields: @data['advanced_fields'] || false,
+          # Legacy archives predate the authoring-profile discriminator —
+          # every pre-existing archive is a STIG.
+          document_type: @data['document_type'] || 'stig',
           security_requirements_guide_id: srg.id,
           # Legacy archives (draft / adjudication / final) are remapped
           # to the current open/closed shape via #normalize_comment_phase.

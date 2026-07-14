@@ -137,7 +137,9 @@ class Project < ApplicationRecord
     scope_components = component_id.present? ? [component_id.to_i] & component_ids_in_project : component_ids_in_project
     return empty_result if scope_components.empty?
 
-    rule_id_subquery = Rule.where(component_id: scope_components).select(:id)
+    # base_rules-scoped: the Rule STI query would hide comments on
+    # authored SrgRules from the project-level comment view.
+    rule_id_subquery = BaseRule.live_for_components(scope_components).select(:id)
     rule_scoped = Review.top_level_comments
                         .where(commentable_type: 'BaseRule', commentable_id: rule_id_subquery)
     component_scoped = Review.top_level_comments
@@ -258,23 +260,47 @@ class Project < ApplicationRecord
          .limit(limit)
   end
 
+  # Per-document-type sections: stig and srg buckets never collapse into
+  # each other; type-agnostic numbers (locks, review state, total) stay
+  # top-level. The legacy flat keys mirror the stig section until the
+  # frontend migrates its readers, then they go away.
   def details
-    status_counts = rules.group(:status).count
-    lock_counts = rules.group(:locked).count
-    review_counts = rules.where(locked: false).group(
+    component_types = components.pluck(:id, :document_type).to_h
+    live_rows = BaseRule.live_for_components(component_types.keys)
+    status_rows = live_rows.group(:component_id, :status).count
+    lock_counts = live_rows.group(:locked).count
+    review_counts = live_rows.where(locked: false).group(
       Arel.sql('CASE WHEN review_requestor_id IS NULL THEN \'nur\' ELSE \'ur\' END')
     ).count
 
+    stig_counts, srg_counts = split_status_rows_by_type(status_rows, component_types)
+    stig_buckets = Component.status_buckets(stig_counts)
+    srg_buckets = Component.srg_status_buckets(srg_counts)
+
     {
-      ac: status_counts[RuleConstants::STATUS_APPLICABLE_CONFIGURABLE] || 0,
-      aim: status_counts[RuleConstants::STATUS_APPLICABLE_IM] || 0,
-      adnm: status_counts[RuleConstants::STATUS_APPLICABLE_DNM] || 0,
-      na: status_counts[RuleConstants::STATUS_NOT_APPLICABLE] || 0,
-      nyd: status_counts[RuleConstants::STATUS_NYD] || 0,
+      ac: stig_buckets[:applicable_configurable],
+      aim: stig_buckets[:applicable_inherently_meets],
+      adnm: stig_buckets[:applicable_does_not_meet],
+      na: stig_buckets[:not_applicable],
+      nyd: stig_buckets[:not_yet_determined],
+      stig: {
+        ac: stig_buckets[:applicable_configurable],
+        aim: stig_buckets[:applicable_inherently_meets],
+        adnm: stig_buckets[:applicable_does_not_meet],
+        na: stig_buckets[:not_applicable],
+        nyd: stig_buckets[:not_yet_determined],
+        total: stig_buckets.values.sum
+      },
+      srg: {
+        applicable: srg_buckets[:applicable],
+        na: srg_buckets[:not_applicable],
+        nyd: srg_buckets[:not_yet_determined],
+        total: srg_buckets.values.sum
+      },
       nur: review_counts['nur'] || 0,
       ur: review_counts['ur'] || 0,
       lck: lock_counts[true] || 0,
-      total: status_counts.values.sum
+      total: stig_buckets.values.sum + srg_buckets.values.sum
     }
   end
 
@@ -282,14 +308,18 @@ class Project < ApplicationRecord
   # per metric), assembled per component from the RESULT ROWS, never by
   # enumerating rules. Percentages are nil when a denominator is zero.
   def dashboard_stats
-    comps = components.select(:id, :name, :prefix).order(:prefix)
+    comps = components.select(:id, :name, :prefix, :document_type).order(:prefix)
     ids = comps.map(&:id)
-    status_rows = Rule.where(component_id: ids).group(:component_id, :status).count
-    severity_rows = Rule.where(component_id: ids).group(:rule_severity).count
-    locked_rows = Rule.where(component_id: ids, locked: true).group(:component_id).count
+    # base_rules-scoped: the Rule STI query excluded authored SrgRules
+    # (and SrgRule tombstones need the explicit deleted_at filter).
+    live_rows = BaseRule.live_for_components(ids)
+    status_rows = live_rows.group(:component_id, :status).count
+    severity_rows = live_rows.group(:rule_severity).count
+    locked_rows = live_rows.where(locked: true).group(:component_id).count
+    component_types = comps.to_h { |c| [c.id, c.document_type] }
 
     {
-      aggregate: dashboard_aggregate(status_rows, severity_rows, locked_rows),
+      aggregate: dashboard_aggregate(status_rows, severity_rows, locked_rows, component_types),
       components: comps.map { |comp| dashboard_component_row(comp, status_rows, locked_rows) }
     }
   end
@@ -306,28 +336,47 @@ class Project < ApplicationRecord
              .select(:id, :name, :prefix, :version, :release, :project_id,
                      :security_requirements_guide_id, :released, :updated_at,
                      :rules_count, :component_id, :admin_name, :admin_email,
-                     :description)
+                     :description, :document_type)
              .order(:id) # deterministic serialized order
   end
 
   private
 
   # Project-wide totals summed from the per-component GROUP BY rows.
-  def dashboard_aggregate(status_rows, severity_rows, locked_rows)
-    summed = status_rows.each_with_object(Hash.new(0)) { |((_, status), count), acc| acc[status] += count }
-    buckets = Component.status_buckets(summed)
-    total = buckets.values.sum
+  def dashboard_aggregate(status_rows, severity_rows, locked_rows, component_types)
+    stig_counts, srg_counts = split_status_rows_by_type(status_rows, component_types)
+    stig_buckets = Component.status_buckets(stig_counts)
+    srg_buckets = Component.srg_status_buckets(srg_counts)
+    total = stig_buckets.values.sum + srg_buckets.values.sum
+    undecided = stig_buckets[:not_yet_determined] + srg_buckets[:not_yet_determined]
     {
-      rules_by_status: buckets,
+      # Legacy five-bucket shape stays stig-only (never a cross-type
+      # collapse) until the frontend migrates to the typed sections.
+      rules_by_status: stig_buckets,
+      rules_by_status_by_type: { stig: stig_buckets, srg: srg_buckets },
       rules_by_severity: {
         high: severity_rows['high'] || 0,
         medium: severity_rows['medium'] || 0,
         low: severity_rows['low'] || 0
       },
       rule_count: total,
-      completion_pct: percentage_of(total - buckets[:not_yet_determined], total),
+      # Completion is type-agnostic: not-NYD over live rows — both
+      # vocabularies share the Not Yet Determined key.
+      completion_pct: percentage_of(total - undecided, total),
       lock_pct: percentage_of(locked_rows.values.sum, total)
     }
+  end
+
+  # Splits the { [component_id, status] => count } GROUP BY rows into
+  # per-document-type { status => count } hashes.
+  def split_status_rows_by_type(status_rows, component_types)
+    stig = Hash.new(0)
+    srg = Hash.new(0)
+    status_rows.each do |(component_id, status), count|
+      target = component_types[component_id] == 'srg' ? srg : stig
+      target[status] += count
+    end
+    [stig, srg]
   end
 
   # One breakdown row per component, built from the shared GROUP BY rows.
@@ -335,14 +384,17 @@ class Project < ApplicationRecord
     counts = status_rows.each_with_object({}) do |((component_id, status), count), acc|
       acc[status] = count if component_id == comp.id
     end
-    buckets = Component.status_buckets(counts)
-    total = buckets.values.sum
+    # Rows carry their own kind; the completion math is type-agnostic —
+    # both vocabularies share the Not Yet Determined key.
+    total = counts.values.sum
+    undecided = counts[RuleConstants::STATUS_NYD] || 0
     {
       id: comp.id,
       name: comp.name,
       prefix: comp.prefix,
+      document_type: comp.document_type,
       rule_count: total,
-      completion_pct: percentage_of(total - buckets[:not_yet_determined], total),
+      completion_pct: percentage_of(total - undecided, total),
       lock_pct: percentage_of(locked_rows[comp.id] || 0, total)
     }
   end

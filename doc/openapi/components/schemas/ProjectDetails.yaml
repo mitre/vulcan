@@ -1,0 +1,119 @@
+description: >-
+  Project-wide requirement statistics with per-document-type sections.
+  The stig and srg sections never collapse into each other; top-level
+  numbers (total, lck, nur, ur) are type-agnostic. The flat
+  ac/aim/adnm/na/nyd keys mirror the stig section and are deprecated in
+  favor of the typed sections.
+type: object
+required:
+  - ac
+  - aim
+  - adnm
+  - na
+  - nyd
+  - stig
+  - srg
+  - nur
+  - ur
+  - lck
+  - total
+additionalProperties: false
+properties:
+  ac:
+    type: integer
+    description: Deprecated mirror of stig.ac.
+    example: 120
+  aim:
+    type: integer
+    description: Deprecated mirror of stig.aim.
+    example: 15
+  adnm:
+    type: integer
+    description: Deprecated mirror of stig.adnm.
+    example: 8
+  na:
+    type: integer
+    description: Deprecated mirror of stig.na.
+    example: 10
+  nyd:
+    type: integer
+    description: Deprecated mirror of stig.nyd.
+    example: 50
+  stig:
+    type: object
+    description: STIG-kind requirement counts in the five DISA buckets.
+    required:
+      - ac
+      - aim
+      - adnm
+      - na
+      - nyd
+      - total
+    additionalProperties: false
+    properties:
+      ac:
+        type: integer
+        description: Applicable - Configurable.
+        example: 120
+      aim:
+        type: integer
+        description: Applicable - Inherently Meets.
+        example: 15
+      adnm:
+        type: integer
+        description: Applicable - Does Not Meet.
+        example: 8
+      na:
+        type: integer
+        description: Not Applicable.
+        example: 10
+      nyd:
+        type: integer
+        description: Not Yet Determined.
+        example: 50
+      total:
+        type: integer
+        description: Total STIG-kind requirements.
+        example: 203
+  srg:
+    type: object
+    description: SRG-kind requirement counts in the three-value vocabulary.
+    required:
+      - applicable
+      - na
+      - nyd
+      - total
+    additionalProperties: false
+    properties:
+      applicable:
+        type: integer
+        description: Applicable.
+        example: 180
+      na:
+        type: integer
+        description: Not Applicable.
+        example: 3
+      nyd:
+        type: integer
+        description: Not Yet Determined.
+        example: 12
+      total:
+        type: integer
+        description: Total SRG-kind requirements.
+        example: 195
+  nur:
+    type: integer
+    description: Unlocked requirements not under review (all kinds).
+    example: 40
+  ur:
+    type: integer
+    description: Unlocked requirements under review (all kinds).
+    example: 5
+  lck:
+    type: integer
+    description: Locked requirements (all kinds).
+    example: 158
+  total:
+    type: integer
+    description: Total live requirements across every document kind.
+    example: 398

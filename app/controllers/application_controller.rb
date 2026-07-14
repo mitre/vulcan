@@ -282,11 +282,13 @@ class ApplicationController < ActionController::Base
   def find_slack_channel(object, notification_type)
     channels = []
     # In all case except for review request, the general channel
-    # (default configured with the Vulcan instance) will be notified
-    channels << Settings.slack.channel_id unless object.is_a?(Rule)
+    # (default configured with the Vulcan instance) will be notified.
+    # Requirement rows of either kind route to their component's channel.
+    requirement_row = object.is_a?(Rule) || object.is_a?(SrgRule)
+    channels << Settings.slack.channel_id unless requirement_row
     # Usecase: requesting a review, revoking review request, approving or requesting changes on a control
     case object
-    when Rule
+    when Rule, SrgRule
       # Getting the component or project slack channel
       comp = object.component
       channels << (comp.metadata&.dig('Slack Channel ID') || comp.project.metadata&.dig('Slack Channel ID'))

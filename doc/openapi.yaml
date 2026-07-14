@@ -2443,8 +2443,11 @@ paths:
             application/json:
               schema:
                 type: array
+                description: 'Items are shaped by the component''s document_type: STIG rules or authored SRG requirements.'
                 items:
-                  $ref: '#/components/schemas/RuleEditorResponse'
+                  oneOf:
+                    - $ref: '#/components/schemas/RuleEditorResponse'
+                    - $ref: '#/components/schemas/AuthoredSrgRuleEditorResponse'
               examples:
                 rules:
                   summary: Two rules
@@ -3178,7 +3181,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RuleEditorResponse'
+                description: 'Shaped by the parent component''s document_type: a STIG rule or an authored SRG requirement.'
+                oneOf:
+                  - $ref: '#/components/schemas/RuleEditorResponse'
+                  - $ref: '#/components/schemas/AuthoredSrgRuleEditorResponse'
           links:
             UpdateThisRule:
               operationId: updateRule
@@ -7368,6 +7374,7 @@ components:
         - id
         - name
         - prefix
+        - document_type
         - title
         - released
         - project_id
@@ -7391,6 +7398,13 @@ components:
           type: string
           description: STIG ID prefix.
           example: RHEL-09
+        document_type:
+          type: string
+          description: Authoring profile of the component (stig or srg). Immutable after creation.
+          enum:
+            - stig
+            - srg
+          example: stig
         title:
           type: string
           description: Component title.
@@ -7557,6 +7571,27 @@ components:
           type: integer
           description: Rules with status Not Applicable.
           example: 10
+    SrgRulesByStatus:
+      description: Requirement counts for an SRG-kind component, grouped into the three-value SRG authoring vocabulary. Disjoint from the five-bucket STIG shape — the two never collapse into one list.
+      type: object
+      required:
+        - not_yet_determined
+        - applicable
+        - not_applicable
+      additionalProperties: false
+      properties:
+        not_yet_determined:
+          type: integer
+          description: Authored requirements with status Not Yet Determined.
+          example: 12
+        applicable:
+          type: integer
+          description: Authored requirements with status Applicable.
+          example: 180
+        not_applicable:
+          type: integer
+          description: Authored requirements with status Not Applicable.
+          example: 3
     SeverityBuckets:
       description: Rule counts grouped by severity (SQL aggregate).
       type: object
@@ -7582,6 +7617,7 @@ components:
       description: 'Rule statistics for one component: counts by status and severity plus completion and lock percentages. Percentages are null when the component has no rules — never a fabricated 0.0.'
       type: object
       required:
+        - document_type
         - rules_by_status
         - rules_by_severity
         - rule_count
@@ -7589,8 +7625,18 @@ components:
         - lock_pct
       additionalProperties: false
       properties:
+        document_type:
+          type: string
+          description: Authoring profile of the component — tells clients which rules_by_status branch to expect.
+          enum:
+            - stig
+            - srg
+          example: stig
         rules_by_status:
-          $ref: '#/components/schemas/RulesByStatus'
+          description: 'Status buckets shaped by the component''s document_type: the five STIG buckets or the three SRG buckets. The two branch shapes are disjoint; the component''s document_type tells clients which to expect.'
+          oneOf:
+            - $ref: '#/components/schemas/RulesByStatus'
+            - $ref: '#/components/schemas/SrgRulesByStatus'
         rules_by_severity:
           $ref: '#/components/schemas/SeverityBuckets'
         rule_count:
@@ -7613,6 +7659,7 @@ components:
       description: Workflow readiness for a component across the authoring, lock, review, comment, triage, and export stages. Counts are SQL aggregates; the comment booleans mirror the server's write-guards.
       type: object
       required:
+        - document_type
         - authoring
         - locks
         - reviews
@@ -7621,6 +7668,13 @@ components:
         - export
       additionalProperties: false
       properties:
+        document_type:
+          type: string
+          description: Authoring profile of the component.
+          enum:
+            - stig
+            - srg
+          example: stig
         authoring:
           type: object
           description: Rule authoring progress.
@@ -7810,6 +7864,50 @@ components:
             - 'null'
           description: Percentage of top-level comments adjudicated, rounded to one decimal. Null when there are no top-level comments.
           example: 20
+    ProjectAggregateStats:
+      description: Project-wide requirement statistics aggregated across every component. Per-document-type status sections never collapse into each other; rule_count, completion and lock percentages are type-agnostic. The flat rules_by_status mirrors the stig section and is deprecated in favor of rules_by_status_by_type.
+      type: object
+      required:
+        - rules_by_status
+        - rules_by_status_by_type
+        - rules_by_severity
+        - rule_count
+        - completion_pct
+        - lock_pct
+      additionalProperties: false
+      properties:
+        rules_by_status:
+          $ref: '#/components/schemas/RulesByStatus'
+        rules_by_status_by_type:
+          type: object
+          description: Per-document-type status sections.
+          required:
+            - stig
+            - srg
+          additionalProperties: false
+          properties:
+            stig:
+              $ref: '#/components/schemas/RulesByStatus'
+            srg:
+              $ref: '#/components/schemas/SrgRulesByStatus'
+        rules_by_severity:
+          $ref: '#/components/schemas/SeverityBuckets'
+        rule_count:
+          type: integer
+          description: Total live requirements across all components, every document kind.
+          example: 207
+        completion_pct:
+          type:
+            - number
+            - 'null'
+          description: Percentage of determined requirements (anything other than Not Yet Determined) across all kinds. Null when the project has no requirements.
+          example: 75.4
+        lock_pct:
+          type:
+            - number
+            - 'null'
+          description: Percentage of locked requirements across all kinds. Null when empty.
+          example: 12.3
     ProjectStatsResponse:
       description: 'Project-level rule statistics: totals aggregated across every component plus a per-component breakdown. Percentages are null when a denominator is zero.'
       type: object
@@ -7819,7 +7917,7 @@ components:
       additionalProperties: false
       properties:
         aggregate:
-          $ref: '#/components/schemas/ComponentStatsResponse'
+          $ref: '#/components/schemas/ProjectAggregateStats'
         components:
           type: array
           description: Per-component breakdown, ordered by prefix.
@@ -7829,6 +7927,7 @@ components:
               - id
               - name
               - prefix
+              - document_type
               - rule_count
               - completion_pct
               - lock_pct
@@ -7846,6 +7945,13 @@ components:
                 type: string
                 description: STIG ID prefix.
                 example: RHEL-09
+              document_type:
+                type: string
+                description: Authoring profile of the component — each row carries its own kind.
+                enum:
+                  - stig
+                  - srg
+                example: stig
               rule_count:
                 type: integer
                 description: Rules in this component.
@@ -8063,6 +8169,121 @@ components:
           type: string
           description: Relative URL to the newly created project page. Present on success, absent on error.
           example: /projects/1
+    ProjectDetails:
+      description: Project-wide requirement statistics with per-document-type sections. The stig and srg sections never collapse into each other; top-level numbers (total, lck, nur, ur) are type-agnostic. The flat ac/aim/adnm/na/nyd keys mirror the stig section and are deprecated in favor of the typed sections.
+      type: object
+      required:
+        - ac
+        - aim
+        - adnm
+        - na
+        - nyd
+        - stig
+        - srg
+        - nur
+        - ur
+        - lck
+        - total
+      additionalProperties: false
+      properties:
+        ac:
+          type: integer
+          description: Deprecated mirror of stig.ac.
+          example: 120
+        aim:
+          type: integer
+          description: Deprecated mirror of stig.aim.
+          example: 15
+        adnm:
+          type: integer
+          description: Deprecated mirror of stig.adnm.
+          example: 8
+        na:
+          type: integer
+          description: Deprecated mirror of stig.na.
+          example: 10
+        nyd:
+          type: integer
+          description: Deprecated mirror of stig.nyd.
+          example: 50
+        stig:
+          type: object
+          description: STIG-kind requirement counts in the five DISA buckets.
+          required:
+            - ac
+            - aim
+            - adnm
+            - na
+            - nyd
+            - total
+          additionalProperties: false
+          properties:
+            ac:
+              type: integer
+              description: Applicable - Configurable.
+              example: 120
+            aim:
+              type: integer
+              description: Applicable - Inherently Meets.
+              example: 15
+            adnm:
+              type: integer
+              description: Applicable - Does Not Meet.
+              example: 8
+            na:
+              type: integer
+              description: Not Applicable.
+              example: 10
+            nyd:
+              type: integer
+              description: Not Yet Determined.
+              example: 50
+            total:
+              type: integer
+              description: Total STIG-kind requirements.
+              example: 203
+        srg:
+          type: object
+          description: SRG-kind requirement counts in the three-value vocabulary.
+          required:
+            - applicable
+            - na
+            - nyd
+            - total
+          additionalProperties: false
+          properties:
+            applicable:
+              type: integer
+              description: Applicable.
+              example: 180
+            na:
+              type: integer
+              description: Not Applicable.
+              example: 3
+            nyd:
+              type: integer
+              description: Not Yet Determined.
+              example: 12
+            total:
+              type: integer
+              description: Total SRG-kind requirements.
+              example: 195
+        nur:
+          type: integer
+          description: Unlocked requirements not under review (all kinds).
+          example: 40
+        ur:
+          type: integer
+          description: Unlocked requirements under review (all kinds).
+          example: 5
+        lck:
+          type: integer
+          description: Locked requirements (all kinds).
+          example: 158
+        total:
+          type: integer
+          description: Total live requirements across every document kind.
+          example: 398
     ComponentSummary:
       description: Base component fields shared by all views. Serialized by ComponentBlueprint (default view). View-specific schemas (ComponentEditorResponse, ComponentIndexResponse) extend this with additional fields.
       type: object
@@ -8083,6 +8304,13 @@ components:
           type: string
           description: Short alphanumeric prefix used to construct rule IDs (e.g. PHOS-03 in PHOS-03-000010).
           example: PHOS-03
+        document_type:
+          type: string
+          description: 'Authoring profile of the component: stig components author STIG requirements, srg components author SRG requirements. Immutable after creation.'
+          enum:
+            - stig
+            - srg
+          example: stig
         version:
           type:
             - integer
@@ -8175,10 +8403,10 @@ components:
               description: Aggregate pending comment count across all components.
               example: 1
             details:
-              type:
-                - object
-                - 'null'
-              description: Project detail statistics (component counts, rule counts, etc.).
+              description: Project-wide requirement statistics. Per-document-type sections (stig with the five DISA buckets, srg with the three SRG buckets) never collapse into each other; total, lock, and review-state numbers are type-agnostic and span every kind. The flat ac/aim/adnm/na/nyd keys mirror the stig section and are deprecated in favor of the typed sections.
+              oneOf:
+                - $ref: '#/components/schemas/ProjectDetails'
+                - type: 'null'
             histories:
               type: array
               description: Recent audit trail entries (last 50).
@@ -8461,7 +8689,7 @@ components:
                 description: New value after the change.
                 example: true
     ComponentInput:
-      description: Input fields for creating or updating a STIG component within a project.
+      description: Input fields for creating or updating a component within a project.
       type: object
       required:
         - name
@@ -8476,6 +8704,13 @@ components:
           type: string
           description: Short alphanumeric prefix used to construct rule IDs (e.g. CNTR in CNTR-00-000050).
           example: CNTR
+        document_type:
+          type: string
+          description: 'Authoring profile for the new component: stig authors STIG requirements from a source SRG; srg authors SRG requirements. Defaults to stig; immutable after creation.'
+          enum:
+            - stig
+            - srg
+          example: stig
         version:
           type: string
           description: Version number of the component.
@@ -9126,6 +9361,9 @@ components:
       allOf:
         - $ref: '#/components/schemas/RuleSummary'
         - type: object
+          required:
+            - satisfies
+            - satisfied_by
           properties:
             rule_weight:
               type:
@@ -9295,6 +9533,191 @@ components:
                     - string
                     - 'null'
                   example: V2R4
+    AuthoredSrgRuleEditorResponse:
+      description: 'A component-authored SRG requirement for the editing form. Shares the common requirement surface with STIG rules — status, locking, reviews, audit history, content — but its status vocabulary is the three-value SRG set, and it carries none of the STIG-only surfaces: no satisfies/satisfied_by, no srg_rule_attributes, no additional answers, no InSpec fields. Lineage is the portable derived_from_version token.'
+      type: object
+      required:
+        - id
+        - rule_id
+        - locked
+        - derived_from_version
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          description: Unique requirement identifier.
+          example: 10633
+        rule_id:
+          type: string
+          description: Six-digit zero-padded requirement number combined with the component prefix to form the displayed ID.
+          example: '000001'
+        title:
+          type:
+            - string
+            - 'null'
+          description: Title of the requirement. Null if not yet authored.
+          example: The container platform must enforce approved authorizations.
+        version:
+          type:
+            - string
+            - 'null'
+          description: Requirement version identifier. Minted at release for authored requirements.
+          example: null
+        status:
+          type:
+            - string
+            - 'null'
+          description: Applicability status in the SRG authoring vocabulary.
+          enum:
+            - Not Yet Determined
+            - Applicable
+            - Not Applicable
+            - null
+          example: Applicable
+        rule_severity:
+          type:
+            - string
+            - 'null'
+          description: DISA severity level.
+          enum:
+            - low
+            - medium
+            - high
+            - null
+          example: medium
+        locked:
+          type: boolean
+          description: Whether the requirement is locked from further edits.
+          example: false
+        review_requestor_id:
+          type:
+            - integer
+            - 'null'
+          description: ID of the user who requested review. Null if no review requested.
+          example: null
+        changes_requested:
+          type: boolean
+          description: Whether changes have been requested during review.
+          example: false
+        comment_summary:
+          type: object
+          description: Per-requirement comment counts.
+          required:
+            - open
+            - total
+          additionalProperties: false
+          properties:
+            open:
+              type: integer
+              description: Comments not yet adjudicated, including replies under open parents.
+              example: 1
+            total:
+              type: integer
+              description: Total comment count across all statuses.
+              example: 1
+        rule_weight:
+          type:
+            - string
+            - 'null'
+          description: Rule weight for DISA scoring.
+          example: '10.0'
+        fixtext:
+          type:
+            - string
+            - 'null'
+          description: Remediation guidance authored for this requirement.
+          example: Configure the container platform to enforce approved authorizations.
+        fixtext_fixref:
+          type:
+            - string
+            - 'null'
+          description: Fix reference identifier.
+          example: null
+        ident:
+          type:
+            - string
+            - 'null'
+          description: Comma-separated CCI identifiers.
+          example: CCI-000366
+        ident_system:
+          type:
+            - string
+            - 'null'
+          description: Identifier system URI.
+          example: http://iase.disa.mil/cci
+        vendor_comments:
+          type:
+            - string
+            - 'null'
+          description: Vendor comments.
+          example: null
+        vuln_id:
+          type:
+            - string
+            - 'null'
+          description: Vulnerability identifier. Assigned at release for authored requirements.
+          example: null
+        legacy_ids:
+          type:
+            - string
+            - 'null'
+          description: Comma-separated legacy identifiers.
+          example: null
+        component_id:
+          type: integer
+          description: The SRG-kind component this requirement is authored on.
+          example: 46
+        status_justification:
+          type:
+            - string
+            - 'null'
+          description: Justification for the chosen status.
+          example: null
+        artifact_description:
+          type:
+            - string
+            - 'null'
+          description: Artifact description.
+          example: null
+        locked_fields:
+          type: object
+          description: Per-section lock map (section name to true).
+          example: {}
+        nist_control_family:
+          type: string
+          description: NIST control families derived from the CCI identifiers.
+          example: CM
+        derived_from_version:
+          type:
+            - string
+            - 'null'
+          description: Version (SRG-ID) of the core-catalog requirement this authored requirement was derived from. Null for requirements authored from scratch. Always present — it distinguishes authored requirements from STIG rules wherever the two shapes appear in a oneOf.
+          example: SRG-OS-000023
+        disa_rule_descriptions_attributes:
+          type: array
+          description: DISA rule description records.
+          items:
+            $ref: '#/components/schemas/DisaRuleDescription'
+        checks_attributes:
+          type: array
+          description: Check content records.
+          items:
+            $ref: '#/components/schemas/CheckSummary'
+        rule_descriptions_attributes:
+          type: array
+          description: Raw rule description records.
+          items:
+            $ref: '#/components/schemas/RuleDescriptionSummary'
+        histories:
+          type: array
+          description: Audit trail entries for this requirement, ordered by creation time.
+          items:
+            $ref: '#/components/schemas/AuditEntry'
+        reviews:
+          type: array
+          description: Review actions on this requirement (comments, locks, etc.).
+          items:
+            $ref: '#/components/schemas/ReviewSummary'
     ComponentEditorResponse:
       description: Full component for the editing page. Serialized by ComponentBlueprint :editor view. 35 total fields including nested rules, memberships, histories, reviews. Used by GET /components/:id (member), GET /components/:id/rules (via index).
       allOf:
@@ -9426,12 +9849,10 @@ components:
               description: ID of the latest SRG for linking. Null when srg_is_latest=true.
               example: null
             status_counts:
-              type: object
-              description: Count of rules by applicability status.
-              example:
-                Not Yet Determined: 200
-                Applicable - Configurable: 2
-                Not Applicable: 1
+              description: 'Requirement counts bucketed by the component''s document_type: five STIG buckets or three SRG buckets. The shapes are disjoint and never collapse into one list.'
+              oneOf:
+                - $ref: '#/components/schemas/RulesByStatus'
+                - $ref: '#/components/schemas/SrgRulesByStatus'
             additional_questions:
               type: array
               description: Component-level custom questions for rule authors.
@@ -9439,9 +9860,11 @@ components:
                 type: object
             rules:
               type: array
-              description: All rules via RuleBlueprint :editor view.
+              description: 'All requirements, shaped by document_type: STIG rule objects for stig components, authored SRG requirement objects for srg components.'
               items:
-                $ref: '#/components/schemas/RuleEditorResponse'
+                oneOf:
+                  - $ref: '#/components/schemas/RuleEditorResponse'
+                  - $ref: '#/components/schemas/AuthoredSrgRuleEditorResponse'
             reviews:
               type: array
               description: Recent reviews (last 20, hand-built hashes with displayed_rule_name).

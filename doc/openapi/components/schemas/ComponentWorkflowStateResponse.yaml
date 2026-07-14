@@ -4,6 +4,7 @@ description: >-
   comment booleans mirror the server's write-guards.
 type: object
 required:
+  - document_type
   - authoring
   - locks
   - reviews
@@ -12,6 +13,13 @@ required:
   - export
 additionalProperties: false
 properties:
+  document_type:
+    type: string
+    description: Authoring profile of the component.
+    enum:
+      - stig
+      - srg
+    example: stig
   authoring:
     type: object
     description: Rule authoring progress.

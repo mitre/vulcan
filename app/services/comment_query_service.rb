@@ -38,7 +38,10 @@ class CommentQueryService
   private
 
   def build_base_scope
-    rule_id_subquery = @component.rules.select(:id)
+    # base_rules-scoped (not @component.rules): the Rule STI association
+    # excludes authored SrgRules, emptying the triage table for SRG-kind
+    # components.
+    rule_id_subquery = BaseRule.live_for_components(@component.id).select(:id)
     rule_scoped = Review.top_level_comments
                         .where(commentable_type: 'BaseRule', commentable_id: rule_id_subquery)
     component_scoped = Review.top_level_comments
@@ -78,7 +81,7 @@ class CommentQueryService
   end
 
   def count_total_comments
-    rule_id_subquery = @component.rules.select(:id)
+    rule_id_subquery = BaseRule.live_for_components(@component.id).select(:id)
     rule_replies = Review.where(action: Review::ACTION_COMMENT,
                                 commentable_type: 'BaseRule',
                                 commentable_id: rule_id_subquery)
@@ -111,11 +114,11 @@ class CommentQueryService
   end
 
   def serialize_rows(page_records)
-    rule_id_to_displayed = @component.rules.pluck(:id, :rule_id).to_h
+    rule_id_to_displayed = @component.requirements.pluck(:id, :rule_id).to_h
                                      .transform_values { |rid| "#{@component.prefix}-#{rid}" }
 
     child_to_parent = RuleSatisfaction
-                      .where(rule_id: @component.rules.ids)
+                      .where(rule_id: @component.requirements.ids)
                       .pluck(:rule_id, :satisfied_by_rule_id)
                       .to_h
     parent_rule_map = child_to_parent.transform_values { |pid| rule_id_to_displayed[pid] }

@@ -77,7 +77,8 @@ class Rule < BaseRule
   belongs_to :component, counter_cache: true
   belongs_to :srg_rule
   belongs_to :review_requestor, class_name: 'User', inverse_of: :reviews, optional: true
-  has_many :reviews, dependent: :destroy
+  # has_many :reviews lives on BaseRule — reviews attach to authored
+  # SrgRules through the same rule_id column.
   has_many :additional_answers, dependent: :destroy
 
   accepts_nested_attributes_for :additional_answers
@@ -96,15 +97,15 @@ class Rule < BaseRule
   before_validation :set_rule_id
   before_save :apply_audit_comment, :sort_ident
   after_create :seed_inspec_control_body
-  before_destroy :prevent_destroy_if_under_review_or_locked
   after_destroy :update_component_rules_count
   after_save :update_component_rules_count, :update_inspec_code
 
+  # Lock/review-state invariants (cannot_be_locked_and_under_review,
+  # locked_fields validation, destroy guard) live on BaseRule — shared
+  # lock semantics across Rule and authored SrgRule.
   validates_with RuleSatisfactionValidator
-  validate :cannot_be_locked_and_under_review
   validate :review_fields_cannot_change_with_other_fields, on: :update
 
-  validate :locked_fields_must_be_valid_sections
   validates :rule_id, allow_blank: false, presence: true, uniqueness: { scope: :component_id }
 
   default_scope { where(deleted_at: nil) }
@@ -286,10 +287,6 @@ class Rule < BaseRule
     csv_attributes_hash.values_at(*ExportConstants::DISA_EXPORT_HEADERS)
   end
 
-  def displayed_name
-    "#{component[:prefix]}-#{rule_id}"
-  end
-
   # Runs inside the parent save's transaction (after_save, not after_commit).
   # update_column participates in the transaction — rolls back if the
   # transaction fails. Does NOT update updated_at — inspec_control_file
@@ -409,15 +406,6 @@ class Rule < BaseRule
     end
   end
 
-  def locked_fields_must_be_valid_sections
-    return if locked_fields.blank?
-
-    invalid = locked_fields.keys - LOCKABLE_SECTION_NAMES
-    return if invalid.empty?
-
-    errors.add(:locked_fields, "contains invalid section names: #{invalid.join(', ')}")
-  end
-
   def sort_ident
     self.ident = ident.to_s.split(/, */).uniq.sort.join(', ')
   end
@@ -450,12 +438,6 @@ class Rule < BaseRule
     satisfied_by.size.positive? ? satisfied_by.order(:id).first.checks.first&.content : checks.first&.content
   end
 
-  def cannot_be_locked_and_under_review
-    return unless locked && review_requestor_id.present?
-
-    errors.add(:base, 'Control cannot be under review and locked at the same time.')
-  end
-
   ##
   # Check to ensure that "review fields" are not changed
   # in the same `.save` action as any "non-review fields"
@@ -481,26 +463,6 @@ class Rule < BaseRule
     # rubocop:disable Rails/SkipsModelValidations -- avoid retriggering callbacks on create
     update_column(:inspec_control_body, INSPEC_STUB_BODY)
     # rubocop:enable Rails/SkipsModelValidations
-  end
-
-  ##
-  # Rules should never be deleted if they are under review or locked
-  # This checks *_was to cover the case where an attrubute was changed before attempting to destroy
-  def prevent_destroy_if_under_review_or_locked
-    # Allow deletion if it is due to the parent being deleted
-    return if destroyed_by_association.present?
-
-    # Abort if under review and trying to delete
-    if review_requestor_id_was.present?
-      errors.add(:base, 'Control is under review and cannot be destroyed')
-      throw(:abort)
-    end
-
-    # Abort if locked and trying to delete
-    return unless locked_was
-
-    errors.add(:base, 'Control is locked and cannot be destroyed')
-    throw(:abort)
   end
 
   ##

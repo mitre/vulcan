@@ -7,6 +7,12 @@ description: >-
 allOf:
   - $ref: ./RuleSummary.yaml
   - type: object
+    # The satisfaction arrays are always present on STIG rules and never
+    # on authored SRG requirements — they keep the two editor row shapes
+    # disjoint wherever they appear together in a oneOf.
+    required:
+      - satisfies
+      - satisfied_by
     properties:
       rule_weight:
         type:

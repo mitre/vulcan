@@ -7,6 +7,7 @@ class Component < ApplicationRecord
   include ExportConstants
   include ActionView::Helpers::TextHelper
   include SeverityCounts
+  include RequirementBuckets
   include XccdfParseable
   include BenchmarkSearchable
   include PercentageMath
@@ -81,8 +82,8 @@ class Component < ApplicationRecord
              foreign_key: 'security_requirements_guide_id',
              inverse_of: 'components'
   has_many :rules, dependent: :destroy
-  # Requirements of an srg-kind component (ADR §3): authored SrgRules share
-  # the base_rules component_id column with Rules; the STI type keeps the
+  # Requirements of an srg-kind component: authored SrgRules share the
+  # base_rules component_id column with Rules; the STI type keeps the
   # two collections disjoint. No counter_cache — SRG counting is a live
   # scoped count (see #requirements_count).
   has_many :authored_srg_rules, class_name: 'SrgRule', inverse_of: :component, dependent: :destroy
@@ -118,14 +119,11 @@ class Component < ApplicationRecord
            :cannot_unrelease_component,
            :cannot_overlay_self
 
-  # Authoring profiles (ADR docs/decisions/adr-srg-component-authoring.md
-  # §2.2): document_type is the profile key — it routes source eligibility,
-  # status vocabulary, and field config. The user picks it at creation and
-  # it never changes (§2.1.4 — changing your mind means a new component).
-  # The extensible profile registry lands in Phase 2; the storage contract
-  # lives here.
-  DOCUMENT_TYPES = %w[stig srg].freeze
-  validates :document_type, inclusion: { in: DOCUMENT_TYPES }
+  # document_type is the authoring-profile key — it routes source
+  # eligibility, status vocabulary, and field config through the
+  # AuthoringProfile registry. The user picks it at creation and it never
+  # changes; changing your mind means a new component.
+  validates :document_type, inclusion: { in: AuthoringProfile.keys }
   validate :document_type_cannot_change, on: :update
 
   COMMENT_PHASES = %w[open closed].freeze
@@ -141,9 +139,16 @@ class Component < ApplicationRecord
 
   # Unified requirement access, kind-routed by the authoring profile:
   # a stig component's requirements are its Rules; an srg component's are
-  # its live authored SrgRules (ADR §6 v7.1).
+  # its live authored SrgRules.
   def requirements
     document_type == 'srg' ? authored_srg_rules : rules
+  end
+
+  # SeverityCounts fallback path counts through the kind-routed accessor
+  # (the with_severity_counts SQL scope is already type-agnostic — it
+  # counts base_rules rows by component_id).
+  def rules_association
+    requirements
   end
 
   # STIG counting keeps the existing rules_count counter cache. SRG
@@ -192,9 +197,16 @@ class Component < ApplicationRecord
     )
   end
 
-  # Returns a hash of rule counts grouped by status.
-  # Used by the frontend export modal to warn about NYD-only components.
+  # Returns a hash of rule counts grouped by status, bucketed by the
+  # component's authoring profile: five STIG buckets or three SRG buckets —
+  # never a shared flat list.
   def status_counts
+    if document_type == 'srg'
+      # Live authored rows only — SrgRule's default scope excludes
+      # tombstones; SRG counting never rides the Rule counter machinery.
+      return self.class.srg_status_buckets(authored_srg_rules.group(:status).count)
+    end
+
     counts = if association_cached?(:rules)
                # In-memory grouping: set_component already
                # preloaded rules for the editor; don't re-query base_rules.
@@ -205,19 +217,6 @@ class Component < ApplicationRecord
     self.class.status_buckets(counts)
   end
 
-  # Maps a raw { status string => count } hash into the canonical
-  # five-bucket shape. Shared by status_counts and the project-level
-  # dashboard aggregation (which GROUPs by component + status in one query).
-  def self.status_buckets(counts)
-    {
-      not_yet_determined: counts[STATUS_NYD] || 0,
-      applicable_configurable: counts[STATUS_APPLICABLE_CONFIGURABLE] || 0,
-      applicable_inherently_meets: counts[STATUS_APPLICABLE_IM] || 0,
-      applicable_does_not_meet: counts[STATUS_APPLICABLE_DNM] || 0,
-      not_applicable: counts[STATUS_NOT_APPLICABLE] || 0
-    }
-  end
-
   # Dashboard aggregates — SQL only (GROUP BY via status_counts /
   # severity_counts + one COUNT for locks). Percentages are nil when the
   # component has no rules.
@@ -226,11 +225,13 @@ class Component < ApplicationRecord
     total = by_status.values.sum
     determined = total - by_status[:not_yet_determined]
     {
+      # The client's routing key for the kind-shaped buckets below.
+      document_type: document_type,
       rules_by_status: by_status,
       rules_by_severity: severity_counts,
       rule_count: total,
       completion_pct: percentage_of(determined, total),
-      lock_pct: percentage_of(rules.where(locked: true).count, total)
+      lock_pct: percentage_of(requirements.where(locked: true).count, total)
     }
   end
 
@@ -241,12 +242,13 @@ class Component < ApplicationRecord
   def workflow_state
     by_status = status_counts
     total = by_status.values.sum
-    locked_count = rules.where(locked: true).count
+    locked_count = requirements.where(locked: true).count
     pending = self.class.pending_comment_counts([id])[id] || 0
     {
+      document_type: document_type,
       authoring: { rules_total: total, rules_determined: total - by_status[:not_yet_determined] },
       locks: { locked: locked_count, total: total, all_locked: total.positive? && locked_count == total },
-      reviews: { under_review: rules.where.not(review_requestor_id: nil).count },
+      reviews: { under_review: requirements.where.not(review_requestor_id: nil).count },
       comment: {
         phase: comment_phase,
         accepting_new_comments: accepting_new_comments?,
@@ -404,12 +406,13 @@ class Component < ApplicationRecord
     # If already released, then it cannot be released again
     return false if released_was
 
-    # If all rules are locked, then component may be released. Prefer the
-    # in-memory rules collection when preloaded.
-    if association_cached?(:rules)
+    # Every LIVE requirement must be locked — authored SrgRules for
+    # srg-kind, Rules for stig-kind. Prefer the in-memory rules collection
+    # when preloaded (stig path only; srg counts are always live queries).
+    if document_type != 'srg' && association_cached?(:rules)
       rules.none? { |r| !r.locked }
     else
-      rules.where(locked: false).empty?
+      requirements.where(locked: false).empty?
     end
   end
 
@@ -706,10 +709,13 @@ class Component < ApplicationRecord
   end
 
   def reviews
-    rule_names = if association_cached?(:rules)
+    rule_names = if document_type != 'srg' && association_cached?(:rules)
                    rules.each_with_object({}) { |r, h| h[r.id] = "#{prefix}-#{r.rule_id}" }
                  else
-                   rules.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
+                   # requirements: SRG-kind review labels come from authored
+                   # SrgRules; reviews.rule_id is dual-written for both
+                   # kinds so the id-keyed lookup below is type-safe.
+                   requirements.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
                  end
 
     # :id breaks created_at ties so the 20 most-recent reviews come out in a
@@ -839,7 +845,7 @@ class Component < ApplicationRecord
 
   # The profile gates the source picker, status vocabulary, and export
   # mode — flipping it mid-life would strand requirements authored under
-  # the other profile's rules (ADR §2.1.4).
+  # the other profile's rules.
   def document_type_cannot_change
     return unless document_type_changed?
 
@@ -1034,6 +1040,10 @@ class Component < ApplicationRecord
   end
 
   def import_srg_rules
+    # SRG-kind components never receive class-Rule rows — their
+    # requirements are authored SrgRules, created through their own flow.
+    return if document_type == 'srg'
+
     # We assume that we will automatically add the SRG rules within the transaction of the inital creation
     # if the `component_id` is `nil` and if `security_requirements_guide_id` if present
     return unless component_id.nil? && security_requirements_guide_id.present?

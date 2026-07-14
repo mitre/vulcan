@@ -1,4 +1,4 @@
-description: Input fields for creating or updating a STIG component within a project.
+description: Input fields for creating or updating a component within a project.
 type: object
 required:
   - name
@@ -13,6 +13,16 @@ properties:
     type: string
     description: Short alphanumeric prefix used to construct rule IDs (e.g. CNTR in CNTR-00-000050).
     example: CNTR
+  document_type:
+    type: string
+    description: >-
+      Authoring profile for the new component: stig authors STIG
+      requirements from a source SRG; srg authors SRG requirements.
+      Defaults to stig; immutable after creation.
+    enum:
+      - stig
+      - srg
+    example: stig
   version:
     type: string
     description: Version number of the component.

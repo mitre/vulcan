@@ -192,7 +192,14 @@ module Export
     end
 
     def load_rules(component)
-      component.rules.eager_load(*@mode.eager_load_associations)
+      # SRG-kind components serve authored SrgRules to modes that opt in.
+      # Rule-only eager loads (satisfies, srg_rule, additional_answers) do
+      # not exist on SrgRule, so opted-in modes use the BaseRule-shared set.
+      if component.document_type == 'srg' && @mode.supports_srg_kind?
+        component.requirements.eager_load(*@mode.srg_eager_load_associations)
+      else
+        component.rules.eager_load(*@mode.eager_load_associations)
+      end
     end
 
     def default_workbook_filename

@@ -179,11 +179,10 @@ RSpec.describe Component do
     end
   end
 
-  # Kind-routed requirement access (ADR adr-srg-component-authoring.md §6
-  # v7.1): a stig component's requirements are its Rules and its count is
-  # the existing rules_count counter cache; an srg component's requirements
-  # are its LIVE authored SrgRules, counted directly — never through
-  # rules_count / reset_counters(:rules).
+  # Kind-routed requirement access: a stig component's requirements are
+  # its Rules and its count is the existing rules_count counter cache; an
+  # srg component's requirements are its LIVE authored SrgRules, counted
+  # directly — never through rules_count / reset_counters(:rules).
   describe '#requirements and #requirements_count' do
     it 'routes a stig component to its Rules and counter cache' do
       components_component.reload
@@ -197,7 +196,7 @@ RSpec.describe Component do
       srg_component = Component.create!(project: components_project, name: 'Authored SRG', title: 'Authored SRG',
                                         prefix: 'ASRG-01', based_on: components_srg,
                                         skip_import_srg_rules: true, document_type: 'srg')
-      authored = create_list(:srg_rule, 2, security_requirements_guide: nil, component: srg_component)
+      authored = create_list(:srg_rule, 2, :authored, component: srg_component)
 
       expect(srg_component.requirements).to match_array(authored)
       expect(srg_component.requirements_count).to eq(2)

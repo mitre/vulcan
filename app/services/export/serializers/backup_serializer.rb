@@ -24,6 +24,7 @@ module Export
       EXCLUDED_RULE_COLUMNS = %w[
         id type component_id srg_rule_id review_requestor_id
         security_requirements_guide_id stig_id stig_rule_id
+        derived_from_srg_rule_id
       ].freeze
 
       # @param component [Component] the component to serialize
@@ -72,6 +73,7 @@ module Export
           admin_name: @component.admin_name,
           admin_email: @component.admin_email,
           advanced_fields: @component.advanced_fields,
+          document_type: @component.document_type,
           # closed_reason is 'adjudicating' / 'finalized' when closed,
           # null when open.
           comment_phase: @component.comment_phase,
@@ -115,7 +117,10 @@ module Export
       end
 
       def rules_collection
-        @preloaded_rules || @component.rules
+        # requirements, not rules: an SRG-kind component's archive must
+        # carry its authored SrgRules — the Rule STI association would
+        # serialize an EMPTY archive.
+        @preloaded_rules || @component.requirements
       end
 
       def serialize_rules
@@ -124,12 +129,20 @@ module Export
 
       def serialize_rule(rule)
         attrs = rule_base_attributes(rule)
-        attrs[:srg_rule_version] = rule.srg_rule&.version
+        # Portable lineage tokens (catalog versions, never DB ids):
+        # srg_rule_version for Rules, derived_from_srg_rule_version for
+        # authored SrgRules. srg_rule/additional_answers exist on Rule only.
+        if rule.is_a?(Rule)
+          attrs[:srg_rule_version] = rule.srg_rule&.version
+          attrs[:additional_answers] = serialize_additional_answers(rule)
+        else
+          attrs[:derived_from_srg_rule_version] = rule.derived_from&.version
+          attrs[:additional_answers] = []
+        end
         attrs[:disa_rule_descriptions] = serialize_disa_rule_descriptions(rule)
         attrs[:checks] = serialize_checks(rule)
         attrs[:rule_descriptions] = serialize_rule_descriptions(rule)
         attrs[:references] = serialize_references(rule)
-        attrs[:additional_answers] = serialize_additional_answers(rule)
         attrs
       end
 
@@ -178,6 +191,9 @@ module Export
       def serialize_satisfactions
         satisfactions = []
         rules_collection.each do |rule|
+          # Satisfies is structurally absent on authored SrgRules.
+          next unless rule.respond_to?(:satisfies)
+
           rule.satisfies.each do |satisfied_rule|
             # rule is the satisfier (satisfied_by_rule_id in DB)
             # satisfied_rule is the one being satisfied (rule_id in DB)

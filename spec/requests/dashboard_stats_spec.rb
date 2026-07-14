@@ -179,6 +179,7 @@ RSpec.describe 'Dashboard stats' do
       a = rows.find { |c| c['id'] == component.id }
       expect(a).to eq(
         'id' => component.id, 'name' => 'Dashboard Component', 'prefix' => 'DASH-01',
+        'document_type' => 'stig',
         'rule_count' => 5, 'completion_pct' => 60.0, 'lock_pct' => 20.0
       )
       b = rows.find { |c| c['id'] == component_b.id }

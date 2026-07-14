@@ -39,7 +39,11 @@ module Import
           rule_id_map[rule.rule_id] = rule.id
         end
 
-        @component.update_columns(rules_count: @component.rules.where(deleted_at: nil).count) # rubocop:disable Rails/SkipsModelValidations -- reset counter cache after bulk import
+        unless srg_kind?
+          # Rule-only counter cache — the SRG requirement count is a live
+          # scoped query and must never ride rules_count.
+          @component.update_columns(rules_count: @component.rules.where(deleted_at: nil).count) # rubocop:disable Rails/SkipsModelValidations -- reset counter cache after bulk import
+        end
         rule_id_map
       end
 
@@ -53,12 +57,9 @@ module Import
       end
 
       def build_rule(rule_data)
-        srg_rule = resolve_srg_rule(rule_data)
-
-        rule = @component.rules.new
+        rule = srg_kind? ? build_authored_srg_rule(rule_data) : build_stig_rule_row(rule_data)
 
         assign_direct_columns(rule, rule_data)
-        rule.srg_rule_id = srg_rule&.id
         rule.component_id = @component.id
 
         build_nested_records(rule, rule_data)
@@ -69,8 +70,36 @@ module Import
         end
 
         restore_timestamps(rule, rule_data)
-        build_additional_answers(rule, rule_data)
+        # additional_answers exist on Rule only.
+        build_additional_answers(rule, rule_data) unless srg_kind?
 
+        rule
+      end
+
+      def srg_kind?
+        @component.document_type == 'srg'
+      end
+
+      def build_stig_rule_row(rule_data)
+        rule = @component.rules.new
+        rule.srg_rule_id = resolve_srg_rule(rule_data)&.id
+        rule
+      end
+
+      # SRG-kind archives rebuild authored SrgRules, never Rules.
+      # Lineage is re-linked by portable catalog version.
+      def build_authored_srg_rule(rule_data)
+        rule = @component.authored_srg_rules.new
+        derived_version = rule_data['derived_from_srg_rule_version']
+        if derived_version.present?
+          derived = @srg_rules[derived_version]
+          if derived
+            rule.derived_from_srg_rule_id = derived.id
+          else
+            @result.add_warning("SRG rule '#{derived_version}' not found for derived_from of " \
+                                "rule #{rule_data['rule_id']}")
+          end
+        end
         rule
       end
 

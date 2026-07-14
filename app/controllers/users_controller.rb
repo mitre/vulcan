@@ -303,7 +303,9 @@ class UsersController < ApplicationController
     visible_component_ids = Component.where(project_id: current_user.available_projects.select(:id)).select(:id)
     visible_component_ids = visible_component_ids.where(project_id: params[:project_id]) if params[:project_id].present?
 
-    rule_id_subquery = Rule.where(component_id: visible_component_ids).select(:id)
+    # base_rules-scoped: the Rule STI query would hide the user's comments
+    # on authored SrgRules from their comments page.
+    rule_id_subquery = BaseRule.live_for_components(visible_component_ids).select(:id)
     rule_scoped = Review.top_level_comments
                         .where(user_id: @target_user.id, commentable_type: 'BaseRule', commentable_id: rule_id_subquery)
     component_scoped = Review.top_level_comments

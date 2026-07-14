@@ -15,39 +15,11 @@ class RuleBlueprint < Blueprinter::Base
   fields :rule_id, :title, :version, :status, :rule_severity, :locked,
          :review_requestor_id, :changes_requested
 
-  # per-rule comment summary surfaced on the navigator + section
-  # icon badges so triagers + commenters can spot rules with active
-  # work without drilling in. Computed in-memory against the eager-
-  # loaded :reviews association (set_component already eager-loads
-  # rules → :reviews) so this is zero additional queries.
-  #
-  # `open` = comments not yet adjudicated (pending OR triaged-but-
-  # not-yet-closed OR needs_clarification). Includes replies under
-  # those open parents — replies are comments. Once a parent is
-  # adjudicated (adjudicated_at set), it and its replies leave the
-  # `open` count.
+  # Per-rule comment summary surfaced on the navigator + section icon
+  # badges. One shared definition across document kinds — see
+  # CommentSummaryField for the "open" semantics.
   field :comment_summary do |rule, _options|
-    comments = rule.reviews.select { |r| r.action == 'comment' }
-    top_level = comments.select { |r| r.responding_to_review_id.nil? }
-    open_root_ids = top_level.reject { |r| r.adjudicated_at.present? }.map(&:id)
-
-    children_by_parent = comments.reject { |r| r.responding_to_review_id.nil? }
-                                 .group_by(&:responding_to_review_id)
-    open_count = open_root_ids.size
-    queue = open_root_ids.dup
-    visited = Set.new(open_root_ids)
-    until queue.empty?
-      current = queue.shift
-      (children_by_parent[current] || []).each do |child|
-        next if visited.include?(child.id)
-
-        visited << child.id
-        queue << child.id
-        open_count += 1
-      end
-    end
-
-    { open: open_count, total: comments.size }
+    CommentSummaryField.summarize(rule)
   end
 
   # === Navigator view: sidebar list ===

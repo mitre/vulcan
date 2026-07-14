@@ -10,6 +10,7 @@ required:
   - id
   - name
   - prefix
+  - document_type
   - title
   - released
   - project_id
@@ -33,6 +34,13 @@ properties:
     type: string
     description: STIG ID prefix.
     example: RHEL-09
+  document_type:
+    type: string
+    description: Authoring profile of the component (stig or srg). Immutable after creation.
+    enum:
+      - stig
+      - srg
+    example: stig
   title:
     type: string
     description: Component title.

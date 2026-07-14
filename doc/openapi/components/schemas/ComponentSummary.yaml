@@ -19,6 +19,16 @@ properties:
     type: string
     description: Short alphanumeric prefix used to construct rule IDs (e.g. PHOS-03 in PHOS-03-000010).
     example: PHOS-03
+  document_type:
+    type: string
+    description: >-
+      Authoring profile of the component: stig components author STIG
+      requirements, srg components author SRG requirements. Immutable
+      after creation.
+    enum:
+      - stig
+      - srg
+    example: stig
   version:
     type:
       - integer

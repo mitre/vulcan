@@ -12,7 +12,12 @@ get:
       content:
         application/json:
           schema:
-            $ref: ../components/schemas/RuleEditorResponse.yaml
+            description: >-
+              Shaped by the parent component's document_type: a STIG rule
+              or an authored SRG requirement.
+            oneOf:
+              - $ref: ../components/schemas/RuleEditorResponse.yaml
+              - $ref: ../components/schemas/AuthoredSrgRuleEditorResponse.yaml
       links:
         UpdateThisRule:
           operationId: updateRule

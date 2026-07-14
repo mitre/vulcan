@@ -134,12 +134,13 @@ allOf:
         description: ID of the latest SRG for linking. Null when srg_is_latest=true.
         example: null
       status_counts:
-        type: object
-        description: Count of rules by applicability status.
-        example:
-          Not Yet Determined: 200
-          Applicable - Configurable: 2
-          Not Applicable: 1
+        description: >-
+          Requirement counts bucketed by the component's document_type:
+          five STIG buckets or three SRG buckets. The shapes are disjoint
+          and never collapse into one list.
+        oneOf:
+          - $ref: ./RulesByStatus.yaml
+          - $ref: ./SrgRulesByStatus.yaml
       additional_questions:
         type: array
         description: Component-level custom questions for rule authors.
@@ -147,9 +148,14 @@ allOf:
           type: object
       rules:
         type: array
-        description: All rules via RuleBlueprint :editor view.
+        description: >-
+          All requirements, shaped by document_type: STIG rule objects for
+          stig components, authored SRG requirement objects for srg
+          components.
         items:
-          $ref: ./RuleEditorResponse.yaml
+          oneOf:
+            - $ref: ./RuleEditorResponse.yaml
+            - $ref: ./AuthoredSrgRuleEditorResponse.yaml
       reviews:
         type: array
         description: Recent reviews (last 20, hand-built hashes with displayed_rule_name).
