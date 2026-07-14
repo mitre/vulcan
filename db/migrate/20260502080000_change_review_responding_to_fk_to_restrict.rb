@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# PR-717 review remediation .4 F1 — Rails owns the cascade for Review#responses;
+# Rails owns the cascade for Review#responses;
 # Postgres FK becomes a safety net via on_delete: :restrict.
 #
 # Why: the original FK on_delete: :cascade combined with Rails
@@ -17,7 +17,7 @@
 # the duration of validation on production-sized tables. The validate
 # half is in 20260502080001_validate_review_responding_to_fk.rb,
 # which sets disable_ddl_transaction! so the validate scan runs
-# without holding a long ACCESS EXCLUSIVE — see PR-717 .kea.
+# without holding a long ACCESS EXCLUSIVE.
 #
 # Reversible: down restores the legacy :cascade semantics. WARNING:
 # do NOT run down in production after admin_destroy snapshots are
@@ -30,7 +30,7 @@ class ChangeReviewRespondingToFkToRestrict < ActiveRecord::Migration[8.0]
                     on_delete: :restrict,
                     validate: false
     # validate_foreign_key has moved to the paired migration
-    # 20260502080001_validate_review_responding_to_fk.rb. See PR-717 .kea.
+    # 20260502080001_validate_review_responding_to_fk.rb.
   end
 
   def down

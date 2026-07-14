@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe Component do
   include_context 'components model base setup'
 
-  # (§18.4): #largest_rule_id built its TO_NUMBER query via
+  # #largest_rule_id built its TO_NUMBER query via
   # string interpolation of the component id. Brakeman-flagged SQL injection
   # (false positive in practice — id is an AR PK — but a real bug class).
   # The fix routes component_id through bound params; only the trusted

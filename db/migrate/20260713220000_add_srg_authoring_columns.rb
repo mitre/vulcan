@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
-# Storage seam for SRG component authoring (ADR
-# docs/decisions/adr-srg-component-authoring.md §8.2, §12.1).
+# Storage seam for SRG component authoring.
 #
 # The XOR CHECK ships in the SAME migration that makes an SrgRule's catalog
 # parent optional — sequencing them separately opens a window where a catalog

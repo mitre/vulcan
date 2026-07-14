@@ -150,7 +150,7 @@ defaults: &defaults
     # Maximum total uncompressed size of all entries in a json_archive zip
     # upload, in megabytes. Pre-decompression upload caps in the controller
     # (100 MB) and rubyzip's per-entry validation don't catch zip-bomb
-    # geometries where small archives expand to gigabytes. PR-717 .lsj.
+    # geometries where small archives expand to gigabytes.
     json_archive_size_budget_mb: <%= ENV.fetch('VULCAN_IMPORT_JSON_ARCHIVE_SIZE_BUDGET_MB', '500').to_i %>
   api_tokens:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV.fetch('VULCAN_API_TOKENS_ENABLED', 'true')) != false %>

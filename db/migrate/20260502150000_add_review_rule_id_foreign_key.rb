@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# PR-717 review remediation .j4a step A4 — pass 1 of 2 (Strong Migrations
+# Pass 1 of 2 (Strong Migrations
 # canonical pattern). Adds the FK with `validate: false` so the table is
 # not held under ACCESS EXCLUSIVE while existing rows are validated. The
 # companion migration (20260502150001) runs `validate_foreign_key` inside

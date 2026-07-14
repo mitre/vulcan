@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 # Direct unit tests for the OIDC registry builder (the tested-Ruby-builder half
-# of ADR §1). Settings.oidc.providers integration is covered in
+# of the multi-provider design). Settings.oidc.providers integration is covered in
 # spec/config/oidc_providers_spec.rb; here we drive the builder with explicit
 # env hashes — no Settings reload — to pin field mapping, legacy vs registry
 # shapes, validation, and defaults.

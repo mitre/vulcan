@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# PR-717 review remediation .2 — concurrent index pass for the lifecycle
+# Concurrent index pass for the lifecycle
 # columns added in 20260429145530. Splitting the index creation away from
 # the column-add migration avoids ACCESS EXCLUSIVE on `reviews` for the
 # duration of five index builds. Pattern matches

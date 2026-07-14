@@ -1,8 +1,9 @@
 // Single source of truth for triage vocabulary in the frontend.
 // Mirrors config/locales/en.yml#vulcan.triage. If you add a status key,
-// update both files and the canonical table in DESIGN §3.1.2.
+// update both files.
 //
-// Storage = DISA-native. UI = friendly English. See DESIGN §3.1.1 for why.
+// Storage = DISA-native (what exports and the API speak). UI = friendly
+// English so commenters do not need to know DISA terminology.
 
 // Database / API key → friendly UI label (past tense for status display)
 export const TRIAGE_LABELS = Object.freeze({

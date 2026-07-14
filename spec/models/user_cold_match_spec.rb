@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-# Cold-match block (ADR §6a): when a user signs in via an unlinked provider
+# Cold-match block: when a user signs in via an unlinked provider
 # whose email matches an existing account, the error must give actionable
 # guidance to sign in with the existing method and connect from settings —
 # never a silent merge, never a dead-end "already exists" without next steps.

@@ -2,8 +2,8 @@
 
 # Replaces Review#as_json which added `methods: [:name]`.
 # Originally also stripped user_id/rule_id/updated_at to mirror
-# Rule#as_json's pattern; PR-717 .20 brings rule_id back into the default
-# field list (frontend modal needs it for picker scope after a triage
+# Rule#as_json's pattern; rule_id is back in the default field list
+# (the frontend modal needs it for picker scope after a triage
 # mutation, otherwise it has to refetch). user_id stays excluded as a
 # public-comment correlation guard.
 class ReviewBlueprint < Blueprinter::Base

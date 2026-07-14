@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# PR-717 review remediation .17 — partial index covering the triage
+# Partial index covering the triage
 # queue's natural shape. Component#paginated_comments runs:
 #
 #   Review.top_level_comments.where(triage_status: 'pending')

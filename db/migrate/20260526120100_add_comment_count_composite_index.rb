@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# vulcan-v3.x-480.6 §18.4: composite index supporting the comment-count UNION
+# Composite index supporting the comment-count UNION
 # query in Project (the hot path on triage/landing pages). The existing
 # two-column indexes on (commentable_type, commentable_id) and
 # (action, triage_status) don't cover the full predicate; a five-column

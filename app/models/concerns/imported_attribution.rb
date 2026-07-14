@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Generates `<role>_display_name` and `<role>_imported?` instance methods
-# on the including model. PR-717 review remediation: by mid-branch we had
+# on the including model. Why it exists: we had
 # three role-prefixes on Review (triager / adjudicator / commenter) that
 # all needed the same fallback chain — resolved User name → imported_name
 # → imported_email → nil — and the same imported? predicate. Six

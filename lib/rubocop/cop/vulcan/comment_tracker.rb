@@ -42,14 +42,14 @@ module RuboCop
       #
       # @example Parenthesized reference with section number
       #   # bad
-      #   # Batch counts via GROUP BY (vulcan-v3.x-73z.9 §4.2).
+      #   # Batch counts via GROUP BY (vulcan-v3.x-9z9.9 §4.2).
       #
       #   # good
       #   # Batch counts via GROUP BY.
       #
       # @example Trailing reference after sentence
       #   # bad
-      #   # DB ids changed between merges. vulcan-v3.x-480.7.
+      #   # DB ids changed between merges. vulcan-v3.x-9z9.9.
       #
       #   # good
       #   # DB ids changed between merges.

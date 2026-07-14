@@ -43,12 +43,12 @@ ruleTester.run("comment-tracker", rule, {
       errors: [{ messageId: "trackerRef" }],
     },
     {
-      code: "// Batch counts via GROUP BY (vulcan-v3.x-73z.9).",
+      code: "// Batch counts via GROUP BY (vulcan-v3.x-9z9.9).",
       output: "// Batch counts via GROUP BY.",
       errors: [{ messageId: "trackerRef" }],
     },
     {
-      code: "// vulcan-v3.x-480.7",
+      code: "// vulcan-v3.x-9z9.9",
       output: "",
       errors: [{ messageId: "trackerRef" }],
     },

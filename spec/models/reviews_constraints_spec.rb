@@ -6,7 +6,7 @@ RSpec.describe Review do
   include_context 'srg model base setup'
 
   # DB-layer FK constraints
-  # on `reviews.user_id` and `reviews.rule_id`. Pre-.j4a, neither column
+  # on `reviews.user_id` and `reviews.rule_id`. Previously, neither column
   # had a Postgres FK constraint at all, despite the model-level
   # belongs_to declarations. Failure modes:
   # - Direct SQL DELETE on a User orphaned every review (next read 500'd

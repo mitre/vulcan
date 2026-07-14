@@ -17,10 +17,9 @@ module Import
       # legacy/test callers can still construct ReviewBuilder positionally.
       # When all three are present, `build_all` writes a Component-level
       # audit row capturing WHICH external_ids landed FROM WHICH archive
-      # — closes the audit-laundering chain documented in PR-717 review
-      # remediation .10 (admin_destroy → re-import via Review.insert!
-      # bypasses audited; the Component-level row preserves the recovery
-      # trail).
+      # — closing an audit-laundering hole: admin_destroy → re-import via
+      # Review.insert! bypasses audited, so the Component-level row is
+      # what preserves the recovery trail.
       #
       # external_to_new_id is populated during build_all and exposed to
       # callers (Applier) that need per-row audit linkage between the

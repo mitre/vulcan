@@ -40,7 +40,7 @@ RSpec.describe RuboCop::Cop::Vulcan::CommentTracker, :config do
 
   it 'strips parenthesized reference, preserves surrounding text' do
     expect_offense(<<~RUBY)
-      # Batch per-project counts via GROUP BY (vulcan-v3.x-73z.9).
+      # Batch per-project counts via GROUP BY (vulcan-v3.x-9z9.9).
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{msg}
     RUBY
 
@@ -51,7 +51,7 @@ RSpec.describe RuboCop::Cop::Vulcan::CommentTracker, :config do
 
   it 'strips reference with section number' do
     expect_offense(<<~RUBY)
-      # Single CASE UPDATE per column (vulcan-v3.x-480.6 §18.4).
+      # Single CASE UPDATE per column (vulcan-v3.x-9z9.9 §99.9).
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{msg}
     RUBY
 
@@ -62,7 +62,7 @@ RSpec.describe RuboCop::Cop::Vulcan::CommentTracker, :config do
 
   it 'strips trailing reference after period' do
     expect_offense(<<~RUBY)
-      # DB ids changed between merges. vulcan-v3.x-480.7.
+      # DB ids changed between merges. vulcan-v3.x-9z9.9.
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{msg}
     RUBY
 

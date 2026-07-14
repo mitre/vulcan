@@ -62,9 +62,9 @@ RSpec.describe 'RuleBlueprint' do
         expect(review).to have_key('id')
         expect(review).to have_key('name')
         expect(review).not_to have_key('user_id')
-        # rule_id is intentionally present (PR-717 .20: frontend modal
-        # needs it for the picker scope after a triage mutation,
-        # otherwise it has to refetch).
+        # rule_id is intentionally present (the frontend modal needs it
+        # for the picker scope after a triage mutation, otherwise it has
+        # to refetch).
         expect(review).to have_key('rule_id')
       end
     end
