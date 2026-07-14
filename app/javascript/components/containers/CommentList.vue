@@ -86,6 +86,8 @@ export default {
     updateRow(id, patch) {
       const idx = this.rows.findIndex((r) => r.id === id);
       if (idx < 0) return;
+      // $set required for array-index reactivity under Vue 2; becomes a
+      // plain assignment in Vue 3 (same migration debt as render(h) above).
       this.$set(this.rows, idx, { ...this.rows[idx], ...patch });
     },
     refresh() {
