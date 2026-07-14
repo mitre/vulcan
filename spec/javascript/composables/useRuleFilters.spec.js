@@ -1,6 +1,26 @@
+/**
+ * REQUIREMENTS — vocabulary-driven filter model (kind-aware):
+ *
+ * Status filters are a `statusFilters` map keyed by the page's statuses
+ * vocabulary — never named per-status booleans. STIG pages get five
+ * entries, SRG pages three; the composable never hardcodes a status.
+ * Review filters (not-under-review / under-review / locked) and display
+ * toggles are kind-free and keep their named keys. Additive model
+ * throughout: unchecked = no filter (show all).
+ */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { ref } from "vue";
-import { useRuleFilters } from "@/composables/useRuleFilters";
+import { useRuleFilters, getDefaultFilters } from "@/composables/useRuleFilters";
+
+const STIG_STATUSES = [
+  "Not Yet Determined",
+  "Applicable - Configurable",
+  "Applicable - Inherently Meets",
+  "Applicable - Does Not Meet",
+  "Not Applicable",
+];
+
+const SRG_STATUSES = ["Not Yet Determined", "Applicable", "Not Applicable"];
 
 describe("useRuleFilters", () => {
   const mockRules = ref([
@@ -49,6 +69,8 @@ describe("useRuleFilters", () => {
   ]);
 
   const componentId = 41;
+  const make = (rules = mockRules, statuses = STIG_STATUSES) =>
+    useRuleFilters(rules, componentId, statuses);
 
   beforeEach(() => {
     localStorage.clear();
@@ -59,282 +81,263 @@ describe("useRuleFilters", () => {
     localStorage.clear();
   });
 
+  describe("getDefaultFilters(statuses)", () => {
+    it("builds statusFilters from the vocabulary, all unchecked, in vocabulary order", () => {
+      const defaults = getDefaultFilters(STIG_STATUSES);
+      expect(Object.keys(defaults.statusFilters)).toEqual(STIG_STATUSES);
+      expect(Object.values(defaults.statusFilters)).toEqual([false, false, false, false, false]);
+    });
+
+    it("builds the SRG shape from the SRG vocabulary — no STIG keys anywhere", () => {
+      const defaults = getDefaultFilters(SRG_STATUSES);
+      expect(Object.keys(defaults.statusFilters)).toEqual(SRG_STATUSES);
+      expect(JSON.stringify(defaults)).not.toContain("Applicable - Configurable");
+      expect(defaults.acFilterChecked).toBeUndefined();
+      expect(defaults.nydFilterChecked).toBeUndefined();
+    });
+
+    it("keeps kind-free review filters and display toggles with their named keys", () => {
+      const defaults = getDefaultFilters(STIG_STATUSES);
+      expect(defaults.nurFilterChecked).toBe(false);
+      expect(defaults.urFilterChecked).toBe(false);
+      expect(defaults.lckFilterChecked).toBe(false);
+      expect(defaults.nestSatisfiedRulesChecked).toBe(true);
+      expect(defaults.showSRGIdChecked).toBe(false);
+      expect(defaults.sortBySRGIdChecked).toBe(true);
+      expect(defaults.openCommentsOnly).toBe(false);
+      expect(defaults.search).toBe("");
+    });
+  });
+
   describe("initialization", () => {
     it("initializes with all status filters unchecked (additive model — no filter = show all)", () => {
-      const { filters } = useRuleFilters(mockRules, componentId);
-      expect(filters.value.acFilterChecked).toBe(false);
-      expect(filters.value.aimFilterChecked).toBe(false);
-      expect(filters.value.adnmFilterChecked).toBe(false);
-      expect(filters.value.naFilterChecked).toBe(false);
-      expect(filters.value.nydFilterChecked).toBe(false);
+      const { filters } = make();
+      STIG_STATUSES.forEach((status) => {
+        expect(filters.value.statusFilters[status]).toBe(false);
+      });
     });
 
     it("initializes with all review filters unchecked (additive model)", () => {
-      const { filters } = useRuleFilters(mockRules, componentId);
+      const { filters } = make();
       expect(filters.value.nurFilterChecked).toBe(false);
       expect(filters.value.urFilterChecked).toBe(false);
       expect(filters.value.lckFilterChecked).toBe(false);
     });
 
     it("initializes with display options (nest + sort by SRG enabled, show SRG ID disabled)", () => {
-      const { filters } = useRuleFilters(mockRules, componentId);
+      const { filters } = make();
       expect(filters.value.nestSatisfiedRulesChecked).toBe(true);
-      expect(filters.value.showSRGIdChecked).toBe(false);
       expect(filters.value.sortBySRGIdChecked).toBe(true);
+      expect(filters.value.showSRGIdChecked).toBe(false);
     });
 
     it("initializes with empty search", () => {
-      const { filters } = useRuleFilters(mockRules, componentId);
+      const { filters } = make();
       expect(filters.value.search).toBe("");
     });
   });
 
   describe("counts", () => {
-    it("computes status counts correctly", () => {
-      const { counts } = useRuleFilters(mockRules, componentId);
-      expect(counts.value.ac).toBe(2); // 2 Applicable - Configurable
-      expect(counts.value.aim).toBe(1); // 1 Applicable - Inherently Meets
-      expect(counts.value.adnm).toBe(1); // 1 Applicable - Does Not Meet
-      expect(counts.value.na).toBe(1); // 1 Not Applicable
-      expect(counts.value.nyd).toBe(1); // 1 Not Yet Determined
+    it("computes status counts keyed by status value", () => {
+      const { counts } = make();
+      expect(counts.value.statusCounts).toEqual({
+        "Not Yet Determined": 1,
+        "Applicable - Configurable": 2,
+        "Applicable - Inherently Meets": 1,
+        "Applicable - Does Not Meet": 1,
+        "Not Applicable": 1,
+      });
     });
 
     it("computes review counts correctly", () => {
-      const { counts } = useRuleFilters(mockRules, componentId);
-      expect(counts.value.lck).toBe(1); // 1 locked
-      expect(counts.value.ur).toBe(1); // 1 under review (has review_requestor_id)
-      expect(counts.value.nur).toBe(4); // 4 not under review (not locked, no review_requestor_id)
+      const { counts } = make();
+      expect(counts.value.nur).toBe(4);
+      expect(counts.value.ur).toBe(1);
+      expect(counts.value.lck).toBe(1);
     });
 
     it("updates counts when rules change", () => {
       const rules = ref([
-        { id: 1, status: "Applicable - Configurable", locked: false, review_requestor_id: null },
+        {
+          id: 1,
+          rule_id: "X-1",
+          status: "Not Applicable",
+          locked: false,
+          review_requestor_id: null,
+        },
       ]);
-      const { counts } = useRuleFilters(rules, componentId);
-      expect(counts.value.ac).toBe(1);
+      const { counts } = make(rules);
+      expect(counts.value.statusCounts["Not Applicable"]).toBe(1);
+      rules.value = [
+        ...rules.value,
+        {
+          id: 2,
+          rule_id: "X-2",
+          status: "Not Applicable",
+          locked: false,
+          review_requestor_id: null,
+        },
+      ];
+      expect(counts.value.statusCounts["Not Applicable"]).toBe(2);
+    });
 
-      rules.value.push({
-        id: 2,
-        status: "Applicable - Configurable",
-        locked: false,
-        review_requestor_id: null,
+    it("counts SRG statuses under the SRG vocabulary", () => {
+      const srgRules = ref([
+        { id: 1, rule_id: "S-1", status: "Applicable", locked: false, review_requestor_id: null },
+        {
+          id: 2,
+          rule_id: "S-2",
+          status: "Not Yet Determined",
+          locked: false,
+          review_requestor_id: null,
+        },
+      ]);
+      const { counts } = make(srgRules, SRG_STATUSES);
+      expect(counts.value.statusCounts).toEqual({
+        "Not Yet Determined": 1,
+        Applicable: 1,
+        "Not Applicable": 0,
       });
-      expect(counts.value.ac).toBe(2);
     });
   });
 
-  describe("toggleFilter", () => {
-    it("toggles a status filter from false to true", () => {
-      const { filters, toggleFilter } = useRuleFilters(mockRules, componentId);
-      expect(filters.value.acFilterChecked).toBe(false);
-      toggleFilter("acFilterChecked");
-      expect(filters.value.acFilterChecked).toBe(true);
+  describe("toggleFilter / setFilter", () => {
+    it("toggles a status filter by its status value", () => {
+      const { filters, toggleFilter } = make();
+      toggleFilter("Applicable - Configurable");
+      expect(filters.value.statusFilters["Applicable - Configurable"]).toBe(true);
+      toggleFilter("Applicable - Configurable");
+      expect(filters.value.statusFilters["Applicable - Configurable"]).toBe(false);
     });
 
-    it("toggles a display option from true to false", () => {
-      const { filters, toggleFilter } = useRuleFilters(mockRules, componentId);
-      expect(filters.value.nestSatisfiedRulesChecked).toBe(true);
+    it("toggles a named (kind-free) filter", () => {
+      const { filters, toggleFilter } = make();
       toggleFilter("nestSatisfiedRulesChecked");
       expect(filters.value.nestSatisfiedRulesChecked).toBe(false);
     });
-  });
 
-  describe("setFilter", () => {
-    it("sets a filter to a specific value", () => {
-      const { filters, setFilter } = useRuleFilters(mockRules, componentId);
-      setFilter("acFilterChecked", false);
-      expect(filters.value.acFilterChecked).toBe(false);
-      setFilter("acFilterChecked", true);
-      expect(filters.value.acFilterChecked).toBe(true);
-    });
-
-    it("sets search filter", () => {
-      const { filters, setFilter } = useRuleFilters(mockRules, componentId);
-      setFilter("search", "CNTR-00");
-      expect(filters.value.search).toBe("CNTR-00");
+    it("sets a status filter and a named filter to specific values", () => {
+      const { filters, setFilter } = make();
+      setFilter("Not Applicable", true);
+      expect(filters.value.statusFilters["Not Applicable"]).toBe(true);
+      setFilter("search", "CNTR");
+      expect(filters.value.search).toBe("CNTR");
     });
   });
 
   describe("resetFilters", () => {
     it("resets all filters to defaults (all unchecked)", () => {
-      const { filters, toggleFilter, setFilter, resetFilters } = useRuleFilters(
-        mockRules,
-        componentId,
-      );
-
-      // Activate some filters
-      toggleFilter("acFilterChecked");
-      toggleFilter("nestSatisfiedRulesChecked");
-      setFilter("search", "test");
-
-      // Reset
+      const { filters, toggleFilter, resetFilters } = make();
+      toggleFilter("Applicable - Configurable");
+      toggleFilter("lckFilterChecked");
       resetFilters();
-
-      // Verify defaults restored (additive model: all unchecked)
-      expect(filters.value.acFilterChecked).toBe(false);
-      expect(filters.value.nestSatisfiedRulesChecked).toBe(true);
-      expect(filters.value.search).toBe("");
+      expect(filters.value.statusFilters["Applicable - Configurable"]).toBe(false);
+      expect(filters.value.lckFilterChecked).toBe(false);
+      expect(Object.keys(filters.value.statusFilters)).toEqual(STIG_STATUSES);
     });
   });
 
-  describe("filteredRules", () => {
-    it("returns all rules when all filters enabled", () => {
-      const { filteredRules } = useRuleFilters(mockRules, componentId);
+  describe("filteredRules (additive model)", () => {
+    it("returns all rules when nothing is checked", () => {
+      const { filteredRules } = make();
       expect(filteredRules.value.length).toBe(6);
     });
 
-    it("returns all rules when NO status filters are checked (additive model — no filter = show all)", () => {
-      const { filters, filteredRules } = useRuleFilters(mockRules, componentId);
-      filters.value.acFilterChecked = false;
-      filters.value.aimFilterChecked = false;
-      filters.value.adnmFilterChecked = false;
-      filters.value.naFilterChecked = false;
-      filters.value.nydFilterChecked = false;
-      expect(filteredRules.value.length).toBe(6);
-    });
-
-    it("returns all rules when NO review filters are checked (additive model)", () => {
-      const { filters, filteredRules } = useRuleFilters(mockRules, componentId);
-      filters.value.nurFilterChecked = false;
-      filters.value.urFilterChecked = false;
-      filters.value.lckFilterChecked = false;
-      expect(filteredRules.value.length).toBe(6);
-    });
-
-    it("returns all rules when ALL filters are unchecked (both status and review)", () => {
-      const { filters, filteredRules } = useRuleFilters(mockRules, componentId);
-      filters.value.acFilterChecked = false;
-      filters.value.aimFilterChecked = false;
-      filters.value.adnmFilterChecked = false;
-      filters.value.naFilterChecked = false;
-      filters.value.nydFilterChecked = false;
-      filters.value.nurFilterChecked = false;
-      filters.value.urFilterChecked = false;
-      filters.value.lckFilterChecked = false;
-      expect(filteredRules.value.length).toBe(6);
-    });
-
-    it("filters by status (additive: check AC to show only AC)", () => {
-      const { filters, filteredRules } = useRuleFilters(mockRules, componentId);
-      filters.value.acFilterChecked = true;
-      expect(filteredRules.value.length).toBe(2);
-      expect(filteredRules.value.every((r) => r.status === "Applicable - Configurable")).toBe(true);
+    it("filters by status (check one status to show only it)", () => {
+      const { filteredRules, setFilter } = make();
+      setFilter("Applicable - Configurable", true);
+      expect(filteredRules.value.map((r) => r.id)).toEqual([1, 2]);
     });
 
     it("filters by review status (check locked to show only locked)", () => {
-      const { filters, filteredRules } = useRuleFilters(mockRules, componentId);
-      filters.value.lckFilterChecked = true;
-      expect(filteredRules.value.length).toBe(1);
-      expect(filteredRules.value[0].locked).toBe(true);
+      const { filteredRules, setFilter } = make();
+      setFilter("lckFilterChecked", true);
+      expect(filteredRules.value.map((r) => r.id)).toEqual([2]);
     });
 
     it("filters by review status (check under review to show only UR)", () => {
-      const { filters, filteredRules } = useRuleFilters(mockRules, componentId);
-      filters.value.urFilterChecked = true;
-      expect(filteredRules.value.length).toBe(1);
-      expect(filteredRules.value[0].review_requestor_id).toBeTruthy();
+      const { filteredRules, setFilter } = make();
+      setFilter("urFilterChecked", true);
+      expect(filteredRules.value.map((r) => r.id)).toEqual([4]);
     });
 
-    it("filters by search term (rule_id)", () => {
-      const { filters, filteredRules } = useRuleFilters(mockRules, componentId);
-      filters.value.search = "000010";
-      expect(filteredRules.value.length).toBe(1);
-      expect(filteredRules.value[0].rule_id).toBe("CNTR-00-000010");
-    });
-
-    it("search is case insensitive", () => {
-      const { filters, filteredRules } = useRuleFilters(mockRules, componentId);
-      filters.value.search = "cntr-00-000010";
-      expect(filteredRules.value.length).toBe(1);
+    it("filters by search term (rule_id), case insensitive", () => {
+      const { filteredRules, setFilter } = make();
+      setFilter("search", "cntr-00-000030");
+      expect(filteredRules.value.map((r) => r.id)).toEqual([3]);
     });
 
     it("combines status and search filters", () => {
-      const { filters, filteredRules } = useRuleFilters(mockRules, componentId);
-      filters.value.aimFilterChecked = false;
-      filters.value.adnmFilterChecked = false;
-      filters.value.naFilterChecked = false;
-      filters.value.nydFilterChecked = false;
-      filters.value.search = "000010";
-      expect(filteredRules.value.length).toBe(1);
+      const { filteredRules, setFilter } = make();
+      setFilter("Applicable - Configurable", true);
+      setFilter("search", "CNTR-00-000020");
+      expect(filteredRules.value.map((r) => r.id)).toEqual([2]);
+    });
+
+    it("a rule whose status is outside the vocabulary is never filtered out by status filters", () => {
+      const rules = ref([
+        { id: 9, rule_id: "ODD-1", status: "Mystery", locked: false, review_requestor_id: null },
+        {
+          id: 10,
+          rule_id: "ODD-2",
+          status: "Not Applicable",
+          locked: false,
+          review_requestor_id: null,
+        },
+      ]);
+      const { filteredRules, setFilter } = make(rules);
+      setFilter("Not Applicable", true);
+      expect(filteredRules.value.map((r) => r.id)).toEqual([9, 10]);
     });
   });
 
-  describe("allStatusFiltersEnabled", () => {
-    it("returns false when defaults are all-unchecked", () => {
-      const { allStatusFiltersEnabled } = useRuleFilters(mockRules, componentId);
+  describe("allStatusFiltersEnabled / activeFilterCount", () => {
+    it("allStatusFiltersEnabled is true only when every vocabulary status is checked", () => {
+      const { filters, allStatusFiltersEnabled, setFilter } = make();
       expect(allStatusFiltersEnabled.value).toBe(false);
-    });
-
-    it("returns true when all status filters are manually enabled", () => {
-      const { filters, allStatusFiltersEnabled } = useRuleFilters(mockRules, componentId);
-      filters.value.acFilterChecked = true;
-      filters.value.aimFilterChecked = true;
-      filters.value.adnmFilterChecked = true;
-      filters.value.naFilterChecked = true;
-      filters.value.nydFilterChecked = true;
+      STIG_STATUSES.forEach((s) => setFilter(s, true));
       expect(allStatusFiltersEnabled.value).toBe(true);
-    });
-  });
-
-  describe("allReviewFiltersEnabled", () => {
-    it("returns false when defaults are all-unchecked", () => {
-      const { allReviewFiltersEnabled } = useRuleFilters(mockRules, componentId);
-      expect(allReviewFiltersEnabled.value).toBe(false);
+      expect(filters.value.statusFilters["Not Applicable"]).toBe(true);
     });
 
-    it("returns true when all review filters are manually enabled", () => {
-      const { filters, allReviewFiltersEnabled } = useRuleFilters(mockRules, componentId);
-      filters.value.nurFilterChecked = true;
-      filters.value.urFilterChecked = true;
-      filters.value.lckFilterChecked = true;
-      expect(allReviewFiltersEnabled.value).toBe(true);
-    });
-  });
-
-  describe("activeFilterCount", () => {
-    it("returns 0 when no filters are active", () => {
-      const { activeFilterCount } = useRuleFilters(mockRules, componentId);
+    it("activeFilterCount counts checked status filters, review filters, search, and openCommentsOnly", () => {
+      const { activeFilterCount, setFilter } = make();
       expect(activeFilterCount.value).toBe(0);
+      setFilter("Applicable - Configurable", true);
+      setFilter("lckFilterChecked", true);
+      setFilter("search", "x");
+      setFilter("openCommentsOnly", true);
+      expect(activeFilterCount.value).toBe(4);
+    });
+  });
+
+  describe("SRG vocabulary leak regression", () => {
+    it("SRG statusFilters carry exactly the three SRG statuses — no STIG-only strings anywhere in state", () => {
+      const srgRules = ref([
+        { id: 1, rule_id: "S-1", status: "Applicable", locked: false, review_requestor_id: null },
+      ]);
+      const { filters, counts } = make(srgRules, SRG_STATUSES);
+      expect(Object.keys(filters.value.statusFilters)).toEqual(SRG_STATUSES);
+      const serialized = JSON.stringify(filters.value) + JSON.stringify(counts.value);
+      ["Applicable - Configurable", "Inherently Meets", "Does Not Meet"].forEach((leak) => {
+        expect(serialized).not.toContain(leak);
+      });
     });
 
-    it("counts each individual status filter", () => {
-      const { filters, activeFilterCount } = useRuleFilters(mockRules, componentId);
-      filters.value.acFilterChecked = true;
-      expect(activeFilterCount.value).toBe(1);
-      filters.value.aimFilterChecked = true;
-      expect(activeFilterCount.value).toBe(2);
-      filters.value.nydFilterChecked = true;
-      expect(activeFilterCount.value).toBe(3);
-    });
-
-    it("counts each individual review filter", () => {
-      const { filters, activeFilterCount } = useRuleFilters(mockRules, componentId);
-      filters.value.nurFilterChecked = true;
-      expect(activeFilterCount.value).toBe(1);
-      filters.value.lckFilterChecked = true;
-      expect(activeFilterCount.value).toBe(2);
-    });
-
-    it("counts search as 1", () => {
-      const { filters, activeFilterCount } = useRuleFilters(mockRules, componentId);
-      filters.value.search = "test";
-      expect(activeFilterCount.value).toBe(1);
-    });
-
-    it("counts openCommentsOnly as 1", () => {
-      const { filters, activeFilterCount } = useRuleFilters(mockRules, componentId);
-      filters.value.openCommentsOnly = true;
-      expect(activeFilterCount.value).toBe(1);
-    });
-
-    it("counts across all categories correctly", () => {
-      const { filters, activeFilterCount } = useRuleFilters(mockRules, componentId);
-      filters.value.acFilterChecked = true;
-      filters.value.aimFilterChecked = true;
-      filters.value.nurFilterChecked = true;
-      filters.value.search = "test";
-      filters.value.openCommentsOnly = true;
-      expect(activeFilterCount.value).toBe(5);
+    it("SRG filtering works end-to-end on the SRG vocabulary", () => {
+      const srgRules = ref([
+        { id: 1, rule_id: "S-1", status: "Applicable", locked: false, review_requestor_id: null },
+        {
+          id: 2,
+          rule_id: "S-2",
+          status: "Not Applicable",
+          locked: false,
+          review_requestor_id: null,
+        },
+      ]);
+      const { filteredRules, setFilter } = make(srgRules, SRG_STATUSES);
+      setFilter("Applicable", true);
+      expect(filteredRules.value.map((r) => r.id)).toEqual([1]);
     });
   });
 });

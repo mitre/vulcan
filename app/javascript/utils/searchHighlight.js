@@ -1,9 +1,8 @@
 /**
  * Search field highlighting utilities.
  *
- * Extracted from RuleNavigator to DRY the scroll-to-field and text highlight
- * logic. Used by any component that navigates to and highlights matching
- * content within the rule editor.
+ * Shared scroll-to-field and text highlight logic. Used by any component
+ * that navigates to and highlights matching content within the rule editor.
  */
 
 const FIELD_MAP = { check: "content" };
@@ -105,18 +104,23 @@ export function searchTextForRule(projectPrefix, rule) {
   const checkDescriptionSearchAttrs = ["content"];
   const disaDescriptionSearchAttrs = ["vuln_discussion"];
 
+  // Nested attribute arrays are Rule-shaped payload keys; authored SRG
+  // requirement payloads omit them entirely, so default to empty.
+  const checks = rule.checks_attributes || [];
+  const disaDescriptions = rule.disa_rule_descriptions_attributes || [];
+
   let searchText = `${projectPrefix}-${rule.rule_id}`;
   for (let i = 0; i < ruleSearchAttrs.length; i++) {
     searchText += ` | ${rule[ruleSearchAttrs[i]] || ""}`;
   }
   for (let i = 0; i < checkDescriptionSearchAttrs.length; i++) {
-    for (let j = 0; j < rule.checks_attributes.length; j++) {
-      searchText += ` | ${rule.checks_attributes[j][checkDescriptionSearchAttrs[i]] || ""}`;
+    for (let j = 0; j < checks.length; j++) {
+      searchText += ` | ${checks[j][checkDescriptionSearchAttrs[i]] || ""}`;
     }
   }
   for (let i = 0; i < disaDescriptionSearchAttrs.length; i++) {
-    for (let j = 0; j < rule.disa_rule_descriptions_attributes.length; j++) {
-      searchText += ` | ${rule.disa_rule_descriptions_attributes[j][disaDescriptionSearchAttrs[i]] || ""}`;
+    for (let j = 0; j < disaDescriptions.length; j++) {
+      searchText += ` | ${disaDescriptions[j][disaDescriptionSearchAttrs[i]] || ""}`;
     }
   }
   return searchText.toLowerCase();

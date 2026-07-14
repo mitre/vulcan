@@ -3,7 +3,7 @@
   = stylesheet_link_tag 'rules'
 
 #Rules.vulcan-editor-layout
-  %Rules{ **common_vue_props,                                |
+  %Rules{ **common_vue_props(component: @component),         |
     'v-bind:project': ProjectBlueprint.render(@project),     |
     'v-bind:component': @component_json,                     |
     'v-bind:rules': @rules_json,                             |

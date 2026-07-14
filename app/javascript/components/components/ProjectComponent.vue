@@ -267,12 +267,14 @@ export default {
     const { filters, counts, setFilter, activeFilterCount } = useRuleFilters(
       localRules,
       componentId,
+      props.statuses,
     );
     const nav = useRuleNavigation(
       localRules,
       props.initialComponentState.prefix,
       componentId,
       filters,
+      props.statuses,
     );
     const { activePanel, togglePanel, closePanel } = useSidebar();
 
@@ -301,10 +303,10 @@ export default {
         composerBridge.afterPosted && composerBridge.afterPosted(parentReviewId, snapshot),
     });
 
+    // Persistence lives in useRuleNavigation (it watches this same filters
+    // ref and saves/restores) — no manual localStorage writes here.
     const updateFilter = (filterName, value) => {
       setFilter(filterName, value);
-      localStorage.setItem(`ruleNavigatorFilters-${componentId}`, JSON.stringify(filters.value));
-      localStorage.setItem(`showSRGIdChecked-${componentId}`, filters.value.showSRGIdChecked);
     };
 
     return {

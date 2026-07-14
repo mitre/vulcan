@@ -328,44 +328,24 @@ export default {
     const { filters, counts, setFilter, resetFilters, activeFilterCount } = useRuleFilters(
       rulesRef,
       componentId,
+      props.statuses,
     );
-    const nav = useRuleNavigation(rulesRef, props.component.prefix, componentId, filters);
+    const nav = useRuleNavigation(
+      rulesRef,
+      props.component.prefix,
+      componentId,
+      filters,
+      props.statuses,
+    );
     const { activePanel, togglePanel, openPanel, closePanel } = useSidebar();
     const autosave = useRuleAutosave(selectedRule, { componentId, onAutoSave: null });
 
+    // Persistence lives in useRuleNavigation (it watches this same filters
+    // ref and saves/restores, including the legacy-shape migration) — no
+    // manual localStorage handling here.
     const updateFilter = (filterName, value) => {
       setFilter(filterName, value);
-      localStorage.setItem(`ruleNavigatorFilters-${componentId}`, JSON.stringify(filters.value));
-      localStorage.setItem(`showSRGIdChecked-${componentId}`, filters.value.showSRGIdChecked);
     };
-
-    const saved = localStorage.getItem(`ruleNavigatorFilters-${componentId}`);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        const restorableKeys = [
-          "search",
-          "acFilterChecked",
-          "aimFilterChecked",
-          "adnmFilterChecked",
-          "naFilterChecked",
-          "nydFilterChecked",
-          "nurFilterChecked",
-          "urFilterChecked",
-          "lckFilterChecked",
-          "showSRGIdChecked",
-          "sortBySRGIdChecked",
-          "nestSatisfiedRulesChecked",
-        ];
-        restorableKeys.forEach((key) => {
-          if (key in parsed && key in filters.value) {
-            filters.value[key] = parsed[key];
-          }
-        });
-      } catch (e) {
-        // Use defaults
-      }
-    }
 
     const { alertOrNotifyResponse } = useToast();
 

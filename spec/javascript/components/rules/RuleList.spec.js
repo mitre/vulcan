@@ -362,4 +362,30 @@ describe("RuleList", () => {
       expect(row.text()).toContain("TEST-000001");
     });
   });
+
+  // ── Authored-row tolerance (SRG kind — leak/robustness regression) ──
+  describe("authored SRG rows (no Rule-only payload keys)", () => {
+    it("renders rows that omit satisfies/satisfied_by entirely, with nesting enabled", () => {
+      // Authentic authored-row shape: kind-shaped payloads omit the
+      // Rule-only association keys rather than sending empty arrays.
+      const authoredRow = {
+        id: 71,
+        rule_id: "000010",
+        version: "SRG-OS-000001",
+        status: "Applicable",
+        locked: false,
+        review_requestor_id: null,
+        changes_requested: false,
+        comment_summary: null,
+      };
+      wrapper = createWrapper({
+        filteredRules: [authoredRow],
+        allRules: [authoredRow],
+        nestSatisfiedRulesChecked: true,
+      });
+      const row = wrapper.find(".ruleRow");
+      expect(row.exists()).toBe(true);
+      expect(row.text()).toContain("TEST-000010");
+    });
+  });
 });

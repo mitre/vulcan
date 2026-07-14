@@ -32,4 +32,24 @@ RSpec.describe VuePropsHelper do
       expect(props.size).to eq(3)
     end
   end
+
+  describe '#common_vue_props with a component (kind-aware statuses)' do
+    it 'serves the SRG vocabulary for an srg-kind component' do
+      component = build_stubbed(:component, document_type: 'srg')
+      props = helper.common_vue_props(component: component)
+      expect(props['v-bind:statuses'])
+        .to eq(['Not Yet Determined', 'Applicable', 'Not Applicable'].to_json)
+    end
+
+    it 'serves the STIG vocabulary for a stig-kind component' do
+      component = build_stubbed(:component, document_type: 'stig')
+      props = helper.common_vue_props(component: component)
+      expect(props['v-bind:statuses']).to eq(RuleConstants::STATUSES.to_json)
+    end
+
+    it 'serves the global STIG vocabulary when no component is given' do
+      expect(helper.common_vue_props['v-bind:statuses'])
+        .to eq(RuleConstants::STATUSES.to_json)
+    end
+  end
 end

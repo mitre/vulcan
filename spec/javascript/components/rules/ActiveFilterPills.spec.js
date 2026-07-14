@@ -12,18 +12,29 @@ import ActiveFilterPills from "@/components/rules/ActiveFilterPills.vue";
  * 4. "Clear all" link emits 'clear-all' to reset all filters
  * 5. Renders nothing when no filters are active
  * 6. Handles status filters, review filters, search text, and open-comments-only
+ *
+ * Kind-awareness: status pills iterate the vocabulary-keyed statusFilters
+ * map — the component never hardcodes a status. Display labels strip the
+ * "Applicable - " prefix (preserves the established short pill text on
+ * STIG and reads naturally for SRG). Pill remove keys for statuses are
+ * the status values themselves.
  */
 describe("ActiveFilterPills", () => {
   let wrapper;
 
+  const stigStatusFilters = (overrides = {}) => ({
+    "Not Yet Determined": false,
+    "Applicable - Configurable": false,
+    "Applicable - Inherently Meets": false,
+    "Applicable - Does Not Meet": false,
+    "Not Applicable": false,
+    ...overrides,
+  });
+
   const defaultProps = {
     filters: {
       search: "",
-      acFilterChecked: false,
-      aimFilterChecked: false,
-      adnmFilterChecked: false,
-      naFilterChecked: false,
-      nydFilterChecked: false,
+      statusFilters: stigStatusFilters(),
       nurFilterChecked: false,
       urFilterChecked: false,
       lckFilterChecked: false,
@@ -61,29 +72,58 @@ describe("ActiveFilterPills", () => {
       wrapper = createWrapper({
         filters: {
           ...defaultProps.filters,
-          acFilterChecked: true,
-          naFilterChecked: true,
+          statusFilters: stigStatusFilters({
+            "Applicable - Configurable": true,
+            "Not Applicable": true,
+          }),
         },
       });
       const pills = wrapper.findAll('[data-test="filter-pill"]');
       expect(pills.length).toBe(2);
     });
 
-    it("shows human-readable labels on pills", () => {
+    it("shows short display labels (Applicable prefix stripped)", () => {
       wrapper = createWrapper({
-        filters: { ...defaultProps.filters, acFilterChecked: true },
+        filters: {
+          ...defaultProps.filters,
+          statusFilters: stigStatusFilters({ "Applicable - Configurable": true }),
+        },
       });
       const pill = wrapper.find('[data-test="filter-pill"]');
       expect(pill.text()).toContain("Configurable");
+      expect(pill.text()).not.toContain("Applicable - Configurable");
     });
 
-    it("emits remove-filter with the key when pill dismiss is clicked", () => {
+    it("emits remove-filter with the STATUS VALUE when pill dismiss is clicked", () => {
       wrapper = createWrapper({
-        filters: { ...defaultProps.filters, acFilterChecked: true },
+        filters: {
+          ...defaultProps.filters,
+          statusFilters: stigStatusFilters({ "Applicable - Configurable": true }),
+        },
       });
       wrapper.find('[data-test="pill-dismiss"]').trigger("click");
       expect(wrapper.emitted("remove-filter")).toBeTruthy();
-      expect(wrapper.emitted("remove-filter")[0][0]).toBe("acFilterChecked");
+      expect(wrapper.emitted("remove-filter")[0][0]).toBe("Applicable - Configurable");
+    });
+
+    it("SRG vocabulary pills carry SRG statuses — no STIG-only labels (leak regression)", () => {
+      wrapper = createWrapper({
+        filters: {
+          ...defaultProps.filters,
+          statusFilters: {
+            "Not Yet Determined": true,
+            Applicable: true,
+            "Not Applicable": false,
+          },
+        },
+      });
+      const pills = wrapper.findAll('[data-test="filter-pill"]');
+      expect(pills.length).toBe(2);
+      expect(pills.at(0).text()).toContain("Not Yet Determined");
+      expect(pills.at(1).text()).toContain("Applicable");
+      ["Configurable", "Inherently Meets", "Does Not Meet"].forEach((leak) => {
+        expect(wrapper.text()).not.toContain(leak);
+      });
     });
   });
 
@@ -120,7 +160,10 @@ describe("ActiveFilterPills", () => {
   describe("clear all", () => {
     it("renders clear-all link when any filter is active", () => {
       wrapper = createWrapper({
-        filters: { ...defaultProps.filters, acFilterChecked: true },
+        filters: {
+          ...defaultProps.filters,
+          statusFilters: stigStatusFilters({ "Applicable - Configurable": true }),
+        },
       });
       const clearAll = wrapper.find('[data-test="clear-all-filters"]');
       expect(clearAll.exists()).toBe(true);
@@ -128,7 +171,10 @@ describe("ActiveFilterPills", () => {
 
     it("emits clear-all when clicked", () => {
       wrapper = createWrapper({
-        filters: { ...defaultProps.filters, acFilterChecked: true },
+        filters: {
+          ...defaultProps.filters,
+          statusFilters: stigStatusFilters({ "Applicable - Configurable": true }),
+        },
       });
       wrapper.find('[data-test="clear-all-filters"]').trigger("click");
       expect(wrapper.emitted("clear-all")).toBeTruthy();

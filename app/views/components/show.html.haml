@@ -13,7 +13,7 @@
     = stylesheet_link_tag 'project_component'
 
   #projectcomponent.vulcan-editor-layout
-    %projectcomponent{ **common_vue_props,                               |
+    %projectcomponent{ **common_vue_props(component: @component),        |
       'v-bind:queried-rule': (@rule_json || {}.to_json),                 |
       'v-bind:initial-component-state': @component_json,                 |
       'v-bind:project': @project_json,                                   |

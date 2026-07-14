@@ -77,7 +77,7 @@
       >
         <span>
           <!-- Expand/collapse toggle for parents with children -->
-          <template v-if="nestSatisfiedRulesChecked && rule.satisfies.length > 0">
+          <template v-if="nestSatisfiedRulesChecked && childRules(rule).length > 0">
             <b-icon
               :icon="isParentExpanded(rule.id) ? 'chevron-down' : 'chevron-right'"
               class="tree-toggle mr-1"
@@ -96,23 +96,23 @@
           </span>
           <!-- Child count badge for collapsed parents -->
           <b-badge
-            v-if="nestSatisfiedRulesChecked && rule.satisfies.length > 0"
+            v-if="nestSatisfiedRulesChecked && childRules(rule).length > 0"
             variant="secondary"
             pill
             class="ml-1 child-count"
           >
-            {{ rule.satisfies.length }}
+            {{ childRules(rule).length }}
           </b-badge>
         </span>
         <RuleRowIcons :rule="rule" :rule-open="ruleOpen(rule)" />
       </div>
       <div
-        v-if="nestSatisfiedRulesChecked && rule.satisfies.length > 0"
+        v-if="nestSatisfiedRulesChecked && childRules(rule).length > 0"
         v-show="isParentExpanded(rule.id)"
         class="nested-children"
       >
         <div
-          v-for="satisfies in sortAlsoSatisfies(rule.satisfies)"
+          v-for="satisfies in sortAlsoSatisfies(childRules(rule))"
           :key="satisfies.id"
           :class="ruleRowClass(satisfies)"
           class="d-flex justify-content-between text-responsive child-row"
@@ -198,6 +198,11 @@ export default {
     },
   },
   methods: {
+    // satisfies is a Rule-shaped payload key; authored SRG requirement
+    // payloads omit it entirely, so default to empty.
+    childRules(rule) {
+      return rule.satisfies || [];
+    },
     ruleSelected(rule) {
       if (!rule.histories) {
         this.$root.$emit("refresh:rule", rule.id);

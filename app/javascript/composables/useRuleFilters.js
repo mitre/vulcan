@@ -1,19 +1,26 @@
 import { ref, computed } from "vue";
 
 /**
- * Default filter state - all status/review filters enabled, nest + sort by SRG enabled
- * Exported so other components can use the same defaults (DRY)
+ * Default filter state, built from the page's statuses vocabulary.
+ *
+ * `statusFilters` is a map keyed by status value (vocabulary order) — the
+ * composable never hardcodes a status name, so STIG pages get five entries
+ * and SRG pages three from the same code. Review filters and display
+ * toggles are kind-free named keys.
+ *
+ * Additive model: unchecked = no filter (show all). Per NNG, Baymard,
+ * Carbon Design System: check to narrow, not uncheck to hide.
+ *
+ * @param {Array<string>} statuses - the page's status vocabulary
  */
-export function getDefaultFilters() {
+export function getDefaultFilters(statuses) {
+  const statusFilters = {};
+  for (const status of statuses) {
+    statusFilters[status] = false;
+  }
   return {
     search: "",
-    // Status filters — additive model: unchecked = no filter (show all)
-    // Per NNG, Baymard, Carbon Design System: check to narrow, not uncheck to hide
-    acFilterChecked: false,
-    aimFilterChecked: false,
-    adnmFilterChecked: false,
-    naFilterChecked: false,
-    nydFilterChecked: false,
+    statusFilters,
     // Review filters — same additive model
     nurFilterChecked: false,
     urFilterChecked: false,
@@ -27,45 +34,29 @@ export function getDefaultFilters() {
 }
 
 /**
- * Status value to filter key mapping
- */
-const STATUS_FILTER_MAP = {
-  "Applicable - Configurable": "acFilterChecked",
-  "Applicable - Inherently Meets": "aimFilterChecked",
-  "Applicable - Does Not Meet": "adnmFilterChecked",
-  "Not Applicable": "naFilterChecked",
-  "Not Yet Determined": "nydFilterChecked",
-};
-
-/**
  * Composable for managing rule filter state.
  *
  * @param {Ref<Array>} rules - Reactive ref containing array of rule objects
  * @param {number} componentId - Component ID (for potential persistence)
+ * @param {Array<string>} statuses - the page's status vocabulary
  * @returns {Object} Filter state and methods
  */
-export function useRuleFilters(rules, componentId) {
+export function useRuleFilters(rules, componentId, statuses) {
   // State
-  const filters = ref(getDefaultFilters());
+  const filters = ref(getDefaultFilters(statuses));
 
-  // Computed: Rule status counts
+  // Computed: Rule status counts, keyed by status value
   const counts = computed(() => {
-    let ac = 0,
-      aim = 0,
-      adnm = 0,
-      na = 0,
-      nyd = 0;
+    const statusCounts = {};
+    for (const status of statuses) {
+      statusCounts[status] = 0;
+    }
     let nur = 0,
       ur = 0,
       lck = 0;
 
     for (const rule of rules.value) {
-      // Status counts
-      if (rule.status === "Applicable - Configurable") ac++;
-      else if (rule.status === "Applicable - Inherently Meets") aim++;
-      else if (rule.status === "Applicable - Does Not Meet") adnm++;
-      else if (rule.status === "Not Applicable") na++;
-      else if (rule.status === "Not Yet Determined") nyd++;
+      if (rule.status in statusCounts) statusCounts[rule.status]++;
 
       // Review counts
       if (rule.locked) lck++;
@@ -73,17 +64,11 @@ export function useRuleFilters(rules, componentId) {
       else nur++;
     }
 
-    return { ac, aim, adnm, na, nyd, nur, ur, lck };
+    return { statusCounts, nur, ur, lck };
   });
 
   const anyStatusFilterActive = computed(() => {
-    return (
-      filters.value.acFilterChecked ||
-      filters.value.aimFilterChecked ||
-      filters.value.adnmFilterChecked ||
-      filters.value.naFilterChecked ||
-      filters.value.nydFilterChecked
-    );
+    return Object.values(filters.value.statusFilters).some(Boolean);
   });
 
   const anyReviewFilterActive = computed(() => {
@@ -98,10 +83,13 @@ export function useRuleFilters(rules, componentId) {
   // Additive model: no filters checked = show all (per NNG/Baymard/Carbon)
   const filteredRules = computed(() => {
     return rules.value.filter((rule) => {
-      // Status filter — skip when no status filters are active (show all)
+      // Status filter — skip when no status filters are active (show all).
+      // A rule whose status is outside the vocabulary is never status-filtered.
       if (anyStatusFilterActive.value) {
-        const statusFilterKey = STATUS_FILTER_MAP[rule.status];
-        if (statusFilterKey && !filters.value[statusFilterKey]) {
+        if (
+          rule.status in filters.value.statusFilters &&
+          !filters.value.statusFilters[rule.status]
+        ) {
           return false;
         }
       }
@@ -132,13 +120,7 @@ export function useRuleFilters(rules, componentId) {
 
   // Computed: Are all status filters enabled?
   const allStatusFiltersEnabled = computed(() => {
-    return (
-      filters.value.acFilterChecked &&
-      filters.value.aimFilterChecked &&
-      filters.value.adnmFilterChecked &&
-      filters.value.naFilterChecked &&
-      filters.value.nydFilterChecked
-    );
+    return Object.values(filters.value.statusFilters).every(Boolean);
   });
 
   // Computed: Are all review filters enabled?
@@ -152,12 +134,7 @@ export function useRuleFilters(rules, componentId) {
 
   const activeFilterCount = computed(() => {
     const f = filters.value;
-    let count = 0;
-    if (f.acFilterChecked) count++;
-    if (f.aimFilterChecked) count++;
-    if (f.adnmFilterChecked) count++;
-    if (f.naFilterChecked) count++;
-    if (f.nydFilterChecked) count++;
+    let count = Object.values(f.statusFilters).filter(Boolean).length;
     if (f.nurFilterChecked) count++;
     if (f.urFilterChecked) count++;
     if (f.lckFilterChecked) count++;
@@ -166,21 +143,27 @@ export function useRuleFilters(rules, componentId) {
     return count;
   });
 
-  // Methods
+  // Methods — a filter name is either a status value (statusFilters key)
+  // or a kind-free named key. Status values can never collide with the
+  // named keys, so the lookup order is safe.
   function toggleFilter(filterName) {
-    if (filterName in filters.value) {
+    if (filterName in filters.value.statusFilters) {
+      filters.value.statusFilters[filterName] = !filters.value.statusFilters[filterName];
+    } else if (filterName in filters.value) {
       filters.value[filterName] = !filters.value[filterName];
     }
   }
 
   function setFilter(filterName, value) {
-    if (filterName in filters.value) {
+    if (filterName in filters.value.statusFilters) {
+      filters.value.statusFilters[filterName] = value;
+    } else if (filterName in filters.value) {
       filters.value[filterName] = value;
     }
   }
 
   function resetFilters() {
-    filters.value = getDefaultFilters();
+    filters.value = getDefaultFilters(statuses);
   }
 
   return {

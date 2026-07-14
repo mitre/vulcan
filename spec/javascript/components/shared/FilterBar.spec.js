@@ -41,26 +41,41 @@ import { getDefaultFilters } from "@/composables/useRuleFilters";
 describe("FilterBar", () => {
   let wrapper;
 
+  const STIG_STATUSES = [
+    "Not Yet Determined",
+    "Applicable - Configurable",
+    "Applicable - Inherently Meets",
+    "Applicable - Does Not Meet",
+    "Not Applicable",
+  ];
+
+  const SRG_STATUSES = ["Not Yet Determined", "Applicable", "Not Applicable"];
+
   const defaultFilters = {
-    acFilterChecked: true,
-    aimFilterChecked: true,
-    adnmFilterChecked: false,
-    naFilterChecked: true,
-    nydFilterChecked: true,
+    statusFilters: {
+      "Not Yet Determined": true,
+      "Applicable - Configurable": true,
+      "Applicable - Inherently Meets": true,
+      "Applicable - Does Not Meet": false,
+      "Not Applicable": true,
+    },
     nurFilterChecked: true,
     urFilterChecked: true,
     lckFilterChecked: true,
     nestSatisfiedRulesChecked: true,
     showSRGIdChecked: false,
     sortBySRGIdChecked: true,
+    openCommentsOnly: false,
   };
 
   const defaultCounts = {
-    ac: 264,
-    aim: 0,
-    adnm: 0,
-    na: 0,
-    nyd: 0,
+    statusCounts: {
+      "Not Yet Determined": 0,
+      "Applicable - Configurable": 264,
+      "Applicable - Inherently Meets": 0,
+      "Applicable - Does Not Meet": 0,
+      "Not Applicable": 0,
+    },
     nur: 264,
     ur: 0,
     lck: 0,
@@ -168,48 +183,62 @@ describe("FilterBar", () => {
   // ==========================================
   // STATUS ITEMS
   // ==========================================
-  describe("statusItems computed", () => {
-    it("returns 5 status items in authoring lifecycle order (NYD first)", () => {
+  describe("statusItems computed (vocabulary-derived)", () => {
+    it("returns items keyed by status value in vocabulary order (NYD first)", () => {
       wrapper = createWrapper();
       const items = wrapper.vm.statusItems;
       expect(items).toHaveLength(5);
-      expect(items.map((i) => i.key)).toEqual([
-        "nydFilterChecked",
-        "acFilterChecked",
-        "aimFilterChecked",
-        "adnmFilterChecked",
-        "naFilterChecked",
-      ]);
+      expect(items.map((i) => i.key)).toEqual(STIG_STATUSES);
     });
 
-    it("status items have correct labels in lifecycle order", () => {
+    it("status item labels are the status values", () => {
       wrapper = createWrapper();
       const items = wrapper.vm.statusItems;
-      expect(items[0].label).toBe("Not Yet Determined");
-      expect(items[1].label).toBe("Applicable - Configurable");
-      expect(items[2].label).toBe("Applicable - Inherently Meets");
-      expect(items[3].label).toBe("Applicable - Does Not Meet");
-      expect(items[4].label).toBe("Not Applicable");
+      expect(items.map((i) => i.label)).toEqual(STIG_STATUSES);
     });
 
-    it("status items include counts from props", () => {
+    it("status items include counts from statusCounts", () => {
       wrapper = createWrapper();
       const items = wrapper.vm.statusItems;
-      expect(items[0].count).toBe(0); // nyd
-      expect(items[1].count).toBe(264); // ac
+      expect(items[0].count).toBe(0); // Not Yet Determined
+      expect(items[1].count).toBe(264); // Applicable - Configurable
     });
 
-    it("status items reflect checked state from filters prop", () => {
+    it("status items reflect checked state from the statusFilters map", () => {
       wrapper = createWrapper();
       const items = wrapper.vm.statusItems;
-      expect(items[0].checked).toBe(true); // nydFilterChecked (from mock props)
-      expect(items[1].checked).toBe(true); // acFilterChecked (from mock props)
+      expect(items[0].checked).toBe(true); // Not Yet Determined
+      expect(items[3].checked).toBe(false); // Applicable - Does Not Meet
     });
 
     it("passes status items to Status group", () => {
       wrapper = createWrapper();
       const statusGroup = wrapper.findAllComponents({ name: "FilterGroup" }).at(0);
       expect(statusGroup.props("items")).toHaveLength(5);
+    });
+
+    it("SRG vocabulary yields exactly three items — no STIG-only labels (leak regression)", () => {
+      wrapper = createWrapper({
+        filters: {
+          ...defaultFilters,
+          statusFilters: {
+            "Not Yet Determined": false,
+            Applicable: false,
+            "Not Applicable": false,
+          },
+        },
+        counts: {
+          statusCounts: { "Not Yet Determined": 1, Applicable: 2, "Not Applicable": 0 },
+          nur: 3,
+          ur: 0,
+          lck: 0,
+        },
+      });
+      const items = wrapper.vm.statusItems;
+      expect(items.map((i) => i.key)).toEqual(SRG_STATUSES);
+      items.forEach((item) => {
+        expect(item.label).not.toContain("Applicable - ");
+      });
     });
   });
 
@@ -275,17 +304,19 @@ describe("FilterBar", () => {
   // EVENTS - UPDATE
   // ==========================================
   describe("update events", () => {
-    it("emits update:filters when status group updates", async () => {
+    it("emits update:filters when status group updates (status keys land in statusFilters)", async () => {
       wrapper = createWrapper();
       const statusGroup = wrapper.findAllComponents({ name: "FilterGroup" }).at(0);
 
-      await statusGroup.vm.$emit("update:items", [{ key: "acFilterChecked", checked: false }]);
+      await statusGroup.vm.$emit("update:items", [
+        { key: "Applicable - Configurable", checked: false },
+      ]);
 
       expect(wrapper.emitted("update:filters")).toBeTruthy();
       const emitted = wrapper.emitted("update:filters")[0][0];
-      expect(emitted.acFilterChecked).toBe(false);
+      expect(emitted.statusFilters["Applicable - Configurable"]).toBe(false);
       // Other filters should be preserved
-      expect(emitted.aimFilterChecked).toBe(true);
+      expect(emitted.statusFilters["Applicable - Inherently Meets"]).toBe(true);
     });
 
     it("emits update:filters when display group updates", async () => {
@@ -315,15 +346,15 @@ describe("FilterBar", () => {
       const statusGroup = wrapper.findAllComponents({ name: "FilterGroup" }).at(0);
 
       await statusGroup.vm.$emit("update:items", [
-        { key: "acFilterChecked", checked: false },
-        { key: "naFilterChecked", checked: false },
+        { key: "Applicable - Configurable", checked: false },
+        { key: "Not Applicable", checked: false },
       ]);
 
       const emitted = wrapper.emitted("update:filters")[0][0];
-      expect(emitted.acFilterChecked).toBe(false);
-      expect(emitted.naFilterChecked).toBe(false);
+      expect(emitted.statusFilters["Applicable - Configurable"]).toBe(false);
+      expect(emitted.statusFilters["Not Applicable"]).toBe(false);
       // Others remain from original filters
-      expect(emitted.aimFilterChecked).toBe(true);
+      expect(emitted.statusFilters["Applicable - Inherently Meets"]).toBe(true);
     });
   });
 
@@ -331,24 +362,17 @@ describe("FilterBar", () => {
   // EVENTS - RESET
   // ==========================================
   describe("reset events", () => {
-    it("resets status filters to defaults when status group emits reset", async () => {
-      wrapper = createWrapper({
-        filters: {
-          ...defaultFilters,
-          acFilterChecked: false,
-          aimFilterChecked: false,
-        },
-      });
+    it("resets status filters (all unchecked) when status group emits reset", async () => {
+      wrapper = createWrapper();
       const statusGroup = wrapper.findAllComponents({ name: "FilterGroup" }).at(0);
       await statusGroup.vm.$emit("reset");
 
       const emitted = wrapper.emitted("update:filters")[0][0];
-      const defaults = getDefaultFilters();
-      expect(emitted.acFilterChecked).toBe(defaults.acFilterChecked);
-      expect(emitted.aimFilterChecked).toBe(defaults.aimFilterChecked);
-      expect(emitted.adnmFilterChecked).toBe(defaults.adnmFilterChecked);
-      expect(emitted.naFilterChecked).toBe(defaults.naFilterChecked);
-      expect(emitted.nydFilterChecked).toBe(defaults.nydFilterChecked);
+      STIG_STATUSES.forEach((status) => {
+        expect(emitted.statusFilters[status]).toBe(false);
+      });
+      // Review/display untouched by a status reset
+      expect(emitted.nurFilterChecked).toBe(true);
     });
 
     it("resets review filters to defaults when review group emits reset", async () => {
@@ -362,7 +386,7 @@ describe("FilterBar", () => {
       await reviewGroup.vm.$emit("reset");
 
       const emitted = wrapper.emitted("update:filters")[0][0];
-      const defaults = getDefaultFilters();
+      const defaults = getDefaultFilters(STIG_STATUSES);
       expect(emitted.nurFilterChecked).toBe(defaults.nurFilterChecked);
       expect(emitted.urFilterChecked).toBe(defaults.urFilterChecked);
       expect(emitted.lckFilterChecked).toBe(defaults.lckFilterChecked);
@@ -379,7 +403,7 @@ describe("FilterBar", () => {
       await displayGroup.vm.$emit("reset");
 
       const emitted = wrapper.emitted("update:filters")[0][0];
-      const defaults = getDefaultFilters();
+      const defaults = getDefaultFilters(STIG_STATUSES);
       expect(emitted.nestSatisfiedRulesChecked).toBe(defaults.nestSatisfiedRulesChecked);
       expect(emitted.showSRGIdChecked).toBe(defaults.showSRGIdChecked);
       expect(emitted.sortBySRGIdChecked).toBe(defaults.sortBySRGIdChecked);

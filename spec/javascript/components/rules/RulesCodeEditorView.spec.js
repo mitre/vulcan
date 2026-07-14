@@ -233,32 +233,32 @@ describe("RulesCodeEditorView", () => {
   });
 
   describe("useRuleFilters composable integration", () => {
-    it("has filters in component state", () => {
+    it("has filters in component state (vocabulary-keyed statusFilters)", () => {
       wrapper = createWrapper();
       expect(wrapper.vm.filters).toBeDefined();
-      expect(wrapper.vm.filters.acFilterChecked).toBe(false);
+      expect(wrapper.vm.filters.statusFilters["Applicable - Configurable"]).toBe(false);
     });
 
-    it("has counts computed property", () => {
+    it("has counts computed property keyed by status value", () => {
       wrapper = createWrapper();
       // counts should come from useRuleFilters
       const counts = wrapper.vm.counts;
       expect(counts).toBeDefined();
-      expect(counts.nyd).toBe(1); // One rule with 'Not Yet Determined'
-      expect(counts.ac).toBe(1); // One rule with 'Applicable - Configurable'
+      expect(counts.statusCounts["Not Yet Determined"]).toBe(1);
+      expect(counts.statusCounts["Applicable - Configurable"]).toBe(1);
     });
 
-    it("setFilter updates filter state", () => {
+    it("setFilter updates filter state by status value", () => {
       wrapper = createWrapper();
-      wrapper.vm.setFilter("acFilterChecked", false);
-      expect(wrapper.vm.filters.acFilterChecked).toBe(false);
+      wrapper.vm.setFilter("Applicable - Configurable", true);
+      expect(wrapper.vm.filters.statusFilters["Applicable - Configurable"]).toBe(true);
     });
 
     it("resetFilters resets all filters to defaults (all unchecked)", () => {
       wrapper = createWrapper();
-      wrapper.vm.setFilter("acFilterChecked", true);
+      wrapper.vm.setFilter("Applicable - Configurable", true);
       wrapper.vm.resetFilters();
-      expect(wrapper.vm.filters.acFilterChecked).toBe(false);
+      expect(wrapper.vm.filters.statusFilters["Applicable - Configurable"]).toBe(false);
     });
   });
 
@@ -510,12 +510,6 @@ describe("RulesCodeEditorView", () => {
       wrapper = createWrapper();
       const ruleList = wrapper.findComponent({ name: "RuleList" });
       expect(ruleList.exists()).toBe(true);
-    });
-
-    it("does NOT render RuleNavigator (replaced by direct composable usage)", () => {
-      wrapper = createWrapper();
-      const nav = wrapper.findComponent({ name: "RuleNavigator" });
-      expect(nav.exists()).toBe(false);
     });
   });
 

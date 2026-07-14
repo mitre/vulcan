@@ -25,19 +25,22 @@
 </template>
 
 <script>
-const FILTER_LABELS = {
-  acFilterChecked: "Configurable",
-  aimFilterChecked: "Inherently Meets",
-  adnmFilterChecked: "Does Not Meet",
-  naFilterChecked: "Not Applicable",
-  nydFilterChecked: "Not Yet Determined",
+// Kind-free named filters keep fixed labels; status pills derive from the
+// vocabulary-keyed statusFilters map so the component never hardcodes a
+// status name.
+const NAMED_FILTER_LABELS = {
   nurFilterChecked: "Not Under Review",
   urFilterChecked: "Under Review",
   lckFilterChecked: "Locked",
   openCommentsOnly: "Open Comments",
 };
 
-const FILTER_KEYS = Object.keys(FILTER_LABELS);
+const NAMED_FILTER_KEYS = Object.keys(NAMED_FILTER_LABELS);
+
+// Short display form of a status pill: the "Applicable - " prefix is
+// dropped (preserves the established pill text on STIG pages and reads
+// naturally for every vocabulary).
+const statusPillLabel = (status) => status.replace(/^Applicable - /, "");
 
 export default {
   name: "ActiveFilterPills",
@@ -50,9 +53,14 @@ export default {
   computed: {
     activePills() {
       const pills = [];
-      FILTER_KEYS.forEach((key) => {
+      Object.entries(this.filters.statusFilters).forEach(([status, checked]) => {
+        if (checked) {
+          pills.push({ key: status, label: statusPillLabel(status) });
+        }
+      });
+      NAMED_FILTER_KEYS.forEach((key) => {
         if (this.filters[key]) {
-          pills.push({ key, label: FILTER_LABELS[key] });
+          pills.push({ key, label: NAMED_FILTER_LABELS[key] });
         }
       });
       if (this.filters.search) {

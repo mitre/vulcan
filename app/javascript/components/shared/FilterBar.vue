@@ -74,39 +74,16 @@ export default {
     },
   },
   computed: {
+    // Derived from the vocabulary-keyed statusFilters map — the bar renders
+    // whatever statuses the page's kind provides, in vocabulary order.
     statusItems() {
-      return [
-        {
-          key: "nydFilterChecked",
-          label: "Not Yet Determined",
-          count: this.counts.nyd,
-          checked: this.filters.nydFilterChecked,
-        },
-        {
-          key: "acFilterChecked",
-          label: "Applicable - Configurable",
-          count: this.counts.ac,
-          checked: this.filters.acFilterChecked,
-        },
-        {
-          key: "aimFilterChecked",
-          label: "Applicable - Inherently Meets",
-          count: this.counts.aim,
-          checked: this.filters.aimFilterChecked,
-        },
-        {
-          key: "adnmFilterChecked",
-          label: "Applicable - Does Not Meet",
-          count: this.counts.adnm,
-          checked: this.filters.adnmFilterChecked,
-        },
-        {
-          key: "naFilterChecked",
-          label: "Not Applicable",
-          count: this.counts.na,
-          checked: this.filters.naFilterChecked,
-        },
-      ];
+      const statusCounts = this.counts.statusCounts || {};
+      return Object.entries(this.filters.statusFilters).map(([status, checked]) => ({
+        key: status,
+        label: status,
+        count: statusCounts[status],
+        checked,
+      }));
     },
     reviewItems() {
       return [
@@ -156,8 +133,24 @@ export default {
     },
   },
   methods: {
+    // An item key is either a status value (statusFilters key) or a
+    // kind-free named key — status values can never collide with the
+    // named keys, so routing by membership is safe.
     emitUpdatedFilters(updates) {
-      const newFilters = { ...this.filters, ...updates };
+      const statusUpdates = {};
+      const namedUpdates = {};
+      Object.entries(updates).forEach(([key, value]) => {
+        if (key in this.filters.statusFilters) {
+          statusUpdates[key] = value;
+        } else {
+          namedUpdates[key] = value;
+        }
+      });
+      const newFilters = {
+        ...this.filters,
+        ...namedUpdates,
+        statusFilters: { ...this.filters.statusFilters, ...statusUpdates },
+      };
       this.$emit("update:filters", newFilters);
     },
     onGroupUpdate(items) {
@@ -168,17 +161,14 @@ export default {
       this.emitUpdatedFilters(updates);
     },
     onStatusReset() {
-      const defaults = getDefaultFilters();
-      this.emitUpdatedFilters({
-        acFilterChecked: defaults.acFilterChecked,
-        aimFilterChecked: defaults.aimFilterChecked,
-        adnmFilterChecked: defaults.adnmFilterChecked,
-        naFilterChecked: defaults.naFilterChecked,
-        nydFilterChecked: defaults.nydFilterChecked,
+      const updates = {};
+      Object.keys(this.filters.statusFilters).forEach((status) => {
+        updates[status] = false;
       });
+      this.emitUpdatedFilters(updates);
     },
     onReviewReset() {
-      const defaults = getDefaultFilters();
+      const defaults = getDefaultFilters(Object.keys(this.filters.statusFilters));
       this.emitUpdatedFilters({
         nurFilterChecked: defaults.nurFilterChecked,
         urFilterChecked: defaults.urFilterChecked,
@@ -186,7 +176,7 @@ export default {
       });
     },
     onDisplayReset() {
-      const defaults = getDefaultFilters();
+      const defaults = getDefaultFilters(Object.keys(this.filters.statusFilters));
       this.emitUpdatedFilters({
         nestSatisfiedRulesChecked: defaults.nestSatisfiedRulesChecked,
         showSRGIdChecked: defaults.showSRGIdChecked,
