@@ -10,44 +10,42 @@
  * @returns composable API (see JSDoc on return)
  */
 import { computed } from "vue";
-import {
-  STATUS_FIELD_CONFIG,
-  SEVERITY_EDITABLE_STATUSES,
-  SEVERITY_OVERRIDE_STATUSES,
-  LOCKABLE_SECTIONS,
-} from "./ruleFieldConfig";
+import { LOCKABLE_SECTIONS } from "./ruleFieldConfig";
+import { buildFieldSets, resolveFieldStates } from "./fieldStateConfig";
 
-// ─── Helper: build field set from config ──────────────────
-function buildFieldSet(config, isAdvanced) {
-  if (!config) {
-    return { displayed: [], disabled: [] };
-  }
-
-  const displayed = [...config.displayed];
-  const disabled = [...(config.disabled || [])];
-
-  if (isAdvanced && config.advancedDisplayed) {
-    displayed.push(...config.advancedDisplayed);
-  }
-  if (isAdvanced && config.advancedDisabled) {
-    disabled.push(...config.advancedDisabled);
-  }
-
-  return { displayed, disabled };
-}
-
-// ─── Status config lookup ───────────────────────────────────
-function getStatusConfig(status) {
-  return STATUS_FIELD_CONFIG[status] || { rule: null, disa: null, check: null };
-}
+const EMPTY_SETS = Object.freeze({
+  rule: { displayed: [], disabled: [] },
+  disa: { displayed: [], disabled: [] },
+  check: { displayed: [], disabled: [] },
+});
 
 export function useRuleFormFields(rule, advancedMode, options = {}) {
   const readOnly = options.readOnly || { value: false };
+  // STIG is the documented default: it is the only kind existing pages
+  // serve until the SRG editor threads document_type through.
+  const documentType = options.documentType || { value: "stig" };
+
+  // Interim tier mapping: the Advanced Fields checkbox IS the publisher
+  // tier switch until the publisher membership capability ships.
+  const tier = computed(() => (advancedMode.value ? "publisher" : "author"));
+
+  // One resolution per (kind, status, tier); a rule still loading (no
+  // status yet) renders empty sets rather than throwing — absence of a
+  // status is a loading state, not a vocabulary violation.
+  const fieldSets = computed(() => {
+    const status = rule.value.status;
+    if (!status) return EMPTY_SETS;
+    return buildFieldSets({
+      documentType: documentType.value,
+      status,
+      tier: tier.value,
+    });
+  });
 
   // ─── Effective status ───
   // Status is set by the backend: ADNM when satisfied-by (per DISA V4R3
   // §4.1.9), NYD on removal. No frontend override needed — the DB value
-  // drives STATUS_FIELD_CONFIG field visibility.
+  // drives fieldStateConfig field visibility.
   const effectiveStatus = computed(() => {
     return rule.value.status;
   });
@@ -71,18 +69,29 @@ export function useRuleFormFields(rule, advancedMode, options = {}) {
     return r.rule_severity !== srg.rule_severity;
   });
 
+  // Severity is editable exactly when the resolver says so for the
+  // current (kind, status, tier) — replaces the STIG-only status list.
   const severityEditable = computed(() => {
-    return SEVERITY_EDITABLE_STATUSES.includes(effectiveStatus.value);
+    const status = rule.value.status;
+    if (!status) return false;
+    const states = resolveFieldStates({
+      documentType: documentType.value,
+      status,
+      tier: tier.value,
+    });
+    return states.rule.rule_severity === "editable";
   });
 
   const showSeverityOverride = computed(() => {
-    return severityChanged.value && SEVERITY_OVERRIDE_STATUSES.includes(effectiveStatus.value);
+    return severityChanged.value && severityEditable.value;
   });
 
   // ─── Rule form fields ─────────────────────────────────────
   const ruleFormFields = computed(() => {
-    const config = getStatusConfig(effectiveStatus.value);
-    const result = buildFieldSet(config.rule, advancedMode.value);
+    const result = {
+      displayed: [...fieldSets.value.rule.displayed],
+      disabled: [...fieldSets.value.rule.disabled],
+    };
 
     // Dynamic injection of severity_override_guidance (between severity and title)
     if (showSeverityOverride.value && !result.displayed.includes("severity_override_guidance")) {
@@ -104,16 +113,20 @@ export function useRuleFormFields(rule, advancedMode, options = {}) {
 
   // ─── DISA description fields ──────────────────────────────
   const disaDescriptionFields = computed(() => {
-    const config = getStatusConfig(effectiveStatus.value);
-    const result = buildFieldSet(config.disa, advancedMode.value);
+    const result = {
+      displayed: [...fieldSets.value.disa.displayed],
+      disabled: [...fieldSets.value.disa.disabled],
+    };
     injectLockedFields(result);
     return result;
   });
 
   // ─── Check form fields ────────────────────────────────────
   const checkFormFields = computed(() => {
-    const config = getStatusConfig(effectiveStatus.value);
-    const result = buildFieldSet(config.check, advancedMode.value);
+    const result = {
+      displayed: [...fieldSets.value.check.displayed],
+      disabled: [...fieldSets.value.check.disabled],
+    };
     injectLockedFields(result);
     return result;
   });
@@ -122,13 +135,22 @@ export function useRuleFormFields(rule, advancedMode, options = {}) {
   const showDisaSection = computed(() => disaDescriptionFields.value.displayed.length > 0);
   const showChecksSection = computed(() => checkFormFields.value.displayed.length > 0);
 
-  // Collapsible sections only when advanced mode adds extra DISA/check fields
-  // beyond basic. Statuses with no advanced additions keep fields inline.
+  // Collapsible sections only when the publisher tier reveals fields the
+  // author tier doesn't — statuses that are tier-invariant keep fields
+  // inline (matches the legacy "has advanced additions" behavior).
   const showCollapsibleSections = computed(() => {
-    const config = getStatusConfig(effectiveStatus.value);
-    const hasAdvancedDisa = config.disa?.advancedDisplayed?.length > 0;
-    const hasAdvancedRule = config.rule?.advancedDisplayed?.length > 0;
-    return hasAdvancedDisa || hasAdvancedRule;
+    const status = rule.value.status;
+    if (!status) return false;
+    const author = buildFieldSets({ documentType: documentType.value, status, tier: "author" });
+    const publisher = buildFieldSets({
+      documentType: documentType.value,
+      status,
+      tier: "publisher",
+    });
+    return (
+      publisher.rule.displayed.length > author.rule.displayed.length ||
+      publisher.disa.displayed.length > author.disa.displayed.length
+    );
   });
 
   // ─── Per-section locking ─────────────────────────────────

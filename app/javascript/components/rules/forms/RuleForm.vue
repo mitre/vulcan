@@ -115,7 +115,6 @@
           tooltip="The NIST control family (e.g. AC-2) mapped to this requirement"
           extra-class="col-md-6"
           read-only
-          :custom-display-check="() => true"
         >
           <template #default="{ inputId }">
             <b-form-input
@@ -133,7 +132,6 @@
           tooltip="The Common Control Indicator (CCI) mapped to this requirement"
           extra-class="col-md-6"
           read-only
-          :custom-display-check="() => true"
         >
           <template #default="{ inputId }">
             <b-form-input :id="inputId" :value="rule.ident || '\u2014'" readonly class="bg-light" />
@@ -470,7 +468,41 @@ import SatisfiedByIndicator from "../../shared/SatisfiedByIndicator.vue";
 import DisaRuleDescriptionForm from "./DisaRuleDescriptionForm";
 import AdditionalQuestions from "./AdditionalQuestions";
 import CheckForm from "./CheckForm";
-import { SEVERITY_OPTIONS } from "../../../constants/terminology";
+import {
+  SEVERITY_OPTIONS,
+  STATUS_DESCRIPTIONS_BY_DOCUMENT_TYPE,
+} from "../../../constants/terminology";
+
+// Display form of a status name (en-dash, matching published DISA copy).
+const displayStatus = (status) => status.replace(" - ", " – ");
+
+// Oxford-style join of <em>-wrapped items: "A, B, or C" / "A or B".
+const emJoin = (items) => {
+  const wrapped = items.map((s) => `<em>${s}</em>`);
+  if (wrapped.length <= 1) return wrapped.join("");
+  if (wrapped.length === 2) return `${wrapped[0]} or ${wrapped[1]}`;
+  return `${wrapped.slice(0, -1).join(", ")}, or ${wrapped[wrapped.length - 1]}`;
+};
+
+// Status-KEYED helper-copy exceptions. These are data lookups against the
+// current row's status — an SRG status simply misses and falls through to
+// the kind-neutral default; STIG statuses keep today's copy exactly
+// (explicit nulls mean "no tooltip for this status").
+const ARTIFACT_TOOLTIP_BY_STATUS = Object.freeze({
+  "Not Applicable":
+    "Provide evidence that the control is not applicable to the system - code files, documentation, screenshots, etc.",
+  "Not Yet Determined": null,
+  "Applicable - Configurable": null,
+  "Applicable - Does Not Meet": null,
+});
+
+const FIXTEXT_TOOLTIP_BY_STATUS = Object.freeze({
+  "Applicable - Configurable":
+    "Describe how to correctly configure the requirement to remediate the system vulnerability",
+  "Applicable - Does Not Meet": null,
+  "Applicable - Inherently Meets": null,
+  "Not Applicable": null,
+});
 
 export default {
   name: "RuleForm",
@@ -490,6 +522,14 @@ export default {
     statuses: {
       type: Array,
       required: true,
+    },
+    // STIG is the documented default: the only kind existing pages serve
+    // until the SRG editor threads document_type through. Selects the
+    // per-status helper copy; the vocabulary itself comes from `statuses`.
+    documentType: {
+      type: String,
+      default: "stig",
+      validator: (value) => ["stig", "srg"].includes(value),
     },
     disabled: {
       type: Boolean,
@@ -596,21 +636,31 @@ export default {
     },
     nydTooltip() {
       if (this.rule.status !== "Not Yet Determined") return null;
+      // The unlock list is the page's vocabulary minus NYD \u2014 never a
+      // hardcoded status list, so SRG pages describe SRG statuses.
+      const unlockStatuses = this.statuses
+        .filter((s) => s !== "Not Yet Determined")
+        .map(displayStatus);
       return (
         "Fields are locked while status is <strong>Not Yet Determined</strong>. " +
-        "Change the status to <em>Applicable \u2013 Configurable</em>, " +
-        "<em>Applicable \u2013 Does Not Meet</em>, " +
-        "<em>Applicable \u2013 Inherently Meets</em>, or " +
-        "<em>Not Applicable</em> to unlock."
+        `Change the status to ${emJoin(unlockStatuses)} to unlock.`
       );
     },
     tooltips: function () {
+      // Per-status helper copy comes from the kind-keyed map, composed
+      // against the page's vocabulary \u2014 statuses without an entry (NYD)
+      // are simply not described. Status-KEYED lookups below are data,
+      // not control flow: an SRG status misses STIG-only entries and
+      // falls through to the kind-neutral default.
+      const descriptions = STATUS_DESCRIPTIONS_BY_DOCUMENT_TYPE[this.documentType];
+      const statusTooltip = this.statuses
+        .filter((s) => descriptions[s])
+        .map((s) => `${displayStatus(s)}: ${descriptions[s]}`)
+        .join("<br><br>");
+      const justificationExempt = { "Applicable - Configurable": true, "Not Yet Determined": true };
       return {
-        status:
-          "Applicable \u2013 Configurable: The product requires configuration or the application of policy settings to achieve compliance.<br><br>Applicable \u2013 Inherently Meets: The product is compliant in its initial state and cannot be subsequently reconfigured to a noncompliant state.<br><br> Applicable \u2013 Does Not Meet: There are no technical means to achieve compliance.<br><br> Not Applicable: The requirement addresses a capability or use case that the product does not support.",
-        status_justification: ["Applicable - Configurable", "Not Yet Determined"].includes(
-          this.rule.status,
-        )
+        status: statusTooltip,
+        status_justification: justificationExempt[this.rule.status]
           ? null
           : "Explain the rationale behind selecting one of the above statuses",
         title: this.nydTooltip || "Describe the vulnerability for this control",
@@ -618,29 +668,16 @@ export default {
         rule_severity:
           "CAT I (High): a grave or critical problem, CAT II (Medium): a fairly serious problem, CAT III (Low): a relatively minor problem",
         rule_weight: null,
-        artifact_description:
-          this.rule.status === "Not Applicable"
-            ? "Provide evidence that the control is not applicable to the system - code files, documentation, screenshots, etc."
-            : [
-                  "Not Yet Determined",
-                  "Applicable - Configurable",
-                  "Applicable - Does Not Meet",
-                ].includes(this.rule.status)
-              ? null
-              : "Provide evidence that the control is inherently met by the system - code files, documentation, screenshots, etc.",
+        artifact_description: Object.hasOwn(ARTIFACT_TOOLTIP_BY_STATUS, this.rule.status)
+          ? ARTIFACT_TOOLTIP_BY_STATUS[this.rule.status]
+          : "Provide evidence that the control is inherently met by the system - code files, documentation, screenshots, etc.",
         fix_id: null,
         fixtext_fixref: null,
         fixtext:
           this.nydTooltip ||
-          (this.rule.status === "Applicable - Configurable"
-            ? "Describe how to correctly configure the requirement to remediate the system vulnerability"
-            : [
-                  "Applicable - Does Not Meet",
-                  "Applicable - Inherently Meets",
-                  "Not Applicable",
-                ].includes(this.rule.status)
-              ? null
-              : "Explain how to fix the vulnerability discussed"),
+          (Object.hasOwn(FIXTEXT_TOOLTIP_BY_STATUS, this.rule.status)
+            ? FIXTEXT_TOOLTIP_BY_STATUS[this.rule.status]
+            : "Explain how to fix the vulnerability discussed"),
         ident:
           "Typically the Common Control Indicator (CCI) that maps to the vulnerability being discussed in this control",
         ident_system: null,

@@ -165,11 +165,8 @@
 </template>
 
 <script>
-import {
-  STATUS_FIELD_CONFIG,
-  FIELD_LABELS,
-  FIELD_DISPLAY_ORDER,
-} from "../../composables/ruleFieldConfig";
+import { FIELD_LABELS, FIELD_DISPLAY_ORDER } from "../../composables/ruleFieldConfig";
+import { buildFieldSets } from "../../composables/fieldStateConfig";
 import InfoTooltip from "../shared/InfoTooltip.vue";
 import SatisfiedByIndicator from "../shared/SatisfiedByIndicator.vue";
 
@@ -188,6 +185,13 @@ export default {
     parentRuleDisplayedName: { type: String, default: null },
     componentId: { type: [Number, String], default: null },
     ruleStatus: { type: String, default: null },
+    // STIG is the documented default: the only kind the triage panel
+    // serves until the SRG editor threads document_type through.
+    documentType: {
+      type: String,
+      default: "stig",
+      validator: (value) => ["stig", "srg"].includes(value),
+    },
     focusedSection: { type: String, default: null },
     contextMode: {
       type: String,
@@ -212,8 +216,20 @@ export default {
     },
     visibleFields() {
       if (!this.ruleContent) return [];
-      const config = STATUS_FIELD_CONFIG[this.ruleStatus];
-      if (!config) return this.fallbackSections();
+
+      // The panel shows what the config declares for this kind/status/tier
+      // (the Advanced toggle is the interim publisher-tier switch). An
+      // unknown status falls back to showing every populated field.
+      let sets;
+      try {
+        sets = buildFieldSets({
+          documentType: this.documentType,
+          status: this.ruleStatus,
+          tier: this.showAdvanced ? "publisher" : "author",
+        });
+      } catch {
+        return this.fallbackSections();
+      }
 
       const fields = [];
       const seen = new Set();
@@ -232,13 +248,9 @@ export default {
         }
       };
 
-      addFields(config.rule.displayed);
-      addFields(config.disa.displayed);
-      addFields(config.check.displayed);
-      if (this.showAdvanced) {
-        if (config.rule.advancedDisplayed) addFields(config.rule.advancedDisplayed);
-        if (config.disa.advancedDisplayed) addFields(config.disa.advancedDisplayed);
-      }
+      addFields(sets.rule.displayed);
+      addFields(sets.disa.displayed);
+      addFields(sets.check.displayed);
 
       fields.sort((a, b) => {
         const idxA = FIELD_DISPLAY_ORDER.indexOf(a.key);

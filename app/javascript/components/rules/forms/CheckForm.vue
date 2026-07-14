@@ -91,6 +91,13 @@ import { useCommentIconHost } from "../../../composables/useCommentIconHost";
 import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
 import RuleFormGroup from "../../shared/RuleFormGroup.vue";
 
+// Statuses whose check-content field carries no tooltip.
+const CONTENT_TOOLTIP_EXEMPT_STATUSES = Object.freeze({
+  "Applicable - Does Not Meet": true,
+  "Applicable - Inherently Meets": true,
+  "Not Applicable": true,
+});
+
 export default {
   name: "CheckForm",
   components: { MarkdownTextarea, RuleFormGroup },
@@ -168,17 +175,16 @@ export default {
       const isConfigurable =
         (this.rule.satisfied_by && this.rule.satisfied_by.length > 0) ||
         this.rule.status === "Applicable - Configurable";
+      // Status-KEYED data lookup: statuses outside the map (any vocabulary)
+      // fall to the default check-content text.
+      const contentTooltipExempt = Object.hasOwn(CONTENT_TOOLTIP_EXEMPT_STATUSES, this.rule.status);
       return {
         system: null,
         content_ref_name: null,
         content_ref_href: null,
         content: isConfigurable
           ? "Describe how to validate that the remediation has been properly implemented"
-          : [
-                "Applicable - Does Not Meet",
-                "Applicable - Inherently Meets",
-                "Not Applicable",
-              ].includes(this.rule.status)
+          : contentTooltipExempt
             ? null
             : "Describe how to check for the presence of the vulnerability",
       };

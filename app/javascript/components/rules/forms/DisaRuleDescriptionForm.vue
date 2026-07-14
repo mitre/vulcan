@@ -37,9 +37,6 @@
       label="Vulnerability Discussion"
       id-prefix="ruleEditor-disa_rule_description"
       :tooltip="tooltips['vuln_discussion']"
-      :custom-display-check="
-        () => fields.displayed.includes('vuln_discussion') || rule.status == 'Not Yet Determined'
-      "
       @toggle-section-lock="$emit('toggle-section-lock', $event)"
       v-on="commentIconListeners"
     >
@@ -49,7 +46,7 @@
           :value="description.vuln_discussion"
           :input-class="inputClass('vuln_discussion')"
           placeholder=""
-          :disabled="isDisabled || rule.status == 'Not Yet Determined'"
+          :disabled="isDisabled"
           rows="1"
           max-rows="99"
           @input="
@@ -443,6 +440,22 @@ import { useCommentIconHost } from "../../../composables/useCommentIconHost";
 import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
 import RuleFormGroup from "../../shared/RuleFormGroup.vue";
 import InfoTooltip from "../../shared/InfoTooltip.vue";
+
+// Statuses whose mitigations field carries no tooltip (the field is either
+// hidden or self-explanatory there). Data lookup, not control flow — other
+// vocabularies miss and get the default text.
+const MITIGATIONS_TOOLTIP_EXEMPT = Object.freeze({
+  "Not Yet Determined": true,
+  "Applicable - Configurable": true,
+  "Applicable - Inherently Meets": true,
+  "Not Applicable": true,
+});
+
+const POAM_TOOLTIP_BY_STATUS = Object.freeze({
+  "Applicable - Does Not Meet":
+    "Discuss the action of the POA&M in place for this vulnerability, including the start date and end date of the action",
+});
+
 export default {
   name: "DisaRuleDescriptionForm",
   components: { MarkdownTextarea, RuleFormGroup, InfoTooltip },
@@ -548,20 +561,14 @@ export default {
         false_negatives: "List any likely false-negatives associated with evaluating this control",
         mitigations_available:
           "Toggle ON if a compensating control or mitigation exists for this vulnerability. Mutually exclusive with POA&M.",
-        mitigations: [
-          "Not Yet Determined",
-          "Applicable - Configurable",
-          "Applicable - Inherently Meets",
-          "Not Applicable",
-        ].includes(this.rule.status)
+        // Status-KEYED data lookup: statuses outside the map (Applicable -
+        // Does Not Meet, or any other vocabulary) fall to the default text.
+        mitigations: Object.hasOwn(MITIGATIONS_TOOLTIP_EXEMPT, this.rule.status)
           ? null
           : "Discuss how the system mitigates this vulnerability in the absence of a configuration that would eliminate it",
         poam_available:
           "Toggle ON if a Plan of Action & Milestones exists for this vulnerability. Only available when Mitigations is OFF.",
-        poam:
-          this.rule.status === "Applicable - Does Not Meet"
-            ? "Discuss the action of the POA&M in place for this vulnerability, including the start date and end date of the action"
-            : null,
+        poam: POAM_TOOLTIP_BY_STATUS[this.rule.status] || null,
         severity_override_guidance:
           "Guidance for when the severity of this finding may be adjusted based on operational context or compensating controls",
         potential_impacts:

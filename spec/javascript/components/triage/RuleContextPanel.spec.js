@@ -152,7 +152,7 @@ describe("RuleContextPanel", () => {
     expect(w.text()).toContain("Vulnerability Discussion");
   });
 
-  // ── STATUS_FIELD_CONFIG drives visibility ──────────────────────────
+  // ── fieldStateConfig drives visibility ─────────────────────────────
 
   it("shows check_content for Applicable - Configurable", () => {
     const w = mount(RuleContextPanel, { localVue, propsData: props() });
@@ -602,6 +602,38 @@ describe("RuleContextPanel", () => {
       });
       expect(w.find(".satisfied-by-indicator").exists()).toBe(false);
       expect(w.find("[data-testid='child-indicator']").exists()).toBe(false);
+    });
+  });
+
+  // ── Leak regression: SRG kind never surfaces STIG-only fields ───────
+  describe("SRG vocabulary leak regression", () => {
+    it("srg kind + SRG status shows content fields but never STIG-only fields", () => {
+      const srgContent = {
+        ...ruleContent,
+        vendor_comments: "vendor text that must not render",
+        mitigations: "mitigation text that must not render",
+      };
+      const w = mount(RuleContextPanel, {
+        localVue,
+        propsData: props({
+          ruleContent: srgContent,
+          ruleStatus: "Applicable",
+          documentType: "srg",
+        }),
+      });
+      const keys = w.vm.visibleFields.map((f) => f.key);
+      expect(keys).toContain("title");
+      expect(keys).toContain("vuln_discussion");
+      expect(keys).not.toContain("vendor_comments");
+      expect(keys).not.toContain("mitigations");
+    });
+
+    it("a STIG status against the srg kind falls back to showing populated fields (no crash)", () => {
+      const w = mount(RuleContextPanel, {
+        localVue,
+        propsData: props({ ruleStatus: "Applicable - Configurable", documentType: "srg" }),
+      });
+      expect(w.vm.visibleFields.length).toBeGreaterThan(0);
     });
   });
 });

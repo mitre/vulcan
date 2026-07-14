@@ -107,4 +107,19 @@ describe("CheckForm", () => {
       expect(wrapper.vm.formGroupProps.validFeedback).toEqual({});
     });
   });
+
+  // ── Leak regression: SRG vocabulary never surfaces STIG-only copy ──
+  describe("SRG vocabulary leak regression", () => {
+    it("an SRG status gets the kind-neutral tooltip, never STIG-only phrasing", () => {
+      wrapper = createWrapper({ rule: makeRule({ status: "Applicable" }) });
+      expect(wrapper.vm.tooltips.content).toBe(
+        "Describe how to check for the presence of the vulnerability",
+      );
+    });
+
+    it("STIG statuses keep today's tooltip behavior (equivalence)", () => {
+      wrapper = createWrapper({ rule: makeRule({ status: "Applicable - Inherently Meets" }) });
+      expect(wrapper.vm.tooltips.content).toBeNull();
+    });
+  });
 });

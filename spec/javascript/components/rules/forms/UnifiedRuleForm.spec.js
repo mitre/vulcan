@@ -100,7 +100,8 @@ describe("UnifiedRuleForm", () => {
       expect(fields.displayed).toEqual(
         expect.arrayContaining(["status", "rule_severity", "title", "fixtext", "vendor_comments"]),
       );
-      expect(fields.disabled).toEqual([]);
+      // Only the absorbed IA/CCI reference display is read-only here.
+      expect([...fields.disabled].sort()).toEqual(["cci", "nist_control_family"]);
     });
 
     it("passes correct fields for Not Yet Determined (includes fixtext for context)", () => {

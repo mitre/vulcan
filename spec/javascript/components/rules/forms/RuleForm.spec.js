@@ -252,27 +252,39 @@ describe("RuleForm", () => {
     });
   });
 
-  // ─── R3: IA Control/CCI always visible ─────────────────────
-  describe("IA Control/CCI always visible when rule has data (R3)", () => {
+  // ─── R3: IA Control/CCI reference display (config-declared) ───
+  // The former always-on template bypass is absorbed into the config:
+  // fieldStateConfig supplies nist_control_family + cci as readonly in
+  // displayed/disabled at EVERY status (pinned in fieldStateConfig.spec).
+  // RuleForm renders exactly what the config declares.
+  const fieldsWithReferenceKeys = (displayed, disabled = []) => ({
+    displayed: [...displayed, "nist_control_family", "cci"],
+    disabled: [...disabled, "nist_control_family", "cci"],
+  });
+
+  describe("IA Control/CCI reference display (R3 — config-declared)", () => {
+    const refFields = () =>
+      fieldsWithReferenceKeys(["status", "rule_severity", "title", "fixtext", "vendor_comments"]);
+
     it("renders IA Control/CCI section when rule has nist_control_family and ident", () => {
-      wrapper = createWrapper();
+      wrapper = createWrapper({ fields: refFields() });
       expect(wrapper.find('[data-testid="ia-control-cci"]').exists()).toBe(true);
     });
 
     it("displays the correct IA Control value", () => {
-      wrapper = createWrapper();
+      wrapper = createWrapper({ fields: refFields() });
       const iaInput = wrapper.find('input[id^="ruleEditor-nist_control_family-"]');
       expect(iaInput.element.value).toBe("AC-2 (1)");
     });
 
     it("displays the correct CCI value", () => {
-      wrapper = createWrapper();
+      wrapper = createWrapper({ fields: refFields() });
       const cciInput = wrapper.find('input[id^="ruleEditor-cci-"]');
       expect(cciInput.element.value).toBe("CCI-000015");
     });
 
     it("IA Control and CCI inputs are readonly", () => {
-      wrapper = createWrapper();
+      wrapper = createWrapper({ fields: refFields() });
       const iaInput = wrapper.find('input[id^="ruleEditor-nist_control_family-"]');
       const cciInput = wrapper.find('input[id^="ruleEditor-cci-"]');
       expect(iaInput.attributes("readonly")).toBeDefined();
@@ -281,20 +293,25 @@ describe("RuleForm", () => {
 
     it("does NOT render when rule has no nist_control_family or ident", () => {
       wrapper = createWrapper({
+        fields: refFields(),
         rule: makeRule({ nist_control_family: null, ident: null }),
       });
       expect(wrapper.find('[data-testid="ia-control-cci"]').exists()).toBe(false);
     });
 
-    it("renders regardless of which fields are in displayed", () => {
-      // Even with minimal fields (Inherently Meets-like), IA Control/CCI renders
+    it("renders with a minimal field set as long as the config declares the reference keys", () => {
       wrapper = createWrapper({
-        fields: {
-          displayed: ["status", "rule_severity", "status_justification"],
-          disabled: [],
-        },
+        fields: fieldsWithReferenceKeys(["status", "rule_severity", "status_justification"]),
       });
       expect(wrapper.find('[data-testid="ia-control-cci"]').exists()).toBe(true);
+    });
+
+    it("does NOT render when the config omits the reference keys (no more template bypass)", () => {
+      wrapper = createWrapper({
+        fields: { displayed: ["status", "status_justification"], disabled: [] },
+      });
+      expect(wrapper.find('input[id^="ruleEditor-nist_control_family-"]').exists()).toBe(false);
+      expect(wrapper.find('input[id^="ruleEditor-cci-"]').exists()).toBe(false);
     });
   });
 
@@ -533,6 +550,66 @@ describe("RuleForm", () => {
       expect(wrapper.vm.inputClass("title")).toBe("is-invalid");
       expect(wrapper.vm.inputClass("fixtext")).toBe("is-valid");
       expect(wrapper.vm.inputClass("vendor_comments")).toBe("");
+    });
+  });
+
+  // ─── Tooltip copy derives from the statuses vocabulary ─────
+  // REQUIREMENT: RuleForm must never surface a status string that is not
+  // in its `statuses` prop — the vocabulary is the single source. SRG
+  // pages pass the 3-status vocabulary; STIG pages keep today's copy.
+  describe("status tooltips derive from the vocabulary (leak regression)", () => {
+    const SRG_STATUSES = ["Not Yet Determined", "Applicable", "Not Applicable"];
+    const STIG_ONLY = [
+      "Applicable - Configurable",
+      "Applicable - Inherently Meets",
+      "Applicable - Does Not Meet",
+    ];
+
+    it("SRG vocabulary: nydTooltip lists exactly the SRG unlock statuses, no STIG-only strings", () => {
+      wrapper = createWrapper({
+        statuses: SRG_STATUSES,
+        documentType: "srg",
+        rule: makeRule({ status: "Not Yet Determined" }),
+      });
+      const tooltip = wrapper.vm.nydTooltip;
+      expect(tooltip).toContain("Applicable");
+      expect(tooltip).toContain("Not Applicable");
+      STIG_ONLY.forEach((s) => expect(tooltip).not.toContain(s.replace(" - ", " – ")));
+      STIG_ONLY.forEach((s) => expect(tooltip).not.toContain(s));
+    });
+
+    it("SRG vocabulary: the status tooltip describes only vocabulary statuses", () => {
+      wrapper = createWrapper({
+        statuses: SRG_STATUSES,
+        documentType: "srg",
+        rule: makeRule({ status: "Applicable" }),
+      });
+      const tooltip = wrapper.vm.tooltips.status;
+      STIG_ONLY.forEach((s) => expect(tooltip).not.toContain(s));
+      // The en-dash display variants and unique STIG phrases must be gone too.
+      ["Configurable", "Inherently Meets", "Does Not Meet"].forEach((phrase) =>
+        expect(tooltip).not.toContain(phrase),
+      );
+      expect(tooltip).toMatch(/(^|<br>|\s)Applicable:/);
+      expect(tooltip).toContain("Not Applicable:");
+    });
+
+    it("STIG vocabulary: nydTooltip lists all four unlock statuses (equivalence)", () => {
+      wrapper = createWrapper({ rule: makeRule({ status: "Not Yet Determined" }) });
+      const tooltip = wrapper.vm.nydTooltip;
+      STIG_ONLY.forEach((s) => expect(tooltip).toContain(s.replace(" - ", " – ")));
+      expect(tooltip).toContain("Not Applicable");
+    });
+
+    it("STIG vocabulary: the status tooltip keeps today's four descriptions (equivalence)", () => {
+      wrapper = createWrapper();
+      const tooltip = wrapper.vm.tooltips.status;
+      expect(tooltip).toContain("Applicable – Configurable: The product requires configuration");
+      expect(tooltip).toContain("Inherently Meets: The product is compliant in its initial state");
+      expect(tooltip).toContain("Does Not Meet: There are no technical means");
+      expect(tooltip).toContain(
+        "Not Applicable: The requirement addresses a capability or use case",
+      );
     });
   });
 });

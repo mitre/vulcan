@@ -219,7 +219,8 @@ describe("useRuleFormFields", () => {
       expect(ruleFormFields.value.displayed).toEqual(
         expect.arrayContaining(["status", "rule_severity", "title", "fixtext", "vendor_comments"]),
       );
-      expect(ruleFormFields.value.disabled).toEqual([]);
+      // Only the absorbed IA/CCI reference display is read-only here.
+      expect([...ruleFormFields.value.disabled].sort()).toEqual(["cci", "nist_control_family"]);
     });
 
     it("Not Yet Determined: shows status, rule_severity, title, fixtext; disables title, rule_severity, fixtext", () => {
@@ -245,7 +246,8 @@ describe("useRuleFormFields", () => {
           "vendor_comments",
         ]),
       );
-      expect(ruleFormFields.value.disabled).toEqual([]);
+      // Only the absorbed IA/CCI reference display is read-only here.
+      expect([...ruleFormFields.value.disabled].sort()).toEqual(["cci", "nist_control_family"]);
     });
 
     it("Does Not Meet: shows status, rule_severity, status_justification, vendor_comments", () => {
@@ -259,7 +261,8 @@ describe("useRuleFormFields", () => {
           "vendor_comments",
         ]),
       );
-      expect(ruleFormFields.value.disabled).toEqual([]);
+      // Only the absorbed IA/CCI reference display is read-only here.
+      expect([...ruleFormFields.value.disabled].sort()).toEqual(["cci", "nist_control_family"]);
     });
 
     it("Not Applicable: shows status, rule_severity, status_justification, vendor_comments; disables rule_severity; NO artifact_description (AIM only per §4.1.16)", () => {
@@ -902,6 +905,14 @@ describe("useRuleFormFields", () => {
       },
     };
 
+    // The IA Control / CCI reference display is part of the rule group at
+    // every status: shown read-only (absorbed from the former template
+    // bypass into the declared config). Field ORDER is not part of the
+    // contract — consumers resolve via .includes or re-sort by
+    // FIELD_DISPLAY_ORDER — so membership is compared sorted.
+    const REFERENCE_KEYS = ["nist_control_family", "cci"];
+    const sorted = (arr) => [...arr].sort();
+
     for (const [status, modes] of Object.entries(STATUSES)) {
       describe(status, () => {
         for (const [mode, expected] of Object.entries(modes)) {
@@ -910,22 +921,32 @@ describe("useRuleFormFields", () => {
           it(`${mode} mode: exact ruleFormFields`, () => {
             const rule = ref(makeRule({ status }));
             const { ruleFormFields } = useRuleFormFields(rule, ref(isAdvanced));
-            expect(ruleFormFields.value.displayed).toEqual(expected.rule.displayed);
-            expect(ruleFormFields.value.disabled).toEqual(expected.rule.disabled);
+            expect(sorted(ruleFormFields.value.displayed)).toEqual(
+              sorted([...expected.rule.displayed, ...REFERENCE_KEYS]),
+            );
+            expect(sorted(ruleFormFields.value.disabled)).toEqual(
+              sorted([...expected.rule.disabled, ...REFERENCE_KEYS]),
+            );
           });
 
           it(`${mode} mode: exact disaDescriptionFields`, () => {
             const rule = ref(makeRule({ status }));
             const { disaDescriptionFields } = useRuleFormFields(rule, ref(isAdvanced));
-            expect(disaDescriptionFields.value.displayed).toEqual(expected.disa.displayed);
-            expect(disaDescriptionFields.value.disabled).toEqual(expected.disa.disabled);
+            expect(sorted(disaDescriptionFields.value.displayed)).toEqual(
+              sorted(expected.disa.displayed),
+            );
+            expect(sorted(disaDescriptionFields.value.disabled)).toEqual(
+              sorted(expected.disa.disabled),
+            );
           });
 
           it(`${mode} mode: exact checkFormFields`, () => {
             const rule = ref(makeRule({ status }));
             const { checkFormFields } = useRuleFormFields(rule, ref(isAdvanced));
-            expect(checkFormFields.value.displayed).toEqual(expected.check.displayed);
-            expect(checkFormFields.value.disabled).toEqual(expected.check.disabled);
+            expect(sorted(checkFormFields.value.displayed)).toEqual(
+              sorted(expected.check.displayed),
+            );
+            expect(sorted(checkFormFields.value.disabled)).toEqual(sorted(expected.check.disabled));
           });
         }
       });

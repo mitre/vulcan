@@ -85,6 +85,28 @@ export const ACTION_LABELS = {
   related: "Related",
 };
 
+// Per-status helper copy, keyed by document kind. The status tooltip is
+// composed from the page's statuses vocabulary against this map, so a page
+// can never surface another kind's status names. STIG copy is verbatim
+// DISA-derived text; SRG copy follows the authoring lifecycle language.
+export const STATUS_DESCRIPTIONS_BY_DOCUMENT_TYPE = Object.freeze({
+  stig: {
+    "Applicable - Configurable":
+      "The product requires configuration or the application of policy settings to achieve compliance.",
+    "Applicable - Inherently Meets":
+      "The product is compliant in its initial state and cannot be subsequently reconfigured to a noncompliant state.",
+    "Applicable - Does Not Meet": "There are no technical means to achieve compliance.",
+    "Not Applicable":
+      "The requirement addresses a capability or use case that the product does not support.",
+  },
+  srg: {
+    Applicable:
+      "The requirement applies to this technology family and will be included in the released SRG.",
+    "Not Applicable":
+      "The requirement does not apply to this technology family — a justification is required and the requirement is excluded from the released SRG.",
+  },
+});
+
 // Navigator labels (used in the RuleList sidebar)
 export const NAVIGATOR_LABELS = {
   openRules: `Open ${RULE_TERM.plural}`,
