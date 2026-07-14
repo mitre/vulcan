@@ -1,7 +1,7 @@
 /**
  * @fileoverview Detects internal issue-tracker references in source comments.
  *
- * Tracker IDs (e.g. vulcan-clean-abc, vulcan-v3.x-480.7) are project-management
+ * Tracker IDs (e.g. vulcan-clean-abc, vulcan-v3.x-9z9.9) are project-management
  * artifacts that belong in commit messages and PR descriptions — not in committed
  * source code. They leak internal tooling details into public repositories and
  * become meaningless as boards are reorganized.
@@ -33,18 +33,17 @@
  *
  * @type {string}
  */
-const TRACKER_SRC =
-  "\\b(?:vulcan-(?:v3\\.x|v2\\.x|clean)|v[23])-[\\w.]+(?:\\s*§[\\d.]+)?";
+const TRACKER_SRC = "\\b(?:vulcan-(?:v3\\.x|v2\\.x|clean)|v[23])-[\\w.]+(?:\\s*§[\\d.]+)?";
 
 /**
  * Matches internal tracker prefixes followed by a card identifier.
  *
  * @example
  * // All matched:
- * // vulcan-v3.x-480.7
+ * // vulcan-v3.x-9z9.9
  * // vulcan-clean-abc123
  * // vulcan-v2.x-def
- * // vulcan-v3.x-480.6 §18.4
+ * // vulcan-v3.x-9z9.9 §99.9
  * // v2-abc.12
  *
  * @type {RegExp}
@@ -109,10 +108,7 @@ function buildFixer(sourceCode, comment) {
     if (comment.type === "Line") {
       return fixer.replaceTextRange(comment.range, "//" + cleaned);
     }
-    return fixer.replaceTextRange(
-      comment.range,
-      "/*" + cleaned + "*/"
-    );
+    return fixer.replaceTextRange(comment.range, "/*" + cleaned + "*/");
   };
 }
 
@@ -133,8 +129,7 @@ module.exports = {
     fixable: "code",
     schema: [],
     messages: {
-      trackerRef:
-        "Do not reference tracker IDs in source comments.",
+      trackerRef: "Do not reference tracker IDs in source comments.",
     },
   },
 

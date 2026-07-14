@@ -73,7 +73,7 @@ RSpec.describe RuboCop::Cop::Vulcan::CommentTracker, :config do
 
   it 'strips leading reference with colon' do
     expect_offense(<<~RUBY)
-      # vulcan-v3.x-aik: keep named routes ABOVE the catch-all
+      # vulcan-v3.x-9k9: keep named routes ABOVE the catch-all
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #{msg}
     RUBY
 

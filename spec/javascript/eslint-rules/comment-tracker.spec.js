@@ -23,7 +23,7 @@ ruleTester.run("comment-tracker", rule, {
 
   invalid: [
     {
-      code: "// vulcan-v3.x-aik: renamed for clarity",
+      code: "// vulcan-v3.x-9k9: renamed for clarity",
       output: "// renamed for clarity",
       errors: [{ messageId: "trackerRef" }],
     },
@@ -38,7 +38,7 @@ ruleTester.run("comment-tracker", rule, {
       errors: [{ messageId: "trackerRef" }],
     },
     {
-      code: "const x = 1; // vulcan-v3.x-oxz: peer endpoint",
+      code: "const x = 1; // vulcan-v3.x-9x9: peer endpoint",
       output: "const x = 1; // peer endpoint",
       errors: [{ messageId: "trackerRef" }],
     },
