@@ -284,7 +284,7 @@ class ReviewsController < ApplicationController
   # PATCH /reviews/:id/withdraw — commenter retracts their own comment
   # before triage. Allowed only when triage_status is 'pending' or
   # 'needs_clarification'. The Review#auto_set_adjudicated_for_terminal_statuses
-  # callback (Task 06) fills in adjudicated_at + adjudicated_by_id=self.
+  # callback fills in adjudicated_at + adjudicated_by_id=self.
   def withdraw
     unless %w[pending needs_clarification].include?(@review.triage_status)
       return render_toast(title: 'Cannot withdraw.',
@@ -496,7 +496,7 @@ class ReviewsController < ApplicationController
   end
 
   # PUT /reviews/:id — commenter edits their own comment text. Allowed
-  # only while triage_status='pending'. Audited gem (Task 06) captures
+  # only while triage_status='pending'. The audited gem captures
   # the prior text on the audit trail. Strong params lock to :comment
   # only — lifecycle fields stay server-controlled.
   def update

@@ -90,8 +90,8 @@ describe("DiffViewer", () => {
     });
   });
 
-  // ─── Task 28: FilterDropdown migration ───────────────────
-  describe("filter dropdown migration (Task 28)", () => {
+  // ─── FilterDropdown migration ─────────────────────────────
+  describe("filter dropdown migration", () => {
     it("Base/Compare/Theme selectors all render as FilterDropdown — no native <select>", () => {
       wrapper = createWrapper();
       // Base, Compare (when baseComponent is set), and Theme — Compare may

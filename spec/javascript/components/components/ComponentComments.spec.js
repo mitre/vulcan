@@ -515,7 +515,7 @@ describe("ComponentComments", () => {
     });
   });
 
-  // REQUIREMENT: the DISA disposition matrix CSV export (Task 29) is
+  // REQUIREMENT: the DISA disposition matrix CSV export is
   // available to authors+ on a single-component triage queue. The button
   // links to /components/:id/export/disposition_csv with the active
   // triage_status filter passed through.

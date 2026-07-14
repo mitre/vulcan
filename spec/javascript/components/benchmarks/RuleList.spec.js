@@ -494,9 +494,9 @@ describe("RuleList", () => {
   });
 
   // ==========================================
-  // FILTER DROPDOWN MIGRATION (Task 28)
+  // FILTER DROPDOWN MIGRATION
   // ==========================================
-  describe("filter dropdown migration (Task 28)", () => {
+  describe("filter dropdown migration", () => {
     it("renders FilterDropdown for the field selector (not native <select>)", () => {
       wrapper = createWrapper();
       expect(wrapper.findComponent({ name: "FilterDropdown" }).exists()).toBe(true);

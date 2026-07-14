@@ -118,12 +118,12 @@ Rails.application.routes.draw do
   patch '/reviews/:id/adjudicate',      to: 'reviews#adjudicate'
   patch '/reviews/:id/reopen',          to: 'reviews#reopen'
   patch '/reviews/:id/withdraw',        to: 'reviews#withdraw'
-  # PR-717 Task 25 — admin overrides on a comment. Audit-comment required.
+  # Admin overrides on a comment (PR #717). Audit-comment required.
   patch '/reviews/:id/admin_withdraw',  to: 'reviews#admin_withdraw'
   patch '/reviews/:id/admin_restore',   to: 'reviews#admin_restore'
   patch '/reviews/:id/move_to_rule',    to: 'reviews#move_to_rule'
   delete '/reviews/:id/admin_destroy',  to: 'reviews#admin_destroy'
-  # PR-717 Task 30 — author+ retags a comment's section retroactively.
+  # Author+ retags a comment's section retroactively (PR #717).
   patch '/reviews/:id/section',         to: 'reviews#section'
   put '/reviews/:id', to: 'reviews#update'
   # Reactions: POST toggles current_user's 👍/👎 on the review;

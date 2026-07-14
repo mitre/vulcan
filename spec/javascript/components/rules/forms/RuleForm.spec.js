@@ -415,7 +415,7 @@ describe("RuleForm", () => {
     });
   });
 
-  // ─── PR #717 — Section comment icon wiring (Task 16) ──────
+  // ─── PR #717 — Section comment icon wiring ────────────────
   /**
    * REQUIREMENTS:
    * The first RuleFormGroup of each section in RuleForm must opt in to the
