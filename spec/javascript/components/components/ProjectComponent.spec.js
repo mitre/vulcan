@@ -183,11 +183,6 @@ describe("ProjectComponent", () => {
       wrapper = createWrapper();
       expect(wrapper.findComponent({ name: "RuleList" }).exists()).toBe(true);
     });
-
-    it("does NOT render RuleNavigator (replaced by composable)", () => {
-      wrapper = createWrapper();
-      expect(wrapper.findComponent({ name: "RuleNavigator" }).exists()).toBe(false);
-    });
   });
 
   describe("useRuleSelection composable integration", () => {

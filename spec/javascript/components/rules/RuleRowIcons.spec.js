@@ -15,8 +15,8 @@ import RuleRowIcons from "@/components/rules/RuleRowIcons.vue";
  * 5. Lock icon when rule.locked is true
  * 6. Changes requested icon when rule.changes_requested is true
  *
- * This was extracted from RuleNavigator to DRY the identical 3-place pattern
- * (open rules, all rules, nested children all rendered the same icons).
+ * DRYs the identical 3-place sidebar pattern (open rules, all rules, and
+ * nested children all render the same icons).
  */
 describe("RuleRowIcons", () => {
   let wrapper;

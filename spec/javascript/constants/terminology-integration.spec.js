@@ -95,6 +95,3 @@ describe("Terminology Integration - LockControlsModal", () => {
     expect(wrapper.text()).not.toContain("Controls");
   });
 });
-
-// RuleEditorHeader requires complex setup with rules array - will update component directly
-// and verify manually. The component uses hardcoded strings that need to be DRY'd.

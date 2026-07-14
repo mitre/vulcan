@@ -430,8 +430,8 @@ describe("RuleSatisfactions", () => {
   });
 
   // ---------------------------------------------------------------
-  // Cross-rule comment discovery is handled by the RuleNavigator
-  // sidebar (Task 19) and the component-scope triage queue. The
+  // Cross-rule comment discovery is handled by the sidebar
+  // navigation and the component-scope triage queue. The
   // Satisfies panel's job is showing the relationship — not also
   // duplicating triage signals. No comment-count badge here.
   // ---------------------------------------------------------------

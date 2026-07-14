@@ -85,7 +85,7 @@ export const ACTION_LABELS = {
   related: "Related",
 };
 
-// Navigator labels (used in RuleNavigator sidebar)
+// Navigator labels (used in the RuleList sidebar)
 export const NAVIGATOR_LABELS = {
   openRules: `Open ${RULE_TERM.plural}`,
   allRules: `All ${RULE_TERM.plural}`,
@@ -147,7 +147,7 @@ export const ROLE_DESCRIPTIONS = [
   `Full control of a Project or ${COMPONENT_TERM.singular}. Lock ${RULE_TERM.plural}, revert ${RULE_TERM.plural.toLowerCase()}, and manage members.`,
 ];
 
-// Review action labels (used in RuleEditorHeader review workflow)
+// Review action labels (used by reviewActionHelpers for the review workflow)
 export const REVIEW_ACTION_LABELS = {
   requestReview: {
     name: "Request Review",

@@ -268,7 +268,7 @@ RSpec.describe Review do
       satisfies_list = json['satisfies']
       satisfied = satisfies_list.first
 
-      # CRITICAL CONTRACT: Frontend RuleNavigator uses srg_id for display.
+      # CRITICAL CONTRACT: the frontend sidebar navigation uses srg_id for display.
       # If version were included, it would mask the bug where template
       # references satisfies.version instead of satisfies.srg_id.
       expect(satisfied).to have_key('srg_id')
