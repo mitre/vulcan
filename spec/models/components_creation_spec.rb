@@ -215,6 +215,25 @@ RSpec.describe Component do
     end
   end
 
+  describe '#destroy with soft-deleted requirements' do
+    # REQUIREMENT: deleting a component must remove ALL of its requirement
+    # rows, tombstones included. Rule's deleted_at default scope hides
+    # soft-deleted rows from the :rules association — a cascade that only
+    # walks :rules leaves them behind and the base_rules FK aborts the
+    # component delete with PG::ForeignKeyViolation.
+    it 'destroys a component whose rules include a soft-deleted row' do
+      component = Component.create!(project: components_project, name: 'Tombstoned', title: 'T',
+                                    prefix: 'TOMB-01', based_on: components_srg,
+                                    skip_import_srg_rules: true)
+      live = create(:rule, component: component)
+      tombstone = create(:rule, component: component)
+      tombstone.update_columns(deleted_at: Time.zone.now)
+
+      expect { component.destroy! }.not_to raise_error
+      expect(BaseRule.unscoped.where(id: [live.id, tombstone.id])).to be_empty
+    end
+  end
+
   describe '#import_srg_rules failure path' do
     it 'raises RecordInvalid when from_mapping returns false' do
       allow_any_instance_of(Component).to receive(:from_mapping).and_return(false)

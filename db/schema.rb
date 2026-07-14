@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_14_170000) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_13_220000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -96,11 +96,13 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_14_170000) do
     t.string "vuln_id"
     t.string "legacy_ids"
     t.jsonb "locked_fields", default: {}
+    t.bigint "derived_from_srg_rule_id"
     t.index ["component_id", "deleted_at", "rule_severity"], name: "index_base_rules_on_component_deleted_severity"
     t.index ["component_id", "deleted_at", "status"], name: "index_base_rules_on_component_deleted_status"
     t.index ["component_id", "locked", "review_requestor_id"], name: "index_base_rules_on_component_locked_requestor"
     t.index ["component_id"], name: "index_base_rules_on_component_id"
     t.index ["deleted_at"], name: "index_base_rules_on_deleted_at"
+    t.index ["derived_from_srg_rule_id"], name: "index_base_rules_on_derived_from_srg_rule_id"
     t.index ["review_requestor_id"], name: "index_base_rules_on_review_requestor_id"
     t.index ["rule_id", "component_id"], name: "rule_id_and_component_id", unique: true
     t.index ["security_requirements_guide_id", "type", "rule_severity"], name: "index_base_rules_on_srg_type_severity"
@@ -109,6 +111,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_14_170000) do
     t.index ["stig_id", "type", "rule_severity"], name: "index_base_rules_on_stig_type_severity"
     t.index ["stig_id"], name: "index_base_rules_on_stig_id"
     t.index ["stig_rule_id"], name: "index_base_rules_on_stig_rule_id"
+    t.check_constraint "type::text <> 'SrgRule'::text OR (component_id IS NULL) <> (security_requirements_guide_id IS NULL)", name: "base_rules_srg_authored_xor_catalog"
   end
 
   create_table "checks", force: :cascade do |t|
@@ -152,6 +155,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_14_170000) do
     t.datetime "comment_period_starts_at"
     t.datetime "comment_period_ends_at"
     t.string "closed_reason"
+    t.string "document_type", default: "stig", null: false
     t.index ["closed_reason"], name: "index_components_on_closed_reason"
     t.index ["comment_period_starts_at", "comment_period_ends_at"], name: "index_components_on_comment_period_dates"
     t.index ["comment_phase"], name: "index_components_on_comment_phase"
@@ -456,6 +460,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_14_170000) do
 
   add_foreign_key "additional_answers", "additional_questions"
   add_foreign_key "additional_answers", "base_rules", column: "rule_id"
+  add_foreign_key "base_rules", "base_rules", column: "derived_from_srg_rule_id", on_delete: :nullify
   add_foreign_key "base_rules", "base_rules", column: "srg_rule_id"
   add_foreign_key "base_rules", "base_rules", column: "stig_rule_id"
   add_foreign_key "base_rules", "components"

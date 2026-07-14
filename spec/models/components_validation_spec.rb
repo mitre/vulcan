@@ -98,6 +98,30 @@ RSpec.describe Component do
     end
   end
 
+  context 'document_type' do
+    it 'defaults to stig for every component' do
+      expect(components_component.document_type).to eq('stig')
+    end
+
+    it 'rejects values outside the known authoring profiles' do
+      components_component.document_type = 'bogus'
+      expect(components_component.valid?).to be(false)
+      expect(components_component.errors[:document_type]).to include('is not included in the list')
+    end
+
+    it 'is immutable after create' do
+      srg_component = Component.create!(project: components_project, name: 'Authored SRG', title: 'Authored SRG',
+                                        prefix: 'ASRG-00', based_on: components_srg,
+                                        skip_import_srg_rules: true, document_type: 'srg')
+      expect(srg_component.document_type).to eq('srg')
+
+      srg_component.document_type = 'stig'
+      expect(srg_component.valid?).to be(false)
+      expect(srg_component.errors[:document_type]).to include('cannot be changed after creation')
+      srg_component.destroy!
+    end
+  end
+
   describe '#largest_rule_id' do
     it 'returns the highest numeric rule_id' do
       max_id = components_component.rules.pluck(:rule_id).map(&:to_i).max

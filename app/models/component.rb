@@ -81,6 +81,16 @@ class Component < ApplicationRecord
              foreign_key: 'security_requirements_guide_id',
              inverse_of: 'components'
   has_many :rules, dependent: :destroy
+  # Requirements of an srg-kind component (ADR §3): authored SrgRules share
+  # the base_rules component_id column with Rules; the STI type keeps the
+  # two collections disjoint. No counter_cache — SRG counting is a live
+  # scoped count (see #requirements_count).
+  has_many :authored_srg_rules, class_name: 'SrgRule', inverse_of: :component, dependent: :destroy
+  # Subclass default scopes (Rule/SrgRule hide soft-deleted rows) do not
+  # apply to BaseRule queries, so this cascade reaches tombstoned rows the
+  # scoped associations above cannot. Without it the base_rules FK blocks
+  # destroying any component that has a soft-deleted requirement.
+  has_many :all_requirement_rows, class_name: 'BaseRule', inverse_of: false, dependent: :destroy
   belongs_to :component, class_name: 'Component', inverse_of: :child_components, optional: true
   has_many :child_components, class_name: 'Component', inverse_of: :component, dependent: :destroy
   has_many :memberships, -> { includes :user }, inverse_of: :membership, as: :membership, dependent: :destroy
@@ -108,6 +118,16 @@ class Component < ApplicationRecord
            :cannot_unrelease_component,
            :cannot_overlay_self
 
+  # Authoring profiles (ADR docs/decisions/adr-srg-component-authoring.md
+  # §2.2): document_type is the profile key — it routes source eligibility,
+  # status vocabulary, and field config. The user picks it at creation and
+  # it never changes (§2.1.4 — changing your mind means a new component).
+  # The extensible profile registry lands in Phase 2; the storage contract
+  # lives here.
+  DOCUMENT_TYPES = %w[stig srg].freeze
+  validates :document_type, inclusion: { in: DOCUMENT_TYPES }
+  validate :document_type_cannot_change, on: :update
+
   COMMENT_PHASES = %w[open closed].freeze
   CLOSED_REASONS = %w[adjudicating finalized].freeze
   validates :comment_phase, inclusion: { in: COMMENT_PHASES }
@@ -118,6 +138,21 @@ class Component < ApplicationRecord
   # (vulcan_audited captures every phase change with optional audit_comment)
   # plus frozen_for_writes? (blocks Review writes whenever the component IS
   # currently closed+finalized, regardless of how it got there).
+
+  # Unified requirement access, kind-routed by the authoring profile:
+  # a stig component's requirements are its Rules; an srg component's are
+  # its live authored SrgRules (ADR §6 v7.1).
+  def requirements
+    document_type == 'srg' ? authored_srg_rules : rules
+  end
+
+  # STIG counting keeps the existing rules_count counter cache. SRG
+  # counting is a live scoped count — authored SrgRules have no counter
+  # column, and reset_counters(:rules) must never be the SRG path (it
+  # counts class Rule and would zero the count).
+  def requirements_count
+    document_type == 'srg' ? authored_srg_rules.count : rules_count
+  end
 
   def accepting_new_comments?
     comment_phase == 'open'
@@ -801,6 +836,15 @@ class Component < ApplicationRecord
   end
 
   private
+
+  # The profile gates the source picker, status vocabulary, and export
+  # mode — flipping it mid-life would strand requirements authored under
+  # the other profile's rules (ADR §2.1.4).
+  def document_type_cannot_change
+    return unless document_type_changed?
+
+    errors.add(:document_type, 'cannot be changed after creation')
+  end
 
   # closed_reason is meaningless on an open component; reject the
   # combination rather than silently storing an inert value.
