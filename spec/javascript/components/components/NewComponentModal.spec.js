@@ -438,6 +438,151 @@ describe("NewComponentModal", () => {
     });
   });
 
+  // ==========================================
+  // DOCUMENT-TYPE PROFILE PICKER (creation-time choice)
+  //
+  // REQUIREMENTS:
+  // 1. Creating a NEW component asks "What are you authoring?" FIRST —
+  //    before any other input. STIG/SRG, exclusive, no default.
+  // 2. The choice only exists where a choice exists: duplicate, copy,
+  //    and spreadsheet-import flows have a determined type (inherited
+  //    or stig) and must NOT render the picker.
+  // 3. The selection gates the downstream steps: form fields stay
+  //    disabled until a profile is chosen.
+  // 4. The create request posts component[document_type] with the
+  //    chosen profile — and only in the picker flow (duplicate/copy
+  //    inherit server-side).
+  // 5. Submitting without a choice keeps the modal open (guard), like
+  //    the existing missing-name/missing-SRG guards.
+  // ==========================================
+  describe("document-type profile picker", () => {
+    const ModalStub = { template: "<div><slot></slot></div>" };
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    const createMountedWrapper = (props = {}) => {
+      return mount(NewComponentModal, {
+        localVue,
+        propsData: { ...defaultProps, ...props },
+        stubs: { "b-modal": ModalStub, VueMultiselect: true },
+      });
+    };
+
+    it("renders the picker BEFORE every other input in create-new mode", () => {
+      wrapper = createMountedWrapper();
+      const html = wrapper.html();
+      const pickerAt = html.indexOf('data-testid="document-type-picker"');
+      expect(pickerAt).toBeGreaterThan(-1);
+      expect(pickerAt).toBeLessThan(html.indexOf("Select a Security Requirements Guide"));
+      expect(pickerAt).toBeLessThan(html.indexOf("Component Name"));
+    });
+
+    it("starts with no profile selected", () => {
+      wrapper = createMountedWrapper();
+      expect(wrapper.vm.document_type).toBeNull();
+    });
+
+    it("does NOT render the picker in spreadsheet-import mode", () => {
+      wrapper = createMountedWrapper({ spreadsheet_import: true });
+      expect(wrapper.find('[data-testid="document-type-picker"]').exists()).toBe(false);
+    });
+
+    it("does NOT render the picker in copy-component mode", () => {
+      wrapper = createMountedWrapper({ copy_component: true });
+      expect(wrapper.find('[data-testid="document-type-picker"]').exists()).toBe(false);
+    });
+
+    it("does NOT render the picker in duplicate mode", () => {
+      wrapper = createMountedWrapper({ component_to_duplicate: 7 });
+      expect(wrapper.find('[data-testid="document-type-picker"]').exists()).toBe(false);
+    });
+
+    it("disables downstream fields until a profile is chosen", async () => {
+      wrapper = createMountedWrapper();
+      const nameInput = wrapper.find('input[placeholder="Component Name"]');
+      const titleInput = wrapper.find('input[placeholder="Component Title"]');
+      expect(nameInput.attributes("disabled")).toBeDefined();
+      expect(titleInput.attributes("disabled")).toBeDefined();
+
+      await wrapper.setData({ document_type: "stig" });
+      expect(nameInput.attributes("disabled")).toBeUndefined();
+      expect(titleInput.attributes("disabled")).toBeUndefined();
+    });
+
+    it("does NOT disable fields in duplicate mode (no picker, no gate)", () => {
+      wrapper = createMountedWrapper({ component_to_duplicate: 7 });
+      const nameInput = wrapper.find('input[placeholder="Component Name"]');
+      expect(nameInput.attributes("disabled")).toBeUndefined();
+    });
+
+    it("posts component[document_type]=srg when SRG is chosen", async () => {
+      wrapper = createMountedWrapper();
+      await wrapper.setData({
+        document_type: "srg",
+        name: "Container SRG",
+        prefix: "CTR-00",
+        security_requirements_guide_id: 1,
+      });
+      wrapper.vm.createComponent({ preventDefault: vi.fn() });
+
+      expect(createComponentInProject).toHaveBeenCalled();
+      const formData = createComponentInProject.mock.calls[0][1];
+      expect(formData.get("component[document_type]")).toBe("srg");
+    });
+
+    it("posts component[document_type]=stig when STIG is chosen", async () => {
+      wrapper = createMountedWrapper();
+      await wrapper.setData({
+        document_type: "stig",
+        name: "OpenShift STIG",
+        prefix: "OSHF-00",
+        security_requirements_guide_id: 1,
+      });
+      wrapper.vm.createComponent({ preventDefault: vi.fn() });
+
+      const formData = createComponentInProject.mock.calls[0][1];
+      expect(formData.get("component[document_type]")).toBe("stig");
+    });
+
+    it("does NOT post document_type in duplicate mode (inherited server-side)", async () => {
+      wrapper = createMountedWrapper({ component_to_duplicate: 7 });
+      await wrapper.setData({
+        name: "Dup",
+        prefix: "DUP-00",
+        security_requirements_guide_id: 1,
+      });
+      wrapper.vm.createComponent({ preventDefault: vi.fn() });
+
+      const formData = createComponentInProject.mock.calls[0][1];
+      expect(formData.get("component[document_type]")).toBeNull();
+    });
+
+    it("keeps the modal open when no profile is chosen (guard)", async () => {
+      wrapper = createMountedWrapper();
+      await wrapper.setData({
+        name: "No Choice",
+        prefix: "NOCH-00",
+        security_requirements_guide_id: 1,
+      });
+      const mockEvent = { preventDefault: vi.fn() };
+      wrapper.vm.createComponent(mockEvent);
+
+      expect(mockEvent.preventDefault).toHaveBeenCalled();
+      expect(createComponentInProject).not.toHaveBeenCalled();
+      expect(wrapper.vm.loading).toBe(false);
+    });
+
+    it("resets the profile choice when the modal reopens", async () => {
+      wrapper = createWrapper();
+      await wrapper.setData({ document_type: "srg" });
+      wrapper.vm.$refs.AddComponentModal = { show: vi.fn() };
+      wrapper.vm.showModal();
+      expect(wrapper.vm.document_type).toBeNull();
+    });
+  });
+
   describe("project_id prop", () => {
     it("accepts undefined project_id without error", () => {
       const spy = vi.spyOn(console, "error").mockImplementation(() => {});

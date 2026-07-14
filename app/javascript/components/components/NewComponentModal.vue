@@ -13,7 +13,11 @@
       :title="submitText"
       size="lg"
       :ok-title="loading ? 'Loading...' : submitText"
-      :ok-disabled="loading || !(security_requirements_guide_id || component_to_duplicate)"
+      :ok-disabled="
+        loading ||
+        awaitingProfileChoice ||
+        !(security_requirements_guide_id || component_to_duplicate)
+      "
       @show="fetchData"
       @ok="createComponent"
     >
@@ -25,6 +29,15 @@
           name="authenticity_token"
           :value="authenticityToken"
         />
+        <!-- Creation-time profile choice — first step; the selection
+             gates the rest of the form. Duplicate/copy/spreadsheet
+             flows have a determined type and skip the picker. -->
+        <template v-if="profilePickerMode">
+          <DocumentTypePicker v-model="document_type" />
+          <small v-if="awaitingProfileChoice" class="text-muted d-block mb-3">
+            Choose one to enable the rest of the form.
+          </small>
+        </template>
         <b-row>
           <b-col>
             <!-- Select a SRG -->
@@ -69,7 +82,7 @@
                 track-by="id"
                 :searchable="true"
                 :allow-empty="true"
-                :disabled="detecting"
+                :disabled="detecting || awaitingProfileChoice"
                 placeholder="Search for an SRG..."
                 @input="setSelectedSrg($event)"
               />
@@ -87,18 +100,27 @@
                 placeholder="Component Name"
                 required
                 autocomplete="off"
+                :disabled="awaitingProfileChoice"
               />
             </b-form-group>
             <!-- Version and Release -->
             <b-form-row>
               <b-col>
                 <b-form-group label="Version">
-                  <b-form-input v-model="version" autocomplete="off" />
+                  <b-form-input
+                    v-model="version"
+                    autocomplete="off"
+                    :disabled="awaitingProfileChoice"
+                  />
                 </b-form-group>
               </b-col>
               <b-col>
                 <b-form-group label="Release">
-                  <b-form-input v-model="release" autocomplete="off" />
+                  <b-form-input
+                    v-model="release"
+                    autocomplete="off"
+                    :disabled="awaitingProfileChoice"
+                  />
                 </b-form-group>
               </b-col>
             </b-form-row>
@@ -126,6 +148,7 @@
                 placeholder="Example... ABCD-EF, ABCD-00"
                 required
                 autocomplete="off"
+                :disabled="awaitingProfileChoice"
               />
             </b-form-group>
             <!-- Title -->
@@ -135,11 +158,17 @@
                 placeholder="Component Title"
                 required
                 autocomplete="off"
+                :disabled="awaitingProfileChoice"
               />
             </b-form-group>
             <!-- Description -->
             <b-form-group label="Description">
-              <b-form-textarea v-model="description" placeholder="" rows="3" />
+              <b-form-textarea
+                v-model="description"
+                placeholder=""
+                rows="3"
+                :disabled="awaitingProfileChoice"
+              />
             </b-form-group>
             <!-- Select PoC -->
             <b-form-group
@@ -154,6 +183,7 @@
                 track-by="id"
                 :searchable="true"
                 :allow-empty="true"
+                :disabled="awaitingProfileChoice"
                 placeholder="Search for eligible PoC..."
                 @input="setComponentPoc($event)"
               />
@@ -167,6 +197,7 @@
                 v-model="slackChannelId"
                 placeholder="Example... C123456, #general"
                 autocomplete="off"
+                :disabled="awaitingProfileChoice"
               />
             </b-form-group>
           </b-col>
@@ -182,12 +213,14 @@ import { detectSrg, createComponentInProject } from "../../api/componentsApi";
 import { useAuthToken } from "../../composables/useAuthToken";
 import { useToast } from "../../composables/useToast";
 import { useDisplayedComponent } from "../../composables/useDisplayedComponent";
+import DocumentTypePicker from "./DocumentTypePicker.vue";
 import VueMultiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
 
 export default {
   name: "NewComponentModal",
   components: {
+    DocumentTypePicker,
     VueMultiselect,
   },
   props: {
@@ -237,6 +270,9 @@ export default {
   data: function () {
     return {
       loading: false,
+      // The creation-time profile choice. Starts empty — the author
+      // must pick; posted as component[document_type] (immutable).
+      document_type: null,
       selected_project_id: this.project_id,
       selected_component_id: null,
       security_requirements_guide: null,
@@ -284,6 +320,15 @@ export default {
     newComponent: function () {
       return !this.component_to_duplicate;
     },
+    // The "What are you authoring?" step exists only where a choice
+    // exists: duplicate/copy inherit the source's document_type and
+    // spreadsheet import is Rule-based (stig).
+    profilePickerMode: function () {
+      return this.newComponent && !this.copy_component && !this.spreadsheet_import;
+    },
+    awaitingProfileChoice: function () {
+      return this.profilePickerMode && !this.document_type;
+    },
     submitText: function () {
       if (this.spreadsheet_import) {
         return "Import Component";
@@ -327,6 +372,7 @@ export default {
         });
     },
     showModal: function () {
+      this.document_type = null;
       this.selected_project_id = this.project_id;
       this.selected_component_id = null;
       this.security_requirements_guide = null;
@@ -405,6 +451,14 @@ export default {
       let failed = false;
 
       // Guard before POST — preventDefault keeps modal open on validation errors
+      if (this.awaitingProfileChoice) {
+        this.$bvToast.toast("Please choose what you are authoring", {
+          title: "Error",
+          variant: "danger",
+          solid: true,
+        });
+        failed = true;
+      }
       if (!this.prefix && !this.spreadsheet_import) {
         this.$bvToast.toast("Please enter a prefix", {
           title: "Error",
@@ -459,6 +513,11 @@ export default {
         this.security_requirements_guide_id,
       );
       formData.append("component[name]", this.name);
+      // Only the picker flow posts the choice — duplicate/copy inherit
+      // the source's document_type server-side.
+      if (this.profilePickerMode) {
+        formData.append("component[document_type]", this.document_type);
+      }
       if (!this.newComponent) {
         formData.append("component[duplicate]", !this.newComponent);
         formData.append("component[id]", this.component_to_duplicate);
