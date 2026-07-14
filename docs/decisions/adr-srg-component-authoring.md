@@ -1,6 +1,6 @@
 # ADR: Generalized XCCDF Document Authoring — SRG as the First New Profile
 
-- **Status:** DRAFT v7 — v5 core (authored SRG requirements are **expanded
+- **Status:** DRAFT v8 — v5 core (authored SRG requirements are **expanded
   `SrgRule`s**, not `Rule`s behind a policy layer) stands unchanged; v6 added
   Will's scoping (§0.1) + user workflow (§2.1). v7 (Aaron, 2026-07-12)
   resolves ALL of Will's review items 4–8 (§10): per-profile status
@@ -43,14 +43,29 @@
   §14.7 and the companion; glossary added (§2.2);
   `target_technology_token` rename (§6). REVIEW PASS COMPLETE — ready
   to card.
+  v8 (2026-07-14, Aaron interview during Phase-2 build): the SRG
+  requirement lifecycle and field-state model are DECIDED (§4.1) — NYD
+  fully editable; NA requires justification, hides content, and is
+  excluded at release; severity/CCI display inherited with a narrow
+  publisher-tier edit overlay (companion publisher ADR). Disposition-
+  matrix exports are kind-agnostic — the §3.1 **[G]** is overridden
+  (draft SRGs take public comment exactly like STIGs). Creation-picker
+  copy locked (§2.1.6). Premise correction: the two §3.1 "consolidate"
+  components (`RuleNavigator.vue`, `RuleEditorHeader.vue`) were dead
+  code — zero consumers; removed rather than consolidated. Phase-2
+  frontend split into six ≤5-point cards (§14).
 - **Date:** 2026-07-10 (v2 per 3-agent swarm; v3 folded Aaron's eight fork
   decisions; v4 per readiness swarm; v5 replaced the storage core);
-  2026-07-12 (v6 scoping + workflow, Will; v7 review resolutions, Aaron)
+  2026-07-12 (v6 scoping + workflow, Will; v7 review resolutions, Aaron);
+  2026-07-14 (v8 lifecycle/field-state interview + premise corrections,
+  Aaron)
 - **Deciders:** Aaron Lippold (with STIG-lead input, 2026-07-10; review
-  resolutions 2026-07-12); Will Dower (scoping + workflow, 2026-07-12)
+  resolutions 2026-07-12; lifecycle/field-state interview 2026-07-14);
+  Will Dower (scoping + workflow, 2026-07-12)
 - **Companion:** `adr-satisfaction-restructuring.md` (v2-ulhw) — two
   distinct primitives, §9. `adr-dual-xccdf-export.md` — the export chapter
-  of this initiative (same branch).
+  of this initiative (same branch). `adr-publisher-field-governance.md` —
+  the publisher-tier / field-governance layer (§4.1), drafted 2026-07-14.
 
 ## 0. Decisions (Aaron, 2026-07-10 — all recorded on card v2-0d2l.1)
 
@@ -74,9 +89,10 @@
 Remaining open items (§10): all three core family identifiers
 (SRG-NET/SRG-OS/SRG-APP namespace documents — non-public, supplied by
 Aaron with the core documents at upload; GPOS is a *derived* SRG, not the
-OS core); per-status SRG field-config content (STIG-lead input at
-implementation); export emit-shape details (pinned by diffing published
-SRG XMLs).
+OS core); export emit-shape details (pinned by diffing published
+SRG XMLs); severity/CCI inheritance source (§10.9 — working assumption
+`derived_from`; decide before the field-config card). *(v8: per-status
+SRG field-config content is RESOLVED — the §4.1 lifecycle table.)*
 
 ## 0.1 Scoping amendment (Will Dower, 2026-07-12)
 
@@ -203,10 +219,11 @@ Everything below follows from that single answer.
 |---|---|---|
 | **Source / parent picker** (what you may base the document on) | 1..N **derived (non-core) SRGs** from the catalog — today's single `based_on`, now multi-select (§0.14) | 1..N **core SRGs** (SRG-NET / SRG-OS / SRG-APP) — the non-public author-community documents (§5) |
 | **Per-requirement status options** | today's five: NYD, Applicable-Configurable, Applicable-Inherently Meets, Applicable-Does Not Meet, Not Applicable | NYD, **Applicable**, **Not Applicable** (§4; relocation is a record, not a status — §6) |
-| **Per-status field config** (which fields are active/required) | today's `STATUS_FIELD_CONFIG` | SRG field config (content from STIG leads — §10.2) |
+| **Per-status field config** (which fields are active/required) | today's `STATUS_FIELD_CONFIG` | SRG field config — lifecycle + field states DECIDED (§4.1) |
 | **Satisfied-By panel** | present | **absent entirely** — not a disabled state (§7) |
 | **Relocation marker** | absent | present (§6) |
-| **Export mode** | STIG XCCDF (+ InSpec, disposition matrix) | SRG XCCDF (§8.2) |
+| **Export mode** | STIG XCCDF (+ InSpec) | SRG XCCDF (§8.2) |
+| **Disposition matrix** (public-comment adjudication) | present | present — **kind-agnostic** (Aaron, 2026-07-14; draft SRGs take public comment exactly like STIGs) |
 
 The two lists of source options are **mirror images and mutually exclusive**:
 a core SRG is never a valid STIG base, and a derived SRG is never a valid SRG
@@ -250,7 +267,8 @@ types (`Rule` vs `SrgRule`) differ. Consequences to accept and to surface in
 the UI:
 
 - The creation dialog must make the choice legible and hard to get wrong
-  (short plain-language description of each, not just two radio buttons).
+  (short plain-language description of each, not just two radio buttons —
+  copy locked, §2.1.6).
 - Deleting loses the live component — but the pre-delete backup (§2.1.5)
   carries its content and reviews/comments out, and restore brings them
   back, so the practical cost of the remedy is near-zero.
@@ -291,6 +309,23 @@ audits table (audited retains rows after destroy), and a restored
 component starts a fresh audit trail. Build-time verify-point: confirm the
 archive's review/history coverage against what §2.1.4 promises before
 closing the implementing card.
+
+### 2.1.6 Creation-dialog copy (LOCKED — Aaron, 2026-07-14)
+
+Task-led copy, verbatim (adjust only line-wrapping):
+
+> **What are you authoring?**
+>
+> **STIG** — Implement an existing SRG's requirements for a specific
+> product (e.g. "Red Hat OpenShift STIG"). You'll work each requirement
+> to a compliance posture: Configurable, Inherently Meets, Does Not
+> Meet, or Not Applicable.
+>
+> **SRG** — Author a new Security Requirements Guide derived from core
+> SRGs (e.g. "Container Platform SRG"). You'll decide which requirements
+> apply to the technology family and tailor their content.
+>
+> ⓘ This choice is permanent for the component.
 
 ## 2.2 The profile seam (per §0.1 amendment A)
 
@@ -359,7 +394,8 @@ catalog parent becomes optional while authored), an authoring surface for
 The JS/HAML surfaces hard-code STIG statuses regardless of which model
 class holds requirements, so this inventory survives the core rework.
 Dispositions: **[P]** route through the document-kind seam, **[G]** gate
-to STIG-kind, **[U]** unreachable for SRG-kind.
+to STIG-kind (no surface carries [G] since the v8 disposition override —
+kept for future surfaces), **[U]** unreachable for SRG-kind.
 
 Ruby:
 - `vue_props_helper.rb` — global `statuses` prop ships all 5 STIG statuses
@@ -377,17 +413,23 @@ Ruby:
   (`container_srg_nesting_fix.rake`), which operates on `Rule`s and
   cannot touch `SrgRule`s. **[U]** (structural now — verified reasoning
   replaces the v4 policy guard).
-- Disposition matrix export — comment-driven, STIG-shaped. **[G]** v1.
+- Disposition matrix export — comment-driven. ~~**[G]** v1~~ **OVERRIDDEN
+  (Aaron, 2026-07-14): kind-agnostic [P]** — public-comment adjudication
+  applies to any draft document; draft SRGs (the Container SRG redo is
+  one) produce disposition matrices exactly like STIGs. No kind gate;
+  a regression spec asserts its absence.
 
 JavaScript:
 - `useRuleFormFields` + `RuleContextPanel.vue` (both read
   `STATUS_FIELD_CONFIG`). **[P]** via a document-kind-keyed config.
 - Full-status hard-coding: `useRuleFilters.js`, `useRuleNavigation.js`,
-  `FilterBar.vue`, `ProjectSidepanels.vue`, `RuleNavigator.vue` (unsynced
-  duplicate of useRuleNavigation — consolidate), `ActiveFilterPills.vue`,
-  `RuleForm.vue`, `DisaRuleDescriptionForm.vue`, `CheckForm.vue`,
-  `RuleEditorHeader.vue` (duplicates reviewActionHelpers — consolidate).
-  **[P]**
+  `FilterBar.vue`, `ProjectSidepanels.vue`, `ActiveFilterPills.vue`,
+  `RuleForm.vue`, `DisaRuleDescriptionForm.vue`, `CheckForm.vue`.
+  **[P]** *(v8 premise correction: `RuleNavigator.vue` and
+  `RuleEditorHeader.vue` — previously listed here as "consolidate" —
+  were dead code with zero consumers; the live pages already used
+  `useRuleNavigation`/`reviewActionHelpers`. Both components and their
+  specs were REMOVED, 2026-07-14.)*
 - Partial references (lock tooltips/messages): `reviewActionHelpers.js`,
   `terminology.js`. **[P]**
 - Phase 2 AC: grep for prefix/substring matches on `'Applicable'` that the
@@ -421,6 +463,38 @@ JavaScript:
   `rules_by_status` modeled as **`oneOf` + `document_type` discriminator**
   with `additionalProperties: false` per branch (a type-keyed loose map
   would weaken every shipped STIG contract).
+
+### 4.1 SRG requirement lifecycle & field states (Aaron interview, 2026-07-14)
+
+Resolves §10.2 — the per-status field content is decided (Aaron is the
+STIG-lead authority):
+
+| | **Not Yet Determined** | **Applicable** | **Not Applicable** |
+|---|---|---|---|
+| Status dropdown | the 3 SRG statuses, always | same | same |
+| Title / Vuln Discussion / Check / Fix | editable | editable | **hidden** (retained in DB) |
+| Status Justification | hidden | hidden | shown + **required** |
+| Severity, CCI / IA Control | visible **read-only**, inherited (§10.9) | same | hidden |
+| — with publisher tier active | editable — publisher-level override | same | — |
+| At release | **blocks release** — every live row must be decided | included | **excluded** from the catalog copy and the SRG XCCDF; justification stays on the component |
+
+- **NYD is fully editable.** Tailor and decide in either order — the
+  status records the decision; it does not gate the work (same
+  anti-paternalism posture as §2.1.4's phase decisions).
+- **The field model is three states per field** — hidden / visible
+  read-only / editable — resolved by (document kind × status × editing
+  tier). This formalizes what `STATUS_FIELD_CONFIG` already half-does
+  (`displayed` / `disabled` / omitted); the kind and tier keying are the
+  new parts.
+- **The editing tier (author vs publisher) is a narrow per-field
+  OVERLAY, not a parallel config.** Expected to stay a one-or-two-field
+  concern (severity, CCI/IA-control): authors may still need to SEE an
+  inherited value read-only, or the field may hide from authors
+  entirely — a per-field choice. If tier overrides proliferate, revisit
+  the roles model rather than adding overrides. Today's Advanced Fields
+  checkbox is the interim tier switch; who holds the publisher role,
+  change tracking, and approval are the companion publisher ADR's scope
+  (`adr-publisher-field-governance.md`).
 
 ## 5. Multi-parent derivation — ALL document kinds (R2; extended §0.14)
 
@@ -684,10 +758,13 @@ cross-type call.
   (status/reviews/locked/comment summary; no satisfies/srg_rule/
   additional_answers) plus a kind-routed serializer branch.
 - **Field config**: `STATUS_FIELD_CONFIG` gains a document-kind dimension
-  (`FIELD_CONFIG_BY_DOCUMENT_TYPE`); both direct consumers
-  (`useRuleFormFields`, `RuleContextPanel.vue`) select by the component's
-  kind. SRG per-status field content comes from the STIG leads at
-  implementation.
+  (`FIELD_CONFIG_BY_DOCUMENT_TYPE`) built on the three-state field model
+  (§4.1 — hidden / read-only / editable per kind × status × tier, tier as
+  a narrow per-field overlay); both direct consumers (`useRuleFormFields`,
+  `RuleContextPanel.vue`) select by the component's kind. SRG per-status
+  content is decided (§4.1). The config-model restructure follows the
+  publisher ADR's approved model so kind and tier land in ONE
+  restructure, not two.
 - The global `statuses` prop becomes per-component kind-aware (§3.1).
 
 ### 8.1 Related requirements + reference benchmarks (Aaron, 2026-07-10)
@@ -726,8 +803,8 @@ filters client-side; no reference-benchmark concept exists):
   `SecurityRequirementsGuide` row, generates the SRG XCCDF via the
   exporter and stores it on that row (the released entry is shaped
   identically to an uploaded one — basing, is-latest, and seeds work
-  unchanged), then **copies each LIVE authored `SrgRule`** into a fresh
-  catalog row (`security_requirements_guide_id` = catalog,
+  unchanged), then **copies each live, non-NA authored `SrgRule`** into a
+  fresh catalog row (`security_requirements_guide_id` = catalog,
   `component_id` = NULL). **The release copy is NEW machinery (v7.1)**:
   `SrgRule`'s amoeba block is hardwired `set type: Rule` /
   `become_rule` (srg_rule.rb:5-9) — it exists to turn catalog rows into
@@ -739,7 +816,11 @@ filters client-side; no reference-benchmark concept exists):
   Authored rows stay component-linked and editable; tombstones are not
   copied (enforced by the §6 default scope + an explicit
   `deleted_at: nil` guard); reviews/comments/history stay on the
-  component.
+  component. **v8 (§4.1): `Not Applicable` rows are likewise excluded
+  from the catalog copy and the SRG XCCDF** — the component keeps the
+  row and its required justification as the working record — **and
+  release is blocked while any live row is still `Not Yet Determined`**
+  (every remaining requirement must be decided).
 - **Integrity constraint (v7):** an `SrgRule` is authored XOR catalog —
   `CHECK (type <> 'SrgRule' OR (component_id IS NULL) <>
   (security_requirements_guide_id IS NULL))` — **type-scoped** because
@@ -768,6 +849,10 @@ duplication appears.
    upload (non-public; not externally researchable; GPOS is derived from
    the OS core, not the core itself).
 2. **SRG per-status field-config content** — STIG-lead input at Phase 2.
+   **RESOLVED (Aaron, 2026-07-14): the full lifecycle + field-state table
+   is §4.1** — NYD fully editable, NA justification-required/content-
+   hidden/release-excluded, severity/CCI inherited read-only with the
+   publisher-tier overlay.
 3. **Export emit-shape details** — pinned by diffing the published SRG
    XMLs in `db/seeds/srgs/` against the import model (Phase 7 starting
    task; full implementation is in scope, §0.13).
@@ -828,6 +913,17 @@ should be settled before their phase is carded:
    **RESOLVED (Aaron, 2026-07-12): user designates via a primary radio in
    the picker, default = first selected; `based_on` IS the designation and
    must be ∈ declared parents (§5).**
+
+9. **Severity/CCI inheritance source (raised by §4.1, 2026-07-14).** The
+   inherited read-only severity and CCI/IA-control display on an authored
+   requirement — which record supplies it? Two candidates: the
+   requirement's own `derived_from` catalog row (structural — every
+   requirement has exactly ONE lineage even in a dual-lineage family, §5,
+   so this is never ambiguous), or the component's primary parent
+   (`based_on`). **Working assumption: `derived_from`** — per-requirement,
+   unambiguous, and survives dual-home families where `based_on` points
+   at only one core. Decide before the field-config card implements the
+   inherited display.
 
 ## 11. Alternatives considered and rejected
 
@@ -906,7 +1002,9 @@ should be settled before their phase is carded:
   dangling-target nullify; `document_type` immutability.
 - **Leak-surface regression**: one spec per §3.1 [P] surface asserting
   SRG rendering/config never contains a STIG-only status (the statuses
-  prop is the canary).
+  prop is the canary). Exception: the disposition-matrix surface's [P]
+  spec asserts the ABSENCE of any kind gate (v8 — it is kind-agnostic,
+  not vocabulary-bearing).
 - **API/contract**: discriminator `oneOf` with per-branch
   `additionalProperties: false`; 7-layer rule per endpoint.
 - **Live**: the FULL SRG authoring walkthrough (create → import → bucket →
@@ -925,13 +1023,18 @@ should be settled before their phase is carded:
    `Component#requirements` accessor, audit wiring; zero behavior change.
 2. **SRG status model + authoring surface** — `Applicable` +
    `SrgRule`-scoped validation; editor/controller `SrgRule` branch; the
-   full §3.1 [P] gating (Ruby + JS, incl. the consolidations); type-aware
-   buckets/dashboards (`oneOf`); SRG field config (STIG-lead content);
+   full §3.1 [P] gating (Ruby + JS); type-aware
+   buckets/dashboards (`oneOf`); SRG field config (content decided, §4.1);
    the cross-type satisfaction request spec (§7); **the Rule-association
    scoping-site migration to `Component#requirements`** (comments/triage/
    lock/release paths, §8 v7.3 — without it the triage table is empty and
    an SRG component cannot be released); **the dedicated authored-SrgRule
-   editor blueprint** (§8 v7.3).
+   editor blueprint** (§8 v7.3). *(v8: the backend half shipped as one
+   card; the frontend half split into six ≤5-point cards — dead-component
+   removal [done]; profile picker; kind-keyed field config [blocked by
+   the publisher ADR's config-model approval]; nav/filter vocabulary
+   gating; authored-row editor surfaces + walkthrough; legacy
+   flat-aggregate-key removal.)*
 3. **Multi-parent (both kinds, §0.14)** — core flag on upload
    (+ identifiers from Aaron), join table, per-kind parent-eligibility
    validation (SRG ⊆ cores; STIG ⊆ derived), family invariants, dual-mode
