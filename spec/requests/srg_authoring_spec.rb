@@ -167,10 +167,9 @@ RSpec.describe 'SRG authoring backend' do
       # Type-agnostic numbers stay top-level; total spans both kinds.
       expect(details[:total]).to eq(4)
       expect(details[:lck]).to eq(1)
-      # Legacy flat keys mirror the stig section until the frontend
-      # migrates its readers — never a cross-type collapse.
-      expect(details[:ac]).to eq(1)
-      expect(details[:nyd]).to eq(1)
+      # The legacy flat mirrors are REMOVED — typed sections only.
+      expect(details).not_to have_key(:ac)
+      expect(details).not_to have_key(:nyd)
     end
 
     it 'dashboard aggregates count every kind without collapsing buckets' do
@@ -185,12 +184,8 @@ RSpec.describe 'SRG authoring backend' do
                 not_applicable: 0 },
         srg: { not_yet_determined: 0, applicable: 1, not_applicable: 1 }
       )
-      # Legacy five-bucket aggregate stays stig-only — never collapsed.
-      expect(stats[:aggregate][:rules_by_status]).to eq(
-        not_yet_determined: 1, applicable_configurable: 1,
-        applicable_inherently_meets: 0, applicable_does_not_meet: 0,
-        not_applicable: 0
-      )
+      # The legacy flat aggregate is REMOVED — typed sections only.
+      expect(stats[:aggregate]).not_to have_key(:rules_by_status)
 
       srg_row = stats[:components].find { |c| c[:prefix] == 'SRGM-00' }
       expect(srg_row[:document_type]).to eq('srg')

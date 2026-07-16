@@ -42,11 +42,13 @@ RSpec.describe 'Query performance optimizations' do
 
     it 'returns correct status counts' do
       details = project.details
-      expect(details[:ac]).to eq(2)
-      expect(details[:aim]).to eq(1)
-      expect(details[:adnm]).to eq(0)
-      expect(details[:na]).to eq(1)
-      expect(details[:nyd]).to eq(1)
+      # Typed sections are the only shape — the flat mirrors are removed.
+      expect(details).not_to have_key(:ac)
+      expect(details[:stig][:ac]).to eq(2)
+      expect(details[:stig][:aim]).to eq(1)
+      expect(details[:stig][:adnm]).to eq(0)
+      expect(details[:stig][:na]).to eq(1)
+      expect(details[:stig][:nyd]).to eq(1)
       expect(details[:total]).to eq(5)
     end
 

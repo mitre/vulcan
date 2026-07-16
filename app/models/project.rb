@@ -262,8 +262,7 @@ class Project < ApplicationRecord
 
   # Per-document-type sections: stig and srg buckets never collapse into
   # each other; type-agnostic numbers (locks, review state, total) stay
-  # top-level. The legacy flat keys mirror the stig section until the
-  # frontend migrates its readers, then they go away.
+  # top-level.
   def details
     component_types = components.pluck(:id, :document_type).to_h
     live_rows = BaseRule.live_for_components(component_types.keys)
@@ -278,11 +277,6 @@ class Project < ApplicationRecord
     srg_buckets = Component.srg_status_buckets(srg_counts)
 
     {
-      ac: stig_buckets[:applicable_configurable],
-      aim: stig_buckets[:applicable_inherently_meets],
-      adnm: stig_buckets[:applicable_does_not_meet],
-      na: stig_buckets[:not_applicable],
-      nyd: stig_buckets[:not_yet_determined],
       stig: {
         ac: stig_buckets[:applicable_configurable],
         aim: stig_buckets[:applicable_inherently_meets],
@@ -350,9 +344,6 @@ class Project < ApplicationRecord
     total = stig_buckets.values.sum + srg_buckets.values.sum
     undecided = stig_buckets[:not_yet_determined] + srg_buckets[:not_yet_determined]
     {
-      # Legacy five-bucket shape stays stig-only (never a cross-type
-      # collapse) until the frontend migrates to the typed sections.
-      rules_by_status: stig_buckets,
       rules_by_status_by_type: { stig: stig_buckets, srg: srg_buckets },
       rules_by_severity: {
         high: severity_rows['high'] || 0,
