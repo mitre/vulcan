@@ -86,6 +86,7 @@
             :rule="selectedRule"
             :statuses="statuses"
             :read-only="true"
+            :document-type="component.document_type"
             :effective-permissions="effective_permissions"
             :advanced_fields="localAdvancedFields"
             :additional_questions="component.additional_questions"

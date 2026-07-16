@@ -6,6 +6,7 @@
         :rule="rule"
         :effective-permissions="effectivePermissions"
         :read-only="readOnly"
+        :document-type="documentType"
         @clone="$emit('clone')"
         @delete="$emit('delete')"
         @save="$emit('save', $event)"
@@ -91,6 +92,7 @@
             :rule="rule"
             :statuses="statuses"
             :read-only="readOnly"
+            :document-type="documentType"
             :advanced-mode="localAdvancedFields"
             :additional_questions="additional_questions"
             :effective-permissions="effectivePermissions"
@@ -99,10 +101,13 @@
             @view-comments="$emit('view-comments', $event)"
           />
         </b-tab>
-        <b-tab title="Test Script" lazy>
+        <!-- InSpec is Rule-only content — authored SRG rows carry no
+             inspec keys (the backend omits them), so the tabs are
+             absent for SRG-kind rather than empty. -->
+        <b-tab v-if="!isSrg" title="Test Script" lazy>
           <InspecControlEditor :rule="rule" field="inspec_control_body" :read-only="readOnly" />
         </b-tab>
-        <b-tab title="Generated Control (Read-Only)" lazy>
+        <b-tab v-if="!isSrg" title="Generated Control (Read-Only)" lazy>
           <InspecControlEditor :rule="rule" field="inspec_control_file" :read-only="true" />
         </b-tab>
       </b-tabs>
@@ -130,6 +135,10 @@ export default {
     readOnly: {
       type: Boolean,
       default: false,
+    },
+    documentType: {
+      type: String,
+      default: "stig",
     },
     effectivePermissions: {
       type: String,
@@ -159,6 +168,9 @@ export default {
     };
   },
   computed: {
+    isSrg() {
+      return this.documentType === "srg";
+    },
     autosaveDisabledReason() {
       if (this.readOnly) return "view";
       if (this.rule.locked) return "locked";

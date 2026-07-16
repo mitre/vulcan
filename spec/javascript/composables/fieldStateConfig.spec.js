@@ -39,6 +39,7 @@ import {
   FIELD_CONFIG_BY_DOCUMENT_TYPE,
   resolveFieldStates,
   buildFieldSets,
+  hasHiddenFields,
 } from "@/composables/fieldStateConfig";
 
 const sorted = (arr) => [...arr].sort();
@@ -318,6 +319,57 @@ describe("fieldStateConfig — three-state model (kind x status x tier)", () => 
       );
       expect(sorted(Object.keys(FIELD_CONFIG_BY_DOCUMENT_TYPE.srg))).toEqual(
         sorted(["Not Yet Determined", "Applicable", "Not Applicable"]),
+      );
+    });
+  });
+
+  // ─── hasHiddenFields — the "some fields are hidden" signal ──────────
+  //
+  // REQUIREMENT: the editor's fields-hidden hint derives from the config,
+  // never from a hardcoded status string. A status "hides fields" when the
+  // kind's fullest authoring form (STIG: Applicable - Configurable;
+  // SRG: Applicable) shows fields this status does not.
+  // STIG parity: the old condition was literally status !== "Applicable -
+  // Configurable" — every non-Configurable STIG status must stay true.
+  // SRG: NYD and Applicable hide nothing (full working form); Not
+  // Applicable hides the content fields (justification-only form).
+  describe("hasHiddenFields", () => {
+    it("stig: false at Applicable - Configurable (the full form)", () => {
+      expect(hasHiddenFields({ documentType: "stig", status: "Applicable - Configurable" })).toBe(
+        false,
+      );
+    });
+
+    it.each([
+      "Not Yet Determined",
+      "Applicable - Inherently Meets",
+      "Applicable - Does Not Meet",
+      "Not Applicable",
+    ])("stig: true at %s (parity with the old non-Configurable condition)", (status) => {
+      expect(hasHiddenFields({ documentType: "stig", status })).toBe(true);
+    });
+
+    it("srg: false at Not Yet Determined and Applicable (full working form)", () => {
+      expect(hasHiddenFields({ documentType: "srg", status: "Not Yet Determined" })).toBe(false);
+      expect(hasHiddenFields({ documentType: "srg", status: "Applicable" })).toBe(false);
+    });
+
+    it("srg: true at Not Applicable (content hidden, justification-only)", () => {
+      expect(hasHiddenFields({ documentType: "srg", status: "Not Applicable" })).toBe(true);
+    });
+
+    it("respects the tier: stig Not Applicable hides fields at publisher tier too", () => {
+      expect(
+        hasHiddenFields({ documentType: "stig", status: "Not Applicable", tier: "publisher" }),
+      ).toBe(true);
+    });
+
+    it("throws on unknown document type and unknown status", () => {
+      expect(() => hasHiddenFields({ documentType: "nope", status: "Applicable" })).toThrow(
+        /unknown document type/i,
+      );
+      expect(() => hasHiddenFields({ documentType: "srg", status: "Configurable" })).toThrow(
+        /unknown status/i,
       );
     });
   });

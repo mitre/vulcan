@@ -137,8 +137,11 @@
       </div>
     </b-sidebar>
 
-    <!-- Rule Satisfies -->
+    <!-- Rule Satisfies — Rule-only: the backend omits satisfies data
+         for authored SRG rows entirely, so the sidebar is absent for
+         SRG-kind (deliberately not a disabled state). -->
     <b-sidebar
+      v-if="component.document_type !== 'srg'"
       id="sidebar-satisfies"
       :title="titles.satisfies"
       right

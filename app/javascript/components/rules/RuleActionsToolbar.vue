@@ -4,7 +4,12 @@
     <div class="toolbar-row">
       <span class="toolbar-label">Info</span>
       <div class="toolbar-btn-group">
+        <!-- Related + Satisfies are Rule-only: the related search keys
+             off Rule SRG linkage (the backend 404s authored rows) and
+             the backend omits satisfies data for authored rows
+             entirely — absence, not a disabled state, is the design. -->
         <b-button
+          v-if="!isSrg"
           v-b-tooltip.hover
           title="View related rules from other components"
           variant="outline-secondary"
@@ -14,6 +19,7 @@
           <b-icon icon="link-45deg" /> Related
         </b-button>
         <b-button
+          v-if="!isSrg"
           v-b-tooltip.hover
           title="Rules this control satisfies or is satisfied by"
           variant="outline-secondary"
@@ -97,7 +103,10 @@
           wrapper-class="d-inline-flex"
           @comment="$emit('save', $event)"
         />
+        <!-- Clone creates a Rule — the backend rejects that on SRG-kind
+             components by design (requirements come from source SRGs). -->
         <b-button
+          v-if="!isSrg"
           v-b-tooltip.hover
           title="Duplicate this rule"
           variant="outline-info"
@@ -180,6 +189,10 @@ export default {
       type: Boolean,
       default: false,
     },
+    documentType: {
+      type: String,
+      default: "stig",
+    },
   },
   data() {
     return {
@@ -187,6 +200,9 @@ export default {
     };
   },
   computed: {
+    isSrg() {
+      return this.documentType === "srg";
+    },
     isReadOnly() {
       // Disabled if explicitly read-only, or rule is locked/under review
       return this.readOnly || this.rule.locked || !!this.rule.review_requestor_id;

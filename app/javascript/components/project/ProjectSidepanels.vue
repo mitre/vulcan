@@ -20,29 +20,50 @@
         <hr />
 
         <h6>Status Summary</h6>
+        <!-- Counts read the typed sections; percentages stay against
+             the type-agnostic total, so the two kind sections together
+             account for the Total row. -->
+        <p class="mb-1 font-weight-bold">STIG ({{ project.details.stig.total }})</p>
         <p class="mb-1">
-          <strong>Applicable - Configurable:</strong> {{ project.details.ac }} ({{
-            percentage(project.details.ac)
+          <strong>Applicable - Configurable:</strong> {{ project.details.stig.ac }} ({{
+            percentage(project.details.stig.ac)
           }}%)
         </p>
         <p class="mb-1">
-          <strong>Applicable - Inherently Meets:</strong> {{ project.details.aim }} ({{
-            percentage(project.details.aim)
+          <strong>Applicable - Inherently Meets:</strong> {{ project.details.stig.aim }} ({{
+            percentage(project.details.stig.aim)
           }}%)
         </p>
         <p class="mb-1">
-          <strong>Applicable - Does Not Meet:</strong> {{ project.details.adnm }} ({{
-            percentage(project.details.adnm)
+          <strong>Applicable - Does Not Meet:</strong> {{ project.details.stig.adnm }} ({{
+            percentage(project.details.stig.adnm)
           }}%)
         </p>
         <p class="mb-1">
-          <strong>Not Applicable:</strong> {{ project.details.na }} ({{
-            percentage(project.details.na)
+          <strong>Not Applicable:</strong> {{ project.details.stig.na }} ({{
+            percentage(project.details.stig.na)
           }}%)
         </p>
         <p class="mb-1">
-          <strong>Not Yet Determined:</strong> {{ project.details.nyd }} ({{
-            percentage(project.details.nyd)
+          <strong>Not Yet Determined:</strong> {{ project.details.stig.nyd }} ({{
+            percentage(project.details.stig.nyd)
+          }}%)
+        </p>
+
+        <p class="mb-1 mt-2 font-weight-bold">SRG ({{ project.details.srg.total }})</p>
+        <p class="mb-1">
+          <strong>Applicable:</strong> {{ project.details.srg.applicable }} ({{
+            percentage(project.details.srg.applicable)
+          }}%)
+        </p>
+        <p class="mb-1">
+          <strong>Not Applicable:</strong> {{ project.details.srg.na }} ({{
+            percentage(project.details.srg.na)
+          }}%)
+        </p>
+        <p class="mb-1">
+          <strong>Not Yet Determined:</strong> {{ project.details.srg.nyd }} ({{
+            percentage(project.details.srg.nyd)
           }}%)
         </p>
 

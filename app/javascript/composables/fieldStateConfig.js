@@ -206,6 +206,31 @@ export function resolveFieldStates({ documentType, status, tier = "author" }) {
   return resolved;
 }
 
+// The status whose form is the kind's fullest — the baseline the
+// fields-hidden hint compares against. Status knowledge lives in this
+// module by design; components never hardcode a status string.
+const FULL_FORM_STATUS_BY_DOCUMENT_TYPE = Object.freeze({
+  stig: "Applicable - Configurable",
+  srg: "Applicable",
+});
+
+/**
+ * Whether the given status hides fields that the kind's fullest
+ * authoring form shows (at the same tier). Drives the editor's
+ * "some fields are hidden due to the control's status" hint.
+ */
+export function hasHiddenFields({ documentType, status, tier = "author" }) {
+  const current = resolveFieldStates({ documentType, status, tier });
+  const full = resolveFieldStates({
+    documentType,
+    status: FULL_FORM_STATUS_BY_DOCUMENT_TYPE[documentType],
+    tier,
+  });
+  return GROUPS.some((group) =>
+    Object.keys(full[group]).some((field) => !(field in current[group])),
+  );
+}
+
 /**
  * Adapter for the existing consumer contract: RuleFormGroup and the form
  * components resolve visibility via `fields.displayed.includes(name)` and

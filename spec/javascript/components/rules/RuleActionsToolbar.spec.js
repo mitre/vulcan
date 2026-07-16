@@ -15,10 +15,20 @@ import RuleActionsToolbar from "@/components/rules/RuleActionsToolbar.vue";
  *    Admin: Delete, Lock/Unlock (destructive/restricted)
  *
  * 2. PANEL BUTTONS (info/reference):
- *    - Related: Opens RelatedRulesModal (always available)
- *    - Satisfies: Opens satisfies panel (always available)
+ *    - Related: Opens RelatedRulesModal (STIG-kind only — the related
+ *      search keys off Rule SRG linkage; no authored surface exists)
+ *    - Satisfies: Opens satisfies panel (STIG-kind only — absent for
+ *      SRG, deliberately: the backend omits the data entirely)
  *    - Changelog: Opens rule changelog panel (always available)
  *    - Discussion: Opens rule discussion panel (always available)
+ *
+ * 5. DOCUMENT KIND:
+ *    - Rule-only affordances (Related, Satisfies, Clone) are ABSENT for
+ *      SRG-kind components — not disabled. The backend 404s/422s these
+ *      by design; absence is the meaning (authored requirements come
+ *      from source SRGs, not manual creation).
+ *    - Comment/discussion/changelog/review/save/delete/lock surfaces
+ *      are kind-agnostic and render for both kinds.
  *
  * 3. ACTION BUTTONS:
  *    - Comment: Always available
@@ -476,6 +486,65 @@ describe("RuleActionsToolbar", () => {
         .findAll(".comment-modal-stub")
         .wrappers.find((b) => b.text().includes("Unlock"));
       expect(unlockStub.attributes("button-tooltip")).toBe("Unlock this rule for editing");
+    });
+  });
+
+  // ==========================================
+  // DOCUMENT KIND — Rule-only affordances absent for SRG
+  //
+  // REQUIREMENT: on an SRG-kind component the Related, Satisfies, and
+  // Clone buttons do not exist in the DOM (absent, NOT disabled) — the
+  // backend 404s related, omits satisfies data entirely, and 422s Rule
+  // creation by design. Kind-agnostic surfaces (comment, discussion,
+  // changelog, review, save, delete, lock) render for both kinds.
+  // ==========================================
+  describe("document kind gating", () => {
+    // Authored SRG rows omit Rule-only keys entirely — authentic shape.
+    const authoredRule = {
+      id: 7,
+      rule_id: "000007",
+      status: "Applicable",
+      locked: false,
+      review_requestor_id: null,
+    };
+
+    const buttonTexts = () =>
+      wrapper.findAll("button, .comment-modal-stub").wrappers.map((b) => b.text().trim());
+
+    it("defaults to stig and renders every affordance (regression)", () => {
+      wrapper = createWrapper();
+      expect(wrapper.props("documentType")).toBe("stig");
+      const texts = buttonTexts();
+      expect(texts).toContain("Related");
+      expect(texts).toContain("Satisfies");
+      expect(texts).toContain("Clone");
+    });
+
+    it("renders NO Satisfies button for srg-kind — absent, not disabled", () => {
+      wrapper = createWrapper({ documentType: "srg", rule: authoredRule });
+      expect(buttonTexts()).not.toContain("Satisfies");
+    });
+
+    it("renders NO Related button for srg-kind", () => {
+      wrapper = createWrapper({ documentType: "srg", rule: authoredRule });
+      expect(buttonTexts()).not.toContain("Related");
+    });
+
+    it("renders NO Clone button for srg-kind", () => {
+      wrapper = createWrapper({ documentType: "srg", rule: authoredRule });
+      expect(buttonTexts()).not.toContain("Clone");
+    });
+
+    it("keeps every kind-agnostic surface for srg-kind (comment/disposition surfaces have no kind gate)", () => {
+      wrapper = createWrapper({ documentType: "srg", rule: authoredRule });
+      const texts = buttonTexts();
+      expect(texts).toContain("Rule Changelog");
+      expect(texts).toContain("Rule Discussion");
+      expect(texts).toContain("Comment");
+      expect(texts).toContain("Change Review Status");
+      expect(texts).toContain("Save");
+      expect(texts).toContain("Delete");
+      expect(texts).toContain("Lock");
     });
   });
 });

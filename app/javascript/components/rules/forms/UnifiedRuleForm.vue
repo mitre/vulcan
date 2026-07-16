@@ -62,9 +62,10 @@
       </span>
     </div>
 
-    <!-- Status hint: above form so user sees it before the fields -->
+    <!-- Status hint: above form so user sees it before the fields.
+         Config-derived per kind — SRG working statuses hide nothing. -->
     <b-alert
-      v-if="effectiveStatus !== 'Applicable - Configurable'"
+      v-if="fieldsHiddenByStatus"
       variant="info"
       show
       class="py-2 mb-2"
@@ -78,6 +79,7 @@
       <RuleForm
         :rule="rule"
         :statuses="statuses"
+        :document-type="documentType"
         :disabled="isFormDisabled"
         :fields="ruleFormFields"
         :locked-sections="lockedSections"
@@ -95,7 +97,11 @@
       />
     </b-form>
 
+    <!-- SRG reference block is Rule-only: an authored SRG row IS the
+         requirement, and the backend omits srg_rule/srg_info entirely —
+         absent for SRG-kind, deliberately. -->
     <RuleSecurityRequirementsGuideInformation
+      v-if="documentType !== 'srg'"
       :nist_control_family="rule.nist_control_family"
       :srg_rule="rule.srg_rule_attributes"
       :cci="rule.ident"
@@ -131,6 +137,10 @@ export default {
       type: Boolean,
       default: false,
     },
+    documentType: {
+      type: String,
+      default: "stig",
+    },
     advancedMode: {
       type: Boolean,
       default: false,
@@ -149,8 +159,12 @@ export default {
     const ruleRef = computed(() => props.rule);
     const advancedRef = computed(() => props.advancedMode);
     const readOnlyRef = computed(() => props.readOnly);
+    const documentTypeRef = computed(() => props.documentType);
 
-    const composable = useRuleFormFields(ruleRef, advancedRef, { readOnly: readOnlyRef });
+    const composable = useRuleFormFields(ruleRef, advancedRef, {
+      readOnly: readOnlyRef,
+      documentType: documentTypeRef,
+    });
     const ruleSelectionStore = useRuleSelectionStore();
 
     return {

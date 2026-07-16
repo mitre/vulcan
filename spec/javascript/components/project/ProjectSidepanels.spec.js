@@ -36,16 +36,16 @@ describe("ProjectSidepanels", () => {
       visibility: "hidden",
       metadata: { key: "value" },
       histories: [{ id: 1, action: "created" }],
+      // Typed-sections shape ONLY — the legacy flat ac/aim/adnm/na/nyd
+      // keys are deliberately ABSENT: the reader must consume the stig
+      // section, never the removed mirrors.
       details: {
-        ac: 10,
-        aim: 5,
-        adnm: 2,
-        na: 3,
-        nyd: 20,
+        stig: { ac: 10, aim: 5, adnm: 2, na: 3, nyd: 20, total: 40 },
+        srg: { applicable: 4, na: 1, nyd: 3, total: 8 },
         nur: 15,
         ur: 5,
         lck: 2,
-        total: 62,
+        total: 48,
       },
     },
     activePanel: null,
@@ -185,10 +185,29 @@ describe("ProjectSidepanels", () => {
       expect(wrapper.text()).toContain("Test description");
     });
 
-    it("displays status counts", () => {
+    it("displays status counts read from the typed stig section (flat keys absent)", () => {
       wrapper = createWrapper({ activePanel: "proj-details" });
-      // Should show AC, AIM, ADNM, NA, NYD counts
-      expect(wrapper.text()).toContain("Applicable - Configurable");
+      const text = wrapper.text().replace(/\s+/g, " ");
+      // Counts come from details.stig.*; percentages use the
+      // type-agnostic details.total (48).
+      expect(text).toContain("Applicable - Configurable: 10 (20.83%)");
+      expect(text).toContain("Applicable - Inherently Meets: 5 (10.42%)");
+      expect(text).toContain("Applicable - Does Not Meet: 2 (4.17%)");
+      expect(text).toContain("Not Applicable: 3 (6.25%)");
+      expect(text).toContain("Not Yet Determined: 20 (41.67%)");
+      expect(text).toContain("Total: 48");
+    });
+
+    it("displays the SRG section from details.srg with its own vocabulary", () => {
+      wrapper = createWrapper({ activePanel: "proj-details" });
+      const text = wrapper.text().replace(/\s+/g, " ");
+      // Both kind sections carry their section totals; the overall
+      // Total row stays type-agnostic (40 + 8 = 48).
+      expect(text).toContain("STIG (40)");
+      expect(text).toContain("SRG (8)");
+      expect(text).toContain("Applicable: 4 (8.33%)");
+      expect(text).toContain("Not Applicable: 1 (2.08%)");
+      expect(text).toContain("Not Yet Determined: 3 (6.25%)");
     });
 
     it("shows edit button for admin", () => {

@@ -568,6 +568,17 @@ describe("ComponentComments", () => {
       expect(btn).toBeUndefined();
     });
 
+    // REQUIREMENT (locked decision): disposition-matrix surfaces are
+    // KIND-AGNOSTIC — draft SRGs take public comment exactly like STIGs
+    // and produce disposition matrices the same way. The component takes
+    // no document-kind input at all, so no kind can ever gate the export;
+    // this pins that a kind prop is never introduced to gate it.
+    it("has NO document-kind gate — the surface accepts no kind input (kind-agnostic by design)", () => {
+      const declaredProps = Object.keys(ComponentComments.props || {});
+      expect(declaredProps).not.toContain("documentType");
+      expect(declaredProps).not.toContain("document_type");
+    });
+
     it("renders the Export CSV button in project (aggregate) scope and links to the project endpoint", async () => {
       const wrapper = mount(ComponentComments, {
         propsData: { projectId: 7, scope: "project" },

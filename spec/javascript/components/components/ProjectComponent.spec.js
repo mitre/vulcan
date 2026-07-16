@@ -302,6 +302,18 @@ describe("ProjectComponent", () => {
     // CRITICAL: RuleEditor must forward toggle-panel events so panel buttons work.
     // This was a regression where buttons did nothing because events weren't wired up.
 
+    it("threads the component's document_type into RuleEditor (kind-aware editor)", async () => {
+      wrapper = createWrapper({
+        initialComponentState: {
+          ...defaultProps.initialComponentState,
+          document_type: "srg",
+        },
+      });
+      wrapper.vm.selectRule(1);
+      await wrapper.vm.$nextTick();
+      expect(wrapper.findComponent({ name: "RuleEditor" }).props("documentType")).toBe("srg");
+    });
+
     it("forwards toggle-panel events from RuleEditor to togglePanel", async () => {
       wrapper = createWrapper();
       // Select a rule first so RuleEditor renders

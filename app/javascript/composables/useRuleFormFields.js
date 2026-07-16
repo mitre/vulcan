@@ -11,7 +11,7 @@
  */
 import { computed } from "vue";
 import { LOCKABLE_SECTIONS } from "./ruleFieldConfig";
-import { buildFieldSets, resolveFieldStates } from "./fieldStateConfig";
+import { buildFieldSets, hasHiddenFields, resolveFieldStates } from "./fieldStateConfig";
 
 const EMPTY_SETS = Object.freeze({
   rule: { displayed: [], disabled: [] },
@@ -48,6 +48,19 @@ export function useRuleFormFields(rule, advancedMode, options = {}) {
   // drives fieldStateConfig field visibility.
   const effectiveStatus = computed(() => {
     return rule.value.status;
+  });
+
+  // Whether the current status hides fields the kind's fullest form
+  // shows — drives the "some fields are hidden" hint, config-derived
+  // so no consumer ever compares against a hardcoded status string.
+  const fieldsHiddenByStatus = computed(() => {
+    const status = rule.value.status;
+    if (!status) return false;
+    return hasHiddenFields({
+      documentType: documentType.value,
+      status,
+      tier: tier.value,
+    });
   });
 
   // ─── Form-level disabled ───────────────────────────────────
@@ -213,6 +226,7 @@ export function useRuleFormFields(rule, advancedMode, options = {}) {
 
     // Severity override
     effectiveStatus,
+    fieldsHiddenByStatus,
     severityChanged,
     showSeverityOverride,
     severityEditable,

@@ -501,4 +501,62 @@ describe("RuleEditor", () => {
       expect(tabsWrapper.classes()).toContain("overflow-auto");
     });
   });
+
+  // ==========================================
+  // DOCUMENT KIND — InSpec surfaces absent for SRG
+  //
+  // REQUIREMENT: authored SRG rows carry no InSpec content (the backend
+  // omits inspec_control_body/inspec_control_file entirely), so the
+  // Test Script and Generated Control tabs do not exist for SRG-kind.
+  // The kind flows down to the toolbar and the form.
+  // ==========================================
+  describe("document kind gating", () => {
+    // Authored SRG rows omit Rule-only keys entirely — authentic shape.
+    const authoredRule = {
+      id: 7,
+      rule_id: "000007",
+      status: "Applicable",
+      locked: false,
+      review_requestor_id: null,
+      rule_severity: "medium",
+    };
+    const srgStatuses = ["Not Yet Determined", "Applicable", "Not Applicable"];
+
+    const tabTitles = () =>
+      wrapper
+        .findComponent({ name: "BTabs" })
+        .findAllComponents({ name: "BTab" })
+        .wrappers.map((t) => t.props("title"));
+
+    it("defaults to stig and renders the InSpec tabs (regression)", () => {
+      wrapper = createWrapper();
+      expect(wrapper.props("documentType")).toBe("stig");
+      expect(tabTitles()).toEqual([
+        "Documentation",
+        "Test Script",
+        "Generated Control (Read-Only)",
+      ]);
+    });
+
+    it("renders NO InSpec tabs for srg-kind — Documentation only", () => {
+      wrapper = createWrapper({
+        documentType: "srg",
+        rule: authoredRule,
+        statuses: srgStatuses,
+      });
+      expect(tabTitles()).toEqual(["Documentation"]);
+    });
+
+    it("forwards documentType to the toolbar and the form", () => {
+      wrapper = createWrapper({
+        documentType: "srg",
+        rule: authoredRule,
+        statuses: srgStatuses,
+      });
+      expect(wrapper.findComponent({ name: "RuleActionsToolbar" }).props("documentType")).toBe(
+        "srg",
+      );
+      expect(wrapper.findComponent({ name: "UnifiedRuleForm" }).props("documentType")).toBe("srg");
+    });
+  });
 });

@@ -168,6 +168,7 @@
           :rule="selectedRule"
           :statuses="statuses"
           :read-only="isViewerOnly"
+          :document-type="component.document_type"
           :effective-permissions="effectivePermissions"
           :advanced_fields="localAdvancedFields"
           :additional_questions="component.additional_questions"

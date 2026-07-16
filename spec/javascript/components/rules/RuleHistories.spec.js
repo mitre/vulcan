@@ -93,4 +93,21 @@ describe("RuleHistories", () => {
       expect(wrapper.text()).toContain("No revision history yet.");
     });
   });
+
+  // ─── Document kind — revert is Rule machinery ──────────────
+  //
+  // REQUIREMENT: history revert exists only for Rule rows (the backend
+  // 404s authored-requirement reverts), so the changelog renders
+  // read-only for SRG-kind components and revertable for STIG-kind.
+  describe("document kind — revert affordance", () => {
+    it("marks history revertable for stig-kind components (regression)", () => {
+      wrapper = createWrapper();
+      expect(wrapper.findComponent({ name: "History" }).props("revertable")).toBe(true);
+    });
+
+    it("marks history NOT revertable for srg-kind components", () => {
+      wrapper = createWrapper({ component: { id: 41, document_type: "srg" } });
+      expect(wrapper.findComponent({ name: "History" }).props("revertable")).toBe(false);
+    });
+  });
 });

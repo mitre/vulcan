@@ -154,4 +154,42 @@ describe("ControlsSidepanels", () => {
       wrapper = null; // prevent double destroy in afterEach
     });
   });
+
+  // ─── Document kind — satisfies sidebar absent for SRG ──────
+  //
+  // REQUIREMENT: the satisfies sidebar does not exist for SRG-kind
+  // components (absent, NOT disabled) — the backend omits satisfies
+  // data for authored rows entirely; the exception to the app-wide
+  // disabled-with-tooltip rule is deliberate per design. Every other
+  // sidebar (incl. the comment/discussion surfaces) is kind-agnostic.
+  describe("document kind gating", () => {
+    const srgComponent = (overrides = {}) => ({
+      id: 9,
+      name: "Authored SRG",
+      document_type: "srg",
+      histories: [],
+      reviews: [],
+      memberships: [],
+      metadata: {},
+      additional_questions: [],
+      ...overrides,
+    });
+
+    it("renders the satisfies sidebar for stig-kind (regression)", () => {
+      wrapper = createWrapper();
+      expect(wrapper.find("#sidebar-satisfies").exists()).toBe(true);
+    });
+
+    it("renders NO satisfies sidebar for srg-kind — absent, not disabled", () => {
+      wrapper = createWrapper({ component: srgComponent() });
+      expect(wrapper.find("#sidebar-satisfies").exists()).toBe(false);
+    });
+
+    it("keeps the kind-agnostic sidebars for srg-kind (discussion/history have no kind gate)", () => {
+      wrapper = createWrapper({ component: srgComponent() });
+      expect(wrapper.find("#sidebar-rule-reviews").exists()).toBe(true);
+      expect(wrapper.find("#sidebar-rule-history").exists()).toBe(true);
+      expect(wrapper.find("#sidebar-comp-history").exists()).toBe(true);
+    });
+  });
 });

@@ -7,7 +7,11 @@
  * 3. Severity override guidance appears dynamically when severity differs from SRG default
  * 4. satisfied_by forces Configurable behavior, disables title+fixtext only
  * 5. Collapsible DISA/Checks sections visible only in advanced mode
- * 6. RuleSecurityRequirementsGuideInformation always rendered
+ * 6. RuleSecurityRequirementsGuideInformation rendered for STIG-kind;
+ *    ABSENT for SRG-kind (authored rows ARE the SRG requirement — the
+ *    backend omits srg_rule/srg_info reference data entirely)
+ * 7. The fields-hidden hint derives from the field config per kind —
+ *    never from a hardcoded status string
  */
 import { describe, it, expect, afterEach } from "vitest";
 import { shallowMount } from "@vue/test-utils";
@@ -659,6 +663,95 @@ describe("UnifiedRuleForm", () => {
       ruleForm.vm.$emit("navigate-to-rule", 100);
       await wrapper.vm.$nextTick();
       expect(store.selectedRuleId).toBe(100);
+    });
+  });
+
+  // ─── Document kind — authored SRG rows ─────────────────────
+  //
+  // REQUIREMENTS:
+  // - Authored SRG rows omit Rule-only keys ENTIRELY (no srg_rule
+  //   reference data, no srg_info, no satisfied_by) — the form renders
+  //   them without the SRG-information reference block: the row IS the
+  //   SRG requirement, so absence is the design, not a fallback.
+  // - documentType flows into the field resolver and RuleForm so the
+  //   SRG vocabulary and field config drive the form.
+  // - The fields-hidden hint is config-derived per kind: SRG Applicable
+  //   hides nothing (full working form), SRG Not Applicable hides the
+  //   content fields (justification-only).
+  describe("document kind — authored SRG rows", () => {
+    // Authentic authored-row shape: Rule-only keys OMITTED, not empty.
+    function makeAuthoredRule(overrides = {}) {
+      return {
+        status: "Applicable",
+        rule_severity: "medium",
+        locked: false,
+        review_requestor_id: null,
+        title: "Authored requirement",
+        fixtext: "Authored fix",
+        nist_control_family: "AC-2 (1)",
+        ident: "CCI-000015",
+        derived_from_version: "SRG-OS-000001",
+        disa_rule_descriptions_attributes: [
+          { _destroy: false, vuln_discussion: "Authored discussion" },
+        ],
+        checks_attributes: [{ content: "Authored check", _destroy: false }],
+        ...overrides,
+      };
+    }
+
+    const srgStatuses = ["Not Yet Determined", "Applicable", "Not Applicable"];
+
+    const createSrgWrapper = (ruleOverrides = {}, props = {}) => {
+      const pinia = createPinia();
+      setActivePinia(pinia);
+      return shallowMount(UnifiedRuleForm, {
+        localVue,
+        pinia,
+        propsData: {
+          rule: makeAuthoredRule(ruleOverrides),
+          statuses: srgStatuses,
+          documentType: "srg",
+          ...props,
+        },
+      });
+    };
+
+    it("renders NO RuleSecurityRequirementsGuideInformation for srg-kind — absent, not empty", () => {
+      wrapper = createSrgWrapper();
+      expect(
+        wrapper.findComponent({ name: "RuleSecurityRequirementsGuideInformation" }).exists(),
+      ).toBe(false);
+    });
+
+    it("passes documentType through to RuleForm", () => {
+      wrapper = createSrgWrapper();
+      expect(wrapper.findComponent({ name: "RuleForm" }).props("documentType")).toBe("srg");
+    });
+
+    it("resolves fields from the SRG config: Applicable serves the full editable working form", () => {
+      wrapper = createSrgWrapper();
+      const fields = wrapper.findComponent({ name: "RuleForm" }).props("fields");
+      expect(fields.displayed).toContain("title");
+      expect(fields.displayed).toContain("fixtext");
+      expect(fields.disabled).not.toContain("title");
+      expect(fields.disabled).not.toContain("fixtext");
+      // Inherited identifiers render readonly at author tier
+      expect(fields.disabled).toContain("rule_severity");
+    });
+
+    it("shows NO fields-hidden hint at srg Applicable (nothing is hidden)", () => {
+      wrapper = createSrgWrapper();
+      expect(wrapper.find('[data-testid="fields-hidden-alert"]').exists()).toBe(false);
+    });
+
+    it("shows NO fields-hidden hint at srg Not Yet Determined", () => {
+      wrapper = createSrgWrapper({ status: "Not Yet Determined" });
+      expect(wrapper.find('[data-testid="fields-hidden-alert"]').exists()).toBe(false);
+    });
+
+    it("shows the fields-hidden hint at srg Not Applicable (justification-only form)", () => {
+      wrapper = createSrgWrapper({ status: "Not Applicable" });
+      expect(wrapper.find('[data-testid="fields-hidden-alert"]').exists()).toBe(true);
     });
   });
 });
