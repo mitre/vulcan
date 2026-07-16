@@ -31,6 +31,7 @@ get:
                 id: 38
                 name: RHEL 9 Hardened Baseline
                 prefix: RHEL-09
+                document_type: stig
                 title: Red Hat Enterprise Linux 9
                 version: 2
                 release: 1
@@ -58,44 +59,8 @@ get:
                 frozen_for_writes: false
                 comment_period_days_remaining: 5
     '401':
-      description: Authentication required
-      content:
-        application/json:
-          schema:
-            type: object
-            required:
-              - error
-            additionalProperties: false
-            properties:
-              error:
-                type: string
-                description: Error message.
-                example: Unauthorized
+      $ref: ../components/responses/Unauthorized.yaml
     '403':
-      description: Caller lacks viewer permission on an unreleased component
-      content:
-        application/json:
-          schema:
-            type: object
-            required:
-              - error
-            additionalProperties: false
-            properties:
-              error:
-                type: string
-                description: Error message.
-                example: You are not authorized to perform viewer actions on this component
+      $ref: ../components/responses/Forbidden.yaml
     '404':
-      description: Component not found
-      content:
-        application/json:
-          schema:
-            type: object
-            required:
-              - error
-            additionalProperties: false
-            properties:
-              error:
-                type: string
-                description: Error message.
-                example: Not found
+      $ref: ../components/responses/NotFound.yaml

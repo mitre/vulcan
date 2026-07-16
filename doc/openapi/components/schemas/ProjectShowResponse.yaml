@@ -28,9 +28,7 @@ allOf:
           Project-wide requirement statistics. Per-document-type sections
           (stig with the five DISA buckets, srg with the three SRG buckets)
           never collapse into each other; total, lock, and review-state
-          numbers are type-agnostic and span every kind. The flat
-          ac/aim/adnm/na/nyd keys mirror the stig section and are
-          deprecated in favor of the typed sections.
+          numbers are type-agnostic and span every kind.
         oneOf:
           - $ref: ./ProjectDetails.yaml
           - type: 'null'

@@ -27,6 +27,7 @@ get:
                 components:
                   - id: 1
                     name: Photon OS 3
+                    prefix: PHOS-03
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
 patch:

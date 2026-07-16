@@ -28,6 +28,7 @@ get:
             in_progress:
               summary: Component mid-authoring with an open comment period
               value:
+                document_type: stig
                 authoring:
                   rules_total: 203
                   rules_determined: 153
@@ -54,4 +55,4 @@ get:
     '403':
       $ref: ../components/responses/Forbidden.yaml
     '404':
-      $ref: ../components/responses/ErrorResponse.yaml
+      $ref: ../components/responses/NotFound.yaml

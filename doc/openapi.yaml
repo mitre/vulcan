@@ -76,20 +76,7 @@ paths:
                     admin: true
                     provider: oidc
         '401':
-          description: Not authenticated — no valid session or token
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: Unauthorized
-              examples:
-                unauthorized:
-                  summary: No session
-                  value:
-                    error: Unauthorized
+          $ref: '#/components/responses/Unauthorized'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /api/auth/login:
@@ -143,20 +130,42 @@ paths:
                     admin: false
                     provider: null
         '401':
-          description: Invalid email or password
+          description: Invalid email or password (RFC 9457 problem details)
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
+                additionalProperties: false
+                required:
+                  - type
+                  - title
+                  - status
+                  - detail
                 properties:
-                  error:
+                  type:
                     type: string
-                    example: Invalid email or password
+                    description: Stable machine identifier for the error class.
+                    example: /api/docs/errors#invalid_credentials
+                  title:
+                    type: string
+                    description: Short human summary of the error class.
+                    example: Invalid credentials
+                  status:
+                    type: integer
+                    description: HTTP status code, repeated in the body.
+                    example: 401
+                  detail:
+                    type: string
+                    description: Occurrence-specific human explanation.
+                    example: The email or password is incorrect.
               examples:
-                invalid:
+                invalid_credentials:
                   summary: Bad credentials
                   value:
-                    error: Invalid email or password
+                    type: /api/docs/errors#invalid_credentials
+                    title: Invalid credentials
+                    status: 401
+                    detail: The email or password is incorrect.
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /api/auth/logout:
@@ -186,20 +195,7 @@ paths:
                   value:
                     message: Signed out successfully
         '401':
-          description: Not authenticated — no session to destroy
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: Unauthorized
-              examples:
-                unauthorized:
-                  summary: No session
-                  value:
-                    error: Unauthorized
+          $ref: '#/components/responses/Unauthorized'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /api/navigation:
@@ -250,15 +246,7 @@ paths:
                     access_requests: []
                     locked_users: []
         '401':
-          description: Not authenticated
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: Unauthorized
+          $ref: '#/components/responses/Unauthorized'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /api/settings:
@@ -287,10 +275,10 @@ paths:
                       text_color: '#ffffff'
                     consent:
                       enabled: false
-                      version: '1'
+                      version: 1
                       title: Terms of Use
                       content: ''
-                      ttl: '0'
+                      ttl: 0
                     local_login:
                       enabled: true
                     user_registration:
@@ -383,6 +371,8 @@ paths:
                       - id: 29
                         name: Container SRG
                     rules: []
+                    stig_rules: []
+                    srg_rules: []
                     srgs:
                       - id: 1
                         title: Container Platform Security Requirements Guide
@@ -570,33 +560,44 @@ paths:
                       per_page: 25
                       total: 1
         '400':
-          description: Requested page is out of range
+          description: Requested page is out of range (RFC 9457 problem details)
           content:
-            application/json:
+            application/problem+json:
               schema:
                 type: object
-                required:
-                  - error
                 additionalProperties: false
+                required:
+                  - type
+                  - title
+                  - status
+                  - detail
                 properties:
-                  error:
+                  type:
+                    type: string
+                    description: Stable machine identifier for the error class.
+                    example: /api/docs/errors#page_out_of_range
+                  title:
+                    type: string
+                    description: Short human summary of the error class.
+                    example: Page out of range
+                  status:
+                    type: integer
+                    description: HTTP status code, repeated in the body.
+                    example: 400
+                  detail:
                     type: string
                     description: Error message naming the valid page range.
                     example: Page 9999 is out of range (1..2)
+              examples:
+                page_out_of_range:
+                  summary: Page beyond the last available page
+                  value:
+                    type: /api/docs/errors#page_out_of_range
+                    title: Page out of range
+                    status: 400
+                    detail: Page 9999 is out of range (1..2)
         '401':
-          description: Authentication required
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - error
-                additionalProperties: false
-                properties:
-                  error:
-                    type: string
-                    description: Error message.
-                    example: Unauthorized
+          $ref: '#/components/responses/Unauthorized'
   /api/srgs/latest:
     get:
       operationId: latestSrgs
@@ -678,33 +679,9 @@ paths:
                           project_id: 9
                           project_name: Photon OS 5 Hardening
         '401':
-          description: Authentication required — usage exposes project data
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - error
-                additionalProperties: false
-                properties:
-                  error:
-                    type: string
-                    description: Error message.
-                    example: Unauthorized
+          $ref: '#/components/responses/Unauthorized'
         '404':
-          description: SRG not found
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - error
-                additionalProperties: false
-                properties:
-                  error:
-                    type: string
-                    description: Error message.
-                    example: Not found
+          $ref: '#/components/responses/NotFound'
   /api/stigs/latest:
     get:
       operationId: latestStigs
@@ -771,19 +748,7 @@ paths:
                       medium: 300
                       low: 40
         '404':
-          description: STIG not found
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - error
-                additionalProperties: false
-                properties:
-                  error:
-                    type: string
-                    description: Error message.
-                    example: Not found
+          $ref: '#/components/responses/NotFound'
   /api/components/latest:
     get:
       operationId: latestComponents
@@ -818,19 +783,7 @@ paths:
                         version: 2
                         release: 1
         '401':
-          description: Authentication required — components are not public
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - error
-                additionalProperties: false
-                properties:
-                  error:
-                    type: string
-                    description: Error message.
-                    example: Unauthorized
+          $ref: '#/components/responses/Unauthorized'
   /api/components/{id}/summary:
     get:
       operationId: componentSummary
@@ -860,6 +813,7 @@ paths:
                     id: 38
                     name: RHEL 9 Hardened Baseline
                     prefix: RHEL-09
+                    document_type: stig
                     title: Red Hat Enterprise Linux 9
                     version: 2
                     release: 1
@@ -887,47 +841,11 @@ paths:
                     frozen_for_writes: false
                     comment_period_days_remaining: 5
         '401':
-          description: Authentication required
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - error
-                additionalProperties: false
-                properties:
-                  error:
-                    type: string
-                    description: Error message.
-                    example: Unauthorized
+          $ref: '#/components/responses/Unauthorized'
         '403':
-          description: Caller lacks viewer permission on an unreleased component
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - error
-                additionalProperties: false
-                properties:
-                  error:
-                    type: string
-                    description: Error message.
-                    example: You are not authorized to perform viewer actions on this component
+          $ref: '#/components/responses/Forbidden'
         '404':
-          description: Component not found
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - error
-                additionalProperties: false
-                properties:
-                  error:
-                    type: string
-                    description: Error message.
-                    example: Not found
+          $ref: '#/components/responses/NotFound'
   /api/components/{id}/stats:
     get:
       operationId: componentStats
@@ -954,6 +872,7 @@ paths:
                 stats:
                   summary: Component stats
                   value:
+                    document_type: stig
                     rules_by_status:
                       not_yet_determined: 50
                       applicable_configurable: 120
@@ -972,7 +891,7 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/ErrorResponse'
+          $ref: '#/components/responses/NotFound'
   /api/components/{id}/workflow_state:
     get:
       operationId: componentWorkflowState
@@ -999,6 +918,7 @@ paths:
                 in_progress:
                   summary: Component mid-authoring with an open comment period
                   value:
+                    document_type: stig
                     authoring:
                       rules_total: 203
                       rules_determined: 153
@@ -1025,7 +945,7 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/ErrorResponse'
+          $ref: '#/components/responses/NotFound'
   /api/components/{id}/triage_summary:
     get:
       operationId: componentTriageSummary
@@ -1070,7 +990,7 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/ErrorResponse'
+          $ref: '#/components/responses/NotFound'
   /api/projects/{id}/stats:
     get:
       operationId: projectStats
@@ -1098,12 +1018,17 @@ paths:
                   summary: Project with two components
                   value:
                     aggregate:
-                      rules_by_status:
-                        not_yet_determined: 53
-                        applicable_configurable: 121
-                        applicable_inherently_meets: 15
-                        applicable_does_not_meet: 8
-                        not_applicable: 11
+                      rules_by_status_by_type:
+                        stig:
+                          not_yet_determined: 51
+                          applicable_configurable: 121
+                          applicable_inherently_meets: 15
+                          applicable_does_not_meet: 8
+                          not_applicable: 10
+                        srg:
+                          not_yet_determined: 2
+                          applicable: 1
+                          not_applicable: 0
                       rules_by_severity:
                         high: 21
                         medium: 176
@@ -1115,12 +1040,14 @@ paths:
                       - id: 38
                         name: RHEL 9 Hardened Baseline
                         prefix: RHEL-09
+                        document_type: stig
                         rule_count: 203
                         completion_pct: 75.4
                         lock_pct: 12.3
                       - id: 41
                         name: Photon OS 5 Baseline
                         prefix: PHTN-50
+                        document_type: srg
                         rule_count: 5
                         completion_pct: 40
                         lock_pct: 0
@@ -1129,7 +1056,7 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/ErrorResponse'
+          $ref: '#/components/responses/NotFound'
   /api/projects/{id}/triage_summary:
     get:
       operationId: projectTriageSummary
@@ -1174,7 +1101,7 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/ErrorResponse'
+          $ref: '#/components/responses/NotFound'
   /search/rules:
     get:
       operationId: searchRulesLegacy
@@ -1403,6 +1330,7 @@ paths:
                     components:
                       - id: 1
                         name: Photon OS 3
+                        prefix: PHOS-03
         4XX:
           $ref: '#/components/responses/ErrorResponse'
     patch:
@@ -1952,9 +1880,14 @@ paths:
                   value:
                     - id: 500
                       auditable_type: Component
+                      auditable_id: 38
                       action: update
-                      user_name: Demo Admin
+                      name: Demo Admin
                       created_at: '2026-05-28T15:00:00Z'
+                      audited_changes:
+                        - field: released
+                          prev_value: false
+                          new_value: true
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /components:
@@ -1980,14 +1913,14 @@ paths:
                     - id: 29
                       name: Container SRG
                       prefix: CNTR
-                      version: '1'
-                      release: '1'
+                      version: 1
+                      release: 1
                       released: true
                     - id: 30
                       name: Photon OS 3
                       prefix: PHOS-03
-                      version: '1'
-                      release: '1'
+                      version: 1
+                      release: 1
                       released: true
         4XX:
           $ref: '#/components/responses/ErrorResponse'
@@ -2016,9 +1949,10 @@ paths:
                   component:
                     name: Container SRG
                     prefix: CNTR
+                    title: Container Platform Security Technical Implementation Guide
                     version: 1
                     release: 1
-                    based_on_id: 1
+                    security_requirements_guide_id: 1
           multipart/form-data:
             schema:
               type: object
@@ -2071,8 +2005,8 @@ paths:
                     title: Photon OS 3 STIG Readiness Guide
                     rules_count: 203
                     comment_phase: open
-                    version: '1'
-                    release: '1'
+                    version: 1
+                    release: 1
                     released: false
         4XX:
           $ref: '#/components/responses/ErrorResponse'
@@ -2090,14 +2024,14 @@ paths:
               type: object
               properties:
                 component:
-                  $ref: '#/components/schemas/ComponentInput'
+                  $ref: '#/components/schemas/ComponentUpdateInput'
             examples:
               update:
                 summary: Update version and release
                 value:
                   component:
-                    version: '2'
-                    release: '1'
+                    version: 2
+                    release: 1
       responses:
         '200':
           description: Component updated
@@ -2130,7 +2064,7 @@ paths:
               type: object
               properties:
                 component:
-                  $ref: '#/components/schemas/ComponentInput'
+                  $ref: '#/components/schemas/ComponentUpdateInput'
       responses:
         '200':
           description: Component updated
@@ -2221,6 +2155,7 @@ paths:
                   value:
                     rows:
                       - id: 44
+                        commentable_type: BaseRule
                         rule_displayed_name: CNTR-00-000050
                         section: fixtext
                         author_name: John Osborne
@@ -2228,10 +2163,15 @@ paths:
                         comment: This requirement needs clarification...
                         triage_status: pending
                         created_at: '2026-05-19T16:15:00Z'
+                        responses_count: 0
+                        reactions:
+                          up: 1
+                          down: 0
                     pagination:
                       page: 1
                       per_page: 25
-                      total: 10
+                      total: 1
+                      total_comments: 10
                     status_counts:
                       pending: 10
                       concur: 2
@@ -2422,9 +2362,14 @@ paths:
                   value:
                     - id: 600
                       auditable_type: Rule
+                      auditable_id: 812
                       action: update
-                      user_name: Demo Admin
+                      name: Demo Admin
                       created_at: '2026-05-28T15:00:00Z'
+                      audited_changes:
+                        - field: status
+                          prev_value: Not Yet Determined
+                          new_value: Applicable - Configurable
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /components/{componentId}/rules:
@@ -2456,10 +2401,16 @@ paths:
                       rule_id: CNTR-00-000050
                       title: Container images must be signed
                       status: Applicable - Configurable
+                      locked: false
+                      satisfies: []
+                      satisfied_by: []
                     - id: 101
                       rule_id: CNTR-00-000051
                       title: Container images must come from approved registries
                       status: Applicable - Configurable
+                      locked: false
+                      satisfies: []
+                      satisfied_by: []
         4XX:
           $ref: '#/components/responses/ErrorResponse'
     post:
@@ -2467,7 +2418,7 @@ paths:
       tags:
         - Rules
       summary: Create a new rule in a component
-      description: Creates a new rule with the specified content fields. The rule_id must follow the component's prefix pattern. Requires author role or higher on the parent project.
+      description: Creates a rule row — either a blank rule (content is then edited via the rule update endpoint) or a duplicate of an existing rule in the component. Rule IDs are assigned from the component's prefix pattern. Requires author role or higher on the parent project. Rejected with 422 on SRG-kind components (authored requirements come from source SRGs, not manual creation).
       requestBody:
         required: true
         content:
@@ -2476,15 +2427,29 @@ paths:
               type: object
               properties:
                 rule:
-                  $ref: '#/components/schemas/RuleInput'
+                  type: object
+                  description: Creation mode only — content fields are not accepted here; edit the created rule to set content.
+                  properties:
+                    duplicate:
+                      type: boolean
+                      description: Duplicate an existing rule instead of creating a blank one.
+                      example: false
+                    id:
+                      type: integer
+                      description: Source rule id to duplicate (required when duplicate is true).
+                      example: 100
             examples:
               create:
-                summary: Create a rule
+                summary: Create a blank rule
                 value:
                   rule:
-                    title: New container security requirement
-                    status: Applicable - Configurable
-                    severity: medium
+                    duplicate: false
+              duplicate:
+                summary: Duplicate an existing rule
+                value:
+                  rule:
+                    duplicate: true
+                    id: 100
       responses:
         '200':
           description: Rule created
@@ -2506,6 +2471,9 @@ paths:
                       rule_id: '000204'
                       title: New container security requirement
                       status: Not Yet Determined
+                      locked: false
+                      satisfies: []
+                      satisfied_by: []
           links:
             GetCreatedRule:
               operationId: getRule
@@ -2555,9 +2523,11 @@ paths:
                       - id: 100
                         rule_id: CNTR-00-000050
                         title: Container images must be signed
+                        locked: false
                       - id: 101
                         rule_id: CNTR-00-000051
                         title: Container images must come from approved registries
+                        locked: true
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /components/detect_srg:
@@ -2819,10 +2789,16 @@ paths:
                       rule_id: CNTR-00-000050
                       title: Container images must be signed
                       status: Applicable - Configurable
+                      locked: false
+                      satisfies: []
+                      satisfied_by: []
                     - id: 101
                       rule_id: CNTR-00-000051
                       title: Container images must come from approved registries
                       status: Applicable - Configurable
+                      locked: false
+                      satisfies: []
+                      satisfied_by: []
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /components/{componentId}/preview_spreadsheet_update:
@@ -3148,18 +3124,29 @@ paths:
                         example: 264
               examples:
                 diff:
-                  summary: Two rules compared
+                  summary: Two rules compared by generated InSpec control
                   value:
                     data:
-                      CNTR-00-000050:
-                        fixtext:
-                          base: Original fix text...
-                          diff: Updated fix text...
-                          changed: true
-                        check_content:
-                          base: Same check
-                          diff: Same check
-                          changed: false
+                      '000050':
+                        base: |-
+                          control 'CNTR-00-000050' do
+                            title 'Container images must be signed'
+                          end
+                        diff: |-
+                          control 'CNTR-00-000050' do
+                            title 'Container images must be signed and verified'
+                          end
+                        changed: true
+                      '000051':
+                        base: |-
+                          control 'CNTR-00-000051' do
+                            title 'Approved registries only'
+                          end
+                        diff: |-
+                          control 'CNTR-00-000051' do
+                            title 'Approved registries only'
+                          end
+                        changed: false
                     meta:
                       base_id: 29
                       diff_id: 30
@@ -3546,14 +3533,14 @@ paths:
                     action: comment
                     comment: The overall approach to container isolation is sound.
                     section: null
-              rule_comment:
-                summary: Comment on a specific rule's fix text
+              threaded_reply:
+                summary: Reply to an existing component-level comment
                 value:
                   review:
                     action: comment
-                    comment: The fix text should reference the vendor's hardening guide.
-                    rule_id: 100
-                    section: fixtext
+                    comment: Agreed — the isolation model covers this case.
+                    section: null
+                    responding_to_review_id: 44
       responses:
         '200':
           description: Comment created
@@ -4139,15 +4126,29 @@ paths:
                   value:
                     review:
                       id: 44
+                      action: comment
+                      comment: This requirement needs clarification...
+                      rule_id: 812
                       section: vuln_discussion
                       triage_status: pending
+                      created_at: '2026-05-19T16:15:00Z'
+                      reactions:
+                        up: 1
+                        down: 0
                 idempotent:
                   summary: No change — same section
                   value:
                     review:
                       id: 44
+                      action: comment
+                      comment: This requirement needs clarification...
+                      rule_id: 812
                       section: fixtext
                       triage_status: pending
+                      created_at: '2026-05-19T16:15:00Z'
+                      reactions:
+                        up: 1
+                        down: 0
                     idempotent: true
         4XX:
           $ref: '#/components/responses/ErrorResponse'
@@ -4211,7 +4212,7 @@ paths:
               type: object
               properties:
                 membership:
-                  $ref: '#/components/schemas/MembershipInput'
+                  $ref: '#/components/schemas/MembershipUpdateInput'
             examples:
               promote:
                 summary: Promote to reviewer
@@ -4265,7 +4266,7 @@ paths:
               type: object
               properties:
                 membership:
-                  $ref: '#/components/schemas/MembershipInput'
+                  $ref: '#/components/schemas/MembershipUpdateInput'
             examples:
               promote:
                 summary: Promote to reviewer
@@ -5188,7 +5189,7 @@ paths:
                       per_page: 25
                       total: 12
         '404':
-          description: User not found
+          $ref: '#/components/responses/NotFound'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /users/unlink_identity:
@@ -6371,9 +6372,44 @@ paths:
                         allowed_ips: null
                         created_at: 2026-05-30 10:00:00 UTC
         '403':
-          description: Token auth rejected (session required) or non-admin tried user_id param
+          description: Token-authenticated request rejected — token management requires a session (RFC 9457 problem details)
+          content:
+            application/problem+json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - type
+                  - title
+                  - status
+                  - detail
+                properties:
+                  type:
+                    type: string
+                    description: Stable machine identifier for the error class.
+                    example: /api/docs/errors#session_authentication_required
+                  title:
+                    type: string
+                    description: Short human summary of the error class.
+                    example: Session authentication required
+                  status:
+                    type: integer
+                    description: HTTP status code, repeated in the body.
+                    example: 403
+                  detail:
+                    type: string
+                    description: Occurrence-specific human explanation.
+                    example: Token management requires a signed-in browser session; API tokens cannot create or revoke tokens.
+              examples:
+                session_required:
+                  summary: API token used against token management
+                  value:
+                    type: /api/docs/errors#session_authentication_required
+                    title: Session authentication required
+                    status: 403
+                    detail: Token management requires a signed-in browser session; API tokens cannot create or revoke tokens.
         '404':
-          description: API tokens feature is disabled
+          $ref: '#/components/responses/NotFound'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
     post:
@@ -6444,7 +6480,42 @@ paths:
                 tokenId: $response.body#/personal_access_token/id
               description: Revoke the newly created token.
         '401':
-          description: Incorrect password
+          description: Current password confirmation failed (RFC 9457 problem details). Token creation re-verifies the signed-in user's password before minting a credential.
+          content:
+            application/problem+json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - type
+                  - title
+                  - status
+                  - detail
+                properties:
+                  type:
+                    type: string
+                    description: Stable machine identifier for the error class.
+                    example: /api/docs/errors#incorrect_password
+                  title:
+                    type: string
+                    description: Short human summary of the error class.
+                    example: Incorrect password
+                  status:
+                    type: integer
+                    description: HTTP status code, repeated in the body.
+                    example: 401
+                  detail:
+                    type: string
+                    description: Occurrence-specific human explanation.
+                    example: Creating or managing API tokens re-verifies your identity, and the current password provided does not match.
+              examples:
+                incorrect_password:
+                  summary: Password confirmation failed
+                  value:
+                    type: /api/docs/errors#incorrect_password
+                    title: Incorrect password
+                    status: 401
+                    detail: Creating or managing API tokens re-verifies your identity, and the current password provided does not match.
         '422':
           description: Validation failed (invalid scopes, max tokens reached, etc.)
           content:
@@ -6478,7 +6549,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
         '404':
-          description: Token not found or belongs to another user
+          $ref: '#/components/responses/NotFound'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /personal_access_tokens/{tokenId}/admin_revoke:
@@ -6519,9 +6590,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
         '403':
-          description: Not an admin
+          $ref: '#/components/responses/Forbidden'
         '404':
-          description: Token not found
+          $ref: '#/components/responses/NotFound'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
 components:
@@ -7865,10 +7936,9 @@ components:
           description: Percentage of top-level comments adjudicated, rounded to one decimal. Null when there are no top-level comments.
           example: 20
     ProjectAggregateStats:
-      description: Project-wide requirement statistics aggregated across every component. Per-document-type status sections never collapse into each other; rule_count, completion and lock percentages are type-agnostic. The flat rules_by_status mirrors the stig section and is deprecated in favor of rules_by_status_by_type.
+      description: Project-wide requirement statistics aggregated across every component. Per-document-type status sections never collapse into each other; rule_count, completion and lock percentages are type-agnostic.
       type: object
       required:
-        - rules_by_status
         - rules_by_status_by_type
         - rules_by_severity
         - rule_count
@@ -7876,8 +7946,6 @@ components:
         - lock_pct
       additionalProperties: false
       properties:
-        rules_by_status:
-          $ref: '#/components/schemas/RulesByStatus'
         rules_by_status_by_type:
           type: object
           description: Per-document-type status sections.
@@ -8170,14 +8238,9 @@ components:
           description: Relative URL to the newly created project page. Present on success, absent on error.
           example: /projects/1
     ProjectDetails:
-      description: Project-wide requirement statistics with per-document-type sections. The stig and srg sections never collapse into each other; top-level numbers (total, lck, nur, ur) are type-agnostic. The flat ac/aim/adnm/na/nyd keys mirror the stig section and are deprecated in favor of the typed sections.
+      description: Project-wide requirement statistics with per-document-type sections. The stig and srg sections never collapse into each other; top-level numbers (total, lck, nur, ur) are type-agnostic.
       type: object
       required:
-        - ac
-        - aim
-        - adnm
-        - na
-        - nyd
         - stig
         - srg
         - nur
@@ -8186,26 +8249,6 @@ components:
         - total
       additionalProperties: false
       properties:
-        ac:
-          type: integer
-          description: Deprecated mirror of stig.ac.
-          example: 120
-        aim:
-          type: integer
-          description: Deprecated mirror of stig.aim.
-          example: 15
-        adnm:
-          type: integer
-          description: Deprecated mirror of stig.adnm.
-          example: 8
-        na:
-          type: integer
-          description: Deprecated mirror of stig.na.
-          example: 10
-        nyd:
-          type: integer
-          description: Deprecated mirror of stig.nyd.
-          example: 50
         stig:
           type: object
           description: STIG-kind requirement counts in the five DISA buckets.
@@ -8403,7 +8446,7 @@ components:
               description: Aggregate pending comment count across all components.
               example: 1
             details:
-              description: Project-wide requirement statistics. Per-document-type sections (stig with the five DISA buckets, srg with the three SRG buckets) never collapse into each other; total, lock, and review-state numbers are type-agnostic and span every kind. The flat ac/aim/adnm/na/nyd keys mirror the stig section and are deprecated in favor of the typed sections.
+              description: Project-wide requirement statistics. Per-document-type sections (stig with the five DISA buckets, srg with the three SRG buckets) never collapse into each other; total, lock, and review-state numbers are type-agnostic and span every kind.
               oneOf:
                 - $ref: '#/components/schemas/ProjectDetails'
                 - type: 'null'
@@ -8695,7 +8738,12 @@ components:
         - name
         - prefix
         - title
+        - security_requirements_guide_id
       properties:
+        security_requirements_guide_id:
+          type: integer
+          description: The catalog SRG the component is based on — the requirement source for STIG-kind imports and the declared source document for SRG-kind authoring.
+          example: 1
         name:
           type: string
           description: Human-readable component name.
@@ -8712,13 +8760,13 @@ components:
             - srg
           example: stig
         version:
-          type: string
+          type: integer
           description: Version number of the component.
-          example: '1'
+          example: 1
         release:
-          type: string
+          type: integer
           description: Release number of the component.
-          example: '1'
+          example: 1
         title:
           type: string
           description: Full official title of the component.
@@ -9891,6 +9939,114 @@ components:
               description: Memberships inherited from the parent project.
               items:
                 $ref: '#/components/schemas/MembershipSummary'
+    ComponentUpdateInput:
+      description: Partial update for an existing component — every field is optional and only provided attributes change. The authoring profile (document_type) is immutable after creation and is not accepted here.
+      type: object
+      properties:
+        name:
+          type: string
+          description: Human-readable component name.
+          example: Container SRG
+        prefix:
+          type: string
+          description: Short alphanumeric prefix used to construct rule IDs (e.g. CNTR in CNTR-00-000050).
+          example: CNTR
+        version:
+          type: integer
+          description: Version number of the component.
+          example: 1
+        release:
+          type: integer
+          description: Release number of the component.
+          example: 1
+        title:
+          type: string
+          description: Full official title of the component.
+          example: Container Platform Security Technical Implementation Guide
+        description:
+          type: string
+          description: Optional longer description of the component scope and purpose.
+          example: STIG guidance for container orchestration platform deployments.
+        released:
+          type: boolean
+          description: Marks the component as released (admin-gated workflow action).
+          example: false
+        admin_name:
+          type: string
+          description: Point-of-contact name.
+          example: Jane Analyst
+        admin_email:
+          type: string
+          description: Point-of-contact email.
+          example: jane.analyst@example.com
+        advanced_fields:
+          type: boolean
+          description: Whether the editor shows the advanced field set for this component.
+          example: false
+        comment_phase:
+          type: string
+          description: Public comment phase for the component.
+          enum:
+            - draft
+            - open
+            - triage
+            - final
+          example: open
+        closed_reason:
+          type:
+            - string
+            - 'null'
+          description: Reason recorded when the comment phase closes.
+          example: null
+        comment_period_starts_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+          description: Public comment period opening time.
+          example: '2026-07-01T00:00:00Z'
+        comment_period_ends_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+          description: Public comment period closing time.
+          example: '2026-08-01T00:00:00Z'
+        additional_questions_attributes:
+          type: array
+          description: Nested additional-question definitions (id + _destroy for removal).
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 3
+              name:
+                type: string
+                example: Deployment environment
+              question_type:
+                type: string
+                example: dropdown
+              _destroy:
+                type: boolean
+                example: false
+              options:
+                type: array
+                items:
+                  type: string
+                example:
+                  - Cloud
+                  - On-prem
+        component_metadata_attributes:
+          type: object
+          description: Nested metadata payload; data is a free-form string map.
+          properties:
+            data:
+              type: object
+              additionalProperties:
+                type: string
+              example:
+                Slack Channel ID: C123456
     RuleContent:
       description: Rule content fields for the split-pane triage view, serialized by Component#serialize_rule_content. Present on comment rows only when the include_rule_content query parameter is true and the comment targets a rule (null for component-level comments).
       type: object
@@ -10351,44 +10507,6 @@ components:
             concur: 45
             non_concur: 8
             withdrawn: 3
-    RuleInput:
-      description: Input fields for updating a security rule within a component.
-      type: object
-      properties:
-        status:
-          type: string
-          description: Applicability status of the rule indicating whether and how it applies to the technology.
-          enum:
-            - Not Yet Determined
-            - Applicable - Configurable
-            - Applicable - Inherently Meets
-            - Applicable - Does Not Meet
-            - Not Applicable
-          example: Applicable - Configurable
-        title:
-          type: string
-          description: Title of the security control.
-          example: The container platform must enforce approved authorizations for access.
-        fixtext:
-          type: string
-          description: Remediation instructions describing how to fix a non-compliant finding.
-          example: Configure the container platform to enforce approved authorizations for logical access.
-        vendor_comments:
-          type: string
-          description: Vendor-provided comments or implementation notes for this rule.
-          example: This requirement is met by default when using the recommended container runtime configuration.
-        status_justification:
-          type: string
-          description: Justification text required when setting status to Not Applicable or Does Not Meet.
-          example: The container platform inherently meets this requirement through its architecture.
-        artifact_description:
-          type: string
-          description: Description of artifacts or evidence supporting the rule implementation.
-          example: Screenshot of the container platform access control configuration panel.
-        locked:
-          type: boolean
-          description: Whether the rule is locked from further edits pending review.
-          example: false
     RuleCreateResponse:
       description: Response from rule creation. Toast notification plus the created rule under the "data" key.
       type: object
@@ -10476,6 +10594,44 @@ components:
         diff:
           description: Rule content in the new version. Present for 'added' and 'updated' changes.
           $ref: '#/components/schemas/RuleBasicFields'
+    RuleInput:
+      description: Input fields for updating a security rule within a component.
+      type: object
+      properties:
+        status:
+          type: string
+          description: Applicability status of the rule indicating whether and how it applies to the technology.
+          enum:
+            - Not Yet Determined
+            - Applicable - Configurable
+            - Applicable - Inherently Meets
+            - Applicable - Does Not Meet
+            - Not Applicable
+          example: Applicable - Configurable
+        title:
+          type: string
+          description: Title of the security control.
+          example: The container platform must enforce approved authorizations for access.
+        fixtext:
+          type: string
+          description: Remediation instructions describing how to fix a non-compliant finding.
+          example: Configure the container platform to enforce approved authorizations for logical access.
+        vendor_comments:
+          type: string
+          description: Vendor-provided comments or implementation notes for this rule.
+          example: This requirement is met by default when using the recommended container runtime configuration.
+        status_justification:
+          type: string
+          description: Justification text required when setting status to Not Applicable or Does Not Meet.
+          example: The container platform inherently meets this requirement through its architecture.
+        artifact_description:
+          type: string
+          description: Description of artifacts or evidence supporting the rule implementation.
+          example: Screenshot of the container platform access control configuration panel.
+        locked:
+          type: boolean
+          description: Whether the rule is locked from further edits pending review.
+          example: false
     RuleSectionLockResponse:
       description: Response from section lock/unlock. Toast notification plus the updated rule. Used by PATCH /rules/:id/section_locks and PATCH /rules/:id/bulk_section_locks.
       type: object
@@ -10509,8 +10665,10 @@ components:
           description: The comment text accompanying this review action.
           example: The fix text should reference the container runtime configuration file.
         section:
-          type: string
-          description: Rule section this comment applies to (e.g. fixtext, check_content, vuln_discussion).
+          type:
+            - string
+            - 'null'
+          description: Rule section this comment applies to (e.g. fixtext, check_content, vuln_discussion). Null for general comments; component-level comments are always stored section-less.
           example: fixtext
         responding_to_review_id:
           type: integer
@@ -10681,6 +10839,21 @@ components:
             - reviewer
             - admin
           example: author
+    MembershipUpdateInput:
+      description: Update for an existing membership — the membership is addressed by the URL and only the role may change; user and membership type are fixed at creation.
+      type: object
+      required:
+        - role
+      properties:
+        role:
+          type: string
+          description: Access role granted to the user (viewer < author < reviewer < admin).
+          enum:
+            - viewer
+            - author
+            - reviewer
+            - admin
+          example: reviewer
     SrgSummary:
       description: Security Requirements Guide (SRG) listing entry. Serialized by SrgBlueprint (default/index view). SRGs use release_date (not benchmark_date — that is STIGs).
       type: object
@@ -11394,8 +11567,91 @@ components:
         personal_access_token:
           $ref: '#/components/schemas/PersonalAccessTokenSummary'
   responses:
+    Unauthorized:
+      description: Authentication required (RFC 9457 problem details). Either no API token and no signed-in session, or an Authorization header token that is revoked, expired, or mistyped. The `type` URI names which case applied and `how_to_authenticate` spells out both supported methods.
+      content:
+        application/problem+json:
+          schema:
+            type: object
+            additionalProperties: false
+            required:
+              - type
+              - title
+              - status
+              - detail
+            properties:
+              type:
+                type: string
+                description: Stable machine identifier for the error class — a URI reference anchoring into the live API docs.
+                example: /api/docs/errors#not_authenticated
+              title:
+                type: string
+                description: Short human summary of the error class.
+                example: Not authenticated
+              status:
+                type: integer
+                description: HTTP status code, repeated in the body.
+                example: 401
+              detail:
+                type: string
+                description: Occurrence-specific human explanation of why.
+                example: This request included no API token and no valid signed-in session. If you were signed in, the session may have timed out, been signed out, or ended because this account signed in from another location.
+              how_to_authenticate:
+                type: object
+                additionalProperties: false
+                description: Both supported authentication methods (extension member).
+                properties:
+                  session:
+                    type: string
+                    description: How to authenticate with a browser session.
+                    example: Sign in through the web UI (/users/sign_in) and retry with the session cookie.
+                  token:
+                    type: string
+                    description: How to authenticate with a personal access token.
+                    example: 'Create a personal access token (your profile page, or POST /personal_access_tokens) and send it in the request header: Authorization: Token <your-token>.'
+          examples:
+            not_authenticated:
+              summary: No API token and no signed-in session
+              value:
+                type: /api/docs/errors#not_authenticated
+                title: Not authenticated
+                status: 401
+                detail: This request included no API token and no valid signed-in session. If you were signed in, the session may have timed out, been signed out, or ended because this account signed in from another location.
+                how_to_authenticate:
+                  session: Sign in through the web UI (/users/sign_in) and retry with the session cookie.
+                  token: 'Create a personal access token (your profile page, or POST /personal_access_tokens) and send it in the request header: Authorization: Token <your-token>.'
+            invalid_token:
+              summary: Authorization header token revoked, expired, or mistyped
+              value:
+                type: /api/docs/errors#invalid_token
+                title: Invalid or expired API token
+                status: 401
+                detail: The Authorization header carried a token that does not match any active personal access token. It may be revoked, expired, or mistyped.
+                how_to_authenticate:
+                  session: Sign in through the web UI (/users/sign_in) and retry with the session cookie.
+                  token: 'Create a personal access token (your profile page, or POST /personal_access_tokens) and send it in the request header: Authorization: Token <your-token>.'
+            session_superseded:
+              summary: Session ended because the account signed in from another location
+              value:
+                type: /api/docs/errors#session_superseded
+                title: Session ended — signed in elsewhere
+                status: 401
+                detail: You were signed out because this account signed in from another location. Only one active session per account is allowed at a time.
+                how_to_authenticate:
+                  session: Sign in through the web UI (/users/sign_in) and retry with the session cookie.
+                  token: 'Create a personal access token (your profile page, or POST /personal_access_tokens) and send it in the request header: Authorization: Token <your-token>.'
+            session_timed_out:
+              summary: Session expired after inactivity
+              value:
+                type: /api/docs/errors#session_timed_out
+                title: Session timed out
+                status: 401
+                detail: Your session timed out after a period of inactivity. Sign in again to continue.
+                how_to_authenticate:
+                  session: Sign in through the web UI (/users/sign_in) and retry with the session cookie.
+                  token: 'Create a personal access token (your profile page, or POST /personal_access_tokens) and send it in the request header: Authorization: Token <your-token>.'
     ErrorResponse:
-      description: Error response (401 unauthorized, 403 forbidden, 404 not found, 422 validation, or 500 server error).
+      description: Catch-all 4XX error response. Domain and validation feedback arrives as the canonical toast object (application/json); auth and infrastructure errors (401/403/404/400) arrive as RFC 9457 problem details (application/problem+json) with a stable `type` URI, `title`, `status`, and `detail`.
       content:
         application/json:
           schema:
@@ -11403,8 +11659,8 @@ components:
             properties:
               error:
                 type: string
-                description: Human-readable error message.
-                example: Not authorized.
+                description: Human-readable error message (domain errors).
+                example: No SRG IDs found in spreadsheet
               toast:
                 type: object
                 description: Optional toast notification with structured error details.
@@ -11434,42 +11690,185 @@ components:
                   message:
                     - Name can't be blank.
                   variant: danger
+        application/problem+json:
+          schema:
+            type: object
+            required:
+              - type
+              - title
+              - status
+              - detail
+            properties:
+              type:
+                type: string
+                description: Stable machine identifier for the error class — a URI reference anchoring into the live API docs.
+                example: /api/docs/errors#not_found
+              title:
+                type: string
+                description: Short human summary of the error class.
+                example: Not found
+              status:
+                type: integer
+                description: HTTP status code, repeated in the body.
+                example: 404
+              detail:
+                type: string
+                description: Occurrence-specific human explanation.
+                example: The requested resource could not be found.
+              how_to_authenticate:
+                type: object
+                description: Extension member on 401s — both authentication methods.
+              admins:
+                type: array
+                description: Extension member on permission denials — who to ask.
+                items:
+                  type: object
+              toast:
+                type: object
+                description: Legacy toast extension on permission denials.
+          examples:
             not_found:
               summary: Resource not found
               value:
-                error: Not found.
-    Unauthorized:
-      description: Authentication required. The request lacks valid session credentials.
+                type: /api/docs/errors#not_found
+                title: Not found
+                status: 404
+                detail: The requested resource could not be found.
+    NotFound:
+      description: Resource not found (RFC 9457 problem details). The body is identical for a truly nonexistent resource and one the caller may not learn exists.
       content:
-        application/json:
+        application/problem+json:
           schema:
             type: object
+            additionalProperties: false
+            required:
+              - type
+              - title
+              - status
+              - detail
             properties:
-              error:
+              type:
                 type: string
-                description: Human-readable authentication error message.
-                example: You need to sign in or sign up before continuing.
+                description: Stable machine identifier for the error class — a URI reference anchoring into the live API docs.
+                example: /api/docs/errors#not_found
+              title:
+                type: string
+                description: Short human summary of the error class.
+                example: Not found
+              status:
+                type: integer
+                description: HTTP status code, repeated in the body.
+                example: 404
+              detail:
+                type: string
+                description: Occurrence-specific human explanation.
+                example: The requested resource could not be found.
           examples:
-            not_signed_in:
-              summary: No active session
+            not_found:
+              summary: No such resource is reachable by this request
               value:
-                error: You need to sign in or sign up before continuing.
+                type: /api/docs/errors#not_found
+                title: Not found
+                status: 404
+                detail: The requested resource could not be found.
     Forbidden:
-      description: Insufficient permissions to perform the requested action.
+      description: Insufficient permissions (RFC 9457 problem details). The `type` URI names the denial class; permission denials carry the project `admins` to ask for access, plus a legacy `toast` extension kept until every consumer reads the problem fields directly.
       content:
-        application/json:
+        application/problem+json:
           schema:
             type: object
+            additionalProperties: false
+            required:
+              - type
+              - title
+              - status
+              - detail
             properties:
-              error:
+              type:
                 type: string
-                description: Human-readable authorization error message.
-                example: You are not authorized to perform this action.
+                description: Stable machine identifier for the error class — a URI reference anchoring into the live API docs.
+                example: /api/docs/errors#permission_denied
+              title:
+                type: string
+                description: Short human summary of the error class.
+                example: Permission denied
+              status:
+                type: integer
+                description: HTTP status code, repeated in the body.
+                example: 403
+              detail:
+                type: string
+                description: Occurrence-specific human explanation of why.
+                example: You are not authorized to perform viewer actions on this project
+              admins:
+                type: array
+                description: Project admin contacts to ask for access (extension member, present on permission denials when a project or component is in scope; empty otherwise).
+                items:
+                  type: object
+                  additionalProperties: false
+                  required:
+                    - name
+                    - email
+                  properties:
+                    name:
+                      type: string
+                      description: Admin display name.
+                      example: Alice Admin
+                    email:
+                      type: string
+                      format: email
+                      description: Admin contact email.
+                      example: alice@example.com
+              toast:
+                type: object
+                additionalProperties: false
+                description: Legacy toast extension for older consumers (permission denials only).
+                properties:
+                  title:
+                    type: string
+                    description: Toast heading.
+                    example: Not Authorized.
+                  message:
+                    type: array
+                    description: Toast body lines.
+                    items:
+                      type: string
+                    example:
+                      - You are not authorized to perform viewer actions on this project
+                  variant:
+                    type: string
+                    description: Bootstrap alert variant.
+                    example: danger
           examples:
-            forbidden:
-              summary: Non-admin attempting admin action
+            permission_denied:
+              summary: Authenticated but lacking the required project capability
               value:
-                error: You are not authorized to perform this action.
+                type: /api/docs/errors#permission_denied
+                title: Permission denied
+                status: 403
+                detail: You are not authorized to perform viewer actions on this project
+                admins:
+                  - name: Alice Admin
+                    email: alice@example.com
+                toast:
+                  title: Not Authorized.
+                  message:
+                    - You are not authorized to perform viewer actions on this project
+                  variant: danger
+            insufficient_token_scope:
+              summary: Token lacks the scope this request requires
+              value:
+                type: /api/docs/errors#insufficient_token_scope
+                title: Insufficient token scope
+                status: 403
+                detail: This request requires the write scope, and the token does not grant it.
+            ip_not_allowed:
+              summary: Request IP outside the token allowlist
+              value:
+                type: /api/docs/errors#ip_not_allowed
+                title: IP address not allowed
+                status: 403
+                detail: The request came from an IP address outside this token's allowlist.
     UnprocessableEntity:
       description: Validation errors prevented the request from being processed.
       content:

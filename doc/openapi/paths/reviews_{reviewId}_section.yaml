@@ -66,15 +66,29 @@ patch:
               value:
                 review:
                   id: 44
+                  action: comment
+                  comment: "This requirement needs clarification..."
+                  rule_id: 812
                   section: vuln_discussion
                   triage_status: pending
+                  created_at: "2026-05-19T16:15:00Z"
+                  reactions:
+                    up: 1
+                    down: 0
             idempotent:
               summary: No change — same section
               value:
                 review:
                   id: 44
+                  action: comment
+                  comment: "This requirement needs clarification..."
+                  rule_id: 812
                   section: fixtext
                   triage_status: pending
+                  created_at: "2026-05-19T16:15:00Z"
+                  reactions:
+                    up: 1
+                    down: 0
                 idempotent: true
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

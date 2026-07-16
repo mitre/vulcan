@@ -9,3 +9,6 @@ rules:
   operation-description: error
   parameter-description: error
   tag-description: error
+  # Examples must validate against their media-type schemas — a stale
+  # example showing a removed field is documentation lying about the API.
+  no-invalid-media-type-examples: error

@@ -58,6 +58,7 @@ get:
               value:
                 rows:
                   - id: 44
+                    commentable_type: BaseRule
                     rule_displayed_name: "CNTR-00-000050"
                     section: fixtext
                     author_name: John Osborne
@@ -65,10 +66,15 @@ get:
                     comment: "This requirement needs clarification..."
                     triage_status: pending
                     created_at: "2026-05-19T16:15:00Z"
+                    responses_count: 0
+                    reactions:
+                      up: 1
+                      down: 0
                 pagination:
                   page: 1
                   per_page: 25
-                  total: 10
+                  total: 1
+                  total_comments: 10
                 status_counts:
                   pending: 10
                   concur: 2

@@ -25,6 +25,6 @@ delete:
           schema:
             $ref: ../components/schemas/ToastResponse.yaml
     '404':
-      description: Token not found or belongs to another user
+      $ref: ../components/responses/NotFound.yaml
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

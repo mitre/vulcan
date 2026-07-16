@@ -24,8 +24,13 @@ get:
               value:
                 - id: 600
                   auditable_type: Rule
+                  auditable_id: 812
                   action: update
-                  user_name: Demo Admin
+                  name: Demo Admin
                   created_at: "2026-05-28T15:00:00Z"
+                  audited_changes:
+                    - field: status
+                      prev_value: Not Yet Determined
+                      new_value: Applicable - Configurable
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

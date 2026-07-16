@@ -1,0 +1,110 @@
+description: >-
+  Partial update for an existing component — every field is optional and
+  only provided attributes change. The authoring profile (document_type)
+  is immutable after creation and is not accepted here.
+type: object
+properties:
+  name:
+    type: string
+    description: Human-readable component name.
+    example: Container SRG
+  prefix:
+    type: string
+    description: Short alphanumeric prefix used to construct rule IDs (e.g. CNTR in CNTR-00-000050).
+    example: CNTR
+  version:
+    type: integer
+    description: Version number of the component.
+    example: 1
+  release:
+    type: integer
+    description: Release number of the component.
+    example: 1
+  title:
+    type: string
+    description: Full official title of the component.
+    example: Container Platform Security Technical Implementation Guide
+  description:
+    type: string
+    description: Optional longer description of the component scope and purpose.
+    example: STIG guidance for container orchestration platform deployments.
+  released:
+    type: boolean
+    description: Marks the component as released (admin-gated workflow action).
+    example: false
+  admin_name:
+    type: string
+    description: Point-of-contact name.
+    example: Jane Analyst
+  admin_email:
+    type: string
+    description: Point-of-contact email.
+    example: jane.analyst@example.com
+  advanced_fields:
+    type: boolean
+    description: Whether the editor shows the advanced field set for this component.
+    example: false
+  comment_phase:
+    type: string
+    description: Public comment phase for the component.
+    enum:
+      - draft
+      - open
+      - triage
+      - final
+    example: open
+  closed_reason:
+    type:
+      - string
+      - 'null'
+    description: Reason recorded when the comment phase closes.
+    example: null
+  comment_period_starts_at:
+    type:
+      - string
+      - 'null'
+    format: date-time
+    description: Public comment period opening time.
+    example: '2026-07-01T00:00:00Z'
+  comment_period_ends_at:
+    type:
+      - string
+      - 'null'
+    format: date-time
+    description: Public comment period closing time.
+    example: '2026-08-01T00:00:00Z'
+  additional_questions_attributes:
+    type: array
+    description: Nested additional-question definitions (id + _destroy for removal).
+    items:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 3
+        name:
+          type: string
+          example: Deployment environment
+        question_type:
+          type: string
+          example: dropdown
+        _destroy:
+          type: boolean
+          example: false
+        options:
+          type: array
+          items:
+            type: string
+          example:
+            - Cloud
+            - On-prem
+  component_metadata_attributes:
+    type: object
+    description: Nested metadata payload; data is a free-form string map.
+    properties:
+      data:
+        type: object
+        additionalProperties:
+          type: string
+        example:
+          Slack Channel ID: C123456

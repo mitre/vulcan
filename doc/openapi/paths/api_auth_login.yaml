@@ -51,19 +51,41 @@ post:
                 admin: false
                 provider: null
     '401':
-      description: Invalid email or password
+      description: Invalid email or password (RFC 9457 problem details)
       content:
-        application/json:
+        application/problem+json:
           schema:
             type: object
+            additionalProperties: false
+            required:
+              - type
+              - title
+              - status
+              - detail
             properties:
-              error:
+              type:
                 type: string
-                example: Invalid email or password
+                description: Stable machine identifier for the error class.
+                example: /api/docs/errors#invalid_credentials
+              title:
+                type: string
+                description: Short human summary of the error class.
+                example: Invalid credentials
+              status:
+                type: integer
+                description: HTTP status code, repeated in the body.
+                example: 401
+              detail:
+                type: string
+                description: Occurrence-specific human explanation.
+                example: The email or password is incorrect.
           examples:
-            invalid:
+            invalid_credentials:
               summary: Bad credentials
               value:
-                error: Invalid email or password
+                type: /api/docs/errors#invalid_credentials
+                title: Invalid credentials
+                status: 401
+                detail: The email or password is incorrect.
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

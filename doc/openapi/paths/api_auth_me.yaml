@@ -32,19 +32,6 @@ get:
                 admin: true
                 provider: oidc
     '401':
-      description: Not authenticated — no valid session or token
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: Unauthorized
-          examples:
-            unauthorized:
-              summary: No session
-              value:
-                error: Unauthorized
+      $ref: ../components/responses/Unauthorized.yaml
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

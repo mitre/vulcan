@@ -45,9 +45,15 @@ post:
                   rule_id: "CNTR-00-000050"
                   title: "Container images must be signed"
                   status: "Applicable - Configurable"
+                  locked: false
+                  satisfies: []
+                  satisfied_by: []
                 - id: 101
                   rule_id: "CNTR-00-000051"
                   title: "Container images must come from approved registries"
                   status: "Applicable - Configurable"
+                  locked: false
+                  satisfies: []
+                  satisfied_by: []
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

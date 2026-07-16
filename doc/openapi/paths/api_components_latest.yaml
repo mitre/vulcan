@@ -40,16 +40,4 @@ get:
                     version: 2
                     release: 1
     '401':
-      description: Authentication required — components are not public
-      content:
-        application/json:
-          schema:
-            type: object
-            required:
-              - error
-            additionalProperties: false
-            properties:
-              error:
-                type: string
-                description: Error message.
-                example: Unauthorized
+      $ref: ../components/responses/Unauthorized.yaml

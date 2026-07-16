@@ -19,8 +19,13 @@ properties:
     description: The comment text accompanying this review action.
     example: The fix text should reference the container runtime configuration file.
   section:
-    type: string
-    description: Rule section this comment applies to (e.g. fixtext, check_content, vuln_discussion).
+    type:
+      - string
+      - 'null'
+    description: >-
+      Rule section this comment applies to (e.g. fixtext, check_content,
+      vuln_discussion). Null for general comments; component-level
+      comments are always stored section-less.
     example: fixtext
   responding_to_review_id:
     type: integer

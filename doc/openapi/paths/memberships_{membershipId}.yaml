@@ -18,7 +18,7 @@ patch:
           type: object
           properties:
             membership:
-              $ref: ../components/schemas/MembershipInput.yaml
+              $ref: ../components/schemas/MembershipUpdateInput.yaml
         examples:
           promote:
             summary: Promote to reviewer
@@ -79,7 +79,7 @@ put:
           type: object
           properties:
             membership:
-              $ref: ../components/schemas/MembershipInput.yaml
+              $ref: ../components/schemas/MembershipUpdateInput.yaml
         examples:
           promote:
             summary: Promote to reviewer

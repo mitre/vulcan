@@ -31,6 +31,44 @@ We target OpenAPI 3.2.0 specifically. These 3.2 features reduce duplication:
 - `components/mediaTypes` — reusable media type objects. Could DRY up the toast JSON shape but Redocly tooling support is still emerging.
 - `additionalOperations` — for non-standard HTTP methods. We only use standard methods.
 
+## Error Responses — Shared Refs and the Disclosure Policy
+
+Auth and infrastructure errors (401/403/404/400) are RFC 9457 problem details
+(`application/problem+json`) rendered by one shared renderer. Document them by
+`$ref` to a shared response, not inline, so every path speaks the same
+vocabulary:
+
+| Shared response | Status | Body |
+|---|---|---|
+| `responses/Unauthorized.yaml` | 401 | `#not_authenticated` (and true-cause variants) + `how_to_authenticate` |
+| `responses/Forbidden.yaml` | 403 | `#permission_denied` + `admins` (who to ask) + legacy `toast` |
+| `responses/NotFound.yaml` | 404 | `#not_found` — also the concealment body (see below) |
+| `responses/ErrorResponse.yaml` | `4XX` | Catch-all only — the toast `application/json` OR problem `application/problem+json` shape for other 4xx codes |
+
+Use `ErrorResponse.yaml` **only** as the `4XX` catch-all. A specific `'404'`
+declaration references `NotFound.yaml`, never the catch-all — the catch-all is
+looser (`additionalProperties` open, permits a toast body) and misstates what a
+real not-found returns.
+
+### The 403-vs-404 disclosure policy
+
+Whether a denied caller may learn that a forbidden resource exists is decided by
+the resource owner's `visibility` setting, not a global rule (the GitHub
+private-vs-internal model):
+
+| Resource state | Denied response |
+|---|---|
+| Discoverable project (and its components) | **403** `#permission_denied` + `admins` — the request-access flow working as designed |
+| Non-discoverable (hidden) project (and its components), caller is not a member | **404** `#not_found` — existence concealed; body **byte-identical** to a true miss |
+| Hidden project, caller **is** a member denied a higher action | **403** `#permission_denied` — a member already knows it exists, so an honest 403 |
+| Instance-global resources (STIGs, SRGs) and released components | Never concealed — visible to all authenticated users |
+
+Because a concealed denial and a genuine missing record return the **same**
+`#not_found` body, a project- or component-scoped endpoint that can deny
+documents **both** `'403'` (`Forbidden.yaml`) and `'404'` (`NotFound.yaml`); the
+`'404'` covers the true-miss and the concealment case at once. Instance-global
+read endpoints (STIGs, SRGs) document a `'404'` only for a genuine missing id.
+
 ## Workflow
 
 ```bash

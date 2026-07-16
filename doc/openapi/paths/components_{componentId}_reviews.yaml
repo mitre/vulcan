@@ -27,14 +27,14 @@ post:
                 action: comment
                 comment: "The overall approach to container isolation is sound."
                 section: null
-          rule_comment:
-            summary: Comment on a specific rule's fix text
+          threaded_reply:
+            summary: Reply to an existing component-level comment
             value:
               review:
                 action: comment
-                comment: "The fix text should reference the vendor's hardening guide."
-                rule_id: 100
-                section: fixtext
+                comment: "Agreed — the isolation model covers this case."
+                section: null
+                responding_to_review_id: 44
   responses:
     '200':
       description: Comment created

@@ -44,30 +44,6 @@ get:
                       project_id: 9
                       project_name: Photon OS 5 Hardening
     '401':
-      description: Authentication required — usage exposes project data
-      content:
-        application/json:
-          schema:
-            type: object
-            required:
-              - error
-            additionalProperties: false
-            properties:
-              error:
-                type: string
-                description: Error message.
-                example: Unauthorized
+      $ref: ../components/responses/Unauthorized.yaml
     '404':
-      description: SRG not found
-      content:
-        application/json:
-          schema:
-            type: object
-            required:
-              - error
-            additionalProperties: false
-            properties:
-              error:
-                type: string
-                description: Error message.
-                example: Not found
+      $ref: ../components/responses/NotFound.yaml

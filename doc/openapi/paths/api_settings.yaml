@@ -27,10 +27,10 @@ get:
                   text_color: "#ffffff"
                 consent:
                   enabled: false
-                  version: "1"
+                  version: 1
                   title: Terms of Use
                   content: ""
-                  ttl: "0"
+                  ttl: 0
                 local_login:
                   enabled: true
                 user_registration:

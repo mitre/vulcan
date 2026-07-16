@@ -4,7 +4,15 @@ required:
   - name
   - prefix
   - title
+  - security_requirements_guide_id
 properties:
+  security_requirements_guide_id:
+    type: integer
+    description: >-
+      The catalog SRG the component is based on — the requirement source
+      for STIG-kind imports and the declared source document for
+      SRG-kind authoring.
+    example: 1
   name:
     type: string
     description: Human-readable component name.
@@ -24,13 +32,13 @@ properties:
       - srg
     example: stig
   version:
-    type: string
+    type: integer
     description: Version number of the component.
-    example: "1"
+    example: 1
   release:
-    type: string
+    type: integer
     description: Release number of the component.
-    example: "1"
+    example: 1
   title:
     type: string
     description: Full official title of the component.

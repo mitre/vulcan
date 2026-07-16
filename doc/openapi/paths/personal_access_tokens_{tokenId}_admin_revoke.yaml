@@ -38,8 +38,8 @@ delete:
           schema:
             $ref: ../components/schemas/ToastResponse.yaml
     '403':
-      description: Not an admin
+      $ref: ../components/responses/Forbidden.yaml
     '404':
-      description: Token not found
+      $ref: ../components/responses/NotFound.yaml
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

@@ -93,30 +93,41 @@ get:
                   per_page: 25
                   total: 1
     '400':
-      description: Requested page is out of range
+      description: Requested page is out of range (RFC 9457 problem details)
       content:
-        application/json:
+        application/problem+json:
           schema:
             type: object
-            required:
-              - error
             additionalProperties: false
+            required:
+              - type
+              - title
+              - status
+              - detail
             properties:
-              error:
+              type:
+                type: string
+                description: Stable machine identifier for the error class.
+                example: /api/docs/errors#page_out_of_range
+              title:
+                type: string
+                description: Short human summary of the error class.
+                example: Page out of range
+              status:
+                type: integer
+                description: HTTP status code, repeated in the body.
+                example: 400
+              detail:
                 type: string
                 description: Error message naming the valid page range.
                 example: Page 9999 is out of range (1..2)
+          examples:
+            page_out_of_range:
+              summary: Page beyond the last available page
+              value:
+                type: /api/docs/errors#page_out_of_range
+                title: Page out of range
+                status: 400
+                detail: Page 9999 is out of range (1..2)
     '401':
-      description: Authentication required
-      content:
-        application/json:
-          schema:
-            type: object
-            required:
-              - error
-            additionalProperties: false
-            properties:
-              error:
-                type: string
-                description: Error message.
-                example: Unauthorized
+      $ref: ../components/responses/Unauthorized.yaml

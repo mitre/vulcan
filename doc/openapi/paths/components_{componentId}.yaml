@@ -26,8 +26,8 @@ get:
                 title: "Photon OS 3 STIG Readiness Guide"
                 rules_count: 203
                 comment_phase: open
-                version: "1"
-                release: "1"
+                version: 1
+                release: 1
                 released: false
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
@@ -48,14 +48,14 @@ put:
           type: object
           properties:
             component:
-              $ref: ../components/schemas/ComponentInput.yaml
+              $ref: ../components/schemas/ComponentUpdateInput.yaml
         examples:
           update:
             summary: Update version and release
             value:
               component:
-                version: "2"
-                release: "1"
+                version: 2
+                release: 1
   responses:
     '200':
       description: Component updated
@@ -90,7 +90,7 @@ patch:
           type: object
           properties:
             component:
-              $ref: ../components/schemas/ComponentInput.yaml
+              $ref: ../components/schemas/ComponentUpdateInput.yaml
   responses:
     '200':
       description: Component updated

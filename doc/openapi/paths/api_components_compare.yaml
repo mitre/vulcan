@@ -70,18 +70,17 @@ get:
                     example: 264
           examples:
             diff:
-              summary: Two rules compared
+              summary: Two rules compared by generated InSpec control
               value:
                 data:
-                  CNTR-00-000050:
-                    fixtext:
-                      base: "Original fix text..."
-                      diff: "Updated fix text..."
-                      changed: true
-                    check_content:
-                      base: "Same check"
-                      diff: "Same check"
-                      changed: false
+                  "000050":
+                    base: "control 'CNTR-00-000050' do\n  title 'Container images must be signed'\nend"
+                    diff: "control 'CNTR-00-000050' do\n  title 'Container images must be signed and verified'\nend"
+                    changed: true
+                  "000051":
+                    base: "control 'CNTR-00-000051' do\n  title 'Approved registries only'\nend"
+                    diff: "control 'CNTR-00-000051' do\n  title 'Approved registries only'\nend"
+                    changed: false
                 meta:
                   base_id: 29
                   diff_id: 30

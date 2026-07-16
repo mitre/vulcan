@@ -23,14 +23,14 @@ get:
                 - id: 29
                   name: Container SRG
                   prefix: CNTR
-                  version: "1"
-                  release: "1"
+                  version: 1
+                  release: 1
                   released: true
                 - id: 30
                   name: Photon OS 3
                   prefix: PHOS-03
-                  version: "1"
-                  release: "1"
+                  version: 1
+                  release: 1
                   released: true
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

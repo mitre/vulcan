@@ -27,12 +27,17 @@ get:
               summary: Project with two components
               value:
                 aggregate:
-                  rules_by_status:
-                    not_yet_determined: 53
-                    applicable_configurable: 121
-                    applicable_inherently_meets: 15
-                    applicable_does_not_meet: 8
-                    not_applicable: 11
+                  rules_by_status_by_type:
+                    stig:
+                      not_yet_determined: 51
+                      applicable_configurable: 121
+                      applicable_inherently_meets: 15
+                      applicable_does_not_meet: 8
+                      not_applicable: 10
+                    srg:
+                      not_yet_determined: 2
+                      applicable: 1
+                      not_applicable: 0
                   rules_by_severity:
                     high: 21
                     medium: 176
@@ -44,12 +49,14 @@ get:
                   - id: 38
                     name: RHEL 9 Hardened Baseline
                     prefix: RHEL-09
+                    document_type: stig
                     rule_count: 203
                     completion_pct: 75.4
                     lock_pct: 12.3
                   - id: 41
                     name: Photon OS 5 Baseline
                     prefix: PHTN-50
+                    document_type: srg
                     rule_count: 5
                     completion_pct: 40.0
                     lock_pct: 0.0
@@ -58,4 +65,4 @@ get:
     '403':
       $ref: ../components/responses/Forbidden.yaml
     '404':
-      $ref: ../components/responses/ErrorResponse.yaml
+      $ref: ../components/responses/NotFound.yaml

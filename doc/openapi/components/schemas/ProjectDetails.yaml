@@ -1,16 +1,9 @@
 description: >-
   Project-wide requirement statistics with per-document-type sections.
   The stig and srg sections never collapse into each other; top-level
-  numbers (total, lck, nur, ur) are type-agnostic. The flat
-  ac/aim/adnm/na/nyd keys mirror the stig section and are deprecated in
-  favor of the typed sections.
+  numbers (total, lck, nur, ur) are type-agnostic.
 type: object
 required:
-  - ac
-  - aim
-  - adnm
-  - na
-  - nyd
   - stig
   - srg
   - nur
@@ -19,26 +12,6 @@ required:
   - total
 additionalProperties: false
 properties:
-  ac:
-    type: integer
-    description: Deprecated mirror of stig.ac.
-    example: 120
-  aim:
-    type: integer
-    description: Deprecated mirror of stig.aim.
-    example: 15
-  adnm:
-    type: integer
-    description: Deprecated mirror of stig.adnm.
-    example: 8
-  na:
-    type: integer
-    description: Deprecated mirror of stig.na.
-    example: 10
-  nyd:
-    type: integer
-    description: Deprecated mirror of stig.nyd.
-    example: 50
   stig:
     type: object
     description: STIG-kind requirement counts in the five DISA buckets.

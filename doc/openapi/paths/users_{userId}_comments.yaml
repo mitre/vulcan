@@ -85,6 +85,6 @@ get:
                   per_page: 25
                   total: 12
     '404':
-      description: User not found
+      $ref: ../components/responses/NotFound.yaml
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

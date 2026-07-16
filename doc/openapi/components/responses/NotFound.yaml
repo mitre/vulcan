@@ -1,0 +1,40 @@
+description: >-
+  Resource not found (RFC 9457 problem details). The body is identical for
+  a truly nonexistent resource and one the caller may not learn exists.
+content:
+  application/problem+json:
+    schema:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+          description: >-
+            Stable machine identifier for the error class — a URI reference
+            anchoring into the live API docs.
+          example: /api/docs/errors#not_found
+        title:
+          type: string
+          description: Short human summary of the error class.
+          example: Not found
+        status:
+          type: integer
+          description: HTTP status code, repeated in the body.
+          example: 404
+        detail:
+          type: string
+          description: Occurrence-specific human explanation.
+          example: The requested resource could not be found.
+    examples:
+      not_found:
+        summary: No such resource is reachable by this request
+        value:
+          type: /api/docs/errors#not_found
+          title: Not found
+          status: 404
+          detail: The requested resource could not be found.

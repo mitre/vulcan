@@ -48,9 +48,48 @@ get:
                     allowed_ips: null
                     created_at: '2026-05-30 10:00:00 UTC'
     '403':
-      description: Token auth rejected (session required) or non-admin tried user_id param
+      description: Token-authenticated request rejected — token management requires a session (RFC 9457 problem details)
+      content:
+        application/problem+json:
+          schema:
+            type: object
+            additionalProperties: false
+            required:
+              - type
+              - title
+              - status
+              - detail
+            properties:
+              type:
+                type: string
+                description: Stable machine identifier for the error class.
+                example: /api/docs/errors#session_authentication_required
+              title:
+                type: string
+                description: Short human summary of the error class.
+                example: Session authentication required
+              status:
+                type: integer
+                description: HTTP status code, repeated in the body.
+                example: 403
+              detail:
+                type: string
+                description: Occurrence-specific human explanation.
+                example: >-
+                  Token management requires a signed-in browser session; API
+                  tokens cannot create or revoke tokens.
+          examples:
+            session_required:
+              summary: API token used against token management
+              value:
+                type: /api/docs/errors#session_authentication_required
+                title: Session authentication required
+                status: 403
+                detail: >-
+                  Token management requires a signed-in browser session; API
+                  tokens cannot create or revoke tokens.
     '404':
-      description: API tokens feature is disabled
+      $ref: ../components/responses/NotFound.yaml
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
 post:
@@ -119,7 +158,49 @@ post:
             tokenId: '$response.body#/personal_access_token/id'
           description: Revoke the newly created token.
     '401':
-      description: Incorrect password
+      description: >-
+        Current password confirmation failed (RFC 9457 problem details).
+        Token creation re-verifies the signed-in user's password before
+        minting a credential.
+      content:
+        application/problem+json:
+          schema:
+            type: object
+            additionalProperties: false
+            required:
+              - type
+              - title
+              - status
+              - detail
+            properties:
+              type:
+                type: string
+                description: Stable machine identifier for the error class.
+                example: /api/docs/errors#incorrect_password
+              title:
+                type: string
+                description: Short human summary of the error class.
+                example: Incorrect password
+              status:
+                type: integer
+                description: HTTP status code, repeated in the body.
+                example: 401
+              detail:
+                type: string
+                description: Occurrence-specific human explanation.
+                example: >-
+                  Creating or managing API tokens re-verifies your identity,
+                  and the current password provided does not match.
+          examples:
+            incorrect_password:
+              summary: Password confirmation failed
+              value:
+                type: /api/docs/errors#incorrect_password
+                title: Incorrect password
+                status: 401
+                detail: >-
+                  Creating or managing API tokens re-verifies your identity,
+                  and the current password provided does not match.
     '422':
       description: Validation failed (invalid scopes, max tokens reached, etc.)
       content:

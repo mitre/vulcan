@@ -31,8 +31,10 @@ get:
                   - id: 100
                     rule_id: "CNTR-00-000050"
                     title: "Container images must be signed"
+                    locked: false
                   - id: 101
                     rule_id: "CNTR-00-000051"
                     title: "Container images must come from approved registries"
+                    locked: true
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

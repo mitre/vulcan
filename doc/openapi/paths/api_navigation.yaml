@@ -48,14 +48,6 @@ get:
                 access_requests: []
                 locked_users: []
     '401':
-      description: Not authenticated
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: Unauthorized
+      $ref: ../components/responses/Unauthorized.yaml
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

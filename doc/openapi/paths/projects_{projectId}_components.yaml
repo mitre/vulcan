@@ -26,9 +26,10 @@ post:
               component:
                 name: Container SRG
                 prefix: CNTR
+                title: Container Platform Security Technical Implementation Guide
                 version: 1
                 release: 1
-                based_on_id: 1
+                security_requirements_guide_id: 1
       multipart/form-data:
         schema:
           type: object

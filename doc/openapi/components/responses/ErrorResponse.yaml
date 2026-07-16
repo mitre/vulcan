@@ -1,6 +1,9 @@
 description: >-
-  Error response (401 unauthorized, 403 forbidden, 404 not found, 422
-  validation, or 500 server error).
+  Catch-all 4XX error response. Domain and validation feedback arrives as
+  the canonical toast object (application/json); auth and infrastructure
+  errors (401/403/404/400) arrive as RFC 9457 problem details
+  (application/problem+json) with a stable `type` URI, `title`, `status`,
+  and `detail`.
 content:
   application/json:
     schema:
@@ -8,8 +11,8 @@ content:
       properties:
         error:
           type: string
-          description: Human-readable error message.
-          example: Not authorized.
+          description: Human-readable error message (domain errors).
+          example: No SRG IDs found in spreadsheet
         toast:
           type: object
           description: Optional toast notification with structured error details.
@@ -39,7 +42,49 @@ content:
             message:
               - "Name can't be blank."
             variant: danger
+  application/problem+json:
+    schema:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+          description: >-
+            Stable machine identifier for the error class — a URI reference
+            anchoring into the live API docs.
+          example: /api/docs/errors#not_found
+        title:
+          type: string
+          description: Short human summary of the error class.
+          example: Not found
+        status:
+          type: integer
+          description: HTTP status code, repeated in the body.
+          example: 404
+        detail:
+          type: string
+          description: Occurrence-specific human explanation.
+          example: The requested resource could not be found.
+        how_to_authenticate:
+          type: object
+          description: Extension member on 401s — both authentication methods.
+        admins:
+          type: array
+          description: Extension member on permission denials — who to ask.
+          items:
+            type: object
+        toast:
+          type: object
+          description: Legacy toast extension on permission denials.
+    examples:
       not_found:
         summary: Resource not found
         value:
-          error: Not found.
+          type: /api/docs/errors#not_found
+          title: Not found
+          status: 404
+          detail: The requested resource could not be found.

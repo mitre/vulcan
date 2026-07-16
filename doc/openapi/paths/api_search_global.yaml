@@ -43,6 +43,8 @@ get:
                   - id: 29
                     name: Container SRG
                 rules: []
+                stig_rules: []
+                srg_rules: []
                 srgs:
                   - id: 1
                     title: Container Platform Security Requirements Guide

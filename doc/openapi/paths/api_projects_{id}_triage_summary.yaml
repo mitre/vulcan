@@ -44,4 +44,4 @@ get:
     '403':
       $ref: ../components/responses/Forbidden.yaml
     '404':
-      $ref: ../components/responses/ErrorResponse.yaml
+      $ref: ../components/responses/NotFound.yaml

@@ -1,12 +1,9 @@
 description: >-
   Project-wide requirement statistics aggregated across every component.
   Per-document-type status sections never collapse into each other;
-  rule_count, completion and lock percentages are type-agnostic. The flat
-  rules_by_status mirrors the stig section and is deprecated in favor of
-  rules_by_status_by_type.
+  rule_count, completion and lock percentages are type-agnostic.
 type: object
 required:
-  - rules_by_status
   - rules_by_status_by_type
   - rules_by_severity
   - rule_count
@@ -14,8 +11,6 @@ required:
   - lock_pct
 additionalProperties: false
 properties:
-  rules_by_status:
-    $ref: ./RulesByStatus.yaml
   rules_by_status_by_type:
     type: object
     description: Per-document-type status sections.

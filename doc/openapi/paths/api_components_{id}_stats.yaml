@@ -27,6 +27,7 @@ get:
             stats:
               summary: Component stats
               value:
+                document_type: stig
                 rules_by_status:
                   not_yet_determined: 50
                   applicable_configurable: 120
@@ -45,4 +46,4 @@ get:
     '403':
       $ref: ../components/responses/Forbidden.yaml
     '404':
-      $ref: ../components/responses/ErrorResponse.yaml
+      $ref: ../components/responses/NotFound.yaml

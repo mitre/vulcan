@@ -31,10 +31,16 @@ get:
                   rule_id: "CNTR-00-000050"
                   title: "Container images must be signed"
                   status: "Applicable - Configurable"
+                  locked: false
+                  satisfies: []
+                  satisfied_by: []
                 - id: 101
                   rule_id: "CNTR-00-000051"
                   title: "Container images must come from approved registries"
                   status: "Applicable - Configurable"
+                  locked: false
+                  satisfies: []
+                  satisfied_by: []
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
 post:
@@ -43,9 +49,12 @@ post:
     - Rules
   summary: Create a new rule in a component
   description: >-
-    Creates a new rule with the specified content fields. The rule_id must
-    follow the component's prefix pattern. Requires author role or higher
-    on the parent project.
+    Creates a rule row — either a blank rule (content is then edited via
+    the rule update endpoint) or a duplicate of an existing rule in the
+    component. Rule IDs are assigned from the component's prefix pattern.
+    Requires author role or higher on the parent project. Rejected with
+    422 on SRG-kind components (authored requirements come from source
+    SRGs, not manual creation).
   requestBody:
     required: true
     content:
@@ -54,15 +63,31 @@ post:
           type: object
           properties:
             rule:
-              $ref: ../components/schemas/RuleInput.yaml
+              type: object
+              description: >-
+                Creation mode only — content fields are not accepted here;
+                edit the created rule to set content.
+              properties:
+                duplicate:
+                  type: boolean
+                  description: Duplicate an existing rule instead of creating a blank one.
+                  example: false
+                id:
+                  type: integer
+                  description: Source rule id to duplicate (required when duplicate is true).
+                  example: 100
         examples:
           create:
-            summary: Create a rule
+            summary: Create a blank rule
             value:
               rule:
-                title: "New container security requirement"
-                status: "Applicable - Configurable"
-                severity: medium
+                duplicate: false
+          duplicate:
+            summary: Duplicate an existing rule
+            value:
+              rule:
+                duplicate: true
+                id: 100
   responses:
     '200':
       description: Rule created
@@ -84,6 +109,9 @@ post:
                   rule_id: "000204"
                   title: "New container security requirement"
                   status: "Not Yet Determined"
+                  locked: false
+                  satisfies: []
+                  satisfied_by: []
       links:
         GetCreatedRule:
           operationId: getRule

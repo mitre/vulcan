@@ -33,16 +33,4 @@ get:
                   medium: 300
                   low: 40
     '404':
-      description: STIG not found
-      content:
-        application/json:
-          schema:
-            type: object
-            required:
-              - error
-            additionalProperties: false
-            properties:
-              error:
-                type: string
-                description: Error message.
-                example: Not found
+      $ref: ../components/responses/NotFound.yaml
