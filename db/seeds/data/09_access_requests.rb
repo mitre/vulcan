@@ -10,18 +10,16 @@ if vsphere && vsphere.visibility != 'discoverable'
   puts '  Set vSphere 7.0 to discoverable'
 end
 
-# Create a non-member user who wants to join vSphere 7.0
+# The requester persona is created in 00_users so it exists before
+# 05_memberships runs (all users must exist before the membership pass —
+# users created later pick up unintended memberships on the next reseed).
 if vsphere
-  requester = User.find_or_initialize_by(email: 'requester@example.com')
-  if requester.new_record?
-    requester.name = 'Access Requester'
-    requester.password = requester.password_confirmation = SeedHelpers::DEMO_PASSWORD
-    requester.skip_confirmation!
-    requester.save!
-    puts "  Created requester user: #{requester.email}"
-  end
+  requester = User.find_by!(email: 'requester@example.com')
 
-  # Remove any existing membership so the access request makes sense
+  # Remove any vSphere membership so the pending request makes sense. On a
+  # fresh seed this undoes the all-users membership pass (the request does
+  # not exist yet when 05 runs); once the request exists, 05 skips the pair
+  # and this finds nothing. Also repairs dev DBs seeded before the invariant.
   Membership.where(user: requester, membership: vsphere).destroy_all
 
   ProjectAccessRequest.find_or_create_by!(

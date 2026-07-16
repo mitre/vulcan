@@ -158,6 +158,21 @@ All demo users share the password from `VULCAN_SEED_ADMIN_PASSWORD` (default: `1
 | `viewer@example.com` | Viewer | Can comment, cannot triage |
 | `author@example.com` | Author | Can comment + triage |
 | `reviewer@example.com` | Reviewer | Can comment + triage + review |
+| `requester@example.com` | Non-member (vSphere 7.0) | Pending access request for the request-access flow |
+
+### API Test Users
+
+Seeded by `00_users.rb` from `SeedHelpers::API_TEST_USERS`. Dedicated owners
+for personal access tokens used by scripts, curl checks, and automation.
+Vulcan enforces one active session per account, and token-auth requests count
+as sign-ins — a token request as an account someone is browsing with evicts
+their session. Mint automation PATs on these users instead, and use the two
+tiers to exercise admin vs member authorization separation.
+
+| Email | Tier | Purpose |
+|-------|------|---------|
+| `api-admin@example.com` | Site admin | Admin-level API access for scripted checks |
+| `api-viewer@example.com` | Member (viewer on demo projects) | Non-admin API access for authorization testing |
 
 ### Community SME Personas
 

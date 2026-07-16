@@ -26,16 +26,21 @@ RSpec.describe 'seed pipeline', :seed_pipeline, type: :model do
   end
 
   describe 'record counts' do
-    it 'has at least 14 users (admin + 3 role-tier + 10 filler)' do
-      expect(User.count).to be >= 14
+    # Fresh-seed population is deterministic: 1 admin + 3 role-tier +
+    # 8 community personas + requester + 2 API test users. The filler-user
+    # block never fires on a fresh seed (personas alone push the non-demo
+    # count past its threshold).
+    it 'has exactly 15 users' do
+      expect(User.count).to eq(15)
     end
 
-    it 'has exactly 5 projects' do
-      expect(Project.count).to eq(5)
+    it 'has exactly 6 projects' do
+      expect(Project.count).to eq(6)
     end
 
-    it 'has 4 SRGs' do
-      expect(SecurityRequirementsGuide.count).to eq(4)
+    # 4 XCCDF files in db/seeds/srgs + the Container SRG Test dataset SRG
+    it 'has 5 SRGs' do
+      expect(SecurityRequirementsGuide.count).to eq(5)
     end
 
     it 'has 4 STIGs' do
@@ -50,11 +55,48 @@ RSpec.describe 'seed pipeline', :seed_pipeline, type: :model do
   describe 'RBAC coverage' do
     it 'every demo project has viewer, author, reviewer, and admin memberships' do
       demo_project_names = ['Photon 3', 'Photon 4', 'vSphere 7.0', 'Container Platform']
-      Project.where(name: demo_project_names).find_each do |p|
+      demo_projects = Project.where(name: demo_project_names)
+      expect(demo_projects.count).to eq(4)
+      demo_projects.find_each do |p|
         roles = p.memberships.pluck(:role).uniq.sort
         expect(roles).to include('admin', 'author', 'reviewer', 'viewer'),
                          "Project '#{p.name}' missing role tiers — has: #{roles.inspect}"
       end
+    end
+  end
+
+  describe 'API test users' do
+    it 'creates api-admin@example.com as a site admin and api-viewer@example.com as a member-tier user' do
+      api_admin = User.find_by(email: 'api-admin@example.com')
+      api_viewer = User.find_by(email: 'api-viewer@example.com')
+      expect(api_admin&.admin).to be(true), 'api-admin@example.com missing or not a site admin'
+      expect(api_viewer&.admin).to be(false), 'api-viewer@example.com missing or unexpectedly a site admin'
+      expect(api_admin.confirmed?).to be(true)
+      expect(api_viewer.confirmed?).to be(true)
+    end
+
+    it 'gives api-viewer viewer membership on all four demo projects' do
+      api_viewer = User.find_by(email: 'api-viewer@example.com')
+      demo_projects = Project.where(name: ['Photon 3', 'Photon 4', 'vSphere 7.0', 'Container Platform'])
+      expect(demo_projects.count).to eq(4)
+      demo_projects.find_each do |p|
+        role = p.memberships.find_by(user: api_viewer)&.role
+        expect(role).to eq('viewer'), "api-viewer membership on '#{p.name}' expected viewer, got #{role.inspect}"
+      end
+    end
+  end
+
+  describe 'access request persona' do
+    # requester@example.com exists to exercise the request-access flow:
+    # a pending request means deliberately NOT a member of that project.
+    # Guards the 05_memberships/09_access_requests ordering — the all-users
+    # membership loop must never re-grant what a pending request is asking for.
+    it 'requester has a pending vSphere request and no vSphere membership' do
+      requester = User.find_by(email: 'requester@example.com')
+      vsphere = Project.find_by(name: 'vSphere 7.0')
+      expect(requester).to be_present
+      expect(ProjectAccessRequest.exists?(user: requester, project: vsphere)).to be(true)
+      expect(Membership.exists?(user: requester, membership: vsphere)).to be(false)
     end
   end
 

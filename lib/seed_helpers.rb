@@ -3,12 +3,22 @@
 # rubocop:disable Metrics/ModuleLength
 module SeedHelpers # rubocop:disable Style/Documentation
   DEMO_PASSWORD = ENV.fetch('VULCAN_SEED_ADMIN_PASSWORD', '12qwaszx!@QWASZX')
-  DEMO_EMAILS = %w[admin@example.com viewer@example.com author@example.com reviewer@example.com].freeze
+  DEMO_EMAILS = %w[admin@example.com viewer@example.com author@example.com reviewer@example.com
+                   api-admin@example.com api-viewer@example.com].freeze
 
   DEMO_ROLE_USERS = {
     'viewer@example.com' => { name: 'Demo Viewer', role: 'viewer' },
     'author@example.com' => { name: 'Demo Author', role: 'author' },
     'reviewer@example.com' => { name: 'Demo Reviewer', role: 'reviewer' }
+  }.freeze
+
+  # Dedicated API test users: PAT owners for scripted API access. Kept
+  # separate from the human demo logins so token-auth sign-ins never evict
+  # a person's browser session (one active session per account), with one
+  # user per authorization tier for separation-of-concerns testing.
+  API_TEST_USERS = {
+    'api-admin@example.com' => { name: 'API Admin', admin: true },
+    'api-viewer@example.com' => { name: 'API Viewer', admin: false }
   }.freeze
 
   COMMUNITY_PERSONAS = {
@@ -48,6 +58,21 @@ module SeedHelpers # rubocop:disable Style/Documentation
     yield
   ensure
     ActionMailer::Base.perform_deliveries = prev_deliveries
+  end
+
+  # Idempotently create a seed user by email. Confirmation is skipped so the
+  # user is usable regardless of the email-confirmation setting. Callers can
+  # branch on user.previously_new_record? for progress output.
+  def self.find_or_create_demo_user(email, name:, admin: false)
+    user = User.find_or_initialize_by(email: email)
+    return user unless user.new_record?
+
+    user.name = name
+    user.admin = admin
+    user.password = DEMO_PASSWORD
+    user.skip_confirmation!
+    user.save!
+    user
   end
 
   # Progress output for the seed pipeline. Seeds run inside specs (via
