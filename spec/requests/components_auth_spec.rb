@@ -58,10 +58,10 @@ RSpec.describe 'Component authorization' do
       expect(response).to have_http_status(:success)
     end
 
-    it 'rejects non-member' do
+    it 'conceals from non-member (hidden project → 404)' do
       sign_in outsider
       get "/components/#{component.id}/triage"
-      expect(response).to redirect_to(root_path)
+      expect(response).to have_http_status(:not_found)
     end
 
     it 'redirects unauthenticated to sign-in' do
@@ -77,10 +77,10 @@ RSpec.describe 'Component authorization' do
       expect(response).to have_http_status(:success)
     end
 
-    it 'rejects non-member (JSON → 403)' do
+    it 'conceals from non-member (hidden project → JSON 404)' do
       sign_in outsider
       get "/components/#{component.id}/comments", headers: json_headers
-      expect(response).to have_http_status(:forbidden)
+      expect(response).to have_http_status(:not_found)
     end
 
     it 'redirects unauthenticated to sign-in' do
@@ -130,12 +130,23 @@ RSpec.describe 'Component authorization' do
       expect(response).to have_http_status(:success)
     end
 
-    it 'rejects non-member (JSON → 403)' do
+    it 'conceals from non-member (hidden project → JSON 404)' do
       sign_in outsider
       get '/api/components/compare',
           params: { base_id: component.id, diff_id: other_component.id },
           headers: json_headers
-      expect(response).to have_http_status(:forbidden)
+      expect(response).to have_http_status(:not_found)
+    end
+
+    # A bogus peer id must answer 404 not_found (not a silent skip) so it is
+    # indistinguishable from a concealed component — no existence oracle.
+    it 'answers a missing peer component with 404 not_found' do
+      sign_in viewer_user
+      get '/api/components/compare',
+          params: { base_id: 999_999_999, diff_id: other_component.id },
+          headers: json_headers
+      expect(response).to have_http_status(:not_found)
+      expect(response.parsed_body['type']).to eq('/api/docs/errors#not_found')
     end
 
     it 'redirects unauthenticated' do
@@ -156,12 +167,12 @@ RSpec.describe 'Component authorization' do
       expect(response).to have_http_status(:success)
     end
 
-    it 'rejects non-member (JSON → 403)' do
+    it 'conceals from non-member (hidden project → JSON 404)' do
       sign_in outsider
       get '/components/history',
           params: { project_id: project.id, name: component.name },
           headers: json_headers
-      expect(response).to have_http_status(:forbidden)
+      expect(response).to have_http_status(:not_found)
     end
 
     it 'redirects unauthenticated' do
@@ -180,10 +191,10 @@ RSpec.describe 'Component authorization' do
       expect(response).to have_http_status(:ok)
     end
 
-    it 'rejects non-member (JSON → 403)' do
+    it 'conceals from non-member (hidden project → JSON 404)' do
       sign_in outsider
       post "/components/#{component.id}/find", params: { find: 'test' }, as: :json
-      expect(response).to have_http_status(:forbidden)
+      expect(response).to have_http_status(:not_found)
     end
 
     it 'redirects unauthenticated' do

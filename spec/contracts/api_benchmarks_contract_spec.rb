@@ -79,7 +79,7 @@ RSpec.describe 'Benchmark latest endpoint contracts', type: :request do
       get "/api/srgs/#{stats_srg.id}/stats", headers: json_headers
       body = validate_and_parse!(expected_status: :unauthorized)
 
-      expect(body['error']).to eq('Unauthorized')
+      expect(body['type']).to eq('/api/docs/errors#not_authenticated')
     end
   end
 
@@ -100,7 +100,7 @@ RSpec.describe 'Benchmark latest endpoint contracts', type: :request do
       get '/api/stigs/0/stats', headers: json_headers
       body = validate_and_parse!(expected_status: :not_found)
 
-      expect(body['error']).to eq('Not found')
+      expect(body['type']).to eq('/api/docs/errors#not_found')
     end
   end
 
@@ -129,7 +129,7 @@ RSpec.describe 'Benchmark latest endpoint contracts', type: :request do
       get '/api/components/latest', headers: json_headers
       body = validate_and_parse!(expected_status: :unauthorized)
 
-      expect(body['error']).to eq('Unauthorized')
+      expect(body['type']).to eq('/api/docs/errors#not_authenticated')
     end
   end
 end

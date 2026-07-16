@@ -21,32 +21,38 @@ module Api
       if api_token_request? || user_signed_in?
         super
       else
-        render json: { error: 'Unauthorized' }, status: :unauthorized
+        render_not_authenticated
       end
     end
 
-    # Standardized JSON error responses with correct HTTP semantics
+    # Standardized problem-details error responses with correct HTTP
+    # semantics. Bodies come from ErrorRendering — API endpoints answer JSON
+    # regardless of the Accept header, so each rescue calls the renderer
+    # directly instead of going through a format negotiation.
 
     # 400 Bad Request - Client sent invalid parameters
     rescue_from ActionController::ParameterMissing do |exception|
-      render json: { error: exception.message }, status: :bad_request
+      render_parameter_missing(exception)
     end
 
     # 404 Not Found - Resource doesn't exist
     rescue_from ActiveRecord::RecordNotFound do |_exception|
-      render json: { error: 'Not found' }, status: :not_found
+      render_not_found
     end
 
     # 400 Bad Request - Pagination page out of range
     rescue_from Pagy::RangeError do |exception|
-      render json: { error: "Page #{exception.pagy.page} is out of range (1..#{exception.pagy.last})" },
-             status: :bad_request
+      render_page_out_of_range(exception)
     end
 
-    # 403 Forbidden - Authenticated but not authorized
+    # 403 Forbidden - Authenticated but not authorized. Same rich body as
+    # the HTML controllers' JSON branch (who-to-ask contacts included) —
+    # this rescue exists only to skip format negotiation, never to serve a
+    # thinner payload. Honors the disclosure policy: a denial on a
+    # non-discoverable project conceals as 404 identical to a true miss.
     # Note: 401 Unauthorized is for unauthenticated requests (handled above)
     rescue_from NotAuthorizedError do |exception|
-      render json: { error: exception.message }, status: :forbidden
+      render_authorization_denied_json(exception)
     end
   end
 end

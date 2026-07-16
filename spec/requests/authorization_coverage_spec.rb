@@ -35,6 +35,8 @@ AUTHORIZE_METHODS = %w[
   authorize_section_lock
   authorize_review_owner
   authorize_review_visibility
+  authorize_bulk_selection
+  authorize_merge_selection
   check_admin_for_advanced_fields
   set_and_authorize_access_request
 ].freeze
@@ -96,7 +98,8 @@ AUTHENTICATE_ONLY_ACTIONS = {
   'api/components#latest' => 'Data-scoped: released components only — instance-wide reference ' \
                              'data for any authenticated user (matches components#index)',
   'api/navigation#show' => 'App shell data scoped to current_user session',
-  'api/projects#index' => 'Paginated project listing — data-scoped via Project.all (future: user-visible only)'
+  'api/projects#index' => 'Data-scoped: current_user.available_projects (member projects + discoverable); ' \
+                          'non-discoverable projects are not listed to non-members'
 }.freeze
 
 RSpec.describe 'Authorization coverage' do

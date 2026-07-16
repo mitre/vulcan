@@ -8,7 +8,9 @@ RSpec.describe 'Reviews' do
   describe 'PATCH /reviews/:id/triage' do
     let_it_be(:triager) { create(:user) }
     let_it_be(:commenter) { create(:user) }
-    let_it_be(:other_project) { create(:project) }
+    # Discoverable so the cross-project (IDOR) denial answers 403
+    # permission_denied — the body this spec pins — not a concealing 404.
+    let_it_be(:other_project) { create(:project, :discoverable) }
     let_it_be(:other_component) { create(:component, project: other_project, based_on: srg) }
 
     # before_all (test_prof) runs once before any example in this describe;
@@ -258,7 +260,7 @@ RSpec.describe 'Reviews' do
               params: { triage_status: 'concur' }, as: :json
 
         expect(response).to have_http_status(:forbidden)
-        expect(response.parsed_body['error']).to eq('permission_denied')
+        expect(response.parsed_body['type']).to eq('/api/docs/errors#permission_denied')
         expect(other_comment.reload.triage_status).to eq('pending')
       end
     end

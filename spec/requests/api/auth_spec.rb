@@ -42,11 +42,18 @@ RSpec.describe 'Api::Auth' do
     end
 
     context 'when not authenticated' do
-      it 'returns 401 JSON' do
+      # The 401 is an RFC 9457 problem body saying WHY and HOW to
+      # authenticate — canonical field-by-field pins live in
+      # error_rendering_spec; this pins the endpoint serves that contract.
+      it 'returns the not_authenticated problem body' do
         get '/api/auth/me', as: :json
 
         expect(response).to have_http_status(:unauthorized)
-        expect(response.parsed_body['error']).to eq('Unauthorized')
+        expect(response.media_type).to eq('application/problem+json')
+        body = response.parsed_body
+        expect(body['type']).to eq('/api/docs/errors#not_authenticated')
+        expect(body['title']).to eq('Not authenticated')
+        expect(body['how_to_authenticate']).to include('session', 'token')
       end
     end
   end
@@ -66,7 +73,7 @@ RSpec.describe 'Api::Auth' do
       post '/api/auth/login', params: { email: user.email, password: 'wrong' }, as: :json
 
       expect(response).to have_http_status(:unauthorized)
-      expect(response.parsed_body['error']).to be_present
+      expect(response.parsed_body['type']).to eq('/api/docs/errors#invalid_credentials')
     end
 
     it 'returns 401 for non-existent email' do

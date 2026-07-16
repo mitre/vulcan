@@ -29,11 +29,11 @@ RSpec.describe 'Component search and rule picker' do
       expect(response).to have_http_status(:unauthorized)
     end
 
-    it 'rejects non-member on unreleased component' do
+    it 'conceals an unreleased component from a non-member (hidden project → 404)' do
       outsider = create(:user)
       sign_in outsider
       get "/components/#{component.id}/rules_picker.json"
-      expect(response).to have_http_status(:forbidden)
+      expect(response).to have_http_status(:not_found)
     end
   end
 

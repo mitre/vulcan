@@ -30,10 +30,10 @@ RSpec.describe 'TriageResponseTemplates' do
       expect(body['triage_response_templates'].first['name']).to eq('Generalize text')
     end
 
-    it 'forbids non-members' do
+    it 'conceals the project from non-members (hidden project → 404)' do
       sign_in outsider
       get "/projects/#{project.id}/triage_response_templates", as: :json
-      expect(response).to have_http_status(:forbidden)
+      expect(response).to have_http_status(:not_found)
     end
   end
 

@@ -44,10 +44,10 @@ RSpec.describe 'Reviews' do
         expect(rows.pluck('comment')).to eq(['first reply', 'second reply'])
       end
 
-      it 'rejects a non-member' do
+      it 'conceals the thread from a non-member (hidden project → 404)' do
         sign_in rr_outsider
         get "/reviews/#{rr_unreleased_parent.id}/responses", as: :json
-        expect(response).to have_http_status(:forbidden)
+        expect(response).to have_http_status(:not_found)
       end
 
       it 'rejects an unauthenticated request' do

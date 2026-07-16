@@ -34,6 +34,16 @@ RSpec.describe 'Dashboard stats endpoint contracts', type: :request do
       expect(body['rule_count']).to eq(1)
       expect(body['completion_pct']).to eq(100.0)
     end
+
+    it 'conceals a component in a hidden project from a non-member (documented 404 not_found shape)' do
+      sign_in create(:user)
+
+      get "/api/components/#{component.id}/stats", headers: json_headers
+      body = validate_and_parse!(expected_status: :not_found)
+
+      expect(body['type']).to eq('/api/docs/errors#not_found')
+      expect(body['detail']).to eq('The requested resource could not be found.')
+    end
   end
 
   describe 'GET /api/components/:id/workflow_state' do
@@ -45,6 +55,16 @@ RSpec.describe 'Dashboard stats endpoint contracts', type: :request do
       expect(body.dig('locks', 'all_locked')).to be(true)
       expect(body.dig('comment', 'pending_comments')).to eq(1)
     end
+
+    it 'conceals a component in a hidden project from a non-member (documented 404 not_found shape)' do
+      sign_in create(:user)
+
+      get "/api/components/#{component.id}/workflow_state", headers: json_headers
+      body = validate_and_parse!(expected_status: :not_found)
+
+      expect(body['type']).to eq('/api/docs/errors#not_found')
+      expect(body['detail']).to eq('The requested resource could not be found.')
+    end
   end
 
   describe 'GET /api/components/:id/triage_summary' do
@@ -55,6 +75,16 @@ RSpec.describe 'Dashboard stats endpoint contracts', type: :request do
       assert_fields_present body, :by_triage_status, :total, :adjudicated, :adjudication_pct
       expect(body['total']).to eq(1)
       expect(body.dig('by_triage_status', 'pending')).to eq(1)
+    end
+
+    it 'conceals a component in a hidden project from a non-member (documented 404 not_found shape)' do
+      sign_in create(:user)
+
+      get "/api/components/#{component.id}/triage_summary", headers: json_headers
+      body = validate_and_parse!(expected_status: :not_found)
+
+      expect(body['type']).to eq('/api/docs/errors#not_found')
+      expect(body['detail']).to eq('The requested resource could not be found.')
     end
   end
 
@@ -68,13 +98,14 @@ RSpec.describe 'Dashboard stats endpoint contracts', type: :request do
       expect(body['components'].first['prefix']).to eq('DCON-01')
     end
 
-    it 'matches the documented 403 shape for a non-member' do
+    it 'conceals the hidden project from a non-member (documented 404 not_found shape)' do
       sign_in create(:user)
 
       get "/api/projects/#{project.id}/stats", headers: json_headers
-      body = validate_and_parse!(expected_status: :forbidden)
+      body = validate_and_parse!(expected_status: :not_found)
 
-      expect(body['error']).to match(/not authorized/)
+      expect(body['type']).to eq('/api/docs/errors#not_found')
+      expect(body['detail']).to eq('The requested resource could not be found.')
     end
   end
 
@@ -93,7 +124,17 @@ RSpec.describe 'Dashboard stats endpoint contracts', type: :request do
       get "/api/projects/#{project.id}/triage_summary", headers: json_headers
       body = validate_and_parse!(expected_status: :unauthorized)
 
-      expect(body['error']).to eq('Unauthorized')
+      expect(body['type']).to eq('/api/docs/errors#not_authenticated')
+    end
+
+    it 'conceals the hidden project from a non-member (documented 404 not_found shape)' do
+      sign_in create(:user)
+
+      get "/api/projects/#{project.id}/triage_summary", headers: json_headers
+      body = validate_and_parse!(expected_status: :not_found)
+
+      expect(body['type']).to eq('/api/docs/errors#not_found')
+      expect(body['detail']).to eq('The requested resource could not be found.')
     end
   end
 end

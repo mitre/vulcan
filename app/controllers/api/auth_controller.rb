@@ -17,7 +17,7 @@ module Api
         session[:auth_method] = :local
         render json: CurrentUserBlueprint.render(user)
       else
-        render json: { error: 'Invalid email or password' }, status: :unauthorized
+        render_invalid_credentials
       end
     end
 

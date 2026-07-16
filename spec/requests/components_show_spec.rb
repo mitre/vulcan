@@ -130,11 +130,11 @@ RSpec.describe 'Component show' do
       expect(response.parsed_body['effective_permissions']).to eq('viewer')
     end
 
-    it 'returns 403 for non-member (no effective_permissions exposed)' do
+    it 'conceals the component from a non-member (hidden project → 404, no effective_permissions exposed)' do
       outsider = create(:user)
       sign_in outsider
       get "/components/#{component.id}.json"
-      expect(response).to have_http_status(:forbidden)
+      expect(response).to have_http_status(:not_found)
     end
   end
 
@@ -213,9 +213,9 @@ RSpec.describe 'Component show' do
 
     before { sign_in outsider }
 
-    it 'rejects with 403' do
+    it 'conceals it (hidden project → 404)' do
       get "/components/#{component.id}", headers: { 'Accept' => application_json }
-      expect(response).to have_http_status(:forbidden)
+      expect(response).to have_http_status(:not_found)
     end
   end
 end

@@ -5,9 +5,11 @@ require 'rails_helper'
 RSpec.describe 'ApiFilterable concern' do
   let_it_be(:user) { create(:user) }
 
-  let_it_be(:project_alpha) { create(:project, name: 'Alpha Project') }
-  let_it_be(:project_beta) { create(:project, name: 'Beta Project') }
-  let_it_be(:project_gamma) { create(:project, name: 'Gamma Project') }
+  # Discoverable so they appear in the caller's available_projects — this spec
+  # exercises the filtering/pagination concern, not visibility scoping.
+  let_it_be(:project_alpha) { create(:project, :discoverable, name: 'Alpha Project') }
+  let_it_be(:project_beta) { create(:project, :discoverable, name: 'Beta Project') }
+  let_it_be(:project_gamma) { create(:project, :discoverable, name: 'Gamma Project') }
 
   before do
     Rails.application.reload_routes!
@@ -49,7 +51,8 @@ RSpec.describe 'ApiFilterable concern' do
     it 'returns 400 for out-of-range page' do
       get '/api/projects', params: { page: 9999 }, as: :json
       expect(response).to have_http_status(:bad_request)
-      expect(response.parsed_body['error']).to match(/out of range/i)
+      expect(response.parsed_body['type']).to eq('/api/docs/errors#page_out_of_range')
+      expect(response.parsed_body['detail']).to match(/out of range/i)
     end
   end
 

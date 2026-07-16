@@ -21,9 +21,10 @@ import { useToast, TOAST_EVENT } from "@/composables/useToast";
  *  - Success path (response.data.toast object): {title, variant, message} from the toast
  *  - Error path (response.response.data.toast object): same, from legacy axios error shape
  *  - Canonical message arrays pass through as arrays (Toaster renders paragraphs)
- *  - Structured permission denied (403 + error === 'permission_denied'):
- *      title "Permission denied", variant "danger", message + admins list,
- *      autoHideDelay 8000
+ *  - Structured permission denied (403 + RFC 9457 problem `type` ending in
+ *      #permission_denied): title "Permission denied", variant "danger",
+ *      message from the problem `detail` + admins list, autoHideDelay 8000;
+ *      other 403 problem types fall through to their toast extension
  *  - Fallback: response.message → generic Error toast
  *  - No toast and no message → dispatches nothing
  */
@@ -128,12 +129,17 @@ describe("useToast#alertOrNotifyResponse", () => {
   });
 
   describe("structured permission denied", () => {
+    // RFC 9457 problem body (application/problem+json): `type` is the
+    // stable machine key, `detail` the human why, `admins` the who-to-ask
+    // extension. The legacy toast extension rides along for older readers.
     const permissionDeniedResponse = {
       response: {
         status: 403,
         data: {
-          error: "permission_denied",
-          message: "You do not have permission to perform that action.",
+          type: "/api/docs/errors#permission_denied",
+          title: "Permission denied",
+          status: 403,
+          detail: "You do not have permission to perform that action.",
           admins: [
             { name: "Alice Admin", email: "alice@example.org" },
             { name: "Bob Boss", email: "bob@example.org" },
@@ -147,7 +153,7 @@ describe("useToast#alertOrNotifyResponse", () => {
       },
     };
 
-    it("dispatches a danger toast titled 'Permission denied' with message, admins, and 8s delay", () => {
+    it("dispatches a danger toast titled 'Permission denied' with detail, admins, and 8s delay", () => {
       const { alertOrNotifyResponse } = useToast();
       alertOrNotifyResponse(permissionDeniedResponse);
       expect(detail).toEqual({
@@ -167,7 +173,7 @@ describe("useToast#alertOrNotifyResponse", () => {
       alertOrNotifyResponse({
         response: {
           status: 403,
-          data: { error: "permission_denied", message: "Forbidden" },
+          data: { type: "/api/docs/errors#permission_denied", detail: "Forbidden" },
         },
       });
       expect(detail).toEqual({
@@ -177,6 +183,21 @@ describe("useToast#alertOrNotifyResponse", () => {
         admins: [],
         autoHideDelay: 8000,
       });
+    });
+
+    it("ignores non-permission problem types on 403 (falls through to the toast extension)", () => {
+      const { alertOrNotifyResponse } = useToast();
+      alertOrNotifyResponse({
+        response: {
+          status: 403,
+          data: {
+            type: "/api/docs/errors#insufficient_token_scope",
+            detail: "This request requires the write scope, and the token does not grant it.",
+            toast: { title: "Not Authorized.", message: "No scope", variant: "danger" },
+          },
+        },
+      });
+      expect(detail).toEqual({ title: "Not Authorized.", variant: "danger", message: "No scope" });
     });
   });
 

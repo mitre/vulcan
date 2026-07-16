@@ -5,6 +5,8 @@
 class ApplicationController < ActionController::Base
   helper :all
   include SlackNotificationsHelper
+  include ErrorRendering
+  include AuthorizationDisclosure
   include ApiTokenAuthenticatable
 
   # Explicit CSRF protection. Rails 8 (load_defaults 8.0) enables this by
@@ -45,11 +47,7 @@ class ApplicationController < ActionController::Base
   rescue_from StandardError, with: :helpful_errors unless Rails.env.development?
 
   rescue_from ActiveRecord::RecordNotFound do |_e|
-    respond_to do |format|
-      format.json { render json: { error: 'Not found' }, status: :not_found }
-      format.html { render plain: 'Not Found', status: :not_found }
-      format.any  { render json: { error: 'Not found' }, status: :not_found }
-    end
+    render_resource_not_found
   end
 
   rescue_from NotAuthorizedError, with: :not_authorized
@@ -106,10 +104,6 @@ class ApplicationController < ActionController::Base
 
   def self.record_invalid_titles(map)
     self.record_invalid_titles_map = map.transform_keys(&:to_sym).freeze
-  end
-
-  def render_not_found
-    render json: { error: 'Not found' }, status: :not_found
   end
 
   def set_project_permissions
@@ -364,52 +358,43 @@ class ApplicationController < ActionController::Base
   end
 
   def not_authorized(exception)
-    # Based on the accepted response type, either send a JSON response with the
-    # alert message, or redirect to home and display the alert.
+    # Disclosure policy: a denial on a non-discoverable project conceals
+    # existence — answer exactly as a true miss, on every format, so nothing
+    # distinguishes the two.
+    return render_resource_not_found if permission_denied_conceals_existence?
+
+    # Discoverable (or no project context): either send a JSON problem body
+    # with the who-to-ask contacts, or redirect to home and display the alert.
     respond_to do |format|
       format.html do
         flash.alert = not_authorized_html_message(exception)
         redirect_back(fallback_location: root_path)
       end
       format.json do
-        render json: permission_denied_payload(exception), status: :forbidden
+        render_permission_denied(exception)
       end
+    end
+  end
+
+  # HTML+JSON "not found" negotiation. Both a genuine ActiveRecord::RecordNotFound
+  # and a concealed authorization denial render through this one method, so a
+  # concealed 404 is byte-identical to a true miss on every format.
+  def render_resource_not_found
+    respond_to do |format|
+      format.json { render_not_found }
+      format.html { render plain: 'Not Found', status: :not_found }
+      format.any  { render_not_found }
     end
   end
 
   # Builds the HTML flash message for an authorization denial. Non-admins get
   # an appended hint to contact an administrator — the JSON path already
-  # surfaces structured admin contacts via permission_denied_payload, so this
+  # surfaces structured admin contacts via render_permission_denied, so this
   # keeps the HTML and JSON paths aligned in user-helpfulness.
   def not_authorized_html_message(exception)
     return exception.message if current_user&.admin?
 
     "#{exception.message} Please contact an administrator if you believe this message is in error."
-  end
-
-  # Builds the structured permission-denied JSON body. Includes the project
-  # admin contacts when a project (or component-with-project) is in scope so
-  # the frontend can tell the user exactly who to ask for access. The legacy
-  # `toast` shape is preserved alongside so AlertMixin keeps rendering a
-  # basic toast without changes.
-  def permission_denied_payload(exception)
-    project = permission_denied_project_context
-    admins = project ? project.admins.map { |a| { name: a.name, email: a.email } } : []
-
-    {
-      error: 'permission_denied',
-      message: exception.message,
-      admins: admins,
-      toast: Toast.new(
-        title: 'Not Authorized.',
-        message: exception.message,
-        variant: 'danger'
-      )
-    }
-  end
-
-  def permission_denied_project_context
-    @project || @component&.project
   end
 
   def setup_navigation

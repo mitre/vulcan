@@ -264,8 +264,9 @@ class ProjectsController < ApplicationController
 
     # disposition_csv: author-tier+ only (PII-adjacent data; mirrors per-component endpoint).
     if export_type == :disposition_csv && !current_user.can_author_project?(@project)
-      render json: { error: 'Forbidden' }, status: :forbidden
-      return
+      raise NotAuthorizedError,
+            'You are not authorized to export the disposition matrix for this project — ' \
+            'author tier or higher is required'
     end
 
     respond_to do |format|

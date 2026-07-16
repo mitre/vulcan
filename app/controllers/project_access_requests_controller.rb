@@ -84,6 +84,9 @@ class ProjectAccessRequestsController < ApplicationController
 
     return if @access_request.user == current_user || current_user.can_admin_project?(@access_request.project)
 
+    # Expose the project so a denial on a non-discoverable project is concealed
+    # as a 404 rather than revealing the request exists.
+    @project = @access_request.project
     raise(NotAuthorizedError, 'You are not authorized to delete this access request.')
   end
 end

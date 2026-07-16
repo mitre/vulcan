@@ -82,11 +82,10 @@ RSpec.describe 'Components spreadsheet update endpoints' do
     context 'when authenticated as non-member' do
       before { sign_in non_member_user }
 
-      it 'returns forbidden status' do
+      it 'conceals the component (hidden project → 404)' do
         file = export_csv_tempfile(component)
         post preview_path, params: { file: Rack::Test::UploadedFile.new(file.path, 'text/csv') }
-        # Non-member should get 403 or redirect (depends on error handler)
-        expect(response.status).to be_in([403, 302, 500])
+        expect(response).to have_http_status(:not_found)
       end
     end
 

@@ -11,7 +11,10 @@ module Api
     has_scope :search, as: :q
 
     def index
-      scope = apply_scopes(Project.all)
+      # Scoped to what the caller may see (member projects + discoverable), so
+      # non-discoverable projects and their admin contacts are not disclosed to
+      # non-members. Matches the HTML ProjectsController#index.
+      scope = apply_scopes(current_user.available_projects)
       scope = apply_sort(scope, allowed: %w[name created_at updated_at])
       pagy_obj, records = paginate(scope)
       render json: pagy_response(pagy_obj, ProjectBlueprint.render_as_json(records))

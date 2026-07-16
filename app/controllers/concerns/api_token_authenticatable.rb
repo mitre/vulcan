@@ -31,23 +31,23 @@ module ApiTokenAuthenticatable
   def authenticate_with_api_token!
     raw_token = extract_token_from_header
     if raw_token.blank?
-      render_token_unauthorized
+      render_invalid_token
       return
     end
 
     token = PersonalAccessToken.authenticate(raw_token)
     unless token
-      render_token_unauthorized
+      render_invalid_token
       return
     end
 
     unless token.ip_allowed?(request.remote_ip)
-      render json: { error: 'IP address not in token allowlist' }, status: :forbidden
+      render_ip_not_allowed
       return
     end
 
     unless scope_sufficient?(token)
-      render json: { error: 'Insufficient token scope for this action' }, status: :forbidden
+      render_insufficient_token_scope(required_scope)
       return
     end
 
@@ -65,15 +65,11 @@ module ApiTokenAuthenticatable
   end
 
   def scope_sufficient?(token)
-    if WRITE_METHODS.include?(request.method)
-      token.can?(:write)
-    else
-      token.can?(:read)
-    end
+    token.can?(required_scope)
   end
 
-  def render_token_unauthorized
-    render json: { error: 'Invalid or expired API token' }, status: :unauthorized
+  def required_scope
+    WRITE_METHODS.include?(request.method) ? 'write' : 'read'
   end
 
   def handle_unverified_request

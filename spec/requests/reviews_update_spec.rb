@@ -70,9 +70,9 @@ RSpec.describe 'Reviews' do
         sign_in edit_owner
       end
 
-      it 'returns 403 and leaves the comment text unchanged' do
+      it 'conceals the project (404) and leaves the comment text unchanged' do
         put "/reviews/#{my_comment.id}", params: { review: { comment: 'sneaky edit' } }, as: :json
-        expect(response).to have_http_status(:forbidden)
+        expect(response).to have_http_status(:not_found)
         expect(my_comment.reload.comment).to eq('original text')
       end
     end

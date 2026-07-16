@@ -49,7 +49,7 @@ RSpec.describe 'Benchmark stats' do
       get "/api/srgs/#{srg.id}/stats"
 
       expect(response).to have_http_status(:unauthorized)
-      expect(response.parsed_body['error']).to eq('Unauthorized')
+      expect(response.parsed_body['type']).to eq('/api/docs/errors#not_authenticated')
     end
 
     it 'returns rule count and severity breakdown as exact values' do
@@ -101,7 +101,7 @@ RSpec.describe 'Benchmark stats' do
       get '/api/srgs/0/stats'
 
       expect(response).to have_http_status(:not_found)
-      expect(response.parsed_body['error']).to eq('Not found')
+      expect(response.parsed_body['type']).to eq('/api/docs/errors#not_found')
     end
   end
 
@@ -132,7 +132,7 @@ RSpec.describe 'Benchmark stats' do
       get '/api/stigs/0/stats'
 
       expect(response).to have_http_status(:not_found)
-      expect(response.parsed_body['error']).to eq('Not found')
+      expect(response.parsed_body['type']).to eq('/api/docs/errors#not_found')
     end
   end
 end

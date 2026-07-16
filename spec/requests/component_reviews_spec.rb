@@ -40,7 +40,7 @@ RSpec.describe 'Component-level reviews' do
       )
     end
 
-    it 'rejects when the component is unauthorized for the user (non-member)' do
+    it 'conceals the component from an unauthorized user (non-member of a hidden project)' do
       sign_out viewer
       stranger = create(:user)
       sign_in stranger
@@ -48,7 +48,7 @@ RSpec.describe 'Component-level reviews' do
       post "/components/#{component.id}/reviews", params: {
         review: { action: 'comment', comment: 'no access' }
       }, as: :json
-      expect(response).to have_http_status(:forbidden)
+      expect(response).to have_http_status(:not_found)
     end
 
     it 'rejects new top-level comments when comment_phase is closed/finalized' do

@@ -71,9 +71,14 @@ const client = ky.create({
  * @returns {Promise<Object|string>} Parsed JSON object, or raw text for non-JSON responses.
  */
 async function parseBody(response) {
-  return response.headers.get("content-type")?.includes("application/json")
-    ? response.json()
-    : response.text();
+  // Match application/json AND +json structured-syntax suffixes
+  // (application/problem+json, application/vnd.api+json — RFC 6839),
+  // mirroring ky's own error-body detection.
+  const mimeType = (response.headers.get("content-type") ?? "")
+    .split(";", 1)[0]
+    .trim()
+    .toLowerCase();
+  return /\/(?:.*[.+-])?json$/.test(mimeType) ? response.json() : response.text();
 }
 
 /**

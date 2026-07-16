@@ -33,7 +33,7 @@ RSpec.describe 'Auth endpoint contracts', type: :request do
       get '/api/auth/me', headers: json_headers
       body = validate_and_parse!(expected_status: :unauthorized)
 
-      expect(body['error']).to eq('Unauthorized')
+      expect(body['type']).to eq('/api/docs/errors#not_authenticated')
     end
   end
 
@@ -56,7 +56,8 @@ RSpec.describe 'Auth endpoint contracts', type: :request do
            headers: json_headers, as: :json
       body = validate_and_parse!(expected_status: :unauthorized)
 
-      expect(body['error']).to eq('Invalid email or password')
+      expect(body['type']).to eq('/api/docs/errors#invalid_credentials')
+      expect(body['detail']).to eq('The email or password is incorrect.')
     end
   end
 

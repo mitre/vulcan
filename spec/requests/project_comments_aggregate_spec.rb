@@ -99,10 +99,10 @@ RSpec.describe 'GET /projects/:id/comments' do
   context 'as a non-member (IDOR)' do
     before { sign_in outsider }
 
-    it 'returns 403' do
+    it 'conceals the project (hidden → 404 identical to a true miss)' do
       get "/projects/#{project.id}/comments",
           headers: { 'Accept' => 'application/json' }
-      expect(response).to have_http_status(:forbidden)
+      expect(response).to have_http_status(:not_found)
     end
   end
 

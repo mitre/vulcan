@@ -117,7 +117,8 @@ RSpec.describe 'Projects endpoint contracts', type: :request do
       get '/api/projects', params: { page: 9999 }, headers: json_headers
       body = validate_and_parse!(expected_status: :bad_request)
 
-      expect(body['error']).to match(/out of range/)
+      expect(body['type']).to eq('/api/docs/errors#page_out_of_range')
+      expect(body['detail']).to match(/out of range/)
     end
 
     it 'matches the documented 401 shape when unauthenticated' do
@@ -126,7 +127,7 @@ RSpec.describe 'Projects endpoint contracts', type: :request do
       get '/api/projects', headers: json_headers
       body = validate_and_parse!(expected_status: :unauthorized)
 
-      expect(body['error']).to eq('Unauthorized')
+      expect(body['type']).to eq('/api/docs/errors#not_authenticated')
     end
   end
 

@@ -38,15 +38,15 @@ RSpec.describe 'Component summary' do
       get "/api/components/#{component.id}/summary"
 
       expect(response).to have_http_status(:unauthorized)
-      expect(response.parsed_body['error']).to eq('Unauthorized')
+      expect(response.parsed_body['type']).to eq('/api/docs/errors#not_authenticated')
     end
 
-    it 'forbids non-members on unreleased components' do
+    it 'conceals unreleased components from non-members (hidden project → 404)' do
       sign_in outsider
 
       get "/api/components/#{component.id}/summary"
 
-      expect(response).to have_http_status(:forbidden)
+      expect(response).to have_http_status(:not_found)
     end
 
     it 'returns identity and srg header fields for a member' do
@@ -140,7 +140,7 @@ RSpec.describe 'Component summary' do
       get '/api/components/0/summary'
 
       expect(response).to have_http_status(:not_found)
-      expect(response.parsed_body['error']).to eq('Not found')
+      expect(response.parsed_body['type']).to eq('/api/docs/errors#not_found')
     end
   end
 end

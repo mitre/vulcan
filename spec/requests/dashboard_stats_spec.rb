@@ -67,7 +67,7 @@ RSpec.describe 'Dashboard stats' do
 
       sign_in outsider
       get "/api/components/#{component.id}/stats"
-      expect(response).to have_http_status(:forbidden)
+      expect(response).to have_http_status(:not_found)
     end
 
     it 'returns rules by status, by severity, and completion/lock percentages' do
@@ -126,7 +126,7 @@ RSpec.describe 'Dashboard stats' do
 
       get "/api/components/#{component.id}/workflow_state"
 
-      expect(response).to have_http_status(:forbidden)
+      expect(response).to have_http_status(:not_found)
     end
   end
 
@@ -169,7 +169,9 @@ RSpec.describe 'Dashboard stats' do
       expect(response).to have_http_status(:ok)
       body = response.parsed_body
       expect(body.dig('aggregate', 'rule_count')).to eq(6)
-      expect(body.dig('aggregate', 'rules_by_status')).to include(
+      # The legacy flat aggregate is gone — typed sections are the only shape.
+      expect(body['aggregate']).not_to have_key('rules_by_status')
+      expect(body.dig('aggregate', 'rules_by_status_by_type', 'stig')).to include(
         'not_yet_determined' => 3, 'applicable_configurable' => 1
       )
       expect(body.dig('aggregate', 'rules_by_severity')).to eq('high' => 1, 'medium' => 3, 'low' => 2)
@@ -192,7 +194,7 @@ RSpec.describe 'Dashboard stats' do
 
       get "/api/projects/#{project.id}/stats"
 
-      expect(response).to have_http_status(:forbidden)
+      expect(response).to have_http_status(:not_found)
     end
 
     it 'returns 404 for an unknown project' do
@@ -223,7 +225,7 @@ RSpec.describe 'Dashboard stats' do
 
       get "/api/projects/#{project.id}/triage_summary"
 
-      expect(response).to have_http_status(:forbidden)
+      expect(response).to have_http_status(:not_found)
     end
   end
 end

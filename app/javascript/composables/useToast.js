@@ -65,9 +65,11 @@ function showWarning(message, title = "Warning") {
  * - response.response.data.toast (HTTP-error responses — baseApi reshapes
  *   ky HTTPErrors to this legacy axios shape)
  *
- * Structured permission-denied responses (403 + error === 'permission_denied')
- * get a rich danger toast carrying the project admin contacts so the user
- * knows who to ask for access.
+ * Structured permission-denied responses (403 + RFC 9457 problem `type`
+ * ending in #permission_denied) get a rich danger toast carrying the
+ * project admin contacts so the user knows who to ask for access. The
+ * problem body's `detail` is the human explanation; other 403 problem
+ * types fall through to their legacy toast extension.
  *
  * If a backend ever returns a non-object toast we fall through to the
  * generic error branch so the regression is visible, not silent.
@@ -76,11 +78,15 @@ function showWarning(message, title = "Warning") {
  */
 function alertOrNotifyResponse(response) {
   const errorData = response?.response?.data;
-  if (response?.response?.status === 403 && errorData?.error === "permission_denied") {
+  if (
+    response?.response?.status === 403 &&
+    typeof errorData?.type === "string" &&
+    errorData.type.endsWith("#permission_denied")
+  ) {
     dispatchToast({
       title: "Permission denied",
       variant: "danger",
-      message: errorData.message,
+      message: errorData.detail,
       admins: Array.isArray(errorData.admins) ? errorData.admins : [],
       autoHideDelay: 8000,
     });

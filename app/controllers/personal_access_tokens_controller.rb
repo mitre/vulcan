@@ -16,7 +16,7 @@ class PersonalAccessTokensController < ApplicationController
 
   def create
     unless valid_password?
-      render json: { error: 'Current password is incorrect' }, status: :unauthorized
+      render_incorrect_password
       return
     end
 
@@ -60,7 +60,7 @@ class PersonalAccessTokensController < ApplicationController
   def require_session_auth
     return unless @current_token
 
-    render json: { error: 'Token management requires session authentication' }, status: :forbidden
+    render_session_authentication_required
   end
 
   def target_user

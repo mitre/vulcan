@@ -49,11 +49,11 @@ RSpec.describe 'Project Import Backup' do
       expect(response).to redirect_to(new_user_session_path)
     end
 
-    it 'rejects non-members' do
+    it 'conceals the project from non-members (hidden → 404, not a redirect)' do
       sign_in non_member_user
       post "/projects/#{project.id}/import_backup",
            params: { file: uploaded_file }
-      expect(response).to have_http_status(:found) # redirected
+      expect(response).to have_http_status(:not_found)
     end
 
     it 'rejects viewers (non-admin members)' do

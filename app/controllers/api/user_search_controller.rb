@@ -46,13 +46,24 @@ module Api
         # Any member can search within existing members (e.g., PoC selection)
         return if current_user.admin || current_user.effective_permissions(@target)
 
-        raise NotAuthorizedError, 'You must be a member to search'
+        deny_search('You must be a member to search')
       else
         # Only admins can search for non-members (add member flow)
         return if current_user.admin || current_user.effective_permissions(@target) == 'admin'
 
-        raise NotAuthorizedError, 'You must be an admin to search for users'
+        deny_search('You must be an admin to search for users')
       end
+    end
+
+    # Expose the target project/component so a denial on a non-discoverable
+    # project is concealed as a 404 instead of revealing, via a 403, that the
+    # project exists.
+    def deny_search(message)
+      case @target
+      when Project then @project = @target
+      when Component then @component = @target
+      end
+      raise NotAuthorizedError, message
     end
   end
 end

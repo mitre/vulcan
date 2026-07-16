@@ -44,11 +44,12 @@ RSpec.describe 'Triage page HTML responses' do
     context 'as a non-member of an unreleased component' do
       before { sign_in outsider }
 
-      # HTML auth failures redirect (Vulcan-wide convention). The JSON
-      # path returns 403 — covered by the components_controller suite.
-      it 'redirects (HTML auth failure convention)' do
+      # A hidden project is concealed from non-members: the denial answers a
+      # bare 404 identical to a true miss, on HTML as on JSON — no redirect
+      # that would reveal the resource exists.
+      it 'conceals the component (hidden project → 404)' do
         get "/components/#{component.id}/triage"
-        expect(response).to have_http_status(:redirect)
+        expect(response).to have_http_status(:not_found)
       end
     end
   end
@@ -72,9 +73,9 @@ RSpec.describe 'Triage page HTML responses' do
     context 'as a non-member' do
       before { sign_in outsider }
 
-      it 'redirects (HTML auth failure convention)' do
+      it 'conceals the project (hidden → 404)' do
         get "/projects/#{project.id}/triage"
-        expect(response).to have_http_status(:redirect)
+        expect(response).to have_http_status(:not_found)
       end
     end
   end

@@ -135,11 +135,18 @@ class MembershipsController < ApplicationController
 
   # This isn't in the application controller because it is specific to the membership controller
   def authorize_admin_membership
-    effective_permissions = current_user.effective_permissions(@membership.membership)
+    target = @membership.membership
 
     # Break early if the user is an admin
-    return if effective_permissions == 'admin'
+    return if current_user.effective_permissions(target) == 'admin'
 
+    # Expose the target project/component so the disclosure policy conceals a
+    # denial on a non-discoverable project (404) rather than revealing, via a
+    # 403, that this membership exists.
+    case target
+    when Project then @project = target
+    when Component then @component = target
+    end
     raise(
       NotAuthorizedError,
       "You are not authorized to manage permissions on this #{@membership.membership_type}"

@@ -4,6 +4,17 @@ FactoryBot.define do
   factory :project do
     name { generate(:name) }
 
+    # Visibility drives the disclosure policy: discoverable projects answer
+    # 403 on denial, hidden projects answer 404. The DB default is hidden;
+    # these traits make the intent explicit in specs.
+    trait :discoverable do
+      visibility { :discoverable }
+    end
+
+    trait :hidden do
+      visibility { :hidden }
+    end
+
     trait :with_admin do
       transient do
         admin_user { nil }

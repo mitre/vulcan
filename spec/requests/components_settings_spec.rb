@@ -64,9 +64,9 @@ RSpec.describe 'GET /components/:id/settings' do
 
     before { sign_in outsider }
 
-    it 'is denied' do
+    it 'is concealed (hidden project → 404, not a redirect that reveals it exists)' do
       get "/components/#{component.id}/settings"
-      expect(response).to redirect_to(root_path)
+      expect(response).to have_http_status(:not_found)
     end
   end
 

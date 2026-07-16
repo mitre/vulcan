@@ -109,9 +109,17 @@ RSpec.describe 'GET /projects/:id/export/disposition_csv' do
   context 'as viewer (rejected — PII gate)' do
     before { sign_in viewer }
 
-    it 'returns 403' do
-      get "/projects/#{project.id}/export/disposition_csv"
+    it 'returns the 403 problem body on JSON requests' do
+      get "/projects/#{project.id}/export/disposition_csv", as: :json
       expect(response).to have_http_status(:forbidden)
+      expect(response.parsed_body['type']).to eq('/api/docs/errors#permission_denied')
+      expect(response.parsed_body['detail']).to match(/author tier or higher/)
+    end
+
+    it 'redirects with a flash alert on browser navigations' do
+      get "/projects/#{project.id}/export/disposition_csv"
+      expect(response).to have_http_status(:redirect)
+      expect(flash.alert).to include('author tier or higher')
     end
   end
 

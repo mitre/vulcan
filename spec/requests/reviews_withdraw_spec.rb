@@ -72,9 +72,9 @@ RSpec.describe 'Reviews' do
         sign_in wd_owner
       end
 
-      it 'returns 403 and leaves the comment untouched' do
+      it 'conceals the project (404) and leaves the comment untouched' do
         patch "/reviews/#{my_comment.id}/withdraw", as: :json
-        expect(response).to have_http_status(:forbidden)
+        expect(response).to have_http_status(:not_found)
         expect(my_comment.reload.triage_status).to eq('pending')
       end
     end

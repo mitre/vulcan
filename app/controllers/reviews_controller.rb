@@ -21,11 +21,16 @@ class ReviewsController < ApplicationController
   before_action :authorize_viewer_project, only: %i[create withdraw update]
   before_action :authorize_admin_component, only: %i[lock_controls]
   before_action :authorize_review_component, only: %i[lock_sections]
-  before_action :authorize_author_project, only: %i[triage adjudicate reopen section bulk_triage]
+  before_action :authorize_author_project, only: %i[triage adjudicate reopen section]
+  # bulk_triage/merge authorize every project in the selection before the
+  # selection's shape is revealed (concealment precedes cross-component/survivor
+  # validation).
+  before_action :authorize_bulk_selection, only: %i[bulk_triage]
+  before_action :authorize_merge_selection, only: %i[merge]
   before_action :authorize_review_owner, only: %i[withdraw update]
   # admin override actions are gated to project admins.
   # Authorization runs from set_project_from_review, so @project is set.
-  before_action :authorize_admin_project, only: %i[admin_withdraw admin_restore admin_destroy move_to_rule merge]
+  before_action :authorize_admin_project, only: %i[admin_withdraw admin_restore admin_destroy move_to_rule]
   # Reply chain visibility mirrors the parent component's read auth:
   # released → any logged-in user; unreleased → project member.
   before_action :authorize_review_visibility, only: %i[responses]
@@ -707,9 +712,22 @@ class ReviewsController < ApplicationController
   # selections (the anti-pattern guard for cross-component bulk triage).
   def set_bulk_reviews
     ids = Array(params[:review_ids]).map(&:to_i).uniq.reject(&:zero?)
-    @reviews = Review.where(id: ids).to_a
+    # Nothing referenced at all: a plain bad-request (no ids to probe).
+    return render_toast(title: 'Could not save triage.', message: 'No comments selected.') if ids.empty?
 
-    return render_toast(title: 'Could not save triage.', message: 'No comments selected.') if @reviews.empty?
+    @reviews = Review.where(id: ids).to_a
+    # Referenced ids that resolve to nothing are concealed as a 404 identical to
+    # a true miss, so a hidden-project review cannot be told apart from one that
+    # never existed.
+    render_resource_not_found if @reviews.empty?
+  end
+
+  # Authorizes a loaded bulk selection BEFORE its shape is revealed: every
+  # distinct project must be reachable (else the caller is concealed), then the
+  # single-component invariant is enforced. Runs as an authorize_* before_action
+  # so the deny-by-default coverage guard recognizes it.
+  def authorize_bulk_selection
+    authorize_selection_projects(@reviews) { authorize_author_project }
 
     components = @reviews.filter_map(&:component).uniq
     if components.size != 1
@@ -721,29 +739,53 @@ class ReviewsController < ApplicationController
     @project = @component.project
   end
 
+  # Authorize the current user against every distinct project represented in a
+  # bulk selection, deferring selection-shape validation until afterward. The
+  # per-project authorize (yielded) raises + conceals through the standard
+  # disclosure policy for the first project the caller cannot reach.
+  def authorize_selection_projects(reviews)
+    reviews.filter_map { |r| r.component&.project }.uniq.each do |project|
+      @project = project
+      @component = nil
+      yield
+    end
+  end
+
   # Loads the merge selection: review_ids must include the survivor_id, and
   # all selections must belong to one component. Sets @survivor /
   # @duplicates_to_merge / @component / @project for the action + authorize_*.
   def set_merge_reviews
-    survivor_id = params[:survivor_id].to_i
     ids = Array(params[:review_ids]).map(&:to_i).uniq.reject(&:zero?)
-    selected = Review.where(id: ids).to_a
+    # Nothing referenced at all: a plain bad-request (no ids to probe).
+    return render_toast(title: 'Could not merge comments.', message: 'No comments selected.') if ids.empty?
 
-    return render_toast(title: 'Could not merge comments.', message: 'No comments selected.') if selected.empty?
+    @merge_selection = Review.where(id: ids).to_a
+    # Referenced ids that resolve to nothing are concealed as a 404 identical to
+    # a true miss.
+    render_resource_not_found if @merge_selection.empty?
+  end
 
-    @survivor = selected.find { |r| r.id == survivor_id }
+  # Authorizes a loaded merge selection BEFORE its shape is revealed: every
+  # distinct project must be reachable (else the caller is concealed), then the
+  # survivor/duplicate/single-component invariants are enforced. Runs as an
+  # authorize_* before_action so the deny-by-default coverage guard recognizes it.
+  def authorize_merge_selection
+    authorize_selection_projects(@merge_selection) { authorize_admin_project }
+
+    survivor_id = params[:survivor_id].to_i
+    @survivor = @merge_selection.find { |r| r.id == survivor_id }
     if @survivor.nil?
       return render_toast(title: 'Could not merge comments.',
                           message: 'Survivor must be one of the selected comments.')
     end
 
-    @duplicates_to_merge = selected.reject { |r| r.id == @survivor.id }
+    @duplicates_to_merge = @merge_selection.reject { |r| r.id == @survivor.id }
     if @duplicates_to_merge.empty?
       return render_toast(title: 'Could not merge comments.',
                           message: 'Select at least one duplicate to merge into the survivor.')
     end
 
-    components = selected.filter_map(&:component).uniq
+    components = @merge_selection.filter_map(&:component).uniq
     if components.size != 1
       return render_toast(title: 'Could not merge comments.',
                           message: 'Merge cannot span multiple components.')

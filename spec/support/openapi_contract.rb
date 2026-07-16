@@ -29,12 +29,15 @@ end
 # Auto-validate every JSON request spec response against the OpenAPI schema.
 # Skips: HTML responses, redirect responses, opt-outs via `openapi: false`.
 # Undocumented endpoints are silently skipped (ignore_response_error above).
+# JSON detection matches application/json AND +json structured-syntax
+# suffixes (application/problem+json — RFC 6839), so problem-details error
+# bodies stay inside the mechanical safety net.
 RSpec.configure do |config|
   config.after(:each, type: :request) do |example|
     next if example.metadata[:openapi] == false
     next unless response&.status
     next if response.redirect?
-    next unless response.content_type&.include?('application/json')
+    next unless response.media_type&.match?(%r{/(?:.*[.+-])?json\z})
 
     api = OpenapiFirst::Test[:vulcan]
     validated = api.validate_response(request, response, raise_error: false)

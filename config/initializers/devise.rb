@@ -273,13 +273,12 @@ Devise.setup do |config|
   end
 
   # ==> Warden configuration
-  # If you want to use other strategies, that are not supported by Devise, or
-  # change the failure app, you can configure them inside the config.warden block.
-  #
-  # config.warden do |manager|
-  #   manager.intercept_401 = false
-  #   manager.default_strategies(scope: :user).unshift :some_external_strategy
-  # end
+  # Custom failure app: JSON / non-navigational auth failures answer with the
+  # RFC 9457 problem envelope naming the true cause (superseded session,
+  # timeout, unauthenticated); HTML requests keep Devise's redirect + flash.
+  config.warden do |manager|
+    manager.failure_app = SessionAwareFailureApp
+  end
 
   # ==> Mountable engine configurations
   # When using Devise inside an engine, let's call it `MyEngine`, and this engine

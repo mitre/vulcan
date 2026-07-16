@@ -15,14 +15,19 @@ class ComponentsController < ApplicationController
   before_action :set_component_basic, only: %i[find based_on_same_srg histories comments rules_picker]
   before_action :set_project, only: %i[show create history triage settings]
   before_action :set_component_permissions, only: %i[show triage settings]
-  before_action :set_rule, only: %i[show]
   before_action :authorize_admin_project, only: %i[create]
   before_action :authorize_admin_component, only: %i[destroy settings]
   before_action :authorize_author_component, only: %i[update preview_spreadsheet_update apply_spreadsheet_update]
   before_action :check_permission_to_update_slackchannel, only: %i[update]
   before_action :check_admin_for_advanced_fields, only: %i[update]
-  before_action :authorize_component_access, only: %i[show export find histories comments triage rules_picker]
-  before_action :authorize_logged_in, only: %i[search index based_on_same_srg bulk_export detect_srg]
+  before_action :authorize_component_access,
+                only: %i[show export find histories comments triage rules_picker based_on_same_srg]
+  # set_rule runs AFTER authorization so a deep-link with an unknown rule id
+  # cannot become an existence oracle: a non-member of a hidden component is
+  # concealed (404) before rule lookup; only authorized viewers reach the
+  # friendly "control not found" response.
+  before_action :set_rule, only: %i[show]
+  before_action :authorize_logged_in, only: %i[search index bulk_export detect_srg]
   before_action :authorize_compare_access, only: %i[compare]
   before_action :authorize_viewer_project, only: %i[history]
   before_action :validate_component_upload, only: %i[create detect_srg]
@@ -189,8 +194,9 @@ class ComponentsController < ApplicationController
     # Task 29). Viewers must NOT be able to export PII-adjacent data even
     # though they can read it in the in-app triage table.
     if export_type == :disposition_csv && !current_user.can_author_project?(@component.project)
-      render json: { error: 'Forbidden' }, status: :forbidden
-      return
+      raise NotAuthorizedError,
+            'You are not authorized to export the disposition matrix for this component — ' \
+            'author tier or higher is required'
     end
 
     respond_to do |format|
@@ -639,24 +645,11 @@ class ComponentsController < ApplicationController
     # Returns out of the method If the Component instance variable does exist.
     return if @component.present?
 
-    message = 'The requested component could not be found.'
-    respond_to do |format|
-      # Return an HTML response with an alert flash message if request format is HTML.
-      format.html do
-        flash.alert = message
-        redirect_back(fallback_location: root_path)
-      end
-      # Return a JSON response with a toast message if request formt is JSON.
-      format.json do
-        render json: {
-          toast: Toast.new(
-            title: CONTROL_NOT_FOUND_TITLE,
-            message: message,
-            variant: 'danger'
-          )
-        }, status: :not_found
-      end
-    end
+    # A missing component answers exactly as any other miss (problem+json /
+    # bare 404). This must match the concealed-denial body so that a component
+    # in a non-discoverable project is indistinguishable from one that never
+    # existed.
+    render_resource_not_found
   end
 
   # This function sets the rule based on the specified parameters
@@ -708,18 +701,9 @@ class ComponentsController < ApplicationController
     @component = Component.find_by(id: params[:id])
     return if @component.present?
 
-    message = 'The requested component could not be found.'
-    respond_to do |format|
-      format.html do
-        flash.alert = message
-        redirect_back(fallback_location: root_path)
-      end
-      format.json do
-        render json: {
-          toast: Toast.new(title: CONTROL_NOT_FOUND_TITLE, message: message, variant: 'danger')
-        }, status: :not_found
-      end
-    end
+    # Match the concealed-denial body so a component in a non-discoverable
+    # project is indistinguishable from one that never existed.
+    render_resource_not_found
   end
 
   # Authorize access to component based on released status:
@@ -740,7 +724,10 @@ class ComponentsController < ApplicationController
     diff = Component.find_by(id: params[:diff_id])
 
     [base, diff].each do |component|
-      next if component.nil?
+      # A missing component answers 404 (not a silent skip) so it is
+      # indistinguishable from a component in a non-discoverable project the
+      # caller cannot reach — no existence oracle via a bogus peer id.
+      raise ActiveRecord::RecordNotFound if component.nil?
       next if component.released
 
       @component = component

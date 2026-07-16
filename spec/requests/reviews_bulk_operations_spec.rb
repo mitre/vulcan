@@ -13,6 +13,9 @@ RSpec.describe 'Reviews' do
 
     before_all do
       Membership.find_or_create_by!(user: bulk_triager, membership: project) { |m| m.role = 'author' }
+      # Author on the other project too, so the cross-component test exercises
+      # the business rule (422) rather than a concealment denial (404).
+      Membership.find_or_create_by!(user: bulk_triager, membership: bulk_other_project) { |m| m.role = 'author' }
       Membership.find_or_create_by!(user: bulk_commenter, membership: project) { |m| m.role = 'viewer' }
       Membership.find_or_create_by!(user: bulk_commenter, membership: bulk_other_project) { |m| m.role = 'viewer' }
     end
@@ -98,6 +101,30 @@ RSpec.describe 'Reviews' do
         expect(comment_a.reload.triage_status).to eq('pending')
       end
     end
+
+    # A stranger to a hidden project must not learn a review exists by bulk-
+    # triaging it: the denial is concealed as a 404 identical to a nonexistent id.
+    context 'as a stranger to a hidden project (concealment, no oracle)' do
+      let_it_be(:bulk_stranger) { create(:user) }
+
+      before { sign_in bulk_stranger }
+
+      it 'answers a hidden-project review identically to a nonexistent id (404 not_found)' do
+        foreign = create(:review, :comment, comment: 'hidden concern', user: bulk_commenter,
+                                            rule: bulk_other_component.rules.first, section: nil)
+        patch '/reviews/bulk_triage',
+              params: { review_ids: [foreign.id], triage_status: 'informational' }, as: :json
+        concealed = { status: response.status, body: response.body }
+
+        patch '/reviews/bulk_triage',
+              params: { review_ids: [999_999_999], triage_status: 'informational' }, as: :json
+        missing = { status: response.status, body: response.body }
+
+        expect(concealed[:status]).to eq(404)
+        expect(response.parsed_body['type']).to eq('/api/docs/errors#not_found')
+        expect(concealed).to eq(missing)
+      end
+    end
   end
 
   describe 'PATCH /reviews/merge' do
@@ -110,6 +137,9 @@ RSpec.describe 'Reviews' do
 
     before_all do
       Membership.find_or_create_by!(user: merge_admin, membership: project) { |m| m.role = 'admin' }
+      # Admin on the other project too, so the cross-component test exercises the
+      # business rule (422) rather than a concealment denial (404).
+      Membership.find_or_create_by!(user: merge_admin, membership: merge_other_project) { |m| m.role = 'admin' }
       Membership.find_or_create_by!(user: merge_author, membership: project) { |m| m.role = 'author' }
       Membership.find_or_create_by!(user: merge_commenter, membership: project) { |m| m.role = 'viewer' }
       Membership.find_or_create_by!(user: merge_other_commenter, membership: project) { |m| m.role = 'viewer' }
@@ -199,6 +229,28 @@ RSpec.describe 'Reviews' do
 
         expect(response).to have_http_status(:forbidden)
         expect(dup_b.reload.triage_status).to eq('pending')
+      end
+    end
+
+    # A stranger to a hidden project must not learn a review exists by merging
+    # it: the denial is concealed as a 404 identical to a nonexistent id.
+    context 'as a stranger to a hidden project (concealment, no oracle)' do
+      let_it_be(:merge_stranger) { create(:user) }
+
+      before { sign_in merge_stranger }
+
+      it 'answers a hidden-project review identically to a nonexistent id (404 not_found)' do
+        foreign = create(:review, :comment, comment: 'hidden concern', user: merge_commenter,
+                                            rule: merge_other_component.rules.first, section: nil)
+        patch '/reviews/merge', params: { review_ids: [foreign.id], survivor_id: foreign.id }, as: :json
+        concealed = { status: response.status, body: response.body }
+
+        patch '/reviews/merge', params: { review_ids: [999_999_999], survivor_id: 999_999_999 }, as: :json
+        missing = { status: response.status, body: response.body }
+
+        expect(concealed[:status]).to eq(404)
+        expect(response.parsed_body['type']).to eq('/api/docs/errors#not_found')
+        expect(concealed).to eq(missing)
       end
     end
   end

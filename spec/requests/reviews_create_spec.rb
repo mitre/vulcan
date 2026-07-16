@@ -125,6 +125,9 @@ RSpec.describe 'Reviews' do
       let_it_be(:project_admin_user) { create(:user) }
 
       before do
+        # Discoverable so the outsider's denial is a 403 permission_denied with
+        # admin contacts (asserted below), not a concealing 404.
+        project.update!(visibility: :discoverable)
         # Set up at least one project admin so the structured 403 response has
         # something to populate the `admins` array with.
         create(:membership, user: project_admin_user, membership: project, role: 'admin')
@@ -141,8 +144,8 @@ RSpec.describe 'Reviews' do
         expect(response).to have_http_status(:forbidden)
 
         body = response.parsed_body
-        expect(body['error']).to eq('permission_denied')
-        expect(body['message']).to be_present
+        expect(body['type']).to eq('/api/docs/errors#permission_denied')
+        expect(body['detail']).to match(/not authorized/i)
         expect(body['admins']).to be_an(Array)
         expect(body['admins']).to include(hash_including(
                                             'name' => project_admin_user.name,

@@ -43,6 +43,46 @@ describe("baseApi", () => {
     expect(api._client).toBe("ky");
   });
 
+  // ── Success-body parsing ───────────────────────────────────────────
+  // REQUIREMENT: +json structured-syntax suffixes (application/problem+json,
+  // application/vnd.api+json — RFC 6839) parse as JSON, not text, matching
+  // ky's own error-body detection.
+  describe("parseBody content-type detection", () => {
+    it("parses +json suffixed media types as JSON", async () => {
+      kyPut.mockResolvedValueOnce({
+        status: 200,
+        headers: new Headers({ "content-type": "application/problem+json; charset=utf-8" }),
+        json: () => Promise.resolve({ type: "/api/docs/errors#not_found", title: "Not found" }),
+        text: () => Promise.resolve("SHOULD NOT BE USED"),
+      });
+      const { data, status } = await api.put("/anything", {});
+      expect(status).toBe(200);
+      expect(data).toEqual({ type: "/api/docs/errors#not_found", title: "Not found" });
+    });
+
+    it("still parses plain application/json as JSON", async () => {
+      kyPut.mockResolvedValueOnce({
+        status: 200,
+        headers: new Headers({ "content-type": "application/json; charset=utf-8" }),
+        json: () => Promise.resolve({ ok: true }),
+        text: () => Promise.resolve("SHOULD NOT BE USED"),
+      });
+      const { data } = await api.put("/anything", {});
+      expect(data).toEqual({ ok: true });
+    });
+
+    it("falls back to text for non-JSON media types", async () => {
+      kyPut.mockResolvedValueOnce({
+        status: 200,
+        headers: new Headers({ "content-type": "text/csv" }),
+        json: () => Promise.reject(new Error("not json")),
+        text: () => Promise.resolve("a,b,c"),
+      });
+      const { data } = await api.put("/anything", {});
+      expect(data).toEqual("a,b,c");
+    });
+  });
+
   // ── HTTP-error normalization ───────────────────────────────────────
   // REQUIREMENT: on 4xx/5xx the thrown error must carry the SERVER's parsed
   // body at error.response.data so alertOrNotifyResponse can render the
