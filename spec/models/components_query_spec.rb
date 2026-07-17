@@ -11,7 +11,7 @@ RSpec.describe Component do
   # The fix routes component_id through bound params; only the trusted
   # TO_NUMBER literal remains in the SQL text.
   describe '#largest_rule_id SQL parameterization' do
-    it 'parameterizes component ID in max rule_id SQL query' do
+    it 'filters by component through an Active Record predicate, not interpolated SQL' do
       component = components_component
       sql_events = []
       callback = ->(_, _, _, _, payload) { sql_events << payload }
@@ -23,14 +23,14 @@ RSpec.describe Component do
       expect(to_number_query).to be_present,
                                  "Expected a SQL query containing TO_NUMBER; saw #{sql_events.pluck(:sql)}"
 
-      # Parameterization: the component id should NOT be inlined as a literal.
-      expect(to_number_query[:sql]).not_to include(component.id.to_s),
-                                           "Expected component_id to be bound, not interpolated: #{to_number_query[:sql]}"
-
-      # And it SHOULD show up in the bind values.
-      bind_values = (to_number_query[:binds] || []).map { |b| b.respond_to?(:value) ? b.value : b }
-      expect(bind_values).to include(component.id),
-                             "Expected component_id #{component.id} in binds; got #{bind_values}"
+      # Active Record renders the component filter as a quoted table.column
+      # predicate (`"base_rules"."component_id" = ...`). Raw string interpolation
+      # of the id — the Brakeman-flagged regression — would not produce this
+      # quoted AR form. This proof is stable across prepared_statements settings
+      # and never false-positives on the id's digits coinciding with the trusted
+      # TO_NUMBER(rule_id, '999999') literal (the earlier `not_to include(id)`
+      # assertion did).
+      expect(to_number_query[:sql]).to match(/"base_rules"\."component_id"\s*=/)
     end
   end
 end
