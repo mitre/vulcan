@@ -8,6 +8,9 @@ ruby '3.4.9'
 gem 'rails', '~> 8.0.0'
 # Use postgresql as the database for Active Record
 gem 'pg', '>= 0.18', '< 2.0'
+# Catch unsafe migrations (table locks, blocking backfills) in dev/CI before
+# they reach a production table. Config in config/initializers/strong_migrations.rb.
+gem 'strong_migrations', '~> 2.8'
 # Use Puma as the app server
 gem 'puma', '~> 7.0'
 # Asset pipeline for JavaScript bundling
