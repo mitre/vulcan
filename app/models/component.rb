@@ -76,7 +76,11 @@ class Component < ApplicationRecord
   belongs_to :project, inverse_of: :components
   belongs_to :based_on,
              lambda {
-               select(:srg_id, :title, :version)
+               # Trimmed select skips the multi-hundred-KB xml column, but the
+               # primary key MUST stay in the list: without :id every fresh
+               # load returns an instance whose id reads nil (silently), so
+               # assigning that based_on to another component writes a NULL FK.
+               select(:id, :srg_id, :title, :version)
              },
              class_name: :SecurityRequirementsGuide,
              foreign_key: 'security_requirements_guide_id',
