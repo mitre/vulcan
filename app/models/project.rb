@@ -177,8 +177,11 @@ class Project < ApplicationRecord
                         .offset((page - 1) * per_page)
                         .limit(per_page)
                         .to_a
+    # BaseRule, not Rule: rule_id is dual-written for authored SrgRule
+    # comments too, and the Rule STI scope would drop those ids — leaving
+    # SRG rows with nil rule/component decoration.
     page_rule_ids = page_reviews.filter_map(&:rule_id).uniq
-    rule_lookup = Rule.where(id: page_rule_ids).pluck(:id, :rule_id, :component_id).to_h do |rid, rule_id, cid|
+    rule_lookup = BaseRule.where(id: page_rule_ids).pluck(:id, :rule_id, :component_id).to_h do |rid, rule_id, cid|
       [rid, { rule_id: rule_id, component_id: cid, prefix: component_lookup[cid]&.prefix }]
     end
 

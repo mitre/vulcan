@@ -636,16 +636,17 @@ class Review < ApplicationRecord
   # A duplicate marker (duplicate_of_review_id) must point to a
   # top-level comment within the SAME COMPONENT. Cross-component or
   # cross-project duplicate references are meaningless to a triager
-  # and risk leaking review IDs across project boundaries.
+  # and risk leaking review IDs across project boundaries. Component
+  # resolution goes through the kind-agnostic #component accessor: the
+  # previous Rule STI lookup returned nil for comments on authored
+  # SrgRules (and the rule_id guard skipped component-level comments),
+  # silently waiving the check for both.
   def duplicate_of_must_be_same_component
     return if duplicate_of_review_id.blank?
     return if duplicate_of_review_id == id # self-ref handled separately
-    return if rule_id.blank?
 
-    self_component_id = Rule.where(id: rule_id).pick(:component_id)
-    target_component_id = Rule.joins(:reviews)
-                              .where(reviews: { id: duplicate_of_review_id })
-                              .pick('base_rules.component_id')
+    self_component_id = component&.id
+    target_component_id = duplicate_of&.component&.id
     return if self_component_id.nil? || target_component_id.nil?
     return if self_component_id == target_component_id
 

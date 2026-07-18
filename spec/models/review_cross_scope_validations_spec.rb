@@ -117,4 +117,106 @@ RSpec.describe Review do
       _ = original_in_a1
     end
   end
+
+  # Comments on authored SRG requirements live on the polymorphic
+  # commentable (legacy rule_id column is nil) — the same-component guard
+  # must resolve their component through the kind-agnostic accessor, not
+  # the Rule-classed column.
+  describe 'duplicate_of_review_id scoping — authored SRG requirements' do
+    let_it_be(:srg_component_a) do
+      create(:component, :skip_rules, project: project_a, document_type: 'srg',
+                                      based_on: srg, prefix: 'SRGA-00',
+                                      name: 'Authored SRG A', title: 'Authored SRG A')
+    end
+    let_it_be(:srg_component_b) do
+      create(:component, :skip_rules, project: project_b, document_type: 'srg',
+                                      based_on: srg, prefix: 'SRGB-00',
+                                      name: 'Authored SRG B', title: 'Authored SRG B')
+    end
+    let_it_be(:req_a) do
+      create(:srg_rule, :authored, component: srg_component_a, rule_id: '000001',
+                                   status: 'Applicable')
+    end
+    let_it_be(:req_a2) do
+      create(:srg_rule, :authored, component: srg_component_a, rule_id: '000002',
+                                   status: 'Applicable')
+    end
+    let_it_be(:req_b) do
+      create(:srg_rule, :authored, component: srg_component_b, rule_id: '000001',
+                                   status: 'Applicable')
+    end
+
+    let(:original_on_req_a) do
+      create(:review, :comment, user: viewer, rule: nil, commentable: req_a,
+                                section: 'fixtext',
+                                comment: 'first occurrence on SRG requirement')
+    end
+
+    it 'rejects a duplicate that targets a comment in a different project' do
+      original_on_req_b = create(:review, :comment, user: viewer, rule: nil,
+                                                    commentable: req_b, section: 'fixtext',
+                                                    comment: 'unrelated SRG comment in project B')
+      dup = Review.new(action: 'comment', user: viewer, rule: nil, commentable: req_a,
+                       comment: 'cross-project duplicate attempt',
+                       triage_status: 'duplicate',
+                       triage_set_by_id: author.id, triage_set_at: Time.current,
+                       duplicate_of_review_id: original_on_req_b.id)
+      expect(dup).not_to be_valid
+      expect(dup.errors[:duplicate_of_review_id]).to include(/same component/i)
+    end
+
+    it 'rejects a duplicate that targets a STIG comment in a different component of the same project' do
+      original_in_a1 = create(:review, :comment, user: viewer,
+                                                 rule: component_a1.rules.first,
+                                                 comment: 'STIG comment on a1')
+      dup = Review.new(action: 'comment', user: viewer, rule: nil, commentable: req_a,
+                       comment: 'cross-component duplicate attempt',
+                       triage_status: 'duplicate',
+                       triage_set_by_id: author.id, triage_set_at: Time.current,
+                       duplicate_of_review_id: original_in_a1.id)
+      expect(dup).not_to be_valid
+      expect(dup.errors[:duplicate_of_review_id]).to include(/same component/i)
+    end
+
+    it 'accepts a duplicate that targets a comment on the same SRG component' do
+      dup = Review.new(action: 'comment', user: viewer, rule: nil, commentable: req_a2,
+                       comment: 'duplicate across requirements of the same component',
+                       triage_status: 'duplicate',
+                       triage_set_by_id: author.id, triage_set_at: Time.current,
+                       duplicate_of_review_id: original_on_req_a.id)
+      expect(dup).to be_valid
+    end
+  end
+
+  # Component-level comments (commentable: Component) also carry a nil
+  # rule_id — the guard's design intent ("same component, no cross-project
+  # review-ID leaks") applies to them identically.
+  describe 'duplicate_of_review_id scoping — component-level comments' do
+    it 'rejects a component-level duplicate that targets a comment in a different project' do
+      original_in_b1 = create(:review, :comment, user: viewer,
+                                                 rule: component_b1.rules.first,
+                                                 comment: 'rule comment in project B')
+      dup = Review.new(action: 'comment', user: viewer, rule: nil,
+                       commentable: component_a1,
+                       comment: 'component-level cross-project duplicate attempt',
+                       triage_status: 'duplicate',
+                       triage_set_by_id: author.id, triage_set_at: Time.current,
+                       duplicate_of_review_id: original_in_b1.id)
+      expect(dup).not_to be_valid
+      expect(dup.errors[:duplicate_of_review_id]).to include(/same component/i)
+    end
+
+    it 'accepts a component-level duplicate that targets a rule comment on the same component' do
+      original_in_a1 = create(:review, :comment, user: viewer,
+                                                 rule: component_a1.rules.first,
+                                                 comment: 'rule comment on a1')
+      dup = Review.new(action: 'comment', user: viewer, rule: nil,
+                       commentable: component_a1,
+                       comment: 'component-level duplicate of a rule comment',
+                       triage_status: 'duplicate',
+                       triage_set_by_id: author.id, triage_set_at: Time.current,
+                       duplicate_of_review_id: original_in_a1.id)
+      expect(dup).to be_valid
+    end
+  end
 end

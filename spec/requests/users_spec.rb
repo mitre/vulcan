@@ -639,6 +639,41 @@ RSpec.describe 'Users' do
                                             responding_to_review_id: @other_users_c.id)
     end
 
+    # Authored-SRG comments carry the requirement on the polymorphic
+    # commentable (legacy rule_id is nil) — the display map must key by the
+    # requirement id or every SRG row collapses onto one nil key and rows
+    # show each other's display names.
+    context 'with comments on authored SRG requirements' do
+      before do
+        srg_component = create(:component, :skip_rules, project: my_project,
+                                                        document_type: 'srg', based_on: srg,
+                                                        prefix: 'SRGT-00', name: 'Authored SRG',
+                                                        title: 'Authored SRG')
+        authored_one = create(:srg_rule, :authored, component: srg_component,
+                                                    rule_id: '000001', status: 'Applicable')
+        authored_two = create(:srg_rule, :authored, component: srg_component,
+                                                    rule_id: '000002', status: 'Applicable')
+        @srg_comment_one = create(:review, :comment, comment: 'srg one', user: viewer,
+                                                     rule: nil, commentable: authored_one,
+                                                     section: 'fixtext')
+        @srg_comment_two = create(:review, :comment, comment: 'srg two', user: viewer,
+                                                     rule: nil, commentable: authored_two,
+                                                     section: 'fixtext')
+        sign_in viewer
+      end
+
+      it 'decorates each SRG row with its OWN requirement display name and component' do
+        get "/users/#{viewer.id}/comments", as: :json
+
+        rows = response.parsed_body['rows']
+        row_one = rows.find { |r| r['id'] == @srg_comment_one.id }
+        row_two = rows.find { |r| r['id'] == @srg_comment_two.id }
+        expect(row_one['rule_displayed_name']).to eq('SRGT-00-000001')
+        expect(row_two['rule_displayed_name']).to eq('SRGT-00-000002')
+        expect(row_one['component_name']).to eq('Authored SRG')
+      end
+    end
+
     context 'as the viewer requesting their own comments' do
       before { sign_in viewer }
 
