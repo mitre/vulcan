@@ -529,8 +529,7 @@ RSpec.describe 'JSON Archive Backup Round-Trip' do
       it 'handles conflicting component with rename' do
         # Create conflict in target
         create(:component, project: target_project,
-                           name: source_component.name,
-                           based_on: source_component.based_on)
+                           name: source_component.name)
 
         renamed = "#{source_component.name} (restored)"
         filter = { source_component.name => renamed, second_component.name => second_component.name }

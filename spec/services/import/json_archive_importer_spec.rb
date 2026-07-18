@@ -364,8 +364,7 @@ RSpec.describe Import::JsonArchiveImporter do
       before do
         create(:component,
                project: target_project,
-               name: source_component.name,
-               based_on: source_component.based_on)
+               name: source_component.name)
       end
 
       it 'fails with conflict error' do
@@ -496,8 +495,7 @@ RSpec.describe Import::JsonArchiveImporter do
       it 'detects conflicts with existing components' do
         create(:component,
                project: target_project,
-               name: source_component.name,
-               based_on: source_component.based_on)
+               name: source_component.name)
 
         filter = { second_component.name => second_component.name }
         result = import_archive(project_backup_zip, target_project,
@@ -510,8 +508,7 @@ RSpec.describe Import::JsonArchiveImporter do
       it 'allows importing conflicting component with renamed name via filter' do
         create(:component,
                project: target_project,
-               name: source_component.name,
-               based_on: source_component.based_on)
+               name: source_component.name)
 
         new_name = "#{source_component.name} (restored)"
         filter = {
@@ -531,8 +528,7 @@ RSpec.describe Import::JsonArchiveImporter do
       before do
         create(:component,
                project: target_project,
-               name: source_component.name,
-               based_on: source_component.based_on)
+               name: source_component.name)
       end
 
       it 'treats conflicts as warnings (not errors) when component_filter is provided' do

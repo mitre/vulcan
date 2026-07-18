@@ -18,7 +18,7 @@ RSpec.describe 'Component relationships' do
 
     it 'response does not leak AR timestamps or internal FKs' do
       create(:component, project: project, name: 'Same-SRG Sibling',
-                         based_on: component.based_on)
+                         security_requirements_guide_id: component.security_requirements_guide_id)
       get "/components/#{component.id}/related", headers: { 'Accept' => application_json }
 
       expect(response).to have_http_status(:success)

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_13_220000) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_17_232023) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -133,13 +133,23 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_13_220000) do
     t.index ["component_id"], name: "by_component_id", unique: true
   end
 
+  create_table "component_source_srgs", force: :cascade do |t|
+    t.bigint "component_id", null: false
+    t.bigint "security_requirements_guide_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["component_id", "security_requirements_guide_id"], name: "index_component_source_srgs_on_component_and_srg", unique: true
+    t.index ["component_id"], name: "index_component_source_srgs_on_component_id"
+    t.index ["security_requirements_guide_id"], name: "index_component_source_srgs_on_security_requirements_guide_id"
+  end
+
   create_table "components", force: :cascade do |t|
     t.bigint "project_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "component_id"
     t.string "prefix"
-    t.bigint "security_requirements_guide_id"
+    t.bigint "security_requirements_guide_id", null: false
     t.string "name"
     t.boolean "released", default: false, null: false
     t.integer "memberships_count", default: 0
@@ -365,6 +375,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_13_220000) do
     t.datetime "updated_at", null: false
     t.date "release_date"
     t.string "name"
+    t.boolean "core", default: false, null: false
     t.index ["name"], name: "index_srgs_on_name_trigram", opclass: :gin_trgm_ops, using: :gin
     t.index ["srg_id", "version"], name: "security_requirements_guides_id_and_version", unique: true
     t.index ["title"], name: "index_srgs_on_title_trigram", opclass: :gin_trgm_ops, using: :gin
@@ -467,6 +478,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_13_220000) do
   add_foreign_key "base_rules", "security_requirements_guides"
   add_foreign_key "base_rules", "stigs"
   add_foreign_key "base_rules", "users", column: "review_requestor_id"
+  add_foreign_key "component_source_srgs", "components", on_delete: :cascade
+  add_foreign_key "component_source_srgs", "security_requirements_guides"
   add_foreign_key "components", "components"
   add_foreign_key "identities", "users", on_delete: :cascade
   add_foreign_key "memberships", "users"

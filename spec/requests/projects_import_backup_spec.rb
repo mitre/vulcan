@@ -235,8 +235,7 @@ RSpec.describe 'Project Import Backup' do
 
     it 'returns 422 when component name conflicts' do
       # Create a component with same name as source
-      create(:component, project: project, name: source_component.name,
-                         based_on: source_component.based_on)
+      create(:component, project: project, name: source_component.name)
 
       post "/projects/#{project.id}/import_backup",
            params: { file: uploaded_file }

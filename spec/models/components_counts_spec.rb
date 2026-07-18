@@ -147,23 +147,11 @@ RSpec.describe Component do
       expect(json[:status_counts]).to have_key(:not_yet_determined)
     end
 
-    # REQUIREMENT: as_json must not crash when based_on (SRG) is nil.
-    # This can happen with legacy data or components created without an SRG link.
-    it 'handles nil based_on gracefully' do
-      orphan = Component.new(
-        project: components_component.project, name: 'Orphan', title: 'Orphan STIG',
-        version: 99, release: 1, prefix: 'ORPH-01'
-      )
-      # Skip validations to create a component without based_on
-      orphan.save!(validate: false)
-
-      expect { orphan.as_json }.not_to raise_error
-      json = orphan.as_json
-      expect(json[:based_on_title]).to be_nil
-      expect(json[:based_on_version]).to be_nil
-
-      orphan.destroy!
-    end
+    # An earlier example asserted as_json tolerates a nil based_on. That state
+    # is now unreachable — components.security_requirements_guide_id is NOT NULL
+    # and as_json only ever runs on persisted components — so the constraint
+    # (not a unit test of defensive code) is the guarantee. Removed rather than
+    # adapted to an artificial in-memory scenario that never occurs.
   end
 
   describe '#csv_export' do

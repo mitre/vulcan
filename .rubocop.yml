@@ -96,6 +96,9 @@ Rails/SkipsModelValidations:
   Exclude:
     - spec/**/*
     - lib/tasks/**/*
+    # Migrations operate at the schema/data level via migration-local models
+    # with no validations — bulk backfills legitimately use insert_all/update_all.
+    - db/migrate/**/*
 # FactoryBot/FactoryAssociationWithStrategy changes build vs create behavior —
 # fixing requires verifying all tests still pass with implicit associations.
 # TODO: Fix factories to use implicit associations in dedicated session.
