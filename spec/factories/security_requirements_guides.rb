@@ -10,6 +10,12 @@ FactoryBot.define do
     xml { XML_FILE }
     release_date { Time.zone.today }
 
+    # A core-family SRG — the non-public raw material SRG-kind components
+    # derive from (never a valid STIG parent).
+    trait :core do
+      core { true }
+    end
+
     # Lightweight SRG that skips the ~250 rule import from the XML fixture.
     # Use when tests hand-craft srg_rules (e.g., pinning severity counts).
     # Same pattern as the stig factory's :skip_rules trait.

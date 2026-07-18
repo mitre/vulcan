@@ -645,8 +645,10 @@ RSpec.describe 'Users' do
     # show each other's display names.
     context 'with comments on authored SRG requirements' do
       before do
+        core_srg = create(:security_requirements_guide, :skip_rules, :core,
+                          srg_id: 'SRG-CORE-MYCOM', version: 'V1R1')
         srg_component = create(:component, :skip_rules, project: my_project,
-                                                        document_type: 'srg', based_on: srg,
+                                                        document_type: 'srg', based_on: core_srg,
                                                         prefix: 'SRGT-00', name: 'Authored SRG',
                                                         title: 'Authored SRG')
         authored_one = create(:srg_rule, :authored, component: srg_component,

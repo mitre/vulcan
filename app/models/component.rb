@@ -7,6 +7,7 @@ class Component < ApplicationRecord
   include ExportConstants
   include ActionView::Helpers::TextHelper
   include SeverityCounts
+  include ComponentParentSet
   include RequirementBuckets
   include XccdfParseable
   include BenchmarkSearchable
@@ -36,6 +37,7 @@ class Component < ApplicationRecord
   amoeba do
     include_association :component_metadata
     include_association :rules
+    include_association :component_source_srgs
     include_association :additional_questions
     set released: false
     # Don't set rules_count - it will be recalculated after save

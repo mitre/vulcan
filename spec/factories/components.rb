@@ -5,7 +5,18 @@ FactoryBot.define do
     project { create(:project) }
     # Reuse existing SRG to avoid re-parsing 604KB XML + importing ~250 rules each time.
     # The SRG import is the single most expensive factory operation (~500ms per call).
-    based_on { SecurityRequirementsGuide.first || create(:security_requirements_guide) }
+    # Kind-aware: parent eligibility requires core families for srg-kind
+    # components and derived (non-core) for stig-kind — each kind reuses
+    # its own shared eligible SRG.
+    based_on do
+      if document_type == 'srg'
+        SecurityRequirementsGuide.where(core: true).first ||
+          create(:security_requirements_guide, :core)
+      else
+        SecurityRequirementsGuide.where(core: false).first ||
+          create(:security_requirements_guide)
+      end
+    end
 
     prefix { 'ABCD-00' }
     name { FFaker::Name.name }

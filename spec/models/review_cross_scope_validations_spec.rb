@@ -123,14 +123,18 @@ RSpec.describe Review do
   # must resolve their component through the kind-agnostic accessor, not
   # the Rule-classed column.
   describe 'duplicate_of_review_id scoping — authored SRG requirements' do
+    let_it_be(:core_srg) do
+      create(:security_requirements_guide, :skip_rules, :core,
+             srg_id: 'SRG-CORE-XSCOPE', version: 'V1R1')
+    end
     let_it_be(:srg_component_a) do
       create(:component, :skip_rules, project: project_a, document_type: 'srg',
-                                      based_on: srg, prefix: 'SRGA-00',
+                                      based_on: core_srg, prefix: 'SRGA-00',
                                       name: 'Authored SRG A', title: 'Authored SRG A')
     end
     let_it_be(:srg_component_b) do
       create(:component, :skip_rules, project: project_b, document_type: 'srg',
-                                      based_on: srg, prefix: 'SRGB-00',
+                                      based_on: core_srg, prefix: 'SRGB-00',
                                       name: 'Authored SRG B', title: 'Authored SRG B')
     end
     let_it_be(:req_a) do

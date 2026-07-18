@@ -111,7 +111,7 @@ RSpec.describe Component do
 
     it 'is immutable after create' do
       srg_component = Component.create!(project: components_project, name: 'Authored SRG', title: 'Authored SRG',
-                                        prefix: 'ASRG-00', based_on: components_srg,
+                                        prefix: 'ASRG-00', based_on: components_core_srg,
                                         skip_import_srg_rules: true, document_type: 'srg')
       expect(srg_component.document_type).to eq('srg')
 

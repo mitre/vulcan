@@ -14,9 +14,13 @@ RSpec.describe 'Project#paginated_comments — row decoration' do
   let_it_be(:stig_component) do
     create(:component, project: project, based_on: srg, prefix: 'STIG-00')
   end
+  let_it_be(:core_srg) do
+    create(:security_requirements_guide, :skip_rules, :core,
+           srg_id: 'SRG-CORE-PPAG', version: 'V1R1')
+  end
   let_it_be(:srg_component) do
     create(:component, :skip_rules, project: project, document_type: 'srg',
-                                    based_on: srg, prefix: 'SRGT-00',
+                                    based_on: core_srg, prefix: 'SRGT-00',
                                     name: 'Authored SRG', title: 'Authored SRG')
   end
   let_it_be(:authored) do

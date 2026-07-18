@@ -182,7 +182,7 @@ RSpec.describe Component do
 
     it 'routes an srg component to its live authored SrgRules, never rules_count' do
       srg_component = Component.create!(project: components_project, name: 'Authored SRG', title: 'Authored SRG',
-                                        prefix: 'ASRG-01', based_on: components_srg,
+                                        prefix: 'ASRG-01', based_on: components_core_srg,
                                         skip_import_srg_rules: true, document_type: 'srg')
       authored = create_list(:srg_rule, 2, :authored, component: srg_component)
 

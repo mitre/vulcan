@@ -13,6 +13,13 @@ RSpec.shared_context 'components model base setup' do
     srg.save!
     srg
   end
+  # Core-family SRG for srg-kind components (parent eligibility requires
+  # core parents for that kind; components_srg is derived and serves the
+  # stig-kind components).
+  let_it_be(:components_core_srg) do
+    create(:security_requirements_guide, :skip_rules, :core,
+           srg_id: 'SRG-CORE-TEST', version: 'V1R1')
+  end
   let_it_be(:components_project) { create(:project, name: 'Photon OS 3') }
   let_it_be(:components_component) do
     Component.create!(project: components_project, name: 'Photon OS 3', title: 'Photon OS 3 STIG',

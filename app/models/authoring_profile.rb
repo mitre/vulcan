@@ -34,8 +34,10 @@ class AuthoringProfile
       key: 'stig',
       statuses: RuleConstants::STATUSES,
       field_config_key: 'stig',
-      # STIG components may derive from any catalog SRG (today's behavior).
-      parent_eligibility: :any_srg,
+      # STIG components derive from derived (non-core) SRGs only — the
+      # cores are the authors' non-public raw material, never a valid
+      # STIG base.
+      parent_eligibility: :derived_srgs,
       # Editor surfaces that exist only for Rule-backed requirements.
       panels: %i[satisfies inspec stig_answers]
     ),
@@ -58,5 +60,29 @@ class AuthoringProfile
 
   def self.keys
     REGISTRY.keys
+  end
+
+  def self.profile?(key)
+    REGISTRY.key?(key.to_s)
+  end
+
+  # Per-profile parent eligibility — the ONE kind-difference in the
+  # multi-parent model. Expressed as policy so a third profile adds a row
+  # and (at most) a new policy symbol, never a hard-coded kind pair.
+  def parent_eligible?(srg)
+    case parent_eligibility
+    when :core_srgs then srg.core
+    when :derived_srgs then !srg.core
+    else raise ArgumentError, "unknown parent_eligibility policy: #{parent_eligibility.inspect}"
+    end
+  end
+
+  # Human wording for eligibility failures, per policy.
+  def parent_eligibility_requirement
+    case parent_eligibility
+    when :core_srgs then 'a core SRG family'
+    when :derived_srgs then 'a derived (non-core) SRG family'
+    else raise ArgumentError, "unknown parent_eligibility policy: #{parent_eligibility.inspect}"
+    end
   end
 end

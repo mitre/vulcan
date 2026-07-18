@@ -43,9 +43,11 @@ RSpec.describe AuthoringProfile do
       )
     end
 
-    it 'carries the stig field-config key, any-SRG parent policy, and the Rule-only panels' do
+    it 'carries the stig field-config key, derived-parent policy, and the Rule-only panels' do
       expect(profile.field_config_key).to eq('stig')
-      expect(profile.parent_eligibility).to eq(:any_srg)
+      # Cores are the authors' non-public raw material — never a valid
+      # STIG base; STIG components derive from derived (non-core) SRGs.
+      expect(profile.parent_eligibility).to eq(:derived_srgs)
       expect(profile.panels).to eq(%i[satisfies inspec stig_answers])
     end
   end

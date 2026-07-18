@@ -90,9 +90,13 @@ Remaining open items (§10): all three core family identifiers
 (SRG-NET/SRG-OS/SRG-APP namespace documents — non-public, supplied by
 Aaron with the core documents at upload; GPOS is a *derived* SRG, not the
 OS core); export emit-shape details (pinned by diffing published
-SRG XMLs); severity/CCI inheritance source (§10.9 — working assumption
-`derived_from`; decide before the field-config card). *(v8: per-status
+SRG XMLs). *(v8: per-status
 SRG field-config content is RESOLVED — the §4.1 lifecycle table.)*
+*(v9, Aaron 2026-07-18: §10.9 severity/CCI inheritance source is
+RESOLVED — **per-requirement `derived_from`**: each authored row
+inherits its read-only severity and CCI/IA-control display from its own
+core catalog row, correct under dual lineage where sibling requirements
+derive from different cores.)*
 
 ## 0.1 Scoping amendment (Will Dower, 2026-07-12)
 
