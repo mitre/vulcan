@@ -128,6 +128,47 @@ serves any XCCDF upstream. Renaming/widening later is a rename + a nullable
 column, not a redesign. We record the debt here so the third profile is a
 known, costed follow-on rather than a surprise.
 
+## 0.2 Completion-sweep amendment (Aaron, 2026-07-18 — v9)
+
+A five-dimension verified sweep of the shipped seam (backend queries,
+export/import/backup, frontend, API contract, documentation — method and
+full gap inventory: `docs/plans/srg-codebase-impact.md`) confirmed the §3
+architecture landed correctly and found the remaining gaps concentrated in
+a **second fetch family** the first migration never touched (copy,
+spreadsheet update, pickers, in-component find, comment decoration, one
+validator). Four decisions and three standing rules:
+
+| # | Fork | Decision |
+|---|---|---|
+| 15 | Entity noun | **Kind-keyed.** SRG surfaces say **Requirement**, STIG surfaces say **Rule** — DISA vocabulary. Layers ON TOP of the existing deployment-wide rename capability; same config shape as the kind-keyed status descriptions (§3.1 terminology entry). |
+| 16 | Audit revert | **Kind-parity.** Authored `SrgRule`s are audited; history revert serves both kinds. The Rule-only guard on the revert endpoint lifts; a Rule-only-attribute restore fails loudly, never silently. |
+| 17 | Compare / history diff | **This ADR's surfaces.** Component compare and version-history diff kind-route through `Component#requirements` here — not deferred to the sync/merge epic. |
+| 18 | Component copy | **ONE kind-aware path.** User duplicate, overlay, and release-copy converge on one requirements-based deep-copy helper (refines §14 phase 3's "amoeba/duplicate gating" — routing, not just gating). |
+
+Standing rules (enforced, not aspirational):
+
+- **The kind-seam query invariant:** no requirement-scoped code reads
+  `Rule.where(...)` / `component.rules` — always `Component#requirements` /
+  `BaseRule.live_for_components`. Enforced mechanically by a custom cop
+  whose explicit allowlist names each blessed STIG-only surface (satisfies
+  graph, InSpec, spreadsheet-import internals, STIG ID minting). The sweep
+  proved vigilance alone does not hold — regressions sat beside
+  already-fixed siblings.
+- **Loud doors, never silent-empty:** structurally STIG-only surfaces
+  reject unsupported kinds with an explicit error (the `rules#create`
+  pattern). A surface returning empty where it should refuse is the defect
+  class the sweep kept finding.
+- **Archives round-trip the whole parent set:** the backup format
+  serializes and restores `component_source_srgs` portably (srg_id +
+  version, matching `based_on`) — a dual-lineage component survives
+  backup/restore intact. Completes decision #4's join table through the
+  archive layer.
+
+Reality correction to earlier text: `ExportHelper` — including the
+`export_helper.rb:286` satisfies-guard site named in §14 phase 7 — is
+dead, specs-only code superseded by the export formatters. It is
+**deleted**, not guarded.
+
 ## 1. Context
 
 Per Aaron/STIG leads (2026-07-10): DISA publishes all SRGs and STIGs;
@@ -431,7 +472,9 @@ JavaScript:
   `useRuleNavigation`/`reviewActionHelpers`. Both components and their
   specs were REMOVED, 2026-07-14.)*
 - Partial references (lock tooltips/messages): `reviewActionHelpers.js`,
-  `terminology.js`. **[P]**
+  `terminology.js`. **[P]** *(v9, §0.2 #15: the entity noun itself is also
+  kind-keyed — Requirement/SRG vs Rule/STIG — composing with, not
+  replacing, the deployment-wide rename.)*
 - Phase 2 AC: grep for prefix/substring matches on `'Applicable'` that the
   new bare value would wrongly satisfy.
 
@@ -1060,10 +1103,11 @@ should be settled before their phase is carded:
    published_stig.rb:20-36 pulls Rule-only associations), an
    authored-`SrgRule` fetch replacing `component.rules` (export
    base.rb:195 — the Rule association is EMPTY for an SRG component;
-   **this phase owns that fix**), and guards on ALL THREE Rule-only
+   **this phase owns that fix**), and guards on ~~ALL THREE~~ the Rule-only
    `rule.satisfies` export/backup sites (xccdf_formatter.rb:124,
-   export_helper.rb:286, backup_serializer.rb:181 — near-duplicate code,
-   a DRY smell the dual-XCCDF rebuild partly retires). Plus release
+   ~~export_helper.rb:286~~ *(v9: `ExportHelper` is dead specs-only code —
+   deleted, not guarded; §0.2)*, backup_serializer.rb:181 — near-duplicate
+   code, a DRY smell the dual-XCCDF rebuild partly retires). Plus release
    readme/changelog removals + local catalog attachment (§8.2).
    **Cross-ADR sequencing (v7.4):** the companion dual-XCCDF ADR
    rebuilds the same formatter (`VersionProfile` + `format_id`) on this
@@ -1087,3 +1131,15 @@ to lose between two storage phases:**
   both profiles**: create → pick sources → import → set statuses from the
   correct vocabulary → confirm the wrong profile's options are never
   offered (not merely rejected).
+
+**Completion sweep (v9, 2026-07-18).** With the phase 1–3 foundations
+shipped, a verified five-dimension sweep mapped every remaining kind gap
+across the wider codebase and carded the completion work as two sub-epics
+under the initiative — kind-seam completion (copy, lifecycle, discovery
+surfaces, the enforcement cop) and DISA-process documentation (SRG
+authoring page, hierarchy diagrams, staleness edits) — plus
+contract/frontend standalones. Inventory, severities, and the architecture
+rationale live in `docs/plans/srg-codebase-impact.md`; the §0.2 decisions
+and standing rules are their contract. The documentation sub-epic also
+owns embedding the built VitePress docs site in-app (its own design note,
+deliberately outside this ADR's data-model scope).
