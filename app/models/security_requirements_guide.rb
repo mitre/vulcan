@@ -9,6 +9,8 @@ class SecurityRequirementsGuide < ApplicationRecord
   include VersionSortable
   include BenchmarkSearchable
 
+  self.version_family_column = :srg_id
+
   def self.search_columns
     %w[name title srg_id]
   end
@@ -31,11 +33,19 @@ class SecurityRequirementsGuide < ApplicationRecord
 
   def self.srg_info_for_components(components)
     latest_ids = latest_versions.pluck(:id).to_set
+    # Currency covers the WHOLE parent set (title/version stay the
+    # primary's — display); one batched join-row query for all components.
+    parent_map = ComponentSourceSrg.where(component_id: components.map(&:id))
+                                   .pluck(:component_id, :security_requirements_guide_id)
+                                   .group_by(&:first)
+                                   .transform_values { |rows| rows.map(&:last) }
     components.each_with_object({}) do |c, map|
       srg = c.based_on
       next unless srg
 
-      map[c.id] = { title: srg.title, version: srg.version, is_latest: latest_ids.include?(srg.id) }
+      parent_ids = parent_map[c.id] || [srg.id]
+      map[c.id] = { title: srg.title, version: srg.version,
+                    is_latest: parent_ids.all? { |pid| latest_ids.include?(pid) } }
     end
   end
 

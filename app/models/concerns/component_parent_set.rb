@@ -21,6 +21,30 @@ module ComponentParentSet
     validate :parents_must_satisfy_profile_eligibility
   end
 
+  # Declared parents whose family has a newer release — primary first, so
+  # the update affordance targets the primary's upgrade when several are
+  # stale. Currency is a property of the WHOLE parent set.
+  def stale_parents
+    source_srgs.to_a
+               .sort_by { |srg| srg.id == security_requirements_guide_id ? 0 : 1 }
+               .reject(&:latest?)
+  end
+
+  # Current only when every declared parent is its family's latest.
+  def parents_current?
+    parents = source_srgs.to_a
+    parents.present? && parents.all?(&:latest?)
+  end
+
+  # Replace the declared member of new_srg's family with new_srg — the
+  # revision upgrade path for a non-primary parent. Safe on unsaved
+  # amoeba copies: built rows are dropped from the target, persisted rows
+  # marked for destruction (autosave destroys them in the save).
+  def replace_parent_family(new_srg)
+    supersede_family_members(new_srg.srg_id)
+    component_source_srgs.build(security_requirements_guide: new_srg)
+  end
+
   # Does any live requirement of this component source the given SRG
   # family (srg_id)? Version-tolerant: a Rule's srg_rule or an authored
   # SrgRule's derived_from may reference ANY catalog version of the
@@ -47,14 +71,18 @@ module ComponentParentSet
     return if active.any? { |row| row.security_requirements_guide_id == security_requirements_guide_id }
 
     family = based_on&.srg_id
-    if family
-      active.each do |row|
-        next unless row.security_requirements_guide&.srg_id == family
-
-        row.persisted? ? row.mark_for_destruction : component_source_srgs.delete(row)
-      end
-    end
+    supersede_family_members(family) if family
+    # Build by id, not by assigning based_on's instance — its trimmed
+    # select would poison later attribute reads through the join row.
     component_source_srgs.build(security_requirements_guide_id: security_requirements_guide_id)
+  end
+
+  def supersede_family_members(family)
+    component_source_srgs.reject(&:marked_for_destruction?).each do |row|
+      next unless row.security_requirements_guide&.srg_id == family
+
+      row.persisted? ? row.mark_for_destruction : component_source_srgs.delete(row)
+    end
   end
 
   def based_on_must_be_declared_parent

@@ -8,6 +8,8 @@ class Stig < ApplicationRecord
   include VersionSortable
   include BenchmarkSearchable
 
+  self.version_family_column = :stig_id
+
   has_many :stig_rules, dependent: :destroy
 
   def self.search_columns

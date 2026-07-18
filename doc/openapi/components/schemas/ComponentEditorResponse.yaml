@@ -119,19 +119,27 @@ allOf:
         example: false
       srg_is_latest:
         type: boolean
-        description: Whether the component's based_on SRG is the latest version of its family.
+        description: >-
+          Whether EVERY declared source SRG of the component is the latest
+          version of its family. A component with any stale parent —
+          including a secondary parent under dual lineage — reports false.
         example: true
       srg_latest_version:
         type:
           - string
           - 'null'
-        description: Version string of the latest SRG in the same family. Null when srg_is_latest=true.
+        description: >-
+          Version string of the newest release available for the first
+          stale parent (primary first, then secondaries). Null when
+          srg_is_latest=true.
         example: null
       srg_latest_id:
         type:
           - integer
           - 'null'
-        description: ID of the latest SRG for linking. Null when srg_is_latest=true.
+        description: >-
+          ID of that newest release for linking. Null when
+          srg_is_latest=true.
         example: null
       status_counts:
         description: >-

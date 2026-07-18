@@ -150,18 +150,19 @@ class ComponentBlueprint < Blueprinter::Base
       component.status_counts
     end
 
+    # Currency covers the WHOLE parent set: a dual-lineage component is
+    # stale when ANY declared parent has a newer release. The latest_*
+    # fields target the first stale parent (primary first).
     field :srg_is_latest do |component, _options|
-      component.based_on&.latest? || false
+      component.parents_current?
     end
 
     field :srg_latest_version do |component, _options|
-      srg = component.based_on
-      srg&.latest? ? nil : srg&.latest_for_family&.version
+      component.stale_parents.first&.latest_for_family&.version
     end
 
     field :srg_latest_id do |component, _options|
-      srg = component.based_on
-      srg&.latest? ? nil : srg&.latest_for_family&.id
+      component.stale_parents.first&.latest_for_family&.id
     end
 
     field :additional_questions do |component, _options|

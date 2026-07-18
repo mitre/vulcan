@@ -22,6 +22,9 @@ RSpec.describe ComponentSourceSrg do
   let_it_be(:fam_b) do
     create(:security_requirements_guide, :skip_rules, srg_id: 'SRG-FAM-B', version: 'V1R1')
   end
+  let_it_be(:fam_b_v2) do
+    create(:security_requirements_guide, :skip_rules, srg_id: 'SRG-FAM-B', version: 'V1R2')
+  end
   let_it_be(:core_srg) do
     create(:security_requirements_guide, :skip_rules, :core, srg_id: 'SRG-CORE-OS', version: 'V1R1')
   end
@@ -159,6 +162,27 @@ RSpec.describe ComponentSourceSrg do
       # Version-tolerant invariant: the copied rule still sources the OLD
       # catalog row (kept by design) — same family, so the set is valid.
       expect(revision.source_srgs.map(&:srg_id)).to include(catalog_row.security_requirements_guide.srg_id)
+    end
+
+    # The revision guard compares the FULL parent set, not primary-only:
+    # an exact member needs no rebase, and a secondary-family upgrade
+    # replaces that member without flipping the primary designation.
+    it 'short-circuits when the requested SRG is already a declared secondary parent' do
+      component = stig_component
+      component.component_source_srgs.create!(security_requirements_guide: fam_b)
+      revision = component.duplicate(new_name: 'No-op revision', new_srg_id: fam_b.id)
+      revision.save!
+      expect(revision.based_on).to eq(fam_a_v1)
+      expect(revision.source_srgs.reload).to contain_exactly(fam_a_v1, fam_b)
+    end
+
+    it 'upgrades a SECONDARY family member without flipping the primary' do
+      component = stig_component
+      component.component_source_srgs.create!(security_requirements_guide: fam_b)
+      revision = component.duplicate(new_name: 'Secondary upgrade', new_srg_id: fam_b_v2.id)
+      revision.save!
+      expect(revision.based_on).to eq(fam_a_v1)
+      expect(revision.source_srgs.reload).to contain_exactly(fam_a_v1, fam_b_v2)
     end
   end
 end
