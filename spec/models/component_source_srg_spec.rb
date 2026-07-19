@@ -185,4 +185,51 @@ RSpec.describe ComponentSourceSrg do
       expect(revision.source_srgs.reload).to contain_exactly(fam_a_v1, fam_b_v2)
     end
   end
+
+  describe 'add-parent-later (#add_source_parent!)' do
+    let_it_be(:core_srg_b) do
+      create(:security_requirements_guide, :skip_rules, :core, srg_id: 'SRG-CORE-APP', version: 'V1R1')
+    end
+    let_it_be(:core_b_rows) do
+      %w[SRG-APP-000201 SRG-APP-000202].map do |version|
+        create(:srg_rule, security_requirements_guide: core_srg_b, version: version)
+      end
+    end
+
+    let(:srg_component) do
+      create(:component, :skip_rules, document_type: 'srg', project: project,
+                                      based_on: core_srg, prefix: 'PSET-00')
+    end
+
+    it 'declares the parent and imports its full requirement set through the one machinery' do
+      srg_component.add_source_parent!(core_srg_b)
+
+      expect(srg_component.source_srgs.reload).to contain_exactly(core_srg, core_srg_b)
+      rows = srg_component.authored_srg_rules.reload
+      expect(rows.map(&:version)).to match_array(%w[SRG-APP-000201 SRG-APP-000202])
+      expect(rows.map(&:derived_from_srg_rule_id)).to match_array(core_b_rows.map(&:id))
+    end
+
+    it 'imports only the offered selection when versions are given' do
+      srg_component.add_source_parent!(core_srg_b, versions: ['SRG-APP-000202'])
+
+      expect(srg_component.source_srgs.reload).to contain_exactly(core_srg, core_srg_b)
+      expect(srg_component.authored_srg_rules.pluck(:version)).to eq(['SRG-APP-000202'])
+    end
+
+    it 'rejects an ineligible parent and persists neither the declaration nor any rows' do
+      expect { srg_component.add_source_parent!(fam_b) }
+        .to raise_error(ActiveRecord::RecordInvalid, /core SRG family/)
+
+      expect(srg_component.source_srgs.reload).to contain_exactly(core_srg)
+      expect(srg_component.authored_srg_rules.count).to eq(0)
+    end
+
+    it 'rejects a parent that is already declared' do
+      expect { srg_component.add_source_parent!(core_srg) }
+        .to raise_error(ActiveRecord::RecordInvalid, /already been taken/)
+
+      expect(srg_component.source_srgs.reload).to contain_exactly(core_srg)
+    end
+  end
 end

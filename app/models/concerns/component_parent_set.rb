@@ -36,6 +36,19 @@ module ComponentParentSet
     parents.present? && parents.all?(&:latest?)
   end
 
+  # Declare a new source parent and import its requirements through the
+  # one import machinery, atomically — eligibility and membership are
+  # enforced by the component validations before any row is generated.
+  # versions: nil imports the parent's full requirement set; a list (the
+  # accepted subset of an offer) imports only those requirements.
+  def add_source_parent!(srg, versions: nil)
+    transaction do
+      component_source_srgs.build(security_requirements_guide: srg)
+      save!
+      RequirementImportService.new(self).import_parent!(srg, versions: versions)
+    end
+  end
+
   # Replace the declared member of new_srg's family with new_srg — the
   # revision upgrade path for a non-primary parent. Safe on unsaved
   # amoeba copies: built rows are dropped from the target, persisted rows
