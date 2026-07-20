@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_17_232023) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_20_210000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -300,6 +300,21 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_17_232023) do
     t.bigint "base_rule_id"
   end
 
+  create_table "requirement_relocations", force: :cascade do |t|
+    t.bigint "source_rule_id", null: false
+    t.string "target_technology_token", null: false
+    t.bigint "target_rule_id"
+    t.bigint "requested_by_id"
+    t.datetime "executed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["requested_by_id"], name: "index_requirement_relocations_on_requested_by_id"
+    t.index ["source_rule_id"], name: "index_requirement_relocations_on_source_rule_id"
+    t.index ["source_rule_id"], name: "index_requirement_relocations_pending_source", unique: true, where: "(executed_at IS NULL)"
+    t.index ["target_rule_id"], name: "index_requirement_relocations_on_target_rule_id"
+    t.index ["target_technology_token"], name: "index_requirement_relocations_on_target_technology_token"
+  end
+
   create_table "reviews", force: :cascade do |t|
     t.bigint "user_id"
     t.bigint "rule_id"
@@ -488,6 +503,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_17_232023) do
   add_foreign_key "project_access_requests", "users"
   add_foreign_key "reactions", "reviews", on_delete: :cascade
   add_foreign_key "reactions", "users", on_delete: :cascade
+  add_foreign_key "requirement_relocations", "base_rules", column: "source_rule_id"
+  add_foreign_key "requirement_relocations", "base_rules", column: "target_rule_id", on_delete: :nullify
+  add_foreign_key "requirement_relocations", "users", column: "requested_by_id", on_delete: :nullify
   add_foreign_key "reviews", "base_rules", column: "addressed_by_rule_id", on_delete: :restrict
   add_foreign_key "reviews", "base_rules", column: "rule_id", on_delete: :restrict
   add_foreign_key "reviews", "reviews", column: "duplicate_of_review_id", on_delete: :nullify

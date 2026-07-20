@@ -149,6 +149,13 @@ allOf:
         oneOf:
           - $ref: ./RulesByStatus.yaml
           - $ref: ./SrgRulesByStatus.yaml
+      moved_out_count:
+        type: integer
+        description: >-
+          Requirements that relocated OUT of this component — a lifecycle
+          fact counted from executed relocation records, never one of the
+          status buckets. Always 0 for stig-kind components.
+        example: 0
       additional_questions:
         type: array
         description: Component-level custom questions for rule authors.

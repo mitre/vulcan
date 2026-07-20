@@ -150,6 +150,13 @@ class ComponentBlueprint < Blueprinter::Base
       component.status_counts
     end
 
+    # Requirements that relocated OUT — a lifecycle fact from executed
+    # relocation records, never one of the status buckets. Always 0 for
+    # stig-kind components (relocation is SRG-authoring, source side).
+    field :moved_out_count do |component, _options|
+      component.moved_out_count
+    end
+
     # Currency covers the WHOLE parent set: a dual-lineage component is
     # stale when ANY declared parent has a newer release. The latest_*
     # fields target the first stale parent (primary first).

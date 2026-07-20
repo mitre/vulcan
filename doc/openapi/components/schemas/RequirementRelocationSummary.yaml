@@ -1,0 +1,52 @@
+description: >-
+  A pending relocation marker in the per-family backlog. Serialized by
+  RequirementRelocationBlueprint: the marker plus enough source identity
+  to act on it. Only pending markers are listed — executed relocation
+  records are immutable history and never served here.
+type: object
+additionalProperties: false
+required:
+  - id
+  - source_rule_id
+  - target_technology_token
+  - source_displayed_name
+  - component_id
+properties:
+  id:
+    type: integer
+    description: Relocation record identifier.
+    example: 12
+  source_rule_id:
+    type: integer
+    description: The authored requirement marked for relocation.
+    example: 5137
+  target_technology_token:
+    type: string
+    description: >-
+      Destination family technology token (the SRG-world analogue of a
+      STIG component prefix).
+    example: CTR
+  created_at:
+    type: string
+    description: When the marker was created. Blueprinter format.
+    example: "2026-07-20 15:36:06 UTC"
+  source_displayed_name:
+    type: string
+    description: Component-prefixed requirement name of the source.
+    example: CNTR-00-000051
+  component_id:
+    type: integer
+    description: The source requirement's component.
+    example: 42
+  component_name:
+    type:
+      - string
+      - 'null'
+    description: Name of the source component.
+    example: Container Platform SRG
+  requested_by_name:
+    type:
+      - string
+      - 'null'
+    description: Who marked the requirement. Null when the account was removed.
+    example: Jane Doe

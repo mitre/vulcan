@@ -63,6 +63,10 @@ Rails.application.routes.draw do
     end
   end
 
+  # The per-family relocation backlog (index) and un-mark (destroy);
+  # marking nests under the source rule above.
+  resources :requirement_relocations, only: %i[index destroy]
+
   resources :srgs, only: %i[index show create destroy], controller: 'security_requirements_guides'
   resources :stigs, only: %i[index show create destroy]
 
@@ -82,6 +86,7 @@ Rails.application.routes.draw do
         patch 'section_locks', on: :member
         patch 'bulk_section_locks', on: :member
         resources :reviews, only: %i[create]
+        resources :relocations, only: %i[create], controller: 'requirement_relocations'
       end
     end
     resources :project_access_requests, only: %i[create destroy]

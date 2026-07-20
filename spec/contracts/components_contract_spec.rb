@@ -72,7 +72,7 @@ RSpec.describe 'Components endpoint contracts', type: :request do
                             :admin_email, :released, :advanced_fields, :project_id,
                             :component_id, :security_requirements_guide_id,
                             :memberships_count, :rules_count, :updated_at, :created_at,
-                            :comment_phase, :releasable, :status_counts,
+                            :comment_phase, :releasable, :status_counts, :moved_out_count,
                             :additional_questions, :rules, :reviews, :histories,
                             :memberships, :metadata, :inherited_memberships,
                             :effective_permissions

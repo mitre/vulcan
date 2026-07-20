@@ -1,0 +1,38 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    description: Numeric ID of the pending relocation record.
+    schema:
+      type: integer
+    example: 12
+delete:
+  operationId: deleteRequirementRelocation
+  tags:
+    - Rules
+  summary: Un-mark a requirement for relocation
+  description: >-
+    Destroys a PENDING relocation record, removing the move marker.
+    Audited. Requires author role on the source component. Executed
+    records are immutable — they answer 404 exactly like a record that
+    never existed.
+  responses:
+    '200':
+      description: Marker removed
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            unmarked:
+              summary: Marker removed
+              value:
+                toast:
+                  title: Relocation marker removed.
+                  message:
+                    - The requirement is no longer marked for relocation.
+                  variant: success
+    '404':
+      $ref: ../components/responses/NotFound.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

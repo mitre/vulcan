@@ -158,6 +158,12 @@ paths:
     $ref: paths/rule_satisfactions.yaml
   /rule_satisfactions/{ruleId}:
     $ref: paths/rule_satisfactions_{ruleId}.yaml
+  /rules/{ruleId}/relocations:
+    $ref: paths/rules_{ruleId}_relocations.yaml
+  /requirement_relocations:
+    $ref: paths/requirement_relocations.yaml
+  /requirement_relocations/{id}:
+    $ref: paths/requirement_relocations_{id}.yaml
   /rules/{ruleId}/reviews:
     $ref: paths/rules_{ruleId}_reviews.yaml
   /components/{componentId}/reviews:

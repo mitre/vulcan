@@ -165,6 +165,16 @@ class Component < ApplicationRecord
     document_type == 'srg' ? authored_srg_rules.count : rules_count
   end
 
+  # Requirements that relocated OUT of this component — a lifecycle fact
+  # from executed relocation records, never a status bucket. The source
+  # rows are tombstoned, so the join reads base_rules unscoped.
+  def moved_out_count
+    RequirementRelocation.executed
+                         .joins('INNER JOIN base_rules ON base_rules.id = requirement_relocations.source_rule_id')
+                         .where(base_rules: { component_id: id })
+                         .count
+  end
+
   def accepting_new_comments?
     comment_phase == 'open'
   end

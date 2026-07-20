@@ -60,6 +60,14 @@ class BaseRule < ApplicationRecord
   has_many :disa_rule_descriptions, dependent: :destroy
   has_many :checks, dependent: :destroy
   has_many :references, dependent: :destroy
+  # Source-side relocation records cascade with a hard-destroyed source
+  # row (pending and executed alike) — declared HERE, not on SrgRule,
+  # because the component-destroy path traverses BaseRule-classed
+  # all_requirement_rows and an SrgRule-only association would leave the
+  # restrictive FK blocking that cascade. Vacuous for Rule/StigRule and
+  # catalog rows, which never carry relocation records.
+  has_many :requirement_relocations, foreign_key: :source_rule_id,
+                                     inverse_of: :source_rule, dependent: :destroy
   # Reviews attach to any requirement row (Rule or authored SrgRule) via
   # the dual-written rule_id column — one shared review machinery.
   # inverse_of: false — Review#rule is Rule-classed (legacy back-compat)

@@ -31,6 +31,13 @@
 
 en:
   hello: "Hello world"
+  activerecord:
+    errors:
+      models:
+        requirement_relocation:
+          attributes:
+            source_rule_id:
+              pending_exists: "already has a pending relocation"
   vulcan:
     triage:
       status:

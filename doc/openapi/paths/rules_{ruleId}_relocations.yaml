@@ -1,0 +1,72 @@
+parameters:
+  - $ref: ../components/parameters/RuleId.yaml
+post:
+  operationId: createRequirementRelocation
+  tags:
+    - Rules
+  summary: Mark an authored SRG requirement for relocation
+  description: >-
+    Creates a PENDING relocation record — the move marker — for an
+    authored requirement of an SRG component, naming the destination
+    family's technology token. Requires author role on the component.
+    One pending marker per requirement; a second mark returns 422. The
+    marker is a record, never a status change on the requirement.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - requirement_relocation
+          properties:
+            requirement_relocation:
+              type: object
+              required:
+                - target_technology_token
+              properties:
+                target_technology_token:
+                  type: string
+                  description: Destination family technology token.
+                  example: CTR
+        examples:
+          mark:
+            summary: Mark for the Container family
+            value:
+              requirement_relocation:
+                target_technology_token: CTR
+  responses:
+    '200':
+      description: Requirement marked for relocation
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            marked:
+              summary: Marker created
+              value:
+                toast:
+                  title: Requirement marked for relocation.
+                  message:
+                    - Marked for the CTR family.
+                  variant: success
+    '422':
+      description: Duplicate pending marker or ineligible source
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            duplicate:
+              summary: Already marked
+              value:
+                toast:
+                  title: Could not mark requirement for relocation.
+                  message:
+                    - Source rule already has a pending relocation
+                  variant: danger
+    '404':
+      $ref: ../components/responses/NotFound.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
