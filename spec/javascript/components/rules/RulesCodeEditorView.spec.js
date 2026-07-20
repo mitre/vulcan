@@ -20,6 +20,9 @@ vi.mock("@/api/baseApi", () => ({
 vi.mock("@/api/rulesApi", () => ({
   updateRule: vi.fn(() => Promise.resolve({ data: {} })),
   updateSectionLocks: vi.fn(() => Promise.resolve({ data: {} })),
+  getRelocations: vi.fn(() => Promise.resolve({ data: [] })),
+  markRelocation: vi.fn(() => Promise.resolve({ data: {} })),
+  unmarkRelocation: vi.fn(() => Promise.resolve({ data: {} })),
 }));
 
 vi.mock("@/api/reviewsApi", () => ({
@@ -587,6 +590,73 @@ describe("RulesCodeEditorView", () => {
       wrapper.vm.onAddSatisfied(2, 1);
       expect(rootEmitSpy).toHaveBeenCalledWith("addSatisfied:rule", 2, 1);
       rootEmitSpy.mockRestore();
+    });
+  });
+
+  describe("Rule-only modals are structurally absent for SRG kind", () => {
+    // The layout stub must render its slots or absence assertions pass
+    // vacuously for both kinds.
+    const SlotLayout = {
+      template:
+        "<div><slot name='modals'></slot><slot name='main-content'></slot><slot name='right-panels'></slot></div>",
+    };
+
+    const mountWithKind = (documentType) => {
+      pinia = createPinia();
+      setActivePinia(pinia);
+      const router = createTestRouter([
+        { path: "/", name: "editor-root" },
+        { path: "/rules/:ruleId", name: "rule", props: true },
+      ]);
+      const w = shallowMount(RulesCodeEditorView, {
+        localVue,
+        pinia,
+        router,
+        provide: { effectivePermissions: "admin" },
+        propsData: {
+          ...defaultProps,
+          component: { ...defaultProps.component, document_type: documentType },
+        },
+        stubs: {
+          RuleEditor: true,
+          RuleHistories: true,
+          RuleReviews: true,
+          RuleSatisfactions: true,
+          RelatedRulesModal: true,
+          RuleReviewModal: true,
+          RuleFilterBar: true,
+          ControlsCommandBar: true,
+          ControlsPageLayout: SlotLayout,
+          NewRuleModalForm: true,
+          AlsoSatisfiesModal: true,
+          RuleSearchBar: true,
+          RuleList: true,
+          ActiveFilterPills: true,
+          Multiselect: true,
+          BModal: true,
+          BSidebar: true,
+          BButton: true,
+          BFormGroup: true,
+          BIcon: true,
+        },
+      });
+      w.vm.ruleStore.selectedRuleId = 1;
+      return w;
+    };
+
+    it("renders the satisfies/duplicate/related modals for stig kind (baseline)", async () => {
+      wrapper = mountWithKind("stig");
+      await wrapper.vm.$nextTick();
+      expect(wrapper.findComponent({ name: "AlsoSatisfiesModal" }).exists()).toBe(true);
+      expect(wrapper.findComponent({ name: "RelatedRulesModal" }).exists()).toBe(true);
+    });
+
+    it("never mounts them for srg kind — authored rows omit the Rule-only keys they crash on", async () => {
+      wrapper = mountWithKind("srg");
+      await wrapper.vm.$nextTick();
+      expect(wrapper.findComponent({ name: "AlsoSatisfiesModal" }).exists()).toBe(false);
+      expect(wrapper.findComponent({ name: "RelatedRulesModal" }).exists()).toBe(false);
+      expect(wrapper.findComponent({ name: "NewRuleModalForm" }).exists()).toBe(false);
     });
   });
 });

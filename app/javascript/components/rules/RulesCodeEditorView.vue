@@ -74,6 +74,7 @@
         :nest-satisfied-rules-checked="navFilters.nestSatisfiedRulesChecked"
         :show-s-r-g-id-checked="navFilters.showSRGIdChecked"
         :has-active-filters="navHasActiveFilters"
+        :pending-relocations="relocByRuleId"
         @reset-filters="onClearNavFilters"
       />
     </template>
@@ -82,6 +83,7 @@
     <template #modals>
       <template v-if="selectedRule">
         <NewRuleModalForm
+          v-if="!isSrgComponent"
           :title="msg.cloneTitle"
           :id-prefix="'duplicate'"
           :for-duplicate="true"
@@ -110,8 +112,19 @@
           </template>
         </b-modal>
 
-        <!-- Also Satisfies Modal -->
+        <!-- Mark-for-relocation (SRG kind) -->
+        <MarkRelocationModal
+          v-if="isSrgComponent"
+          :visible.sync="relocationModalVisible"
+          :rule-display-name="`${component.prefix}-${selectedRule.rule_id}`"
+          @mark="onMarkRelocation"
+        />
+
+        <!-- Rule-only: authored rows omit the satisfies keys this
+             component reads, and its affordance is absent from the
+             toolbar for SRG kind by design. -->
         <AlsoSatisfiesModal
+          v-if="!isSrgComponent"
           :rules="rules"
           :selected-rule="selectedRule"
           :component-prefix="component.prefix"
@@ -122,7 +135,7 @@
 
       <!-- Related Rules Modal -->
       <RelatedRulesModal
-        v-if="selectedRule"
+        v-if="selectedRule && !isSrgComponent"
         :read-only="selectedRule.locked || !!selectedRule.review_requestor_id"
         :rule="selectedRule"
         :rule-stig-id="`${component.prefix}-${selectedRule.rule_id}`"
@@ -151,6 +164,14 @@
 
     <!-- Main Content -->
     <template #main-content>
+      <!-- Open-time relocation intake prompt (SRG kind; renders only
+           when pending markers exist for this component's family) -->
+      <RelocationIntakeBanner
+        v-if="isSrgComponent"
+        :count="relocFamilyCount"
+        :token="relocFamilyToken"
+        @view-backlog="openPanel('relocations')"
+      />
       <template v-if="selectedRule">
         <!-- Locked/Under Review warnings -->
         <p v-if="!isViewerOnly && selectedRule.locked" class="text-danger font-weight-bold">
@@ -174,6 +195,8 @@
           :additional_questions="component.additional_questions"
           :autosave-enabled="autosaveEnabled"
           :autosave-dirty="autosaveDirty"
+          :pending-relocation="relocByRuleId[selectedRule.id] || null"
+          @open-relocation-modal="relocationModalVisible = true"
           @clone="$bvModal.show('duplicate-rule-modal')"
           @delete="$bvModal.show('delete-rule-modal')"
           @save="saveRule($event)"
@@ -206,6 +229,28 @@
         @component-updated="refreshComponent"
         @open-reply-composer="onOpenReplyComposer"
       />
+
+      <!-- Relocation backlog (SRG kind) — same slideover conventions as
+           the shared panels -->
+      <b-sidebar
+        v-if="isSrgComponent"
+        id="sidebar-relocations"
+        title="Relocation backlog"
+        right
+        shadow
+        backdrop
+        width="400px"
+        :visible="activePanel === 'relocations'"
+        @hidden="closePanel"
+      >
+        <RelocationBacklogPanel
+          :markers="relocMarkers"
+          :component-id="component.id"
+          :initial-token="relocFamilyToken"
+          :can-author="!isViewerOnly"
+          @unmark="onUnmarkRelocation"
+        />
+      </b-sidebar>
 
       <CommentComposerModal
         v-if="composerActive"
@@ -243,6 +288,10 @@ import { useRuleSelectionStore } from "../../stores/ruleSelection";
 import { getFirstVisibleRule } from "../../utils/ruleSelectionUtils";
 import { useRuleAutosave } from "../../composables/useRuleAutosave";
 import { useToast } from "../../composables/useToast";
+import { useRelocations } from "../../composables/useRelocations";
+import RelocationIntakeBanner from "./RelocationIntakeBanner.vue";
+import RelocationBacklogPanel from "./RelocationBacklogPanel.vue";
+import MarkRelocationModal from "./MarkRelocationModal.vue";
 import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
 import { MESSAGE_LABELS } from "../../constants/terminology";
 import { scrollToField } from "../../utils/searchHighlight";
@@ -262,6 +311,9 @@ export default {
     ControlsPageLayout,
     NewRuleModalForm,
     ControlsSidepanels,
+    RelocationIntakeBanner,
+    RelocationBacklogPanel,
+    MarkRelocationModal,
     CommentComposerModal,
   },
   provide() {
@@ -350,9 +402,20 @@ export default {
 
     const { alertOrNotifyResponse } = useToast();
 
+    // Relocation marker state (SRG authoring): one fetch feeds the row
+    // badges, the backlog panel, and the open-time intake prompt.
+    const relocations = useRelocations(props.component);
+
     return {
       effectivePermissions,
       alertOrNotifyResponse,
+      relocMarkers: relocations.markers,
+      relocByRuleId: relocations.markersByRuleId,
+      relocFamilyToken: relocations.familyToken,
+      relocFamilyCount: relocations.familyBacklogCount,
+      relocFetch: relocations.fetchMarkers,
+      relocMark: relocations.mark,
+      relocUnmark: relocations.unmark,
       composerBridge,
       ...composer,
       ruleStore,
@@ -399,6 +462,7 @@ export default {
       },
       msg: MESSAGE_LABELS,
       reviewsSectionFilter: "all",
+      relocationModalVisible: false,
     };
   },
   computed: {
@@ -417,11 +481,19 @@ export default {
     isViewerOnly() {
       return this.effectivePermissions === "viewer";
     },
+    isSrgComponent() {
+      return this.component.document_type === "srg";
+    },
   },
   created() {
     this.composerBridge.onOpen = () => this.$bvModal.show("comment-composer-modal");
     this.composerBridge.afterPosted = (parentReviewId, snapshot) =>
       this.afterComposerPosted(parentReviewId, snapshot);
+    // Relocation markers exist only for SRG authoring; a load failure
+    // surfaces as a toast rather than silently hiding the badges.
+    if (this.isSrgComponent) {
+      this.relocFetch().catch(this.alertOrNotifyResponse);
+    }
   },
   mounted() {
     this.ruleStore.init(this.$router, this.component.id);
@@ -451,6 +523,19 @@ export default {
     this.destroyAutosave();
   },
   methods: {
+    onMarkRelocation(token) {
+      this.relocMark(this.selectedRule.id, token)
+        .then((response) => {
+          this.relocationModalVisible = false;
+          this.alertOrNotifyResponse(response);
+        })
+        .catch(this.alertOrNotifyResponse);
+    },
+    onUnmarkRelocation(relocationId) {
+      this.relocUnmark(relocationId)
+        .then(this.alertOrNotifyResponse)
+        .catch(this.alertOrNotifyResponse);
+    },
     toggleFilterBar() {
       this.filterBarVisible = !this.filterBarVisible;
       localStorage.setItem(`filterBarVisible-${this.component.id}`, String(this.filterBarVisible));

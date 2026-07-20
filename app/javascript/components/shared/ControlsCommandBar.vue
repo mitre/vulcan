@@ -210,9 +210,13 @@
                 aria-hidden="true"
                 class="text-danger"
               />
-              <a class="text-dark" :href="ruleUrl">
+              <!-- The component-view deep-link is a Rule-only route; an
+                   authored requirement renders its id as plain text until
+                   the lookup is kind-aware. -->
+              <a v-if="component.document_type !== 'srg'" class="text-dark" :href="ruleUrl">
                 {{ ruleDisplayId }}
               </a>
+              <span v-else class="text-dark">{{ ruleDisplayId }}</span>
               <small class="text-muted ml-1">// {{ selectedRule.version }}</small>
             </h5>
             <small v-if="lastEditor" class="text-muted">

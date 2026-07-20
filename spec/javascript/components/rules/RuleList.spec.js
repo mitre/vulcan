@@ -5,6 +5,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { createTestRouter } from "@test/support/routerTestHelper";
 import { useRuleSelectionStore } from "@/stores/ruleSelection";
 import RuleList from "@/components/rules/RuleList.vue";
+import RuleRowIcons from "@/components/rules/RuleRowIcons.vue";
 
 /**
  * RuleList requirements:
@@ -386,6 +387,24 @@ describe("RuleList", () => {
       const row = wrapper.find(".ruleRow");
       expect(row.exists()).toBe(true);
       expect(row.text()).toContain("TEST-000010");
+    });
+  });
+
+  describe("relocation marker pass-through", () => {
+    it("hands each row its pending relocation from the markers map", () => {
+      const rule = createRule(7, "000007");
+      wrapper = createWrapper({
+        allRules: [rule],
+        filteredRules: [rule],
+        pendingRelocations: { 7: { id: 99, target_technology_token: "CTR" } },
+      });
+
+      const icons = wrapper.findAllComponents(RuleRowIcons);
+      const withMarker = icons.wrappers.find(
+        (w) => w.props("pendingRelocation") && w.props("pendingRelocation").id === 99,
+      );
+      expect(withMarker).toBeDefined();
+      expect(withMarker.props("pendingRelocation").target_technology_token).toBe("CTR");
     });
   });
 });

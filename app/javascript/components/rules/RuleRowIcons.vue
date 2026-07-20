@@ -49,6 +49,17 @@
       aria-hidden="true"
       data-test="icon-changes-requested"
     />
+    <!-- Pending relocation marker (SRG authoring): the pending record IS
+         the marker — the badge follows the icon-family convention of
+         absent-when-not-applicable. -->
+    <b-icon
+      v-if="pendingRelocation"
+      v-b-tooltip.hover
+      icon="box-arrow-right"
+      :title="`Marked for relocation to ${pendingRelocation.target_technology_token}`"
+      aria-hidden="true"
+      data-test="icon-relocation"
+    />
   </span>
 </template>
 
@@ -63,6 +74,12 @@ export default {
     ruleOpen: {
       type: Number,
       default: 0,
+    },
+    // The rule's pending relocation record ({ target_technology_token, ... })
+    // or null — supplied by the page's relocation state, not the rule payload.
+    pendingRelocation: {
+      type: Object,
+      default: null,
     },
   },
   computed: {

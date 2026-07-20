@@ -32,7 +32,11 @@
           </span>
           <span v-else>{{ formatRuleId(rule.rule_id) }}</span>
         </span>
-        <RuleRowIcons :rule="rule" :rule-open="ruleOpen(rule)" />
+        <RuleRowIcons
+          :rule="rule"
+          :rule-open="ruleOpen(rule)"
+          :pending-relocation="pendingRelocations[rule.id] || null"
+        />
       </div>
     </div>
 
@@ -104,7 +108,11 @@
             {{ childRules(rule).length }}
           </b-badge>
         </span>
-        <RuleRowIcons :rule="rule" :rule-open="ruleOpen(rule)" />
+        <RuleRowIcons
+          :rule="rule"
+          :rule-open="ruleOpen(rule)"
+          :pending-relocation="pendingRelocations[rule.id] || null"
+        />
       </div>
       <div
         v-if="nestSatisfiedRulesChecked && childRules(rule).length > 0"
@@ -124,7 +132,11 @@
               {{ truncateId(satisfies.srg_id) }}
             </span>
           </span>
-          <RuleRowIcons :rule="satisfies" :rule-open="0" />
+          <RuleRowIcons
+            :rule="satisfies"
+            :rule-open="0"
+            :pending-relocation="pendingRelocations[satisfies.id] || null"
+          />
         </div>
       </div>
     </div>
@@ -169,6 +181,12 @@ export default {
     showSRGIdChecked: {
       type: Boolean,
       default: false,
+    },
+    // Pending relocation markers keyed by rule id — supplied by the
+    // page's relocation state so every row variant shows the badge.
+    pendingRelocations: {
+      type: Object,
+      default: () => ({}),
     },
     hasActiveFilters: {
       type: Boolean,

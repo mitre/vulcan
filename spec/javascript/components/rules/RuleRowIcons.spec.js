@@ -37,6 +37,7 @@ describe("RuleRowIcons", () => {
       propsData: {
         rule: createRule(props.rule || {}),
         ruleOpen: props.ruleOpen || 0,
+        pendingRelocation: props.pendingRelocation || null,
       },
       stubs: {
         BIcon: true,
@@ -133,6 +134,26 @@ describe("RuleRowIcons", () => {
       const icon = wrapper.find('[data-test="icon-satisfied-by"]');
       expect(icon.attributes("title")).toContain("CNTR-00-000020");
       expect(icon.attributes("title")).toContain("CNTR-00-000030");
+    });
+  });
+
+  describe("relocation marker badge", () => {
+    it("renders the marker badge with the destination family when a pending relocation exists", () => {
+      wrapper = createWrapper({ pendingRelocation: { target_technology_token: "CTR" } });
+      const icon = wrapper.find('[data-test="icon-relocation"]');
+      expect(icon.exists()).toBe(true);
+      expect(icon.attributes("title")).toBe("Marked for relocation to CTR");
+    });
+
+    it("renders no marker badge when the pending relocation is removed (un-mark)", async () => {
+      wrapper = createWrapper({ pendingRelocation: { target_technology_token: "CTR" } });
+      await wrapper.setProps({ pendingRelocation: null });
+      expect(wrapper.find('[data-test="icon-relocation"]').exists()).toBe(false);
+    });
+
+    it("renders no marker badge by default", () => {
+      wrapper = createWrapper();
+      expect(wrapper.find('[data-test="icon-relocation"]').exists()).toBe(false);
     });
   });
 });

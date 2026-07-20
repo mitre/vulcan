@@ -659,4 +659,24 @@ describe("ControlsCommandBar", () => {
       expect(wrapper.emitted("open-comments-panel")).toBeTruthy();
     });
   });
+
+  describe("rule header deep-link by document kind", () => {
+    const selectedRule = { id: 9, rule_id: "000051", component_id: 41, version: "SRG-X-000051" };
+
+    it("links the rule id to the component view for stig kind", () => {
+      wrapper = createWrapper({ selectedRule });
+      const link = wrapper.find('a[href="/components/41/TEST-000051"]');
+      expect(link.exists()).toBe(true);
+      expect(link.text()).toContain("TEST-000051");
+    });
+
+    it("renders plain text for srg kind — the deep-link route is Rule-only", () => {
+      wrapper = createWrapper({
+        component: { ...defaultComponent, document_type: "srg" },
+        selectedRule,
+      });
+      expect(wrapper.find('a[href="/components/41/TEST-000051"]').exists()).toBe(false);
+      expect(wrapper.text()).toContain("TEST-000051");
+    });
+  });
 });

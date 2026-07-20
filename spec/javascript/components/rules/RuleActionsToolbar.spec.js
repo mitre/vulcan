@@ -341,6 +341,55 @@ describe("RuleActionsToolbar", () => {
         expect(wrapper.emitted("clone")).toBeTruthy();
       });
     });
+
+    describe("Relocate button (SRG kind only)", () => {
+      const relocateBtn = () =>
+        wrapper.findAll("button").wrappers.find((b) => b.text().includes("Relocate"));
+
+      it("is ABSENT for stig-kind components (relocation is SRG authoring)", () => {
+        wrapper = createWrapper();
+        expect(relocateBtn()).toBeUndefined();
+      });
+
+      it("emits open-relocation-modal for an srg-kind component", async () => {
+        wrapper = createWrapper({ documentType: "srg" });
+        await relocateBtn().trigger("click");
+        expect(wrapper.emitted("open-relocation-modal")).toBeTruthy();
+      });
+
+      it("is disabled-not-hidden with a tooltip when the requirement is already marked", () => {
+        wrapper = createWrapper({
+          documentType: "srg",
+          pendingRelocation: { id: 7, target_technology_token: "CTR" },
+        });
+        const btn = relocateBtn();
+        expect(btn.attributes("disabled")).toBe("disabled");
+        expect(wrapper.find('[data-test="relocate-tip"]').attributes("title")).toContain(
+          "Already marked",
+        );
+      });
+
+      it("is disabled in read-only mode", () => {
+        wrapper = createWrapper({ documentType: "srg", readOnly: true });
+        expect(relocateBtn().attributes("disabled")).toBe("disabled");
+      });
+    });
+
+    describe("Backlog button (SRG kind only)", () => {
+      const backlogBtn = () =>
+        wrapper.findAll("button").wrappers.find((b) => b.text().includes("Backlog"));
+
+      it("is ABSENT for stig-kind components", () => {
+        wrapper = createWrapper();
+        expect(backlogBtn()).toBeUndefined();
+      });
+
+      it("opens the relocations panel for an srg-kind component, even read-only", async () => {
+        wrapper = createWrapper({ documentType: "srg", readOnly: true });
+        await backlogBtn().trigger("click");
+        expect(wrapper.emitted("toggle-panel")).toEqual([["relocations"]]);
+      });
+    });
   });
 
   // ==========================================

@@ -85,3 +85,21 @@ export function duplicateRule(componentId, ruleId) {
 export function bulkSectionLocks(ruleId, data) {
   return api.patch(`/rules/${ruleId}/bulk_section_locks`, { rule: data });
 }
+
+/**
+ * Relocation markers: a pending requirement_relocation record IS the
+ * move marker for an authored SRG requirement.
+ */
+export function getRelocations(params = {}) {
+  return api.get("/requirement_relocations", { params });
+}
+
+export function markRelocation(ruleId, targetTechnologyToken) {
+  return api.post(`/rules/${ruleId}/relocations`, {
+    requirement_relocation: { target_technology_token: targetTechnologyToken },
+  });
+}
+
+export function unmarkRelocation(relocationId) {
+  return api.delete(`/requirement_relocations/${relocationId}`);
+}

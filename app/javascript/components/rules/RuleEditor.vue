@@ -7,6 +7,8 @@
         :effective-permissions="effectivePermissions"
         :read-only="readOnly"
         :document-type="documentType"
+        :pending-relocation="pendingRelocation"
+        @open-relocation-modal="$emit('open-relocation-modal')"
         @clone="$emit('clone')"
         @delete="$emit('delete')"
         @save="$emit('save', $event)"
@@ -139,6 +141,11 @@ export default {
     documentType: {
       type: String,
       default: "stig",
+    },
+    // The open requirement's pending relocation record, or null.
+    pendingRelocation: {
+      type: Object,
+      default: null,
     },
     effectivePermissions: {
       type: String,

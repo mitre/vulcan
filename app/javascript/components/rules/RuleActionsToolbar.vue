@@ -71,6 +71,18 @@
         >
           <b-icon icon="question-circle" /> DISA Guide
         </b-button>
+        <!-- The standing per-family relocation backlog (SRG authoring) —
+             a read-only panel, so it stays enabled for every role. -->
+        <b-button
+          v-if="isSrg"
+          v-b-tooltip.hover
+          title="Pending relocation markers by destination family"
+          variant="outline-secondary"
+          size="sm"
+          @click="$emit('toggle-panel', 'relocations')"
+        >
+          <b-icon icon="box-arrow-in-right" /> Backlog
+        </b-button>
       </div>
     </div>
 
@@ -115,6 +127,20 @@
         >
           <b-icon icon="files" /> Clone
         </b-button>
+        <!-- Relocation marking is SRG authoring, source side — absent for
+             STIG kind. Disabled-not-hidden within SRG kind: the wrapping
+             span carries the tooltip because disabled buttons swallow
+             pointer events. -->
+        <span v-if="isSrg" v-b-tooltip.hover :title="relocateTooltip" data-test="relocate-tip">
+          <b-button
+            variant="outline-warning"
+            size="sm"
+            :disabled="!!pendingRelocation || readOnly"
+            @click="$emit('open-relocation-modal')"
+          >
+            <b-icon icon="box-arrow-right" /> Relocate
+          </b-button>
+        </span>
       </div>
       <!-- Destructive/admin actions separated with gap -->
       <div v-if="effectivePermissions === 'admin'" class="toolbar-btn-group ml-3">
@@ -193,6 +219,12 @@ export default {
       type: String,
       default: "stig",
     },
+    // The open requirement's pending relocation record, or null —
+    // marking is one-per-source, so a pending marker disables the button.
+    pendingRelocation: {
+      type: Object,
+      default: null,
+    },
   },
   data() {
     return {
@@ -202,6 +234,15 @@ export default {
   computed: {
     isSrg() {
       return this.documentType === "srg";
+    },
+    relocateTooltip() {
+      if (this.pendingRelocation) {
+        return `Already marked for relocation to ${this.pendingRelocation.target_technology_token} — un-mark from the backlog`;
+      }
+      if (this.readOnly) {
+        return "Requires author role";
+      }
+      return "Mark this requirement for relocation to another family";
     },
     isReadOnly() {
       // Disabled if explicitly read-only, or rule is locked/under review
