@@ -173,6 +173,12 @@ Reality correction to earlier text: `ExportHelper` — including the
 dead, specs-only code superseded by the export formatters. It is
 **deleted**, not guarded.
 
+## 0.3 Container lineage amendment (Aaron, 2026-07-20 — v10)
+
+| # | Fork | Decision |
+|---|---|---|
+| 19 | Container parentage | **APP core alone.** Container Platform SRG and Container SRG share the same single parent. OS-core one-offs arrive via selective add-parent-later (secondary parent, selected requirements only) — dual lineage stays a supported capability, not the Container default. The acceptance run (§8.2 / the Container redo) exercises the single-parent common case; N=2 stays validated by the multi-parent test suite and the creation-flow walkthrough. Full text: the R2 update note in §2. |
+
 ## 1. Context
 
 Per Aaron/STIG leads (2026-07-10): DISA publishes all SRGs and STIGs;
@@ -229,6 +235,18 @@ R2. **Parentage: one or more CORE SRGs.** An SRG component derives from
     namespaces with one shared technology token (`SRG-APP-…-CTR-…` and
     `SRG-OS-…-CTR-…`) — each requirement's ID core-half follows its own
     `derived_from` lineage. `Component.based_on` today is a single FK.
+
+    **Updated (Aaron, 2026-07-20 — decision #19): the Container SRG
+    derives from the APP core alone.** Both container documents —
+    Container Platform SRG and Container SRG — share the same single
+    parent. If a requirement or two from the OS core is ever needed, it
+    arrives through the shipped selective add-parent-later path (declare
+    the OS core as a secondary parent, import only the selected
+    requirements) — dual lineage remains a supported CAPABILITY, exercised
+    ad hoc, no longer the pilot's default shape. The multi-parent
+    machinery itself stays validated at N=2 by its test suite and the
+    creation-flow browser walkthrough; the §8.2 acceptance run (the
+    Container redo) exercises the single-parent common case.
 
 R3. **No Satisfied-By at the SRG level** — satisfaction is STIG semantics.
 
