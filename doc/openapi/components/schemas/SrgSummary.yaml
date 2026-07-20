@@ -6,6 +6,7 @@ required:
   - id
   - srg_id
   - severity_counts
+  - core
 properties:
   id:
     type: integer
@@ -17,6 +18,14 @@ properties:
       - 'null'
     description: DISA SRG identifier string.
     example: Container_Platform_SRG
+  core:
+    type: boolean
+    description: >-
+      Whether this is a core-family SRG. Core families are the raw
+      material SRG-kind components derive from; derived (non-core)
+      families are the valid sources for STIG-kind components. Drives
+      the creation-flow source picker's eligibility filtering.
+    example: false
   name:
     type:
       - string

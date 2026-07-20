@@ -29,13 +29,27 @@ RSpec.describe 'Benchmarks endpoint contracts (SRGs + STIGs)', type: :request do
 
       first_srg = body.find { |s| s['id'] == srg.id }
       expect(first_srg).not_to be_nil, "SRG #{srg.id} not found in response"
-      assert_fields_present first_srg, :id, :srg_id, :name, :title, :version, :release_date, :severity_counts
+      assert_fields_present first_srg, :id, :srg_id, :name, :title, :version, :release_date, :severity_counts,
+                            :core
       expect(first_srg['srg_id']).to eq(srg.srg_id)
       expect(first_srg['name']).to eq(srg.name)
       expect(first_srg['severity_counts']).to be_a(Hash)
       assert_fields_present first_srg['severity_counts'], :high, :medium, :low
 
       assert_fields_absent first_srg, :stig_id, :benchmark_date, :xml
+    end
+
+    # The source picker filters parents by family kind — the payload must
+    # say which families are core.
+    it 'flags core families so the creation-flow picker can filter by eligibility' do
+      core = create(:security_requirements_guide, :core, :skip_rules,
+                    srg_id: 'SRG-CORE-CONTRACT-LIST', version: 'V1R1')
+
+      get '/srgs', headers: json_headers
+      body = validate_and_parse!
+
+      expect(body.find { |s| s['id'] == core.id }['core']).to be(true)
+      expect(body.find { |s| s['id'] == srg.id }['core']).to be(false)
     end
   end
 

@@ -4,7 +4,10 @@
 class SrgBlueprint < Blueprinter::Base
   identifier :id
 
-  fields :srg_id, :name, :title, :version, :release_date
+  # core: whether this is a core-family SRG (the non-public raw material
+  # SRG-kind components derive from) — drives the creation-flow source
+  # picker's eligibility filtering.
+  fields :srg_id, :name, :title, :version, :release_date, :core
 
   field :severity_counts do |srg, _options|
     srg.severity_counts_hash
@@ -29,7 +32,8 @@ class SrgBlueprint < Blueprinter::Base
   # === Latest view: dropdown population ===
   # Reference identity only — no per-record severity/currency queries.
   view :latest do
-    excludes :severity_counts, :is_latest, :latest_available_version, :latest_available_id, :release_date
+    excludes :severity_counts, :is_latest, :latest_available_version, :latest_available_id, :release_date,
+             :core
   end
 
   view :show do

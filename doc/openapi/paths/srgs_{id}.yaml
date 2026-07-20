@@ -26,6 +26,7 @@ get:
                 title: Container Platform Security Requirements Guide
                 version: V2R4
                 release_date: "2025-10-28"
+                core: false
                 severity_counts:
                   high: 8
                   medium: 177

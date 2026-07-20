@@ -37,6 +37,11 @@
           <small v-if="awaitingProfileChoice" class="text-muted d-block mb-3">
             Choose one to enable the rest of the form.
           </small>
+          <!-- Declared sources come right after the profile choice
+               (profile → sources → identity): 1..N eligible SRGs with
+               a primary designation, replacing the single-SRG select
+               for the create-new flow. -->
+          <SourceSrgPicker v-model="sourceSelection" :srgs="srgs" :document-type="document_type" />
         </template>
         <b-row>
           <b-col>
@@ -70,9 +75,10 @@
               />
             </b-form-group>
 
-            <!-- Select a SRG -->
+            <!-- Select a SRG (single-source flows only: the create-new
+                 flow declares sources through SourceSrgPicker above) -->
             <b-form-group
-              v-if="predetermined_security_requirements_guide_id == null"
+              v-if="!profilePickerMode && predetermined_security_requirements_guide_id == null"
               label="Select a Security Requirements Guide"
             >
               <vue-multiselect
@@ -214,6 +220,7 @@ import { useAuthToken } from "../../composables/useAuthToken";
 import { useToast } from "../../composables/useToast";
 import { useDisplayedComponent } from "../../composables/useDisplayedComponent";
 import DocumentTypePicker from "./DocumentTypePicker.vue";
+import SourceSrgPicker from "./SourceSrgPicker.vue";
 import VueMultiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
 
@@ -221,6 +228,7 @@ export default {
   name: "NewComponentModal",
   components: {
     DocumentTypePicker,
+    SourceSrgPicker,
     VueMultiselect,
   },
   props: {
@@ -273,6 +281,9 @@ export default {
       // The creation-time profile choice. Starts empty — the author
       // must pick; posted as component[document_type] (immutable).
       document_type: null,
+      // The declared source set + primary designation for the
+      // create-new flow (SourceSrgPicker v-model).
+      sourceSelection: { sourceIds: [], primaryId: null },
       selected_project_id: this.project_id,
       selected_component_id: null,
       security_requirements_guide: null,
@@ -349,6 +360,17 @@ export default {
         this.srgAutoDetected = false;
       }
     },
+    // The primary designation IS security_requirements_guide_id (the
+    // backend contract), so the existing guards and ok-disabled
+    // bindings keep working unchanged in the picker flow. Deep: the
+    // mirror must hold whether the selection object is replaced (the
+    // picker emits fresh state) or mutated in place.
+    sourceSelection: {
+      deep: true,
+      handler: function (selection) {
+        this.security_requirements_guide_id = selection.primaryId;
+      },
+    },
   },
   methods: {
     detectSrg: function (file) {
@@ -373,6 +395,7 @@ export default {
     },
     showModal: function () {
       this.document_type = null;
+      this.sourceSelection = { sourceIds: [], primaryId: null };
       this.selected_project_id = this.project_id;
       this.selected_component_id = null;
       this.security_requirements_guide = null;
@@ -517,6 +540,11 @@ export default {
       // the source's document_type server-side.
       if (this.profilePickerMode) {
         formData.append("component[document_type]", this.document_type);
+        // The full declared source set; the primary already rides
+        // security_requirements_guide_id above.
+        this.sourceSelection.sourceIds.forEach((id) => {
+          formData.append("component[declared_source_srg_ids][]", id);
+        });
       }
       if (!this.newComponent) {
         formData.append("component[duplicate]", !this.newComponent);

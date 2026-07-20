@@ -26,6 +26,7 @@ get:
                   title: Container Platform Security Requirements Guide
                   version: V2R4
                   release_date: "2025-10-28"
+                  core: false
                   severity_counts:
                     high: 8
                     medium: 177
@@ -36,6 +37,7 @@ get:
                   title: General Purpose Operating System SRG
                   version: V3R3
                   release_date: "2025-06-15"
+                  core: false
                   severity_counts:
                     high: 15
                     medium: 150

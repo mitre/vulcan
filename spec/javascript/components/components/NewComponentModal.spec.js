@@ -475,7 +475,9 @@ describe("NewComponentModal", () => {
       const html = wrapper.html();
       const pickerAt = html.indexOf('data-testid="document-type-picker"');
       expect(pickerAt).toBeGreaterThan(-1);
-      expect(pickerAt).toBeLessThan(html.indexOf("Select a Security Requirements Guide"));
+      // Profile choice comes before the source picker (§2.1.2 order:
+      // profile → sources → identity).
+      expect(pickerAt).toBeLessThan(html.indexOf('data-testid="source-srg-picker"'));
       expect(pickerAt).toBeLessThan(html.indexOf("Component Name"));
     });
 
@@ -580,6 +582,80 @@ describe("NewComponentModal", () => {
       wrapper.vm.$refs.AddComponentModal = { show: vi.fn() };
       wrapper.vm.showModal();
       expect(wrapper.vm.document_type).toBeNull();
+    });
+  });
+
+  describe("multi-parent source picker wiring", () => {
+    const ModalStub = { template: "<div><slot></slot></div>" };
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    const createMountedWrapper = (props = {}) => {
+      return mount(NewComponentModal, {
+        localVue,
+        propsData: { ...defaultProps, ...props },
+        stubs: { "b-modal": ModalStub, VueMultiselect: true },
+      });
+    };
+
+    it("renders the source picker and NOT the legacy single-SRG select in create-new mode", () => {
+      wrapper = createMountedWrapper();
+      expect(wrapper.find('[data-testid="source-srg-picker"]').exists()).toBe(true);
+      expect(wrapper.html()).not.toContain("Select a Security Requirements Guide<");
+    });
+
+    it("does NOT render the source picker in spreadsheet, copy, or duplicate modes", () => {
+      [
+        { spreadsheet_import: true },
+        { copy_component: true },
+        { component_to_duplicate: 7 },
+      ].forEach((props) => {
+        const modal = createMountedWrapper(props);
+        expect(modal.find('[data-testid="source-srg-picker"]').exists()).toBe(false);
+        modal.destroy();
+      });
+    });
+
+    it("posts every declared source and the designated primary", async () => {
+      wrapper = createMountedWrapper();
+      await wrapper.setData({
+        document_type: "srg",
+        name: "Dual-home SRG",
+        prefix: "DUAL-00",
+        sourceSelection: { sourceIds: [11, 12], primaryId: 12 },
+      });
+      wrapper.vm.createComponent({ preventDefault: vi.fn() });
+
+      expect(createComponentInProject).toHaveBeenCalled();
+      const formData = createComponentInProject.mock.calls[0][1];
+      expect(formData.getAll("component[declared_source_srg_ids][]")).toEqual(["11", "12"]);
+      expect(formData.get("component[security_requirements_guide_id]")).toBe("12");
+    });
+
+    it("keeps the modal open when no source is selected (SRG guard)", async () => {
+      wrapper = createMountedWrapper();
+      await wrapper.setData({
+        document_type: "srg",
+        name: "No sources",
+        prefix: "NOSR-00",
+      });
+      const mockEvent = { preventDefault: vi.fn() };
+      wrapper.vm.createComponent(mockEvent);
+
+      expect(mockEvent.preventDefault).toHaveBeenCalled();
+      expect(createComponentInProject).not.toHaveBeenCalled();
+    });
+
+    it("resets the source selection when the modal reopens", async () => {
+      wrapper = createMountedWrapper();
+      wrapper.vm.$refs.AddComponentModal.show = vi.fn();
+      await wrapper.setData({ sourceSelection: { sourceIds: [11], primaryId: 11 } });
+
+      wrapper.vm.showModal();
+
+      expect(wrapper.vm.sourceSelection).toEqual({ sourceIds: [], primaryId: null });
     });
   });
 

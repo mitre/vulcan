@@ -4385,6 +4385,7 @@ paths:
                       title: Container Platform Security Requirements Guide
                       version: V2R4
                       release_date: '2025-10-28'
+                      core: false
                       severity_counts:
                         high: 8
                         medium: 177
@@ -4395,6 +4396,7 @@ paths:
                       title: General Purpose Operating System SRG
                       version: V3R3
                       release_date: '2025-06-15'
+                      core: false
                       severity_counts:
                         high: 15
                         medium: 150
@@ -4464,6 +4466,7 @@ paths:
                     title: Container Platform Security Requirements Guide
                     version: V2R4
                     release_date: '2025-10-28'
+                    core: false
                     severity_counts:
                       high: 8
                       medium: 177
@@ -10896,6 +10899,7 @@ components:
         - id
         - srg_id
         - severity_counts
+        - core
       properties:
         id:
           type: integer
@@ -10907,6 +10911,10 @@ components:
             - 'null'
           description: DISA SRG identifier string.
           example: Container_Platform_SRG
+        core:
+          type: boolean
+          description: Whether this is a core-family SRG. Core families are the raw material SRG-kind components derive from; derived (non-core) families are the valid sources for STIG-kind components. Drives the creation-flow source picker's eligibility filtering.
+          example: false
         name:
           type:
             - string
