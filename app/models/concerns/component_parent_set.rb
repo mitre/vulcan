@@ -36,6 +36,31 @@ module ComponentParentSet
     parents.present? && parents.all?(&:latest?)
   end
 
+  # Virtual creation attribute: the FULL declared source set by id.
+  # Builds join rows through the association so eligibility and
+  # membership validations see them on the very first save — join rows
+  # are never written controller-side. based_on joins the set through
+  # the reconciliation whether or not it is listed here.
+  def declared_source_srg_ids=(ids)
+    Array(ids).compact_blank.map(&:to_i).uniq.each do |srg_id|
+      next if component_source_srgs.any? { |row| row.security_requirements_guide_id == srg_id }
+
+      component_source_srgs.build(security_requirements_guide_id: srg_id)
+    end
+  end
+
+  # The selective-import filter applied at creation:
+  # { security_requirements_guide_id => [version, ...] }. Nil means full
+  # union. Request params arrive string-keyed — normalized here so the
+  # import machinery always sees integer ids and string versions.
+  attr_reader :requirement_selections
+
+  def requirement_selections=(map)
+    @requirement_selections = map&.to_h do |srg_id, versions|
+      [srg_id.to_i, Array(versions).map(&:to_s)]
+    end
+  end
+
   # Declare a new source parent and import its requirements through the
   # one import machinery, atomically — eligibility and membership are
   # enforced by the component validations before any row is generated.

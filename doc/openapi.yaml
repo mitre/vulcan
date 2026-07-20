@@ -1932,7 +1932,7 @@ paths:
       tags:
         - Components
       summary: Create or duplicate a component in a project
-      description: Creates a new component in the project from an SRG, duplicates an existing component, or imports from an uploaded XCCDF/CSV file. Requires admin role on the project. The component is initialized with all rules from the selected SRG baseline.
+      description: Creates a new component in the project from one or more declared source SRGs, duplicates an existing component, or imports from an uploaded XCCDF/CSV file. Requires admin role on the project. The component is initialized with requirements from every declared source (full union by default, or the requirement_selections subset) — security_requirements_guide_id designates the primary.
       requestBody:
         required: true
         content:
@@ -1953,6 +1953,20 @@ paths:
                     version: 1
                     release: 1
                     security_requirements_guide_id: 1
+              multi_source_srg:
+                summary: Create a dual-home SRG component from two core sources
+                value:
+                  component:
+                    name: Container Platform SRG
+                    prefix: CNTR
+                    title: Container Platform Security Requirements Guide
+                    version: 1
+                    release: 1
+                    document_type: srg
+                    security_requirements_guide_id: 1
+                    declared_source_srg_ids:
+                      - 1
+                      - 2
           multipart/form-data:
             schema:
               type: object
@@ -8742,8 +8756,29 @@ components:
       properties:
         security_requirements_guide_id:
           type: integer
-          description: The catalog SRG the component is based on — the requirement source for STIG-kind imports and the declared source document for SRG-kind authoring.
+          description: 'The PRIMARY source SRG (based_on). Always a declared source: it joins the declared source set automatically even when declared_source_srg_ids omits it. STIG-kind components derive from non-core SRGs, SRG-kind components from core SRGs.'
           example: 1
+        declared_source_srg_ids:
+          type: array
+          description: The full declared source-SRG set for multi-parent derivation. Every listed SRG becomes a declared parent and contributes its requirements at creation (full union by default). Eligibility is enforced per document_type — non-core families for stig, core families for srg. Omit for the classic single-source create.
+          items:
+            type: integer
+          example:
+            - 1
+            - 2
+        requirement_selections:
+          type: object
+          description: Selective-import filter. Keys are declared source SRG ids, values the requirement versions to import from that source. When present, only the listed requirements are imported and a declared source absent from the map contributes none; when omitted, creation imports the full union of every declared source.
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            '1':
+              - SRG-OS-000001
+              - SRG-OS-000002
+            '2':
+              - SRG-APP-000101
         name:
           type: string
           description: Human-readable component name.

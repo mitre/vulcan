@@ -6,10 +6,12 @@ post:
     - Components
   summary: Create or duplicate a component in a project
   description: >-
-    Creates a new component in the project from an SRG, duplicates an existing
-    component, or imports from an uploaded XCCDF/CSV file. Requires admin role
-    on the project. The component is initialized with all rules from the
-    selected SRG baseline.
+    Creates a new component in the project from one or more declared source
+    SRGs, duplicates an existing component, or imports from an uploaded
+    XCCDF/CSV file. Requires admin role on the project. The component is
+    initialized with requirements from every declared source (full union by
+    default, or the requirement_selections subset) —
+    security_requirements_guide_id designates the primary.
   requestBody:
     required: true
     content:
@@ -30,6 +32,18 @@ post:
                 version: 1
                 release: 1
                 security_requirements_guide_id: 1
+          multi_source_srg:
+            summary: Create a dual-home SRG component from two core sources
+            value:
+              component:
+                name: Container Platform SRG
+                prefix: CNTR
+                title: Container Platform Security Requirements Guide
+                version: 1
+                release: 1
+                document_type: srg
+                security_requirements_guide_id: 1
+                declared_source_srg_ids: [1, 2]
       multipart/form-data:
         schema:
           type: object

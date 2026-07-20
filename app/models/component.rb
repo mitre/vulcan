@@ -1056,21 +1056,18 @@ class Component < ApplicationRecord
   end
 
   def import_srg_rules
-    # SRG-kind components never receive class-Rule rows — their
-    # requirements are authored SrgRules, created through their own flow.
-    return if document_type == 'srg'
-
-    # We assume that we will automatically add the SRG rules within the transaction of the inital creation
-    # if the `component_id` is `nil` and if `security_requirements_guide_id` if present
+    # Requirements are imported within the creation transaction only for
+    # plain creates — overlays (component_id set) and duplicates/
+    # spreadsheet imports (skip_import_srg_rules) carry their own rows.
     return unless component_id.nil? && security_requirements_guide_id.present?
-
-    # Break early if the `skip_import_srg_rules` has been set to a true value
     return if skip_import_srg_rules
 
-    # Break early if all rules imported without any issues
-    return if from_mapping(SecurityRequirementsGuide.find(security_requirements_guide_id))
-
-    raise ActiveRecord::RecordInvalid, self
+    # ONE import machinery for both kinds: stig components receive Rule
+    # rows, srg components authored SrgRules — a full union across the
+    # declared parent set (the common single-parent create imports
+    # exactly its based_on), or selective when a requirement filter was
+    # supplied at creation. Failures raise and roll back the create.
+    RequirementImportService.new(self).import_all!(selections: requirement_selections)
   end
 
   def cannot_overlay_self

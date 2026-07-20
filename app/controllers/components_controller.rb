@@ -767,7 +767,9 @@ class ComponentsController < ApplicationController
       :id, :duplicate, :copy_component, :component_id, :project_id,
       :security_requirements_guide_id, :name, :prefix, :version, :release,
       :title, :description, :admin_name, :admin_email, :file, :slack_channel_id,
-      :document_type
+      :document_type,
+      declared_source_srg_ids: [],
+      requirement_selections: {}
     )
     # rubocop:enable Rails/StrongParametersExpect
   end

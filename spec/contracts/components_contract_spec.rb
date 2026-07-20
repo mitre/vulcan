@@ -102,6 +102,29 @@ RSpec.describe 'Components endpoint contracts', type: :request do
       expect(body.dig('toast', 'message')).to be_an(Array)
       assert_fields_absent body, :component, :data
     end
+
+    it 'returns ToastResponse when creating with a declared source set and a selection filter' do
+      core_one = create(:security_requirements_guide, :core, :skip_rules,
+                        srg_id: 'SRG-CORE-CONTRACT-A', version: 'V1R1')
+      core_two = create(:security_requirements_guide, :core, :skip_rules,
+                        srg_id: 'SRG-CORE-CONTRACT-B', version: 'V1R1')
+      create(:srg_rule, security_requirements_guide: core_one, version: 'SRG-OS-000901')
+      create(:srg_rule, security_requirements_guide: core_two, version: 'SRG-APP-000902')
+
+      post "/projects/#{project.id}/components",
+           params: { component: { name: 'Multi-source Contract Comp', prefix: 'MSCC-01',
+                                  title: 'Multi-source Contract Component', document_type: 'srg',
+                                  security_requirements_guide_id: core_one.id,
+                                  declared_source_srg_ids: [core_one.id, core_two.id],
+                                  requirement_selections: { core_two.id => ['SRG-APP-000902'] } } },
+           headers: json_headers, as: :json
+      body = validate_and_parse!
+
+      expect(body.dig('toast', 'variant')).to eq('success')
+      created = Component.find_by!(project: project, name: 'Multi-source Contract Comp')
+      expect(created.source_srgs.count).to eq(2)
+      expect(created.authored_srg_rules.pluck(:version)).to eq(['SRG-APP-000902'])
+    end
   end
 
   # ── PUT /components/:id (update) ──
