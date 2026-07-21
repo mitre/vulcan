@@ -738,6 +738,12 @@ requirement_relocations
 - **Executed** = ONE transaction: create/link the target requirement →
   set `target_rule_id` → stamp `executed_at` → **soft-delete the source
   row** → recount the component's requirement counter.
+  **Landed numbering (Aaron, 2026-07-20):** the moved requirement takes
+  the NEXT number in the target component's own sequence, exactly like
+  import — a working number is a local ordinal, never identity (final
+  identifiers mint at release from lineage, §5). Keeping the source
+  number would collide with the unique per-component index on any
+  populated target. Dry-run previews the landed number.
 - **Tombstone visibility requires a `SrgRule` default scope (v7.1).**
   The `deleted_at` default scope exists ONLY on `Rule` (rule.rb:110) —
   `BaseRule`/`SrgRule` have none, so without it a tombstoned authored
