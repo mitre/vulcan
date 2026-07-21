@@ -28,6 +28,9 @@ class RequirementRelocation < ApplicationRecord
   # The per-family backlog: pending markers destined for a technology
   # token, across all source components.
   scope :backlog_for, ->(token) { pending.where(target_technology_token: token) }
+  # The orphan sweep: executed history whose landed target was later
+  # destroyed (target FK nullified with an audit note).
+  scope :executed_orphaned, -> { executed.where(target_rule_id: nil) }
 
   validates :target_technology_token, presence: true
   # One pending marker per source (backed by the partial unique index);
@@ -38,6 +41,9 @@ class RequirementRelocation < ApplicationRecord
             if: :pending?
   validate :source_must_be_an_authored_srg_requirement
   validate :executed_records_are_immutable, on: :update
+  # The one-directional invariant: executed implies the source row is
+  # tombstoned — enforced here AND by the executor transaction.
+  validate :executed_requires_tombstoned_source, if: -> { executed_at.present? }
 
   def pending?
     executed_at.nil?
@@ -55,10 +61,21 @@ class RequirementRelocation < ApplicationRecord
   end
 
   # Pending -> executed is the one permitted transition (the executor's
-  # transaction); a record that was already executed never changes again.
+  # transaction); a record that was already executed never changes again —
+  # except the system-side target release (target_rule_id -> nil with an
+  # audit note) when the landed row is destroyed, the same
+  # system-not-user pattern as the source-side cascade.
   def executed_records_are_immutable
     return if executed_at_was.nil?
+    return if changes.keys == ['target_rule_id'] && target_rule_id.nil?
 
     errors.add(:base, 'executed relocation records are immutable')
+  end
+
+  def executed_requires_tombstoned_source
+    return if source_rule.nil?
+    return if source_rule.deleted_at.present?
+
+    errors.add(:executed_at, 'requires the source requirement to be tombstoned first')
   end
 end

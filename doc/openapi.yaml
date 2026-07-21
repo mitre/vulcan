@@ -3633,6 +3633,132 @@ paths:
           $ref: '#/components/responses/NotFound'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
+  /requirement_relocations/{id}/dry_run:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Numeric ID of the pending relocation record.
+        schema:
+          type: integer
+        example: 12
+    post:
+      operationId: dryRunRequirementRelocation
+      tags:
+        - Rules
+      summary: Preview executing a relocation with zero writes
+      description: Returns exactly what execute would do for this pending marker and destination component — or every reason it cannot run — without writing anything. Requires author role on BOTH the source and the destination components. Executed records answer 404 like a record that never existed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target_component_id
+              properties:
+                target_component_id:
+                  type: integer
+                  description: The destination SRG component.
+                  example: 42
+            examples:
+              preview:
+                summary: Preview a move into component 42
+                value:
+                  target_component_id: 42
+      responses:
+        '200':
+          description: The preview, valid or not
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequirementRelocationDryRun'
+              examples:
+                valid:
+                  summary: Move can run
+                  value:
+                    valid: true
+                    errors: []
+                    source_displayed_name: CNTR-00-000051
+                    target_component_id: 42
+                    target_component_name: Container Platform SRG
+                    would_create:
+                      title: The application must enforce approved authorizations
+                      status: Applicable
+                      derived_from_srg_rule_id: 5137
+                    would_tombstone_source: true
+        '404':
+          $ref: '#/components/responses/NotFound'
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
+  /requirement_relocations/{id}/execute:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Numeric ID of the pending relocation record.
+        schema:
+          type: integer
+        example: 12
+    post:
+      operationId: executeRequirementRelocation
+      tags:
+        - Rules
+      summary: Execute a relocation — move the requirement, tombstone the source
+      description: 'ONE transaction: creates the requirement in the destination component with content and core lineage carried over, tombstones the source row, and stamps the record executed — atomically, or not at all. Requires author role on BOTH the source and destination components. Audited. Executed records answer 404 like a record that never existed.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target_component_id
+              properties:
+                target_component_id:
+                  type: integer
+                  description: The destination SRG component.
+                  example: 42
+            examples:
+              move:
+                summary: Execute the move into component 42
+                value:
+                  target_component_id: 42
+      responses:
+        '200':
+          description: Requirement relocated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+              examples:
+                relocated:
+                  summary: Move executed
+                  value:
+                    toast:
+                      title: Requirement relocated.
+                      message:
+                        - Moved to Container Platform SRG — the source requirement is now history.
+                      variant: success
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: The move cannot run (validation errors from the preview)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+              examples:
+                invalid:
+                  summary: Ineligible destination
+                  value:
+                    toast:
+                      title: Could not execute the relocation.
+                      message:
+                        - target component must be an SRG component
+                      variant: danger
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
   /rules/{ruleId}/reviews:
     parameters:
       - $ref: '#/components/parameters/RuleId'
@@ -10873,6 +10999,76 @@ components:
             - 'null'
           description: Who marked the requirement. Null when the account was removed.
           example: Jane Doe
+    RequirementRelocationDryRun:
+      description: 'Zero-write preview of executing a relocation: whether the move can run, every reason it cannot, and exactly what would be created and tombstoned.'
+      type: object
+      additionalProperties: false
+      required:
+        - valid
+        - errors
+        - source_displayed_name
+        - would_create
+        - would_tombstone_source
+      properties:
+        valid:
+          type: boolean
+          description: Whether execute would run with these inputs.
+          example: true
+        errors:
+          type: array
+          description: Every reason the move cannot run. Empty when valid.
+          items:
+            type: string
+          example: []
+        source_displayed_name:
+          type: string
+          description: Component-prefixed name of the source requirement.
+          example: CNTR-00-000051
+        target_component_id:
+          type:
+            - integer
+            - 'null'
+          description: The destination component.
+          example: 42
+        target_component_name:
+          type:
+            - string
+            - 'null'
+          description: Name of the destination component.
+          example: Container Platform SRG
+        would_create:
+          type: object
+          additionalProperties: false
+          description: The requirement that execute would create in the target.
+          properties:
+            title:
+              type:
+                - string
+                - 'null'
+              description: Title carried over from the source.
+              example: The application must enforce approved authorizations
+            status:
+              type:
+                - string
+                - 'null'
+              description: Authoring status carried over from the source.
+              example: Applicable
+            rule_id:
+              type:
+                - string
+                - 'null'
+              description: The number the moved requirement would land under — the next in the target component's own sequence (working numbers are local ordinals; identifiers mint at release).
+              example: '000003'
+            derived_from_srg_rule_id:
+              type:
+                - integer
+                - 'null'
+              description: Core-requirement lineage preserved on the move.
+              example: 5137
+        would_tombstone_source:
+          type: boolean
+          description: Execute soft-deletes the source row — always true.
+          example: true
     ReviewInput:
       description: Input fields for creating a review action (comment, approval, review request, or lock) on a rule.
       type: object

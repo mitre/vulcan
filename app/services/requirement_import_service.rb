@@ -77,22 +77,15 @@ class RequirementImportService
   end
 
   def build_authored_row(catalog_row)
-    row = catalog_row.dup
+    row = catalog_row.dup_with_nested_records
     row.component_id = @component.id
     row.derived_from_srg_rule_id = catalog_row.id
     row.security_requirements_guide_id = nil
     # Authored rows start at the beginning of the SRG lifecycle regardless
     # of any catalog status.
     row.status = RuleConstants::STATUS_NYD
-    copy_nested_records(catalog_row, row)
     row.audits.build(Audited.audit_class.create_initial_rule_audit_from_mapping(@component.id))
     row
-  end
-
-  def copy_nested_records(catalog_row, row)
-    %i[rule_descriptions disa_rule_descriptions checks references].each do |assoc|
-      row.public_send(:"#{assoc}=", catalog_row.public_send(assoc).map(&:dup))
-    end
   end
 
   # Today's single-SRG import, run per parent: rule numbering continues

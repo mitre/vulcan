@@ -1,0 +1,73 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    description: Numeric ID of the pending relocation record.
+    schema:
+      type: integer
+    example: 12
+post:
+  operationId: executeRequirementRelocation
+  tags:
+    - Rules
+  summary: Execute a relocation — move the requirement, tombstone the source
+  description: >-
+    ONE transaction: creates the requirement in the destination component
+    with content and core lineage carried over, tombstones the source
+    row, and stamps the record executed — atomically, or not at all.
+    Requires author role on BOTH the source and destination components.
+    Audited. Executed records answer 404 like a record that never
+    existed.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - target_component_id
+          properties:
+            target_component_id:
+              type: integer
+              description: The destination SRG component.
+              example: 42
+        examples:
+          move:
+            summary: Execute the move into component 42
+            value:
+              target_component_id: 42
+  responses:
+    '200':
+      description: Requirement relocated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            relocated:
+              summary: Move executed
+              value:
+                toast:
+                  title: Requirement relocated.
+                  message:
+                    - Moved to Container Platform SRG — the source requirement is now history.
+                  variant: success
+    '422':
+      description: The move cannot run (validation errors from the preview)
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            invalid:
+              summary: Ineligible destination
+              value:
+                toast:
+                  title: Could not execute the relocation.
+                  message:
+                    - target component must be an SRG component
+                  variant: danger
+    '404':
+      $ref: ../components/responses/NotFound.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

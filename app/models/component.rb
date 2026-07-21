@@ -688,9 +688,13 @@ class Component < ApplicationRecord
     if id.nil?
       rules.collect { |rule| rule.rule_id.to_i }.max
     else
+      # ONE numbering primitive for both kinds: base_rules scoped by
+      # component covers Rules AND authored SrgRules (catalog rows carry
+      # no component_id), unscoped so tombstoned numbers are never
+      # reissued against the unique (rule_id, component_id) index.
       # component_id flows through bind params via .where; only the trusted
       # TO_NUMBER literal is wrapped in Arel.sql for safe integer sorting.
-      Rule.unscoped.where(component_id: id).maximum(Arel.sql("TO_NUMBER(rule_id, '999999')")).to_i
+      BaseRule.unscoped.where(component_id: id).maximum(Arel.sql("TO_NUMBER(rule_id, '999999')")).to_i
     end
   end
 

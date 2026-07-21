@@ -87,6 +87,7 @@ RSpec.describe 'Requirement relocations' do
 
     it 'answers 404 for an executed record — immutable through the API' do
       source = authored_row('910005')
+      source.update!(deleted_at: Time.current)
       executed = RequirementRelocation.create!(source_rule: source, target_technology_token: 'CTR',
                                                executed_at: 1.day.ago)
       sign_in author
@@ -106,6 +107,7 @@ RSpec.describe 'Requirement relocations' do
       other = authored_row('910007')
       RequirementRelocation.create!(source_rule: other, target_technology_token: 'GPOS')
       executed_source = authored_row('910008')
+      executed_source.update!(deleted_at: Time.current)
       RequirementRelocation.create!(source_rule: executed_source, target_technology_token: 'CTR',
                                     executed_at: 1.day.ago)
       sign_in author
@@ -135,6 +137,111 @@ RSpec.describe 'Requirement relocations' do
       expect(response).to have_http_status(:ok)
       ids = response.parsed_body.pluck('id')
       expect(RequirementRelocation.find_by(source_rule_id: hidden_source.id).id).not_to be_in(ids)
+    end
+  end
+
+  describe 'executing a relocation' do
+    let_it_be(:target_component) do
+      create(:component, :skip_rules, project: project, document_type: 'srg',
+                                      based_on: core_srg, prefix: 'RTGT-00')
+    end
+
+    def pending_marker(rule_id)
+      source = authored_row(rule_id)
+      RequirementRelocation.create!(source_rule: source, target_technology_token: 'RTGT')
+    end
+
+    describe 'POST /requirement_relocations/:id/dry_run' do
+      it 'previews the move with zero writes for an author of both components' do
+        record = pending_marker('910010')
+        sign_in author
+
+        expect do
+          post "/requirement_relocations/#{record.id}/dry_run",
+               params: { target_component_id: target_component.id }
+        end.not_to(change { [SrgRule.unscoped.count, record.reload.executed_at] })
+
+        expect(response).to have_http_status(:ok)
+        body = response.parsed_body
+        expect(body['valid']).to be true
+        expect(body['source_displayed_name']).to eq('RAPI-00-910010')
+        expect(body['target_component_id']).to eq(target_component.id)
+      end
+
+      it 'reports validation errors without writing' do
+        record = pending_marker('910011')
+        stig_target = create(:component, :skip_rules, project: project, prefix: 'RSTG-00')
+        sign_in author
+
+        post "/requirement_relocations/#{record.id}/dry_run",
+             params: { target_component_id: stig_target.id }
+
+        expect(response).to have_http_status(:ok)
+        body = response.parsed_body
+        expect(body['valid']).to be false
+        expect(body['errors'].join).to match(/SRG component/)
+      end
+    end
+
+    describe 'POST /requirement_relocations/:id/execute' do
+      it 'executes the move for an author of both components' do
+        record = pending_marker('910012')
+        source_id = record.source_rule_id
+        sign_in author
+
+        post "/requirement_relocations/#{record.id}/execute",
+             params: { target_component_id: target_component.id }
+
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body.dig('toast', 'variant')).to eq('success')
+        record.reload
+        expect(record.executed_at).to be_present
+        expect(record.target_rule).to have_attributes(component_id: target_component.id)
+        expect(SrgRule.unscoped.find(source_id).deleted_at).to be_present
+      end
+
+      it 'returns 422 with the executor errors when the move is invalid' do
+        record = pending_marker('910013')
+        stig_target = create(:component, :skip_rules, project: project, prefix: 'RSTH-00')
+        sign_in author
+
+        post "/requirement_relocations/#{record.id}/execute",
+             params: { target_component_id: stig_target.id }
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body.dig('toast', 'message').join).to match(/SRG component/)
+        expect(record.reload.executed_at).to be_nil
+      end
+
+      it 'forbids execution without author on the target component' do
+        other_project = create(:project, visibility: 'discoverable')
+        foreign_target = create(:component, :skip_rules, project: other_project,
+                                                         document_type: 'srg', based_on: core_srg,
+                                                         prefix: 'RFOR-00')
+        record = pending_marker('910014')
+        sign_in author
+
+        post "/requirement_relocations/#{record.id}/execute",
+             params: { target_component_id: foreign_target.id }, as: :json
+
+        # Discoverable project, non-member: an honest 403 per the
+        # disclosure policy — never a 500.
+        expect(response).to have_http_status(:forbidden)
+        expect(record.reload.executed_at).to be_nil
+      end
+
+      it 'answers 404 for an executed record' do
+        source = authored_row('910015')
+        source.update!(deleted_at: Time.current)
+        executed = RequirementRelocation.create!(source_rule: source, target_technology_token: 'RTGT',
+                                                 executed_at: 1.day.ago)
+        sign_in author
+
+        post "/requirement_relocations/#{executed.id}/execute",
+             params: { target_component_id: target_component.id }
+
+        expect(response).to have_http_status(:not_found)
+      end
     end
   end
 end

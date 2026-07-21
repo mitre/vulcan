@@ -35,6 +35,18 @@ class BaseRule < ApplicationRecord
     where(component_id: component_ids, deleted_at: nil)
   }
 
+  # A plain dup carrying the four nested record collections — the shared
+  # copy mechanic for authored-row generation and relocation moves.
+  # Deliberately NOT amoeba: SrgRule's amoeba block retypes to Rule (the
+  # import path), which is exactly wrong for same-type copies.
+  def dup_with_nested_records
+    copy = dup
+    %i[rule_descriptions disa_rule_descriptions checks references].each do |assoc|
+      copy.public_send(:"#{assoc}=", public_send(assoc).map(&:dup))
+    end
+    copy
+  end
+
   # In-memory ordering for ALREADY-loaded collections (the serialization path).
   # Sorting the eager-loaded records in Ruby reorders them with zero extra
   # queries — calling the .canonical_order SQL scope on a loaded association
@@ -68,6 +80,11 @@ class BaseRule < ApplicationRecord
   # catalog rows, which never carry relocation records.
   has_many :requirement_relocations, foreign_key: :source_rule_id,
                                      inverse_of: :source_rule, dependent: :destroy
+  # Target-side: destroying a landed requirement releases the link with
+  # an audit note rather than blocking or silently nullifying — the
+  # executed history row survives as the orphan the sweep finds. The
+  # database-level nullify remains the backstop for bulk deletes.
+  before_destroy :release_incoming_relocations
   # Reviews attach to any requirement row (Rule or authored SrgRule) via
   # the dual-written rule_id column — one shared review machinery.
   # inverse_of: false — Review#rule is Rule-classed (legacy back-compat)
@@ -172,6 +189,15 @@ class BaseRule < ApplicationRecord
   end
 
   private
+
+  # System-side release of executed relocation links pointing at this
+  # row as their landed target — audited, unlike the DB-level nullify.
+  def release_incoming_relocations
+    RequirementRelocation.executed.where(target_rule_id: id).find_each do |relocation|
+      relocation.audit_comment = 'Relocation target destroyed — link released'
+      relocation.update!(target_rule_id: nil)
+    end
+  end
 
   def cannot_be_locked_and_under_review
     return unless locked && review_requestor_id.present?

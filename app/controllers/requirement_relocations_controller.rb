@@ -8,8 +8,13 @@
 class RequirementRelocationsController < ApplicationController
   before_action :authorize_logged_in, only: %i[index]
   before_action :set_source_rule_component, only: %i[create]
-  before_action :set_pending_relocation_component, only: %i[destroy]
-  before_action :authorize_author_component, only: %i[create destroy]
+  before_action :set_pending_relocation_component, only: %i[destroy dry_run execute]
+  before_action :set_target_component, only: %i[dry_run execute]
+  before_action :authorize_author_component, only: %i[create destroy dry_run execute]
+  # Executing writes into the target component too — author authority is
+  # required on BOTH sides. Re-pointing @component makes the denial
+  # disclose (403 vs concealed 404) per the TARGET's own policy.
+  before_action :authorize_author_target, only: %i[dry_run execute]
 
   def index
     rows = RequirementRelocation.pending
@@ -45,6 +50,24 @@ class RequirementRelocationsController < ApplicationController
                  variant: 'success', status: :ok)
   end
 
+  # Zero-write preview of exactly what execute would do.
+  def dry_run
+    render json: RelocationExecutor.new(@relocation, target_component: @target_component).dry_run
+  end
+
+  def execute
+    RelocationExecutor.new(@relocation, target_component: @target_component).execute!
+    render_toast(title: 'Requirement relocated.',
+                 message: "Moved to #{@target_component.name} — the source requirement is now history.",
+                 variant: 'success', status: :ok)
+  rescue RelocationExecutor::ExecutionError => e
+    render json: {
+      toast: Toast.new(title: 'Could not execute the relocation.',
+                       message: e.message.split('; '),
+                       variant: 'danger')
+    }, status: :unprocessable_content
+  end
+
   private
 
   def relocation_params
@@ -69,5 +92,17 @@ class RequirementRelocationsController < ApplicationController
     return if @component.present?
 
     render_resource_not_found
+  end
+
+  def set_target_component
+    @target_component = Component.find_by(id: params[:target_component_id])
+    return if @target_component.present?
+
+    render_resource_not_found
+  end
+
+  def authorize_author_target
+    @component = @target_component
+    authorize_author_component
   end
 end

@@ -34,6 +34,7 @@ RSpec.describe RequirementRelocation do
 
     it 'allows a pending and an executed record to coexist for the same source' do
       source = authored_row('900002')
+      source.update!(deleted_at: Time.current)
       described_class.create!(source_rule: source, target_technology_token: 'CTR',
                               requested_by: requester, executed_at: 1.day.ago)
 
@@ -65,6 +66,7 @@ RSpec.describe RequirementRelocation do
   describe 'executed records are immutable to users' do
     it 'rejects any update to an executed record' do
       source = authored_row('900003')
+      source.update!(deleted_at: Time.current)
       executed = described_class.create!(source_rule: source, target_technology_token: 'CTR',
                                          executed_at: 1.day.ago)
 
@@ -73,10 +75,11 @@ RSpec.describe RequirementRelocation do
       expect(executed.errors[:base].join).to match(/immutable/)
     end
 
-    it 'permits the pending-to-executed transition (the executor path)' do
+    it 'permits the pending-to-executed transition once the source is tombstoned (the executor path)' do
       source = authored_row('900004')
       record = described_class.create!(source_rule: source, target_technology_token: 'CTR')
 
+      source.update!(deleted_at: Time.current)
       record.executed_at = Time.current
       expect(record.save).to be true
     end
@@ -86,6 +89,7 @@ RSpec.describe RequirementRelocation do
     it 'hard-destroy of the source rule cascades its records, pending and executed alike' do
       source = authored_row('900005')
       pending = described_class.create!(source_rule: source, target_technology_token: 'CTR')
+      source.update!(deleted_at: Time.current)
       executed = described_class.create!(source_rule: source, target_technology_token: 'GPOS',
                                          executed_at: 1.day.ago)
 
@@ -97,6 +101,7 @@ RSpec.describe RequirementRelocation do
     it 'nullifies target_rule_id when the landed target row is destroyed' do
       source = authored_row('900006')
       target = authored_row('900007')
+      source.update!(deleted_at: Time.current)
       executed = described_class.create!(source_rule: source, target_technology_token: 'CTR',
                                          target_rule: target, executed_at: 1.day.ago)
 
@@ -113,6 +118,7 @@ RSpec.describe RequirementRelocation do
       c = authored_row('900010')
       ctr_pending = described_class.create!(source_rule: a, target_technology_token: 'CTR')
       described_class.create!(source_rule: b, target_technology_token: 'GPOS')
+      c.update!(deleted_at: Time.current)
       described_class.create!(source_rule: c, target_technology_token: 'CTR',
                               executed_at: 1.day.ago)
 
@@ -121,6 +127,7 @@ RSpec.describe RequirementRelocation do
 
     it 'counts moved-out requirements from executed records on the component' do
       source = authored_row('900011')
+      source.update!(deleted_at: Time.current)
       described_class.create!(source_rule: source, target_technology_token: 'CTR',
                               executed_at: 1.day.ago)
       other = authored_row('900012')
