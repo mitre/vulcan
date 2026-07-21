@@ -3638,7 +3638,7 @@ paths:
       - name: id
         in: path
         required: true
-        description: Numeric ID of the pending relocation record.
+        description: Numeric ID of the open relocation proposal.
         schema:
           type: integer
         example: 12
@@ -3646,8 +3646,8 @@ paths:
       operationId: dryRunRequirementRelocation
       tags:
         - Rules
-      summary: Preview executing a relocation with zero writes
-      description: Returns exactly what execute would do for this pending marker and destination component — or every reason it cannot run — without writing anything. Requires author role on BOTH the source and the destination components. Executed records answer 404 like a record that never existed.
+      summary: Preview accepting a relocation with zero writes
+      description: Returns exactly what accepting the proposal would do for this destination component — or every reason it cannot run — without writing anything. This preview is the adjudication review artifact. Requires author role on the DESTINATION component only. Adjudicated proposals (declined or executed) answer 404 like a record that never existed.
       requestBody:
         required: true
         content:
@@ -3691,21 +3691,21 @@ paths:
           $ref: '#/components/responses/NotFound'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
-  /requirement_relocations/{id}/execute:
+  /requirement_relocations/{id}/accept:
     parameters:
       - name: id
         in: path
         required: true
-        description: Numeric ID of the pending relocation record.
+        description: Numeric ID of the open relocation proposal.
         schema:
           type: integer
         example: 12
     post:
-      operationId: executeRequirementRelocation
+      operationId: acceptRequirementRelocation
       tags:
         - Rules
-      summary: Execute a relocation — move the requirement, tombstone the source
-      description: 'ONE transaction: creates the requirement in the destination component with content and core lineage carried over, tombstones the source row, and stamps the record executed — atomically, or not at all. Requires author role on BOTH the source and destination components. Audited. Executed records answer 404 like a record that never existed.'
+      summary: Accept a relocation proposal — land the requirement
+      description: 'Receiver-side adjudication: acceptance and landing are ONE transaction — creates the requirement in the destination component with content and core lineage carried over, tombstones the source row, and stamps the record executed with the accepting actor — atomically, or not at all. Requires author role on the DESTINATION component only; the proposal itself carries source consent. Audited. Adjudicated proposals (declined or executed) answer 404 like a record that never existed.'
       requestBody:
         required: true
         content:
@@ -3720,23 +3720,23 @@ paths:
                   description: The destination SRG component.
                   example: 42
             examples:
-              move:
-                summary: Execute the move into component 42
+              accept:
+                summary: Accept the move into component 42
                 value:
                   target_component_id: 42
       responses:
         '200':
-          description: Requirement relocated
+          description: Proposal accepted and requirement landed
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
               examples:
-                relocated:
-                  summary: Move executed
+                accepted:
+                  summary: Move landed
                   value:
                     toast:
-                      title: Requirement relocated.
+                      title: Proposal accepted.
                       message:
                         - Moved to Container Platform SRG — the source requirement is now history.
                       variant: success
@@ -3753,7 +3753,95 @@ paths:
                   summary: Ineligible destination
                   value:
                     toast:
-                      title: Could not execute the relocation.
+                      title: Could not accept the proposal.
+                      message:
+                        - target component must be an SRG component
+                      variant: danger
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
+  /requirement_relocations/{id}/decline:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Numeric ID of the open relocation proposal.
+        schema:
+          type: integer
+        example: 12
+    post:
+      operationId: declineRequirementRelocation
+      tags:
+        - Rules
+      summary: Decline a relocation proposal with a rationale
+      description: 'Receiver-side adjudication: declines the proposal with a REQUIRED rationale. The record is retained as terminal history — never destroyed — and the rationale surfaces to the source author in the backlog, so the refusal communicates back across the ownership boundary. Requires author role on the destination component named in the request, and that component must be an ELIGIBLE receiver — an unreleased SRG component, other than the source, that declares the source requirement''s core family (the same eligibility accept enforces). Audited. A declined source may be proposed again.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target_component_id
+                - requirement_relocation
+              properties:
+                target_component_id:
+                  type: integer
+                  description: The destination component the decliner adjudicates for — establishes receiver-side authority.
+                  example: 42
+                requirement_relocation:
+                  type: object
+                  required:
+                    - adjudication_rationale
+                  properties:
+                    adjudication_rationale:
+                      type: string
+                      description: Why the proposal is declined — shown to the source author.
+                      example: Covered by CNTR-00-000001 already.
+            examples:
+              decline:
+                summary: Decline with the reason
+                value:
+                  target_component_id: 42
+                  requirement_relocation:
+                    adjudication_rationale: Covered by CNTR-00-000001 already.
+      responses:
+        '200':
+          description: Proposal declined and retained with the rationale
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+              examples:
+                declined:
+                  summary: Decline recorded
+                  value:
+                    toast:
+                      title: Proposal declined.
+                      message:
+                        - The source author can see your rationale in the backlog.
+                      variant: success
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: The rationale is missing, or the named component is not an eligible receiver
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+              examples:
+                missing_rationale:
+                  summary: Rationale required
+                  value:
+                    toast:
+                      title: Could not decline the proposal.
+                      message:
+                        - Adjudication rationale can't be blank
+                      variant: danger
+                ineligible_receiver:
+                  summary: Anchored to an ineligible component
+                  value:
+                    toast:
+                      title: Could not decline the proposal.
                       message:
                         - target component must be an SRG component
                       variant: danger
@@ -10953,7 +11041,7 @@ components:
         toast:
           $ref: '#/components/schemas/ToastObject'
     RequirementRelocationSummary:
-      description: 'A pending relocation marker in the per-family backlog. Serialized by RequirementRelocationBlueprint: the marker plus enough source identity to act on it. Only pending markers are listed — executed relocation records are immutable history and never served here.'
+      description: 'A relocation proposal in the per-family backlog: the open proposal plus enough source identity to act on it, or a retained decline whose rationale communicates the refusal back to the source author. Executed relocation records are immutable history and never served here.'
       type: object
       additionalProperties: false
       required:
@@ -10999,6 +11087,24 @@ components:
             - 'null'
           description: Who marked the requirement. Null when the account was removed.
           example: Jane Doe
+        declined_at:
+          type:
+            - string
+            - 'null'
+          description: When the receiving side declined the proposal. Null while the proposal is open. Blueprinter format.
+          example: null
+        adjudication_rationale:
+          type:
+            - string
+            - 'null'
+          description: Why the proposal was declined — required on every decline, shown to the source author. Null while the proposal is open.
+          example: null
+        declined_by_name:
+          type:
+            - string
+            - 'null'
+          description: Who declined the proposal. Null while open or when the account was removed.
+          example: null
     RequirementRelocationDryRun:
       description: 'Zero-write preview of executing a relocation: whether the move can run, every reason it cannot, and exactly what would be created and tombstoned.'
       type: object

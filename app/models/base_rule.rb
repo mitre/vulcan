@@ -73,7 +73,8 @@ class BaseRule < ApplicationRecord
   has_many :checks, dependent: :destroy
   has_many :references, dependent: :destroy
   # Source-side relocation records cascade with a hard-destroyed source
-  # row (pending and executed alike) — declared HERE, not on SrgRule,
+  # row (open, declined, and executed alike) — declared HERE, not on
+  # SrgRule,
   # because the component-destroy path traverses BaseRule-classed
   # all_requirement_rows and an SrgRule-only association would leave the
   # restrictive FK blocking that cascade. Vacuous for Rule/StigRule and

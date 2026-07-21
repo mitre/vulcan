@@ -2,9 +2,12 @@
 
 require 'rails_helper'
 
-# REQUIREMENT (relocation marker API): authors of an SRG component mark a
-# requirement for relocation (create a pending record), un-mark it
-# (destroy the pending record), and read the per-family backlog. Executed
+# REQUIREMENT (relocation proposal API): authors of an SRG component mark
+# a requirement for relocation (an open proposal — the source-side offer),
+# un-mark it while open, and read the per-family backlog. The RECEIVING
+# side adjudicates with TARGET-side author rights only (the mark carries
+# source consent): accept lands the move; decline requires a rationale,
+# is retained, and surfaces to the source author in the backlog. Executed
 # records are untouchable through the API. Backlog rows are scoped to
 # projects the caller can see.
 RSpec.describe 'Requirement relocations' do
@@ -58,7 +61,7 @@ RSpec.describe 'Requirement relocations' do
            params: { requirement_relocation: { target_technology_token: 'GPOS' } }
 
       expect(response).to have_http_status(:unprocessable_content)
-      expect(response.parsed_body.dig('toast', 'message').join).to match(/pending/i)
+      expect(response.parsed_body.dig('toast', 'message').join).to match(/open relocation proposal/i)
     end
 
     it 'forbids a viewer from marking' do
@@ -140,36 +143,47 @@ RSpec.describe 'Requirement relocations' do
     end
   end
 
-  describe 'executing a relocation' do
+  describe 'adjudicating a proposal (receiver side)' do
     let_it_be(:target_component) do
       create(:component, :skip_rules, project: project, document_type: 'srg',
                                       based_on: core_srg, prefix: 'RTGT-00')
     end
+    # The cross-boundary case the workflow exists for: the receiver
+    # authors the RECEIVING project only — no membership on the source.
+    let_it_be(:receiving_project) { create(:project) }
+    let_it_be(:receiving_component) do
+      create(:component, :skip_rules, project: receiving_project, document_type: 'srg',
+                                      based_on: core_srg, prefix: 'RRCV-00')
+    end
+    let_it_be(:receiver) { create(:user) }
+    let_it_be(:receiver_membership) do
+      Membership.create!(user: receiver, membership: receiving_project, role: 'author')
+    end
 
-    def pending_marker(rule_id)
+    def open_proposal(rule_id, token: 'RTGT')
       source = authored_row(rule_id)
-      RequirementRelocation.create!(source_rule: source, target_technology_token: 'RTGT')
+      RequirementRelocation.create!(source_rule: source, target_technology_token: token)
     end
 
     describe 'POST /requirement_relocations/:id/dry_run' do
-      it 'previews the move with zero writes for an author of both components' do
-        record = pending_marker('910010')
-        sign_in author
+      it 'previews the move with zero writes for a target-side author' do
+        record = open_proposal('910010')
+        sign_in receiver
 
         expect do
           post "/requirement_relocations/#{record.id}/dry_run",
-               params: { target_component_id: target_component.id }
+               params: { target_component_id: receiving_component.id }
         end.not_to(change { [SrgRule.unscoped.count, record.reload.executed_at] })
 
         expect(response).to have_http_status(:ok)
         body = response.parsed_body
         expect(body['valid']).to be true
         expect(body['source_displayed_name']).to eq('RAPI-00-910010')
-        expect(body['target_component_id']).to eq(target_component.id)
+        expect(body['target_component_id']).to eq(receiving_component.id)
       end
 
       it 'reports validation errors without writing' do
-        record = pending_marker('910011')
+        record = open_proposal('910011')
         stig_target = create(:component, :skip_rules, project: project, prefix: 'RSTG-00')
         sign_in author
 
@@ -183,29 +197,30 @@ RSpec.describe 'Requirement relocations' do
       end
     end
 
-    describe 'POST /requirement_relocations/:id/execute' do
-      it 'executes the move for an author of both components' do
-        record = pending_marker('910012')
+    describe 'POST /requirement_relocations/:id/accept' do
+      it 'lands the move for a TARGET-only author — no source-side membership required' do
+        record = open_proposal('910012', token: 'RRCV')
         source_id = record.source_rule_id
-        sign_in author
+        sign_in receiver
 
-        post "/requirement_relocations/#{record.id}/execute",
-             params: { target_component_id: target_component.id }
+        post "/requirement_relocations/#{record.id}/accept",
+             params: { target_component_id: receiving_component.id }
 
         expect(response).to have_http_status(:ok)
         expect(response.parsed_body.dig('toast', 'variant')).to eq('success')
         record.reload
         expect(record.executed_at).to be_present
-        expect(record.target_rule).to have_attributes(component_id: target_component.id)
+        expect(record.accepted_by_id).to eq(receiver.id)
+        expect(record.target_rule).to have_attributes(component_id: receiving_component.id)
         expect(SrgRule.unscoped.find(source_id).deleted_at).to be_present
       end
 
       it 'returns 422 with the executor errors when the move is invalid' do
-        record = pending_marker('910013')
+        record = open_proposal('910013')
         stig_target = create(:component, :skip_rules, project: project, prefix: 'RSTH-00')
         sign_in author
 
-        post "/requirement_relocations/#{record.id}/execute",
+        post "/requirement_relocations/#{record.id}/accept",
              params: { target_component_id: stig_target.id }
 
         expect(response).to have_http_status(:unprocessable_content)
@@ -213,15 +228,15 @@ RSpec.describe 'Requirement relocations' do
         expect(record.reload.executed_at).to be_nil
       end
 
-      it 'forbids execution without author on the target component' do
+      it 'forbids acceptance without author on the target component — source rights do not grant it' do
         other_project = create(:project, visibility: 'discoverable')
         foreign_target = create(:component, :skip_rules, project: other_project,
                                                          document_type: 'srg', based_on: core_srg,
                                                          prefix: 'RFOR-00')
-        record = pending_marker('910014')
+        record = open_proposal('910014')
         sign_in author
 
-        post "/requirement_relocations/#{record.id}/execute",
+        post "/requirement_relocations/#{record.id}/accept",
              params: { target_component_id: foreign_target.id }, as: :json
 
         # Discoverable project, non-member: an honest 403 per the
@@ -237,10 +252,170 @@ RSpec.describe 'Requirement relocations' do
                                                  executed_at: 1.day.ago)
         sign_in author
 
-        post "/requirement_relocations/#{executed.id}/execute",
+        post "/requirement_relocations/#{executed.id}/accept",
              params: { target_component_id: target_component.id }
 
         expect(response).to have_http_status(:not_found)
+      end
+    end
+
+    describe 'POST /requirement_relocations/:id/decline' do
+      it 'declines with a required rationale, retaining the record' do
+        record = open_proposal('910016', token: 'RRCV')
+        sign_in receiver
+
+        post "/requirement_relocations/#{record.id}/decline",
+             params: { target_component_id: receiving_component.id,
+                       requirement_relocation: { adjudication_rationale: 'Covered by RRCV-00-000001 already.' } }
+
+        expect(response).to have_http_status(:ok)
+        record.reload
+        expect(record.declined_at).to be_present
+        expect(record.declined_by_id).to eq(receiver.id)
+        expect(record.adjudication_rationale).to eq('Covered by RRCV-00-000001 already.')
+        expect(record.executed_at).to be_nil
+      end
+
+      it 'rejects a decline without a rationale' do
+        record = open_proposal('910017', token: 'RRCV')
+        sign_in receiver
+
+        post "/requirement_relocations/#{record.id}/decline",
+             params: { target_component_id: receiving_component.id,
+                       requirement_relocation: { adjudication_rationale: '' } }
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body.dig('toast', 'message').join).to match(/rationale/i)
+        expect(record.reload.declined_at).to be_nil
+      end
+
+      it 'forbids a viewer from declining' do
+        record = open_proposal('910018')
+        sign_in viewer
+
+        post "/requirement_relocations/#{record.id}/decline",
+             params: { target_component_id: target_component.id,
+                       requirement_relocation: { adjudication_rationale: 'No.' } }, as: :json
+
+        expect(response).to have_http_status(:forbidden)
+        expect(record.reload.declined_at).to be_nil
+      end
+
+      it 'rejects a decline anchored to an ineligible component — adjudication binds to an eligible receiver' do
+        record = open_proposal('910023')
+        stig_component = create(:component, :skip_rules, project: project, prefix: 'RSTD-00')
+        sign_in author
+
+        post "/requirement_relocations/#{record.id}/decline",
+             params: { target_component_id: stig_component.id,
+                       requirement_relocation: { adjudication_rationale: 'Not ours.' } }
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body.dig('toast', 'message').join).to match(/SRG component/)
+        expect(record.reload.declined_at).to be_nil
+      end
+
+      it 'rejects a decline anchored to a released component at both layers' do
+        record = open_proposal('910026')
+        released = create(:component, :skip_rules, project: project, document_type: 'srg',
+                                                   based_on: core_srg, prefix: 'RREL-00')
+        released.update_column(:released, true)
+
+        # Layer 1 — authz: released components are read-only, so the
+        # author role itself is denied there.
+        sign_in author
+        post "/requirement_relocations/#{record.id}/decline",
+             params: { target_component_id: released.id,
+                       requirement_relocation: { adjudication_rationale: 'From a released doc.' } },
+             as: :json
+        expect(response).to have_http_status(:forbidden)
+
+        # Layer 2 — the eligibility oracle catches role-bypassing admins.
+        sign_in admin
+        post "/requirement_relocations/#{record.id}/decline",
+             params: { target_component_id: released.id,
+                       requirement_relocation: { adjudication_rationale: 'From a released doc.' } }
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body.dig('toast', 'message').join).to match(/released/)
+
+        expect(record.reload.declined_at).to be_nil
+      end
+
+      it 'rejects a decline anchored to the source component itself' do
+        record = open_proposal('910024')
+        sign_in author
+
+        post "/requirement_relocations/#{record.id}/decline",
+             params: { target_component_id: srg_component.id,
+                       requirement_relocation: { adjudication_rationale: 'Self-decline attempt.' } }
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body.dig('toast', 'message').join).to match(/source component/)
+        expect(record.reload.declined_at).to be_nil
+      end
+
+      it 'answers 404 when declining an already-declined proposal — directly' do
+        source = authored_row('910025')
+        declined = RequirementRelocation.create!(source_rule: source, target_technology_token: 'RTGT',
+                                                 declined_at: 1.day.ago, declined_by: receiver,
+                                                 adjudication_rationale: 'Once is enough.')
+        sign_in author
+
+        post "/requirement_relocations/#{declined.id}/decline",
+             params: { target_component_id: target_component.id,
+                       requirement_relocation: { adjudication_rationale: 'Again.' } }
+
+        expect(response).to have_http_status(:not_found)
+        expect(declined.reload.adjudication_rationale).to eq('Once is enough.')
+      end
+
+      it 'answers 404 for an already-declined proposal — adjudication is terminal' do
+        source = authored_row('910019')
+        declined = RequirementRelocation.create!(source_rule: source, target_technology_token: 'RTGT',
+                                                 declined_at: 1.day.ago, declined_by: receiver,
+                                                 adjudication_rationale: 'Out of scope.')
+        sign_in author
+
+        post "/requirement_relocations/#{declined.id}/accept",
+             params: { target_component_id: target_component.id }
+
+        expect(response).to have_http_status(:not_found)
+        expect(declined.reload.executed_at).to be_nil
+      end
+    end
+
+    describe 'declined visibility (source side)' do
+      it 'serves declined rows in the backlog with the rationale, still excluding executed history' do
+        declined_source = authored_row('910020')
+        RequirementRelocation.create!(source_rule: declined_source, target_technology_token: 'RVIS',
+                                      declined_at: 1.day.ago, declined_by: receiver,
+                                      adjudication_rationale: 'Wrong family for this control.')
+        open_source = authored_row('910021')
+        RequirementRelocation.create!(source_rule: open_source, target_technology_token: 'RVIS')
+        sign_in author
+
+        get '/requirement_relocations', params: { target_technology_token: 'RVIS' }
+
+        expect(response).to have_http_status(:ok)
+        rows = response.parsed_body
+        expect(rows.size).to eq(2)
+        declined_row = rows.find { |r| r['declined_at'].present? }
+        expect(declined_row['adjudication_rationale']).to eq('Wrong family for this control.')
+        expect(declined_row['declined_by_name']).to eq(receiver.name)
+      end
+
+      it 'permits a fresh proposal for the same source after a decline' do
+        source = authored_row('910022')
+        RequirementRelocation.create!(source_rule: source, target_technology_token: 'CTR',
+                                      declined_at: 1.day.ago, declined_by: receiver,
+                                      adjudication_rationale: 'Declined once.')
+        sign_in author
+
+        post "/rules/#{source.id}/relocations",
+             params: { requirement_relocation: { target_technology_token: 'GPOS' } }
+
+        expect(response).to have_http_status(:ok)
+        expect(RequirementRelocation.proposed.where(source_rule_id: source.id).count).to eq(1)
       end
     end
   end

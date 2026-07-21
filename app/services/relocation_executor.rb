@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 
-# Executes a pending relocation: ONE transaction that creates the target
-# requirement in the destination component (content moves with the
-# requirement, lineage preserved), tombstones the source row, and stamps
-# the record executed — atomically, or not at all. Dry-run previews the
-# identical move with zero writes.
+# Lands an accepted relocation proposal: ONE transaction that creates
+# the target requirement in the destination component (content moves
+# with the requirement, lineage preserved), tombstones the source row,
+# and stamps the record executed with the accepting actor — atomically,
+# or not at all. Acceptance and landing are one action: there is no
+# accepted-but-unlanded state. Dry-run previews the identical move with
+# zero writes.
 #
 # Recount note: SRG-kind requirement counts are live scoped queries, so
 # the tombstone corrects every count by construction — reset_counters
@@ -15,9 +17,10 @@ class RelocationExecutor
 
   Result = Struct.new(:relocation, :target_rule, keyword_init: true)
 
-  def initialize(relocation, target_component:)
+  def initialize(relocation, target_component:, accepted_by: nil)
     @relocation = relocation
     @target_component = target_component
+    @accepted_by = accepted_by
   end
 
   # The zero-write preview: everything execute! would do, or the reasons
@@ -41,6 +44,10 @@ class RelocationExecutor
   end
 
   def execute!
+    # A missing actor is a caller bug, not a domain state — landing is
+    # always an acceptance by someone.
+    raise ArgumentError, 'an accepting actor is required to land a proposal' if @accepted_by.nil?
+
     errors = validation_errors
     raise ExecutionError, errors.join('; ') if errors.any?
 
@@ -51,8 +58,28 @@ class RelocationExecutor
       # Tombstone before stamping: the one-directional invariant
       # (executed ⇒ source tombstoned) validates at the stamp.
       source.update!(deleted_at: Time.current)
-      @relocation.update!(target_rule_id: target.id, executed_at: Time.current)
+      @relocation.update!(target_rule_id: target.id, executed_at: Time.current,
+                          accepted_by: @accepted_by, accepted_at: Time.current)
       Result.new(relocation: @relocation, target_rule: target)
+    end
+  end
+
+  # The ONE adjudication-eligibility oracle: every reason this proposal
+  # cannot be adjudicated against this destination. Accept consults it
+  # before landing; decline consults it before terminating — an author of
+  # an ineligible component may do neither.
+  def validation_errors
+    @validation_errors ||= begin
+      errors = []
+      errors << 'proposal is no longer open' unless @relocation.proposed?
+      errors << 'target component is required' if @target_component.nil?
+      if @target_component
+        errors << 'target component must be an SRG component' unless @target_component.document_type == 'srg'
+        errors << 'target component is released' if @target_component.released
+        errors << 'target component is the source component' if @relocation.source_rule.component_id == @target_component.id
+        errors.concat(family_coverage_errors)
+      end
+      errors
     end
   end
 
@@ -76,21 +103,6 @@ class RelocationExecutor
 
   def landed_rule_id
     format('%06d', @target_component.largest_rule_id + 1)
-  end
-
-  def validation_errors
-    @validation_errors ||= begin
-      errors = []
-      errors << 'relocation is not pending' unless @relocation.pending?
-      errors << 'target component is required' if @target_component.nil?
-      if @target_component
-        errors << 'target component must be an SRG component' unless @target_component.document_type == 'srg'
-        errors << 'target component is released' if @target_component.released
-        errors << 'target component is the source component' if @relocation.source_rule.component_id == @target_component.id
-        errors.concat(family_coverage_errors)
-      end
-      errors
-    end
   end
 
   # The family invariant: every requirement's lineage belongs to a

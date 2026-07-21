@@ -69,7 +69,8 @@ Rails.application.routes.draw do
   resources :requirement_relocations, only: %i[index destroy] do
     member do
       post :dry_run
-      post :execute
+      post :accept
+      post :decline
     end
   end
 

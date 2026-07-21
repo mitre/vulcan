@@ -14,12 +14,14 @@ export function familyTokenFromPrefix(prefix) {
 }
 
 /**
- * useRelocations - relocation marker state for the component editor.
+ * useRelocations - relocation proposal state for the component editor.
  *
- * ONE fetch of the caller-visible pending markers feeds all three
- * surfaces: the per-rule badge map (this component's rows only), the
- * per-family backlog (across components), and the open-time prompt
- * count keyed by the interim prefix-derived family token.
+ * ONE fetch of the caller-visible rows feeds all three surfaces: the
+ * per-rule badge map (this component's rows only), the per-family
+ * backlog (across components), and the open-time prompt count keyed by
+ * the interim prefix-derived family token. The server retains DECLINED
+ * proposals in the response for source-author visibility — those are
+ * not open markers, so every marker surface filters to open proposals.
  *
  * Usage:
  *   const relocations = useRelocations({ id, prefix });
@@ -42,10 +44,12 @@ export function useRelocations(component) {
     }
   };
 
+  const openProposal = (marker) => !marker.declined_at;
+
   const markersByRuleId = computed(() => {
     const map = {};
     markers.value
-      .filter((marker) => marker.component_id === component.id)
+      .filter((marker) => openProposal(marker) && marker.component_id === component.id)
       .forEach((marker) => {
         map[marker.source_rule_id] = marker;
       });
@@ -53,7 +57,9 @@ export function useRelocations(component) {
   });
 
   const backlogFor = (token) =>
-    markers.value.filter((marker) => marker.target_technology_token === token);
+    markers.value.filter(
+      (marker) => openProposal(marker) && marker.target_technology_token === token,
+    );
 
   const familyToken = computed(() => familyTokenFromPrefix(component.prefix));
 

@@ -2,22 +2,24 @@ parameters:
   - name: id
     in: path
     required: true
-    description: Numeric ID of the pending relocation record.
+    description: Numeric ID of the open relocation proposal.
     schema:
       type: integer
     example: 12
 post:
-  operationId: executeRequirementRelocation
+  operationId: acceptRequirementRelocation
   tags:
     - Rules
-  summary: Execute a relocation — move the requirement, tombstone the source
+  summary: Accept a relocation proposal — land the requirement
   description: >-
-    ONE transaction: creates the requirement in the destination component
+    Receiver-side adjudication: acceptance and landing are ONE
+    transaction — creates the requirement in the destination component
     with content and core lineage carried over, tombstones the source
-    row, and stamps the record executed — atomically, or not at all.
-    Requires author role on BOTH the source and destination components.
-    Audited. Executed records answer 404 like a record that never
-    existed.
+    row, and stamps the record executed with the accepting actor —
+    atomically, or not at all. Requires author role on the DESTINATION
+    component only; the proposal itself carries source consent. Audited.
+    Adjudicated proposals (declined or executed) answer 404 like a
+    record that never existed.
   requestBody:
     required: true
     content:
@@ -32,23 +34,23 @@ post:
               description: The destination SRG component.
               example: 42
         examples:
-          move:
-            summary: Execute the move into component 42
+          accept:
+            summary: Accept the move into component 42
             value:
               target_component_id: 42
   responses:
     '200':
-      description: Requirement relocated
+      description: Proposal accepted and requirement landed
       content:
         application/json:
           schema:
             $ref: ../components/schemas/ToastResponse.yaml
           examples:
-            relocated:
-              summary: Move executed
+            accepted:
+              summary: Move landed
               value:
                 toast:
-                  title: Requirement relocated.
+                  title: Proposal accepted.
                   message:
                     - Moved to Container Platform SRG — the source requirement is now history.
                   variant: success
@@ -63,7 +65,7 @@ post:
               summary: Ineligible destination
               value:
                 toast:
-                  title: Could not execute the relocation.
+                  title: Could not accept the proposal.
                   message:
                     - target component must be an SRG component
                   variant: danger

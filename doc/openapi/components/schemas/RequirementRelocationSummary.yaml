@@ -1,8 +1,9 @@
 description: >-
-  A pending relocation marker in the per-family backlog. Serialized by
-  RequirementRelocationBlueprint: the marker plus enough source identity
-  to act on it. Only pending markers are listed — executed relocation
-  records are immutable history and never served here.
+  A relocation proposal in the per-family backlog: the open proposal
+  plus enough source identity to act on it, or a retained decline whose
+  rationale communicates the refusal back to the source author.
+  Executed relocation records are immutable history and never served
+  here.
 type: object
 additionalProperties: false
 required:
@@ -50,3 +51,27 @@ properties:
       - 'null'
     description: Who marked the requirement. Null when the account was removed.
     example: Jane Doe
+  declined_at:
+    type:
+      - string
+      - 'null'
+    description: >-
+      When the receiving side declined the proposal. Null while the
+      proposal is open. Blueprinter format.
+    example: null
+  adjudication_rationale:
+    type:
+      - string
+      - 'null'
+    description: >-
+      Why the proposal was declined — required on every decline, shown
+      to the source author. Null while the proposal is open.
+    example: null
+  declined_by_name:
+    type:
+      - string
+      - 'null'
+    description: >-
+      Who declined the proposal. Null while open or when the account was
+      removed.
+    example: null

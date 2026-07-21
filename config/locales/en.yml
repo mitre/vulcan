@@ -37,7 +37,7 @@ en:
         requirement_relocation:
           attributes:
             source_rule_id:
-              pending_exists: "already has a pending relocation"
+              open_proposal_exists: "already has an open relocation proposal"
   vulcan:
     triage:
       status:

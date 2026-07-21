@@ -8,16 +8,33 @@ vi.mock("@/api/rulesApi", () => ({
   unmarkRelocation: vi.fn(),
 }));
 
-// REQUIREMENT (relocation marker state): ONE fetch of visible pending
-// markers feeds all three surfaces — the per-rule badge map (this
-// component's rows only), the per-family backlog (across components),
-// and the open-time prompt count keyed by the interim prefix-derived
-// family token (decision 2026-07-20: token field arrives with minting;
-// until then family = the prefix's leading alpha segment).
+// REQUIREMENT (relocation proposal state): ONE fetch of visible rows
+// feeds all three surfaces — the per-rule badge map (this component's
+// rows only), the per-family backlog (across components), and the
+// open-time prompt count keyed by the interim prefix-derived family
+// token (decision 2026-07-20: token field arrives with minting; until
+// then family = the prefix's leading alpha segment). The server also
+// retains DECLINED proposals in the response for source-author
+// visibility — those are NOT open markers: badges, backlog counts, and
+// prompts count open proposals only.
 const MARKERS = [
-  { id: 1, source_rule_id: 11, component_id: 5, target_technology_token: "CTR" },
-  { id: 2, source_rule_id: 22, component_id: 5, target_technology_token: "GPOS" },
-  { id: 3, source_rule_id: 33, component_id: 9, target_technology_token: "CTR" },
+  { id: 1, source_rule_id: 11, component_id: 5, target_technology_token: "CTR", declined_at: null },
+  {
+    id: 2,
+    source_rule_id: 22,
+    component_id: 5,
+    target_technology_token: "GPOS",
+    declined_at: null,
+  },
+  { id: 3, source_rule_id: 33, component_id: 9, target_technology_token: "CTR", declined_at: null },
+  {
+    id: 4,
+    source_rule_id: 44,
+    component_id: 5,
+    target_technology_token: "CTR",
+    declined_at: "2026-07-21 10:00:00 UTC",
+    adjudication_rationale: "Covered elsewhere.",
+  },
 ];
 
 describe("familyTokenFromPrefix", () => {
@@ -38,16 +55,17 @@ describe("useRelocations", () => {
     getRelocations.mockResolvedValue({ data: MARKERS });
   });
 
-  it("maps this component's markers by source rule id after fetching", async () => {
+  it("maps this component's OPEN proposals by source rule id — declined rows are not markers", async () => {
     const { fetchMarkers, markersByRuleId } = useRelocations({ id: 5, prefix: "CNTR-00" });
     await fetchMarkers();
 
     expect(markersByRuleId.value[11].target_technology_token).toBe("CTR");
     expect(markersByRuleId.value[22].target_technology_token).toBe("GPOS");
     expect(markersByRuleId.value[33]).toBeUndefined();
+    expect(markersByRuleId.value[44]).toBeUndefined();
   });
 
-  it("serves the per-family backlog across components", async () => {
+  it("serves the per-family backlog of OPEN proposals across components", async () => {
     const { fetchMarkers, backlogFor } = useRelocations({ id: 5, prefix: "CNTR-00" });
     await fetchMarkers();
 

@@ -2,7 +2,7 @@ parameters:
   - name: id
     in: path
     required: true
-    description: Numeric ID of the pending relocation record.
+    description: Numeric ID of the open relocation proposal.
     schema:
       type: integer
     example: 12
@@ -10,13 +10,14 @@ post:
   operationId: dryRunRequirementRelocation
   tags:
     - Rules
-  summary: Preview executing a relocation with zero writes
+  summary: Preview accepting a relocation with zero writes
   description: >-
-    Returns exactly what execute would do for this pending marker and
+    Returns exactly what accepting the proposal would do for this
     destination component — or every reason it cannot run — without
-    writing anything. Requires author role on BOTH the source and the
-    destination components. Executed records answer 404 like a record
-    that never existed.
+    writing anything. This preview is the adjudication review artifact.
+    Requires author role on the DESTINATION component only. Adjudicated
+    proposals (declined or executed) answer 404 like a record that never
+    existed.
   requestBody:
     required: true
     content:

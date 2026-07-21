@@ -27,6 +27,7 @@ AUTHORIZE_METHODS = %w[
   authorize_admin_component
   authorize_review_component
   authorize_author_component
+  authorize_author_target
   authorize_viewer_component
   authorize_admin_membership
   authorize_membership_create

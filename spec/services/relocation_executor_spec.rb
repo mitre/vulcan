@@ -2,12 +2,14 @@
 
 require 'rails_helper'
 
-# REQUIREMENT (executing a relocation): execute is ONE
-# transaction — create/link the target requirement in the destination
-# component, stamp executed_at, tombstone the source row — rolling back
-# atomically on any step failure. Dry-run previews the same move with
-# zero writes. Reviews stay frozen on the tombstone; counts and
-# duplication never resurrect it.
+# REQUIREMENT (accepting a relocation proposal): acceptance and landing
+# are ONE action and ONE transaction — create/link the target
+# requirement in the destination component, stamp executed_at plus the
+# accepting actor, tombstone the source row — rolling back atomically on
+# any step failure. Dry-run previews the same move with zero writes.
+# Declined or executed proposals are no longer open and cannot land.
+# Reviews stay frozen on the tombstone; counts and duplication never
+# resurrect it.
 RSpec.describe RelocationExecutor do
   let_it_be(:core_os) do
     create(:security_requirements_guide, :core, :skip_rules, srg_id: 'SRG-CORE-EXEC-OS', version: 'V1R1')
@@ -38,7 +40,8 @@ RSpec.describe RelocationExecutor do
                                                  target_technology_token: 'EXTC',
                                                  requested_by: requester)
 
-      result = described_class.new(relocation, target_component: target_component).execute!
+      result = described_class.new(relocation, target_component: target_component,
+                                               accepted_by: requester).execute!
 
       target = result.target_rule
       expect(target.component_id).to eq(target_component.id)
@@ -49,6 +52,9 @@ RSpec.describe RelocationExecutor do
       relocation.reload
       expect(relocation.executed_at).to be_present
       expect(relocation.target_rule_id).to eq(target.id)
+      # Acceptance provenance is stamped in the same transaction.
+      expect(relocation.accepted_by).to eq(requester)
+      expect(relocation.accepted_at).to be_present
 
       # Tombstoned: gone from the live scope, present unscoped.
       expect(target_component.authored_srg_rules.pluck(:id)).to include(target.id)
@@ -64,7 +70,8 @@ RSpec.describe RelocationExecutor do
       relocation = RequirementRelocation.create!(source_rule: source,
                                                  target_technology_token: 'EXTD')
 
-      executor = described_class.new(relocation, target_component: target_component)
+      executor = described_class.new(relocation, target_component: target_component,
+                                                 accepted_by: requester)
       allow(relocation).to receive(:update!).and_raise(ActiveRecord::RecordInvalid.new(relocation))
 
       expect { executor.execute! }.to raise_error(ActiveRecord::RecordInvalid)
@@ -114,8 +121,15 @@ RSpec.describe RelocationExecutor do
       released_target = srg_component('EXRL-00', core_os)
       released_target.update_column(:released, true)
 
+      declined = RequirementRelocation.create!(source_rule: authored_row(source_component, '300024'),
+                                               target_technology_token: 'X',
+                                               declined_at: 1.day.ago, declined_by: requester,
+                                               adjudication_rationale: 'Out of family scope.')
+
       expect(described_class.new(executed, target_component: srg_component('EXTF-00', core_os))
-        .dry_run[:errors].join).to match(/not pending/)
+        .dry_run[:errors].join).to match(/no longer open/)
+      expect(described_class.new(declined, target_component: srg_component('EXTG-00', core_os))
+        .dry_run[:errors].join).to match(/no longer open/)
       expect(described_class.new(other_pending, target_component: stig_target)
         .dry_run[:errors].join).to match(/must be an SRG component/)
       expect(described_class.new(other_pending, target_component: released_target)
@@ -125,8 +139,18 @@ RSpec.describe RelocationExecutor do
       expect(described_class.new(other_pending, target_component: app_only_target)
         .dry_run[:errors].join).to match(/does not declare the SRG-CORE-EXEC-OS family/)
 
-      expect { described_class.new(other_pending, target_component: stig_target).execute! }
-        .to raise_error(RelocationExecutor::ExecutionError, /SRG component/)
+      expect do
+        described_class.new(other_pending, target_component: stig_target, accepted_by: requester).execute!
+      end.to raise_error(RelocationExecutor::ExecutionError, /SRG component/)
+    end
+
+    it 'refuses to land without an accepting actor' do
+      source = authored_row(srg_component('EXSL-00', core_os), '300025')
+      relocation = RequirementRelocation.create!(source_rule: source, target_technology_token: 'EXTL')
+
+      expect do
+        described_class.new(relocation, target_component: srg_component('EXTL-00', core_os)).execute!
+      end.to raise_error(ArgumentError, /accepting actor/)
     end
   end
 
@@ -152,7 +176,8 @@ RSpec.describe RelocationExecutor do
       review = create(:review, :comment, user: reviewer, rule: nil, commentable: source,
                                          comment: 'frozen comment', section: 'fixtext')
       relocation = RequirementRelocation.create!(source_rule: source, target_technology_token: 'T')
-      result = described_class.new(relocation, target_component: target_component).execute!
+      result = described_class.new(relocation, target_component: target_component,
+                                               accepted_by: reviewer).execute!
       [source_component, target_component, source, review, result]
     end
 
@@ -195,7 +220,8 @@ RSpec.describe RelocationExecutor do
       source = authored_row(source_component, '000001', derived_from: catalog_row)
       relocation = RequirementRelocation.create!(source_rule: source, target_technology_token: 'EXTI')
 
-      result = described_class.new(relocation, target_component: target_component).execute!
+      result = described_class.new(relocation, target_component: target_component,
+                                               accepted_by: requester).execute!
 
       expect(result.target_rule.rule_id).to eq('000003')
       expect(target_component.authored_srg_rules.pluck(:rule_id))
@@ -210,7 +236,8 @@ RSpec.describe RelocationExecutor do
       source = authored_row(source_component, '000001')
       relocation = RequirementRelocation.create!(source_rule: source, target_technology_token: 'EXTJ')
 
-      result = described_class.new(relocation, target_component: target_component).execute!
+      result = described_class.new(relocation, target_component: target_component,
+                                               accepted_by: requester).execute!
 
       expect(result.target_rule.rule_id).to eq('000006')
     end
@@ -235,7 +262,8 @@ RSpec.describe RelocationExecutor do
       target_component = srg_component('EXTH-00', core_os)
       source = authored_row(source_component, '300007', derived_from: catalog_row)
       relocation = RequirementRelocation.create!(source_rule: source, target_technology_token: 'W')
-      result = described_class.new(relocation, target_component: target_component).execute!
+      result = described_class.new(relocation, target_component: target_component,
+                                               accepted_by: requester).execute!
 
       result.target_rule.destroy!
 

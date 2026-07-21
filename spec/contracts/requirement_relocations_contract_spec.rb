@@ -112,8 +112,8 @@ RSpec.describe 'Requirement relocations endpoint contracts', type: :request do
     end
   end
 
-  describe 'POST /requirement_relocations/:id/execute (JSON)' do
-    it 'returns ToastResponse when executing the move' do
+  describe 'POST /requirement_relocations/:id/accept (JSON)' do
+    it 'returns ToastResponse when accepting the proposal' do
       source = authored_row('920006')
       record = RequirementRelocation.create!(source_rule: source, target_technology_token: 'RCTH')
       target = create(:component, :skip_rules, project: project, document_type: 'srg',
@@ -121,13 +121,50 @@ RSpec.describe 'Requirement relocations endpoint contracts', type: :request do
                                                name: 'Relocation Contract Target Two',
                                                title: 'Relocation Contract Target Two')
 
-      post "/requirement_relocations/#{record.id}/execute",
+      post "/requirement_relocations/#{record.id}/accept",
            params: { target_component_id: target.id }, headers: json_headers, as: :json
       body = validate_and_parse!
 
       expect(body.dig('toast', 'variant')).to eq('success')
       expect(record.reload.executed_at).to be_present
+      expect(record.accepted_by_id).to eq(admin.id)
       expect(target.authored_srg_rules.count).to eq(1)
+    end
+  end
+
+  describe 'POST /requirement_relocations/:id/decline (JSON)' do
+    it 'returns ToastResponse when declining with a rationale' do
+      source = authored_row('920007')
+      record = RequirementRelocation.create!(source_rule: source, target_technology_token: 'RCTI')
+      target = create(:component, :skip_rules, project: project, document_type: 'srg',
+                                               based_on: core_srg, prefix: 'RCTI-00',
+                                               name: 'Relocation Contract Target Three',
+                                               title: 'Relocation Contract Target Three')
+
+      post "/requirement_relocations/#{record.id}/decline",
+           params: { target_component_id: target.id,
+                     requirement_relocation: { adjudication_rationale: 'Out of family scope.' } },
+           headers: json_headers, as: :json
+      body = validate_and_parse!
+
+      expect(body.dig('toast', 'variant')).to eq('success')
+      expect(record.reload.declined_at).to be_present
+    end
+
+    it 'serves the retained decline in the backlog with the rationale' do
+      source = authored_row('920008')
+      RequirementRelocation.create!(source_rule: source, target_technology_token: 'RCTJ',
+                                    declined_at: 1.day.ago, declined_by: admin,
+                                    adjudication_rationale: 'Duplicate coverage.')
+
+      get '/requirement_relocations', params: { target_technology_token: 'RCTJ' },
+                                      headers: json_headers
+      body = validate_and_parse!
+
+      expect(body.size).to eq(1)
+      assert_fields_present body.first, :declined_at, :adjudication_rationale, :declined_by_name
+      expect(body.first['adjudication_rationale']).to eq('Duplicate coverage.')
+      expect(body.first['declined_by_name']).to eq(admin.name)
     end
   end
 end

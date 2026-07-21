@@ -2,11 +2,15 @@
 
 require 'rails_helper'
 
-# REQUIREMENT (relocation as a record, never a status): a PENDING
+# REQUIREMENT (relocation as a record, never a status): a PROPOSED
 # requirement_relocations row IS the move marker for an authored SRG
-# requirement — one pending marker per source, unlimited executed history;
-# executed records are immutable to users; the source rule hard-destroy
-# cascades its records while target destruction only nullifies.
+# requirement — one open proposal per source, unlimited executed history;
+# the receiving side adjudicates: acceptance lands (executed, stamped
+# with the accepting actor), decline is a RETAINED terminal state with
+# required rationale that frees the source for a fresh proposal.
+# Adjudicated records (declined or executed) are immutable to users; the
+# source rule hard-destroy cascades its records while target destruction
+# only nullifies.
 RSpec.describe RequirementRelocation do
   let_it_be(:core_srg) do
     create(:security_requirements_guide, :core, :skip_rules, srg_id: 'SRG-CORE-RELOC', version: 'V1R1')
@@ -20,8 +24,8 @@ RSpec.describe RequirementRelocation do
     create(:srg_rule, :authored, component: srg_component, rule_id: rule_id)
   end
 
-  describe 'one pending marker per source' do
-    it 'rejects a second pending relocation for the same source rule' do
+  describe 'one open proposal per source' do
+    it 'rejects a second open proposal for the same source rule' do
       source = authored_row('900001')
       described_class.create!(source_rule: source, target_technology_token: 'CTR',
                               requested_by: requester)
@@ -29,18 +33,18 @@ RSpec.describe RequirementRelocation do
       duplicate = described_class.new(source_rule: source, target_technology_token: 'GPOS',
                                       requested_by: requester)
       expect(duplicate).not_to be_valid
-      expect(duplicate.errors[:source_rule_id].join).to match(/pending/i)
+      expect(duplicate.errors[:source_rule_id].join).to match(/open relocation proposal/i)
     end
 
-    it 'allows a pending and an executed record to coexist for the same source' do
+    it 'allows an open proposal and an executed record to coexist for the same source' do
       source = authored_row('900002')
       source.update!(deleted_at: Time.current)
       described_class.create!(source_rule: source, target_technology_token: 'CTR',
                               requested_by: requester, executed_at: 1.day.ago)
 
-      pending_again = described_class.new(source_rule: source, target_technology_token: 'GPOS',
-                                          requested_by: requester)
-      expect(pending_again).to be_valid
+      proposed_again = described_class.new(source_rule: source, target_technology_token: 'GPOS',
+                                           requested_by: requester)
+      expect(proposed_again).to be_valid
     end
   end
 
@@ -134,6 +138,77 @@ RSpec.describe RequirementRelocation do
       described_class.create!(source_rule: other, target_technology_token: 'CTR')
 
       expect(srg_component.moved_out_count).to eq(1)
+    end
+  end
+
+  describe 'adjudication (propose -> receiver adjudicates)' do
+    it 'requires a rationale to decline' do
+      source = authored_row('900014')
+      record = described_class.create!(source_rule: source, target_technology_token: 'CTR',
+                                       requested_by: requester)
+
+      record.declined_at = Time.current
+      record.declined_by = requester
+      expect(record.save).to be false
+      expect(record.errors[:adjudication_rationale].join).to match(/blank/)
+
+      record.adjudication_rationale = 'Requirement is out of scope for this family.'
+      expect(record.save).to be true
+    end
+
+    it 'retains declined records as terminal — no further updates' do
+      source = authored_row('900015')
+      declined = described_class.create!(source_rule: source, target_technology_token: 'CTR',
+                                         declined_at: 1.hour.ago, declined_by: requester,
+                                         adjudication_rationale: 'Belongs in the OS family.')
+
+      declined.target_technology_token = 'GPOS'
+      expect(declined.save).to be false
+      expect(declined.errors[:base].join).to match(/immutable/)
+    end
+
+    it 'rejects a record that is both declined and executed' do
+      source = authored_row('900016')
+      source.update!(deleted_at: Time.current)
+      record = described_class.new(source_rule: source, target_technology_token: 'CTR',
+                                   declined_at: Time.current, declined_by: requester,
+                                   adjudication_rationale: 'No.', executed_at: Time.current)
+
+      expect(record).not_to be_valid
+      expect(record.errors[:base].join).to match(/cannot be both declined and executed/)
+    end
+
+    it 'frees the source for a fresh proposal after a decline' do
+      source = authored_row('900017')
+      described_class.create!(source_rule: source, target_technology_token: 'CTR',
+                              declined_at: 1.day.ago, declined_by: requester,
+                              adjudication_rationale: 'Wrong family — CTR does not cover this.')
+
+      fresh = described_class.new(source_rule: source, target_technology_token: 'GPOS',
+                                  requested_by: requester)
+      expect(fresh).to be_valid
+    end
+
+    it 'excludes declined records from the per-family backlog of open proposals' do
+      a = authored_row('900018')
+      b = authored_row('900019')
+      open_proposal = described_class.create!(source_rule: a, target_technology_token: 'CTR2')
+      described_class.create!(source_rule: b, target_technology_token: 'CTR2',
+                              declined_at: 1.day.ago, declined_by: requester,
+                              adjudication_rationale: 'Duplicate of an existing requirement.')
+
+      expect(described_class.backlog_for('CTR2')).to contain_exactly(open_proposal)
+    end
+
+    it 'stores the accepting actor and timestamp on executed records' do
+      source = authored_row('900020')
+      source.update!(deleted_at: Time.current)
+      executed = described_class.create!(source_rule: source, target_technology_token: 'CTR',
+                                         executed_at: 1.day.ago, accepted_at: 1.day.ago,
+                                         accepted_by: requester)
+
+      expect(executed.reload.accepted_by).to eq(requester)
+      expect(executed.accepted_at).to be_present
     end
   end
 
