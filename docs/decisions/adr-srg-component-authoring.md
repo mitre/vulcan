@@ -179,6 +179,12 @@ dead, specs-only code superseded by the export formatters. It is
 |---|---|---|
 | 19 | Container parentage | **APP core alone.** Container Platform SRG and Container SRG share the same single parent. OS-core one-offs arrive via selective add-parent-later (secondary parent, selected requirements only) — dual lineage stays a supported capability, not the Container default. The acceptance run (§8.2 / the Container redo) exercises the single-parent common case; N=2 stays validated by the multi-parent test suite and the creation-flow walkthrough. Full text: the R2 update note in §2. |
 
+## 0.4 Relocation workflow amendment (Aaron, 2026-07-21 — v11)
+
+| # | Fork | Decision |
+|---|---|---|
+| 20 | Transfer workflow | **Propose → receiver adjudicates → land.** A relocation crosses an ownership boundary, so the destination independently accepts it — the source's action is never sufficient by itself. Marking is the source-side offer; an author+ on the receiving family's component accepts (dry-run preview as the review artifact) or declines with required rationale (retained, visible to the source author); acceptance triggers the §6 landing transaction. Unilateral execute is rejected as the product workflow — it cannot express transfer across a real boundary (it requires one actor to hold rights on both sides, the exact case where a direct move suffices). Full mechanics: §6.1. |
+
 ## 1. Context
 
 Per Aaron/STIG leads (2026-07-10): DISA publishes all SRGs and STIGs;
@@ -779,6 +785,49 @@ requirement_relocations
   open-time prompt ("N requirements are marked for this family") seeding
   the executor phase. SRG components only (source side), per §0.8.
 
+### 6.1 Transfer workflow — propose, receiver-adjudicate, land (v11, Aaron 2026-07-21)
+
+Decided against surveyed cross-boundary transfer models (code-review
+submit gates, two-step inventory transfer with independent goods
+receipt, change-enablement queues, catalog withdrawal conventions). The
+convergent industry principles: the destination independently
+acknowledges the transfer; the pending state stays visible; batching is
+a scheduling convenience, not a per-item requirement; the old location
+keeps a durable redirect. The record model below already satisfied the
+last three — this amendment adds the first.
+
+ONE state machine on the relocation record — states derived from
+timestamps, matching the existing pending/executed derivation; no
+parallel approval system:
+
+- **Proposed** (the state previously called pending): marking is the
+  source-side offer, made by an author of the source component. The
+  proposer needs NO rights on any destination. Un-mark (source-side
+  withdrawal) destroys the record, audited, as shipped.
+- **Accepted = Executed**: an author+ on the receiving family's open
+  component adjudicates the proposal with the dry-run preview as the
+  review artifact. Acceptance and landing are ONE action and ONE
+  transaction — the §6 landing mechanics unchanged (atomic transaction,
+  landed numbering, tombstone, one-directional invariant), with the
+  accepting actor and timestamp stamped on the record alongside
+  `executed_at`. No accepted-but-unlanded custody state exists. The
+  authz recut: accept/dry-run require TARGET-side author rights only —
+  the mark itself carries source consent.
+- **Declined**: terminal and RETAINED (never destroyed), with required
+  rationale visible to the source author — the communication back
+  across the boundary. Because declined records are retained, the
+  one-pending-per-source uniqueness excludes declined rows: a source
+  author may legitimately re-propose after a decline.
+- **No open working component** (family's latest is released):
+  proposals simply remain queued as proposed; the receiving admin
+  creates the next version (duplicate latest release + marker intake,
+  the §14 phasing line) and then works the queue. Version creation
+  stays an explicit admin decision, never an automatic side effect of
+  acceptance.
+- The one-step case is the degenerate path: an actor with rights on
+  both sides performs propose and accept themselves — same state
+  machine, honest audit trail, no second code path.
+
 ## 7. Satisfied-By exclusion (R3) — structural
 
 `SrgRule` has no satisfies associations, no `RuleSatisfactionValidator`
@@ -927,6 +976,13 @@ duplication appears.
 3. **Export emit-shape details** — pinned by diffing the published SRG
    XMLs in `db/seeds/srgs/` against the import model (Phase 7 starting
    task; full implementation is in scope, §0.13).
+3a. **Cross-project proposal disclosure (v11)** — a receiving-side
+   adjudicator may not be a member of the source project. What a
+   proposal reveals (requirement content and lineage are needed to
+   adjudicate; source component/project identity is the question) must
+   be decided against the hidden-project concealment policy. Working
+   position, undecided: offering to a family consents to disclosing the
+   proposal's content to that family's component authors.
 
 Raised in review (Will, 2026-07-12) — none blocks the §3 core, but 4 and 7
 should be settled before their phase is carded:
