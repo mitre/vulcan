@@ -62,11 +62,16 @@ class RequirementRelocationsController < ApplicationController
   end
 
   def accept
-    RelocationExecutor.new(@relocation, target_component: @target_component,
-                                        accepted_by: current_user).execute!
-    render_toast(title: 'Proposal accepted.',
-                 message: "Moved to #{@target_component.name} — the source requirement is now history.",
-                 variant: 'success', status: :ok)
+    result = RelocationExecutor.new(@relocation, target_component: @target_component,
+                                                 accepted_by: current_user).execute!
+    # The landed id rides the toast so the editor can materialize the
+    # new row without a page reload.
+    render json: {
+      toast: Toast.new(title: 'Proposal accepted.',
+                       message: "Moved to #{@target_component.name} — the source requirement is now history.",
+                       variant: 'success'),
+      landed_rule_id: result.target_rule.id
+    }, status: :ok
   rescue RelocationExecutor::ExecutionError => e
     render json: {
       toast: Toast.new(title: 'Could not accept the proposal.',

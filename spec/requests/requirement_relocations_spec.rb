@@ -213,6 +213,9 @@ RSpec.describe 'Requirement relocations' do
         expect(record.accepted_by_id).to eq(receiver.id)
         expect(record.target_rule).to have_attributes(component_id: receiving_component.id)
         expect(SrgRule.unscoped.find(source_id).deleted_at).to be_present
+        # The landed requirement id rides the toast so the editor can
+        # materialize the new row without a page reload.
+        expect(response.parsed_body['landed_rule_id']).to eq(record.target_rule_id)
       end
 
       it 'returns 422 with the executor errors when the move is invalid' do

@@ -1,0 +1,17 @@
+description: >-
+  Combined response for accepting a relocation proposal: the success
+  toast plus the id of the requirement that landed in the destination
+  component, so the editor can materialize the new row without a page
+  reload.
+type: object
+required:
+  - toast
+  - landed_rule_id
+additionalProperties: false
+properties:
+  toast:
+    $ref: ./ToastObject.yaml
+  landed_rule_id:
+    type: integer
+    description: The requirement created in the destination component.
+    example: 5137

@@ -3730,7 +3730,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ToastResponse'
+                $ref: '#/components/schemas/RequirementRelocationAcceptResponse'
               examples:
                 accepted:
                   summary: Move landed
@@ -3740,6 +3740,7 @@ paths:
                       message:
                         - Moved to Container Platform SRG — the source requirement is now history.
                       variant: success
+                    landed_rule_id: 5137
         '404':
           $ref: '#/components/responses/NotFound'
         '422':
@@ -11175,6 +11176,20 @@ components:
           type: boolean
           description: Execute soft-deletes the source row — always true.
           example: true
+    RequirementRelocationAcceptResponse:
+      description: 'Combined response for accepting a relocation proposal: the success toast plus the id of the requirement that landed in the destination component, so the editor can materialize the new row without a page reload.'
+      type: object
+      required:
+        - toast
+        - landed_rule_id
+      additionalProperties: false
+      properties:
+        toast:
+          $ref: '#/components/schemas/ToastObject'
+        landed_rule_id:
+          type: integer
+          description: The requirement created in the destination component.
+          example: 5137
     ReviewInput:
       description: Input fields for creating a review action (comment, approval, review request, or lock) on a rule.
       type: object

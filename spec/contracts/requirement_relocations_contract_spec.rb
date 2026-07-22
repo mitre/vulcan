@@ -128,6 +128,7 @@ RSpec.describe 'Requirement relocations endpoint contracts', type: :request do
       expect(body.dig('toast', 'variant')).to eq('success')
       expect(record.reload.executed_at).to be_present
       expect(record.accepted_by_id).to eq(admin.id)
+      expect(body['landed_rule_id']).to eq(record.target_rule_id)
       expect(target.authored_srg_rules.count).to eq(1)
     end
   end

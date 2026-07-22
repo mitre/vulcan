@@ -44,7 +44,7 @@ post:
       content:
         application/json:
           schema:
-            $ref: ../components/schemas/ToastResponse.yaml
+            $ref: ../components/schemas/RequirementRelocationAcceptResponse.yaml
           examples:
             accepted:
               summary: Move landed
@@ -54,6 +54,7 @@ post:
                   message:
                     - Moved to Container Platform SRG — the source requirement is now history.
                   variant: success
+                landed_rule_id: 5137
     '422':
       description: The move cannot run (validation errors from the preview)
       content:
