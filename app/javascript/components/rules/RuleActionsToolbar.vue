@@ -190,6 +190,7 @@
 import CommentModal from "../shared/CommentModal.vue";
 import { MESSAGE_LABELS, PANEL_LABELS } from "../../constants/terminology";
 import { commentsClosedTooltip } from "../../constants/triageVocabulary";
+import { roleGteTo } from "../../utils/roleComparison";
 
 export default {
   name: "RuleActionsToolbar",
@@ -225,6 +226,14 @@ export default {
       type: Object,
       default: null,
     },
+    // True on the read-only component view page, where authoring lives
+    // in the editor. Distinguishes the mode barrier (tooltip names the
+    // editor as the path) from a viewer-role barrier (which the editor
+    // cannot cure — the role reason stands on either page).
+    viewOnlyPage: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
@@ -237,9 +246,13 @@ export default {
     },
     relocateTooltip() {
       if (this.pendingRelocation) {
-        return `Already marked for relocation to ${this.pendingRelocation.target_technology_token} — un-mark from the backlog`;
+        const path = this.viewOnlyPage ? "open the editor to un-mark" : "un-mark from the backlog";
+        return `Already marked for relocation to ${this.pendingRelocation.target_technology_token} — ${path}`;
       }
       if (this.readOnly) {
+        if (this.viewOnlyPage && roleGteTo(this.effectivePermissions, "author")) {
+          return "Available in the editor — open the editor to relocate";
+        }
         return "Requires author role";
       }
       return "Mark this requirement for relocation to another family";

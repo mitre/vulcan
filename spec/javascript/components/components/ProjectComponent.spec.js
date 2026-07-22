@@ -25,7 +25,14 @@ vi.mock("@/api/componentsApi", () => ({
 
 vi.mock("@/api/rulesApi", () => ({
   getRule: vi.fn(() => Promise.resolve({ data: {} })),
+  getRelocations: vi.fn(() => Promise.resolve({ data: [] })),
+  markRelocation: vi.fn(() => Promise.resolve({ data: {} })),
+  unmarkRelocation: vi.fn(() => Promise.resolve({ data: {} })),
+  dryRunRelocation: vi.fn(() => Promise.resolve({ data: {} })),
+  acceptRelocation: vi.fn(() => Promise.resolve({ data: {} })),
+  declineRelocation: vi.fn(() => Promise.resolve({ data: {} })),
 }));
+import { getRelocations } from "@/api/rulesApi";
 
 vi.mock("@/api/projectsApi", () => ({
   exportProjectData: vi.fn(() => Promise.resolve("/projects/1/export/csv?component_ids=41")),
@@ -670,6 +677,98 @@ describe("ProjectComponent", () => {
 
       expect(getRule).toHaveBeenCalledWith(1);
       expect(wrapper.vm.composerActive).toBe(false);
+    });
+  });
+
+  // ==========================================================================
+  // Relocation surfaces on the VIEW page (SRG kind)
+  //
+  // REQUIREMENTS: the read-only view page shows the same relocation STATE
+  // the editor shows — row badges, the backlog panel (read-only: actions
+  // disabled with editor-pointing tooltips), and the command-bar opener
+  // with its count badge. Authoring stays in the editor; the view page
+  // never mutates.
+  // ==========================================================================
+  describe("relocation surfaces (SRG kind, view page)", () => {
+    const srgState = { ...defaultProps.initialComponentState, document_type: "srg" };
+    const MARKER = {
+      id: 7,
+      source_rule_id: 1,
+      component_id: 41,
+      target_technology_token: "TEST",
+      source_displayed_name: "TEST-001",
+      component_name: "Test Component",
+      declined_at: null,
+    };
+
+    beforeEach(() => vi.clearAllMocks());
+
+    it("fetches relocation markers for an srg component", async () => {
+      wrapper = createWrapper({ initialComponentState: srgState });
+      await flushPromises(wrapper);
+      expect(getRelocations).toHaveBeenCalled();
+    });
+
+    it("does NOT fetch relocation markers for stig-kind", async () => {
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+      expect(getRelocations).not.toHaveBeenCalled();
+    });
+
+    it("feeds the badge map to RuleList so relocation badges render on the view page", async () => {
+      getRelocations.mockResolvedValueOnce({ data: [MARKER] });
+      wrapper = createWrapper({ initialComponentState: srgState });
+      await flushPromises(wrapper);
+      expect(wrapper.findComponent({ name: "RuleList" }).props("pendingRelocations")).toEqual({
+        1: MARKER,
+      });
+    });
+
+    it("passes the open-proposal count to the command bar", async () => {
+      getRelocations.mockResolvedValueOnce({ data: [MARKER] });
+      wrapper = createWrapper({ initialComponentState: srgState });
+      await flushPromises(wrapper);
+      expect(wrapper.findComponent({ name: "ControlsCommandBar" }).props("relocationCount")).toBe(
+        1,
+      );
+    });
+
+    it("mounts the backlog panel read-only — viewOnlyPage with real role and released state", async () => {
+      getRelocations.mockResolvedValueOnce({ data: [MARKER] });
+      wrapper = createWrapper({ initialComponentState: srgState });
+      await flushPromises(wrapper);
+      const panel = wrapper.findComponent({ name: "RelocationBacklogPanel" });
+      expect(panel.exists()).toBe(true);
+      expect(panel.props("viewOnlyPage")).toBe(true);
+      expect(panel.props("canAuthor")).toBe(true);
+      expect(panel.props("componentReleased")).toBe(false);
+    });
+
+    it("derives canAuthor=false for a viewer session", async () => {
+      wrapper = createWrapper({
+        initialComponentState: { ...srgState, effective_permissions: "viewer" },
+      });
+      await flushPromises(wrapper);
+      expect(wrapper.findComponent({ name: "RelocationBacklogPanel" }).props("canAuthor")).toBe(
+        false,
+      );
+    });
+
+    it("does NOT mount the backlog panel for stig-kind", async () => {
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+      expect(wrapper.findComponent({ name: "RelocationBacklogPanel" }).exists()).toBe(false);
+    });
+
+    it("threads viewOnlyPage and the selected rule's marker into RuleEditor", async () => {
+      getRelocations.mockResolvedValueOnce({ data: [MARKER] });
+      wrapper = createWrapper({ initialComponentState: srgState });
+      await flushPromises(wrapper);
+      wrapper.vm.selectRule(1);
+      await wrapper.vm.$nextTick();
+      const editor = wrapper.findComponent({ name: "RuleEditor" });
+      expect(editor.props("viewOnlyPage")).toBe(true);
+      expect(editor.props("pendingRelocation")).toEqual(MARKER);
     });
   });
 });

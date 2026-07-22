@@ -373,6 +373,57 @@ describe("RuleActionsToolbar", () => {
         wrapper = createWrapper({ documentType: "srg", readOnly: true });
         expect(relocateBtn().attributes("disabled")).toBe("disabled");
       });
+
+      // The tooltip states the TRUE reason for each read-only source:
+      // the view page is a mode barrier (the editor is the path), while
+      // a viewer role is a permission barrier the editor cannot cure.
+      it("explains the role barrier for an edit-page viewer", () => {
+        wrapper = createWrapper({
+          documentType: "srg",
+          readOnly: true,
+          effectivePermissions: "viewer",
+        });
+        expect(wrapper.find('[data-test="relocate-tip"]').attributes("title")).toBe(
+          "Requires author role",
+        );
+      });
+
+      it("points an author-capable user at the editor on the view page", () => {
+        wrapper = createWrapper({
+          documentType: "srg",
+          readOnly: true,
+          viewOnlyPage: true,
+          effectivePermissions: "author",
+        });
+        expect(wrapper.find('[data-test="relocate-tip"]').attributes("title")).toBe(
+          "Available in the editor — open the editor to relocate",
+        );
+      });
+
+      it("keeps the role barrier for a viewer on the view page — the editor would not help", () => {
+        wrapper = createWrapper({
+          documentType: "srg",
+          readOnly: true,
+          viewOnlyPage: true,
+          effectivePermissions: "viewer",
+        });
+        expect(wrapper.find('[data-test="relocate-tip"]').attributes("title")).toBe(
+          "Requires author role",
+        );
+      });
+
+      it("points the already-marked message at the editor on the view page", () => {
+        wrapper = createWrapper({
+          documentType: "srg",
+          readOnly: true,
+          viewOnlyPage: true,
+          effectivePermissions: "author",
+          pendingRelocation: { id: 7, target_technology_token: "CTR" },
+        });
+        expect(wrapper.find('[data-test="relocate-tip"]').attributes("title")).toBe(
+          "Already marked for relocation to CTR — open the editor to un-mark",
+        );
+      });
     });
 
     describe("Backlog button (SRG kind only)", () => {

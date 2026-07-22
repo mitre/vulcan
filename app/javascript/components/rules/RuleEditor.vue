@@ -8,6 +8,7 @@
         :read-only="readOnly"
         :document-type="documentType"
         :pending-relocation="pendingRelocation"
+        :view-only-page="viewOnlyPage"
         @open-relocation-modal="$emit('open-relocation-modal')"
         @clone="$emit('clone')"
         @delete="$emit('delete')"
@@ -146,6 +147,13 @@ export default {
     pendingRelocation: {
       type: Object,
       default: null,
+    },
+    // True on the read-only component view page — passed through to the
+    // toolbar so read-only tooltips can state the true reason (mode vs
+    // role) and point at the editor.
+    viewOnlyPage: {
+      type: Boolean,
+      default: false,
     },
     effectivePermissions: {
       type: String,

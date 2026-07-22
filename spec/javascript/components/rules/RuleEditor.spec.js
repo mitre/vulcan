@@ -558,5 +558,18 @@ describe("RuleEditor", () => {
       );
       expect(wrapper.findComponent({ name: "UnifiedRuleForm" }).props("documentType")).toBe("srg");
     });
+
+    it("forwards viewOnlyPage to the toolbar so read-only tooltips state the true reason", () => {
+      wrapper = createWrapper({
+        documentType: "srg",
+        rule: authoredRule,
+        statuses: srgStatuses,
+        readOnly: true,
+        viewOnlyPage: true,
+      });
+      expect(wrapper.findComponent({ name: "RuleActionsToolbar" }).props("viewOnlyPage")).toBe(
+        true,
+      );
+    });
   });
 });

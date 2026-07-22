@@ -19,6 +19,7 @@
           :show-filter-toggle="true"
           :filter-bar-visible="filterBarVisible"
           :active-filter-count="activeFilterCount"
+          :relocation-count="relocFamilyCount"
           @release="requestRelease(component)"
           @open-members="$bvModal.show(`members-modal-${component.id}`)"
           @toggle-panel="togglePanel"
@@ -75,6 +76,7 @@
           :nest-satisfied-rules-checked="navFilters.nestSatisfiedRulesChecked"
           :show-s-r-g-id-checked="navFilters.showSRGIdChecked"
           :has-active-filters="navHasActiveFilters"
+          :pending-relocations="relocByRuleId"
           @reset-filters="onClearNavFilters"
         />
       </template>
@@ -86,10 +88,12 @@
             :rule="selectedRule"
             :statuses="statuses"
             :read-only="true"
+            :view-only-page="true"
             :document-type="component.document_type"
             :effective-permissions="effective_permissions"
             :advanced_fields="localAdvancedFields"
             :additional_questions="component.additional_questions"
+            :pending-relocation="relocByRuleId[selectedRule.id] || null"
             @open-related-modal="$bvModal.show('related-rules-modal')"
             @open-composer="onOpenComposer"
             @view-comments="onViewComments"
@@ -160,6 +164,30 @@
           @component-updated="refreshComponent"
           @open-reply-composer="onOpenReplyComposer"
         />
+
+        <!-- Relocation backlog (SRG kind) — read-only on the view page:
+             the same panel the editor mounts, with adjudication and
+             withdrawal disabled behind editor-pointing tooltips. -->
+        <b-sidebar
+          v-if="isSrgComponent"
+          id="sidebar-relocations"
+          title="Relocation backlog"
+          right
+          shadow
+          backdrop
+          width="400px"
+          :visible="activePanel === 'relocations'"
+          @hidden="closePanel"
+        >
+          <RelocationBacklogPanel
+            :markers="relocMarkers"
+            :component-id="component.id"
+            :initial-token="relocFamilyToken"
+            :can-author="canAuthorComponent"
+            :component-released="!!component.released"
+            :view-only-page="true"
+          />
+        </b-sidebar>
       </template>
     </ControlsPageLayout>
   </div>
@@ -185,10 +213,13 @@ import RuleSearchBar from "../rules/RuleSearchBar.vue";
 import RuleList from "../rules/RuleList.vue";
 import ActiveFilterPills from "../rules/ActiveFilterPills.vue";
 import { useRuleNavigation } from "../../composables/useRuleNavigation";
+import { useRelocations } from "../../composables/useRelocations";
 import { scrollToField } from "../../utils/searchHighlight";
+import { roleGteTo } from "../../utils/roleComparison";
 import RuleEditor from "../rules/RuleEditor.vue";
 import RelatedRulesModal from "../rules/RelatedRulesModal.vue";
 import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
+import RelocationBacklogPanel from "../rules/RelocationBacklogPanel.vue";
 import CommentComposerModal from "./CommentComposerModal.vue";
 import ExportModal from "../shared/ExportModal.vue";
 
@@ -204,6 +235,7 @@ export default {
     RuleEditor,
     RelatedRulesModal,
     ControlsSidepanels,
+    RelocationBacklogPanel,
     CommentComposerModal,
     ExportModal,
   },
@@ -279,6 +311,10 @@ export default {
     );
     const { activePanel, togglePanel, closePanel } = useSidebar();
 
+    // Relocation STATE on the view page: badges, the read-only backlog
+    // panel, and the command-bar count. All mutations live in the editor.
+    const relocations = useRelocations(props.initialComponentState);
+
     const { compareRules } = useSortRules();
     const { alertOrNotifyResponse } = useToast();
 
@@ -334,6 +370,11 @@ export default {
       activePanel,
       togglePanel,
       closePanel,
+      relocMarkers: relocations.markers,
+      relocByRuleId: relocations.markersByRuleId,
+      relocFamilyToken: relocations.familyToken,
+      relocFamilyCount: relocations.familyBacklogCount,
+      relocFetch: relocations.fetchMarkers,
       compareRules,
       alertOrNotifyResponse,
       showModal,
@@ -392,11 +433,22 @@ export default {
     rulePanels() {
       return ["satisfies", "rule-reviews", "rule-history"];
     },
+    isSrgComponent() {
+      return this.component.document_type === "srg";
+    },
+    canAuthorComponent() {
+      return roleGteTo(this.effective_permissions, "author");
+    },
   },
   created() {
     this.composerBridge.onOpen = () => this.$bvModal.show("comment-composer-modal");
     this.composerBridge.afterPosted = (parentReviewId, snapshot) =>
       this.afterComposerPosted(parentReviewId, snapshot);
+    // Relocation markers exist only for SRG authoring; a load failure
+    // surfaces as a toast rather than silently hiding the badges.
+    if (this.isSrgComponent) {
+      this.relocFetch().catch(this.alertOrNotifyResponse);
+    }
   },
   mounted() {
     this.ruleStore.init(this.$router, this.component.id);
