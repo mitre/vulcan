@@ -382,9 +382,15 @@ export default {
       }
       const ruleIndex = this.reactiveRules.findIndex((r) => r.id == response.data.id);
 
-      // If the rule is not in the reactive rules then add it and return early
+      // If the rule is not in the reactive rules then add it and return
+      // early. A modern rule response IS response.data; only the legacy
+      // string-payload shape (no top-level id) carries the rule under
+      // .data.data — pushing .data.data unconditionally inserted
+      // undefined and crashed every consumer of the rules array.
       if (ruleIndex < 0) {
-        this.reactiveRules.push(response.data.data);
+        this.reactiveRules.push(
+          response.data.id === undefined ? response.data.data : response.data,
+        );
         return;
       }
 

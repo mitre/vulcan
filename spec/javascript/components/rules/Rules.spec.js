@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { shallowMount } from "@vue/test-utils";
-import { localVue } from "@test/testHelper";
+import { localVue, flushPromises } from "@test/testHelper";
 import Rules from "@/components/rules/Rules.vue";
 vi.mock("@/api/baseApi", () => ({
   default: {
@@ -23,6 +23,7 @@ vi.mock("@/api/rulesApi", () => ({
 
 vi.mock("@/composables/useSortRules", { spy: true });
 import { useSortRules } from "@/composables/useSortRules";
+import { getRule } from "@/api/rulesApi";
 
 describe("Rules", () => {
   const createWrapper = (rulesOverrides = []) => {
@@ -91,6 +92,39 @@ describe("Rules", () => {
         "000020",
         "000030",
       ]);
+      wrapper.destroy();
+    });
+  });
+
+  // ── refresh:rule insert path ────────────────────────────────────────
+  // REQUIREMENT: refresh:rule with an id NOT in the list inserts the
+  // fetched rule — the landed-relocation materialization path. A modern
+  // rule response IS response.data; the regression pushed
+  // response.data.data (undefined) and crashed every rules consumer.
+  describe("refresh:rule insert path (landed relocation row)", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("inserts the fetched rule when the id is not in the list", async () => {
+      const landedRule = {
+        id: 555,
+        component_id: 100,
+        rule_id: "000002",
+        status: "Applicable",
+        satisfied_by: [],
+        satisfies: [],
+        disa_rule_descriptions_attributes: [],
+        checks_attributes: [],
+        rule_descriptions_attributes: [],
+      };
+      getRule.mockResolvedValueOnce({ data: landedRule });
+      const wrapper = createWrapper();
+
+      wrapper.vm.$root.$emit("refresh:rule", 555);
+      await flushPromises(wrapper);
+
+      expect(getRule).toHaveBeenCalledWith(555);
+      expect(wrapper.vm.reactiveRules.find((r) => r && r.id === 555)).toEqual(landedRule);
+      expect(wrapper.vm.reactiveRules.every((r) => r && r.id !== undefined)).toBe(true);
       wrapper.destroy();
     });
   });
