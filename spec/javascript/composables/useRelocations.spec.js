@@ -1,11 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useRelocations, familyTokenFromPrefix } from "@/composables/useRelocations";
-import { getRelocations, markRelocation, unmarkRelocation } from "@/api/rulesApi";
+import {
+  getRelocations,
+  markRelocation,
+  unmarkRelocation,
+  dryRunRelocation,
+  acceptRelocation,
+  declineRelocation,
+} from "@/api/rulesApi";
 
 vi.mock("@/api/rulesApi", () => ({
   getRelocations: vi.fn(),
   markRelocation: vi.fn(),
   unmarkRelocation: vi.fn(),
+  dryRunRelocation: vi.fn(),
+  acceptRelocation: vi.fn(),
+  declineRelocation: vi.fn(),
 }));
 
 // REQUIREMENT (relocation proposal state): ONE fetch of visible rows
@@ -110,6 +120,48 @@ describe("useRelocations", () => {
     const { mark } = useRelocations({ id: 5, prefix: "CTR-00" });
 
     await expect(mark(44, "GPOS")).rejects.toThrow("422");
+    expect(getRelocations).not.toHaveBeenCalled();
+  });
+
+  // Adjudication (receiver side): dry-run previews against THIS
+  // component with zero refresh; accept and decline terminate the
+  // proposal and refresh the marker set.
+  it("dry-runs a proposal against this component without refetching", async () => {
+    dryRunRelocation.mockResolvedValue({ data: { valid: true } });
+    const { dryRun } = useRelocations({ id: 5, prefix: "CTR-00" });
+
+    const preview = await dryRun(3);
+
+    expect(dryRunRelocation).toHaveBeenCalledWith(3, 5);
+    expect(preview.data.valid).toBe(true);
+    expect(getRelocations).not.toHaveBeenCalled();
+  });
+
+  it("accepts a proposal into this component and refreshes the markers", async () => {
+    acceptRelocation.mockResolvedValue({ data: {} });
+    const { accept } = useRelocations({ id: 5, prefix: "CTR-00" });
+
+    await accept(3);
+
+    expect(acceptRelocation).toHaveBeenCalledWith(3, 5);
+    expect(getRelocations).toHaveBeenCalled();
+  });
+
+  it("declines a proposal with the rationale and refreshes the markers", async () => {
+    declineRelocation.mockResolvedValue({ data: {} });
+    const { decline } = useRelocations({ id: 5, prefix: "CTR-00" });
+
+    await decline(3, "Covered elsewhere.");
+
+    expect(declineRelocation).toHaveBeenCalledWith(3, 5, "Covered elsewhere.");
+    expect(getRelocations).toHaveBeenCalled();
+  });
+
+  it("propagates accept failures to the caller without refetching", async () => {
+    acceptRelocation.mockRejectedValue(new Error("422"));
+    const { accept } = useRelocations({ id: 5, prefix: "CTR-00" });
+
+    await expect(accept(3)).rejects.toThrow("422");
     expect(getRelocations).not.toHaveBeenCalled();
   });
 });

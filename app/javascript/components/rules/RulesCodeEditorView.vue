@@ -15,6 +15,7 @@
         :show-filter-toggle="true"
         :filter-bar-visible="filterBarVisible"
         :active-filter-count="activeFilterCount"
+        :relocation-count="relocFamilyCount"
         @open-members="$bvModal.show(`members-modal-${component.id}`)"
         @toggle-panel="togglePanel"
         @toggle-filter-bar="toggleFilterBar"
@@ -248,9 +249,30 @@
           :component-id="component.id"
           :initial-token="relocFamilyToken"
           :can-author="!isViewerOnly"
+          :component-released="!!component.released"
           @unmark="onUnmarkRelocation"
+          @accept-request="onAcceptRequest"
+          @decline-request="onDeclineRequest"
         />
       </b-sidebar>
+
+      <!-- Receiver-side adjudication (SRG kind): dry-run preview with
+           explicit confirm to accept; required rationale to decline. -->
+      <template v-if="isSrgComponent">
+        <AcceptRelocationModal
+          :visible.sync="acceptModalVisible"
+          :marker="adjudicatingMarker"
+          :preview="adjudicationPreview"
+          :loading="adjudicationLoading"
+          @accept="onConfirmAccept"
+        />
+        <DeclineRelocationModal
+          v-if="adjudicatingMarker"
+          :visible.sync="declineModalVisible"
+          :source-displayed-name="adjudicatingMarker.source_displayed_name"
+          @decline="onConfirmDecline"
+        />
+      </template>
 
       <CommentComposerModal
         v-if="composerActive"
@@ -292,6 +314,8 @@ import { useRelocations } from "../../composables/useRelocations";
 import RelocationIntakeBanner from "./RelocationIntakeBanner.vue";
 import RelocationBacklogPanel from "./RelocationBacklogPanel.vue";
 import MarkRelocationModal from "./MarkRelocationModal.vue";
+import AcceptRelocationModal from "./AcceptRelocationModal.vue";
+import DeclineRelocationModal from "./DeclineRelocationModal.vue";
 import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
 import { MESSAGE_LABELS } from "../../constants/terminology";
 import { scrollToField } from "../../utils/searchHighlight";
@@ -314,6 +338,8 @@ export default {
     RelocationIntakeBanner,
     RelocationBacklogPanel,
     MarkRelocationModal,
+    AcceptRelocationModal,
+    DeclineRelocationModal,
     CommentComposerModal,
   },
   provide() {
@@ -416,6 +442,9 @@ export default {
       relocFetch: relocations.fetchMarkers,
       relocMark: relocations.mark,
       relocUnmark: relocations.unmark,
+      relocDryRun: relocations.dryRun,
+      relocAccept: relocations.accept,
+      relocDecline: relocations.decline,
       composerBridge,
       ...composer,
       ruleStore,
@@ -463,6 +492,11 @@ export default {
       msg: MESSAGE_LABELS,
       reviewsSectionFilter: "all",
       relocationModalVisible: false,
+      acceptModalVisible: false,
+      declineModalVisible: false,
+      adjudicatingMarker: null,
+      adjudicationPreview: null,
+      adjudicationLoading: false,
     };
   },
   computed: {
@@ -534,6 +568,49 @@ export default {
     onUnmarkRelocation(relocationId) {
       this.relocUnmark(relocationId)
         .then(this.alertOrNotifyResponse)
+        .catch(this.alertOrNotifyResponse);
+    },
+    // Receiver-side adjudication: the dry-run preview IS the review
+    // artifact — the modal opens immediately and confirm stays disabled
+    // until the preview arrives valid.
+    onAcceptRequest(marker) {
+      this.adjudicatingMarker = marker;
+      this.adjudicationPreview = null;
+      this.adjudicationLoading = true;
+      this.acceptModalVisible = true;
+      this.relocDryRun(marker.id)
+        .then((response) => {
+          this.adjudicationPreview = response.data;
+        })
+        .catch((error) => {
+          this.acceptModalVisible = false;
+          this.alertOrNotifyResponse(error);
+        })
+        .finally(() => {
+          this.adjudicationLoading = false;
+        });
+    },
+    onConfirmAccept() {
+      this.relocAccept(this.adjudicatingMarker.id)
+        .then((response) => {
+          this.acceptModalVisible = false;
+          this.alertOrNotifyResponse(response);
+          // Materialize the landed row through the established per-rule
+          // refresh path — unknown ids are inserted.
+          this.$root.$emit("refresh:rule", response.data.landed_rule_id);
+        })
+        .catch(this.alertOrNotifyResponse);
+    },
+    onDeclineRequest(marker) {
+      this.adjudicatingMarker = marker;
+      this.declineModalVisible = true;
+    },
+    onConfirmDecline(rationale) {
+      this.relocDecline(this.adjudicatingMarker.id, rationale)
+        .then((response) => {
+          this.declineModalVisible = false;
+          this.alertOrNotifyResponse(response);
+        })
         .catch(this.alertOrNotifyResponse);
     },
     toggleFilterBar() {

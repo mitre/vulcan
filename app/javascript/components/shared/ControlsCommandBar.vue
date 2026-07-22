@@ -127,6 +127,21 @@
         >
           <b-icon icon="clock-history" /> {{ labels.compHistory }}
         </b-button>
+        <!-- The relocation backlog's persistent opener (SRG authoring) —
+             works on the view page too; the panel renders read-only there. -->
+        <b-button
+          v-if="isSrg"
+          v-b-tooltip.hover
+          title="Relocation backlog panel"
+          data-testid="relocations-btn"
+          :variant="isPanelActive('relocations') ? 'secondary' : 'outline-secondary'"
+          @click="onTogglePanel('relocations')"
+        >
+          <b-icon icon="box-arrow-in-right" /> Relocations
+          <b-badge v-if="relocationCount > 0" variant="warning" pill class="ml-1">
+            {{ relocationCount }}
+          </b-badge>
+        </b-button>
         <b-button
           v-b-tooltip.hover
           title="Open comment triage page"
@@ -273,6 +288,12 @@ export default {
       type: Number,
       default: 0,
     },
+    // Open relocation proposals for the component's family — badges the
+    // Relocations panel button (SRG kind only).
+    relocationCount: {
+      type: Number,
+      default: 0,
+    },
   },
   setup() {
     const { effectivePermissions, canEdit, canAdmin, isMember } = usePermissions();
@@ -285,6 +306,9 @@ export default {
     };
   },
   computed: {
+    isSrg() {
+      return this.component.document_type === "srg";
+    },
     canCommentOnComponent() {
       return this.isMember;
     },

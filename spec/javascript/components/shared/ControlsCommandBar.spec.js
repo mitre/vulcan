@@ -263,6 +263,47 @@ describe("ControlsCommandBar", () => {
   });
 
   // ==========================================
+  // RELOCATIONS PANEL BUTTON (SRG kind only)
+  //
+  // REQUIREMENT: the relocation backlog needs a persistent opener on
+  // BOTH pages (the intake banner is edit-side and conditional). The
+  // command bar carries a Relocations panel toggle for SRG-kind
+  // components with an open-proposal count badge — the Triage-button
+  // pattern.
+  // ==========================================
+  describe("Relocations panel button (SRG kind only)", () => {
+    const srgComponent = { ...defaultComponent, document_type: "srg" };
+    const relocationsBtn = () =>
+      wrapper.findAll("button").wrappers.find((b) => b.text().includes("Relocations"));
+
+    it("is ABSENT for stig-kind components", () => {
+      wrapper = createWrapper({ component: { ...defaultComponent, document_type: "stig" } });
+      expect(relocationsBtn()).toBeUndefined();
+    });
+
+    it("toggles the relocations panel for an srg-kind component, even read-only", async () => {
+      wrapper = createWrapper({ component: srgComponent, readOnly: true });
+      await relocationsBtn().trigger("click");
+      expect(wrapper.emitted("toggle-panel")).toEqual([["relocations"]]);
+    });
+
+    it("shows the open-proposal count badge when proposals exist", () => {
+      wrapper = createWrapper({ component: srgComponent, relocationCount: 3 });
+      expect(relocationsBtn().find(".badge").text()).toBe("3");
+    });
+
+    it("hides the badge when the count is zero", () => {
+      wrapper = createWrapper({ component: srgComponent, relocationCount: 0 });
+      expect(relocationsBtn().find(".badge").exists()).toBe(false);
+    });
+
+    it("has a tooltip", () => {
+      wrapper = createWrapper({ component: srgComponent });
+      expect(relocationsBtn().attributes("title")).toBe("Relocation backlog panel");
+    });
+  });
+
+  // ==========================================
   // MODE BEHAVIOR (VIEW vs EDIT)
   // ==========================================
   describe("mode behavior", () => {

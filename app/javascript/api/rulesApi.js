@@ -87,8 +87,11 @@ export function bulkSectionLocks(ruleId, data) {
 }
 
 /**
- * Relocation markers: a pending requirement_relocation record IS the
- * move marker for an authored SRG requirement.
+ * Relocation proposals: an open requirement_relocation record IS the
+ * move marker for an authored SRG requirement. The receiving side
+ * adjudicates — dry-run preview, accept (lands the move), or decline
+ * with a required rationale. Adjudication actions are lifecycle calls:
+ * flat params, not wrapped in a domain key.
  */
 export function getRelocations(params = {}) {
   return api.get("/requirement_relocations", { params });
@@ -102,4 +105,23 @@ export function markRelocation(ruleId, targetTechnologyToken) {
 
 export function unmarkRelocation(relocationId) {
   return api.delete(`/requirement_relocations/${relocationId}`);
+}
+
+export function dryRunRelocation(relocationId, targetComponentId) {
+  return api.post(`/requirement_relocations/${relocationId}/dry_run`, {
+    target_component_id: targetComponentId,
+  });
+}
+
+export function acceptRelocation(relocationId, targetComponentId) {
+  return api.post(`/requirement_relocations/${relocationId}/accept`, {
+    target_component_id: targetComponentId,
+  });
+}
+
+export function declineRelocation(relocationId, targetComponentId, adjudicationRationale) {
+  return api.post(`/requirement_relocations/${relocationId}/decline`, {
+    target_component_id: targetComponentId,
+    requirement_relocation: { adjudication_rationale: adjudicationRationale },
+  });
 }

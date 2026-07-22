@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { shallowMount } from "@vue/test-utils";
-import { localVue } from "@test/testHelper";
+import { localVue, flushPromises } from "@test/testHelper";
 import { createPinia, setActivePinia } from "pinia";
 import { createTestRouter } from "@test/support/routerTestHelper";
 import { useRuleSelectionStore } from "@/stores/ruleSelection";
@@ -23,7 +23,16 @@ vi.mock("@/api/rulesApi", () => ({
   getRelocations: vi.fn(() => Promise.resolve({ data: [] })),
   markRelocation: vi.fn(() => Promise.resolve({ data: {} })),
   unmarkRelocation: vi.fn(() => Promise.resolve({ data: {} })),
+  dryRunRelocation: vi.fn(() => Promise.resolve({ data: {} })),
+  acceptRelocation: vi.fn(() => Promise.resolve({ data: {} })),
+  declineRelocation: vi.fn(() => Promise.resolve({ data: {} })),
 }));
+import {
+  getRelocations,
+  dryRunRelocation,
+  acceptRelocation,
+  declineRelocation,
+} from "@/api/rulesApi";
 
 vi.mock("@/api/reviewsApi", () => ({
   createRuleReview: vi.fn(() => Promise.resolve({ data: {} })),
@@ -306,6 +315,93 @@ describe("RulesCodeEditorView", () => {
       await wrapper.vm.$nextTick();
       // With shallowMount, check the vm state rather than stubbed component props
       expect(wrapper.vm.activePanel).toBe("reviews");
+    });
+  });
+
+  describe("adjudicating relocation proposals (receiver side)", () => {
+    // REQUIREMENT: accept-request runs the dry-run and shows the preview
+    // modal; nothing lands until the modal's explicit confirm, which
+    // calls accept and materializes the landed row via the established
+    // per-rule refresh event. Decline collects the rationale through its
+    // own modal.
+    const MARKER = {
+      id: 7,
+      source_rule_id: 91,
+      component_id: 9,
+      target_technology_token: "TEST",
+      source_displayed_name: "WALK-00-000012",
+      declined_at: null,
+    };
+    const PREVIEW = {
+      valid: true,
+      errors: [],
+      source_displayed_name: "WALK-00-000012",
+      target_component_name: "Test Component",
+      would_create: { title: "Incoming", status: "Applicable", rule_id: "000004" },
+      would_tombstone_source: true,
+    };
+
+    const srgWrapper = () =>
+      createWrapper({ component: { ...defaultProps.component, document_type: "srg" } });
+
+    it("runs the dry-run and opens the preview modal on accept-request", async () => {
+      dryRunRelocation.mockResolvedValue({ data: PREVIEW });
+      wrapper = srgWrapper();
+
+      wrapper.findComponent({ name: "RelocationBacklogPanel" }).vm.$emit("accept-request", MARKER);
+      await wrapper.vm.$nextTick();
+      await wrapper.vm.$nextTick();
+
+      expect(dryRunRelocation).toHaveBeenCalledWith(7, 41);
+      const modal = wrapper.findComponent({ name: "AcceptRelocationModal" });
+      expect(modal.props("visible")).toBe(true);
+      expect(modal.props("preview")).toEqual(PREVIEW);
+    });
+
+    it("accepts only on explicit confirm and materializes the landed row", async () => {
+      dryRunRelocation.mockResolvedValue({ data: PREVIEW });
+      acceptRelocation.mockResolvedValue({ data: { toast: {}, landed_rule_id: 555 } });
+      wrapper = srgWrapper();
+      const rootEmit = vi.spyOn(wrapper.vm.$root, "$emit");
+
+      wrapper.findComponent({ name: "RelocationBacklogPanel" }).vm.$emit("accept-request", MARKER);
+      await wrapper.vm.$nextTick();
+      expect(acceptRelocation).not.toHaveBeenCalled();
+
+      wrapper.findComponent({ name: "AcceptRelocationModal" }).vm.$emit("accept");
+      await flushPromises(wrapper);
+
+      expect(acceptRelocation).toHaveBeenCalledWith(7, 41);
+      expect(rootEmit).toHaveBeenCalledWith("refresh:rule", 555);
+      expect(wrapper.findComponent({ name: "AcceptRelocationModal" }).props("visible")).toBe(false);
+    });
+
+    it("declines with the collected rationale through the decline modal", async () => {
+      declineRelocation.mockResolvedValue({ data: {} });
+      wrapper = srgWrapper();
+
+      wrapper.findComponent({ name: "RelocationBacklogPanel" }).vm.$emit("decline-request", MARKER);
+      await wrapper.vm.$nextTick();
+      const modal = wrapper.findComponent({ name: "DeclineRelocationModal" });
+      expect(modal.props("visible")).toBe(true);
+      expect(modal.props("sourceDisplayedName")).toBe("WALK-00-000012");
+
+      modal.vm.$emit("decline", "Covered elsewhere.");
+      await flushPromises(wrapper);
+
+      expect(declineRelocation).toHaveBeenCalledWith(7, 41, "Covered elsewhere.");
+      expect(wrapper.findComponent({ name: "DeclineRelocationModal" }).props("visible")).toBe(
+        false,
+      );
+    });
+
+    it("passes the family open-proposal count to the command bar's Relocations badge", async () => {
+      getRelocations.mockResolvedValueOnce({ data: [MARKER] });
+      wrapper = srgWrapper();
+      await flushPromises(wrapper);
+      expect(wrapper.findComponent({ name: "ControlsCommandBar" }).props("relocationCount")).toBe(
+        1,
+      );
     });
   });
 

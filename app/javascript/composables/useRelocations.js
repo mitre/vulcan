@@ -1,5 +1,12 @@
 import { ref, computed } from "vue";
-import { getRelocations, markRelocation, unmarkRelocation } from "../api/rulesApi";
+import {
+  getRelocations,
+  markRelocation,
+  unmarkRelocation,
+  dryRunRelocation,
+  acceptRelocation,
+  declineRelocation,
+} from "../api/rulesApi";
 
 /**
  * Interim family identity: the technology token becomes a real component
@@ -79,6 +86,23 @@ export function useRelocations(component) {
     return response;
   };
 
+  // Receiver-side adjudication against THIS component: the dry-run is a
+  // zero-write preview (no refresh); accept and decline terminate the
+  // proposal, so both refresh the marker set on success.
+  const dryRun = (relocationId) => dryRunRelocation(relocationId, component.id);
+
+  const accept = async (relocationId) => {
+    const response = await acceptRelocation(relocationId, component.id);
+    await fetchMarkers();
+    return response;
+  };
+
+  const decline = async (relocationId, adjudicationRationale) => {
+    const response = await declineRelocation(relocationId, component.id, adjudicationRationale);
+    await fetchMarkers();
+    return response;
+  };
+
   return {
     markers,
     loading,
@@ -89,5 +113,8 @@ export function useRelocations(component) {
     familyBacklogCount,
     mark,
     unmark,
+    dryRun,
+    accept,
+    decline,
   };
 }
