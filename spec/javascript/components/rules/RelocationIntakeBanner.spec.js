@@ -6,9 +6,9 @@ import RelocationIntakeBanner from "@/components/rules/RelocationIntakeBanner.vu
 /**
  * RelocationIntakeBanner requirements (the open-time intake prompt):
  *
- * 1. When pending markers exist for the open SRG component's family
- *    token, an info banner says "N requirements are marked for the
- *    TOKEN family" with a View-backlog affordance.
+ * 1. When open proposals exist for the open component's SRG (by
+ *    technology token), an info banner says "N requirements are
+ *    proposed for the TOKEN SRG" with a View-backlog affordance.
  * 2. Zero markers (or no derivable token) renders NOTHING — the banner
  *    is a notification indicator, absence is the meaning.
  */
@@ -28,16 +28,16 @@ describe("RelocationIntakeBanner", () => {
     }
   });
 
-  it("announces the pending count for the family", () => {
+  it("announces the open-proposal count for the SRG", () => {
     wrapper = createWrapper();
     const text = wrapper.text().replace(/\s+/g, " ");
-    expect(text).toContain("3 requirements are marked for the CTR family");
+    expect(text).toContain("3 requirements are proposed for the CTR SRG");
   });
 
-  it("uses singular phrasing for one marker", () => {
+  it("uses singular phrasing for one proposal", () => {
     wrapper = createWrapper({ count: 1 });
     expect(wrapper.text().replace(/\s+/g, " ")).toContain(
-      "1 requirement is marked for the CTR family",
+      "1 requirement is proposed for the CTR SRG",
     );
   });
 
@@ -53,7 +53,7 @@ describe("RelocationIntakeBanner", () => {
     expect(wrapper.text().trim()).toBe("");
   });
 
-  it("renders nothing without a family token", () => {
+  it("renders nothing without a technology token", () => {
     wrapper = createWrapper({ token: null });
     expect(wrapper.text().trim()).toBe("");
   });

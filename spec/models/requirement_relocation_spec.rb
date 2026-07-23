@@ -152,7 +152,7 @@ RSpec.describe RequirementRelocation do
       expect(record.save).to be false
       expect(record.errors[:adjudication_rationale].join).to match(/blank/)
 
-      record.adjudication_rationale = 'Requirement is out of scope for this family.'
+      record.adjudication_rationale = 'Requirement is out of scope for this SRG.'
       expect(record.save).to be true
     end
 
@@ -160,7 +160,7 @@ RSpec.describe RequirementRelocation do
       source = authored_row('900015')
       declined = described_class.create!(source_rule: source, target_technology_token: 'CTR',
                                          declined_at: 1.hour.ago, declined_by: requester,
-                                         adjudication_rationale: 'Belongs in the OS family.')
+                                         adjudication_rationale: 'Belongs in the OS SRG.')
 
       declined.target_technology_token = 'GPOS'
       expect(declined.save).to be false
@@ -182,14 +182,14 @@ RSpec.describe RequirementRelocation do
       source = authored_row('900017')
       described_class.create!(source_rule: source, target_technology_token: 'CTR',
                               declined_at: 1.day.ago, declined_by: requester,
-                              adjudication_rationale: 'Wrong family — CTR does not cover this.')
+                              adjudication_rationale: 'Wrong SRG — CTR does not cover this.')
 
       fresh = described_class.new(source_rule: source, target_technology_token: 'GPOS',
                                   requested_by: requester)
       expect(fresh).to be_valid
     end
 
-    it 'excludes declined records from the per-family backlog of open proposals' do
+    it 'excludes declined records from the per-SRG backlog of open proposals' do
       a = authored_row('900018')
       b = authored_row('900019')
       open_proposal = described_class.create!(source_rule: a, target_technology_token: 'CTR2')

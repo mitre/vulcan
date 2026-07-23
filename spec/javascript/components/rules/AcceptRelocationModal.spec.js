@@ -43,7 +43,7 @@ const INVALID_PREVIEW = {
   ...VALID_PREVIEW,
   valid: false,
   errors: [
-    "target component does not declare the SRG-CORE-OS family — add it as a source first",
+    "target component does not declare SRG-CORE-OS as a source SRG — add it first",
     "target component is released",
   ],
   would_create: { ...VALID_PREVIEW.would_create, rule_id: null },
@@ -94,9 +94,14 @@ describe("AcceptRelocationModal", () => {
   it("renders every server reason and disables confirm for an invalid preview", () => {
     wrapper = createWrapper({ preview: INVALID_PREVIEW });
     const text = wrapper.text().replace(/\s+/g, " ");
-    expect(text).toContain("does not declare the SRG-CORE-OS family");
+    expect(text).toContain("does not declare SRG-CORE-OS as a source SRG");
     expect(text).toContain("target component is released");
     expect(wrapper.find('[data-test="confirm-accept"]').attributes("disabled")).toBeDefined();
+  });
+
+  it("labels confirm with the DISA concur verb", () => {
+    wrapper = createWrapper();
+    expect(wrapper.find('[data-test="confirm-accept"]').text()).toBe("Concur and move");
   });
 
   it("disables confirm while the dry-run is loading", () => {

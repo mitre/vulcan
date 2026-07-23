@@ -219,6 +219,15 @@ describe("ProjectComponent", () => {
       wrapper.vm.selectRule(1);
       expect(localStorage.getItem("selectedRuleId-41")).toBe("1");
     });
+
+    // REGRESSION: a persisted selection can reference a requirement that
+    // no longer exists (e.g. relocated away since the last visit) — the
+    // stale id is cleared and the first rule selected, never an empty pane.
+    it("clears a stale persisted selection and falls back to the first rule", () => {
+      localStorage.setItem("selectedRuleId-41", "999");
+      wrapper = createWrapper();
+      expect(wrapper.vm.selectedRuleId).toBe(1);
+    });
   });
 
   describe("useSidebar composable integration", () => {

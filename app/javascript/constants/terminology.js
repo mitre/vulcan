@@ -101,11 +101,61 @@ export const STATUS_DESCRIPTIONS_BY_DOCUMENT_TYPE = Object.freeze({
   },
   srg: {
     Applicable:
-      "The requirement applies to this technology family and will be included in the released SRG.",
+      "The requirement applies to this technology and will be included in the released SRG.",
     "Not Applicable":
-      "The requirement does not apply to this technology family — a justification is required and the requirement is excluded from the released SRG.",
+      "The requirement does not apply to this technology — a justification is required and the requirement is excluded from the released SRG.",
   },
 });
+
+// Relocation display vocabulary — the DISA-standard verb set (proposed /
+// withdrawn / concur / non-concur). ONE table, read by every relocation
+// surface (buttons, badges, tooltips, modal copy); an organization swaps
+// its vocabulary by editing these values. Schema columns, routes, and
+// state names are unaffected — this is presentation only. Requirements
+// relocate between SRGs; the word "family" never appears (in this domain
+// it means NIST 800-53 control families).
+export const RELOCATION_TERM = {
+  // Verbs and states
+  propose: "Propose relocation", // source-side action (button/modal title)
+  proposed: "proposed", // open-proposal state verb (count lines)
+  withdraw: "Withdraw", // source-side retraction action
+  concur: "Concur", // destination decision, positive
+  concurConfirm: "Concur and move", // the accept modal's confirm button
+  nonConcur: "Non-concur", // destination decision, negative
+  nonConcurred: "Non-concurred", // retained-decline state badge
+
+  // Destination picker ("abbreviation" is the user-facing word for the
+  // SRG's short code — CTR, GPOS, DB; the API field name is unchanged)
+  otherSrgOption: "Other SRG… (enter its abbreviation)",
+  nextReleaseSuffix: "(next release)",
+
+  // Titles, headings, and opener labels
+  concurTitle: "Concur with relocation proposal",
+  nonConcurTitle: "Non-concur with relocation proposal",
+  nonConcurredHeading: "Non-concurred proposals",
+  backlogTitle: "Relocation backlog",
+  panelButton: "Relocations",
+  panelButtonTooltip: "Relocation backlog panel",
+
+  // Tooltip phrases
+  proposeTooltip: "Propose relocating this requirement to another SRG",
+  proposeInEditorTooltip: "Available in the editor — open the editor to propose relocation",
+  requiresAuthorTooltip: "Requires author role",
+  backlogButtonTooltip: "Relocation proposals by destination SRG",
+  proposedBadgeTooltip: (token) => `Proposed for relocation to the ${token} SRG`,
+  alreadyProposedTooltip: (token, viewOnlyPage) =>
+    `Already proposed for relocation to the ${token} SRG — ${
+      viewOnlyPage ? "open the editor to withdraw" : "withdraw from the backlog"
+    }`,
+
+  // Disabled-action reasons (backlog panel)
+  selfRowReason: "This requirement already lives in this component",
+  requiresAuthorReason: "Requires author role on this component",
+  releasedReason: "Released components cannot receive relocated requirements",
+  editorAdjudicateReason: "Open the editor to adjudicate this proposal",
+  editorWithdrawReason: "Open the editor to withdraw this proposal",
+  otherComponentWithdrawReason: "Withdraw from that component's editor",
+};
 
 // Navigator labels (used in the RuleList sidebar)
 export const NAVIGATOR_LABELS = {

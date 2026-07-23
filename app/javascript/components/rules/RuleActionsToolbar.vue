@@ -71,12 +71,12 @@
         >
           <b-icon icon="question-circle" /> DISA Guide
         </b-button>
-        <!-- The standing per-family relocation backlog (SRG authoring) —
+        <!-- The standing per-SRG relocation backlog (SRG authoring) —
              a read-only panel, so it stays enabled for every role. -->
         <b-button
           v-if="isSrg"
           v-b-tooltip.hover
-          title="Pending relocation markers by destination family"
+          :title="relocationTerms.backlogButtonTooltip"
           variant="outline-secondary"
           size="sm"
           @click="$emit('toggle-panel', 'relocations')"
@@ -138,7 +138,7 @@
             :disabled="!!pendingRelocation || readOnly"
             @click="$emit('open-relocation-modal')"
           >
-            <b-icon icon="box-arrow-right" /> Relocate
+            <b-icon icon="box-arrow-right" /> {{ relocationTerms.propose }}
           </b-button>
         </span>
       </div>
@@ -188,7 +188,7 @@
 
 <script>
 import CommentModal from "../shared/CommentModal.vue";
-import { MESSAGE_LABELS, PANEL_LABELS } from "../../constants/terminology";
+import { MESSAGE_LABELS, PANEL_LABELS, RELOCATION_TERM } from "../../constants/terminology";
 import { commentsClosedTooltip } from "../../constants/triageVocabulary";
 import { roleGteTo } from "../../utils/roleComparison";
 
@@ -238,6 +238,7 @@ export default {
   data() {
     return {
       msg: MESSAGE_LABELS,
+      relocationTerms: RELOCATION_TERM,
     };
   },
   computed: {
@@ -246,16 +247,18 @@ export default {
     },
     relocateTooltip() {
       if (this.pendingRelocation) {
-        const path = this.viewOnlyPage ? "open the editor to un-mark" : "un-mark from the backlog";
-        return `Already marked for relocation to ${this.pendingRelocation.target_technology_token} — ${path}`;
+        return this.relocationTerms.alreadyProposedTooltip(
+          this.pendingRelocation.target_technology_token,
+          this.viewOnlyPage,
+        );
       }
       if (this.readOnly) {
         if (this.viewOnlyPage && roleGteTo(this.effectivePermissions, "author")) {
-          return "Available in the editor — open the editor to relocate";
+          return this.relocationTerms.proposeInEditorTooltip;
         }
-        return "Requires author role";
+        return this.relocationTerms.requiresAuthorTooltip;
       }
-      return "Mark this requirement for relocation to another family";
+      return this.relocationTerms.proposeTooltip;
     },
     isReadOnly() {
       // Disabled if explicitly read-only, or rule is locked/under review

@@ -2,13 +2,14 @@
 
 # The multi-parent source-SRG set of a component. based_on IS the primary
 # parent: assigning it reconciles the join set (inserting the new member
-# and superseding any same-family member), membership is validated, and
-# parent eligibility comes from the AuthoringProfile registry policy.
+# and superseding any same-SRG member — an older release), membership is
+# validated, and parent eligibility comes from the AuthoringProfile
+# registry policy.
 module ComponentParentSet
   extend ActiveSupport::Concern
 
   included do
-    # autosave is required: based_on reconciliation supersedes same-family
+    # autosave is required: based_on reconciliation supersedes same-SRG
     # members via mark_for_destruction, which a has_many silently ignores
     # at save unless autosave is declared.
     has_many :component_source_srgs, dependent: :destroy, inverse_of: :component,
@@ -21,16 +22,24 @@ module ComponentParentSet
     validate :parents_must_satisfy_profile_eligibility
   end
 
-  # Declared parents whose family has a newer release — primary first, so
-  # the update affordance targets the primary's upgrade when several are
-  # stale. Currency is a property of the WHOLE parent set.
+  # Interim SRG technology token — the prefix's leading alpha segment
+  # (CNTR-00 -> CNTR) until release-identifier minting adds the real
+  # field. Mirrors the frontend derivation (technologyTokenFromPrefix);
+  # "abbreviation" is the user-facing word for it.
+  def technology_token
+    prefix.to_s[/\A[A-Za-z]+/]&.upcase
+  end
+
+  # Declared parents with a newer release of their SRG — primary first,
+  # so the update affordance targets the primary's upgrade when several
+  # are stale. Currency is a property of the WHOLE parent set.
   def stale_parents
     source_srgs.to_a
                .sort_by { |srg| srg.id == security_requirements_guide_id ? 0 : 1 }
                .reject(&:latest?)
   end
 
-  # Current only when every declared parent is its family's latest.
+  # Current only when every declared parent is its SRG's latest release.
   def parents_current?
     parents = source_srgs.to_a
     parents.present? && parents.all?(&:latest?)
@@ -74,50 +83,51 @@ module ComponentParentSet
     end
   end
 
-  # Replace the declared member of new_srg's family with new_srg — the
-  # revision upgrade path for a non-primary parent. Safe on unsaved
-  # amoeba copies: built rows are dropped from the target, persisted rows
-  # marked for destruction (autosave destroys them in the save).
-  def replace_parent_family(new_srg)
-    supersede_family_members(new_srg.srg_id)
+  # Replace the declared parent that is another release of new_srg's SRG
+  # with new_srg — the revision upgrade path for a non-primary parent.
+  # Safe on unsaved amoeba copies: built rows are dropped from the
+  # target, persisted rows marked for destruction (autosave destroys
+  # them in the save).
+  def replace_parent_srg(new_srg)
+    supersede_same_srg_parents(new_srg.srg_id)
     component_source_srgs.build(security_requirements_guide: new_srg)
   end
 
   # Does any live requirement of this component source the given SRG
-  # family (srg_id)? Version-tolerant: a Rule's srg_rule or an authored
-  # SrgRule's derived_from may reference ANY catalog version of the
-  # family. Used by the join-row destroy guard.
-  def requirement_family_referenced?(family)
+  # (by srg_id)? Version-tolerant: a Rule's srg_rule or an authored
+  # SrgRule's derived_from may reference ANY catalog release of that
+  # SRG. Used by the join-row destroy guard.
+  def requirement_source_srg_referenced?(srg_key)
     BaseRule.live_for_components([id])
             .joins('INNER JOIN base_rules sources ' \
                    'ON sources.id = COALESCE(base_rules.srg_rule_id, base_rules.derived_from_srg_rule_id)')
-            .joins('INNER JOIN security_requirements_guides families ' \
-                   'ON families.id = sources.security_requirements_guide_id')
-            .exists?(families: { srg_id: family })
+            .joins('INNER JOIN security_requirements_guides source_srgs ' \
+                   'ON source_srgs.id = sources.security_requirements_guide_id')
+            .exists?(source_srgs: { srg_id: srg_key })
   end
 
   private
 
   # Assigning based_on inserts it into the parent set atomically. A
-  # same-family member (same srg_id, e.g. the prior version during a
+  # same-SRG member (same srg_id, e.g. the prior release during a
   # revision) is superseded — replaced, never appended unbounded. A
-  # new-family based_on is added alongside the existing declared parents.
+  # based_on from a new SRG is added alongside the existing parents.
   def reconcile_based_on_into_source_srgs
     return if security_requirements_guide_id.blank?
 
     active = component_source_srgs.reject(&:marked_for_destruction?)
     return if active.any? { |row| row.security_requirements_guide_id == security_requirements_guide_id }
 
-    family = based_on&.srg_id
-    supersede_family_members(family) if family
+    srg_key = based_on&.srg_id
+    supersede_same_srg_parents(srg_key) if srg_key
     # Build by id, not by assigning based_on's instance — its trimmed
     # select would poison later attribute reads through the join row.
     component_source_srgs.build(security_requirements_guide_id: security_requirements_guide_id)
   end
 
-  def supersede_family_members(family)
+  def supersede_same_srg_parents(srg_key)
     component_source_srgs.reject(&:marked_for_destruction?).each do |row|
-      next unless row.security_requirements_guide&.srg_id == family
+      next unless row.security_requirements_guide&.srg_id == srg_key
 
       row.persisted? ? row.mark_for_destruction : component_source_srgs.delete(row)
     end

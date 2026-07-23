@@ -165,11 +165,11 @@ class ComponentBlueprint < Blueprinter::Base
     end
 
     field :srg_latest_version do |component, _options|
-      component.stale_parents.first&.latest_for_family&.version
+      component.stale_parents.first&.latest_release&.version
     end
 
     field :srg_latest_id do |component, _options|
-      component.stale_parents.first&.latest_for_family&.id
+      component.stale_parents.first&.latest_release&.id
     end
 
     field :additional_questions do |component, _options|

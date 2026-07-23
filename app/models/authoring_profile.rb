@@ -80,8 +80,8 @@ class AuthoringProfile
   # Human wording for eligibility failures, per policy.
   def parent_eligibility_requirement
     case parent_eligibility
-    when :core_srgs then 'a core SRG family'
-    when :derived_srgs then 'a derived (non-core) SRG family'
+    when :core_srgs then 'a core SRG'
+    when :derived_srgs then 'a derived (non-core) SRG'
     else raise ArgumentError, "unknown parent_eligibility policy: #{parent_eligibility.inspect}"
     end
   end

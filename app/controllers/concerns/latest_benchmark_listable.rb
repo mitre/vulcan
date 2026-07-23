@@ -2,7 +2,7 @@
 
 # Shared GET #latest implementation for benchmark reference listings —
 # SRGs, STIGs, and released Components share one response contract:
-#   { rows: [...] } — one row per family, numerically highest version,
+#   { rows: [...] } — one row per document, its numerically highest release,
 #   optional ?q= filter via the model's SearchQueryService-backed search.
 #
 # Controllers declare the shape:
@@ -12,7 +12,7 @@
 #
 # and may override #latest_base_scope to restrict visibility
 # (e.g., released components only). The model must implement
-# `latest_versions` (family-grouped, numerically ranked) and `search`
+# `latest_versions` (grouped by benchmark id, numerically ranked) and `search`
 # (BenchmarkSearchable).
 module LatestBenchmarkListable
   extend ActiveSupport::Concern

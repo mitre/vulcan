@@ -27,7 +27,7 @@ RSpec.describe Stig, '.latest_versions' do
     expect(described_class.latest_versions).to be_a(ActiveRecord::Relation)
   end
 
-  it 'includes single-version families' do
+  it 'includes single-release STIGs' do
     results = described_class.latest_versions
     win = results.find { |r| r.title == 'Windows Server 2025 STIG' }
     expect(win.version).to eq('V3R1')

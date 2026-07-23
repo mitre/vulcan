@@ -84,7 +84,7 @@ RSpec.describe 'Component creation with declared sources' do
                                   declared_source_srg_ids: [core_a.id, derived_a.id] } }
 
       expect(response).to have_http_status(:unprocessable_content)
-      expect(response.parsed_body.dig('toast', 'message').join).to include('core SRG family')
+      expect(response.parsed_body.dig('toast', 'message').join).to include('must be a core SRG')
       expect(Component.find_by(project: project, name: 'Bad-source SRG')).to be_nil
     end
   end

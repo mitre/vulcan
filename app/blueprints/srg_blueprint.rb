@@ -4,7 +4,7 @@
 class SrgBlueprint < Blueprinter::Base
   identifier :id
 
-  # core: whether this is a core-family SRG (the non-public raw material
+  # core: whether this is a core SRG (the non-public raw material
   # SRG-kind components derive from) — drives the creation-flow source
   # picker's eligibility filtering.
   fields :srg_id, :name, :title, :version, :release_date, :core
@@ -18,11 +18,11 @@ class SrgBlueprint < Blueprinter::Base
   end
 
   field :latest_available_version do |srg, _options|
-    srg.latest? ? nil : srg.latest_for_family&.version
+    srg.latest? ? nil : srg.latest_release&.version
   end
 
   field :latest_available_id do |srg, _options|
-    srg.latest? ? nil : srg.latest_for_family&.id
+    srg.latest? ? nil : srg.latest_release&.id
   end
 
   view :index do

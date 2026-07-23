@@ -3,10 +3,10 @@
 require 'rails_helper'
 
 RSpec.describe 'Version currency Blueprint fields' do
-  # Two releases of ONE family — real DISA shape: the XCCDF benchmark id
+  # Two releases of ONE SRG — real DISA shape: the XCCDF benchmark id
   # (srg_id) is identical across releases; only the version moves. A
   # release may reword the TITLE without a formal rename, so the newer
-  # release carries a reworded title — the family holds by id.
+  # release carries a reworded title — the SRG's identity holds by id.
   let_it_be(:srg_old) do
     SecurityRequirementsGuide.insert_all([{
                                            srg_id: 'Currency_SRG', title: 'Currency Test SRG', version: 'V1R1',
@@ -63,7 +63,7 @@ RSpec.describe 'Version currency Blueprint fields' do
       expect(json['is_latest']).to be true
     end
 
-    it 'has null latest_available fields for single-version family' do
+    it 'has null latest_available fields for a single-release SRG' do
       json = StigBlueprint.render_as_json(stig)
       expect(json['latest_available_version']).to be_nil
       expect(json['latest_available_id']).to be_nil
@@ -137,7 +137,7 @@ RSpec.describe 'Version currency Blueprint fields' do
       expect(json['srg_is_latest']).to be false
     end
 
-    it 'points latest_version and latest_id at the stale secondary family latest' do
+    it 'points latest_version and latest_id at the stale secondary parent latest release' do
       component = dual_parent_component(primary: fam_c_v2, secondary: fam_d_v1)
       json = ComponentBlueprint.render_as_json(component, view: :editor)
       expect(json['srg_latest_version']).to eq('V1R2')
@@ -152,7 +152,7 @@ RSpec.describe 'Version currency Blueprint fields' do
       expect(json['srg_latest_id']).to be_nil
     end
 
-    it 'prefers the stale PRIMARY family for the latest fields when both are stale' do
+    it 'prefers the stale PRIMARY parent for the latest fields when both are stale' do
       component = dual_parent_component(primary: fam_c_v1, secondary: fam_d_v1)
       json = ComponentBlueprint.render_as_json(component, view: :editor)
       expect(json['srg_is_latest']).to be false

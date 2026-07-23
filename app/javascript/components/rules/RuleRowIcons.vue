@@ -50,13 +50,13 @@
       data-test="icon-changes-requested"
     />
     <!-- Pending relocation marker (SRG authoring): the pending record IS
-         the marker — the badge follows the icon-family convention of
+         the marker — the badge follows the row-icon convention of
          absent-when-not-applicable. -->
     <b-icon
       v-if="pendingRelocation"
       v-b-tooltip.hover
       icon="box-arrow-right"
-      :title="`Marked for relocation to ${pendingRelocation.target_technology_token}`"
+      :title="relocationTerms.proposedBadgeTooltip(pendingRelocation.target_technology_token)"
       aria-hidden="true"
       data-test="icon-relocation"
     />
@@ -64,6 +64,8 @@
 </template>
 
 <script>
+import { RELOCATION_TERM } from "../../constants/terminology";
+
 export default {
   name: "RuleRowIcons",
   props: {
@@ -81,6 +83,11 @@ export default {
       type: Object,
       default: null,
     },
+  },
+  data() {
+    return {
+      relocationTerms: RELOCATION_TERM,
+    };
   },
   computed: {
     satisfiedByTooltip() {

@@ -1,6 +1,7 @@
 import { ref, computed } from "vue";
 import {
   getRelocations,
+  getRelocationDestinations,
   markRelocation,
   unmarkRelocation,
   dryRunRelocation,
@@ -9,13 +10,13 @@ import {
 } from "../api/rulesApi";
 
 /**
- * Interim family identity: the technology token becomes a real component
- * field at release-identifier minting; until then the family is keyed by
- * the prefix's leading alpha segment (CNTR-00 -> CNTR) — decided
- * 2026-07-20. The backlog panel's explicit token filter means a
+ * Interim SRG identity: the technology token becomes a real component
+ * field at release-identifier minting; until then the SRG's token is
+ * derived from the prefix's leading alpha segment (CNTR-00 -> CNTR) —
+ * decided 2026-07-20. The backlog panel's explicit token filter means a
  * mismatched derivation hides nothing.
  */
-export function familyTokenFromPrefix(prefix) {
+export function technologyTokenFromPrefix(prefix) {
   const match = (prefix || "").match(/^[A-Za-z]+/);
   return match ? match[0].toUpperCase() : null;
 }
@@ -24,9 +25,9 @@ export function familyTokenFromPrefix(prefix) {
  * useRelocations - relocation proposal state for the component editor.
  *
  * ONE fetch of the caller-visible rows feeds all three surfaces: the
- * per-rule badge map (this component's rows only), the per-family
+ * per-rule badge map (this component's rows only), the per-SRG
  * backlog (across components), and the open-time prompt count keyed by
- * the interim prefix-derived family token. The server retains DECLINED
+ * the interim prefix-derived technology token. The server retains DECLINED
  * proposals in the response for source-author visibility — those are
  * not open markers, so every marker surface filters to open proposals.
  *
@@ -40,6 +41,8 @@ export function familyTokenFromPrefix(prefix) {
 export function useRelocations(component) {
   const markers = ref([]);
   const loading = ref(false);
+  // Destination SRG options for the propose picker.
+  const destinations = ref([]);
 
   const fetchMarkers = async () => {
     loading.value = true;
@@ -49,6 +52,11 @@ export function useRelocations(component) {
     } finally {
       loading.value = false;
     }
+  };
+
+  const fetchDestinations = async () => {
+    const response = await getRelocationDestinations();
+    destinations.value = response.data || [];
   };
 
   const openProposal = (marker) => !marker.declined_at;
@@ -68,10 +76,10 @@ export function useRelocations(component) {
       (marker) => openProposal(marker) && marker.target_technology_token === token,
     );
 
-  const familyToken = computed(() => familyTokenFromPrefix(component.prefix));
+  const technologyToken = computed(() => technologyTokenFromPrefix(component.prefix));
 
-  const familyBacklogCount = computed(() =>
-    familyToken.value ? backlogFor(familyToken.value).length : 0,
+  const srgBacklogCount = computed(() =>
+    technologyToken.value ? backlogFor(technologyToken.value).length : 0,
   );
 
   const mark = async (ruleId, targetTechnologyToken) => {
@@ -106,11 +114,13 @@ export function useRelocations(component) {
   return {
     markers,
     loading,
+    destinations,
     fetchMarkers,
+    fetchDestinations,
     markersByRuleId,
     backlogFor,
-    familyToken,
-    familyBacklogCount,
+    technologyToken,
+    srgBacklogCount,
     mark,
     unmark,
     dryRun,

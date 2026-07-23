@@ -39,9 +39,9 @@ RSpec.describe 'Benchmarks endpoint contracts (SRGs + STIGs)', type: :request do
       assert_fields_absent first_srg, :stig_id, :benchmark_date, :xml
     end
 
-    # The source picker filters parents by family kind — the payload must
-    # say which families are core.
-    it 'flags core families so the creation-flow picker can filter by eligibility' do
+    # The source picker filters parents by tier — the payload must
+    # say which SRGs are core.
+    it 'flags core SRGs so the creation-flow picker can filter by eligibility' do
       core = create(:security_requirements_guide, :core, :skip_rules,
                     srg_id: 'SRG-CORE-CONTRACT-LIST', version: 'V1R1')
 

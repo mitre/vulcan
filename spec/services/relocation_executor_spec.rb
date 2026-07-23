@@ -104,7 +104,7 @@ RSpec.describe RelocationExecutor do
   end
 
   describe 'validations' do
-    it 'rejects an executed relocation, a stig target, a released target, the source component, and a missing family' do
+    it 'rejects an executed relocation, a stig target, a released target, the source component, and an undeclared source SRG' do
       catalog_row = create(:srg_rule, security_requirements_guide: core_os, version: 'SRG-OS-000304')
       source_component = srg_component('EXSF-00', core_os)
       source = authored_row(source_component, '300004', derived_from: catalog_row)
@@ -124,7 +124,7 @@ RSpec.describe RelocationExecutor do
       declined = RequirementRelocation.create!(source_rule: authored_row(source_component, '300024'),
                                                target_technology_token: 'X',
                                                declined_at: 1.day.ago, declined_by: requester,
-                                               adjudication_rationale: 'Out of family scope.')
+                                               adjudication_rationale: 'Out of scope for this SRG.')
 
       expect(described_class.new(executed, target_component: srg_component('EXTF-00', core_os))
         .dry_run[:errors].join).to match(/no longer open/)
@@ -137,7 +137,7 @@ RSpec.describe RelocationExecutor do
       expect(described_class.new(other_pending, target_component: source_component)
         .dry_run[:errors].join).to match(/source component/)
       expect(described_class.new(other_pending, target_component: app_only_target)
-        .dry_run[:errors].join).to match(/does not declare the SRG-CORE-EXEC-OS family/)
+        .dry_run[:errors].join).to match(/does not declare SRG-CORE-EXEC-OS as a source SRG/)
 
       expect do
         described_class.new(other_pending, target_component: stig_target, accepted_by: requester).execute!

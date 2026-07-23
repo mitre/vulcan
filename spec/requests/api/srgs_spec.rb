@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-# GET /api/srgs/latest serves the highest-versioned SRG per family for
+# GET /api/srgs/latest serves each SRG's highest-versioned release for
 # dropdown population. Public reference data — no authentication required.
 # Version ranking must be numeric (V10R1 > V4R4), never string comparison.
 RSpec.describe 'Api::Srgs' do
@@ -30,7 +30,7 @@ RSpec.describe 'Api::Srgs' do
   end
 
   describe 'GET /api/srgs/latest' do
-    it 'returns one SRG per family with the numerically highest version' do
+    it 'returns each SRG once, at its numerically highest version' do
       get '/api/srgs/latest'
 
       expect(response).to have_http_status(:ok)
@@ -56,14 +56,14 @@ RSpec.describe 'Api::Srgs' do
       )
     end
 
-    it 'filters families by substring, case-insensitive (?q=web_server)' do
+    it 'filters SRGs by substring, case-insensitive (?q=web_server)' do
       get '/api/srgs/latest', params: { q: 'web_server' }
 
       rows = response.parsed_body['rows']
       expect(rows.pluck('srg_id')).to eq(['Web_Server_SRG'])
     end
 
-    it 'expands the GPOS abbreviation to the General_Purpose_Operating_System family (?q=GPOS)' do
+    it 'expands the GPOS abbreviation to the General_Purpose_Operating_System SRG (?q=GPOS)' do
       get '/api/srgs/latest', params: { q: 'GPOS' }
 
       rows = response.parsed_body['rows']
@@ -72,7 +72,7 @@ RSpec.describe 'Api::Srgs' do
     end
 
     it 'returns no rows for a query matching nothing' do
-      get '/api/srgs/latest', params: { q: 'zzz-no-such-family' }
+      get '/api/srgs/latest', params: { q: 'zzz-no-such-query' }
 
       expect(response).to have_http_status(:ok)
       expect(response.parsed_body['rows']).to eq([])

@@ -2,8 +2,8 @@
   <b-alert v-if="count > 0 && token" show variant="info" class="d-flex align-items-center mb-3">
     <b-icon icon="box-arrow-in-right" class="mr-2" />
     <span>
-      {{ count }} {{ count === 1 ? "requirement is" : "requirements are" }} marked for the
-      {{ token }} family
+      {{ count }} {{ count === 1 ? "requirement is" : "requirements are" }} {{ terms.proposed }} for
+      the {{ token }} SRG
     </span>
     <b-button
       variant="outline-info"
@@ -18,17 +18,19 @@
 </template>
 
 <script>
+import { RELOCATION_TERM } from "../../constants/terminology";
+
 /**
  * RelocationIntakeBanner - the creation/open-time intake prompt.
  *
- * Announces pending relocation markers destined for the open SRG
- * component's family and links to the backlog panel. A zero count or a
- * missing family token renders nothing — this is a notification
- * indicator, so absence is the meaning.
+ * Announces open relocation proposals destined for the open component's
+ * SRG and links to the backlog panel. A zero count or a missing
+ * technology token renders nothing — this is a notification indicator,
+ * so absence is the meaning.
  *
  * Props:
- *   - count: Number - pending markers for the family
- *   - token: String|null - the family technology token
+ *   - count: Number - open proposals for the SRG
+ *   - token: String|null - the SRG's technology token
  *
  * Emits:
  *   - view-backlog: open the relocation backlog panel
@@ -44,6 +46,11 @@ export default {
       type: String,
       default: null,
     },
+  },
+  data() {
+    return {
+      terms: RELOCATION_TERM,
+    };
   },
 };
 </script>

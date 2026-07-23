@@ -17,11 +17,11 @@ class StigBlueprint < Blueprinter::Base
   end
 
   field :latest_available_version do |stig, _options|
-    stig.latest? ? nil : stig.latest_for_family&.version
+    stig.latest? ? nil : stig.latest_release&.version
   end
 
   field :latest_available_id do |stig, _options|
-    stig.latest? ? nil : stig.latest_for_family&.id
+    stig.latest? ? nil : stig.latest_release&.id
   end
 
   # === Index view: listing page ===

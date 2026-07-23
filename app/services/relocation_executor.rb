@@ -77,7 +77,7 @@ class RelocationExecutor
         errors << 'target component must be an SRG component' unless @target_component.document_type == 'srg'
         errors << 'target component is released' if @target_component.released
         errors << 'target component is the source component' if @relocation.source_rule.component_id == @target_component.id
-        errors.concat(family_coverage_errors)
+        errors.concat(source_srg_coverage_errors)
       end
       errors
     end
@@ -105,17 +105,18 @@ class RelocationExecutor
     format('%06d', @target_component.largest_rule_id + 1)
   end
 
-  # The family invariant: every requirement's lineage belongs to a
-  # declared parent family of its component. A move into a component
-  # that has not declared the source's core family would violate it —
-  # the author adds the family first (add-parent-later), then executes.
-  def family_coverage_errors
+  # The parent-set invariant: every requirement's lineage belongs to a
+  # declared source SRG of its component (same SRG, any release). A move
+  # into a component that has not declared the source's core SRG would
+  # violate it — the author adds that SRG as a source first
+  # (add-parent-later), then the move can land.
+  def source_srg_coverage_errors
     derived_from = @relocation.source_rule.derived_from
     return [] if derived_from.nil?
 
-    family = derived_from.security_requirements_guide.srg_id
-    return [] if @target_component.source_srgs.any? { |srg| srg.srg_id == family }
+    source_srg_id = derived_from.security_requirements_guide.srg_id
+    return [] if @target_component.source_srgs.any? { |srg| srg.srg_id == source_srg_id }
 
-    ["target component does not declare the #{family} family — add it as a source first"]
+    ["target component does not declare #{source_srg_id} as a source SRG — add it first"]
   end
 end

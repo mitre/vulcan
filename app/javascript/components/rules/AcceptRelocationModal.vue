@@ -1,9 +1,5 @@
 <template>
-  <b-modal
-    :visible="visible"
-    title="Accept relocation proposal"
-    @change="$emit('update:visible', $event)"
-  >
+  <b-modal :visible="visible" :title="terms.concurTitle" @change="$emit('update:visible', $event)">
     <div v-if="loading" class="text-muted" data-test="preview-loading">
       <b-spinner small class="mr-1" /> Checking what this move would do...
     </div>
@@ -11,7 +7,7 @@
     <template v-else-if="preview">
       <template v-if="preview.valid">
         <p>
-          Accepting moves <strong>{{ preview.source_displayed_name }}</strong> into
+          Concurring moves <strong>{{ preview.source_displayed_name }}</strong> into
           <strong>{{ preview.target_component_name }}</strong> as requirement
           <strong>{{ preview.would_create.rule_id }}</strong
           >. The source requirement becomes history — its reviews stay frozen on the record.
@@ -24,7 +20,7 @@
         </dl>
       </template>
       <template v-else>
-        <p>This proposal cannot be accepted into this component:</p>
+        <p>This proposal cannot land in this component:</p>
         <ul data-test="preview-errors">
           <li v-for="error in preview.errors" :key="error">{{ error }}</li>
         </ul>
@@ -41,20 +37,23 @@
         data-test="confirm-accept"
         @click="$emit('accept')"
       >
-        Accept and move
+        {{ terms.concurConfirm }}
       </b-button>
     </template>
   </b-modal>
 </template>
 
 <script>
+import { RELOCATION_TERM } from "../../constants/terminology";
+
 /**
  * AcceptRelocationModal - the dry-run preview and explicit confirm for
- * accepting a relocation proposal. Presentational: the caller runs the
- * dry-run, passes the preview, owns the accept call and toasting. A
+ * concurring with a relocation proposal. Presentational: the caller runs
+ * the dry-run, passes the preview, owns the accept call and toasting. A
  * valid preview enables confirm; an invalid one renders every server
  * reason verbatim with confirm disabled — the server stays
- * authoritative.
+ * authoritative. Display verbs come from the centralized RELOCATION_TERM
+ * table (DISA-standard concur/non-concur).
  *
  * Props:
  *   - visible: Boolean (use with .sync)
@@ -85,6 +84,11 @@ export default {
       type: Boolean,
       default: false,
     },
+  },
+  data() {
+    return {
+      terms: RELOCATION_TERM,
+    };
   },
   computed: {
     canConfirm() {

@@ -138,11 +138,11 @@ describe("RuleRowIcons", () => {
   });
 
   describe("relocation marker badge", () => {
-    it("renders the marker badge with the destination family when a pending relocation exists", () => {
+    it("renders the marker badge with the DISA proposed verb and the destination SRG", () => {
       wrapper = createWrapper({ pendingRelocation: { target_technology_token: "CTR" } });
       const icon = wrapper.find('[data-test="icon-relocation"]');
       expect(icon.exists()).toBe(true);
-      expect(icon.attributes("title")).toBe("Marked for relocation to CTR");
+      expect(icon.attributes("title")).toBe("Proposed for relocation to the CTR SRG");
     });
 
     it("renders no marker badge when the pending relocation is removed (un-mark)", async () => {

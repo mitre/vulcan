@@ -132,12 +132,12 @@
         <b-button
           v-if="isSrg"
           v-b-tooltip.hover
-          title="Relocation backlog panel"
+          :title="relocationTerms.panelButtonTooltip"
           data-testid="relocations-btn"
           :variant="isPanelActive('relocations') ? 'secondary' : 'outline-secondary'"
           @click="onTogglePanel('relocations')"
         >
-          <b-icon icon="box-arrow-in-right" /> Relocations
+          <b-icon icon="box-arrow-in-right" /> {{ relocationTerms.panelButton }}
           <b-badge v-if="relocationCount > 0" variant="warning" pill class="ml-1">
             {{ relocationCount }}
           </b-badge>
@@ -250,7 +250,7 @@ import { useDateFormat } from "../../composables/useDateFormat";
 import BaseCommandBar from "./BaseCommandBar.vue";
 import CommentStatusChip from "./CommentStatusChip.vue";
 import UpdateFromSpreadsheetModal from "../components/UpdateFromSpreadsheetModal.vue";
-import { PANEL_LABELS } from "../../constants/terminology";
+import { PANEL_LABELS, RELOCATION_TERM } from "../../constants/terminology";
 
 export default {
   name: "ControlsCommandBar",
@@ -288,7 +288,7 @@ export default {
       type: Number,
       default: 0,
     },
-    // Open relocation proposals for the component's family — badges the
+    // Open relocation proposals for the component's SRG — badges the
     // Relocations panel button (SRG kind only).
     relocationCount: {
       type: Number,
@@ -303,6 +303,7 @@ export default {
   data() {
     return {
       labels: PANEL_LABELS,
+      relocationTerms: RELOCATION_TERM,
     };
   },
   computed: {

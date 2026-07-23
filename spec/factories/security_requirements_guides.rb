@@ -10,7 +10,7 @@ FactoryBot.define do
     xml { XML_FILE }
     release_date { Time.zone.today }
 
-    # A core-family SRG — the non-public raw material SRG-kind components
+    # A core SRG — the non-public raw material SRG-kind components
     # derive from (never a valid STIG parent).
     trait :core do
       core { true }

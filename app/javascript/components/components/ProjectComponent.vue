@@ -19,7 +19,7 @@
           :show-filter-toggle="true"
           :filter-bar-visible="filterBarVisible"
           :active-filter-count="activeFilterCount"
-          :relocation-count="relocFamilyCount"
+          :relocation-count="relocBacklogCount"
           @release="requestRelease(component)"
           @open-members="$bvModal.show(`members-modal-${component.id}`)"
           @toggle-panel="togglePanel"
@@ -171,7 +171,7 @@
         <b-sidebar
           v-if="isSrgComponent"
           id="sidebar-relocations"
-          title="Relocation backlog"
+          :title="relocationTerms.backlogTitle"
           right
           shadow
           backdrop
@@ -182,7 +182,7 @@
           <RelocationBacklogPanel
             :markers="relocMarkers"
             :component-id="component.id"
-            :initial-token="relocFamilyToken"
+            :initial-token="relocToken"
             :can-author="canAuthorComponent"
             :component-released="!!component.released"
             :view-only-page="true"
@@ -205,7 +205,7 @@ import { useReplyComposer } from "../../composables/useReplyComposer";
 import { useRuleFilters, useSidebar } from "../../composables";
 import { useRuleSelectionStore } from "../../stores/ruleSelection";
 import { getFirstVisibleRule } from "../../utils/ruleSelectionUtils";
-import { MESSAGE_LABELS } from "../../constants/terminology";
+import { MESSAGE_LABELS, RELOCATION_TERM } from "../../constants/terminology";
 import ControlsPageLayout from "../rules/ControlsPageLayout.vue";
 import ControlsCommandBar from "../shared/ControlsCommandBar.vue";
 import RuleFilterBar from "../rules/RuleFilterBar.vue";
@@ -372,8 +372,8 @@ export default {
       closePanel,
       relocMarkers: relocations.markers,
       relocByRuleId: relocations.markersByRuleId,
-      relocFamilyToken: relocations.familyToken,
-      relocFamilyCount: relocations.familyBacklogCount,
+      relocToken: relocations.technologyToken,
+      relocBacklogCount: relocations.srgBacklogCount,
       relocFetch: relocations.fetchMarkers,
       compareRules,
       alertOrNotifyResponse,
@@ -394,6 +394,7 @@ export default {
       component: this.initialComponentState,
       localAdvancedFields: this.initialComponentState.advanced_fields,
       msg: MESSAGE_LABELS,
+      relocationTerms: RELOCATION_TERM,
       showExportModal: false,
       availableExportModes: ["working_copy", "vendor_submission", "published_stig", "backup"],
       reviewsSectionFilter: "all",
@@ -452,6 +453,15 @@ export default {
   },
   mounted() {
     this.ruleStore.init(this.$router, this.component.id);
+    // A persisted selection can reference a requirement that no longer
+    // exists — e.g. relocated away since the last visit. Clear the stale
+    // id so the first-rule fallback fires instead of an empty pane.
+    if (
+      this.ruleStore.selectedRuleId !== null &&
+      !this.localRules.some((rule) => rule.id === this.ruleStore.selectedRuleId)
+    ) {
+      this.ruleStore.deselectRule(this.ruleStore.selectedRuleId);
+    }
 
     if (this.queriedRule && this.queriedRule.id) {
       this.ruleStore.selectRule(this.queriedRule.id);

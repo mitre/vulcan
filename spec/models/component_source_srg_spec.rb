@@ -4,15 +4,15 @@ require 'rails_helper'
 
 # REQUIREMENT (multi-parent derivation): based_on IS the primary parent and
 # must be a member of the component_source_srgs join set; assigning based_on
-# reconciles the join atomically — replacing a superseded SAME-FAMILY member
-# (family = srg_id, version-tolerant) and never appending unbounded; parent
+# reconciles the join atomically — replacing a superseded SAME-SRG member
+# (same srg_id, version-tolerant) and never appending unbounded; parent
 # eligibility comes from the AuthoringProfile registry policy (SRG-kind
-# parents must be core families, STIG-kind parents derived/non-core); and
-# the family invariant — every sourced live requirement belongs to a
-# parent-set family — guards parent removal.
+# parents must be core SRGs, STIG-kind parents derived/non-core); and the
+# parent-set invariant — every sourced live requirement belongs to a
+# declared parent SRG — guards parent removal.
 RSpec.describe ComponentSourceSrg do
   let_it_be(:project) { create(:project) }
-  # Family A in two versions (same srg_id) + an unrelated family B.
+  # SRG A in two releases (same srg_id) + an unrelated SRG B.
   let_it_be(:fam_a_v1) do
     create(:security_requirements_guide, :skip_rules, srg_id: 'SRG-FAM-A', version: 'V1R1')
   end
@@ -48,20 +48,20 @@ RSpec.describe ComponentSourceSrg do
       expect(component.source_srgs.reload).to contain_exactly(fam_a_v1)
     end
 
-    it 'reassigning based_on to a newer same-family version REPLACES the superseded member' do
+    it 'reassigning based_on to a newer release of the same SRG REPLACES the superseded member' do
       component = stig_component
       component.update!(based_on: fam_a_v2)
       expect(component.source_srgs.reload).to contain_exactly(fam_a_v2)
     end
 
-    it 'leaves a different-family secondary untouched by same-family replacement' do
+    it 'leaves a different-SRG secondary untouched by same-SRG replacement' do
       component = stig_component
       component.component_source_srgs.create!(security_requirements_guide: fam_b)
       component.update!(based_on: fam_a_v2)
       expect(component.source_srgs.reload).to contain_exactly(fam_a_v2, fam_b)
     end
 
-    it 'reassigning based_on to a NEW family adds it and keeps the prior family as a declared parent' do
+    it 'reassigning based_on to a NEW SRG adds it and keeps the prior SRG as a declared parent' do
       component = stig_component
       component.update!(based_on: fam_b)
       expect(component.source_srgs.reload).to contain_exactly(fam_a_v1, fam_b)
@@ -112,17 +112,17 @@ RSpec.describe ComponentSourceSrg do
     end
   end
 
-  describe 'family invariant guard on parent removal' do
-    it 'blocks removing the only member of a family still referenced by live requirements' do
+  describe 'parent-set invariant guard on parent removal' do
+    it 'blocks removing the only release of an SRG still referenced by live requirements' do
       component = stig_component
       catalog_row = create(:srg_rule, security_requirements_guide: fam_a_v1)
       create(:rule, component: component, srg_rule: catalog_row)
       join_row = component.component_source_srgs.find_by(security_requirements_guide: fam_a_v1)
       expect(join_row.destroy).to be false
-      expect(join_row.errors[:base].join).to match(/referenced|family/i)
+      expect(join_row.errors[:base].join).to match(/referenced|parent SRG/i)
     end
 
-    it 'allows a same-family version swap while requirements reference the family' do
+    it 'allows a same-SRG release swap while requirements reference that SRG' do
       component = stig_component
       catalog_row = create(:srg_rule, security_requirements_guide: fam_a_v1)
       create(:rule, component: component, srg_rule: catalog_row)
@@ -130,7 +130,7 @@ RSpec.describe ComponentSourceSrg do
       expect(component.source_srgs.reload).to contain_exactly(fam_a_v2)
     end
 
-    it 'allows removing a parent family no live requirement references' do
+    it 'allows removing a parent SRG no live requirement references' do
       component = stig_component
       component.component_source_srgs.create!(security_requirements_guide: fam_b)
       join_row = component.component_source_srgs.find_by(security_requirements_guide: fam_b)
@@ -148,7 +148,7 @@ RSpec.describe ComponentSourceSrg do
       expect(copy.source_srgs.reload).to contain_exactly(fam_a_v1, fam_b)
     end
 
-    it 'revision flow end-to-end: duplicate(new_srg_id:) replaces the family member and keeps old-version sources valid' do
+    it 'revision flow end-to-end: duplicate(new_srg_id:) replaces the same-SRG member and keeps old-release sources valid' do
       component = stig_component
       catalog_row = create(:srg_rule, security_requirements_guide: fam_a_v1)
       create(:rule, component: component, srg_rule: catalog_row)
@@ -160,12 +160,12 @@ RSpec.describe ComponentSourceSrg do
       expect(revision.based_on).to eq(fam_a_v2)
       expect(revision.source_srgs.reload).to contain_exactly(fam_a_v2, fam_b)
       # Version-tolerant invariant: the copied rule still sources the OLD
-      # catalog row (kept by design) — same family, so the set is valid.
+      # catalog row (kept by design) — same SRG, so the set is valid.
       expect(revision.source_srgs.map(&:srg_id)).to include(catalog_row.security_requirements_guide.srg_id)
     end
 
     # The revision guard compares the FULL parent set, not primary-only:
-    # an exact member needs no rebase, and a secondary-family upgrade
+    # an exact member needs no rebase, and a secondary-parent upgrade
     # replaces that member without flipping the primary designation.
     it 'short-circuits when the requested SRG is already a declared secondary parent' do
       component = stig_component
@@ -176,7 +176,7 @@ RSpec.describe ComponentSourceSrg do
       expect(revision.source_srgs.reload).to contain_exactly(fam_a_v1, fam_b)
     end
 
-    it 'upgrades a SECONDARY family member without flipping the primary' do
+    it 'upgrades a SECONDARY parent to a newer release without flipping the primary' do
       component = stig_component
       component.component_source_srgs.create!(security_requirements_guide: fam_b)
       revision = component.duplicate(new_name: 'Secondary upgrade', new_srg_id: fam_b_v2.id)
@@ -219,7 +219,7 @@ RSpec.describe ComponentSourceSrg do
 
     it 'rejects an ineligible parent and persists neither the declaration nor any rows' do
       expect { srg_component.add_source_parent!(fam_b) }
-        .to raise_error(ActiveRecord::RecordInvalid, /core SRG family/)
+        .to raise_error(ActiveRecord::RecordInvalid, /must be a core SRG/)
 
       expect(srg_component.source_srgs.reload).to contain_exactly(core_srg)
       expect(srg_component.authored_srg_rules.count).to eq(0)

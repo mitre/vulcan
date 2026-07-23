@@ -97,6 +97,12 @@ export function getRelocations(params = {}) {
   return api.get("/requirement_relocations", { params });
 }
 
+// Destination SRG options for the propose picker — one row per
+// abbreviation across the SRG components the caller can see.
+export function getRelocationDestinations() {
+  return api.get("/requirement_relocations/destinations");
+}
+
 export function markRelocation(ruleId, targetTechnologyToken) {
   return api.post(`/rules/${ruleId}/relocations`, {
     requirement_relocation: { target_technology_token: targetTechnologyToken },

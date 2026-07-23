@@ -2,7 +2,7 @@
 
 # A relocation is a RECORD, never a status. A proposed row (no
 # adjudication stamps) is the move marker on an authored SRG requirement:
-# it renders as the row badge, feeds the per-family backlog of open
+# it renders as the row badge, feeds the per-SRG backlog of open
 # proposals, and un-marking (source-side withdrawal) simply destroys it.
 # The RECEIVING side adjudicates: acceptance lands the move (executed,
 # stamped with the accepting actor in the same transaction) and decline
@@ -34,7 +34,7 @@ class RequirementRelocation < ApplicationRecord
   # Everything the backlog serves: open proposals plus retained declines
   # (the source author's visibility into why); executed history stays out.
   scope :unexecuted, -> { where(executed_at: nil) }
-  # The per-family backlog: open proposals destined for a technology
+  # The per-SRG backlog: open proposals destined for a technology
   # token, across all source components.
   scope :backlog_for, ->(token) { proposed.where(target_technology_token: token) }
   # The orphan sweep: executed history whose landed target was later

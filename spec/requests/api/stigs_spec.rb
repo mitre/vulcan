@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-# GET /api/stigs/latest serves the highest-versioned STIG per family for
+# GET /api/stigs/latest serves each STIG's highest-versioned release for
 # dropdown population. Public reference data — no authentication required.
 # Version ranking must be numeric (V10R1 > V2R7), never string comparison.
 RSpec.describe 'Api::Stigs' do
@@ -30,7 +30,7 @@ RSpec.describe 'Api::Stigs' do
   end
 
   describe 'GET /api/stigs/latest' do
-    it 'returns one STIG per family with the numerically highest version' do
+    it 'returns each STIG once, at its numerically highest version' do
       get '/api/stigs/latest'
 
       expect(response).to have_http_status(:ok)
@@ -56,7 +56,7 @@ RSpec.describe 'Api::Stigs' do
       )
     end
 
-    it 'filters families by substring, case-insensitive (?q=rhel)' do
+    it 'filters STIGs by substring, case-insensitive (?q=rhel)' do
       get '/api/stigs/latest', params: { q: 'rhel' }
 
       rows = response.parsed_body['rows']
@@ -72,7 +72,7 @@ RSpec.describe 'Api::Stigs' do
     end
 
     it 'returns no rows for a query matching nothing' do
-      get '/api/stigs/latest', params: { q: 'zzz-no-such-family' }
+      get '/api/stigs/latest', params: { q: 'zzz-no-such-query' }
 
       expect(response).to have_http_status(:ok)
       expect(response.parsed_body['rows']).to eq([])

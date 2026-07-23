@@ -25,8 +25,8 @@
             <div class="font-weight-bold">SRG</div>
             <small class="text-muted">
               Author a new Security Requirements Guide derived from core SRGs (e.g. "Container
-              Platform SRG"). You'll decide which requirements apply to the technology family and
-              tailor their content.
+              Platform SRG"). You'll decide which requirements apply to the technology and tailor
+              their content.
             </small>
           </div>
         </div>

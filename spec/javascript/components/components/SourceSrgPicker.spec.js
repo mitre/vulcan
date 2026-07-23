@@ -10,7 +10,7 @@ import SourceSrgPicker from "@/components/components/SourceSrgPicker.vue";
  * REQUIREMENTS (multi-parent creation flow):
  *
  * 1. ELIGIBILITY BY CONSTRUCTION: the picker offers ONLY parents
- *    eligible for the chosen profile — core families for srg,
+ *    eligible for the chosen profile — core SRGs for srg,
  *    derived (non-core) for stig. Ineligible sources never appear,
  *    mirroring the backend AuthoringProfile registry policy.
  *
@@ -68,12 +68,12 @@ describe("SourceSrgPicker", () => {
   });
 
   describe("eligibility by construction (registry policy mirror)", () => {
-    it("offers only core families for an srg-kind component", () => {
+    it("offers only core SRGs for an srg-kind component", () => {
       wrapper = createWrapper({ documentType: "srg" });
       expect(offeredIds()).toEqual([CORE_OS.id, CORE_APP.id]);
     });
 
-    it("offers only derived (non-core) families for a stig-kind component", () => {
+    it("offers only derived (non-core) SRGs for a stig-kind component", () => {
       wrapper = createWrapper({ documentType: "stig" });
       expect(offeredIds()).toEqual([DERIVED_GPOS.id, DERIVED_CTR.id]);
     });

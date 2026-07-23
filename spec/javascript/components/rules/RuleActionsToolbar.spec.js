@@ -342,9 +342,9 @@ describe("RuleActionsToolbar", () => {
       });
     });
 
-    describe("Relocate button (SRG kind only)", () => {
+    describe("Propose relocation button (SRG kind only)", () => {
       const relocateBtn = () =>
-        wrapper.findAll("button").wrappers.find((b) => b.text().includes("Relocate"));
+        wrapper.findAll("button").wrappers.find((b) => b.text().includes("Propose relocation"));
 
       it("is ABSENT for stig-kind components (relocation is SRG authoring)", () => {
         wrapper = createWrapper();
@@ -365,7 +365,7 @@ describe("RuleActionsToolbar", () => {
         const btn = relocateBtn();
         expect(btn.attributes("disabled")).toBe("disabled");
         expect(wrapper.find('[data-test="relocate-tip"]').attributes("title")).toContain(
-          "Already marked",
+          "Already proposed",
         );
       });
 
@@ -396,7 +396,7 @@ describe("RuleActionsToolbar", () => {
           effectivePermissions: "author",
         });
         expect(wrapper.find('[data-test="relocate-tip"]').attributes("title")).toBe(
-          "Available in the editor — open the editor to relocate",
+          "Available in the editor — open the editor to propose relocation",
         );
       });
 
@@ -421,7 +421,7 @@ describe("RuleActionsToolbar", () => {
           pendingRelocation: { id: 7, target_technology_token: "CTR" },
         });
         expect(wrapper.find('[data-test="relocate-tip"]').attributes("title")).toBe(
-          "Already marked for relocation to CTR — open the editor to un-mark",
+          "Already proposed for relocation to the CTR SRG — open the editor to withdraw",
         );
       });
     });

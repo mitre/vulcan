@@ -13,7 +13,7 @@ RSpec.shared_context 'components model base setup' do
     srg.save!
     srg
   end
-  # Core-family SRG for srg-kind components (parent eligibility requires
+  # Core SRG for srg-kind components (parent eligibility requires
   # core parents for that kind; components_srg is derived and serves the
   # stig-kind components).
   let_it_be(:components_core_srg) do

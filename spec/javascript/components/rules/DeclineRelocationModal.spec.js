@@ -60,4 +60,12 @@ describe("DeclineRelocationModal", () => {
 
     expect(wrapper.emitted("decline")).toEqual([["Covered elsewhere."]]);
   });
+
+  it("labels confirm with the DISA non-concur verb and SRG-worded placeholder", () => {
+    wrapper = createWrapper();
+    expect(wrapper.find('[data-test="confirm-decline"]').text()).toBe("Non-concur");
+    expect(
+      wrapper.find('[data-test="decline-rationale-input"]').attributes("placeholder"),
+    ).toContain("in this SRG");
+  });
 });

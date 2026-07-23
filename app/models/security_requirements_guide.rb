@@ -9,7 +9,7 @@ class SecurityRequirementsGuide < ApplicationRecord
   include VersionSortable
   include BenchmarkSearchable
 
-  self.version_family_column = :srg_id
+  self.series_key_column = :srg_id
 
   def self.search_columns
     %w[name title srg_id]

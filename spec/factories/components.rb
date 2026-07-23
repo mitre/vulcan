@@ -5,7 +5,7 @@ FactoryBot.define do
     project { create(:project) }
     # Reuse existing SRG to avoid re-parsing 604KB XML + importing ~250 rules each time.
     # The SRG import is the single most expensive factory operation (~500ms per call).
-    # Kind-aware: parent eligibility requires core families for srg-kind
+    # Kind-aware: parent eligibility requires core SRGs for srg-kind
     # components and derived (non-core) for stig-kind — each kind reuses
     # its own shared eligible SRG.
     based_on do

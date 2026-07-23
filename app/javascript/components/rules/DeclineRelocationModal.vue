@@ -1,14 +1,14 @@
 <template>
   <b-modal
     :visible="visible"
-    title="Decline relocation proposal"
+    :title="terms.nonConcurTitle"
     @change="$emit('update:visible', $event)"
     @show="rationale = ''"
   >
     <p>
-      Decline the proposal to move <strong>{{ sourceDisplayedName }}</strong> into this component.
-      The proposal is retained with your rationale — the source author sees it in the backlog, and
-      the requirement can be proposed again later.
+      Non-concur with the proposal to move <strong>{{ sourceDisplayedName }}</strong> into this
+      component. The proposal is retained with your rationale — the source author sees it in the
+      backlog, and the requirement can be proposed again later.
     </p>
     <b-form-group
       label="Rationale"
@@ -17,7 +17,7 @@
       <b-form-textarea
         v-model="rationale"
         rows="3"
-        placeholder="Covered by an existing requirement in this family..."
+        placeholder="Covered by an existing requirement in this SRG..."
         data-test="decline-rationale-input"
       />
     </b-form-group>
@@ -31,19 +31,22 @@
         data-test="confirm-decline"
         @click="$emit('decline', rationale.trim())"
       >
-        Decline proposal
+        {{ terms.nonConcur }}
       </b-button>
     </template>
   </b-modal>
 </template>
 
 <script>
+import { RELOCATION_TERM } from "../../constants/terminology";
+
 /**
  * DeclineRelocationModal - collects the required rationale for
- * declining a relocation proposal. The rationale is the message back to
- * the source author, so confirm stays disabled until it is non-blank.
- * Presentational: the caller owns the API call and toasting. The field
- * clears on every open.
+ * non-concurring with a relocation proposal. The rationale is the
+ * message back to the source author, so confirm stays disabled until it
+ * is non-blank. Presentational: the caller owns the API call and
+ * toasting. The field clears on every open. Display verbs come from the
+ * centralized RELOCATION_TERM table (DISA-standard concur/non-concur).
  *
  * Props:
  *   - visible: Boolean (use with .sync)
@@ -68,6 +71,7 @@ export default {
   data() {
     return {
       rationale: "",
+      terms: RELOCATION_TERM,
     };
   },
 };

@@ -5,8 +5,9 @@ require 'rails_helper'
 RSpec.describe VersionSortable do
   # Test via SecurityRequirementsGuide which includes the concern.
   # Use insert_all to skip after_create :import_srg_rules (needs real XCCDF XML).
-  # Real DISA release shape: the family key — the XCCDF benchmark id — is
-  # identical across releases; the title may be reworded mid-family.
+  # Real DISA release shape: the series key — the XCCDF benchmark id — is
+  # identical across releases of one SRG; the title may be reworded
+  # between releases.
   let_it_be(:srg_v2r1) do
     SecurityRequirementsGuide.insert_all([{
                                            srg_id: 'Test_SRG', title: 'Test SRG', version: 'V2R1',
@@ -30,7 +31,7 @@ RSpec.describe VersionSortable do
   end
 
   describe '.latest_versions' do
-    it 'returns only the highest version per family (by benchmark id)' do
+    it 'returns only the highest version per document (by benchmark id)' do
       latest = SecurityRequirementsGuide.latest_versions
       latest_by_id = latest.pluck(:srg_id, :version).to_h
 
@@ -40,30 +41,30 @@ RSpec.describe VersionSortable do
   end
 
   describe '#latest?' do
-    it 'returns true for the newest version in its family' do
+    it 'returns true for the newest release of its SRG' do
       expect(srg_v3r3.latest?).to be true
     end
 
-    it 'returns false for an older version in the same family' do
+    it 'returns false for an older release of the same SRG' do
       expect(srg_v2r1.latest?).to be false
     end
 
-    it 'returns true for a single-version family' do
+    it 'returns true for a single-release SRG' do
       expect(other_srg.latest?).to be true
     end
   end
 
-  describe '#latest_for_family' do
-    it 'returns the latest record for the same family' do
-      expect(srg_v2r1.latest_for_family).to eq(srg_v3r3)
+  describe '#latest_release' do
+    it 'returns the latest release of the same SRG' do
+      expect(srg_v2r1.latest_release).to eq(srg_v3r3)
     end
 
     it 'returns self when already the latest' do
-      expect(srg_v3r3.latest_for_family).to eq(srg_v3r3)
+      expect(srg_v3r3.latest_release).to eq(srg_v3r3)
     end
 
-    it 'returns self for a single-version family' do
-      expect(other_srg.latest_for_family).to eq(other_srg)
+    it 'returns self for a single-release SRG' do
+      expect(other_srg.latest_release).to eq(other_srg)
     end
   end
 end

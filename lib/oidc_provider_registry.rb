@@ -10,7 +10,7 @@
 # Settings.oidc.providers — this class holds no state and is not a second
 # config system.
 #
-# Env families:
+# Env var shapes:
 #   Registry:  VULCAN_OIDC_PROVIDERS=okta,login_gov  + VULCAN_OIDC_<KEY>_<FIELD>
 #   Legacy:    VULCAN_OIDC_PROVIDERS unset           + unprefixed VULCAN_OIDC_<FIELD>
 #              (a single provider named `oidc`, only when VULCAN_ENABLE_OIDC)

@@ -32,6 +32,11 @@
 en:
   hello: "Hello world"
   activerecord:
+    attributes:
+      requirement_relocation:
+        # User vocabulary: the SRG short code is its "abbreviation" —
+        # the column name stays target_technology_token.
+        target_technology_token: "Destination SRG abbreviation"
     errors:
       models:
         requirement_relocation:

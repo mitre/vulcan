@@ -29,7 +29,7 @@ const STIG_DESCRIPTION =
   "Does Not Meet, or Not Applicable.";
 const SRG_DESCRIPTION =
   'Author a new Security Requirements Guide derived from core SRGs (e.g. "Container Platform SRG"). ' +
-  "You'll decide which requirements apply to the technology family and tailor their content.";
+  "You'll decide which requirements apply to the technology and tailor their content.";
 const PERMANENCE_NOTE = "This choice is permanent for the component.";
 
 describe("DocumentTypePicker", () => {

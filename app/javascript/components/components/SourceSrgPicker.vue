@@ -42,7 +42,7 @@
 /**
  * SourceSrgPicker - the multi-parent source picker for the creation flow.
  *
- * Offers ONLY parents eligible for the chosen profile (core families
+ * Offers ONLY parents eligible for the chosen profile (core SRGs
  * for srg, derived for stig — the AuthoringProfile registry policy),
  * so eligibility is enforced by construction; the backend validation
  * remains the enforcement layer. The author declares 1..N sources and

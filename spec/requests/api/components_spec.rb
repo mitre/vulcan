@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 # GET /api/components/latest serves the highest-versioned RELEASED component
-# per prefix family for dropdown population. A component is a STIG in
+# per prefix for dropdown population. A component is a STIG in
 # progress — released ones are instance-wide reference data for any
 # authenticated user (same visibility as the components list page).
 # Ranking is numeric on the integer version/release columns.
@@ -40,7 +40,7 @@ RSpec.describe 'Api::Components' do
   end
 
   describe 'GET /api/components/latest' do
-    it 'returns one released component per prefix family with the numerically highest version/release' do
+    it 'returns one released component per prefix with the numerically highest version/release' do
       get '/api/components/latest'
 
       expect(response).to have_http_status(:ok)
@@ -86,7 +86,7 @@ RSpec.describe 'Api::Components' do
       )
     end
 
-    it 'filters families by substring, case-insensitive (?q=photon)' do
+    it 'filters components by substring, case-insensitive (?q=photon)' do
       get '/api/components/latest', params: { q: 'photon' }
 
       rows = response.parsed_body['rows']

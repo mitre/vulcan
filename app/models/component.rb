@@ -19,7 +19,7 @@ class Component < ApplicationRecord
     %w[name prefix title]
   end
 
-  # One component per prefix family — the numerically highest
+  # One component per prefix — the numerically highest
   # (version, release) pair. Unlike SRGs/STIGs (VersionSortable parses
   # V{major}R{minor} strings), component version/release are integer
   # columns. Operates on the current relation, so visibility filters
@@ -457,18 +457,18 @@ class Component < ApplicationRecord
 
     new_srg = SecurityRequirementsGuide.find_by(id: new_srg_id)
     # The revision guard compares the FULL parent set: an exact
-    # (family, version) already declared as ANY parent needs no rebase —
-    # a primary-only compare mis-detected secondary-family revisions.
+    # (srg_id, version) already declared as ANY parent needs no rebase —
+    # a primary-only compare mis-detected secondary-parent revisions.
     return copied_component if new_srg.nil? ||
                                source_srgs.any? { |s| s.srg_id == new_srg.srg_id && s.version == new_srg.version }
 
-    # A primary-family upgrade moves based_on (reconciliation replaces the
-    # member); a SECONDARY-family upgrade replaces that member and leaves
-    # the primary designation alone.
+    # A primary-parent upgrade moves based_on (reconciliation replaces the
+    # member); a SECONDARY-parent upgrade replaces that member — the older
+    # release of the same SRG — and leaves the primary designation alone.
     if new_srg.srg_id == based_on.srg_id
       copied_component.based_on = new_srg
     else
-      copied_component.replace_parent_family(new_srg)
+      copied_component.replace_parent_srg(new_srg)
     end
 
     new_srg_rules = new_srg.srg_rules.index_by(&:version)

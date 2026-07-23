@@ -5,24 +5,25 @@ import RelocationBacklogPanel from "@/components/rules/RelocationBacklogPanel.vu
 import FilterDropdown from "@/components/shared/FilterDropdown.vue";
 
 /**
- * RelocationBacklogPanel requirements (per-family backlog):
+ * RelocationBacklogPanel requirements (per-SRG backlog):
  *
- * 1. Lists pending markers for the selected family token, across
- *    components, with the source's component-prefixed name.
+ * 1. Lists open proposals for the selected destination SRG (by
+ *    technology token), across components, with the source's
+ *    component-prefixed name.
  * 2. The token filter offers every distinct pending token (explicit
  *    filter — a mismatched prefix-derived default hides nothing) and
- *    defaults to the open component's family token.
+ *    defaults to the open component's own token.
  * 3. Un-mark emits the record id for rows of the OPEN component when
  *    the user can author; rows from other components and non-author
  *    sessions render the button DISABLED with an explanatory tooltip —
  *    disabled-not-hidden.
- * 4. Shows the family count line the open-time prompt links to.
+ * 4. Shows the per-SRG count line the open-time prompt links to.
  * 5. Adjudication affordances on OPEN rows: Accept and Decline emit the
  *    full marker for rows the open component can receive (another
  *    component's requirement, author role, component not released);
  *    self-rows, non-author sessions, and released components render the
  *    buttons DISABLED with an explanatory tooltip — disabled-not-hidden.
- *    The server stays authoritative for everything else (family
+ *    The server stays authoritative for everything else (source-SRG
  *    coverage, open state) via dry-run.
  * 6. DECLINED rows are retained history, not open markers: they render
  *    the declined state with the rationale and decliner, carry no
@@ -110,18 +111,25 @@ describe("RelocationBacklogPanel", () => {
     expect(text).not.toContain("CNTR-00-000090");
   });
 
-  it("offers every distinct pending token in the filter and defaults to the family token", () => {
+  it("offers every distinct pending token in the filter and defaults to the component's token", () => {
     wrapper = createWrapper();
     const dropdown = wrapper.findComponent(FilterDropdown);
     expect(dropdown.props("options").map((o) => o.value)).toEqual(["CTR", "GPOS"]);
     expect(dropdown.props("value")).toBe("CTR");
   });
 
-  it("shows the family count line", () => {
+  it("shows the per-SRG count line in the propose vocabulary", () => {
     wrapper = createWrapper();
     expect(wrapper.text().replace(/\s+/g, " ")).toContain(
-      "2 requirements are marked for the CTR family",
+      "2 requirements are proposed for the CTR SRG",
     );
+  });
+
+  it("labels the actions with the DISA verbs — Concur, Non-concur, Withdraw", () => {
+    wrapper = createWrapper();
+    expect(wrapper.find('[data-test="accept-2"]').text()).toBe("Concur");
+    expect(wrapper.find('[data-test="decline-2"]').text()).toBe("Non-concur");
+    expect(wrapper.find('[data-test="unmark-1"]').text()).toBe("Withdraw");
   });
 
   it("emits unmark with the record id for an authorable row of the open component", async () => {
@@ -150,7 +158,7 @@ describe("RelocationBacklogPanel", () => {
 
   it("shows the empty state when no markers match the token", () => {
     wrapper = createWrapper({ markers: [], initialToken: null });
-    expect(wrapper.text().replace(/\s+/g, " ")).toContain("No requirements are marked");
+    expect(wrapper.text().replace(/\s+/g, " ")).toContain("No requirements are proposed");
   });
 
   it("emits accept-request and decline-request with the full marker for a receivable row", async () => {
@@ -197,7 +205,7 @@ describe("RelocationBacklogPanel", () => {
     expect(declinedRow.exists()).toBe(true);
     const text = declinedRow.text().replace(/\s+/g, " ");
     expect(text).toContain("WALK-00-000044");
-    expect(text).toContain("Declined");
+    expect(text).toContain("Non-concurred");
     expect(text).toContain("Covered by an existing requirement here.");
     expect(text).toContain("Riley Receiver");
     expect(wrapper.find('[data-test="accept-4"]').exists()).toBe(false);
@@ -208,7 +216,7 @@ describe("RelocationBacklogPanel", () => {
   it("keeps declined rows out of the open-proposal count line", () => {
     wrapper = createWrapper();
     expect(wrapper.text().replace(/\s+/g, " ")).toContain(
-      "2 requirements are marked for the CTR family",
+      "2 requirements are proposed for the CTR SRG",
     );
   });
 
@@ -221,7 +229,7 @@ describe("RelocationBacklogPanel", () => {
       expect(accept.attributes("disabled")).toBeDefined();
       expect(decline.attributes("disabled")).toBeDefined();
       expect(wrapper.find('[data-test="adjudicate-tip-2"]').attributes("title")).toBe(
-        "Open the editor to accept or decline this proposal",
+        "Open the editor to adjudicate this proposal",
       );
     });
 
