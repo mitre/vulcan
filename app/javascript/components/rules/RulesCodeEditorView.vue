@@ -15,7 +15,7 @@
         :show-filter-toggle="true"
         :filter-bar-visible="filterBarVisible"
         :active-filter-count="activeFilterCount"
-        :relocation-count="relocFamilyCount"
+        :relocation-count="relocBacklogCount"
         @open-members="$bvModal.show(`members-modal-${component.id}`)"
         @toggle-panel="togglePanel"
         @toggle-filter-bar="toggleFilterBar"
@@ -118,6 +118,7 @@
           v-if="isSrgComponent"
           :visible.sync="relocationModalVisible"
           :rule-display-name="`${component.prefix}-${selectedRule.rule_id}`"
+          :destinations="destinationOptions"
           @mark="onMarkRelocation"
         />
 
@@ -166,11 +167,11 @@
     <!-- Main Content -->
     <template #main-content>
       <!-- Open-time relocation intake prompt (SRG kind; renders only
-           when pending markers exist for this component's family) -->
+           when open proposals exist for this component's SRG) -->
       <RelocationIntakeBanner
         v-if="isSrgComponent"
-        :count="relocFamilyCount"
-        :token="relocFamilyToken"
+        :count="relocBacklogCount"
+        :token="relocToken"
         @view-backlog="openPanel('relocations')"
       />
       <template v-if="selectedRule">
@@ -197,7 +198,7 @@
           :autosave-enabled="autosaveEnabled"
           :autosave-dirty="autosaveDirty"
           :pending-relocation="relocByRuleId[selectedRule.id] || null"
-          @open-relocation-modal="relocationModalVisible = true"
+          @open-relocation-modal="openRelocationModal"
           @clone="$bvModal.show('duplicate-rule-modal')"
           @delete="$bvModal.show('delete-rule-modal')"
           @save="saveRule($event)"
@@ -236,7 +237,7 @@
       <b-sidebar
         v-if="isSrgComponent"
         id="sidebar-relocations"
-        title="Relocation backlog"
+        :title="relocationTerms.backlogTitle"
         right
         shadow
         backdrop
@@ -247,7 +248,7 @@
         <RelocationBacklogPanel
           :markers="relocMarkers"
           :component-id="component.id"
-          :initial-token="relocFamilyToken"
+          :initial-token="relocToken"
           :can-author="!isViewerOnly"
           :component-released="!!component.released"
           @unmark="onUnmarkRelocation"
@@ -317,7 +318,7 @@ import MarkRelocationModal from "./MarkRelocationModal.vue";
 import AcceptRelocationModal from "./AcceptRelocationModal.vue";
 import DeclineRelocationModal from "./DeclineRelocationModal.vue";
 import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
-import { MESSAGE_LABELS } from "../../constants/terminology";
+import { MESSAGE_LABELS, RELOCATION_TERM } from "../../constants/terminology";
 import { scrollToField } from "../../utils/searchHighlight";
 
 export default {
@@ -437,9 +438,11 @@ export default {
       alertOrNotifyResponse,
       relocMarkers: relocations.markers,
       relocByRuleId: relocations.markersByRuleId,
-      relocFamilyToken: relocations.familyToken,
-      relocFamilyCount: relocations.familyBacklogCount,
+      relocToken: relocations.technologyToken,
+      relocBacklogCount: relocations.srgBacklogCount,
+      relocDestinations: relocations.destinations,
       relocFetch: relocations.fetchMarkers,
+      relocFetchDestinations: relocations.fetchDestinations,
       relocMark: relocations.mark,
       relocUnmark: relocations.unmark,
       relocDryRun: relocations.dryRun,
@@ -490,6 +493,7 @@ export default {
         comment: "",
       },
       msg: MESSAGE_LABELS,
+      relocationTerms: RELOCATION_TERM,
       reviewsSectionFilter: "all",
       relocationModalVisible: false,
       acceptModalVisible: false,
@@ -518,6 +522,11 @@ export default {
     isSrgComponent() {
       return this.component.document_type === "srg";
     },
+    // Destination picker options — a requirement never relocates to its
+    // own SRG, so the component's own abbreviation is excluded.
+    destinationOptions() {
+      return this.relocDestinations.filter((destination) => destination.token !== this.relocToken);
+    },
   },
   created() {
     this.composerBridge.onOpen = () => this.$bvModal.show("comment-composer-modal");
@@ -531,6 +540,15 @@ export default {
   },
   mounted() {
     this.ruleStore.init(this.$router, this.component.id);
+    // A persisted selection can reference a requirement that no longer
+    // exists — e.g. relocated away since the last visit. Clear the stale
+    // id rather than fetching a 404 for it below.
+    if (
+      this.ruleStore.selectedRuleId !== null &&
+      !this.rules.some((rule) => rule.id === this.ruleStore.selectedRuleId)
+    ) {
+      this.ruleStore.deselectRule(this.ruleStore.selectedRuleId);
+    }
     if (this.ruleStore.selectedRuleId === null && this.rules.length > 0) {
       const firstVisible = getFirstVisibleRule(this.rules);
       if (firstVisible) this.ruleStore.selectRule(firstVisible.id);
@@ -557,6 +575,13 @@ export default {
     this.destroyAutosave();
   },
   methods: {
+    // Fetch fresh destination options as the modal opens — a failed
+    // fetch surfaces as a toast and the modal still opens with the
+    // free-abbreviation entry available.
+    openRelocationModal() {
+      this.relocFetchDestinations().catch(this.alertOrNotifyResponse);
+      this.relocationModalVisible = true;
+    },
     onMarkRelocation(token) {
       this.relocMark(this.selectedRule.id, token)
         .then((response) => {

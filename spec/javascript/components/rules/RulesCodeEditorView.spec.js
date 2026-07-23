@@ -21,6 +21,7 @@ vi.mock("@/api/rulesApi", () => ({
   updateRule: vi.fn(() => Promise.resolve({ data: {} })),
   updateSectionLocks: vi.fn(() => Promise.resolve({ data: {} })),
   getRelocations: vi.fn(() => Promise.resolve({ data: [] })),
+  getRelocationDestinations: vi.fn(() => Promise.resolve({ data: [] })),
   markRelocation: vi.fn(() => Promise.resolve({ data: {} })),
   unmarkRelocation: vi.fn(() => Promise.resolve({ data: {} })),
   dryRunRelocation: vi.fn(() => Promise.resolve({ data: {} })),
@@ -29,6 +30,7 @@ vi.mock("@/api/rulesApi", () => ({
 }));
 import {
   getRelocations,
+  getRelocationDestinations,
   dryRunRelocation,
   acceptRelocation,
   declineRelocation,
@@ -242,6 +244,21 @@ describe("RulesCodeEditorView", () => {
       wrapper.vm.selectRule(1);
       expect(localStorage.getItem("selectedRuleId-41")).toBe("1");
     });
+
+    // REGRESSION: a persisted selection can reference a requirement that
+    // no longer exists — e.g. relocated away since the last visit. The
+    // stale id must be CLEARED (fall back to the first rule), never
+    // fetched: the old behavior fired refresh:rule with the dead id and
+    // 404ed on every subsequent visit.
+    it("clears a stale persisted selection instead of fetching the missing rule", async () => {
+      localStorage.setItem("selectedRuleId-41", "999");
+      wrapper = createWrapper();
+      const rootEmit = vi.spyOn(wrapper.vm.$root, "$emit");
+      await new Promise((resolve) => setTimeout(resolve, 5));
+
+      expect(rootEmit).not.toHaveBeenCalledWith("refresh:rule", 999);
+      expect(wrapper.vm.selectedRuleId).toBe(1);
+    });
   });
 
   describe("useRuleFilters composable integration", () => {
@@ -395,13 +412,52 @@ describe("RulesCodeEditorView", () => {
       );
     });
 
-    it("passes the family open-proposal count to the command bar's Relocations badge", async () => {
+    it("passes the SRG's open-proposal count to the command bar's Relocations badge", async () => {
       getRelocations.mockResolvedValueOnce({ data: [MARKER] });
       wrapper = srgWrapper();
       await flushPromises(wrapper);
       expect(wrapper.findComponent({ name: "ControlsCommandBar" }).props("relocationCount")).toBe(
         1,
       );
+    });
+
+    it("fetches destinations on propose-modal open and excludes the component's own SRG", async () => {
+      getRelocationDestinations.mockResolvedValueOnce({
+        data: [
+          { token: "TEST", name: "This very SRG", released: false },
+          { token: "RCVA", name: "Walkthrough receiving SRG", released: false },
+        ],
+      });
+      wrapper = srgWrapper();
+      await flushPromises(wrapper);
+
+      wrapper.vm.openRelocationModal();
+      await flushPromises(wrapper);
+
+      expect(getRelocationDestinations).toHaveBeenCalled();
+      expect(wrapper.vm.relocationModalVisible).toBe(true);
+      // TEST is this component's own abbreviation — never a destination.
+      expect(wrapper.findComponent({ name: "MarkRelocationModal" }).props("destinations")).toEqual([
+        { token: "RCVA", name: "Walkthrough receiving SRG", released: false },
+      ]);
+    });
+
+    it("surfaces a destinations fetch failure as a toast and still opens the modal", async () => {
+      getRelocationDestinations.mockRejectedValueOnce(new Error("network down"));
+      const toasts = [];
+      const listener = (event) => toasts.push(event.detail);
+      document.addEventListener("vulcan:toast", listener);
+      wrapper = srgWrapper();
+      await flushPromises(wrapper);
+
+      wrapper.vm.openRelocationModal();
+      await flushPromises(wrapper);
+      document.removeEventListener("vulcan:toast", listener);
+
+      // The failure is surfaced, and the modal still opens — the free
+      // abbreviation input remains a working propose path.
+      expect(toasts.some((t) => t.variant === "danger")).toBe(true);
+      expect(wrapper.vm.relocationModalVisible).toBe(true);
     });
   });
 

@@ -63,10 +63,13 @@ Rails.application.routes.draw do
     end
   end
 
-  # The per-family relocation backlog (index), un-mark (destroy), and
-  # the executor pair (zero-write dry_run + transactional execute);
-  # marking nests under the source rule above.
+  # The per-SRG relocation backlog (index), withdraw (destroy), and
+  # the adjudication set (zero-write dry_run + accept + decline);
+  # proposing nests under the source rule above.
   resources :requirement_relocations, only: %i[index destroy] do
+    collection do
+      get :destinations
+    end
     member do
       post :dry_run
       post :accept

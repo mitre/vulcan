@@ -11,7 +11,7 @@
 # serves open proposals plus retained declines, scoped to projects the
 # caller can see.
 class RequirementRelocationsController < ApplicationController
-  before_action :authorize_logged_in, only: %i[index]
+  before_action :authorize_logged_in, only: %i[index destinations]
   before_action :set_source_rule_component, only: %i[create]
   before_action :set_open_proposal, only: %i[destroy dry_run accept decline]
   # Un-marking is the source author's withdrawal — source-side authority.
@@ -33,16 +33,37 @@ class RequirementRelocationsController < ApplicationController
     render body: RequirementRelocationBlueprint.render(rows), content_type: 'application/json'
   end
 
+  # The Destination SRG picker's options: one row per technology token
+  # across the SRG components the caller can discover — an open
+  # (unreleased) component wins the row; a released-only token is the
+  # queued next-release case. Concealment-safe by construction:
+  # available_projects is the one discoverability truth, so hidden
+  # projects' SRGs never appear (proposing to them stays possible via
+  # the free-token entry).
+  def destinations
+    components = Component.where(document_type: 'srg', project_id: current_user.available_projects)
+                          .order(:released, updated_at: :desc)
+    rows = {}
+    components.each do |component|
+      token = component.technology_token
+      next if token.blank? || rows.key?(token)
+
+      rows[token] = { token: token, name: component.name, released: component.released }
+    end
+
+    render json: rows.values.sort_by { |row| row[:token] }
+  end
+
   def create
     relocation = RequirementRelocation.new(relocation_params.merge(source_rule_id: @source_rule.id,
                                                                    requested_by: current_user))
     if relocation.save
-      render_toast(title: 'Requirement marked for relocation.',
-                   message: "Marked for the #{relocation.target_technology_token} family.",
+      render_toast(title: 'Relocation proposed.',
+                   message: "Proposed for the #{relocation.target_technology_token} SRG.",
                    variant: 'success', status: :ok)
     else
       render json: {
-        toast: Toast.new(title: 'Could not mark requirement for relocation.',
+        toast: Toast.new(title: 'Could not propose the relocation.',
                          message: relocation.errors.full_messages,
                          variant: 'danger')
       }, status: :unprocessable_content
@@ -67,14 +88,14 @@ class RequirementRelocationsController < ApplicationController
     # The landed id rides the toast so the editor can materialize the
     # new row without a page reload.
     render json: {
-      toast: Toast.new(title: 'Proposal accepted.',
+      toast: Toast.new(title: 'Concurred.',
                        message: "Moved to #{@target_component.name} — the source requirement is now history.",
                        variant: 'success'),
       landed_rule_id: result.target_rule.id
     }, status: :ok
   rescue RelocationExecutor::ExecutionError => e
     render json: {
-      toast: Toast.new(title: 'Could not accept the proposal.',
+      toast: Toast.new(title: 'Could not concur with the proposal.',
                        message: e.message.split('; '),
                        variant: 'danger')
     }, status: :unprocessable_content
@@ -82,27 +103,27 @@ class RequirementRelocationsController < ApplicationController
 
   def decline
     # Adjudication binds to an ELIGIBLE receiver: the same one eligibility
-    # oracle accept uses (SRG kind, not released, not the source, family
-    # declared) decides whether the named component may adjudicate at all —
-    # an author of an unrelated component cannot terminate someone else's
-    # proposal.
+    # oracle accept uses (SRG kind, not released, not the source, source
+    # SRG declared) decides whether the named component may adjudicate at
+    # all — an author of an unrelated component cannot terminate someone
+    # else's proposal.
     eligibility_errors = RelocationExecutor.new(@relocation, target_component: @target_component)
                                            .validation_errors
     if eligibility_errors.any?
       return render json: {
-        toast: Toast.new(title: 'Could not decline the proposal.',
+        toast: Toast.new(title: 'Could not non-concur with the proposal.',
                          message: eligibility_errors,
                          variant: 'danger')
       }, status: :unprocessable_content
     end
 
     if @relocation.update(decline_params.merge(declined_by: current_user, declined_at: Time.current))
-      render_toast(title: 'Proposal declined.',
+      render_toast(title: 'Non-concurred.',
                    message: 'The source author can see your rationale in the backlog.',
                    variant: 'success', status: :ok)
     else
       render json: {
-        toast: Toast.new(title: 'Could not decline the proposal.',
+        toast: Toast.new(title: 'Could not non-concur with the proposal.',
                          message: @relocation.errors.full_messages,
                          variant: 'danger')
       }, status: :unprocessable_content

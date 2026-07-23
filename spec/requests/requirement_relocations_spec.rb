@@ -4,7 +4,7 @@ require 'rails_helper'
 
 # REQUIREMENT (relocation proposal API): authors of an SRG component mark
 # a requirement for relocation (an open proposal — the source-side offer),
-# un-mark it while open, and read the per-family backlog. The RECEIVING
+# withdraw it while open, and read the per-SRG backlog. The RECEIVING
 # side adjudicates with TARGET-side author rights only (the mark carries
 # source consent): accept lands the move; decline requires a rationale,
 # is retained, and surfaces to the source author in the backlog. Executed
@@ -50,6 +50,21 @@ RSpec.describe 'Requirement relocations' do
       expect(record.target_technology_token).to eq('CTR')
       expect(record.requested_by_id).to eq(author.id)
       expect(record.executed_at).to be_nil
+      # DISA display vocabulary — proposed; the destination is an SRG.
+      expect(response.parsed_body.dig('toast', 'title')).to eq('Relocation proposed.')
+      expect(response.parsed_body.dig('toast', 'message').join).to eq('Proposed for the CTR SRG.')
+    end
+
+    it 'rejects a blank abbreviation in user vocabulary — abbreviation, never token' do
+      source = authored_row('910012')
+      sign_in author
+
+      post "/rules/#{source.id}/relocations",
+           params: { requirement_relocation: { target_technology_token: '' } }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      message = response.parsed_body.dig('toast', 'message').join
+      expect(message).to eq("Destination SRG abbreviation can't be blank")
     end
 
     it 'rejects a duplicate pending marker with a 422 toast' do
@@ -102,7 +117,49 @@ RSpec.describe 'Requirement relocations' do
     end
   end
 
-  describe 'GET /requirement_relocations (per-family backlog)' do
+  describe 'GET /requirement_relocations/destinations (picker options)' do
+    it 'serves one row per token — open components win over released, hidden projects excluded' do
+      # Released release of the SAME SRG as the open srg_component (RAPI):
+      # the open one must win the token row.
+      released_rapi = create(:component, :skip_rules, project: project, document_type: 'srg',
+                                                      based_on: core_srg, prefix: 'RAPI-00',
+                                                      name: 'RAPI prior release', version: 1)
+      released_rapi.update_column(:released, true)
+      # A released-only token: the queued next-release case.
+      released_only = create(:component, :skip_rules, project: project, document_type: 'srg',
+                                                      based_on: core_srg, prefix: 'RQUE-00',
+                                                      name: 'Queued SRG')
+      released_only.update_column(:released, true)
+      # A hidden project's SRG component must not be disclosed.
+      hidden_project = create(:project)
+      create(:component, :skip_rules, project: hidden_project, document_type: 'srg',
+                                      based_on: core_srg, prefix: 'RSEC-00', name: 'Hidden SRG')
+      # STIG-kind components are never destinations.
+      create(:component, :skip_rules, project: project, prefix: 'RSTG-00', name: 'A STIG')
+      sign_in author
+
+      get '/requirement_relocations/destinations'
+
+      expect(response).to have_http_status(:ok)
+      rows = response.parsed_body
+      tokens = rows.pluck('token')
+      expect(tokens).to include('RAPI', 'RQUE')
+      expect(tokens).not_to include('RSEC', 'RSTG')
+      rapi = rows.find { |row| row['token'] == 'RAPI' }
+      expect(rapi['released']).to be false
+      expect(rapi['name']).to eq(srg_component.name)
+      que = rows.find { |row| row['token'] == 'RQUE' }
+      expect(que['released']).to be true
+      expect(que['name']).to eq('Queued SRG')
+    end
+
+    it 'requires authentication' do
+      get '/requirement_relocations/destinations'
+      expect(response).to redirect_to(new_user_session_path)
+    end
+  end
+
+  describe 'GET /requirement_relocations (per-SRG backlog)' do
     it 'lists pending markers for the token with source identity' do
       source = authored_row('910006')
       RequirementRelocation.create!(source_rule: source, target_technology_token: 'CTR',
@@ -208,6 +265,7 @@ RSpec.describe 'Requirement relocations' do
 
         expect(response).to have_http_status(:ok)
         expect(response.parsed_body.dig('toast', 'variant')).to eq('success')
+        expect(response.parsed_body.dig('toast', 'title')).to eq('Concurred.')
         record.reload
         expect(record.executed_at).to be_present
         expect(record.accepted_by_id).to eq(receiver.id)
@@ -228,6 +286,26 @@ RSpec.describe 'Requirement relocations' do
 
         expect(response).to have_http_status(:unprocessable_content)
         expect(response.parsed_body.dig('toast', 'message').join).to match(/SRG component/)
+        expect(record.reload.executed_at).to be_nil
+      end
+
+      it 'returns 422 in SRG wording when the target does not declare the source SRG' do
+        other_core = create(:security_requirements_guide, :core, :skip_rules,
+                            srg_id: 'SRG-CORE-RELOCAPI-APP', version: 'V1R1')
+        uncovered_target = create(:component, :skip_rules, project: project, document_type: 'srg',
+                                                           based_on: other_core, prefix: 'RUNC-00')
+        catalog_row = create(:srg_rule, security_requirements_guide: core_srg, version: 'SRG-OS-000901')
+        source = create(:srg_rule, :authored, component: srg_component, rule_id: '910023',
+                                              derived_from_srg_rule_id: catalog_row.id)
+        record = RequirementRelocation.create!(source_rule: source, target_technology_token: 'RUNC')
+        sign_in author
+
+        post "/requirement_relocations/#{record.id}/accept",
+             params: { target_component_id: uncovered_target.id }
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body.dig('toast', 'message').join)
+          .to match(/does not declare SRG-CORE-RELOCAPI as a source SRG/)
         expect(record.reload.executed_at).to be_nil
       end
 
@@ -272,6 +350,7 @@ RSpec.describe 'Requirement relocations' do
                        requirement_relocation: { adjudication_rationale: 'Covered by RRCV-00-000001 already.' } }
 
         expect(response).to have_http_status(:ok)
+        expect(response.parsed_body.dig('toast', 'title')).to eq('Non-concurred.')
         record.reload
         expect(record.declined_at).to be_present
         expect(record.declined_by_id).to eq(receiver.id)
@@ -392,7 +471,7 @@ RSpec.describe 'Requirement relocations' do
         declined_source = authored_row('910020')
         RequirementRelocation.create!(source_rule: declined_source, target_technology_token: 'RVIS',
                                       declined_at: 1.day.ago, declined_by: receiver,
-                                      adjudication_rationale: 'Wrong family for this control.')
+                                      adjudication_rationale: 'Wrong SRG for this control.')
         open_source = authored_row('910021')
         RequirementRelocation.create!(source_rule: open_source, target_technology_token: 'RVIS')
         sign_in author
@@ -403,7 +482,7 @@ RSpec.describe 'Requirement relocations' do
         rows = response.parsed_body
         expect(rows.size).to eq(2)
         declined_row = rows.find { |r| r['declined_at'].present? }
-        expect(declined_row['adjudication_rationale']).to eq('Wrong family for this control.')
+        expect(declined_row['adjudication_rationale']).to eq('Wrong SRG for this control.')
         expect(declined_row['declined_by_name']).to eq(receiver.name)
       end
 
