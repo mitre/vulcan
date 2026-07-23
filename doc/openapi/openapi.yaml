@@ -162,6 +162,8 @@ paths:
     $ref: paths/rules_{ruleId}_relocations.yaml
   /requirement_relocations:
     $ref: paths/requirement_relocations.yaml
+  /requirement_relocations/destinations:
+    $ref: paths/requirement_relocations_destinations.yaml
   /requirement_relocations/{id}:
     $ref: paths/requirement_relocations_{id}.yaml
   /requirement_relocations/{id}/dry_run:

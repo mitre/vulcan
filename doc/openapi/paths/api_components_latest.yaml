@@ -2,13 +2,13 @@ get:
   operationId: latestComponents
   tags:
     - Benchmarks
-  summary: List the latest released component per family
+  summary: List the latest released component per prefix
   description: >-
-    Returns one released component per prefix family — the numerically
+    Returns one released component per prefix — the numerically
     highest version/release pair — for dropdown population. A component is
     a STIG in progress; released ones are instance-wide reference data for
     any authenticated user. Unreleased drafts never appear. The q parameter
-    filters families by case-insensitive substring with abbreviation
+    filters components by case-insensitive substring with abbreviation
     expansion (RHEL matches Red Hat Enterprise Linux); queries shorter than
     2 characters return no rows.
   parameters:
@@ -16,14 +16,14 @@ get:
       in: query
       required: false
       description: >-
-        Family filter — case-insensitive substring matched against name,
+        Component filter — case-insensitive substring matched against name,
         prefix, and title, with abbreviation expansion (minimum 2 characters).
       schema:
         type: string
       example: RHEL-09
   responses:
     '200':
-      description: Latest released component per family, ordered by prefix
+      description: Latest released component per prefix, ordered by prefix
       content:
         application/json:
           schema:

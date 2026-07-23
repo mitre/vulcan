@@ -603,20 +603,20 @@ paths:
       operationId: latestSrgs
       tags:
         - Benchmarks
-      summary: List the latest SRG version per family
-      description: Returns one SRG per family — the numerically highest V{major}R{minor} version — for dropdown population. Public reference data, no authentication required. The q parameter filters families by case-insensitive substring with abbreviation expansion (GPOS matches General Purpose Operating System); queries shorter than 2 characters return no rows.
+      summary: List the latest release of each SRG
+      description: Returns one row per SRG — its numerically highest V{major}R{minor} release — for dropdown population. Public reference data, no authentication required. The q parameter filters SRGs by case-insensitive substring with abbreviation expansion (GPOS matches General Purpose Operating System); queries shorter than 2 characters return no rows.
       security: []
       parameters:
         - name: q
           in: query
           required: false
-          description: Family filter — case-insensitive substring matched against name, title, and srg_id, with abbreviation expansion (minimum 2 characters).
+          description: SRG filter — case-insensitive substring matched against name, title, and srg_id, with abbreviation expansion (minimum 2 characters).
           schema:
             type: string
           example: GPOS
       responses:
         '200':
-          description: Latest SRG per family, ordered by title
+          description: Latest release of each SRG, ordered by title
           content:
             application/json:
               schema:
@@ -687,20 +687,20 @@ paths:
       operationId: latestStigs
       tags:
         - Benchmarks
-      summary: List the latest STIG version per family
-      description: Returns one STIG per family — the numerically highest V{major}R{minor} version — for dropdown population. Public reference data, no authentication required. The q parameter filters families by case-insensitive substring with abbreviation expansion (RHEL matches Red Hat Enterprise Linux); queries shorter than 2 characters return no rows.
+      summary: List the latest release of each STIG
+      description: Returns one row per STIG — its numerically highest V{major}R{minor} release — for dropdown population. Public reference data, no authentication required. The q parameter filters STIGs by case-insensitive substring with abbreviation expansion (RHEL matches Red Hat Enterprise Linux); queries shorter than 2 characters return no rows.
       security: []
       parameters:
         - name: q
           in: query
           required: false
-          description: Family filter — case-insensitive substring matched against name, title, and stig_id, with abbreviation expansion (minimum 2 characters).
+          description: STIG filter — case-insensitive substring matched against name, title, and stig_id, with abbreviation expansion (minimum 2 characters).
           schema:
             type: string
           example: RHEL
       responses:
         '200':
-          description: Latest STIG per family, ordered by title
+          description: Latest release of each STIG, ordered by title
           content:
             application/json:
               schema:
@@ -754,19 +754,19 @@ paths:
       operationId: latestComponents
       tags:
         - Benchmarks
-      summary: List the latest released component per family
-      description: Returns one released component per prefix family — the numerically highest version/release pair — for dropdown population. A component is a STIG in progress; released ones are instance-wide reference data for any authenticated user. Unreleased drafts never appear. The q parameter filters families by case-insensitive substring with abbreviation expansion (RHEL matches Red Hat Enterprise Linux); queries shorter than 2 characters return no rows.
+      summary: List the latest released component per prefix
+      description: Returns one released component per prefix — the numerically highest version/release pair — for dropdown population. A component is a STIG in progress; released ones are instance-wide reference data for any authenticated user. Unreleased drafts never appear. The q parameter filters components by case-insensitive substring with abbreviation expansion (RHEL matches Red Hat Enterprise Linux); queries shorter than 2 characters return no rows.
       parameters:
         - name: q
           in: query
           required: false
-          description: Family filter — case-insensitive substring matched against name, prefix, and title, with abbreviation expansion (minimum 2 characters).
+          description: Component filter — case-insensitive substring matched against name, prefix, and title, with abbreviation expansion (minimum 2 characters).
           schema:
             type: string
           example: RHEL-09
       responses:
         '200':
-          description: Latest released component per family, ordered by prefix
+          description: Latest released component per prefix, ordered by prefix
           content:
             application/json:
               schema:
@@ -3499,8 +3499,8 @@ paths:
       operationId: createRequirementRelocation
       tags:
         - Rules
-      summary: Mark an authored SRG requirement for relocation
-      description: Creates a PENDING relocation record — the move marker — for an authored requirement of an SRG component, naming the destination family's technology token. Requires author role on the component. One pending marker per requirement; a second mark returns 422. The marker is a record, never a status change on the requirement.
+      summary: Propose relocating an authored SRG requirement
+      description: Creates an OPEN relocation proposal for an authored requirement of an SRG component, naming the destination SRG's abbreviation. Requires author role on the component. One open proposal per requirement; a second returns 422. The proposal is a record, never a status change on the requirement — the destination SRG's authors concur or non-concur.
       requestBody:
         required: true
         content:
@@ -3517,44 +3517,44 @@ paths:
                   properties:
                     target_technology_token:
                       type: string
-                      description: Destination family technology token.
+                      description: The destination SRG's abbreviation — the short code its requirement IDs start with (CTR, GPOS, DB).
                       example: CTR
             examples:
               mark:
-                summary: Mark for the Container family
+                summary: Propose relocation to the Container SRG
                 value:
                   requirement_relocation:
                     target_technology_token: CTR
       responses:
         '200':
-          description: Requirement marked for relocation
+          description: Relocation proposed
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
               examples:
-                marked:
-                  summary: Marker created
+                proposed:
+                  summary: Proposal created
                   value:
                     toast:
-                      title: Requirement marked for relocation.
+                      title: Relocation proposed.
                       message:
-                        - Marked for the CTR family.
+                        - Proposed for the CTR SRG.
                       variant: success
         '404':
           $ref: '#/components/responses/NotFound'
         '422':
-          description: Duplicate pending marker or ineligible source
+          description: Duplicate open proposal or ineligible source
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
               examples:
                 duplicate:
-                  summary: Already marked
+                  summary: Already proposed
                   value:
                     toast:
-                      title: Could not mark requirement for relocation.
+                      title: Could not propose the relocation.
                       message:
                         - Source rule already has a pending relocation
                       variant: danger
@@ -3565,19 +3565,19 @@ paths:
       operationId: listRequirementRelocations
       tags:
         - Rules
-      summary: List the pending relocation backlog
-      description: Returns pending relocation markers, optionally filtered to one destination family's technology token — the standing per-family backlog and the creation/open-time prompt count both read this. Rows are scoped to projects the caller can see. Executed records are immutable history and never listed.
+      summary: List the open relocation-proposal backlog
+      description: Returns relocation proposals, optionally filtered to one destination SRG's abbreviation — the standing per-SRG backlog and the creation/open-time prompt count both read this. Rows are scoped to projects the caller can see. Executed records are immutable history and never listed.
       parameters:
         - name: target_technology_token
           in: query
           required: false
-          description: Destination family technology token to filter by.
+          description: The destination SRG's abbreviation to filter by.
           schema:
             type: string
           example: CTR
       responses:
         '200':
-          description: Pending markers, oldest first
+          description: Open proposals (and retained declines), oldest first
           content:
             application/json:
               schema:
@@ -3586,7 +3586,7 @@ paths:
                   $ref: '#/components/schemas/RequirementRelocationSummary'
               examples:
                 backlog:
-                  summary: One pending marker for the CTR family
+                  summary: One open proposal for the CTR SRG
                   value:
                     - id: 12
                       source_rule_id: 5137
@@ -3596,6 +3596,34 @@ paths:
                       component_id: 42
                       component_name: Container Platform SRG
                       requested_by_name: Jane Doe
+        4XX:
+          $ref: '#/components/responses/ErrorResponse'
+  /requirement_relocations/destinations:
+    get:
+      operationId: listRelocationDestinations
+      tags:
+        - Rules
+      summary: List destination SRG options for the propose flow
+      description: 'Serves the Destination SRG picker: one row per SRG abbreviation across the SRG components in projects the caller can see (member or discoverable). An open component wins its abbreviation''s row; released true marks the queued next-release case. Hidden projects'' SRGs never appear — proposing to them remains possible through the free abbreviation entry, which discloses nothing.'
+      responses:
+        '200':
+          description: Destination options, ordered by abbreviation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RelocationDestination'
+              examples:
+                destinations:
+                  summary: One open component and one queued SRG
+                  value:
+                    - token: CTR
+                      name: Container Platform SRG
+                      released: false
+                    - token: GPOS
+                      name: General Purpose Operating System SRG
+                      released: true
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /requirement_relocations/{id}:
@@ -3704,8 +3732,8 @@ paths:
       operationId: acceptRequirementRelocation
       tags:
         - Rules
-      summary: Accept a relocation proposal — land the requirement
-      description: 'Receiver-side adjudication: acceptance and landing are ONE transaction — creates the requirement in the destination component with content and core lineage carried over, tombstones the source row, and stamps the record executed with the accepting actor — atomically, or not at all. Requires author role on the DESTINATION component only; the proposal itself carries source consent. Audited. Adjudicated proposals (declined or executed) answer 404 like a record that never existed.'
+      summary: Concur with a relocation proposal — land the requirement
+      description: 'Receiver-side adjudication (displayed as Concur): acceptance and landing are ONE transaction — creates the requirement in the destination component with content and core lineage carried over, tombstones the source row, and stamps the record executed with the accepting actor — atomically, or not at all. Requires author role on the DESTINATION component only; the proposal itself carries source consent. Audited. Adjudicated proposals (declined or executed) answer 404 like a record that never existed.'
       requestBody:
         required: true
         content:
@@ -3721,12 +3749,12 @@ paths:
                   example: 42
             examples:
               accept:
-                summary: Accept the move into component 42
+                summary: Concur — land the move into component 42
                 value:
                   target_component_id: 42
       responses:
         '200':
-          description: Proposal accepted and requirement landed
+          description: Proposal concurred with and requirement landed
           content:
             application/json:
               schema:
@@ -3736,7 +3764,7 @@ paths:
                   summary: Move landed
                   value:
                     toast:
-                      title: Proposal accepted.
+                      title: Concurred.
                       message:
                         - Moved to Container Platform SRG — the source requirement is now history.
                       variant: success
@@ -3773,8 +3801,8 @@ paths:
       operationId: declineRequirementRelocation
       tags:
         - Rules
-      summary: Decline a relocation proposal with a rationale
-      description: 'Receiver-side adjudication: declines the proposal with a REQUIRED rationale. The record is retained as terminal history — never destroyed — and the rationale surfaces to the source author in the backlog, so the refusal communicates back across the ownership boundary. Requires author role on the destination component named in the request, and that component must be an ELIGIBLE receiver — an unreleased SRG component, other than the source, that declares the source requirement''s core family (the same eligibility accept enforces). Audited. A declined source may be proposed again.'
+      summary: Non-concur with a relocation proposal, with a rationale
+      description: 'Receiver-side adjudication (displayed as Non-concur): declines the proposal with a REQUIRED rationale. The record is retained as terminal history — never destroyed — and the rationale surfaces to the source author in the backlog, so the refusal communicates back across the ownership boundary. Requires author role on the destination component named in the request, and that component must be an ELIGIBLE receiver — an unreleased SRG component, other than the source, that declares the source requirement''s core SRG (the same eligibility accept enforces). Audited. A declined source may be proposed again.'
       requestBody:
         required: true
         content:
@@ -3807,17 +3835,17 @@ paths:
                     adjudication_rationale: Covered by CNTR-00-000001 already.
       responses:
         '200':
-          description: Proposal declined and retained with the rationale
+          description: Proposal non-concurred with and retained with the rationale
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
               examples:
                 declined:
-                  summary: Decline recorded
+                  summary: Non-concur recorded
                   value:
                     toast:
-                      title: Proposal declined.
+                      title: Non-concurred.
                       message:
                         - The source author can see your rationale in the backlog.
                       variant: success
@@ -7646,7 +7674,7 @@ components:
           description: Total number of records across all pages.
           example: 47
     BenchmarkLatestResponse:
-      description: Latest-version benchmark listing for dropdown population. One row per benchmark family, ranked by numeric V{major}R{minor} version (V10R1 above V4R4). SRG rows carry srg_id; STIG rows carry stig_id.
+      description: Latest-version benchmark listing for dropdown population. One row per benchmark, ranked by numeric V{major}R{minor} version (V10R1 above V4R4). SRG rows carry srg_id; STIG rows carry stig_id.
       type: object
       required:
         - rows
@@ -7654,7 +7682,7 @@ components:
       properties:
         rows:
           type: array
-          description: One entry per benchmark family, ordered by title.
+          description: One entry per benchmark, ordered by title.
           items:
             type: object
             required:
@@ -7670,11 +7698,11 @@ components:
                 example: 42
               srg_id:
                 type: string
-                description: SRG family identifier. Present only in /api/srgs/latest responses.
+                description: The SRG's stable benchmark identifier across releases. Present only in /api/srgs/latest responses.
                 example: General_Purpose_Operating_System
               stig_id:
                 type: string
-                description: STIG family identifier. Present only in /api/stigs/latest responses.
+                description: The STIG's stable benchmark identifier across releases. Present only in /api/stigs/latest responses.
                 example: RHEL_9_STIG
               title:
                 type: string
@@ -7764,7 +7792,7 @@ components:
                     description: Owning project name.
                     example: Photon OS 5 Hardening
     ComponentLatestResponse:
-      description: Latest released component per prefix family for dropdown population. A component is a STIG in progress — released ones are instance-wide reference data. Ranking is numeric on the integer version/release pair; unreleased drafts never appear.
+      description: Latest released component per prefix for dropdown population. A component is a STIG in progress — released ones are instance-wide reference data. Ranking is numeric on the integer version/release pair; unreleased drafts never appear.
       type: object
       required:
         - rows
@@ -7772,7 +7800,7 @@ components:
       properties:
         rows:
           type: array
-          description: One entry per prefix family, ordered by prefix.
+          description: One entry per prefix, ordered by prefix.
           items:
             type: object
             required:
@@ -7787,7 +7815,7 @@ components:
                 example: 38
               prefix:
                 type: string
-                description: STIG ID prefix — the component family identifier.
+                description: STIG ID prefix — the component's identity across releases.
                 example: RHEL-09
               name:
                 type: string
@@ -9119,7 +9147,7 @@ components:
           example: 1
         declared_source_srg_ids:
           type: array
-          description: The full declared source-SRG set for multi-parent derivation. Every listed SRG becomes a declared parent and contributes its requirements at creation (full union by default). Eligibility is enforced per document_type — non-core families for stig, core families for srg. Omit for the classic single-source create.
+          description: The full declared source-SRG set for multi-parent derivation. Every listed SRG becomes a declared parent and contributes its requirements at creation (full union by default). Eligibility is enforced per document_type — non-core SRGs for stig, core SRGs for srg. Omit for the classic single-source create.
           items:
             type: integer
           example:
@@ -10276,7 +10304,7 @@ components:
               example: false
             srg_is_latest:
               type: boolean
-              description: Whether EVERY declared source SRG of the component is the latest version of its family. A component with any stale parent — including a secondary parent under dual lineage — reports false.
+              description: Whether EVERY declared source SRG of the component is at its latest release. A component with any stale parent — including a secondary parent under dual lineage — reports false.
               example: true
             srg_latest_version:
               type:
@@ -10773,7 +10801,7 @@ components:
               example: V3R3
             is_latest:
               type: boolean
-              description: Whether this SRG version is the latest available for its family. Green dot = true, yellow dot = false.
+              description: Whether this SRG version is that SRG's latest available release. Green dot = true, yellow dot = false.
               example: true
         addressed_by_rule_name:
           type:
@@ -11042,7 +11070,7 @@ components:
         toast:
           $ref: '#/components/schemas/ToastObject'
     RequirementRelocationSummary:
-      description: 'A relocation proposal in the per-family backlog: the open proposal plus enough source identity to act on it, or a retained decline whose rationale communicates the refusal back to the source author. Executed relocation records are immutable history and never served here.'
+      description: 'A relocation proposal in the per-SRG backlog: the open proposal plus enough source identity to act on it, or a retained non-concur whose rationale communicates the refusal back to the source author. Executed relocation records are immutable history and never served here.'
       type: object
       additionalProperties: false
       required:
@@ -11058,11 +11086,11 @@ components:
           example: 12
         source_rule_id:
           type: integer
-          description: The authored requirement marked for relocation.
+          description: The authored requirement proposed for relocation.
           example: 5137
         target_technology_token:
           type: string
-          description: Destination family technology token (the SRG-world analogue of a STIG component prefix).
+          description: The destination SRG's abbreviation (CTR, GPOS, DB — the SRG-world analogue of a STIG component prefix).
           example: CTR
         created_at:
           type: string
@@ -11106,6 +11134,27 @@ components:
             - 'null'
           description: Who declined the proposal. Null while open or when the account was removed.
           example: null
+    RelocationDestination:
+      description: 'A destination SRG option for the relocation propose flow: one row per SRG abbreviation across the SRG components the caller can discover. An open (unreleased) component wins the row; released true marks the queued next-release case (proposals wait until the receiving admin creates the next version).'
+      type: object
+      additionalProperties: false
+      required:
+        - token
+        - name
+        - released
+      properties:
+        token:
+          type: string
+          description: The destination SRG's abbreviation — the short code its requirement IDs start with (CTR, GPOS, DB).
+          example: CTR
+        name:
+          type: string
+          description: The component carrying the abbreviation — the open component when one exists, otherwise the latest released one.
+          example: Container Platform SRG
+        released:
+          type: boolean
+          description: True when no open component carries the abbreviation — a proposal queues for the SRG's next release.
+          example: false
     RequirementRelocationDryRun:
       description: 'Zero-write preview of executing a relocation: whether the move can run, every reason it cannot, and exactly what would be created and tombstoned.'
       type: object
@@ -11422,7 +11471,7 @@ components:
           example: Container_Platform_SRG
         core:
           type: boolean
-          description: Whether this is a core-family SRG. Core families are the raw material SRG-kind components derive from; derived (non-core) families are the valid sources for STIG-kind components. Drives the creation-flow source picker's eligibility filtering.
+          description: Whether this is a core SRG. Core SRGs are the raw material SRG-kind components derive from; derived (non-core) SRGs are the valid sources for STIG-kind components. Drives the creation-flow source picker's eligibility filtering.
           example: false
         name:
           type:
@@ -11451,13 +11500,13 @@ components:
           example: '2025-10-28'
         is_latest:
           type: boolean
-          description: Whether this is the latest available version of this SRG family.
+          description: Whether this is the latest available release of this SRG.
           example: true
         latest_available_version:
           type:
             - string
             - 'null'
-          description: Version string of the latest available SRG in this family. Null when is_latest=true.
+          description: Version string of this SRG's latest available release. Null when is_latest=true.
           example: null
         latest_available_id:
           type:
@@ -11534,13 +11583,13 @@ components:
           example: '2025-10-01'
         is_latest:
           type: boolean
-          description: Whether this is the latest available version of this STIG family.
+          description: Whether this is the latest available release of this STIG.
           example: true
         latest_available_version:
           type:
             - string
             - 'null'
-          description: Version string of the latest available STIG in this family. Null when is_latest=true.
+          description: Version string of this STIG's latest available release. Null when is_latest=true.
           example: null
         latest_available_id:
           type:

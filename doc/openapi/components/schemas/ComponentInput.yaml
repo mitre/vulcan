@@ -20,8 +20,8 @@ properties:
       The full declared source-SRG set for multi-parent derivation.
       Every listed SRG becomes a declared parent and contributes its
       requirements at creation (full union by default). Eligibility is
-      enforced per document_type — non-core families for stig, core
-      families for srg. Omit for the classic single-source create.
+      enforced per document_type — non-core SRGs for stig, core
+      SRGs for srg. Omit for the classic single-source create.
     items:
       type: integer
     example: [1, 2]

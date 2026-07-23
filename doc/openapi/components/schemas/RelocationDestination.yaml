@@ -1,0 +1,31 @@
+description: >-
+  A destination SRG option for the relocation propose flow: one row per
+  SRG abbreviation across the SRG components the caller can discover. An
+  open (unreleased) component wins the row; released true marks the
+  queued next-release case (proposals wait until the receiving admin
+  creates the next version).
+type: object
+additionalProperties: false
+required:
+  - token
+  - name
+  - released
+properties:
+  token:
+    type: string
+    description: >-
+      The destination SRG's abbreviation — the short code its
+      requirement IDs start with (CTR, GPOS, DB).
+    example: CTR
+  name:
+    type: string
+    description: >-
+      The component carrying the abbreviation — the open component when
+      one exists, otherwise the latest released one.
+    example: Container Platform SRG
+  released:
+    type: boolean
+    description: >-
+      True when no open component carries the abbreviation — a proposal
+      queues for the SRG's next release.
+    example: false

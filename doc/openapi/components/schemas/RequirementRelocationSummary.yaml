@@ -1,7 +1,7 @@
 description: >-
-  A relocation proposal in the per-family backlog: the open proposal
-  plus enough source identity to act on it, or a retained decline whose
-  rationale communicates the refusal back to the source author.
+  A relocation proposal in the per-SRG backlog: the open proposal
+  plus enough source identity to act on it, or a retained non-concur
+  whose rationale communicates the refusal back to the source author.
   Executed relocation records are immutable history and never served
   here.
 type: object
@@ -19,13 +19,13 @@ properties:
     example: 12
   source_rule_id:
     type: integer
-    description: The authored requirement marked for relocation.
+    description: The authored requirement proposed for relocation.
     example: 5137
   target_technology_token:
     type: string
     description: >-
-      Destination family technology token (the SRG-world analogue of a
-      STIG component prefix).
+      The destination SRG's abbreviation (CTR, GPOS, DB — the SRG-world
+      analogue of a STIG component prefix).
     example: CTR
   created_at:
     type: string

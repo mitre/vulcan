@@ -10,16 +10,16 @@ post:
   operationId: acceptRequirementRelocation
   tags:
     - Rules
-  summary: Accept a relocation proposal — land the requirement
+  summary: Concur with a relocation proposal — land the requirement
   description: >-
-    Receiver-side adjudication: acceptance and landing are ONE
-    transaction — creates the requirement in the destination component
-    with content and core lineage carried over, tombstones the source
-    row, and stamps the record executed with the accepting actor —
-    atomically, or not at all. Requires author role on the DESTINATION
-    component only; the proposal itself carries source consent. Audited.
-    Adjudicated proposals (declined or executed) answer 404 like a
-    record that never existed.
+    Receiver-side adjudication (displayed as Concur): acceptance and
+    landing are ONE transaction — creates the requirement in the
+    destination component with content and core lineage carried over,
+    tombstones the source row, and stamps the record executed with the
+    accepting actor — atomically, or not at all. Requires author role on
+    the DESTINATION component only; the proposal itself carries source
+    consent. Audited. Adjudicated proposals (declined or executed)
+    answer 404 like a record that never existed.
   requestBody:
     required: true
     content:
@@ -35,12 +35,12 @@ post:
               example: 42
         examples:
           accept:
-            summary: Accept the move into component 42
+            summary: Concur — land the move into component 42
             value:
               target_component_id: 42
   responses:
     '200':
-      description: Proposal accepted and requirement landed
+      description: Proposal concurred with and requirement landed
       content:
         application/json:
           schema:
@@ -50,7 +50,7 @@ post:
               summary: Move landed
               value:
                 toast:
-                  title: Proposal accepted.
+                  title: Concurred.
                   message:
                     - Moved to Container Platform SRG — the source requirement is now history.
                   variant: success

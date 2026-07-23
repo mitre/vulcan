@@ -44,13 +44,13 @@ properties:
     example: "2025-10-01"
   is_latest:
     type: boolean
-    description: Whether this is the latest available version of this STIG family.
+    description: Whether this is the latest available release of this STIG.
     example: true
   latest_available_version:
     type:
       - string
       - 'null'
-    description: Version string of the latest available STIG in this family. Null when is_latest=true.
+    description: Version string of this STIG's latest available release. Null when is_latest=true.
     example: null
   latest_available_id:
     type:

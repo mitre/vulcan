@@ -43,7 +43,7 @@ RSpec.describe 'Requirement relocations endpoint contracts', type: :request do
       body = validate_and_parse!
 
       expect(body.dig('toast', 'variant')).to eq('success')
-      expect(body.dig('toast', 'title')).to eq('Requirement marked for relocation.')
+      expect(body.dig('toast', 'title')).to eq('Relocation proposed.')
     end
 
     it 'returns ToastResponse 422 on a duplicate pending marker' do
@@ -76,6 +76,20 @@ RSpec.describe 'Requirement relocations endpoint contracts', type: :request do
                             :requested_by_name, :created_at
       expect(row['source_displayed_name']).to eq('RCON-00-920003')
       expect(row['component_id']).to eq(srg_component.id)
+    end
+  end
+
+  describe 'GET /requirement_relocations/destinations (JSON)' do
+    it 'returns RelocationDestination rows — open component wins the token' do
+      create(:component, :skip_rules, project: project, document_type: 'srg',
+                                      based_on: core_srg, prefix: 'RDST-00', name: 'Destination SRG')
+
+      get '/requirement_relocations/destinations', headers: json_headers
+      body = validate_and_parse!
+
+      row = body.find { |r| r['token'] == 'RDST' }
+      expect(row).to include('token' => 'RDST', 'name' => 'Destination SRG', 'released' => false)
+      expect(row.keys).to match_array(%w[token name released])
     end
   end
 
@@ -144,12 +158,33 @@ RSpec.describe 'Requirement relocations endpoint contracts', type: :request do
 
       post "/requirement_relocations/#{record.id}/decline",
            params: { target_component_id: target.id,
-                     requirement_relocation: { adjudication_rationale: 'Out of family scope.' } },
+                     requirement_relocation: { adjudication_rationale: 'Out of scope for this SRG.' } },
            headers: json_headers, as: :json
       body = validate_and_parse!
 
       expect(body.dig('toast', 'variant')).to eq('success')
       expect(record.reload.declined_at).to be_present
+    end
+
+    it 'returns ToastResponse 422 in SRG wording for an ineligible receiver' do
+      other_core = create(:security_requirements_guide, :core, :skip_rules,
+                          srg_id: 'SRG-CORE-RELCON-APP', version: 'V1R1')
+      uncovered_target = create(:component, :skip_rules, project: project, document_type: 'srg',
+                                                         based_on: other_core, prefix: 'RUNQ-00')
+      catalog_row = create(:srg_rule, security_requirements_guide: core_srg, version: 'SRG-OS-000902')
+      source = create(:srg_rule, :authored, component: srg_component, rule_id: '920009',
+                                            derived_from_srg_rule_id: catalog_row.id)
+      record = RequirementRelocation.create!(source_rule: source, target_technology_token: 'RUNQ')
+
+      post "/requirement_relocations/#{record.id}/decline",
+           params: { target_component_id: uncovered_target.id,
+                     requirement_relocation: { adjudication_rationale: 'Does not belong here.' } },
+           headers: json_headers, as: :json
+      body = validate_and_parse!(expected_status: :unprocessable_content)
+
+      expect(body.dig('toast', 'variant')).to eq('danger')
+      expect(body.dig('toast', 'message').join).to match(/does not declare SRG-CORE-RELCON as a source SRG/)
+      expect(record.reload.declined_at).to be_nil
     end
 
     it 'serves the retained decline in the backlog with the rationale' do

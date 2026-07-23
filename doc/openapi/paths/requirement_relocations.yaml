@@ -2,24 +2,24 @@ get:
   operationId: listRequirementRelocations
   tags:
     - Rules
-  summary: List the pending relocation backlog
+  summary: List the open relocation-proposal backlog
   description: >-
-    Returns pending relocation markers, optionally filtered to one
-    destination family's technology token — the standing per-family
-    backlog and the creation/open-time prompt count both read this.
-    Rows are scoped to projects the caller can see. Executed records
-    are immutable history and never listed.
+    Returns relocation proposals, optionally filtered to one destination
+    SRG's abbreviation — the standing per-SRG backlog and the
+    creation/open-time prompt count both read this. Rows are scoped to
+    projects the caller can see. Executed records are immutable history
+    and never listed.
   parameters:
     - name: target_technology_token
       in: query
       required: false
-      description: Destination family technology token to filter by.
+      description: The destination SRG's abbreviation to filter by.
       schema:
         type: string
       example: CTR
   responses:
     '200':
-      description: Pending markers, oldest first
+      description: Open proposals (and retained declines), oldest first
       content:
         application/json:
           schema:
@@ -28,7 +28,7 @@ get:
               $ref: ../components/schemas/RequirementRelocationSummary.yaml
           examples:
             backlog:
-              summary: One pending marker for the CTR family
+              summary: One open proposal for the CTR SRG
               value:
                 - id: 12
                   source_rule_id: 5137

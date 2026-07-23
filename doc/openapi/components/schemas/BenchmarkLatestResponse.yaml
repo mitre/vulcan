@@ -1,6 +1,6 @@
 description: >-
   Latest-version benchmark listing for dropdown population. One row per
-  benchmark family, ranked by numeric V{major}R{minor} version (V10R1 above
+  benchmark, ranked by numeric V{major}R{minor} version (V10R1 above
   V4R4). SRG rows carry srg_id; STIG rows carry stig_id.
 type: object
 required:
@@ -9,7 +9,7 @@ additionalProperties: false
 properties:
   rows:
     type: array
-    description: One entry per benchmark family, ordered by title.
+    description: One entry per benchmark, ordered by title.
     items:
       type: object
       required:
@@ -26,12 +26,14 @@ properties:
         srg_id:
           type: string
           description: >-
-            SRG family identifier. Present only in /api/srgs/latest responses.
+            The SRG's stable benchmark identifier across releases.
+            Present only in /api/srgs/latest responses.
           example: General_Purpose_Operating_System
         stig_id:
           type: string
           description: >-
-            STIG family identifier. Present only in /api/stigs/latest responses.
+            The STIG's stable benchmark identifier across releases.
+            Present only in /api/stigs/latest responses.
           example: RHEL_9_STIG
         title:
           type: string

@@ -2,11 +2,11 @@ get:
   operationId: latestStigs
   tags:
     - Benchmarks
-  summary: List the latest STIG version per family
+  summary: List the latest release of each STIG
   description: >-
-    Returns one STIG per family — the numerically highest V{major}R{minor}
-    version — for dropdown population. Public reference data, no
-    authentication required. The q parameter filters families by
+    Returns one row per STIG — its numerically highest V{major}R{minor}
+    release — for dropdown population. Public reference data, no
+    authentication required. The q parameter filters STIGs by
     case-insensitive substring with abbreviation expansion (RHEL matches
     Red Hat Enterprise Linux); queries shorter than 2 characters return
     no rows.
@@ -16,14 +16,14 @@ get:
       in: query
       required: false
       description: >-
-        Family filter — case-insensitive substring matched against name,
+        STIG filter — case-insensitive substring matched against name,
         title, and stig_id, with abbreviation expansion (minimum 2 characters).
       schema:
         type: string
       example: RHEL
   responses:
     '200':
-      description: Latest STIG per family, ordered by title
+      description: Latest release of each STIG, ordered by title
       content:
         application/json:
           schema:

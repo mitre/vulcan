@@ -21,10 +21,10 @@ properties:
   core:
     type: boolean
     description: >-
-      Whether this is a core-family SRG. Core families are the raw
-      material SRG-kind components derive from; derived (non-core)
-      families are the valid sources for STIG-kind components. Drives
-      the creation-flow source picker's eligibility filtering.
+      Whether this is a core SRG. Core SRGs are the raw material
+      SRG-kind components derive from; derived (non-core) SRGs are
+      the valid sources for STIG-kind components. Drives the
+      creation-flow source picker's eligibility filtering.
     example: false
   name:
     type:
@@ -53,13 +53,13 @@ properties:
     example: "2025-10-28"
   is_latest:
     type: boolean
-    description: Whether this is the latest available version of this SRG family.
+    description: Whether this is the latest available release of this SRG.
     example: true
   latest_available_version:
     type:
       - string
       - 'null'
-    description: Version string of the latest available SRG in this family. Null when is_latest=true.
+    description: Version string of this SRG's latest available release. Null when is_latest=true.
     example: null
   latest_available_id:
     type:

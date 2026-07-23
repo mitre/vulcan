@@ -120,8 +120,8 @@ allOf:
       srg_is_latest:
         type: boolean
         description: >-
-          Whether EVERY declared source SRG of the component is the latest
-          version of its family. A component with any stale parent —
+          Whether EVERY declared source SRG of the component is at its
+          latest release. A component with any stale parent —
           including a secondary parent under dual lineage — reports false.
         example: true
       srg_latest_version:

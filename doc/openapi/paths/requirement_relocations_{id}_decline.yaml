@@ -10,17 +10,18 @@ post:
   operationId: declineRequirementRelocation
   tags:
     - Rules
-  summary: Decline a relocation proposal with a rationale
+  summary: Non-concur with a relocation proposal, with a rationale
   description: >-
-    Receiver-side adjudication: declines the proposal with a REQUIRED
-    rationale. The record is retained as terminal history — never
-    destroyed — and the rationale surfaces to the source author in the
-    backlog, so the refusal communicates back across the ownership
-    boundary. Requires author role on the destination component named in
-    the request, and that component must be an ELIGIBLE receiver — an
-    unreleased SRG component, other than the source, that declares the
-    source requirement's core family (the same eligibility accept
-    enforces). Audited. A declined source may be proposed again.
+    Receiver-side adjudication (displayed as Non-concur): declines the
+    proposal with a REQUIRED rationale. The record is retained as
+    terminal history — never destroyed — and the rationale surfaces to
+    the source author in the backlog, so the refusal communicates back
+    across the ownership boundary. Requires author role on the
+    destination component named in the request, and that component must
+    be an ELIGIBLE receiver — an unreleased SRG component, other than
+    the source, that declares the source requirement's core SRG (the
+    same eligibility accept enforces). Audited. A declined source may be
+    proposed again.
   requestBody:
     required: true
     content:
@@ -55,17 +56,17 @@ post:
                 adjudication_rationale: Covered by CNTR-00-000001 already.
   responses:
     '200':
-      description: Proposal declined and retained with the rationale
+      description: Proposal non-concurred with and retained with the rationale
       content:
         application/json:
           schema:
             $ref: ../components/schemas/ToastResponse.yaml
           examples:
             declined:
-              summary: Decline recorded
+              summary: Non-concur recorded
               value:
                 toast:
-                  title: Proposal declined.
+                  title: Non-concurred.
                   message:
                     - The source author can see your rationale in the backlog.
                   variant: success

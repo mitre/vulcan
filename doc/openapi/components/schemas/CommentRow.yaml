@@ -120,7 +120,7 @@ properties:
         example: V3R3
       is_latest:
         type: boolean
-        description: Whether this SRG version is the latest available for its family. Green dot = true, yellow dot = false.
+        description: Whether this SRG version is that SRG's latest available release. Green dot = true, yellow dot = false.
         example: true
   addressed_by_rule_name:
     type:

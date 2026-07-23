@@ -1,5 +1,5 @@
 description: >-
-  Latest released component per prefix family for dropdown population. A
+  Latest released component per prefix for dropdown population. A
   component is a STIG in progress — released ones are instance-wide
   reference data. Ranking is numeric on the integer version/release pair;
   unreleased drafts never appear.
@@ -10,7 +10,7 @@ additionalProperties: false
 properties:
   rows:
     type: array
-    description: One entry per prefix family, ordered by prefix.
+    description: One entry per prefix, ordered by prefix.
     items:
       type: object
       required:
@@ -25,7 +25,7 @@ properties:
           example: 38
         prefix:
           type: string
-          description: STIG ID prefix — the component family identifier.
+          description: STIG ID prefix — the component's identity across releases.
           example: RHEL-09
         name:
           type: string

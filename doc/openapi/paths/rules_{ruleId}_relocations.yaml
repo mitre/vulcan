@@ -4,13 +4,14 @@ post:
   operationId: createRequirementRelocation
   tags:
     - Rules
-  summary: Mark an authored SRG requirement for relocation
+  summary: Propose relocating an authored SRG requirement
   description: >-
-    Creates a PENDING relocation record — the move marker — for an
-    authored requirement of an SRG component, naming the destination
-    family's technology token. Requires author role on the component.
-    One pending marker per requirement; a second mark returns 422. The
-    marker is a record, never a status change on the requirement.
+    Creates an OPEN relocation proposal for an authored requirement of
+    an SRG component, naming the destination SRG's abbreviation.
+    Requires author role on the component. One open proposal per
+    requirement; a second returns 422. The proposal is a record, never a
+    status change on the requirement — the destination SRG's authors
+    concur or non-concur.
   requestBody:
     required: true
     content:
@@ -27,42 +28,44 @@ post:
               properties:
                 target_technology_token:
                   type: string
-                  description: Destination family technology token.
+                  description: >-
+                    The destination SRG's abbreviation — the short code
+                    its requirement IDs start with (CTR, GPOS, DB).
                   example: CTR
         examples:
           mark:
-            summary: Mark for the Container family
+            summary: Propose relocation to the Container SRG
             value:
               requirement_relocation:
                 target_technology_token: CTR
   responses:
     '200':
-      description: Requirement marked for relocation
+      description: Relocation proposed
       content:
         application/json:
           schema:
             $ref: ../components/schemas/ToastResponse.yaml
           examples:
-            marked:
-              summary: Marker created
+            proposed:
+              summary: Proposal created
               value:
                 toast:
-                  title: Requirement marked for relocation.
+                  title: Relocation proposed.
                   message:
-                    - Marked for the CTR family.
+                    - Proposed for the CTR SRG.
                   variant: success
     '422':
-      description: Duplicate pending marker or ineligible source
+      description: Duplicate open proposal or ineligible source
       content:
         application/json:
           schema:
             $ref: ../components/schemas/ToastResponse.yaml
           examples:
             duplicate:
-              summary: Already marked
+              summary: Already proposed
               value:
                 toast:
-                  title: Could not mark requirement for relocation.
+                  title: Could not propose the relocation.
                   message:
                     - Source rule already has a pending relocation
                   variant: danger

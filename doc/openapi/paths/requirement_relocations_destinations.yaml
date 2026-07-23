@@ -1,0 +1,33 @@
+get:
+  operationId: listRelocationDestinations
+  tags:
+    - Rules
+  summary: List destination SRG options for the propose flow
+  description: >-
+    Serves the Destination SRG picker: one row per SRG abbreviation
+    across the SRG components in projects the caller can see (member or
+    discoverable). An open component wins its abbreviation's row;
+    released true marks the queued next-release case. Hidden projects'
+    SRGs never appear — proposing to them remains possible through the
+    free abbreviation entry, which discloses nothing.
+  responses:
+    '200':
+      description: Destination options, ordered by abbreviation
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/RelocationDestination.yaml
+          examples:
+            destinations:
+              summary: One open component and one queued SRG
+              value:
+                - token: CTR
+                  name: Container Platform SRG
+                  released: false
+                - token: GPOS
+                  name: General Purpose Operating System SRG
+                  released: true
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
