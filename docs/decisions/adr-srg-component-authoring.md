@@ -78,7 +78,7 @@
 | 5 | Core recognition | **DB flag** `security_requirements_guides.core`. Provenance: the core SRGs are **not on cyber.mil** — they are working documents of the ~4-person DISA SRG-author community (Aaron is one); they enter Vulcan via **upload**, and the identifiers come from Aaron and the documents themselves. |
 | 6 | Creation modes | **Both, defaulting to full union-import** from all declared cores (every exclusion becomes an audited NA); selective mode = the same import machinery behind a requirement picker, not a second code path. |
 | 7 | Publication | **Both**: SRG XCCDF export for the official DISA flow AND local catalog attachment on release so other work can base on it immediately (§8.2 — no converter needed under the SrgRule model). |
-| 8 | Marker scope + intake | SRG components **only**. **Both consumers ship**: a standing per-family backlog view + an intake prompt at SRG-component creation/open for a family with pending markers. |
+| 8 | Marker scope + intake | SRG components **only**. **Both consumers ship**: a standing per-SRG backlog view + an intake prompt at SRG-component creation/open for an SRG with pending proposals. |
 | 9 | Cross-document executor | **New primitive owned by v2-0d2l**; ulhw stays intra-component as scoped. |
 | 10 | Satisfies UI | **Hidden entirely** on SRG components — structural under the SrgRule model (§7). |
 | 11 | Reference benchmarks | **Manual searchable pick in v1** (creation step + settings); the two-stage suggestion engine is an optional, separately-carded follow-on gated on validating its similarity hypothesis (§8.1.3). |
@@ -86,7 +86,7 @@
 | 13 | Export scope | **Full SRG XCCDF export in v1** — format guidance from the published SRG XCCDFs already imported. |
 | 14 | Multi-parent for ALL kinds (2026-07-11) | **STIG components get 1..N parents too** — one join table, one import engine, one invariant for the whole system; the ONLY kind-difference is parent eligibility: SRG components ⊆ the three cores; STIG components ⊆ derived (non-core) SRGs. Matches DISA practice (product STIGs span multiple SRGs). |
 
-Remaining open items (§10): all three core family identifiers
+Remaining open items (§10): all three core SRG identifiers
 (SRG-NET/SRG-OS/SRG-APP namespace documents — non-public, supplied by
 Aaron with the core documents at upload; GPOS is a *derived* SRG, not the
 OS core); export emit-shape details (pinned by diffing published
@@ -138,7 +138,7 @@ A five-dimension verified sweep of the shipped seam (backend queries,
 export/import/backup, frontend, API contract, documentation — method and
 full gap inventory: `docs/plans/srg-codebase-impact.md`) confirmed the §3
 architecture landed correctly and found the remaining gaps concentrated in
-a **second fetch family** the first migration never touched (copy,
+a **second group of fetch paths** the first migration never touched (copy,
 spreadsheet update, pickers, in-component find, comment decoration, one
 validator). Four decisions and three standing rules:
 
@@ -183,7 +183,8 @@ dead, specs-only code superseded by the export formatters. It is
 
 | # | Fork | Decision |
 |---|---|---|
-| 20 | Transfer workflow | **Propose → receiver adjudicates → land.** A relocation crosses an ownership boundary, so the destination independently accepts it — the source's action is never sufficient by itself. Marking is the source-side offer; an author+ on the receiving family's component accepts (dry-run preview as the review artifact) or declines with required rationale (retained, visible to the source author); acceptance triggers the §6 landing transaction. Unilateral execute is rejected as the product workflow — it cannot express transfer across a real boundary (it requires one actor to hold rights on both sides, the exact case where a direct move suffices). Full mechanics: §6.1. |
+| 20 | Transfer workflow | **Propose → receiver adjudicates → land.** A relocation crosses an ownership boundary, so the destination independently accepts it — the source's action is never sufficient by itself. Marking is the source-side offer; an author+ on the receiving SRG's component accepts (dry-run preview as the review artifact) or declines with required rationale (retained, visible to the source author); acceptance triggers the §6 landing transaction. Unilateral execute is rejected as the product workflow — it cannot express transfer across a real boundary (it requires one actor to hold rights on both sides, the exact case where a direct move suffices). Full mechanics: §6.1. |
+| 21 | Terminology: no "family"; DISA relocation vocabulary (Aaron, 2026-07-22) | **The word "family" is abolished from this feature's vocabulary.** In this domain "family" means NIST 800-53 control families; requirements relocate between **SRGs**, not families. No successor noun is coined (Will's point, endorsed): the SRG itself is the identity across releases — say "the same SRG", "the SRG's next release" (current+1 is where an accepted proposal lands). Relocation display vocabulary is DISA-standard — **proposed / withdrawn / concur / non-concur** — centralized in ONE terminology table (DRY, org-swappable by editing the table) while schema and state names (`accepted_*`/`declined_*`, route names) are unchanged. Destination selection is BY SRG: a **Destination SRG picker** supersedes the technology-token text input ("which SRG does this requirement move to" is the question the UI asks). |
 
 ## 1. Context
 
@@ -231,13 +232,13 @@ R1. **Same state machine, different terminal buckets.** All requirements
 R2. **Parentage: one or more CORE SRGs.** An SRG component derives from
     1..N of the three core SRGs (Network, OS, Application) — non-public
     author-community documents uploaded to Vulcan; core-ness is a
-    family-level property. **Today every published SRG has exactly ONE
+    property of the SRG (all releases). **Today every published SRG has exactly ONE
     core parent; the Container SRG effort is the pilot demonstrating that
     multi-core parentage has value — specifically DUAL lineage from the
     App core AND the OS core, which the authors believe produces the best
     final result** (Aaron, 2026-07-10). So 1 is the common case, and the
     validating scenario for N is concretely N=2 (APP+OS → Container).
-    Identifier consequence: a dual-lineage family mints under both core
+    Identifier consequence: a dual-lineage SRG mints under both core
     namespaces with one shared technology token (`SRG-APP-…-CTR-…` and
     `SRG-OS-…-CTR-…`) — each requirement's ID core-half follows its own
     `derived_from` lineage. `Component.based_on` today is a single FK.
@@ -258,8 +259,8 @@ R3. **No Satisfied-By at the SRG level** — satisfaction is STIG semantics.
 
 R4. **Relocation marker**: a requirement can be labeled "needs to move"
     with a target SRG document (in-progress component; published SRG with
-    an update under way; or published SRG with no update started = "next
-    release of this family"). Markers form a cross-document backlog.
+    an update under way; or published SRG with no update started = "the
+    SRG's next release"). Markers form a cross-document backlog.
 
 R5. **Edit flow and active fields differ per document type.**
 
@@ -304,7 +305,7 @@ by the profile they just chose, not merely validated after the fact.
 1. **Choose the profile** — STIG or SRG.
 2. **Choose the source document(s)** — the picker is populated per §2.1.1 and
    is multi-select for both profiles (§0.14).
-3. **Identity** — STIG: the component prefix, as today. SRG: the family
+3. **Identity** — STIG: the component prefix, as today. SRG: the SRG's
    **technology token** (CTR, GPOS, DB, …), the SRG-world analogue of the
    prefix (§5).
 4. **Choose the import mode** — full union-import of every requirement from
@@ -379,7 +380,8 @@ component starts a fresh audit trail. Build-time verify-point: confirm the
 archive's review/history coverage against what §2.1.4 promises before
 closing the implementing card.
 
-### 2.1.6 Creation-dialog copy (LOCKED — Aaron, 2026-07-14)
+### 2.1.6 Creation-dialog copy (LOCKED — Aaron, 2026-07-14; one phrase
+amended under decision #21, 2026-07-22: "technology family" → "technology")
 
 Task-led copy, verbatim (adjust only line-wrapping):
 
@@ -392,7 +394,7 @@ Task-led copy, verbatim (adjust only line-wrapping):
 >
 > **SRG** — Author a new Security Requirements Guide derived from core
 > SRGs (e.g. "Container Platform SRG"). You'll decide which requirements
-> apply to the technology family and tailor their content.
+> apply to the technology and tailor their content.
 >
 > ⓘ This choice is permanent for the component.
 
@@ -415,9 +417,14 @@ hierarchy carries the *behavioral* variance. The profile table carries the
 "kind" is informal shorthand for it); `base_rules.type` = the STI class
 discriminator (behavioral variance — `Rule` vs `SrgRule`); "authoring
 profile" = the registry row keyed by `document_type`; "technology token" =
-CTR/GPOS/DB (the family's ID token, §2.1.2); "family" = the version-group
-of a document line (never the token); `derived_from` = the association
-over the `derived_from_srg_rule_id` FK.
+CTR/GPOS/DB (the SRG's short code, §2.1.2) — schema-side name only
+(`target_technology_token`); **the user-facing word is "abbreviation"**
+(Aaron, 2026-07-22): UI copy, tooltips, validation messages, and API
+descriptions say "abbreviation", never "token". **There is NO "family" concept
+(decision #21)** — the SRG itself is the identity across its releases (say
+"the same SRG", "the SRG's next release"); in this domain "family" means
+NIST 800-53 control families and must not appear in design or UI language.
+`derived_from` = the association over the `derived_from_srg_rule_id` FK.
 
 ## 3. Decision (core): expand `SrgRule`; the STI hierarchy IS the seam
 
@@ -591,7 +598,7 @@ STIG-lead authority):
   picker includes a primary radio, **default = first selected**; the user
   may change it post-create only among declared parents. One validation
   ties the mechanisms: `based_on` must be ∈ `component_source_srgs`.
-  Changing primary affects display/family defaults only — imports were
+  Changing primary affects display defaults only — imports were
   unioned at creation and do not re-run.
 - **Join reconciliation on revision (v7.1):** `Component#duplicate`
   (component.rb:408) reassigns `copied_component.based_on = new_srg` when
@@ -599,8 +606,8 @@ STIG-lead authority):
   parent set — leaving `based_on` ∉ join and the invariant rejecting the
   revision save. The model must enforce reconciliation: assigning
   `based_on` inserts it into `component_source_srgs` atomically (and the
-  upgrade path replaces the superseded family member rather than
-  appending unbounded). One spec pins the revision flow end-to-end.
+  upgrade path replaces the superseded parent — same SRG, older
+  release — rather than appending unbounded). One spec pins the revision flow end-to-end.
 - **Three based_on-only sites are CORRECTNESS under multi-parent, not
   display (v7.3, collision review)** — "primary-only display until the
   follow-on card" does not cover them:
@@ -619,15 +626,15 @@ STIG-lead authority):
   3. **Revision guard**: `duplicate(new_srg_id:)` short-circuits on a
      primary-only compare (component.rb:405) — a revision changing a
      secondary parent is mis-detected. Guard compares the full set.
-- **Invariant — family-level, version-tolerant, both kinds**: every
+- **Invariant — SRG-level, version-tolerant, both kinds**: every
   requirement's source (`Rule#srg_rule` / authored `SrgRule#derived_from`)
-  belongs to a parent-set *family* (exact-record matching is violated by
-  real upgraded-component data — `Component#duplicate` keeps old-version
-  references by design). Verify against production data before
-  enforcement.
+  belongs to a parent-set SRG — same SRG, any release (exact-record
+  matching is violated by real upgraded-component data —
+  `Component#duplicate` keeps old-version references by design). Verify
+  against production data before enforcement.
 - **Parent eligibility is the ONLY kind-difference**: SRG-kind — ≥1
-  parent, every parent family must be **core**; STIG-kind — ≥1 parent,
-  every parent family must be **derived (non-core)** (mirror-image;
+  parent, every parent must be a **core SRG**; STIG-kind — ≥1 parent,
+  every parent must be a **derived (non-core) SRG** (mirror-image;
   cores are the authors' non-public raw material and are not valid STIG
   bases). **Express this as per-profile policy (§2.2), not as a hard-coded
   mirror-image pair** — it is the rule that a third profile (§1) most
@@ -652,16 +659,16 @@ STIG-lead authority):
   from APP: `SRG-APP-…-CTR-…`) → Level 2 = STIGs, based on derived SRGs
   (today's STIG components, unchanged).
 - **Derived identifier minting (Aaron, 2026-07-10)**: the SRG component
-  declares its family **technology token** (CTR, GPOS, DB, …) at creation
+  declares its **technology token** (CTR, GPOS, DB, …) at creation
   — the SRG-world analogue of a STIG component's prefix. Working
   requirements display their core lineage (`derived_from`); the final
   derived identifiers (`SRG-APP-000014-CTR-000035` = core half from
   lineage + token + local sequence) are **minted at release** so
   mid-authoring adds/removes never renumber a published identifier.
-- **Next release of a family (Aaron, 2026-07-10)**: **duplicate the prior
+- **Next release of an SRG (Aaron, 2026-07-10)**: **duplicate the prior
   release + reconcile against the latest cores** (the SRG-world analogue
-  of today's STIG-component revision flow), plus the family's pending
-  relocation-marker intake (§6). Minted identifiers carry forward stable;
+  of today's STIG-component revision flow), plus the SRG's pending
+  relocation-proposal intake (§6). Minted identifiers carry forward stable;
   only new requirements mint new local sequence numbers.
 - **The lifecycle cascade — one staleness pattern, three levels**: cores
   version too. Core update → derived-SRG update (authored here,
@@ -691,7 +698,7 @@ Two modes, one machinery:
   `security_requirements_guide_id` NULL.
 Both modes: adding a parent later imports (or offers) its requirements;
 `Component#duplicate`/overlay must `include_association` the new join
-tables and, for SRG-kind, validate core-family membership on rebase.
+tables and, for SRG-kind, validate core-SRG membership on rebase.
 
 ### 5.1 Mixed-type projects (Aaron, §0.12)
 
@@ -711,11 +718,10 @@ tell of two concepts in one column. The redesign:
 requirement_relocations
   source_rule_id       NOT NULL, FK base_rules   -- dependent: :destroy from
                                                  -- the source rule (v7.2)
-  target_technology_token  NOT NULL              -- 'CTR', 'GPOS', … (v7.4:
-                                                 -- named for §2.1.2/§5
-                                                 -- "technology token";
-                                                 -- "family" stays the
-                                                 -- version-group sense)
+  target_technology_token  NOT NULL              -- 'CTR', 'GPOS', … (the
+                                                 -- §2.1.2/§5 technology
+                                                 -- token — identifies the
+                                                 -- destination SRG)
   target_rule_id       NULL, FK base_rules       -- filled when landed;
                                                  -- on_delete: :nullify (v7.2)
   requested_by_id      FK users
@@ -737,7 +743,7 @@ requirement_relocations
   "executed records are immutable" means no user edits; system-side
   cascade/nullify with audit coverage is the same pattern both sides.
 
-- **Pending** (`executed_at` NULL) IS the R4 marker: row badge; per-family
+- **Pending** (`executed_at` NULL) IS the R4 marker: row badge; per-SRG
   backlog = `pending.where(target_technology_token:)`; creation/open-time
   intake prompt (§0.8). Un-mark = destroy the pending record (audited);
   executed records are immutable.
@@ -781,8 +787,8 @@ requirement_relocations
   sweep owned by the relocation phase card.
 - Audit: authored `SrgRule`s get `VulcanAuditable` wiring in Phase 1;
   relocation create/un-mark/execute are audited.
-- **Intake (both, §0.8)**: standing per-family backlog view + creation/
-  open-time prompt ("N requirements are marked for this family") seeding
+- **Intake (both, §0.8)**: standing per-SRG backlog view + creation/
+  open-time prompt ("N requirements are proposed for this SRG") seeding
   the executor phase. SRG components only (source side), per §0.8.
 
 ### 6.1 Transfer workflow — propose, receiver-adjudicate, land (v11, Aaron 2026-07-21)
@@ -804,7 +810,7 @@ parallel approval system:
   source-side offer, made by an author of the source component. The
   proposer needs NO rights on any destination. Un-mark (source-side
   withdrawal) destroys the record, audited, as shipped.
-- **Accepted = Executed**: an author+ on the receiving family's open
+- **Accepted = Executed**: an author+ on the receiving SRG's open
   component adjudicates the proposal with the dry-run preview as the
   review artifact. Acceptance and landing are ONE action and ONE
   transaction — the §6 landing mechanics unchanged (atomic transaction,
@@ -818,7 +824,7 @@ parallel approval system:
   across the boundary. Because declined records are retained, the
   one-pending-per-source uniqueness excludes declined rows: a source
   author may legitimately re-propose after a decline.
-- **No open working component** (family's latest is released):
+- **No open working component** (the SRG's latest release is published):
   proposals simply remain queued as proposed; the receiving admin
   creates the next version (duplicate latest release + marker intake,
   the §14 phasing line) and then works the queue. Version creation
@@ -827,6 +833,22 @@ parallel approval system:
 - The one-step case is the degenerate path: an actor with rights on
   both sides performs propose and accept themselves — same state
   machine, honest audit trail, no second code path.
+- **Display vocabulary (decision #21, Aaron 2026-07-22)**: user-facing
+  words are DISA-standard — **proposed / withdrawn / concur /
+  non-concur** (landing stays the internal outcome term shown in the
+  dry-run preview's landed-number sentence). Centralized in ONE
+  terminology table (the `constants/terminology.js` pattern) that every
+  relocation surface reads — button labels, modal copy, panel, banner,
+  tooltips, toasts — so an organization swaps vocabulary by editing one
+  table. Schema columns, route names, and state derivations
+  (`accepted_*`/`declined_*`) are unchanged: this is a presentation
+  layer, same as the comment-triage vocabulary layering. Destination
+  selection is BY SRG — a Destination SRG picker supersedes the
+  technology-token text input. The SRG short code's user-facing word is
+  **"abbreviation"** (Aaron, 2026-07-22) — "token" is programmer
+  vocabulary and never appears in UI copy, validation messages, or API
+  descriptions; the schema field name `target_technology_token` is
+  unchanged.
 
 ## 7. Satisfied-By exclusion (R3) — structural
 
@@ -899,7 +921,7 @@ filters client-side; no reference-benchmark concept exists):
 2. **Reference benchmarks (both kinds)**: `component_reference_benchmarks`
    join; `related_rules` gains server-side filter params; results default
    to declared references (absent a declaration: STIG-kind → its
-   `based_on` family; SRG-kind → its parent cores) with an explicit
+   `based_on` SRG, any release; SRG-kind → its parent cores) with an explicit
    **see-all** toggle.
 3. **Suggested references — v1 is a manual pick (Aaron, §0.11)**: a
    searchable catalog picker at creation (+ settings) writes the join
@@ -964,7 +986,7 @@ duplication appears.
 
 ## 10. Remaining open items
 
-1. **The three core family identifiers** (SRG-NET / SRG-OS / SRG-APP
+1. **The three core SRG identifiers** (SRG-NET / SRG-OS / SRG-APP
    namespace documents) — supplied by Aaron with the core documents at
    upload (non-public; not externally researchable; GPOS is derived from
    the OS core, not the core itself).
@@ -981,8 +1003,8 @@ duplication appears.
    proposal reveals (requirement content and lineage are needed to
    adjudicate; source component/project identity is the question) must
    be decided against the hidden-project concealment policy. Working
-   position, undecided: offering to a family consents to disclosing the
-   proposal's content to that family's component authors.
+   position, undecided: offering to an SRG consents to disclosing the
+   proposal's content to that SRG's component authors.
 
 Raised in review (Will, 2026-07-12) — none blocks the §3 core, but 4 and 7
 should be settled before their phase is carded:
@@ -1045,10 +1067,10 @@ should be settled before their phase is carded:
    inherited read-only severity and CCI/IA-control display on an authored
    requirement — which record supplies it? Two candidates: the
    requirement's own `derived_from` catalog row (structural — every
-   requirement has exactly ONE lineage even in a dual-lineage family, §5,
+   requirement has exactly ONE lineage even in a dual-lineage SRG, §5,
    so this is never ambiguous), or the component's primary parent
    (`based_on`). **Working assumption: `derived_from`** — per-requirement,
-   unambiguous, and survives dual-home families where `based_on` points
+   unambiguous, and survives dual-lineage SRGs where `based_on` points
    at only one core. Decide before the field-config card implements the
    inherited display.
 
@@ -1105,7 +1127,7 @@ should be settled before their phase is carded:
    `security_requirements_guides.core` flag (set on core-document
    upload).
 4. Phase 4: `requirement_relocations` table (§6) — source FK
-   (`dependent: :destroy` from the source rule), target family token,
+   (`dependent: :destroy` from the source rule), target technology token,
    nullable target FK (`on_delete: :nullify`), `executed_at`, unique
    partial index on pending source — one atomic change. No new
    `base_rules` columns, no new status value.
@@ -1122,8 +1144,8 @@ should be settled before their phase is carded:
 - **Shared machinery**: shared examples proving locking, reviews,
   comments, audit behave identically on authored `SrgRule`s (the
   component-level-comment precedent extended).
-- **Invariants**: parent-set ⊆ core families; derived-from ∈ parent
-  families (family-level, prod-verified before enforcement); relocation
+- **Invariants**: parent-set ⊆ core SRGs; derived-from ∈ parent
+  SRGs (SRG-level version-tolerant, prod-verified before enforcement); relocation
   lifecycle (§6): unique pending per source, executed ⇒ source
   soft-deleted (one-directional), executed records immutable,
   dangling-target nullify; `document_type` immutability.
@@ -1164,13 +1186,13 @@ should be settled before their phase is carded:
    flat-aggregate-key removal.)*
 3. **Multi-parent (both kinds, §0.14)** — core flag on upload
    (+ identifiers from Aaron), join table, per-kind parent-eligibility
-   validation (SRG ⊆ cores; STIG ⊆ derived), family invariants, dual-mode
+   validation (SRG ⊆ cores; STIG ⊆ derived), parent-SRG invariants, dual-mode
    creation import (§5.0) for both kinds, amoeba/duplicate gating
    (+ follow-on: multi-parent display, both kinds).
 4. **Relocation records (pending intake)** — `requirement_relocations`
-   table (§6); pending record = the R4 marker (row badge, per-family
+   table (§6); pending record = the R4 marker (row badge, per-SRG
    backlog queries, un-mark = audited destroy); `moved_out` count from
-   executed records (§4); **both intake surfaces** (family backlog view +
+   executed records (§4); **both intake surfaces** (SRG backlog view +
    creation/open prompt). Depends on 2.
 5. **Relocation executor** — dry-run + the §6 transaction per move
    (create/link target → stamp `executed_at` → soft-delete source →

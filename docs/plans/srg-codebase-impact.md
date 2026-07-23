@@ -16,7 +16,7 @@ config (`fieldStateConfig` keyed kind × status × tier), the export fetch
 backup/restore round-trip, and the API **read** surface (oneOf-routed schemas
 with a real-fixture contract test) were all migrated correctly and verify clean.
 
-What remains is a **second fetch family** the first migration never touched:
+What remains is a **second group of fetch paths** the first migration never touched:
 copy/duplicate, spreadsheet update, pickers and in-component search, comment
 decoration, one validator, and the write side of one API schema. Each is a
 small fix; all share one root shape — `Rule`-scoped access to requirement rows.
@@ -35,7 +35,7 @@ Plus the documentation surfaces, which are entirely STIG-voiced today.
 | API read contract | Editor/stats/workflow schemas oneOf-routed and Blueprint-aligned; `spec/contracts/srg_components_contract_spec.rb` exercises real authored rows |
 | HAML views + props seam | Follow-up sweep (2026-07-18): `app/views/` has ZERO Rule-traversal or STIG-status hardcodes; `vue_props_helper.rb` verified kind-aware (`AuthoringProfile.for(component.document_type).statuses` — the former "sharpest leak" properly fixed). Mailers had exactly one gap (G16). |
 
-## 3. Verified gaps — the second fetch family
+## 3. Verified gaps — the second group of fetch paths
 
 Severity: ★★★ integrity/data-loss · ★★ wrong/empty results · ★ hardening/hygiene.
 
@@ -45,14 +45,14 @@ Severity: ★★★ integrity/data-loss · ★★ wrong/empty results · ★ har
 |---|---|---|---|
 | G1 | `app/models/review.rb:645-650` | `duplicate_of_must_be_same_component` resolves component via `Rule.where(id:)` / `Rule.joins(:reviews)` — nil for SrgRule, and the validator returns on nil. **The cross-component/cross-project duplicate guard silently passes for every SRG comment** (the guard exists to prevent review-ID leaks across project boundaries). Fix: `Rule` → `BaseRule`. | ★★★ |
 | G2 | `app/models/project.rb:181` | Project comment view: visibility scope (`:142`) already kind-aware, but page decoration does `Rule.where(id: page_rule_ids)` — SRG comment rows render with nil rule-ID/prefix/component. Fix: `Rule` → `BaseRule` (mirror `comment_query_service`). | ★★ |
-| G16 | `app/mailers/user_mailer.rb:79-85` | `find_latest_request_review` re-fetches the row via `Rule.find_by(...).id` — nil for an authored SrgRule → **NoMethodError; the review-workflow email family crashes for SRG requirements** when SMTP is enabled (the review-request workflow is kind-shared by design). Redundant lookup — the method already receives the row. Found by the follow-up HAML/helpers/mailers sweep (2026-07-18). | ★★ |
+| G16 | `app/mailers/user_mailer.rb:79-85` | `find_latest_request_review` re-fetches the row via `Rule.find_by(...).id` — nil for an authored SrgRule → **NoMethodError; the review-workflow emails crash for SRG requirements** when SMTP is enabled (the review-request workflow is kind-shared by design). Redundant lookup — the method already receives the row. Found by the follow-up HAML/helpers/mailers sweep (2026-07-18). | ★★ |
 
 ### 3.2 Copy & data-lifecycle domain
 
 | # | file:line | Defect | Sev |
 |---|---|---|---|
 | G3 | `app/models/component.rb:38` (amoeba `include_association :rules`) + user paths `components_controller.rb:611-620` (`create_or_duplicate`, `overlay`) | User copy/duplicate/overlay copies only `Rule` rows — **an SRG component copy silently produces an empty component** (all authored requirements dropped). The release-copy card owns only the release path; the user path is unowned. | ★★★ |
-| G4 | `app/models/component.rb:805,814` via `components_controller.rb` update/apply actions | Spreadsheet **update/apply** flow has no `document_type` guard (the create-branch guard card covers create only). Applying a spreadsheet against an SRG component operates on the wrong STI family. | ★★ |
+| G4 | `app/models/component.rb:805,814` via `components_controller.rb` update/apply actions | Spreadsheet **update/apply** flow has no `document_type` guard (the create-branch guard card covers create only). Applying a spreadsheet against an SRG component operates on the wrong STI subtree. | ★★ |
 | G5 | `app/services/import/backup_serializer.rb` (manifest emits singular `based_on` only) + restore `component_builder.rb:78-83` | `component_source_srgs` join rows never serialized or restored — **a multi-source (dual-lineage) SRG component does not survive a backup round-trip intact**. | ★★★ |
 | G6 | `app/controllers/components_controller.rb:146` | Destroy bulk cleanup is `Rule.unscoped`-scoped: for SRG components the fast path no-ops and deletion falls to per-row cascade — kind-inconsistent delete semantics (bulk `delete_all` vs audited cascade) and latent perf risk. | ★ |
 
@@ -107,7 +107,7 @@ explicit allowlist for the deliberate STIG-only surfaces. The comment-domain
 regressions (G1/G2 sitting next to an already-fixed sibling) prove vigilance
 alone does not hold.
 
-**4.3 One copy path.** The amoeba `include_association :rules` family (user
+**4.3 One copy path.** The amoeba `include_association :rules` call sites (user
 copy, overlay, release-copy) converges on one kind-aware deep-copy helper that
 copies `requirements` — not three call sites each branching.
 
