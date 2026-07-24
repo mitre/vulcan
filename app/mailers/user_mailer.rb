@@ -39,7 +39,7 @@ class UserMailer < ApplicationMailer
   def review_action(action_type, *)
     parse_mailer_review_args(*)
     @subject = subject_field[action_type.to_sym]
-    @latest_review_user = find_latest_request_review(@rule, @component_id)
+    @latest_review_user = Review.latest_requestor_for(@rule)
     setting_review_message_based_on_action_type(action_type)
     to_recipient = action_type == 'request_review' ? @component_admins : @latest_review_user&.email
     cc_recipient = action_type == 'request_review' ? @current_user.email : @component_admins
@@ -63,7 +63,7 @@ class UserMailer < ApplicationMailer
   def parse_mailer_review_args(*args)
     @current_user, @component_id, @comment, @rule = args
     component = Component.find(@component_id)
-    @stig_id = "#{component.prefix}-#{@rule.rule_id}"
+    @stig_id = @rule.displayed_name
     @project_id = component.project.id
     @component_admins = get_project_or_component_admins(component)
   end
@@ -74,14 +74,6 @@ class UserMailer < ApplicationMailer
     @admins = get_project_or_component_admins(@project_or_component)
     @user = @membership.user
     @role_assigned = @membership.role.to_s
-  end
-
-  def find_latest_request_review(rule, component_id)
-    latest_review = Review.where(
-      rule_id: Rule.find_by(rule_id: rule.rule_id.to_s, component_id: component_id).id,
-      action: 'request_review'
-    ).order(updated_at: :desc).first
-    latest_review&.user
   end
 
   def subject_field
@@ -155,7 +147,10 @@ class UserMailer < ApplicationMailer
   end
 
   def setting_review_message_based_on_action_type(action_type)
-    url = component_url("#{@component_id}/#{@stig_id}")
+    # The named deep-link route keeps the path slash literal — string
+    # interpolation through component_url encoded it to %2F, which drops
+    # the stig_id param and loses the requirement focus.
+    url = component_rule_url(@component_id, @stig_id)
 
     greeting, action_message = case action_type
                                when 'request_review'

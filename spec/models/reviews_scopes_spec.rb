@@ -24,6 +24,41 @@ RSpec.describe Review do
       expect(Review.pending_triage.where(rule: rule)).to include(@c1)
       expect(Review.pending_triage.where(rule: rule)).not_to include(@c2, @reply)
     end
+  end
+
+  # REQUIREMENT: the review-notification recipient (mail + Slack) is the
+  # user who filed the LATEST review request on the requirement row —
+  # kind-shared (reviews.rule_id is the base_rules PK), so authored SRG
+  # requirements resolve exactly like STIG requirements.
+  describe '.latest_requestor_for' do
+    it 'returns the latest requestor for a STIG requirement' do
+      first = create(:review, user: p_author, rule: rule, action: 'request_review',
+                              comment: 'first request')
+      first.update_column(:updated_at, 2.days.ago)
+      # A second request is only valid after the first is closed out.
+      create(:review, user: p_author, rule: rule, action: 'revoke_review_request',
+                      comment: 'withdrawing')
+      create(:review, user: p_admin, rule: rule, action: 'request_review',
+                      comment: 'latest request')
+
+      expect(Review.latest_requestor_for(rule)).to eq(p_admin)
+    end
+
+    it 'returns the requestor for an authored SRG requirement' do
+      core_srg = create(:security_requirements_guide, :core, :skip_rules,
+                        srg_id: 'SRG-CORE-SCOPES', version: 'V1R1')
+      srg_component = create(:component, :skip_rules, project: project, document_type: 'srg',
+                                                      based_on: core_srg, prefix: 'SCOP-00')
+      srg_requirement = create(:srg_rule, :authored, component: srg_component, rule_id: '940001')
+      create(:review, rule: nil, commentable: srg_requirement, user: p_author,
+                      action: 'request_review', comment: 'srg request')
+
+      expect(Review.latest_requestor_for(srg_requirement)).to eq(p_author)
+    end
+
+    it 'returns nil when no review was ever requested' do
+      expect(Review.latest_requestor_for(rule)).to be_nil
+    end
 
     # the original lifecycle migration set
     # triage_status NOT NULL DEFAULT 'pending'. On systems with pre-PR-717

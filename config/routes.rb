@@ -151,7 +151,7 @@ Rails.application.routes.draw do
   # otherwise /components/:id/<anything> binds to components#show with
   # :stig_id="<anything>" and rule-context filters 404 on a missing rule_id.
   get '/components/:id/related', to: 'components#based_on_same_srg'
-  get '/components/:id/:stig_id', to: 'components#show'
+  get '/components/:id/:stig_id', to: 'components#show', as: :component_rule
 
   # Make components#index not a child of project
   get '/components', to: 'components#index'

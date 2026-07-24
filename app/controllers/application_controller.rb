@@ -306,11 +306,7 @@ class ApplicationController < ActionController::Base
   end
 
   def latest_reviewer_slack_id(rule)
-    latest_review = Review.where(
-      rule_id: Rule.find_by(rule_id: rule.rule_id.to_s, component_id: rule.component_id).id,
-      action: 'request_review'
-    ).order(updated_at: :desc).first
-    latest_review&.user&.slack_user_id
+    Review.latest_requestor_for(rule)&.slack_user_id
   end
 
   def membership_action?(action)

@@ -145,6 +145,16 @@ class Review < ApplicationRecord
     # rubocop:enable Rails/SkipsModelValidations
   end
 
+  # The user who filed the latest review request on a requirement row —
+  # the one notification-recipient lookup (mail and Slack). rule_id is
+  # the base_rules primary key, so STIG Rules and authored SrgRules
+  # resolve identically; the row in hand is queried directly, never
+  # re-fetched through a kind subclass.
+  def self.latest_requestor_for(requirement)
+    where(rule_id: requirement.id, action: 'request_review')
+      .order(updated_at: :desc).first&.user
+  end
+
   # Applies one triage decision (and an optional response, copied per-comment)
   # to many top-level comments in a single transaction. Each comment gets its
   # own response Review so threads stay self-contained. The per-row audits

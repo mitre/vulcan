@@ -124,7 +124,7 @@ module NotificationFieldsHelper
       },
       generate_control_label: {
         label: 'Control',
-        value: generate_proj_or_comp_value(object, Rule)
+        value: generate_proj_or_comp_value(object, BaseRule)
       },
       generate_comment_label: {
         label: 'Comment',
@@ -155,19 +155,23 @@ module NotificationFieldsHelper
     labels_hash[notification_type_prefix]
   end
 
+  # Requirement rows type-match BaseRule — the review workflow is
+  # kind-shared, so an authored SrgRule builds fields exactly like a
+  # STIG Rule.
   def generate_proj_or_comp_value(object, model)
     proj_or_comp = object if object.is_a?(Project) && model == Project
     proj_or_comp = object if object.is_a?(Component) && model == Component
     proj_or_comp = object.project if object.is_a?(Component) && model == Project
     proj_or_comp = object.membership if object.is_a?(Membership)
-    proj_or_comp = object.component if object.is_a?(Rule) && [Component, Rule].include?(model)
-    proj_or_comp = object.component.project if object.is_a?(Rule) && model == Project
-    url = model == Project ? project_url(proj_or_comp) : component_url(proj_or_comp)
-    if model == Rule
-      stig_id = "#{proj_or_comp.prefix}-#{object.rule_id}"
-      url = "#{url}/#{stig_id}"
-      return "<#{url}/#{stig_id}|#{stig_id}>"
+    proj_or_comp = object.component if object.is_a?(BaseRule) && [Component, BaseRule].include?(model)
+    proj_or_comp = object.component.project if object.is_a?(BaseRule) && model == Project
+    if model == BaseRule
+      # The named deep-link route, once — the hand-built string doubled
+      # the requirement segment and broke every review-notification link.
+      return "<#{component_rule_url(proj_or_comp.id, object.displayed_name)}|#{object.displayed_name}>"
     end
+
+    url = model == Project ? project_url(proj_or_comp) : component_url(proj_or_comp)
     "<#{url}|#{proj_or_comp.name}>"
   end
 
