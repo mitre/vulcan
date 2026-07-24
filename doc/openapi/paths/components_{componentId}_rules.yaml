@@ -47,14 +47,19 @@ post:
   operationId: createRule
   tags:
     - Rules
-  summary: Create a new rule in a component
+  summary: Create a new requirement in a component
   description: >-
-    Creates a rule row — either a blank rule (content is then edited via
-    the rule update endpoint) or a duplicate of an existing rule in the
-    component. Rule IDs are assigned from the component's prefix pattern.
-    Requires author role or higher on the parent project. Rejected with
-    422 on SRG-kind components (authored requirements come from source
-    SRGs, not manual creation).
+    Creates a requirement in one call, shaped by the component's
+    document_type — a STIG rule (seeded from the source SRG's CCI-000366
+    baseline row; severity and weight are inherited from it) or an
+    authored SRG requirement. Content fields apply at creation: provided
+    values win over seeded defaults, and provided nested attributes
+    replace the built defaults. Duplicate mode copies an existing
+    requirement of THIS component. Requirement numbers are server-owned
+    and assigned from the component's sequence. Blank/content creation
+    requires project admin; duplication requires author. Returns 422
+    when a STIG component's source SRG has no CCI-000366 baseline row,
+    or when provided content fails the kind's validations.
   requestBody:
     required: true
     content:
@@ -63,27 +68,46 @@ post:
           type: object
           properties:
             rule:
-              type: object
               description: >-
-                Creation mode only — content fields are not accepted here;
-                edit the created rule to set content.
-              properties:
-                duplicate:
-                  type: boolean
-                  description: Duplicate an existing rule instead of creating a blank one.
-                  example: false
-                id:
-                  type: integer
-                  description: Source rule id to duplicate (required when duplicate is true).
-                  example: 100
+                Creation mode plus the one-call content surface (the same
+                fields the update endpoint accepts; nested attributes
+                carry no id at creation).
+              allOf:
+                - type: object
+                  properties:
+                    duplicate:
+                      type: boolean
+                      description: Duplicate an existing requirement instead of creating a blank one.
+                      example: false
+                    id:
+                      type: integer
+                      description: Source requirement id to duplicate (required when duplicate is true; must belong to this component).
+                      example: 100
+                - $ref: ../components/schemas/RuleInput.yaml
         examples:
           create:
-            summary: Create a blank rule
+            summary: Create a blank requirement
             value:
               rule:
                 duplicate: false
+          one_call_content:
+            summary: Create a STIG rule with content in one call
+            value:
+              rule:
+                duplicate: false
+                title: The container platform must enforce approved authorizations.
+                status: Applicable - Configurable
+                vendor_comments: Met by the recommended runtime configuration.
+          authored_srg:
+            summary: Create an authored SRG requirement with content
+            value:
+              rule:
+                duplicate: false
+                title: The application must enforce approved authorizations for logical access.
+                status: Applicable
+                fixtext: Configure the application to enforce approved authorizations.
           duplicate:
-            summary: Duplicate an existing rule
+            summary: Duplicate an existing requirement
             value:
               rule:
                 duplicate: true

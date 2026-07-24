@@ -94,7 +94,6 @@ class Rule < BaseRule
                           foreign_key: :satisfied_by_rule_id,
                           association_foreign_key: :rule_id
 
-  before_validation :set_rule_id
   before_save :apply_audit_comment, :sort_ident
   after_create :seed_inspec_control_body
   after_destroy :update_component_rules_count
@@ -451,10 +450,6 @@ class Rule < BaseRule
     return unless any_review_fields_changed && any_non_review_fields_changed
 
     errors.add(:base, 'Cannot update review-related attributes with other non-review-related attributes')
-  end
-
-  def set_rule_id
-    self.rule_id = (component.largest_rule_id + 1).to_s.rjust(6, '0') if rule_id.blank?
   end
 
   def seed_inspec_control_body

@@ -185,6 +185,37 @@ describe("useRuleNavigation", () => {
     });
   });
 
+  describe("SRG-ID sort with a null version (net-new authored requirement)", () => {
+    it("sorts without throwing and places null-version rows last", () => {
+      const srgRules = ref([
+        {
+          id: 1,
+          rule_id: "000001",
+          version: "SRG-R-905001",
+          status: "Applicable",
+          locked: false,
+          review_requestor_id: null,
+          comment_summary: null,
+        },
+        {
+          // A net-new authored requirement has no source SRG requirement —
+          // its version is honestly null and must never crash the sort.
+          id: 2,
+          rule_id: "000004",
+          version: null,
+          status: "Not Yet Determined",
+          locked: false,
+          review_requestor_id: null,
+          comment_summary: null,
+        },
+      ]);
+      const { filters, filteredRules } = nav(srgRules, null, SRG_STATUSES);
+      filters.value.sortBySRGIdChecked = true;
+
+      expect(filteredRules.value.map((r) => r.id)).toEqual([1, 2]);
+    });
+  });
+
   describe("SRG vocabulary leak regression", () => {
     it("SRG navigation state carries exactly the SRG statuses — no STIG-only strings", () => {
       // Authentic authored-row shape: NO satisfies/satisfied_by/checks keys —

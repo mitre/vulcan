@@ -99,7 +99,14 @@ export function useRuleNavigation(rules, projectPrefix, componentId, externalFil
   const filteredRules = computed(() => {
     let sortedRules = [...rules.value];
     if (filters.value.sortBySRGIdChecked) {
-      sortedRules.sort((a, b) => a.version.localeCompare(b.version));
+      // Net-new authored requirements carry no source SRG requirement —
+      // version is honestly null; sort them last (the backend's
+      // canonical NULLs-last order), never crash the pipeline.
+      sortedRules.sort((a, b) => {
+        if (a.version == null) return b.version == null ? 0 : 1;
+        if (b.version == null) return -1;
+        return a.version.localeCompare(b.version);
+      });
     }
 
     const downcaseSearch = filters.value.search.toLowerCase();

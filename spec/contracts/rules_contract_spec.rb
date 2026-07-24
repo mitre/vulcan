@@ -91,6 +91,34 @@ RSpec.describe 'Rules endpoint contracts', type: :request do
       assert_fields_present body['data'], :id, :rule_id, :status, :component_id
       expect(body['data']['component_id']).to eq(component.id)
     end
+
+    it 'accepts one-call content and returns it in the created rule' do
+      post "/components/#{component.id}/rules",
+           params: { rule: { duplicate: false, title: 'One-call contract control',
+                             status: 'Applicable - Configurable' } },
+           headers: json_headers, as: :json
+      body = validate_and_parse!
+
+      expect(body.dig('data', 'title')).to eq('One-call contract control')
+      expect(body.dig('data', 'status')).to eq('Applicable - Configurable')
+    end
+
+    it 'returns the authored-SRG variant when creating on an srg-kind component' do
+      core = create(:security_requirements_guide, :core, :skip_rules,
+                    srg_id: 'SRG-CORE-CONTRACT', version: 'V1R1')
+      srg_comp = create(:component, :skip_rules, project: project, document_type: 'srg',
+                                                 based_on: core, prefix: 'RCSR-00')
+
+      post "/components/#{srg_comp.id}/rules",
+           params: { rule: { duplicate: false, title: 'Authored contract requirement',
+                             status: 'Applicable' } },
+           headers: json_headers, as: :json
+      body = validate_and_parse!
+
+      expect(body.dig('data', 'title')).to eq('Authored contract requirement')
+      expect(body.dig('data', 'status')).to eq('Applicable')
+      assert_fields_present body['data'], :id, :rule_id, :locked, :derived_from_version
+    end
   end
 
   # ── GET /components/:componentId/rules/picker ──

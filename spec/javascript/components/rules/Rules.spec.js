@@ -23,7 +23,7 @@ vi.mock("@/api/rulesApi", () => ({
 
 vi.mock("@/composables/useSortRules", { spy: true });
 import { useSortRules } from "@/composables/useSortRules";
-import { getRule } from "@/api/rulesApi";
+import { getRule, createRuleInComponent } from "@/api/rulesApi";
 
 describe("Rules", () => {
   const createWrapper = (rulesOverrides = []) => {
@@ -125,6 +125,45 @@ describe("Rules", () => {
       expect(getRule).toHaveBeenCalledWith(555);
       expect(wrapper.vm.reactiveRules.find((r) => r && r.id === 555)).toEqual(landedRule);
       expect(wrapper.vm.reactiveRules.every((r) => r && r.id !== undefined)).toBe(true);
+      wrapper.destroy();
+    });
+  });
+
+  // ── create:rule insert path ─────────────────────────────────────────
+  // REQUIREMENT: creating a requirement inserts the created row and
+  // hands it to the success callback (which selects it). The create
+  // body is { toast, data: <object> } — data is ALREADY parsed, so the
+  // legacy string-payload JSON.parse must never run on it (it threw and
+  // silently dropped the insert + selection).
+  describe("create:rule insert path", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("inserts the created rule and passes it to the success callback", async () => {
+      const createdRule = {
+        id: 777,
+        component_id: 100,
+        rule_id: "000190",
+        status: "Not Yet Determined",
+        satisfied_by: [],
+        satisfies: [],
+        disa_rule_descriptions_attributes: [],
+        checks_attributes: [],
+        rule_descriptions_attributes: [],
+      };
+      createRuleInComponent.mockResolvedValueOnce({
+        data: {
+          toast: { title: "Control created.", message: [], variant: "success" },
+          data: createdRule,
+        },
+      });
+      const callback = vi.fn();
+      const wrapper = createWrapper();
+
+      wrapper.vm.$root.$emit("create:rule", { duplicate: false }, callback);
+      await flushPromises(wrapper);
+
+      expect(wrapper.vm.reactiveRules.find((r) => r && r.id === 777)).toEqual(createdRule);
+      expect(callback).toHaveBeenCalled();
       wrapper.destroy();
     });
   });

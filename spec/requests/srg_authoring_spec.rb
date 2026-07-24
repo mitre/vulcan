@@ -312,11 +312,14 @@ RSpec.describe 'SRG authoring backend' do
   end
 
   describe 'STIG-only surfaces are gated on srg-kind components' do
-    it 'rejects manual Rule creation on an srg-kind component' do
+    it 'creates an authored SrgRule on an srg-kind component — never a class-Rule row' do
       post "/components/#{srg_component.id}/rules",
-           params: { rule: { rule_id: '999901' } }
+           params: { rule: { duplicate: false } }, as: :json
 
-      expect(response).to have_http_status(:unprocessable_content)
+      expect(response).to have_http_status(:ok)
+      created = BaseRule.unscoped.find(response.parsed_body.dig('data', 'id'))
+      expect(created.class).to eq(SrgRule)
+      # The corruption gate holds structurally: rules_count never sees it.
       expect(srg_component.rules.count).to eq(0)
     end
 

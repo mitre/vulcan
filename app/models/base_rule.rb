@@ -58,6 +58,12 @@ class BaseRule < ApplicationRecord
     rules.sort_by { |rule| [rule.version.nil? ? 1 : 0, rule.version.to_s, rule.rule_id.to_s, rule.id] }
   end
 
+  # ONE numbering assignment for both requirement kinds: a blank-numbered
+  # component row takes the next number from the component's kind-agnostic
+  # sequence (largest_rule_id spans Rules and authored SrgRules and never
+  # reissues tombstoned numbers). Catalog rows carry their own ids and no
+  # component, so this never touches them.
+  before_validation :set_rule_id
   before_create :ensure_disa_description_exists
   before_create :ensure_check_exists
   before_destroy :prevent_destroy_if_under_review_or_locked
@@ -243,6 +249,12 @@ class BaseRule < ApplicationRecord
   # today's behavior.
   def legacy_status_vocabulary?
     true
+  end
+
+  def set_rule_id
+    return if rule_id.present? || component_id.blank?
+
+    self.rule_id = (component.largest_rule_id + 1).to_s.rjust(6, '0')
   end
 
   def ensure_disa_description_exists

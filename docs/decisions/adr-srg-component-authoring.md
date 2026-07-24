@@ -696,6 +696,13 @@ Two modes, one machinery:
   content from the catalog row, sets `component_id` +
   `derived_from_srg_rule_id`, and leaves
   `security_requirements_guide_id` NULL.
+**Net-new direct authoring (Aaron's parity directive, 2026-07-14; built
+2026-07-24):** import is not the ONLY source — authors may add net-new
+authored requirements directly (POST create on the srg component, one
+call with content, same STI seam: an authored `SrgRule` with no
+`derived_from`). The corruption gate is structural, not a blanket 422:
+manual creation on an srg component creates the correct authored class,
+never a class-Rule row.
 Both modes: adding a parent later imports (or offers) its requirements;
 `Component#duplicate`/overlay must `include_association` the new join
 tables and, for SRG-kind, validate core-SRG membership on rebase.

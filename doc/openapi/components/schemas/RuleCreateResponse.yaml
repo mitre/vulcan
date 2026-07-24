@@ -1,5 +1,7 @@
 description: >-
-  Response from rule creation. Toast notification plus the created rule under the "data" key.
+  Response from requirement creation. Toast notification plus the created
+  row under the "data" key, shaped by the parent component's
+  document_type: a STIG rule or an authored SRG requirement.
 type: object
 required:
   - toast
@@ -8,4 +10,6 @@ properties:
   toast:
     $ref: ./ToastObject.yaml
   data:
-    $ref: ./RuleEditorResponse.yaml
+    oneOf:
+      - $ref: ./RuleEditorResponse.yaml
+      - $ref: ./AuthoredSrgRuleEditorResponse.yaml

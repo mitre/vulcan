@@ -377,7 +377,10 @@ export default {
      * changes just beause a user has commented.
      */
     ruleFetchSuccess: function (response, updated = "all") {
-      if (response.data.id === undefined) {
+      // Only the legacy string payload needs parsing — the create body
+      // carries data as an already-parsed object, and JSON.parse on an
+      // object throws, silently dropping the insert and selection.
+      if (response.data.id === undefined && typeof response.data.data === "string") {
         response.data.data = JSON.parse(response.data.data);
       }
       const ruleIndex = this.reactiveRules.findIndex((r) => r.id == response.data.id);

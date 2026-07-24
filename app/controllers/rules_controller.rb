@@ -86,33 +86,28 @@ class RulesController < ApplicationController
   end
 
   def create
-    # SRG-kind components author SrgRules through their own flow — a
-    # class-Rule row here would corrupt the component (counted by
-    # rules_count, invisible to requirements and backups).
-    if @component.document_type == 'srg'
-      return render json: {
-        toast: Toast.new(
-          title: 'Cannot create control.',
-          message: ['SRG components author SRG requirements — STIG controls cannot be added.'],
-          variant: 'danger'
-        )
-      }, status: :unprocessable_content
-    end
+    # One kind-routed create: a stig component creates a Rule, an srg
+    # component creates an authored SrgRule — the correct STI class
+    # through the seam, so a class-Rule row never lands on an srg
+    # component (counted by rules_count, invisible to requirements and
+    # backups). Content applies at creation — one call, both kinds.
+    requirement = rule_create_params[:duplicate] ? duplicate_requirement : build_blank_requirement
+    return if performed?
 
-    rule = create_or_duplicate
-    if rule.save
+    apply_creation_content(requirement)
+    if requirement.save
       # multi-key response (toast +
       # data). Inline the canonical toast object since render_toast
       # doesn't support piggybacking extra response keys.
       render json: {
         toast: Toast.new(title: 'Control created.', message: ['Successfully created control.'], variant: 'success'),
-        data: RuleBlueprint.render_as_json(rule, view: :editor)
+        data: serialized_requirement(requirement)
       }
     else
       render json: {
         toast: Toast.new(
           title: 'Could not create control.',
-          message: rule.errors.full_messages,
+          message: requirement.errors.full_messages,
           variant: 'danger'
         )
       }, status: :unprocessable_content
@@ -269,44 +264,121 @@ class RulesController < ApplicationController
     raise(NotAuthorizedError, 'You are not authorized to manage section locks on this component')
   end
 
-  def create_or_duplicate
-    if authorize_author_project.nil? && rule_create_params[:duplicate]
-      rule = Rule.find(rule_create_params[:id])
-      rule.update_single_rule_clone(true)
-      new_rule = rule.amoeba_dup
-      new_rule.rule_id = nil
-      new_rule
-    elsif authorize_admin_project.nil?
-      srg = SecurityRequirementsGuide.find_by(id: @component.security_requirements_guide_id)
-      db_srg_rule = srg.srg_rules.eager_load(:disa_rule_descriptions, :checks, :rule_descriptions, :references)
-                       .where('ident LIKE ?', '%CCI-000366%').first
+  # Duplication is an author action; the source must live in THIS
+  # component — an unscoped find would let an author on one component
+  # inject clones into another. The copy mechanic is per-class: amoeba
+  # for Rule, dup_with_nested_records for SrgRule (amoeba retypes an
+  # SrgRule to Rule by design — never use it for authored copies).
+  def duplicate_requirement
+    authorize_author_project
+    source = @component.requirements.find(rule_create_params[:id])
+    copy = if source.is_a?(SrgRule)
+             source.dup_with_nested_records
+           else
+             source.update_single_rule_clone(true)
+             source.amoeba_dup
+           end
+    copy.rule_id = nil
+    copy
+  end
 
-      rule = Rule.new(
-        component: @component,
-        srg_rule: db_srg_rule,
-        rule_id: (@component.rules.order(:rule_id).pluck(:rule_id).last.to_i + 1).to_s.rjust(6, '0'),
-        status: RuleConstants::STATUS_NYD,
-        rule_severity: 'unknown',
-        rule_weight: db_srg_rule&.rule_weight || '10.0',
-        version: db_srg_rule&.version,
-        title: db_srg_rule&.title,
-        ident: db_srg_rule&.ident || 'CCI-000366',
-        ident_system: db_srg_rule&.ident_system,
-        fixtext: db_srg_rule&.fixtext,
-        fixtext_fixref: db_srg_rule&.fixtext_fixref,
-        fix_id: db_srg_rule&.fix_id
-      )
-      rule.disa_rule_descriptions.build(db_srg_rule.disa_rule_descriptions.map { |d| d.attributes.except('id', 'base_rule_id') }) if db_srg_rule&.disa_rule_descriptions&.any?
-      rule.checks.build(db_srg_rule.checks.map { |c| c.attributes.except('id', 'base_rule_id') }) if db_srg_rule&.checks&.any?
-      rule.references.build(db_srg_rule.references.map { |r| r.attributes.except('id', 'base_rule_id') }) if db_srg_rule&.references&.any?
-      rule.audits.build(Audited.audit_class.create_initial_rule_audit_from_mapping(@component.id))
-
-      rule
+  # Blank/content create is a project-admin action on both kinds.
+  def build_blank_requirement
+    authorize_admin_project
+    if @component.document_type == 'srg'
+      # Net-new authored requirements have no derived_from to inherit
+      # severity from — medium (CAT II) is the DISA-conventional default,
+      # the same value the STIG path inherits from its baseline row.
+      # Overridable in the same request via rule_severity.
+      return @component.authored_srg_rules.new(status: RuleConstants::STATUS_NYD, rule_severity: 'medium')
     end
+
+    build_rule_from_template
+  end
+
+  # A new STIG control seeds from the source SRG's CCI-000366 baseline
+  # row — severity and weight are INHERITED from it, never fabricated
+  # (an out-of-vocabulary placeholder made every blank create 422).
+  def build_rule_from_template
+    srg = SecurityRequirementsGuide.find_by(id: @component.security_requirements_guide_id)
+    template = if srg
+                 srg.srg_rules
+                    .eager_load(:disa_rule_descriptions, :checks, :rule_descriptions, :references)
+                    .find_by('ident LIKE ?', '%CCI-000366%')
+               end
+    if template.nil?
+      render json: {
+        toast: Toast.new(title: 'Could not create control.',
+                         message: ['The source SRG has no CCI-000366 baseline requirement to seed a new control from.'],
+                         variant: 'danger')
+      }, status: :unprocessable_content
+      return
+    end
+
+    rule = Rule.new(
+      component: @component,
+      srg_rule: template,
+      status: RuleConstants::STATUS_NYD,
+      rule_severity: template.rule_severity,
+      rule_weight: template.rule_weight || '10.0',
+      version: template.version,
+      title: template.title,
+      ident: template.ident,
+      ident_system: template.ident_system,
+      fixtext: template.fixtext,
+      fixtext_fixref: template.fixtext_fixref,
+      fix_id: template.fix_id
+    )
+    build_template_nested_records(rule, template)
+    # No manual audit build here: the bulk-shaped initial audit (user_type
+    # System) exists for import paths that bypass callbacks — an
+    # interactive save gets its real create audit from audited, with the
+    # acting user attributed.
+    rule
+  end
+
+  # Template nested records seed only the associations the request does
+  # not provide — provided nested attributes REPLACE the defaults, they
+  # never land beside them.
+  def build_template_nested_records(rule, template)
+    provided = rule_content_params(rule)
+    # References carry no request surface, so the template's always seed.
+    %i[disa_rule_descriptions checks references].each do |assoc|
+      rows = template.public_send(assoc)
+      next if rows.none? || provided[:"#{assoc}_attributes"].present?
+
+      rule.public_send(assoc).build(rows.map { |r| r.attributes.except('id', 'base_rule_id') })
+    end
+  end
+
+  # The one-call content surface, uniform across modes: provided nested
+  # attributes replace the would-be defaults or copied records.
+  def apply_creation_content(requirement)
+    content = rule_content_params(requirement)
+    %i[checks disa_rule_descriptions rule_descriptions].each do |assoc|
+      requirement.public_send(:"#{assoc}=", []) if content[:"#{assoc}_attributes"].present?
+    end
+    requirement.assign_attributes(content)
   end
 
   def rule_create_params
     params.expect(rule: %i[duplicate id])
+  end
+
+  # The update-equivalent content surface at creation — the ONE permit
+  # list (rule_update_params) with the persistence keys stripped from
+  # nested records (nothing exists yet to target). Numbering is
+  # server-owned: rule_id is never in the permit list.
+  def rule_content_params(requirement)
+    permitted = rule_update_params
+    permitted = permitted.except(:additional_answers_attributes) unless requirement.is_a?(Rule)
+    %i[checks_attributes rule_descriptions_attributes
+       disa_rule_descriptions_attributes additional_answers_attributes].each do |key|
+      next if permitted[key].blank?
+
+      permitted[key] = permitted[key].map { |attrs| attrs.except(:id, :_destroy) }
+    end
+    permitted
   end
 
   def rule_update_params
