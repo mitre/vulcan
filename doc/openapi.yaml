@@ -2431,8 +2431,8 @@ paths:
       operationId: createRule
       tags:
         - Rules
-      summary: Create a new rule in a component
-      description: Creates a rule row — either a blank rule (content is then edited via the rule update endpoint) or a duplicate of an existing rule in the component. Rule IDs are assigned from the component's prefix pattern. Requires author role or higher on the parent project. Rejected with 422 on SRG-kind components (authored requirements come from source SRGs, not manual creation).
+      summary: Create a new requirement in a component
+      description: 'Creates a requirement in one call, shaped by the component''s document_type — a STIG rule (seeded from the source SRG''s CCI-000366 baseline row; severity and weight are inherited from it) or an authored SRG requirement. Content fields apply at creation: provided values win over seeded defaults, and provided nested attributes replace the built defaults. Duplicate mode copies an existing requirement of THIS component. Requirement numbers are server-owned and assigned from the component''s sequence. Blank/content creation requires project admin; duplication requires author. Returns 422 when a STIG component''s source SRG has no CCI-000366 baseline row, or when provided content fails the kind''s validations.'
       requestBody:
         required: true
         content:
@@ -2441,25 +2441,43 @@ paths:
               type: object
               properties:
                 rule:
-                  type: object
-                  description: Creation mode only — content fields are not accepted here; edit the created rule to set content.
-                  properties:
-                    duplicate:
-                      type: boolean
-                      description: Duplicate an existing rule instead of creating a blank one.
-                      example: false
-                    id:
-                      type: integer
-                      description: Source rule id to duplicate (required when duplicate is true).
-                      example: 100
+                  description: Creation mode plus the one-call content surface (the same fields the update endpoint accepts; nested attributes carry no id at creation).
+                  allOf:
+                    - type: object
+                      properties:
+                        duplicate:
+                          type: boolean
+                          description: Duplicate an existing requirement instead of creating a blank one.
+                          example: false
+                        id:
+                          type: integer
+                          description: Source requirement id to duplicate (required when duplicate is true; must belong to this component).
+                          example: 100
+                    - $ref: '#/components/schemas/RuleInput'
             examples:
               create:
-                summary: Create a blank rule
+                summary: Create a blank requirement
                 value:
                   rule:
                     duplicate: false
+              one_call_content:
+                summary: Create a STIG rule with content in one call
+                value:
+                  rule:
+                    duplicate: false
+                    title: The container platform must enforce approved authorizations.
+                    status: Applicable - Configurable
+                    vendor_comments: Met by the recommended runtime configuration.
+              authored_srg:
+                summary: Create an authored SRG requirement with content
+                value:
+                  rule:
+                    duplicate: false
+                    title: The application must enforce approved authorizations for logical access.
+                    status: Applicable
+                    fixtext: Configure the application to enforce approved authorizations.
               duplicate:
-                summary: Duplicate an existing rule
+                summary: Duplicate an existing requirement
                 value:
                   rule:
                     duplicate: true
@@ -3220,6 +3238,19 @@ paths:
               properties:
                 rule:
                   $ref: '#/components/schemas/RuleInput'
+            examples:
+              stig_update:
+                summary: STIG rule status change
+                value:
+                  rule:
+                    status: Applicable - Configurable
+                    vendor_comments: Met by the recommended runtime configuration.
+              authored_srg_update:
+                summary: Authored SRG requirement decided Not Applicable
+                value:
+                  rule:
+                    status: Not Applicable
+                    status_justification: The platform provides no wireless interfaces to configure.
       responses:
         '200':
           description: Rule updated
@@ -3244,6 +3275,22 @@ paths:
               properties:
                 rule:
                   $ref: '#/components/schemas/RuleInput'
+            examples:
+              stig_update:
+                summary: STIG rule full update
+                value:
+                  rule:
+                    status: Applicable - Configurable
+                    title: The container platform must enforce approved authorizations.
+                    fixtext: Configure the container platform to enforce approved authorizations.
+                    vendor_comments: Met by the recommended runtime configuration.
+              authored_srg_update:
+                summary: Authored SRG requirement update
+                value:
+                  rule:
+                    status: Applicable
+                    title: The application must enforce approved authorizations for logical access.
+                    fixtext: Configure the application to enforce approved authorizations.
       responses:
         '200':
           description: Rule updated
@@ -6755,7 +6802,10 @@ paths:
                   personal_access_tokens:
                     type: array
                     items:
-                      $ref: '#/components/schemas/PersonalAccessTokenSummary'
+                      description: 'Shaped by the caller: the owner''s own tokens, or — when an administrator passes user_id — that user''s tokens with the owner identity attached.'
+                      oneOf:
+                        - $ref: '#/components/schemas/PersonalAccessTokenSummary'
+                        - $ref: '#/components/schemas/PersonalAccessTokenAdminSummary'
               examples:
                 with_tokens:
                   summary: User has two active tokens
@@ -6818,7 +6868,7 @@ paths:
       tags:
         - Personal Access Tokens
       summary: Create a new API token
-      description: Creates a personal access token. The raw token is returned ONCE in the response — it is never stored or retrievable after this. Requires current password for session hijack protection. Session auth only. Max 20 active tokens per user, max 365-day lifetime.
+      description: 'Creates a personal access token ON THE SIGNED-IN ACCOUNT. The raw token is returned ONCE in the response — it is never stored or retrievable after this. Requires current password for session hijack protection. Session auth only. Max 20 active tokens per user, max 365-day lifetime. Ownership can never be redirected: a token authenticates AS its owner, so no caller — administrators included — may mint one on another user''s account, and any user_id supplied in the body is ignored. Administrators oversee other users'' tokens by listing (GET with user_id) and revoking them; account recovery goes through a password reset, where the user re-authenticates.'
       security:
         - cookieAuth: []
       requestBody:
@@ -6864,9 +6914,6 @@ paths:
                     current_password:
                       type: string
                       description: Required for session hijack protection.
-                    user_id:
-                      type: integer
-                      description: Admin-only. Create token for this user.
       responses:
         '201':
           description: Token created — raw token shown once
@@ -10933,8 +10980,43 @@ components:
             concur: 45
             non_concur: 8
             withdrawn: 3
+    RuleInput:
+      description: Input fields for updating a requirement — the endpoint serves both document kinds. The status vocabulary is per-kind (see the status field); STIG-only nested attributes (additional_answers_attributes) are dropped server-side when the target is an authored SRG requirement.
+      type: object
+      properties:
+        status:
+          type: string
+          description: Applicability status. The accepted vocabulary depends on the parent component's document_type — STIG rules accept Not Yet Determined, Applicable - Configurable, Applicable - Inherently Meets, Applicable - Does Not Meet, and Not Applicable; authored SRG requirements accept Not Yet Determined, Applicable, and Not Applicable. A value outside the target's vocabulary returns 422.
+          enum:
+            - Not Yet Determined
+            - Applicable - Configurable
+            - Applicable - Inherently Meets
+            - Applicable - Does Not Meet
+            - Applicable
+            - Not Applicable
+          example: Applicable - Configurable
+        title:
+          type: string
+          description: Title of the security control.
+          example: The container platform must enforce approved authorizations for access.
+        fixtext:
+          type: string
+          description: Remediation instructions describing how to fix a non-compliant finding.
+          example: Configure the container platform to enforce approved authorizations for logical access.
+        vendor_comments:
+          type: string
+          description: Vendor-provided comments or implementation notes for this rule.
+          example: This requirement is met by default when using the recommended container runtime configuration.
+        status_justification:
+          type: string
+          description: Justification for the status decision. For an authored SRG requirement the server requires it whenever status is Not Applicable (422 otherwise) — the justification records the decision and is excluded from the released catalog copy.
+          example: The platform provides no wireless interfaces to configure.
+        artifact_description:
+          type: string
+          description: Description of artifacts or evidence supporting the rule implementation.
+          example: Screenshot of the container platform access control configuration panel.
     RuleCreateResponse:
-      description: Response from rule creation. Toast notification plus the created rule under the "data" key.
+      description: 'Response from requirement creation. Toast notification plus the created row under the "data" key, shaped by the parent component''s document_type: a STIG rule or an authored SRG requirement.'
       type: object
       required:
         - toast
@@ -10943,7 +11025,9 @@ components:
         toast:
           $ref: '#/components/schemas/ToastObject'
         data:
-          $ref: '#/components/schemas/RuleEditorResponse'
+          oneOf:
+            - $ref: '#/components/schemas/RuleEditorResponse'
+            - $ref: '#/components/schemas/AuthoredSrgRuleEditorResponse'
     RulePickerResponse:
       description: Lightweight rule for picker dropdowns. Serialized by RuleBlueprint :picker view. Extends RuleSummary defaults with displayed_name and satisfaction relationships. 13 total fields.
       allOf:
@@ -11020,44 +11104,6 @@ components:
         diff:
           description: Rule content in the new version. Present for 'added' and 'updated' changes.
           $ref: '#/components/schemas/RuleBasicFields'
-    RuleInput:
-      description: Input fields for updating a security rule within a component.
-      type: object
-      properties:
-        status:
-          type: string
-          description: Applicability status of the rule indicating whether and how it applies to the technology.
-          enum:
-            - Not Yet Determined
-            - Applicable - Configurable
-            - Applicable - Inherently Meets
-            - Applicable - Does Not Meet
-            - Not Applicable
-          example: Applicable - Configurable
-        title:
-          type: string
-          description: Title of the security control.
-          example: The container platform must enforce approved authorizations for access.
-        fixtext:
-          type: string
-          description: Remediation instructions describing how to fix a non-compliant finding.
-          example: Configure the container platform to enforce approved authorizations for logical access.
-        vendor_comments:
-          type: string
-          description: Vendor-provided comments or implementation notes for this rule.
-          example: This requirement is met by default when using the recommended container runtime configuration.
-        status_justification:
-          type: string
-          description: Justification text required when setting status to Not Applicable or Does Not Meet.
-          example: The container platform inherently meets this requirement through its architecture.
-        artifact_description:
-          type: string
-          description: Description of artifacts or evidence supporting the rule implementation.
-          example: Screenshot of the container platform access control configuration panel.
-        locked:
-          type: boolean
-          description: Whether the rule is locked from further edits pending review.
-          example: false
     RuleSectionLockResponse:
       description: Response from section lock/unlock. Toast notification plus the updated rule. Used by PATCH /rules/:id/section_locks and PATCH /rules/:id/bulk_section_locks.
       type: object
@@ -12092,6 +12138,7 @@ components:
           description: When the template was created.
           example: '2026-06-03T01:00:00Z'
     PersonalAccessTokenSummary:
+      description: A personal access token as seen by its OWNER (GET /personal_access_tokens). Carries no owner identity — administrators listing another user's tokens get PersonalAccessTokenAdminSummary instead. The secret itself is returned only once, at creation, and is never retrievable here.
       type: object
       required:
         - id
@@ -12103,9 +12150,11 @@ components:
       properties:
         id:
           type: integer
+          description: Unique token identifier.
           example: 1
         name:
           type: string
+          description: Human-readable label the owner gave the token.
           example: CI Pipeline
         token_prefix:
           type: string
@@ -12113,6 +12162,7 @@ components:
           description: First 8 characters of the token for identification. The full token is never stored or returned after creation.
         scopes:
           type: array
+          description: Capabilities granted to the token.
           items:
             type: string
             enum:
@@ -12152,7 +12202,93 @@ components:
           description: CIDR allowlist. Null or empty means any IP allowed.
         created_at:
           type: string
+          description: When the token was created. Blueprinter format.
           example: 2026-05-30 10:00:00 UTC
+    PersonalAccessTokenAdminSummary:
+      description: 'A personal access token as seen by an administrator listing ANOTHER user''s tokens (GET /personal_access_tokens?user_id=). Adds the owner''s identity to the standard summary so oversight is attributable. Read-only oversight: the secret is never included here or anywhere after creation, and no endpoint lets an administrator mint a token on this owner''s account.'
+      type: object
+      required:
+        - id
+        - name
+        - token_prefix
+        - scopes
+        - created_at
+        - user_id
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          description: Unique token identifier.
+          example: 1
+        name:
+          type: string
+          description: Human-readable label the owner gave the token.
+          example: CI Pipeline
+        token_prefix:
+          type: string
+          description: First 8 characters of the token for identification. The full token is never stored or returned after creation.
+          example: vulcan_a
+        scopes:
+          type: array
+          description: Capabilities granted to the token.
+          items:
+            type: string
+            enum:
+              - read
+              - write
+              - admin
+          example:
+            - read
+            - write
+        expires_at:
+          type:
+            - string
+            - 'null'
+          description: ISO 8601 date. Maximum 365 days from creation. Null means no expiry (warned in UI).
+          example: '2026-08-30'
+        last_used_at:
+          type:
+            - string
+            - 'null'
+          description: Timestamp of last API request using this token. Updated at most once per minute.
+          example: 2026-05-30 14:22:01 UTC
+        revoked_at:
+          type:
+            - string
+            - 'null'
+          description: Null when active. Timestamp when revoked (soft-delete preserves audit trail).
+          example: null
+        allowed_ips:
+          type:
+            - array
+            - 'null'
+          description: CIDR allowlist. Null or empty means any IP allowed.
+          items:
+            type: string
+          example:
+            - 10.0.0.0/8
+            - 192.168.1.0/24
+        created_at:
+          type: string
+          description: When the token was created. Blueprinter format.
+          example: 2026-05-30 10:00:00 UTC
+        user_id:
+          type: integer
+          description: Numeric id of the token's owner.
+          example: 42
+        user_name:
+          type:
+            - string
+            - 'null'
+          description: Display name of the token's owner. Null if the owner has not set one.
+          example: Jane Doe
+        user_email:
+          type:
+            - string
+            - 'null'
+          format: email
+          description: Email address of the token's owner.
+          example: jane@example.com
     PersonalAccessTokenCreateResponse:
       type: object
       required:

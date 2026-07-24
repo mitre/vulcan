@@ -130,6 +130,12 @@ no collapsed nullable-everything schema** — `document_type` lives on the paren
 component (the stats schemas' sibling-tag pattern is correct), and disjointness
 is already enforced by `required` + `additionalProperties: false`. Bring the
 write side (`RuleInput`) up to the same standard as the read side.
+**Write-side exception (resolved during G9):** request bodies carry no kind
+discriminator and the shared statuses (`Not Yet Determined`, `Not Applicable`)
+are legal under both vocabularies, so a `oneOf` split is formally
+unsatisfiable on input (a shared-status body matches both branches; Redocly's
+example validation rejects it). `RuleInput` therefore uses the documented
+enum union with per-kind descriptions — do not re-attempt the split there.
 
 ## 5. Documentation plan — DISA Process docs
 

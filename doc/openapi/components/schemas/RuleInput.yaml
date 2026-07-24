@@ -1,14 +1,26 @@
-description: Input fields for updating a security rule within a component.
+description: >-
+  Input fields for updating a requirement — the endpoint serves both
+  document kinds. The status vocabulary is per-kind (see the status
+  field); STIG-only nested attributes (additional_answers_attributes)
+  are dropped server-side when the target is an authored SRG
+  requirement.
 type: object
 properties:
   status:
     type: string
-    description: Applicability status of the rule indicating whether and how it applies to the technology.
+    description: >-
+      Applicability status. The accepted vocabulary depends on the
+      parent component's document_type — STIG rules accept Not Yet
+      Determined, Applicable - Configurable, Applicable - Inherently
+      Meets, Applicable - Does Not Meet, and Not Applicable; authored
+      SRG requirements accept Not Yet Determined, Applicable, and Not
+      Applicable. A value outside the target's vocabulary returns 422.
     enum:
       - Not Yet Determined
       - Applicable - Configurable
       - Applicable - Inherently Meets
       - Applicable - Does Not Meet
+      - Applicable
       - Not Applicable
     example: Applicable - Configurable
   title:
@@ -25,13 +37,13 @@ properties:
     example: This requirement is met by default when using the recommended container runtime configuration.
   status_justification:
     type: string
-    description: Justification text required when setting status to Not Applicable or Does Not Meet.
-    example: The container platform inherently meets this requirement through its architecture.
+    description: >-
+      Justification for the status decision. For an authored SRG
+      requirement the server requires it whenever status is Not
+      Applicable (422 otherwise) — the justification records the
+      decision and is excluded from the released catalog copy.
+    example: The platform provides no wireless interfaces to configure.
   artifact_description:
     type: string
     description: Description of artifacts or evidence supporting the rule implementation.
     example: Screenshot of the container platform access control configuration panel.
-  locked:
-    type: boolean
-    description: Whether the rule is locked from further edits pending review.
-    example: false

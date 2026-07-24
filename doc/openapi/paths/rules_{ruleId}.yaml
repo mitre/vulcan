@@ -54,6 +54,19 @@ patch:
           properties:
             rule:
               $ref: ../components/schemas/RuleInput.yaml
+        examples:
+          stig_update:
+            summary: STIG rule status change
+            value:
+              rule:
+                status: Applicable - Configurable
+                vendor_comments: Met by the recommended runtime configuration.
+          authored_srg_update:
+            summary: Authored SRG requirement decided Not Applicable
+            value:
+              rule:
+                status: Not Applicable
+                status_justification: The platform provides no wireless interfaces to configure.
   responses:
     '200':
       description: Rule updated
@@ -80,6 +93,22 @@ put:
           properties:
             rule:
               $ref: ../components/schemas/RuleInput.yaml
+        examples:
+          stig_update:
+            summary: STIG rule full update
+            value:
+              rule:
+                status: Applicable - Configurable
+                title: The container platform must enforce approved authorizations.
+                fixtext: Configure the container platform to enforce approved authorizations.
+                vendor_comments: Met by the recommended runtime configuration.
+          authored_srg_update:
+            summary: Authored SRG requirement update
+            value:
+              rule:
+                status: Applicable
+                title: The application must enforce approved authorizations for logical access.
+                fixtext: Configure the application to enforce approved authorizations.
   responses:
     '200':
       description: Rule updated
