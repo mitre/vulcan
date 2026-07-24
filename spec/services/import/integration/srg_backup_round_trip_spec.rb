@@ -27,7 +27,8 @@ RSpec.describe 'SRG-kind JSON Archive Backup Round-Trip' do
   end
   let_it_be(:authored_two) do
     create(:srg_rule, :authored, component: source_component, rule_id: '000002',
-                                 status: 'Not Applicable', title: 'Second authored requirement')
+                                 status: 'Not Applicable', title: 'Second authored requirement',
+                                 status_justification: 'Decided out of scope')
   end
   let_it_be(:srg_comment) do
     create(:review, :comment, user: admin, rule: nil, commentable: authored_one,

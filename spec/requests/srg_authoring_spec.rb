@@ -54,7 +54,8 @@ RSpec.describe 'SRG authoring backend' do
       decided_a = create(:srg_rule, :authored, component: component, rule_id: '000001',
                                                status: 'Applicable')
       decided_b = create(:srg_rule, :authored, component: component, rule_id: '000002',
-                                               status: 'Not Applicable')
+                                               status: 'Not Applicable',
+                                               status_justification: 'Decided out of scope')
       undecided = create(:srg_rule, :authored, component: component, rule_id: '000003')
 
       post "/components/#{component.id}/lock",
@@ -152,7 +153,8 @@ RSpec.describe 'SRG authoring backend' do
       [create(:srg_rule, :authored, component: mixed_srg_component, rule_id: '000001',
                                     status: 'Applicable', locked: true),
        create(:srg_rule, :authored, component: mixed_srg_component, rule_id: '000002',
-                                    status: 'Not Applicable')]
+                                    status: 'Not Applicable',
+                                    status_justification: 'Decided out of scope')]
     end
 
     it 'details reports per-document-type sections with type-agnostic numbers top-level' do
@@ -278,6 +280,18 @@ RSpec.describe 'SRG authoring backend' do
 
       expect(response).to have_http_status(:unprocessable_content)
       expect(authored_b.reload.status).not_to eq('Applicable - Configurable')
+    end
+
+    it 'rejects Not Applicable without a justification with the canonical 422 toast' do
+      put "/rules/#{authored_b.id}",
+          params: { rule: { status: 'Not Applicable', status_justification: '' } }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body.dig('toast', 'title')).to eq('Could not update control.')
+      expect(response.parsed_body.dig('toast', 'variant')).to eq('danger')
+      expect(response.parsed_body.dig('toast', 'message'))
+        .to include('Status justification is required when the requirement is Not Applicable')
+      expect(authored_b.reload.status).not_to eq('Not Applicable')
     end
   end
 

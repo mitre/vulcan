@@ -36,6 +36,12 @@ class SrgRule < BaseRule
   # (exact match); catalog rows keep the legacy superset via BaseRule so
   # published-XML statuses never break ingest.
   validate :authored_status_in_profile_vocabulary, if: -> { component_id.present? }
+  # Marking an authored requirement Not Applicable records a decision —
+  # the justification IS the record, so it is required here, not just in
+  # the form. Catalog rows are untouched.
+  validates :status_justification,
+            presence: { message: :required_when_not_applicable },
+            if: -> { component_id.present? && status == RuleConstants::STATUS_NOT_APPLICABLE }
 
   def self.from_mapping(rule_mapping, srg_id)
     rule = super(self, rule_mapping)

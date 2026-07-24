@@ -43,6 +43,10 @@ en:
           attributes:
             source_rule_id:
               open_proposal_exists: "already has an open relocation proposal"
+        srg_rule:
+          attributes:
+            status_justification:
+              required_when_not_applicable: "is required when the requirement is Not Applicable"
   vulcan:
     triage:
       status:

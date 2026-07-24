@@ -104,8 +104,12 @@ RSpec.describe SrgRule do
 
   describe 'authored status vocabulary (per-profile)' do
     it 'accepts every SRG-vocabulary status on an authored row' do
+      # Not Applicable carries its lifecycle requirement: the decision's
+      # justification (see the Not Applicable justification examples).
       ['Not Yet Determined', 'Applicable', 'Not Applicable'].each do |status|
-        rule = build(:srg_rule, :authored, component: component, status: status)
+        justification = status == 'Not Applicable' ? 'Decided out of scope' : nil
+        rule = build(:srg_rule, :authored, component: component, status: status,
+                                           status_justification: justification)
         expect(rule).to be_valid, "expected authored row with status #{status.inspect} to be valid"
       end
     end
@@ -172,6 +176,54 @@ RSpec.describe SrgRule do
 
       expect { described_class.import(rows, all_or_none: true, recursive: true) }
         .not_to change(Audited::Audit, :count)
+    end
+  end
+
+  # REQUIREMENT (SRG lifecycle): marking an authored requirement Not
+  # Applicable records a decision — the justification IS the record, so
+  # it is required at the model layer. Catalog rows and the other
+  # authored statuses are untouched.
+  describe 'Not Applicable justification (authored rows only)' do
+    it 'rejects an authored NA row without a status_justification' do
+      rule = build(:srg_rule, :authored, component: component,
+                                         status: 'Not Applicable', status_justification: nil)
+
+      expect(rule).not_to be_valid
+      expect(rule.errors.full_messages)
+        .to include('Status justification is required when the requirement is Not Applicable')
+    end
+
+    it 'rejects an authored NA row with a blank status_justification' do
+      rule = build(:srg_rule, :authored, component: component,
+                                         status: 'Not Applicable', status_justification: '   ')
+
+      expect(rule).not_to be_valid
+      expect(rule.errors[:status_justification])
+        .to include('is required when the requirement is Not Applicable')
+    end
+
+    it 'accepts an authored NA row with a justification' do
+      rule = build(:srg_rule, :authored, component: component,
+                                         status: 'Not Applicable',
+                                         status_justification: 'Container platforms have no wireless interfaces')
+
+      expect(rule).to be_valid
+    end
+
+    it 'accepts authored Applicable and Not Yet Determined rows without a justification' do
+      ['Applicable', 'Not Yet Determined'].each do |status|
+        rule = build(:srg_rule, :authored, component: component,
+                                           status: status, status_justification: nil)
+
+        expect(rule).to be_valid, "expected #{status} to be valid without a justification"
+      end
+    end
+
+    it 'leaves catalog rows unaffected — NA without justification stays valid' do
+      rule = build(:srg_rule, security_requirements_guide: srg,
+                              status: 'Not Applicable', status_justification: nil)
+
+      expect(rule).to be_valid
     end
   end
 end
