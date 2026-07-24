@@ -1,8 +1,9 @@
 description: >-
-  A personal access token as seen by its OWNER (GET /personal_access_tokens).
-  Carries no owner identity — administrators listing another user's tokens get
-  PersonalAccessTokenAdminSummary instead. The secret itself is returned only
-  once, at creation, and is never retrievable here.
+  A personal access token as seen by an administrator listing ANOTHER user's
+  tokens (GET /personal_access_tokens?user_id=). Adds the owner's identity to
+  the standard summary so oversight is attributable. Read-only oversight: the
+  secret is never included here or anywhere after creation, and no endpoint
+  lets an administrator mint a token on this owner's account.
 type: object
 required:
   - id
@@ -10,6 +11,7 @@ required:
   - token_prefix
   - scopes
   - created_at
+  - user_id
 additionalProperties: false
 properties:
   id:
@@ -22,8 +24,8 @@ properties:
     example: CI Pipeline
   token_prefix:
     type: string
-    example: vulcan_a
     description: First 8 characters of the token for identification. The full token is never stored or returned after creation.
+    example: vulcan_a
   scopes:
     type: array
     description: Capabilities granted to the token.
@@ -35,29 +37,46 @@ properties:
     type:
       - string
       - 'null'
-    example: '2026-08-30'
     description: ISO 8601 date. Maximum 365 days from creation. Null means no expiry (warned in UI).
+    example: '2026-08-30'
   last_used_at:
     type:
       - string
       - 'null'
-    example: '2026-05-30 14:22:01 UTC'
     description: Timestamp of last API request using this token. Updated at most once per minute.
+    example: '2026-05-30 14:22:01 UTC'
   revoked_at:
     type:
       - string
       - 'null'
-    example: null
     description: Null when active. Timestamp when revoked (soft-delete preserves audit trail).
+    example: null
   allowed_ips:
     type:
       - array
       - 'null'
+    description: CIDR allowlist. Null or empty means any IP allowed.
     items:
       type: string
     example: ['10.0.0.0/8', '192.168.1.0/24']
-    description: CIDR allowlist. Null or empty means any IP allowed.
   created_at:
     type: string
     description: When the token was created. Blueprinter format.
     example: '2026-05-30 10:00:00 UTC'
+  user_id:
+    type: integer
+    description: Numeric id of the token's owner.
+    example: 42
+  user_name:
+    type:
+      - string
+      - 'null'
+    description: Display name of the token's owner. Null if the owner has not set one.
+    example: Jane Doe
+  user_email:
+    type:
+      - string
+      - 'null'
+    format: email
+    description: Email address of the token's owner.
+    example: jane@example.com

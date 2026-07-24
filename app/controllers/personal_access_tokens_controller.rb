@@ -7,8 +7,8 @@ class PersonalAccessTokensController < ApplicationController
   before_action :set_token, only: [:destroy]
 
   def index
-    tokens = target_user.personal_access_tokens
-                        .order(Arel.sql('revoked_at IS NOT NULL'), created_at: :desc)
+    tokens = viewable_user.personal_access_tokens
+                          .order(Arel.sql('revoked_at IS NOT NULL'), created_at: :desc)
     view = current_user.admin? && params[:user_id].present? ? :admin : :default
     render body: PersonalAccessTokenBlueprint.render(tokens, view: view, root: :personal_access_tokens),
            content_type: 'application/json'
@@ -20,7 +20,14 @@ class PersonalAccessTokensController < ApplicationController
       return
     end
 
-    token = target_user.personal_access_tokens.build(token_params)
+    # Ownership is ALWAYS the signed-in account — a token authenticates AS
+    # its owner, so minting one for someone else would make every audit
+    # record attributed to them repudiable. Admin oversight of another
+    # user's tokens is read (index) and revoke (admin_revoke) only; the
+    # accountable admin path for account recovery is a password reset,
+    # where the user re-authenticates and the admin never holds a
+    # credential that speaks as them.
+    token = current_user.personal_access_tokens.build(token_params)
 
     if token.save
       render json: {
@@ -63,7 +70,10 @@ class PersonalAccessTokensController < ApplicationController
     render_session_authentication_required
   end
 
-  def target_user
+  # READ-ONLY admin oversight: an admin may LIST another user's tokens
+  # (name, prefix, last-used — never the secret). Deliberately not used by
+  # create; see the comment there.
+  def viewable_user
     if params[:user_id].present? && current_user.admin?
       User.find(params[:user_id])
     else

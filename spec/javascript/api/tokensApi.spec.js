@@ -6,7 +6,6 @@ import {
   revokeToken,
   adminRevokeToken,
   adminListTokens,
-  adminCreateToken,
 } from "@/api/tokensApi";
 
 vi.mock("@/api/baseApi", () => ({
@@ -55,14 +54,6 @@ describe("tokensApi", () => {
     await adminListTokens(42);
     expect(api.get).toHaveBeenCalledWith("/personal_access_tokens", {
       params: { user_id: 42 },
-    });
-  });
-
-  it("adminCreateToken calls POST /personal_access_tokens with user_id merged", async () => {
-    api.post.mockResolvedValue({ data: {} });
-    await adminCreateToken(42, { name: "Admin-created", scopes: ["read", "write"] });
-    expect(api.post).toHaveBeenCalledWith("/personal_access_tokens", {
-      personal_access_token: { name: "Admin-created", scopes: ["read", "write"], user_id: 42 },
     });
   });
 

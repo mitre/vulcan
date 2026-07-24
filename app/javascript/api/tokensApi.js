@@ -39,14 +39,16 @@ export function adminRevokeToken(id, auditComment) {
   });
 }
 
-/** Admin: list tokens for a specific user. */
+/**
+ * Admin: list tokens for a specific user (metadata only — never the secret).
+ *
+ * Admin oversight of someone else's tokens is READ and REVOKE only. There is
+ * deliberately no admin create-on-behalf helper: a token authenticates AS its
+ * owner, so minting one for another user would make every audit record
+ * attributed to them repudiable. Account recovery goes through a password
+ * reset, where the user re-authenticates and the admin never holds a
+ * credential that speaks as them.
+ */
 export function adminListTokens(userId) {
   return api.get(`/personal_access_tokens`, { params: { user_id: userId } });
-}
-
-/** Admin: create a token on behalf of another user. */
-export function adminCreateToken(userId, data) {
-  return api.post("/personal_access_tokens", {
-    personal_access_token: { ...data, user_id: userId },
-  });
 }

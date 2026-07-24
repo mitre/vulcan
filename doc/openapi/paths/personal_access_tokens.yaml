@@ -32,7 +32,13 @@ get:
               personal_access_tokens:
                 type: array
                 items:
-                  $ref: ../components/schemas/PersonalAccessTokenSummary.yaml
+                  description: >-
+                    Shaped by the caller: the owner's own tokens, or — when an
+                    administrator passes user_id — that user's tokens with the
+                    owner identity attached.
+                  oneOf:
+                    - $ref: ../components/schemas/PersonalAccessTokenSummary.yaml
+                    - $ref: ../components/schemas/PersonalAccessTokenAdminSummary.yaml
           examples:
             with_tokens:
               summary: User has two active tokens
@@ -98,10 +104,16 @@ post:
     - Personal Access Tokens
   summary: Create a new API token
   description: >-
-    Creates a personal access token. The raw token is returned ONCE in the
-    response — it is never stored or retrievable after this. Requires current
-    password for session hijack protection. Session auth only. Max 20 active
-    tokens per user, max 365-day lifetime.
+    Creates a personal access token ON THE SIGNED-IN ACCOUNT. The raw token is
+    returned ONCE in the response — it is never stored or retrievable after
+    this. Requires current password for session hijack protection. Session auth
+    only. Max 20 active tokens per user, max 365-day lifetime.
+    Ownership can never be redirected: a token authenticates AS its owner, so
+    no caller — administrators included — may mint one on another user's
+    account, and any user_id supplied in the body is ignored. Administrators
+    oversee other users' tokens by listing (GET with user_id) and revoking
+    them; account recovery goes through a password reset, where the user
+    re-authenticates.
   security:
     - cookieAuth: []
   requestBody:
@@ -141,9 +153,6 @@ post:
                 current_password:
                   type: string
                   description: Required for session hijack protection.
-                user_id:
-                  type: integer
-                  description: Admin-only. Create token for this user.
   responses:
     '201':
       description: Token created — raw token shown once

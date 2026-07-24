@@ -99,6 +99,71 @@ RSpec.describe 'PersonalAccessTokens management' do
     end
   end
 
+  # REQUIREMENT (non-repudiation): a personal access token authenticates AS
+  # its owner, so it may only ever be minted for the signed-in account. No
+  # request shape — not an admin's, not any parameter placement — may
+  # redirect ownership to another user. Admin oversight of someone else's
+  # tokens is READ and REVOKE only (listing below, and the admin revoke
+  # endpoint); minting on their behalf would make every audit record
+  # attributed to that user repudiable. Accountable admin recovery already
+  # exists via password reset, where the user re-authenticates and the admin
+  # never holds a credential that speaks as them.
+  describe 'token ownership cannot be redirected (non-repudiation)' do
+    let_it_be(:admin_pw) { 'PAToken99!!admin' }
+    let_it_be(:pw_admin) { create(:user, admin: true, password: admin_pw) }
+    let_it_be(:target) { create(:user, admin: false) }
+
+    it 'creates the token on the admin\'s own account when user_id is sent top-level' do
+      sign_in pw_admin
+
+      post '/personal_access_tokens',
+           params: {
+             user_id: target.id,
+             personal_access_token: { name: 'On behalf attempt', scopes: %w[read],
+                                      current_password: admin_pw }
+           },
+           headers: { 'Accept' => 'application/json' }, as: :json
+
+      expect(response).to have_http_status(:created)
+      token = PersonalAccessToken.find_by!(name: 'On behalf attempt')
+      expect(token.user_id).to eq(pw_admin.id)
+      expect(target.personal_access_tokens).to be_empty
+    end
+
+    it 'creates the token on the admin\'s own account when user_id is nested in the payload' do
+      sign_in pw_admin
+
+      post '/personal_access_tokens',
+           params: {
+             personal_access_token: { name: 'Nested attempt', scopes: %w[read],
+                                      user_id: target.id, current_password: admin_pw }
+           },
+           headers: { 'Accept' => 'application/json' }, as: :json
+
+      expect(response).to have_http_status(:created)
+      token = PersonalAccessToken.find_by!(name: 'Nested attempt')
+      expect(token.user_id).to eq(pw_admin.id)
+      expect(target.personal_access_tokens).to be_empty
+    end
+
+    it 'creates the token on a non-admin\'s own account when user_id is supplied' do
+      sign_in user
+
+      post '/personal_access_tokens',
+           params: {
+             user_id: target.id,
+             personal_access_token: { name: 'Non-admin attempt', scopes: %w[read],
+                                      current_password: 'PAToken99!!test' }
+           },
+           headers: { 'Accept' => 'application/json' }, as: :json
+
+      expect(response).to have_http_status(:created)
+      token = PersonalAccessToken.find_by!(name: 'Non-admin attempt')
+      expect(token.user_id).to eq(user.id)
+      expect(target.personal_access_tokens).to be_empty
+    end
+  end
+
   describe 'GET /personal_access_tokens (index)' do
     before { sign_in user }
 
@@ -131,6 +196,43 @@ RSpec.describe 'PersonalAccessTokens management' do
       expect(response).to have_http_status(:ok)
       names = response.parsed_body['personal_access_tokens'].pluck('name')
       expect(names).not_to include('Admin Token')
+    end
+  end
+
+  # REQUIREMENT (admin oversight — the counterpart to the minting ban above):
+  # an admin may LIST another user's tokens, seeing owner identity and usage
+  # metadata but never the secret. This is how oversight stays possible
+  # without anyone holding a credential that speaks as someone else.
+  describe 'GET /personal_access_tokens?user_id= (admin oversight)' do
+    it 'lists another user\'s tokens with owner identity, never the secret' do
+      create(:personal_access_token, user: user, name: 'Owned by user')
+      sign_in admin
+
+      get '/personal_access_tokens', params: { user_id: user.id },
+                                     headers: { 'Accept' => 'application/json' }
+
+      expect(response).to have_http_status(:ok)
+      rows = response.parsed_body['personal_access_tokens']
+      expect(rows.pluck('name')).to include('Owned by user')
+      row = rows.find { |r| r['name'] == 'Owned by user' }
+      expect(row['user_id']).to eq(user.id)
+      expect(row['user_email']).to eq(user.email)
+      expect(row).to have_key('token_prefix')
+      expect(row).not_to have_key('token_digest')
+    end
+
+    it 'ignores user_id for a non-admin — they still see only their own' do
+      create(:personal_access_token, user: admin, name: 'Admin Only Token')
+      create(:personal_access_token, user: user, name: 'Own Token')
+      sign_in user
+
+      get '/personal_access_tokens', params: { user_id: admin.id },
+                                     headers: { 'Accept' => 'application/json' }
+
+      expect(response).to have_http_status(:ok)
+      names = response.parsed_body['personal_access_tokens'].pluck('name')
+      expect(names).to include('Own Token')
+      expect(names).not_to include('Admin Only Token')
     end
   end
 
