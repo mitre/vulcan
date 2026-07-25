@@ -16,8 +16,21 @@ post:
           type: object
           properties:
             review:
+              description: >-
+                The bulk-lock surface is action + comment only — one review
+                row is generated per locked requirement carrying both. Other
+                review keys (section, responding_to_review_id, component_id)
+                are ignored.
               type: object
+              required:
+                - action
               properties:
+                action:
+                  type: string
+                  description: The review action recorded on every generated row.
+                  enum:
+                    - lock_control
+                  example: lock_control
                 comment:
                   type: string
                   description: Audit trail comment explaining why the component was locked.
@@ -27,6 +40,7 @@ post:
             summary: Lock with audit comment
             value:
               review:
+                action: lock_control
                 comment: "Locking for DISA submission review."
   responses:
     '200':

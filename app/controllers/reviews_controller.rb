@@ -587,7 +587,7 @@ class ReviewsController < ApplicationController
       lockable.each do |rule|
         # commentable, not rule: — the polymorphic target reaches authored
         # SrgRules; the dual-write callback still sets rule_id for Rules.
-        review = Review.new(review_params.merge({ user: current_user, commentable: rule }))
+        review = Review.new(lock_review_params.merge({ user: current_user, commentable: rule }))
         next if review.save
 
         save_failure_messages = review.errors.full_messages
@@ -863,6 +863,16 @@ class ReviewsController < ApplicationController
     # here — they are set only by the dedicated triage / adjudicate / withdraw
     # endpoints (Tasks 10/11/12).
     params.expect(review: %i[component_id action comment section responding_to_review_id])
+  end
+
+  # The bulk lock creates one review per requirement — its surface is only
+  # the action and the shared comment. The single-comment keys are
+  # meaningless here: a body section would mislabel every generated row, a
+  # responding_to_review_id would thread them all under one parent, and
+  # component_id is not a Review attribute at all (mass-assigning it
+  # crashed the endpoint).
+  def lock_review_params
+    params.expect(review: %i[action comment])
   end
 
   # Phase-gates new top-level comments to comment_phase=open. Replies (with

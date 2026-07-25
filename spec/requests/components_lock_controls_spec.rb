@@ -62,6 +62,28 @@ RSpec.describe 'Lock Controls (B10)' do
       expect(nyd_unlocked.count).to be > 0
     end
 
+    # REQUIREMENT: the bulk lock surface is action + comment ONLY. The
+    # single-comment keys (section, responding_to_review_id, component_id)
+    # are meaningless for a bulk lock and must never reach the generated
+    # Review rows — a body responding_to_review_id would thread every lock
+    # review under one parent, and a body section would mislabel them.
+    it 'ignores extraneous body keys — section, responding_to_review_id, component_id' do
+      ac_rule = component.rules.find_by(status: 'Applicable - Configurable')
+      anchor = create(:review, user: admin, rule: ac_rule, action: 'comment', comment: 'anchor comment')
+
+      post "/components/#{component.id}/lock",
+           params: { review: { action: 'lock_control', comment: 'Narrow surface test',
+                               section: 'Fix', responding_to_review_id: anchor.id,
+                               component_id: 999_999 } }
+
+      expect(response).to have_http_status(:success)
+      lock_review = ac_rule.reviews.where(action: 'lock_control').order(:id).last
+      expect(lock_review.comment).to eq('Narrow surface test')
+      expect(lock_review.section).to be_nil
+      expect(lock_review.responding_to_review_id).to be_nil
+      expect(lock_review.commentable).to eq(ac_rule)
+    end
+
     it 'returns 422 when ALL rules are skippable and none can be locked' do
       # Set all rules to NYD
       component.rules.update_all(status: 'Not Yet Determined', locked: false)
