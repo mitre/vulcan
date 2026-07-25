@@ -30,7 +30,9 @@ module Export
       end
 
       # Multiple components: produces zip with subdirectories per component.
-      def generate_batch(component_rule_pairs:)
+      # Discards the interface's project keyword — InSpec profiles carry no
+      # project-level document.
+      def generate_batch(component_rule_pairs:, **)
         Zip::OutputStream.write_buffer do |zio|
           component_rule_pairs.each do |pair|
             component = pair[:component]

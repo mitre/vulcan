@@ -129,13 +129,27 @@ RSpec.describe Export::Formatters::JsonArchiveFormatter do
   end
 
   describe '#generate_batch' do
-    subject(:data) { formatter.generate_batch(component_rule_pairs: pairs) }
+    subject(:data) { formatter.generate_batch(component_rule_pairs: pairs, project: first_component.project) }
 
     let_it_be(:first_component) { create(:component) }
     let_it_be(:second_component) { create(:component, project: first_component.project) }
     let(:pairs) do
       [first_component, second_component].map do |c|
         { component: c, rules: c.rules }
+      end
+    end
+
+    # REQUIREMENT: a component-less project still exports a valid backup —
+    # project.json carries the project identity even with zero components.
+    # Deriving the project from the first pair crashed on empty projects.
+    context 'with a project that has no components' do
+      it 'produces an archive whose project.json carries the project name' do
+        empty_project = create(:project)
+        empty_data = formatter.generate_batch(component_rule_pairs: [], project: empty_project)
+
+        expect(zip_entries(empty_data)).to include(project_file)
+        project_json = JSON.parse(zip_read(empty_data, project_file))
+        expect(project_json['name']).to eq(empty_project.name)
       end
     end
 
@@ -183,7 +197,7 @@ RSpec.describe Export::Formatters::JsonArchiveFormatter do
       member_user = create(:user)
       Membership.create!(user: member_user, membership: first_component.project, role: 'author')
 
-      new_data = formatter.generate_batch(component_rule_pairs: pairs)
+      new_data = formatter.generate_batch(component_rule_pairs: pairs, project: first_component.project)
       project_json = JSON.parse(zip_read(new_data, project_file))
 
       expect(project_json['memberships']).to be_an(Array)
@@ -198,7 +212,7 @@ RSpec.describe Export::Formatters::JsonArchiveFormatter do
       Membership.create!(user: member_user, membership: first_component.project, role: 'author')
       Membership.create!(user: member_user, membership: first_component, role: 'admin')
 
-      new_data = formatter.generate_batch(component_rule_pairs: pairs)
+      new_data = formatter.generate_batch(component_rule_pairs: pairs, project: first_component.project)
       pj = JSON.parse(zip_read(new_data, project_file))
       expect(pj['memberships'].size).to eq(1)
     end

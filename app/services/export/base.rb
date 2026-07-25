@@ -83,10 +83,19 @@ module Export
         { component: component, rules: scoped }
       end
 
-      data = @formatter.generate_batch(component_rule_pairs: pairs, **@formatter_options)
+      data = @formatter.generate_batch(component_rule_pairs: pairs, project: batch_project(pairs),
+                                       **@formatter_options)
       filename = @zip_filename || default_zip_filename
 
       Result.new(data: data, filename: filename, content_type: @formatter.content_type)
+    end
+
+    # The project whose identity accompanies a batch archive (project.json) —
+    # known from the exportable even when the project has zero components.
+    def batch_project(pairs)
+      return @exportable if @exportable.is_a?(Project)
+
+      pairs.first&.dig(:component)&.project
     end
 
     # Component-based path: each component is processed individually (XCCDF).

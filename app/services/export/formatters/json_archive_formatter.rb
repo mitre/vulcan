@@ -40,8 +40,11 @@ module Export
       end
 
       # Multi-component export (project-level backup).
+      # @param project [Project] owner of the archive — passed explicitly so a
+      #   component-less project still exports its project.json (deriving it
+      #   from the first component crashed on empty projects)
       # @param include_srg [Boolean] when true, include base SRG XML files in the archive
-      def generate_batch(component_rule_pairs:, include_srg: false)
+      def generate_batch(component_rule_pairs:, project: nil, include_srg: false)
         serializers = component_rule_pairs.map do |pair|
           Serializers::BackupSerializer.new(pair[:component], preloaded_rules: pair[:rules])
         end
@@ -51,7 +54,7 @@ module Export
 
         Zip::OutputStream.write_buffer do |zio|
           write_manifest(zio, manifest_entries, srg_entries: srg_entries)
-          write_project_json(zio, component_rule_pairs.first[:component].project)
+          write_project_json(zio, project)
           write_srg_files(zio, srg_entries) if srg_entries.any?
 
           component_rule_pairs.each_with_index do |pair, idx|
