@@ -123,4 +123,118 @@ RSpec.describe 'Component creation with declared sources' do
       expect(component.rules.count).to eq(derived_a.srg_rules.count)
     end
   end
+
+  # REQUIREMENT (one-call component creation): metadata, additional
+  # questions, and advanced_fields are part of the update surface, so
+  # creation accepts them too — one shared nested-attribute shape, both
+  # document kinds. Provided values replace copied ones on the duplicate
+  # path; the slack_channel_id convenience merges into the one metadata
+  # shape and wins on conflict.
+  describe 'creation extras — metadata, additional questions, advanced fields' do
+    let(:extras) do
+      {
+        advanced_fields: true,
+        component_metadata_attributes: { data: { 'Vendor' => 'Acme', 'POC' => 'Sam' } },
+        additional_questions_attributes: [
+          { name: 'Deployment model?', question_type: 'dropdown', options: %w[cloud onprem] }
+        ]
+      }
+    end
+
+    it 'persists all three at stig-kind creation' do
+      post "/projects/#{project.id}/components",
+           params: { component: { name: 'Extras STIG', prefix: 'EXTS-00', title: 'Extras STIG',
+                                  version: 1, release: 1,
+                                  security_requirements_guide_id: derived_a.id }.merge(extras) }
+
+      expect(response).to have_http_status(:ok)
+      component = created_component('Extras STIG')
+      expect(component.advanced_fields).to be true
+      expect(component.component_metadata.data).to eq('Vendor' => 'Acme', 'POC' => 'Sam')
+      question = component.additional_questions.sole
+      expect(question.name).to eq('Deployment model?')
+      expect(question.question_type).to eq('dropdown')
+      expect(question.options).to eq(%w[cloud onprem])
+    end
+
+    it 'persists all three at srg-kind creation (kind parity)' do
+      post "/projects/#{project.id}/components",
+           params: { component: { name: 'Extras SRG', prefix: 'EXSR-00', title: 'Extras SRG',
+                                  version: 1, release: 1, document_type: 'srg',
+                                  security_requirements_guide_id: core_a.id,
+                                  declared_source_srg_ids: [core_a.id] }.merge(extras) }
+
+      expect(response).to have_http_status(:ok)
+      component = created_component('Extras SRG')
+      expect(component.advanced_fields).to be true
+      expect(component.component_metadata.data).to eq('Vendor' => 'Acme', 'POC' => 'Sam')
+      expect(component.additional_questions.sole.options).to eq(%w[cloud onprem])
+    end
+
+    it 'replaces copied questions and metadata with provided ones on duplicate' do
+      source = created_or_create_duplicate_source
+
+      post "/projects/#{project.id}/components",
+           params: { component: { duplicate: true, id: source.id, name: 'Dup With Extras',
+                                  prefix: 'DUPE-00',
+                                  component_metadata_attributes: { data: { 'Vendor' => 'NewCo' } },
+                                  additional_questions_attributes: [
+                                    { name: 'Replacement question?', question_type: 'freeform' }
+                                  ] } }
+
+      expect(response).to have_http_status(:ok)
+      component = created_component('Dup With Extras')
+      expect(component.component_metadata.data).to eq('Vendor' => 'NewCo')
+      expect(component.additional_questions.sole.name).to eq('Replacement question?')
+    end
+
+    it 'keeps copied questions and metadata on duplicate when none are provided' do
+      source = created_or_create_duplicate_source
+
+      post "/projects/#{project.id}/components",
+           params: { component: { duplicate: true, id: source.id, name: 'Dup Plain', prefix: 'DUPP-00' } }
+
+      expect(response).to have_http_status(:ok)
+      component = created_component('Dup Plain')
+      expect(component.component_metadata.data).to eq('Origin' => 'Copied')
+      expect(component.additional_questions.sole.name).to eq('Copied question?')
+    end
+
+    it 'merges the slack convenience param into provided metadata — param wins on conflict' do
+      post "/projects/#{project.id}/components",
+           params: { component: { name: 'Slack Merge', prefix: 'SLKM-00', title: 'Slack Merge',
+                                  version: 1, release: 1,
+                                  security_requirements_guide_id: derived_a.id,
+                                  slack_channel_id: 'C0111111111',
+                                  component_metadata_attributes: {
+                                    data: { 'Vendor' => 'Acme', 'Slack Channel ID' => 'C0000000000' }
+                                  } } }
+
+      expect(response).to have_http_status(:ok)
+      expect(created_component('Slack Merge').component_metadata.data)
+        .to eq('Vendor' => 'Acme', 'Slack Channel ID' => 'C0111111111')
+    end
+
+    it 'keeps the slack_channel_id convenience path working alone (regression)' do
+      post "/projects/#{project.id}/components",
+           params: { component: { name: 'Slack Only', prefix: 'SLKO-00', title: 'Slack Only',
+                                  version: 1, release: 1,
+                                  security_requirements_guide_id: derived_a.id,
+                                  slack_channel_id: 'C0222222222' } }
+
+      expect(response).to have_http_status(:ok)
+      expect(created_component('Slack Only').component_metadata.data)
+        .to eq('Slack Channel ID' => 'C0222222222')
+    end
+
+    def created_or_create_duplicate_source
+      Component.find_by(project: project, name: 'Dup Source') || begin
+        source = create(:component, project: project, name: 'Dup Source', prefix: 'DUPS-00',
+                                    based_on: derived_a)
+        ComponentMetadata.create!(component: source, data: { 'Origin' => 'Copied' })
+        AdditionalQuestion.create!(component: source, name: 'Copied question?', question_type: 'freeform')
+        source
+      end
+    end
+  end
 end

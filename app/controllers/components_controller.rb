@@ -11,6 +11,14 @@ class ComponentsController < ApplicationController
   NO_FILE_PROVIDED = 'No file provided'
   CONTROL_NOT_FOUND_TITLE = 'Control not found'
 
+  # Creation params applied through ONE seam after the component is built
+  # (apply_creation_extras) so every creation mode — blank, spreadsheet,
+  # duplicate, overlay — treats them identically. slack_channel_id is not a
+  # Component attribute; mass-assigning it crashed the blank and spreadsheet
+  # paths.
+  CREATION_EXTRAS = %i[slack_channel_id advanced_fields
+                       additional_questions_attributes component_metadata_attributes].freeze
+
   before_action :set_component, only: %i[show update destroy export preview_spreadsheet_update apply_spreadsheet_update triage settings]
   before_action :set_component_basic, only: %i[find based_on_same_srg histories comments rules_picker]
   before_action :set_project, only: %i[show create history triage settings]
@@ -80,6 +88,7 @@ class ComponentsController < ApplicationController
 
   def create
     component = create_or_duplicate
+    apply_creation_extras(component)
     # When importing from an existing spreadsheet, some errors are set before
     # save, this makes sure those errors are shown and not overwritten by the
     # component validators.
@@ -94,11 +103,6 @@ class ComponentsController < ApplicationController
         component.duplicate_reviews_and_history(component_create_params[:id])
         component.create_rule_satisfactions if component_create_params[:file]
         Component.reset_counters(component.id, :rules)
-        if component_create_params[:slack_channel_id].present?
-          component.component_metadata_attributes = { data: {
-            'Slack Channel ID' => component_create_params[:slack_channel_id]
-          } }
-        end
         component.save
         safely_notify('create_component') { send_slack_notification(:create_component, component) } if Settings.slack.enabled
         render_toast(title: 'Component added.',
@@ -622,12 +626,37 @@ class ComponentsController < ApplicationController
     elsif component_create_params[:file]
       # Create a new component from the provided parameters and then pass the spreadsheet
       # to the component for further parsing
-      component = @project.components.new(component_create_params.except(:id, :duplicate, :file))
+      component = @project.components.new(
+        component_create_params.except(:id, :duplicate, :file, *CREATION_EXTRAS)
+      )
       component.from_spreadsheet(component_create_params[:file])
       component
     else
-      Component.new(component_create_params.except(:id, :duplicate, :component_id, :file).merge({ project: @project }))
+      Component.new(
+        component_create_params.except(:id, :duplicate, :component_id, :file, *CREATION_EXTRAS)
+                               .merge({ project: @project })
+      )
     end
+  end
+
+  # Provided values replace copied ones (requirement-create precedent); the
+  # slack_channel_id convenience merges into the one metadata shape and wins
+  # over a same-key entry in the provided data.
+  def apply_creation_extras(component)
+    permitted = component_create_params
+    component.advanced_fields = permitted[:advanced_fields] unless permitted[:advanced_fields].nil?
+    if permitted[:additional_questions_attributes].present?
+      component.additional_questions = []
+      component.additional_questions_attributes = permitted[:additional_questions_attributes]
+    end
+    metadata = creation_component_metadata
+    component.component_metadata_attributes = { data: metadata } if metadata.present?
+  end
+
+  def creation_component_metadata
+    data = component_create_params.dig(:component_metadata_attributes, :data).to_h
+    data['Slack Channel ID'] = component_create_params[:slack_channel_id] if component_create_params[:slack_channel_id].present?
+    data
   end
 
   # Defines the set_component method.
@@ -767,9 +796,11 @@ class ComponentsController < ApplicationController
       :id, :duplicate, :copy_component, :component_id, :project_id,
       :security_requirements_guide_id, :name, :prefix, :version, :release,
       :title, :description, :admin_name, :admin_email, :file, :slack_channel_id,
-      :document_type,
+      :document_type, :advanced_fields,
       declared_source_srg_ids: [],
-      requirement_selections: {}
+      requirement_selections: {},
+      additional_questions_attributes: [:name, :question_type, { options: [] }],
+      component_metadata_attributes: { data: {} }
     )
     # rubocop:enable Rails/StrongParametersExpect
   end

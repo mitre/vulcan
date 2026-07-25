@@ -74,3 +74,58 @@ properties:
     type: string
     description: Optional longer description of the component scope and purpose.
     example: STIG guidance for container orchestration platform deployments.
+  advanced_fields:
+    type: boolean
+    description: Whether the editor shows the advanced field set for this component.
+    example: false
+  additional_questions_attributes:
+    type: array
+    description: >-
+      Nested additional-question definitions — the same shape the update
+      path accepts, minus id/_destroy (meaningless at creation and not
+      accepted). On the duplicate path, provided questions REPLACE the
+      ones copied from the source component.
+    items:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Deployment environment
+        question_type:
+          type: string
+          enum:
+            - dropdown
+            - freeform
+            - url
+          example: dropdown
+        options:
+          type: array
+          description: Choice list — required when question_type is dropdown.
+          items:
+            type: string
+          example:
+            - Cloud
+            - On-prem
+  component_metadata_attributes:
+    type: object
+    description: >-
+      Nested metadata payload; data is a free-form string map — the same
+      shape the update path accepts. On the duplicate path, provided
+      metadata replaces the copied record. The slack_channel_id
+      convenience field merges into this map as "Slack Channel ID" and
+      wins over a same-key entry.
+    properties:
+      data:
+        type: object
+        additionalProperties:
+          type: string
+        example:
+          Vendor: Acme
+          POC: Sam
+  slack_channel_id:
+    type: string
+    description: >-
+      Convenience field — stored as the metadata key "Slack Channel ID".
+      Accepted at creation only; use component_metadata_attributes on
+      update.
+    example: C0123456789

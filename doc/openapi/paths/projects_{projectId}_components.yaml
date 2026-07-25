@@ -44,6 +44,25 @@ post:
                 document_type: srg
                 security_requirements_guide_id: 1
                 declared_source_srg_ids: [1, 2]
+          one_call_with_extras:
+            summary: Create complete in one call — metadata, questions, advanced fields
+            value:
+              component:
+                name: Container SRG
+                prefix: CNTR
+                title: Container Platform Security Technical Implementation Guide
+                version: 1
+                release: 1
+                security_requirements_guide_id: 1
+                advanced_fields: true
+                component_metadata_attributes:
+                  data:
+                    Vendor: Acme
+                    POC: Sam
+                additional_questions_attributes:
+                  - name: Deployment environment
+                    question_type: dropdown
+                    options: [Cloud, On-prem]
       multipart/form-data:
         schema:
           type: object
