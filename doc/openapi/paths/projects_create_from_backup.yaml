@@ -6,8 +6,9 @@ post:
   description: >-
     Creates a new project by restoring from a JSON archive (.zip). The archive
     must have been created by the json_archive export. Optionally override the
-    project name. The creating user becomes the project admin. Requires
-    authentication.
+    project name. The archived project metadata (project.json) is restored
+    onto the new project. The creating user becomes the project admin.
+    Requires authentication.
   requestBody:
     required: true
     content:

@@ -141,7 +141,8 @@ class ProjectsController < ApplicationController
       memberships_attributes: [{ user: current_user, role: ROLE_ADMIN }],
       visibility: new_project_params[:visibility]
     )
-    project.project_metadata_attributes = { data: { 'Slack Channel ID' => new_project_params[:slack_channel_id] } } if new_project_params[:slack_channel_id].present?
+    metadata = creation_metadata
+    project.project_metadata_attributes = { data: metadata } if metadata.present?
 
     # First save ensures base Project is acceptable.
     if project.save
@@ -516,7 +517,19 @@ class ProjectsController < ApplicationController
   end
 
   def new_project_params
-    params.expect(project: %i[name description visibility slack_channel_id])
+    # project_metadata_attributes is a singular nested hash (has_one) — the
+    # expect nested-ARRAY breakage (issue #692) does not apply here.
+    params.expect(project: [:name, :description, :visibility, :slack_channel_id,
+                            { project_metadata_attributes: { data: {} } }])
+  end
+
+  # One metadata shape at creation — the same nested form the update path
+  # accepts. The slack_channel_id convenience param merges into it and wins
+  # over a same-key entry in the provided data.
+  def creation_metadata
+    data = new_project_params.dig(:project_metadata_attributes, :data).to_h
+    data['Slack Channel ID'] = new_project_params[:slack_channel_id] if new_project_params[:slack_channel_id].present?
+    data
   end
 
   def project_params

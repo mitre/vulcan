@@ -18,3 +18,19 @@ properties:
       - discoverable
       - hidden
     example: discoverable
+  project_metadata_attributes:
+    type: object
+    description: >-
+      Project metadata as a nested-attributes object — the one metadata
+      shape, accepted at creation and update alike. The data hash holds
+      free-form string keys (points of contact, Slack channel, and so on).
+    properties:
+      data:
+        type: object
+        description: Free-form metadata keys and values.
+        additionalProperties:
+          type: string
+        example:
+          POC Name: Jane Doe
+          POC Email: jane@example.com
+          Slack Channel ID: C0123456789
