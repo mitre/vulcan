@@ -403,14 +403,6 @@ class RulesController < ApplicationController
     # rubocop:enable Rails/StrongParametersExpect
   end
 
-  def manage_lock_params
-    params.expect(rule: [:locked])
-  end
-
-  def revert_params
-    params.permit(:audit_id, :field)
-  end
-
   def set_rule
     # Requirement rows of any STI type (Rule or authored SrgRule) — a
     # Rule-classed find would 404 reads/updates of authored requirements.

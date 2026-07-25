@@ -202,5 +202,13 @@ RSpec.describe 'Rule section locks API' do
             params: { sections: %w[Title Bogus], locked: true }
       expect(response).to have_http_status(:unprocessable_content)
     end
+
+    # Pins the full bulk surface: sections (plural) + locked + comment.
+    it 'records the provided comment on the audit trail' do
+      patch "/rules/#{rule.id}/bulk_section_locks",
+            params: { sections: %w[Title Check], locked: true, comment: 'Bulk lock for release prep' }
+      expect(response).to have_http_status(:ok)
+      expect(rule.reload.audits.last.comment).to eq('Bulk lock for release prep')
+    end
   end
 end
