@@ -47,6 +47,15 @@ properties:
       - 'null'
     description: Timestamp when the account was locked due to excessive failed attempts. Null if not locked. Blueprinter format.
     example: null
+  slack_user_id:
+    type:
+      - string
+      - 'null'
+    description: >-
+      Slack member ID driving this user's Slack notifications. Settable by
+      the user (profile) and by admins (create/update, audited). Null when
+      not set.
+    example: U0123456789
   identities:
     type: array
     description: Linked external identities for this user (provider, email, last sign-in). Present in admin and profile views.

@@ -160,6 +160,27 @@ describe("EditUserModal", () => {
       );
     });
 
+    it("sends the edited slack_user_id", async () => {
+      updateUser.mockResolvedValue({ data: { toast: "OK", user: { id: 42 } } });
+
+      wrapper.vm.localUser.slack_user_id = "U0EDIT789";
+      await wrapper.vm.onSubmit({ preventDefault: vi.fn() });
+
+      expect(updateUser).toHaveBeenCalledWith(
+        42,
+        expect.objectContaining({ slack_user_id: "U0EDIT789" }),
+      );
+    });
+
+    it("sends an empty slack_user_id to clear it", async () => {
+      updateUser.mockResolvedValue({ data: { toast: "OK", user: { id: 42 } } });
+
+      wrapper.vm.localUser.slack_user_id = "";
+      await wrapper.vm.onSubmit({ preventDefault: vi.fn() });
+
+      expect(updateUser).toHaveBeenCalledWith(42, expect.objectContaining({ slack_user_id: "" }));
+    });
+
     it("emits user-updated on success", async () => {
       const updatedUser = {
         id: 42,

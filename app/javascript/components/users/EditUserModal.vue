@@ -16,6 +16,18 @@
         />
       </b-form-group>
 
+      <b-form-group label="Slack Member ID" label-for="edit-user-slack">
+        <b-form-input
+          id="edit-user-slack"
+          v-model="localUser.slack_user_id"
+          placeholder="U0123456789"
+          autocomplete="off"
+        />
+        <small class="form-text text-muted">
+          Drives this user's Slack notifications. Leave blank to disable. Changes are audited.
+        </small>
+      </b-form-group>
+
       <b-form-group label="Authentication Provider">
         <b-badge :variant="providerVariant">{{ providerLabel }}</b-badge>
       </b-form-group>
@@ -415,6 +427,8 @@ export default {
           name: this.localUser.name,
           email: this.localUser.email,
           admin: this.localUser.admin,
+          // Empty string clears the Slack id (audited server-side).
+          slack_user_id: this.localUser.slack_user_id || "",
         });
         this.alertOrNotifyResponse(response);
         this.$emit("user-updated", response.data.user);

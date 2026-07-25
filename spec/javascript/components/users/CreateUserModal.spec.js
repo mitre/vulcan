@@ -93,6 +93,23 @@ describe("CreateUserModal", () => {
       });
     });
 
+    it("includes slack_user_id in the payload only when typed", async () => {
+      createUser.mockResolvedValue({ data: { toast: "User created.", user: { id: 7 } } });
+
+      wrapper.vm.form.name = "Jane";
+      wrapper.vm.form.email = "jane@test.com";
+      wrapper.vm.form.slack_user_id = "U0CREATE1";
+
+      await wrapper.vm.onSubmit({ preventDefault: vi.fn() });
+
+      expect(createUser).toHaveBeenCalledWith({
+        name: "Jane",
+        email: "jane@test.com",
+        admin: false,
+        slack_user_id: "U0CREATE1",
+      });
+    });
+
     it("emits user-created with user data on success", async () => {
       const userData = {
         id: 99,

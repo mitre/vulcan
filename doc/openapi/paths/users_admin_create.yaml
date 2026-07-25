@@ -34,6 +34,13 @@ post:
                   type: boolean
                   description: Whether to grant admin privileges.
                   example: false
+                slack_user_id:
+                  type: string
+                  description: >-
+                    Slack member ID driving the new user's Slack
+                    notifications. Optional; the user can change it later.
+                    Admin-made changes are audited.
+                  example: U0123456789
                 password:
                   type: string
                   description: Initial password. If omitted, a reset link is generated.

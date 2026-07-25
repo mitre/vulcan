@@ -27,7 +27,7 @@ class User < ApplicationRecord
 
   include VulcanAuditable
 
-  vulcan_audited only: %i[admin name email provider]
+  vulcan_audited only: %i[admin name email provider slack_user_id]
 
   include ProjectMemberConstants
   include PasswordComplexityValidator

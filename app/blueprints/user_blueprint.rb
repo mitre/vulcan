@@ -35,7 +35,7 @@ class UserBlueprint < Blueprinter::Base
   end
 
   view :admin do
-    fields :provider, :admin, :last_sign_in_at, :failed_attempts, :locked_at
+    fields :provider, :admin, :last_sign_in_at, :failed_attempts, :locked_at, :slack_user_id
 
     field :identities do |user|
       user.identities.order(last_sign_in_at: :desc).map do |i|

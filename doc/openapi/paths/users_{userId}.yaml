@@ -28,12 +28,27 @@ patch:
                   format: email
                 admin:
                   type: boolean
+                slack_user_id:
+                  type: string
+                  description: >-
+                    Slack member ID driving the user's Slack notifications.
+                    Send an empty string to clear it. Admin-made changes are
+                    audited.
+                  example: U0123456789
         examples:
           promote:
             summary: Promote user to admin
             value:
               user:
                 admin: true
+          set_slack:
+            summary: Set the user's Slack member ID
+            value:
+              user:
+                name: Jane Doe
+                email: jane.doe@example.org
+                admin: false
+                slack_user_id: U0123456789
   responses:
     '200':
       description: User updated
@@ -100,12 +115,27 @@ put:
                   format: email
                 admin:
                   type: boolean
+                slack_user_id:
+                  type: string
+                  description: >-
+                    Slack member ID driving the user's Slack notifications.
+                    Send an empty string to clear it. Admin-made changes are
+                    audited.
+                  example: U0123456789
         examples:
           promote:
             summary: Promote user to admin
             value:
               user:
                 admin: true
+          set_slack:
+            summary: Set the user's Slack member ID
+            value:
+              user:
+                name: Jane Doe
+                email: jane.doe@example.org
+                admin: false
+                slack_user_id: U0123456789
   responses:
     '200':
       description: User updated

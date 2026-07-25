@@ -10,7 +10,7 @@ class UsersController < ApplicationController
 
   def index
     @users = User.alphabetical.select(:id, :name, :email, :provider, :admin, :last_sign_in_at,
-                                      :failed_attempts, :locked_at)
+                                      :failed_attempts, :locked_at, :slack_user_id)
     @histories = AuditBlueprint.render_as_json(
       Audited.audit_class.includes(:auditable, :user)
              .where(auditable_type: 'User')
@@ -369,11 +369,11 @@ class UsersController < ApplicationController
   end
 
   def user_create_params
-    params.expect(user: %i[name email admin])
+    params.expect(user: %i[name email admin slack_user_id])
   end
 
   def user_update_params
-    params.expect(user: %i[name email admin])
+    params.expect(user: %i[name email admin slack_user_id])
   end
 
   def password_params

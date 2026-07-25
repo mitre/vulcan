@@ -19,7 +19,7 @@ RSpec.describe 'Users endpoint contracts', type: :request do
   # ── GET /users ──
 
   describe 'GET /users (JSON)' do
-    it 'returns UserSummary array with all 8 fields pinned to real data' do
+    it 'returns UserSummary array with all 9 fields pinned to real data' do
       get '/users', headers: json_headers
       body = validate_and_parse!
 
@@ -29,7 +29,7 @@ RSpec.describe 'Users endpoint contracts', type: :request do
       admin_row = body.find { |u| u['id'] == admin.id }
       expect(admin_row).not_to be_nil, "Admin user #{admin.id} not found in response"
       assert_fields_present admin_row, :id, :name, :email, :provider, :admin,
-                            :last_sign_in_at, :failed_attempts, :locked_at
+                            :last_sign_in_at, :failed_attempts, :locked_at, :slack_user_id
       expect(admin_row['email']).to eq(admin.email)
       expect(admin_row['admin']).to be(true)
     end
@@ -38,7 +38,7 @@ RSpec.describe 'Users endpoint contracts', type: :request do
   # ── PUT /users/:id ──
 
   describe 'PUT /users/:id (JSON)' do
-    it 'returns UserToastResponse with updated user and all 8 fields' do
+    it 'returns UserToastResponse with updated user and all 9 fields' do
       put "/users/#{target_user.id}",
           params: { user: { name: 'Updated Name' } },
           headers: json_headers, as: :json
@@ -49,7 +49,7 @@ RSpec.describe 'Users endpoint contracts', type: :request do
       expect(body['user']['id']).to eq(target_user.id)
       expect(body['user']['name']).to eq('Updated Name')
       assert_fields_present body['user'], :id, :name, :email, :provider, :admin,
-                            :last_sign_in_at, :failed_attempts, :locked_at
+                            :last_sign_in_at, :failed_attempts, :locked_at, :slack_user_id
     end
 
     it 'returns 422 when last admin tries to demote self' do
@@ -159,7 +159,7 @@ RSpec.describe 'Users endpoint contracts', type: :request do
       expect(body.dig('toast', 'variant')).to eq('success')
       expect(body.dig('toast', 'title')).to eq('User created.')
       assert_fields_present body['user'], :id, :name, :email, :provider, :admin,
-                            :last_sign_in_at, :failed_attempts, :locked_at
+                            :last_sign_in_at, :failed_attempts, :locked_at, :slack_user_id
       expect(body['user']['name']).to eq('New Contract User')
     end
 
@@ -245,7 +245,7 @@ RSpec.describe 'Users endpoint contracts', type: :request do
       expect(body['user']['id']).to eq(target_user.id)
       expect(body['user']['locked_at']).not_to be_nil
       assert_fields_present body['user'], :id, :name, :email, :provider, :admin,
-                            :last_sign_in_at, :failed_attempts, :locked_at
+                            :last_sign_in_at, :failed_attempts, :locked_at, :slack_user_id
     end
 
     it 'returns 422 with danger toast when locking self' do
