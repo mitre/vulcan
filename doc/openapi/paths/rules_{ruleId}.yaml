@@ -67,6 +67,14 @@ patch:
               rule:
                 status: Not Applicable
                 status_justification: The platform provides no wireless interfaces to configure.
+          nested_content:
+            summary: Update check content and record an audit comment
+            value:
+              rule:
+                audit_comment: Check procedure clarified per review feedback.
+                checks_attributes:
+                  - id: 311
+                    content: Review the container platform configuration to verify approved authorizations are enforced.
   responses:
     '200':
       description: Rule updated
