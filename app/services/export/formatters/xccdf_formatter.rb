@@ -8,6 +8,15 @@ module Export
     # Moved from ExportHelper#xccdf_helper, groups_helper, descriptions_helper,
     # checks_helper, ox_el_helper, ox_el_helper_ascii_str.
     class XccdfFormatter < BaseFormatter
+      attr_reader :version_profile
+
+      # Version variance (namespace, schemaLocation, id encoding) lives in
+      # the profile — the content model below is version-agnostic.
+      def initialize(version: Xccdf::VersionProfile::V1_1_4)
+        super()
+        @version_profile = version
+      end
+
       def component_based?
         true
       end
@@ -55,13 +64,10 @@ module Export
         benchmark['xmlns:cpe'] = 'http://cpe.mitre.org/language/2.0'
         benchmark['xmlns:xhtml'] = 'http://www.w3.org/1999/xhtml'
         benchmark['xmlns:dsig'] = 'http://www.w3.org/2000/09/xmldsig#'
-        benchmark['xsi:schemaLocation'] = 'http://checklists.nist.gov/xccdf/1.1 ' \
-                                          'http://nvd.nist.gov/schema/xccdf-1.1.4.xsd' \
-                                          'http://cpe.mitre.org/dictionary/2.0 ' \
-                                          'http://cpe.mitre.org/files/cpe-dictionary_2.1.xsd'
-        benchmark['id'] = component[:name]
+        benchmark['xsi:schemaLocation'] = version_profile.schema_location
+        benchmark['id'] = version_profile.format_id(:benchmark, component[:name])
         benchmark['xml:lang'] = 'en'
-        benchmark['xmlns'] = 'http://checklists.nist.gov/xccdf/1.1'
+        benchmark['xmlns'] = version_profile.namespace
 
         add_element(benchmark, 'status', 'draft', { date: Time.zone.today.strftime('%Y-%m-%d') })
         title = component[:title] || "#{component[:name]} STIG Readiness Guide"
@@ -91,11 +97,11 @@ module Export
         groups = {}
         rules.each do |rule|
           group = Ox::Element.new('Group')
-          group['id'] = "V-#{component[:prefix]}-#{rule[:rule_id]}"
+          group['id'] = version_profile.format_id(:group, "V-#{component[:prefix]}-#{rule[:rule_id]}")
 
           add_element(group, 'title', rule[:version])
           group_rule = Ox::Element.new('Rule')
-          group_rule['id'] = "SV-#{component[:prefix]}-#{rule[:rule_id]}"
+          group_rule['id'] = version_profile.format_id(:rule, "SV-#{component[:prefix]}-#{rule[:rule_id]}")
           group_rule['severity'] = rule[:rule_severity] if rule[:rule_severity].present?
           group_rule['weight'] = rule[:rule_weight] if rule[:rule_weight].present?
 
@@ -104,7 +110,7 @@ module Export
           build_descriptions(group_rule, rule)
           add_element(group_rule, 'ident', rule[:ident], { system: rule[:ident_system] })
           add_element(group_rule, 'fixtext', rule[:fixtext],
-                      { fixref: "F-#{component[:prefix]}-#{rule[:rule_id]}_fix" })
+                      { fixref: version_profile.format_id(:fix, "F-#{component[:prefix]}-#{rule[:rule_id]}_fix") })
           build_checks(group_rule, rule)
 
           group << group_rule
