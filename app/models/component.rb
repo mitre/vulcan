@@ -8,6 +8,7 @@ class Component < ApplicationRecord
   include ActionView::Helpers::TextHelper
   include SeverityCounts
   include ComponentParentSet
+  include ComponentCopy
   include RequirementBuckets
   include XccdfParseable
   include BenchmarkSearchable
@@ -55,6 +56,13 @@ class Component < ApplicationRecord
           answer.rule = new_component.rules.find { |r| r.rule_id == answer.rule.rule_id }
         end
       end
+
+      # Authored SrgRules cannot ride the :rules include above (that
+      # association is Rule-scoped) and cannot ride amoeba at all —
+      # SrgRule's own amoeba block retypes copies to Rule for the import
+      # path. The ONE kind-aware copy seam handles them; empty (and so a
+      # no-op) for stig components.
+      original_component.copy_authored_requirements_onto(new_component)
 
       # Cloning the habtm relationship just doesn't work here since it tries to create a new rule
       # and doesn't intelligently link to the existing rule. This code loops over every rules satisfies
@@ -520,73 +528,6 @@ class Component < ApplicationRecord
     end
 
     copied_component
-  end
-
-  # Copy audit history and reviews from the original component's rules to the
-  # duplicated component's rules. Uses bulk SQL (4 queries total) instead of
-  # per-rule queries (4 * N rules) for dramatically better performance.
-  def duplicate_reviews_and_history(component_id)
-    return unless component_id
-
-    orig = Component.find(component_id)
-    conn = ActiveRecord::Base.connection
-
-    # Build rule_id → new rule id mapping (matched by rule_id field)
-    new_rules_by_rule_id = rules.index_by(&:rule_id)
-    id_map = orig.rules.filter_map do |orig_rule|
-      new_rule = new_rules_by_rule_id[orig_rule.rule_id]
-      [orig_rule.id, new_rule.id] if new_rule
-    end
-    return if id_map.empty?
-
-    new_ids = id_map.map(&:last)
-
-    # Create a temporary mapping table for bulk operations.
-    # Values are integer PKs from ActiveRecord — safe for interpolation.
-    # Cast to Integer explicitly to satisfy Brakeman's SQL injection scanner.
-    safe_values = id_map.map { |o, n| "(#{Integer(o)}, #{Integer(n)})" }.join(', ')
-    mapping_cte = "rule_map AS (SELECT * FROM (VALUES #{safe_values}) AS t(orig_id, new_id))"
-    safe_new_ids = new_ids.map { |id| Integer(id) }.join(', ')
-
-    # 1. Preserve original timestamps on duplicated rules
-    conn.exec_update(
-      "WITH #{mapping_cte} UPDATE base_rules " \
-      'SET created_at = orig.created_at, updated_at = orig.updated_at ' \
-      'FROM rule_map JOIN base_rules orig ON orig.id = rule_map.orig_id ' \
-      'WHERE base_rules.id = rule_map.new_id'
-    )
-
-    # 2. Remove auto-generated audits from the duplication save
-    conn.exec_delete(
-      "DELETE FROM audits WHERE auditable_type = 'BaseRule' " \
-      "AND auditable_id IN (#{safe_new_ids})"
-    )
-
-    # 3. Copy original audit history to new rules
-    conn.exec_insert(
-      "WITH #{mapping_cte} " \
-      'INSERT INTO audits (auditable_id, auditable_type, associated_id, associated_type, ' \
-      'user_id, user_type, username, action, audited_changes, version, ' \
-      'comment, remote_address, request_uuid, created_at, audited_user_id, audited_username) ' \
-      'SELECT rule_map.new_id, a.auditable_type, a.associated_id, a.associated_type, ' \
-      'a.user_id, a.user_type, a.username, a.action, a.audited_changes, a.version, ' \
-      'a.comment, a.remote_address, a.request_uuid, a.created_at, ' \
-      'a.audited_user_id, a.audited_username FROM audits a ' \
-      "JOIN rule_map ON a.auditable_id = rule_map.orig_id WHERE a.auditable_type = 'BaseRule'"
-    )
-
-    # 4. Copy reviews from original rules. Dual-write the polymorphic
-    # commentable target (BaseRule + new rule id) — this raw INSERT bypasses
-    # sync_commentable_from_rule, and the triage read paths filter on
-    # commentable_*, so omitting them hides the copied comments.
-    conn.exec_insert(
-      "WITH #{mapping_cte} " \
-      'INSERT INTO reviews (user_id, rule_id, commentable_type, commentable_id, ' \
-      'action, comment, created_at, updated_at) ' \
-      "SELECT r.user_id, rule_map.new_id, 'BaseRule', rule_map.new_id, " \
-      'r.action, r.comment, r.created_at, r.updated_at ' \
-      'FROM reviews r JOIN rule_map ON r.rule_id = rule_map.orig_id'
-    )
   end
 
   def create_rule_satisfactions

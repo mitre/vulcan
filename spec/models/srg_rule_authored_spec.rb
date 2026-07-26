@@ -50,6 +50,33 @@ RSpec.describe SrgRule do
       expect(rule.errors[:base])
         .to include('must belong to either a component (authored) or a security requirements guide (catalog), not both')
     end
+
+    # REQUIREMENT: "authored" is decided by the association, not just the
+    # FK column — during a nested build (component copy) the parent is
+    # unsaved so component_id is still nil while the component association
+    # is set. A column-only test misclassified copied authored rows as
+    # catalog rows (XOR failure + wrong status vocabulary).
+    it 'treats a nested-built row (unsaved parent, association set) as authored' do
+      unsaved_parent = Component.new(project: component.project, name: 'Nested Parent',
+                                     prefix: 'NEST-00', title: 'Nested', document_type: 'srg',
+                                     based_on: component.based_on)
+      rule = build(:srg_rule, :authored, component: unsaved_parent, status: 'Applicable')
+
+      expect(rule.component_id).to be_nil
+      expect(rule).to be_valid
+    end
+
+    it 'validates a nested-built authored row against the profile vocabulary, not the legacy list' do
+      unsaved_parent = Component.new(project: component.project, name: 'Nested Vocab',
+                                     prefix: 'NESV-00', title: 'Nested vocab', document_type: 'srg',
+                                     based_on: component.based_on)
+      rule = build(:srg_rule, :authored, component: unsaved_parent,
+                                         status: 'Applicable - Configurable')
+
+      expect(rule).not_to be_valid
+      expect(rule.errors[:status].join)
+        .to include("acceptable values are: 'Not Yet Determined', 'Applicable', 'Not Applicable'")
+    end
   end
 
   describe 'authored XOR catalog (database CHECK — survives validation bypass)' do
