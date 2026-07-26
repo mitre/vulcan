@@ -158,4 +158,30 @@ RSpec.describe Export::Formatters::XccdfFormatter do
       expect(new_groups.size).to eq(old_groups.size)
     end
   end
+
+  describe '#generate_from_component with authored SRG requirements' do
+    let_it_be(:core) do
+      create(:security_requirements_guide, :core, :skip_rules, srg_id: 'SRG-CORE-XCCDF-GUARD', version: 'V1R1')
+    end
+    let_it_be(:core_row) do
+      create(:srg_rule, security_requirements_guide: core, version: 'SRG-OS-000701')
+    end
+    let_it_be(:srg_component) do
+      create(:component, :skip_rules, document_type: 'srg', based_on: core, prefix: 'XFMT-00')
+    end
+
+    it 'formats authored SrgRules without emitting satisfies structures — satisfies is structurally absent' do
+      row = create(:srg_rule, :authored, component: srg_component, version: 'SRG-OS-000701',
+                                         rule_id: '000801', status: 'Applicable',
+                                         derived_from_srg_rule_id: core_row.id)
+      row.checks.create!(system: 'C-xfmt', content: 'Authored check content')
+
+      xml_string = formatter.generate_from_component(component: srg_component,
+                                                     rules: srg_component.authored_srg_rules)
+
+      expect(xml_string).to include('SRG-OS-000701')
+      expect(xml_string).to include('Authored check content')
+      expect(xml_string).not_to include('Satisfies')
+    end
+  end
 end

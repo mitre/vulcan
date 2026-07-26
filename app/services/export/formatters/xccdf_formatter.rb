@@ -115,13 +115,24 @@ module Export
         groups.keys.sort.each { |rule_id| benchmark << groups[rule_id] }
       end
 
+      # Satisfies is structurally absent on authored SrgRules — same guard
+      # idiom as the backup serializer's satisfaction pass. Empty string
+      # when the rule carries no satisfaction relations.
+      def satisfaction_note(rule)
+        return '' unless rule.respond_to?(:satisfies) && rule.satisfies.present?
+
+        "\n\n#{rule.satisfaction_text(format: :srg)}"
+      end
+
       def build_descriptions(group_rule, rule)
         rule.disa_rule_descriptions.each do |drd|
           desc = Ox::Element.new('description')
 
           desc_str = []
-          vuln_discussion = drd[:vuln_discussion].dup || ''
-          vuln_discussion << "\n\n#{rule.satisfaction_text(format: :srg)}" if rule.satisfies.present?
+          # (value || '').dup — dup AFTER the fallback: a nil discussion
+          # must not yield the frozen '' literal, which crashes any append.
+          vuln_discussion = (drd[:vuln_discussion] || '').dup
+          vuln_discussion << satisfaction_note(rule)
           desc_str << ascii_element('VulnDiscussion', vuln_discussion)
           desc_str << ascii_element('FalsePositives', drd[:false_positives])
           desc_str << ascii_element('FalseNegatives', drd[:false_negatives])
