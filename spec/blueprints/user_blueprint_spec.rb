@@ -38,7 +38,7 @@ RSpec.describe UserBlueprint do
 
     it 'includes all admin-visible fields' do
       expect(result.keys).to match_array(%w[id name email provider admin last_sign_in_at
-                                            failed_attempts locked_at identities])
+                                            failed_attempts locked_at identities slack_user_id])
     end
 
     it 'does NOT include Devise internals' do
