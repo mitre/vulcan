@@ -57,6 +57,25 @@ module Export
         doc << benchmark
       end
 
+      # Published SRG documents use underscored benchmark ids
+      # (General_Purpose_Operating_System); the STIG readiness emission
+      # keeps the raw name — byte-locked by the corpus.
+      def benchmark_id(component)
+        return component[:name] unless srg_component?(component)
+
+        component[:name].tr(' ', '_')
+      end
+
+      def srg_component?(component)
+        component.respond_to?(:document_type) && component.document_type == 'srg'
+      end
+
+      # Authored SRG requirement rows publish with the SRG family shape;
+      # Rule rows keep the STIG readiness shape byte-for-byte.
+      def authored_srg?(rule)
+        rule.is_a?(SrgRule)
+      end
+
       def build_benchmark(component)
         benchmark = Ox::Element.new('Benchmark')
         benchmark['xmlns:dc'] = 'http://purl.org/dc/elements/1.1/'
@@ -65,7 +84,7 @@ module Export
         benchmark['xmlns:xhtml'] = 'http://www.w3.org/1999/xhtml'
         benchmark['xmlns:dsig'] = 'http://www.w3.org/2000/09/xmldsig#'
         benchmark['xsi:schemaLocation'] = version_profile.schema_location
-        benchmark['id'] = version_profile.format_id(:benchmark, component[:name])
+        benchmark['id'] = version_profile.format_id(:benchmark, benchmark_id(component))
         benchmark['xml:lang'] = 'en'
         benchmark['xmlns'] = version_profile.namespace
 
@@ -96,22 +115,39 @@ module Export
       def build_groups(benchmark, component, rules)
         groups = {}
         rules.each do |rule|
+          srg_shape = authored_srg?(rule)
           group = Ox::Element.new('Group')
           group['id'] = version_profile.format_id(:group, "V-#{component[:prefix]}-#{rule[:rule_id]}")
 
-          add_element(group, 'title', rule[:version])
+          # Published SRG shape: the Group title is the core-half from the
+          # row's own lineage; a net-new row carries its minted identifier,
+          # or its working display name before release mints one — never an
+          # empty title. STIG rows keep their SRG-ID version.
+          working_name = "#{component[:prefix]}-#{rule[:rule_id]}"
+          group_title = if srg_shape
+                          rule.derived_from&.version || rule[:version].presence || working_name
+                        else
+                          rule[:version]
+                        end
+          add_element(group, 'title', group_title)
+          add_element(group, 'description', '<GroupDescription></GroupDescription>') if srg_shape
           group_rule = Ox::Element.new('Rule')
           group_rule['id'] = version_profile.format_id(:rule, "SV-#{component[:prefix]}-#{rule[:rule_id]}")
           group_rule['severity'] = rule[:rule_severity] if rule[:rule_severity].present?
           group_rule['weight'] = rule[:rule_weight] if rule[:rule_weight].present?
 
-          add_element(group_rule, 'version', "#{component[:prefix]}-#{rule[:rule_id]}")
+          # SRG rows publish their minted identifier (working display name
+          # before release mints one); STIG rows keep the working STIG-ID
+          # convention.
+          rule_version = srg_shape ? (rule[:version].presence || working_name) : working_name
+          add_element(group_rule, 'version', rule_version)
           add_element(group_rule, 'title', rule[:title])
           build_descriptions(group_rule, rule)
           add_element(group_rule, 'ident', rule[:ident], { system: rule[:ident_system] })
-          add_element(group_rule, 'fixtext', rule[:fixtext],
-                      { fixref: version_profile.format_id(:fix, "F-#{component[:prefix]}-#{rule[:rule_id]}_fix") })
-          build_checks(group_rule, rule)
+          fixref = version_profile.format_id(:fix, "F-#{component[:prefix]}-#{rule[:rule_id]}_fix")
+          add_element(group_rule, 'fixtext', rule[:fixtext], { fixref: fixref })
+          add_element(group_rule, 'fix', nil, { id: fixref }) if srg_shape
+          build_checks(group_rule, rule, component)
 
           group << group_rule
           groups[rule[:id]] = group
@@ -157,10 +193,19 @@ module Export
         end
       end
 
-      def build_checks(group_rule, rule)
+      def build_checks(group_rule, rule, component)
+        srg_shape = authored_srg?(rule)
         rule.checks.each do |check|
           ch = Ox::Element.new('check')
-          ch['system'] = 'N/A'
+          if srg_shape
+            # Published SRG shape: working-convention check id and a
+            # content-ref to the document itself, before the content.
+            ch['system'] = "C-#{component[:prefix]}-#{rule[:rule_id]}_chk"
+            add_element(ch, 'check-content-ref', nil,
+                        { href: "#{benchmark_id(component)}_SRG.xml", name: 'M' })
+          else
+            ch['system'] = 'N/A'
+          end
           add_element(ch, 'check-content', check[:content])
           group_rule << ch
         end

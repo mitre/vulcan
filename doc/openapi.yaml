@@ -2252,11 +2252,11 @@ paths:
       tags:
         - Components
       summary: Export component in the specified format
-      description: Downloads the component as CSV, XCCDF XML, InSpec profile, JSON archive, or disposition CSV. Supports mode selection (working_copy, vendor_submission, published_stig) via query param. disposition_csv is for DISA comment triage matrix export. Requires project membership.
+      description: 'Downloads the component as CSV, XCCDF XML, InSpec profile, JSON archive, or disposition CSV. Supports mode selection (working_copy, vendor_submission, published_stig) via query param. The xccdf type is kind-routed by the component''s document type: SRG components export their authored requirements through the published_srg mode (only Applicable requirements publish); STIG components use published_stig. disposition_csv is for DISA comment triage matrix export. Requires project membership.'
       parameters:
         - name: mode
           in: query
-          description: Export mode controlling which fields are included.
+          description: Export mode controlling which fields are included. The xccdf type ignores this parameter — its mode is derived from the component's document type (published_srg for SRG kind, published_stig for STIG).
           schema:
             type: string
             enum:

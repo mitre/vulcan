@@ -221,8 +221,12 @@ class ComponentsController < ApplicationController
             filename: "#{@component[:name].tr(' ', '-')}-#{version}#{release}-stig-baseline.zip"
           )
         when :xccdf
+          # Kind-derived publication mode: SRG components publish their
+          # authored requirements; the STIG mode's Rule association is
+          # structurally empty for them.
+          xccdf_mode = @component.document_type == 'srg' ? :published_srg : :published_stig
           perform_export(
-            exportable: @component, mode: :published_stig, format: :xccdf,
+            exportable: @component, mode: xccdf_mode, format: :xccdf,
             filename: "#{@component[:name].tr(' ', '-')}-#{version}#{release}-xccdf.xml"
           )
         when :json_archive

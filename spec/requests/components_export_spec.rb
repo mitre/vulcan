@@ -50,4 +50,35 @@ RSpec.describe 'Component bulk export' do
       end
     end
   end
+
+  # ==========================================================================
+  # REQUIREMENT: the xccdf export type is kind-routed — an SRG component
+  # exports its authored requirements through the published-SRG mode
+  # (never the STIG mode, whose Rule association is structurally empty
+  # for SRG kind and would download an empty benchmark).
+  # ==========================================================================
+  describe 'GET /components/:id/export/xccdf for an SRG component' do
+    let_it_be(:export_core) do
+      create(:security_requirements_guide, :core, :skip_rules, srg_id: 'SRG-CORE-EXPRT', version: 'V1R1')
+    end
+    let_it_be(:export_core_row) do
+      create(:srg_rule, security_requirements_guide: export_core, version: 'SRG-OS-000821')
+    end
+    let_it_be(:srg_component) do
+      srg_comp = Component.create!(project: project, name: 'Export SRG Component', prefix: 'EXPS-00',
+                                   title: 'Export SRG', document_type: 'srg', based_on: export_core)
+      srg_comp.authored_srg_rules.each { |r| r.update!(status: 'Applicable', audit_comment: 'setup') }
+      ReleaseIdentifierMinter.new(srg_comp).mint!(srg_comp.authored_srg_rules.to_a)
+      srg_comp
+    end
+
+    it 'serves the published SRG shape — authored requirements with minted identifiers' do
+      get "/components/#{srg_component.id}/export/xccdf", headers: { 'Accept' => 'text/html' }
+
+      expect(response).to have_http_status(:success)
+      expect(response.headers['Content-Type']).to include('application/xml')
+      expect(response.body).to include('SRG-OS-000821-EXPS-000001')
+      expect(response.body).to include('GroupDescription')
+    end
+  end
 end
