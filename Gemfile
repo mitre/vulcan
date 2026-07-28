@@ -157,9 +157,4 @@ gem 'blueprinter-activerecord', '~> 1.3'
 
 gem 'oj', '~> 3.16'
 
-# faraday is a transitive dependency (omniauth_openid_connect, oauth2,
-# faraday_middleware). Pin the security-patched 1.10.x line for CVE-2026-54297
-# without moving to the 2.x major. `bundle update faraday` (even with its full
-# companion set) mis-resolves this deep transitive gem downward to 1.3.1, so an
-# explicit floor is required to reach the fixed 1.10.6.
 gem 'faraday', '~> 1.10', '>= 1.10.6'
