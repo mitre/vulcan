@@ -151,6 +151,23 @@ RSpec.describe Export::Modes::PublishedSrg do
     expect(version.text).to eq("PSRG-00-#{net_new.rule_id}")
   end
 
+  it 'profile select lists track the emitted Groups only — excluded rows never appear' do
+    component, applicable, = build_release_ready_component
+
+    xml = export_xml(component)
+    benchmark = Ox.parse(xml).nodes.last
+    group_ids = benchmark.nodes.select { |n| n.is_a?(Ox::Element) && n.name == 'Group' }.pluck('id')
+    profiles = benchmark.nodes.select { |n| n.is_a?(Ox::Element) && n.name == 'Profile' }
+
+    expect(group_ids.size).to eq(2)
+    expect(group_ids).to include("V-PSRG-00-#{applicable.rule_id}")
+    expect(profiles.size).to eq(9)
+    profiles.each do |profile|
+      idrefs = profile.nodes.select { |n| n.is_a?(Ox::Element) && n.name == 'select' }.map { |s| s['idref'] }
+      expect(idrefs).to eq(group_ids)
+    end
+  end
+
   describe 'XCCDF 1.1.4 schema validation' do
     def xccdf_schema
       # Relative schema imports resolve against the working directory.

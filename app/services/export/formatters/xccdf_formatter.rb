@@ -8,6 +8,17 @@ module Export
     # Moved from ExportHelper#xccdf_helper, groups_helper, descriptions_helper,
     # checks_helper, ox_el_helper, ox_el_helper_ascii_str.
     class XccdfFormatter < BaseFormatter
+      # Published SRGs carry nine MAC profiles — three mission assurance
+      # categories crossed with three confidentiality levels. Every
+      # published DISA SRG (and the core documents) selects every Group
+      # in every profile; there is no differential selection to encode.
+      MAC_CATEGORIES = {
+        'MAC-1' => 'I - Mission Critical',
+        'MAC-2' => 'II - Mission Support',
+        'MAC-3' => 'III - Administrative'
+      }.freeze
+      CONFIDENTIALITY_LEVELS = %w[Classified Public Sensitive].freeze
+
       attr_reader :version_profile
 
       # Version variance (namespace, schemaLocation, id encoding) lives in
@@ -51,8 +62,11 @@ module Export
         instruct_xsl['href'] = 'STIG_unclass.xsl'
         doc << instruct_xsl
 
-        # Benchmark root
+        # Benchmark root — XCCDF content-model order: version, then
+        # Profiles, then Groups. Profiles are published-SRG shape only;
+        # the STIG readiness emission is byte-locked by the corpus.
         benchmark = build_benchmark(component)
+        build_profiles(benchmark, component, rules) if srg_component?(component)
         build_groups(benchmark, component, rules)
         doc << benchmark
       end
@@ -112,12 +126,40 @@ module Export
         benchmark
       end
 
+      # Each MAC profile selects every emitted Group, in Group order —
+      # the select list and the Group list are built from the same
+      # sorted rows and the same id helper so they cannot drift.
+      def build_profiles(benchmark, component, rules)
+        rows = sorted_rules(rules)
+        MAC_CATEGORIES.each do |category, category_title|
+          CONFIDENTIALITY_LEVELS.each do |level|
+            profile = Ox::Element.new('Profile')
+            profile['id'] = version_profile.format_id(:profile, "#{category}_#{level}")
+            add_element(profile, 'title', "#{category_title} #{level}")
+            add_element(profile, 'description', '<ProfileDescription></ProfileDescription>')
+            rows.each do |rule|
+              add_element(profile, 'select', nil, { idref: group_id(component, rule), selected: 'true' })
+            end
+            benchmark << profile
+          end
+        end
+      end
+
+      # Sorted for deterministic output — Groups and profile selects
+      # share this order.
+      def sorted_rules(rules)
+        rules.sort_by { |rule| rule[:id] }
+      end
+
+      def group_id(component, rule)
+        version_profile.format_id(:group, "V-#{component[:prefix]}-#{rule[:rule_id]}")
+      end
+
       def build_groups(benchmark, component, rules)
-        groups = {}
-        rules.each do |rule|
+        sorted_rules(rules).each do |rule|
           srg_shape = authored_srg?(rule)
           group = Ox::Element.new('Group')
-          group['id'] = version_profile.format_id(:group, "V-#{component[:prefix]}-#{rule[:rule_id]}")
+          group['id'] = group_id(component, rule)
 
           # Published SRG shape: the Group title is the core-half from the
           # row's own lineage; a net-new row carries its minted identifier,
@@ -150,11 +192,8 @@ module Export
           build_checks(group_rule, rule, component)
 
           group << group_rule
-          groups[rule[:id]] = group
+          benchmark << group
         end
-
-        # Sort by rule ID for deterministic output
-        groups.keys.sort.each { |rule_id| benchmark << groups[rule_id] }
       end
 
       # Satisfies is structurally absent on authored SrgRules — same guard

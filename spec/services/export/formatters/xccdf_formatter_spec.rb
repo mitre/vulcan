@@ -119,6 +119,10 @@ RSpec.describe Export::Formatters::XccdfFormatter do
     it 'includes ident element' do
       expect(xml_string).to include('<ident')
     end
+
+    it 'emits no Profile elements — the STIG readiness shape carries none (byte-locked by the corpus)' do
+      expect(xml_string).not_to include('<Profile')
+    end
   end
 
   describe 'parity with ExportHelper' do
@@ -182,6 +186,53 @@ RSpec.describe Export::Formatters::XccdfFormatter do
       expect(xml_string).to include('SRG-OS-000701')
       expect(xml_string).to include('Authored check content')
       expect(xml_string).not_to include('Satisfies')
+    end
+
+    # Published DISA SRGs carry nine MAC profiles — 3 mission assurance
+    # categories x 3 confidentiality levels — each selecting every Group
+    # (verified against every published SRG in db/seeds/srgs and the OS
+    # Core document: no differential selection exists).
+    it 'emits the nine MAC profiles between version and the Groups, each selecting every Group' do
+      %w[000801 000802].each do |rule_id|
+        create(:srg_rule, :authored, component: srg_component, version: nil,
+                                     rule_id: rule_id, status: 'Applicable',
+                                     derived_from_srg_rule_id: core_row.id)
+      end
+
+      xml_string = formatter.generate_from_component(component: srg_component,
+                                                     rules: srg_component.authored_srg_rules)
+      benchmark = Ox.parse(xml_string).nodes.last
+      children = benchmark.nodes.select { |n| n.is_a?(Ox::Element) }
+      names = children.map(&:name)
+      profiles = children.select { |n| n.name == 'Profile' }
+      group_ids = children.select { |n| n.name == 'Group' }.pluck('id')
+
+      expect(profiles.pluck('id')).to eq(
+        %w[MAC-1_Classified MAC-1_Public MAC-1_Sensitive
+           MAC-2_Classified MAC-2_Public MAC-2_Sensitive
+           MAC-3_Classified MAC-3_Public MAC-3_Sensitive]
+      )
+      titles = profiles.map { |p| p.nodes.find { |n| n.is_a?(Ox::Element) && n.name == 'title' }.text }
+      expect(titles).to eq(
+        ['I - Mission Critical Classified', 'I - Mission Critical Public',
+         'I - Mission Critical Sensitive', 'II - Mission Support Classified',
+         'II - Mission Support Public', 'II - Mission Support Sensitive',
+         'III - Administrative Classified', 'III - Administrative Public',
+         'III - Administrative Sensitive']
+      )
+      descriptions = profiles.map { |p| p.nodes.find { |n| n.is_a?(Ox::Element) && n.name == 'description' }.text }
+      expect(descriptions.uniq).to eq(['<ProfileDescription></ProfileDescription>'])
+
+      expect(group_ids).to eq(%w[V-XFMT-00-000801 V-XFMT-00-000802])
+      profiles.each do |profile|
+        selects = profile.nodes.select { |n| n.is_a?(Ox::Element) && n.name == 'select' }
+        expect(selects.map { |s| s['idref'] }).to eq(group_ids)
+        expect(selects.map { |s| s['selected'] }.uniq).to eq(['true'])
+      end
+
+      # XCCDF benchmark order: version, then Profiles, then Groups.
+      expect(names.index('Profile')).to be > names.index('version')
+      expect(names.rindex('Profile')).to be < names.index('Group')
     end
   end
 end
