@@ -152,7 +152,7 @@ module Export
       end
 
       def group_id(component, rule)
-        version_profile.format_id(:group, "V-#{component[:prefix]}-#{rule[:rule_id]}")
+        version_profile.format_id(:group, PublishedIdentifiers.group(component[:prefix], rule[:rule_id]))
       end
 
       def build_groups(benchmark, component, rules)
@@ -174,7 +174,8 @@ module Export
           add_element(group, 'title', group_title)
           add_element(group, 'description', '<GroupDescription></GroupDescription>') if srg_shape
           group_rule = Ox::Element.new('Rule')
-          group_rule['id'] = version_profile.format_id(:rule, "SV-#{component[:prefix]}-#{rule[:rule_id]}")
+          group_rule['id'] = version_profile.format_id(:rule,
+                                                       PublishedIdentifiers.rule(component[:prefix], rule[:rule_id]))
           group_rule['severity'] = rule[:rule_severity] if rule[:rule_severity].present?
           group_rule['weight'] = rule[:rule_weight] if rule[:rule_weight].present?
 
@@ -186,7 +187,8 @@ module Export
           add_element(group_rule, 'title', rule[:title])
           build_descriptions(group_rule, rule)
           add_element(group_rule, 'ident', rule[:ident], { system: rule[:ident_system] })
-          fixref = version_profile.format_id(:fix, "F-#{component[:prefix]}-#{rule[:rule_id]}_fix")
+          fixref = version_profile.format_id(:fix,
+                                             PublishedIdentifiers.fixref(component[:prefix], rule[:rule_id]))
           add_element(group_rule, 'fixtext', rule[:fixtext], { fixref: fixref })
           add_element(group_rule, 'fix', nil, { id: fixref }) if srg_shape
           build_checks(group_rule, rule, component)
@@ -239,7 +241,7 @@ module Export
           if srg_shape
             # Published SRG shape: working-convention check id and a
             # content-ref to the document itself, before the content.
-            ch['system'] = "C-#{component[:prefix]}-#{rule[:rule_id]}_chk"
+            ch['system'] = PublishedIdentifiers.check(component[:prefix], rule[:rule_id])
             add_element(ch, 'check-content-ref', nil,
                         { href: "#{benchmark_id(component)}_SRG.xml", name: 'M' })
           else

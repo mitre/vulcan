@@ -307,8 +307,8 @@ class Rule < BaseRule
     control.add_tag(Inspec::Object::Tag.new('severity', rule_severity))
     control.add_tag(Inspec::Object::Tag.new('gtitle', version))
     control.add_tag(Inspec::Object::Tag.new('satisfies', satisfies.includes(:srg_rule).filter_map { |r| r.srg_rule&.version }.uniq.sort)) if satisfies.present?
-    control.add_tag(Inspec::Object::Tag.new('gid', "V-#{component[:prefix]}-#{rule_id}"))
-    control.add_tag(Inspec::Object::Tag.new('rid', "SV-#{component[:prefix]}-#{rule_id}"))
+    control.add_tag(Inspec::Object::Tag.new('gid', PublishedIdentifiers.group(component[:prefix], rule_id)))
+    control.add_tag(Inspec::Object::Tag.new('rid', PublishedIdentifiers.rule(component[:prefix], rule_id)))
     control.add_tag(Inspec::Object::Tag.new('stig_id', "#{component[:prefix]}-#{rule_id}"))
     control.add_tag(Inspec::Object::Tag.new('cci', format_inspec_control_cci.uniq.sort)) if ident.present?
     control.add_tag(Inspec::Object::Tag.new('nist', format_inspec_control_nist.uniq.sort))
