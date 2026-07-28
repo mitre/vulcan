@@ -33,6 +33,31 @@ RSpec.describe RequirementImportService do
       expect(rows.map(&:derived_from_srg_rule_id)).to match_array(core_a_rows.map(&:id))
     end
 
+    it 'numbers generated rows with local ordinals — the catalog document id never carries over' do
+      described_class.new(srg_component).import_parent!(core_a)
+
+      rows = srg_component.authored_srg_rules.reload.order(:rule_id)
+      expect(rows.map(&:rule_id)).to eq(%w[000001 000002])
+      expect(core_a_rows.map(&:rule_id)).to all(match(/\ASV-/))
+    end
+
+    it 'numbers deterministically in the source document order, not insertion or database order' do
+      reversed_core = create(:security_requirements_guide, :core, :skip_rules)
+      create(:srg_rule, security_requirements_guide: reversed_core, version: 'SRG-OS-000902',
+                        title: 'Inserted first, numbered second')
+      create(:srg_rule, security_requirements_guide: reversed_core, version: 'SRG-OS-000901',
+                        title: 'Inserted second, numbered first')
+      component = create(:component, :skip_rules, document_type: 'srg', based_on: reversed_core,
+                                                  prefix: 'DETO-00', name: 'Deterministic numbering')
+
+      described_class.new(component).import_parent!(reversed_core)
+
+      rows = component.authored_srg_rules.reload.order(:rule_id)
+      expect(rows.map { |r| [r.rule_id, r.derived_from.version] }).to eq(
+        [%w[000001 SRG-OS-000901], %w[000002 SRG-OS-000902]]
+      )
+    end
+
     it 'copies content from the catalog row' do
       described_class.new(srg_component).import_parent!(core_a)
 

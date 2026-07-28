@@ -63,7 +63,17 @@ class RequirementImportService
   # bulk-inserted with nested records and the initial creation audit
   # (activerecord-import bypasses callbacks, matching the Rule path).
   def generate_authored_requirements!(srg, versions)
-    rows = catalog_rows(srg, versions).map { |catalog_row| build_authored_row(catalog_row) }
+    # Component rows are numbered locally (the kind-agnostic sequence) —
+    # the catalog row's own document id must never carry onto the
+    # authored working sequence. Numbers are assigned explicitly here
+    # because the bulk import validates every row before any insert, so
+    # the per-row set_rule_id callback would hand them all the same next
+    # number.
+    next_number = @component.largest_rule_id
+    rows = catalog_rows(srg, versions).map do |catalog_row|
+      next_number += 1
+      build_authored_row(catalog_row, next_number)
+    end
     failed = SrgRule.import(rows, all_or_none: true, recursive: true).failed_instances
     return if failed.blank?
 
@@ -71,14 +81,18 @@ class RequirementImportService
     raise ActiveRecord::RecordInvalid, @component
   end
 
+  # Canonical order makes the ordinal numbering deterministic — working
+  # numbers follow the source document's requirement order, the same
+  # convention the stig import path uses (it sorts by catalog version).
   def catalog_rows(srg, versions)
-    scope = srg.srg_rules
+    scope = srg.srg_rules.canonical_order
     versions.nil? ? scope : scope.where(version: versions)
   end
 
-  def build_authored_row(catalog_row)
+  def build_authored_row(catalog_row, number)
     row = catalog_row.dup_with_nested_records
     row.component_id = @component.id
+    row.rule_id = format('%06d', number)
     row.derived_from_srg_rule_id = catalog_row.id
     row.security_requirements_guide_id = nil
     # Authored rows start at the beginning of the SRG lifecycle regardless
