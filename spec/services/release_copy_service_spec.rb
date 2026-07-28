@@ -71,14 +71,17 @@ RSpec.describe ReleaseCopyService do
       expect(row.component_id).to be_nil
       expect(catalog.srg_rules.count).to eq(1)
 
-      # Content and working ordinals carry; the version is the identifier
-      # minted at release, stamped on the authored row and carried here.
+      # Content carries; the version is the identifier minted at release,
+      # stamped on the authored row and carried here.
       expect(row.fixtext).to eq('Released fixtext')
       expect(row.vendor_comments).to eq('Released vendor comment')
       expect(row.checks.map(&:content)).to eq(['Released check content'])
       expect(row.version).to eq('SRG-OS-000801-RCPA-000001')
       expect(applicable.reload.version).to eq('SRG-OS-000801-RCPA-000001')
-      expect(row.rule_id).to eq(applicable.rule_id)
+      # Uploaded shape: the catalog row's rule_id is its document's Rule
+      # element id — the join key the basing import matches against the
+      # parsed XCCDF. The working ordinal stays on the authored row.
+      expect(row.rule_id).to eq("SV-RCPA-01-#{applicable.rule_id}")
       # Core lineage carries — identifier minting consumes it at release.
       expect(row.derived_from_srg_rule_id).to eq(applicable.derived_from_srg_rule_id)
       expect(row.derived_from_srg_rule_id).not_to be_nil

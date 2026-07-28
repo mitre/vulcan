@@ -32,9 +32,18 @@ class ReleaseCopyService
   # (the release flow, its UI) consult this before attempting the copy.
   def validation_errors
     @validation_errors ||= begin
+      errors = component_validation_errors.dup
+      errors << 'a catalog SRG row is required' if @catalog_srg.nil?
+      errors
+    end
+  end
+
+  # The component-side release blocks, independent of the catalog row —
+  # the release attachment consults these before the catalog row exists.
+  def component_validation_errors
+    @component_validation_errors ||= begin
       errors = []
       errors << 'component must be an SRG component' unless @component.document_type == 'srg'
-      errors << 'a catalog SRG row is required' if @catalog_srg.nil?
       undetermined = live_rows.where(status: RuleConstants::STATUS_NYD).count
       if undetermined.positive?
         errors << "release is blocked: #{undetermined} live requirement(s) still " \
@@ -44,17 +53,25 @@ class ReleaseCopyService
     end
   end
 
+  # The release population: live, decided rows in canonical order — the
+  # ONE selection shared by identifier minting, the published export, and
+  # the catalog copy.
+  def publishable_rows
+    live_rows.where.not(status: RuleConstants::STATUS_NOT_APPLICABLE).canonical_order
+  end
+
   # Copies all live, non-NA rows atomically and returns the catalog rows.
   def copy!
     errors = validation_errors
     raise ReleaseBlockedError, errors.join('; ') if errors.any?
 
     ApplicationRecord.transaction do
-      rows = live_rows.where.not(status: RuleConstants::STATUS_NOT_APPLICABLE)
-                      .canonical_order.to_a
+      rows = publishable_rows.to_a
       # Final derived identifiers mint here — in the release transaction,
       # stamped on the authored rows so the catalog copy carries them and
-      # next-release duplicates keep them stable.
+      # next-release duplicates keep them stable. Already-minted rows are
+      # left byte-identical, so a caller that minted earlier (the release
+      # attachment mints before generating the XCCDF) stays correct.
       ReleaseIdentifierMinter.new(@component).mint!(rows)
       rows.map { |row| copy_row(row) }
     end
@@ -73,6 +90,10 @@ class ReleaseCopyService
     copy = row.dup_with_nested_records
     copy.component = nil
     copy.security_requirements_guide = @catalog_srg
+    # Uploaded shape: a catalog row's rule_id is its document's Rule
+    # element id — the join key the basing import matches against the
+    # parsed XCCDF. The working ordinal stays on the authored row.
+    copy.rule_id = PublishedIdentifiers.rule(@component.prefix, row.rule_id)
     # Uploaded shape: the applicability decision stays on the component.
     copy.status = RuleConstants::STATUS_NYD
     copy.status_justification = nil
