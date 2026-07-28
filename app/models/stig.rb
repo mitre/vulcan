@@ -33,12 +33,13 @@ class Stig < ApplicationRecord
   def self.from_mapping(benchmark_mapping)
     id = benchmark_mapping&.id
     title = benchmark_mapping&.title&.first
-    version = "V#{benchmark_mapping&.version&.version}" \
-              "#{SecurityRequirementsGuide.revision(benchmark_mapping.plaintext.first)}"
-    benchmark_date = SecurityRequirementsGuide.release_date(benchmark_mapping.plaintext.first)
+    release_plaintext = benchmark_mapping&.plaintext&.first
+    release_info = release_plaintext&.plaintext
+    release = SecurityRequirementsGuide.release_number(release_info)
+    version = release && SecurityRequirementsGuide.version_string(benchmark_mapping&.version&.version, release)
+    benchmark_date = SecurityRequirementsGuide.release_date(release_info)
     description = benchmark_mapping&.description&.first
-    name = id&.tr('_', ' ')&.gsub(/(?<=\d)-/, '.')
-    name = "#{name} - Ver #{version.to_s[1]}, Rel #{version.to_s.last}"
+    name = id && SecurityRequirementsGuide.display_name(id, version)
 
     Stig.new(stig_id: id, title: title, name: name, version: version, description: description,
              benchmark_date: benchmark_date)

@@ -52,7 +52,11 @@ RSpec.describe SecurityRequirementsGuide, '.latest_versions' do
   end
 
   it 'handles non-standard version strings gracefully' do
-    odd = create(:security_requirements_guide, title: 'Odd SRG', srg_id: 'Odd_SRG', version: 'Draft')
+    # Legacy-data simulation: the header consistency validation makes
+    # non-standard versions uncreatable through any normal path, but
+    # pre-validation rows can still hold them — sorting must stay robust.
+    odd = create(:security_requirements_guide, title: 'Odd SRG', srg_id: 'Odd_SRG', version: 'V1R1')
+    odd.update_column(:version, 'Draft')
     expect { described_class.latest_versions.to_a }.not_to raise_error
     result = described_class.latest_versions.find { |r| r.title == 'Odd SRG' }
     expect(result.id).to eq(odd.id)

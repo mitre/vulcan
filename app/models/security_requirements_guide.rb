@@ -18,9 +18,14 @@ class SecurityRequirementsGuide < ApplicationRecord
   has_many :components, dependent: :restrict_with_error
   has_many :srg_rules, dependent: :destroy
 
-  after_create :import_srg_rules
+  # Release-path intent flag: catalog rows created at release get their
+  # rules from the release copy, never the XML import.
+  attr_accessor :skip_rule_import
+
+  after_create :import_srg_rules, unless: :skip_rule_import
 
   validates :srg_id, :title, :version, :xml, presence: true
+  validate :header_must_match_columns, if: -> { xml.present? && will_save_change_to_xml? }
   validates :srg_id, uniqueness: {
     scope: :version,
     message: ' ID has already been taken'
@@ -49,34 +54,66 @@ class SecurityRequirementsGuide < ApplicationRecord
     end
   end
 
+  # ---- Shared header composition rules -------------------------------
+  # The ONE home for each formula: upload (from_mapping, here and on
+  # Stig), export (XccdfFormatter#benchmark_id), and the release
+  # attachment all call these — no second copy may exist anywhere.
+
+  def self.version_string(version, release)
+    "V#{version}R#{release}"
+  end
+
+  def self.display_name(srg_id, version)
+    base = srg_id.tr('_', ' ').gsub(/(?<=\d)-/, '.')
+    match = version.to_s.match(/\AV(\d+)R(\d+)\z/)
+    return base unless match
+
+    "#{base} - Ver #{match[1]}, Rel #{match[2]}"
+  end
+
+  def self.srg_id_from_name(name)
+    name.tr(' ', '_')
+  end
+
+  # Light header read of an XCCDF string — identity fields only, never
+  # the full rule parse. The shared extractor behind the row-XML
+  # consistency validation and the release attachment: the stored
+  # document is authoritative, the columns are its projection.
+  def self.header_fields(xml)
+    header = Xccdf::BenchmarkHeader.parse(xml)
+    release = release_number(header.release_info)
+    {
+      srg_id: header.benchmark_id,
+      title: header.title,
+      version: header.version.presence && release && version_string(header.version, release),
+      release_date: release_date(header.release_info).presence
+    }
+  end
+
   # Since an SRG is top-level, the parameter is the entire parsed benchmark
   def self.from_mapping(benchmark_mapping)
-    # Disabling `Style/RescueModifier` here because the goal is simply just to try and
-    # fetch the attribute, but return `nil` if anything goes wrong with parsing.
+    # Fetch attributes defensively — nil pieces are rejected downstream
+    # by the presence validations, never silently defaulted.
     # rubocop:disable Style/RescueModifier
     id = benchmark_mapping.id rescue nil
     title = benchmark_mapping.title.first rescue nil
-    version = "V#{benchmark_mapping.version.version}" \
-              "#{SecurityRequirementsGuide.revision(benchmark_mapping.plaintext.first)}" rescue nil
-    release_date = SecurityRequirementsGuide.release_date(benchmark_mapping.plaintext.first)
+    release_info = benchmark_mapping.plaintext.first&.plaintext rescue nil
+    release = release_number(release_info)
+    version = release && version_string(benchmark_mapping.version.version, release) rescue nil
     # rubocop:enable Style/RescueModifier
-    name = id&.tr('_', ' ')&.gsub(/(?<=\d)-/, '.')
-    name = "#{name} - Ver #{version.to_s[1]}, Rel #{version.to_s.last}"
-    SecurityRequirementsGuide.new(srg_id: id, title: title, name: name, version: version, release_date: release_date)
+    SecurityRequirementsGuide.new(srg_id: id, title: title, name: id && display_name(id, version),
+                                  version: version, release_date: release_date(release_info))
   end
 
   # If the SRGs do not conform nicely and this function gets complex, remove the version parse logic
   # and do not display detailed version information. Make SRG producers actually provide consistent
   # metadata.
-  def self.revision(plaintext_mapping)
-    revision_string = plaintext_mapping.plaintext.split('Release: ')[1]
-    return '' if revision_string.nil?
-
-    "R#{revision_string.match(/^\d+/)[0]}"
+  def self.release_number(release_info)
+    release_info.to_s.split('Release: ')[1]&.match(/^\d+/)&.[](0)
   end
 
-  def self.release_date(plaintext_mapping)
-    release_date_string = plaintext_mapping.plaintext.split('Benchmark Date: ')[1]
+  def self.release_date(release_info)
+    release_date_string = release_info.to_s.split('Benchmark Date: ')[1]
     return '' if release_date_string.nil?
 
     begin
@@ -113,6 +150,19 @@ class SecurityRequirementsGuide < ApplicationRecord
   end
 
   private
+
+  # The stored document is authoritative — backup restore re-derives rows
+  # from it, so a row whose columns disagree with its own XML header
+  # would change identity across a backup cycle. Reject the write.
+  def header_must_match_columns
+    header = SecurityRequirementsGuide.header_fields(xml)
+    { srg_id: srg_id, title: title, version: version }.each do |field, column_value|
+      next if column_value == header[field]
+
+      errors.add(field, 'does not match the stored XCCDF header ' \
+                        "(column: #{column_value.inspect}, header: #{header[field].inspect})")
+    end
+  end
 
   def import_srg_rules
     srg_rules = parsed_benchmark.rule.map { |rule| SrgRule.from_mapping(rule, id) }.sort_by(&:version)

@@ -77,7 +77,7 @@ module Export
       def benchmark_id(component)
         return component[:name] unless srg_component?(component)
 
-        component[:name].tr(' ', '_')
+        SecurityRequirementsGuide.srg_id_from_name(component[:name])
       end
 
       def srg_component?(component)

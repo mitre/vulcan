@@ -77,14 +77,11 @@ RSpec.describe 'Benchmarks endpoint contracts (SRGs + STIGs)', type: :request do
   # ── DELETE /srgs/:id ──
 
   describe 'DELETE /srgs/:id (JSON)' do
+    # The factory stamps the header to match the row's own identity —
+    # hand-editing srg_id on another document's XML now (correctly)
+    # fails the header consistency validation.
     let!(:deletable_srg) do
-      parsed = Xccdf::Benchmark.parse(srg.xml)
-      new_srg = SecurityRequirementsGuide.from_mapping(parsed)
-      new_srg.srg_id = "Deletable_SRG_#{SecureRandom.hex(4)}"
-      new_srg.xml = srg.xml
-      new_srg.parsed_benchmark = parsed
-      new_srg.save!
-      new_srg
+      create(:security_requirements_guide, :skip_rules, srg_id: "Deletable_SRG_#{SecureRandom.hex(4)}")
     end
 
     it 'returns ToastResponse on success' do

@@ -380,20 +380,16 @@ RSpec.describe 'Api::Search' do
       let(:sshd_rule_id) { 'RHEL-09-252010' }
       let(:sudoers_path) { '/etc/sudoers' }
       let(:status_applicable) { 'Applicable - Configurable' }
-      # Create a simple STIG without importing rules from XML
+      # A simple STIG without importing rules from XML — the factory
+      # trait skips the import per-instance (never a global
+      # skip_callback, which leaks across parallel workers).
       let!(:rhel_stig) do
-        # Skip after_create callback to avoid XML import
-        Stig.skip_callback(:create, :after, :import_stig_rules)
-        stig = Stig.create!(
-          stig_id: 'RHEL_9_STIG',
-          title: 'Red Hat Enterprise Linux 9 STIG',
-          name: 'RHEL 9 STIG - Ver 1, Rel 3',
-          version: 'V1R3',
-          description: 'RHEL 9 security configuration',
-          xml: '<Benchmark/>'
-        )
-        Stig.set_callback(:create, :after, :import_stig_rules)
-        stig
+        create(:stig, :skip_rules,
+               stig_id: 'RHEL_9_STIG',
+               title: 'Red Hat Enterprise Linux 9 STIG',
+               name: 'RHEL 9 STIG - Ver 1, Rel 3',
+               version: 'V1R3',
+               description: 'RHEL 9 security configuration')
       end
 
       let!(:sudoers_rule) do
@@ -522,18 +518,16 @@ RSpec.describe 'Api::Search' do
       let(:cci_identifier) { 'CCI-002385' }
       # Use an existing SRG from the test setup (created for component factory)
       # Note: The SRG created by the component factory already has srg_rules
+      # The intent flag (via :skip_rules) replaces the old global
+      # skip_callback hack — that mutation leaked across parallel
+      # workers, and the factory-stamped XML keeps the row consistent
+      # with the header validation.
       let!(:custom_srg) do
-        # Skip after_create callback to avoid XML import
-        SecurityRequirementsGuide.skip_callback(:create, :after, :import_srg_rules)
-        srg = SecurityRequirementsGuide.create!(
-          srg_id: 'Custom_Test_SRG',
-          title: 'Custom Test Security Requirements Guide',
-          name: 'Custom Test SRG - Ver 1, Rel 1',
-          version: 'V1R1',
-          xml: '<Benchmark/>'
-        )
-        SecurityRequirementsGuide.set_callback(:create, :after, :import_srg_rules)
-        srg
+        create(:security_requirements_guide, :skip_rules,
+               srg_id: 'Custom_Test_SRG',
+               title: 'Custom Test Security Requirements Guide',
+               name: 'Custom Test SRG - Ver 1, Rel 1',
+               version: 'V1R1')
       end
 
       let!(:firewall_srg_rule) do
