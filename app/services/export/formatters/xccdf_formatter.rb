@@ -84,7 +84,7 @@ module Export
         component.respond_to?(:document_type) && component.document_type == 'srg'
       end
 
-      # Authored SRG requirement rows publish with the SRG family shape;
+      # Authored SRG requirement rows publish with the published-SRG shape;
       # Rule rows keep the STIG readiness shape byte-for-byte.
       def authored_srg?(rule)
         rule.is_a?(SrgRule)

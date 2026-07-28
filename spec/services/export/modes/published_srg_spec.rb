@@ -7,7 +7,7 @@ require 'rails_helper'
 # emits its authored SrgRules — never an empty benchmark. Terminal
 # filtering: ONLY Applicable rows publish; Not Applicable, Not Yet
 # Determined, and tombstoned rows are excluded. The emit shape follows
-# the published DISA SRG family (decided against the seeded GPOS
+# the published DISA SRG document shape (decided against the seeded GPOS
 # document): Group id keeps the working convention (V-PREFIX-rule_id),
 # Group title carries the core-half from the row's own lineage (a
 # net-new row emits its minted identifier — never an empty title), the
@@ -70,7 +70,7 @@ RSpec.describe Export::Modes::PublishedSrg do
     expect(xml).not_to include('Satisfies')
   end
 
-  it 'shapes the emission per the published SRG family — ids, titles, version, conformance bits' do
+  it 'shapes the emission per the published SRG document shape — ids, titles, version, conformance bits' do
     component, applicable, = build_release_ready_component
     applicable.reload
 

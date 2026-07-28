@@ -4,10 +4,10 @@ require 'rails_helper'
 
 # REQUIREMENTS (review-workflow mail, kind-shared by design):
 # 1. The request_review / approve / revoke_review_request /
-#    request_changes family renders for BOTH document kinds — the
+#    request_changes mail set renders for BOTH document kinds — the
 #    review-request workflow lives on base_rules, so an authored SRG
 #    requirement must mail exactly like a STIG requirement.
-# 2. The approve-family recipient is the user who requested the review,
+# 2. The approve-mail recipient is the user who requested the review,
 #    found from the requirement row the mailer already holds — never by
 #    re-fetching through the Rule (STIG) subclass, which returns nil for
 #    an authored SrgRule and crashes the mail.
