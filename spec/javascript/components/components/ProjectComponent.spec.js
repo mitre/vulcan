@@ -26,13 +26,14 @@ vi.mock("@/api/componentsApi", () => ({
 vi.mock("@/api/rulesApi", () => ({
   getRule: vi.fn(() => Promise.resolve({ data: {} })),
   getRelocations: vi.fn(() => Promise.resolve({ data: [] })),
+  getRelocationDestinations: vi.fn(() => Promise.resolve({ data: [] })),
   markRelocation: vi.fn(() => Promise.resolve({ data: {} })),
   unmarkRelocation: vi.fn(() => Promise.resolve({ data: {} })),
   dryRunRelocation: vi.fn(() => Promise.resolve({ data: {} })),
   acceptRelocation: vi.fn(() => Promise.resolve({ data: {} })),
   declineRelocation: vi.fn(() => Promise.resolve({ data: {} })),
 }));
-import { getRelocations } from "@/api/rulesApi";
+import { getRelocations, getRelocationDestinations } from "@/api/rulesApi";
 
 vi.mock("@/api/projectsApi", () => ({
   exportProjectData: vi.fn(() => Promise.resolve("/projects/1/export/csv?component_ids=41")),
@@ -716,6 +717,19 @@ describe("ProjectComponent", () => {
       wrapper = createWrapper({ initialComponentState: srgState });
       await flushPromises(wrapper);
       expect(getRelocations).toHaveBeenCalled();
+    });
+
+    it("fetches the destination vocabulary and feeds named options to the backlog filter", async () => {
+      getRelocationDestinations.mockResolvedValueOnce({
+        data: [{ token: "RCVA", name: "Walkthrough receiving SRG", released: false }],
+      });
+      wrapper = createWrapper({ initialComponentState: srgState });
+      await flushPromises(wrapper);
+
+      expect(getRelocationDestinations).toHaveBeenCalled();
+      expect(
+        wrapper.findComponent({ name: "RelocationBacklogPanel" }).props("destinationOptions"),
+      ).toEqual([{ value: "RCVA", text: "Walkthrough receiving SRG" }]);
     });
 
     it("does NOT fetch relocation markers for stig-kind", async () => {

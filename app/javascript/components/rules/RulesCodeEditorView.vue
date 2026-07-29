@@ -118,7 +118,7 @@
           v-if="isSrgComponent"
           :visible.sync="relocationModalVisible"
           :rule-display-name="`${component.prefix}-${selectedRule.rule_id}`"
-          :destinations="destinationOptions"
+          :destination-options="relocProposalDestinationOptions"
           @mark="onMarkRelocation"
         />
 
@@ -247,6 +247,7 @@
       >
         <RelocationBacklogPanel
           :markers="relocMarkers"
+          :destination-options="relocDestinationOptions"
           :component-id="component.id"
           :initial-token="relocToken"
           :can-author="!isViewerOnly"
@@ -440,7 +441,8 @@ export default {
       relocByRuleId: relocations.markersByRuleId,
       relocToken: relocations.technologyToken,
       relocBacklogCount: relocations.srgBacklogCount,
-      relocDestinations: relocations.destinations,
+      relocDestinationOptions: relocations.destinationOptions,
+      relocProposalDestinationOptions: relocations.proposalDestinationOptions,
       relocFetch: relocations.fetchMarkers,
       relocFetchDestinations: relocations.fetchDestinations,
       relocMark: relocations.mark,
@@ -522,11 +524,6 @@ export default {
     isSrgComponent() {
       return this.component.document_type === "srg";
     },
-    // Destination picker options — a requirement never relocates to its
-    // own SRG, so the component's own abbreviation is excluded.
-    destinationOptions() {
-      return this.relocDestinations.filter((destination) => destination.token !== this.relocToken);
-    },
   },
   created() {
     this.composerBridge.onOpen = () => this.$bvModal.show("comment-composer-modal");
@@ -536,6 +533,10 @@ export default {
     // surfaces as a toast rather than silently hiding the badges.
     if (this.isSrgComponent) {
       this.relocFetch().catch(this.alertOrNotifyResponse);
+      // The backlog filter's vocabulary — fetched with the markers so
+      // the filter is never empty; the propose modal still refreshes it
+      // on open.
+      this.relocFetchDestinations().catch(this.alertOrNotifyResponse);
     }
   },
   mounted() {

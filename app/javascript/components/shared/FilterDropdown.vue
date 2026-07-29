@@ -3,7 +3,7 @@
     :text="currentLabel"
     :variant="variant"
     :size="size"
-    :disabled="disabled"
+    :disabled="effectiveDisabled"
     :menu-class="menuClass"
     :toggle-attrs="{ 'aria-label': ariaLabel }"
     :class="dropdownClass"
@@ -59,6 +59,11 @@ export default {
     menuClass: { type: [String, Array, Object], default: null },
   },
   computed: {
+    // Disabled-not-hidden: a dropdown with nothing to offer renders
+    // disabled showing its placeholder — never an empty open menu.
+    effectiveDisabled() {
+      return this.disabled || this.options.length === 0;
+    },
     currentLabel() {
       const match = this.options.find((o) => o.value === this.value);
       return match ? match.text : this.placeholder;

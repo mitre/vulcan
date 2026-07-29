@@ -181,6 +181,7 @@
         >
           <RelocationBacklogPanel
             :markers="relocMarkers"
+            :destination-options="relocDestinationOptions"
             :component-id="component.id"
             :initial-token="relocToken"
             :can-author="canAuthorComponent"
@@ -374,7 +375,9 @@ export default {
       relocByRuleId: relocations.markersByRuleId,
       relocToken: relocations.technologyToken,
       relocBacklogCount: relocations.srgBacklogCount,
+      relocDestinationOptions: relocations.destinationOptions,
       relocFetch: relocations.fetchMarkers,
+      relocFetchDestinations: relocations.fetchDestinations,
       compareRules,
       alertOrNotifyResponse,
       showModal,
@@ -449,6 +452,9 @@ export default {
     // surfaces as a toast rather than silently hiding the badges.
     if (this.isSrgComponent) {
       this.relocFetch().catch(this.alertOrNotifyResponse);
+      // The backlog filter's vocabulary — named SRG options, never a
+      // blank menu after the last proposal is adjudicated.
+      this.relocFetchDestinations().catch(this.alertOrNotifyResponse);
     }
   },
   mounted() {

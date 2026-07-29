@@ -8,6 +8,7 @@ import {
   acceptRelocation,
   declineRelocation,
 } from "../api/rulesApi";
+import { RELOCATION_TERM } from "../constants/terminology";
 
 /**
  * Interim SRG identity: the technology token becomes a real component
@@ -78,6 +79,38 @@ export function useRelocations(component) {
 
   const technologyToken = computed(() => technologyTokenFromPrefix(component.prefix));
 
+  // The ONE destination vocabulary: endpoint rows labelled by SRG name
+  // (released rows carry the next-release suffix), merged with marker
+  // abbreviations the endpoint does not know — proposals to SRGs outside
+  // Vulcan, which the backlog must still filter to — deduped by
+  // abbreviation and abbreviation-sorted. Every destination list in the
+  // UI derives from this computed; no consumer builds its own.
+  const destinationOptions = computed(() => {
+    const rows = new Map();
+    destinations.value.forEach((destination) => {
+      rows.set(destination.token, {
+        value: destination.token,
+        text: destination.released
+          ? `${destination.name} ${RELOCATION_TERM.nextReleaseSuffix}`
+          : destination.name,
+      });
+    });
+    markers.value.forEach((marker) => {
+      const token = marker.target_technology_token;
+      if (token && !rows.has(token)) {
+        rows.set(token, { value: token, text: token });
+      }
+    });
+    return [...rows.values()].sort((a, b) => a.value.localeCompare(b.value));
+  });
+
+  // The propose subset: a requirement never relocates to its own SRG.
+  // The full vocabulary above keeps the own abbreviation because the
+  // backlog filter's primary use is the receiver's own inbox.
+  const proposalDestinationOptions = computed(() =>
+    destinationOptions.value.filter((option) => option.value !== technologyToken.value),
+  );
+
   const srgBacklogCount = computed(() =>
     technologyToken.value ? backlogFor(technologyToken.value).length : 0,
   );
@@ -115,6 +148,8 @@ export function useRelocations(component) {
     markers,
     loading,
     destinations,
+    destinationOptions,
+    proposalDestinationOptions,
     fetchMarkers,
     fetchDestinations,
     markersByRuleId,

@@ -108,4 +108,23 @@ describe("FilterDropdown", () => {
       expect(w.emitted("input")[0]).toEqual([null]);
     });
   });
+
+  // REQUIREMENT (disabled-not-hidden): a dropdown with nothing to offer
+  // never opens an empty menu — it renders disabled showing its
+  // placeholder, in every consumer, forever. Found live: the relocation
+  // backlog filter opened blank after the last proposal was adjudicated.
+  describe("zero options", () => {
+    it("renders disabled with the placeholder instead of an empty menu", () => {
+      const w = mountWith({ options: [], value: null, placeholder: "Choose an SRG..." });
+
+      const toggle = w.find("button.dropdown-toggle");
+      expect(toggle.attributes("disabled")).toBeDefined();
+      expect(toggle.text()).toBe("Choose an SRG...");
+    });
+
+    it("stays enabled when options exist and the disabled prop is not set", () => {
+      const w = mountWith({});
+      expect(w.find("button.dropdown-toggle").attributes("disabled")).toBeUndefined();
+    });
+  });
 });

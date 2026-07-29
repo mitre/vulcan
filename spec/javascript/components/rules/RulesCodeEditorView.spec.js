@@ -422,7 +422,9 @@ describe("RulesCodeEditorView", () => {
     });
 
     it("fetches destinations on propose-modal open and excludes the component's own SRG", async () => {
-      getRelocationDestinations.mockResolvedValueOnce({
+      // Served to BOTH fetches: the eager created-hook fetch (backlog
+      // vocabulary) and the propose-modal-open refresh.
+      getRelocationDestinations.mockResolvedValue({
         data: [
           { token: "TEST", name: "This very SRG", released: false },
           { token: "RCVA", name: "Walkthrough receiving SRG", released: false },
@@ -436,10 +438,12 @@ describe("RulesCodeEditorView", () => {
 
       expect(getRelocationDestinations).toHaveBeenCalled();
       expect(wrapper.vm.relocationModalVisible).toBe(true);
-      // TEST is this component's own abbreviation — never a destination.
-      expect(wrapper.findComponent({ name: "MarkRelocationModal" }).props("destinations")).toEqual([
-        { token: "RCVA", name: "Walkthrough receiving SRG", released: false },
-      ]);
+      // TEST is this component's own abbreviation — never a propose
+      // destination. The modal receives the labelled propose subset from
+      // useRelocations' destination vocabulary.
+      expect(
+        wrapper.findComponent({ name: "MarkRelocationModal" }).props("destinationOptions"),
+      ).toEqual([{ value: "RCVA", text: "Walkthrough receiving SRG" }]);
     });
 
     it("surfaces a destinations fetch failure as a toast and still opens the modal", async () => {

@@ -20,9 +20,9 @@
       "
     >
       <FilterDropdown
-        v-if="destinations.length > 0"
+        v-if="destinationOptions.length > 0"
         :value="picked"
-        :options="destinationOptions"
+        :options="pickerOptions"
         aria-label="Pick the destination SRG"
         placeholder="Choose the destination SRG..."
         class="mb-2"
@@ -73,7 +73,8 @@ const OTHER_SRG = "__other__";
  * Props:
  *   - visible: Boolean (use with .sync)
  *   - ruleDisplayName: String - the requirement being proposed
- *   - destinations: Array of { token, name, released } option rows
+ *   - destinationOptions: Array of { value, text } labelled options from
+ *     useRelocations' destination vocabulary (the propose subset)
  *
  * Emits:
  *   - mark: String - the destination SRG's technology token
@@ -93,7 +94,7 @@ export default {
       type: String,
       required: true,
     },
-    destinations: {
+    destinationOptions: {
       type: Array,
       default: () => [],
     },
@@ -106,18 +107,13 @@ export default {
     };
   },
   computed: {
-    destinationOptions() {
-      const options = this.destinations.map((destination) => ({
-        value: destination.token,
-        text: destination.released
-          ? `${destination.name} ${this.terms.nextReleaseSuffix}`
-          : destination.name,
-      }));
-      options.push({ value: OTHER_SRG, text: this.terms.otherSrgOption });
-      return options;
+    // Labelling and merging live in useRelocations' destination
+    // vocabulary — this modal only appends its own Other entry.
+    pickerOptions() {
+      return [...this.destinationOptions, { value: OTHER_SRG, text: this.terms.otherSrgOption }];
     },
     showTokenInput() {
-      return this.destinations.length === 0 || this.picked === OTHER_SRG;
+      return this.destinationOptions.length === 0 || this.picked === OTHER_SRG;
     },
     effectiveToken() {
       if (this.showTokenInput) return this.token || null;

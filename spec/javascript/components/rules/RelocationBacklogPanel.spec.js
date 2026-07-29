@@ -87,6 +87,10 @@ describe("RelocationBacklogPanel", () => {
       localVue,
       propsData: {
         markers: MARKERS,
+        destinationOptions: [
+          { value: "CTR", text: "Container Best Practice SRG" },
+          { value: "GPOS", text: "GPOS SRG (next release)" },
+        ],
         componentId: 5,
         initialToken: "CTR",
         canAuthor: true,
@@ -159,6 +163,19 @@ describe("RelocationBacklogPanel", () => {
   it("shows the empty state when no markers match the token", () => {
     wrapper = createWrapper({ markers: [], initialToken: null });
     expect(wrapper.text().replace(/\s+/g, " ")).toContain("No requirements are proposed");
+  });
+
+  // The filter never derives from the loaded proposals — with an EMPTY
+  // backlog the shared destination vocabulary still lists SRGs by name
+  // (found live: the old marker-derived list went blank the moment the
+  // last proposal was adjudicated).
+  it("keeps named destination options in the filter when the backlog is empty", () => {
+    wrapper = createWrapper({ markers: [], initialToken: null });
+    const options = wrapper.findComponent({ name: "FilterDropdown" }).props("options");
+    expect(options.map((o) => o.text)).toEqual([
+      "Container Best Practice SRG",
+      "GPOS SRG (next release)",
+    ]);
   });
 
   it("emits accept-request and decline-request with the full marker for a receivable row", async () => {

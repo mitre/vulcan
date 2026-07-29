@@ -180,4 +180,73 @@ describe("useRelocations", () => {
     await expect(accept(3)).rejects.toThrow("422");
     expect(getRelocations).not.toHaveBeenCalled();
   });
+
+  // REQUIREMENT (one destination vocabulary): the labelled destination
+  // list exists exactly once. Endpoint rows are labelled by SRG name
+  // (released rows carry the next-release suffix); marker abbreviations
+  // the endpoint does not know (proposals to SRGs outside Vulcan) merge
+  // in by raw abbreviation so the backlog can still filter to them;
+  // deduped by abbreviation and abbreviation-sorted. The propose subset
+  // additionally excludes the component's own SRG — a requirement never
+  // relocates to its own document — while the full vocabulary keeps it,
+  // because the receiver filters the backlog by its OWN abbreviation.
+  describe("destination vocabulary", () => {
+    const loadVocabulary = async () => {
+      // Marker AAA sorts FIRST and the endpoint rows arrive out of
+      // order — a broken sort (or insertion-order passthrough) fails.
+      getRelocations.mockResolvedValue({
+        data: [
+          {
+            id: 1,
+            source_rule_id: 11,
+            component_id: 5,
+            target_technology_token: "CTR",
+            declined_at: null,
+          },
+          {
+            id: 2,
+            source_rule_id: 22,
+            component_id: 9,
+            target_technology_token: "AAA",
+            declined_at: null,
+          },
+        ],
+      });
+      getRelocationDestinations.mockResolvedValue({
+        data: [
+          { token: "WK", name: "WK Release SRG", released: false },
+          { token: "GPOS", name: "General Purpose OS SRG", released: true },
+          { token: "CTR", name: "Container Best Practice SRG", released: false },
+        ],
+      });
+      const relocations = useRelocations({ id: 5, prefix: "WK55-00" });
+      await relocations.fetchMarkers();
+      await relocations.fetchDestinations();
+      return relocations;
+    };
+
+    it("labels endpoint rows by name and merges unknown marker abbreviations, deduped and sorted", async () => {
+      const relocations = await loadVocabulary();
+
+      expect(relocations.destinationOptions.value).toEqual([
+        { value: "AAA", text: "AAA" },
+        { value: "CTR", text: "Container Best Practice SRG" },
+        { value: "GPOS", text: "General Purpose OS SRG (next release)" },
+        { value: "WK", text: "WK Release SRG" },
+      ]);
+    });
+
+    it("excludes only the component's own SRG from the propose subset", async () => {
+      const relocations = await loadVocabulary();
+
+      expect(relocations.proposalDestinationOptions.value.map((o) => o.value)).toEqual([
+        "AAA",
+        "CTR",
+        "GPOS",
+      ]);
+      // The full vocabulary keeps the own abbreviation — the backlog
+      // filter's primary use is the receiver's own inbox.
+      expect(relocations.destinationOptions.value.map((o) => o.value)).toContain("WK");
+    });
+  });
 });

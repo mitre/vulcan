@@ -3,7 +3,7 @@
     <b-form-group label="Destination SRG" label-class="font-weight-bold">
       <FilterDropdown
         :value="selectedToken"
-        :options="tokenOptions"
+        :options="destinationOptions"
         aria-label="Filter backlog by destination SRG abbreviation"
         placeholder="Choose an SRG..."
         @input="selectedToken = $event"
@@ -155,6 +155,14 @@ export default {
       type: Array,
       required: true,
     },
+    // The shared destination vocabulary from useRelocations — named SRG
+    // options merged with outside-Vulcan abbreviations. The panel never
+    // derives its own list from markers (the old tokenOptions went blank
+    // the moment the last proposal was adjudicated).
+    destinationOptions: {
+      type: Array,
+      required: true,
+    },
     componentId: {
       type: Number,
       required: true,
@@ -183,10 +191,6 @@ export default {
     };
   },
   computed: {
-    tokenOptions() {
-      const tokens = [...new Set(this.markers.map((m) => m.target_technology_token))].sort();
-      return tokens.map((token) => ({ value: token, text: token }));
-    },
     filteredMarkers() {
       if (!this.selectedToken) return [];
       return this.markers.filter((m) => m.target_technology_token === this.selectedToken);

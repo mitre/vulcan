@@ -14,15 +14,17 @@ import FilterDropdown from "@/components/shared/FilterDropdown.vue";
  * 4. Copy is the DISA propose vocabulary: the destination SRG's authors
  *    concur or non-concur; nothing changes here until then; the
  *    proposal is withdrawable while open. Never the word family.
- * 5. DESTINATION PICKER: visible destinations render as a picker by SRG
- *    name (released rows carry the next-release suffix); picking one
- *    emits its token on confirm. An Other-SRG option (and the empty
- *    options case) reveals the free token input — proposing to an SRG
- *    the caller cannot see stays possible without disclosure.
+ * 5. DESTINATION PICKER: the modal renders the labelled options provided
+ *    by useRelocations' destination vocabulary (labelling and merging
+ *    are pinned in the composable spec) and appends ONLY its own
+ *    Other-SRG entry; picking one emits its abbreviation on confirm.
+ *    The Other option (and the empty options case) reveals the free
+ *    token input — proposing to an SRG the caller cannot see stays
+ *    possible without disclosure.
  */
-const DESTINATIONS = [
-  { token: "RCVA", name: "Walkthrough receiving SRG", released: false },
-  { token: "GPOS", name: "GPOS SRG", released: true },
+const DESTINATION_OPTIONS = [
+  { value: "RCVA", text: "Walkthrough receiving SRG" },
+  { value: "GPOS", text: "GPOS SRG (next release)" },
 ];
 describe("MarkRelocationModal", () => {
   let wrapper;
@@ -72,8 +74,8 @@ describe("MarkRelocationModal", () => {
   });
 
   describe("destination picker", () => {
-    it("lists destinations by SRG name with the next-release suffix on released rows", () => {
-      wrapper = createWrapper({ destinations: DESTINATIONS });
+    it("renders the provided labelled options and appends only its Other entry", () => {
+      wrapper = createWrapper({ destinationOptions: DESTINATION_OPTIONS });
       const options = wrapper.findComponent(FilterDropdown).props("options");
       expect(options.map((o) => o.text)).toEqual([
         "Walkthrough receiving SRG",
@@ -84,7 +86,7 @@ describe("MarkRelocationModal", () => {
     });
 
     it("emits the picked destination's token on confirm — no free input shown", async () => {
-      wrapper = createWrapper({ destinations: DESTINATIONS });
+      wrapper = createWrapper({ destinationOptions: DESTINATION_OPTIONS });
       expect(wrapper.find('[data-test="relocation-token-input"]').exists()).toBe(false);
       wrapper.findComponent(FilterDropdown).vm.$emit("input", "GPOS");
       await wrapper.vm.$nextTick();
@@ -95,7 +97,7 @@ describe("MarkRelocationModal", () => {
     });
 
     it("reveals the free token input for the Other-SRG option", async () => {
-      wrapper = createWrapper({ destinations: DESTINATIONS });
+      wrapper = createWrapper({ destinationOptions: DESTINATION_OPTIONS });
       wrapper.findComponent(FilterDropdown).vm.$emit("input", "__other__");
       await wrapper.vm.$nextTick();
       await wrapper.find('[data-test="relocation-token-input"]').setValue("ctr");
@@ -104,13 +106,13 @@ describe("MarkRelocationModal", () => {
     });
 
     it("shows the free token input directly when no destinations are visible", () => {
-      wrapper = createWrapper({ destinations: [] });
+      wrapper = createWrapper({ destinationOptions: [] });
       expect(wrapper.findComponent(FilterDropdown).exists()).toBe(false);
       expect(wrapper.find('[data-test="relocation-token-input"]').exists()).toBe(true);
     });
 
     it("resets the picked destination when the modal reopens (the show handler)", async () => {
-      wrapper = createWrapper({ destinations: DESTINATIONS });
+      wrapper = createWrapper({ destinationOptions: DESTINATION_OPTIONS });
       wrapper.findComponent(FilterDropdown).vm.$emit("input", "GPOS");
       await wrapper.vm.$nextTick();
       // Fire the modal's show event through the stub — pins the
