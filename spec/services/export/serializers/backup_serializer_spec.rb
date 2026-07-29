@@ -335,6 +335,61 @@ RSpec.describe Export::Serializers::BackupSerializer do
       end
     end
 
+    # A review can hold attribution on the *_imported_email/_name columns with
+    # a NULL user FK — either it arrived via archive import without a matching
+    # local user, or its author was destroyed (User#preserve_review_attribution
+    # snapshots identity before the FK nullifies). The export must fall back to
+    # those columns or the attribution dies on the second export → import trip
+    # (the importer skips reviews with blank attribution entirely).
+    describe 'imported attribution fallback' do
+      let(:orphan_commenter) { create(:user, name: 'Commenter') }
+      let(:orphan_triager) { create(:user, name: 'Triager') }
+      let!(:orphaned) do
+        Membership.find_or_create_by!(user: orphan_commenter, membership: project) { |m| m.role = 'viewer' }
+        Membership.find_or_create_by!(user: orphan_triager, membership: project) { |m| m.role = 'author' }
+        create(:review, :comment, :concur_with_comment, :adjudicated,
+               user: orphan_commenter, rule: component.rules.first,
+               comment: 'imported attribution survivor',
+               triage_set_by: orphan_triager, triage_set_at: 1.day.ago,
+               adjudicated_at: 12.hours.ago, adjudicated_by: orphan_triager)
+      end
+
+      def orphaned_row
+        data[:reviews].find { |r| r[:comment] == 'imported attribution survivor' }
+      end
+
+      it 'falls back to the imported commenter columns when the user FK is nil' do
+        orphaned.update_columns(user_id: nil,
+                                commenter_imported_email: 'brian.original@archive.test',
+                                commenter_imported_name: 'Brian Original')
+        expect(orphaned_row[:user_email]).to eq('brian.original@archive.test')
+        expect(orphaned_row[:user_name]).to eq('Brian Original')
+      end
+
+      it 'falls back to the imported triager columns when triage_set_by is nil' do
+        orphaned.update_columns(triage_set_by_id: nil,
+                                triage_set_by_imported_email: 'triager.original@archive.test',
+                                triage_set_by_imported_name: 'Triager Original')
+        expect(orphaned_row[:triage_set_by_email]).to eq('triager.original@archive.test')
+        expect(orphaned_row[:triage_set_by_name]).to eq('Triager Original')
+      end
+
+      it 'falls back to the imported adjudicator columns when adjudicated_by is nil' do
+        orphaned.update_columns(adjudicated_by_id: nil,
+                                adjudicated_by_imported_email: 'adjudicator.original@archive.test',
+                                adjudicated_by_imported_name: 'Adjudicator Original')
+        expect(orphaned_row[:adjudicated_by_email]).to eq('adjudicator.original@archive.test')
+        expect(orphaned_row[:adjudicated_by_name]).to eq('Adjudicator Original')
+      end
+
+      it 'prefers the linked user over stale imported columns when both are present' do
+        orphaned.update_columns(commenter_imported_email: 'stale@archive.test',
+                                commenter_imported_name: 'Stale Import')
+        expect(orphaned_row[:user_email]).to eq(orphan_commenter.email)
+        expect(orphaned_row[:user_name]).to eq('Commenter')
+      end
+    end
+
     describe 'additional answers serialization' do
       before do
         question = component.additional_questions.create!(

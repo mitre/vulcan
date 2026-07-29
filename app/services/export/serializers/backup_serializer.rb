@@ -220,21 +220,27 @@ module Export
       # parent / duplicate cross-references can be re-linked on import without
       # the original DB ids surviving (re-import generates fresh ids).
       def serialize_review(review, rule)
+        user_email, user_name = attribution(review.user, review.commenter_imported_email,
+                                            review.commenter_imported_name)
+        triager_email, triager_name = attribution(review.triage_set_by, review.triage_set_by_imported_email,
+                                                  review.triage_set_by_imported_name)
+        adjudicator_email, adjudicator_name = attribution(review.adjudicated_by, review.adjudicated_by_imported_email,
+                                                          review.adjudicated_by_imported_name)
         {
           external_id: review.id,
           rule_id: rule.rule_id,
           action: review.action,
           comment: review.comment,
-          user_email: review.user&.email,
-          user_name: review.user&.name,
+          user_email: user_email,
+          user_name: user_name,
           # public-comment-review lifecycle
           section: review.section,
           triage_status: review.triage_status,
-          triage_set_by_email: review.triage_set_by&.email,
-          triage_set_by_name: review.triage_set_by&.name,
+          triage_set_by_email: triager_email,
+          triage_set_by_name: triager_name,
           triage_set_at: review.triage_set_at&.iso8601(6),
-          adjudicated_by_email: review.adjudicated_by&.email,
-          adjudicated_by_name: review.adjudicated_by&.name,
+          adjudicated_by_email: adjudicator_email,
+          adjudicated_by_name: adjudicator_name,
           adjudicated_at: review.adjudicated_at&.iso8601(6),
           responding_to_external_id: review.responding_to_review_id,
           duplicate_of_external_id: review.duplicate_of_review_id,
@@ -250,6 +256,18 @@ module Export
           updated_at: review.updated_at&.iso8601(6),
           reactions: serialize_reactions(review)
         }
+      end
+
+      # A review can hold attribution on its *_imported_email/_name columns with
+      # a NULL user FK — a prior import without a matching local user, or an
+      # author whose User row was destroyed (User#preserve_review_attribution).
+      # The archive must carry that snapshot or the attribution dies on the
+      # second export → import trip: ReviewBuilder skips reviews whose archive
+      # attribution is blank. The linked user always wins when present.
+      def attribution(user, imported_email, imported_name)
+        return [user.email, user.name] if user
+
+        [imported_email, imported_name]
       end
 
       def serialize_reactions(review)

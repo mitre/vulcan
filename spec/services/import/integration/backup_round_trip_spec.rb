@@ -351,6 +351,43 @@ RSpec.describe 'JSON Archive Backup Round-Trip' do
       end
     end
 
+    # Second-trip attribution survival: a review whose author is already on the
+    # imported columns (user FK nil — prior import without a local match, or the
+    # author's User was destroyed) must export with that attribution and arrive
+    # intact on re-import, landing back on the imported columns rather than
+    # being skipped as attribution-less.
+    describe 'review with imported attribution (second round trip)' do
+      let(:orphan_component) do
+        create(:component, project: source_project, name: 'Imported Attribution Component')
+      end
+
+      it 'preserves imported commenter attribution through export then import' do
+        review = create(:review, :comment, user: review_user,
+                                           rule: orphan_component.rules.first,
+                                           comment: 'carried across instances')
+        review.update_columns(user_id: nil,
+                              commenter_imported_email: 'original.author@archive.test',
+                              commenter_imported_name: 'Original Author')
+
+        zip = Export::Base.new(
+          exportable: orphan_component.reload, mode: :backup, format: :json_archive
+        ).call.data
+
+        result = Import::JsonArchiveImporter.new(
+          zip_file: zip, project: target_project, include_reviews: true
+        ).call
+
+        expect(result).to be_success
+        imported = target_project.components.find_by(name: 'Imported Attribution Component')
+        imported_review = Review.where(rule_id: imported.rules.select(:id))
+                                .find_by(comment: 'carried across instances')
+        expect(imported_review).to be_present
+        expect(imported_review.user_id).to be_nil
+        expect(imported_review.commenter_imported_email).to eq('original.author@archive.test')
+        expect(imported_review.commenter_imported_name).to eq('Original Author')
+      end
+    end
+
     describe 'multi-component project backup' do
       let!(:second_component) do
         create(:component, project: source_project, name: 'Second Component')
