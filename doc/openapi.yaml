@@ -3075,6 +3075,64 @@ paths:
                     error: No file was provided. Please upload a CSV or XLSX file.
         4XX:
           $ref: '#/components/responses/ErrorResponse'
+  /components/{componentId}/release:
+    parameters:
+      - $ref: '#/components/parameters/ComponentId'
+    post:
+      operationId: releaseComponent
+      tags:
+        - Components
+      summary: Release an SRG component to the catalog
+      description: 'Releases an SRG-kind component in one transaction: verifies every live requirement is decided (never Not Yet Determined) and locked, mints the final published identifiers, generates the published SRG XCCDF, creates the catalog SecurityRequirementsGuide entry with its columns derived from that document, copies the published requirements onto the entry, and flags the component released. The released entry behaves exactly like an uploaded SRG — new components can base on it immediately. Requires the author role on the component. STIG readiness components do not use this endpoint (their release is the released flag on component update).'
+      responses:
+        '200':
+          description: Component released and attached to the catalog
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentReleaseResponse'
+              examples:
+                released:
+                  summary: First release of a derived SRG
+                  value:
+                    toast:
+                      title: Component released.
+                      message:
+                        - Container Best Practice SRG - Ver 1, Rel 1 is now in the SRG catalog.
+                      variant: success
+                    catalog_srg:
+                      id: 42
+                      srg_id: Container_Best_Practice_SRG
+                      version: V1R1
+                      name: Container Best Practice SRG - Ver 1, Rel 1
+                    changelog:
+                      version: V1R1
+                      removals: []
+                      text: |-
+                        Container Best Practice SRG V1R1 — Release Changelog
+
+                        No requirements were removed in this release.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Release blocked — the component is not an SRG component, is already released, is missing its version/release pair or abbreviation, still has Not Yet Determined requirements, or has unlocked requirements. The toast messages carry every blocking reason.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+              examples:
+                undecided:
+                  summary: Undecided requirements block the release
+                  value:
+                    toast:
+                      title: Could not release component.
+                      message:
+                        - 'release is blocked: 3 live requirement(s) still Not Yet Determined — every requirement must be decided'
+                      variant: danger
   /components/bulk_export/{type}:
     parameters:
       - name: type
@@ -11437,6 +11495,75 @@ components:
         diff:
           description: Rule content in the new version. Present for 'added' and 'updated' changes.
           $ref: '#/components/schemas/RuleBasicFields'
+    ComponentReleaseResponse:
+      type: object
+      description: 'Successful release of an SRG component. The component''s requirements are published to the SRG catalog: the catalog entry is shaped exactly like an uploaded SRG (other components can base on it immediately, and is-latest tracks it), and the changelog summarizes what left the document via executed relocations.'
+      required:
+        - toast
+        - catalog_srg
+        - changelog
+      properties:
+        toast:
+          $ref: '#/components/schemas/ToastObject'
+        catalog_srg:
+          type: object
+          description: The catalog entry created by this release.
+          required:
+            - id
+            - srg_id
+            - version
+            - name
+          properties:
+            id:
+              type: integer
+              description: Catalog SecurityRequirementsGuide record id.
+            srg_id:
+              type: string
+              description: The released document's benchmark id — the component name with spaces underscored.
+              example: Container_Best_Practice_SRG
+            version:
+              type: string
+              description: Catalog version string mapped from the component's integer version/release pair.
+              example: V1R1
+            name:
+              type: string
+              description: Display name composed from the benchmark id and version.
+              example: Container Best Practice SRG - Ver 1, Rel 1
+        changelog:
+          type: object
+          description: Release changelog content. Removals are the component's executed relocation records — requirements that left this document for another SRG. Storage is not implied; this is the generated content.
+          required:
+            - version
+            - removals
+            - text
+          properties:
+            version:
+              type: string
+              example: V1R1
+            removals:
+              type: array
+              items:
+                type: object
+                required:
+                  - identifier
+                  - destination_abbreviation
+                  - executed_on
+                properties:
+                  identifier:
+                    type: string
+                    description: The requirement's published identifier (its working display name if it was never minted).
+                    example: SRG-OS-000811-CTR-000042
+                  destination_abbreviation:
+                    type: string
+                    description: The destination SRG's short abbreviation.
+                    example: WEB
+                  executed_on:
+                    type: string
+                    format: date
+                    example: '2026-07-20'
+            text:
+              type: string
+              description: Plain-text rendering of the changelog.
     RuleSectionLockResponse:
       description: Response from section lock/unlock. Toast notification plus the updated rule. Used by PATCH /rules/:id/section_locks and PATCH /rules/:id/bulk_section_locks.
       type: object

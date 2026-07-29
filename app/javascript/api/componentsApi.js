@@ -17,6 +17,16 @@ export function patchComponent(componentId, data) {
   return api.patch(`/components/${componentId}`, { component: data });
 }
 
+/**
+ * Release an SRG component through the full release flow: undecided
+ * gate, identifier minting, catalog attachment, and the release copy
+ * run server-side in one transaction. STIG readiness components release
+ * via patchComponent (released: true) instead.
+ */
+export function releaseComponent(componentId) {
+  return api.post(`/components/${componentId}/release`);
+}
+
 export function deleteComponent(componentId) {
   return api.delete(`/components/${componentId}`);
 }

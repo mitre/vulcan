@@ -1,5 +1,5 @@
 import { ref } from "vue";
-import { patchComponent } from "../api/componentsApi";
+import { patchComponent, releaseComponent } from "../api/componentsApi";
 
 /**
  * Dialog copy from ConfirmComponentReleaseMixin — exported once so both
@@ -72,9 +72,13 @@ export function useConfirmRelease() {
   }
 
   /**
-   * Confirm and execute the release: PATCH { released: true }.
-   * Release cannot be undone — on error the dialog stays open with the
-   * component retained so the user can retry; on success everything resets.
+   * Confirm and execute the release, kind-routed: SRG components run
+   * the FULL release flow server-side (undecided gate, minting, catalog
+   * attachment, copy — a plain released:true PATCH is rejected by the
+   * model guard); STIG readiness components PATCH { released: true } as
+   * before. Release cannot be undone — on error the dialog stays open
+   * with the component retained so the user can retry; on success
+   * everything resets.
    *
    * @returns {Promise<{success: boolean, response: Object|null, error: Error|null}>}
    */
@@ -86,7 +90,11 @@ export function useConfirmRelease() {
     isReleasing.value = true;
 
     try {
-      const response = await patchComponent(componentToRelease.value.id, { released: true });
+      const pending = componentToRelease.value;
+      const response =
+        pending.document_type === "srg"
+          ? await releaseComponent(pending.id)
+          : await patchComponent(pending.id, { released: true });
 
       showModal.value = false;
       componentToRelease.value = null;

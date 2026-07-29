@@ -87,6 +87,9 @@ RSpec.describe 'Component copy across document kinds' do
       # Overlays require a released source (existing model validation);
       # locking all requirements is the release precondition.
       source.authored_srg_rules.each { |r| r.update!(locked: true, audit_comment: 'release prep') }
+      # Post-release state via the flow-intent flag — the seam the real
+      # release machinery uses (a plain released update is rejected).
+      source.via_release_flow = true
       source.update!(released: true)
       overlay = source.overlay(other_project.id)
       overlay.save!

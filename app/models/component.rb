@@ -128,10 +128,17 @@ class Component < ApplicationRecord
   validates :description, length: { maximum: ->(_r) { Settings.input_limits.component_description } }
   validates :admin_name, :admin_email,
             length: { maximum: ->(_r) { Settings.input_limits.short_string } }, allow_nil: true
+  # SRG release runs mint -> catalog attachment -> copy in one
+  # transaction; flipping released through a plain update would strand a
+  # released SRG outside the catalog. The release action sets this
+  # intent flag around its own update (the Review#save_intent pattern).
+  attr_accessor :via_release_flow
+
   validate :associated_component_must_be_released,
            :rules_must_be_locked_to_release_component,
            :cannot_unrelease_component,
-           :cannot_overlay_self
+           :cannot_overlay_self,
+           :srg_release_uses_the_release_flow
 
   # document_type is the authoring-profile key — it routes source
   # eligibility, status vocabulary, and field config through the
@@ -1030,6 +1037,13 @@ class Component < ApplicationRecord
     return if component_id.nil? || id != component_id
 
     errors.add(:component_id, 'cannot overlay itself')
+  end
+
+  def srg_release_uses_the_release_flow
+    return unless document_type == 'srg' && released && !released_was && !via_release_flow
+
+    errors.add(:base, 'SRG components release through the release flow — ' \
+                      'the release endpoint runs the full catalog attachment')
   end
 
   def cannot_unrelease_component

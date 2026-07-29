@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useConfirmRelease, RELEASE_CONFIRM_COPY } from "@/composables/useConfirmRelease";
-import { patchComponent } from "@/api/componentsApi";
+import { patchComponent, releaseComponent } from "@/api/componentsApi";
 
 vi.mock("@/api/componentsApi", () => ({
   patchComponent: vi.fn(),
+  releaseComponent: vi.fn(),
 }));
 
 // REQUIREMENT: useConfirmRelease must replicate ConfirmComponentReleaseMixin
@@ -87,6 +88,40 @@ describe("useConfirmRelease", () => {
       expect(showModal.value).toBe(false);
       expect(componentToRelease.value).toBe(null);
       expect(isReleasing.value).toBe(false);
+    });
+
+    // SRG-kind releases run the FULL release flow server-side (undecided
+    // gate, minting, catalog attachment, copy) — a plain released:true
+    // PATCH is rejected by the model guard, so the composable must
+    // kind-route.
+    it("POSTs to the release endpoint for an SRG-kind component", async () => {
+      const apiResponse = {
+        data: { toast: { title: "Component released." }, catalog_srg: { id: 9 } },
+      };
+      releaseComponent.mockResolvedValue(apiResponse);
+
+      const { requestRelease, confirm, showModal } = useConfirmRelease();
+      requestRelease({ id: 42, releasable: true, document_type: "srg" });
+
+      const result = await confirm();
+
+      expect(releaseComponent).toHaveBeenCalledExactlyOnceWith(42);
+      expect(patchComponent).not.toHaveBeenCalled();
+      expect(result.success).toBe(true);
+      expect(result.response).toBe(apiResponse);
+      expect(showModal.value).toBe(false);
+    });
+
+    it("keeps the PATCH path for stig-kind components", async () => {
+      patchComponent.mockResolvedValue({ data: {} });
+
+      const { requestRelease, confirm } = useConfirmRelease();
+      requestRelease({ id: 7, releasable: true, document_type: "stig" });
+
+      await confirm();
+
+      expect(patchComponent).toHaveBeenCalledExactlyOnceWith(7, { released: true });
+      expect(releaseComponent).not.toHaveBeenCalled();
     });
 
     it("returns failure without calling the API when nothing is pending", async () => {

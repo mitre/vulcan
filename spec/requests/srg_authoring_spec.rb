@@ -365,6 +365,10 @@ RSpec.describe 'SRG authoring backend' do
       create(:srg_rule, :authored, component: component, rule_id: '000001',
                                    status: 'Applicable', locked: true)
 
+      # The flow-intent flag isolates the lock gate under test — srg
+      # release outside the release flow is separately rejected (pinned
+      # in the release endpoint request spec).
+      component.via_release_flow = true
       component.released = true
       expect(component).to be_valid
     end
@@ -374,6 +378,7 @@ RSpec.describe 'SRG authoring backend' do
                                                   prefix: 'SRGU-00', name: 'Unreleasable SRG', title: 'Unreleasable SRG')
       create(:srg_rule, :authored, component: component, rule_id: '000001', status: 'Applicable')
 
+      component.via_release_flow = true
       component.released = true
       expect(component).not_to be_valid
       expect(component.errors[:base])

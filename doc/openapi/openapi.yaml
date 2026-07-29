@@ -140,6 +140,8 @@ paths:
     $ref: paths/components_{componentId}_preview_spreadsheet_update.yaml
   /components/{componentId}/apply_spreadsheet_update:
     $ref: paths/components_{componentId}_apply_spreadsheet_update.yaml
+  /components/{componentId}/release:
+    $ref: paths/components_{componentId}_release.yaml
   /components/bulk_export/{type}:
     $ref: paths/components_bulk_export_{type}.yaml
   /api/components/compare:

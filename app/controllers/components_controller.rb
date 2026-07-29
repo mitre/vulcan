@@ -20,12 +20,13 @@ class ComponentsController < ApplicationController
                        additional_questions_attributes component_metadata_attributes].freeze
 
   before_action :set_component, only: %i[show update destroy export preview_spreadsheet_update apply_spreadsheet_update triage settings]
-  before_action :set_component_basic, only: %i[find based_on_same_srg histories comments rules_picker]
+  before_action :set_component_basic, only: %i[find based_on_same_srg histories comments rules_picker release]
   before_action :set_project, only: %i[show create history triage settings]
   before_action :set_component_permissions, only: %i[show triage settings]
   before_action :authorize_admin_project, only: %i[create]
   before_action :authorize_admin_component, only: %i[destroy settings]
-  before_action :authorize_author_component, only: %i[update preview_spreadsheet_update apply_spreadsheet_update]
+  before_action :authorize_author_component,
+                only: %i[update preview_spreadsheet_update apply_spreadsheet_update release]
   before_action :check_permission_to_update_slackchannel, only: %i[update]
   before_action :check_admin_for_advanced_fields, only: %i[update]
   before_action :authorize_component_access,
@@ -139,6 +140,32 @@ class ComponentsController < ApplicationController
         )
       }, status: :unprocessable_content
     end
+  end
+
+  # Releases an SRG component: undecided-requirement gate, identifier
+  # minting, catalog attachment, release copy, and the released flag —
+  # ONE transaction, so a failure anywhere (including the locked-rules
+  # validation on the released flag) leaves no catalog row. Author-level
+  # authorization, matching the update path that flips released today.
+  def release
+    service = ReleaseAttachmentService.new(@component)
+    blockers = release_blockers(service)
+    return render_release_blocked(blockers) if blockers.any?
+
+    catalog = nil
+    ActiveRecord::Base.transaction do
+      catalog = service.attach!
+      @component.via_release_flow = true
+      @component.update!(released: true)
+    end
+    render_toast(title: 'Component released.',
+                 message: ["#{catalog.name} is now in the SRG catalog."],
+                 variant: 'success', status: :ok,
+                 catalog_srg: { id: catalog.id, srg_id: catalog.srg_id,
+                                version: catalog.version, name: catalog.name },
+                 changelog: service.changelog_data.merge(text: service.changelog_text))
+  rescue ActiveRecord::RecordInvalid => e
+    render_release_blocked(e.record.errors.full_messages)
   end
 
   def destroy
@@ -661,6 +688,21 @@ class ComponentsController < ApplicationController
     data = component_create_params.dig(:component_metadata_attributes, :data).to_h
     data['Slack Channel ID'] = component_create_params[:slack_channel_id] if component_create_params[:slack_channel_id].present?
     data
+  end
+
+  # The srg-kind and already-released checks answer before the service
+  # runs; STIG readiness components keep releasing through update.
+  def release_blockers(service)
+    return ['component must be an SRG component — STIG readiness components release via update'] unless
+      @component.document_type == 'srg'
+    return ['component is already released'] if @component.released
+
+    service.validation_errors
+  end
+
+  def render_release_blocked(messages)
+    render_toast(title: 'Could not release component.', message: messages,
+                 variant: 'danger', status: :unprocessable_content)
   end
 
   # Defines the set_component method.
