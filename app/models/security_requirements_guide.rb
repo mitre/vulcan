@@ -11,6 +11,13 @@ class SecurityRequirementsGuide < ApplicationRecord
 
   self.series_key_column = :srg_id
 
+  # The core SRGs are DEFINED — exactly three, DISA-published (Operating
+  # System Core, Network Core, Application Core). Core-ness is recognition
+  # of those documents by benchmark id, never a user designation. DISA's
+  # own naming is inconsistent (two ids end _SRG, one does not) — these
+  # values are read from the published documents.
+  CORE_SRG_IDS = %w[Operating_System_Core Network_Core_SRG Application_Core_SRG].freeze
+
   def self.search_columns
     %w[name title srg_id]
   end
@@ -21,6 +28,13 @@ class SecurityRequirementsGuide < ApplicationRecord
   # Release-path intent flag: catalog rows created at release get their
   # rules from the release copy, never the XML import.
   attr_accessor :skip_rule_import
+
+  # One-directional: a matching benchmark id flags the record core; a
+  # non-matching id never unsets an explicitly-set core (scratch and
+  # walkthrough cores use arbitrary ids). The model is the ONE recognition
+  # seam — every creation path (upload, seeds, release attachment) passes
+  # through it.
+  before_validation :recognize_core_document, on: :create
 
   after_create :import_srg_rules, unless: :skip_rule_import
 
@@ -150,6 +164,10 @@ class SecurityRequirementsGuide < ApplicationRecord
   end
 
   private
+
+  def recognize_core_document
+    self.core = true if CORE_SRG_IDS.include?(srg_id)
+  end
 
   # The stored document is authoritative — backup restore re-derives rows
   # from it, so a row whose columns disagree with its own XML header
