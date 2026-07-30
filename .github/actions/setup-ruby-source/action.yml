@@ -1,0 +1,82 @@
+name: 'Setup Ruby (source build)'
+description: >-
+  TEMPORARY drop-in replacement for ruby/setup-ruby. Compiles the pinned Ruby
+  from source (mirroring the Dockerfile's build) because ruby-builder does not
+  yet publish a prebuilt binary for it. The compiled Ruby and the installed gem
+  bundle are both cached, so the ~6-minute compile is paid only once per Ruby
+  version. Revert lint/backend back to ruby/setup-ruby (see git history) once
+  https://github.com/ruby/ruby-builder ships a binary for the pinned version.
+
+runs:
+  using: 'composite'
+  steps:
+    # Single source of truth: version from .ruby-version (matches Gemfile +
+    # Dockerfile ARG), checksum from the Dockerfile ARG. A drift between the two
+    # trips the sha256 check below, loudly.
+    - name: Resolve Ruby version and checksum
+      id: ruby
+      shell: bash
+      run: |
+        ver="$(cat .ruby-version)"
+        sha="$(grep -m1 '^ARG RUBY_SHA256=' Dockerfile | cut -d= -f2)"
+        echo "version=$ver" >> "$GITHUB_OUTPUT"
+        echo "sha256=$sha" >> "$GITHUB_OUTPUT"
+        echo "install_dir=$HOME/.rubies/$ver" >> "$GITHUB_OUTPUT"
+
+    - name: Restore compiled Ruby
+      id: ruby-cache
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: ${{ steps.ruby.outputs.install_dir }}
+        key: ruby-src-${{ runner.os }}-24.04-${{ steps.ruby.outputs.version }}-${{ steps.ruby.outputs.sha256 }}
+
+    # Needed to compile Ruby (rust is for --enable-yjit) and to build native gem
+    # extensions during bundle install (pg needs libpq-dev, etc.).
+    - name: Install build dependencies
+      shell: bash
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -yqq --no-install-recommends \
+          autoconf bison build-essential libffi-dev libgmp-dev libpq-dev \
+          libreadline-dev libssl-dev libyaml-dev rustc zlib1g-dev
+
+    - name: Compile Ruby from source
+      if: steps.ruby-cache.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        RUBY_VERSION: ${{ steps.ruby.outputs.version }}
+        RUBY_SHA256: ${{ steps.ruby.outputs.sha256 }}
+        INSTALL_DIR: ${{ steps.ruby.outputs.install_dir }}
+      run: |
+        set -euo pipefail
+        curl -fsSL "https://cache.ruby-lang.org/pub/ruby/${RUBY_VERSION%.*}/ruby-${RUBY_VERSION}.tar.gz" -o /tmp/ruby.tar.gz
+        echo "${RUBY_SHA256}  /tmp/ruby.tar.gz" | sha256sum -c -
+        tar -xzf /tmp/ruby.tar.gz -C /tmp
+        cd "/tmp/ruby-${RUBY_VERSION}"
+        ./configure --prefix="${INSTALL_DIR}" --disable-install-doc --enable-yjit
+        make -j"$(nproc)"
+        make install
+
+    - name: Add Ruby to PATH
+      shell: bash
+      run: echo "${{ steps.ruby.outputs.install_dir }}/bin" >> "$GITHUB_PATH"
+
+    - name: Install bundler
+      shell: bash
+      run: |
+        bundler_version="$(awk '/BUNDLED WITH/{getline; gsub(/[[:space:]]/,""); print; exit}' Gemfile.lock)"
+        gem install bundler -v "$bundler_version" --no-document
+
+    - name: Restore gem bundle
+      id: bundle-cache
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: vendor/bundle
+        key: bundle-${{ runner.os }}-ruby-${{ steps.ruby.outputs.version }}-${{ hashFiles('Gemfile.lock') }}
+
+    - name: Install gems
+      shell: bash
+      run: |
+        bundle config set --local path vendor/bundle
+        bundle config set --local deployment true
+        bundle install --jobs 4
