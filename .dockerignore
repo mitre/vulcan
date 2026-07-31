@@ -71,6 +71,22 @@
 /sonar-project.properties
 /postcss.config.js
 
+# Ignore additional dev/CI/internal files not needed at runtime
+/.claude
+/.foreman
+/.git-hooks
+/.gitguardian.yml
+/.github_changelog_generator
+/.rspec
+/.safety-net.json
+/.slugignore
+/.sonarcloud.properties
+/.tool-versions
+/app.json
+/cliff.toml
+/issues.jsonl
+/Procfile.dev
+
 # Ignore non-Linux binaries
 /bin/vulcan
 
@@ -81,20 +97,11 @@
 /nginx.conf*
 /setup-docker-secrets.sh
 
-# Ignore markdown files not needed at runtime
-/CHANGELOG.md
-/CODE_OF_CONDUCT.md
-/CONTRIBUTING.md
-/LICENSE.md
-/NOTICE.md
-/README.md
-/RELEASE_NOTES.md
-/SECURITY.md
-/ROADMAP.md
-/BENCHMARK-VIEWER-DESIGN.md
+# Ignore root-level markdown (docs/ is kept — read at runtime by DisaGuideController)
+/*.md
+
+# Other root files not needed at runtime
 /AGENT-STATUS
-/ENVIRONMENT_VARIABLES.md
-/CLAUDE.md
 /_config.yml
 /CNAME
 /create_admin.rb

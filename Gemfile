@@ -2,7 +2,7 @@
 
 source 'https://rubygems.org'
 
-ruby '3.4.9'
+ruby '3.4.10'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 8.0.0'
@@ -156,3 +156,5 @@ gem 'blueprinter', '~> 1.2'
 gem 'blueprinter-activerecord', '~> 1.3'
 
 gem 'oj', '~> 3.16'
+
+gem 'faraday', '~> 1.10', '>= 1.10.6'
