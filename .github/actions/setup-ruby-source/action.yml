@@ -49,7 +49,7 @@ runs:
         INSTALL_DIR: ${{ steps.ruby.outputs.install_dir }}
       run: |
         set -euo pipefail
-        curl -fsSL "https://cache.ruby-lang.org/pub/ruby/${RUBY_VERSION%.*}/ruby-${RUBY_VERSION}.tar.gz" -o /tmp/ruby.tar.gz
+        curl -fsSL --proto '=https' --proto-redir '=https' "https://cache.ruby-lang.org/pub/ruby/${RUBY_VERSION%.*}/ruby-${RUBY_VERSION}.tar.gz" -o /tmp/ruby.tar.gz
         echo "${RUBY_SHA256}  /tmp/ruby.tar.gz" | sha256sum -c -
         tar -xzf /tmp/ruby.tar.gz -C /tmp
         cd "/tmp/ruby-${RUBY_VERSION}"

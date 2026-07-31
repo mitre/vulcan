@@ -117,7 +117,7 @@ RUN microdnf update -y && \
 # findutils, tar, xz are kept here (build-time only) and intentionally
 # excluded from the base stage — they're not needed at runtime.
 
-RUN curl -fsSL https://cache.ruby-lang.org/pub/ruby/${RUBY_VERSION%.*}/ruby-${RUBY_VERSION}.tar.gz -o /tmp/ruby.tar.gz && \
+RUN curl -fsSL --proto '=https' --proto-redir '=https' https://cache.ruby-lang.org/pub/ruby/${RUBY_VERSION%.*}/ruby-${RUBY_VERSION}.tar.gz -o /tmp/ruby.tar.gz && \
     echo "${RUBY_SHA256}  /tmp/ruby.tar.gz" | sha256sum -c - && \
     tar --no-same-owner -xzf /tmp/ruby.tar.gz -C /tmp && \
     cd /tmp/ruby-${RUBY_VERSION} && \
@@ -138,7 +138,7 @@ RUN curl -fsSL https://cache.ruby-lang.org/pub/ruby/${RUBY_VERSION%.*}/ruby-${RU
 # jemalloc — UBI doesn't ship it; compile from source for ~20-30% memory savings.
 ARG JEMALLOC_VERSION=5.3.0
 ARG JEMALLOC_SHA256=2db82d1e7119df3e71b7640219b6dfe84789bc0537983c3b7ac4f7189aecfeaa
-RUN curl -fsSL https://github.com/jemalloc/jemalloc/releases/download/${JEMALLOC_VERSION}/jemalloc-${JEMALLOC_VERSION}.tar.bz2 \
+RUN curl -fsSL --proto '=https' --proto-redir '=https' https://github.com/jemalloc/jemalloc/releases/download/${JEMALLOC_VERSION}/jemalloc-${JEMALLOC_VERSION}.tar.bz2 \
       -o /tmp/jemalloc.tar.bz2 && \
     echo "${JEMALLOC_SHA256}  /tmp/jemalloc.tar.bz2" | sha256sum -c - && \
     tar --no-same-owner -xjf /tmp/jemalloc.tar.bz2 -C /tmp && \
@@ -157,8 +157,8 @@ ARG TARGETARCH
 ENV PATH="/opt/node/bin:${PATH}"
 RUN ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") && \
     NODE_TARBALL="node-v${NODE_VERSION}-linux-${ARCH}.tar.xz" && \
-    curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/${NODE_TARBALL}" -o /tmp/node.tar.xz && \
-    curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/SHASUMS256.txt" -o /tmp/node.sha256 && \
+    curl -fsSL --proto '=https' --proto-redir '=https' "https://nodejs.org/dist/v${NODE_VERSION}/${NODE_TARBALL}" -o /tmp/node.tar.xz && \
+    curl -fsSL --proto '=https' --proto-redir '=https' "https://nodejs.org/dist/v${NODE_VERSION}/SHASUMS256.txt" -o /tmp/node.sha256 && \
     awk -v t="${NODE_TARBALL}" '$2 == t { print $1 "  /tmp/node.tar.xz" }' /tmp/node.sha256 | sha256sum -c - && \
     mkdir -p /opt/node && \
     tar --no-same-owner -xJf /tmp/node.tar.xz -C /opt/node --strip-components=1 && \
