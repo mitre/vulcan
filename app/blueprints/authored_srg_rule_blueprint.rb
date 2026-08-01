@@ -36,6 +36,14 @@ class AuthoredSrgRuleBlueprint < Blueprinter::Base
       rule.nist_control_family
     end
 
+    # One kind-agnostic srg_id across document kinds: requirement lists
+    # (the editor sidebar's SRG ID display) read rule.srg_id regardless
+    # of kind. For an authored requirement the SRG identifier IS the
+    # row's version — the same value the editor header displays.
+    field :srg_id do |rule, _options|
+      rule.version
+    end
+
     # Portable lineage: the catalog requirement this row was derived from.
     field :derived_from_version do |rule, _options|
       rule.derived_from&.version

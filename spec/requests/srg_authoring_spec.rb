@@ -254,6 +254,16 @@ RSpec.describe 'SRG authoring backend' do
       expect(rows.first.keys).not_to include('satisfies', 'srg_rule_attributes')
     end
 
+    it 'serves srg_id — the SRG requirement identifier — on every authored row' do
+      get "/components/#{srg_component.id}/rules", headers: { 'Accept' => 'application/json' }
+
+      expect(response).to have_http_status(:ok)
+      rows = response.parsed_body.index_by { |r| r['rule_id'] }
+      expect(authored_a.version).to match(/\ASRG-APP-/)
+      expect(rows.fetch('000001')['srg_id']).to eq(authored_a.version)
+      expect(rows.fetch('000002')['srg_id']).to eq(authored_b.version)
+    end
+
     it 'GET /rules/:id returns an individual authored requirement' do
       get "/rules/#{authored_a.id}", headers: { 'Accept' => 'application/json' }
 

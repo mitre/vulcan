@@ -10251,12 +10251,13 @@ components:
                     - 'null'
                   example: V2R4
     AuthoredSrgRuleEditorResponse:
-      description: 'A component-authored SRG requirement for the editing form. Shares the common requirement surface with STIG rules — status, locking, reviews, audit history, content — but its status vocabulary is the three-value SRG set, and it carries none of the STIG-only surfaces: no satisfies/satisfied_by, no srg_rule_attributes, no additional answers, no InSpec fields. Lineage is the portable derived_from_version token.'
+      description: 'A component-authored SRG requirement for the editing form. Shares the common requirement surface with STIG rules — status, locking, reviews, audit history, content — but its status vocabulary is the three-value SRG set, and it carries none of the STIG-only surfaces: no satisfies/satisfied_by, no srg_rule_attributes, no additional answers, no InSpec fields. Lineage is the portable derived_from_version identifier.'
       type: object
       required:
         - id
         - rule_id
         - locked
+        - srg_id
         - derived_from_version
       additionalProperties: false
       properties:
@@ -10404,6 +10405,12 @@ components:
           type: string
           description: NIST control families derived from the CCI identifiers.
           example: CM
+        srg_id:
+          type:
+            - string
+            - 'null'
+          description: The SRG requirement identifier shown by requirement lists (the editor sidebar's SRG ID display) — one kind-agnostic key across document kinds. For an authored requirement this is the row's version value, the same identifier the editor header displays. Null when the row has no requirement identifier yet.
+          example: SRG-APP-000003
         derived_from_version:
           type:
             - string
