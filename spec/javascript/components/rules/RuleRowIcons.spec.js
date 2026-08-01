@@ -1,5 +1,5 @@
-import { describe, it, expect, afterEach } from "vitest";
-import { shallowMount } from "@vue/test-utils";
+import { describe, it, expect, afterEach, vi } from "vitest";
+import { mount, shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import RuleRowIcons from "@/components/rules/RuleRowIcons.vue";
 
@@ -66,6 +66,39 @@ describe("RuleRowIcons", () => {
       wrapper = createWrapper({ ruleOpen: 7, rule: { id: 1 } });
       const badge = wrapper.find('[data-test="rule-open-comment-1"]');
       expect(badge.attributes("title")).toContain("7");
+    });
+
+    it("emits open-comments with the rule when the comment indicator is clicked", async () => {
+      wrapper = createWrapper({ ruleOpen: 3, rule: { id: 5 } });
+      await wrapper.find('[data-test="rule-open-comment-5"]').trigger("click");
+      const emitted = wrapper.emitted("open-comments");
+      expect(emitted).toHaveLength(1);
+      expect(emitted[0][0]).toEqual(wrapper.props("rule"));
+    });
+
+    it("does not propagate the indicator click to the row (row selection untouched)", async () => {
+      const parentClick = vi.fn();
+      const rule = createRule({ id: 9 });
+      wrapper = mount(
+        {
+          render(h) {
+            return h("div", { on: { click: parentClick } }, [
+              h(RuleRowIcons, { props: { rule, ruleOpen: 2, pendingRelocation: null } }),
+            ]);
+          },
+        },
+        { localVue, stubs: { BIcon: true } },
+      );
+      await wrapper.find('[data-test="rule-open-comment-9"]').trigger("click");
+      expect(parentClick).not.toHaveBeenCalled();
+    });
+
+    it("is a real button with an accessible name (keyboard-actionable)", () => {
+      wrapper = createWrapper({ ruleOpen: 4, rule: { id: 5 } });
+      const badge = wrapper.find('[data-test="rule-open-comment-5"]');
+      expect(badge.element.tagName).toBe("BUTTON");
+      expect(badge.attributes("type")).toBe("button");
+      expect(badge.attributes("aria-label")).toBe("View 4 open comments");
     });
   });
 

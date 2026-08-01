@@ -794,4 +794,28 @@ describe("ProjectComponent", () => {
       expect(editor.props("pendingRelocation")).toEqual(MARKER);
     });
   });
+
+  describe("sidebar comments-modal composer wiring", () => {
+    it("add-comment opens the section composer for the EMITTED rule, not the selected rule", async () => {
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+      const sidebarRule = { id: 42, rule_id: "000042", satisfied_by: [] };
+      wrapper.vm.onSidebarAddComment(sidebarRule);
+      expect(wrapper.vm.composerProps.ruleId).toBe(42);
+      expect(wrapper.vm.composerProps.ruleDisplayedName).toBe("TEST-000042");
+      expect(wrapper.vm.composerProps.initialSection).toBe(null);
+      expect(wrapper.vm.composerProps.replyToReviewId).toBe(null);
+    });
+
+    it("reply-comment opens the reply composer with the comment row's identity", async () => {
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+      const row = { id: 77, rule_id: 42, component_id: 5, rule_displayed_name: "TEST-000042" };
+      wrapper.vm.onSidebarReplyComment(row);
+      expect(wrapper.vm.composerProps.replyToReviewId).toBe(77);
+      expect(wrapper.vm.composerProps.ruleId).toBe(42);
+      expect(wrapper.vm.composerProps.componentId).toBe(5);
+      expect(wrapper.vm.composerProps.ruleDisplayedName).toBe("TEST-000042");
+    });
+  });
 });

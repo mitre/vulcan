@@ -1,9 +1,10 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import { createPinia, setActivePinia } from "pinia";
 import { createTestRouter } from "@test/support/routerTestHelper";
 import { useRuleSelectionStore } from "@/stores/ruleSelection";
+import { commentsClosedTooltip } from "@/constants/triageVocabulary";
 import RuleList from "@/components/rules/RuleList.vue";
 import RuleRowIcons from "@/components/rules/RuleRowIcons.vue";
 
@@ -64,7 +65,7 @@ describe("RuleList", () => {
   let pinia;
   let router;
 
-  const createWrapper = (props = {}) => {
+  const createWrapper = (props = {}, extraStubs = {}) => {
     pinia = createPinia();
     setActivePinia(pinia);
     router = createTestRouter([
@@ -86,6 +87,18 @@ describe("RuleList", () => {
         BIcon: true,
         BBadge: true,
         NewRuleModalForm: true,
+        // Slot-inert named stub: the real container invokes its scoped
+        // slots with live rows; the auto-stub would invoke them with an
+        // empty scope and trip CommentItem's required-prop check (the
+        // zero-stderr contract). Props declared so tests can assert them.
+        CommentList: {
+          name: "CommentList",
+          props: ["componentId", "filterRuleId", "commentableType", "filterStatus"],
+          render(h) {
+            return h("div");
+          },
+        },
+        ...extraStubs,
       },
       mocks: {
         $root: { $emit: () => {} },
@@ -156,6 +169,263 @@ describe("RuleList", () => {
     it("formats rule ID with project prefix", () => {
       wrapper = createWrapper();
       expect(wrapper.vm.formatRuleId("000001")).toBe("TEST-000001");
+    });
+  });
+
+  describe("status dots", () => {
+    it("renders a dot per row carrying data-status and an accessible name — stig vocabulary", () => {
+      const rule = createRule(1, "000001", { status: "Applicable - Configurable" });
+      wrapper = createWrapper({ allRules: [rule], filteredRules: [rule] });
+      const dot = wrapper.find('[data-test="all-rules-header"] ~ div .status-dot');
+      expect(dot.exists()).toBe(true);
+      expect(dot.attributes("data-status")).toBe("Applicable - Configurable");
+      expect(dot.attributes("aria-label")).toBe("Status: Applicable - Configurable");
+      expect(dot.attributes("title")).toBe("Applicable - Configurable");
+    });
+
+    it("renders the dot for an authored-shaped srg row (no Rule-only keys)", () => {
+      const authored = {
+        id: 9,
+        rule_id: "000009",
+        version: "SRG-APP-000009",
+        srg_id: "SRG-APP-000009",
+        status: "Applicable",
+        locked: false,
+        review_requestor_id: null,
+        changes_requested: false,
+        comment_summary: null,
+      };
+      wrapper = createWrapper({ allRules: [authored], filteredRules: [authored] });
+      const dot = wrapper.find(".status-dot");
+      expect(dot.attributes("data-status")).toBe("Applicable");
+      expect(dot.attributes("aria-label")).toBe("Status: Applicable");
+    });
+
+    it("resolves a nested satisfies row's status from allRules (refs carry no status)", async () => {
+      const child = createRule(21, "000021", { status: "Not Applicable" });
+      const childRef = createSatisfactionRef(21, "000021", "SRG-OS-000021");
+      const parent = createRule(20, "000020", {
+        status: "Applicable - Does Not Meet",
+        satisfies: [childRef],
+      });
+      wrapper = createWrapper({
+        allRules: [parent, child],
+        filteredRules: [parent],
+        nestSatisfiedRulesChecked: true,
+      });
+      wrapper.vm.toggleParentExpanded(parent.id);
+      await wrapper.vm.$nextTick();
+      const childDot = wrapper.find(".nested-children .status-dot");
+      expect(childDot.exists()).toBe(true);
+      expect(childDot.attributes("data-status")).toBe("Not Applicable");
+    });
+  });
+
+  describe("comments modal", () => {
+    // BModal auto-stub drops its slot; a render-function stub keeps the
+    // default slot so the hosted CommentList is assertable (runtime-only
+    // build — no template-string stubs).
+    const modalSlotStub = {
+      render(h) {
+        return h("div", [this.$slots.default, this.$slots["modal-footer"]]);
+      },
+    };
+
+    it("open-comments from a row icon shows the modal via the real $bvModal injection", async () => {
+      const rule = createRule(3, "000003");
+      wrapper = createWrapper({ allRules: [rule], filteredRules: [rule] });
+      const show = vi.spyOn(wrapper.vm.$bvModal, "show");
+      wrapper.findComponent({ name: "RuleRowIcons" }).vm.$emit("open-comments", rule);
+      await wrapper.vm.$nextTick();
+      expect(show).toHaveBeenCalledWith("rule-comments-modal");
+      expect(wrapper.vm.commentsRule).toEqual(rule);
+    });
+
+    it("hosts CommentList filtered to the requirement, titled with the displayed id", async () => {
+      const rule = createRule(3, "000003");
+      wrapper = createWrapper(
+        { allRules: [rule], filteredRules: [rule] },
+        { BModal: modalSlotStub },
+      );
+      wrapper.findComponent({ name: "RuleRowIcons" }).vm.$emit("open-comments", rule);
+      await wrapper.vm.$nextTick();
+      expect(wrapper.vm.commentsModalTitle).toBe("TEST-000003");
+      const list = wrapper.findComponent({ name: "CommentList" });
+      expect(list.exists()).toBe(true);
+      expect(list.props("componentId")).toBe(41);
+      expect(list.props("filterRuleId")).toBe(3);
+    });
+
+    it("footer Add Comment emits add-comment with the rule and hides the modal", async () => {
+      const rule = createRule(3, "000003");
+      wrapper = createWrapper(
+        { allRules: [rule], filteredRules: [rule] },
+        { BModal: modalSlotStub },
+      );
+      const hide = vi.spyOn(wrapper.vm.$bvModal, "hide");
+      wrapper.vm.openComments(rule);
+      await wrapper.vm.$nextTick();
+      const btn = wrapper.find('[data-test="modal-add-comment"]');
+      expect(btn.exists()).toBe(true);
+      expect(btn.attributes("disabled")).toBeUndefined();
+      await btn.trigger("click");
+      expect(wrapper.emitted("add-comment")).toHaveLength(1);
+      expect(wrapper.emitted("add-comment")[0][0]).toEqual(rule);
+      expect(hide).toHaveBeenCalledWith("rule-comments-modal");
+    });
+
+    it("Add Comment is disabled-not-hidden when the comment phase is closed", async () => {
+      const rule = createRule(3, "000003");
+      wrapper = createWrapper(
+        { allRules: [rule], filteredRules: [rule] },
+        { BModal: modalSlotStub },
+      );
+      // Re-mount with the tree-scoped gate the pages provide.
+      wrapper.destroy();
+      wrapper = shallowMount(RuleList, {
+        localVue,
+        pinia,
+        router,
+        propsData: { ...defaultProps, allRules: [rule], filteredRules: [rule] },
+        provide: { isCommentsClosed: () => true, getClosedReason: () => "archived" },
+        stubs: {
+          BIcon: true,
+          BBadge: true,
+          NewRuleModalForm: true,
+          BModal: modalSlotStub,
+          CommentList: {
+            name: "CommentList",
+            props: ["componentId", "filterRuleId"],
+            render(h) {
+              return h("div");
+            },
+          },
+        },
+      });
+      wrapper.vm.openComments(rule);
+      await wrapper.vm.$nextTick();
+      const btn = wrapper.find('[data-test="modal-add-comment"]');
+      expect(btn.exists()).toBe(true);
+      expect(btn.attributes("disabled")).toBeTruthy();
+      expect(wrapper.vm.addCommentTooltip).toBe(commentsClosedTooltip("archived"));
+    });
+
+    it("Add Comment is disabled when the requirement is locked, with the locked tooltip", async () => {
+      const rule = createRule(3, "000003", { locked: true });
+      wrapper = createWrapper(
+        { allRules: [rule], filteredRules: [rule] },
+        { BModal: modalSlotStub },
+      );
+      wrapper.vm.openComments(rule);
+      await wrapper.vm.$nextTick();
+      const btn = wrapper.find('[data-test="modal-add-comment"]');
+      expect(btn.attributes("disabled")).toBeTruthy();
+      expect(wrapper.vm.addCommentTooltip).toBe(
+        "Rule is locked — comments are closed for this rule",
+      );
+    });
+
+    it("a reply from a hosted comment emits reply-comment with the ROW even though the inner chain emits an id", async () => {
+      // The real CommentThread → CommentActions → CommentItem chain emits
+      // the parent review ID (a number), NOT the row — the item slot must
+      // bind the slot-scoped comment, exactly like the comments table does.
+      const commentRow = {
+        id: 77,
+        rule_id: 3,
+        component_id: 41,
+        rule_displayed_name: "TEST-000003",
+      };
+      const itemRenderingListStub = {
+        name: "CommentList",
+        render(h) {
+          const item =
+            this.$scopedSlots.item &&
+            this.$scopedSlots.item({ comment: commentRow, dimmed: false, updateRow: () => {} });
+          return h("div", [item]);
+        },
+      };
+      const rule = createRule(3, "000003");
+      wrapper = createWrapper(
+        { allRules: [rule], filteredRules: [rule] },
+        { BModal: modalSlotStub, CommentList: itemRenderingListStub },
+      );
+      const hide = vi.spyOn(wrapper.vm.$bvModal, "hide");
+      wrapper.vm.openComments(rule);
+      await wrapper.vm.$nextTick();
+      const item = wrapper.findComponent({ name: "CommentItem" });
+      expect(item.exists()).toBe(true);
+      item.vm.$emit("reply", 999);
+      expect(wrapper.emitted("reply-comment")).toHaveLength(1);
+      expect(wrapper.emitted("reply-comment")[0][0]).toEqual(commentRow);
+      expect(hide).toHaveBeenCalledWith("rule-comments-modal");
+    });
+
+    it("all three row variants forward open-comments (open rules, all rules, children)", async () => {
+      const child = createRule(21, "000021");
+      const parent = createRule(20, "000020", { satisfies: [child] });
+      wrapper = createWrapper({
+        allRules: [parent, child],
+        filteredRules: [parent],
+        nestSatisfiedRulesChecked: true,
+      });
+      wrapper.vm.ruleStore.openRuleIds = [parent.id];
+      wrapper.vm.toggleParentExpanded(parent.id);
+      await wrapper.vm.$nextTick();
+      const icons = wrapper.findAllComponents({ name: "RuleRowIcons" });
+      expect(icons.length).toBe(3);
+      for (let i = 0; i < icons.length; i += 1) {
+        wrapper.vm.commentsRule = null;
+        icons.at(i).vm.$emit("open-comments", i === 2 ? child : parent);
+        await wrapper.vm.$nextTick();
+        expect(wrapper.vm.commentsRule).not.toBeNull();
+      }
+    });
+  });
+
+  describe("SRG ID display toggle", () => {
+    // Authored SRG rows omit Rule-only keys entirely (satisfies,
+    // satisfied_by, checks_attributes, disa_rule_descriptions_attributes)
+    // — fixtures must mirror that authentic shape, not pass [].
+    const authoredRow = {
+      id: 901,
+      rule_id: "000002",
+      version: "SRG-APP-000003",
+      srg_id: "SRG-APP-000003",
+      status: "Applicable",
+      locked: false,
+      review_requestor_id: null,
+      changes_requested: false,
+      comment_summary: null,
+    };
+
+    it("renders the requirement identifier for an authored-shaped row when the toggle is on", () => {
+      wrapper = createWrapper({
+        allRules: [authoredRow],
+        filteredRules: [authoredRow],
+        showSRGIdChecked: true,
+      });
+      expect(wrapper.text()).toContain("SRG-APP-000003");
+      expect(wrapper.text()).not.toContain("000002");
+    });
+
+    it("renders the truncated srg_id for a STIG-shaped row when the toggle is on", () => {
+      const stigRow = createRule(7, "STIG-00-000007");
+      wrapper = createWrapper({
+        allRules: [stigRow],
+        filteredRules: [stigRow],
+        showSRGIdChecked: true,
+      });
+      expect(wrapper.text()).toContain("SRG-OS-000007");
+      expect(wrapper.text()).not.toContain("GPOS");
+    });
+
+    it("falls back to the formatted rule ID when the toggle is off", () => {
+      wrapper = createWrapper({
+        allRules: [authoredRow],
+        filteredRules: [authoredRow],
+        showSRGIdChecked: false,
+      });
+      expect(wrapper.text()).toContain("000002");
     });
   });
 
@@ -325,7 +595,9 @@ describe("RuleList", () => {
       wrapper.setData({ expandedParents: new Set([parentRule.id]) });
 
       const childRows = wrapper.findAll(".child-row");
-      const tooltipSpans = childRows.at(0).findAll("span[title]");
+      // The status dot also carries a title — exclude it; this test is
+      // about the SRG id tooltip.
+      const tooltipSpans = childRows.at(0).findAll("span[title]:not(.status-dot)");
       expect(tooltipSpans.length).toBeGreaterThan(0);
       const titleValue = tooltipSpans.at(0).attributes("title");
       expect(titleValue).toBeTruthy();
@@ -346,7 +618,7 @@ describe("RuleList", () => {
       const parentText = allRows.at(0).text();
       expect(parentText).toContain("SRG-OS-000001");
 
-      const tooltipSpan = allRows.at(0).find("span[title]");
+      const tooltipSpan = allRows.at(0).find("span[title]:not(.status-dot)");
       expect(tooltipSpan.exists()).toBe(true);
       expect(tooltipSpan.attributes("title")).toBe(srgIdParent);
     });

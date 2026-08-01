@@ -78,6 +78,8 @@
           :has-active-filters="navHasActiveFilters"
           :pending-relocations="relocByRuleId"
           @reset-filters="onClearNavFilters"
+          @add-comment="onSidebarAddComment"
+          @reply-comment="onSidebarReplyComment"
         />
       </template>
 
@@ -530,8 +532,7 @@ export default {
       this.reviewsSectionFilter = section || "all";
       this.togglePanel("rule-reviews");
     },
-    onOpenComposer(section) {
-      const rule = this.selectedRule;
+    onOpenComposer(section, rule = this.selectedRule) {
       const parent = rule?.satisfied_by?.[0];
       this.openSectionComposer({
         ruleId: rule?.id,
@@ -540,6 +541,19 @@ export default {
         ruleName: rule ? `${this.component.prefix}-${rule.rule_id}` : null,
         parentRuleId: parent?.id || null,
         parentRuleName: parent ? `${this.component.prefix}-${parent.rule_id}` : null,
+      });
+    },
+    // Sidebar comments-modal entry points — same contract as the editor
+    // page: the row's own rule, and the comment row's identity for replies.
+    onSidebarAddComment(rule) {
+      this.onOpenComposer(null, rule);
+    },
+    onSidebarReplyComment(row) {
+      this.openReplyComposer({
+        reviewId: row.id,
+        ruleId: row.rule_id,
+        componentId: row.component_id || this.component.id,
+        ruleName: row.rule_displayed_name || null,
       });
     },
     onOpenReplyComposer(reviewId) {

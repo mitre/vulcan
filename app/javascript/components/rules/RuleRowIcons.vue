@@ -1,14 +1,20 @@
 <template>
   <span>
-    <span
+    <!-- The indicator is also the entry point to the requirement's
+         comments — a real button so it works from the keyboard; the
+         click must never select the row underneath. -->
+    <button
       v-if="ruleOpen > 0"
       v-b-tooltip.hover
+      type="button"
       :title="`${ruleOpen} open comments`"
+      :aria-label="`View ${ruleOpen} open comments`"
       :data-test="`rule-open-comment-${rule.id}`"
-      class="text-warning mr-1"
+      class="btn btn-link p-0 border-0 align-baseline text-warning mr-1"
+      @click.stop="$emit('open-comments', rule)"
     >
       <b-icon icon="chat-left-text" aria-hidden="true" />
-    </span>
+    </button>
     <b-icon
       v-if="rule.satisfies && rule.satisfies.length > 0"
       v-b-tooltip.hover

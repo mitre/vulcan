@@ -27,6 +27,14 @@
       >
         <span>
           <b-icon icon="x" aria-hidden="true" @click.stop="ruleDeselected(rule)" />
+          <span
+            v-b-tooltip.hover
+            class="status-dot mr-1"
+            role="img"
+            :data-status="rule.status"
+            :title="rule.status"
+            :aria-label="`Status: ${rule.status}`"
+          />
           <span v-if="showSRGIdChecked" v-b-tooltip.hover :title="rule.srg_id">
             {{ truncateId(rule.srg_id) }}
           </span>
@@ -36,6 +44,7 @@
           :rule="rule"
           :rule-open="ruleOpen(rule)"
           :pending-relocation="pendingRelocations[rule.id] || null"
+          @open-comments="openComments"
         />
       </div>
     </div>
@@ -92,6 +101,14 @@
           <template v-else-if="nestSatisfiedRulesChecked && hasParentRules">
             <span class="tree-toggle-spacer" />
           </template>
+          <span
+            v-b-tooltip.hover
+            class="status-dot mr-1"
+            role="img"
+            :data-status="rule.status"
+            :title="rule.status"
+            :aria-label="`Status: ${rule.status}`"
+          />
           <span v-if="showSRGIdChecked" v-b-tooltip.hover :title="rule.srg_id">
             {{ truncateId(rule.srg_id) }}
           </span>
@@ -112,6 +129,7 @@
           :rule="rule"
           :rule-open="ruleOpen(rule)"
           :pending-relocation="pendingRelocations[rule.id] || null"
+          @open-comments="openComments"
         />
       </div>
       <div
@@ -128,6 +146,16 @@
         >
           <span>
             <b-icon icon="chevron-right" />
+            <!-- Satisfaction refs carry no status — resolve it from the
+                 full row so the child dot tells the truth. -->
+            <span
+              v-b-tooltip.hover
+              class="status-dot mr-1"
+              role="img"
+              :data-status="childStatus(satisfies)"
+              :title="childStatus(satisfies) || 'Status unknown'"
+              :aria-label="`Status: ${childStatus(satisfies) || 'unknown'}`"
+            />
             <span v-b-tooltip.hover :title="satisfies.srg_id">
               {{ truncateId(satisfies.srg_id) }}
             </span>
@@ -136,23 +164,91 @@
             :rule="satisfies"
             :rule-open="0"
             :pending-relocation="pendingRelocations[satisfies.id] || null"
+            @open-comments="openComments"
           />
         </div>
       </div>
     </div>
+
+    <!-- Requirement comments, reachable from any row's comment indicator.
+         CommentList owns its data; the item rendering is the shared
+         CommentItem. Add Comment and Reply both hand off to the HOSTING
+         page's composer modal — this list never mounts its own. -->
+    <b-modal id="rule-comments-modal" :title="commentsModalTitle" size="lg" scrollable>
+      <CommentList
+        v-if="commentsRule"
+        :component-id="componentId"
+        :filter-rule-id="commentsRule.id"
+      >
+        <template #loading>
+          <div class="text-center my-3">
+            <b-spinner small label="Loading comments" />
+          </div>
+        </template>
+        <template #error="{ error }">
+          <b-alert show variant="danger">
+            Comments could not be loaded: {{ error.message }}
+          </b-alert>
+        </template>
+        <template #empty>
+          <em>No comments on this requirement.</em>
+        </template>
+        <template #item="{ comment, updateRow }">
+          <div class="mb-2">
+            <!-- The inner reply chain emits the parent review ID, not the
+                 row — bind the slot-scoped comment so the hosts get the
+                 full row identity (same shape the comments table sends). -->
+            <CommentItem
+              :comment="comment"
+              :can-reply="!addCommentDisabled"
+              @toggle-reaction="(kind) => toggleCommentReaction(comment, kind, updateRow)"
+              @reply="() => onReplyComment(comment)"
+            />
+          </div>
+        </template>
+      </CommentList>
+      <template #modal-footer>
+        <!-- Disabled buttons swallow hover — the wrapping span carries
+             the tooltip either way (the toolbar's own pattern). -->
+        <span v-b-tooltip.hover :title="addCommentTooltip" class="d-inline-block">
+          <b-button
+            variant="primary"
+            data-test="modal-add-comment"
+            :disabled="addCommentDisabled"
+            @click="onAddComment"
+          >
+            <b-icon icon="pencil-square" /> Add Comment
+          </b-button>
+        </span>
+        <b-button variant="secondary" @click="$bvModal.hide('rule-comments-modal')">
+          Close
+        </b-button>
+      </template>
+    </b-modal>
   </div>
 </template>
 
 <script>
 import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
 import RuleRowIcons from "./RuleRowIcons.vue";
+import CommentList from "../containers/CommentList.vue";
+import CommentItem from "../shared/CommentItem.vue";
 import { NAVIGATOR_LABELS } from "../../constants/terminology";
+import { commentsClosedTooltip } from "../../constants/triageVocabulary";
 import { truncateId } from "../../utils/idFormatter";
 import { useRuleSelectionStore } from "../../stores/ruleSelection";
+import { useCommentReactions } from "../../composables/useCommentReactions";
 
 export default {
   name: "RuleList",
-  components: { NewRuleModalForm, RuleRowIcons },
+  components: { NewRuleModalForm, RuleRowIcons, CommentList, CommentItem },
+  // Component-level "comments closed" gate, provided by the pages that
+  // host the sidebar (same tree-scoped contract RuleActionsToolbar uses).
+  // Defaults keep tests and isolated mounts green.
+  inject: {
+    isCommentsClosed: { default: () => () => false },
+    getClosedReason: { default: () => () => null },
+  },
   props: {
     filteredRules: {
       type: Array,
@@ -195,13 +291,16 @@ export default {
   },
   setup() {
     const ruleStore = useRuleSelectionStore();
-    return { ruleStore };
+    const { toggle: toggleReactionApi } = useCommentReactions();
+    return { ruleStore, toggleReactionApi };
   },
   data() {
     return {
       navLabels: NAVIGATOR_LABELS,
       expandedParents: new Set(),
       truncateId,
+      // The row whose comments the modal is showing; null until first open.
+      commentsRule: null,
     };
   },
   computed: {
@@ -214,12 +313,35 @@ export default {
     isFiltered() {
       return this.hasActiveFilters;
     },
+    commentsModalTitle() {
+      return this.commentsRule ? this.formatRuleId(this.commentsRule.rule_id) : "";
+    },
+    // Mirrors the toolbar's Comment gating: a locked rule blocks (rule
+    // scope) and a closed comment phase blocks (component scope).
+    addCommentDisabled() {
+      return !!(this.commentsRule && this.commentsRule.locked) || this.isCommentsClosed();
+    },
+    addCommentTooltip() {
+      if (this.commentsRule && this.commentsRule.locked) {
+        return "Rule is locked — comments are closed for this rule";
+      }
+      if (this.isCommentsClosed()) {
+        return commentsClosedTooltip(this.getClosedReason());
+      }
+      return "Add a comment on this requirement";
+    },
   },
   methods: {
     // satisfies is a Rule-shaped payload key; authored SRG requirement
     // payloads omit it entirely, so default to empty.
     childRules(rule) {
       return rule.satisfies || [];
+    },
+    // Satisfaction refs are id-only stubs — the child's status lives on
+    // its full row in allRules (same lookup ruleOpen uses).
+    childStatus(satisfies) {
+      const full = this.allRules.find((r) => r.id === satisfies.id);
+      return (full && full.status) || null;
     },
     ruleSelected(rule) {
       if (!rule.histories) {
@@ -273,6 +395,27 @@ export default {
     },
     sortAlsoSatisfies(rules) {
       return [...rules].sort((a, b) => a.rule_id.localeCompare(b.rule_id));
+    },
+    openComments(rule) {
+      this.commentsRule = rule;
+      this.$bvModal.show("rule-comments-modal");
+    },
+    // Composer entry points: the hosting page owns the composer modal
+    // (RulesCodeEditorView / ProjectComponent) — this list only hands the
+    // context up and gets out of the way.
+    onAddComment() {
+      this.$bvModal.hide("rule-comments-modal");
+      this.$emit("add-comment", this.commentsRule);
+    },
+    onReplyComment(row) {
+      this.$bvModal.hide("rule-comments-modal");
+      this.$emit("reply-comment", row);
+    },
+    toggleCommentReaction(comment, kind, updateRow) {
+      const prev = { ...comment.reactions };
+      this.toggleReactionApi(comment.id, kind, prev, (reactions) => {
+        updateRow(comment.id, { reactions });
+      });
     },
   },
 };
