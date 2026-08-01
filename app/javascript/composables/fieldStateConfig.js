@@ -161,8 +161,16 @@ export const FIELD_CONFIG_BY_DOCUMENT_TYPE = Object.freeze({
         status: "editable",
         // Required at Not Applicable — requiredness is enforced server-side.
         status_justification: "editable",
+        // The requirement identity stays visible read-only so the author
+        // can see what was ruled out — and keep the spirit of the
+        // requirement in view while writing the justification — without
+        // flipping the status back. Implementation guidance (fixtext,
+        // check content) stays hidden: it has no bearing on an NA ruling.
+        title: "readonly",
+        rule_severity: "readonly",
+        ...REFERENCE_DISPLAY,
       },
-      disa: {},
+      disa: { vuln_discussion: "readonly" },
       check: {},
     },
   },

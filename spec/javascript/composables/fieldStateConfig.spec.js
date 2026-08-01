@@ -26,7 +26,10 @@
  *      justification hidden.
  *    - Applicable: identical to NYD.
  *    - Not Applicable: justification shown + editable (required is enforced
- *      server-side); ALL content fields hidden; severity + IA/CCI hidden.
+ *      server-side); the requirement identity (title, vuln discussion,
+ *      severity, IA/CCI reference) stays visible READONLY so the author can
+ *      see what was ruled out without flipping the status; fixtext and
+ *      check content hidden — status + justification are the only editables.
  *    - Publisher tier: severity becomes editable; the CCI identifier (ident)
  *      becomes editable; reference display keys stay readonly.
  *    - vendor_comments and the DISA vendor-metadata block are STIG-only.
@@ -251,7 +254,7 @@ describe("fieldStateConfig — three-state model (kind x status x tier)", () => 
       expect(applicable).toEqual(nyd);
     });
 
-    it("Not Applicable: justification editable; all content hidden; severity + IA/CCI hidden", () => {
+    it("Not Applicable: justification editable; requirement identity readonly; fixtext + check hidden", () => {
       const states = resolveFieldStates({
         documentType: "srg",
         status: "Not Applicable",
@@ -259,12 +262,25 @@ describe("fieldStateConfig — three-state model (kind x status x tier)", () => 
       });
       expect(states.rule.status).toBe("editable");
       expect(states.rule.status_justification).toBe("editable");
-      expect(states.rule.title).toBeUndefined();
+      expect(states.rule.title).toBe("readonly");
+      expect(states.disa.vuln_discussion).toBe("readonly");
+      expect(states.rule.rule_severity).toBe("readonly");
+      REFERENCE_KEYS.forEach((key) => expect(states.rule[key]).toBe("readonly"));
       expect(states.rule.fixtext).toBeUndefined();
-      expect(states.disa.vuln_discussion).toBeUndefined();
       expect(states.check.content).toBeUndefined();
-      expect(states.rule.rule_severity).toBeUndefined();
-      REFERENCE_KEYS.forEach((key) => expect(states.rule[key]).toBeUndefined());
+    });
+
+    it("Not Applicable: status + justification are the ONLY editable fields, both tiers", () => {
+      ["author", "publisher"].forEach((tier) => {
+        const states = resolveFieldStates({ documentType: "srg", status: "Not Applicable", tier });
+        const editableRule = Object.entries(states.rule)
+          .filter(([, state]) => state === "editable")
+          .map(([field]) => field)
+          .sort();
+        expect(editableRule).toEqual(["status", "status_justification"]);
+        Object.values(states.disa).forEach((state) => expect(state).toBe("readonly"));
+        expect(Object.keys(states.check)).toEqual([]);
+      });
     });
 
     it("publisher tier: severity and the CCI identifier become editable; reference display stays readonly", () => {

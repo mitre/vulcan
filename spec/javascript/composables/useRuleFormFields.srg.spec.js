@@ -61,15 +61,26 @@ describe("useRuleFormFields — SRG kind", () => {
     expect(applicable.checkFormFields.value).toEqual(nyd.checkFormFields.value);
   });
 
-  it("Not Applicable: only status + justification; DISA and check sections hidden entirely", () => {
-    const { ruleFormFields, showDisaSection, showChecksSection } = useRuleFormFields(
-      makeSrgRule({ status: "Not Applicable" }),
-      ref(false),
-      srgOptions(),
-    );
-    expect([...ruleFormFields.value.displayed].sort()).toEqual(["status", "status_justification"]);
-    expect(ruleFormFields.value.disabled).toEqual([]);
-    expect(showDisaSection.value).toBe(false);
+  it("Not Applicable: justification editable with the requirement identity read-only; check section hidden", () => {
+    const { ruleFormFields, disaDescriptionFields, showDisaSection, showChecksSection } =
+      useRuleFormFields(makeSrgRule({ status: "Not Applicable" }), ref(false), srgOptions());
+    expect([...ruleFormFields.value.displayed].sort()).toEqual([
+      "cci",
+      "nist_control_family",
+      "rule_severity",
+      "status",
+      "status_justification",
+      "title",
+    ]);
+    expect([...ruleFormFields.value.disabled].sort()).toEqual([
+      "cci",
+      "nist_control_family",
+      "rule_severity",
+      "title",
+    ]);
+    expect(disaDescriptionFields.value.displayed).toEqual(["vuln_discussion"]);
+    expect(disaDescriptionFields.value.disabled).toEqual(["vuln_discussion"]);
+    expect(showDisaSection.value).toBe(true);
     expect(showChecksSection.value).toBe(false);
   });
 
