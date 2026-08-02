@@ -377,8 +377,10 @@ class ComponentsController < ApplicationController
   def rules_picker
     return render_not_found unless @component
 
-    rules = @component.rules.includes(:satisfied_by, :satisfies)
-    render json: { rules: RuleBlueprint.render_as_json(rules, view: :picker) }
+    # Deliberately a plain relation: the blueprint declares what the picker view
+    # reads, and preloading is applied from that declaration on the way in. An
+    # includes list written here would be a second, drifting copy of it.
+    render json: { rules: RuleBlueprint.render_as_json(@component.rules, view: :picker) }
   end
 
   def comments

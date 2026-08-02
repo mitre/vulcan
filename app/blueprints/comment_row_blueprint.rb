@@ -56,9 +56,9 @@ class CommentRowBlueprint < Blueprinter::Base
   view :component do
     extend ImportedAttributionFields
 
-    attribution_fields :triager
-    attribution_fields :adjudicator
-    attribution_fields :commenter
+    attribution_fields :triager,     via: :triage_set_by
+    attribution_fields :adjudicator, via: :adjudicated_by
+    attribution_fields :commenter,   via: :user
 
     field :author_email do |review, _options|
       review.user&.email || review.commenter_imported_email
@@ -94,8 +94,8 @@ class CommentRowBlueprint < Blueprinter::Base
   view :project do
     extend ImportedAttributionFields
 
-    attribution_fields :triager
-    attribution_fields :adjudicator
+    attribution_fields :triager,     via: :triage_set_by
+    attribution_fields :adjudicator, via: :adjudicated_by
 
     field :parent_rule_displayed_name do |review, options|
       if review.commentable_type == 'Component'

@@ -59,7 +59,11 @@ class RulesController < ApplicationController
   def show
     summary = Reaction.summary(@rule.reviews.map(&:id), current_user&.id)
     blueprint = @rule.is_a?(SrgRule) ? AuthoredSrgRuleBlueprint : RuleBlueprint
-    render json: blueprint.render_as_json(@rule, view: :editor, reactions_summary: summary)
+    # Asks for the audit trail explicitly: it is per-record work that the
+    # collection deliberately omits, and this endpoint serves the one
+    # requirement whose history is actually displayed.
+    render json: blueprint.render_as_json(@rule, view: :editor, reactions_summary: summary,
+                                                 include_histories: true)
   end
 
   def related_rules

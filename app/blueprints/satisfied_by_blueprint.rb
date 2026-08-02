@@ -5,7 +5,11 @@
 class SatisfiedByBlueprint < SatisfactionBlueprint
   field :fixtext
 
-  field :component_prefix do |rule, _options|
+  # Reaches the owning component for its prefix. This is the second dependency
+  # under a satisfaction link, separate from the source requirement inherited
+  # from the parent blueprint — fixing one without the other leaves the row
+  # still fetching per link.
+  field :component_prefix, preload: :component do |rule, _options|
     rule.component&.prefix
   end
 end

@@ -196,7 +196,12 @@ properties:
       $ref: ./RuleDescriptionSummary.yaml
   histories:
     type: array
-    description: Audit trail entries for this requirement, ordered by creation time.
+    description: >-
+      Audit trail entries for this requirement, ordered by creation time. Present
+      only when a single requirement is requested. The trail cannot be fetched for
+      a whole collection in one query, so a component response omits it for every
+      requirement and callers read it from the per-requirement endpoint for the
+      one being shown.
     items:
       $ref: ./AuditEntry.yaml
   reviews:

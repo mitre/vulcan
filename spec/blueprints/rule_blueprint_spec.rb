@@ -69,9 +69,21 @@ RSpec.describe 'RuleBlueprint' do
       end
     end
 
-    it 'includes histories array for rule revision sidebar' do
-      expect(json).to have_key('histories')
-      expect(json['histories']).to be_an(Array)
+    # The audit trail is opt-in. It cannot be fetched for a collection in one
+    # query, and it is only ever displayed for the single requirement a user has
+    # open, so asking for it is the caller's decision — the per-requirement
+    # endpoint asks, a component's rules list does not. Both directions are
+    # asserted: presence when requested is what the revision sidebar needs, and
+    # absence by default is what keeps a component from paying a query per row.
+    it 'includes the histories array when the caller asks for it' do
+      requested = RuleBlueprint.render_as_json(rule, view: :editor, include_histories: true)
+
+      expect(requested).to have_key('histories')
+      expect(requested['histories']).to be_an(Array)
+    end
+
+    it 'omits the histories array unless asked' do
+      expect(json).not_to have_key('histories')
     end
 
     it 'includes satisfies and satisfied_by arrays' do

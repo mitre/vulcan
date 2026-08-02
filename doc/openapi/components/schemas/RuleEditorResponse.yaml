@@ -148,7 +148,11 @@ allOf:
           $ref: ./SatisfiedBySummary.yaml
       histories:
         type: array
-        description: Audit trail entries for this rule, ordered by creation time.
+        description: >-
+          Audit trail entries for this rule, ordered by creation time. Present only
+          when a single rule is requested. The trail cannot be fetched for a whole
+          collection in one query, so a component response omits it for every rule
+          and callers read it from the per-rule endpoint for the one being shown.
         items:
           $ref: ./AuditEntry.yaml
       rule_descriptions_attributes:

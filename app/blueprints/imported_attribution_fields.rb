@@ -15,22 +15,28 @@
 #
 #   class ReviewBlueprint < Blueprinter::Base
 #     extend ImportedAttributionFields
-#     attribution_fields :triager
-#     attribution_fields :adjudicator
-#     attribution_fields :commenter
+#     attribution_fields :triager,     via: :triage_set_by
+#     attribution_fields :adjudicator, via: :adjudicated_by
+#     attribution_fields :commenter,   via: :user
 #   end
 #
 # Mixed via `extend` — `attribution_fields` is a class-level macro on the
 # blueprint, paired with Blueprinter's `field` class-level DSL.
+#
+# `via:` names the association the generated methods resolve a name through, and
+# must match the `via:` given to the model-side macro. It is declared so the
+# fields can be preloaded: resolving a display name reads that association, and
+# without it every serialized row fetches its own person one at a time.
 module ImportedAttributionFields
-  def attribution_fields(role)
+  def attribution_fields(role, via:)
     display_method  = "#{role}_display_name"
     imported_method = "#{role}_imported?"
 
-    field display_method.to_sym do |review, _options|
+    field display_method.to_sym, preload: via do |review, _options|
       review.public_send(display_method)
     end
 
+    # Reads only the FK column and the imported_* columns, so it reaches nothing.
     field :"#{role}_imported" do |review, _options|
       review.public_send(imported_method)
     end

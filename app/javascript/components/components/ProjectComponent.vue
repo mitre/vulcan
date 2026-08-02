@@ -477,6 +477,18 @@ export default {
       const firstVisible = getFirstVisibleRule(this.localRules);
       if (firstVisible) this.ruleStore.selectRule(firstVisible.id);
     }
+
+    // The sidebar asks for a requirement to be refreshed when the one selected
+    // is missing detail the collection does not carry. The editor page has
+    // always answered that; this page emitted it and nobody listened.
+    this.$root.$on("refresh:rule", this.refreshRule);
+
+    // Whatever is selected on arrival needs the same treatment as one selected
+    // by clicking, or the first requirement shown is the only one without it.
+    if (this.ruleStore.selectedRuleId) this.refreshRule(this.ruleStore.selectedRuleId);
+  },
+  beforeDestroy() {
+    this.$root.$off("refresh:rule", this.refreshRule);
   },
   methods: {
     clearAllFilters() {
@@ -573,11 +585,22 @@ export default {
         this.refreshComponent();
         return;
       }
+      this.refreshRule(ruleId);
+    },
+    // Replaces one requirement in the list with the full record from the
+    // per-requirement endpoint, which carries the detail the collection omits.
+    // A response that is not a requirement is ignored rather than written in:
+    // overwriting a good row with an empty payload loses the row from the
+    // sidebar entirely, which is worse than missing the detail we came for.
+    refreshRule(ruleId) {
       getRule(ruleId)
         .then((response) => {
+          const fetched = response && response.data;
+          if (!fetched || fetched.id === undefined) return;
+
           const idx = this.localRules.findIndex((r) => r.id === ruleId);
           if (idx >= 0) {
-            this.localRules.splice(idx, 1, response.data);
+            this.localRules.splice(idx, 1, fetched);
           }
         })
         .catch(this.alertOrNotifyResponse);

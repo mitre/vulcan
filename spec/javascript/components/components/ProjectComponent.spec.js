@@ -688,6 +688,32 @@ describe("ProjectComponent", () => {
       expect(getRule).toHaveBeenCalledWith(1);
       expect(wrapper.vm.composerActive).toBe(false);
     });
+
+    // The collection no longer carries a requirement's audit trail, so selecting
+    // one fetches it. That fetch must never be able to damage the sidebar: if the
+    // response is not a requirement, the row already in hand is kept.
+    it("keeps the existing row when a refresh returns something that is not a requirement", async () => {
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+      const before = wrapper.vm.localRules.map((rule) => rule.rule_id);
+
+      getRule.mockResolvedValueOnce({ data: {} });
+      wrapper.vm.refreshRule(1);
+      await flushPromises(wrapper);
+
+      expect(wrapper.vm.localRules.map((rule) => rule.rule_id)).toEqual(before);
+    });
+
+    it("replaces the row when a refresh returns the requirement", async () => {
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+
+      getRule.mockResolvedValueOnce({ data: { ...mockRules[0], title: "hydrated" } });
+      wrapper.vm.refreshRule(1);
+      await flushPromises(wrapper);
+
+      expect(wrapper.vm.localRules.find((rule) => rule.id === 1).title).toBe("hydrated");
+    });
   });
 
   // ==========================================================================

@@ -10216,7 +10216,7 @@ components:
                 $ref: '#/components/schemas/SatisfiedBySummary'
             histories:
               type: array
-              description: Audit trail entries for this rule, ordered by creation time.
+              description: Audit trail entries for this rule, ordered by creation time. Present only when a single rule is requested. The trail cannot be fetched for a whole collection in one query, so a component response omits it for every rule and callers read it from the per-rule endpoint for the one being shown.
               items:
                 $ref: '#/components/schemas/AuditEntry'
             rule_descriptions_attributes:
@@ -10434,7 +10434,7 @@ components:
             $ref: '#/components/schemas/RuleDescriptionSummary'
         histories:
           type: array
-          description: Audit trail entries for this requirement, ordered by creation time.
+          description: Audit trail entries for this requirement, ordered by creation time. Present only when a single requirement is requested. The trail cannot be fetched for a whole collection in one query, so a component response omits it for every requirement and callers read it from the per-requirement endpoint for the one being shown.
           items:
             $ref: '#/components/schemas/AuditEntry'
         reviews:

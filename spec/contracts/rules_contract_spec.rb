@@ -70,8 +70,15 @@ RSpec.describe 'Rules endpoint contracts', type: :request do
       assert_fields_present first_rule, :id, :rule_id, :title, :version, :status, :rule_severity,
                             :locked, :comment_summary, :component_id, :locked_fields,
                             :checks_attributes, :disa_rule_descriptions_attributes,
-                            :satisfies, :satisfied_by, :reviews, :histories, :srg_rule_attributes
+                            :satisfies, :satisfied_by, :reviews, :srg_rule_attributes
       expect(first_rule['component_id']).to eq(component.id)
+
+      # Deliberately absent, and asserted so it stays that way. An audit trail
+      # cannot be fetched for a collection in one query, so including it here
+      # cost one query per rule to produce data only ever displayed for the
+      # single rule a user has open. GET /rules/:id carries it instead, and
+      # that endpoint's contract above asserts its presence.
+      expect(first_rule).not_to have_key('histories')
     end
   end
 
