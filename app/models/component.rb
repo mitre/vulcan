@@ -539,9 +539,11 @@ class Component < ApplicationRecord
 
   def create_rule_satisfactions
     # Build lookup maps for identifier resolution
-    # SRG IDs (SRG-OS-000480-GPOS-00227) → rule via srg_rule.version
+    # SRG IDs (SRG-OS-000480-GPOS-00227) → rule, keyed by the requirement's
+    # own answer for its SRG identifier.
     srg_version_map = rules.includes(:srg_rule).each_with_object({}) do |rule, map|
-      map[rule.srg_rule.version] = rule if rule.srg_rule&.version.present?
+      identifier = rule.srg_identifier
+      map[identifier] = rule if identifier.present?
     end
     # STIG IDs (PREFIX-000123) → rule via rule_id
     rule_id_map = rules.index_by(&:rule_id)
@@ -796,7 +798,7 @@ class Component < ApplicationRecord
     loaded_rules = rules.eager_load(:disa_rule_descriptions, :checks, :satisfies, :satisfied_by,
                                     srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
     rule_by_rule_id = loaded_rules.index_by(&:rule_id)
-    rule_by_srg_id = loaded_rules.index_by { |r| r.srg_rule&.version }
+    rule_by_srg_id = loaded_rules.index_by(&:srg_identifier)
     updated_count = 0
 
     ActiveRecord::Base.transaction do
@@ -860,7 +862,7 @@ class Component < ApplicationRecord
   # Resolve a satisfaction identifier to a rule.
   # Supports both STIG IDs (PREFIX-000123) and SRG IDs (SRG-OS-000480-GPOS-00227).
   def resolve_satisfaction_identifier(identifier, rule_id_map, srg_version_map)
-    # Try SRG ID first (exact match on srg_rule.version)
+    # Try SRG ID first (exact match on the requirement's SRG identifier)
     return srg_version_map[identifier] if srg_version_map.key?(identifier)
 
     # Fall back to STIG ID (extract numeric part after last hyphen)
@@ -876,7 +878,7 @@ class Component < ApplicationRecord
     # Build lookup by rule_id (numeric portion of STIG ID)
     rule_by_rule_id = loaded_rules.index_by(&:rule_id)
     # Also build SRG ID lookup for rows without STIG ID
-    rule_by_srg_id = loaded_rules.index_by { |r| r.srg_rule&.version }
+    rule_by_srg_id = loaded_rules.index_by(&:srg_identifier)
     result = { updated: [], unchanged: [], skipped_locked: [], warnings: [] }
 
     rows.each do |row|

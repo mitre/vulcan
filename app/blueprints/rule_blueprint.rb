@@ -58,7 +58,7 @@ class RuleBlueprint < Blueprinter::Base
     end
 
     field :srg_id do |rule, _options|
-      rule.srg_rule&.version
+      rule.srg_identifier
     end
 
     association :disa_rule_descriptions_attributes, blueprint: DisaRuleDescriptionBlueprint,

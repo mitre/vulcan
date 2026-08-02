@@ -35,6 +35,17 @@ class BaseRule < ApplicationRecord
     where(component_id: component_ids, deleted_at: nil)
   }
 
+  # The SRG requirement this requirement corresponds to, as its published
+  # identifier. The answer differs by document kind — a STIG requirement
+  # DERIVES from a source SRG requirement, while an authored requirement IS
+  # one — so each kind answers for itself and every consumer (serializers,
+  # sidebar display, sidebar sort) reads the one answer instead of
+  # reconstructing it. nil when there is no corresponding requirement; never
+  # a fabricated value.
+  def srg_identifier
+    raise NotImplementedError, "#{self.class} must answer srg_identifier"
+  end
+
   # A plain dup carrying the four nested record collections — the shared
   # copy mechanic for authored-row generation and relocation moves.
   # Deliberately NOT amoeba: SrgRule's amoeba block retypes to Rule (the

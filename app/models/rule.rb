@@ -139,6 +139,13 @@ class Rule < BaseRule
 
   @single_rule_clone = false
 
+  # A STIG requirement DERIVES from a source SRG requirement, so its SRG
+  # identifier is that source's published version — NOT this rule's own
+  # version, which is the STIG-side identifier and is free to differ.
+  def srg_identifier
+    srg_rule&.version
+  end
+
   # If rule clone not coming from a "copy component" action, allow "answers" to be also cloned
   def update_single_rule_clone(rule_clone)
     @single_rule_clone = rule_clone
@@ -306,7 +313,7 @@ class Rule < BaseRule
     control.impact = RuleConstants::IMPACTS_MAP[rule_severity]
     control.add_tag(Inspec::Object::Tag.new('severity', rule_severity))
     control.add_tag(Inspec::Object::Tag.new('gtitle', version))
-    control.add_tag(Inspec::Object::Tag.new('satisfies', satisfies.includes(:srg_rule).filter_map { |r| r.srg_rule&.version }.uniq.sort)) if satisfies.present?
+    control.add_tag(Inspec::Object::Tag.new('satisfies', satisfies.includes(:srg_rule).filter_map(&:srg_identifier).uniq.sort)) if satisfies.present?
     control.add_tag(Inspec::Object::Tag.new('gid', PublishedIdentifiers.group(component[:prefix], rule_id)))
     control.add_tag(Inspec::Object::Tag.new('rid', PublishedIdentifiers.rule(component[:prefix], rule_id)))
     control.add_tag(Inspec::Object::Tag.new('stig_id', "#{component[:prefix]}-#{rule_id}"))
@@ -348,7 +355,7 @@ class Rule < BaseRule
     label = direction == :satisfies ? 'Satisfies' : 'Satisfied By'
     ids = case format
           when :srg
-            relations.filter_map { |r| r.srg_rule&.version }
+            relations.filter_map(&:srg_identifier)
           when :stig
             relations.map { |r| "#{component.prefix}-#{r.rule_id}" }
           else

@@ -50,6 +50,12 @@ class SrgRule < BaseRule
     rule
   end
 
+  # An SRG requirement IS the SRG requirement, so it answers with its own
+  # published version — the same value the editor header displays.
+  def srg_identifier
+    version
+  end
+
   private
 
   # An authored row belongs to a component. During a nested build (the

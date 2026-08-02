@@ -37,11 +37,11 @@ class AuthoredSrgRuleBlueprint < Blueprinter::Base
     end
 
     # One kind-agnostic srg_id across document kinds: requirement lists
-    # (the editor sidebar's SRG ID display) read rule.srg_id regardless
-    # of kind. For an authored requirement the SRG identifier IS the
-    # row's version — the same value the editor header displays.
+    # (the editor sidebar's SRG ID display and its sort) read rule.srg_id
+    # regardless of kind. The model answers which value that is for this
+    # kind — serializers never reconstruct it.
     field :srg_id do |rule, _options|
-      rule.version
+      rule.srg_identifier
     end
 
     # Portable lineage: the catalog requirement this row was derived from.

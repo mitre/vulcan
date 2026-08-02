@@ -133,7 +133,7 @@ module Export
         # srg_rule_version for Rules, derived_from_srg_rule_version for
         # authored SrgRules. srg_rule/additional_answers exist on Rule only.
         if rule.is_a?(Rule)
-          attrs[:srg_rule_version] = rule.srg_rule&.version
+          attrs[:srg_rule_version] = rule.srg_identifier
           attrs[:additional_answers] = serialize_additional_answers(rule)
         else
           attrs[:derived_from_srg_rule_version] = rule.derived_from&.version
