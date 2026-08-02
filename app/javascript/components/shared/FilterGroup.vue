@@ -5,25 +5,38 @@
       <span v-if="!disabled" class="reset-link" @click="$emit('reset')">reset</span>
     </div>
     <div class="filter-group-body">
-      <div v-for="item in items" :key="item.key" class="filter-item">
+      <div v-for="item in items" :key="item.key" class="filter-item d-flex align-items-center">
         <b-form-checkbox
           :id="`filter-${instanceId}-${item.key}`"
           :checked="item.checked"
-          :disabled="disabled"
+          :disabled="disabled || !!item.disabled"
+          :aria-describedby="item.disabledReason ? reasonId(item) : null"
           switch
           size="sm"
           @change="onToggleChange(item.key, $event)"
         >
           {{ item.label }}<template v-if="item.count !== undefined"> ({{ item.count }})</template>
         </b-form-checkbox>
+        <!-- The info icon carries the reason for SIGHTED users and is
+             aria-hidden, so an aria-label on it would never be announced.
+             The same text therefore lives in a visually-hidden element that
+             the control points at with aria-describedby — otherwise a screen
+             reader reports a disabled switch and never says why. -->
+        <InfoTooltip v-if="item.disabledReason" :text="item.disabledReason" />
+        <span v-if="item.disabledReason" :id="reasonId(item)" class="sr-only">
+          {{ item.disabledReason }}
+        </span>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import InfoTooltip from "./InfoTooltip.vue";
+
 export default {
   name: "FilterGroup",
+  components: { InfoTooltip },
   props: {
     title: {
       type: String,
@@ -45,6 +58,9 @@ export default {
     };
   },
   methods: {
+    reasonId(item) {
+      return `filter-${this.instanceId}-${item.key}-reason`;
+    },
     onToggleChange(key, checked) {
       const updatedItems = this.items.map((item) => {
         if (item.key === key) {

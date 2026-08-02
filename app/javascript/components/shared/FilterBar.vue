@@ -35,6 +35,7 @@
 <script>
 import FilterGroup from "./FilterGroup.vue";
 import { getDefaultFilters } from "../../composables/useRuleFilters";
+import { groupEntries, appliesToKind } from "../../constants/ruleFilterRegistry";
 
 export default {
   name: "FilterBar",
@@ -72,6 +73,13 @@ export default {
       type: Boolean,
       default: false,
     },
+    // The page's document kind. Entries the registry limits to another kind
+    // render disabled with the registry's reason rather than silently doing
+    // nothing.
+    documentType: {
+      type: String,
+      default: "stig",
+    },
   },
   computed: {
     // Derived from the vocabulary-keyed statusFilters map — the bar renders
@@ -85,54 +93,44 @@ export default {
         checked,
       }));
     },
+    // Review counts are keyed by a short name on the counts payload; the
+    // registry owns the key, label and applicability.
     reviewItems() {
-      return [
-        {
-          key: "nurFilterChecked",
-          label: "Not Under Review",
-          count: this.counts.nur,
-          checked: this.filters.nurFilterChecked,
-        },
-        {
-          key: "urFilterChecked",
-          label: "Under Review",
-          count: this.counts.ur,
-          checked: this.filters.urFilterChecked,
-        },
-        {
-          key: "lckFilterChecked",
-          label: "Locked",
-          count: this.counts.lck,
-          checked: this.filters.lckFilterChecked,
-        },
-      ];
+      const countFor = {
+        nurFilterChecked: this.counts.nur,
+        urFilterChecked: this.counts.ur,
+        lckFilterChecked: this.counts.lck,
+      };
+      return groupEntries("review").map((entry) =>
+        this.itemFor(entry, { count: countFor[entry.key] }),
+      );
     },
     displayItems() {
-      return [
-        {
-          key: "nestSatisfiedRulesChecked",
-          label: "Nest Satisfied",
-          checked: this.filters.nestSatisfiedRulesChecked,
-        },
-        {
-          key: "showSRGIdChecked",
-          label: "SRG ID",
-          checked: this.filters.showSRGIdChecked,
-        },
-        {
-          key: "sortBySRGIdChecked",
-          label: "Sort SRG",
-          checked: this.filters.sortBySRGIdChecked,
-        },
-        {
-          key: "openCommentsOnly",
-          label: "Open Comments Only",
-          checked: this.filters.openCommentsOnly,
-        },
-      ];
+      return groupEntries("display").map((entry) => this.itemFor(entry));
     },
   },
   methods: {
+    // One place turns a registry entry into a rendered item, so key, label
+    // and applicability are never restated per group. A toggle that cannot
+    // act on this document kind renders disabled and SAYS SO — silently
+    // inert controls are how a toggle looks functional while doing nothing.
+    itemFor(entry, extra = {}) {
+      const usable = appliesToKind(entry.key, this.documentType);
+      return {
+        key: entry.key,
+        label: entry.label,
+        // Show the EFFECTIVE value: an entry this kind cannot act on is off
+        // no matter what is stored, because rendering it on would claim an
+        // effect that provably is not happening.
+        checked: usable && this.filters[entry.key],
+        disabled: !usable,
+        // The reason is the registry's to state — it knows WHY an entry is
+        // limited to a kind. Composing it here would put kind-specific
+        // wording back into the component.
+        ...(usable ? {} : { disabledReason: entry.unavailableReason }),
+        ...extra,
+      };
+    },
     // An item key is either a status value (statusFilters key) or a
     // kind-free named key — status values can never collide with the
     // named keys, so routing by membership is safe.
@@ -156,6 +154,11 @@ export default {
     onGroupUpdate(items) {
       const updates = {};
       items.forEach((item) => {
+        // A group re-emits its WHOLE item array on any single toggle, and a
+        // disabled item renders its EFFECTIVE value rather than the stored
+        // one. Writing that back would persist a value the user cannot even
+        // operate, silently overwriting what they chose on another kind.
+        if (item.disabled) return;
         updates[item.key] = item.checked;
       });
       this.emitUpdatedFilters(updates);
@@ -167,22 +170,21 @@ export default {
       });
       this.emitUpdatedFilters(updates);
     },
-    onReviewReset() {
+    // Which keys a group resets is the registry's list, not a copy of it —
+    // a copy is how a new toggle ends up silently un-resettable.
+    resetGroup(groupKey) {
       const defaults = getDefaultFilters(Object.keys(this.filters.statusFilters));
-      this.emitUpdatedFilters({
-        nurFilterChecked: defaults.nurFilterChecked,
-        urFilterChecked: defaults.urFilterChecked,
-        lckFilterChecked: defaults.lckFilterChecked,
+      const updates = {};
+      groupEntries(groupKey).forEach((entry) => {
+        updates[entry.key] = defaults[entry.key];
       });
+      this.emitUpdatedFilters(updates);
+    },
+    onReviewReset() {
+      this.resetGroup("review");
     },
     onDisplayReset() {
-      const defaults = getDefaultFilters(Object.keys(this.filters.statusFilters));
-      this.emitUpdatedFilters({
-        nestSatisfiedRulesChecked: defaults.nestSatisfiedRulesChecked,
-        showSRGIdChecked: defaults.showSRGIdChecked,
-        sortBySRGIdChecked: defaults.sortBySRGIdChecked,
-        openCommentsOnly: defaults.openCommentsOnly,
-      });
+      this.resetGroup("display");
     },
   },
 };

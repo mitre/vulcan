@@ -3,6 +3,7 @@ import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import FilterBar from "@/components/shared/FilterBar.vue";
 import { getDefaultFilters } from "@/composables/useRuleFilters";
+import { groupEntries } from "@/constants/ruleFilterRegistry";
 
 /**
  * FilterBar Component Requirements:
@@ -296,6 +297,70 @@ describe("FilterBar", () => {
       const items = wrapper.vm.displayItems;
       items.forEach((item) => {
         expect(item.count).toBeUndefined();
+      });
+    });
+
+    it("renders exactly the registry's display entries, in registry order", () => {
+      // The component must not restate the toggle list. If a toggle is added
+      // to the registry and this component keeps its own array, they drift —
+      // which is the defect this card removes.
+      wrapper = createWrapper();
+      const fromRegistry = groupEntries("display");
+      expect(wrapper.vm.displayItems.map((i) => i.key)).toEqual(fromRegistry.map((e) => e.key));
+      expect(wrapper.vm.displayItems.map((i) => i.label)).toEqual(fromRegistry.map((e) => e.label));
+    });
+
+    it("disables a toggle that cannot act on this document kind, and says why", () => {
+      // Authored SRG requirements carry no satisfaction keys, so nesting has
+      // nothing to act on. It must present as unavailable with a reason,
+      // never as a functional control that silently does nothing.
+      wrapper = createWrapper({ documentType: "srg" });
+      const nest = wrapper.vm.displayItems.find((i) => i.key === "nestSatisfiedRulesChecked");
+      expect(nest.disabled).toBe(true);
+      expect(typeof nest.disabledReason).toBe("string");
+      expect(nest.disabledReason.length).toBeGreaterThan(0);
+
+      // Kind-agnostic toggles stay usable on the same page.
+      const srgId = wrapper.vm.displayItems.find((i) => i.key === "showSRGIdChecked");
+      expect(srgId.disabled).toBe(false);
+      expect(srgId.disabledReason).toBeUndefined();
+    });
+
+    it("shows an inapplicable toggle as off, because its effective value is off", () => {
+      // The stored value may be true (it is the default), but on this kind the
+      // pipeline cannot act on it, so rendering it ON would claim nesting is
+      // happening when it provably is not. Show the effective state.
+      wrapper = createWrapper({ documentType: "srg" });
+      const nest = wrapper.vm.displayItems.find((i) => i.key === "nestSatisfiedRulesChecked");
+      expect(defaultFilters.nestSatisfiedRulesChecked).toBe(true); // stored value
+      expect(nest.checked).toBe(false); // effective value
+    });
+
+    it("never writes back a value for a control the user cannot operate", () => {
+      // FilterGroup re-emits its WHOLE item array on any single toggle, and
+      // items render the EFFECTIVE value for kind-inapplicable entries. Left
+      // unguarded, toggling any other Display switch on an SRG page would
+      // persist nestSatisfiedRulesChecked: false — a value the user never
+      // touched, silently overwriting their stored default.
+      wrapper = createWrapper({ documentType: "srg" });
+      const items = wrapper.vm.displayItems.map((i) =>
+        i.key === "showSRGIdChecked" ? { ...i, checked: true } : i,
+      );
+
+      wrapper.vm.onGroupUpdate(items);
+
+      const emitted = wrapper.emitted("update:filters");
+      expect(emitted).toBeTruthy();
+      const payload = emitted[emitted.length - 1][0];
+      expect(payload.showSRGIdChecked).toBe(true);
+      // The stored value for the inapplicable entry must survive untouched.
+      expect(payload.nestSatisfiedRulesChecked).toBe(defaultFilters.nestSatisfiedRulesChecked);
+    });
+
+    it("leaves every display toggle enabled on a stig component", () => {
+      wrapper = createWrapper({ documentType: "stig" });
+      wrapper.vm.displayItems.forEach((item) => {
+        expect(item.disabled).toBe(false);
       });
     });
   });

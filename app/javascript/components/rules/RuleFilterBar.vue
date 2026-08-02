@@ -8,6 +8,7 @@
     :disabled-status="disabledStatus"
     :disabled-review="disabledReview"
     :disabled-display="disabledDisplay"
+    :document-type="documentType"
     @update:filters="handleFiltersUpdate"
   />
 </template>
@@ -50,6 +51,12 @@ export default {
     disabledDisplay: {
       type: Boolean,
       default: false,
+    },
+    // Threaded to FilterBar so entries the registry limits to another kind
+    // render disabled with a reason instead of silently doing nothing.
+    documentType: {
+      type: String,
+      default: "stig",
     },
   },
   methods: {

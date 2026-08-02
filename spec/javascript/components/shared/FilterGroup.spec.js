@@ -146,6 +146,62 @@ describe("FilterGroup", () => {
       });
     });
 
+    it("disables only the item that declares it, and explains why via the standard info tooltip", () => {
+      // A toggle that cannot act must LOOK unavailable and state the reason.
+      // Silently inert controls are how a toggle appears functional while
+      // doing nothing — the defect this whole change removes.
+      wrapper = createWrapper({
+        items: [
+          { key: "a", label: "Usable", checked: true },
+          {
+            key: "b",
+            label: "Blocked",
+            checked: false,
+            disabled: true,
+            disabledReason: "Blocked is unavailable here — reason text.",
+          },
+        ],
+      });
+      const boxes = wrapper.findAllComponents({ name: "BFormCheckbox" });
+      expect(boxes.at(0).props("disabled")).toBe(false);
+      expect(boxes.at(1).props("disabled")).toBe(true);
+
+      const tips = wrapper.findAllComponents({ name: "InfoTooltip" });
+      expect(tips.length).toBe(1);
+      expect(tips.at(0).props("text")).toBe("Blocked is unavailable here — reason text.");
+    });
+
+    it("makes the disabled reason reachable by assistive technology", () => {
+      // The info icon is aria-hidden (decorative), so an aria-label on it is
+      // NOT announced. The reason must therefore be carried by the control
+      // itself, or a screen-reader user is told only that a switch is
+      // disabled and never why.
+      wrapper = createWrapper({
+        items: [
+          {
+            key: "b",
+            label: "Blocked",
+            checked: false,
+            disabled: true,
+            disabledReason: "Blocked is unavailable here — reason text.",
+          },
+        ],
+      });
+      const box = wrapper.findComponent({ name: "BFormCheckbox" });
+      const described = box.attributes("aria-describedby");
+      expect(described).toBeTruthy();
+      const target = wrapper.find(`#${described}`);
+      expect(target.exists()).toBe(true);
+      expect(target.text()).toContain("Blocked is unavailable here");
+    });
+
+    it("keeps the group-level disabled flag working for every item", () => {
+      wrapper = createWrapper({ disabled: true });
+      wrapper.findAllComponents({ name: "BFormCheckbox" }).wrappers.forEach((box) => {
+        expect(box.props("disabled")).toBe(true);
+      });
+    });
+
     it("generates different IDs for different component instances", () => {
       wrapper = createWrapper();
       const wrapper2 = createWrapper();

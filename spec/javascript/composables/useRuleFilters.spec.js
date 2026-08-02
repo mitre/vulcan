@@ -237,59 +237,12 @@ describe("useRuleFilters", () => {
     });
   });
 
-  describe("filteredRules (additive model)", () => {
-    it("returns all rules when nothing is checked", () => {
-      const { filteredRules } = make();
-      expect(filteredRules.value.length).toBe(6);
-    });
-
-    it("filters by status (check one status to show only it)", () => {
-      const { filteredRules, setFilter } = make();
-      setFilter("Applicable - Configurable", true);
-      expect(filteredRules.value.map((r) => r.id)).toEqual([1, 2]);
-    });
-
-    it("filters by review status (check locked to show only locked)", () => {
-      const { filteredRules, setFilter } = make();
-      setFilter("lckFilterChecked", true);
-      expect(filteredRules.value.map((r) => r.id)).toEqual([2]);
-    });
-
-    it("filters by review status (check under review to show only UR)", () => {
-      const { filteredRules, setFilter } = make();
-      setFilter("urFilterChecked", true);
-      expect(filteredRules.value.map((r) => r.id)).toEqual([4]);
-    });
-
-    it("filters by search term (rule_id), case insensitive", () => {
-      const { filteredRules, setFilter } = make();
-      setFilter("search", "cntr-00-000030");
-      expect(filteredRules.value.map((r) => r.id)).toEqual([3]);
-    });
-
-    it("combines status and search filters", () => {
-      const { filteredRules, setFilter } = make();
-      setFilter("Applicable - Configurable", true);
-      setFilter("search", "CNTR-00-000020");
-      expect(filteredRules.value.map((r) => r.id)).toEqual([2]);
-    });
-
-    it("a rule whose status is outside the vocabulary is never filtered out by status filters", () => {
-      const rules = ref([
-        { id: 9, rule_id: "ODD-1", status: "Mystery", locked: false, review_requestor_id: null },
-        {
-          id: 10,
-          rule_id: "ODD-2",
-          status: "Not Applicable",
-          locked: false,
-          review_requestor_id: null,
-        },
-      ]);
-      const { filteredRules, setFilter } = make(rules);
-      setFilter("Not Applicable", true);
-      expect(filteredRules.value.map((r) => r.id)).toEqual([9, 10]);
-    });
-  });
+  // The filtering pipeline that used to live here was an unconsumed
+  // duplicate of useRuleNavigation's, with divergent search semantics. It
+  // is gone; the requirements it covered now live in
+  // spec/javascript/composables/useRuleNavigation.spec.js against the
+  // pipeline the pages actually render from. This composable owns filter
+  // STATE only.
 
   describe("allStatusFiltersEnabled / activeFilterCount", () => {
     it("allStatusFiltersEnabled is true only when every vocabulary status is checked", () => {
@@ -324,7 +277,11 @@ describe("useRuleFilters", () => {
       });
     });
 
-    it("SRG filtering works end-to-end on the SRG vocabulary", () => {
+    it("sets an SRG status filter by its vocabulary value, and counts it as active", () => {
+      // The end-to-end filtering assertion for the SRG vocabulary now lives
+      // in useRuleNavigation's spec, against the surviving pipeline. What
+      // this composable owns — and what is asserted here — is that the SRG
+      // status is settable by value and registers as an active filter.
       const srgRules = ref([
         { id: 1, rule_id: "S-1", status: "Applicable", locked: false, review_requestor_id: null },
         {
@@ -335,9 +292,11 @@ describe("useRuleFilters", () => {
           review_requestor_id: null,
         },
       ]);
-      const { filteredRules, setFilter } = make(srgRules, SRG_STATUSES);
+      const { filters, setFilter, activeFilterCount } = make(srgRules, SRG_STATUSES);
       setFilter("Applicable", true);
-      expect(filteredRules.value.map((r) => r.id)).toEqual([1]);
+      expect(filters.value.statusFilters.Applicable).toBe(true);
+      expect(filters.value.statusFilters["Not Applicable"]).toBe(false);
+      expect(activeFilterCount.value).toBe(1);
     });
   });
 });

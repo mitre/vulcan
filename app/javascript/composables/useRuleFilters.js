@@ -1,4 +1,5 @@
 import { ref, computed } from "vue";
+import { registryDefaults, countsAsActiveFilter } from "../constants/ruleFilterRegistry";
 
 /**
  * Default filter state, built from the page's statuses vocabulary.
@@ -14,22 +15,12 @@ import { ref, computed } from "vue";
  * @param {Array<string>} statuses - the page's status vocabulary
  */
 export function getDefaultFilters(statuses) {
-  const statusFilters = {};
-  for (const status of statuses) {
-    statusFilters[status] = false;
-  }
+  // Every key, label, default, persistence flag and kind applicability lives
+  // in the registry. Restating any of them here is what let the four
+  // definition sites drift apart.
   return {
     search: "",
-    statusFilters,
-    // Review filters — same additive model
-    nurFilterChecked: false,
-    urFilterChecked: false,
-    lckFilterChecked: false,
-    // Display options (these are toggles, not filters — keep enabled defaults)
-    nestSatisfiedRulesChecked: true,
-    showSRGIdChecked: false,
-    sortBySRGIdChecked: true,
-    openCommentsOnly: false,
+    ...registryDefaults(statuses),
   };
 }
 
@@ -79,44 +70,11 @@ export function useRuleFilters(rules, componentId, statuses) {
     );
   });
 
-  // Computed: Filtered rules based on current filter state
-  // Additive model: no filters checked = show all (per NNG/Baymard/Carbon)
-  const filteredRules = computed(() => {
-    return rules.value.filter((rule) => {
-      // Status filter — skip when no status filters are active (show all).
-      // A rule whose status is outside the vocabulary is never status-filtered.
-      if (anyStatusFilterActive.value) {
-        if (
-          rule.status in filters.value.statusFilters &&
-          !filters.value.statusFilters[rule.status]
-        ) {
-          return false;
-        }
-      }
-
-      // Review filter — skip when no review filters are active (show all)
-      if (anyReviewFilterActive.value) {
-        if (rule.locked) {
-          if (!filters.value.lckFilterChecked) return false;
-        } else if (rule.review_requestor_id) {
-          if (!filters.value.urFilterChecked) return false;
-        } else if (!filters.value.nurFilterChecked) {
-          return false;
-        }
-      }
-
-      // Search filter
-      if (filters.value.search) {
-        const searchLower = filters.value.search.toLowerCase();
-        const ruleIdLower = (rule.rule_id || "").toLowerCase();
-        if (!ruleIdLower.includes(searchLower)) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  });
+  // NOTE: this composable owns filter STATE only. Deriving the visible rule
+  // list belongs to useRuleNavigation, which the pages wire to this same
+  // state ref. A second pipeline used to live here — unconsumed, and
+  // matching search against rule_id alone while the live one matched the
+  // broader search text — so the two silently disagreed. One pipeline.
 
   // Computed: Are all status filters enabled?
   const allStatusFiltersEnabled = computed(() => {
@@ -132,14 +90,16 @@ export function useRuleFilters(rules, componentId, statuses) {
     );
   });
 
+  // Which keys narrow the list is declared in the registry, not restated
+  // here — that judgement previously lived in two places that disagreed.
   const activeFilterCount = computed(() => {
     const f = filters.value;
     let count = Object.values(f.statusFilters).filter(Boolean).length;
-    if (f.nurFilterChecked) count++;
-    if (f.urFilterChecked) count++;
-    if (f.lckFilterChecked) count++;
     if (f.search) count++;
-    if (f.openCommentsOnly) count++;
+    Object.entries(f).forEach(([key, value]) => {
+      if (key === "statusFilters" || key === "search") return;
+      if (value === true && countsAsActiveFilter(key)) count++;
+    });
     return count;
   });
 
@@ -172,7 +132,6 @@ export function useRuleFilters(rules, componentId, statuses) {
 
     // Computed
     counts,
-    filteredRules,
     allStatusFiltersEnabled,
     allReviewFiltersEnabled,
     activeFilterCount,

@@ -1,5 +1,6 @@
 import { ref, computed, watch } from "vue";
 import { getDefaultFilters } from "./useRuleFilters";
+import { persistedKeys } from "../constants/ruleFilterRegistry";
 import { searchTextForRule } from "../utils/searchHighlight";
 
 // LEGACY localStorage shim: saved filter state from the retired
@@ -15,15 +16,9 @@ const LEGACY_SAVED_STATUS_KEYS = Object.freeze({
   nydFilterChecked: "Not Yet Determined",
 });
 
-const RESTORABLE_NAMED_KEYS = Object.freeze([
-  "search",
-  "nurFilterChecked",
-  "urFilterChecked",
-  "lckFilterChecked",
-  "showSRGIdChecked",
-  "sortBySRGIdChecked",
-  "nestSatisfiedRulesChecked",
-]);
+// Which keys survive a reload is DECLARED in the registry, not restated
+// here. This list was hand-maintained and silently omitted one toggle, so
+// that toggle alone reset on every reload while its siblings persisted.
 
 /**
  * Composable for sidebar navigation: filtering, sorting, searching rules.
@@ -99,13 +94,18 @@ export function useRuleNavigation(rules, projectPrefix, componentId, externalFil
   const filteredRules = computed(() => {
     let sortedRules = [...rules.value];
     if (filters.value.sortBySRGIdChecked) {
-      // Net-new authored requirements carry no source SRG requirement —
-      // version is honestly null; sort them last (the backend's
+      // Sort on the SAME value the sidebar displays: srg_id, which the
+      // server answers once per document kind. Sorting on the row's own
+      // version was a second derivation of one concept — it agreed with
+      // the display only while the data happened to make it agree.
+      //
+      // Net-new authored requirements correspond to no SRG requirement —
+      // the identifier is honestly null; sort them last (the backend's
       // canonical NULLs-last order), never crash the pipeline.
       sortedRules.sort((a, b) => {
-        if (a.version == null) return b.version == null ? 0 : 1;
-        if (b.version == null) return -1;
-        return a.version.localeCompare(b.version);
+        if (a.srg_id == null) return b.srg_id == null ? 0 : 1;
+        if (b.srg_id == null) return -1;
+        return a.srg_id.localeCompare(b.srg_id);
       });
     }
 
@@ -167,7 +167,7 @@ export function useRuleNavigation(rules, projectPrefix, componentId, externalFil
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
-      for (const key of RESTORABLE_NAMED_KEYS) {
+      for (const key of persistedKeys()) {
         if (key in parsed) {
           filters.value[key] = parsed[key];
         }
