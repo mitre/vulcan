@@ -442,18 +442,24 @@ describe("RuleList", () => {
     // the lg breakpoint with nesting on. The strip must not shrink; the
     // identifier absorbs any shortfall instead (it ellipsizes with a
     // tooltip carrying the full value).
-    it("marks the icon strip non-shrinking on every row site", () => {
-      const child = createSatisfactionRef(21, "000021", "SRG-OS-000021");
+    it("marks the icon strip non-shrinking on every row site", async () => {
+      // All three sites at once — an open rule, an all-rules parent, and a
+      // nested child. Pinning the count at three is what makes this cover
+      // every site: a loose lower bound would pass while one of them rendered
+      // a shrinkable strip, which is exactly the row that wrapped.
+      const child = createRule(21, "000021");
       const parent = createRule(20, "000020", { satisfies: [child] });
-      const leaf = createRule(21, "000021");
       wrapper = createWrapper({
-        filteredRules: [parent, leaf],
-        allRules: [parent, leaf],
+        filteredRules: [parent],
+        allRules: [parent, child],
         nestSatisfiedRulesChecked: true,
       });
+      wrapper.vm.ruleStore.openRuleIds = [parent.id];
+      wrapper.vm.toggleParentExpanded(parent.id);
+      await wrapper.vm.$nextTick();
 
       const strips = wrapper.findAllComponents(RuleRowIcons);
-      expect(strips.length).toBeGreaterThan(0);
+      expect(strips.length).toBe(3);
       strips.wrappers.forEach((strip) => {
         expect(strip.classes()).toContain("flex-shrink-0");
       });
