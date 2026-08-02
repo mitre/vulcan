@@ -4,7 +4,6 @@
       :has-selected-rule="!!selectedRule"
       :show-command-bar="true"
       :show-filter-bar="filterBarVisible"
-      :sidebar-width="2"
       :empty-state-message="msg.selectRule"
     >
       <!-- Command Bar -->
@@ -41,6 +40,7 @@
           :show-review="true"
           :show-display="true"
           :disabled-review="true"
+          :document-type="component.document_type"
           @update:filter="updateFilter"
         />
       </template>

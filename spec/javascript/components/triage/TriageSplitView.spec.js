@@ -201,10 +201,18 @@ describe("TriageSplitView", () => {
     expect(sidebar.props("comments")).toHaveLength(3);
   });
 
-  it("uses a three-column layout with sidebar, context, and triage panes", () => {
+  it("uses a three-pane layout: a bounded queue sidebar, then context and triage", () => {
+    // REQUIREMENT: three panes, and the queue is a SIDEBAR — bounded by the
+    // shell's width token — while context and triage divide the remainder.
+    // Asserting grid-fraction classes here would pin the implementation
+    // rather than the requirement, and did: it broke when the shell stopped
+    // sizing panels as a share of the viewport.
     const w = mountView();
-    const cols = w.findAll(".col-lg-2, .col-lg-5");
-    expect(cols.length).toBe(3);
+    const panels = w.findAll(".panel-layout__panel");
+    expect(panels.length).toBe(3);
+    expect(panels.at(0).classes()).toContain("panel-layout__panel--sidebar");
+    expect(panels.at(1).classes()).toContain("panel-layout__panel--fill");
+    expect(panels.at(2).classes()).toContain("panel-layout__panel--fill");
   });
 
   // ── Dirty-form guard ───────────────────────────────────────────────

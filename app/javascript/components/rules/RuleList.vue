@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Currently opened rules -->
-    <p class="mt-0 mb-1 d-flex justify-content-between align-items-center spacing-responsive">
+    <p class="mt-0 mb-1 d-flex justify-content-between align-items-center rule-row-spacing">
       <strong>{{ navLabels.openRules }}</strong>
       <template v-if="ruleStore.openRuleIds.length > 0">
         <span
@@ -22,10 +22,10 @@
         v-for="rule in openRules"
         :key="`open-${rule.id}`"
         :class="ruleRowClass(rule)"
-        class="d-flex justify-content-between text-responsive"
+        class="d-flex justify-content-between rule-row-text"
         @click="ruleSelected(rule)"
       >
-        <span>
+        <span class="rule-row-main">
           <b-icon icon="x" aria-hidden="true" @click.stop="ruleDeselected(rule)" />
           <span
             v-b-tooltip.hover
@@ -35,12 +35,20 @@
             :title="rule.status"
             :aria-label="`Status: ${rule.status}`"
           />
-          <span v-if="showSRGIdChecked" v-b-tooltip.hover :title="rule.srg_id">
+          <span
+            v-if="showSRGIdChecked"
+            v-b-tooltip.hover
+            class="rule-row-label"
+            :title="rule.srg_id"
+          >
             {{ truncateId(rule.srg_id) }}
           </span>
-          <span v-else>{{ formatRuleId(rule.rule_id) }}</span>
+          <span v-else v-b-tooltip.hover class="rule-row-label" :title="formatRuleId(rule.rule_id)">
+            {{ formatRuleId(rule.rule_id) }}
+          </span>
         </span>
         <RuleRowIcons
+          class="flex-shrink-0"
           :rule="rule"
           :rule-open="ruleOpen(rule)"
           :pending-relocation="pendingRelocations[rule.id] || null"
@@ -54,7 +62,7 @@
     <!-- All project rules -->
     <p
       data-test="all-rules-header"
-      class="mt-0 mb-0 d-flex justify-content-between align-items-center spacing-responsive"
+      class="mt-0 mb-0 d-flex justify-content-between align-items-center rule-row-spacing"
     >
       <span>
         <strong>{{ navLabels.allRules }}</strong>
@@ -85,10 +93,10 @@
     <div v-for="rule in filteredRules" :key="`rule-${rule.id}`">
       <div
         :class="ruleRowClass(rule)"
-        class="d-flex justify-content-between text-responsive"
+        class="d-flex justify-content-between rule-row-text"
         @click="ruleSelected(rule)"
       >
-        <span>
+        <span class="rule-row-main">
           <!-- Expand/collapse toggle for parents with children -->
           <template v-if="nestSatisfiedRulesChecked && childRules(rule).length > 0">
             <b-icon
@@ -109,23 +117,30 @@
             :title="rule.status"
             :aria-label="`Status: ${rule.status}`"
           />
-          <span v-if="showSRGIdChecked" v-b-tooltip.hover :title="rule.srg_id">
+          <span
+            v-if="showSRGIdChecked"
+            v-b-tooltip.hover
+            class="rule-row-label"
+            :title="rule.srg_id"
+          >
             {{ truncateId(rule.srg_id) }}
           </span>
-          <span v-else>
+          <span v-else v-b-tooltip.hover class="rule-row-label" :title="formatRuleId(rule.rule_id)">
             {{ formatRuleId(rule.rule_id) }}
           </span>
-          <!-- Child count badge for collapsed parents -->
+          <!-- Child count badge for collapsed parents. It sits OUTSIDE the
+               label so the identifier's ellipsis can never eat it. -->
           <b-badge
             v-if="nestSatisfiedRulesChecked && childRules(rule).length > 0"
             variant="secondary"
             pill
-            class="ml-1 child-count"
+            class="ml-1 child-count flex-shrink-0"
           >
             {{ childRules(rule).length }}
           </b-badge>
         </span>
         <RuleRowIcons
+          class="flex-shrink-0"
           :rule="rule"
           :rule-open="ruleOpen(rule)"
           :pending-relocation="pendingRelocations[rule.id] || null"
@@ -141,10 +156,10 @@
           v-for="satisfies in sortAlsoSatisfies(childRules(rule))"
           :key="satisfies.id"
           :class="ruleRowClass(satisfies)"
-          class="d-flex justify-content-between text-responsive child-row"
+          class="d-flex justify-content-between rule-row-text child-row"
           @click="ruleSelected(satisfies)"
         >
-          <span>
+          <span class="rule-row-main">
             <b-icon icon="chevron-right" />
             <!-- Satisfaction refs carry no status — resolve it from the
                  full row so the child dot tells the truth. -->
@@ -156,11 +171,12 @@
               :title="childStatus(satisfies) || 'Status unknown'"
               :aria-label="`Status: ${childStatus(satisfies) || 'unknown'}`"
             />
-            <span v-b-tooltip.hover :title="satisfies.srg_id">
+            <span v-b-tooltip.hover class="rule-row-label" :title="satisfies.srg_id">
               {{ truncateId(satisfies.srg_id) }}
             </span>
           </span>
           <RuleRowIcons
+            class="flex-shrink-0"
             :rule="satisfies"
             :rule-open="0"
             :pending-relocation="pendingRelocations[satisfies.id] || null"
@@ -422,17 +438,44 @@ export default {
 </script>
 
 <style scoped>
-.text-responsive {
-  font-size: 0.9em;
-  font-weight: 500;
+/* One text size at every width. The sidebar is sized by the shell's width
+   token, so a standard identifier fits on one line without shrinking the
+   type to buy space — the narrow-viewport size and tightened tracking that
+   used to do that are gone. */
+.rule-row-text {
+  font-size: 1em;
+  font-weight: 400;
 }
 
-.spacing-responsive {
-  letter-spacing: -0.05em;
+.rule-row-spacing {
+  letter-spacing: 0.01em;
 }
 
 .ruleRow {
   padding: 0.25em;
+}
+
+/* The row's leading group: tree toggle, status dot, identifier, and the
+   child-count badge. min-width: 0 lets it shrink so the identifier — and
+   only the identifier — absorbs any shortfall. */
+.rule-row-main {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+/* The identifier is the row's primary content and is atomic: it never
+   breaks across lines, because half an identifier on each of two lines is
+   unreadable and was the original complaint. The sidebar token is sized to
+   fit the widest real row, so this should never engage — but if a project
+   ever uses a longer prefix than any measured here, the identifier
+   ellipsizes rather than fracturing, and every row site carries a hover
+   tooltip with the full untruncated value so nothing is unrecoverable. */
+.rule-row-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ruleRow:hover {
@@ -474,15 +517,5 @@ export default {
 .child-count {
   font-size: 0.75em;
   font-weight: normal;
-}
-
-@media (min-width: 1200px) {
-  .text-responsive {
-    font-size: 1em;
-    font-weight: 400;
-  }
-  .spacing-responsive {
-    letter-spacing: 0.01em;
-  }
 }
 </style>

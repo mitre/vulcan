@@ -304,9 +304,9 @@ export default {
   computed: {
     triagePanels() {
       return [
-        { name: "left", cols: 2, bgTier: "secondary" },
-        { name: "center", cols: 5, bgTier: "body" },
-        { name: "right", cols: 5, bgTier: "tertiary" },
+        { name: "left", size: "sidebar", bgTier: "secondary" },
+        { name: "center", size: "fill", bgTier: "body" },
+        { name: "right", size: "fill", bgTier: "tertiary" },
       ];
     },
     sortedRows() {

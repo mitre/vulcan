@@ -69,6 +69,28 @@
   --vulcan-gray-800: #{$gray-800};
   --vulcan-gray-900: #{$gray-900};
 
+  // Application-shell geometry. The editor sidebar lists requirement
+  // identifiers, so its width requirement is intrinsic and roughly constant
+  // — it is bounded here rather than taken as a share of the viewport. The
+  // floor is measured, not guessed. The widest real row is a nested PARENT
+  // requirement: expand chevron, status dot, identifier, child-count badge,
+  // and the trailing icon strip — 248px of content measured on a live STIG
+  // component with nesting on. The floor covers that content plus the panel's
+  // own chrome: 1px border, 2rem of body padding, and the scroll gutter. The
+  // gutter is the part that is easy to miss — a browser drawing overlay
+  // scrollbars takes no width, but a classic scrollbar takes about 17px out
+  // of the same panel, and the requirement list always scrolls. Measured on a
+  // live component with a classic scrollbar forced, a floor that ignored the
+  // gutter cut six of thirteen identifiers. The ceiling stops the sidebar
+  // from stealing editor width on large displays.
+  //
+  // Deliberately in rem, not px: the root font-size is stepped responsively
+  // further down this file, and the row text scales with it, so a rem token
+  // scales in step and the measurement stays valid at any root size. The
+  // 248px figure was taken at the lg root size (1rem), which is also where
+  // the sidebar sizing engages — the two breakpoints coincide.
+  --vulcan-shell-sidebar-width: clamp(19rem, 18vw, 20rem);
+
   // Body-level semantic tokens — Bootstrap 5.3 three-tier bg hierarchy
   --vulcan-body-bg: #{$body-bg};
   --vulcan-body-color: #{$body-color};

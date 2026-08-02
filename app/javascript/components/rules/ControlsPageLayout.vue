@@ -70,11 +70,6 @@ export default {
       type: Boolean,
       default: false,
     },
-    sidebarWidth: {
-      type: Number,
-      default: 2,
-      validator: (value) => value >= 1 && value <= 6,
-    },
     emptyStateMessage: {
       type: String,
       default: "Select a control on the left to view or edit.",
@@ -83,8 +78,8 @@ export default {
   computed: {
     layoutPanels() {
       return [
-        { name: "left", cols: this.sidebarWidth, bgTier: "secondary" },
-        { name: "center", cols: 12 - this.sidebarWidth, bgTier: "body" },
+        { name: "left", size: "sidebar", bgTier: "secondary" },
+        { name: "center", size: "fill", bgTier: "body" },
       ];
     },
   },

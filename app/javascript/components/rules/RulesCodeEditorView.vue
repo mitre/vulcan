@@ -3,7 +3,6 @@
     :has-selected-rule="!!selectedRule"
     :show-command-bar="true"
     :show-filter-bar="filterBarVisible"
-    :sidebar-width="2"
   >
     <!-- Command Bar -->
     <template #command-bar>
@@ -39,6 +38,7 @@
       <RuleFilterBar
         :filters="filters"
         :counts="counts"
+        :document-type="component.document_type"
         @update:filter="updateFilter"
         @reset="resetFilters"
       />

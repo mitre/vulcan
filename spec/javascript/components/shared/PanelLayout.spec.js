@@ -20,9 +20,9 @@ import PanelLayout from "@/components/shared/PanelLayout.vue";
  */
 describe("PanelLayout", () => {
   const defaultPanels = [
-    { name: "left", cols: 2, bgTier: "secondary" },
-    { name: "center", cols: 5, bgTier: "body" },
-    { name: "right", cols: 5, bgTier: "tertiary" },
+    { name: "left", size: "sidebar", bgTier: "secondary" },
+    { name: "center", size: "fill", bgTier: "body" },
+    { name: "right", size: "fill", bgTier: "tertiary" },
   ];
 
   const mountWith = (props = {}, slots = {}) =>
@@ -70,12 +70,39 @@ describe("PanelLayout", () => {
     expect(panels.at(2).classes()).not.toContain("panel-layout__panel--border-right");
   });
 
-  it("sets correct col width from panels prop", () => {
+  // REQUIREMENT: an application shell is not a content grid. A sidebar
+  // holds fixed-size content, so its width is a bounded design token; the
+  // remaining panels share what is left. Sizing it as a fraction of the
+  // viewport gives ~133px of content at the lg breakpoint, which is what
+  // wrapped requirement identifiers onto two lines.
+  it("sizes panels by role, never by a grid fraction", () => {
     const wrapper = mountWith();
     const panels = wrapper.findAll(".panel-layout__panel");
-    expect(panels.at(0).classes()).toContain("col-lg-2");
-    expect(panels.at(1).classes()).toContain("col-lg-5");
-    expect(panels.at(2).classes()).toContain("col-lg-5");
+    expect(panels.at(0).classes()).toContain("panel-layout__panel--sidebar");
+    expect(panels.at(1).classes()).toContain("panel-layout__panel--fill");
+    expect(panels.at(2).classes()).toContain("panel-layout__panel--fill");
+
+    panels.wrappers.forEach((panel) => {
+      const fractional = panel.classes().filter((c) => /^col-(lg-)?\d+$/.test(c) && c !== "col-12");
+      expect(fractional).toEqual([]);
+    });
+  });
+
+  it("keeps the stacked full-width behavior below the lg breakpoint", () => {
+    // col-12 is what stacks the panels on narrow viewports; the bounded
+    // sidebar only takes effect at lg and up.
+    const wrapper = mountWith();
+    wrapper.findAll(".panel-layout__panel").wrappers.forEach((panel) => {
+      expect(panel.classes()).toContain("col-12");
+    });
+  });
+
+  it("rejects a panel whose size role is not one the layout knows", () => {
+    const validator = PanelLayout.props.panels.validator;
+    expect(validator([{ name: "left", size: "sidebar", bgTier: "secondary" }])).toBe(true);
+    expect(validator([{ name: "left", size: "fill", bgTier: "body" }])).toBe(true);
+    expect(validator([{ name: "left", size: "wide", bgTier: "body" }])).toBe(false);
+    expect(validator([{ name: "left", bgTier: "body" }])).toBe(false);
   });
 
   it("renders header slot when provided", () => {
@@ -108,8 +135,8 @@ describe("PanelLayout", () => {
 
   it("supports 2-panel layout by omitting right panel", () => {
     const twoPanels = [
-      { name: "left", cols: 3, bgTier: "secondary" },
-      { name: "center", cols: 9, bgTier: "body" },
+      { name: "left", size: "sidebar", bgTier: "secondary" },
+      { name: "center", size: "fill", bgTier: "body" },
     ];
     const wrapper = mountWith(
       { panels: twoPanels },

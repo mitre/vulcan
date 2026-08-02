@@ -175,33 +175,31 @@ describe("ControlsPageLayout", () => {
     });
   });
 
-  describe("responsive column widths via PanelLayout", () => {
-    it("passes default sidebar width of 2 columns to PanelLayout", () => {
+  describe("panel sizing via PanelLayout", () => {
+    // REQUIREMENT: the editor shell's sidebar holds fixed-size content —
+    // a requirement identifier of known maximum width, a status dot, an
+    // icon strip. Its width requirement is intrinsic, so it is sized by a
+    // bounded design token; the main panel takes what is left. A viewport
+    // FRACTION is the wrong model and is what wrapped identifiers at lg.
+    it("declares a bounded sidebar and a filling main panel", () => {
       wrapper = createWrapper({ hasSelectedRule: true });
       const panelLayout = wrapper.findComponent({ name: "PanelLayout" });
       expect(panelLayout.exists()).toBe(true);
 
       const panels = panelLayout.props("panels");
-      expect(panels[0].cols).toBe(2);
-      expect(panels[1].cols).toBe(10);
+      expect(panels[0].name).toBe("left");
+      expect(panels[0].size).toBe("sidebar");
+      expect(panels[1].name).toBe("center");
+      expect(panels[1].size).toBe("fill");
     });
 
-    it("passes custom sidebarWidth to PanelLayout", () => {
-      wrapper = createWrapper({ hasSelectedRule: true, sidebarWidth: 3 });
-      const panelLayout = wrapper.findComponent({ name: "PanelLayout" });
-
-      const panels = panelLayout.props("panels");
-      expect(panels[0].cols).toBe(3);
-      expect(panels[1].cols).toBe(9);
-    });
-
-    it("validates sidebarWidth is between 1 and 6", () => {
-      // This tests the prop validator
-      const validator = ControlsPageLayout.props.sidebarWidth.validator;
-      expect(validator(1)).toBe(true);
-      expect(validator(6)).toBe(true);
-      expect(validator(0)).toBe(false);
-      expect(validator(7)).toBe(false);
+    it("carries no column count — width is the layout's concern, not the page's", () => {
+      wrapper = createWrapper({ hasSelectedRule: true });
+      const panels = wrapper.findComponent({ name: "PanelLayout" }).props("panels");
+      panels.forEach((panel) => {
+        expect(panel.cols).toBeUndefined();
+      });
+      expect(ControlsPageLayout.props.sidebarWidth).toBeUndefined();
     });
   });
 });

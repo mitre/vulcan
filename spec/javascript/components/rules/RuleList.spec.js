@@ -382,6 +382,84 @@ describe("RuleList", () => {
     });
   });
 
+  describe("identifier is never silently truncated", () => {
+    // REQUIREMENT: the sidebar label is nowrap + ellipsis, so an identifier
+    // that ever exceeds the sidebar's width is clipped visually. The full
+    // value must therefore ALWAYS be recoverable on hover — in BOTH display
+    // modes, not only when SRG IDs are shown. The rule_id mode is the
+    // default and is the one STIG components use, so it is the mode that
+    // matters most; it previously had no title at all.
+    // .rule-row-label IS the identifier span — the only element that
+    // truncates — so its title is what must carry the full value.
+    const idSpanTitle = (w, text) => {
+      const span = w.findAll(".rule-row-label").wrappers.find((s) => s.text().trim() === text);
+      return span ? span.attributes("title") : undefined;
+    };
+
+    it("carries the full identifier in a title in rule_id display mode", () => {
+      const rule = createRule(1, "000020");
+      wrapper = createWrapper({
+        filteredRules: [rule],
+        allRules: [rule],
+        showSRGIdChecked: false,
+        projectPrefix: "CNTR-00",
+      });
+      expect(idSpanTitle(wrapper, "CNTR-00-000020")).toBe("CNTR-00-000020");
+    });
+
+    it("carries the full, untruncated identifier in a title in SRG ID mode", () => {
+      const rule = createRule(2, "000021");
+      wrapper = createWrapper({
+        filteredRules: [rule],
+        allRules: [rule],
+        showSRGIdChecked: true,
+        projectPrefix: "CNTR-00",
+      });
+      // The displayed text is truncated; the title must carry the whole id.
+      expect(idSpanTitle(wrapper, "SRG-OS-000002")).toBe(rule.srg_id);
+    });
+
+    it("keeps the child-count badge outside the truncating label", () => {
+      // The badge is secondary but must never be eaten by the identifier's
+      // ellipsis, so it lives beside the label rather than inside it.
+      const child = createSatisfactionRef(9, "000099", "SRG-OS-000009");
+      const parent = createRule(3, "000030", { satisfies: [child] });
+      wrapper = createWrapper({
+        filteredRules: [parent],
+        allRules: [parent, createRule(9, "000099")],
+        nestSatisfiedRulesChecked: true,
+      });
+      const badge = wrapper.find(".child-count");
+      expect(badge.exists()).toBe(true);
+      expect(badge.element.closest(".rule-row-label")).toBeNull();
+    });
+  });
+
+  describe("row icon strip is never squeezed", () => {
+    // REQUIREMENT: the trailing icon strip has an intrinsic width. If the
+    // label group is allowed to squeeze it, its icons wrap onto a second
+    // line and the whole row doubles in height — which is what happened at
+    // the lg breakpoint with nesting on. The strip must not shrink; the
+    // identifier absorbs any shortfall instead (it ellipsizes with a
+    // tooltip carrying the full value).
+    it("marks the icon strip non-shrinking on every row site", () => {
+      const child = createSatisfactionRef(21, "000021", "SRG-OS-000021");
+      const parent = createRule(20, "000020", { satisfies: [child] });
+      const leaf = createRule(21, "000021");
+      wrapper = createWrapper({
+        filteredRules: [parent, leaf],
+        allRules: [parent, leaf],
+        nestSatisfiedRulesChecked: true,
+      });
+
+      const strips = wrapper.findAllComponents(RuleRowIcons);
+      expect(strips.length).toBeGreaterThan(0);
+      strips.wrappers.forEach((strip) => {
+        expect(strip.classes()).toContain("flex-shrink-0");
+      });
+    });
+  });
+
   describe("SRG ID display toggle", () => {
     // Authored SRG rows omit Rule-only keys entirely (satisfies,
     // satisfied_by, checks_attributes, disa_rule_descriptions_attributes)
