@@ -2,7 +2,7 @@
 
 source 'https://rubygems.org'
 
-ruby '3.4.9'
+ruby '3.4.10'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 8.0.0'
@@ -167,3 +167,5 @@ gem 'climate_control', '~> 1.2', group: :test
 
 gem 'has_scope', '~> 0.9.0'
 gem 'pagy', '~> 43.5'
+
+gem 'faraday', '~> 1.10', '>= 1.10.6'
