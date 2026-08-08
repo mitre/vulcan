@@ -468,7 +468,7 @@ GEM
       method_source (~> 1.0)
       reline (>= 0.6.0)
     public_suffix (7.0.5)
-    puma (7.2.1)
+    puma (8.0.2)
       nio4r (~> 2.0)
     pyu-ruby-sasl (0.0.3.3)
     racc (1.8.1)
@@ -782,7 +782,7 @@ DEPENDENCIES
   pg (>= 0.18, < 2.0)
   pg_search
   propshaft
-  puma (~> 7.0)
+  puma (~> 8.0)
   rack-attack
   rails (~> 8.1.0)
   rest-client

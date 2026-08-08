@@ -9,7 +9,7 @@ gem 'rails', '~> 8.1.0'
 # Use postgresql as the database for Active Record
 gem 'pg', '>= 0.18', '< 2.0'
 # Use Puma as the app server
-gem 'puma', '~> 7.0'
+gem 'puma', '~> 8.0'
 # Asset pipeline for JavaScript bundling
 gem 'jsbundling-rails'
 # Asset pipeline for Rails
