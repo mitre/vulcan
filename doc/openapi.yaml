@@ -2834,8 +2834,8 @@ paths:
       operationId: findRulesInComponent
       tags:
         - Components
-      summary: Search rules within a component by text
-      description: Full-text search across rule titles, fix text, vendor comments, status justification, artifact description, vulnerability discussion, mitigations, and check content within a single component. Returns matching rules in rule_id order. Used by the in-component search feature.
+      summary: Search requirements within a component by text
+      description: Full-text search across requirement titles, fix text, vendor comments, status justification, artifact description, vulnerability discussion, mitigations, and check content within a single component. The same field list applies to both document kinds; results are shaped by the component's document_type. Returns matching requirements in rule_id order. Used by the in-component search feature.
       requestBody:
         required: true
         content:
@@ -2856,13 +2856,15 @@ paths:
                   find: container image
       responses:
         '200':
-          description: Matching rules in rule_id order
+          description: 'Matching requirements in rule_id order, shaped by the component''s document_type: STIG rule objects for stig components, authored SRG requirement objects for srg components.'
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/RuleEditorResponse'
+                  oneOf:
+                    - $ref: '#/components/schemas/RuleEditorResponse'
+                    - $ref: '#/components/schemas/AuthoredSrgRuleEditorResponse'
               examples:
                 results:
                   summary: Two matching rules

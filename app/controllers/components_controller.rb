@@ -561,14 +561,17 @@ class ComponentsController < ApplicationController
 
   def find
     find_param = ActiveRecord::Base.sanitize_sql_like(params.require(:find).downcase)
-    component_id = params.require(:id)
 
-    rules = Component.find_by(id: component_id).rules
-    checks = Check.where(base_rule: rules).where('LOWER(content) LIKE ?', "%#{find_param}%")
-    descriptions = DisaRuleDescription.where(base_rule: rules).where(
+    # One searched-field list serves BOTH document kinds: every column below
+    # is a base_rules column and both child tables key on base_rule, so only
+    # the base scope is kind-specific — routed through the requirements seam
+    # (@component is already loaded by set_component_basic).
+    requirements = @component.requirements
+    checks = Check.where(base_rule: requirements).where('LOWER(content) LIKE ?', "%#{find_param}%")
+    descriptions = DisaRuleDescription.where(base_rule: requirements).where(
       'LOWER(vuln_discussion) LIKE ? OR LOWER(mitigations) LIKE ?', "%#{find_param}%", "%#{find_param}%"
     )
-    rules = rules.where(
+    requirements = requirements.where(
       "LOWER(title) LIKE ? OR
       LOWER(fixtext) LIKE ? OR
       LOWER(vendor_comments) LIKE ? OR
@@ -577,9 +580,10 @@ class ComponentsController < ApplicationController
       id IN (?) ", "%#{find_param}%", "%#{find_param}%", "%#{find_param}%", "%#{find_param}%",
       "%#{find_param}%", checks.pluck(:base_rule_id) | descriptions.pluck(:base_rule_id)
     )
-                 .order(:rule_id)
+                               .order(:rule_id)
 
-    render json: RuleBlueprint.render_as_json(rules, view: :editor)
+    blueprint = ComponentBlueprint.requirement_blueprint(@component)
+    render json: blueprint.render_as_json(requirements.preload_blueprint(blueprint, :editor), view: :editor)
   end
 
   private

@@ -22,8 +22,16 @@ class ComponentBlueprint < Blueprinter::Base
   # relation; the canonical ordering then runs in Ruby, where it has always
   # run, because sorting in SQL would hand row order to the database's
   # collation rules and quietly reorder requirements.
+  # The requirement blueprint for a component's document kind — the ONE
+  # blueprint-selection seam. Everything that serializes a component's
+  # requirement rows (full collections here, filtered sets like the
+  # in-component find) picks its blueprint through this method.
+  def self.requirement_blueprint(component)
+    component.document_type == 'srg' ? AuthoredSrgRuleBlueprint : RuleBlueprint
+  end
+
   def self.serialized_requirements(component, options, view:)
-    blueprint = component.document_type == 'srg' ? AuthoredSrgRuleBlueprint : RuleBlueprint
+    blueprint = requirement_blueprint(component)
     ordered = BaseRule.canonical_sort(component.requirements.preload_blueprint(blueprint, view))
     # The outer render's own view key must not override the nested view;
     # caller options (reaction summaries etc.) still pass through.
