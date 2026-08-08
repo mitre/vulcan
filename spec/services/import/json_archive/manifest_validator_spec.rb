@@ -55,5 +55,57 @@ RSpec.describe Import::JsonArchive::ManifestValidator do
         expect(result.warnings.join).to include("'Conflicting' already exists")
       end
     end
+
+    # A component entry may list its full source-SRG set (dual-lineage
+    # components). Pre-flight must check each one: a missing based_on is
+    # already an error above; a missing SECONDARY costs one lineage link,
+    # so it surfaces here as a warning — at pre-flight, not only after the
+    # component is built.
+    context 'when a component entry lists source SRGs' do
+      def manifest_with_sources(sources, bundled_srgs: [])
+        base = manifest
+        base['components'].first['source_srgs'] = sources
+        base['srgs'] = bundled_srgs
+        base
+      end
+
+      def source_entry(srg_record)
+        { 'srg_id' => srg_record.srg_id, 'title' => srg_record.title, 'version' => srg_record.version }
+      end
+
+      let(:missing_entry) do
+        { 'srg_id' => 'SRG-MISSING-SECONDARY', 'title' => 'Missing Secondary', 'version' => 'V1R1' }
+      end
+
+      it 'warns at pre-flight when a secondary source is missing from the catalog' do
+        described_class.new(
+          manifest_with_sources([source_entry(srg), missing_entry]), project
+        ).validate(result)
+
+        expect(result).to be_success
+        expect(result.warnings.join).to include('SRG-MISSING-SECONDARY')
+        expect(result.warnings.join).to include('Missing Secondary')
+      end
+
+      it 'does not warn when every listed source is in the catalog' do
+        second = create(:security_requirements_guide)
+        described_class.new(
+          manifest_with_sources([source_entry(srg), source_entry(second)]), project
+        ).validate(result)
+
+        expect(result).to be_success
+        expect(result.warnings).to be_empty
+      end
+
+      it 'does not warn for a missing secondary whose XML is bundled in the archive' do
+        described_class.new(
+          manifest_with_sources([source_entry(srg), missing_entry],
+                                bundled_srgs: [missing_entry]), project
+        ).validate(result)
+
+        expect(result).to be_success
+        expect(result.warnings).to be_empty
+      end
+    end
   end
 end

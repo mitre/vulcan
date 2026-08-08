@@ -55,6 +55,9 @@ module Export
           srg_id: @component.based_on&.srg_id,
           srg_title: @component.based_on&.title,
           srg_version: @component.based_on&.version,
+          # The full source set, so pre-flight can check every lineage
+          # dependency — the singular fields above cover only based_on.
+          source_srgs: serialize_source_srgs,
           rule_count: rules_collection.size
         }
       end
@@ -89,10 +92,22 @@ module Export
             title: @component.based_on&.title,
             version: @component.based_on&.version
           },
+          source_srgs: serialize_source_srgs,
           overlay_parent: serialize_overlay_parent,
           metadata: @component.component_metadata&.data,
           additional_questions: serialize_additional_questions
         }
+      end
+
+      # Every declared parent, identified the same portable way based_on is —
+      # srg_id plus version, never a database id, because the archive is
+      # restored into a different instance with its own catalog. based_on is
+      # a member of this set, so it appears here too; the restore rebuilds
+      # the whole set from this one key. Sorted for a stable archive.
+      def serialize_source_srgs
+        @component.source_srgs.sort_by(&:srg_id).map do |srg|
+          { srg_id: srg.srg_id, title: srg.title, version: srg.version }
+        end
       end
 
       def serialize_overlay_parent

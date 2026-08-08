@@ -71,6 +71,33 @@ module Import
             )
           end
         end
+
+        validate_secondary_sources(result, archive_has_srgs)
+      end
+
+      # Dual-lineage components list their full source set per entry. A
+      # missing based_on is the error above — nothing to build without it. A
+      # missing SECONDARY costs one lineage link while the rest restores, so
+      # it surfaces here as a pre-flight warning instead of a post-build
+      # surprise. Restore-time resolution falls back across releases, so
+      # only a wholly-absent SRG warrants the warning.
+      def validate_secondary_sources(result, archive_has_srgs)
+        @manifest['components'].each do |entry|
+          sources = entry['source_srgs']
+          next unless sources.is_a?(Array)
+
+          sources.each do |source|
+            source_id = source['srg_id']
+            next if source_id.blank? || source_id == entry['srg_id']
+            next if SecurityRequirementsGuide.exists?(srg_id: source_id)
+            next if archive_has_srgs && @manifest['srgs'].any? { |s| s['srg_id'] == source_id }
+
+            result.add_warning(
+              "Source SRG '#{source['title']}' (#{source_id}) not found — the component " \
+              'will restore without that lineage link. Import the SRG first for full lineage.'
+            )
+          end
+        end
       end
 
       def validate_no_name_conflicts(result)

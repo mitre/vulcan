@@ -254,6 +254,26 @@ RSpec.describe Export::Formatters::JsonArchiveFormatter do
         srg_files = zip_entries(two_data).select { |e| e.start_with?('srgs/') && e.end_with?('.xml') }
         expect(srg_files.size).to eq(1)
       end
+
+      # A dual-lineage component's archive must be self-contained for EVERY
+      # source, not just based_on — otherwise restoring it into a fresh
+      # instance silently loses the secondary lineage link, the exact defect
+      # the backup exists to prevent.
+      it 'bundles SRG XML for every source SRG of a dual-lineage component' do
+        dual = create(:component, :skip_rules, project: component.project, document_type: 'srg',
+                                               prefix: 'DUAL-00', name: 'Dual Lineage')
+        secondary = create(:security_requirements_guide, :core, :skip_rules)
+        dual.add_source_parent!(secondary)
+
+        data = formatter.generate_batch(component_rule_pairs: [{ component: dual.reload, rules: [] }],
+                                        include_srg: true)
+        srg_files = zip_entries(data).select { |e| e.start_with?('srgs/') && e.end_with?('.xml') }
+        manifest = JSON.parse(zip_read(data, manifest_file))
+
+        expect(srg_files.size).to eq(2)
+        expect(manifest['srgs'].pluck('srg_id'))
+          .to contain_exactly(dual.based_on.srg_id, secondary.srg_id)
+      end
     end
 
     context 'when include_srg: false (default)' do

@@ -131,28 +131,21 @@ module Export
       end
 
       def collect_unique_srgs(component_rule_pairs)
-        # Collect unique SRG IDs from components, then load full records (including xml column)
-        srg_ids = component_rule_pairs.filter_map { |p| p[:component].security_requirements_guide_id }.uniq
-        srgs = SecurityRequirementsGuide.where(id: srg_ids).index_by(&:id)
+        # EVERY source SRG, not just based_on — a dual-lineage component's
+        # archive must be self-contained for its secondary too. Two queries
+        # regardless of component count; ordered for a stable archive.
+        srg_ids = ComponentSourceSrg.where(component_id: component_rule_pairs.map { |p| p[:component].id })
+                                    .distinct.pluck(:security_requirements_guide_id)
 
-        seen = {}
-        component_rule_pairs.each do |pair|
-          srg = srgs[pair[:component].security_requirements_guide_id]
-          next unless srg
-
-          key = [srg.srg_id, srg.version]
-          next if seen.key?(key)
-
-          filename = "#{srg.title.tr(' ', '_').gsub(/[^A-Za-z0-9_-]/, '')}-#{srg.version}.xml"
-          seen[key] = {
+        SecurityRequirementsGuide.where(id: srg_ids).order(:srg_id, :version).map do |srg|
+          {
             srg_id: srg.srg_id,
             title: srg.title,
             version: srg.version,
-            filename: filename,
+            filename: "#{srg.title.tr(' ', '_').gsub(/[^A-Za-z0-9_-]/, '')}-#{srg.version}.xml",
             xml: srg.xml
           }
         end
-        seen.values
       end
 
       def write_srg_files(zio, srg_entries)
