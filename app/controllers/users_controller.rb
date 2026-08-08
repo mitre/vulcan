@@ -47,7 +47,7 @@ class UsersController < ApplicationController
     else
       render json: {
         toast: { title: 'Could not create user.', message: user.errors.full_messages, variant: 'danger' }
-      }, status: :unprocessable_entity
+      }, status: :unprocessable_content
     end
   end
 
@@ -62,7 +62,7 @@ class UsersController < ApplicationController
         format.json do
           render json: {
             toast: { title: 'Cannot remove admin.', message: ['You are the only admin. Promote another user first.'], variant: 'danger' }
-          }, status: :unprocessable_entity
+          }, status: :unprocessable_content
         end
       end
     end
@@ -106,7 +106,7 @@ class UsersController < ApplicationController
               message: @user.errors.full_messages,
               variant: 'danger'
             }
-          }, status: :unprocessable_entity
+          }, status: :unprocessable_content
         end
       end
     end
@@ -123,7 +123,7 @@ class UsersController < ApplicationController
         format.json do
           render json: {
             toast: { title: 'Cannot delete user.', message: ['This is the only admin. Promote another user first.'], variant: 'danger' }
-          }, status: :unprocessable_entity
+          }, status: :unprocessable_content
         end
       end
     end
@@ -153,7 +153,7 @@ class UsersController < ApplicationController
               message: @user.errors.full_messages,
               variant: 'danger'
             }
-          }, status: :unprocessable_entity
+          }, status: :unprocessable_content
         end
       end
     end
@@ -164,7 +164,7 @@ class UsersController < ApplicationController
     unless Settings.smtp.enabled
       return render json: {
         toast: { title: 'SMTP not configured.', message: ['Email delivery is not available. Use "Generate Reset Link" instead.'], variant: 'danger' }
-      }, status: :unprocessable_entity
+      }, status: :unprocessable_content
     end
 
     @user.send_reset_password_instructions
@@ -197,7 +197,7 @@ class UsersController < ApplicationController
     if @user == current_user
       return render json: {
         toast: { title: 'Cannot lock yourself.', message: ['You cannot lock your own account.'], variant: 'danger' }
-      }, status: :unprocessable_entity
+      }, status: :unprocessable_content
     end
 
     @user.lock_access!(send_instructions: false)
@@ -232,7 +232,7 @@ class UsersController < ApplicationController
     if password_params[:password].blank?
       return render json: {
         toast: { title: 'Password required.', message: ['Password cannot be blank.'], variant: 'danger' }
-      }, status: :unprocessable_entity
+      }, status: :unprocessable_content
     end
 
     @user.password = @user.password_confirmation = password_params[:password]
@@ -243,7 +243,7 @@ class UsersController < ApplicationController
     else
       render json: {
         toast: { title: 'Could not set password.', message: @user.errors.full_messages, variant: 'danger' }
-      }, status: :unprocessable_entity
+      }, status: :unprocessable_content
     end
   rescue StandardError => e
     Rails.logger.error "set_password failed for user #{@user.id}: #{e.class}: #{e.message}\n#{e.backtrace&.first(5)&.join("\n")}"
@@ -340,7 +340,7 @@ class UsersController < ApplicationController
   end
 
   def set_user
-    @user = User.find(params[:id])
+    @user = User.find(params.expect(:id))
   end
 
   def user_create_params
