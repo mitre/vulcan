@@ -16,10 +16,6 @@ RSpec.describe 'STIG Viewer Performance', type: :request do
     # Find RHEL 9 STIG or use test STIG
     test_stig = Stig.find_by(title: 'Red Hat Enterprise Linux 9 Security Technical Implementation Guide') || stig
 
-    puts "\n=== STIG Viewer Performance Test ==="
-    puts "STIG: #{test_stig.title}"
-    puts "Rules: #{test_stig.stig_rules.count}"
-
     # Measure total request time
     time = Benchmark.realtime do
       get "/stigs/#{test_stig.id}", headers: { 'Accept' => 'application/json' }
@@ -27,9 +23,9 @@ RSpec.describe 'STIG Viewer Performance', type: :request do
     end
 
     total_ms = (time * 1000).round(1)
-    puts "Total request time: #{total_ms}ms"
 
-    # Performance threshold
+    # Performance threshold — the measured time reports through the failure message
+    # so the suite stays silent on success.
     expect(total_ms).to be < 1000, "STIG viewer should load in under 1 second, took #{total_ms}ms"
   end
 end
