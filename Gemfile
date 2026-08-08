@@ -32,7 +32,7 @@ gem 'omniauth', '~> 2.1'
 # LDAP Auth — original omniauth-ldap (actively maintained, no nkf/kconv dependency).
 # Replaces gitlab_omniauth-ldap which had a dead `require 'kconv'` that triggered
 # Ruby VM crash bugs.ruby-lang.org/issues/21967 on parallel_tests forking.
-gem 'omniauth-ldap', '~> 2.3', require: false
+gem 'omniauth-ldap', '~> 3.0', require: false
 # Allow users to sign in with GitHub
 gem 'omniauth-github'
 # https://github.com/omniauth/omniauth/wiki/Resolving-CVE-2015-9284
