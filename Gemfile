@@ -19,7 +19,7 @@ gem 'turbolinks', '~> 5'
 # Build JSON APIs with ease. Read more: https://github.com/rails/jbuilder
 gem 'jbuilder', '~> 2.7'
 # Use HAML instead of ERB
-gem 'haml-rails', '~> 2.0'
+gem 'haml-rails', '~> 3.1'
 # Add Devise for authentication
 gem 'devise', '~> 5.0'
 # PBKDF2-SHA512 password hashing for FIPS 140-2 compliance

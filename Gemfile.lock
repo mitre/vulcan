@@ -235,11 +235,12 @@ GEM
       ostruct
     globalid (1.4.0)
       activesupport (>= 6.1)
-    haml (6.4.0)
+    haml (7.3.0)
+      prism (>= 1.1.0)
       temple (>= 0.8.2)
       thor
       tilt
-    haml-rails (2.1.0)
+    haml-rails (3.1.0)
       actionpack (>= 5.1)
       activesupport (>= 5.1)
       haml (>= 4.0.6)
@@ -754,7 +755,7 @@ DEPENDENCIES
   faraday (~> 1.10, >= 1.10.6)
   ffaker (~> 2.10)
   foreman
-  haml-rails (~> 2.0)
+  haml-rails (~> 3.1)
   health_check (~> 3.1)
   highline (~> 2.0)
   jbuilder (~> 2.7)
