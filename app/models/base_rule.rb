@@ -46,6 +46,20 @@ class BaseRule < ApplicationRecord
     raise NotImplementedError, "#{self.class} must answer srg_identifier"
   end
 
+  # The requirement fields the revision-history diff compares — one shape
+  # for every document kind. This base implementation reads the row's own
+  # check and fix text; Rule overrides it because a STIG requirement
+  # satisfied by another resolves those through the satisfying rule.
+  def basic_fields
+    {
+      rule_id: rule_id,
+      title: title,
+      vuln_discussion: disa_rule_descriptions.first&.vuln_discussion,
+      check: checks.first&.content,
+      fix: fixtext
+    }
+  end
+
   # A plain dup carrying the four nested record collections — the shared
   # copy mechanic for authored-row generation and relocation moves.
   # Deliberately NOT amoeba: SrgRule's amoeba block retypes to Rule (the

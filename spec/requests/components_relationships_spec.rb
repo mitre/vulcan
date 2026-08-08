@@ -57,5 +57,37 @@ RSpec.describe 'Component relationships' do
           headers: { 'Accept' => application_json }
       expect(response).to have_http_status(:not_found)
     end
+
+    # The compare endpoint diffs exactly one field — inspec_control_file —
+    # and SRG requirements carry no InSpec. An SRG or mixed-kind compare
+    # guards loudly instead of diffing nothing and reporting "unchanged".
+    context 'with SRG-kind components' do
+      let_it_be(:srg_base) do
+        create(:component, :skip_rules, project: project, document_type: 'srg',
+                                        prefix: 'CMPA-00', name: 'Compare SRG A', title: 'Compare SRG A')
+      end
+      let_it_be(:srg_diff) do
+        create(:component, :skip_rules, project: project, document_type: 'srg',
+                                        prefix: 'CMPB-00', name: 'Compare SRG B', title: 'Compare SRG B')
+      end
+
+      it 'guards SRG-vs-SRG compare with a clear 422' do
+        get '/api/components/compare',
+            params: { base_id: srg_base.id, diff_id: srg_diff.id },
+            headers: { 'Accept' => application_json }
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body['error']).to include('InSpec comparison applies to STIG components')
+      end
+
+      it 'guards mixed-kind compare with the same 422' do
+        get '/api/components/compare',
+            params: { base_id: component.id, diff_id: srg_base.id },
+            headers: { 'Accept' => application_json }
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body['error']).to include('InSpec comparison applies to STIG components')
+      end
+    end
   end
 end

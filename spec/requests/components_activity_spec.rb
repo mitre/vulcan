@@ -75,6 +75,46 @@ RSpec.describe 'Component activity and history' do
     end
   end
 
+  # An SRG component's versions store requirements as authored SrgRules —
+  # a Rule-scoped diff sees two empty sets and reports no changes between
+  # any two versions.
+  describe 'GET /components/history for SRG components' do
+    let_it_be(:srg_v1) do
+      c = create(:component, :skip_rules, project: project, document_type: 'srg',
+                                          prefix: 'HISA-00', name: 'Versioned SRG',
+                                          title: 'Versioned SRG', version: 1, release: 1)
+      create(:srg_rule, :authored, component: c, rule_id: '000001',
+                                   title: 'Original requirement title')
+      c
+    end
+    let_it_be(:srg_v2) do
+      c = create(:component, :skip_rules, project: project, document_type: 'srg',
+                                          prefix: 'HISB-00', name: 'Versioned SRG',
+                                          title: 'Versioned SRG', version: 1, release: 2)
+      create(:srg_rule, :authored, component: c, rule_id: '000001',
+                                   title: 'Amended requirement title')
+      create(:srg_rule, :authored, component: c, rule_id: '000002',
+                                   title: 'Newly added requirement')
+      c
+    end
+
+    it 'lists authored requirement changes between versions' do
+      get '/components/history',
+          params: { project_id: project.id, name: 'Versioned SRG' },
+          headers: { 'Accept' => application_json }
+
+      expect(response).to have_http_status(:success)
+      diff_entry = response.parsed_body.find { |e| e.key?('changes') }
+      expect(diff_entry).to be_present
+      changes = diff_entry['changes']
+
+      expect(changes['000002']).to include('change' => 'added')
+      expect(changes['000001']).to include('change' => 'updated')
+      expect(changes['000001']['base']['title']).to eq('Original requirement title')
+      expect(changes['000001']['diff']['title']).to eq('Amended requirement title')
+    end
+  end
+
   describe 'GET /components/:id/comments' do
     before do
       rule = component.rules.first

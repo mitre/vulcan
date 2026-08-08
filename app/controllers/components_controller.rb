@@ -441,6 +441,14 @@ class ComponentsController < ApplicationController
     diff_component = Component.find_by(id: params[:diff_id])
     return render_not_found unless base_component && diff_component
 
+    # The comparison is InSpec content, which only STIG requirements carry —
+    # an SRG or mixed-kind pair guards loudly instead of diffing two empty
+    # sets and reporting every requirement unchanged.
+    unless [base_component, diff_component].all? { |c| c.document_type == 'stig' }
+      return render json: { error: 'InSpec comparison applies to STIG components.' },
+                    status: :unprocessable_content
+    end
+
     base = base_component.rules.pluck(:rule_id, :inspec_control_file).to_h
     diff = diff_component.rules.pluck(:rule_id, :inspec_control_file).to_h
     rule_ids = base.keys.union(diff.keys).sort
@@ -461,10 +469,8 @@ class ComponentsController < ApplicationController
       # nothing to compare first component to
       unless idx.zero?
         prev_component = components[idx - 1]
-        base = prev_component.rules.eager_load(:satisfied_by, :checks, :disa_rule_descriptions)
-                             .map(&:basic_fields).index_by { |r| r[:rule_id] }
-        diff = component.rules.eager_load(:satisfied_by, :checks, :disa_rule_descriptions)
-                        .map(&:basic_fields).index_by { |r| r[:rule_id] }
+        base = requirement_diff_fields(prev_component)
+        diff = requirement_diff_fields(component)
         changes = {}
 
         # added
@@ -587,6 +593,16 @@ class ComponentsController < ApplicationController
   end
 
   private
+
+  # One traversal per version over the kind-agnostic requirement set for the
+  # revision-history diff. The field shape is basic_fields for both kinds;
+  # only the satisfaction eager-load is STIG-specific, because the
+  # association exists solely on the Rule branch.
+  def requirement_diff_fields(component)
+    includes = %i[checks disa_rule_descriptions]
+    includes << :satisfied_by if component.document_type == 'stig'
+    component.requirements.eager_load(*includes).map(&:basic_fields).index_by { |r| r[:rule_id] }
+  end
 
   # DISA disposition matrix CSV export. Email column is
   # opt-in and admin-tier-only (server-side enforcement, not just UI hiding).
