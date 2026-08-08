@@ -11,8 +11,12 @@
     {
       "fingerprint": "67a915d17e2ebb4d1a83016b683cdf09d6e1553033eb2bcb4f6fd110051e054d",
       "note": "False positive: File.basename strips path traversal; only serves files from fixed attachments directory"
+    },
+    {
+      "fingerprint": "21ab0fe00fdd5899ffc405cff75aadb91b805ee996a614f7e27b08a287e9062d",
+      "note": "Acknowledged: Rails 8.0 support ends 2026-10-07. The Rails 8.1 upgrade is in progress on master; remove this entry when that upgrade merges into this branch."
     }
   ],
-  "updated": "2026-06-04",
+  "updated": "2026-08-08",
   "brakeman_version": "7.1.0"
 }
