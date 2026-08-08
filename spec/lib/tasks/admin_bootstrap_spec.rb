@@ -9,7 +9,7 @@ RSpec.describe 'admin:bootstrap rake task' do
   let(:bootstrap_password) { 'SecurePass!@1234' }
 
   before(:all) do
-    Rails.application.load_tasks
+    load_rake_tasks
   end
 
   before do

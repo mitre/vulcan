@@ -18,7 +18,7 @@ require 'rake'
 # during pull starts emitting audits (or one of these models becomes
 # audited), the forensic invariant holds without further refactoring.
 RSpec.describe 'stig_and_srg_puller:save_data' do
-  before(:all) { Rails.application.load_tasks }
+  before(:all) { load_rake_tasks }
 
   before do
     Audited.store.delete(:current_request_uuid)
