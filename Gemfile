@@ -38,7 +38,7 @@ gem 'omniauth-github'
 # https://github.com/omniauth/omniauth/wiki/Resolving-CVE-2015-9284
 gem 'omniauth-rails_csrf_protection', '~> 2.0'
 # Allow users to sign in with OIDC providers
-gem 'omniauth_openid_connect', '~> 0.6.0'
+gem 'omniauth_openid_connect', '~> 0.8'
 # Vulcan settings - upgraded for Ruby 3.1+ compatibility
 gem 'mitre-settingslogic', '~> 3.0'
 # Use Redis adapter to run Action Cable in production
