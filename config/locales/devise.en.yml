@@ -29,6 +29,8 @@ en:
         subject: "Password Changed"
     omniauth_callbacks:
       failure: "Could not authenticate you from %{kind} because \"%{reason}\"."
+      reasons:
+        ldap_error: "The directory server could not be reached or returned an error — your credentials were not checked. Try again or contact your administrator"
       success: "Successfully authenticated from %{kind} account."
     passwords:
       no_token: "You can't access this page without coming from a password reset email. If you do come from a password reset email, please make sure you used the full URL provided."

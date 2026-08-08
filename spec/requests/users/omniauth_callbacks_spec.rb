@@ -93,26 +93,76 @@ RSpec.describe 'Remember Me Functionality' do
     end
   end
 
-  describe 'OmniAuth controller remember_me handling' do
-    # NOTE: OmniAuth test mode intercepts requests before params reach the controller,
-    # making full integration testing difficult. We verify the controller logic is correct
-    # through code review: app/controllers/users/omniauth_callbacks_controller.rb
-    #
-    # The controller checks for remember_me in two places:
-    # 1. params[:remember_me] - for direct form submissions
-    # 2. request.env['omniauth.params']['remember_me'] - for OAuth flows
-    #
-    # This is tested implicitly through manual testing and the Local Login tests above
-    # which verify Devise remember_me works correctly.
+  describe 'OmniAuth login with remember_me' do
+    # The callback action is shared by every omniauth provider (LDAP, OIDC),
+    # so the remember-me contract is driven through the provider registered
+    # in the test environment. The remember cookie comes from
+    # Devise::Controllers::Rememberable, which a callback controller must
+    # include explicitly — it is opt-in, not part of DeviseController.
+    let(:email) { 'omniauth-remember@example.com' }
 
-    it 'controller has remember_me handling code' do
-      # Verify the controller code includes remember_me handling
-      controller_path = Rails.root.join('app/controllers/users/omniauth_callbacks_controller.rb')
-      controller_code = File.read(controller_path)
+    before do
+      OmniAuth.config.test_mode = true
+      mock_okta_auth(email: email, name: 'Remember Me User', uid: 'remember-123')
+    end
 
-      expect(controller_code).to include('remember_me')
-      expect(controller_code).to include("params[:remember_me] == '1'")
-      expect(controller_code).to include("omniauth_params['remember_me'] == '1'")
+    after { reset_okta_mock }
+
+    context 'when remember_me is checked' do
+      it 'signs the user in with the remember cookie set' do
+        post user_oidc_omniauth_callback_path, params: { remember_me: '1' }
+
+        expect(response).to redirect_to(root_path)
+        expect(User.find_by(email: email).remember_created_at).to be_present
+        expect(response.cookies['remember_user_token']).to be_present
+      end
+    end
+
+    context 'when remember_me is not checked' do
+      it 'signs the user in without the remember cookie' do
+        post user_oidc_omniauth_callback_path
+
+        expect(response).to redirect_to(root_path)
+        expect(User.find_by(email: email).remember_created_at).to be_nil
+        expect(response.cookies['remember_user_token']).to be_nil
+      end
+    end
+
+    context 'when remember_me rides the provider round-trip as an authorize query param' do
+      # OmniAuth stashes request.GET (query params only) into
+      # session['omniauth.params'] during the request phase and restores it
+      # at the callback — the delivery path for a checkbox that must survive
+      # an external provider redirect.
+      it 'signs the user in with the remember cookie set' do
+        post user_oidc_omniauth_authorize_path(remember_me: '1')
+        follow_redirect!
+
+        expect(response).to redirect_to(root_path)
+        expect(User.find_by(email: email).remember_created_at).to be_present
+        expect(response.cookies['remember_user_token']).to be_present
+      end
+    end
+  end
+
+  describe 'failure reason wording' do
+    # An unreachable or errored directory fails with the distinct
+    # :ldap_error type (no longer reported as invalid credentials). The
+    # raw type humanizes to the meaningless 'Ldap error' — known types get
+    # a readable reason from devise.omniauth_callbacks.reasons instead,
+    # and unknown types keep the humanized fallback.
+    before do
+      OmniAuth.config.test_mode = true
+      OmniAuth.config.mock_auth[:oidc] = :ldap_error
+    end
+
+    after { reset_okta_mock }
+
+    it 'explains an unreachable directory instead of echoing the error type' do
+      post user_oidc_omniauth_authorize_path
+      follow_redirect!
+
+      expect(flash[:alert]).to include('could not be reached')
+      expect(flash[:alert]).not_to include('Ldap error')
     end
   end
 end
