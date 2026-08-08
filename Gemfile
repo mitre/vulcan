@@ -5,7 +5,7 @@ source 'https://rubygems.org'
 ruby '3.4.10'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
-gem 'rails', '~> 8.0.0'
+gem 'rails', '~> 8.1.0'
 # Use postgresql as the database for Active Record
 gem 'pg', '>= 0.18', '< 2.0'
 # Use Puma as the app server
@@ -36,7 +36,7 @@ gem 'omniauth-ldap', '~> 2.3', require: false
 # Allow users to sign in with GitHub
 gem 'omniauth-github'
 # https://github.com/omniauth/omniauth/wiki/Resolving-CVE-2015-9284
-gem 'omniauth-rails_csrf_protection', '~> 1.0'
+gem 'omniauth-rails_csrf_protection', '~> 2.0'
 # Allow users to sign in with OIDC providers
 gem 'omniauth_openid_connect', '~> 0.6.0'
 # Vulcan settings - upgraded for Ruby 3.1+ compatibility
@@ -125,7 +125,7 @@ group :test do
   gem 'rubocop-rails'
   gem 'rubocop-rspec'
   gem 'rubocop-rspec_rails'
-  gem 'shoulda-matchers', '~> 7.0'
+  gem 'shoulda-matchers', '~> 8.0'
   gem 'simplecov', require: false
   gem 'test-prof', '~> 1.5'
   gem 'webmock'
@@ -137,7 +137,7 @@ group :development, :test do
   gem 'factory_bot_rails', '~> 6.5.0'
   gem 'parallel_tests'
   gem 'rspec-mocks'
-  gem 'rspec-rails', '~> 6.0'
+  gem 'rspec-rails', '~> 8.0'
   # Load environment variables from .env files in development and test
   gem 'dotenv-rails'
 end
