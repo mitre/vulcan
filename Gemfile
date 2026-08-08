@@ -113,6 +113,8 @@ end
 group :test do
   # Adds support for Capybara system testing and selenium driver
   gem 'capybara', '>= 2.15'
+  # Parallel-safe ENV mutation for specs (never bare ENV assignment)
+  gem 'climate_control', '~> 1.2'
   gem 'selenium-webdriver'
   # Easy installation and use of web drivers to run system tests with browsers
   # gem 'webdrivers'
@@ -147,7 +149,7 @@ gem 'tzinfo-data'
 
 gem 'highline', '~> 2.0'
 # Ruby wrapper around slack API
-gem 'slack-ruby-client', '1.0.0'
+gem 'slack-ruby-client', '~> 3.2'
 # Slack notification formatting
 gem 'slack_block_kit', '0.3.3'
 
@@ -157,4 +159,4 @@ gem 'blueprinter-activerecord', '~> 1.3'
 
 gem 'oj', '~> 3.16'
 
-gem 'faraday', '~> 1.10', '>= 1.10.6'
+gem 'faraday', '~> 2.0'
