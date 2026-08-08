@@ -86,7 +86,7 @@ module DispositionMatrixExport # rubocop:disable Metrics/ModuleLength
   # CSV/Excel piggyback paths to decide whether to attach the disposition
   # artifact for this component. Matches top_level_reviews semantics.
   def self.records_exist?(component)
-    rule_id_subquery = Rule.where(component_id: component.id).select(:id)
+    rule_id_subquery = BaseRule.live_for_components(component.id).select(:id)
     Review.top_level_comments.exists?(commentable_type: 'BaseRule', commentable_id: rule_id_subquery) ||
       Review.top_level_comments.exists?(commentable_type: 'Component', commentable_id: component.id)
   end
@@ -125,10 +125,14 @@ module DispositionMatrixExport # rubocop:disable Metrics/ModuleLength
                        .join("\n---\n")
 
     component_scoped = review.commentable_type == 'Component'
+    # Review#requirement is the model's kind-agnostic resolution — the
+    # polymorphic commentable (reaches authored SrgRules, which the
+    # Rule-classed association structurally cannot) with the legacy rule
+    # fallback for rows predating the commentable dual-write.
     display_rule = if !component_scoped && review.original_commentable_id
-                     original_rules[review.original_commentable_id] || review.rule
+                     original_rules[review.original_commentable_id] || review.requirement
                    else
-                     review.rule
+                     review.requirement
                    end
     row = [
       review.id,
@@ -217,13 +221,13 @@ module DispositionMatrixExport # rubocop:disable Metrics/ModuleLength
   end
 
   def self.top_level_reviews(component, status_filter)
-    rule_id_subquery = Rule.where(component_id: component.id).select(:id)
+    rule_id_subquery = BaseRule.live_for_components(component.id).select(:id)
     rule_scoped = Review.top_level_comments
                         .where(commentable_type: 'BaseRule', commentable_id: rule_id_subquery)
     component_scoped = Review.top_level_comments
                              .where(commentable_type: 'Component', commentable_id: component.id)
     scope = rule_scoped.or(component_scoped)
-                       .preload(:user, :triage_set_by, :adjudicated_by, :rule)
+                       .preload(:user, :triage_set_by, :adjudicated_by, :commentable, :rule)
                        .order(created_at: :asc)
     scope = scope.where(triage_status: status_filter) if status_filter.present? && status_filter != 'all'
     scope.to_a
@@ -235,13 +239,13 @@ module DispositionMatrixExport # rubocop:disable Metrics/ModuleLength
   # rule→component lookup query.
   def self.top_level_reviews_for_components(components, status_filter)
     component_ids = components.map(&:id)
-    rule_id_to_component = Rule.where(component_id: component_ids).pluck(:id, :component_id).to_h
+    rule_id_to_component = BaseRule.live_for_components(component_ids).pluck(:id, :component_id).to_h
     rule_scoped = Review.top_level_comments
                         .where(commentable_type: 'BaseRule', commentable_id: rule_id_to_component.keys)
     component_scoped = Review.top_level_comments
                              .where(commentable_type: 'Component', commentable_id: component_ids)
     scope = rule_scoped.or(component_scoped)
-                       .preload(:user, :triage_set_by, :adjudicated_by, :rule)
+                       .preload(:user, :triage_set_by, :adjudicated_by, :commentable, :rule)
                        .order(created_at: :asc)
     scope = scope.where(triage_status: status_filter) if status_filter.present? && status_filter != 'all'
     scope.to_a.group_by do |review|
