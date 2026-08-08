@@ -491,7 +491,7 @@ class ProjectsController < ApplicationController
     Zip::File.open_buffer(file_data) do |zip|
       project_entry = zip.find_entry('project.json')
       if project_entry
-        project_json = JSON.parse(zip.read('project.json'))
+        project_json = JSON.parse(ZipEntryReader.read_capped(project_entry))
         defaults[:name] = project_json['name'] if project_json['name'].present?
         defaults[:description] = project_json['description'] if project_json['description'].present?
         defaults[:visibility] = project_json['visibility'] if project_json['visibility'].present?

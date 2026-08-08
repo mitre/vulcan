@@ -95,7 +95,7 @@ module Import
             return archive
           end
 
-          archive[:manifest] = JSON.parse(zip.read('manifest.json'))
+          archive[:manifest] = JSON.parse(ZipEntryReader.read_capped(manifest_entry))
           archive[:project] = safe_parse_json(zip, 'project.json')
 
           # Parse SRG XML files from srgs/ directory
@@ -103,11 +103,11 @@ module Import
             next unless entry.name.start_with?('srgs/') && entry.name.end_with?('.xml')
 
             filename = entry.name.sub('srgs/', '')
-            archive[:srg_files][filename] = zip.read(entry.name)
+            archive[:srg_files][filename] = ZipEntryReader.read_capped(entry)
           end
 
           # Detect archive structure: flat (single component) or nested (components/ directory)
-          archive[:components] = detect_and_parse_components(zip, archive[:manifest])
+          archive[:components] = detect_and_parse_components(zip, archive[:manifest], result)
         end
       rescue Zip::Error => e
         result.add_error("Invalid ZIP file: #{e.message}")
@@ -118,12 +118,18 @@ module Import
       archive
     end
 
-    def detect_and_parse_components(zip, manifest)
+    def detect_and_parse_components(zip, manifest, result)
       # Check for flat structure (single component export)
       return [parse_component_files(zip, '')] if zip.find_entry('component.json')
 
       # Nested structure: components/ComponentName-V1R1/
-      manifest['components'].filter_map do |entry|
+      components = manifest['components']
+      unless components.is_a?(Array)
+        result.add_error('Invalid backup archive: manifest.json has no components list')
+        return []
+      end
+
+      components.filter_map do |entry|
         dir = find_component_dir(zip, entry)
         next unless dir
 
@@ -154,7 +160,7 @@ module Import
       entry = zip.find_entry(path)
       return nil unless entry
 
-      JSON.parse(zip.read(path))
+      JSON.parse(ZipEntryReader.read_capped(entry))
     end
 
     def read_file_data
