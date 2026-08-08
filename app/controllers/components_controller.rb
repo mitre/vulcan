@@ -19,8 +19,11 @@ class ComponentsController < ApplicationController
   CREATION_EXTRAS = %i[slack_channel_id advanced_fields
                        additional_questions_attributes component_metadata_attributes].freeze
 
-  before_action :set_component, only: %i[show update destroy export preview_spreadsheet_update apply_spreadsheet_update triage settings]
-  before_action :set_component_basic, only: %i[find based_on_same_srg histories comments rules_picker release]
+  # destroy uses the basic loader deliberately: the eager loader's in-memory
+  # rules association would be re-walked by destroy! after the bulk cleanup
+  # already emptied the tables — hundreds of per-row no-op destroys.
+  before_action :set_component, only: %i[show update export preview_spreadsheet_update apply_spreadsheet_update triage settings]
+  before_action :set_component_basic, only: %i[find based_on_same_srg histories comments rules_picker release destroy]
   before_action :set_project, only: %i[show create history triage settings]
   before_action :set_component_permissions, only: %i[show triage settings]
   before_action :authorize_admin_project, only: %i[create]
@@ -174,18 +177,29 @@ class ComponentsController < ApplicationController
     # commit phase raised (e.g. deadlock, serialization failure), the rescue
     # below would call render a second time and surface a 500 to the user.
     ActiveRecord::Base.transaction do
-      rule_ids = Rule.unscoped.where(component_id: @component.id).ids
+      # BaseRule, not Rule: an SRG component's requirements are authored
+      # SrgRules, which a Rule-typed collection misses entirely — its whole
+      # bulk block no-oped and deletion fell to the per-row cascade. One
+      # fast path, both kinds. unscoped reaches tombstoned rows too.
+      rule_ids = BaseRule.unscoped.where(component_id: @component.id).ids
 
       if rule_ids.any?
         # Bulk-delete dependent records first (avoid N+1 destroy callbacks)
         Review.where(rule_id: rule_ids).delete_all
         AdditionalAnswer.where(rule_id: rule_ids).delete_all
         RuleSatisfaction.where(rule_id: rule_ids).or(RuleSatisfaction.where(satisfied_by_rule_id: rule_ids)).delete_all
+        # Source-side relocation records RESTRICT deletes of their rule;
+        # target-side links use the database-level nullify, the documented
+        # bulk backstop.
+        RequirementRelocation.where(source_rule_id: rule_ids).delete_all
         Audited::Audit.where(auditable_type: 'BaseRule', auditable_id: rule_ids).delete_all
         Check.where(base_rule_id: rule_ids).delete_all
         DisaRuleDescription.where(base_rule_id: rule_ids).delete_all
         RuleDescription.where(base_rule_id: rule_ids).delete_all
-        Rule.unscoped.where(id: rule_ids).delete_all
+        # references has no database foreign key — without this line the
+        # bulk path leaves its rows orphaned.
+        Reference.where(base_rule_id: rule_ids).delete_all
+        BaseRule.unscoped.where(id: rule_ids).delete_all
       end
 
       @component.destroy!
