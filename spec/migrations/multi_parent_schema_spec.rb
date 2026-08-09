@@ -73,7 +73,7 @@ RSpec.describe 'Multi-parent derivation schema' do
       expect(column).to be_present
       expect(column.type).to eq(:boolean)
       expect(column.null).to be false
-      expect(column.default).to eq('false')
+      expect(column.default).to be(false)
     end
 
     it 'defaults a newly created SRG to non-core' do

@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
 module OmniauthTestHelpers
-  # Mock OKTA/OIDC authentication response
+  # Mock Okta authentication response for the registry-registered :okta provider
   def mock_okta_auth(email: 'test@example.com', name: 'Test User', uid: 'okta-123',
                      id_token: 'fake-id-token', verified: true)
-    OmniAuth.config.mock_auth[:oidc] = OmniAuth::AuthHash.new({
-                                                                provider: 'oidc',
+    OmniAuth.config.mock_auth[:okta] = OmniAuth::AuthHash.new({
+                                                                provider: 'okta',
                                                                 uid: uid,
                                                                 info: {
                                                                   email: email,
@@ -28,25 +28,10 @@ module OmniauthTestHelpers
                                                               })
   end
 
-  # Mock failed authentication
-  def mock_okta_auth_failure(_message = 'Authentication failed')
-    OmniAuth.config.mock_auth[:oidc] = :invalid_credentials
-    OmniAuth.config.on_failure = proc do |env|
-      OmniAuth::FailureEndpoint.new(env).redirect_to_failure
-    end
-  end
-
   # Reset OmniAuth configuration after tests
   def reset_okta_mock
-    OmniAuth.config.mock_auth[:oidc] = nil
+    OmniAuth.config.mock_auth[:okta] = nil
     OmniAuth.config.test_mode = false
-  end
-
-  # Helper to sign in via OKTA in integration tests
-  def okta_sign_in(user_attributes = {})
-    mock_okta_auth(**user_attributes)
-    visit '/users/auth/oidc'
-    # OmniAuth test mode will automatically redirect to callback
   end
 end
 

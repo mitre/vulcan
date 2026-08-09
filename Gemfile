@@ -5,14 +5,14 @@ source 'https://rubygems.org'
 ruby '3.4.10'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
-gem 'rails', '~> 8.0.0'
+gem 'rails', '~> 8.1.0'
 # Use postgresql as the database for Active Record
 gem 'pg', '>= 0.18', '< 2.0'
 # Catch unsafe migrations (table locks, blocking backfills) in dev/CI before
 # they reach a production table. Config in config/initializers/strong_migrations.rb.
 gem 'strong_migrations', '~> 2.8'
 # Use Puma as the app server
-gem 'puma', '~> 7.0'
+gem 'puma', '~> 8.0'
 # Asset pipeline for JavaScript bundling
 gem 'jsbundling-rails'
 # Asset pipeline for Rails
@@ -20,7 +20,7 @@ gem 'propshaft'
 # Build JSON APIs with ease. Read more: https://github.com/rails/jbuilder
 gem 'jbuilder', '~> 2.7'
 # Use HAML instead of ERB
-gem 'haml-rails', '~> 2.0'
+gem 'haml-rails', '~> 3.1'
 # Add Devise for authentication
 gem 'devise', '~> 5.0'
 # PBKDF2-SHA512 password hashing for FIPS 140-2 compliance
@@ -33,13 +33,13 @@ gem 'omniauth', '~> 2.1'
 # LDAP Auth — original omniauth-ldap (actively maintained, no nkf/kconv dependency).
 # Replaces gitlab_omniauth-ldap which had a dead `require 'kconv'` that triggered
 # Ruby VM crash bugs.ruby-lang.org/issues/21967 on parallel_tests forking.
-gem 'omniauth-ldap', '~> 2.3', require: false
+gem 'omniauth-ldap', '~> 3.0', require: false
 # Allow users to sign in with GitHub
 gem 'omniauth-github'
 # https://github.com/omniauth/omniauth/wiki/Resolving-CVE-2015-9284
-gem 'omniauth-rails_csrf_protection', '~> 1.0'
+gem 'omniauth-rails_csrf_protection', '~> 2.0'
 # Allow users to sign in with OIDC providers
-gem 'omniauth_openid_connect', '~> 0.6.0'
+gem 'omniauth_openid_connect', '~> 0.8'
 # Vulcan settings - upgraded for Ruby 3.1+ compatibility
 gem 'mitre-settingslogic', '~> 3.0'
 # Use Redis adapter to run Action Cable in production
@@ -80,7 +80,7 @@ gem 'amoeba'
 # For writing excel files with xml:space="preserve" (fixes whitespace round-trip)
 gem 'caxlsx'
 # For reading excel files
-gem 'ruh-roo', '~> 3.0.0', require: 'roo'
+gem 'roo', '~> 3.0'
 
 # REXML - required explicitly in Ruby 3.0+
 gem 'rexml'
@@ -96,6 +96,12 @@ gem 'commonmarker'
 gem 'rack-attack'
 
 gem 'mitre-inspec-objects'
+# inspec-core is only consumed as a library (control-code generation via
+# mitre-inspec-objects). It resolves from the Cinc Project's community gem
+# server, which builds current InSpec releases from source.
+source 'https://rubygems.cinc.sh' do
+  gem 'inspec-core', '~> 7.1'
+end
 gem 'rest-client'
 
 group :development do
@@ -114,6 +120,8 @@ end
 group :test do
   # Adds support for Capybara system testing and selenium driver
   gem 'capybara', '>= 2.15'
+  # Parallel-safe ENV mutation for specs (never bare ENV assignment)
+  gem 'climate_control', '~> 1.2'
   gem 'selenium-webdriver'
   # Easy installation and use of web drivers to run system tests with browsers
   # gem 'webdrivers'
@@ -126,7 +134,7 @@ group :test do
   gem 'rubocop-rails'
   gem 'rubocop-rspec'
   gem 'rubocop-rspec_rails'
-  gem 'shoulda-matchers', '~> 7.0'
+  gem 'shoulda-matchers', '~> 8.0'
   gem 'simplecov', require: false
   gem 'test-prof', '~> 1.5'
   gem 'webmock'
@@ -138,7 +146,7 @@ group :development, :test do
   gem 'factory_bot_rails', '~> 6.5.0'
   gem 'parallel_tests'
   gem 'rspec-mocks'
-  gem 'rspec-rails', '~> 6.0'
+  gem 'rspec-rails', '~> 8.0'
   # Load environment variables from .env files in development and test
   gem 'dotenv-rails'
   # OpenAPI 3.2 contract testing (MITRE forks until upstream merges 3.2 support)
@@ -153,7 +161,7 @@ gem 'tzinfo-data'
 
 gem 'highline', '~> 2.0'
 # Ruby wrapper around slack API
-gem 'slack-ruby-client', '1.0.0'
+gem 'slack-ruby-client', '~> 3.2'
 # Slack notification formatting
 gem 'slack_block_kit', '0.3.3'
 
@@ -163,9 +171,7 @@ gem 'blueprinter-activerecord', '~> 1.3'
 
 gem 'oj', '~> 3.16'
 
-gem 'climate_control', '~> 1.2', group: :test
-
 gem 'has_scope', '~> 0.9.0'
 gem 'pagy', '~> 43.5'
 
-gem 'faraday', '~> 1.10', '>= 1.10.6'
+gem 'faraday', '~> 2.0'

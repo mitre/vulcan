@@ -8,7 +8,7 @@ class ProjectAccessRequestsController < ApplicationController
   before_action :set_and_authorize_access_request, only: %i[destroy]
 
   def create
-    @project = Project.find(params[:project_id])
+    @project = Project.find(params.expect(:project_id))
     @access_request = ProjectAccessRequest.new(user: current_user, project: @project)
 
     if @access_request.save
@@ -59,7 +59,7 @@ class ProjectAccessRequestsController < ApplicationController
       respond_to do |format|
         format.html do
           flash.notice = message
-          redirect_back(fallback_location: root_path)
+          redirect_back_or_to(root_path)
         end
         # multi-key response (toast + id).
         format.json do
@@ -70,7 +70,7 @@ class ProjectAccessRequestsController < ApplicationController
       respond_to do |format|
         format.html do
           flash.alert = @access_request.errors.full_messages.to_sentence
-          redirect_back(fallback_location: root_path)
+          redirect_back_or_to(root_path)
         end
         format.json { render json: { error: @access_request.errors.full_messages.to_sentence }, status: :unprocessable_content }
       end
@@ -80,7 +80,7 @@ class ProjectAccessRequestsController < ApplicationController
   private
 
   def set_and_authorize_access_request
-    @access_request = ProjectAccessRequest.find(params[:id])
+    @access_request = ProjectAccessRequest.find(params.expect(:id))
 
     return if @access_request.user == current_user || current_user.can_admin_project?(@access_request.project)
 

@@ -103,6 +103,10 @@ RSpec.describe 'Component destruction' do
         large = build_srg_component('DSQB-00', rows: 8)
 
         warm_session
+        # The first destroy in a process can pay one-time lazy-initialization
+        # queries; burn them on a sacrificial destroy so the measured counts
+        # compare steady-state work only.
+        destroy_query_count(build_srg_component('DSQW-00', rows: 1))
         small_count = destroy_query_count(small)
         large_count = destroy_query_count(large)
 
@@ -129,6 +133,8 @@ RSpec.describe 'Component destruction' do
 
         large_rule_count = large.rules.count
         warm_session
+        # Same steady-state warm-up as the SRG invariance example above.
+        destroy_query_count(create(:component, project: project))
         small_count = destroy_query_count(small)
         large_count = destroy_query_count(large)
 

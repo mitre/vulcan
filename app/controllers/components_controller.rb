@@ -429,10 +429,10 @@ class ComponentsController < ApplicationController
     srg_title = @component.based_on.title
     accessible_project_ids = current_user.available_projects.ids
     components = Component.where(based_on: SecurityRequirementsGuide.where(title: srg_title))
-                          .where.not(id: params[:id])
+                          .where.not(id: @component.id)
                           .where(project_id: accessible_project_ids)
                           .or(Component.where(based_on: SecurityRequirementsGuide.where(title: srg_title))
-                                       .where.not(id: params[:id])
+                                       .where.not(id: @component.id)
                                        .where(released: true))
                           .distinct
                           .order(:project_id)
@@ -786,7 +786,7 @@ class ComponentsController < ApplicationController
 
         # If html format is requested, redirect back to default page
         format.html do
-          redirect_back(fallback_location: root_path)
+          redirect_back_or_to(root_path)
         end
         format.json do
           # Render a json response in a toast message format

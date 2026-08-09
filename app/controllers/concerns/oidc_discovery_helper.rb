@@ -200,11 +200,13 @@ module OidcDiscoveryHelper
     Rails.logger.debug { "Cached OIDC discovery for #{normalized_issuer}, expires in 1 hour" }
   end
 
-  # rubocop:disable Naming/PredicateMethod
   def validate_discovery_document(config, expected_issuer)
-    # Security: Validate issuer matches expected value (prevents man-in-the-middle attacks)
+    # Security: Validate issuer matches expected value (prevents man-in-the-middle attacks).
+    # Compare with the same trailing-slash normalization applied to configured
+    # issuers — IdPs like login.gov declare their canonical issuer with a
+    # trailing slash, which is the same authority, not a different issuer.
     actual_issuer = config['issuer']
-    raise SecurityError, "OIDC Discovery: Issuer mismatch. Expected '#{expected_issuer}', got '#{actual_issuer}'" unless actual_issuer == expected_issuer
+    raise SecurityError, "OIDC Discovery: Issuer mismatch. Expected '#{expected_issuer}', got '#{actual_issuer}'" unless actual_issuer.to_s.chomp('/') == expected_issuer.to_s.chomp('/')
 
     # Security: Ensure issuer uses HTTPS in production
     raise SecurityError, 'OIDC Discovery: Issuer must use HTTPS in production' unless Rails.env.development? || actual_issuer.start_with?(HTTPS_PROTOCOL)
@@ -291,7 +293,6 @@ module OidcDiscoveryHelper
 
     true
   end
-  # rubocop:enable Naming/PredicateMethod
 
   def fetch_oidc_endpoint(endpoint_name, fallback_url = nil)
     return fallback_url unless Settings.oidc.discovery

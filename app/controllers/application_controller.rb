@@ -339,7 +339,7 @@ class ApplicationController < ActionController::Base
     respond_to do |format|
       format.html do
         flash.alert = message
-        redirect_back(fallback_location: root_path)
+        redirect_back_or_to(root_path)
       end
       format.json do
         render json: {
@@ -364,7 +364,7 @@ class ApplicationController < ActionController::Base
     respond_to do |format|
       format.html do
         flash.alert = not_authorized_html_message(exception)
-        redirect_back(fallback_location: root_path)
+        redirect_back_or_to(root_path)
       end
       format.json do
         render_permission_denied(exception)

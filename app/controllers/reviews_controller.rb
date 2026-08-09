@@ -688,11 +688,11 @@ class ReviewsController < ApplicationController
   def set_rule
     # Requirement rows of any STI type (Rule or authored SrgRule) — a
     # Rule-classed find would 404 review actions on SRG-kind requirements.
-    @rule = BaseRule.where(deleted_at: nil).where.not(component_id: nil).find(params[:rule_id])
+    @rule = BaseRule.where(deleted_at: nil).where.not(component_id: nil).find(params.expect(:rule_id))
   end
 
   def set_component
-    @component = Component.find(params[:component_id])
+    @component = Component.find(params.expect(:component_id))
   end
 
   # Picks rule (POST /rules/:rule_id/reviews) or component (POST /components/:component_id/reviews).

@@ -410,7 +410,7 @@ class RulesController < ApplicationController
   def set_rule
     # Requirement rows of any STI type (Rule or authored SrgRule) — a
     # Rule-classed find would 404 reads/updates of authored requirements.
-    @rule = BaseRule.where(deleted_at: nil).where.not(component_id: nil).find(params[:id])
+    @rule = BaseRule.where(deleted_at: nil).where.not(component_id: nil).find(params.expect(:id))
   end
 
   # Kind-routed editor serialization for a single requirement row.

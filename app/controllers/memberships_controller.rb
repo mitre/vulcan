@@ -28,7 +28,7 @@ class MembershipsController < ApplicationController
       respond_to do |format|
         format.html do
           flash.alert = "Unable to create membership. #{membership.errors.full_messages}"
-          redirect_back(fallback_location: root_path)
+          redirect_back_or_to(root_path)
         end
         format.json do
           render json: {
@@ -130,7 +130,7 @@ class MembershipsController < ApplicationController
   end
 
   def set_membership
-    @membership = Membership.find(params[:id])
+    @membership = Membership.find(params.expect(:id))
   end
 
   # This isn't in the application controller because it is specific to the membership controller
