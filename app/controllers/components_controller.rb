@@ -363,10 +363,10 @@ class ComponentsController < ApplicationController
     srg_title = @component.based_on.title
     accessible_project_ids = current_user.available_projects.ids
     render json: Component.where(based_on: SecurityRequirementsGuide.where(title: srg_title))
-                 .where.not(id: params[:id])
+                 .where.not(id: @component.id)
                           .where(project_id: accessible_project_ids)
                           .or(Component.where(based_on: SecurityRequirementsGuide.where(title: srg_title))
-                 .where.not(id: params[:id])
+                 .where.not(id: @component.id)
                                        .where(released: true))
                           .distinct
                           .order(:project_id)
