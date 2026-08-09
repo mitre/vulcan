@@ -188,6 +188,11 @@ RUN --mount=type=cache,target=/usr/local/bundle/cache,uid=1000 \
 RUN --mount=type=cache,target=/tmp/.yarn-cache,uid=1000 \
     yarn install --frozen-lockfile --production=false --network-timeout 100000 --cache-folder /tmp/.yarn-cache
 
+# Strip build-only inputs from the application tree. docs/ is pruned down to
+# the DISA process guidance rather than removed outright: the application reads
+# that markdown and its attachments from disk while serving requests, so
+# deleting it leaves the in-app guide returning 404s. Everything else under
+# docs/ is website source that only the documentation build reads.
 RUN bundle exec bootsnap precompile app/ lib/ && \
     SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile && \
     rm -rf \
@@ -199,13 +204,13 @@ RUN bundle exec bootsnap precompile app/ lib/ && \
     spec \
     test \
     .git \
-    docs \
     .node-version \
     .nvmrc \
     .browserslistrc \
     yarn.lock \
     package.json \
     esbuild.config.js && \
+    find docs -mindepth 1 -maxdepth 1 ! -name disa-process -exec rm -rf {} + && \
     find public/assets -name '*.map' -delete 2>/dev/null || true && \
     find "${BUNDLE_PATH}" -name '*.o' -o -name '*.c' -o -name '*.h' | xargs rm -f 2>/dev/null || true && \
     find /rails -type f ! -path '/rails/bin/*' -exec chmod 440 {} + && \
