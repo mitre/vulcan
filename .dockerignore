@@ -49,10 +49,14 @@
 # Ignore test files
 /spec
 
-# /docs is intentionally NOT excluded — DisaGuideController reads
-# markdown from docs/disa-process at runtime. The VitePress source is
-# ~1MB and harmless to ship; build artifacts + node_modules are
-# gitignored.
+# /docs is intentionally NOT excluded — DisaGuideController reads markdown and
+# attachments from docs/disa-process at runtime, and the Dockerfile prunes the
+# rest of docs/ out of the image. Docker does not read .gitignore, so the
+# generated trees under docs/ have to be listed here or they are copied into
+# the build context on every build (~400MB of dependencies and build output).
+/docs/node_modules/
+/docs/.vitepress/cache/
+/docs/.vitepress/dist/
 
 # Ignore development downloads and test artifacts
 /downloads
