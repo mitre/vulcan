@@ -95,6 +95,12 @@ gem 'commonmarker'
 gem 'rack-attack'
 
 gem 'mitre-inspec-objects'
+# inspec-core is only consumed as a library (control-code generation via
+# mitre-inspec-objects). It resolves from the Cinc Project's community gem
+# server, which builds current InSpec releases from source.
+source 'https://rubygems.cinc.sh' do
+  gem 'inspec-core', '~> 7.1'
+end
 gem 'rest-client'
 
 group :development do
