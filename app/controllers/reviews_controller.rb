@@ -548,7 +548,7 @@ class ReviewsController < ApplicationController
     comment = params[:comment]
 
     invalid = sections - RuleConstants::LOCKABLE_SECTION_NAMES
-    return render json: { error: "Invalid sections: #{invalid.join(', ')}" }, status: :unprocessable_entity if invalid.any?
+    return render json: { error: "Invalid sections: #{invalid.join(', ')}" }, status: :unprocessable_content if invalid.any?
 
     rules = @component.rules.where(locked: false)
     count = 0
@@ -625,11 +625,11 @@ class ReviewsController < ApplicationController
   end
 
   def set_rule
-    @rule = Rule.find(params[:rule_id])
+    @rule = Rule.find(params.expect(:rule_id))
   end
 
   def set_component
-    @component = Component.find(params[:component_id])
+    @component = Component.find(params.expect(:component_id))
   end
 
   # Picks rule (POST /rules/:rule_id/reviews) or component (POST /components/:component_id/reviews).

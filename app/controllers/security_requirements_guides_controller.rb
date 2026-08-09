@@ -15,7 +15,7 @@ class SecurityRequirementsGuidesController < ApplicationController
   end
 
   def show
-    @srg = SecurityRequirementsGuide.includes(srg_rules: %i[disa_rule_descriptions checks]).find(params[:id])
+    @srg = SecurityRequirementsGuide.includes(srg_rules: %i[disa_rule_descriptions checks]).find(params.expect(:id))
 
     respond_to do |format|
       format.html { @srg_json = SrgBlueprint.render(@srg, view: :show) }
@@ -108,7 +108,7 @@ class SecurityRequirementsGuidesController < ApplicationController
               message: @srg.errors.full_messages,
               variant: 'danger'
             }
-          }, status: :unprocessable_entity
+          }, status: :unprocessable_content
         end
       end
     end
@@ -117,7 +117,7 @@ class SecurityRequirementsGuidesController < ApplicationController
   private
 
   def security_requirements_guide
-    @srg = SecurityRequirementsGuide.find(params[:id])
+    @srg = SecurityRequirementsGuide.find(params.expect(:id))
   end
 
   def parse_csv_columns(columns_param)

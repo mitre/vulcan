@@ -117,13 +117,13 @@ RSpec.describe 'Components spreadsheet update endpoints' do
 
       it 'returns 422 for missing file parameter' do
         post preview_path
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it 'returns 422 for CSV with missing required headers' do
         file = invalid_csv_tempfile
         post preview_path, params: { file: Rack::Test::UploadedFile.new(file.path, 'text/csv') }
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = response.parsed_body
         expect(json['error']).to be_present
       end
@@ -131,7 +131,7 @@ RSpec.describe 'Components spreadsheet update endpoints' do
       it 'returns 422 for CSV with wrong SRG IDs' do
         file = wrong_srg_csv_tempfile
         post preview_path, params: { file: Rack::Test::UploadedFile.new(file.path, 'text/csv') }
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
 
@@ -207,7 +207,7 @@ RSpec.describe 'Components spreadsheet update endpoints' do
 
       it 'returns 422 when no file is provided' do
         patch apply_path
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
   end

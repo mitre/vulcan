@@ -752,6 +752,61 @@ RSpec.describe Import::JsonArchiveImporter do
       end
     end
 
+    # The second zip-bomb defense layer: the layer-1 budget sums the
+    # central directory's DECLARED sizes, so an archive that lies about
+    # them sails past the budget. rubyzip validates sizes only on file
+    # extraction (Entry#extract) — streaming reads inflate unbounded —
+    # so the importer caps every entry read at its declared size itself.
+    # Both layers are needed: layer 1 stops honest oversized archives
+    # before any decompression, this one stops dishonest ones during it.
+    context 'with an archive whose central directory lies about entry sizes' do
+      let(:lying_cd_archive) do
+        # A real archive with a highly compressible payload, then the
+        # central directory's uncompressed-size field (4 bytes
+        # little-endian at offset +24 from the PK\x01\x02 signature)
+        # patched to declare 16 bytes.
+        payload = "{\"format_version\":\"1.0\"}#{' ' * 50_000}"
+        buffer = Zip::OutputStream.write_buffer do |zio|
+          zio.put_next_entry('manifest.json')
+          zio.write(payload)
+        end
+        data = buffer.string.dup.force_encoding(Encoding::BINARY)
+        cd_offset = data.rindex("PK\x01\x02".b)
+        data[cd_offset + 24, 4] = [16].pack('V')
+        data
+      end
+
+      it 'rejects the archive loudly instead of decompressing past the declared size' do
+        result = import_archive(lying_cd_archive, target_project)
+        expect(result).not_to be_success
+        expect(result.errors.join).to match(/invalid zip file/i)
+        expect(result.errors.join).to match(/larger when inflated/i)
+      end
+
+      it 'creates nothing when the central directory lies' do
+        expect { import_archive(lying_cd_archive, target_project) }
+          .not_to(change { target_project.components.count })
+      end
+    end
+
+    # A structurally valid zip whose manifest simply lacks the components
+    # list must produce a clean import error — malformed input at a trust
+    # boundary is never allowed to escape as an exception.
+    context 'with a valid zip whose manifest has no components list' do
+      let(:componentless_archive) do
+        Zip::OutputStream.write_buffer do |zio|
+          zio.put_next_entry('manifest.json')
+          zio.write({ 'format_version' => '1.0' }.to_json)
+        end.string
+      end
+
+      it 'reports a clean error instead of crashing' do
+        result = import_archive(componentless_archive, target_project)
+        expect(result).not_to be_success
+        expect(result.errors.join).to match(/components/i)
+      end
+    end
+
     # request_uuid producer side. Pre-fix,
     # JsonArchiveImporter#call did not set Audited.store[:current_request_uuid]
     # so each audit row created during the import got a distinct

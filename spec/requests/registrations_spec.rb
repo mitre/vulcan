@@ -208,7 +208,7 @@ RSpec.describe 'User Registrations' do
       }
 
       # When current_password is wrong, Devise should not update the user
-      expect(response).to have_http_status(:unprocessable_entity).or have_http_status(:ok)
+      expect(response).to have_http_status(:unprocessable_content).or have_http_status(:ok)
       existing_user.reload
       expect(existing_user.name).not_to eq(new_user_data.name)
       # The key test is that the name didn't change due to wrong password

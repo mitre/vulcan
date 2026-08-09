@@ -39,7 +39,7 @@ namespace :stig_and_srg_puller do
           Zip::File.open(zip_file_path) do |zip_contents|
             entries = zip_contents.select { |entry| entry.name.include?('xml') }
             entries.each do |entry|
-              new_item[:xmls] << entry.get_input_stream.read
+              new_item[:xmls] << ZipEntryReader.read_capped(entry)
             end
           end
 

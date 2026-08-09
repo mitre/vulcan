@@ -68,7 +68,7 @@ RSpec.describe 'Reactions' do
 
       it 'rejects an unknown kind with 422' do
         post "/reviews/#{comment_review.id}/reactions", params: { kind: 'meh' }, as: :json
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.parsed_body.dig('toast', 'message').join).to match(/invalid/i)
       end
 
@@ -100,7 +100,7 @@ RSpec.describe 'Reactions' do
         expect do
           post "/reviews/#{comment_review.id}/reactions", params: { kind: 'up' }, as: :json
         end.not_to change(Reaction, :count)
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.parsed_body.dig('toast', 'message').join).to match(/finalized/i)
       end
 

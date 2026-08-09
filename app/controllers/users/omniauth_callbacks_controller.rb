@@ -5,6 +5,10 @@ module Users
   # that is hit. Currently we don't have any provider-specific code, since
   # both LDAP and Github return data in a similar enough manner.
   class OmniauthCallbacksController < Devise::OmniauthCallbacksController
+    # remember_me(resource) lives in this opt-in module, built for
+    # controllers that sign users in from a callback.
+    include Devise::Controllers::Rememberable
+
     # Error handling for OmniAuth failure scenarios.
     # Rails checks rescue_from in REVERSE order (last-defined = first-checked).
     # StandardError must be FIRST so specific subclasses defined after it take priority.
@@ -51,9 +55,11 @@ module Users
         Rails.logger.warn "No ID token in OmniAuth credentials for user: #{user.email}"
       end
 
-      # Handle remember_me for OmniAuth logins
-      # The checkbox sends remember_me=1 - check both regular params and omniauth.params
-      # OmniAuth may pass form data via request.env['omniauth.params'] in some configurations
+      # Handle remember_me for OmniAuth logins. Two delivery paths: the LDAP
+      # form posts remember_me with the callback params directly; a checkbox
+      # that must survive an external provider redirect rides the authorize
+      # URL's query string, which OmniAuth stashes (request.GET only) into
+      # session['omniauth.params'] and restores at the callback.
       omniauth_params = request.env['omniauth.params'] || {}
       should_remember = params[:remember_me] == '1' || omniauth_params['remember_me'] == '1'
       remember_me(user) if should_remember
@@ -65,6 +71,19 @@ module Users
     alias ldap all
     alias github all
     alias oidc all
+
+    protected
+
+    # Devise builds the failure flash reason by humanizing the raw OmniAuth
+    # error type, which surfaces strings like "Ldap error" to users. Known
+    # types get a readable reason from devise.omniauth_callbacks.reasons;
+    # anything unmapped keeps Devise's humanized fallback.
+    def failure_message
+      error_type = request.env['omniauth.error.type'].to_s
+      I18n.t(error_type, scope: 'devise.omniauth_callbacks.reasons', default: super)
+    end
+
+    private
 
     def oauth_error(exception)
       # Log full details server-side for debugging.

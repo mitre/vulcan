@@ -23,10 +23,13 @@ RSpec.describe 'Consent Acknowledgment (AC-8)' do
   end
 
   def consent_config_from_response
-    match = response.body.match(/consent_config='([^']+)'/)
+    # Quote-agnostic: haml 7 renders attributes double-quoted (attr_quote
+    # default flip); the embedded JSON's own quotes arrive entity-escaped
+    # either way, so unescapeHTML restores them after the match.
+    match = response.body.match(/consent_config=(["'])(.*?)\1/)
     return {} unless match
 
-    JSON.parse(CGI.unescapeHTML(match[1]))
+    JSON.parse(CGI.unescapeHTML(match[2]))
   end
 
   describe 'POST /consent/acknowledge' do

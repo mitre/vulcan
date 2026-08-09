@@ -39,7 +39,7 @@ module Users
       if Settings.local_login.enabled
         super
       else
-        redirect_back(fallback_location: new_user_session_path, alert: I18n.t('devise.registrations.disabled'))
+        redirect_back_or_to(new_user_session_path, alert: I18n.t('devise.registrations.disabled'))
       end
     end
 
@@ -77,7 +77,7 @@ module Users
                 message: resource.errors.full_messages,
                 variant: 'danger'
               }
-            }, status: :unprocessable_entity
+            }, status: :unprocessable_content
           end
         end
       end

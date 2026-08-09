@@ -15,7 +15,7 @@ class StigsController < ApplicationController
   end
 
   def show
-    @stig = Stig.includes(stig_rules: %i[disa_rule_descriptions checks]).find(params[:id])
+    @stig = Stig.includes(stig_rules: %i[disa_rule_descriptions checks]).find(params.expect(:id))
 
     respond_to do |format|
       format.html { @stig_json = StigBlueprint.render(@stig, view: :show) }
@@ -104,7 +104,7 @@ class StigsController < ApplicationController
               message: @stig.errors.full_messages,
               variant: 'danger'
             }
-          }, status: :unprocessable_entity
+          }, status: :unprocessable_content
         end
       end
     end

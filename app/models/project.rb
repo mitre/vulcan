@@ -84,7 +84,7 @@ class Project < ApplicationRecord
 
     sql = sanitize_sql_array([PENDING_COMMENT_COUNTS_SQL, project_ids, project_ids])
     rows = connection.exec_query(sql)
-    rows.each_with_object({}) { |r, h| h[r['project_id']] = r['cnt'] }
+    rows.to_h { |r| [r['project_id'], r['cnt']] }
   end
 
   # Pending + total top-level comment counts per project. Sparse hash;
@@ -94,9 +94,7 @@ class Project < ApplicationRecord
 
     sql = sanitize_sql_array([COMMENT_COUNTS_SQL, project_ids, project_ids])
     rows = connection.exec_query(sql)
-    rows.each_with_object({}) do |r, h|
-      h[r['project_id']] = { pending: r['pending'], total: r['total'] }
-    end
+    rows.to_h { |r| [r['project_id'], { pending: r['pending'], total: r['total'] }] }
   end
 
   # Per-project deep-link target: the unique pending component_id when a
@@ -107,7 +105,7 @@ class Project < ApplicationRecord
 
     sql = sanitize_sql_array([PENDING_COMMENT_TARGET_COMPONENTS_SQL, project_ids, project_ids])
     rows = connection.exec_query(sql)
-    rows.each_with_object({}) { |r, h| h[r['project_id']] = r['component_id'] }
+    rows.to_h { |r| [r['project_id'], r['component_id']] }
   end
 
   # Backs GET /projects/:id/comments — same row shape as

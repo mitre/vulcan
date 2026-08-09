@@ -47,7 +47,7 @@ RSpec.describe Export::Modes::Backup do
   describe '#eager_load_associations' do
     it 'includes full set of associations for complete backup' do
       assocs = mode.eager_load_associations
-      flat_symbols = assocs.select { |a| a.is_a?(Symbol) }
+      flat_symbols = assocs.grep(Symbol)
       expect(flat_symbols).to include(:disa_rule_descriptions)
       expect(flat_symbols).to include(:checks)
       expect(flat_symbols).to include(:references)

@@ -62,12 +62,12 @@ class RuleSatisfactionsController < ApplicationController
         message: message,
         variant: 'danger'
       }
-    }, status: :unprocessable_entity
+    }, status: :unprocessable_content
   end
 
   def set_component_and_rules
-    @rule = Rule.find(params[:rule_id])
-    @satisfied_by_rule = Rule.find(params[:satisfied_by_rule_id])
+    @rule = Rule.find(params.expect(:rule_id))
+    @satisfied_by_rule = Rule.find(params.expect(:satisfied_by_rule_id))
     @component = @rule.component
   end
 end

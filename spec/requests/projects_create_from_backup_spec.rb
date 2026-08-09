@@ -128,12 +128,43 @@ RSpec.describe 'Project Create From Backup' do
           }
         end.not_to change(Project, :count)
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it 'requires project_name for real import' do
         post BACKUP_ENDPOINT, params: { file: uploaded_file }
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+
+      # The pre-import defaults probe reads project.json from the raw
+      # upload before any importer budget runs — an archive whose central
+      # directory under-declares entry sizes must hit the capped reader
+      # and fall through to the rescue's defaults instead of inflating
+      # unbounded, then fail the real import loudly.
+      it 'survives an archive whose central directory lies about sizes' do
+        data = project_backup_zip_data.dup.force_encoding(Encoding::BINARY)
+        # Patch the central-directory record for rules.json — a known-large
+        # entry — to declare 16 bytes (uncompressed size is 4 bytes LE at
+        # +24; name length at +28; name at +46 of the PK\x01\x02 record).
+        target = nil
+        scan = 0
+        while (idx = data.index("PK\x01\x02".b, scan))
+          name_len = data[idx + 28, 2].unpack1('v')
+          target = idx if data[idx + 46, name_len].end_with?('rules.json')
+          scan = idx + 4
+        end
+        raise 'fixture assumption broken: no rules.json central-directory record' unless target
+
+        data[target + 24, 4] = [16].pack('V')
+        lying_file = Rack::Test::UploadedFile.new(
+          StringIO.new(data), BACKUP_ZIP_CONTENT_TYPE, true, original_filename: 'lying.zip'
+        )
+
+        expect do
+          post BACKUP_ENDPOINT, params: { file: lying_file, project_name: 'Lying Archive' }
+        end.not_to change(Project, :count)
+
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it 'returns 400 when no file provided' do

@@ -33,9 +33,9 @@ module Api
     def set_target
       @target = case params[:membership_type]
                 when 'Project'
-                  Project.find(params[:membership_id])
+                  Project.find(params.expect(:membership_id))
                 when 'Component'
-                  Component.find(params[:membership_id])
+                  Component.find(params.expect(:membership_id))
                 else
                   raise ActiveRecord::RecordNotFound
                 end
