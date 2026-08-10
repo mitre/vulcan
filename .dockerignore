@@ -101,8 +101,19 @@
 /nginx.conf*
 /setup-docker-secrets.sh
 
-# Ignore root-level markdown (docs/ is kept — read at runtime by DisaGuideController)
+# Ignore root-level markdown — working notes, handoffs and plans must not ship.
+# The exceptions below are documentation SOURCE: docs/ symlinks each of them and
+# renders it as a page, so excluding them leaves a dangling link in the build
+# context and the documentation build fails on the first one it reads.
 /*.md
+!/README.md
+!/CHANGELOG.md
+!/CODE_OF_CONDUCT.md
+!/CONTRIBUTING.md
+!/LICENSE.md
+!/NOTICE.md
+!/ROADMAP.md
+!/SECURITY.md
 
 # Other root files not needed at runtime
 /AGENT-STATUS
