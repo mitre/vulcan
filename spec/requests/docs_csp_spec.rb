@@ -10,6 +10,8 @@ require 'rails_helper'
 # importantly, pin that the policy was not loosened to achieve it.
 #
 RSpec.describe 'Docs site content security policy' do
+  before(:all) { DocsSiteHelpers.require_built_site! }
+
   before do
     Rails.application.reload_routes!
   end

@@ -15,6 +15,9 @@ RSpec.describe 'Sign-in page documentation link' do
   # real environment variable rather than stubbed.
   include SettingsEnvHelpers
 
+  # The reachability example follows the link into the served site.
+  before(:all) { DocsSiteHelpers.require_built_site! }
+
   before do
     Rails.application.reload_routes!
   end

@@ -164,6 +164,22 @@ jobs:
         if: steps.js-cache.outputs.cache-hit != 'true'
         run: yarn build
 
+      # The docs serving specs read real files from the built documentation
+      # site — a runner without one errors on every docs example, and a suite
+      # that is green only when a stale dist happens to sit on a developer's
+      # disk is not evidence. Same cache pattern as the JS build; the key
+      # covers the documentation sources, the target table, and the OpenAPI
+      # sources the bundled specification is generated from.
+      - name: Cache documentation site build
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        id: docs-cache
+        with:
+          path: docs/.vitepress/dist
+          key: docs-build-${{ hashFiles('docs/**/*.md', 'docs/.vitepress/**', 'docs/package.json', 'docs/yarn.lock', 'doc/openapi/**') }}
+      - name: Build documentation site
+        if: steps.docs-cache.outputs.cache-hit != 'true'
+        run: bundle exec rails docs:build
+
       - name: Setup database
         run: |
           bundle exec rails db:create

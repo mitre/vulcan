@@ -70,4 +70,13 @@ RSpec.describe 'Documentation build targets' do
   it 'refuses a target it does not define rather than guessing one' do
     expect { resolve('staging') }.to raise_error(/Unknown documentation target/)
   end
+
+  # The published site is built by CI, and nothing else connects that workflow
+  # to the target table: drop or rename the variable there and the site would
+  # publish under the local preview's base with every other test green.
+  it 'has the deploy workflow select the published-site target' do
+    workflow = Rails.root.join('.github/workflows/docs.yml').read
+
+    expect(workflow).to match(/VULCAN_DOCS_TARGET:\s*"pages"/)
+  end
 end

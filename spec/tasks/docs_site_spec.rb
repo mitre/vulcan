@@ -116,9 +116,15 @@ RSpec.describe 'docs:build' do
       expect(calls.pluck(:command)).to eq(['yarn openapi:docs'])
     end
 
-    it 'reports the built site location inside the docs directory' do
+    # Pins the relationship the image prune and the serving controller both
+    # rely on — the build output lives INSIDE the documentation tree — without
+    # restating the implementation's exact path expression, which an earlier
+    # version of this example did (it could not fail for any value the
+    # implementation produced). The exact serving coupling is exercised for
+    # real by spec/requests/docs_spec.rb, which reads files from this location.
+    it 'keeps the build output inside the documentation tree' do
       expect(described_class.output_directory.to_s)
-        .to eq(Rails.root.join('docs/.vitepress/dist').to_s)
+        .to start_with("#{described_class.source_directory}/")
     end
   end
 end
