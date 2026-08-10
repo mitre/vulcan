@@ -33,7 +33,9 @@ RSpec.describe 'Docs site' do
 
       expect(response).to have_http_status(:ok)
       expect(response.media_type).to eq('text/html')
-      expect(response.body).to include('DISA')
+      # The page's own title, not a string the shared navigation puts on every
+      # page — this pins that THIS page came back, not merely some page.
+      expect(response.body).to include('<title>DISA Vendor STIG Process | Vulcan</title>')
     end
 
     # Rails refuses to serve JavaScript to a plain GET unless the same-origin
@@ -86,18 +88,33 @@ RSpec.describe 'Docs site' do
   end
 
   describe 'containment' do
-    it 'refuses to read outside the build directory' do
-      get '/docs/..%2f..%2fconfig/database.yml'
+    # The traversal must aim at a file that really exists — the build root sits
+    # three directories below the repo, and a 404 for a target that is not
+    # there would still pass with the containment check deleted. Asserting the
+    # target exists first is what makes the 404 attributable to containment.
+    it 'refuses a traversal that reaches a real file outside the build' do
+      expect(Rails.root.join('config/database.yml')).to exist
+
+      get '/docs/..%2f..%2f..%2fconfig%2fdatabase.yml'
 
       expect(response).to have_http_status(:not_found)
-      expect(response.body).not_to include('adapter')
+      expect(response.body).to eq('Not found')
     end
 
-    it 'refuses a traversal expressed in path segments' do
-      get '/docs/a/../../../config/database.yml'
+    # A symlink inside the build pointing outside it must not be followed: the
+    # containment comparison resolves real paths, so the link's target decides,
+    # not where the link sits.
+    it 'refuses to follow a symlink out of the build directory' do
+      target = Rails.root.join('config/database.yml')
+      link = DocsSite.output_directory.join('escape-hatch.yml')
+      File.symlink(target, link)
+
+      get '/docs/escape-hatch.yml'
 
       expect(response).to have_http_status(:not_found)
-      expect(response.body).not_to include('adapter')
+      expect(response.body).to eq('Not found')
+    ensure
+      File.delete(link) if File.symlink?(link)
     end
   end
 

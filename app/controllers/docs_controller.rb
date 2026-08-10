@@ -68,7 +68,7 @@ class DocsController < ApplicationController
   # clean URLs, so a page is looked up by three shapes: the exact file, the
   # same name with an .html extension, and a directory's index.
   def resolve(path)
-    candidates(path).find { |candidate| contained?(candidate) && candidate.file? }
+    candidates(path).find { |candidate| candidate.file? && contained?(candidate) }
   end
 
   def candidates(path)
@@ -77,12 +77,19 @@ class DocsController < ApplicationController
     [base, Pathname.new("#{base}.html"), base.join('index.html')]
   end
 
-  # A request may not read outside the build. Comparing expanded real paths
-  # rather than the requested string is what makes traversal and symlinks fail
-  # closed instead of resolving somewhere unintended.
+  # A request may not read outside the build. The candidate's REAL path — every
+  # symlink resolved — must sit under the build root's real path, so dot-segment
+  # traversal and a symlink pointing out of the build both fail closed. Only
+  # existing files reach here (realpath raises on anything else), which resolve
+  # guarantees by checking file? first.
   def contained?(candidate)
-    candidate.expand_path.to_s.start_with?("#{root.expand_path}/") ||
-      candidate.expand_path == root.expand_path
+    real = candidate.realpath
+
+    real.to_s.start_with?("#{root_realpath}/") || real == root_realpath
+  end
+
+  def root_realpath
+    @root_realpath ||= root.realpath
   end
 
   def root
