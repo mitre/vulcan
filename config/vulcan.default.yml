@@ -13,7 +13,7 @@ defaults: &defaults
   # passwords) turns the rest of the line into a YAML comment and the
   # setting silently becomes nil. JSON strings are valid YAML scalars and
   # escape every special character; nil still renders as YAML null.
-  welcome_text: <%= (ENV['VULCAN_WELCOME_TEXT'] || 'Welcome to Vulcan').to_json %>
+  welcome_text: <%= ENV['VULCAN_WELCOME_TEXT']&.to_json %>
   contact_email: <%= ENV['VULCAN_CONTACT_EMAIL']&.to_json %>
   app_url: <%= ENV['VULCAN_APP_URL']&.to_json %>
   smtp:

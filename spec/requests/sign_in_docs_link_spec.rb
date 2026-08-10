@@ -28,6 +28,12 @@ RSpec.describe 'Sign-in page documentation link' do
     expect(response.body).to include('href="/docs"')
   end
 
+  it 'names the process by its proper title, not a vague shorthand' do
+    get '/users/sign_in'
+
+    expect(response.body).to include('DISA Vendor STIG Process')
+  end
+
   it 'links somewhere an anonymous visitor can actually reach' do
     get '/users/sign_in'
     expect(response.body).to include('href="/docs"')

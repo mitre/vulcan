@@ -35,8 +35,9 @@ This document lists all environment variables that can be used to configure Vulc
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
 | `VULCAN_APP_URL` | Application URL (for mailer links) | — (must be set for emails) | `https://vulcan.example.com` |
-| `VULCAN_WELCOME_TEXT` | Welcome message on login page | `Welcome to Vulcan` | `Welcome to MITRE Vulcan` |
+| `VULCAN_WELCOME_TEXT` | Extra welcome text under the sign-in page heading | — (unset; the page carries its own heading) | `Welcome to MITRE Vulcan` |
 | `VULCAN_CONTACT_EMAIL` | Contact email for notifications and default SMTP username | `vulcan-support@example.com` | `support@mycompany.com` |
+| `VULCAN_DOCS_REQUIRE_LOGIN` | Require a signed-in user to read the in-app documentation site at `/docs` | `false` (public) | `true` |
 
 ## Authentication Settings
 

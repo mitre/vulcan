@@ -47,7 +47,25 @@ RSpec.describe 'config/vulcan.default.yml template rendering' do
       expect(defaults.dig('slack', 'channel_id')).to be_nil
       expect(defaults.dig('banner', 'background_color')).to eq('#007a33')
       expect(defaults.dig('banner', 'text_color')).to eq('#ffffff')
-      expect(defaults['welcome_text']).to eq('Welcome to Vulcan')
+      # No default: the sign-in page already carries its own heading, and a
+      # default here rendered the same words twice. The paragraph exists only
+      # for deployment-supplied text.
+      expect(defaults['welcome_text']).to be_nil
+    end
+  end
+
+  it 'keeps deployment-supplied welcome text' do
+    ClimateControl.modify(VULCAN_WELCOME_TEXT: 'Welcome to MITRE Vulcan') do
+      expect(rendered_defaults['welcome_text']).to eq('Welcome to MITRE Vulcan')
+    end
+  end
+
+  it 'defaults documentation access to public and honours the env var' do
+    ClimateControl.modify(VULCAN_DOCS_REQUIRE_LOGIN: nil) do
+      expect(rendered_defaults.dig('docs', 'require_login')).to be(false)
+    end
+    ClimateControl.modify(VULCAN_DOCS_REQUIRE_LOGIN: 'true') do
+      expect(rendered_defaults.dig('docs', 'require_login')).to be(true)
     end
   end
 end
