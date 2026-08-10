@@ -2,13 +2,15 @@ import { defineConfig } from "vitepress";
 import { ViteImageOptimizer } from "vite-plugin-image-optimizer";
 import { useSidebar } from "vitepress-openapi";
 import spec from "../data/openapi.json" with { type: "json" };
+import { target } from "./target.mjs";
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   title: "Vulcan",
   description: "Security Technical Implementation Guide (STIG) creation and validation platform",
-  // Use / for GitHub Pages with custom domain (vulcan.mitre.org), /vulcan/ for local dev
-  base: process.env.GITHUB_DEPLOY === "true" ? "/" : "/vulcan/",
+  // Every per-target difference is declared in target.mjs, selected by
+  // VULCAN_DOCS_TARGET at build time. Nothing else in this file re-derives it.
+  base: target.base,
 
   // Exclude internal planning docs and non-publishable content from the build.
   // These contain raw HTML/markdown that Vue's template compiler rejects.
@@ -30,8 +32,14 @@ export default defineConfig({
 
   // Theme configuration
   themeConfig: {
+    // The resolved target travels to the browser bundle here — the same route
+    // VitePress uses to carry per-locale values to components. The theme reads
+    // it from siteData and from useData().theme rather than re-deriving
+    // anything from the environment, which it could not reach in any case.
+    docsTarget: target,
+
     // Logo in nav bar
-    logo: "/logo.png",
+    logo: "/logo.svg",
 
     // Navigation bar
     nav: [

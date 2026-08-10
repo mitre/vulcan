@@ -48,7 +48,10 @@ jobs:
 
       - name: Install and build docs
         env:
-          GITHUB_DEPLOY: "true"  # Tell VitePress to use / base for custom domain
+          # Selects the published-site entry in docs/.vitepress/target.mjs,
+          # which sets the / base for the custom domain along with everything
+          # else that differs for a public build.
+          VULCAN_DOCS_TARGET: "pages"
         run: |
           # Docs have their own package.json with Vue 3 deps (isolated from
           # the Rails app's Vue 2). Install only docs deps in CI.
