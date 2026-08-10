@@ -70,6 +70,13 @@ AUTHENTICATE_ONLY_ACTIONS = {
   # DisaGuideController serves static documentation to any authenticated user.
   'disa_guide#show' => 'Static docs page — any authenticated user',
   'disa_guide#attachment' => 'Static docs attachment — any authenticated user',
+  # DocsController serves the built documentation site. It is the only action whose
+  # authentication is CONDITIONAL: Settings.docs.require_login decides, defaulting to
+  # public, because the readers who most need the setup and troubleshooting pages are
+  # the ones who cannot sign in yet. There is nothing to authorize beyond that — the
+  # site is identical for every reader, and requests are contained to the build
+  # directory. Both positions of the setting are covered in spec/requests/docs_spec.rb.
+  'docs#show' => 'Static documentation site — public by default, login conditional on Settings.docs.require_login',
   # UserSearchController uses custom authorization in authorize_search before_action:
   # admin-only for non-member searches; any member for scope=members (PoC selection).
   'api/user_search#index' => 'Custom authorization in before_action: admin-only for non-member ' \

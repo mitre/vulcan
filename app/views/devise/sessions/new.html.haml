@@ -12,6 +12,14 @@
           as security testing content.
         - if Settings['welcome_text'].present?
           %p.text-muted= Settings['welcome_text']
+        -# Offered here because the readers who most need the setup and
+        -# troubleshooting pages are the ones who cannot get in yet. Hidden when
+        -# the deployment gates its documentation, since the link would then
+        -# lead straight back to this page.
+        - unless Settings.docs.require_login
+          %p.mt-4.mb-0
+            = link_to 'Read the documentation', docs_path
+            %span.text-muted &nbsp;— setup, configuration, and the DISA process. No account needed.
       .col-lg-6.offset-lg-1
         - if params[:link_pending] && session[:pending_link]
           %b-card.shadow.border.mb-3{"no-body" => ""}

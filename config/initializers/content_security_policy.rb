@@ -12,6 +12,15 @@
 # (which uses pre-compiled SFC templates via build step).
 
 Rails.application.configure do
+  # A per-request nonce lets specifically marked inline scripts run without
+  # admitting inline script generally. It is generated fresh per request rather
+  # than derived from the session, so a nonce observed in one response is
+  # useless in the next. Nothing weakens here: script-src gains no
+  # unsafe-inline and no new origin, and a tag only runs if it carries the
+  # nonce the response itself issued.
+  config.content_security_policy_nonce_generator = ->(_request) { SecureRandom.base64(16) }
+  config.content_security_policy_nonce_directives = %w[script-src]
+
   config.content_security_policy do |policy|
     oidc_origins = Settings.oidc&.enabled ? OidcProviderRegistry.provider_origins : []
 

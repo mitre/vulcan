@@ -161,6 +161,13 @@ defaults: &defaults
     max_tokens_per_user: <%= ENV.fetch('VULCAN_API_TOKENS_MAX_PER_USER', '20').to_i %>
     max_lifetime_days: <%= ENV.fetch('VULCAN_API_TOKENS_MAX_LIFETIME_DAYS', '365').to_i %>
     auto_revoke_idle_days: <%= ENV.fetch('VULCAN_API_TOKENS_AUTO_REVOKE_IDLE_DAYS', '90').to_i %>
+  docs:
+    # The documentation site is served through a controller rather than from
+    # public/, because anything under public/ is served before routing runs and
+    # so could never be placed behind a login. Serving it this way keeps both
+    # outcomes one setting apart. Public by default: the same content is already
+    # published openly.
+    require_login: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_DOCS_REQUIRE_LOGIN']) || false %>
   slack:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_ENABLE_SLACK_COMMS']) || false %>
     api_token: <%= ENV['VULCAN_SLACK_API_TOKEN']&.to_json %>

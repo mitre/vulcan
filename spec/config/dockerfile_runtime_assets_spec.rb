@@ -16,14 +16,21 @@ require 'open3'
 #
 RSpec.describe 'Production image prune' do
   # Directories the running application reads from Rails.root, derived from the
-  # code that reads them so this guard follows the code if a path moves.
+  # code that reads them so this guard follows the code if a path moves. The
+  # documentation site is built during asset precompilation and then served from
+  # disk, so it is a runtime read exactly like the markdown the guide renders.
   let(:runtime_read_paths) do
-    [DisaGuideController::GUIDE_DIR].map { |path| path.relative_path_from(Rails.root).to_s }
+    [DisaGuideController::GUIDE_DIR, DocsSite.output_directory]
+      .map { |path| path.relative_path_from(Rails.root).to_s }
   end
 
-  # Build-only trees that must still be removed. Narrowing the prune is the
-  # goal; removing it is not.
-  let(:build_only_paths) { ['docs/node_modules', 'docs/.vitepress', 'docs/plans', 'node_modules'] }
+  # Build-only trees that must still be removed. Narrowing the prune is the goal;
+  # removing it is not. Note what is NOT listed here: docs/.vitepress as a whole,
+  # because its dist subdirectory is the built site. Listing the parent would make
+  # this guard demand the deletion of the very thing the image needs.
+  let(:build_only_paths) do
+    ['docs/node_modules', 'docs/.vitepress/cache', 'docs/plans', 'docs/user-guide', 'node_modules']
+  end
 
   let(:prune_command) { repo_relative_prune(build_cleanup_run_block) }
 
@@ -48,7 +55,10 @@ RSpec.describe 'Production image prune' do
     Dir.mktmpdir('vulcan-image-prune') do |dir|
       seed_scratch_tree(dir)
 
-      _stdout, stderr, status = Open3.capture3('bash', '-c', prune_command, chdir: dir)
+      # Mirrors the Dockerfile's own `set -eu`, so a prune command that errors
+      # here fails this example instead of being masked by a later one
+      # succeeding — the commands are sequenced with `;`, not `&&`.
+      _stdout, stderr, status = Open3.capture3('bash', '-c', "set -eu; #{prune_command}", chdir: dir)
       raise "production image prune failed: #{stderr}" unless status.success?
 
       yield dir

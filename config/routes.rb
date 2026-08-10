@@ -8,6 +8,10 @@ Rails.application.routes.draw do
   # Provides /health_check, /health_check/database, /health_check/migrations etc.
   health_check_routes
 
+  # The documentation site, served from the build so access stays governable.
+  # The path here has to match the base the site was built under.
+  get '/docs(/*path)', to: 'docs#show', as: :docs, format: false
+
   # In-app DISA process guidance (works in airgapped environments)
   get '/disa-guide/attachments/:filename', to: 'disa_guide#attachment', as: :disa_guide_attachment, constraints: { filename: %r{[^/]+} }
   get '/disa-guide(/:page)', to: 'disa_guide#show', as: :disa_guide
