@@ -22,11 +22,15 @@ export default defineConfig({
   // Last updated time
   lastUpdated: true,
 
-  // Head tags
+  // Head tags. Entries here are emitted VERBATIM — VitePress rebases markdown
+  // links and bundled assets under `base`, but never these — so every href must
+  // carry the target base itself or it 404s on any non-root deployment. (The
+  // favicon appeared to work in-app only because the Rails app happens to ship
+  // a file of the same name at its own root.)
   head: [
     // Match Vulcan's main app and saf-site — all three use the same saf-logo.svg
-    ["link", { rel: "icon", type: "image/svg+xml", href: "/saf-logo.svg" }],
-    ["link", { rel: "apple-touch-icon", sizes: "180x180", href: "/saf-logo-180.png" }],
+    ["link", { rel: "icon", type: "image/svg+xml", href: `${target.base}saf-logo.svg` }],
+    ["link", { rel: "apple-touch-icon", sizes: "180x180", href: `${target.base}saf-logo-180.png` }],
     ["meta", { name: "theme-color", content: "#005288" }],
   ],
 

@@ -13,6 +13,8 @@ RSpec.describe 'Docs site' do
   # than by stubbing the Settings object.
   include SettingsEnvHelpers
 
+  before(:all) { DocsSiteHelpers.require_built_site! }
+
   before do
     Rails.application.reload_routes!
   end
@@ -60,6 +62,26 @@ RSpec.describe 'Docs site' do
       get '/docs/no-such-page'
 
       expect(response).to have_http_status(:not_found)
+    end
+
+    # Head entries in the site configuration are emitted VERBATIM — VitePress
+    # rebases markdown links and bundled assets under the base path, but not
+    # these. A hardcoded root-absolute icon href renders fine on the published
+    # site (base /) and 404s everywhere else, which is exactly what happened
+    # to the favicon. Requesting every reference the served index makes keeps
+    # that whole class caught.
+    it 'serves every asset the built index references' do
+      get '/docs'
+
+      references = response.body.scan(%r{(?:href|src)="(/[^"]+)"}).flatten.uniq
+      expect(references).not_to be_empty
+
+      failures = references.reject do |path|
+        get path
+        response.status == 200
+      end
+
+      expect(failures).to eq([])
     end
   end
 
