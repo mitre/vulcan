@@ -23,7 +23,16 @@ RSpec.describe 'Component destruction' do
       delete "/components/#{component.id}", headers: { 'Accept' => application_json }
     end
     expect(response).to have_http_status(:success)
-    report.total
+    report
+  end
+
+  # The failure message carries both runs' per-query-name breakdowns. Totals
+  # alone cannot say WHICH query scaled, and for an intermittent failure the
+  # message is the only evidence left behind.
+  def expect_query_invariance(small_report, large_report, scaling_message)
+    expect(large_report.total).to eq(small_report.total),
+                                  "#{scaling_message}\nSmall destroy:\n#{small_report}\n" \
+                                  "Large destroy:\n#{large_report}"
   end
 
   def build_srg_component(prefix, rows:)
@@ -107,12 +116,12 @@ RSpec.describe 'Component destruction' do
         # queries; burn them on a sacrificial destroy so the measured counts
         # compare steady-state work only.
         destroy_query_count(build_srg_component('DSQW-00', rows: 1))
-        small_count = destroy_query_count(small)
-        large_count = destroy_query_count(large)
+        small_report = destroy_query_count(small)
+        large_report = destroy_query_count(large)
 
-        expect(large_count).to eq(small_count),
-                               "SRG destroy scales with requirement count: #{small_count} queries " \
-                               "for 2 requirements, #{large_count} for 8 — the per-row cascade is running"
+        expect_query_invariance(small_report, large_report,
+                                "SRG destroy scales with requirement count: #{small_report.total} queries " \
+                                "for 2 requirements, #{large_report.total} for 8 — the per-row cascade is running")
       end
     end
 
@@ -135,12 +144,12 @@ RSpec.describe 'Component destruction' do
         warm_session
         # Same steady-state warm-up as the SRG invariance example above.
         destroy_query_count(create(:component, project: project))
-        small_count = destroy_query_count(small)
-        large_count = destroy_query_count(large)
+        small_report = destroy_query_count(small)
+        large_report = destroy_query_count(large)
 
-        expect(large_count).to eq(small_count),
-                               "STIG destroy scales with rule count: #{small_count} queries for 2 rules, " \
-                               "#{large_count} for #{large_rule_count} — the per-row cascade is running"
+        expect_query_invariance(small_report, large_report,
+                                "STIG destroy scales with rule count: #{small_report.total} queries for 2 rules, " \
+                                "#{large_report.total} for #{large_rule_count} — the per-row cascade is running")
       end
     end
 
