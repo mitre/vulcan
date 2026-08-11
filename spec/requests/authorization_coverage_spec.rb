@@ -67,9 +67,6 @@ AUTHENTICATE_ONLY_ACTIONS = {
   # Authorization is data-scoped (users only see what they have access to),
   # not action-scoped. Any authenticated user can search.
   'api/search#global' => 'Data-scoped auth via current_user.available_projects',
-  # DisaGuideController serves static documentation to any authenticated user.
-  'disa_guide#show' => 'Static docs page — any authenticated user',
-  'disa_guide#attachment' => 'Static docs attachment — any authenticated user',
   # DocsController serves the built documentation site. It is the only action whose
   # authentication is CONDITIONAL: Settings.docs.require_login decides, defaulting to
   # public, because the readers who most need the setup and troubleshooting pages are

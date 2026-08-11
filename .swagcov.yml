@@ -62,7 +62,7 @@ routes:
         - GET
       - /projects/:id/triage:
         - GET
-      # DISA guide (static documentation pages)
+      # Retired guide URLs — permanent redirects into the documentation site
       - /disa-guide:
         - GET
       - /disa-guide/attachments/:filename:

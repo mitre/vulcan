@@ -3,7 +3,7 @@
 require 'rails_helper'
 require 'rake'
 
-RSpec.describe 'disa_guide rake tasks' do
+RSpec.describe 'docs:guide rake tasks' do
   before(:all) do
     load_rake_tasks
   end
@@ -11,42 +11,42 @@ RSpec.describe 'disa_guide rake tasks' do
   # Derived, not named: the fixture is whatever guide document is currently
   # shipped, so a release update needs no spec edit — and two documents side
   # by side fail loudly instead of one being silently picked.
-  let(:guide_docx) { Pathname.new(Dir.glob(DisaGuideController::GUIDE_DIR.join('attachments/*.docx').to_s).sole) }
+  let(:guide_docx) { Pathname.new(Dir.glob(DocsSite.site_root.join('public/attachments/*.docx').to_s).sole) }
 
-  describe 'disa_guide:convert' do
-    after { Rake::Task['disa_guide:convert'].reenable }
+  describe 'docs:guide:convert' do
+    after { Rake::Task['docs:guide:convert'].reenable }
 
     it 'requires pandoc to be installed' do
       allow_any_instance_of(Object).to receive(:system).with('which', 'pandoc', out: File::NULL).and_return(false)
 
-      expect { Rake::Task['disa_guide:convert'].invoke(guide_docx.to_s) }
+      expect { Rake::Task['docs:guide:convert'].invoke(guide_docx.to_s) }
         .to raise_error(SystemExit)
         .and output(/pandoc not found/).to_stderr
     end
 
     context 'with pandoc available', if: system('which', 'pandoc', out: File::NULL) do
       it 'rejects missing file argument' do
-        expect { Rake::Task['disa_guide:convert'].invoke }
+        expect { Rake::Task['docs:guide:convert'].invoke }
           .to raise_error(SystemExit)
           .and output(/Usage:/).to_stderr
       end
 
       it 'rejects non-existent file' do
-        expect { Rake::Task['disa_guide:convert'].invoke('/tmp/nonexistent.docx') }
+        expect { Rake::Task['docs:guide:convert'].invoke('/tmp/nonexistent.docx') }
           .to raise_error(SystemExit)
           .and output(/not found/).to_stderr
       end
 
       it 'rejects non-docx file' do
         Tempfile.create(['test', '.txt']) do |f|
-          expect { Rake::Task['disa_guide:convert'].invoke(f.path) }
+          expect { Rake::Task['docs:guide:convert'].invoke(f.path) }
             .to raise_error(SystemExit)
             .and output(/\.docx/).to_stderr
         end
       end
 
       it 'converts docx to markdown and writes to stdout' do
-        output = capture_stdout { Rake::Task['disa_guide:convert'].invoke(guide_docx.to_s) }
+        output = capture_stdout { Rake::Task['docs:guide:convert'].invoke(guide_docx.to_s) }
 
         expect(output).to start_with("---\ntitle: Vendor STIG Process Guide")
         expect(output).to include('# Vendor STIG Process Guide')
@@ -57,7 +57,7 @@ RSpec.describe 'disa_guide rake tasks' do
       end
 
       it 'shifts headings so top-level sections are ##' do
-        output = capture_stdout { Rake::Task['disa_guide:convert'].invoke(guide_docx.to_s) }
+        output = capture_stdout { Rake::Task['docs:guide:convert'].invoke(guide_docx.to_s) }
 
         headings = output.lines.select { |l| l.start_with?('#') }
         expect(headings.first).to start_with('# ')
@@ -72,20 +72,20 @@ RSpec.describe 'disa_guide rake tasks' do
       end
 
       it 'strips the table of contents block' do
-        output = capture_stdout { Rake::Task['disa_guide:convert'].invoke(guide_docx.to_s) }
+        output = capture_stdout { Rake::Task['docs:guide:convert'].invoke(guide_docx.to_s) }
 
         expect(output).not_to include('TABLE OF CONTENTS')
         expect(output).not_to match(/\[.*\]\(#.*\).*\]\(#/)
       end
 
       it 'strips the revision history table' do
-        output = capture_stdout { Rake::Task['disa_guide:convert'].invoke(guide_docx.to_s) }
+        output = capture_stdout { Rake::Task['docs:guide:convert'].invoke(guide_docx.to_s) }
 
         expect(output).not_to include('REVISION HISTORY')
       end
 
       it 'extracts version and date from document content' do
-        output = capture_stdout { Rake::Task['disa_guide:convert'].invoke(guide_docx.to_s) }
+        output = capture_stdout { Rake::Task['docs:guide:convert'].invoke(guide_docx.to_s) }
 
         expect(output).to include('Version 4, Release 3')
         expect(output).to match(/\d{1,2}\s+\w+\s+\d{4}/)
@@ -93,16 +93,16 @@ RSpec.describe 'disa_guide rake tasks' do
     end
   end
 
-  describe 'disa_guide:update' do
-    after { Rake::Task['disa_guide:update'].reenable }
+  describe 'docs:guide:update' do
+    after { Rake::Task['docs:guide:update'].reenable }
 
     # The defaults are what a maintainer gets running the task with only a docx
     # argument, so they must point at the locations the application actually
     # serves — derived from the serving code, not hardcoded, so a future move
     # of either tree fails here instead of writing files to a dead path.
     describe 'default output locations' do
-      it 'writes the markdown where the guide controller reads it' do
-        expect(default_md_output).to eq(DisaGuideController::GUIDE_DIR.join('vendor-stig-process-guide.md').to_s)
+      it 'writes the markdown into the site tree the build publishes' do
+        expect(default_md_output).to eq(DocsSite.site_root.join('disa-process/vendor-stig-process-guide.md').to_s)
         expect(File).to exist(default_md_output)
       end
 
@@ -113,18 +113,17 @@ RSpec.describe 'disa_guide rake tasks' do
     end
 
     context 'with pandoc available', if: system('which', 'pandoc', out: File::NULL) do
-      let(:output_dir) { Dir.mktmpdir('disa_guide_test') }
-      let(:guide_dir) { DisaGuideController::GUIDE_DIR }
+      let(:output_dir) { Dir.mktmpdir('docs_guide_test') }
 
       after { FileUtils.rm_rf(output_dir) }
 
-      it 'writes markdown file and copies docx to both attachment directories' do
+      it 'writes markdown file and copies docx to the attachments directory' do
         md_path = File.join(output_dir, 'vendor-stig-process-guide.md')
         public_attachments = File.join(output_dir, 'public_attachments')
         FileUtils.mkdir_p(public_attachments)
 
         capture_stdout do
-          Rake::Task['disa_guide:update'].invoke(guide_docx.to_s, md_path, public_attachments)
+          Rake::Task['docs:guide:update'].invoke(guide_docx.to_s, md_path, public_attachments)
         end
 
         expect(File.exist?(md_path)).to be true
@@ -136,20 +135,34 @@ RSpec.describe 'disa_guide rake tasks' do
         expect(docx_in_public.length).to eq(1)
       end
 
+      it 'leaves the shipped document in place when the input is already the shipped attachment' do
+        # The consolidated layout means the maintainer's input IS the copy in
+        # the site's attachments directory — the task must not die on a
+        # same-file copy when re-run over it.
+        md_path = File.join(output_dir, 'vendor-stig-process-guide.md')
+
+        capture_stdout do
+          Rake::Task['docs:guide:update'].invoke(guide_docx.to_s, md_path, guide_docx.dirname.to_s)
+        end
+
+        expect(File.exist?(md_path)).to be true
+        expect(File.exist?(guide_docx.to_s)).to be true
+      end
+
       it 'is idempotent — running twice produces same output' do
         md_path = File.join(output_dir, 'vendor-stig-process-guide.md')
         public_attachments = File.join(output_dir, 'public_attachments')
         FileUtils.mkdir_p(public_attachments)
 
         capture_stdout do
-          Rake::Task['disa_guide:update'].invoke(guide_docx.to_s, md_path, public_attachments)
+          Rake::Task['docs:guide:update'].invoke(guide_docx.to_s, md_path, public_attachments)
         end
         first_content = File.read(md_path)
 
-        Rake::Task['disa_guide:update'].reenable
+        Rake::Task['docs:guide:update'].reenable
 
         capture_stdout do
-          Rake::Task['disa_guide:update'].invoke(guide_docx.to_s, md_path, public_attachments)
+          Rake::Task['docs:guide:update'].invoke(guide_docx.to_s, md_path, public_attachments)
         end
         second_content = File.read(md_path)
 

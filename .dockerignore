@@ -49,9 +49,9 @@
 # Ignore test files
 /spec
 
-# /docs is intentionally NOT excluded — DisaGuideController reads markdown and
-# attachments from docs/site/disa-process at runtime, and the Dockerfile prunes the
-# rest of docs/ out of the image. Docker does not read .gitignore, so the
+# /docs is intentionally NOT excluded — the documentation site builds from it
+# during asset precompilation, and the Dockerfile prunes the sources out of the
+# image afterwards. Docker does not read .gitignore, so the
 # generated trees under docs/ have to be listed here or they are copied into
 # the build context on every build (~400MB of dependencies and build output).
 /docs/node_modules/

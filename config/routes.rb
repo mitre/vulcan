@@ -12,9 +12,18 @@ Rails.application.routes.draw do
   # The path here has to match the base the site was built under.
   get '/docs(/*path)', to: 'docs#show', as: :docs, format: false
 
-  # In-app DISA process guidance (works in airgapped environments)
-  get '/disa-guide/attachments/:filename', to: 'disa_guide#attachment', as: :disa_guide_attachment, constraints: { filename: %r{[^/]+} }
-  get '/disa-guide(/:page)', to: 'disa_guide#show', as: :disa_guide
+  # The retired hand-built guide's URLs live on as permanent redirects into
+  # the documentation site — bookmarks and links from released material must
+  # keep working. Attachments are published verbatim under the site's
+  # attachments directory; the legacy release slug folds into the page map.
+  legacy_guide_slugs = { 'vendor-stig-process-guide-v4r1' => 'vendor-stig-process-guide' }
+  get '/disa-guide/attachments/:filename',
+      to: redirect('/docs/attachments/%{filename}', status: 301),
+      constraints: { filename: %r{[^/]+} }
+  get '/disa-guide(/:page)', to: redirect(status: 301) { |params, _request|
+    page = params[:page].presence || 'overview'
+    "/docs/disa-process/#{legacy_guide_slugs.fetch(page, page)}"
+  }
 
   devise_for :users, controllers: {
     omniauth_callbacks: 'users/omniauth_callbacks',

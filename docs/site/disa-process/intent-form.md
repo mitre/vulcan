@@ -13,7 +13,7 @@ The Intent Form is the first step in the DISA STIG process. It formally notifies
 - **When:** Before any other STIG development activity
 - **Outcome:** DISA reviews internally and notifies vendor whether to proceed
 
-**Source:** [U_Vendor_STIG_Intent_Form.pdf](attachments/U_Vendor_STIG_Intent_Form.pdf)
+**Source:** [U_Vendor_STIG_Intent_Form.pdf](/attachments/U_Vendor_STIG_Intent_Form.pdf)
 
 ### Form Fields
 

@@ -1,33 +1,39 @@
 # frozen_string_literal: true
 
-namespace :disa_guide do
-  desc 'Convert a DISA Vendor STIG Process Guide .docx to cleaned markdown (stdout)'
-  task :convert, %i[docx_path] => :environment do |_t, args|
-    docx_path = validated_docx_path(args[:docx_path])
-    $stdout.puts convert_docx_to_markdown(docx_path)
-  end
+namespace :docs do
+  namespace :guide do
+    desc 'Convert a DISA Vendor STIG Process Guide .docx to cleaned markdown (stdout)'
+    task :convert, %i[docx_path] => :environment do |_t, args|
+      docx_path = validated_docx_path(args[:docx_path])
+      $stdout.puts convert_docx_to_markdown(docx_path)
+    end
 
-  desc 'Full pipeline: convert .docx, write .md, copy .docx to attachment dirs'
-  task :update, %i[docx_path md_output public_attachments_dir] => :environment do |_t, args|
-    docx_path = validated_docx_path(args[:docx_path])
-    md_output = args[:md_output] || default_md_output
-    public_attachments = args[:public_attachments_dir] || default_public_attachments_dir
+    desc 'Full pipeline: convert .docx, write .md, copy .docx to the site attachments'
+    task :update, %i[docx_path md_output public_attachments_dir] => :environment do |_t, args|
+      docx_path = validated_docx_path(args[:docx_path])
+      md_output = args[:md_output] || default_md_output
+      public_attachments = args[:public_attachments_dir] || default_public_attachments_dir
 
-    File.write(md_output, convert_docx_to_markdown(docx_path))
+      File.write(md_output, convert_docx_to_markdown(docx_path))
 
-    FileUtils.mkdir_p(public_attachments)
-    FileUtils.cp(docx_path, public_attachments)
+      FileUtils.mkdir_p(public_attachments)
+      # The maintainer's input may already BE the shipped copy in the
+      # attachments directory — a same-file copy, which FileUtils.cp refuses.
+      destination = File.join(public_attachments, File.basename(docx_path))
+      already_shipped = File.exist?(destination) && File.identical?(docx_path, destination)
+      FileUtils.cp(docx_path, public_attachments) unless already_shipped
 
-    puts "Wrote: #{md_output}"
-    puts "Copied .docx to: #{public_attachments}"
+      puts "Wrote: #{md_output}"
+      puts "Copied .docx to: #{public_attachments}"
+    end
   end
 end
 
-# Default output locations derive from the code that serves the content, so a
-# move of either tree carries the defaults along instead of leaving them
-# pointing at a dead path.
+# Default output locations derive from the site tree the build publishes, so a
+# move of the tree carries the defaults along instead of leaving them pointing
+# at a dead path.
 def default_md_output
-  DisaGuideController::GUIDE_DIR.join('vendor-stig-process-guide.md').to_s
+  DocsSite.site_root.join('disa-process/vendor-stig-process-guide.md').to_s
 end
 
 def default_public_attachments_dir
@@ -45,7 +51,7 @@ def validated_docx_path(docx_path)
   end
 
   if docx_path.blank?
-    warn 'Usage: rake disa_guide:convert[path/to/file.docx]'
+    warn 'Usage: rake docs:guide:convert[path/to/file.docx]'
     exit 1
   end
 

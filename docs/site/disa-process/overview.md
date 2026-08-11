@@ -25,7 +25,7 @@ The vendor submits a **Vendor STIG Intent Form** to DISA (`disa.stig_spt@mail.mi
 
 DISA reviews internally and notifies the vendor whether to proceed.
 
-**Source:** [U_Vendor_STIG_Intent_Form.pdf](attachments/U_Vendor_STIG_Intent_Form.pdf)
+**Source:** [U_Vendor_STIG_Intent_Form.pdf](/attachments/U_Vendor_STIG_Intent_Form.pdf)
 
 ### Step 1: STIG Applicability Questionnaire
 

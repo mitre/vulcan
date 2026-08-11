@@ -1,5 +1,0 @@
-- content_for :assets do
-  = javascript_include_tag 'disa_guide'
-
-#disa-guide
-  %disa-guide-page{ ':html-content' => @html_content.to_json, ':page-title' => @page_title.to_json, ':current-page' => @current_page.to_json, ':page-sections' => @page_sections.to_json, ':toc' => @toc.to_json }

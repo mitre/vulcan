@@ -106,6 +106,20 @@ describe("RuleActionsToolbar", () => {
   });
 
   // ==========================================
+  // DISA GUIDE LINK
+  // ==========================================
+  describe("DISA guide link", () => {
+    it("links the guide button at the served documentation site", () => {
+      // The old hand-built guide URL died silently because nothing asserted
+      // this href — the link is pinned to the page that actually serves.
+      wrapper = createWrapper();
+      const link = wrapper.find('a[href="/docs/disa-process/overview"]');
+      expect(link.exists()).toBe(true);
+      expect(link.text()).toContain("DISA Guide");
+    });
+  });
+
+  // ==========================================
   // PANEL BUTTONS (Info/Reference)
   // ==========================================
   describe("panel buttons", () => {

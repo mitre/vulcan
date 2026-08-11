@@ -206,29 +206,6 @@ export const bvConfig = {
 - **`.rule-form-field`** controls padding + border-radius for rule editor fields. It does NOT set margin — `.form-group` handles that.
 - **Horizontal label:value:** use `<b-form-group label-cols-md="3" label-align-md="right">` — NOT manual `.row > .col-4 > strong`
 
-## Native HTML Elements
-
-### `<details>` / `<summary>` (Disclosure Widget)
-
-Styled globally with `--vulcan-*` variables. Used for collapsible content blocks — VitePress `::: details` syntax, in-app rendered via `DisaGuideController#convert_callouts`, or anywhere native disclosure is appropriate.
-
-| Part | Variable | Purpose |
-|------|----------|---------|
-| Summary background | `--vulcan-tertiary-bg` | Visually recessed header |
-| Summary text | `--vulcan-emphasis-color` | High contrast label |
-| Border | `--vulcan-border-color` | Consistent with card borders |
-| Open divider | `--vulcan-border-subtle` | Faint line between summary and body |
-| Hover | `--vulcan-hover-bg` | Interactive feedback |
-
-Auto-adapts to dark mode — no per-component overrides needed.
-
-```html
-<details>
-  <summary>Click to expand</summary>
-  <p>Content here uses body text color on body background.</p>
-</details>
-```
-
 ## Bootstrap-Vue Components to Use
 
 | Component | Use for | Instead of |

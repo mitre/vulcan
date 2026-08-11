@@ -4,7 +4,7 @@ require 'active_support/testing/stream'
 
 # Shared $stdout capture for specs that exercise rake tasks / CLI code that
 # writes progress to stdout. Without it, that output (the full DISA guide from
-# disa_guide:convert, ADNM run summaries, provider-rename counts) floods the
+# docs:guide:convert, ADNM run summaries, provider-rename counts) floods the
 # suite log and buries real failures.
 #
 # Delegates to Rails' ActiveSupport::Testing::Stream, which reopens the stream

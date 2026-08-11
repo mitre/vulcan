@@ -18,19 +18,21 @@ RSpec.describe 'Production image prune' do
   # Directories the running application reads from Rails.root, derived from the
   # code that reads them so this guard follows the code if a path moves. The
   # documentation site is built during asset precompilation and then served from
-  # disk, so it is a runtime read exactly like the markdown the guide renders.
+  # disk — the built site is the only documentation the image reads at runtime.
   let(:runtime_read_paths) do
-    [DisaGuideController::GUIDE_DIR, DocsSite.output_directory]
+    [DocsSite.output_directory]
       .map { |path| path.relative_path_from(Rails.root).to_s }
   end
 
   # Build-only trees that must still be removed. Narrowing the prune is the goal;
-  # removing it is not. Note what is NOT listed here: docs/.vitepress as a whole,
-  # because its dist subdirectory is the built site. Listing the parent would make
-  # this guard demand the deletion of the very thing the image needs.
+  # removing it is not. The site's markdown sources are build inputs — everything
+  # the reader gets comes from the built output. Note what is NOT listed here:
+  # docs/.vitepress as a whole, because its dist subdirectory is the built site.
+  # Listing the parent would make this guard demand the deletion of the very
+  # thing the image needs.
   let(:build_only_paths) do
     ['docs/node_modules', 'docs/.vitepress/cache', 'docs/plans', 'docs/decisions',
-     'docs/site/user-guide', 'node_modules']
+     'docs/site', 'node_modules']
   end
 
   let(:prune_command) { repo_relative_prune(build_cleanup_run_block) }

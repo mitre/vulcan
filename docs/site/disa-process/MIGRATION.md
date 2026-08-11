@@ -8,16 +8,13 @@ How to update the guide when DISA releases a new version.
 
 ## Steps
 
-### 1. Drop the new .docx into attachments
+### 1. Preview the conversion
+
+Point the task at the downloaded document — it does not need to be copied
+anywhere first:
 
 ```bash
-cp /path/to/U_Vendor_STIG_Process_Guide_V4R3.docx docs/site/disa-process/attachments/
-```
-
-### 2. Preview the conversion
-
-```bash
-bundle exec rake "disa_guide:convert[docs/site/disa-process/attachments/U_Vendor_STIG_Process_Guide_V4R3.docx]" > /tmp/preview.md
+bundle exec rake "docs:guide:convert[/path/to/U_Vendor_STIG_Process_Guide_V4R3.docx]" > /tmp/preview.md
 ```
 
 Open `/tmp/preview.md` and verify:
@@ -26,59 +23,56 @@ Open `/tmp/preview.md` and verify:
 - Tables render (may need manual cleanup for complex tables)
 - No stale TOC or revision history blocks
 
-### 3. Run the full update pipeline
+### 2. Run the full update pipeline
 
 ```bash
-bundle exec rake "disa_guide:update[docs/site/disa-process/attachments/U_Vendor_STIG_Process_Guide_V4R3.docx]"
+bundle exec rake "docs:guide:update[/path/to/U_Vendor_STIG_Process_Guide_V4R3.docx]"
 ```
 
 This will:
 1. Convert the .docx to cleaned markdown
 2. Write `docs/site/disa-process/vendor-stig-process-guide.md`
-3. Copy the .docx to `docs/site/public/attachments/`
+3. Copy the .docx into `docs/site/public/attachments/` — the single home for
+   downloadable attachments, published verbatim by the site build
 
-### 4. Update references
+### 3. Update references
 
 These files reference the guide version and must be updated manually:
 
 | File | What to update |
 |------|---------------|
-| `app/controllers/disa_guide_controller.rb` | PAGE_SECTIONS label (version string) |
 | `docs/site/disa-process/overview.md` | Version in source citations + reference table |
 | `docs/site/disa-process/field-requirements.md` | Version reference in intro paragraph |
 | `app/services/export/modes/vendor_submission.rb` | Comment referencing guide version |
 | `app/models/rule.rb` | Comment referencing guide version (if section numbers changed) |
 
-### 5. Remove old .docx files
+### 4. Remove the old .docx
 
 ```bash
-# Remove old version from both attachment directories
-rm docs/site/disa-process/attachments/U_Vendor_STIG_Process_Guide_V4R1_20220815.docx
 rm docs/site/public/attachments/U_Vendor_STIG_Process_Guide_V4R1_20220815.docx
 ```
 
-### 6. Verify
+### 5. Verify
 
 ```bash
-# In-app: start dev server, navigate to /disa-guide?page=vendor-stig-process-guide
-foreman start -f Procfile.dev
-
-# VitePress: preview docs site
+# Preview the documentation site
 yarn openapi:docs
 cd docs && yarn dev
 # Navigate to /disa-process/vendor-stig-process-guide
 
 # Build check
 cd docs && yarn build
+
+# In-app: rebuild the served site, then visit /docs/disa-process/vendor-stig-process-guide
 ```
 
-### 7. Review manually
+### 6. Review manually
 
 After automated conversion, always check:
 
 - **Tables**: Pandoc converts complex Word tables to markdown pipe tables. Wide tables may need manual column adjustment.
-- **Images**: Pandoc extracts to `media/` by default. Move any extracted images to `docs/site/disa-process/attachments/` and update references.
-- **Callouts**: The in-app renderer supports `::: info` / `::: warning` / `::: tip` callout syntax. Add callouts for critical DISA guidance.
+- **Images**: Pandoc extracts to `media/` by default. Move any extracted images to `docs/site/public/attachments/` and reference them root-absolute (`/attachments/<name>`), which every build target rebases correctly.
+- **Callouts**: VitePress renders `::: info` / `::: warning` / `::: tip` containers natively. Add callouts for critical DISA guidance.
 - **Field requirements**: If the new guide changed field requirements (Section 4), update `docs/site/disa-process/field-requirements.md` to match.
 - **Section numbers**: If sections were renumbered, update code comments that reference specific sections (e.g., `V4R1 §4.1.15`).
 

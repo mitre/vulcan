@@ -19,7 +19,7 @@ DISA has developed a process through which vendors can request to write a STIG f
 
 This Vendor Process contains the following major milestones. "Decision points" indicate when DISA will determine if a vendor continues in the process.
 
-![Vendor STIG Process Major Milestones](attachments/vendor-stig-process-milestones.png)
+![Vendor STIG Process Major Milestones](/attachments/vendor-stig-process-milestones.png)
 
 To begin the process, the vendor submits the Vendor STIG Intent Form through the DOD Cyber Exchange website at <https://public.cyber.mil/stigs/vendor-process>. DISA validates the information on the form, notifies the vendor if more information is needed, and determines if the vendor will move on to the Planning stage.
 

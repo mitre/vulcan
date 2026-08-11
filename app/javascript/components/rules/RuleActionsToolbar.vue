@@ -66,7 +66,7 @@
           title="Open DISA Vendor STIG Process Guide"
           variant="outline-info"
           size="sm"
-          href="/disa-guide"
+          href="/docs/disa-process/overview"
           target="_blank"
         >
           <b-icon icon="question-circle" /> DISA Guide
