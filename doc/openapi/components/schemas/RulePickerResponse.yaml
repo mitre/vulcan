@@ -5,6 +5,13 @@ description: >-
 allOf:
   - $ref: ./RuleSummary.yaml
   - type: object
+    # The satisfaction arrays are always present on STIG rules and never
+    # on authored SRG requirements — they keep the two picker row shapes
+    # disjoint wherever they appear together in a oneOf.
+    required:
+      - displayed_name
+      - satisfies
+      - satisfied_by
     properties:
       displayed_name:
         type: string

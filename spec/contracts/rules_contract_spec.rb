@@ -143,6 +143,25 @@ RSpec.describe 'Rules endpoint contracts', type: :request do
       assert_fields_present first_rule, :id, :rule_id, :title, :displayed_name, :satisfies, :satisfied_by
       expect(first_rule['displayed_name']).to start_with(component.prefix)
     end
+
+    it 'returns the authored-SRG picker variant for an srg-kind component' do
+      core = create(:security_requirements_guide, :core, :skip_rules,
+                    srg_id: 'SRG-CORE-PICKER', version: 'V1R1')
+      srg_comp = create(:component, :skip_rules, project: project, document_type: 'srg',
+                                                 based_on: core, prefix: 'RCPK-00')
+      create(:srg_rule, :authored, component: srg_comp, rule_id: '000001',
+                                   status: 'Applicable', title: 'Authored picker row')
+
+      get "/components/#{srg_comp.id}/rules_picker", headers: json_headers
+      body = validate_and_parse!
+
+      first_rule = body['rules'].first
+      assert_fields_present first_rule, :id, :rule_id, :title, :displayed_name
+      expect(first_rule['displayed_name']).to eq('RCPK-00-000001')
+      expect(first_rule['status']).to eq('Applicable')
+      expect(first_rule).not_to have_key('satisfies')
+      expect(first_rule).not_to have_key('satisfied_by')
+    end
   end
 
   # ── PUT /rules/:id ──

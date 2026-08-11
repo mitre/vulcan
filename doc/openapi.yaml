@@ -2582,10 +2582,10 @@ paths:
       tags:
         - Rules
       summary: Lightweight rule list for picker UI
-      description: Returns a compact list of rules for dropdown/picker selection (e.g., the move-to-rule admin action or duplicate-of picker). Lighter than the full rules list — omits content fields. Requires project membership.
+      description: 'Returns a compact list of requirements for dropdown/picker selection (e.g., the move-to-rule admin action or duplicate-of picker). Lighter than the full rules list — omits content fields. Rows are shaped by the component''s document_type: STIG rule objects carry the satisfaction relationships, authored SRG requirement objects omit them entirely. Requires project membership.'
       responses:
         '200':
-          description: Rules for picker selection
+          description: Requirements for picker selection
           content:
             application/json:
               schema:
@@ -2595,21 +2595,40 @@ paths:
                 properties:
                   rules:
                     type: array
+                    description: All requirements in picker shape, one variant per document kind — the shapes are disjoint and never collapse into one list.
                     items:
-                      $ref: '#/components/schemas/RulePickerResponse'
+                      oneOf:
+                        - $ref: '#/components/schemas/RulePickerResponse'
+                        - $ref: '#/components/schemas/AuthoredSrgRulePickerResponse'
               examples:
-                picker:
-                  summary: Rules for dropdown
+                stig_picker:
+                  summary: STIG rules for dropdown
                   value:
                     rules:
                       - id: 100
-                        rule_id: CNTR-00-000050
+                        rule_id: '000050'
+                        displayed_name: CNTR-00-000050
                         title: Container images must be signed
                         locked: false
+                        satisfies: []
+                        satisfied_by: []
                       - id: 101
-                        rule_id: CNTR-00-000051
+                        rule_id: '000051'
+                        displayed_name: CNTR-00-000051
                         title: Container images must come from approved registries
                         locked: true
+                        satisfies: []
+                        satisfied_by: []
+                srg_picker:
+                  summary: Authored SRG requirements for dropdown
+                  value:
+                    rules:
+                      - id: 10633
+                        rule_id: '000001'
+                        displayed_name: RCPK-00-000001
+                        title: The container platform must enforce approved authorizations
+                        status: Applicable
+                        locked: false
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /components/detect_srg:
@@ -11418,6 +11437,10 @@ components:
       allOf:
         - $ref: '#/components/schemas/RuleSummary'
         - type: object
+          required:
+            - displayed_name
+            - satisfies
+            - satisfied_by
           properties:
             displayed_name:
               type: string
@@ -11433,6 +11456,92 @@ components:
               description: Rules that satisfy this rule.
               items:
                 $ref: '#/components/schemas/SatisfiedBySummary'
+    AuthoredSrgRulePickerResponse:
+      description: 'A component-authored SRG requirement for picker dropdowns. Serialized by AuthoredSrgRuleBlueprint :picker view — the default requirement fields plus displayed_name. Carries no satisfaction relationships: authored requirements have no satisfies graph, and the keys are omitted entirely rather than sent empty. The closed property set keeps this shape disjoint from RulePickerResponse wherever the two appear in a oneOf.'
+      type: object
+      required:
+        - id
+        - rule_id
+        - locked
+        - displayed_name
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          description: Unique requirement identifier.
+          example: 10633
+        rule_id:
+          type: string
+          description: Six-digit zero-padded requirement number combined with the component prefix to form the displayed ID.
+          example: '000001'
+        title:
+          type:
+            - string
+            - 'null'
+          description: Title of the requirement. Null if not yet authored.
+          example: The container platform must enforce approved authorizations.
+        version:
+          type:
+            - string
+            - 'null'
+          description: Requirement version identifier. Minted at release for authored requirements.
+          example: null
+        status:
+          type:
+            - string
+            - 'null'
+          description: Applicability status in the SRG authoring vocabulary.
+          enum:
+            - Not Yet Determined
+            - Applicable
+            - Not Applicable
+            - null
+          example: Applicable
+        rule_severity:
+          type:
+            - string
+            - 'null'
+          description: DISA severity level.
+          enum:
+            - low
+            - medium
+            - high
+            - null
+          example: medium
+        locked:
+          type: boolean
+          description: Whether the requirement is locked from further edits.
+          example: false
+        review_requestor_id:
+          type:
+            - integer
+            - 'null'
+          description: ID of the user who requested review. Null if no review requested.
+          example: null
+        changes_requested:
+          type: boolean
+          description: Whether changes have been requested during review.
+          example: false
+        comment_summary:
+          type: object
+          description: Per-requirement comment counts.
+          required:
+            - open
+            - total
+          additionalProperties: false
+          properties:
+            open:
+              type: integer
+              description: Comments not yet adjudicated, including replies under open parents.
+              example: 0
+            total:
+              type: integer
+              description: Total comment count across all statuses.
+              example: 0
+        displayed_name:
+          type: string
+          description: Component-scoped display name (PREFIX-rule_id).
+          example: RCPK-00-000001
     RuleBasicFields:
       description: Lightweight rule snapshot used for version-to-version diff comparisons. Produced by Rule#basic_fields. Contains only the fields needed to detect content changes between component releases.
       type: object

@@ -394,7 +394,10 @@ class ComponentsController < ApplicationController
     # Deliberately a plain relation: the blueprint declares what the picker view
     # reads, and preloading is applied from that declaration on the way in. An
     # includes list written here would be a second, drifting copy of it.
-    render json: { rules: RuleBlueprint.render_as_json(@component.rules, view: :picker) }
+    # Blueprint selection is kind-routed through the one requirement seam —
+    # authored SRG requirements serve the picker fields that exist for them.
+    blueprint = ComponentBlueprint.requirement_blueprint(@component)
+    render json: { rules: blueprint.render_as_json(@component.requirements, view: :picker) }
   end
 
   def comments

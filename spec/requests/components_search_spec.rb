@@ -37,6 +37,36 @@ RSpec.describe 'Component search and rule picker' do
     end
   end
 
+  # The picker backs move-to-rule / duplicate-target selection in triage
+  # admin actions — it must serve authored requirements for srg-kind
+  # components, not silently return an empty list.
+  describe 'GET /components/:id/rules_picker.json for an SRG component' do
+    let_it_be(:srg_component) do
+      create(:component, :skip_rules, project: project, document_type: 'srg',
+                                      prefix: 'PICK-00', name: 'Picker SRG')
+    end
+    let_it_be(:authored_requirement) do
+      create(:srg_rule, :authored, component: srg_component, rule_id: '000001',
+                                   title: 'Authored picker requirement')
+    end
+
+    it 'returns authored requirements in picker shape with Rule-only keys omitted' do
+      get "/components/#{srg_component.id}/rules_picker.json"
+      expect(response).to have_http_status(:ok)
+
+      rows = response.parsed_body['rules']
+      expect(rows.pluck('id')).to contain_exactly(authored_requirement.id)
+
+      row = rows.first
+      expect(row['rule_id']).to eq('000001')
+      expect(row['title']).to eq('Authored picker requirement')
+      expect(row['displayed_name']).to eq('PICK-00-000001')
+      # Authored rows omit Rule-only keys entirely — never empty arrays.
+      expect(row).not_to have_key('satisfies')
+      expect(row).not_to have_key('satisfied_by')
+    end
+  end
+
   describe 'POST /components/:id/find' do
     let_it_be(:rule) { component.rules.first || create(:rule, component: component, title: 'Test LIKE injection rule') }
     let_it_be(:check_match_rule) do

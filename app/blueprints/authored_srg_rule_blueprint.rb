@@ -35,6 +35,16 @@ class AuthoredSrgRuleBlueprint < Blueprinter::Base
     # Default fields are sufficient for the navigator
   end
 
+  # RulePicker dropdown — defaults plus the component-scoped display name.
+  # Authored requirements have no satisfaction graph, so the satisfies /
+  # satisfied_by keys are omitted entirely (consumers default with || []).
+  view :picker do
+    # Category 3: builds its name from the owning component's prefix.
+    field :displayed_name, preload: :component do |rule, _options|
+      rule.displayed_name
+    end
+  end
+
   # Read-only content (non-member show) — no reviews, no histories.
   view :viewer do
     fields :rule_weight, :fixtext, :fixtext_fixref, :ident, :ident_system,
