@@ -13,7 +13,7 @@ Both are driven by the same OpenAPI 3.2 spec at `doc/openapi/`.
 |---------|--------|---------|
 | `yarn openapi:bundle` | `doc/openapi.yaml` | Bundle multi-file YAML for Rails app + Scalar |
 | `yarn openapi:lint` | stdout | Validate spec (broken $refs, unused schemas) |
-| `yarn openapi:docs` | `docs/data/openapi.json` | Bundle as JSON for VitePress public docs |
+| `yarn openapi:docs` | `docs/site/data/openapi.json` | Bundle as JSON for VitePress public docs |
 
 ## Updating the Spec
 
@@ -37,12 +37,12 @@ JavaScript, PHP, Python), and an interactive playground.
 To preview locally:
 
 ```bash
-yarn openapi:docs         # Generate docs/data/openapi.json
+yarn openapi:docs         # Generate docs/site/data/openapi.json
 cd docs && yarn dev       # Preview at localhost:5173
 ```
 
 In CI, the `docs.yml` workflow runs `yarn openapi:docs` automatically when spec files
-change. The generated `docs/data/openapi.json` is gitignored — built fresh on every deploy.
+change. The generated `docs/site/data/openapi.json` is gitignored — built fresh on every deploy.
 
 The spec is also published to the [Scalar Registry](https://registry.scalar.com/@mitre/apis/vulcan/latest)
 on each release via the `release.yml` workflow.

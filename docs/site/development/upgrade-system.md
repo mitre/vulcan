@@ -123,8 +123,8 @@ lib/tasks/upgrade.rake                      # CLI (preflight/fix/verify/auto)
 bin/db-rename-legacy                        # Shell pre-boot rename
 bin/docker-entrypoint                       # Docker: rename → prepare → auto
 bin/setup                                   # Dev: rename → prepare → auto
-docs/deployment/upgrade-guide.md            # User-facing upgrade docs
-docs/development/upgrade-system.md          # This file (developer docs)
+docs/site/deployment/upgrade-guide.md       # User-facing upgrade docs
+docs/site/development/upgrade-system.md     # This file (developer docs)
 spec/services/upgrade/preflight_spec.rb     # 9 tests
 spec/services/upgrade/runner_spec.rb        # 4 tests
 spec/lib/tasks/upgrade_rake_spec.rb         # 3 tests

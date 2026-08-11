@@ -39,7 +39,7 @@ module DocsSite
   class << self
     def build!(base: default_base)
       run(SPEC_COMMAND, base, Rails.root)
-      BUILD_COMMANDS.each { |command| run(command, base, source_directory) }
+      BUILD_COMMANDS.each { |command| run(command, base, build_directory) }
 
       output_directory
     end
@@ -48,12 +48,23 @@ module DocsSite
       ENV.fetch('VULCAN_DOCS_BASE', DEFAULT_BASE)
     end
 
-    def source_directory
+    # The documentation tree's tooling root — its manifest, generator
+    # configuration, and build output live here, and the build commands run
+    # from here.
+    def build_directory
       Rails.root.join(DIRECTORY)
     end
 
+    # The curated content root. Publishing is structural: a page exists on the
+    # site only if its source lives under this directory, and a tree outside it
+    # cannot be published. This is the one Ruby home for that path — specs and
+    # image-layout checks read it from here.
+    def site_root
+      build_directory.join('site')
+    end
+
     def output_directory
-      source_directory.join('.vitepress/dist')
+      build_directory.join('.vitepress/dist')
     end
 
     private

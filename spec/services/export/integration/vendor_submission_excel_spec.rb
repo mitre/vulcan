@@ -13,7 +13,7 @@ require 'rails_helper'
 # - NYD rules excluded
 # - Correct MIME type and file format
 #
-# See docs/disa-process/field-requirements.md for the full matrix.
+# See docs/site/disa-process/field-requirements.md for the full matrix.
 # ==========================================================================
 RSpec.describe 'VendorSubmission + Excel integration' do
   subject(:result) do

@@ -28,7 +28,7 @@ This document lists all environment variables that can be used to configure Vulc
 
 **Deprecated:** `VULCAN_VUE_DATABASE_PASSWORD` and `DB_SUFFIX` are removed. Use `POSTGRES_PASSWORD` and `DATABASE_NAME` respectively. `POSTGRES_DB` is no longer read by database.yml — use `DATABASE_NAME` for all environments. Test database name (`vulcan_test`) is hardcoded to prevent collision with development.
 
-**Multi-Project Development**: See [docs/development/port-registry.md](docs/development/port-registry.md) for recommended port assignments when running multiple projects simultaneously.
+**Multi-Project Development**: See [docs/site/development/port-registry.md](docs/site/development/port-registry.md) for recommended port assignments when running multiple projects simultaneously.
 
 ## General Application Settings
 
@@ -124,7 +124,7 @@ If an admin already exists from `admin:bootstrap`, the demo admin is skipped and
 > `<app_url>/users/signed_out` (built from `VULCAN_APP_URL`). Without the
 > sign-out entry, providers reject Vulcan's logout with
 > `400 invalid_request`. See the
-> [Okta/OIDC setup guide](docs/deployment/auth/oidc-okta.md) for the full
+> [Okta/OIDC setup guide](docs/site/deployment/auth/oidc-okta.md) for the full
 > settings tables.
 
 #### Multiple OIDC Providers (Registry — v2.3+)
@@ -351,7 +351,7 @@ Configurable maximum lengths for text fields. Defaults are based on analysis of 
 data across 1,785 rules. Group limits by category rather than individual fields — each env var
 controls a category of related fields.
 
-See [docs/development/input-length-limits.md](docs/development/input-length-limits.md) for the
+See [docs/site/development/input-length-limits.md](docs/site/development/input-length-limits.md) for the
 complete field-to-setting mapping.
 
 | Variable | Description | Default | Example |
@@ -386,7 +386,7 @@ complete field-to-setting mapping.
 For local development, create a `.env` file in the project root with your settings:
 
 ```bash
-# Database (see docs/development/port-registry.md for multi-project ports)
+# Database (see docs/site/development/port-registry.md for multi-project ports)
 DATABASE_PORT=5435
 POSTGRES_PORT=5435
 DATABASE_HOST=127.0.0.1

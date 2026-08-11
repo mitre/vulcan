@@ -81,4 +81,4 @@ else
     echo "5. Start the application with: docker compose up -d"
 fi
 echo
-echo "For more information, see docs/deployment/docker.md"
+echo "For more information, see docs/site/deployment/docker.md"

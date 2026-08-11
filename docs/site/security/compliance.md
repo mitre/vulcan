@@ -625,7 +625,7 @@ This table provides direct links to the Vulcan source code that implements each 
 | Control Category | Feature | Implementation Location | Status |
 |-----------------|---------|------------------------|--------|
 | **Session Management** | Session Timeout | [`config/vulcan.default.yml:29`](https://github.com/mitre/vulcan/blob/master/config/vulcan.default.yml#L29)<br>[`config/initializers/devise.rb:161`](https://github.com/mitre/vulcan/blob/master/config/initializers/devise.rb#L161) | ✅ Implemented<br>⚠️ Note: Defaults to 60 min, set to 10 min for compliance |
-| **System Banner** | Welcome Text | [`config/vulcan.default.yml:11`](https://github.com/mitre/vulcan/blob/master/config/vulcan.default.yml#L11)<br>[`app/views/devise/shared/_what_is_vulcan.html.haml:4`](https://github.com/mitre/vulcan/blob/master/app/views/devise/shared/_what_is_vulcan.html.haml#L4) | ✅ Implemented |
+| **System Banner** | Welcome Text | [`config/vulcan.default.yml:16`](https://github.com/mitre/vulcan/blob/master/config/vulcan.default.yml#L16)<br>[`app/views/devise/sessions/new.html.haml:13`](https://github.com/mitre/vulcan/blob/master/app/views/devise/sessions/new.html.haml#L13) | ✅ Implemented |
 | **Audit Logging** | User Auditing | [`app/models/user.rb:8`](https://github.com/mitre/vulcan/blob/master/app/models/user.rb#L8) | ✅ Implemented |
 | **Audit Logging** | Component Auditing | [`app/models/component.rb:42`](https://github.com/mitre/vulcan/blob/master/app/models/component.rb#L42) | ✅ Implemented |
 | **OIDC** | Auto-Discovery | [`config/initializers/oidc_startup_validation.rb`](https://github.com/mitre/vulcan/blob/master/config/initializers/oidc_startup_validation.rb) | ✅ Implemented |

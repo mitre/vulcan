@@ -75,7 +75,7 @@ read endpoints (STIGs, SRGs) document a `'404'` only for a genuine missing id.
 # Edit individual files in this directory, then:
 yarn openapi:bundle       # Regenerate doc/openapi.yaml from multi-file source
 yarn openapi:lint         # Validate the multi-file source (catches broken $refs)
-yarn openapi:docs         # Generate docs/data/openapi.json for VitePress API reference
+yarn openapi:docs         # Generate docs/site/data/openapi.json for VitePress API reference
 ```
 
 Always run bundle + lint after changes. Run `openapi:docs` when updating the public API reference site. Contract tests in `spec/contracts/` validate responses against the bundled output.

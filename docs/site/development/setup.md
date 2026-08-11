@@ -453,7 +453,7 @@ docker compose up --build
 
 ### Multi-Project Setup
 
-When running multiple MITRE projects simultaneously, assign unique ports to avoid conflicts. See `docs/development/port-registry.md` for port assignments.
+When running multiple MITRE projects simultaneously, assign unique ports to avoid conflicts. See `docs/site/development/port-registry.md` for port assignments.
 
 ```bash
 # Example .env

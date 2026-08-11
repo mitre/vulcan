@@ -29,7 +29,8 @@ RSpec.describe 'Production image prune' do
   # because its dist subdirectory is the built site. Listing the parent would make
   # this guard demand the deletion of the very thing the image needs.
   let(:build_only_paths) do
-    ['docs/node_modules', 'docs/.vitepress/cache', 'docs/plans', 'docs/user-guide', 'node_modules']
+    ['docs/node_modules', 'docs/.vitepress/cache', 'docs/plans', 'docs/decisions',
+     'docs/site/user-guide', 'node_modules']
   end
 
   let(:prune_command) { repo_relative_prune(build_cleanup_run_block) }

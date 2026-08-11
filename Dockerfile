@@ -218,7 +218,8 @@ RUN set -eu; \
     yarn.lock \
     package.json \
     esbuild.config.js; \
-    find docs -mindepth 1 -maxdepth 1 ! -name disa-process ! -name .vitepress -exec rm -rf {} +; \
+    find docs -mindepth 1 -maxdepth 1 ! -name site ! -name .vitepress -exec rm -rf {} +; \
+    find docs/site -mindepth 1 -maxdepth 1 ! -name disa-process -exec rm -rf {} +; \
     find docs/.vitepress -mindepth 1 -maxdepth 1 ! -name dist -exec rm -rf {} +; \
     if [ -d public/assets ]; then find public/assets -name '*.map' -delete; fi; \
     find "${BUNDLE_PATH}" \( -name '*.o' -o -name '*.c' -o -name '*.h' \) -delete; \

@@ -124,7 +124,7 @@ RSpec.describe 'docs:build' do
     # real by spec/requests/docs_spec.rb, which reads files from this location.
     it 'keeps the build output inside the documentation tree' do
       expect(described_class.output_directory.to_s)
-        .to start_with("#{described_class.source_directory}/")
+        .to start_with("#{described_class.build_directory}/")
     end
   end
 end

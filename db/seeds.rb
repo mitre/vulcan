@@ -8,7 +8,7 @@
 # - Production seeds (SRGs, STIGs, admin) run on every deploy
 # - Demo data (users, projects, comments) is opt-in via env var
 #
-# See docs/development/seed-system.md for full documentation.
+# See docs/site/development/seed-system.md for full documentation.
 #
 # Usage:
 #   rails db:seed                                    # dev/test: always seeds

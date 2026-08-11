@@ -29,30 +29,42 @@ yarn docs:preview  # Preview the production build locally
 
 ## Directory Structure
 
+Publishing is structural: `srcDir` points VitePress at the curated site root
+`docs/site/`, so everything under it is published and nothing outside it can
+be. There is no exclude list.
+
 ```
 docs/
 ├── .vitepress/
-│   ├── config.js        # Sidebar, nav, VitePress settings
+│   ├── config.mjs       # Sidebar, nav, VitePress settings (srcDir: 'site')
 │   └── theme/           # Custom theme (Mermaid, styles)
 ├── package.json         # Docs-specific dependencies (Vue 3)
 ├── yarn.lock            # Dependency lock file
-├── index.md             # Homepage
-├── about.md             # About page
-├── api/                 # API documentation
-├── deployment/          # Deployment + upgrade guides
-├── development/         # Developer documentation (this file)
-├── disa-process/        # DISA STIG vendor process
-├── getting-started/     # Setup, config, env vars, troubleshooting
-├── release-notes/       # Per-version release notes
-├── security/            # Security controls + compliance
-└── user-guide/          # End-user documentation
+├── site/                # THE PUBLISHED SITE ROOT — every page lives here
+│   ├── index.md         # Homepage
+│   ├── about.md         # About page
+│   ├── api/             # API documentation
+│   ├── data/            # Generated data (openapi.json — gitignored)
+│   ├── deployment/      # Deployment + upgrade guides
+│   ├── development/     # Developer documentation (this file)
+│   ├── disa-process/    # DISA STIG vendor process
+│   ├── getting-started/ # Setup, config, env vars, troubleshooting
+│   ├── public/          # Static assets (logos, favicons, attachments)
+│   ├── release-notes/   # Per-version release notes
+│   ├── security/        # Security controls + compliance
+│   └── user-guide/      # End-user documentation
+├── plans/               # Internal working docs — never published
+├── decisions/           # Architecture decision records — never published
+├── research/            # Research notes — never published
+└── superpowers/         # Development artifacts — never published
 ```
 
 ## Adding Documentation
 
 ### Creating New Pages
 
-1. Create a `.md` file in the appropriate directory
+1. Create a `.md` file in the appropriate directory **under `docs/site/`** — a
+   page outside the site root is never built
 2. Add frontmatter if needed:
    ```yaml
    ---
@@ -64,7 +76,8 @@ docs/
 
 ### Updating Navigation
 
-Edit `.vitepress/config.js` to add pages to the sidebar:
+Edit `.vitepress/config.mjs` to add pages to the sidebar (links are relative
+to the site root, so `docs/site/development/setup.md` is `/development/setup`):
 
 ```javascript
 {
@@ -111,15 +124,15 @@ graph TD
 
 ## Build Configuration
 
-### Excluded Content
+### Unpublished Content
 
-`srcExclude` in `.vitepress/config.js` prevents internal planning docs from being processed:
-
-```javascript
-srcExclude: ['**/superpowers/**', '**/plans/**'],
-```
-
-These directories contain working documents with raw markdown that Vue's template compiler rejects (embedded YAML, duplicate HTML attributes). They're development artifacts, not published content.
+Curation has exactly one mechanism: `srcDir: 'site'` in `.vitepress/config.mjs`.
+Internal working documents (`docs/plans/`, `docs/decisions/`, `docs/research/`,
+`docs/superpowers/`) live outside the site root, so VitePress never processes
+them — there is no exclude list to maintain, and a new internal directory is
+unpublished by default. The guard spec
+`spec/config/docs_site_curation_spec.rb` proves every built page originates
+under the site root.
 
 ### Build Verification
 
@@ -132,7 +145,9 @@ yarn docs:build
 If the build fails, check for:
 - Raw HTML in markdown that Vue interprets as template syntax
 - Unclosed tags or duplicate attributes
-- Files in excluded directories that should stay excluded
+
+If a new page does not appear in the build, check that it lives under
+`docs/site/` — pages outside the site root are silently never built.
 
 ## Deployment
 
@@ -179,9 +194,12 @@ If that fails, manually reinstall:
 cd docs && rm -rf node_modules && yarn install && cd ..
 ```
 
-### Build Fails on Plan Files
+### Internal Docs and the Build
 
-Internal planning docs (`superpowers/plans/`) contain markdown that Vue rejects. They're excluded via `srcExclude` in the VitePress config. If you add new internal docs, add their directory to the exclude list.
+Internal working docs contain raw markdown that Vue's template compiler would
+reject, but the build never sees them: they live outside `docs/site/`, and
+VitePress only processes the site root. New internal docs go anywhere outside
+`docs/site/`; new published pages go under it. Nothing to configure either way.
 
 ## Resources
 

@@ -151,7 +151,7 @@ RSpec.describe Export::Modes::VendorSubmission do
 
   # ==========================================================================
   # Field-blanking requirements per DISA Process Guide V4R3
-  # See docs/disa-process/field-requirements.md for full matrix
+  # See docs/site/disa-process/field-requirements.md for full matrix
   # ==========================================================================
   describe '#transform_value' do
     # Build a minimal exportable_rule double for each status

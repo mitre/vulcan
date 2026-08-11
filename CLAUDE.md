@@ -113,7 +113,7 @@ docker compose build                           # Build image
 docker compose up                              # Start full stack
 docker compose down -v                         # Stop and remove volumes
 
-# Upgrade toolkit (see docs/deployment/upgrade-guide.md)
+# Upgrade toolkit (see docs/site/deployment/upgrade-guide.md)
 bundle exec rake upgrade:preflight             # Read-only report: version, pending actions, warnings
 bundle exec rake upgrade:fix                   # Apply safe auto-fixable actions (DB renames, backfills)
 bundle exec rake upgrade:verify                # Validate post-upgrade state (migrations, DB names, env)
@@ -236,7 +236,7 @@ let!(:existing_admin) { create(:user, admin: true) }
 - Flat naming: `reviews_triage_spec.rb`, not `reviews/triage_spec.rb`
 - Shared contexts in `spec/support/shared_contexts/`
 - Shared examples in `spec/support/shared_examples/`
-- Full testing guide: `docs/development/testing.md`
+- Full testing guide: `docs/site/development/testing.md`
 
 ---
 

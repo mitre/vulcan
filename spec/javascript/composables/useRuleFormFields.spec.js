@@ -742,7 +742,7 @@ describe("useRuleFormFields", () => {
 
   // ─── Exact field sets per status (strict assertions) ──────
   // These use toEqual (not arrayContaining) to catch accidental field additions/omissions.
-  // Business rules source: docs/development/rule-form-business-rules.md
+  // Business rules source: docs/site/development/rule-form-business-rules.md
   describe("exact field sets per status", () => {
     const STATUSES = {
       "Applicable - Configurable": {

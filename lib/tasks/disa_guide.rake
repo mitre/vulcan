@@ -10,8 +10,8 @@ namespace :disa_guide do
   desc 'Full pipeline: convert .docx, write .md, copy .docx to attachment dirs'
   task :update, %i[docx_path md_output public_attachments_dir] => :environment do |_t, args|
     docx_path = validated_docx_path(args[:docx_path])
-    md_output = args[:md_output] || Rails.root.join('docs/disa-process/vendor-stig-process-guide.md').to_s
-    public_attachments = args[:public_attachments_dir] || Rails.root.join('docs/public/attachments').to_s
+    md_output = args[:md_output] || default_md_output
+    public_attachments = args[:public_attachments_dir] || default_public_attachments_dir
 
     File.write(md_output, convert_docx_to_markdown(docx_path))
 
@@ -21,6 +21,17 @@ namespace :disa_guide do
     puts "Wrote: #{md_output}"
     puts "Copied .docx to: #{public_attachments}"
   end
+end
+
+# Default output locations derive from the code that serves the content, so a
+# move of either tree carries the defaults along instead of leaving them
+# pointing at a dead path.
+def default_md_output
+  DisaGuideController::GUIDE_DIR.join('vendor-stig-process-guide.md').to_s
+end
+
+def default_public_attachments_dir
+  DocsSite.site_root.join('public/attachments').to_s
 end
 
 # Validate the docx argument the same way for both tasks: pandoc present, a

@@ -356,7 +356,7 @@ complete field-to-setting mapping.
 For local development, create a `.env` file in the project root with your settings:
 
 ```bash
-# Database (see docs/development/port-registry.md for multi-project ports)
+# Database (see docs/site/development/port-registry.md for multi-project ports)
 DATABASE_PORT=5435
 POSTGRES_PORT=5435
 DATABASE_HOST=127.0.0.1

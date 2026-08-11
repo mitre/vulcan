@@ -4,7 +4,7 @@ require 'rails_helper'
 
 RSpec.describe 'ENV documentation consistency' do
   let(:env_vars_md) { Rails.root.join('ENVIRONMENT_VARIABLES.md').read }
-  let(:github_docs) { Rails.root.join('docs/deployment/auth/github.md').read }
+  let(:github_docs) { Rails.root.join('docs/site/deployment/auth/github.md').read }
 
   it 'ENVIRONMENT_VARIABLES.md GitHub vars match what devise.rb uses (no VULCAN_ prefix)' do
     expect(env_vars_md).to include('GITHUB_APP_ID'),

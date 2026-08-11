@@ -9,7 +9,7 @@ RSpec.describe 'Component bulk export' do
   # REQUIREMENT: Bulk component export must work for released components
   # shown on the ProjectComponents page. The URL pattern must not collide
   # with the single-component export route /components/:id/export/:type.
-  # See: docs/disa-process/export-requirements.md Gap 7
+  # See: docs/site/disa-process/export-requirements.md Gap 7
   # ==========================================================================
   describe 'GET /components/bulk_export/:type (ProjectComponents export)' do
     let!(:released) { create(:component, project: project, released: true) }

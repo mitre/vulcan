@@ -11,13 +11,13 @@ How to update the guide when DISA releases a new version.
 ### 1. Drop the new .docx into attachments
 
 ```bash
-cp /path/to/U_Vendor_STIG_Process_Guide_V4R3.docx docs/disa-process/attachments/
+cp /path/to/U_Vendor_STIG_Process_Guide_V4R3.docx docs/site/disa-process/attachments/
 ```
 
 ### 2. Preview the conversion
 
 ```bash
-bundle exec rake "disa_guide:convert[docs/disa-process/attachments/U_Vendor_STIG_Process_Guide_V4R3.docx]" > /tmp/preview.md
+bundle exec rake "disa_guide:convert[docs/site/disa-process/attachments/U_Vendor_STIG_Process_Guide_V4R3.docx]" > /tmp/preview.md
 ```
 
 Open `/tmp/preview.md` and verify:
@@ -29,13 +29,13 @@ Open `/tmp/preview.md` and verify:
 ### 3. Run the full update pipeline
 
 ```bash
-bundle exec rake "disa_guide:update[docs/disa-process/attachments/U_Vendor_STIG_Process_Guide_V4R3.docx]"
+bundle exec rake "disa_guide:update[docs/site/disa-process/attachments/U_Vendor_STIG_Process_Guide_V4R3.docx]"
 ```
 
 This will:
 1. Convert the .docx to cleaned markdown
-2. Write `docs/disa-process/vendor-stig-process-guide.md`
-3. Copy the .docx to `docs/public/attachments/`
+2. Write `docs/site/disa-process/vendor-stig-process-guide.md`
+3. Copy the .docx to `docs/site/public/attachments/`
 
 ### 4. Update references
 
@@ -44,8 +44,8 @@ These files reference the guide version and must be updated manually:
 | File | What to update |
 |------|---------------|
 | `app/controllers/disa_guide_controller.rb` | PAGE_SECTIONS label (version string) |
-| `docs/disa-process/overview.md` | Version in source citations + reference table |
-| `docs/disa-process/field-requirements.md` | Version reference in intro paragraph |
+| `docs/site/disa-process/overview.md` | Version in source citations + reference table |
+| `docs/site/disa-process/field-requirements.md` | Version reference in intro paragraph |
 | `app/services/export/modes/vendor_submission.rb` | Comment referencing guide version |
 | `app/models/rule.rb` | Comment referencing guide version (if section numbers changed) |
 
@@ -53,8 +53,8 @@ These files reference the guide version and must be updated manually:
 
 ```bash
 # Remove old version from both attachment directories
-rm docs/disa-process/attachments/U_Vendor_STIG_Process_Guide_V4R1_20220815.docx
-rm docs/public/attachments/U_Vendor_STIG_Process_Guide_V4R1_20220815.docx
+rm docs/site/disa-process/attachments/U_Vendor_STIG_Process_Guide_V4R1_20220815.docx
+rm docs/site/public/attachments/U_Vendor_STIG_Process_Guide_V4R1_20220815.docx
 ```
 
 ### 6. Verify
@@ -77,9 +77,9 @@ cd docs && yarn build
 After automated conversion, always check:
 
 - **Tables**: Pandoc converts complex Word tables to markdown pipe tables. Wide tables may need manual column adjustment.
-- **Images**: Pandoc extracts to `media/` by default. Move any extracted images to `docs/disa-process/attachments/` and update references.
+- **Images**: Pandoc extracts to `media/` by default. Move any extracted images to `docs/site/disa-process/attachments/` and update references.
 - **Callouts**: The in-app renderer supports `::: info` / `::: warning` / `::: tip` callout syntax. Add callouts for critical DISA guidance.
-- **Field requirements**: If the new guide changed field requirements (Section 4), update `docs/disa-process/field-requirements.md` to match.
+- **Field requirements**: If the new guide changed field requirements (Section 4), update `docs/site/disa-process/field-requirements.md` to match.
 - **Section numbers**: If sections were renumbered, update code comments that reference specific sections (e.g., `V4R1 §4.1.15`).
 
 ## What the rake task does

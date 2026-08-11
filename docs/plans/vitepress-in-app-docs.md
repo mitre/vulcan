@@ -72,6 +72,22 @@ Settled in discussion; recorded here rather than re-opened.
    controller, a signed-out reader can be shown a sign-in link rather than an
    unexplained 401.
 
+9. **Publishing is structural, and final validation runs once against the final
+   layout** (ruled 2026-08-10). The site builds from a dedicated site root
+   (positive selection): everything under it is published, everything outside it
+   cannot be, and `srcExclude` is deleted so curation has exactly one mechanism.
+   This replaced exclude-pattern curation after it shipped a live defect — the
+   decisions tree was published because the exclude list never named it, against
+   the standing ruling that plans and decisions stay unpublished. Per-target
+   presentation (theme, branding, hero action) lives in the target table as
+   locales-style deltas over the one content tree — the same pattern the site
+   generator uses for internationalization. Sequencing follows from
+   validate-once: reorganization, then theming, then the navigation entry, then
+   the old pipeline's retirement, and only then the production-image capstone
+   (airgap proof and stated size), so the image validation measures the final
+   desired state instead of an intermediate one. The whole chain lands before
+   the merge.
+
 ## Mechanism
 
 Build, in the existing build stage:
@@ -169,16 +185,27 @@ internal references stay out of artifacts.
 
 ## Phases
 
+(Ordering revised 2026-08-10 per decision 9 — the pre-merge chain after the serving
+foundation is: site-root reorganization → theme → navigation entry → retirement →
+production-image capstone, so final validation measures the final layout once.)
+
 1. Base mode and build task — the site builds to a known location during
-   `assets:precompile`, output excluded from the build context.
+   `assets:precompile`, output excluded from the build context. (Done.)
 2. Route, controller, and the access setting — the built site is reachable, with the
-   gate honoring the setting in both positions.
-2a. Theme — the logo, the application's colors, and a link back, applied through the
-   documentation theme's own extension point rather than by post-processing its output.
+   gate honoring the setting in both positions. (Done.)
 3. CSP — the served pages run their scripts under the existing policy, unweakened.
-4. Production image — the build ships, an airgapped container serves the site with no
-   external requests, and the image size is measured and stated.
-5. Retire the old pipeline — redirects from the existing guide paths, then removal of the
-   controller, its view, its Vue page and pack, and their specs.
-6. API reference — the built reference replaces the CDN-loaded page, and the freed
-   origins come out of the CSP.
+   (Done.)
+4. Site-root reorganization — publishing becomes structural (decision 9): the curated
+   site root replaces srcExclude, unpublished trees sit outside it, and every path
+   consumer (guide controller, image prune, workflows) follows the move.
+5. Theme — the logo, the application's colors, and a link back, applied through the
+   documentation theme's own extension point rather than by post-processing its
+   output; per-target presentation deltas live in the target table.
+6. Navigation entry — both menu sources point at the served site, single entry.
+7. Retire the old pipeline — redirects from the existing guide paths, then removal of
+   the controller, its view, its Vue page and pack, and their specs.
+8. Production image, the capstone — the build ships, an airgapped container serves the
+   site with no external requests, and the image size is measured and stated against
+   the final layout.
+9. API reference (post-merge) — the built reference replaces the CDN-loaded page, and
+   the freed origins come out of the CSP.

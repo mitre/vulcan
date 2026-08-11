@@ -754,7 +754,7 @@ jobs:
       - name: Setup database
         env:
           # CI uses default port 5432 (isolated runner, no multi-project conflict).
-          # Local dev uses DATABASE_PORT from .env — see docs/development/port-registry.md.
+          # Local dev uses DATABASE_PORT from .env — see docs/site/development/port-registry.md.
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/test
         run: |
           bundle exec rails db:create

@@ -6,10 +6,10 @@ the finished system supports once all current work is complete.
 
 ## References
 
-- `docs/disa-process/export-requirements.md` — Gap analysis and export architecture
-- `docs/disa-process/field-requirements.md` — DISA field matrix by status
-- `docs/disa-process/overview.md` — DISA vendor process overview
-- `docs/disa-process/intent-form.md` — DISA Intent Form requirements
+- `docs/site/disa-process/export-requirements.md` — Gap analysis and export architecture
+- `docs/site/disa-process/field-requirements.md` — DISA field matrix by status
+- `docs/site/disa-process/overview.md` — DISA vendor process overview
+- `docs/site/disa-process/intent-form.md` — DISA Intent Form requirements
 
 ---
 

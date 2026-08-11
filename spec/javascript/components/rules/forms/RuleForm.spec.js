@@ -9,7 +9,7 @@
  * correctly RESPONDS to those props — catching v-if bugs, binding errors,
  * and missing fields.
  *
- * REQUIREMENTS (from docs/development/rule-form-business-rules.md):
+ * REQUIREMENTS (from docs/site/development/rule-form-business-rules.md):
  * R1: Fields render when in fields.displayed, hidden when not
  * R2: Fields disable when in fields.disabled or when form disabled prop is true
  * R3: IA Control/CCI always visible when rule has data (not status-gated)

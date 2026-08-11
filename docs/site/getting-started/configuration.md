@@ -132,7 +132,7 @@ Use `./setup-docker-secrets.sh` to generate all required secrets automatically, 
 
 ## Configure Welcome Text and Contact Email:
 
-- **welcome_text:** Welcome text is the text shown on the homepage below the "What is Vulcan" blurb on the homepage. It can be configured by the administrator to provide users with any information that may be relevant to their access and usage of the Vulcan application. `(ENV: VULCAN_WELCOME_TEXT)(default: nil)`
+- **welcome_text:** Extra welcome text shown on the sign-in page beneath its heading, rendered only when set. It can be configured by the administrator to provide users with any information that may be relevant to their access and usage of the Vulcan application. `(ENV: VULCAN_WELCOME_TEXT)(default: nil)`
 - **contact_email:** Contact email is the reply email shown to users on confirmation and notification emails. Also serves as the default SMTP username when not explicitly configured, ensuring authentication alignment. By default this will revert to `vulcan-support@example.com` if no email is specified. `(ENV: VULCAN_CONTACT_EMAIL)(default: vulcan-support@example.com)`
 - **app_url:** Allows hyper-linking of vulcan urls when notifications are sent `(ENV: VULCAN_APP_URL)`
 

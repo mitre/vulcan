@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
 ##
-# Serves DISA process guidance documentation from docs/disa-process/*.md
+# Serves DISA process guidance documentation from docs/site/disa-process/*.md
 # within the Vulcan application. Works in airgapped environments.
 #
 class DisaGuideController < ApplicationController
   before_action :authorize_logged_in
 
-  GUIDE_DIR = Rails.root.join('docs/disa-process')
+  GUIDE_DIR = Rails.root.join('docs/site/disa-process')
 
   LEGACY_SLUGS = {
     'vendor-stig-process-guide-v4r1' => 'vendor-stig-process-guide'

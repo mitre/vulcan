@@ -1,5 +1,5 @@
 # PostgreSQL configuration — 12-factor: all settings via environment variables.
-# See docs/development/port-registry.md for multi-project port assignments.
+# See docs/site/development/port-registry.md for multi-project port assignments.
 #
 default: &default
   adapter: postgresql
