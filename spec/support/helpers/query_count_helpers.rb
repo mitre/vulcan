@@ -12,6 +12,12 @@ module QueryCountHelpers
   # and a cache hit costs nothing — none of them should move an assertion.
   IGNORED_NAMES = ['SCHEMA', 'TRANSACTION', 'CACHE', nil].freeze
 
+  # Rack-session persistence is per-request bookkeeping, written only when the
+  # session payload changed during that request — timing, not the measured
+  # code path, decides whether one lands inside a counted window, which makes
+  # any exact-count assertion flake by one query.
+  IGNORED_NAME_PREFIXES = ['ActiveRecord::SessionStore::Session'].freeze
+
   # Total plus a per-source breakdown. The breakdown is what makes a failure
   # diagnosable: "412 queries" says something is wrong, "Check Load: 321" says
   # which association is missing from the preload plan.
@@ -26,7 +32,8 @@ module QueryCountHelpers
   def count_queries
     by_name = Hash.new(0)
     subscriber = ActiveSupport::Notifications.subscribe('sql.active_record') do |*, payload|
-      next if IGNORED_NAMES.include?(payload[:name]) || payload[:cached]
+      next if IGNORED_NAMES.include?(payload[:name]) || payload[:cached] ||
+              IGNORED_NAME_PREFIXES.any? { |prefix| payload[:name].start_with?(prefix) }
 
       by_name[payload[:name]] += 1
     end
