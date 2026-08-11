@@ -3,15 +3,137 @@
 # Remove stale PID file if present (prevents "server is already running" errors)
 rm -f /rails/tmp/pids/server.pid
 
-# If running the rails server then create or migrate existing database
-# db:prepare is idempotent: creates DB if missing, runs pending migrations if exists
-# This also triggers admin:bootstrap (hooked into db:prepare)
+# ─── Pre-boot database connectivity check ─────────────────────────────
+# Runs BEFORE Rails boots. Uses pg_isready (no Ruby, no Rails) so it
+# works even when the Rails environment itself can't load due to a
+# misconfigured database connection. On failure, prints diagnostics
+# with exact fix commands instead of a raw PG::ConnectionBad backtrace.
 #
-# IMPORTANT: db:prepare does NOT need DISABLE_DATABASE_ENVIRONMENT_CHECK=1
-# Unlike db:schema:load (rake task), db:prepare calls load_schema() directly
-# as a Ruby method, bypassing the protected environment check entirely.
-# This is by design — see Rails source: DatabaseTasks#initialize_database
-if [[ "$@" == *"server"* ]]; then
+# This is the "gas and go" safety net: if the container can't reach the
+# database, the operator sees actionable output within 10 seconds
+# instead of a cryptic Rails crash.
+# ──────────────────────────────────────────────────────────────────────
+check_database_connectivity() {
+  # Build connection params from the same env vars that database.yml reads
+  if [ -n "$DATABASE_URL" ]; then
+    DB_CHECK_URL="$DATABASE_URL"
+  else
+    local host="${DATABASE_HOST:-127.0.0.1}"
+    local port="${DATABASE_PORT:-5432}"
+    local user="${POSTGRES_USER:-postgres}"
+    local dbname="${POSTGRES_DB:-vulcan_postgres_production}"
+    DB_CHECK_URL="postgres://${user}@${host}:${port}/${dbname}"
+  fi
+
+  # Extract host:port for pg_isready (handles both URL and individual vars)
+  local check_host check_port check_user
+  if [ -n "$DATABASE_URL" ]; then
+    check_host=$(echo "$DATABASE_URL" | sed -E 's|.*@([^:/]+).*|\1|')
+    check_port=$(echo "$DATABASE_URL" | sed -E 's|.*:([0-9]+)/.*|\1|')
+    check_user=$(echo "$DATABASE_URL" | sed -E 's|.*://([^:@]+).*|\1|')
+    [ -z "$check_port" ] && check_port=5432
+  else
+    check_host="${DATABASE_HOST:-127.0.0.1}"
+    check_port="${DATABASE_PORT:-5432}"
+    check_user="${POSTGRES_USER:-postgres}"
+  fi
+
+  echo "Checking database connectivity (${check_host}:${check_port})..."
+
+  # pg_isready is a lightweight TCP + PG protocol check — no auth needed
+  if command -v pg_isready &>/dev/null; then
+    if pg_isready -h "$check_host" -p "$check_port" -U "$check_user" -t 10 &>/dev/null; then
+      echo "  ✓ Database is reachable"
+      return 0
+    fi
+  fi
+
+  # pg_isready failed or not available — try a psql connection test
+  if command -v psql &>/dev/null; then
+    if psql "$DB_CHECK_URL" -c "SELECT 1" &>/dev/null 2>&1; then
+      echo "  ✓ Database is reachable"
+      return 0
+    fi
+  fi
+
+  # ── Connection failed — print diagnostics ──
+  echo ""
+  echo "======================================================================"
+  echo "  ✗ DATABASE CONNECTION FAILED"
+  echo "======================================================================"
+  echo ""
+  echo "  Vulcan cannot reach the database at ${check_host}:${check_port}"
+  echo ""
+  echo "  ── Check these first ──"
+  echo ""
+  if [ -n "$DATABASE_URL" ]; then
+    echo "  DATABASE_URL is set: ${check_host}:${check_port}"
+  else
+    echo "  DATABASE_URL is NOT set (using individual env vars)"
+    echo "    DATABASE_HOST=${DATABASE_HOST:-(not set, defaulting to 127.0.0.1)}"
+    echo "    DATABASE_PORT=${DATABASE_PORT:-(not set, defaulting to 5432)}"
+    echo "    POSTGRES_USER=${POSTGRES_USER:-(not set, defaulting to postgres)}"
+    echo "    POSTGRES_DB=${POSTGRES_DB:-(not set, defaulting to vulcan_postgres_production)}"
+  fi
+  echo ""
+  echo "  ── Common fixes ──"
+  echo ""
+  echo "  1. Is the database host correct?"
+  echo "     • Docker Compose: use 'db' (the service name), not 'localhost'"
+  echo "     • Aurora RDS: use the CLUSTER endpoint, not the instance endpoint"
+  echo "     • Kubernetes: use the service DNS name"
+  echo ""
+  echo "  2. Is SSL required?"
+  echo "     • Aurora/RDS/Cloud SQL require SSL by default"
+  echo "     • Add ?sslmode=require to DATABASE_URL:"
+  echo "       DATABASE_URL=postgres://user:pass@host:5432/dbname?sslmode=require"
+  echo ""
+  echo "  3. Is GSSAPI causing issues?"
+  echo "     • Aurora does not support GSSAPI authentication"
+  echo "     • Set: DATABASE_GSSENCMODE=disable"
+  echo ""
+  echo "  4. Is the database server running?"
+  echo "     • Docker Compose: check 'docker compose ps db'"
+  echo "     • Aurora: check the RDS console for cluster status"
+  echo "     • Firewall/security group blocking port ${check_port}?"
+  echo ""
+  echo "  5. Are credentials correct?"
+  echo "     • Check POSTGRES_USER and POSTGRES_PASSWORD in .env"
+  echo "     • Aurora IAM auth requires a different connection method"
+  echo ""
+  echo "  ── Quick test from this container ──"
+  echo ""
+  echo "  docker compose exec web bash"
+  if [ -n "$DATABASE_URL" ]; then
+    echo "  pg_isready -h ${check_host} -p ${check_port}"
+  else
+    echo "  pg_isready -h \$DATABASE_HOST -p \$DATABASE_PORT"
+  fi
+  echo ""
+  echo "  ── Standalone diagnostic (no Rails needed) ──"
+  echo ""
+  echo "  curl -fsSL https://raw.githubusercontent.com/mitre/vulcan/master/bin/upgrade-check.sh | bash -s -- \"\$DATABASE_URL\""
+  echo ""
+  echo "======================================================================"
+  echo ""
+  return 1
+}
+
+if [[ "$*" == *"server"* ]]; then
+  # Check connectivity BEFORE Rails boots — gives actionable diagnostics
+  # instead of a raw PG::ConnectionBad backtrace
+  if ! check_database_connectivity; then
+    echo "Exiting. Fix the database connection and restart the container."
+    exit 1
+  fi
+
+  # db:prepare is idempotent: creates DB if missing, runs pending migrations if exists
+  # This also triggers admin:bootstrap (hooked into db:prepare)
+  #
+  # IMPORTANT: db:prepare does NOT need DISABLE_DATABASE_ENVIRONMENT_CHECK=1
+  # Unlike db:schema:load (rake task), db:prepare calls load_schema() directly
+  # as a Ruby method, bypassing the protected environment check entirely.
+  # This is by design — see Rails source: DatabaseTasks#initialize_database
   ./bin/rails db:prepare
 fi
 

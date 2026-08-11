@@ -23,6 +23,8 @@ Choose the deployment method that fits your infrastructure and team.
 
 **Enterprise / multi-tenant?** [Kubernetes](kubernetes) with Helm chart for scaling and isolation.
 
+**Upgrading from an older version?** See the [Upgrade Guide](upgrade-guide) — includes a preflight diagnostic, auto-fix for common data issues, and Aurora RDS guidance.
+
 **Air-gapped / classified network?** [Bare Metal](bare-metal) for full control without container dependencies.
 
 ## Common Requirements (All Deployments)

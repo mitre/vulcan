@@ -189,6 +189,7 @@ export default defineConfig({
             { text: "Bare Metal", link: "/deployment/bare-metal" },
             { text: "Heroku", link: "/deployment/heroku" },
             { text: "Kubernetes", link: "/deployment/kubernetes" },
+            { text: "Upgrade Guide", link: "/deployment/upgrade-guide" },
           ],
         },
         {
