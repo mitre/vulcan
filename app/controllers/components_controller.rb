@@ -692,9 +692,12 @@ class ComponentsController < ApplicationController
       Component.find(component_create_params[:component_id]).overlay(@project.id)
     elsif component_create_params[:file]
       # Create a new component from the provided parameters and then pass the spreadsheet
-      # to the component for further parsing
+      # to the component for further parsing. The profile choice is not honoured
+      # here: spreadsheet imports are Rule-based by definition, so document_type
+      # stays at its stig default — only the plain-create branch below accepts it,
+      # matching how the duplicate and overlay branches scope their parameters.
       component = @project.components.new(
-        component_create_params.except(:id, :duplicate, :file, *CREATION_EXTRAS)
+        component_create_params.except(:id, :duplicate, :file, :document_type, *CREATION_EXTRAS)
       )
       component.from_spreadsheet(component_create_params[:file])
       component

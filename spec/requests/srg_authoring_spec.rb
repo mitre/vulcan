@@ -319,6 +319,45 @@ RSpec.describe 'SRG authoring backend' do
       expect(created.rules.count).to eq(0)
       created.destroy!
     end
+
+    # Spreadsheet imports are Rule-based by definition; only the plain-create
+    # branch accepts the profile choice. A request combining a spreadsheet with
+    # document_type=srg must yield a stig-kind component — never an srg-kind
+    # component carrying imported Rule rows, whose requirements routing would
+    # then ignore its own rules.
+    it 'does not apply the srg profile to a spreadsheet import' do
+      # A derived (non-core) SRG with its whole catalog covered by the file:
+      # stig-kind imports require a derived parent, and any catalog row missing
+      # from the file would be appended as a blank Rule and fail validation.
+      derived_srg = create(:security_requirements_guide, :skip_rules)
+      catalog_rules = create_list(:srg_rule, 2, security_requirements_guide: derived_srg)
+      file = Tempfile.new(['import_profile', '.csv'])
+      CSV.open(file.path, 'w') do |csv|
+        csv << (%w[SRGID STIGID Severity Requirement VulDiscussion Status Check Fix] +
+                ['Status Justification', 'Artifact Description'])
+        catalog_rules.each_with_index do |catalog_rule, idx|
+          csv << [catalog_rule.version, format('IMPT-00-%06d', idx + 1), 'CAT II',
+                  'Imported requirement', 'Discussion', 'Not Yet Determined',
+                  'Check', 'Fix', '', '']
+        end
+      end
+
+      post "/projects/#{project.id}/components",
+           params: { component: { name: 'Imported Component', prefix: 'IMPT-00',
+                                  title: 'Imported Component', version: 1, release: 1,
+                                  security_requirements_guide_id: derived_srg.id,
+                                  document_type: 'srg',
+                                  file: Rack::Test::UploadedFile.new(file.path, 'text/csv') } }
+
+      expect(response).to have_http_status(:ok)
+      created = Component.find_by(name: 'Imported Component')
+      expect(created).to be_present
+      expect(created.rules.count).to eq(2)
+      expect(created.document_type).to eq('stig')
+    ensure
+      Component.find_by(name: 'Imported Component')&.destroy!
+      file.close!
+    end
   end
 
   describe 'STIG-only surfaces are gated on srg-kind components' do
