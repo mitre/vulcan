@@ -89,6 +89,34 @@ class Component < ApplicationRecord
 
   COMMENT_PHASES = %w[open closed].freeze
   CLOSED_REASONS = %w[adjudicating finalized].freeze
+
+  # Aggregate pending-comment counts per component, union over rule-scoped
+  # (commentable_type='BaseRule') AND component-scoped (commentable_type=
+  # 'Component') reviews. Two ? placeholders, one per UNION branch. See
+  # .pending_comment_counts.
+  PENDING_COMMENT_COUNTS_UNION_SQL = <<~SQL.squish.freeze
+    SELECT component_id, COUNT(*) AS cnt FROM (
+      SELECT base_rules.component_id
+      FROM reviews
+      INNER JOIN base_rules ON base_rules.id = reviews.commentable_id
+      WHERE reviews.commentable_type = 'BaseRule'
+        AND reviews.action = 'comment'
+        AND reviews.responding_to_review_id IS NULL
+        AND reviews.triage_status = 'pending'
+        AND base_rules.component_id IN (?)
+      UNION ALL
+      SELECT reviews.commentable_id AS component_id
+      FROM reviews
+      WHERE reviews.commentable_type = 'Component'
+        AND reviews.action = 'comment'
+        AND reviews.responding_to_review_id IS NULL
+        AND reviews.triage_status = 'pending'
+        AND reviews.commentable_id IN (?)
+    ) AS pending
+    GROUP BY component_id
+  SQL
+  private_constant :PENDING_COMMENT_COUNTS_UNION_SQL
+
   validates :comment_phase, inclusion: { in: COMMENT_PHASES }
   validates :closed_reason, inclusion: { in: CLOSED_REASONS }, allow_nil: true
   validate  :closed_reason_only_when_closed
@@ -582,9 +610,20 @@ class Component < ApplicationRecord
   end
 
   def reviews
-    rule_names = rules.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
-    Review.where(rule_id: rule_names.keys).order(created_at: :desc).limit(20).as_json.map do |review|
-      review['displayed_rule_name'] = rule_names[review['rule_id'].to_i]
+    rule_id_to_displayed = rules.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
+    # Polymorphic union: reviews on this component's rules OR on the component
+    # itself (commentable_type='Component'). The pre-polymorphic filter
+    # `rule_id IN (...)` silently dropped component-scoped reviews shipped in
+    # #729. See docs/plans/DATABASE-COMPLETE-REDESIGN-v2.md Problem 13.
+    rule_id_subquery = rules.select(:id)
+    rule_scoped = Review.where(commentable_type: 'BaseRule', commentable_id: rule_id_subquery)
+    component_scoped = Review.where(commentable_type: 'Component', commentable_id: id)
+    rule_scoped.or(component_scoped).order(created_at: :desc).limit(20).as_json.map do |review|
+      review['displayed_rule_name'] = if review['commentable_type'] == 'Component'
+                                        '(component)'
+                                      else
+                                        rule_id_to_displayed[review['rule_id'].to_i]
+                                      end
       review
     end
   end
@@ -602,13 +641,15 @@ class Component < ApplicationRecord
   def self.pending_comment_counts(component_ids)
     return {} if component_ids.blank?
 
-    Review.where(action: 'comment',
-                 responding_to_review_id: nil,
-                 triage_status: 'pending')
-          .joins(:rule)
-          .merge(Rule.where(component_id: component_ids))
-          .group('base_rules.component_id')
-          .count
+    # Polymorphic union: pending top-level comments on this component's rules
+    # OR on the component itself. The pre-polymorphic `.joins(:rule)` INNER
+    # JOIN dropped commentable_type='Component' rows (rule_id IS NULL); see
+    # docs/plans/DATABASE-COMPLETE-REDESIGN-v2.md Problem 13. Mirrors the
+    # REVIEW_COMPONENT_UNION_BODY pattern on Project — single SQL statement
+    # so callers' query-count assertions stay green.
+    sql = sanitize_sql_array([PENDING_COMMENT_COUNTS_UNION_SQL, component_ids, component_ids])
+    rows = connection.exec_query(sql)
+    rows.each_with_object({}) { |r, h| h[r['component_id']] = r['cnt'] }
   end
 
   # Backs GET /components/:id/comments — the triage table.
