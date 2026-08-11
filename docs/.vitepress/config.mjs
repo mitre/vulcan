@@ -1,7 +1,7 @@
 import { defineConfig } from "vitepress";
 import { ViteImageOptimizer } from "vite-plugin-image-optimizer";
 import { useSidebar } from "vitepress-openapi";
-import spec from "../data/openapi.json" with { type: "json" };
+import spec from "../site/data/openapi.json" with { type: "json" };
 import { target } from "./target.mjs";
 
 // https://vitepress.dev/reference/site-config
@@ -12,9 +12,10 @@ export default defineConfig({
   // VULCAN_DOCS_TARGET at build time. Nothing else in this file re-derives it.
   base: target.base,
 
-  // Exclude internal planning docs and non-publishable content from the build.
-  // These contain raw HTML/markdown that Vue's template compiler rejects.
-  srcExclude: ['**/superpowers/**', '**/plans/**', '**/research/**'],
+  // Publishing is structural: only content under the site root builds, so a
+  // tree outside it cannot be published and there is no exclude list to
+  // forget. The curation guard spec pins this against the built output.
+  srcDir: 'site',
 
   // Clean URLs without .html extension
   cleanUrls: true,
@@ -32,7 +33,37 @@ export default defineConfig({
     ["link", { rel: "icon", type: "image/svg+xml", href: `${target.base}saf-logo.svg` }],
     ["link", { rel: "apple-touch-icon", sizes: "180x180", href: `${target.base}saf-logo-180.png` }],
     ["meta", { name: "theme-color", content: "#005288" }],
+    // Served in-app the pages wear the application's palette and dark-mode
+    // surfaces. The overrides live in a public stylesheet linked only by this
+    // build-time entry, so the published targets never load it and the shared
+    // theme stays one code path.
+    ...(target.inApp
+      ? [["link", { rel: "stylesheet", href: `${target.base}in-app-theme.css` }]]
+      : []),
   ],
+
+  // The landing hero is shared content; what differs in-app is one action.
+  // This is the generator's own build-time hook — the served HTML is never
+  // post-processed. Ruling: in-app, "Try Production" becomes "Go to Vulcan"
+  // pointing at the application root — the reader is already inside the
+  // instance the button used to advertise.
+  //
+  // The link is "/../" because the theme rebases every internal href under
+  // the site base: "/" would render as the site's own root, while "/../"
+  // renders as `${base}../`, which the browser resolves to the application
+  // root. target: "_self" rides through to the anchor, which is what stops
+  // the site's SPA router from intercepting a destination outside its base.
+  transformPageData(pageData) {
+    if (!target.inApp || pageData.relativePath !== "index.md") return;
+
+    for (const action of pageData.frontmatter.hero?.actions || []) {
+      if (action.text === "Try Production") {
+        action.text = "Go To Vulcan";
+        action.link = "/../";
+        action.target = "_self";
+      }
+    }
+  },
 
   // Theme configuration
   themeConfig: {
@@ -47,6 +78,13 @@ export default defineConfig({
 
     // Navigation bar
     nav: [
+      // Served in-app, the way back to the application leads the menu. The
+      // link is "/../" because the theme rebases every internal href under
+      // the site base — it renders as `${base}../`, which the browser
+      // resolves to the application root. target: "_self" is a no-op for the
+      // browser but stops the site's SPA router from intercepting a
+      // destination outside its base.
+      ...(target.inApp ? [{ text: "Go To Vulcan", link: "/../", target: "_self" }] : []),
       {
         text: "User Guide",
         items: [
@@ -84,7 +122,10 @@ export default defineConfig({
               { text: "Commenter Email", link: "/user-guide/commenter-email" },
             ],
           },
-          { text: "SAF Training", link: "https://mitre.github.io/saf-training/courses/guidance/" },
+          // Outbound: dead in an airgapped deployment, so declared per target.
+          ...(target.outboundChrome
+            ? [{ text: "SAF Training", link: "https://mitre.github.io/saf-training/courses/guidance/" }]
+            : []),
         ],
       },
       {
@@ -360,22 +401,30 @@ export default defineConfig({
       };
     })(),
 
-    // Social links
-    socialLinks: [
-      { icon: "github", link: "https://github.com/mitre/vulcan" },
-      { icon: "docker", link: "https://hub.docker.com/r/mitre/vulcan" },
-    ],
+    // Social links — outbound, so only where the internet is (target table).
+    ...(target.outboundChrome
+      ? {
+          socialLinks: [
+            { icon: "github", link: "https://github.com/mitre/vulcan" },
+            { icon: "docker", link: "https://hub.docker.com/r/mitre/vulcan" },
+          ],
+        }
+      : {}),
 
     // Search
     search: {
       provider: "local",
     },
 
-    // Edit link
-    editLink: {
-      pattern: "https://github.com/mitre/vulcan/edit/master/docs/:path",
-      text: "Edit this page on GitHub",
-    },
+    // Edit link — outbound, per-page GitHub footer; same target gate.
+    ...(target.outboundChrome
+      ? {
+          editLink: {
+            pattern: "https://github.com/mitre/vulcan/edit/master/docs/:path",
+            text: "Edit this page on GitHub",
+          },
+        }
+      : {}),
 
     // Footer
     footer: {

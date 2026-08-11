@@ -24,6 +24,10 @@ describe("colorMode", () => {
 
   beforeEach(async () => {
     localStorageMock.clear();
+    // The store empties above, but the spies' CALL HISTORY is per-suite —
+    // without this, a negative assertion (not.toHaveBeenCalledWith) reads
+    // calls made by earlier examples.
+    vi.clearAllMocks();
     vi.resetModules();
     colorMode = await import("@/utils/colorMode");
   });
@@ -47,6 +51,15 @@ describe("colorMode", () => {
     it("persists theme to localStorage", () => {
       colorMode.setStoredTheme("dark");
       expect(localStorage.setItem).toHaveBeenCalledWith("vulcan-theme", "dark");
+    });
+
+    // The in-app documentation pages decide their theme pre-paint from the
+    // docs generator's own storage key. Mirroring the preference there is
+    // what makes the served docs follow the app with no flash of the wrong
+    // theme — the docs' inline init script reads only its own key.
+    it("mirrors the preference to the documentation site's key", () => {
+      colorMode.setStoredTheme("dark");
+      expect(localStorage.setItem).toHaveBeenCalledWith("vitepress-theme-appearance", "dark");
     });
   });
 
@@ -94,6 +107,23 @@ describe("colorMode", () => {
     it("defaults to light when no preference", () => {
       colorMode.initTheme();
       expect(document.documentElement.getAttribute("data-bs-theme")).toBe("light");
+    });
+
+    // A preference stored before the mirror existed has never been copied to
+    // the docs key; init is the moment every page load passes through, so it
+    // brings the docs key up to date for those readers.
+    it("mirrors an existing stored preference to the documentation key", () => {
+      localStorage.setItem("vulcan-theme", "dark");
+      colorMode.initTheme();
+      expect(localStorage.setItem).toHaveBeenCalledWith("vitepress-theme-appearance", "dark");
+    });
+
+    it("does not write the documentation key when nothing is stored", () => {
+      colorMode.initTheme();
+      expect(localStorage.setItem).not.toHaveBeenCalledWith(
+        "vitepress-theme-appearance",
+        expect.anything(),
+      );
     });
   });
 });

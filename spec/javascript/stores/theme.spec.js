@@ -6,9 +6,10 @@ vi.mock("@/utils/colorMode", () => ({
   getPreferredTheme: vi.fn(() => "light"),
   applyTheme: vi.fn(),
   setStoredTheme: vi.fn(),
+  initTheme: vi.fn(),
 }));
 
-import { getPreferredTheme, applyTheme, setStoredTheme } from "@/utils/colorMode";
+import { applyTheme, setStoredTheme, initTheme } from "@/utils/colorMode";
 
 describe("useThemeStore", () => {
   beforeEach(() => {
@@ -49,10 +50,13 @@ describe("useThemeStore", () => {
     expect(setStoredTheme).toHaveBeenCalledWith("light");
   });
 
-  it("init applies the preferred theme", () => {
-    getPreferredTheme.mockReturnValue("dark");
+  // The wiring is the requirement: initTheme applies the preference AND
+  // mirrors a stored choice to the docs site's pre-paint key, and the navbar
+  // boots through THIS init — a store that re-inlines the apply logic leaves
+  // the mirror as dead code (which is exactly how it shipped broken once).
+  it("init boots the theme through initTheme", () => {
     const store = useThemeStore();
     store.init();
-    expect(applyTheme).toHaveBeenCalledWith("dark");
+    expect(initTheme).toHaveBeenCalledTimes(1);
   });
 });

@@ -27,6 +27,10 @@ const TARGETS = {
   pages: {
     base: '/',
     inApp: false,
+    // Outbound chrome — the GitHub edit link, the social icons, and the
+    // external training nav entry — is meaningful only where the internet is:
+    // served in-app (possibly airgapped) every one of those links is dead.
+    outboundChrome: true,
     api: PUBLIC_API
   },
 
@@ -34,6 +38,7 @@ const TARGETS = {
   local: {
     base: '/vulcan/',
     inApp: false,
+    outboundChrome: true,
     api: PUBLIC_API
   },
 
@@ -43,6 +48,7 @@ const TARGETS = {
   app: {
     base: process.env.VULCAN_DOCS_BASE || '/docs/',
     inApp: true,
+    outboundChrome: false,
     api: {
       // The reader is already inside the instance, so their session
       // authenticates them and the API is same-origin.

@@ -38,6 +38,18 @@ RSpec.describe 'Docs site' do
       expect(response.body).to include('<title>DISA Vendor STIG Process | Vulcan</title>')
     end
 
+    # The application-palette stylesheet is what makes the served pages wear
+    # the app's colours, and it arrives only through a build-time head entry —
+    # nothing else fails if that entry is deleted, so this is the one pin.
+    it 'links the application palette stylesheet and serves it' do
+      get '/docs'
+      expect(response.body).to include('href="/docs/in-app-theme.css"')
+
+      get '/docs/in-app-theme.css'
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('--vp-c-brand-1')
+    end
+
     # Rails refuses to serve JavaScript to a plain GET unless the same-origin
     # check is skipped, which returned 422 for every bundle and left the site
     # unable to hydrate. This is the guard for that.
@@ -75,7 +87,12 @@ RSpec.describe 'Docs site' do
     it 'serves every asset the built index references' do
       get '/docs'
 
+      # The link back to the application is the one deliberate reference a
+      # served page makes outside the site (its href dot-normalizes to the
+      # application root). Everything else root-absolute must serve from the
+      # site — that is the mis-rebased-asset class this example exists for.
       references = response.body.scan(%r{(?:href|src)="(/[^"]+)"}).flatten.uniq
+                           .reject { |path| Pathname.new(path).cleanpath.to_s == '/' }
       expect(references).not_to be_empty
 
       failures = references.reject do |path|
@@ -84,6 +101,42 @@ RSpec.describe 'Docs site' do
       end
 
       expect(failures).to eq([])
+    end
+  end
+
+  # The served pages are the documentation tool's own documents, not views
+  # inside the application shell — the way back is an explicit link, present
+  # on every page, targeting the application root.
+  describe 'link back into the application' do
+    def links_back(body)
+      Nokogiri::HTML(body).css('a').select { |a| a.text.include?('Go To Vulcan') }
+    end
+
+    # Two load-bearing details, both learned live: the href must RESOLVE to
+    # the application root (the hero button's is written "/docs/../" because
+    # the site generator rebases every internal href under its base), and the
+    # target attribute must be present — the site's SPA router intercepts
+    # every same-origin anchor without one and tries to resolve it as a page
+    # of the site, so an unmarked link renders fine and silently does nothing.
+    def expect_working_app_links(links, page)
+      expect(links).not_to be_empty, "no \"Go to Vulcan\" link in the served #{page}"
+      links.each do |link|
+        resolved = Pathname.new(URI.join('http://resolve.test/docs/', link['href']).path).cleanpath.to_s
+        expect(resolved).to eq('/')
+        expect(link['target']).to eq('_self')
+      end
+    end
+
+    it 'carries the link on the landing page' do
+      get '/docs'
+
+      expect_working_app_links(links_back(response.body), 'landing page')
+    end
+
+    it 'carries the link on a nested page' do
+      get '/docs/disa-process/overview'
+
+      expect_working_app_links(links_back(response.body), 'nested page')
     end
   end
 

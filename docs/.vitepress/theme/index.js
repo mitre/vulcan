@@ -1,3 +1,5 @@
+import { defineComponent, h, watch } from "vue";
+import { useData } from "vitepress";
 import DefaultTheme from "vitepress/theme";
 import { theme, useOpenapi, usePlayground } from "vitepress-openapi/client";
 import "vitepress-openapi/dist/style.css";
@@ -5,7 +7,29 @@ import Mermaid from "./Mermaid.vue";
 import ColorSwatch from "./ColorSwatch.vue";
 import "./custom.css";
 
-import specRaw from "../../data/openapi.json";
+// Served in-app, the reader's theme choice is one preference shared with the
+// application: the app mirrors its stored choice into this site's own storage
+// key (which the pre-paint init script reads), and this wrapper completes the
+// round trip — flipping the appearance switch here records the choice under
+// the application's key too, so the app follows on its next page load.
+// (The link back into the application is ordinary nav configuration in
+// config.mjs, not layout work.)
+const Layout = defineComponent({
+  name: "VulcanDocsLayout",
+  setup() {
+    const { isDark, theme: themeConfig } = useData();
+
+    if (typeof window !== "undefined" && themeConfig.value.docsTarget?.inApp) {
+      watch(isDark, (dark) => {
+        window.localStorage.setItem("vulcan-theme", dark ? "dark" : "light");
+      });
+    }
+
+    return () => h(DefaultTheme.Layout);
+  },
+});
+
+import specRaw from "../../site/data/openapi.json";
 
 // Cookie auth and the same-origin server entry are meaningful only when the
 // reader is inside a running instance. On the published site they describe
@@ -40,6 +64,7 @@ function specForTarget(target) {
 
 export default {
   ...DefaultTheme,
+  Layout,
   async enhanceApp({ app, siteData }) {
     const target = siteData.value.themeConfig.docsTarget;
 
