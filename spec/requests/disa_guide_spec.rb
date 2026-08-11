@@ -15,7 +15,9 @@ RSpec.describe 'DISA Guide' do
     it 'renders the overview page by default' do
       get '/disa-guide'
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('DISA Process Guide')
+      # Pin the overview's own rendered heading — a navbar label must not be
+      # able to satisfy this assertion while the page content goes unserved.
+      expect(response.body).to include('DISA Vendor STIG Process')
     end
 
     it 'renders the vendor STIG process guide page' do

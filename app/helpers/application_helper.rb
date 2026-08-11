@@ -13,9 +13,9 @@ module ApplicationHelper
       { icon: 'patch-check-fill', name: 'Released Components', link: components_path },
       { icon: 'clipboard-check', name: 'STIGs', link: stigs_path },
       { icon: 'clipboard', name: 'SRGs', link: srgs_path },
-      { icon: 'journal-bookmark-fill', name: 'Resources', children: [
-        { icon: 'book', name: 'DISA Process Guide', link: disa_guide_path(page: 'vendor-stig-process-guide') }
-      ] }
+      # The documentation site covers the DISA guide and everything else, so
+      # the old single-child Resources dropdown became one top-level entry.
+      { icon: 'book', name: 'Documentation', link: docs_path }
     ]
   end
 end

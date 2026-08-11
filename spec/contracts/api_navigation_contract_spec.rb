@@ -21,7 +21,9 @@ RSpec.describe 'Navigation endpoint contract', type: :request do
 
       assert_fields_present body, :nav_links, :access_requests, :locked_users
       expect(body['nav_links']).to be_an(Array)
-      expect(body['nav_links'].size).to be >= 5
+      # The menu is a fixed declaration, so the count is exact — a floor here
+      # would keep passing while entries silently appeared or vanished.
+      expect(body['nav_links'].size).to eq(5)
       expect(body['access_requests']).to be_an(Array)
       expect(body['locked_users']).to be_an(Array)
     end

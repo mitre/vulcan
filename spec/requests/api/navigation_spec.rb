@@ -27,11 +27,46 @@ RSpec.describe 'Api::Navigation' do
         expect(body['nav_links'].first).to have_key('link')
       end
 
-      it 'includes Projects, Released Components, STIGs, SRGs, Resources' do
+      it 'includes Projects, Released Components, STIGs, SRGs, Documentation' do
         get '/api/navigation', as: :json
 
         names = response.parsed_body['nav_links'].pluck('name')
-        expect(names).to include('Projects', 'Released Components', 'STIGs', 'SRGs', 'Resources')
+        expect(names).to include('Projects', 'Released Components', 'STIGs', 'SRGs', 'Documentation')
+      end
+
+      # This endpoint's old dropdown child linked '/disa_guide' — an underscore
+      # where the route uses a hyphen — so the menu entry had never worked.
+      # Asserted on the served JSON so the class of link cannot come back.
+      it 'serves no underscore disa_guide link anywhere in the menu' do
+        get '/api/navigation', as: :json
+
+        links = response.parsed_body['nav_links'].flat_map do |item|
+          [item['link'], *Array(item['children']).pluck('link')]
+        end.compact
+        expect(links).not_to include('/disa_guide')
+        expect(links).to include('/docs')
+      end
+
+      # Two files declare this menu (the endpoint here and the HAML helper's
+      # base_navigation). Until they are unified, this is the tripwire that
+      # keeps the documentation entry from drifting apart silently.
+      it 'serves the same documentation entry the navbar helper produces' do
+        get '/api/navigation', as: :json
+
+        helper_host = Class.new do
+          include ApplicationHelper
+
+          def default_url_options
+            {}
+          end
+        end
+
+        served = response.parsed_body['nav_links'].find { |item| item['name'] == 'Documentation' }
+        declared = helper_host.new.base_navigation.find { |item| item[:name] == 'Documentation' }
+
+        expect(served).not_to be_nil
+        expect(declared).not_to be_nil
+        expect(served).to eq(declared.transform_keys(&:to_s))
       end
 
       it 'returns empty access_requests for non-admin' do

@@ -14,10 +14,20 @@ RSpec.describe ApplicationHelper do
       expect(navigation.pluck(:link)).to include('/projects', '/components', '/stigs', '/srgs')
     end
 
-    it 'links the DISA Process Guide directly to the vendor STIG process guide page' do
-      resources = navigation.find { |item| item[:name] == 'Resources' }
-      guide = resources[:children].find { |child| child[:name] == 'DISA Process Guide' }
-      expect(guide[:link]).to eq('/disa-guide/vendor-stig-process-guide')
+    it 'offers a single documentation entry pointing at the docs route' do
+      documentation = navigation.find { |item| item[:name] == 'Documentation' }
+      expect(documentation).not_to be_nil, 'no Documentation entry in the navigation'
+      expect(documentation[:link]).to eq('/docs')
+      expect(documentation).not_to have_key(:children)
+    end
+
+    # The docs entry replaced a dropdown whose only child was the DISA guide —
+    # a single-child dropdown is the shape this card removes, not just moves.
+    it 'leaves no single-child dropdown behind' do
+      navigation.select { |item| item.key?(:children) }.each do |item|
+        expect(item[:children].size).to be > 1,
+                                        "#{item[:name]} is a dropdown with #{item[:children].size} child"
+      end
     end
   end
 end

@@ -7243,7 +7243,7 @@ components:
       properties:
         nav_links:
           type: array
-          description: Primary navigation links for the sidebar/navbar.
+          description: Primary navigation links for the sidebar/navbar. Every entry is a top-level link; the documentation entry points at the docs site served by the application.
           items:
             type: object
             properties:
@@ -7257,23 +7257,8 @@ components:
                 example: Projects
               link:
                 type: string
-                description: URL path. Absent on parent items with children.
+                description: URL path.
                 example: /projects
-              children:
-                type: array
-                description: Nested sub-links (e.g., Resources → DISA Guide).
-                items:
-                  type: object
-                  properties:
-                    icon:
-                      type: string
-                      example: book
-                    name:
-                      type: string
-                      example: DISA Process Guide
-                    link:
-                      type: string
-                      example: /disa_guide
         access_requests:
           type: array
           description: Pending project access requests visible to the current user. Empty for non-admin users.
