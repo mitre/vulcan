@@ -4,9 +4,6 @@ module Export
   module Formatters
     # Generates XCCDF 1.1 XML from a component and its rules.
     # Component-based formatter — receives rich objects, not flat rows.
-    #
-    # Moved from ExportHelper#xccdf_helper, groups_helper, descriptions_helper,
-    # checks_helper, ox_el_helper, ox_el_helper_ascii_str.
     class XccdfFormatter < BaseFormatter
       # Published SRGs carry nine MAC profiles — three mission assurance
       # categories crossed with three confidentiality levels. Every

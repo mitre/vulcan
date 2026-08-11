@@ -4,7 +4,7 @@ require 'rails_helper'
 
 # ==========================================================================
 # REQUIREMENT: XccdfFormatter generates XCCDF 1.1 XML from a component and
-# its rules. Output must match the structure produced by ExportHelper#xccdf_helper:
+# its rules, byte-locked by the corpus fixtures. The required structure:
 # - XML declaration + stylesheet processing instruction
 # - Benchmark root with correct namespaces
 # - Status, title, description, reference, version elements
@@ -122,44 +122,6 @@ RSpec.describe Export::Formatters::XccdfFormatter do
 
     it 'emits no Profile elements — the STIG readiness shape carries none (byte-locked by the corpus)' do
       expect(xml_string).not_to include('<Profile')
-    end
-  end
-
-  describe 'parity with ExportHelper' do
-    include ExportHelper
-
-    let(:component) do
-      create(:component).tap do |c|
-        # Set first rule to AC for a meaningful comparison
-        c.rules.first.update_columns(status: status_ac)
-      end
-    end
-
-    let(:ac_rules) do
-      component.rules
-               .eager_load(
-                 :disa_rule_descriptions, :checks, :satisfies, :satisfied_by,
-                 srg_rule: %i[disa_rule_descriptions rule_descriptions checks]
-               )
-               .where(status: status_ac)
-               .where.not(id: RuleSatisfaction.select(:rule_id))
-    end
-
-    it 'produces XML structurally equivalent to ExportHelper#export_xccdf_component' do
-      old_xml = export_xccdf_component(component)
-      new_xml = formatter.generate_from_component(component: component, rules: ac_rules)
-
-      # Parse both and compare structure (not exact string — whitespace may differ)
-      old_doc = Ox.parse(old_xml)
-      new_doc = Ox.parse(new_xml)
-
-      # Same root element name
-      expect(new_doc.nodes.last.name).to eq(old_doc.nodes.last.name)
-
-      # Same number of Group elements
-      old_groups = old_doc.nodes.last.nodes.select { |n| n.is_a?(Ox::Element) && n.name == 'Group' }
-      new_groups = new_doc.nodes.last.nodes.select { |n| n.is_a?(Ox::Element) && n.name == 'Group' }
-      expect(new_groups.size).to eq(old_groups.size)
     end
   end
 

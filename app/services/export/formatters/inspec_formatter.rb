@@ -11,8 +11,6 @@ module Export
     # Each component becomes:
     #   [dir/]inspec.yml         — profile metadata
     #   [dir/]controls/PREFIX-RULE_ID.rb — one file per AC rule (uses rule.inspec_control_file)
-    #
-    # Moved from ExportHelper#inspec_helper.
     class InspecFormatter < BaseFormatter
       def component_based?
         true

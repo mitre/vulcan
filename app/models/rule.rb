@@ -262,8 +262,9 @@ class Rule < BaseRule
     end
   end
 
-  # Returns export data as a hash keyed by DISA header name.
-  # Used by export_helper to build rows in header order without fragile positional indices.
+  # Returns export data as a hash keyed by DISA header name, so csv_attributes
+  # and ExportableRule build rows in header order without fragile positional
+  # indices.
   def csv_attributes_hash
     {
       'IA Control' => nist_control_family,

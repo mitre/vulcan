@@ -35,7 +35,6 @@ module Export
       end
 
       # Excel worksheet names are limited to 31 characters.
-      # Matches the existing ExportHelper pattern exactly.
       def worksheet_name(component)
         name_ending = "-V#{component.version}R#{component.release}-#{component.id}"
         component.name.gsub(/\s+/, '').first(31 - name_ending.length) + name_ending

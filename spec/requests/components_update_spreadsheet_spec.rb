@@ -35,7 +35,7 @@ RSpec.describe 'Components spreadsheet update endpoints' do
 
   # Helper: export component CSV and return tempfile path
   def export_csv_tempfile(comp)
-    csv_string = comp.csv_export
+    csv_string = working_copy_csv(comp)
     file = Tempfile.new(['update_test', '.csv'])
     file.write(csv_string)
     file.rewind
@@ -166,7 +166,7 @@ RSpec.describe 'Components spreadsheet update endpoints' do
       before { sign_in author_user }
 
       it 'returns 200 and updates rules in DB for valid CSV' do
-        csv_string = component.csv_export
+        csv_string = working_copy_csv(component)
         parsed = CSV.parse(csv_string, headers: true)
         parsed[0]['Requirement'] = 'APPLIED VIA CONTROLLER'
 
@@ -187,7 +187,7 @@ RSpec.describe 'Components spreadsheet update endpoints' do
         component.rules.first.update!(locked: true)
         original_title = component.rules.first.title
 
-        csv_string = component.csv_export
+        csv_string = working_copy_csv(component)
         parsed = CSV.parse(csv_string, headers: true)
         parsed[0]['Requirement'] = 'LOCKED RULE SHOULD NOT CHANGE'
 

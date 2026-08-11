@@ -42,7 +42,7 @@ RSpec.describe Component, '#update_from_spreadsheet / #apply_spreadsheet_update'
 
   # Helper: export CSV, parse it, optionally modify rows, write to tempfile
   def export_and_parse_csv(component)
-    csv_string = component.csv_export
+    csv_string = working_copy_csv(component)
     CSV.parse(csv_string, headers: true)
   end
 

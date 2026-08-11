@@ -768,17 +768,6 @@ class Component < ApplicationRecord
     ).call
   end
 
-  def csv_export
-    ::CSV.generate(headers: true) do |csv|
-      csv << ExportConstants::EXPORT_HEADERS
-      rules.eager_load(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks, :additional_answers, :satisfies,
-                       :satisfied_by, srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
-           .order(:version, :rule_id).each do |rule|
-        csv << rule.csv_attributes.append(rule.inspec_control_body)
-      end
-    end
-  end
-
   # An SRG component's requirements are authored SrgRules; the spreadsheet
   # pipeline addresses the Rule family, so against an srg component an update
   # would silently no-op at best and write to the wrong rows at worst. Both
@@ -951,7 +940,8 @@ class Component < ApplicationRecord
 
   # Compare a rule's current fields against a spreadsheet row.
   # Returns a hash of { field_sym => { from: old, to: new } } for changed fields.
-  # Uses the same values as csv_export to ensure idempotent round-trip.
+  # Reads the same csv_attributes the working-copy export serializes, so an
+  # unmodified exported CSV round-trips as zero changes.
   def compute_rule_changes(rule, row)
     changes = {}
 

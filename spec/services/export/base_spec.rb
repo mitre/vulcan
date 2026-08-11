@@ -4,10 +4,10 @@ require 'rails_helper'
 
 # ==========================================================================
 # REQUIREMENT: Export::Base orchestrates mode + formatter to produce export
-# output. The critical contract is that WorkingCopy + CSV produces
-# BYTE-IDENTICAL output to Component#csv_export for the same component.
-#
-# This is the integration test that proves the new service system works.
+# output. There is ONE working-copy CSV serialization, and every shape that
+# carries it — direct component export, project zip entries, component_ids
+# routing, disposition piggyback — must agree byte-for-byte with the
+# single-component export.
 # ==========================================================================
 RSpec.describe Export::Base do
   let_it_be(:component) { create(:component) }
@@ -33,12 +33,6 @@ RSpec.describe Export::Base do
       result = export.call
       parsed = CSV.parse(result.data)
       expect(parsed.size - 1).to eq component.rules.count
-    end
-
-    it 'produces BYTE-IDENTICAL output to Component#csv_export' do
-      old_output = component.csv_export
-      new_output = export.call.data
-      expect(new_output).to eq old_output
     end
 
     it 'sets correct filename' do
@@ -81,7 +75,7 @@ RSpec.describe Export::Base do
       expect(entries.size).to eq project.components.count
     end
 
-    it 'each zip entry is byte-identical to individual Component#csv_export' do
+    it 'each zip entry is byte-identical to that component single working-copy export' do
       result = export.call
       data_by_entry = {}
       Zip::InputStream.open(StringIO.new(result.data)) do |zis|
@@ -94,7 +88,7 @@ RSpec.describe Export::Base do
       project.components.each do |comp|
         entry_name = data_by_entry.keys.find { |k| k.include?(comp.prefix) }
         expect(entry_name).to be_present, "No zip entry found for component #{comp.prefix}"
-        expect(data_by_entry[entry_name]).to eq comp.csv_export
+        expect(data_by_entry[entry_name]).to eq working_copy_csv(comp)
       end
     end
   end
@@ -124,9 +118,10 @@ RSpec.describe Export::Base do
         component_ids: [component.id]
       )
       result = export.call
-      # Single component = direct file, not zip
+      # Single component = direct file, not zip; component_ids routing must
+      # agree byte-for-byte with the direct single-component export.
       expect(result.content_type).to eq 'text/csv'
-      expect(result.data).to eq component.csv_export
+      expect(result.data).to eq working_copy_csv(component)
     end
   end
 
@@ -193,7 +188,7 @@ RSpec.describe Export::Base do
     it 'leaves a single component-WITHOUT-comments export as a CSV passthrough (no disposition file)' do
       result = single_clean_export.call
       expect(result.content_type).to eq 'text/csv'
-      expect(result.data).to eq dpb_clean.csv_export
+      expect(result.data).to eq working_copy_csv(dpb_clean)
     end
 
     it 'disposition CSV bytes match DispositionMatrixExport.generate(component:)' do
@@ -208,7 +203,7 @@ RSpec.describe Export::Base do
       expect(data_by_entry[disposition_entry]).to eq DispositionMatrixExport.generate(component: dpb_component)
     end
 
-    it 'rule CSV bytes still match Component#csv_export' do
+    it 'disposition piggyback leaves the rule CSV entry intact' do
       result = single_component_export.call
       data_by_entry = {}
       Zip::InputStream.open(StringIO.new(result.data)) do |zis|
@@ -217,7 +212,12 @@ RSpec.describe Export::Base do
         end
       end
       rule_entry = data_by_entry.keys.find { |k| k.exclude?('disposition-matrix') }
-      expect(data_by_entry[rule_entry]).to eq dpb_component.csv_export
+      # No live path emits this component's rule CSV as a standalone artifact
+      # while comments exist (the disposition always rides along), so the pin
+      # is structural: exact header row and one data row per rule.
+      parsed = CSV.parse(data_by_entry[rule_entry])
+      expect(parsed.first).to eq ExportConstants::EXPORT_HEADERS
+      expect(parsed.size - 1).to eq dpb_component.rules.count
     end
 
     it 'multi-component project export includes disposition only for components with comments' do

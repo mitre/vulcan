@@ -32,6 +32,12 @@ module ExportTestHelpers
   def zip_read(data, name)
     Zip::File.open_buffer(StringIO.new(data)) { |zip| return zip.read(name) }
   end
+
+  # A component's working-copy CSV through the live export path. Specs that
+  # need CSV fixtures build them here so they exercise the code users run.
+  def working_copy_csv(component)
+    Export::Base.new(exportable: component, mode: :working_copy, format: :csv).call.data
+  end
 end
 
 RSpec.configure do |config|

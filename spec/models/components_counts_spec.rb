@@ -154,19 +154,6 @@ RSpec.describe Component do
     # adapted to an artificial in-memory scenario that never occurs.
   end
 
-  describe '#csv_export' do
-    it 'produces headers-only CSV for component with zero rules' do
-      empty = Component.create!(project: components_project, name: 'CSV Empty', title: 'E',
-                                version: 'V1R1', prefix: 'CSVE-01', based_on: components_srg,
-                                skip_import_srg_rules: true)
-      csv = empty.csv_export
-      lines = csv.strip.split("\n")
-      expect(lines.size).to eq(1)
-      expect(lines.first).to include('STIGID')
-      empty.destroy!
-    end
-  end
-
   # Kind-routed requirement access: a stig component's requirements are
   # its Rules and its count is the existing rules_count counter cache; an
   # srg component's requirements are its LIVE authored SrgRules, counted

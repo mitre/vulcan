@@ -202,7 +202,7 @@ RSpec.describe Component do
       child.satisfies << parent
       child.save!
 
-      csv_data = components_component.csv_export
+      csv_data = working_copy_csv(components_component)
       parsed = CSV.parse(csv_data, headers: true)
 
       # Verify 'Satisfies' header exists
@@ -225,7 +225,7 @@ RSpec.describe Component do
       child.satisfies << parent
       child.update!(vendor_comments: 'Important security note.')
 
-      csv_data = components_component.csv_export
+      csv_data = working_copy_csv(components_component)
       parsed = CSV.parse(csv_data, headers: true)
       child_row = parsed.find { |row| row['STIGID'] == "#{components_component.prefix}-#{child.rule_id}" }
 
