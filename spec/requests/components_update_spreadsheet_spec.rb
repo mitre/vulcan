@@ -210,4 +210,38 @@ RSpec.describe 'Components spreadsheet update endpoints' do
       end
     end
   end
+
+  # An SRG component's requirements are authored SrgRules — the spreadsheet
+  # pipeline addresses the Rule family, so against an srg component the update
+  # silently no-ops at best and writes to the wrong rows at worst. Both
+  # endpoints must refuse loudly, never quietly succeed with zero changes.
+  describe 'against an SRG-kind component' do
+    let_it_be(:srg_component) do
+      create(:component, :skip_rules, project: project, document_type: 'srg',
+                                      prefix: 'GRDS-00', name: 'Spreadsheet guard SRG',
+                                      title: 'Spreadsheet guard SRG')
+    end
+
+    before { sign_in author_user }
+
+    it 'refuses a preview with a clear error instead of a silent no-op' do
+      file = wrong_srg_csv_tempfile
+
+      post "/components/#{srg_component.id}/preview_spreadsheet_update",
+           params: { file: Rack::Test::UploadedFile.new(file.path, 'text/csv') }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body['error']).to eq(Component::SPREADSHEET_UPDATE_UNSUPPORTED_FOR_SRG)
+    end
+
+    it 'refuses an apply with a clear error instead of a silent no-op' do
+      file = wrong_srg_csv_tempfile
+
+      patch "/components/#{srg_component.id}/apply_spreadsheet_update",
+            params: { file: Rack::Test::UploadedFile.new(file.path, 'text/csv') }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body['error']).to eq(Component::SPREADSHEET_UPDATE_UNSUPPORTED_FOR_SRG)
+    end
+  end
 end

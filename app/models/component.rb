@@ -779,10 +779,21 @@ class Component < ApplicationRecord
     end
   end
 
+  # An SRG component's requirements are authored SrgRules; the spreadsheet
+  # pipeline addresses the Rule family, so against an srg component an update
+  # would silently no-op at best and write to the wrong rows at worst. Both
+  # entry points below refuse through this one message — the single door for
+  # every caller.
+  SPREADSHEET_UPDATE_UNSUPPORTED_FOR_SRG =
+    'Spreadsheet update is not available for SRG components — their ' \
+    'requirements are authored in the editor, not imported from a spreadsheet.'
+
   # Preview changes from a spreadsheet without saving.
   # Returns a hash with :updated, :unchanged, :skipped_locked, :warnings keys,
   # or { error: "message" } on validation failure.
   def update_from_spreadsheet(spreadsheet, _user = nil)
+    return { error: SPREADSHEET_UPDATE_UNSUPPORTED_FOR_SRG } if document_type == 'srg'
+
     result = SpreadsheetParser.new(spreadsheet, security_requirements_guide_id).parse_and_validate
     return { error: result[:error] } if result.key?(:error)
 
@@ -792,6 +803,8 @@ class Component < ApplicationRecord
   # Apply changes from a spreadsheet to the database.
   # Returns { success: true, count: N } or { error: "message" }.
   def apply_spreadsheet_update(spreadsheet, _user = nil)
+    return { error: SPREADSHEET_UPDATE_UNSUPPORTED_FOR_SRG } if document_type == 'srg'
+
     result = SpreadsheetParser.new(spreadsheet, security_requirements_guide_id).parse_and_validate
     return { error: result[:error] } if result.key?(:error)
 
