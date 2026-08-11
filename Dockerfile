@@ -188,13 +188,13 @@ RUN --mount=type=cache,target=/usr/local/bundle/cache,uid=1000 \
 RUN --mount=type=cache,target=/tmp/.yarn-cache,uid=1000 \
     yarn install --frozen-lockfile --production=false --network-timeout 100000 --cache-folder /tmp/.yarn-cache
 
-# Strip build-only inputs from the application tree. Two things under docs/ are
-# read at runtime and must survive: the DISA process markdown and attachments the
-# in-app guide serves, and the documentation site that asset precompilation just
-# built. Everything else — the website sources, the documentation build's own
-# dependencies, and its cache — exists only to produce that build. Deleting the
-# built site here would be invisible in CI and would 404 every documentation
-# request in the released image.
+# Strip build-only inputs from the application tree. One thing under docs/ is
+# read at runtime and must survive: the documentation site that asset
+# precompilation just built. Everything else — the website sources (including
+# the DISA process pages, which ship only as built HTML), the documentation
+# build's own dependencies, and its cache — exists only to produce that build.
+# Deleting the built site here would be invisible in CI and would 404 every
+# documentation request in the released image.
 #
 # `set -eu` is load-bearing. This was previously an `&&` chain ending in
 # `|| true`, and `||` binds looser than `&&`, so that tolerance applied to the

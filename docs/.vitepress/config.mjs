@@ -54,6 +54,13 @@ export default defineConfig({
   // root. target: "_self" rides through to the anchor, which is what stops
   // the site's SPA router from intercepting a destination outside its base.
   transformPageData(pageData) {
+    // Dynamic routes: frontmatter moustaches never interpolate, so the
+    // generated API pages hand their titles through route params — without
+    // this, every built API page bakes literal template syntax into <title>.
+    if (pageData.params?.pageTitle) {
+      pageData.title = pageData.params.pageTitle;
+    }
+
     if (!target.inApp || pageData.relativePath !== "index.md") return;
 
     for (const action of pageData.frontmatter.hero?.actions || []) {

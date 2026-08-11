@@ -127,4 +127,27 @@ RSpec.describe 'docs:build' do
         .to start_with("#{described_class.build_directory}/")
     end
   end
+
+  # The built output itself, not the build mechanics — guarded like the
+  # serving specs, so an absent build fails loudly instead of skipping.
+  describe 'built output' do
+    before(:all) { DocsSiteHelpers.require_built_site! }
+
+    # Frontmatter moustaches never interpolate, so a literal one baked into a
+    # <title> puts template syntax in the browser tab of every generated API
+    # page. Dynamic-route titles travel through the build's page-data hook.
+    it 'interpolates dynamic page titles instead of baking template syntax' do
+      titles = Dir[DocsSite.output_directory.join('api/**/*.html').to_s]
+               .map { |file| File.read(file)[%r{<title>[^<]*</title>}] }
+
+      expect(titles.length).to be > 100
+      expect(titles.grep(/\{\{/)).to eq([])
+
+      # Absence of template syntax is not enough — losing the page-data hook
+      # falls every title back to the generic site title with no moustache in
+      # sight, so one known page pins the interpolated value itself.
+      projects_title = File.read(DocsSite.output_directory.join('api/tags/Projects.html'))[%r{<title>[^<]*</title>}]
+      expect(projects_title).to eq('<title>Projects - Vulcan API | Vulcan</title>')
+    end
+  end
 end

@@ -1,7 +1,6 @@
 ---
 aside: false
 outline: false
-title: "{{ $params.pageTitle }}"
 ---
 
 <script setup>
