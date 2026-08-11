@@ -34,13 +34,14 @@ RSpec.describe 'seed pipeline', :seed_pipeline, type: :model do
       expect(User.count).to eq(15)
     end
 
-    it 'has exactly 6 projects' do
-      expect(Project.count).to eq(6)
+    it 'has exactly 7 projects' do
+      expect(Project.count).to eq(7)
     end
 
-    # 4 XCCDF files in db/seeds/srgs + the Container SRG Test dataset SRG
-    it 'has 5 SRGs' do
-      expect(SecurityRequirementsGuide.count).to eq(5)
+    # 7 XCCDF files in db/seeds/srgs (the three DISA core SRGs included);
+    # the Container SRG Test zip's SRG dedupes against the seeded set.
+    it 'has 7 SRGs' do
+      expect(SecurityRequirementsGuide.count).to eq(7)
     end
 
     it 'has 4 STIGs' do
@@ -124,6 +125,43 @@ RSpec.describe 'seed pipeline', :seed_pipeline, type: :model do
                        .where.not(responding_to_review_id: Review.select(:id))
       expect(orphaned.count).to eq(0),
                                 "Found #{orphaned.count} replies pointing to nonexistent parent reviews: #{orphaned.pluck(:id).inspect}"
+    end
+  end
+
+  describe 'SRG authoring demo' do
+    let(:demo_component) { Component.find_by(document_type: 'srg', prefix: 'DSRG-00') }
+
+    it 'seeds an srg-kind component derived from the Application Core SRG' do
+      expect(demo_component).to be_present
+      expect(demo_component.based_on.srg_id).to eq('Application_Core_SRG')
+      expect(demo_component.comment_phase).to eq('open')
+    end
+
+    it 'covers all three SRG lifecycle states, every Not Applicable row justified' do
+      counts = demo_component.requirements.group(:status).count
+      expect(counts).to eq('Not Yet Determined' => 2, 'Applicable' => 2, 'Not Applicable' => 4)
+      unjustified = demo_component.requirements.where(status: 'Not Applicable',
+                                                      status_justification: [nil, ''])
+      expect(unjustified).to be_empty
+    end
+
+    it 'links authored requirements to core catalog rows with one net-new row' do
+      derived = demo_component.requirements.where.not(derived_from_srg_rule_id: nil).count
+      net_new = demo_component.requirements.where(derived_from_srg_rule_id: nil).count
+      expect(derived).to eq(7)
+      expect(net_new).to eq(1)
+    end
+
+    it 'wires the role-tier memberships on the demo project' do
+      roles = demo_component.project.memberships.pluck(:role).uniq.sort
+      expect(roles).to include('admin', 'author', 'reviewer', 'viewer')
+    end
+
+    it 'has at least one pending comment on an authored requirement' do
+      comments = Review.where(action: Review::ACTION_COMMENT, responding_to_review_id: nil,
+                              commentable_type: 'BaseRule',
+                              commentable_id: demo_component.requirements.select(:id))
+      expect(comments.where(triage_status: 'pending').count).to be >= 1
     end
   end
 

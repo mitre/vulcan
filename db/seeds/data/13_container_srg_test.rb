@@ -2,15 +2,17 @@
 
 # rubocop:disable Rails/Output
 
-CONTAINER_SRG_TEST_ZIP = Rails.root.join('db/seeds/backups/container_srg_test.zip')
-CONTAINER_SRG_PROJECT_NAME = 'Container SRG Test'
+# Locals, not constants — seed files are loaded twice by the idempotency
+# check, and top-level constants warn on the second load.
+container_zip_path = Rails.root.join('db/seeds/backups/container_srg_test.zip')
+container_project_name = 'Container SRG Test'
 
-unless File.exist?(CONTAINER_SRG_TEST_ZIP)
+unless File.exist?(container_zip_path)
   puts 'Skipping Container SRG Test seed — zip not found'
   return
 end
 
-project = Project.find_by(name: CONTAINER_SRG_PROJECT_NAME)
+project = Project.find_by(name: container_project_name)
 if project&.components&.any?
   rule_ids = Rule.where(component_id: project.components.ids).pluck(:id)
   review_count = Review.where(commentable_type: 'BaseRule', commentable_id: rule_ids).count
@@ -34,7 +36,7 @@ SeedHelpers::COMMUNITY_PERSONAS.each do |email, attrs|
   puts "  Created community persona: #{email}"
 end
 
-project ||= Project.find_or_create_by!(name: CONTAINER_SRG_PROJECT_NAME)
+project ||= Project.find_or_create_by!(name: container_project_name)
 puts "  Project: #{project.name} (id: #{project.id})"
 
 # Wire memberships for all personas + demo users
@@ -59,7 +61,7 @@ end
 Membership.find_or_create_by!(user: demo_admin, membership: project) { |m| m.role = 'admin' } if demo_admin
 
 # Import via the production importer
-zip_file = Rack::Test::UploadedFile.new(CONTAINER_SRG_TEST_ZIP.to_s, 'application/zip')
+zip_file = Rack::Test::UploadedFile.new(container_zip_path.to_s, 'application/zip')
 result = Import::JsonArchiveImporter.new(
   zip_file: zip_file,
   project: project,

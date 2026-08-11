@@ -88,6 +88,41 @@ RSpec.describe SeedHelpers do
         )
       end.not_to change(Review, :count)
     end
+
+    context 'with an authored SrgRule (Review#rule is Rule-typed)' do
+      let!(:srg_component) do
+        create(:component, :skip_rules, project: project, document_type: 'srg', prefix: 'SDHL-00')
+      end
+      let!(:authored_requirement) do
+        create(:srg_rule, :authored, component: srg_component, rule_id: '000001')
+      end
+
+      it 'attaches through the polymorphic commentable, which backfills rule_id' do
+        review = described_class.find_or_seed_review(
+          rule: authored_requirement, user: user, section: 'check_content',
+          comment: 'Authored requirement seed comment'
+        )
+        expect(review).to be_persisted
+        expect(review.commentable).to eq(authored_requirement)
+        # sync_commentable_from_rule backfills the legacy column from the
+        # polymorphic attachment for BaseRule commentables of either kind.
+        expect(review.rule_id).to eq(authored_requirement.id)
+        expect(review.triage_status).to eq('pending')
+      end
+
+      it 'is idempotent for authored requirements too' do
+        described_class.find_or_seed_review(
+          rule: authored_requirement, user: user, section: 'check_content',
+          comment: 'Authored idempotent comment'
+        )
+        expect do
+          described_class.find_or_seed_review(
+            rule: authored_requirement, user: user, section: 'check_content',
+            comment: 'Authored idempotent comment'
+          )
+        end.not_to change(Review, :count)
+      end
+    end
   end
 
   describe '.find_or_seed_reply' do

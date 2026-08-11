@@ -133,4 +133,23 @@ RSpec.describe 'seed file idempotency and completeness' do
                        'expected at least one component to set comment_period_ends_at for banner countdown coverage'
     end
   end
+
+  # REQUIREMENT: the SRG authoring demo seed must exist and stay idempotent —
+  # authored requirements are created directly (no importer), so bare create!
+  # would duplicate rows on every reseed.
+  describe 'SRG authoring demo seed' do
+    let(:srg_seed) { Rails.root.join('db/seeds/data/14_srg_authoring_demo.rb').read }
+
+    it 'creates the srg-kind component through the shared seed_component helper' do
+      expect(srg_seed).to match(/SeedHelpers\.seed_component/),
+                          'expected the SRG demo to use SeedHelpers.seed_component'
+      expect(srg_seed).to match(/document_type:\s*['"]srg['"]/),
+                          'expected the seeded component to be srg-kind'
+    end
+
+    it 'guards authored requirement creation with find_or_create' do
+      expect(srg_seed).to match(/SrgRule\.find_or_create_by!?/),
+                          'authored requirements must use find_or_create_by, not bare create! (reseed duplicates)'
+    end
+  end
 end

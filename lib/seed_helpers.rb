@@ -171,12 +171,16 @@ module SeedHelpers # rubocop:disable Style/Documentation
   end
 
   def self.find_or_seed_review(rule:, user:, section:, comment:, **extra)
-    existing = Review.find_by(action: 'comment', comment: comment, rule: rule)
+    # Accepts either requirement kind: a Rule attaches through the legacy
+    # rule association (which syncs commentable), an authored SrgRule only
+    # through the polymorphic commentable — Review#rule is Rule-typed.
+    attach = rule.is_a?(Rule) ? { rule: rule } : { commentable: rule }
+    existing = Review.find_by(action: 'comment', comment: comment, **attach)
     return existing if existing
 
     Review.create!(
-      user: user, rule: rule, action: 'comment',
-      section: section, comment: comment, **extra
+      user: user, action: 'comment',
+      section: section, comment: comment, **attach, **extra
     )
   end
 
@@ -257,6 +261,7 @@ module SeedHelpers # rubocop:disable Style/Documentation
       stigs: Stig.count,
       components: Component.count,
       rules: BaseRule.where(type: 'Rule').count,
+      authored_requirements: BaseRule.where(type: 'SrgRule').where.not(component_id: nil).count,
       memberships: Membership.count,
       comments: Review.where(action: 'comment', responding_to_review_id: nil).count,
       replies: Review.where(action: 'comment').where.not(responding_to_review_id: nil).count
