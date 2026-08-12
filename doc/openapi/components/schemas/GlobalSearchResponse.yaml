@@ -84,8 +84,9 @@ properties:
   rules:
     type: array
     description: >-
-      Rules matching the search query, scoped to what the caller can access —
-      project or component membership, or released components; admins
+      Requirement rows of both document kinds — stig rules and authored SRG
+      requirements — matching the search query, scoped to what the caller can
+      access: project or component membership, or released components; admins
       unrestricted.
     items:
       type: object
@@ -140,13 +141,18 @@ properties:
           type:
             - integer
             - 'null'
-          description: ID of the parent rule (via satisfies relationship). Null if no parent.
+          description: >-
+            ID of the parent rule (via satisfies relationship). Null if no
+            parent; always null for authored SRG requirements (satisfies is
+            stig-only).
           example: null
         parent_display_name:
           type:
             - string
             - 'null'
-          description: Display name of the parent rule. Null if no parent.
+          description: >-
+            Display name of the parent rule. Null if no parent; always null
+            for authored SRG requirements.
           example: null
   srgs:
     type: array

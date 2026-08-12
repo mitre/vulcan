@@ -117,7 +117,11 @@ module Api
                         searchable_components.ids
                       end
 
-      rules_scope = Rule.where(component_id: component_ids)
+      # Requirement rows of BOTH document kinds — stig Rules and authored
+      # SRG requirements — through the kind seam (a Rule-classed query
+      # structurally excludes authored rows; the seam also excludes
+      # tombstoned and catalog rows).
+      rules_scope = BaseRule.live_for_components(component_ids)
 
       rules_scope = if @has_phrases
                       # Phrase search - use websearch_to_tsquery which supports "exact phrase"
@@ -128,9 +132,18 @@ module Api
                       rules_scope.search_content(search_term)
                     end
 
-      rules = rules_scope.includes(:component, :disa_rule_descriptions, :checks, :satisfied_by)
+      # Kind-shared associations preload on the relation; the component
+      # association lives on the subclasses, so prefixes come from a batch
+      # lookup on the base column instead.
+      rules = rules_scope.includes(:disa_rule_descriptions, :checks)
                          .limit(limit)
                          .to_a
+      prefixes = Component.where(id: rules.map(&:component_id).uniq).pluck(:id, :prefix).to_h
+
+      # satisfied_by exists on the stig kind only — preload it for just
+      # those rows (authored rows carry null parent fields).
+      stig_rows = rules.grep(Rule)
+      ActiveRecord::Associations::Preloader.new(records: stig_rows, associations: :satisfied_by).call if stig_rows.any?
 
       # Batch the per-rule comment_count via one GROUP BY.
       comment_counts = Review.where(rule_id: rules.map(&:id), action: Review::ACTION_COMMENT)
@@ -138,19 +151,20 @@ module Api
 
       rules.map do |rule|
         snippet_data = generate_snippet_with_field(rule, @query[:normalized])
-        parent = rule.satisfied_by.first
+        parent = rule.is_a?(Rule) ? rule.satisfied_by.first : nil
+        prefix = prefixes[rule.component_id]
         {
           id: rule.id,
           rule_id: rule.rule_id,
           title: rule.title,
           status: rule.status,
           component_id: rule.component_id,
-          component_prefix: rule.component&.prefix,
+          component_prefix: prefix,
           snippet: snippet_data[:snippet],
           matched_field: snippet_data[:matched_field],
           comment_count: comment_counts[rule.id] || 0,
           parent_rule_id: parent&.id,
-          parent_display_name: parent ? "#{rule.component&.prefix}-#{parent.rule_id}" : nil
+          parent_display_name: parent ? "#{prefix}-#{parent.rule_id}" : nil
         }
       end
     end

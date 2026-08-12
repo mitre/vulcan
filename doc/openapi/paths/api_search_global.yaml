@@ -9,8 +9,9 @@ get:
     everything the caller can discover (memberships plus discoverable
     projects); component and rule content is served only from the caller's
     memberships and released components; SRG/STIG results and the srg_rules
-    requirement catalog are instance-global. Rules can be scoped to a
-    specific component via the component_id parameter. Requires
+    requirement catalog are instance-global. The rules group covers both
+    document kinds — stig rules and authored SRG requirements — and can be
+    scoped to a specific component via the component_id parameter. Requires
     authentication — returns 401 if not signed in.
   parameters:
     - $ref: ../components/parameters/SearchQuery.yaml

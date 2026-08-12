@@ -103,6 +103,12 @@ RSpec.describe 'Api::Search' do
         expect(response.parsed_body['srg_rules']).to eq([])
       end
 
+      it 'does not serve authored requirement content in the rules section either' do
+        get search_path, params: { q: 'Wallaby' }
+
+        expect(response.parsed_body['rules']).to eq([])
+      end
+
       it 'still serves the public SRG requirement catalog in srg_rules results' do
         get search_path, params: { q: 'operating system' }
 
@@ -137,6 +143,43 @@ RSpec.describe 'Api::Search' do
         get search_path, params: { q: 'Quokka' }
 
         expect(response.parsed_body['rules'].pluck('id')).to include(member_rule.id)
+      end
+    end
+
+    # Authored SRG requirements are project content: full-text findable by
+    # members through the RULES section (same access scoping as stig rules).
+    # The srg_rules section stays catalog-only by the no-leak ruling — the
+    # member-side positive pins here are what make the non-member rules
+    # concealment assertions above non-vacuous.
+    describe 'authored SRG requirements in the rules section' do
+      let_it_be(:member_srg_component) do
+        create(:component, :skip_rules, project: project1, document_type: 'srg',
+                                        prefix: 'MSRG-00', name: 'Member Authoring SRG',
+                                        title: 'Member Authoring SRG')
+      end
+      let_it_be(:member_authored_requirement) do
+        create(:srg_rule, :authored, component: member_srg_component, rule_id: '000001',
+                                     title: 'Capybara telemetry requirement for the member platform')
+      end
+
+      before { sign_in user }
+
+      it 'finds an authored SRG requirement by its title text for a project member' do
+        get search_path, params: { q: 'Capybara' }
+
+        row = response.parsed_body['rules'].find { |r| r['id'] == member_authored_requirement.id }
+        expect(row).to be_present
+        expect(row['title']).to eq('Capybara telemetry requirement for the member platform')
+        expect(row['component_prefix']).to eq('MSRG-00')
+      end
+
+      it 'serves null parent fields for authored rows (satisfied_by is stig-only)' do
+        get search_path, params: { q: 'Capybara' }
+
+        row = response.parsed_body['rules'].find { |r| r['id'] == member_authored_requirement.id }
+        expect(row).to be_present
+        expect(row['parent_rule_id']).to be_nil
+        expect(row['parent_display_name']).to be_nil
       end
     end
 
