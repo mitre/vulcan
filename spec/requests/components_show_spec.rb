@@ -283,6 +283,12 @@ RSpec.describe 'Component show' do
     it 'resolves an srg component deep-link to its authored requirement' do
       get "/components/#{srg_component.id}/SHDL-00-000001"
       expect(response).to have_http_status(:ok)
+      # The page embeds the deep-linked row's editor JSON as the queried-rule
+      # binding — pin the ROW IDENTITY, not just the 200 (a found-vs-missed
+      # discriminator alone cannot tell which row rendered).
+      body = CGI.unescapeHTML(response.body)
+      expect(body).to include("\"id\":#{authored_requirement.id}")
+      expect(body).to include('"rule_id":"000001"')
     end
 
     it 'redirects with a flash for an unknown rule id' do

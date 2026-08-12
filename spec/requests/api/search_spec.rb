@@ -120,6 +120,17 @@ RSpec.describe 'Api::Search' do
         expect(response.parsed_body['components'].pluck('id')).to include(released.id)
       end
 
+      it 'serves rules of released components in the rules section (non-member)' do
+        released = create(:component, project: project2, name: 'Released Rules Component',
+                                      prefix: 'RELR-01', based_on: srg, released: true)
+        released_rule = create(:rule, component: released, rule_id: '999803',
+                                      title: 'Wombat perimeter fencing requirement for the released platform')
+
+        get search_path, params: { q: 'Wombat' }
+
+        expect(response.parsed_body['rules'].pluck('id')).to include(released_rule.id)
+      end
+
       it 'serves rule content to a member of the project (scoping does not over-narrow)' do
         sign_in user
 

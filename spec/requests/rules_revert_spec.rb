@@ -64,6 +64,44 @@ RSpec.describe 'Rule history revert' do
       expect(response).to have_http_status(:not_found)
     end
 
+    it 'returns 422 when the fields param is missing, not a swallowed server error' do
+      rule.update!(title: 'Missing Fields Setup', audit_comment: 'setup')
+      change_audit = rule.audits.where(action: 'update').last
+
+      post "/rules/#{rule.id}/revert",
+           params: { audit_id: change_audit.id, audit_comment: 'no fields given' }.to_json,
+           headers: json_headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body.dig('toast', 'title')).to eq('Could not revert history.')
+      expect(response.parsed_body.dig('toast', 'message').join)
+        .to include('Fields to revert are required')
+    end
+
+    it 'regenerates stig InSpec code from the post-revert state' do
+      original_title = rule.title
+      rule.update!(title: 'Drifted Title For Inspec', audit_comment: 'setup drift')
+      change_audit = rule.audits.where(action: 'update').last
+
+      post "/rules/#{rule.id}/revert",
+           params: { audit_id: change_audit.id, fields: ['title'],
+                     audit_comment: 'restore the title' }.to_json,
+           headers: json_headers
+
+      expect(response).to have_http_status(:ok)
+      reverted = rule.reload
+      expect(reverted.title).to eq(original_title)
+      # The after-save InSpec regeneration must read the reverted state —
+      # a stale in-memory instance regenerates the control from pre-revert
+      # attributes and silently overwrites the correct file.
+      expect(reverted.inspec_control_file).to include(original_title)
+      expect(reverted.inspec_control_file).not_to include('Drifted Title For Inspec')
+    end
+
+    # Boundary: the destroy-revert case can re-create RuleDescription,
+    # DisaRuleDescription, and Check rows. Check is audited on update only,
+    # so its destroy branch is defensive — it becomes reachable only if
+    # Check auditing ever expands to destroys.
     it 'reverts a destroyed description by re-creating it' do
       description = RuleDescription.create!(base_rule: rule, description: 'A description worth restoring')
       description.destroy!

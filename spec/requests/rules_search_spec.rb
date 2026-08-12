@@ -55,6 +55,31 @@ RSpec.describe 'Rules search' do
     end
   end
 
+  describe 'result order' do
+    it 'returns matches in a deterministic order — component then rule id' do
+      late_component = create(:component, :skip_rules, project: project, document_type: 'srg',
+                                                       prefix: 'RSRD-00', name: 'Order SRG',
+                                                       title: 'Order SRG')
+      # Insert the higher-sorting rows FIRST so physical row order differs
+      # from the deterministic contract — an unordered limit would return
+      # these in insertion order.
+      late_two = create(:srg_rule, :authored, component: late_component,
+                                              rule_id: '000902', version: 'SRG-APP-000955')
+      late_one = create(:srg_rule, :authored, component: late_component,
+                                              rule_id: '000901', version: 'SRG-APP-000955')
+      early = create(:srg_rule, :authored, component: srg_component,
+                                           rule_id: '000900', version: 'SRG-APP-000955')
+
+      get '/search/rules', params: { q: 'SRG-APP-000955' }
+
+      expect(response.parsed_body['rules']).to eq([
+                                                    [early.id, '000900', srg_component.id, 'RSRC-00'],
+                                                    [late_one.id, '000901', late_component.id, 'RSRD-00'],
+                                                    [late_two.id, '000902', late_component.id, 'RSRD-00']
+                                                  ])
+    end
+  end
+
   describe 'access scoping' do
     let(:outsider) { create(:user) }
 

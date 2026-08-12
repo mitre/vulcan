@@ -119,7 +119,7 @@ describe("ProjectComponent", () => {
     available_roles: ["admin", "author", "viewer"],
   };
 
-  const createWrapper = (props = {}) => {
+  const createWrapper = (props = {}, stubOverrides = {}) => {
     const router = createTestRouter([
       { path: "/", name: "editor-root" },
       { path: "/rules/:ruleId", name: "rule", props: true },
@@ -147,6 +147,7 @@ describe("ProjectComponent", () => {
         BSidebar: true,
         BModal: true,
         BIcon: true,
+        ...stubOverrides,
       },
     });
   };
@@ -251,53 +252,34 @@ describe("ProjectComponent", () => {
     });
   });
 
-  describe("component panels", () => {
-    it("has details slideover", () => {
-      wrapper = createWrapper();
-      // Component should have slideover for details
-      expect(wrapper.vm.componentPanels).toContain("details");
+  // The related-rules surface is structurally stig-only (it keys off Rule
+  // SRG-version linkage) — the editor page guards its modal mount by kind,
+  // and this read-only view must match its sibling. The stig leg proves the
+  // harness renders the modals slot at all, so the srg absence is a real
+  // guard rather than a vacuous pass.
+  describe("RelatedRulesModal document kind guard", () => {
+    const slotRenderingLayout = { template: "<div><slot name='modals' /></div>" };
+
+    it("mounts the modal for a stig component once a rule is selected", async () => {
+      wrapper = createWrapper({}, { ControlsPageLayout: slotRenderingLayout });
+      wrapper.vm.selectRule(1);
+      await wrapper.vm.$nextTick();
+      expect(wrapper.findComponent({ name: "RelatedRulesModal" }).exists()).toBe(true);
     });
 
-    it("has metadata slideover", () => {
-      wrapper = createWrapper();
-      expect(wrapper.vm.componentPanels).toContain("metadata");
-    });
-
-    it("has questions slideover", () => {
-      wrapper = createWrapper();
-      expect(wrapper.vm.componentPanels).toContain("questions");
-    });
-
-    it("has comp-history slideover", () => {
-      wrapper = createWrapper();
-      expect(wrapper.vm.componentPanels).toContain("comp-history");
-    });
-
-    // comp-reviews retired in PR #717 — slideover replaced by the
-    // full-page /components/:id/triage route. The Triage button on
-    // the command bar links there directly.
-    it("does NOT register a comp-reviews slideover panel anymore", () => {
-      wrapper = createWrapper();
-      expect(wrapper.vm.componentPanels).not.toContain("comp-reviews");
-    });
-  });
-
-  describe("rule panels (enabled when rule selected)", () => {
-    // REQUIREMENT: Rule panels use namespaced IDs to avoid collision with component panels
-    // 'rule-reviews' instead of 'reviews', 'rule-history' instead of 'history'
-    it("has satisfies slideover", () => {
-      wrapper = createWrapper();
-      expect(wrapper.vm.rulePanels).toContain("satisfies");
-    });
-
-    it("has rule-reviews slideover", () => {
-      wrapper = createWrapper();
-      expect(wrapper.vm.rulePanels).toContain("rule-reviews");
-    });
-
-    it("has rule-history slideover", () => {
-      wrapper = createWrapper();
-      expect(wrapper.vm.rulePanels).toContain("rule-history");
+    it("does NOT mount the modal for an srg component with a rule selected", async () => {
+      wrapper = createWrapper(
+        {
+          initialComponentState: {
+            ...defaultProps.initialComponentState,
+            document_type: "srg",
+          },
+        },
+        { ControlsPageLayout: slotRenderingLayout },
+      );
+      wrapper.vm.selectRule(1);
+      await wrapper.vm.$nextTick();
+      expect(wrapper.findComponent({ name: "RelatedRulesModal" }).exists()).toBe(false);
     });
   });
 

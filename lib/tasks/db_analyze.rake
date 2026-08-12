@@ -351,4 +351,4 @@ namespace :db do
     puts '=' * 70
   end
 end
-# rubocop:enable Style/FormatStringToken, Metrics/BlockLength
+# rubocop:enable Style/FormatStringToken

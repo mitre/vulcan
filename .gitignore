@@ -97,3 +97,7 @@ issues.jsonl
 
 # Local build / tool caches (yarn, corepack, node) when running outside Docker
 /.cache/
+
+# Local DB benchmark/profiling outputs from the db:analyze rake tasks —
+# never committed.
+db/benchmarks/

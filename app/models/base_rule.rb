@@ -94,6 +94,11 @@ class BaseRule < ApplicationRecord
       # nil check for record
       raise(RuleRevertError, 'Could not locate record for this history.') if record.nil?
 
+      # An update-revert with no named fields would no-op behind a success
+      # toast (and a missing param crashed to the global rescue) — refuse it
+      # loudly like every other invalid revert request.
+      raise(RuleRevertError, 'Fields to revert are required.') if fields.blank?
+
       fields.each do |field|
         # The only field we can revert on AdditionalAnswers is answer
         revert_field = audit.auditable_type.eql?('AdditionalAnswer') ? 'answer' : field

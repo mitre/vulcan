@@ -209,6 +209,7 @@ RSpec/IndexedLet:
 Vulcan/KindSeamQuery:
   Include:
     - app/**/*.rb
+    - db/seeds/**/*.rb
     - lib/tasks/**/*.rake
     - lib/tasks/**/*.rb
   Exclude:
@@ -230,6 +231,16 @@ Vulcan/KindSeamQuery:
     - app/controllers/api/search_controller.rb
     # ADNM automation walks the satisfies graph — structurally STIG-only.
     - lib/tasks/fix_adnm_status.rake
-    # Satisfaction-nesting maintenance for the stig-kind container test
-    # dataset — walks the satisfies graph, structurally STIG-only.
+    # Satisfaction-nesting maintenance for the container stig test dataset —
+    # walks the satisfies graph, structurally STIG-only. Resolves its
+    # component kind-scoped: two kinds share the CNTR-00 prefix.
     - lib/tasks/container_srg_nesting_fix.rake
+    # Stig demo-data seeds — each queries rules on stig components it
+    # creates itself, kind-known by construction. The srg demo seed
+    # (14_srg_authoring_demo.rb) uses the seam and stays enforced.
+    - db/seeds/data/04_components.rb
+    - db/seeds/data/06_rule_statuses.rb
+    - db/seeds/data/07_additional_questions.rb
+    - db/seeds/data/08_rule_descriptions.rb
+    - db/seeds/data/11_cross_project.rb
+    - db/seeds/data/13_container_srg_test.rb

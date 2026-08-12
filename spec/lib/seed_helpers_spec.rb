@@ -161,6 +161,13 @@ RSpec.describe SeedHelpers do
       expect(report).to include(:users, :projects, :srgs, :stigs, :components, :rules, :memberships, :comments, :replies)
       expect(report[:users]).to eq(User.count)
     end
+
+    it 'counts authored SRG requirements separately from stig rules' do
+      report = described_class.status_report
+      expect(report).to have_key(:authored_requirements)
+      expect(report[:authored_requirements])
+        .to eq(BaseRule.where(type: 'SrgRule').where.not(component_id: nil).count)
+    end
   end
 
   describe '.verify!' do

@@ -45,8 +45,11 @@ class RulesController < ApplicationController
     # requirements — and live_for_components keeps catalog rows (no
     # component) and tombstoned rows out. Prefixes come from a second
     # lookup because the component association lives on the subclasses.
+    # Ordered BEFORE the limit: without ORDER BY, which 100 rows return is
+    # up to the planner — the truncated result set must be deterministic.
     matches = BaseRule.live_for_components(searchable_components.select(:id))
                       .where(version: query)
+                      .order(:component_id, :rule_id)
                       .limit(100)
                       .pluck(:id, :rule_id, :component_id)
     prefixes = Component.where(id: matches.map(&:last).uniq).pluck(:id, :prefix).to_h
@@ -186,8 +189,11 @@ class RulesController < ApplicationController
     # One kind-agnostic revert path — Rules and authored SRG requirements
     # share the audit machinery.
     BaseRule.revert(@rule, params[:audit_id], params[:fields], params[:audit_comment])
-    # Save the row to trigger callbacks (update inspec on stig-kind rules)
-    @rule.save
+    # Save the row to trigger callbacks (update inspec on stig-kind rules).
+    # Reload first: the revert saved a different in-memory instance, and the
+    # after-save InSpec regeneration reads instance attributes — a stale
+    # instance silently rebuilds the control from pre-revert state.
+    @rule.reload.save
     render_toast(title: 'History reverted.',
                  message: 'Successfully reverted history for control.',
                  variant: 'success', status: :ok)

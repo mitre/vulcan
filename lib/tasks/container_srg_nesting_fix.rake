@@ -3,7 +3,10 @@
 namespace :container_srg do
   desc 'Fix ~25 miscategorized satisfaction rows in Container SRG (dry-run by default)'
   task fix_nesting: :environment do
-    component = Component.find_by!(prefix: 'CNTR-00')
+    # Kind-scoped: two components share the CNTR-00 prefix (the stig test
+    # dataset and the rebuilt srg) — this task walks the satisfies graph,
+    # which exists only on the stig kind.
+    component = Component.find_by!(prefix: 'CNTR-00', document_type: 'stig')
     dry_run = ENV.fetch('EXECUTE', 'false') != 'true'
 
     puts dry_run ? '=== DRY RUN (set EXECUTE=true to apply) ===' : '=== EXECUTING ==='

@@ -35,6 +35,10 @@ module ExportTestHelpers
 
   # A component's working-copy CSV through the live export path. Specs that
   # need CSV fixtures build them here so they exercise the code users run.
+  #
+  # WARNING: a component WITH comment reviews returns ZIP BYTES here, not
+  # CSV — the export bundles a disposition matrix alongside the working
+  # copy. Only comment-free components yield raw CSV.
   def working_copy_csv(component)
     Export::Base.new(exportable: component, mode: :working_copy, format: :csv).call.data
   end

@@ -107,9 +107,10 @@
 
       <!-- Modals -->
       <template #modals>
-        <!-- Related Rules Modal -->
+        <!-- Related Rules Modal — structurally stig-only (keys off Rule
+             SRG-version linkage); same kind guard as the editor sibling. -->
         <RelatedRulesModal
-          v-if="selectedRule"
+          v-if="selectedRule && !isSrgComponent"
           :read-only="true"
           :rule="selectedRule"
           :rule-stig-id="`${component.prefix}-${selectedRule.rule_id}`"
@@ -432,12 +433,6 @@ export default {
           active: true,
         },
       ];
-    },
-    componentPanels() {
-      return ["details", "metadata", "questions", "comp-history"];
-    },
-    rulePanels() {
-      return ["satisfies", "rule-reviews", "rule-history"];
     },
     isSrgComponent() {
       return this.component.document_type === "srg";
