@@ -4,8 +4,11 @@ post:
   operationId: revertRule
   tags:
     - Rules
-  summary: Revert a rule to a previous audit version
-  description: Restores all audited fields to their values at the specified audit entry. Requires author or admin role.
+  summary: Revert requirement fields to a previous audit version
+  description: >-
+    Restores the named audited fields to their prior values from the
+    specified history entry. Applies to both document kinds — stig rules
+    and authored SRG requirements. Requires author or admin role.
   requestBody:
     required: true
     content:
@@ -15,6 +18,18 @@ post:
           properties:
             audit_id:
               type: integer
+              description: The audit history entry to revert from.
+              example: 4211
+            fields:
+              type: array
+              description: The audited field names to restore.
+              items:
+                type: string
+              example: [title]
+            audit_comment:
+              type: string
+              description: Recorded on the audit trail with the revert.
+              example: Restore the original wording
   responses:
     '200':
       description: Rule reverted

@@ -224,8 +224,7 @@ Vulcan/KindSeamQuery:
     # InSpec control-file diff — InSpec is structurally STIG-only.
     - app/controllers/components_controller.rb
     # Editor payload is kind-routed in-file; related_rules is deliberately
-    # Rule-only (no authored equivalent surface); history revert is
-    # door-guarded Rule machinery, in flight to kind-awareness.
+    # Rule-only (no authored equivalent surface).
     - app/controllers/rules_controller.rb
     # Global search kind-awareness is in flight — remove when it lands.
     - app/controllers/api/search_controller.rb

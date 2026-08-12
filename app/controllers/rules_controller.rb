@@ -183,12 +183,10 @@ class RulesController < ApplicationController
   end
 
   def revert
-    # History revert is Rule machinery; no authored-requirement revert
-    # path exists yet.
-    return render_not_found unless @rule.is_a?(Rule)
-
-    Rule.revert(@rule, params[:audit_id], params[:fields], params[:audit_comment])
-    # Save the rule to trigger callbacks (update inspec)
+    # One kind-agnostic revert path — Rules and authored SRG requirements
+    # share the audit machinery.
+    BaseRule.revert(@rule, params[:audit_id], params[:fields], params[:audit_comment])
+    # Save the row to trigger callbacks (update inspec on stig-kind rules)
     @rule.save
     render_toast(title: 'History reverted.',
                  message: 'Successfully reverted history for control.',

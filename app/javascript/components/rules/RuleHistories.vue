@@ -7,16 +7,7 @@
       }}</b-badge>
     </div>
 
-    <!-- History revert is Rule machinery — the backend has no
-         authored-requirement revert path, so SRG-kind renders the
-         changelog read-only. -->
-    <History
-      :histories="rule.histories"
-      :component="component"
-      :rule="rule"
-      :statuses="statuses"
-      :revertable="component.document_type !== 'srg'"
-    />
+    <History :histories="rule.histories" :component="component" :rule="rule" :statuses="statuses" />
 
     <p v-if="!rule.histories || rule.histories.length === 0" class="text-muted small">
       No revision history yet.

@@ -10,7 +10,7 @@ import { useHistoryGrouping } from "@/composables/useHistoryGrouping";
  * RuleHistories Component Tests
  *
  * REQUIREMENTS:
- * - Shows a "Revision History" heading with a badge counting GROUPED
+ * - Shows a "Changelog" heading with a badge counting GROUPED
  *   histories (bulk saves within the 5s grouping interval with the same
  *   author + comment collapse into one entry) via useHistoryGrouping.
  * - Renders the shared History timeline with the raw histories.
@@ -94,20 +94,20 @@ describe("RuleHistories", () => {
     });
   });
 
-  // ─── Document kind — revert is Rule machinery ──────────────
+  // ─── Document kind — revert affordance ──────────────
   //
-  // REQUIREMENT: history revert exists only for Rule rows (the backend
-  // 404s authored-requirement reverts), so the changelog renders
-  // read-only for SRG-kind components and revertable for STIG-kind.
+  // REQUIREMENT: history revert is one kind-agnostic path — the backend
+  // serves both stig rules and authored SRG requirements, so the
+  // changelog is revertable for both document kinds.
   describe("document kind — revert affordance", () => {
     it("marks history revertable for stig-kind components (regression)", () => {
       wrapper = createWrapper();
       expect(wrapper.findComponent({ name: "History" }).props("revertable")).toBe(true);
     });
 
-    it("marks history NOT revertable for srg-kind components", () => {
+    it("marks history revertable for srg-kind components", () => {
       wrapper = createWrapper({ component: { id: 41, document_type: "srg" } });
-      expect(wrapper.findComponent({ name: "History" }).props("revertable")).toBe(false);
+      expect(wrapper.findComponent({ name: "History" }).props("revertable")).toBe(true);
     });
   });
 });

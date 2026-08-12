@@ -196,71 +196,9 @@ class Rule < BaseRule
   ##
   # Serialization is handled by RuleBlueprint.
   # See app/blueprints/rule_blueprint.rb for :navigator, :viewer, :editor views.
-
-  ##
-  # Revert a specific field on a rule from an audit
   #
-  # Parameters:
-  #    rule (Rule) - A Rule object to revert a change on
-  #    audit_id (integer) - A specific ID for an audited record
-  #    field (string) - A specific field to revert from the audit record
-  #
-  def self.revert(rule, audit_id, fields, audit_comment)
-    audit = rule.own_and_associated_audits.find(audit_id)
-
-    # nil check for audit
-    raise(RuleRevertError, 'Could not locate history for this control.') if audit.nil?
-
-    if audit.action == 'update'
-      record = audit.auditable
-
-      # nil check for record
-      raise(RuleRevertError, 'Could not locate record for this history.') if record.nil?
-
-      fields.each do |field|
-        # The only field we can revert on AdditionalAnswers is answer
-        revert_field = audit.auditable_type.eql?('AdditionalAnswer') ? 'answer' : field
-
-        raise(RuleRevertError, "Field to revert (#{revert_field.humanize}) does not exist in this history.") unless audit.audited_changes.include?(revert_field)
-
-        # The audited change can either be an array `[prev_val, new_val]`
-        # or just the `val`
-        value = if audit.audited_changes[revert_field].is_a?(Array)
-                  audit.audited_changes[revert_field][0]
-                else
-                  audit.audited_changes[revert_field]
-                end
-
-        # Special case for AdditionalAnswer since it stores in the 'answer' field always
-        if audit.auditable_type.eql?('AdditionalAnswer')
-          record.answer = value
-        else
-          record[revert_field] = value
-        end
-      end
-      record.audit_comment = audit_comment if record.changed?
-      record.save
-      return
-    end
-
-    raise(RuleRevertError, 'Cannot revert this history.') unless audit.action == 'destroy'
-
-    auditable_type = case audit.auditable_type
-                     when 'RuleDescription'
-                       RuleDescription
-                     when 'DisaRuleDescription'
-                       DisaRuleDescription
-                     when 'Check'
-                       Check
-                     else
-                       raise(RuleRevertError, 'Cannot revert this history type.')
-                     end
-    begin
-      auditable_type.create!(audit.audited_changes.merge({ rule_id: rule.id, audit_comment: audit_comment }))
-    rescue ActiveRecord::RecordInvalid => e
-      raise(RuleRevertError, "Encountered error while reverting this history. #{e.message}")
-    end
-  end
+  # History revert lives on BaseRule — one kind-agnostic path shared with
+  # authored SRG requirements.
 
   # Returns export data as a hash keyed by DISA header name, so csv_attributes
   # and ExportableRule build rows in header order without fragile positional

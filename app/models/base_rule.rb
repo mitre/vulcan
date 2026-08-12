@@ -72,6 +72,81 @@ class BaseRule < ApplicationRecord
     copy
   end
 
+  ##
+  # Revert named fields on a requirement row from an audit entry. Works for
+  # any audited requirement kind — Rules and authored SrgRules share the
+  # audit machinery and the child-record associations this restores.
+  #
+  # Parameters:
+  #    rule (BaseRule) - the requirement row to revert a change on
+  #    audit_id (integer) - a specific ID for an audited record
+  #    fields (Array<String>) - the fields to revert from the audit record
+  #
+  def self.revert(rule, audit_id, fields, audit_comment)
+    audit = rule.own_and_associated_audits.find(audit_id)
+
+    # nil check for audit
+    raise(RuleRevertError, 'Could not locate history for this control.') if audit.nil?
+
+    if audit.action == 'update'
+      record = audit.auditable
+
+      # nil check for record
+      raise(RuleRevertError, 'Could not locate record for this history.') if record.nil?
+
+      fields.each do |field|
+        # The only field we can revert on AdditionalAnswers is answer
+        revert_field = audit.auditable_type.eql?('AdditionalAnswer') ? 'answer' : field
+
+        raise(RuleRevertError, "Field to revert (#{revert_field.humanize}) does not exist in this history.") unless audit.audited_changes.include?(revert_field)
+
+        # The audited change can either be an array `[prev_val, new_val]`
+        # or just the `val`
+        value = if audit.audited_changes[revert_field].is_a?(Array)
+                  audit.audited_changes[revert_field][0]
+                else
+                  audit.audited_changes[revert_field]
+                end
+
+        # Special case for AdditionalAnswer since it stores in the 'answer' field always
+        if audit.auditable_type.eql?('AdditionalAnswer')
+          record.answer = value
+        else
+          record[revert_field] = value
+        end
+      end
+      record.audit_comment = audit_comment if record.changed?
+      # A refused save must surface — a silent no-op behind a success toast
+      # hides the failure (authored rows carry validations, e.g. the
+      # justification required while Not Applicable).
+      unless record.save
+        raise(RuleRevertError,
+              "Encountered error while reverting this history. #{record.errors.full_messages.join(', ')}")
+      end
+      return
+    end
+
+    raise(RuleRevertError, 'Cannot revert this history.') unless audit.action == 'destroy'
+
+    auditable_type = case audit.auditable_type
+                     when 'RuleDescription'
+                       RuleDescription
+                     when 'DisaRuleDescription'
+                       DisaRuleDescription
+                     when 'Check'
+                       Check
+                     else
+                       raise(RuleRevertError, 'Cannot revert this history type.')
+                     end
+    begin
+      # The child tables key on base_rule_id — a rule_id key here raised
+      # UnknownAttributeError past the RecordInvalid rescue (a 500).
+      auditable_type.create!(audit.audited_changes.merge({ base_rule_id: rule.id, audit_comment: audit_comment }))
+    rescue ActiveRecord::RecordInvalid => e
+      raise(RuleRevertError, "Encountered error while reverting this history. #{e.message}")
+    end
+  end
+
   # In-memory ordering for ALREADY-loaded collections (the serialization path).
   # Sorting the eager-loaded records in Ruby reorders them with zero extra
   # queries — calling the .canonical_order SQL scope on a loaded association
