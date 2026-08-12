@@ -54,7 +54,10 @@ module SlackNotificationFieldsHelper
         notification_fields[:generate_admin_role_action_label],
         notification_fields[:generate_initiated_by_label]
       ]
-    when Rule
+    when Rule, SrgRule
+      # Requirement rows of either STI kind — a Rule-only match let authored
+      # SrgRules fall through with no fields, and safely_notify swallowed the
+      # crash, silently dropping every review notification for them.
       notification_fields = review_notification_fields(notification_type_prefix, object, comment)
       fields = [
         app_notification_field,
