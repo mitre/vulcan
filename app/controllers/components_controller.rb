@@ -777,12 +777,13 @@ class ComponentsController < ApplicationController
     # Returns out of the function if stig ID is blank or empty
     return if stig_id.blank?
 
-    # Queries the Rule model with component_id and rule_id as arguments to find a specific rule.
-    @rule = Rule.find_by(component_id: params[:id], rule_id: stig_id)
+    # Kind-routed through the requirement seam: the deep-linked row is an
+    # authored SrgRule on srg components and a Rule on stig components.
+    @rule = @component.requirements.find_by(rule_id: stig_id)
 
     # If a record for the rule exists, set the instance variable @rule_json to the rule's JSON attribute
     if @rule.present?
-      @rule_json = RuleBlueprint.render(@rule, view: :editor)
+      @rule_json = ComponentBlueprint.requirement_blueprint(@component).render(@rule, view: :editor)
 
       # Else, create an error message and respond to either HTML or JSON requests
     else

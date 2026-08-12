@@ -7,51 +7,59 @@ namespace :db do
     require 'benchmark'
     require 'json'
 
-    component = Component.includes(
-      rules: %i[reviews disa_rule_descriptions checks references rule_descriptions satisfies satisfied_by]
-    ).joins(:rules).where('rules_count > 0').first
+    # COMPONENT_ID targets a specific component; otherwise the one with the
+    # most live requirements, either document kind — the diagnostic measures
+    # the same seam-routed path the editor serves.
+    component = if ENV['COMPONENT_ID']
+                  Component.find_by(id: ENV['COMPONENT_ID'])
+                else
+                  busiest = BaseRule.where(deleted_at: nil).where.not(component_id: nil)
+                                    .group(:component_id).order(Arel.sql('COUNT(*) DESC'))
+                                    .limit(1).count.keys.first
+                  Component.find_by(id: busiest)
+                end
 
-    abort 'No component with rules found. Seed the database first.' unless component
+    abort 'No component with requirements found. Seed the database first.' unless component
 
-    rules = component.rules.to_a
+    blueprint = ComponentBlueprint.requirement_blueprint(component)
+    requirements = component.requirements.to_a
     puts '=' * 70
     puts 'SERIALIZATION PERFORMANCE ANALYSIS'
     puts '=' * 70
-    puts "Component: #{component.name} (#{rules.size} rules)"
+    puts "Component: #{component.name} (kind=#{component.document_type}, #{requirements.size} requirements)"
     puts
 
-    results = { component: component.name, rule_count: rules.size }
+    results = { component: component.name, document_type: component.document_type,
+                requirement_count: requirements.size }
     iterations = 5
 
-    # DB fetch time (isolated)
-    puts '1. DB fetch (eager load all associations)...'
+    # DB fetch time (isolated) — the blueprint-declared preload plan
+    puts '1. DB fetch (blueprint-declared preloads)...'
     fetch_ms = (Benchmark.measure do
       iterations.times do
-        Component.includes(
-          rules: %i[reviews disa_rule_descriptions checks references]
-        ).find(component.id)
+        Component.find(component.id).requirements.preload_blueprint(blueprint, :viewer).to_a
       end
     end.real / iterations * 1000).round(1)
     results[:db_fetch_ms] = fetch_ms
     puts "   #{fetch_ms}ms avg"
 
-    # Blueprint views (batch of all rules)
-    puts '2. Blueprint serialization (all rules)...'
+    # Blueprint views (batch of all requirements)
+    puts '2. Blueprint serialization (all requirements)...'
     %i[navigator viewer editor].each do |view|
       ms = (Benchmark.measure do
-        iterations.times { RuleBlueprint.render_as_json(rules, view: view) }
+        iterations.times { blueprint.render_as_json(requirements, view: view) }
       end.real / iterations * 1000).round(1)
-      per_rule = (ms / rules.size).round(3)
+      per_rule = (ms / requirements.size).round(3)
       results[:"blueprint_#{view}_ms"] = ms
       results[:"blueprint_#{view}_per_rule_ms"] = per_rule
-      puts "   :#{view} — #{ms}ms total, #{per_rule}ms/rule"
+      puts "   :#{view} — #{ms}ms total, #{per_rule}ms/requirement"
     rescue StandardError => e
       puts "   :#{view} — SKIPPED (#{e.message})"
     end
 
     # JSON.generate overhead
     puts '3. JSON.generate overhead...'
-    hash = rules.map { |r| { id: r.id, title: r.title, status: r.status } }
+    hash = requirements.map { |r| { id: r.id, title: r.title, status: r.status } }
     json_ms = (Benchmark.measure do
       100.times { JSON.generate(hash) }
     end.real / 100 * 1000).round(3)
@@ -62,10 +70,9 @@ namespace :db do
     puts '4. Full endpoint simulation (fetch + serialize)...'
     full_ms = (Benchmark.measure do
       iterations.times do
-        c = Component.includes(
-          rules: %i[reviews disa_rule_descriptions checks]
-        ).find(component.id)
-        RuleBlueprint.render_as_json(c.rules, view: :viewer)
+        c = Component.find(component.id)
+        loaded = c.requirements.preload_blueprint(blueprint, :viewer)
+        blueprint.render_as_json(loaded, view: :viewer)
       end
     end.real / iterations * 1000).round(1)
     results[:full_endpoint_viewer_ms] = full_ms
@@ -82,10 +89,8 @@ namespace :db do
       query_count += 1
     end
     ActiveSupport::Notifications.subscribed(counter, 'sql.active_record') do
-      c = Component.includes(
-        rules: %i[reviews disa_rule_descriptions checks references]
-      ).find(component.id)
-      c.rules.each do |r|
+      c = Component.find(component.id)
+      c.requirements.preload_blueprint(blueprint, :viewer).each do |r|
         r.title
         r.checks.first&.content
         r.disa_rule_descriptions.first&.vuln_discussion

@@ -43,6 +43,24 @@ RSpec.describe VulcanAudit do
       )
       expect { audit.send(:find_and_save_associated_rule) }.not_to raise_error
     end
+
+    # The auditable rows are BaseRule — BOTH kinds. A Rule-branch lookup
+    # silently skipped authored SrgRules, so audits on an srg component's
+    # requirements never carried the display-name attribution.
+    it 'attributes audits on authored SRG requirements' do
+      srg_component = create(:component, :skip_rules, document_type: 'srg', prefix: 'AUDT-00')
+      requirement = create(:srg_rule, :authored, component: srg_component, rule_id: '000001')
+
+      audit = VulcanAudit.new(
+        auditable_type: 'BaseRule',
+        associated_type: 'Component',
+        auditable_id: requirement.id,
+        action: 'update'
+      )
+      audit.send(:find_and_save_associated_rule)
+
+      expect(audit.audited_username).to eq('Control AUDT-00-000001')
+    end
   end
 
   # request_uuid correlation works for

@@ -106,7 +106,9 @@ class VulcanAudit < Audited::Audit
     # No auditing for hard deletes
     return if action == 'destroy'
 
-    rule = Rule.find_by(id: auditable_id)
+    # BaseRule, not Rule: the auditable rows are requirements of EITHER kind,
+    # and the Rule STI branch silently skips authored SrgRules.
+    rule = BaseRule.find_by(id: auditable_id)
     # Use `&&` (short-circuit) not `&` (bitwise). `&` evaluates both sides, so
     # `rule.component.present?` would blow up on NoMethodError when rule is nil.
     return unless rule&.component

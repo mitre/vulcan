@@ -1,5 +1,6 @@
 require:
   - ./lib/rubocop/cop/vulcan/comment_tracker
+  - ./lib/rubocop/cop/vulcan/kind_seam_query
   - ./lib/rubocop/cop/vulcan/let_it_be_refind
 
 plugins:
@@ -198,3 +199,37 @@ RSpec/IndexedLet:
     - spec/models/rule_search_spec.rb
     - spec/models/srg_csv_export_spec.rb
     - spec/models/stig_csv_export_spec.rb
+
+# The kind-seam query invariant: requirement-scoped queries route through
+# Component#requirements / BaseRule.live_for_components — Rule is the STIG
+# STI subclass and structurally excludes authored SRG requirements. Each
+# excluded file below is either a deliberately STIG-only surface or the
+# seam's own implementation; in-flight gaps are marked and leave the list
+# when their kind-routing lands. Never quiet this cop inline.
+Vulcan/KindSeamQuery:
+  Include:
+    - app/**/*.rb
+    - lib/tasks/**/*.rake
+    - lib/tasks/**/*.rb
+  Exclude:
+    # The kind seam's own home — requirements routes to rules for stig kind,
+    # and the Rule-only copy/import internals are guarded at their doors.
+    - app/models/component.rb
+    # Rule-internal counter-cache maintenance (SRG counts are live queries).
+    - app/models/rule.rb
+    # Kind-routed at the mode seam — the rules branch serves non-SRG modes.
+    - app/services/export/base.rb
+    # Kind-routed builder — the rules branch is the stig import path.
+    - app/services/import/json_archive/rule_builder.rb
+    # InSpec control-file diff — InSpec is structurally STIG-only.
+    - app/controllers/components_controller.rb
+    # Editor payload is kind-routed in-file; the version-lookup searches are
+    # in flight to kind-awareness — remove when the search work lands.
+    - app/controllers/rules_controller.rb
+    # Global search kind-awareness is in flight — remove when it lands.
+    - app/controllers/api/search_controller.rb
+    # ADNM automation walks the satisfies graph — structurally STIG-only.
+    - lib/tasks/fix_adnm_status.rake
+    # Satisfaction-nesting maintenance for the stig-kind container test
+    # dataset — walks the satisfies graph, structurally STIG-only.
+    - lib/tasks/container_srg_nesting_fix.rake

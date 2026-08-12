@@ -218,4 +218,36 @@ RSpec.describe 'Component show' do
       expect(response).to have_http_status(:not_found)
     end
   end
+
+  # The rule deep-link (/components/:id/:stig_id) resolves through set_rule.
+  # The deep-linked row is an authored SrgRule on srg components and a Rule
+  # on stig components — a Rule-branch lookup silently missed authored rows,
+  # flashing "could not be found" for every srg deep-link (the exact links
+  # the triage table renders). Found = 200 render; missed = 302 redirect.
+  describe 'GET /components/:id/:stig_id (rule deep-link)' do
+    let_it_be(:srg_component) do
+      create(:component, :skip_rules, project: project, document_type: 'srg',
+                                      prefix: 'SHDL-00', name: 'Deep-link SRG',
+                                      title: 'Deep-link SRG')
+    end
+    let_it_be(:authored_requirement) do
+      create(:srg_rule, :authored, component: srg_component, rule_id: '000001')
+    end
+
+    it 'resolves a stig component deep-link to its rule' do
+      rule = component.rules.first
+      get "/components/#{component.id}/#{component.prefix}-#{rule.rule_id}"
+      expect(response).to have_http_status(:ok)
+    end
+
+    it 'resolves an srg component deep-link to its authored requirement' do
+      get "/components/#{srg_component.id}/SHDL-00-000001"
+      expect(response).to have_http_status(:ok)
+    end
+
+    it 'redirects with a flash for an unknown rule id' do
+      get "/components/#{component.id}/#{component.prefix}-999999"
+      expect(response).to have_http_status(:found)
+    end
+  end
 end
