@@ -166,6 +166,27 @@ RSpec.describe 'Component show' do
       review = reviews.find { |r| r['comment'] == 'Blueprint shape test' }
       expect(review).to have_key('commentable_type')
     end
+
+    # The component-level reviews feed serves BOTH kinds. The show path
+    # eager-loads :rules (the stig STI class), which on an srg component is an
+    # empty-but-loaded association — the cached fast path must not swallow
+    # reviews that live on authored requirements.
+    it 'serves reviews on an srg component\'s authored requirements' do
+      srg = create(:component, :skip_rules, project: project, document_type: 'srg',
+                                            prefix: 'RVWD-00', name: 'Reviewed SRG',
+                                            title: 'Reviewed SRG')
+      requirement = create(:srg_rule, :authored, component: srg, rule_id: '000001')
+      Review.create!(action: 'comment', comment: 'SRG feed test',
+                     section: nil, user: user, commentable: requirement)
+
+      get "/components/#{srg.id}.json"
+
+      expect(response).to have_http_status(:success)
+      reviews = response.parsed_body['reviews']
+      review = reviews.find { |r| r['comment'] == 'SRG feed test' }
+      expect(review).to be_present
+      expect(review['rule_displayed_name']).to eq('RVWD-00-000001')
+    end
   end
 
   describe 'GET /components/:id (reaction scoping)' do

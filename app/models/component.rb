@@ -701,7 +701,12 @@ class Component < ApplicationRecord
     # :id breaks created_at ties so the 20 most-recent reviews come out in a
     # deterministic order (both the cached and DB paths agree: newest first,
     # higher id first on a tie).
-    review_records = if association_cached?(:rules) &&
+    #
+    # The cached fast path is stig-only, same guard as rule_names above: on an
+    # srg component the eager-loaded :rules association is empty-but-loaded, so
+    # without the kind guard the all? check is vacuously true and the branch
+    # would swallow every review on authored requirements.
+    review_records = if document_type != 'srg' && association_cached?(:rules) &&
                         rules.all? { |r| r.association(:reviews).loaded? }
                        rules.flat_map(&:reviews).sort_by { |r| [r.created_at, r.id] }.last(20).reverse
                      else
