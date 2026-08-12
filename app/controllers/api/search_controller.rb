@@ -6,6 +6,8 @@ module Api
   # Returns search results across projects, components, rules, SRGs, and STIGs
   #
   class SearchController < BaseController
+    include SearchScoping
+
     before_action :authenticate_user!
 
     def global
@@ -70,15 +72,16 @@ module Api
     def search_components(limit)
       return [] unless current_user
 
-      # Get components from user's available projects
-      project_ids = current_user.available_projects.ids
-
       # Build conditions: search name, prefix, AND metadata JSON values (F2)
       name_prefix_conds = build_ilike_conditions(%w[components.name components.prefix])
       metadata_cond = build_metadata_ilike_condition
 
+      # Content is membership-gated: memberships or released components,
+      # never discoverable-but-not-joined projects (those grant existence
+      # via the projects section, not content). Materialized ids for the
+      # same planner reason as the rules search below.
       Component.left_joins(:component_metadata)
-               .where(project_id: project_ids)
+               .where(id: searchable_components.ids)
                .where("(#{name_prefix_conds[0]}) OR (#{metadata_cond[0]})",
                       *name_prefix_conds[1..], *metadata_cond[1..])
                .includes(:project, :component_metadata)
@@ -100,14 +103,18 @@ module Api
     def search_rules(limit)
       return [] unless current_user
 
-      project_ids = current_user.available_projects.ids
+      # Content is membership-gated — same scope as the component results.
+      # The id set is MATERIALIZED, never passed as a subselect: pg_search's
+      # ts_rank subquery computes tsvectors on the fly, and a subselect here
+      # let the planner re-execute that work per row — a runaway query that
+      # hung the suite for an hour until its backend was terminated.
       component_ids = if params[:component_id].present?
-                        comp = Component.where(id: params[:component_id], project_id: project_ids).first
+                        comp = searchable_components.where(id: params[:component_id]).first
                         return [] unless comp
 
                         [comp.id]
                       else
-                        Component.where(project_id: project_ids).ids
+                        searchable_components.ids
                       end
 
       rules_scope = Rule.where(component_id: component_ids)
@@ -227,7 +234,11 @@ module Api
       # Build search across rule fields and joined check content
       conditions = build_srg_rule_conditions
 
+      # Catalog rows only: component-authored SrgRules are project content
+      # and are never served here — this search type is the instance-global
+      # published SRG requirement catalog.
       SrgRule
+        .where(component_id: nil)
         .left_joins(:checks)
         .where(conditions)
         .includes(:security_requirements_guide)

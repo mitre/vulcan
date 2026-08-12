@@ -20,8 +20,9 @@ RSpec.describe 'Api::Search' do
   let_it_be(:admin_user) { create(:user, admin: true) }
   let_it_be(:user) { create(:user) }
   # Create test data
-  # Note: Set visibility to 'hidden' for project2 so it only appears via membership
-  # (default visibility is 'discoverable' which would show in search)
+  # Note: the visibility column DEFAULTS TO HIDDEN — both projects here are
+  # hidden, so they appear only via membership. project2 states it
+  # explicitly for reading clarity.
   let_it_be(:project1) { create(:project, name: 'Security Baseline Project') }
   let_it_be(:project2) { create(:project, name: 'Another Secret Project', visibility: :hidden) }
 
@@ -44,6 +45,87 @@ RSpec.describe 'Api::Search' do
         get search_path, params: { q: 'Security' }
 
         expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    # Content is membership-gated: a discoverable project grants existence
+    # and request-access, never content. Rule and component content is
+    # served only from the caller's memberships (project or component) and
+    # released components; the SRG requirement catalog is instance-global.
+    context 'when authenticated as a non-member (content is membership-gated)' do
+      let_it_be(:outsider) { create(:user) }
+      let_it_be(:discoverable_project) { create(:project, :discoverable, name: 'Discoverable Search Project') }
+      let_it_be(:discoverable_component) do
+        create(:component, project: discoverable_project, name: 'Discoverable Web Component',
+                           prefix: 'DISC-01', based_on: srg)
+      end
+      let_it_be(:discoverable_content_rule) do
+        create(:rule, component: discoverable_component, rule_id: '999802',
+                      title: 'Numbat termite survey requirement for the discoverable platform')
+      end
+      let_it_be(:member_rule) do
+        create(:rule, component: component1, rule_id: '999801',
+                      title: 'Quokka burrow inspection requirement for the demonstration platform')
+      end
+      let_it_be(:hidden_srg_component) do
+        create(:component, :skip_rules, project: project2, document_type: 'srg',
+                                        prefix: 'HIDE-00', name: 'Hidden Authoring SRG',
+                                        title: 'Hidden Authoring SRG')
+      end
+      let_it_be(:authored_requirement) do
+        create(:srg_rule, :authored, component: hidden_srg_component, rule_id: '000001',
+                                     title: 'Wallaby isolation requirement for the hidden platform')
+      end
+
+      before { sign_in outsider }
+
+      it 'serves the discoverable project itself — request-access discovery, by design' do
+        get search_path, params: { q: 'Discoverable Search' }
+
+        expect(response.parsed_body['projects'].pluck('name')).to include('Discoverable Search Project')
+      end
+
+      it 'does not serve component rows from the discoverable project' do
+        get search_path, params: { q: 'Discoverable Web' }
+
+        expect(response.parsed_body['components']).to eq([])
+      end
+
+      it 'does not serve rule content from the discoverable project' do
+        get search_path, params: { q: 'Numbat' }
+
+        expect(response.parsed_body['rules']).to eq([])
+      end
+
+      it 'does not serve authored requirement content in srg_rules results' do
+        get search_path, params: { q: 'Wallaby' }
+
+        expect(response.parsed_body['srg_rules']).to eq([])
+      end
+
+      it 'still serves the public SRG requirement catalog in srg_rules results' do
+        get search_path, params: { q: 'operating system' }
+
+        rows = response.parsed_body['srg_rules']
+        expect(rows).not_to be_empty
+        expect(rows).to all(include('srg_id' => be_present))
+      end
+
+      it 'serves released components regardless of project visibility' do
+        released = create(:component, project: project2, name: 'Released Hidden Component',
+                                      prefix: 'RELH-01', based_on: srg, released: true)
+
+        get search_path, params: { q: 'Released Hidden' }
+
+        expect(response.parsed_body['components'].pluck('id')).to include(released.id)
+      end
+
+      it 'serves rule content to a member of the project (scoping does not over-narrow)' do
+        sign_in user
+
+        get search_path, params: { q: 'Quokka' }
+
+        expect(response.parsed_body['rules'].pluck('id')).to include(member_rule.id)
       end
     end
 

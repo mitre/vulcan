@@ -335,7 +335,7 @@ paths:
       tags:
         - Search
       summary: Search across all resource types
-      description: Searches projects, components, rules, SRGs, and STIGs by name or title. Results are grouped by type and limited per group. Rules can be scoped to a specific component via the component_id parameter. Requires authentication — returns 401 if not signed in.
+      description: Searches projects, components, rules, SRGs, and STIGs by name or title. Results are grouped by type and limited per group. Project results cover everything the caller can discover (memberships plus discoverable projects); component and rule content is served only from the caller's memberships and released components; SRG/STIG results and the srg_rules requirement catalog are instance-global. Rules can be scoped to a specific component via the component_id parameter. Requires authentication — returns 401 if not signed in.
       parameters:
         - $ref: '#/components/parameters/SearchQuery'
         - name: limit
@@ -7531,7 +7531,7 @@ components:
                 example: 1
         components:
           type: array
-          description: Components matching the search query (from user's available projects).
+          description: Components matching the search query, scoped to what the caller can access — project or component membership, or released components; admins unrestricted.
           items:
             type: object
             properties:
@@ -7573,7 +7573,7 @@ components:
                 example: null
         rules:
           type: array
-          description: Rules matching the search query (from user's available projects).
+          description: Rules matching the search query, scoped to what the caller can access — project or component membership, or released components; admins unrestricted.
           items:
             type: object
             properties:
@@ -7755,7 +7755,7 @@ components:
                 example: Application Security Development STIG - Ver 6, Rel 4
         srg_rules:
           type: array
-          description: Individual rules from SRGs matching the search query.
+          description: Requirements from the published SRG catalog matching the search query. Component-authored requirements are project content and never appear here.
           items:
             type: object
             properties:
