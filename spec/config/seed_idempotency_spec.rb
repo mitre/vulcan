@@ -151,5 +151,35 @@ RSpec.describe 'seed file idempotency and completeness' do
       expect(srg_seed).to match(/SrgRule\.find_or_create_by!?/),
                           'authored requirements must use find_or_create_by, not bare create! (reseed duplicates)'
     end
+
+    # Derived rows must carry their core requirement's version — exactly what
+    # the requirement import produces by dupping the catalog row — so seeded
+    # rows are findable in the global requirement search. Runs the real seed
+    # file, twice, against a factory-built Application Core SRG.
+    it 'stamps derived rows with the core version, heals pre-fix rows, and stays idempotent' do
+      create(:security_requirements_guide, srg_id: 'Application_Core_SRG',
+                                           title: 'Application Core SRG')
+      seed_file = Rails.root.join('db/seeds/data/14_srg_authoring_demo.rb').to_s
+
+      capture_stdout { load seed_file }
+
+      demo = Component.find_by(name: 'Demo Application SRG')
+      expect(demo).to be_present
+      derived, net_new = demo.requirements.partition { |r| r.derived_from_srg_rule_id.present? }
+      expect(derived.size).to eq(7)
+      derived.each do |row|
+        expect(row.version).to eq(row.derived_from.version),
+                               "derived row #{row.rule_id} must carry its core requirement's version"
+      end
+      expect(net_new.map(&:version)).to eq([nil])
+
+      # Rows seeded before the stamp existed converge on reseed.
+      healed_target = derived.first
+      healed_target.update_column(:version, nil)
+      capture_stdout { load seed_file }
+
+      expect(healed_target.reload.version).to eq(healed_target.derived_from.version)
+      expect(demo.requirements.count).to eq(8)
+    end
   end
 end

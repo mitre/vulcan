@@ -74,7 +74,9 @@ allOf:
         example: 0
       rules_count:
         type: integer
-        description: Number of rules in this component.
+        description: >-
+          Number of requirement rows in this component — rules for stig-kind
+          components, authored requirements for srg-kind components.
         example: 203
       updated_at:
         type: string

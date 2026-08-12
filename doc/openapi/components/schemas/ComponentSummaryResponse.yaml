@@ -85,7 +85,9 @@ properties:
     example: V3R3
   rules_count:
     type: integer
-    description: Number of rules in the component.
+    description: >-
+      Number of requirement rows in the component — rules for stig-kind
+      components, authored requirements for srg-kind components.
     example: 203
   memberships_count:
     type: integer

@@ -64,6 +64,16 @@ class ComponentBlueprint < Blueprinter::Base
     counts[component.id] || 0
   end
 
+  # The kind-aware requirement count under the long-standing wire key:
+  # srg components report their authored-row count, stig components the
+  # class-Rule counter cache (which never sees authored rows). Included by
+  # every view that serves the count so the value cannot fork per view.
+  view :requirement_count do
+    field :rules_count do |component, _options|
+      component.requirements_count
+    end
+  end
+
   # === Latest view: dropdown population ===
   # Reference identity only — no per-record severity/comment queries.
   view :latest do
@@ -77,8 +87,9 @@ class ComponentBlueprint < Blueprinter::Base
   # Phase booleans delegate to the model methods — the single source of
   # truth for the write-guards — never reimplemented here.
   view :summary do
+    include_view :requirement_count
     fields :title, :released, :project_id, :component_id,
-           :security_requirements_guide_id, :rules_count, :memberships_count,
+           :security_requirements_guide_id, :memberships_count,
            :updated_at, :comment_phase, :closed_reason, :document_type,
            :comment_period_starts_at, :comment_period_ends_at
 
@@ -108,7 +119,8 @@ class ComponentBlueprint < Blueprinter::Base
   # silently renders as undefined. Verified against grep of
   # component.X property access in ComponentCard.vue.
   view :index do
-    fields :updated_at, :released, :rules_count, :component_id, :project_id,
+    include_view :requirement_count
+    fields :updated_at, :released, :component_id, :project_id,
            :security_requirements_guide_id, :admin_name, :admin_email, :description,
            :document_type
 
@@ -148,11 +160,12 @@ class ComponentBlueprint < Blueprinter::Base
 
   # === Editor view: full editing page ===
   view :editor do
+    include_view :requirement_count
     # All DB columns needed by Vue components
     fields :title, :description, :admin_name, :admin_email,
            :released, :advanced_fields, :project_id, :component_id,
            :security_requirements_guide_id, :memberships_count,
-           :rules_count, :updated_at, :created_at, :document_type,
+           :updated_at, :created_at, :document_type,
            :comment_phase, :closed_reason, :comment_period_starts_at, :comment_period_ends_at
 
     field :effective_permissions do |component, options|

@@ -2,11 +2,13 @@ get:
   operationId: searchRulesLegacy
   tags:
     - Search
-  summary: Legacy rule search by SRG version
+  summary: Legacy requirement search by SRG version
   description: >-
-    Searches rules by SRG version identifier across all components the user
-    can access. Returns compact tuples [id, rule_id, component_id, prefix]
-    for the rule picker and related-rules UI. Requires authentication.
+    Searches requirement rows of both document kinds — stig rules and
+    authored SRG requirements — by version identifier. Scoped to components
+    the user can access: project or component membership, or released
+    components; admins are unrestricted. Returns compact tuples
+    [id, rule_id, component_id, prefix]. Requires authentication.
     This is a legacy search endpoint — prefer /api/search/global for new integrations.
   parameters:
     - name: q

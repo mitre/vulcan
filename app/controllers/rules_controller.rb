@@ -4,6 +4,8 @@
 # Controller for project rules.
 #
 class RulesController < ApplicationController
+  include SearchScoping
+
   before_action :set_rule, only: %i[show update destroy revert related_rules section_locks bulk_section_locks]
   before_action :set_component, only: %i[index show create update revert related_rules section_locks bulk_section_locks]
   before_action :set_project, only: %i[index show create update revert related_rules section_locks bulk_section_locks]
@@ -39,20 +41,17 @@ class RulesController < ApplicationController
 
   def search
     query = params[:q]
-    rules = Rule.joins(component: :project)
-                .tap do |o|
-      unless current_user.admin
-        o.left_joins(component: [{ project: :memberships }])
-         .where({ memberships: { user_id: current_user.id } })
-      end
-    end
-                .and(Rule.where(version: query))
-                .or(Component.where(released: true).and(Rule.where(version: query)))
-                .limit(100)
-                .distinct
-                .pluck(:id, :rule_id, Component.arel_table[:id], Component.arel_table[:prefix])
+    # BaseRule spans both document kinds — stig Rules and authored SRG
+    # requirements — and live_for_components keeps catalog rows (no
+    # component) and tombstoned rows out. Prefixes come from a second
+    # lookup because the component association lives on the subclasses.
+    matches = BaseRule.live_for_components(searchable_components.select(:id))
+                      .where(version: query)
+                      .limit(100)
+                      .pluck(:id, :rule_id, :component_id)
+    prefixes = Component.where(id: matches.map(&:last).uniq).pluck(:id, :prefix).to_h
     render json: {
-      rules: rules
+      rules: matches.map { |id, rule_id, component_id| [id, rule_id, component_id, prefixes[component_id]] }
     }
   end
 

@@ -4,9 +4,11 @@ get:
     - Search
   summary: Legacy component search by SRG ID
   description: >-
-    Searches components by SRG identifier across accessible projects.
-    Returns compact tuples [id, name]. This is a legacy search endpoint
-    — prefer /api/search/global for new integrations.
+    Searches components by the SRG identifier they are based on. Scoped to
+    components the user can access: project or component membership, or
+    released components; admins are unrestricted. Returns compact tuples
+    [id, name]. This is a legacy search endpoint — prefer /api/search/global
+    for new integrations.
   parameters:
     - name: q
       in: query

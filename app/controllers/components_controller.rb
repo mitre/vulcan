@@ -6,6 +6,7 @@
 class ComponentsController < ApplicationController
   include Exportable
   include UploadValidatable
+  include SearchScoping
 
   EXPORT_ERROR_TITLE = 'Export error'
   NO_FILE_PROVIDED = 'No file provided'
@@ -58,18 +59,11 @@ class ComponentsController < ApplicationController
 
   def search
     query = params[:q]
-    components = Component.joins(:project, :based_on)
-                          .tap do |o|
-      unless current_user.admin
-        o.left_joins(project: :memberships)
-         .where({ memberships: { user_id: current_user.id } })
-      end
-    end
-                          .and(SecurityRequirementsGuide.where(srg_id: query))
-                          .or(Component.where(released: true).and(SecurityRequirementsGuide.where(srg_id: query)))
-                          .limit(100)
-                          .distinct
-                          .pluck(:id, :name)
+    components = searchable_components.joins(:based_on)
+                                      .where(security_requirements_guides: { srg_id: query })
+                                      .limit(100)
+                                      .distinct
+                                      .pluck(:id, :name)
     render json: {
       components: components
     }

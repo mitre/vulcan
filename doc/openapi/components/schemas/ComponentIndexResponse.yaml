@@ -15,7 +15,10 @@ allOf:
         example: true
       rules_count:
         type: integer
-        description: Number of rules (security controls) in this component.
+        description: >-
+          Number of requirement rows (security controls) in this component —
+          rules for stig-kind components, authored requirements for srg-kind
+          components.
         example: 203
       component_id:
         type:

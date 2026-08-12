@@ -142,4 +142,43 @@ RSpec.describe 'Component search and rule picker' do
       expect(row).not_to have_key('satisfied_by')
     end
   end
+
+  # GET /search/components — the legacy global lookup by the srg_id a
+  # component is based on, as compact [id, name] tuples. Access-scoped:
+  # project or component membership, or a released component; admins all.
+  describe 'GET /search/components (legacy component lookup)' do
+    it 'finds components based on the queried SRG for a member' do
+      get '/search/components', params: { q: component.based_on.srg_id }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body['components']).to include([component.id, component.name])
+    end
+
+    context 'as a non-member' do
+      let(:outsider) { create(:user) }
+
+      before do
+        sign_out user
+        sign_in outsider
+      end
+
+      it 'conceals components of projects the user is not a member of' do
+        get '/search/components', params: { q: component.based_on.srg_id }
+
+        expect(response.parsed_body['components']).not_to include([component.id, component.name])
+      end
+
+      it 'returns released components, and only those' do
+        released = create(:component, project: create(:project), released: true)
+
+        get '/search/components', params: { q: released.based_on.srg_id }
+
+        tuples = response.parsed_body['components']
+        expect(tuples).to include([released.id, released.name])
+        # The member-only component is based on the same SRG; it must stay
+        # hidden in the same response that serves the released match.
+        expect(tuples).not_to include([component.id, component.name])
+      end
+    end
+  end
 end

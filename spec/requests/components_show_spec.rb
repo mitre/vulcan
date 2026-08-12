@@ -219,6 +219,25 @@ RSpec.describe 'Component show' do
     end
   end
 
+  # The count badge and editor header read rules_count from the component
+  # payload. The wire key stays, the value is kind-aware: srg components
+  # report their authored-row count, not the class-Rule counter cache
+  # (which is structurally 0 for them).
+  describe 'editor payload requirement count' do
+    it 'serves the authored requirement count for an srg-kind component under rules_count' do
+      counted_srg = create(:component, :skip_rules, project: project, document_type: 'srg',
+                                                    prefix: 'CNTD-00', name: 'Counted SRG',
+                                                    title: 'Counted SRG')
+      create(:srg_rule, :authored, component: counted_srg, rule_id: '000001')
+      create(:srg_rule, :authored, component: counted_srg, rule_id: '000002')
+
+      get "/components/#{counted_srg.id}.json"
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body['rules_count']).to eq(2)
+    end
+  end
+
   # The rule deep-link (/components/:id/:stig_id) resolves through set_rule.
   # The deep-linked row is an authored SrgRule on srg components and a Rule
   # on stig components — a Rule-branch lookup silently missed authored rows,

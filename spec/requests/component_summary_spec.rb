@@ -83,6 +83,19 @@ RSpec.describe 'Component summary' do
       expect(body).not_to have_key('histories')
     end
 
+    it 'serves the authored requirement count for an srg-kind component under rules_count' do
+      srg_component = create(:component, :skip_rules, project: project, document_type: 'srg',
+                                                      prefix: 'SUMM-02', name: 'Summary SRG',
+                                                      title: 'Summary SRG')
+      create(:srg_rule, :authored, component: srg_component, rule_id: '000001')
+      create(:srg_rule, :authored, component: srg_component, rule_id: '000002')
+      sign_in member
+
+      get "/api/components/#{srg_component.id}/summary"
+
+      expect(response.parsed_body['rules_count']).to eq(2)
+    end
+
     it 'serializes the open phase: accepting, triaging, not frozen, with days remaining' do
       sign_in member
 

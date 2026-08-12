@@ -70,15 +70,26 @@ requirement_rows = [
 ]
 
 requirement_rows.each_with_index do |row, index|
-  SrgRule.find_or_create_by!(component: demo_component, rule_id: row[:rule_id]) do |r|
+  requirement = SrgRule.find_or_create_by!(component: demo_component, rule_id: row[:rule_id]) do |r|
     r.title = row[:title]
     r.status = row[:status]
     r.status_justification = row[:justification]
     r.rule_severity = 'medium'
     r.rule_weight = '10.0'
     r.ident = 'CCI-000366'
-    r.derived_from = core_rows[index] unless row[:net_new]
+    unless row[:net_new]
+      r.derived_from = core_rows[index]
+      # Derived rows carry the core requirement's version, exactly as the
+      # requirement import produces by dupping the catalog row — that id is
+      # how the global requirement search finds them. Net-new rows stay nil
+      # until an identifier is minted at release.
+      r.version = core_rows[index].version
+    end
   end
+  # Converge rows seeded before derived rows carried the core version.
+  next if row[:net_new] || requirement.version.present?
+
+  requirement.update!(version: core_rows[index].version)
 end
 demo_component.reload
 
