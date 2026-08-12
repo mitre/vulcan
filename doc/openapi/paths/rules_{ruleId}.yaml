@@ -5,7 +5,11 @@ get:
   tags:
     - Rules
   summary: Rule detail
-  description: Returns the full rule editor payload including checks, descriptions, satisfactions, and review history.
+  description: >-
+    Returns the full requirement editor payload for either document kind —
+    checks, descriptions, and review history for both; satisfactions
+    (satisfies/satisfied_by) appear on stig rules only, and authored SRG
+    requirements omit those keys entirely.
   responses:
     '200':
       description: Rule data

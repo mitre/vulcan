@@ -221,6 +221,25 @@ RSpec.describe 'Reviews + Reactions + Satisfactions endpoint contracts', type: :
       expect(body['review']['rule_id']).to eq(target_rule.id)
       assert_review_no_user_id body
     end
+
+    it 'returns the documented 422 toast when the target is the source rule' do
+      patch "/reviews/#{movable.id}/move_to_rule",
+            params: { rule_id: movable.reload.rule_id, audit_comment: 'Contract same-rule move' },
+            headers: json_headers, as: :json
+
+      body = validate_and_parse!(expected_status: :unprocessable_content)
+      expect(body.dig('toast', 'title')).to eq('Cannot move.')
+      expect(body.dig('toast', 'variant')).to eq('warning')
+    end
+
+    it 'returns the documented 404 for an unknown target rule' do
+      patch "/reviews/#{movable.id}/move_to_rule",
+            params: { rule_id: 0, audit_comment: 'Contract missing target' },
+            headers: json_headers, as: :json
+
+      body = validate_and_parse!(expected_status: :not_found)
+      expect(body['type']).to end_with('#not_found')
+    end
   end
 
   # ── GET /reviews/:id/responses ──

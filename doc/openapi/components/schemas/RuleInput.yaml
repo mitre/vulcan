@@ -97,19 +97,31 @@ properties:
     example: Adjusted severity per authorizing official direction.
   inspec_control_body:
     type: string
-    description: InSpec control Ruby source code.
+    description: >-
+      InSpec control Ruby source code. InSpec is a stig-kind surface: the
+      server accepts this field on an authored SRG requirement but no read
+      surface returns it for that kind — sending it there writes data
+      nothing serves back.
     example: "control 'CNTR-00-000050' do\n  impact 0.5\nend"
   inspec_control_file:
     type: string
-    description: InSpec control file path.
+    description: >-
+      InSpec control file path. Stig-kind surface — same write/read
+      asymmetry on authored SRG requirements as inspec_control_body.
     example: controls/CNTR-00-000050.rb
   inspec_control_body_lang:
     type: string
-    description: Language of the InSpec control body. Server default is ruby.
+    description: >-
+      Language of the InSpec control body. Server default is ruby.
+      Stig-kind surface — same write/read asymmetry on authored SRG
+      requirements as inspec_control_body.
     example: ruby
   inspec_control_file_lang:
     type: string
-    description: Language of the InSpec control file. Server default is ruby.
+    description: >-
+      Language of the InSpec control file. Server default is ruby.
+      Stig-kind surface — same write/read asymmetry on authored SRG
+      requirements as inspec_control_body.
     example: ruby
   checks_attributes:
     type: array

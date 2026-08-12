@@ -20,12 +20,23 @@ patch:
           properties:
             sections:
               type: array
-              description: Section names to lock or unlock.
+              description: Section names to lock or unlock, from the lockable-section vocabulary.
               items:
                 type: string
+                enum:
+                  - Title
+                  - Severity
+                  - Status
+                  - Fix
+                  - Check
+                  - Vulnerability Discussion
+                  - DISA Metadata
+                  - Vendor Comments
+                  - Artifact Description
+                  - XCCDF Metadata
               example:
-                - fixtext
-                - check_content
+                - Fix
+                - Check
             locked:
               type: boolean
               description: Whether to lock (true) or unlock (false) the sections.
@@ -33,7 +44,7 @@ patch:
             comment:
               type: string
               description: Optional audit comment explaining the lock change.
-              example: "Locking fixtext and check_content for review"
+              example: "Locking the Fix and Check sections for review"
   responses:
     '200':
       description: Section locks updated, returns updated rule + toast

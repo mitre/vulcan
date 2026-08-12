@@ -144,6 +144,36 @@ RSpec.describe 'Components endpoint contracts', type: :request do
     end
   end
 
+  # ── GET /components/:id (non-member — kind-routed show view) ──
+
+  describe 'GET /components/:id (JSON, non-member show branch)' do
+    let_it_be(:outsider) { create(:user) }
+    let_it_be(:released_for_show) do
+      c = create(:component, project: project, based_on: srg, name: 'Released For Show',
+                             prefix: 'RELS-01', title: 'Released Show Test')
+      c.rules.update_all(locked: true)
+      c.update!(released: true)
+      c
+    end
+
+    it 'returns the read-only show view for a non-member on a released component' do
+      sign_out admin
+      sign_in outsider
+
+      get "/components/#{released_for_show.id}", headers: json_headers
+      body = validate_and_parse!
+
+      expect(body['id']).to eq(released_for_show.id)
+      expect(body['effective_permissions']).to be_nil
+      expect(body).to have_key('rules')
+      # What DISCRIMINATES the show branch from a regression back to the
+      # editor view is the absence of the editor-only keys — the shared
+      # fields above hold under both views for a non-member.
+      assert_fields_absent body, :releasable, :status_counts, :project_id,
+                           :advanced_fields, :memberships_count, :created_at
+    end
+  end
+
   # ── GET /components/:id/comments ──
 
   describe 'GET /components/:id/comments (JSON)' do
@@ -356,6 +386,15 @@ RSpec.describe 'Components endpoint contracts', type: :request do
       expect(body.dig('toast', 'variant')).to eq('success')
       expect(body.dig('toast', 'title')).to include('Section lock')
       expect(body.dig('toast', 'message')).to be_an(Array)
+    end
+
+    it 'returns the documented 422 for a section outside the vocabulary' do
+      patch "/components/#{component.id}/lock_sections",
+            params: { sections: ['fixtext'], locked: true, comment: 'Contract invalid section' },
+            headers: json_headers, as: :json
+
+      body = validate_and_parse!(expected_status: :unprocessable_content)
+      expect(body.dig('toast', 'title')).to eq('Invalid sections')
     end
   end
 

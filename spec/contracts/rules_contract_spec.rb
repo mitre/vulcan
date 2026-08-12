@@ -296,6 +296,15 @@ RSpec.describe 'Rules endpoint contracts', type: :request do
       expect(body.dig('toast', 'variant')).to eq('success')
       expect(body.dig('toast', 'message')).to be_an(Array)
     end
+
+    it 'returns the documented 422 for a section outside the vocabulary' do
+      patch "/rules/#{rule.id}/bulk_section_locks",
+            params: { sections: ['fixtext'], locked: true, comment: 'Contract invalid section' },
+            headers: json_headers, as: :json
+
+      body = validate_and_parse!(expected_status: :unprocessable_content)
+      expect(body['error']).to include('Invalid sections')
+    end
   end
 
   # ── GET /search/rules ──
@@ -313,6 +322,50 @@ RSpec.describe 'Rules endpoint contracts', type: :request do
       first_tuple = body['rules'].first
       expect(first_tuple).to be_an(Array)
       expect(first_tuple.size).to eq(4)
+    end
+  end
+
+  # ── Authored SRG requirement branches (kind-shared endpoints) ──
+  #
+  # The revert and legacy-search endpoints serve both document kinds; these
+  # examples prove the authored branch through the same contract harness the
+  # stig examples above use.
+
+  describe 'authored SRG requirement contract coverage' do
+    # The 'with auditing' around hook covers these examples — every audited
+    # write here happens INSIDE an example (unlike the stig revert describe
+    # above, whose let_it_be fixture needs auditing at before(:all) time).
+    include_context 'with auditing'
+
+    let_it_be(:srg_component) do
+      create(:component, :skip_rules, project: project, document_type: 'srg',
+                                      prefix: 'RCSR-00', name: 'Rules Contract SRG',
+                                      title: 'Rules Contract SRG')
+    end
+    let_it_be(:authored_requirement) do
+      create(:srg_rule, :authored, component: srg_component, rule_id: '000001',
+                                   version: 'SRG-APP-000920', title: 'Authored contract title')
+    end
+
+    it 'POST /rules/:id/revert returns ToastResponse for an authored requirement' do
+      authored_requirement.update!(title: 'Amended contract title', audit_comment: 'contract setup')
+      audit = VulcanAudit.where(auditable: authored_requirement, action: 'update').order(:id).last
+
+      post "/rules/#{authored_requirement.id}/revert",
+           params: { audit_id: audit.id, fields: ['title'], audit_comment: 'contract revert' },
+           headers: json_headers, as: :json
+      body = validate_and_parse!
+
+      expect(body.dig('toast', 'title')).to eq('History reverted.')
+      expect(authored_requirement.reload.title).to eq('Authored contract title')
+    end
+
+    it 'GET /search/rules serves the authored requirement as a 4-element tuple' do
+      get '/search/rules', params: { q: 'SRG-APP-000920' }, headers: json_headers
+      body = validate_and_parse!
+
+      tuple = body['rules'].find { |t| t[0] == authored_requirement.id }
+      expect(tuple).to eq([authored_requirement.id, '000001', srg_component.id, 'RCSR-00'])
     end
   end
 end

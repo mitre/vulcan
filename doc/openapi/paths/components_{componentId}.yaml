@@ -7,15 +7,25 @@ get:
   summary: Component detail with rules
   description: >-
     Returns full component details including all rules with their content
-    fields. The view (editor vs viewer) depends on the user's membership
-    role. Requires project membership or admin role.
+    fields, for either document kind. Members (any role) receive the editor
+    view; a non-member receives the read-only show view for a RELEASED
+    component (released components are never concealed, whatever the
+    project's visibility). An unreleased component answers a non-member per
+    the disclosure policy: 403 with the project admins to ask when the
+    project is discoverable, or the concealment 404 when it is hidden.
   responses:
     '200':
-      description: Component with rules
+      description: >-
+        Component with rules — the editor view for members, the read-only
+        show view otherwise. A null effective_permissions marks the show
+        branch. The two shapes share their core fields, so they are
+        documented as anyOf.
       content:
         application/json:
           schema:
-            $ref: ../components/schemas/ComponentEditorResponse.yaml
+            anyOf:
+              - $ref: ../components/schemas/ComponentEditorResponse.yaml
+              - $ref: ../components/schemas/ComponentShowResponse.yaml
           examples:
             component:
               summary: Component editor view (project member)
@@ -29,6 +39,19 @@ get:
                 version: 1
                 release: 1
                 released: false
+            non_member_show:
+              summary: Read-only show view (non-member, released component)
+              value:
+                id: 1
+                name: Photon OS 3
+                prefix: PHOS-03
+                title: "Photon OS 3 STIG Readiness Guide"
+                released: true
+                effective_permissions: null
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '404':
+      $ref: ../components/responses/NotFound.yaml
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
 put:

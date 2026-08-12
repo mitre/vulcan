@@ -12,6 +12,9 @@ get:
     The rules array is a mix of RuleEditorResponse (component rules) and
     StigRuleSummary (published STIG rules). The parents array is a mix of
     ComponentBlueprint :related and StigBlueprint :index for grouping.
+    Stig rules only — the search keys off the stig rule's SRG-version
+    linkage, so requests for an authored SRG requirement return 404 (no
+    related-rules surface exists for that kind).
   responses:
     '200':
       description: Related rules with parent containers
@@ -61,5 +64,7 @@ get:
                     project:
                       id: 1
                       name: "Photon 3"
+    '404':
+      $ref: ../components/responses/NotFound.yaml
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

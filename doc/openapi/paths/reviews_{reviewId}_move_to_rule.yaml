@@ -5,24 +5,65 @@ patch:
   tags:
     - Reviews
   summary: Admin moves a comment thread to a different rule
-  description: Reassigns the comment and all its replies to a different rule. Walks parent-first to satisfy validators. Requires admin role.
+  description: >-
+    Reassigns the comment and all its replies to a different requirement row
+    in the same component. The target may be either document kind — a stig
+    rule or an authored SRG requirement (the lookup spans both). Walks
+    parent-first to satisfy validators and records an outbound audit entry on
+    the source rule. Requires admin role.
   requestBody:
     required: true
     content:
       application/json:
         schema:
           type: object
+          required:
+            - rule_id
+            - audit_comment
           properties:
-            target_rule_id:
+            rule_id:
               type: integer
+              description: >-
+                Database id of the target requirement row (either kind), which
+                must belong to the same component as the source rule.
+              example: 15117
             audit_comment:
               type: string
+              description: >-
+                Operator-supplied reason for the move, recorded on the audit
+                trail. Required — a blank comment returns 422.
+              example: Comment applies to the account-management requirement.
+        examples:
+          move:
+            summary: Move a thread to another requirement
+            value:
+              rule_id: 15117
+              audit_comment: Comment applies to the account-management requirement.
   responses:
     '200':
-      description: Review moved
+      description: Review moved — returns the updated review.
       content:
         application/json:
           schema:
             $ref: ../components/schemas/ReviewWrapper.yaml
+    '422':
+      description: >-
+        Move refused — the target is the source rule itself, the target
+        belongs to a different component, or the audit comment is blank.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            same_rule:
+              summary: Target is the source rule (no move performed)
+              value:
+                toast:
+                  title: Cannot move.
+                  message:
+                    - Target rule is the same as the source rule.
+                  variant: warning
+    '404':
+      $ref: ../components/responses/NotFound.yaml
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
