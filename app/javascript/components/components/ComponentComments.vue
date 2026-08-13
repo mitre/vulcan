@@ -331,6 +331,17 @@
       @submit="applyMerge"
     />
 
+    <BulkTriageTargetModal
+      v-if="canTriage"
+      :target-type="bulkTargetType"
+      :component-id="bulkTargetComponentId"
+      :exclude-review-ids="selectedIds"
+      :exclude-rule-ids="bulkTargetExcludeRuleIds"
+      :count="selectedIds.length"
+      @confirm="onBulkTargetConfirm"
+      @hidden="onBulkTargetHidden"
+    />
+
     <!-- Pagination (hidden in by-rule view — all comments loaded for grouping) -->
     <div
       v-if="total > perPage && viewMode === 'table' && !splitMode"
@@ -385,6 +396,7 @@ import CommentProgressBar from "../triage/CommentProgressBar.vue";
 import CommentAuthorLine from "../shared/CommentAuthorLine.vue";
 import ComponentSearchModal from "../shared/ComponentSearchModal.vue";
 import BulkTriageBar from "../triage/BulkTriageBar.vue";
+import BulkTriageTargetModal from "../triage/BulkTriageTargetModal.vue";
 import MergeCommentsModal from "../triage/MergeCommentsModal.vue";
 import Highlighter from "vue-highlight-words";
 import { ruleHref as buildRuleHref, rowTriageClass } from "../../utils/commentTableHelpers";
@@ -405,6 +417,7 @@ export default {
     CommentAuthorLine,
     ComponentSearchModal,
     BulkTriageBar,
+    BulkTriageTargetModal,
     MergeCommentsModal,
     Highlighter,
   },
@@ -482,6 +495,7 @@ export default {
     return {
       rows: [],
       selectedIds: [],
+      pendingBulkPayload: null,
       // Snapshot of full review objects fed into MergeCommentsModal — taken
       // at "Merge…" click time so a background reload doesn't drop the
       // selection mid-modal.
@@ -568,6 +582,26 @@ export default {
     },
     selectedIdsSet() {
       return new Set(this.selectedIds);
+    },
+    selectedRows() {
+      return this.rows.filter((r) => this.selectedIdsSet.has(r.id));
+    },
+    bulkTargetType() {
+      return this.pendingBulkPayload ? this.pendingBulkPayload.triage_status : null;
+    },
+    // The one component the target pickers are scoped to. Component scope
+    // has it directly; project scope derives it from the selected rows and
+    // yields null when the selection spans components (the server rejects
+    // those batches — the picker refuses to open instead of mis-scoping).
+    bulkTargetComponentId() {
+      if (this.scope === "component") return this.componentId;
+      const ids = [...new Set(this.selectedRows.map((r) => r.component_id).filter(Boolean))];
+      return ids.length === 1 ? ids[0] : null;
+    },
+    // The selected comments' own rules — excluded from the addressed_by
+    // picker, matching the per-comment picker's own-rule exclusion.
+    bulkTargetExcludeRuleIds() {
+      return [...new Set(this.selectedRows.map((r) => r.rule_id).filter(Boolean))];
     },
     allVisibleSelected() {
       return (
@@ -831,7 +865,39 @@ export default {
     clearSelection() {
       this.selectedIds = [];
     },
+    // duplicate/addressed_by need ONE shared target: stash the payload and
+    // open the target modal; every other status submits directly.
     async applyBulkTriage(payload) {
+      if (["duplicate", "addressed_by"].includes(payload.triage_status)) {
+        if (!this.bulkTargetComponentId) {
+          this.alertOrNotifyResponse({
+            data: {
+              toast: {
+                title: "Could not save triage.",
+                message: "Bulk triage cannot span multiple components.",
+                variant: "danger",
+              },
+            },
+          });
+          return;
+        }
+        this.pendingBulkPayload = payload;
+        this.$bvModal.show("bulk-triage-target-modal");
+        return;
+      }
+      await this.submitBulkTriage(payload);
+    },
+    async onBulkTargetConfirm(targetId) {
+      const payload = { ...this.pendingBulkPayload };
+      if (payload.triage_status === "duplicate") payload.duplicate_of_review_id = targetId;
+      else payload.addressed_by_rule_id = targetId;
+      this.pendingBulkPayload = null;
+      await this.submitBulkTriage(payload);
+    },
+    onBulkTargetHidden() {
+      this.pendingBulkPayload = null;
+    },
+    async submitBulkTriage(payload) {
       const ids = [...this.selectedIds];
       if (ids.length === 0) return;
       try {

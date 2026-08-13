@@ -160,16 +160,28 @@ class Review < ApplicationRecord
   # own response Review so threads stay self-contained. The per-row audits
   # share the request's request_uuid, so the bulk action is recoverable as one
   # correlated group. Raises if the selection spans more than one component.
-  def self.bulk_triage(reviews:, triage_status:, user:, response_comment: nil)
+  #
+  # duplicate/addressed_by carry ONE shared target applied to every selected
+  # comment (many comments duplicating one canonical thread, or addressed by
+  # one rule). A canonical target inside the selection is rejected outright —
+  # the pick-the-canonical-from-within flow is merge_comments!, not this one.
+  # Every per-comment validator (same-component target, chained-duplicate
+  # rejection) still runs per row; any failing row rolls back the batch.
+  def self.bulk_triage(reviews:, triage_status:, user:, response_comment: nil,
+                       duplicate_of_review_id: nil, addressed_by_rule_id: nil)
     reviews = Array(reviews)
     raise ArgumentError, 'No comments selected.' if reviews.empty?
     raise ArgumentError, 'Bulk triage cannot span multiple components.' if reviews.map { |r| r.component&.id }.uniq.size > 1
+
+    canonical_selected = triage_status == 'duplicate' && reviews.any? { |r| r.id == duplicate_of_review_id.to_i }
+    raise ArgumentError, 'The canonical target cannot be among the selected comments.' if canonical_selected
 
     responses = []
     transaction do
       reviews.each do |review|
         review.audit_comment = "Bulk triage: #{triage_status}"
-        review.update!(triage_status: triage_status, triage_set_by_id: user.id, triage_set_at: Time.current)
+        review.update!(triage_status: triage_status, triage_set_by_id: user.id, triage_set_at: Time.current,
+                       duplicate_of_review_id: duplicate_of_review_id, addressed_by_rule_id: addressed_by_rule_id)
 
         next if response_comment.blank?
 

@@ -57,7 +57,7 @@ describe("CanonicalCommentPicker", () => {
   it("fetches comments scoped to the same component on mount", async () => {
     const w = mount(CanonicalCommentPicker, {
       localVue,
-      propsData: { componentId: 8, excludeReviewId: 50 },
+      propsData: { componentId: 8, excludeReviewIds: [50] },
     });
     await flushAll(w);
     expect(getComments).toHaveBeenCalledWith(
@@ -98,7 +98,7 @@ describe("CanonicalCommentPicker", () => {
     });
     const w = mount(CanonicalCommentPicker, {
       localVue,
-      propsData: { componentId: 8, excludeReviewId: 50 },
+      propsData: { componentId: 8, excludeReviewIds: [50] },
     });
     await flushAll(w);
     expect(w.text()).not.toContain("This is the duplicate itself");
@@ -132,17 +132,59 @@ describe("CanonicalCommentPicker", () => {
     });
     const w = mount(CanonicalCommentPicker, {
       localVue,
-      propsData: { componentId: 8, excludeReviewId: 50 },
+      propsData: { componentId: 8, excludeReviewIds: [50] },
     });
     await flushAll(w);
     expect(w.text()).not.toContain("already a dup");
     expect(w.text()).toContain("fresh canonical");
   });
 
+  it("excludes every id in the exclusion array (bulk selection)", async () => {
+    getComments.mockResolvedValueOnce({
+      data: {
+        rows: [
+          {
+            id: 50,
+            triage_status: "pending",
+            comment: "selected member one",
+            rule_displayed_name: "X",
+            author_name: "A",
+            created_at: "2026-04-25T10:00:00Z",
+          },
+          {
+            id: 99,
+            triage_status: "pending",
+            comment: "selected member two",
+            rule_displayed_name: "Y",
+            author_name: "B",
+            created_at: "2026-04-26T10:00:00Z",
+          },
+          {
+            id: 100,
+            triage_status: "pending",
+            comment: "outside the selection",
+            rule_displayed_name: "Z",
+            author_name: "C",
+            created_at: "2026-04-27T10:00:00Z",
+          },
+        ],
+        pagination: { total: 3 },
+      },
+    });
+    const w = mount(CanonicalCommentPicker, {
+      localVue,
+      propsData: { componentId: 8, excludeReviewIds: [50, 99] },
+    });
+    await flushAll(w);
+    expect(w.text()).not.toContain("selected member one");
+    expect(w.text()).not.toContain("selected member two");
+    expect(w.text()).toContain("outside the selection");
+  });
+
   it("emits 'selected' with the review id when a candidate is clicked", async () => {
     const w = mount(CanonicalCommentPicker, {
       localVue,
-      propsData: { componentId: 8, excludeReviewId: 50 },
+      propsData: { componentId: 8, excludeReviewIds: [50] },
     });
     await flushAll(w);
     await w.find('[data-test="canonical-candidate-99"]').trigger("click");
@@ -152,7 +194,7 @@ describe("CanonicalCommentPicker", () => {
   it("highlights the currently-selected candidate", async () => {
     const w = mount(CanonicalCommentPicker, {
       localVue,
-      propsData: { componentId: 8, excludeReviewId: 50, selectedReviewId: 99 },
+      propsData: { componentId: 8, excludeReviewIds: [50], selectedReviewId: 99 },
     });
     await flushAll(w);
     const selected = w.find('[data-test="canonical-candidate-99"]');
@@ -185,7 +227,7 @@ describe("CanonicalCommentPicker", () => {
     });
     const w = mount(CanonicalCommentPicker, {
       localVue,
-      propsData: { componentId: 8, excludeReviewId: 50 },
+      propsData: { componentId: 8, excludeReviewIds: [50] },
     });
     await flushAll(w);
     w.vm.query = "Sarah";

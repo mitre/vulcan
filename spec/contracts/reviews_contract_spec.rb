@@ -325,6 +325,43 @@ RSpec.describe 'Reviews + Reactions + Satisfactions endpoint contracts', type: :
         assert_fields_absent r, :user_id
       end
     end
+
+    it 'returns the shared canonical target on every review for bulk duplicate' do
+      canonical = create(:review, user: admin, rule: rule, action: 'comment',
+                                  comment: 'Bulk contract canonical', triage_status: 'pending')
+      selected = Array.new(2) do |i|
+        create(:review, user: admin, rule: rule, action: 'comment',
+                        comment: "Bulk contract duplicate #{i}", triage_status: 'pending')
+      end
+
+      patch '/reviews/bulk_triage',
+            params: { review_ids: selected.map(&:id), triage_status: 'duplicate',
+                      duplicate_of_review_id: canonical.id },
+            headers: json_headers, as: :json
+      body = validate_and_parse!
+
+      expect(body['reviews'].length).to eq(2)
+      body['reviews'].each do |r|
+        expect(r['triage_status']).to eq('duplicate')
+        expect(r['duplicate_of_review_id']).to eq(canonical.id)
+      end
+    end
+
+    it 'returns the documented 422 toast when the canonical is among the selection' do
+      selected = Array.new(2) do |i|
+        create(:review, user: admin, rule: rule, action: 'comment',
+                        comment: "Bulk contract self-target #{i}", triage_status: 'pending')
+      end
+
+      patch '/reviews/bulk_triage',
+            params: { review_ids: selected.map(&:id), triage_status: 'duplicate',
+                      duplicate_of_review_id: selected.first.id },
+            headers: json_headers, as: :json
+      body = validate_and_parse!(expected_status: :unprocessable_content)
+
+      expect(body.dig('toast', 'message'))
+        .to include('The canonical target cannot be among the selected comments.')
+    end
   end
 
   # ── PATCH /reviews/merge ──

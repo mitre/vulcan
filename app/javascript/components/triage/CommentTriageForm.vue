@@ -17,7 +17,7 @@
         v-if="triageStatus === 'duplicate' && resolvedComponentId"
         class="mt-2 ml-4"
         :component-id="resolvedComponentId"
-        :exclude-review-id="review.id"
+        :exclude-review-ids="[review.id]"
         :selected-review-id="duplicateOfId"
         @selected="onDuplicateSelected"
       />
@@ -31,7 +31,7 @@
         v-if="triageStatus === 'addressed_by' && resolvedComponentId"
         class="mt-2 ml-4"
         :component-id="resolvedComponentId"
-        :exclude-rule-id="review.rule_id || 0"
+        :exclude-rule-ids="[review.rule_id || 0]"
         :selected-rule-id="addressedByRuleId"
         @selected="onAddressedBySelected"
       />

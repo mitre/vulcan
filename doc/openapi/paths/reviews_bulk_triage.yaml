@@ -5,9 +5,19 @@ patch:
   summary: Triage multiple reviews at once
   description: >-
     Applies the same triage status to all specified reviews in a single
-    request. All reviews must belong to the same component (enforced
-    server-side). Optionally creates a response comment on each triaged
-    review. Requires author+ role on the component's project.
+    request. Parameters are FLAT (no wrapper object). All reviews must
+    belong to the same component (enforced server-side). Terminal statuses
+    (duplicate, informational, withdrawn, addressed_by) auto-adjudicate
+    every selected review. Conditional requirements: non_concur requires
+    response_comment; duplicate requires duplicate_of_review_id;
+    addressed_by requires addressed_by_rule_id. The target is ONE shared
+    value applied to every selected review — many comments duplicating one
+    canonical thread, or addressed by one rule. A duplicate canonical that
+    is itself among review_ids is rejected. Every per-comment validator
+    runs per selected review (same-component canonical, no chained
+    duplicates); any failing review rolls back the whole batch. Optionally
+    creates a response comment on each triaged review. Requires author+
+    role on the component's project.
   requestBody:
     required: true
     content:
@@ -26,20 +36,58 @@ patch:
               example: [10, 11, 12]
             triage_status:
               type: string
-              description: The triage status to apply to all selected reviews.
+              description: >-
+                The triage decision applied to all selected reviews. Every
+                value except "pending" is accepted; "pending" is rejected
+                as a non-decision.
               enum:
                 - concur
                 - concur_with_comment
                 - non_concur
-                - informational
                 - needs_clarification
                 - duplicate
+                - informational
+                - withdrawn
                 - addressed_by
               example: concur
+            duplicate_of_review_id:
+              type: integer
+              description: >-
+                REQUIRED when triage_status is "duplicate" — the one
+                canonical review every selected review duplicates. Must be
+                a comment in the same component, must not itself be a
+                duplicate, and must not appear in review_ids.
+              example: 42
+            addressed_by_rule_id:
+              type: integer
+              description: >-
+                REQUIRED when triage_status is "addressed_by" — the one
+                rule that addresses every selected review.
+              example: 7
             response_comment:
               type: string
-              description: Optional response comment to attach to each triaged review.
+              description: >-
+                REQUIRED when triage_status is "non_concur"; optional
+                otherwise. Posted as a reply to each triaged review.
               example: "Accepted — will update check_content in next release."
+        examples:
+          concur:
+            summary: Accept several comments at once (flat body)
+            value:
+              review_ids: [10, 11, 12]
+              triage_status: concur
+          duplicate:
+            summary: Mark a group as duplicates of one canonical thread
+            value:
+              review_ids: [10, 11, 12]
+              triage_status: duplicate
+              duplicate_of_review_id: 42
+          addressed_by:
+            summary: Mark a group as addressed by one rule
+            value:
+              review_ids: [10, 11, 12]
+              triage_status: addressed_by
+              addressed_by_rule_id: 7
   responses:
     '200':
       description: All reviews triaged successfully
@@ -61,7 +109,12 @@ patch:
                     reactions: { up: 0, down: 0, mine: null }
                 response_reviews: []
     '422':
-      description: Validation error (invalid triage status, reviews from different components)
+      description: >-
+        Validation error — invalid or "pending" triage status, reviews
+        spanning components, a missing conditional target, a duplicate
+        canonical among review_ids, a cross-component or chained-duplicate
+        canonical, or any selected review failing its per-comment
+        validators (the batch rolls back atomically).
       content:
         application/json:
           schema:

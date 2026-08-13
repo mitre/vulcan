@@ -191,6 +191,8 @@ class ReviewsController < ApplicationController
       reviews: @reviews,
       triage_status: params[:triage_status],
       response_comment: params[:response_comment],
+      duplicate_of_review_id: params[:duplicate_of_review_id],
+      addressed_by_rule_id: params[:addressed_by_rule_id],
       user: current_user
     )
 

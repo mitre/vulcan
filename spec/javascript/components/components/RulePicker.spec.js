@@ -62,7 +62,7 @@ const rulesPayload = {
 function baseProps(overrides = {}) {
   return {
     componentId: 5,
-    excludeRuleId: 2,
+    excludeRuleIds: [2],
     selectedRuleId: null,
     ...overrides,
   };
@@ -83,10 +83,24 @@ describe("RulePicker", () => {
     expect(ids.some((t) => t.includes("CNTR-01-001002"))).toBe(false);
   });
 
+  it("excludes every id in the exclusion array and drops relationship badges (bulk mode)", async () => {
+    const w = mount(RulePicker, {
+      localVue,
+      propsData: baseProps({ excludeRuleIds: [2, 4] }),
+    });
+    await flushPromises(w);
+    const items = w.findAll("[role='option']");
+    expect(items.length).toBe(2);
+    const texts = items.wrappers.map((item) => item.text());
+    expect(texts.some((t) => t.includes("CNTR-01-001002"))).toBe(false);
+    expect(texts.some((t) => t.includes("Unrelated sibling control"))).toBe(false);
+    expect(w.find("[data-test='relationship-badge']").exists()).toBe(false);
+  });
+
   it("shows 'Parent' badge and highlight on rules that satisfy the source rule", async () => {
     const w = mount(RulePicker, {
       localVue,
-      propsData: baseProps({ excludeRuleId: 2 }),
+      propsData: baseProps({ excludeRuleIds: [2] }),
     });
     await flushPromises(w);
     const parentItem = w.find("[data-test='target-rule-1']");
@@ -99,7 +113,7 @@ describe("RulePicker", () => {
   it("shows 'Child' badge and highlight on rules that the source rule satisfies", async () => {
     const w = mount(RulePicker, {
       localVue,
-      propsData: baseProps({ excludeRuleId: 1 }),
+      propsData: baseProps({ excludeRuleIds: [1] }),
     });
     await flushPromises(w);
     const childItem = w.find("[data-test='target-rule-2']");
@@ -112,7 +126,7 @@ describe("RulePicker", () => {
   it("shows no badge or highlight on unrelated rules", async () => {
     const w = mount(RulePicker, {
       localVue,
-      propsData: baseProps({ excludeRuleId: 2 }),
+      propsData: baseProps({ excludeRuleIds: [2] }),
     });
     await flushPromises(w);
     const siblingItem = w.find("[data-test='target-rule-4']");
@@ -151,7 +165,7 @@ describe("RulePicker", () => {
   it("sorts parent rules first in the list", async () => {
     const w = mount(RulePicker, {
       localVue,
-      propsData: baseProps({ excludeRuleId: 2 }),
+      propsData: baseProps({ excludeRuleIds: [2] }),
     });
     await flushPromises(w);
     const items = w.findAll("[role='option']");

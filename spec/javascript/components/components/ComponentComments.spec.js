@@ -1165,6 +1165,87 @@ describe("ComponentComments", () => {
       });
       expect(wrapper.vm.selectedIds).toEqual([]);
     });
+
+    it("stashes a target status and opens the target modal instead of calling the API", async () => {
+      const wrapper = mountAuthor();
+      await flushPromises();
+      wrapper.vm.rows = [
+        { id: 4, adjudicated_at: null, rule_id: 7 },
+        { id: 5, adjudicated_at: null, rule_id: 8 },
+      ];
+      wrapper.vm.selectedIds = [4, 5];
+      const showSpy = vi.spyOn(wrapper.vm.$bvModal, "show").mockImplementation(() => {});
+
+      await wrapper.vm.applyBulkTriage({ triage_status: "duplicate", response_comment: null });
+
+      expect(bulkTriageReviews).not.toHaveBeenCalled();
+      expect(showSpy).toHaveBeenCalledWith("bulk-triage-target-modal");
+      expect(wrapper.vm.pendingBulkPayload).toEqual({
+        triage_status: "duplicate",
+        response_comment: null,
+      });
+      expect(wrapper.vm.bulkTargetExcludeRuleIds).toEqual([7, 8]);
+      showSpy.mockRestore();
+    });
+
+    it("onBulkTargetConfirm merges the shared duplicate target and submits the batch", async () => {
+      const wrapper = mountAuthor();
+      await flushPromises();
+      wrapper.vm.selectedIds = [4, 5];
+      wrapper.vm.pendingBulkPayload = { triage_status: "duplicate", response_comment: null };
+
+      await wrapper.vm.onBulkTargetConfirm(42);
+
+      expect(bulkTriageReviews).toHaveBeenCalledWith([4, 5], {
+        triage_status: "duplicate",
+        response_comment: null,
+        duplicate_of_review_id: 42,
+      });
+      expect(wrapper.vm.selectedIds).toEqual([]);
+      expect(wrapper.vm.pendingBulkPayload).toBeNull();
+    });
+
+    it("onBulkTargetConfirm maps addressed_by to addressed_by_rule_id", async () => {
+      const wrapper = mountAuthor();
+      await flushPromises();
+      wrapper.vm.selectedIds = [4];
+      wrapper.vm.pendingBulkPayload = { triage_status: "addressed_by", response_comment: null };
+
+      await wrapper.vm.onBulkTargetConfirm(9);
+
+      expect(bulkTriageReviews).toHaveBeenCalledWith([4], {
+        triage_status: "addressed_by",
+        response_comment: null,
+        addressed_by_rule_id: 9,
+      });
+    });
+
+    it("refuses to open the target picker for a project-scope selection spanning components", async () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { projectId: 6, scope: "project" },
+        provide: { effectivePermissions: "author" },
+        stubs: SHARED_STUBS,
+      });
+      await flushPromises(wrapper);
+      wrapper.vm.rows = [
+        { id: 4, adjudicated_at: null, rule_id: 7, component_id: 1 },
+        { id: 5, adjudicated_at: null, rule_id: 8, component_id: 2 },
+      ];
+      wrapper.vm.selectedIds = [4, 5];
+      const showSpy = vi.spyOn(wrapper.vm.$bvModal, "show").mockImplementation(() => {});
+      const toasts = [];
+      const listener = (e) => toasts.push(e.detail);
+      document.addEventListener("vulcan:toast", listener);
+
+      await wrapper.vm.applyBulkTriage({ triage_status: "duplicate", response_comment: null });
+
+      document.removeEventListener("vulcan:toast", listener);
+      expect(showSpy).not.toHaveBeenCalled();
+      expect(bulkTriageReviews).not.toHaveBeenCalled();
+      expect(toasts.length).toBe(1);
+      expect(JSON.stringify(toasts[0])).toContain("cannot span multiple components");
+      showSpy.mockRestore();
+    });
   });
 
   // ── b-alert migration ───────────────────────────────────────────────

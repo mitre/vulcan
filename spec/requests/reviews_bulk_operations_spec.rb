@@ -68,6 +68,161 @@ RSpec.describe 'Reviews' do
         expect(responses.map(&:user_id).uniq).to eq([bulk_triager.id])
       end
 
+      it 'applies duplicate with a shared canonical target to every selected comment' do
+        canonical = create(:review, :comment, comment: 'the canonical logging thread',
+                                              user: bulk_commenter, rule: rule_a, section: 'check_content')
+        patch '/reviews/bulk_triage', params: {
+          review_ids: [comment_a.id, comment_b.id],
+          triage_status: 'duplicate',
+          duplicate_of_review_id: canonical.id
+        }, as: :json
+
+        expect(response).to have_http_status(:ok)
+        [comment_a, comment_b].each do |c|
+          c.reload
+          expect(c.triage_status).to eq('duplicate')
+          expect(c.duplicate_of_review_id).to eq(canonical.id)
+          expect(c.adjudicated_at).to be_present
+        end
+      end
+
+      it 'applies addressed_by with one shared target rule across a selection spanning rules' do
+        target_rule = component.rules.third
+        patch '/reviews/bulk_triage', params: {
+          review_ids: [comment_a.id, comment_b.id],
+          triage_status: 'addressed_by',
+          addressed_by_rule_id: target_rule.id
+        }, as: :json
+
+        expect(response).to have_http_status(:ok)
+        [comment_a, comment_b].each do |c|
+          c.reload
+          expect(c.triage_status).to eq('addressed_by')
+          expect(c.addressed_by_rule_id).to eq(target_rule.id)
+          expect(c.duplicate_of_review_id).to be_nil
+          expect(c.adjudicated_at).to be_present
+        end
+      end
+
+      it 'rejects a canonical target that is among the selected comments, atomically' do
+        patch '/reviews/bulk_triage', params: {
+          review_ids: [comment_a.id, comment_b.id],
+          triage_status: 'duplicate',
+          duplicate_of_review_id: comment_b.id
+        }, as: :json
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body.dig('toast', 'message'))
+          .to include('The canonical target cannot be among the selected comments.')
+        expect(comment_a.reload.triage_status).to eq('pending')
+        expect(comment_b.reload.triage_status).to eq('pending')
+      end
+
+      it 'rejects bulk duplicate without a target (shared validation with per-comment triage)' do
+        patch '/reviews/bulk_triage', params: {
+          review_ids: [comment_a.id, comment_b.id],
+          triage_status: 'duplicate'
+        }, as: :json
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(comment_a.reload.triage_status).to eq('pending')
+      end
+
+      it 'inherits the same-component validator: a cross-component canonical fails the batch' do
+        foreign_canonical = create(:review, :comment, comment: 'other component thread',
+                                                      user: bulk_commenter,
+                                                      rule: bulk_other_component.rules.first, section: nil)
+        patch '/reviews/bulk_triage', params: {
+          review_ids: [comment_a.id, comment_b.id],
+          triage_status: 'duplicate',
+          duplicate_of_review_id: foreign_canonical.id
+        }, as: :json
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(comment_a.reload.triage_status).to eq('pending')
+        expect(comment_b.reload.triage_status).to eq('pending')
+      end
+
+      it 'inherits the chained-duplicate rejection: a canonical that is itself a duplicate fails the batch' do
+        base = create(:review, :comment, comment: 'ultimate canonical', user: bulk_commenter,
+                                         rule: rule_a, section: 'check_content')
+        chained = create(:review, :comment, :duplicate, comment: 'already a duplicate',
+                                                        user: bulk_commenter, rule: rule_a,
+                                                        duplicate_of_review_id: base.id)
+        patch '/reviews/bulk_triage', params: {
+          review_ids: [comment_a.id, comment_b.id],
+          triage_status: 'duplicate',
+          duplicate_of_review_id: chained.id
+        }, as: :json
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(comment_a.reload.triage_status).to eq('pending')
+        expect(comment_b.reload.triage_status).to eq('pending')
+      end
+
+      it 'auto-adjudicates every terminal status through the bulk path' do
+        canonical = create(:review, :comment, comment: 'terminal canonical', user: bulk_commenter,
+                                              rule: rule_a, section: 'check_content')
+        target_params = {
+          'duplicate' => { duplicate_of_review_id: canonical.id },
+          'informational' => {},
+          'withdrawn' => {},
+          'addressed_by' => { addressed_by_rule_id: component.rules.third.id }
+        }
+        expect(target_params.keys).to match_array(Review::TERMINAL_AUTO_ADJUDICATE_STATUSES)
+
+        target_params.each do |status, extra|
+          subject_comment = create(:review, :comment, comment: "terminal probe #{status}",
+                                                      user: bulk_commenter, rule: rule_b,
+                                                      section: 'fixtext')
+          patch '/reviews/bulk_triage',
+                params: { review_ids: [subject_comment.id], triage_status: status }.merge(extra),
+                as: :json
+
+          expect(response).to have_http_status(:ok), "#{status}: #{response.body}"
+          expect(subject_comment.reload.adjudicated_at).to be_present, "#{status} did not auto-adjudicate"
+        end
+      end
+
+      it 'leaves adjudicated_at nil for a non-terminal bulk status' do
+        patch '/reviews/bulk_triage', params: {
+          review_ids: [comment_a.id, comment_b.id],
+          triage_status: 'concur'
+        }, as: :json
+
+        expect(response).to have_http_status(:ok)
+        expect(comment_a.reload.adjudicated_at).to be_nil
+        expect(comment_b.reload.adjudicated_at).to be_nil
+      end
+
+      it 'normalizes a stray target on a non-target status instead of storing it' do
+        canonical = create(:review, :comment, comment: 'stray target', user: bulk_commenter,
+                                              rule: rule_a, section: 'check_content')
+        patch '/reviews/bulk_triage', params: {
+          review_ids: [comment_a.id, comment_b.id],
+          triage_status: 'concur',
+          duplicate_of_review_id: canonical.id
+        }, as: :json
+
+        expect(response).to have_http_status(:ok)
+        expect(comment_a.reload.triage_status).to eq('concur')
+        expect(comment_a.duplicate_of_review_id).to be_nil
+        expect(comment_b.reload.duplicate_of_review_id).to be_nil
+      end
+
+      it 'rolls the whole batch back when one member fails validation (a reply cannot hold a triage status)' do
+        reply = create(:review, :reply, comment: 'a threaded reply', user: bulk_commenter,
+                                        rule: rule_a, responding_to_review_id: comment_a.id)
+        patch '/reviews/bulk_triage', params: {
+          review_ids: [comment_b.id, reply.id],
+          triage_status: 'informational'
+        }, as: :json
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(comment_b.reload.triage_status).to eq('pending')
+        expect(reply.reload.triage_status).to be_nil
+      end
+
       it 'rejects bulk triage spanning multiple components' do
         foreign = create(:review, :comment, comment: 'other component concern',
                                             user: bulk_commenter, rule: bulk_other_component.rules.first,

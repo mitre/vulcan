@@ -57,15 +57,15 @@
 <script>
 import { getRulesPicker } from "../../api/rulesApi";
 
-// Picker for the "move to rule" admin action on the triage modal. Scoped
-// to the same component as the source review (server enforces same-component
-// via the move_to_rule controller action). Excludes the source rule so the
-// admin doesn't accidentally pick the rule the comment is already on.
+// Picker for a target rule scoped to one component: the "move to rule"
+// admin action, per-comment addressed_by, and the bulk target modal.
+// Excludes the given rules so the user doesn't pick a rule the comment is
+// already on (single source) or any selected comment's own rule (bulk).
 export default {
   name: "RulePicker",
   props: {
     componentId: { type: [Number, String], required: true },
-    excludeRuleId: { type: [Number, String], required: true },
+    excludeRuleIds: { type: Array, required: true },
     selectedRuleId: { type: [Number, String], default: null },
   },
   data() {
@@ -77,7 +77,11 @@ export default {
   },
   computed: {
     sourceRule() {
-      return this.rules.find((r) => r.id === Number(this.excludeRuleId)) || null;
+      // Parent/Child relationship badges only make sense relative to ONE
+      // source rule (per-comment triage, move-to-rule). A bulk selection
+      // excludes many rules and has no single source — no badges there.
+      if (this.excludeRuleIds.length !== 1) return null;
+      return this.rules.find((r) => r.id === Number(this.excludeRuleIds[0])) || null;
     },
     parentRuleIds() {
       if (!this.sourceRule) return new Set();
@@ -88,11 +92,11 @@ export default {
       return new Set((this.sourceRule.satisfies || []).map((r) => r.id));
     },
     filteredRules() {
-      const exclude = Number(this.excludeRuleId);
+      const exclude = new Set(this.excludeRuleIds.map(Number));
       const q = this.query.toLowerCase().trim();
       const parents = this.parentRuleIds;
       return this.rules
-        .filter((r) => r.id !== exclude)
+        .filter((r) => !exclude.has(r.id))
         .filter((r) => {
           if (!q) return true;
           const name = (r.displayed_name || r.rule_id || "").toLowerCase();

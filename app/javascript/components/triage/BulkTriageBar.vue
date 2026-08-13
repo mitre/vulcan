@@ -66,15 +66,17 @@ import FilterDropdown from "../shared/FilterDropdown.vue";
 import InfoTooltip from "../shared/InfoTooltip.vue";
 
 // Statuses that make sense applied uniformly to many comments. Excludes
-// `pending` (the initial state), `withdrawn` (commenter-only), and
-// `duplicate`/`addressed_by` (each needs a per-comment target, so they can't
-// share one bulk decision).
+// `pending` (the initial state) and `withdrawn` (commenter-only).
+// `duplicate`/`addressed_by` carry ONE shared target applied to every
+// selected comment — the container opens the target modal on Apply.
 const BULK_TRIAGE_STATUSES = [
   "concur",
   "concur_with_comment",
   "non_concur",
   "informational",
   "needs_clarification",
+  "duplicate",
+  "addressed_by",
 ];
 
 export default {

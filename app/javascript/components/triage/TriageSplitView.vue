@@ -184,7 +184,7 @@
             v-if="adminAction === 'move-to-rule' && resolvedComponentId"
             class="mb-2"
             :component-id="resolvedComponentId"
-            :exclude-rule-id="activeComment.rule_id"
+            :exclude-rule-ids="[activeComment.rule_id]"
             :selected-rule-id="adminTargetRuleId"
             @selected="onTargetRuleSelected"
           />

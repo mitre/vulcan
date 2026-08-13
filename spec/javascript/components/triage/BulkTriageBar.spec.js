@@ -56,6 +56,27 @@ describe("BulkTriageBar", () => {
     expect(wrapper.find('[data-testid="bulk-apply"]').attributes("disabled")).toBeUndefined();
   });
 
+  it("offers duplicate and addressed_by among the bulk statuses", () => {
+    const wrapper = factory();
+    const values = wrapper.vm.statusOptions.map((o) => o.value);
+    expect(values).toContain("duplicate");
+    expect(values).toContain("addressed_by");
+    expect(values).not.toContain("pending");
+    expect(values).not.toContain("withdrawn");
+  });
+
+  it("emits apply for a target status — the container opens the target modal", async () => {
+    const wrapper = factory({ count: 2 });
+    await wrapper.setData({ triageStatus: "duplicate" });
+    expect(wrapper.find('[data-testid="bulk-apply"]').attributes("disabled")).toBeUndefined();
+
+    await wrapper.find('[data-testid="bulk-apply"]').trigger("click");
+    expect(wrapper.emitted("apply")[0][0]).toEqual({
+      triage_status: "duplicate",
+      response_comment: null,
+    });
+  });
+
   it("emits clear and resets local state", async () => {
     const wrapper = factory();
     await wrapper.setData({ triageStatus: "concur", response: "x" });
