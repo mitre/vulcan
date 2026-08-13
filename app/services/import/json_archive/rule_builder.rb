@@ -49,11 +49,24 @@ module Import
 
       private
 
+      # Lineage lookup across ALL declared parents, keyed [srg_id, version]
+      # — a version string is only unique within one SRG, and a
+      # multi-parent component's rows carry lineage into every parent, not
+      # just the primary. Stable srg_id order makes the old-archive
+      # fallback deterministic.
       def load_srg_rules
-        srg_id = @component.security_requirements_guide_id
-        return {} unless srg_id
+        @component.source_srgs.sort_by(&:srg_id).each_with_object({}) do |srg, lookup|
+          srg.srg_rules.each { |row| lookup[[srg.srg_id, row.version]] = row }
+        end
+      end
 
-        SrgRule.where(security_requirements_guide_id: srg_id).index_by(&:version)
+      # Exact resolution when the archive carries the lineage SRG identity;
+      # archives written before that field fall back to the first version
+      # match across the parent set.
+      def resolve_lineage_row(version, lineage_srg_id)
+        return @srg_rules[[lineage_srg_id, version]] if lineage_srg_id.present?
+
+        @srg_rules.find { |(_srg_id, row_version), _row| row_version == version }&.last
       end
 
       def build_rule(rule_data)
@@ -92,7 +105,7 @@ module Import
         rule = @component.authored_srg_rules.new
         derived_version = rule_data['derived_from_srg_rule_version']
         if derived_version.present?
-          derived = @srg_rules[derived_version]
+          derived = resolve_lineage_row(derived_version, rule_data['derived_from_srg_rule_srg_id'])
           if derived
             rule.derived_from_srg_rule_id = derived.id
           else
@@ -107,7 +120,7 @@ module Import
         version = rule_data['srg_rule_version']
         return nil unless version
 
-        srg_rule = @srg_rules[version]
+        srg_rule = resolve_lineage_row(version, rule_data['srg_rule_srg_id'])
         @result.add_warning("SRG rule '#{version}' not found for rule #{rule_data['rule_id']}") unless srg_rule
         srg_rule
       end

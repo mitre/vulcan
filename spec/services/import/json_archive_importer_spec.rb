@@ -887,6 +887,118 @@ RSpec.describe Import::JsonArchiveImporter do
         expect(Audited.store[:current_request_uuid]).to eq('outer-scope-uuid')
       end
     end
+
+    context 'with multi-parent lineage' do
+      # The restore's lineage lookup must resolve across ALL declared
+      # source SRGs, keyed (srg_id, version) — a version string is only
+      # unique within one SRG. Old archives carry no lineage SRG identity
+      # and fall back to a version match across the parent set.
+      let_it_be(:mp_core_a) do
+        create(:security_requirements_guide, :core, :skip_rules,
+               srg_id: 'SRG-CORE-MPRESTORE-A', version: 'V1R1',
+               name: 'MP Restore Core A')
+      end
+      let_it_be(:mp_row_a) do
+        create(:srg_rule, security_requirements_guide: mp_core_a, version: 'SRG-OS-000901')
+      end
+      let_it_be(:mp_core_b) do
+        create(:security_requirements_guide, :core, :skip_rules,
+               srg_id: 'SRG-CORE-MPRESTORE-B', version: 'V1R1',
+               name: 'MP Restore Core B')
+      end
+      let_it_be(:mp_row_b) do
+        create(:srg_rule, security_requirements_guide: mp_core_b, version: 'SRG-NET-000902')
+      end
+      let_it_be(:mp_srg_source) do
+        c = Component.create!(project: source_project, name: 'MP SRG Restore Source',
+                              prefix: 'MPRA-00', title: 'Multi-parent srg source',
+                              document_type: 'srg', based_on: mp_core_a)
+        c.add_source_parent!(mp_core_b)
+        c
+      end
+      let_it_be(:mp_srg_zip) do
+        # reload: srg-kind creation caches source_srgs mid-generation, and
+        # add_source_parent! does not invalidate that cache — a stale
+        # in-memory set would serialize a single-parent archive.
+        Export::Base.new(exportable: mp_srg_source.reload, mode: :backup, format: :json_archive).call.data
+      end
+
+      # The stig import path is XML-driven (from_mapping parses the SRG's
+      # benchmark), so the secondary needs a REAL rule import — selective,
+      # one version, to keep the fixture light.
+      let_it_be(:stig_secondary_srg) do
+        create(:security_requirements_guide,
+               srg_id: 'SRG-DERIVED-MPRESTORE', version: 'V1R1',
+               name: 'MP Restore Stig Secondary')
+      end
+      let_it_be(:stig_secondary_row) { stig_secondary_srg.srg_rules.order(:version).first }
+      let_it_be(:mp_stig_source) do
+        c = create(:component, project: source_project, name: 'MP STIG Restore Source')
+        c.add_source_parent!(stig_secondary_srg, versions: [stig_secondary_row.version])
+        c
+      end
+      let_it_be(:mp_stig_zip) do
+        Export::Base.new(exportable: mp_stig_source, mode: :backup, format: :json_archive).call.data
+      end
+
+      it 'restores secondary-parent lineage on an srg component' do
+        import_archive(mp_srg_zip, target_project)
+
+        imported = target_project.components.find_by!(name: 'MP SRG Restore Source')
+        expect(imported.authored_srg_rules.find_by(derived_from_srg_rule_id: mp_row_b.id)).to be_present
+        expect(imported.authored_srg_rules.find_by(derived_from_srg_rule_id: mp_row_a.id)).to be_present
+      end
+
+      it 'restores secondary-parent srg_rule linkage on a stig component' do
+        import_archive(mp_stig_zip, target_project)
+
+        imported = target_project.components.find_by!(name: 'MP STIG Restore Source')
+        expect(imported.rules.find_by(srg_rule_id: stig_secondary_row.id)).to be_present
+      end
+
+      it 'falls back to a version match across the parent set for archives without lineage SRG identity' do
+        import_archive(strip_lineage_srg_ids(mp_srg_zip), target_project)
+
+        imported = target_project.components.find_by!(name: 'MP SRG Restore Source')
+        expect(imported.authored_srg_rules.find_by(derived_from_srg_rule_id: mp_row_b.id)).to be_present
+      end
+
+      # Rewrites the archive as an old-format one: removes the lineage SRG
+      # identity keys from every rules entry. Self-checking — raises if the
+      # strip removed nothing, so this fixture can never silently test the
+      # exact-resolution path instead of the fallback.
+      def strip_lineage_srg_ids(zip_data)
+        stripped = 0
+        buffer = Zip::OutputStream.write_buffer do |out|
+          Zip::InputStream.open(StringIO.new(zip_data)) do |input|
+            while (entry = input.get_next_entry)
+              content, count = without_lineage_srg_ids(entry.name, input.read)
+              stripped += count
+              out.put_next_entry(entry.name)
+              out.write(content)
+            end
+          end
+        end
+        raise 'fixture strip removed no lineage SRG identity keys' if stripped.zero?
+
+        buffer.string
+      end
+
+      def without_lineage_srg_ids(name, content)
+        return [content, 0] unless name.end_with?('.json')
+
+        parsed = JSON.parse(content)
+        return [content, 0] unless parsed.is_a?(Array)
+
+        lineage_keys = %w[derived_from_srg_rule_srg_id srg_rule_srg_id]
+        count = parsed.sum do |row|
+          next 0 unless row.is_a?(Hash)
+
+          lineage_keys.count { |k| !row.delete(k).nil? }
+        end
+        [JSON.generate(parsed), count]
+      end
+    end
   end
 
   private

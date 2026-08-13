@@ -146,12 +146,18 @@ module Export
         attrs = rule_base_attributes(rule)
         # Portable lineage tokens (catalog versions, never DB ids):
         # srg_rule_version for Rules, derived_from_srg_rule_version for
-        # authored SrgRules. srg_rule/additional_answers exist on Rule only.
+        # authored SrgRules — each paired with the owning SRG's stable
+        # srg_id (the same key the source_srgs entries use), because a
+        # version string is only unique within one SRG and a multi-parent
+        # component carries lineage into several. srg_rule /
+        # additional_answers exist on Rule only.
         if rule.is_a?(Rule)
           attrs[:srg_rule_version] = rule.srg_identifier
+          attrs[:srg_rule_srg_id] = rule.srg_rule&.security_requirements_guide&.srg_id
           attrs[:additional_answers] = serialize_additional_answers(rule)
         else
           attrs[:derived_from_srg_rule_version] = rule.derived_from&.version
+          attrs[:derived_from_srg_rule_srg_id] = rule.derived_from&.security_requirements_guide&.srg_id
           attrs[:additional_answers] = []
         end
         attrs[:disa_rule_descriptions] = serialize_disa_rule_descriptions(rule)
