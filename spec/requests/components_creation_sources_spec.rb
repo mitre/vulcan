@@ -89,6 +89,47 @@ RSpec.describe 'Component creation with declared sources' do
     end
   end
 
+  describe 'srg rebase duplicate' do
+    let_it_be(:core_a_v2) do
+      create(:security_requirements_guide, :core, :skip_rules, srg_id: 'SRG-CORE-OS-API', version: 'V2R1',
+                                                               name: 'OS Core API - Ver 2, Rel 1')
+    end
+    let_it_be(:core_a_v2_rows) do
+      [create(:srg_rule, security_requirements_guide: core_a_v2, version: 'SRG-OS-000001',
+                         fixtext: 'Changed core fix guidance'),
+       create(:srg_rule, security_requirements_guide: core_a_v2, version: 'SRG-OS-000003')]
+    end
+
+    def create_rebase_source(name)
+      Component.create!(project: project, name: name, prefix: 'REBA-00', title: 'Rebase source',
+                        document_type: 'srg', based_on: core_a)
+    end
+
+    it 'reports the reconcile in the toast and never resets the Rule counter on the srg path' do
+      source = create_rebase_source('Rebase Toast Source')
+      allow(Component).to receive(:reset_counters).and_call_original
+
+      post "/projects/#{project.id}/components",
+           params: { component: { name: 'Rebased Copy', prefix: 'REBA-01', title: 'Rebased',
+                                  version: 1, release: 2, duplicate: true, id: source.id,
+                                  project_id: project.id,
+                                  security_requirements_guide_id: core_a_v2.id } }
+
+      expect(response).to have_http_status(:ok)
+      toast = response.parsed_body['toast']
+      rebase_line = toast['message'].find { |m| m.include?('Core rebase') }
+      expect(rebase_line).to eq(
+        'Core rebase: 1 re-linked (1 with changed core content), ' \
+        '1 kept without a core counterpart, 1 added as Not Yet Determined.'
+      )
+      expect(Component).not_to have_received(:reset_counters)
+
+      copy = created_component('Rebased Copy')
+      expect(copy.rules.count).to eq(0)
+      expect(copy.authored_srg_rules.count).to eq(3)
+    end
+  end
+
   describe 'stig-kind multi-source creation' do
     let_it_be(:derived_b) { create(:security_requirements_guide) }
 

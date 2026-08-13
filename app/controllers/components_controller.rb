@@ -100,11 +100,22 @@ class ComponentsController < ApplicationController
         component.admin_email = component_create_params[:admin_email].presence || current_user.email
         component.duplicate_reviews_and_history(component_create_params[:id])
         component.create_rule_satisfactions if component_create_params[:file]
-        Component.reset_counters(component.id, :rules)
+        # The Rule counter is stig-kind only — srg components count live
+        # authored requirements, and reset_counters(:rules) on the srg
+        # path would write the class-Rule count over it.
+        Component.reset_counters(component.id, :rules) unless component.document_type == 'srg'
         component.save
         safely_notify('create_component') { send_slack_notification(:create_component, component) } if Settings.slack.enabled
+        message = ['Successfully added component to project.']
+        if component.rebase_report
+          report = component.rebase_report
+          message << "Core rebase: #{report[:relinked]} re-linked " \
+                     "(#{report[:content_changed]} with changed core content), " \
+                     "#{report[:vanished]} kept without a core counterpart, " \
+                     "#{report[:arrived]} added as Not Yet Determined."
+        end
         render_toast(title: 'Component added.',
-                     message: 'Successfully added component to project.',
+                     message: message,
                      variant: 'success', status: :ok)
       else
         render json: {

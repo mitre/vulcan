@@ -103,6 +103,108 @@ RSpec.describe 'Component copy across document kinds' do
     end
   end
 
+  describe 'SRG rebase (duplicate onto a new core release)' do
+    # Reconcile semantics: matched derived rows re-link to the new release's
+    # catalog rows (stable version ids) and refresh inherited display fields
+    # only; vanished-core rows are KEPT with their old lineage and reported;
+    # arrived core requirements auto-create as NYD through the authored
+    # generator; net-new rows carry untouched. Never silent, never Rule rows.
+    let_it_be(:new_core) do
+      create(:security_requirements_guide, :core, :skip_rules,
+             srg_id: 'SRG-CORE-COPYKIND', version: 'V2R1',
+             name: 'Copy Kind Core - Ver 2, Rel 1')
+    end
+    let_it_be(:new_core_rows) do
+      {
+        matched: create(:srg_rule, security_requirements_guide: new_core,
+                                   version: 'SRG-OS-000701', rule_severity: 'high',
+                                   fixtext: 'Updated core fix guidance for 701'),
+        arrived: create(:srg_rule, security_requirements_guide: new_core,
+                                   version: 'SRG-OS-000703')
+      }
+    end
+
+    def create_rebase_source
+      source = create_srg_source
+      source.authored_srg_rules.create!(
+        rule_id: format('%06d', source.largest_rule_id + 1),
+        title: 'Net new requirement', status: 'Applicable',
+        rule_severity: 'medium', audit_comment: 'net-new for rebase'
+      )
+      source
+    end
+
+    it 're-links derived rows to the new catalog rows and never creates Rule rows' do
+      source = create_rebase_source
+      copy = source.duplicate(new_name: 'SRG Rebase', new_srg_id: new_core.id)
+
+      expect(copy).to be_persisted
+      expect(copy.rules.count).to eq(0)
+      expect(copy.authored_srg_rules.map(&:class).uniq).to eq([SrgRule])
+      matched = copy.authored_srg_rules.find_by!(derived_from_srg_rule_id: new_core_rows[:matched].id)
+      expect(matched.fixtext).to eq('Carried fixtext')
+    end
+
+    it 'refreshes inherited display fields on matched rows without touching authored content' do
+      source = create_rebase_source
+      copy = source.duplicate(new_name: 'SRG Rebase Inherit', new_srg_id: new_core.id)
+
+      matched = copy.authored_srg_rules.find_by!(derived_from_srg_rule_id: new_core_rows[:matched].id)
+      expect(matched.rule_severity).to eq('high')
+      expect(matched.fixtext).to eq('Carried fixtext')
+      expect(matched.status).to eq('Applicable')
+    end
+
+    it 'keeps vanished-core rows with their old lineage intact' do
+      source = create_rebase_source
+      vanished_lineage = core_rows.find { |r| r.version == 'SRG-OS-000702' }
+      copy = source.duplicate(new_name: 'SRG Rebase Vanished', new_srg_id: new_core.id)
+
+      kept = copy.authored_srg_rules.find_by(derived_from_srg_rule_id: vanished_lineage.id)
+      expect(kept).to be_present
+    end
+
+    it 'creates arrived core requirements as NYD authored rows numbered in sequence' do
+      source = create_rebase_source
+      copy = source.duplicate(new_name: 'SRG Rebase Arrived', new_srg_id: new_core.id)
+
+      arrived = copy.authored_srg_rules.find_by(derived_from_srg_rule_id: new_core_rows[:arrived].id)
+      expect(arrived).to be_present
+      expect(arrived.status).to eq('Not Yet Determined')
+      expect(arrived.security_requirements_guide_id).to be_nil
+      expect(arrived.rule_id).to eq(copy.authored_srg_rules.order(:rule_id).last.rule_id)
+    end
+
+    it 'carries net-new authored rows untouched' do
+      source = create_rebase_source
+      copy = source.duplicate(new_name: 'SRG Rebase Net New', new_srg_id: new_core.id)
+
+      net_new = copy.authored_srg_rules.find_by(derived_from_srg_rule_id: nil)
+      expect(net_new).to be_present
+      expect(net_new.title).to eq('Net new requirement')
+      expect(net_new.status).to eq('Applicable')
+    end
+
+    it 'reports the reconcile and records it durably, without reset_counters on the srg path' do
+      allow(Component).to receive(:reset_counters).and_call_original
+
+      source = create_rebase_source
+      copy = source.duplicate(new_name: 'SRG Rebase Report', new_srg_id: new_core.id)
+
+      expect(Component).not_to have_received(:reset_counters)
+      expect(copy.rebase_report).to eq(relinked: 1, content_changed: 1, vanished: 1, arrived: 1)
+      audit_comments = copy.audits.pluck(:comment).compact
+      expect(audit_comments.grep(/rebase/i)).not_to be_empty
+    end
+
+    it 'moves based_on to the new core release' do
+      source = create_rebase_source
+      copy = source.duplicate(new_name: 'SRG Rebase Parent', new_srg_id: new_core.id)
+
+      expect(copy.based_on.id).to eq(new_core.id)
+    end
+  end
+
   describe 'STIG duplicate (regression pin)' do
     it 'still copies Rule rows with their nested records' do
       stig_source = create(:component, project: project)

@@ -16,6 +16,12 @@ class Component < ApplicationRecord
 
   attr_accessor :skip_import_srg_rules
 
+  # The reconcile summary of the most recent SRG rebase performed by
+  # #duplicate on this instance — counts for relinked / content_changed /
+  # vanished / arrived, surfaced by the copy controller's toast. Durable
+  # form lives in the component's audit trail.
+  attr_accessor :rebase_report
+
   def self.search_columns
     %w[name prefix title]
   end
@@ -485,6 +491,11 @@ class Component < ApplicationRecord
     else
       copied_component.replace_parent_srg(new_srg)
     end
+
+    # Authored SRG requirements reconcile through their own kind path —
+    # the class-Rule machinery below (from_mapping, reset_counters(:rules))
+    # must never run for srg kind.
+    return SrgRebaseService.new(copied_component, new_srg).call if document_type == 'srg'
 
     new_srg_rules = new_srg.srg_rules.index_by(&:version)
 
