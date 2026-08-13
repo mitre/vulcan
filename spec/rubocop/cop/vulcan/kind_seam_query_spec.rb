@@ -155,6 +155,10 @@ RSpec.describe RuboCop::Cop::Vulcan::KindSeamQuery, :config do
       expect(offense_count_at('lib/tasks/wiring_probe.rake')).to eq(2)
     end
 
+    it 'flags a violation in a top-level lib file' do
+      expect(offense_count_at('lib/wiring_probe.rb')).to eq(2)
+    end
+
     it 'flags a violation in a seed file' do
       expect(offense_count_at('db/seeds/data/wiring_probe.rb')).to eq(2)
     end

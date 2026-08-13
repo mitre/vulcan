@@ -46,7 +46,9 @@ class SeedContext # rubocop:disable Style/Documentation
   end
 
   def rules_for(comp, limit: 6)
-    rules_list = comp.rules.order(:rule_id).limit(limit).to_a
+    # requirements, not rules — the Rule STI association would return an
+    # empty set for an srg-kind component's authored rows.
+    rules_list = comp.requirements.order(:rule_id).limit(limit).to_a
     rules_list.each_with_index.to_h { |rule, i| [:"rule_#{('a'.ord + i).chr}", rule] }
   end
 end

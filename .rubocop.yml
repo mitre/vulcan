@@ -210,8 +210,8 @@ Vulcan/KindSeamQuery:
   Include:
     - app/**/*.rb
     - db/seeds/**/*.rb
+    - lib/**/*.rb
     - lib/tasks/**/*.rake
-    - lib/tasks/**/*.rb
   Exclude:
     # The kind seam's own home — requirements routes to rules for stig kind,
     # and the Rule-only copy/import internals are guarded at their doors.
