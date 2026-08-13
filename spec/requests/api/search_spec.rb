@@ -285,9 +285,7 @@ RSpec.describe 'Api::Search' do
     end
 
     context 'rules search' do
-      before { sign_in user }
-
-      let!(:rule1) do
+      let_it_be(:rule1) do
         rule = component1.rules.first
         rule.update!(
           title: 'Xylophone Configuration Requirements',
@@ -295,6 +293,8 @@ RSpec.describe 'Api::Search' do
         )
         rule
       end
+
+      before { sign_in user }
 
       it 'searches rules by title' do
         get search_path, params: { q: 'Xylophone' }
@@ -345,23 +345,25 @@ RSpec.describe 'Api::Search' do
       # - Search by name, title, or srg_id
       # - Return useful metadata: id, name, title, version
 
-      before { sign_in user }
-
-      let!(:srg_rhel) do
-        create(:security_requirements_guide,
+      # Shared read-only fixtures; :skip_rules because this block asserts SRG
+      # document metadata only, never parsed requirement content.
+      let_it_be(:srg_rhel) do
+        create(:security_requirements_guide, :skip_rules,
                srg_id: 'RHEL_9_SRG',
                title: 'Red Hat Enterprise Linux 9 Security Requirements Guide',
                name: 'RHEL 9 SRG - Ver 1, Rel 1',
                version: 'V1R1')
       end
 
-      let!(:srg_windows) do
-        create(:security_requirements_guide,
+      let_it_be(:srg_windows) do
+        create(:security_requirements_guide, :skip_rules,
                srg_id: 'WIN_SERVER_2022_SRG',
                title: 'Windows Server 2022 Security Requirements Guide',
                name: 'Windows Server 2022 SRG - Ver 1, Rel 2',
                version: 'V1R2')
       end
+
+      before { sign_in user }
 
       it 'searches SRGs by title' do
         get search_path, params: { q: 'Red Hat' }
@@ -422,10 +424,10 @@ RSpec.describe 'Api::Search' do
       # - Search by name, title, stig_id, or description
       # - Return useful metadata: id, name, title, version, description
 
-      before { sign_in user }
-
-      let!(:stig_apache) do
-        create(:stig,
+      # Shared read-only fixtures; :skip_rules because this block asserts STIG
+      # document metadata only, never parsed rule content.
+      let_it_be(:stig_apache) do
+        create(:stig, :skip_rules,
                stig_id: 'Apache_Server_2_4_STIG',
                title: 'Apache Server 2.4 Security Technical Implementation Guide',
                name: 'Apache Server 2.4 STIG - Ver 2, Rel 3',
@@ -433,14 +435,16 @@ RSpec.describe 'Api::Search' do
                description: 'Security configuration for Apache HTTP Server')
       end
 
-      let!(:stig_nginx) do
-        create(:stig,
+      let_it_be(:stig_nginx) do
+        create(:stig, :skip_rules,
                stig_id: 'NGINX_Web_Server_STIG',
                title: 'NGINX Web Server Security Technical Implementation Guide',
                name: 'NGINX Web Server STIG - Ver 1, Rel 1',
                version: 'V1R1',
                description: 'Security configuration for NGINX web server')
       end
+
+      before { sign_in user }
 
       it 'searches STIGs by title' do
         get search_path, params: { q: 'Apache' }
@@ -512,14 +516,16 @@ RSpec.describe 'Api::Search' do
       # - Example: searching '/etc/sudoers' should find rules with that in check content
       # - Return useful metadata: id, rule_id, vuln_id, title, stig name
 
-      let(:sudoers_vuln_id) { 'V-258217' }
-      let(:sshd_rule_id) { 'RHEL-09-252010' }
-      let(:sudoers_path) { '/etc/sudoers' }
-      let(:status_applicable) { 'Applicable - Configurable' }
+      # let_it_be (not plain let) so the fixture blocks below, which run in
+      # before(:all) context, can reference these values.
+      let_it_be(:sudoers_vuln_id) { 'V-258217' }
+      let_it_be(:sshd_rule_id) { 'RHEL-09-252010' }
+      let_it_be(:sudoers_path) { '/etc/sudoers' }
+      let_it_be(:status_applicable) { 'Applicable - Configurable' }
       # A simple STIG without importing rules from XML — the factory
       # trait skips the import per-instance (never a global
       # skip_callback, which leaks across parallel workers).
-      let!(:rhel_stig) do
+      let_it_be(:rhel_stig) do
         create(:stig, :skip_rules,
                stig_id: 'RHEL_9_STIG',
                title: 'Red Hat Enterprise Linux 9 STIG',
@@ -528,7 +534,7 @@ RSpec.describe 'Api::Search' do
                description: 'RHEL 9 security configuration')
       end
 
-      let!(:sudoers_rule) do
+      let_it_be(:sudoers_rule) do
         rule = StigRule.create!(
           stig: rhel_stig,
           rule_id: 'RHEL-09-654215',
@@ -544,7 +550,7 @@ RSpec.describe 'Api::Search' do
         rule
       end
 
-      let!(:sshd_rule) do
+      let_it_be(:sshd_rule) do
         rule = StigRule.create!(
           stig: rhel_stig,
           rule_id: sshd_rule_id,
@@ -650,15 +656,17 @@ RSpec.describe 'Api::Search' do
       # - Search by rule_id, title, fixtext, ident (CCIs), check content
       # - Return useful metadata: id, rule_id, title, srg name
 
-      let(:firewall_query) { 'firewall rules' }
-      let(:cci_identifier) { 'CCI-002385' }
+      # let_it_be (not plain let) so the fixture blocks below, which run in
+      # before(:all) context, can reference these values.
+      let_it_be(:firewall_query) { 'firewall rules' }
+      let_it_be(:cci_identifier) { 'CCI-002385' }
       # Use an existing SRG from the test setup (created for component factory)
       # Note: The SRG created by the component factory already has srg_rules
       # The intent flag (via :skip_rules) replaces the old global
       # skip_callback hack — that mutation leaked across parallel
       # workers, and the factory-stamped XML keeps the row consistent
       # with the header validation.
-      let!(:custom_srg) do
+      let_it_be(:custom_srg) do
         create(:security_requirements_guide, :skip_rules,
                srg_id: 'Custom_Test_SRG',
                title: 'Custom Test Security Requirements Guide',
@@ -666,7 +674,7 @@ RSpec.describe 'Api::Search' do
                version: 'V1R1')
       end
 
-      let!(:firewall_srg_rule) do
+      let_it_be(:firewall_srg_rule) do
         SrgRule.create!(
           security_requirements_guide: custom_srg,
           rule_id: 'SRG-OS-000480-GPOS-00232',
@@ -814,9 +822,7 @@ RSpec.describe 'Api::Search' do
     # `project.components.count` per row. Replace both with one GROUP BY COUNT
     # batched lookup per kind.
     context 'N+1 prevention' do
-      before { sign_in user }
-
-      let!(:rules_with_comments) do
+      let_it_be(:rules_with_comments) do
         rules = component1.rules.first(3)
         rules.each_with_index do |rule, i|
           rule.update!(title: "Wallaby Unique Result #{i}")
@@ -824,6 +830,8 @@ RSpec.describe 'Api::Search' do
         end
         rules
       end
+
+      before { sign_in user }
 
       it 'search_rules returns comment_count without N+1' do
         per_rule_counts = []
@@ -873,15 +881,15 @@ RSpec.describe 'Api::Search' do
     end
 
     context 'result metadata (comment_count + parent_info)' do
-      before { sign_in user }
-
-      let!(:rule_with_comments) do
+      let_it_be(:rule_with_comments) do
         rule = component1.rules.first
         rule.update!(title: 'Quokka Unique Metadata Test')
         create(:review, rule: rule, action: 'comment', comment: 'Test comment')
         create(:review, rule: rule, action: 'comment', comment: 'Another comment')
         rule
       end
+
+      before { sign_in user }
 
       it 'returns comment_count for each rule result' do
         get search_path, params: { q: 'Quokka' }
@@ -905,13 +913,13 @@ RSpec.describe 'Api::Search' do
     end
 
     context 'component-scoped search' do
-      before { sign_in user }
-
-      let!(:rule_scoped) do
+      let_it_be(:rule_scoped) do
         rule = component1.rules.first
         rule.update!(title: 'Zeppelin Unique Scoped Title')
         rule
       end
+
+      before { sign_in user }
 
       it 'scopes rules to the specified component_id' do
         get search_path, params: { q: 'Zeppelin', component_id: component1.id }
