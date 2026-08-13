@@ -845,7 +845,7 @@ class ReviewsController < ApplicationController
 
   def validate_triage_params
     status = params[:triage_status]
-    return I18n.t('vulcan.triage.errors.cannot_edit_after_triage') unless Review::TRIAGE_STATUSES.include?(status)
+    return I18n.t('vulcan.triage.errors.invalid_status') unless Review::TRIAGE_STATUSES.include?(status)
     # 'pending' is the INITIAL state; submitting it as a triage decision
     # would silently re-stamp triage_set_by_id / triage_set_at on a still-
     # untriaged comment. Reject — there's no decision being made.

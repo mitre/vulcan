@@ -75,6 +75,7 @@ en:
       errors:
         decline_requires_response: "Decline requires a response — explain why so the commenter understands."
         duplicate_requires_target: "Mark-as-duplicate requires selecting the canonical comment."
+        invalid_status: "Triage status is missing or not a recognized value."
         cannot_withdraw_already_triaged: "This comment has already been triaged and can't be withdrawn."
         cannot_edit_after_triage: "Comments can only be edited while pending triage."
         permission_denied_comment: "You do not have permission to comment on this component. Ask a project administrator to grant you membership."

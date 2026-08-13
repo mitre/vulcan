@@ -73,6 +73,44 @@ RSpec.describe 'Reviews' do
         expect(response.parsed_body.dig('toast', 'message').join).to match(/canonical comment/i)
       end
 
+      # The absent/unrecognized-status guard must name ITS failure — not the
+      # edit-after-triage message, which describes a different rule and made
+      # rejected requests read as a state problem instead of a bad status.
+      it 'names the invalid status when triage_status is absent' do
+        patch "/reviews/#{comment.id}/triage", params: {}, as: :json
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body.dig('toast', 'message').join)
+          .to match(/missing or not a recognized/i)
+        expect(comment.reload.triage_status).to eq('pending')
+      end
+
+      it 'names the invalid status for an unrecognized triage_status value' do
+        patch "/reviews/#{comment.id}/triage", params: { triage_status: 'bogus' }, as: :json
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body.dig('toast', 'message').join)
+          .to match(/missing or not a recognized/i)
+      end
+
+      it 'inherits the invalid-status message on bulk_triage through the shared validator' do
+        patch '/reviews/bulk_triage', params: { review_ids: [comment.id] }, as: :json
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body.dig('toast', 'message').join)
+          .to match(/missing or not a recognized/i)
+      end
+
+      it 'keeps the edit-after-triage message on the comment-edit path' do
+        comment.update!(triage_status: 'concur', triage_set_by_id: triager.id,
+                        triage_set_at: Time.current)
+        sign_in commenter
+        put "/reviews/#{comment.id}", params: { review: { comment: 'revised text' } }, as: :json
+
+        expect(response.parsed_body.dig('toast', 'message').join)
+          .to include('Comments can only be edited while pending triage.')
+      end
+
       # mark-as-duplicate decision flow. Most validators
       # already exist on the Review model (no_self_duplicate_reference,
       # duplicate_of_must_be_same_component, duplicate_status_requires_target).
