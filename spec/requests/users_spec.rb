@@ -615,13 +615,16 @@ RSpec.describe 'Users' do
   end
 
   describe 'GET /users/:id/comments (My Comments)' do
-    let!(:my_project) { create(:project) }
-    let!(:srg) { create(:security_requirements_guide) }
-    let!(:my_component) { create(:component, project: my_project, based_on: srg) }
-    let!(:other_project) { create(:project) }
-    let!(:other_component) { create(:component, project: other_project, based_on: srg) }
-    let!(:viewer) { create(:user) }
-    let!(:other_viewer) { create(:user) }
+    # Shared read-only documents: the SRG parse + two component imports are
+    # the expensive part; reviews/memberships stay per-example (they roll
+    # back, so the exact-id assertions below see only their own records).
+    let_it_be(:my_project) { create(:project) }
+    let_it_be(:srg) { create(:security_requirements_guide) }
+    let_it_be(:my_component) { create(:component, project: my_project, based_on: srg) }
+    let_it_be(:other_project) { create(:project) }
+    let_it_be(:other_component) { create(:component, project: other_project, based_on: srg) }
+    let_it_be(:viewer) { create(:user) }
+    let_it_be(:other_viewer) { create(:user) }
 
     before do
       Membership.find_or_create_by!(user: viewer, membership: my_project) { |m| m.role = 'viewer' }

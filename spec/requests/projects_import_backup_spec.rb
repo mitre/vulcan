@@ -10,12 +10,18 @@ require 'rails_helper'
 IMPORT_ZIP_CONTENT_TYPE = 'application/zip'
 
 RSpec.describe 'Project Import Backup' do
+  # Shared read-only source documents — the component import is the
+  # expensive part. The zips below stay LAZY per example on purpose: the
+  # include_reviews context adds a review to the source before its zip
+  # builds, and per-example review/membership writes roll back, so each
+  # example's archive reflects exactly its own setup.
+  let_it_be(:source_project) { create(:project) }
+  let_it_be(:source_component) { create(:component, project: source_project) }
+
   let(:admin_user) { create(:user) }
   let(:viewer_user) { create(:user) }
   let(:non_member_user) { create(:user) }
   let(:project) { create(:project) }
-  let(:source_project) { create(:project) }
-  let(:source_component) { create(:component, project: source_project) }
 
   let(:backup_zip_data) do
     Export::Base.new(

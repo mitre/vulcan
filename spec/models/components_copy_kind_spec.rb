@@ -222,9 +222,12 @@ RSpec.describe 'Component copy across document kinds' do
       expect(copy.based_on.id).to eq(new_core.id)
     end
 
-    describe 'under suppressed auditing (the controller duplicate path)' do
+    describe 'under suppressed auditing' do
       include_context 'with auditing'
 
+      # Wrapping the WHOLE duplicate in without_auditing is a strictly
+      # stronger condition than the controller's, which wraps only the
+      # save block — passing here covers the production path a fortiori.
       it 'still writes the durable audit entry — the explicit report row is not callback-gated' do
         source = create_rebase_source
         copy = nil
@@ -263,9 +266,11 @@ RSpec.describe 'Component copy across document kinds' do
       {
         # Same title/fixtext as the V1R1 row so the matched re-link counts
         # zero content changes — the report arithmetic stays deterministic.
+        # Distinct severity so the primary-rows severity assertion below
+        # discriminates against a cross-row inherited-field leak.
         matched: create(:srg_rule, security_requirements_guide: secondary_core_v2,
                                    version: 'SRG-NET-000801', title: 'Secondary requirement 801',
-                                   fixtext: 'Secondary fix 801'),
+                                   fixtext: 'Secondary fix 801', rule_severity: 'high'),
         arrived: create(:srg_rule, security_requirements_guide: secondary_core_v2,
                                    version: 'SRG-NET-000802')
       }

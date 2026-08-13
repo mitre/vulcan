@@ -995,6 +995,10 @@ RSpec.describe 'Api::Search' do
         expect(response).to have_http_status(:success)
         json = response.parsed_body
         expect(json['rules'].length).to be >= 1
+        unscoped_hit = json['rules'].find do |r|
+          r['rule_id'] == rule_scoped.rule_id && r['component_id'] == component1.id
+        end
+        expect(unscoped_hit).not_to be_nil
       end
     end
   end

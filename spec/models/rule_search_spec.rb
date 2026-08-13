@@ -113,6 +113,14 @@ RSpec.describe 'Rule Search' do
       expect(sql).not_to include('to_tsvector')
     end
 
+    it 'orders by rank then primary key — the determinism consumers rely on' do
+      # pg_search's default order (rank DESC, then primary key ASC) is what
+      # makes result order and every limit window deterministic; a gem
+      # upgrade that changed it would silently reorder search results.
+      sql = Rule.search_content('term').to_sql
+      expect(sql).to match(/ORDER BY pg_search_\w+\.rank DESC, "base_rules"\."id" ASC\z/)
+    end
+
     it 'keeps the vector current when a searched base column changes' do
       rule = component.rules.first
       rule.update!(title: 'Quixotic Vector Freshness Probe')

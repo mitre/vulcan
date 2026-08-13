@@ -34,8 +34,10 @@ RSpec.describe SeedHelpers do
   end
 
   describe '.seed_component' do
-    let!(:srg) { described_class.seed_xccdf(Rails.root.join('db/seeds/srgs').glob('*GPOS*.xml').first) }
-    let!(:project) { create(:project) }
+    # Shared read-only documents — the GPOS parse is the expensive part;
+    # the method under test creates its own records per example.
+    let_it_be(:srg) { described_class.seed_xccdf(Rails.root.join('db/seeds/srgs').glob('*GPOS*.xml').first) }
+    let_it_be(:project) { create(:project) }
 
     it 'creates a component with required attributes' do
       component = described_class.seed_component(
@@ -59,11 +61,13 @@ RSpec.describe SeedHelpers do
   end
 
   describe '.find_or_seed_review' do
-    let!(:srg) { described_class.seed_xccdf(Rails.root.join('db/seeds/srgs').glob('*GPOS*.xml').first) }
-    let!(:project) { create(:project) }
-    let!(:component) { create(:component, project: project, based_on: srg) }
-    let!(:user) { create(:user) }
-    let!(:membership) { create(:membership, user: user, membership: project, role: 'viewer') }
+    # Shared read-only documents — parse + component import once; the
+    # reviews under test are created per example and roll back.
+    let_it_be(:srg) { described_class.seed_xccdf(Rails.root.join('db/seeds/srgs').glob('*GPOS*.xml').first) }
+    let_it_be(:project) { create(:project) }
+    let_it_be(:component) { create(:component, project: project, based_on: srg) }
+    let_it_be(:user) { create(:user) }
+    let_it_be(:membership) { create(:membership, user: user, membership: project, role: 'viewer') }
     let(:rule) { component.rules.first }
 
     it 'creates a review comment via Review.create!' do
@@ -126,11 +130,12 @@ RSpec.describe SeedHelpers do
   end
 
   describe '.find_or_seed_reply' do
-    let!(:srg) { described_class.seed_xccdf(Rails.root.join('db/seeds/srgs').glob('*GPOS*.xml').first) }
-    let!(:project) { create(:project) }
-    let!(:component) { create(:component, project: project, based_on: srg) }
-    let!(:user) { create(:user) }
-    let!(:membership) { create(:membership, user: user, membership: project, role: 'viewer') }
+    # Same shared-document shape as .find_or_seed_review above.
+    let_it_be(:srg) { described_class.seed_xccdf(Rails.root.join('db/seeds/srgs').glob('*GPOS*.xml').first) }
+    let_it_be(:project) { create(:project) }
+    let_it_be(:component) { create(:component, project: project, based_on: srg) }
+    let_it_be(:user) { create(:user) }
+    let_it_be(:membership) { create(:membership, user: user, membership: project, role: 'viewer') }
     let(:rule) { component.rules.first }
 
     it 'creates a reply linked to parent' do
