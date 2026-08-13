@@ -43,6 +43,16 @@ module Export
         false
       end
 
+      # The mode an SRG-kind component routes to when this mode cannot serve
+      # it (e.g. the stig publication mode routes srg components to the srg
+      # publication mode). Nil means no counterpart exists — multi-component
+      # exports EXCLUDE srg components for this mode, and a single-component
+      # export refuses loudly. The route only engages when the counterpart is
+      # a valid Registry combination for the requested format.
+      def srg_counterpart
+        nil
+      end
+
       # The BaseRule-shared association set — authored SrgRules carry none
       # of the Rule-only associations (satisfies, srg_rule, additional_answers).
       def srg_eager_load_associations

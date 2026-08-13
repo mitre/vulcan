@@ -81,4 +81,57 @@ RSpec.describe 'Component bulk export' do
       expect(response.body).to include('GroupDescription')
     end
   end
+
+  # ==========================================================================
+  # REQUIREMENT (kind routing): bulk exports serve both document kinds
+  # through the same seam as project exports — xccdf kind-routes each
+  # component; purposes with no srg meaning exclude srg components, and an
+  # all-excluded selection refuses loudly.
+  # ==========================================================================
+  describe 'GET /components/bulk_export/:type kind routing' do
+    let_it_be(:bulk_core) do
+      create(:security_requirements_guide, :core, :skip_rules, srg_id: 'SRG-CORE-BLKX', version: 'V1R1')
+    end
+    let_it_be(:bulk_core_row) do
+      create(:srg_rule, security_requirements_guide: bulk_core, version: 'SRG-OS-000822')
+    end
+    let_it_be(:released_srg) do
+      comp = Component.create!(project: project, name: 'Bulk SRG Component', prefix: 'BLKS-00',
+                               title: 'Bulk SRG', document_type: 'srg', based_on: bulk_core)
+      comp.authored_srg_rules.each do |r|
+        r.update!(status: 'Applicable', locked: true, audit_comment: 'bulk export setup')
+      end
+      comp.via_release_flow = true
+      comp.update!(released: true)
+      comp
+    end
+    let_it_be(:released_stig) { create(:component, project: project, released: true) }
+
+    it 'bulk xccdf kind-routes the srg component alongside the stig one in one archive' do
+      get "/components/bulk_export/xccdf?component_ids=#{released_srg.id},#{released_stig.id}",
+          headers: { 'Accept' => 'text/html' }
+      expect(response).to have_http_status(:success)
+
+      entries = {}
+      Zip::File.open_buffer(StringIO.new(response.body)) do |zip|
+        zip.each { |e| entries[e.name] = zip.read(e.name) }
+      end
+
+      srg_entry = entries.keys.find { |n| n.start_with?('BLKS-00') }
+      expect(srg_entry).to be_present, "srg member missing: #{entries.keys}"
+      srg_doc = Nokogiri::XML(entries[srg_entry])
+      expect(srg_doc.css('Group').size).to eq(1)
+      expect(entries[srg_entry]).to include('GroupDescription')
+
+      stig_entry = entries.keys.find { |n| n.start_with?(released_stig.prefix) }
+      expect(stig_entry).to be_present
+    end
+
+    it 'refuses a bulk inspec export when every selected component is srg' do
+      get "/components/bulk_export/inspec?component_ids=#{released_srg.id}",
+          headers: { 'Accept' => 'text/html' }
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+  end
 end

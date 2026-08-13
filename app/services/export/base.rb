@@ -11,6 +11,11 @@ module Export
   #   Export::Base.new(exportable: [comp1, comp2], mode: :working_copy, format: :csv).call
   #   Export::Base.new(exportable: project, mode: :working_copy, format: :excel).call
   class Base
+    # Raised when kind routing excludes every component of the run — the
+    # loud alternative to a silently empty archive. Controllers render it
+    # as a 422 toast.
+    class NoExportableComponents < StandardError; end
+
     def initialize(exportable:, mode:, format:, component_ids: nil, zip_filename: nil,
                    formatter_options: {}, mode_options: {})
       raise ArgumentError, 'exportable cannot be nil' if exportable.nil?
@@ -21,6 +26,8 @@ module Export
       end
 
       @exportable = exportable
+      @format = format
+      @mode_options = mode_options
       @mode = Registry.mode_class(mode).new(mode_options)
       @formatter = Registry.formatter_class(format).new
       @component_ids = component_ids
@@ -29,7 +36,7 @@ module Export
     end
 
     def call
-      components = resolve_components
+      components = exportable_components
 
       if @formatter.batch_generate?
         export_batch(components)
@@ -49,6 +56,41 @@ module Export
     end
 
     private
+
+    # Kind routing: an srg component is SERVED when the mode opts in
+    # (supports_srg_kind?) or the mode names a counterpart valid for this
+    # format (mode_for below); otherwise the purpose has no srg meaning and
+    # the component is EXCLUDED from the run — deliberately, never as a
+    # silently empty archive member. A run whose every component is excluded
+    # refuses loudly instead of producing an empty artifact.
+    def exportable_components
+      components = resolve_components
+      routable = components.select { |component| mode_for(component) }
+      if routable.empty? && components.any?
+        raise NoExportableComponents,
+              'None of the selected components support this export purpose.'
+      end
+
+      routable
+    end
+
+    # The mode serving THIS component: the run's mode normally; the mode's
+    # srg counterpart (memoized) for an srg component when the counterpart
+    # is a valid Registry combination for the requested format; nil when the
+    # purpose has no srg meaning for the component's kind.
+    def mode_for(component)
+      return @mode unless component.document_type == 'srg'
+      return @mode if @mode.supports_srg_kind?
+
+      counterpart = @mode.srg_counterpart
+      return nil unless counterpart && Registry.valid?(counterpart, @format)
+
+      srg_counterpart_mode(counterpart)
+    end
+
+    def srg_counterpart_mode(counterpart)
+      @srg_counterpart_mode ||= Registry.mode_class(counterpart).new(@mode_options)
+    end
 
     def resolve_components
       case @exportable
@@ -78,8 +120,9 @@ module Export
     # Produces a single archive with subdirectories per component.
     def export_batch(components)
       pairs = components.sort_by(&:id).map do |component|
-        rules = load_rules(component)
-        scoped = @mode.rule_scope(rules)
+        mode = mode_for(component)
+        rules = load_rules(component, mode)
+        scoped = mode.rule_scope(rules)
         { component: component, rules: scoped }
       end
 
@@ -99,11 +142,15 @@ module Export
     end
 
     # Component-based path: each component is processed individually (XCCDF).
+    # The mode resolves PER COMPONENT — this is where an srg component in a
+    # project/bulk export publishes through the srg publication mode while
+    # its stig siblings publish through the stig one, in the same archive.
     # Packager zips multiple results, passes through a single one.
     def export_component_based(components)
       results = components.sort_by(&:id).map do |component|
-        rules = load_rules(component)
-        scoped = @mode.rule_scope(rules)
+        mode = mode_for(component)
+        rules = load_rules(component, mode)
+        scoped = mode.rule_scope(rules)
         data = @formatter.generate_from_component(component: component, rules: scoped)
         filename = FileNamer.component_filename(component, @formatter.file_extension)
 
@@ -187,27 +234,28 @@ module Export
     end
 
     def build_rows_with_sources(component)
-      rules = load_rules(component)
-      scoped_rules = @mode.rule_scope(rules)
+      mode = mode_for(component)
+      rules = load_rules(component, mode)
+      scoped_rules = mode.rule_scope(rules)
 
       scoped_rules.order(:version, :rule_id).map do |rule|
         exportable_rule = ExportableRule.new(rule)
-        row = @mode.columns.map do |key|
+        row = mode.columns.map do |key|
           value = exportable_rule.value_for(key)
-          @mode.transform_value(key, value, exportable_rule)
+          mode.transform_value(key, value, exportable_rule)
         end
         { row: row, source: exportable_rule.value_for(:source), rule: rule }
       end
     end
 
-    def load_rules(component)
+    def load_rules(component, mode)
       # SRG-kind components serve authored SrgRules to modes that opt in.
       # Rule-only eager loads (satisfies, srg_rule, additional_answers) do
       # not exist on SrgRule, so opted-in modes use the BaseRule-shared set.
-      if component.document_type == 'srg' && @mode.supports_srg_kind?
-        component.requirements.eager_load(*@mode.srg_eager_load_associations)
+      if component.document_type == 'srg' && mode.supports_srg_kind?
+        component.requirements.eager_load(*mode.srg_eager_load_associations)
       else
-        component.rules.eager_load(*@mode.eager_load_associations)
+        component.rules.eager_load(*mode.eager_load_associations)
       end
     end
 

@@ -27,6 +27,14 @@ module Export
         value
       end
 
+      # Publication is the one purpose with meaning for both document kinds:
+      # an srg component publishes its authored requirements through the srg
+      # publication mode (valid for XCCDF only — the Registry gates it, so
+      # InSpec exports still exclude srg components).
+      def srg_counterpart
+        :published_srg
+      end
+
       def eager_load_associations
         [
           :disa_rule_descriptions, :rule_descriptions, :checks,
