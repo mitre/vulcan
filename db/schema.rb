@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_13_125355) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_13_144500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -104,8 +104,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_125355) do
     t.index ["component_id"], name: "index_base_rules_on_component_id"
     t.index ["deleted_at"], name: "index_base_rules_on_deleted_at"
     t.index ["derived_from_srg_rule_id"], name: "index_base_rules_on_derived_from_srg_rule_id"
+    t.index ["ident"], name: "index_base_rules_on_ident_trgm", opclass: :gin_trgm_ops, using: :gin
     t.index ["review_requestor_id"], name: "index_base_rules_on_review_requestor_id"
     t.index ["rule_id", "component_id"], name: "rule_id_and_component_id", unique: true
+    t.index ["rule_id"], name: "index_base_rules_on_rule_id_trgm", opclass: :gin_trgm_ops, using: :gin
     t.index ["searchable"], name: "index_base_rules_on_searchable", using: :gin
     t.index ["security_requirements_guide_id", "type", "rule_severity"], name: "index_base_rules_on_srg_type_severity"
     t.index ["security_requirements_guide_id"], name: "index_base_rules_on_security_requirements_guide_id"
@@ -113,6 +115,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_125355) do
     t.index ["stig_id", "type", "rule_severity"], name: "index_base_rules_on_stig_type_severity"
     t.index ["stig_id"], name: "index_base_rules_on_stig_id"
     t.index ["stig_rule_id"], name: "index_base_rules_on_stig_rule_id"
+    t.index ["vuln_id"], name: "index_base_rules_on_vuln_id_trgm", opclass: :gin_trgm_ops, using: :gin
     t.check_constraint "type::text <> 'SrgRule'::text OR (component_id IS NULL) <> (security_requirements_guide_id IS NULL)", name: "base_rules_srg_authored_xor_catalog"
   end
 
@@ -125,6 +128,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_125355) do
     t.string "system"
     t.datetime "updated_at", null: false
     t.index ["base_rule_id"], name: "index_checks_on_base_rule_id"
+    t.index ["content"], name: "index_checks_on_content_trgm", opclass: :gin_trgm_ops, using: :gin
   end
 
   create_table "component_metadata", force: :cascade do |t|

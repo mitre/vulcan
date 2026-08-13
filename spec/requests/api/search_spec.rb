@@ -616,6 +616,18 @@ RSpec.describe 'Api::Search' do
         expect(json['stig_rules'][0]['fixtext']).to include('sshd_config')
       end
 
+      it 'matches prose by word stem, not raw substring' do
+        # Title: "RHEL 9 must configure sshd to use approved encryption" —
+        # 'configuring' stems to the same root as 'configure'; a raw
+        # substring match can never find it.
+        get search_path, params: { q: 'configuring encryption' }
+
+        expect(response).to have_http_status(:success)
+        json = response.parsed_body
+        expect(json['stig_rules'].length).to eq(1)
+        expect(json['stig_rules'][0]['rule_id']).to eq(sshd_rule_id)
+      end
+
       it 'returns STIG rule metadata' do
         get search_path, params: { q: sudoers_path }
 
@@ -690,13 +702,16 @@ RSpec.describe 'Api::Search' do
 
       before { sign_in user }
 
-      it 'searches SRG rules by rule_id' do
+      it 'searches SRG rules by rule_id, id match first' do
         get search_path, params: { q: 'SRG-OS-000480' }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
-        expect(json['srg_rules'].length).to eq(1)
+        # The exact-id match leads (arm-priority ordering guarantees it
+        # survives the limit window); requirements whose text references
+        # the id may follow as word matches.
         expect(json['srg_rules'][0]['rule_id']).to include('SRG-OS-000480')
+        expect(json['srg_rules'].length).to be >= 1
       end
 
       it 'searches SRG rules by title' do

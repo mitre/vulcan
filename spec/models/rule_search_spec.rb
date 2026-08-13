@@ -132,5 +132,56 @@ RSpec.describe 'Rule Search' do
       description.update!(vuln_discussion: 'Applies to gryphon telemetry review')
       expect(Rule.search_content('gryphon')).to include(rule)
     end
+
+    it 'drops deleted check content from the vector' do
+      rule = component.rules.first
+      check = Check.create!(base_rule: rule, content: 'Verify the ocelot audit ledger')
+      expect(Rule.search_content('ocelot')).to include(rule)
+
+      check.destroy!
+      expect(Rule.search_content('ocelot')).not_to include(rule)
+    end
+
+    # The triggers fire ONLY on writes that can change the vector — a
+    # regression to bare INSERT OR UPDATE triggers keeps every other example
+    # green while restoring the measured write cost (a full recompute on
+    # every status flip, lock toggle, and review write, suite-wide).
+    it 'recomputes only on writes that can change the vector' do
+      definitions = ActiveRecord::Base.connection.select_values(<<~SQL.squish)
+        SELECT pg_get_triggerdef(oid) FROM pg_trigger
+        WHERE tgname IN ('base_rules_searchable', 'checks_searchable',
+                         'disa_rule_descriptions_searchable')
+      SQL
+
+      expect(definitions.size).to eq(3)
+      base = definitions.find { |d| d.include?('ON public.base_rules') }
+      expect(base).to include(
+        'UPDATE OF searchable, title, fixtext, vendor_comments, status_justification, artifact_description'
+      )
+      checks = definitions.find { |d| d.include?('ON public.checks') }
+      expect(checks).to include('UPDATE OF content, base_rule_id')
+      descriptions = definitions.find { |d| d.include?('ON public.disa_rule_descriptions') }
+      expect(descriptions).to include('UPDATE OF vuln_discussion, mitigations, base_rule_id')
+    end
+
+    # The trigram index set IS the catalog-search deliverable: exactly the
+    # fragment-searched columns (ids, CCIs, check content). Title and fixtext
+    # are deliberately NOT trigram-indexed — prose is word-searched through
+    # the stored vector, and their index weight was rejected.
+    it 'carries trigram indexes for exactly the fragment-searched columns' do
+      trgm_indexes = ActiveRecord::Base.connection.select_values(<<~SQL.squish)
+        SELECT indexname FROM pg_indexes
+        WHERE indexname LIKE '%_trgm'
+      SQL
+
+      expect(trgm_indexes).to match_array(
+        %w[
+          index_base_rules_on_rule_id_trgm
+          index_base_rules_on_vuln_id_trgm
+          index_base_rules_on_ident_trgm
+          index_checks_on_content_trgm
+        ]
+      )
+    end
   end
 end
