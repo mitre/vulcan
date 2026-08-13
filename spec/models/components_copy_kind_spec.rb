@@ -183,6 +183,24 @@ RSpec.describe 'Component copy across document kinds' do
       expect(net_new).to be_present
       expect(net_new.title).to eq('Net new requirement')
       expect(net_new.status).to eq('Applicable')
+      # Inherited display fields must survive too — the new core's matched
+      # row carries 'high' severity and a CCI ident, so an inherited-field
+      # write leaking onto a lineage-less row changes these values.
+      expect(net_new.rule_severity).to eq('medium')
+      expect(net_new.ident).to be_nil
+    end
+
+    it 'rejects a rebase onto a non-core SRG through the parent eligibility validation' do
+      source = create_srg_source
+      non_core = create(:security_requirements_guide, :skip_rules,
+                        srg_id: 'SRG-DERIVED-COPYKIND', version: 'V1R1',
+                        name: 'Copy Kind Derived (non-core)')
+
+      copy = source.duplicate(new_name: 'SRG Rebase Non Core', new_srg_id: non_core.id)
+
+      expect(copy).not_to be_persisted
+      expect(copy.errors.full_messages.join)
+        .to include('every parent of a srg component must be a core SRG (ineligible: SRG-DERIVED-COPYKIND)')
     end
 
     it 'reports the reconcile and records it durably, without reset_counters on the srg path' do
@@ -202,6 +220,82 @@ RSpec.describe 'Component copy across document kinds' do
       copy = source.duplicate(new_name: 'SRG Rebase Parent', new_srg_id: new_core.id)
 
       expect(copy.based_on.id).to eq(new_core.id)
+    end
+
+    describe 'under suppressed auditing (the controller duplicate path)' do
+      include_context 'with auditing'
+
+      it 'still writes the durable audit entry — the explicit report row is not callback-gated' do
+        source = create_rebase_source
+        copy = nil
+        Component.without_auditing do
+          copy = source.duplicate(new_name: 'SRG Rebase Audit Pin', new_srg_id: new_core.id)
+        end
+
+        expect(copy).to be_persisted
+        expect(copy.audits.pluck(:comment).compact.grep(/Core SRG rebase/)).not_to be_empty
+      end
+    end
+  end
+
+  describe 'SRG rebase on a multi-parent component' do
+    # A multi-parent component rebases ONE parent at a time: only rows
+    # whose lineage belongs to the SRG being replaced are in that rebase's
+    # reconcile universe. Other parents' derived rows pass through
+    # untouched AND uncounted — counting them as "kept without a core
+    # counterpart" misreports the rebase.
+    let_it_be(:secondary_core) do
+      create(:security_requirements_guide, :core, :skip_rules,
+             srg_id: 'SRG-CORE-COPYKIND-B', version: 'V1R1',
+             name: 'Copy Kind Secondary Core')
+    end
+    let_it_be(:secondary_row) do
+      create(:srg_rule, security_requirements_guide: secondary_core,
+                        version: 'SRG-NET-000801', title: 'Secondary requirement 801',
+                        fixtext: 'Secondary fix 801')
+    end
+    let_it_be(:secondary_core_v2) do
+      create(:security_requirements_guide, :core, :skip_rules,
+             srg_id: 'SRG-CORE-COPYKIND-B', version: 'V2R1',
+             name: 'Copy Kind Secondary Core - Ver 2, Rel 1')
+    end
+    let_it_be(:secondary_v2_rows) do
+      {
+        # Same title/fixtext as the V1R1 row so the matched re-link counts
+        # zero content changes — the report arithmetic stays deterministic.
+        matched: create(:srg_rule, security_requirements_guide: secondary_core_v2,
+                                   version: 'SRG-NET-000801', title: 'Secondary requirement 801',
+                                   fixtext: 'Secondary fix 801'),
+        arrived: create(:srg_rule, security_requirements_guide: secondary_core_v2,
+                                   version: 'SRG-NET-000802')
+      }
+    end
+
+    def create_multi_parent_source
+      source = create_srg_source
+      source.add_source_parent!(secondary_core)
+      source
+    end
+
+    it 'reconciles only the replaced parent — other parents are untouched and uncounted' do
+      source = create_multi_parent_source
+      copy = source.duplicate(new_name: 'SRG Multi Rebase', new_srg_id: secondary_core_v2.id)
+
+      expect(copy).to be_persisted
+      expect(copy.rebase_report).to eq(relinked: 1, content_changed: 0, vanished: 0, arrived: 1)
+      relinked = copy.authored_srg_rules.find_by!(derived_from_srg_rule_id: secondary_v2_rows[:matched].id)
+      expect(relinked.title).to eq('Secondary requirement 801')
+    end
+
+    it 'leaves the primary parent derived rows with lineage and fields intact' do
+      source = create_multi_parent_source
+      copy = source.duplicate(new_name: 'SRG Multi Rebase Lineage', new_srg_id: secondary_core_v2.id)
+
+      primary_rows = copy.authored_srg_rules.where(derived_from_srg_rule_id: core_rows.map(&:id))
+      expect(primary_rows.count).to eq(2)
+      expect(primary_rows.find_by!(fixtext: 'Carried fixtext').status).to eq('Applicable')
+      expect(primary_rows.pluck(:rule_severity).uniq).to eq(['medium'])
+      expect(copy.based_on.id).to eq(core.id)
     end
   end
 

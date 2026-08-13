@@ -38,12 +38,19 @@ class SrgRebaseService
   def reconcile_carried_rows(new_rows_by_version, report)
     old_lineage = SrgRule.unscoped
                          .where(id: @copied_component.authored_srg_rules.filter_map(&:derived_from_srg_rule_id))
+                         .includes(:security_requirements_guide)
                          .index_by(&:id)
     covered_versions = []
 
     @copied_component.authored_srg_rules.each do |row|
       old_row = old_lineage[row.derived_from_srg_rule_id]
       next if old_row.nil? # net-new authored row — untouched
+
+      # A multi-parent component rebases one parent at a time: rows whose
+      # lineage belongs to a DIFFERENT parent SRG are outside this
+      # rebase's reconcile universe — untouched and uncounted, never
+      # counted as vanished.
+      next unless old_row.security_requirements_guide&.srg_id == @new_srg.srg_id
 
       new_row = new_rows_by_version[old_row.version]
       if new_row.nil?
@@ -73,7 +80,9 @@ class SrgRebaseService
   end
 
   def record_report(report)
-    @copied_component.audits.create(
+    # create! — the durable report row must never fail silently; the
+    # counts in the toast are transient, this row is the record.
+    @copied_component.audits.create!(
       action: 'update', audited_changes: {},
       comment: "Core SRG rebase to #{@new_srg.name}: #{report[:relinked]} re-linked " \
                "(#{report[:content_changed]} with changed core content), " \
