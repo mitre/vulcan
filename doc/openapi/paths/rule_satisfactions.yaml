@@ -10,11 +10,18 @@ post:
       application/json:
         schema:
           type: object
+          required:
+            - rule_id
+            - satisfied_by_rule_id
           properties:
             rule_id:
               type: integer
+              description: The rule that is satisfied. Absence is a 400.
+              example: 101
             satisfied_by_rule_id:
               type: integer
+              description: The rule that satisfies it. Absence is a 400.
+              example: 102
   responses:
     '200':
       description: Satisfaction created

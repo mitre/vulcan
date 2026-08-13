@@ -3718,11 +3718,18 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - rule_id
+                - satisfied_by_rule_id
               properties:
                 rule_id:
                   type: integer
+                  description: The rule that is satisfied. Absence is a 400.
+                  example: 101
                 satisfied_by_rule_id:
                   type: integer
+                  description: The rule that satisfies it. Absence is a 400.
+                  example: 102
       responses:
         '200':
           description: Satisfaction created
@@ -4414,26 +4421,51 @@ paths:
       tags:
         - Reviews
       summary: Set triage status on a comment (concur, non_concur, etc.)
-      description: Assigns a triage decision to the comment. Terminal statuses auto-adjudicate. Requires author or admin role.
+      description: 'Assigns a triage decision to the comment. Parameters are FLAT (no wrapper object). Terminal statuses (duplicate, informational, withdrawn, addressed_by) auto-adjudicate. Submitting "pending" is rejected — it is the initial state, not a decision. Conditional requirements: non_concur requires response_comment; duplicate requires duplicate_of_review_id; addressed_by requires addressed_by_rule_id. Requires author or admin role.'
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - triage_status
               properties:
-                review:
-                  type: object
-                  properties:
-                    triage_status:
-                      type: string
-                      enum:
-                        - concur
-                        - concur_with_comment
-                        - non_concur
-                        - needs_clarification
-                        - duplicate
-                        - addressed_by
+                triage_status:
+                  type: string
+                  description: The triage decision. Every value except "pending" is accepted; "pending" is rejected as a non-decision.
+                  enum:
+                    - concur
+                    - concur_with_comment
+                    - non_concur
+                    - needs_clarification
+                    - duplicate
+                    - informational
+                    - withdrawn
+                    - addressed_by
+                  example: concur
+                duplicate_of_review_id:
+                  type: integer
+                  description: REQUIRED when triage_status is "duplicate" — the canonical review this comment duplicates.
+                  example: 42
+                addressed_by_rule_id:
+                  type: integer
+                  description: REQUIRED when triage_status is "addressed_by" — the rule that addresses this comment.
+                  example: 7
+                response_comment:
+                  type: string
+                  description: REQUIRED when triage_status is "non_concur"; optional otherwise. Posted as a reply to the comment.
+                  example: Declining — the requirement text already covers this.
+            examples:
+              concur:
+                summary: Simple concur (flat body)
+                value:
+                  triage_status: concur
+              non_concur:
+                summary: Decline with the required response
+                value:
+                  triage_status: non_concur
+                  response_comment: Declining — covered by the fix text.
       responses:
         '200':
           description: Triage status set
