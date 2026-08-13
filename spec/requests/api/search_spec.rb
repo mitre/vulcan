@@ -616,6 +616,38 @@ RSpec.describe 'Api::Search' do
         expect(json['stig_rules'][0]['fixtext']).to include('sshd_config')
       end
 
+      it 'finds a catalog rule by a check-content fragment even when component-rule checks flood it' do
+        # The check arm must intersect the CATALOG scope before any bound
+        # applies — a globally bounded check lookup lets component-rule
+        # checks consume the window and starve genuine catalog matches.
+        # The needle is a MID-WORD fragment: only the substring check arm
+        # can serve it (the word arm indexes whole stems).
+        component1.rules.first(3).each do |rule|
+          10.times { |i| Check.create!(base_rule: rule, content: "authored xlotstarx filler #{i}") }
+        end
+        Check.create!(base_rule: sudoers_rule, content: 'Verify the ocelotstarve catalog ledger')
+
+        get search_path, params: { q: 'lotstar' }
+
+        expect(response).to have_http_status(:success)
+        json = response.parsed_body
+        expect(json['stig_rules'].pluck('rule_id')).to include(sudoers_rule.rule_id)
+      end
+
+      it 'returns distinct catalog rules when one rule has many matching checks' do
+        # The check arm bounds DISTINCT rules, not join rows — a rule with
+        # many matching checks must not crowd a sibling out of the window.
+        5.times { |i| Check.create!(base_rule: sudoers_rule, content: "crowded xkremlinx check #{i}") }
+        Check.create!(base_rule: sshd_rule, content: 'single xkremlinx check')
+
+        get search_path, params: { q: 'kremlin' }
+
+        expect(response).to have_http_status(:success)
+        json = response.parsed_body
+        expect(json['stig_rules'].pluck('rule_id'))
+          .to include(sudoers_rule.rule_id, sshd_rule.rule_id)
+      end
+
       it 'matches prose by word stem, not raw substring' do
         # Title: "RHEL 9 must configure sshd to use approved encryption" —
         # 'configuring' stems to the same root as 'configure'; a raw
@@ -711,7 +743,6 @@ RSpec.describe 'Api::Search' do
         # survives the limit window); requirements whose text references
         # the id may follow as word matches.
         expect(json['srg_rules'][0]['rule_id']).to include('SRG-OS-000480')
-        expect(json['srg_rules'].length).to be >= 1
       end
 
       it 'searches SRG rules by title' do

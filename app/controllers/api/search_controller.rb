@@ -213,7 +213,9 @@ module Api
     ##
     # Search STIG Rules (rules within published STIGs)
     # STIG rules are public resources - any authenticated user can search them
-    # Searches: rule_id, vuln_id, title, fixtext, ident (CCIs), check content
+    # Searches by SUBSTRING: rule_id, vuln_id, ident (CCIs), check content;
+    # by WORD (stemmed + prefixed, through the stored vector): title,
+    # fixtext, and the rest of the indexed prose
     #
     def search_stig_rules(limit)
       ids = catalog_rule_match_ids(StigRule.all, limit: limit,
@@ -242,7 +244,9 @@ module Api
     ##
     # Search SRG Rules (rules within Security Requirements Guides)
     # SRG rules are public resources - any authenticated user can search them
-    # Searches: rule_id, title, fixtext, ident (CCIs), check content
+    # Searches by SUBSTRING: rule_id, ident (CCIs), check content; by WORD
+    # (stemmed + prefixed, through the stored vector): title, fixtext, and
+    # the rest of the indexed prose
     #
     def search_srg_rules(limit)
       # Catalog rows only: component-authored SrgRules are project content
@@ -301,9 +305,15 @@ module Api
 
       @search_terms.each do |term|
         sanitized = "%#{ActiveRecord::Base.sanitize_sql_like(term)}%"
-        fragment_ids.concat(scope.where(fragment_sql, term: sanitized).limit(limit).ids)
-        check_parents = Check.where('content ILIKE ?', sanitized).limit(limit).pluck(:base_rule_id)
-        check_ids.concat(scope.where(id: check_parents).limit(limit).ids)
+        # Stable :id ordering inside each substring arm makes the limit
+        # window deterministic (the word arm already orders by rank, id).
+        # The check arm joins WITHIN the catalog scope before the bound
+        # applies — a globally bounded check lookup would let
+        # component-rule checks starve catalog matches. The ILIKE stays
+        # single-column on checks, so its trigram index serves the join.
+        fragment_ids.concat(scope.where(fragment_sql, term: sanitized).order(:id).limit(limit).ids)
+        check_ids.concat(scope.joins(:checks).where('checks.content ILIKE ?', sanitized)
+                              .distinct.order(:id).limit(limit).ids)
         word_ids.concat(scope.search_content(term).limit(limit).ids)
       end
 
