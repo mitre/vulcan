@@ -15,35 +15,24 @@ class BaseRule < ApplicationRecord
   include CciMap::Constants
   include PgSearch::Model
 
-  # Full-text search across the searchable columns — defined on the base so
-  # BOTH requirement kinds (stig Rules and authored SrgRules) are findable
-  # through one scope: every weighted column is a base_rules column and the
-  # associated tables key on base_rule_id. Weighted by importance: title (A),
-  # fixtext (B), vendor_comments/status_justification (C),
-  # artifact_description (D).
+  # Full-text search — defined on the base so BOTH requirement kinds (stig
+  # Rules and authored SrgRules) are findable through one scope. Served
+  # entirely by the stored, GIN-indexed base_rules.searchable vector, which
+  # triggers keep current (see db/functions/base_rule_searchable_vector):
+  # title (A), fixtext (B), vendor_comments/status_justification (C),
+  # artifact_description (D), plus associated check text and DISA
+  # description discussion/mitigations at default weight. Ranking is
+  # tsearch-only — a trigram arm in the WHERE clause cannot use the index
+  # and would force sequential scans back.
   pg_search_scope :search_content,
-                  against: {
-                    title: 'A',                    # Highest weight
-                    fixtext: 'B',                  # High weight
-                    vendor_comments: 'C',          # Medium weight
-                    status_justification: 'C',
-                    artifact_description: 'D'      # Lower weight
-                  },
-                  associated_against: {
-                    checks: :content,
-                    disa_rule_descriptions: %i[vuln_discussion mitigations]
-                  },
                   using: {
                     tsearch: {
-                      prefix: true,           # Enable partial word matching
-                      dictionary: 'english',  # Stemming (finds "systems" when searching "system")
-                      any_word: false         # Require ALL words in multi-word queries
-                    },
-                    trigram: {
-                      threshold: 0.2          # Fuzzy matching (typo tolerance)
+                      prefix: true,                  # Enable partial word matching
+                      dictionary: 'english',         # Stemming (finds "systems" when searching "system")
+                      any_word: false,               # Require ALL words in multi-word queries
+                      tsvector_column: 'searchable'  # The stored, GIN-indexed vector
                     }
-                  },
-                  ranked_by: ':tsearch + (0.5 * :trigram)' # Prioritize exact matches, but allow fuzzy
+                  }
 
   ##
   # Phrase search using PostgreSQL's websearch_to_tsquery
@@ -55,17 +44,11 @@ class BaseRule < ApplicationRecord
   scope :search_phrase, lambda { |query|
     return none if query.blank?
 
-    # Build tsvector from searchable columns
-    tsvector_sql = <<~SQL.squish
-      setweight(to_tsvector('english', coalesce(#{table_name}.title, '')), 'A') ||
-      setweight(to_tsvector('english', coalesce(#{table_name}.fixtext, '')), 'B') ||
-      setweight(to_tsvector('english', coalesce(#{table_name}.vendor_comments, '')), 'C') ||
-      setweight(to_tsvector('english', coalesce(#{table_name}.status_justification, '')), 'C') ||
-      setweight(to_tsvector('english', coalesce(#{table_name}.artifact_description, '')), 'D')
-    SQL
-
-    where("(#{tsvector_sql}) @@ websearch_to_tsquery('english', ?)", query)
-      .order(Arel.sql("ts_rank((#{tsvector_sql}), websearch_to_tsquery('english', #{connection.quote(query)})) DESC"))
+    # Served by the stored, GIN-indexed vector — same document as
+    # search_content, so phrases match across the weighted base columns and
+    # the associated content the triggers fold in.
+    where("#{table_name}.searchable @@ websearch_to_tsquery('english', ?)", query)
+      .order(Arel.sql("ts_rank(#{table_name}.searchable, websearch_to_tsquery('english', #{connection.quote(query)})) DESC"))
   }
 
   # Canonical DISA display order for a rule collection: by `version` (the

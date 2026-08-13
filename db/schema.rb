@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_30_004236) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_13_125355) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -84,6 +84,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_30_004236) do
     t.string "rule_id", null: false
     t.string "rule_severity"
     t.string "rule_weight"
+    t.tsvector "searchable"
     t.bigint "security_requirements_guide_id"
     t.string "srg_id"
     t.bigint "srg_rule_id"
@@ -105,6 +106,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_30_004236) do
     t.index ["derived_from_srg_rule_id"], name: "index_base_rules_on_derived_from_srg_rule_id"
     t.index ["review_requestor_id"], name: "index_base_rules_on_review_requestor_id"
     t.index ["rule_id", "component_id"], name: "rule_id_and_component_id", unique: true
+    t.index ["searchable"], name: "index_base_rules_on_searchable", using: :gin
     t.index ["security_requirements_guide_id", "type", "rule_severity"], name: "index_base_rules_on_srg_type_severity"
     t.index ["security_requirements_guide_id"], name: "index_base_rules_on_security_requirements_guide_id"
     t.index ["srg_rule_id"], name: "index_base_rules_on_srg_rule_id"
@@ -527,4 +529,72 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_30_004236) do
   add_foreign_key "search_abbreviations", "users", column: "created_by_id"
   add_foreign_key "triage_response_templates", "projects"
   add_foreign_key "triage_response_templates", "users", column: "created_by_id"
+
+  create_function :base_rule_searchable_vector, sql_definition: <<-'SQL'
+      CREATE OR REPLACE FUNCTION public.base_rule_searchable_vector(p_id bigint, p_title text, p_fixtext text, p_vendor_comments text, p_status_justification text, p_artifact_description text)
+       RETURNS tsvector
+       LANGUAGE sql
+       STABLE
+      AS $function$
+        SELECT setweight(to_tsvector('english', coalesce(p_title, '')), 'A') ||
+               setweight(to_tsvector('english', coalesce(p_fixtext, '')), 'B') ||
+               setweight(to_tsvector('english', coalesce(p_vendor_comments, '')), 'C') ||
+               setweight(to_tsvector('english', coalesce(p_status_justification, '')), 'C') ||
+               setweight(to_tsvector('english', coalesce(p_artifact_description, '')), 'D') ||
+               to_tsvector('english',
+                 coalesce((SELECT string_agg(coalesce(c.content, ''), ' ')
+                             FROM checks c WHERE c.base_rule_id = p_id), '') || ' ' ||
+                 coalesce((SELECT string_agg(coalesce(d.vuln_discussion, '') || ' ' || coalesce(d.mitigations, ''), ' ')
+                             FROM disa_rule_descriptions d WHERE d.base_rule_id = p_id), '')
+               )
+      $function$
+  SQL
+
+  create_function :base_rules_searchable_trigger, sql_definition: <<-'SQL'
+      CREATE OR REPLACE FUNCTION public.base_rules_searchable_trigger()
+       RETURNS trigger
+       LANGUAGE plpgsql
+      AS $function$
+      BEGIN
+        NEW.searchable := base_rule_searchable_vector(
+          NEW.id, NEW.title, NEW.fixtext, NEW.vendor_comments,
+          NEW.status_justification, NEW.artifact_description
+        );
+        RETURN NEW;
+      END;
+      $function$
+  SQL
+
+  create_function :base_rule_children_searchable_trigger, sql_definition: <<-'SQL'
+      CREATE OR REPLACE FUNCTION public.base_rule_children_searchable_trigger()
+       RETURNS trigger
+       LANGUAGE plpgsql
+      AS $function$
+      BEGIN
+        IF TG_OP = 'DELETE' THEN
+          UPDATE base_rules SET searchable = NULL WHERE id = OLD.base_rule_id;
+          RETURN OLD;
+        END IF;
+
+        IF TG_OP = 'UPDATE' AND NEW.base_rule_id IS DISTINCT FROM OLD.base_rule_id THEN
+          UPDATE base_rules SET searchable = NULL WHERE id = OLD.base_rule_id;
+        END IF;
+
+        UPDATE base_rules SET searchable = NULL WHERE id = NEW.base_rule_id;
+        RETURN NEW;
+      END;
+      $function$
+  SQL
+
+  create_trigger :base_rules_searchable, sql_definition: <<-SQL
+      CREATE TRIGGER base_rules_searchable BEFORE INSERT OR UPDATE OF searchable, title, fixtext, vendor_comments, status_justification, artifact_description ON public.base_rules FOR EACH ROW EXECUTE FUNCTION base_rules_searchable_trigger()
+  SQL
+
+  create_trigger :checks_searchable, sql_definition: <<-SQL
+      CREATE TRIGGER checks_searchable AFTER INSERT OR DELETE OR UPDATE OF content, base_rule_id ON public.checks FOR EACH ROW EXECUTE FUNCTION base_rule_children_searchable_trigger()
+  SQL
+
+  create_trigger :disa_rule_descriptions_searchable, sql_definition: <<-SQL
+      CREATE TRIGGER disa_rule_descriptions_searchable AFTER INSERT OR DELETE OR UPDATE OF vuln_discussion, mitigations, base_rule_id ON public.disa_rule_descriptions FOR EACH ROW EXECUTE FUNCTION base_rule_children_searchable_trigger()
+  SQL
 end
