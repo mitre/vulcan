@@ -45,6 +45,43 @@ RSpec.describe 'Reviews' do
                                 responding_to_review_id: reply_review.id)
     end
 
+    # Kind seam: an authored-SrgRule comment has a nil Rule-STI `rule`
+    # association — the whole move path (controller source-audit + model
+    # guard/marker/assignment) must run on the kind-aware accessors.
+    context 'between authored SRG requirements' do
+      let_it_be(:mtr_srg_component) do
+        create(:component, :skip_rules, project: project, document_type: 'srg')
+      end
+      let_it_be(:mtr_authored_src) { create(:srg_rule, :authored, component: mtr_srg_component) }
+      let_it_be(:mtr_authored_target) { create(:srg_rule, :authored, component: mtr_srg_component) }
+      let!(:mtr_srg_review) do
+        create(:review, :comment, comment: 'belongs on the other requirement', section: 'fixtext',
+                                  user: mtr_commenter, rule: nil, commentable: mtr_authored_src)
+      end
+      let!(:mtr_srg_reply) do
+        create(:review, :comment, comment: 'agreed', section: 'fixtext', user: mtr_author, rule: nil,
+                                  commentable: mtr_authored_src, responding_to_review_id: mtr_srg_review.id)
+      end
+
+      it 'moves the thread with provenance and the outbound audit on the source requirement' do
+        sign_in mtr_admin
+        patch "/reviews/#{mtr_srg_review.id}/move_to_rule",
+              params: { rule_id: mtr_authored_target.id, audit_comment: 'Wrong requirement' }, as: :json
+
+        expect(response).to have_http_status(:ok)
+        moved = mtr_srg_review.reload
+        expect(moved.commentable_id).to eq(mtr_authored_target.id)
+        expect(moved.rule_id).to eq(mtr_authored_target.id)
+        expect(moved.original_commentable_id).to eq(mtr_authored_src.id)
+        expect(moved.comment)
+          .to start_with("[Moved from #{mtr_srg_component.prefix}-#{mtr_authored_src.rule_id}: Wrong requirement]")
+        expect(mtr_srg_reply.reload.commentable_id).to eq(mtr_authored_target.id)
+        source_audit = mtr_authored_src.audits.order(:id).last
+        expect(source_audit.action).to eq('review_moved_out')
+        expect(source_audit.audited_changes[:destination_rule_id]).to eq(mtr_authored_target.id)
+      end
+    end
+
     context 'as project admin' do
       before { sign_in mtr_admin }
 

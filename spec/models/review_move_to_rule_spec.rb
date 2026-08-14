@@ -101,4 +101,29 @@ RSpec.describe Review, '#move_to_rule!' do
       expect(last_audit.comment).to include('audit check')
     end
   end
+
+  # Kind seam: an authored-SrgRule comment has a nil Rule-STI `rule`
+  # association — the guard, the provenance marker, and the target
+  # assignment must all run on the kind-aware columns/accessors.
+  context 'between authored SRG requirements' do
+    let_it_be(:srg_component) do
+      create(:component, :skip_rules, project: project, document_type: 'srg')
+    end
+    let_it_be(:authored_src) { create(:srg_rule, :authored, component: srg_component) }
+    let_it_be(:authored_target) { create(:srg_rule, :authored, component: srg_component) }
+
+    it 'moves the review and dual-writes rule_id for the SrgRule target' do
+      review = create(:review, :comment, user: commenter, rule: nil,
+                                         commentable: authored_src, comment: 'seam text')
+      review.move_to_rule!(authored_target, reason: 'kind seam', moved_by: admin)
+
+      review.reload
+      expect(review.commentable_id).to eq(authored_target.id)
+      expect(review.commentable_type).to eq('BaseRule')
+      expect(review.rule_id).to eq(authored_target.id)
+      expect(review.original_commentable_id).to eq(authored_src.id)
+      expect(review.comment)
+        .to start_with("[Moved from #{srg_component.prefix}-#{authored_src.rule_id}: kind seam]")
+    end
+  end
 end

@@ -4,8 +4,28 @@ patch:
   operationId: adminRestoreReview
   tags:
     - Reviews
-  summary: Admin restores a withdrawn comment
-  description: Reverses a withdrawal, resetting the comment to pending status. Requires admin role on the project.
+  summary: Admin restores an adjudicated comment to pending
+  description: >-
+    Inverse of admin_withdraw and any other adjudication — resets the comment
+    to pending status so it can be re-triaged through the normal flow. Rejects
+    comments that are not adjudicated (nothing to restore from). Requires
+    admin role on the project and an audit comment explaining the action.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - audit_comment
+          properties:
+            audit_comment:
+              type: string
+              maxLength: 4096
+              description: >-
+                Operator-supplied reason for the restore, recorded on the
+                audit trail. Required — a blank comment returns 422.
+              example: Restoring — the wrong comment was force-withdrawn.
   responses:
     '200':
       description: Review restored

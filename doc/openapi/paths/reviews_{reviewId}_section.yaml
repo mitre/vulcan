@@ -16,6 +16,8 @@ patch:
       application/json:
         schema:
           type: object
+          required:
+            - audit_comment
           properties:
             section:
               type:
@@ -37,7 +39,10 @@ patch:
               example: fixtext
             audit_comment:
               type: string
-              description: Reason for the section change (audit trail).
+              maxLength: 4096
+              description: >-
+                Reason for the section change (audit trail). Required — a
+                blank comment returns 422.
               example: "Commenter clarified this applies to the fix text."
         examples:
           change_section:

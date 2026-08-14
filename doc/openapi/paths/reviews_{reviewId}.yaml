@@ -12,9 +12,11 @@ put:
       application/json:
         schema:
           type: object
+          required:
+            - review
           properties:
             review:
-              $ref: ../components/schemas/ReviewInput.yaml
+              $ref: ../components/schemas/ReviewUpdateInput.yaml
   responses:
     '200':
       description: Review updated

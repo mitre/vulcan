@@ -5,15 +5,28 @@ delete:
   tags:
     - Reviews
   summary: Admin permanently deletes a comment (irreversible)
-  description: Hard-deletes a comment and all its replies. Requires typed-ID confirmation and an audit comment. This action cannot be undone.
+  description: >-
+    Hard-deletes a comment and all its replies. Requires an audit comment
+    explaining the action — the pre-destroy snapshot plus that comment become
+    the audit record. (The web UI additionally asks the admin to type the
+    comment ID to confirm; the API has no confirmation field.) This action
+    cannot be undone.
   requestBody:
+    required: true
     content:
       application/json:
         schema:
           type: object
+          required:
+            - audit_comment
           properties:
             audit_comment:
               type: string
+              maxLength: 4096
+              description: >-
+                Operator-supplied reason for the hard-delete, recorded on the
+                audit trail. Required — a blank comment returns 422.
+              example: Legal hard-delete — comment contained PII.
   responses:
     '200':
       description: Review destroyed

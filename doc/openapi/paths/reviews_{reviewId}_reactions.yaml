@@ -5,7 +5,7 @@ get:
   tags:
     - Reactions
   summary: List reactions on a review
-  description: Returns aggregate reaction counts and the current user's reaction for the specified review.
+  description: Returns the reacting users' display names, grouped by reaction kind (up/down), for the specified review.
   responses:
     '200':
       description: Reactions list
@@ -27,15 +27,16 @@ post:
       application/json:
         schema:
           type: object
+          required:
+            - kind
           properties:
-            reaction:
-              type: object
-              properties:
-                kind:
-                  type: string
-                  enum:
-                    - up
-                    - down
+            kind:
+              type: string
+              enum:
+                - up
+                - down
+              description: Reaction kind to toggle. Sent at the top level, not nested.
+              example: up
   responses:
     '200':
       description: Reaction created

@@ -1,0 +1,13 @@
+description: >-
+  Input for editing an existing comment's text. Editing is allowed only while
+  the comment is still pending triage; lifecycle fields (action, section,
+  triage status) are server-controlled and cannot be changed here.
+type: object
+required:
+  - comment
+additionalProperties: false
+properties:
+  comment:
+    type: string
+    description: The replacement comment text.
+    example: The fix text should reference the container runtime configuration file.

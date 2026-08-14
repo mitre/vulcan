@@ -11,9 +11,9 @@ properties:
     $ref: ./ReviewSummary.yaml
   response_review:
     description: >-
-      Child review created as a response to the triage decision. Null if
-      no response comment was provided. Present when the triager includes
-      a response_comment in the triage/adjudicate request.
+      Child review created as a response to the decision. Null if no
+      response text was provided. Present when the request includes
+      response_comment (triage) or resolution_comment (adjudicate).
     oneOf:
       - $ref: ./ReviewSummary.yaml
       - type: 'null'

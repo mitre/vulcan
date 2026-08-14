@@ -127,4 +127,45 @@ RSpec.describe Review, '.merge_comments!' do
       Review.merge_comments!(survivor: survivor, duplicates: [dup], merged_by: nil)
     end.to raise_error(NoMethodError)
   end
+
+  # Kind seam: an authored-SrgRule comment has a nil Rule-STI `rule`
+  # association — the merge marker's source labels must come from the
+  # kind-aware accessors.
+  context 'between authored SRG requirements' do
+    let_it_be(:srg_component) do
+      create(:component, :skip_rules, project: project, document_type: 'srg')
+    end
+    let_it_be(:authored_a) { create(:srg_rule, :authored, component: srg_component) }
+    let_it_be(:authored_b) { create(:srg_rule, :authored, component: srg_component) }
+
+    it 'merges authored-requirement comments with the requirement label in the marker' do
+      survivor = create(:review, :comment, user: commenter, rule: nil,
+                                           commentable: authored_a, comment: 'seam survivor')
+      dup = create(:review, :comment, user: commenter, rule: nil,
+                                      commentable: authored_b, comment: 'seam duplicate')
+
+      Review.merge_comments!(survivor: survivor, duplicates: [dup], merged_by: admin)
+
+      expect(survivor.reload.comment)
+        .to start_with("[Merged: originally posted on #{srg_component.prefix}-#{authored_b.rule_id}]")
+      expect(dup.reload.triage_status).to eq('duplicate')
+      expect(dup.duplicate_of_review_id).to eq(survivor.id)
+    end
+  end
+
+  # Scope seam: a component-scoped comment has no requirement at all —
+  # its original location is the component itself, so the marker labels
+  # it with the bare prefix.
+  it 'merges a component-scoped duplicate with the bare component prefix as its label' do
+    survivor = cmt(rule: rule_a)
+    dup = create(:review, :component_comment, user: commenter,
+                                              commentable: component, comment: 'posted at component level')
+
+    Review.merge_comments!(survivor: survivor, duplicates: [dup], merged_by: admin)
+
+    expect(survivor.reload.comment)
+      .to start_with("[Merged: originally posted on #{component.prefix}]")
+    expect(dup.reload.triage_status).to eq('duplicate')
+    expect(dup.duplicate_of_review_id).to eq(survivor.id)
+  end
 end

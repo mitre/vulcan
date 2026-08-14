@@ -29,6 +29,7 @@ patch:
               example: 15117
             audit_comment:
               type: string
+              maxLength: 4096
               description: >-
                 Operator-supplied reason for the move, recorded on the audit
                 trail. Required — a blank comment returns 422.

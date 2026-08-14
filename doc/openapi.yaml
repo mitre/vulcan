@@ -4424,9 +4424,11 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - review
               properties:
                 review:
-                  $ref: '#/components/schemas/ReviewInput'
+                  $ref: '#/components/schemas/ReviewUpdateInput'
       responses:
         '200':
           description: Review updated
@@ -4530,6 +4532,16 @@ paths:
         - Reviews
       summary: Adjudicate (close) a triaged comment
       description: Marks the comment as adjudicated, finalizing the triage decision. Requires author or admin role.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                resolution_comment:
+                  type: string
+                  description: Optional final-resolution text. When supplied, a child Review (action=comment, threaded via responding_to_review_id with the parent's section) is created atomically with the adjudication and returned as response_review, so the resolution renders inline in the comment thread.
+                  example: Fix text updated in R2 — closing as concur.
       responses:
         '200':
           description: Review adjudicated
@@ -4577,13 +4589,19 @@ paths:
       summary: Admin force-withdraws a comment
       description: Admin-only force withdrawal that bypasses the frozen-for-writes check. Requires an audit comment explaining the action.
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - audit_comment
               properties:
                 audit_comment:
                   type: string
+                  maxLength: 4096
+                  description: Operator-supplied reason for the force-withdrawal, recorded on the audit trail. Required — a blank comment returns 422.
+                  example: Removing PII discovered after the comment window closed.
       responses:
         '200':
           description: Review withdrawn by admin
@@ -4605,8 +4623,22 @@ paths:
       operationId: adminRestoreReview
       tags:
         - Reviews
-      summary: Admin restores a withdrawn comment
-      description: Reverses a withdrawal, resetting the comment to pending status. Requires admin role on the project.
+      summary: Admin restores an adjudicated comment to pending
+      description: Inverse of admin_withdraw and any other adjudication — resets the comment to pending status so it can be re-triaged through the normal flow. Rejects comments that are not adjudicated (nothing to restore from). Requires admin role on the project and an audit comment explaining the action.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - audit_comment
+              properties:
+                audit_comment:
+                  type: string
+                  maxLength: 4096
+                  description: Operator-supplied reason for the restore, recorded on the audit trail. Required — a blank comment returns 422.
+                  example: Restoring — the wrong comment was force-withdrawn.
       responses:
         '200':
           description: Review restored
@@ -4646,6 +4678,7 @@ paths:
                   example: 15117
                 audit_comment:
                   type: string
+                  maxLength: 4096
                   description: Operator-supplied reason for the move, recorded on the audit trail. Required — a blank comment returns 422.
                   example: Comment applies to the account-management requirement.
             examples:
@@ -4688,15 +4721,21 @@ paths:
       tags:
         - Reviews
       summary: Admin permanently deletes a comment (irreversible)
-      description: Hard-deletes a comment and all its replies. Requires typed-ID confirmation and an audit comment. This action cannot be undone.
+      description: Hard-deletes a comment and all its replies. Requires an audit comment explaining the action — the pre-destroy snapshot plus that comment become the audit record. (The web UI additionally asks the admin to type the comment ID to confirm; the API has no confirmation field.) This action cannot be undone.
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - audit_comment
               properties:
                 audit_comment:
                   type: string
+                  maxLength: 4096
+                  description: Operator-supplied reason for the hard-delete, recorded on the audit trail. Required — a blank comment returns 422.
+                  example: Legal hard-delete — comment contained PII.
       responses:
         '200':
           description: Review destroyed
@@ -4740,7 +4779,7 @@ paths:
       tags:
         - Reactions
       summary: List reactions on a review
-      description: Returns aggregate reaction counts and the current user's reaction for the specified review.
+      description: Returns the reacting users' display names, grouped by reaction kind (up/down), for the specified review.
       responses:
         '200':
           description: Reactions list
@@ -4762,15 +4801,16 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - kind
               properties:
-                reaction:
-                  type: object
-                  properties:
-                    kind:
-                      type: string
-                      enum:
-                        - up
-                        - down
+                kind:
+                  type: string
+                  enum:
+                    - up
+                    - down
+                  description: Reaction kind to toggle. Sent at the top level, not nested.
+                  example: up
       responses:
         '200':
           description: Reaction created
@@ -4840,6 +4880,8 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - audit_comment
               properties:
                 section:
                   type:
@@ -4861,7 +4903,8 @@ paths:
                   example: fixtext
                 audit_comment:
                   type: string
-                  description: Reason for the section change (audit trail).
+                  maxLength: 4096
+                  description: Reason for the section change (audit trail). Required — a blank comment returns 422.
                   example: Commenter clarified this applies to the fix text.
             examples:
               change_section:
@@ -12181,6 +12224,17 @@ components:
           description: The merged reviews, now marked as duplicates of the survivor.
           items:
             $ref: '#/components/schemas/ReviewSummary'
+    ReviewUpdateInput:
+      description: Input for editing an existing comment's text. Editing is allowed only while the comment is still pending triage; lifecycle fields (action, section, triage status) are server-controlled and cannot be changed here.
+      type: object
+      required:
+        - comment
+      additionalProperties: false
+      properties:
+        comment:
+          type: string
+          description: The replacement comment text.
+          example: The fix text should reference the container runtime configuration file.
     ReviewWrapper:
       description: 'Standard review mutation response. Wraps a single ReviewSummary in a { review: ... } envelope. Used by update, reopen, withdraw, admin_withdraw, admin_restore, move_to_rule, and section endpoints.'
       type: object
@@ -12200,7 +12254,7 @@ components:
         review:
           $ref: '#/components/schemas/ReviewSummary'
         response_review:
-          description: Child review created as a response to the triage decision. Null if no response comment was provided. Present when the triager includes a response_comment in the triage/adjudicate request.
+          description: Child review created as a response to the decision. Null if no response text was provided. Present when the request includes response_comment (triage) or resolution_comment (adjudicate).
           oneOf:
             - $ref: '#/components/schemas/ReviewSummary'
             - type: 'null'

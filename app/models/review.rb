@@ -217,7 +217,7 @@ class Review < ApplicationRecord
     raise ArgumentError, 'Merge cannot span multiple components.' unless duplicates.all? { |r| r.component&.id == survivor.component&.id }
 
     transaction do
-      labels = duplicates.map { |r| "#{r.component.prefix}-#{r.rule.rule_id}" }.uniq
+      labels = duplicates.map { |r| merge_source_label(r) }.uniq
       marker = "[Merged: originally posted on #{labels.join(', ')}]"
       survivor.audit_comment = "Merge survivor (#{duplicates.size} duplicates)"
       survivor.update!(comment: "#{marker}\n\n#{survivor.comment}")
@@ -230,6 +230,19 @@ class Review < ApplicationRecord
     end
     { survivor: survivor, duplicates: duplicates }
   end
+
+  # A duplicate's original location for the merge marker — kind- and
+  # scope-aware: requirement rows of either kind label as PREFIX-rule_id;
+  # a component-scoped comment's location is the component itself (bare
+  # prefix). The Rule-STI `rule` association must not be read here — it is
+  # nil for authored SrgRules (kind seam) and for component-scoped rows.
+  def self.merge_source_label(review)
+    requirement = review.requirement
+    return "#{review.component.prefix}-#{requirement.rule_id}" if requirement
+
+    review.component.prefix
+  end
+  private_class_method :merge_source_label
 
   # recursive subtree fetch via
   # Postgres WITH RECURSIVE CTE. Returns root + every descendant via
@@ -420,13 +433,17 @@ class Review < ApplicationRecord
   # an audit_comment so vulcan_audited's row names the move.
   def move_to_rule!(target_rule, reason:, moved_by:)
     raise ArgumentError, 'reason is required' if reason.to_s.strip.blank?
+
+    # requirement, not rule: the Rule-STI association is nil for
+    # authored-SrgRule commentables (kind seam) — both kinds move.
+    source = requirement
     raise ArgumentError, 'target rule must be in the same component' \
-      unless rule && target_rule&.component_id == rule.component_id
+      unless source && target_rule&.component_id == source.component_id
 
     transaction do
-      prefix = rule.component&.prefix || 'RULE'
+      prefix = source.component&.prefix || 'RULE'
       audit_msg = "Moved to #{prefix}-#{target_rule.rule_id} by #{moved_by&.email || 'unknown'}: #{reason}"
-      apply_move!(target_rule, "[Moved from #{prefix}-#{rule.rule_id}: #{reason}] ", audit_msg)
+      apply_move!(target_rule, "[Moved from #{prefix}-#{source.rule_id}: #{reason}] ", audit_msg)
       cascade_replies_to_rule(target_rule, moved_by)
     end
     self
@@ -439,7 +456,11 @@ class Review < ApplicationRecord
   def apply_move!(target_rule, marker, audit_msg)
     self.original_commentable_id ||= rule_id
     self.comment = "#{marker}#{comment}" if marker
-    self.rule = target_rule
+    # rule_id column, not the rule association: the Rule-typed belongs_to
+    # cannot accept an SrgRule target, and the dual-write callback never
+    # overwrites a stale non-blank rule_id (kind seam). The column write
+    # keeps both kinds consistent.
+    self.rule_id = target_rule.id
     self.commentable = target_rule
     self.audit_comment = audit_msg
     save!

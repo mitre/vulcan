@@ -173,6 +173,18 @@ RSpec.describe 'Reviews + Reactions + Satisfactions endpoint contracts', type: :
       expect(body['review']['id']).to eq(restorable.id)
       assert_review_no_user_id body
     end
+
+    # The documented request body requires audit_comment — this pins the 422
+    # a spec-violating (empty-body) call receives, the exact shape the live
+    # RED proof captured. One pin suffices: all five audit-gated actions
+    # share the single require_audit_comment filter.
+    it 'returns the documented 422 toast when the audit comment is missing' do
+      patch "/reviews/#{restorable.id}/admin_restore", params: {}, headers: json_headers, as: :json
+
+      body = validate_and_parse!(expected_status: :unprocessable_content)
+      expect(body.dig('toast', 'title')).to eq('Audit comment required.')
+      expect(body.dig('toast', 'message')).to eq(['An audit comment is required for admin restore.'])
+    end
   end
 
   # ── DELETE /reviews/:id/admin_destroy ──

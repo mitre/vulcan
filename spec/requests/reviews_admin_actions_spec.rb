@@ -260,6 +260,30 @@ RSpec.describe 'Reviews' do
         expect(body['destroyed_id']).to eq(target_id)
       end
 
+      # Kind seam: the review's Rule-STI `rule` association is nil for an
+      # authored-SrgRule comment — the action must reach the component
+      # through the kind-aware accessor, or PII hard-delete is impossible
+      # on SRG-kind components.
+      it 'hard-deletes a comment on an authored SRG requirement with the audit on the component' do
+        srg_component = create(:component, :skip_rules, project: project, document_type: 'srg')
+        authored_row = create(:srg_rule, :authored, component: srg_component)
+        srg_review = create(:review, :comment, comment: 'PII on SRG requirement', section: nil,
+                                               user: adm_d_commenter, rule: nil, commentable: authored_row)
+
+        target_id = srg_review.id
+        delete "/reviews/#{target_id}/admin_destroy",
+               params: { audit_comment: 'PII removed from SRG comment' }, as: :json
+
+        expect(response).to have_http_status(:ok)
+        body = response.parsed_body
+        expect(body['review']).to be_nil
+        expect(body['destroyed_id']).to eq(target_id)
+        expect(Review.exists?(target_id)).to be(false)
+        audit = srg_component.audits.order(:id).last
+        expect(audit.action).to eq('admin_destroy_review')
+        expect(audit.comment).to eq("Admin hard-delete review #{target_id}: PII removed from SRG comment")
+      end
+
       it 'rejects when audit_comment is blank' do
         delete "/reviews/#{doomed_review.id}/admin_destroy",
                params: { audit_comment: '' }, as: :json

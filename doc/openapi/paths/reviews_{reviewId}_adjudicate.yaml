@@ -6,6 +6,21 @@ patch:
     - Reviews
   summary: Adjudicate (close) a triaged comment
   description: Marks the comment as adjudicated, finalizing the triage decision. Requires author or admin role.
+  requestBody:
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            resolution_comment:
+              type: string
+              description: >-
+                Optional final-resolution text. When supplied, a child Review
+                (action=comment, threaded via responding_to_review_id with the
+                parent's section) is created atomically with the adjudication
+                and returned as response_review, so the resolution renders
+                inline in the comment thread.
+              example: Fix text updated in R2 — closing as concur.
   responses:
     '200':
       description: Review adjudicated

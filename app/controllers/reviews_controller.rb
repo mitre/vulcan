@@ -115,7 +115,10 @@ class ReviewsController < ApplicationController
       end
 
       if review.original_commentable_id
-        parent_label = "#{review.rule.component.prefix}-#{review.rule.rule_id}"
+        # requirement, not rule: the Rule-STI association is nil for
+        # authored-SrgRule commentables (kind seam).
+        parent_requirement = review.requirement
+        parent_label = "#{parent_requirement.component.prefix}-#{parent_requirement.rule_id}"
         render_toast(title: 'Comment posted.',
                      message: ["Posted on parent control #{parent_label}"],
                      variant: 'success', status: :ok)
@@ -384,7 +387,9 @@ class ReviewsController < ApplicationController
       # This row closes that forensic asymmetry: reviewers auditing the
       # source rule's history see "review X moved out to rule Y" with
       # full context.
-      source_rule = @review.rule
+      # requirement, not rule: nil for authored-SrgRule commentables
+      # (kind seam) — the same accessor the component check above uses.
+      source_rule = @review.requirement
       source_rule.audits.create!(
         user: current_user,
         action: 'review_moved_out',
@@ -425,7 +430,10 @@ class ReviewsController < ApplicationController
       # only for the executing statement otherwise.
       @review.lock!
 
-      component = @review.rule.component
+      # Review#component, not rule.component: the Rule-STI association is
+      # nil for authored-SrgRule commentables (kind seam) — without this,
+      # PII hard-delete is impossible on SRG-kind components.
+      component = @review.component
       component_audit_payload = {
         review_id: @review.id,
         rule_id: @review.rule_id,
