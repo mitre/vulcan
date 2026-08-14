@@ -54,5 +54,16 @@ patch:
             $ref: ../components/schemas/RuleSectionLockResponse.yaml
     '422':
       description: Invalid section names
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - error
+            properties:
+              error:
+                type: string
+                description: Names every unrecognized section.
+                example: "Invalid sections: NotASection"
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

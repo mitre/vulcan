@@ -6,13 +6,19 @@ required:
 properties:
   action:
     type: string
-    description: The type of review action to perform.
+    description: >-
+      The review action to perform. Vocabulary and role tiers come from
+      Review::ACTION_PERMISSIONS — comment (viewer+), request_review /
+      revoke_review_request (author+), request_changes / approve
+      (reviewer+), lock_control / unlock_control (admin).
     enum:
       - comment
       - request_review
       - revoke_review_request
+      - request_changes
       - approve
-      - lock
+      - lock_control
+      - unlock_control
     example: comment
   comment:
     type: string

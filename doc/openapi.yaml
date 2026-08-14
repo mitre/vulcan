@@ -2311,18 +2311,22 @@ paths:
       tags:
         - Components
       summary: Lock all unlocked rules in a component
-      description: Locks every currently-unlocked rule in the component, preventing further edits. Optionally accepts a comment for the audit trail. Requires admin role on the parent project. Already-locked rules are unaffected.
+      description: Locks every currently-unlocked rule in the component, preventing further edits. Requires component-admin authority. Already-locked rules are unaffected.
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - review
               properties:
                 review:
-                  description: The bulk-lock surface is action + comment only — one review row is generated per locked requirement carrying both. Other review keys (section, responding_to_review_id, component_id) are ignored.
+                  description: The bulk-lock surface is action + comment only — one review row is generated per locked requirement carrying both, and the comment is required (each generated review validates comment presence). Other review keys (section, responding_to_review_id, component_id) are ignored.
                   type: object
                   required:
                     - action
+                    - comment
                   properties:
                     action:
                       type: string
@@ -2343,20 +2347,46 @@ paths:
                     comment: Locking for DISA submission review.
       responses:
         '200':
-          description: All rules locked
+          description: Lockable rules locked. Rules with incomplete data are SKIPPED, not failed — Not Yet Determined without satisfactions, Does Not Meet without mitigations, Inherently Meets without an artifact description — and each skip is named in a warning line appended to the message (variant becomes warning).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ToastResponse'
               examples:
                 locked:
-                  summary: Component locked
+                  summary: All candidates locked
                   value:
                     toast:
-                      title: Controls locked.
+                      title: Locked 2 controls.
                       message:
-                        - 264 rules locked.
+                        - 'Locked: CNTR-00-000001, CNTR-00-000002'
                       variant: success
+                locked_with_skips:
+                  summary: Some rules skipped for incomplete data
+                  value:
+                    toast:
+                      title: Locked 1 control.
+                      message:
+                        - |-
+                          Locked: CNTR-00-000001
+
+                          Not Yet Determined (skipped): CNTR-00-000002
+                      variant: warning
+        '422':
+          description: Every candidate rule was skipped — nothing could be locked.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToastResponse'
+              examples:
+                nothing_lockable:
+                  summary: All candidates skipped
+                  value:
+                    toast:
+                      title: No controls could be locked.
+                      message:
+                        - 'Not Yet Determined (skipped): CNTR-00-000001, CNTR-00-000002'
+                      variant: warning
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /components/{componentId}/lock_sections:
@@ -3645,6 +3675,17 @@ paths:
                 $ref: '#/components/schemas/RuleSectionLockResponse'
         '422':
           description: Invalid section names
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                properties:
+                  error:
+                    type: string
+                    description: Names every unrecognized section.
+                    example: 'Invalid sections: NotASection'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /rules/{ruleId}/search/related_rules:
@@ -12168,13 +12209,15 @@ components:
       properties:
         action:
           type: string
-          description: The type of review action to perform.
+          description: The review action to perform. Vocabulary and role tiers come from Review::ACTION_PERMISSIONS — comment (viewer+), request_review / revoke_review_request (author+), request_changes / approve (reviewer+), lock_control / unlock_control (admin).
           enum:
             - comment
             - request_review
             - revoke_review_request
+            - request_changes
             - approve
-            - lock
+            - lock_control
+            - unlock_control
           example: comment
         comment:
           type: string

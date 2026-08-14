@@ -344,17 +344,22 @@ RSpec.describe 'Components endpoint contracts', type: :request do
   # ── POST /components/:id/lock (reviews#lock_controls) ──
 
   describe 'POST /components/:id/lock (JSON)' do
-    it 'returns ToastResponse with lock result' do
-      post "/components/#{component.id}/lock",
-           params: { review: { action: 'lock', comment: 'Contract test lock all', component_id: component.id } },
+    # A local component with one lockable rule: the shared fixture's rules
+    # are all Not Yet Determined, which lock_controls SKIPS (422 when every
+    # candidate is skipped) — the prior form of this test posted the invalid
+    # action 'lock', guaranteed itself a 422, and skipped schema validation.
+    it 'locks the lockable rules and returns the documented ToastResponse' do
+      lock_component = create(:component, :skip_rules, project: project)
+      rule = create(:rule, component: lock_component, status: 'Applicable - Configurable')
+
+      post "/components/#{lock_component.id}/lock",
+           params: { review: { action: 'lock_control', comment: 'Contract test lock all' } },
            headers: json_headers, as: :json
 
-      # lock_controls may return success (200) or validation error (422)
-      # depending on whether rules can be locked. Both are valid ToastResponse shapes.
-      body = response.parsed_body
-      validate_response!(request, response) if response.status == 200
-      assert_fields_present body, :toast
-      expect(body.dig('toast', 'message')).to be_an(Array)
+      body = validate_and_parse!
+      expect(body.dig('toast', 'title')).to eq('Locked 1 control.')
+      expect(body.dig('toast', 'message')).to eq(["Locked: #{rule.displayed_name}"])
+      expect(rule.reload.locked).to be(true)
     end
   end
 
