@@ -119,13 +119,18 @@ RSpec.describe Review, '.merge_comments!' do
     expect(dup.reload.triage_status).to eq('duplicate')
   end
 
-  it 'raises NoMethodError when merged_by is nil (accesses .id)' do
-    survivor = cmt(rule: rule_a)
+  it 'raises ArgumentError when merged_by is nil — before any writes' do
+    survivor = cmt(rule: rule_a, text: 'guard survivor text')
     dup      = cmt(rule: rule_b)
 
     expect do
       Review.merge_comments!(survivor: survivor, duplicates: [dup], merged_by: nil)
-    end.to raise_error(NoMethodError)
+    end.to raise_error(ArgumentError, 'merged_by is required.')
+
+    # Fail-fast contract: the survivor was never marked and the duplicate
+    # never re-statused.
+    expect(survivor.reload.comment).to eq('guard survivor text')
+    expect(dup.reload.triage_status).not_to eq('duplicate')
   end
 
   # Kind seam: an authored-SrgRule comment has a nil Rule-STI `rule`

@@ -211,6 +211,8 @@ class Review < ApplicationRecord
   # rule labels. Per-row audits share the request's request_uuid so the
   # operation is recoverable as one correlated group.
   def self.merge_comments!(survivor:, duplicates:, merged_by:)
+    raise ArgumentError, 'merged_by is required.' if merged_by.nil?
+
     duplicates = Array(duplicates).reject { |r| r.id == survivor.id }
     raise ArgumentError, 'At least one duplicate required.' if duplicates.empty?
     raise ArgumentError, 'All comments must be from the same commenter.' if duplicates.any? { |r| r.user_id != survivor.user_id }
