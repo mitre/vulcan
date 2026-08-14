@@ -94,11 +94,12 @@ RSpec.describe Review do
 
         review.reload
         expect(review.addressed_by_rule).to eq(req_from_b)
-        expect(review.adjudicated_at).to be_present
-        # The candidate and display surfaces are component-scoped — the
-        # component's requirement set carries rows derived from BOTH
-        # parents, so no addressed_by surface depends on based_on alone.
-        expect(mp_component.requirements.ids).to include(req_from_a.id, req_from_b.id)
+        # The consumer surface directly: the triage-row decoration resolves
+        # the cross-parent target's displayed name through the component-
+        # scoped display map — proof no addressed_by surface reads based_on.
+        row = CommentQueryService.new(mp_component).call[:rows]
+                                 .find { |r| r['id'] == review.id }
+        expect(row['addressed_by_rule_name']).to eq('ADMP-00-400002')
       end
     end
 

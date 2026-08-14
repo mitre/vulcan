@@ -185,8 +185,8 @@ export default {
     parentRuleDisplayedName: { type: String, default: null },
     componentId: { type: [Number, String], default: null },
     ruleStatus: { type: String, default: null },
-    // STIG is the documented default: the only kind the triage panel
-    // serves until the SRG editor threads document_type through.
+    // The triage view threads the real component kind down to here;
+    // "stig" stays the default for callers that predate the threading.
     documentType: {
       type: String,
       default: "stig",

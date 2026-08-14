@@ -1091,7 +1091,13 @@ describe("ComponentComments", () => {
     wrapper.vm.splitMode = true;
     await wrapper.vm.$nextTick();
     expect(wrapper.vm.canExportDisposition).toBe(true);
-    expect(wrapper.vm.splitMode).toBe(true);
+    const exportBtn = wrapper.find('[aria-label="Export disposition matrix CSV"]');
+    expect(exportBtn.exists()).toBe(true);
+    expect(exportBtn.classes()).toContain("ml-auto");
+    // With the export visible, the comment button must NOT claim ml-auto.
+    const commentBtn = wrapper.find('[aria-label="Add component-level comment"]');
+    expect(commentBtn.exists()).toBe(true);
+    expect(commentBtn.classes()).not.toContain("ml-auto");
   });
 
   it("adds ml-auto to comment button when export hidden in split mode", async () => {
@@ -1104,7 +1110,10 @@ describe("ComponentComments", () => {
     wrapper.vm.splitMode = true;
     await wrapper.vm.$nextTick();
     expect(wrapper.vm.canExportDisposition).toBe(false);
-    expect(wrapper.vm.splitMode).toBe(true);
+    expect(wrapper.find('[aria-label="Export disposition matrix CSV"]').exists()).toBe(false);
+    const commentBtn = wrapper.find('[aria-label="Add component-level comment"]');
+    expect(commentBtn.exists()).toBe(true);
+    expect(commentBtn.classes()).toContain("ml-auto");
   });
 
   // ── Project scope: table only, triage navigates to component ──────

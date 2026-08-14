@@ -402,6 +402,7 @@ describe("TriageSplitView", () => {
     await w.vm.$nextTick();
     await w.vm.$nextTick();
     expect(w.vm.activeCommentId).toBe(2);
+    expect(document.activeElement).toBe(w.vm.$refs.contentHeading);
     w.destroy();
   });
 
@@ -653,7 +654,9 @@ describe("TriageSplitView", () => {
     });
     await w.vm.doSave({ triage_status: "concur" }, true);
     await flushPromises(w);
+    await w.vm.$nextTick();
     expect(w.vm.activeCommentId).toBe(2);
+    expect(document.activeElement).toBe(w.vm.$refs.contentHeading);
     w.destroy();
   });
 
