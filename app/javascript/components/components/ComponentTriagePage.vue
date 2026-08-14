@@ -38,6 +38,7 @@
         :project-id="project.id"
         :component-displayed-name="component.name"
         :component-prefix="component.prefix"
+        :document-type="component.document_type"
         :admin-panel-open="adminPanelOpen"
         :context-mode.sync="contextMode"
         @split-mode-changed="onSplitModeChanged"

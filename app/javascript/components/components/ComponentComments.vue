@@ -139,6 +139,7 @@
       :initial-comment-id="splitCommentId"
       :component-id="componentId"
       :project-id="projectId"
+      :document-type="documentType"
       :admin-panel-open="adminPanelOpen"
       :context-mode="contextMode"
       @update:contextMode="$emit('update:contextMode', $event)"
@@ -436,6 +437,10 @@ export default {
     },
     adminPanelOpen: { type: Boolean, default: false },
     contextMode: { type: String, default: "commented" },
+    // Kind of the component whose comments are in triage. Split mode is
+    // component-scope only (project scope navigates to the component
+    // triage page), so a single kind is always correct here.
+    documentType: { type: String, default: "stig" },
   },
   setup() {
     const commentsStore = useCommentsStore();

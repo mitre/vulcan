@@ -192,6 +192,19 @@ describe("ComponentComments", () => {
     expect(wrapper.vm.splitCommentId).toBe(142);
   });
 
+  it("forwards document-type to TriageSplitView in split mode", async () => {
+    const wrapper = mount(ComponentComments, {
+      propsData: { componentId: 42, documentType: "srg" },
+      stubs: SHARED_STUBS,
+    });
+    await flushPromises();
+    wrapper.vm.openTriageFor(mockResponse.data.rows[0]);
+    await wrapper.vm.$nextTick();
+    const split = wrapper.findComponent({ name: "TriageSplitView" });
+    expect(split.exists()).toBe(true);
+    expect(split.props("documentType")).toBe("srg");
+  });
+
   // REQUIREMENT: rule deep-link must URL-encode the rule_displayed_name so
   // that any unusual characters (slashes, hashes, whitespace) cannot break
   // out of the path segment and silently navigate to the wrong page.
@@ -570,13 +583,22 @@ describe("ComponentComments", () => {
 
     // REQUIREMENT (locked decision): disposition-matrix surfaces are
     // KIND-AGNOSTIC — draft SRGs take public comment exactly like STIGs
-    // and produce disposition matrices the same way. The component takes
-    // no document-kind input at all, so no kind can ever gate the export;
-    // this pins that a kind prop is never introduced to gate it.
-    it("has NO document-kind gate — the surface accepts no kind input (kind-agnostic by design)", () => {
-      const declaredProps = Object.keys(ComponentComments.props || {});
-      expect(declaredProps).not.toContain("documentType");
-      expect(declaredProps).not.toContain("document_type");
+    // and produce disposition matrices the same way. documentType exists
+    // on this component only to thread display kind to the triage context
+    // panel; it must never gate the export. This pins the behavior: the
+    // export renders for an SRG component exactly as for STIG, and its
+    // href carries no kind parameter.
+    it("has NO document-kind gate — the export renders identically for an SRG component", async () => {
+      const wrapper = mount(ComponentComments, {
+        propsData: { componentId: 42, documentType: "srg" },
+        provide: { effectivePermissions: "author" },
+        stubs: noBtnStubs,
+      });
+      await flushPromises();
+      const btn = wrapper.findAll("a").wrappers.find((a) => a.text().includes("Export CSV"));
+      expect(btn).toBeDefined();
+      expect(btn.attributes("href")).toContain("/components/42/export/disposition_csv");
+      expect(btn.attributes("href")).not.toMatch(/document|kind|srg/);
     });
 
     it("renders the Export CSV button in project (aggregate) scope and links to the project endpoint", async () => {

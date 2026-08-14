@@ -46,6 +46,7 @@
             :rule-displayed-name="activeComment.rule_displayed_name"
             :parent-rule-displayed-name="activeComment.parent_rule_displayed_name"
             :component-id="resolvedComponentId"
+            :document-type="documentType"
             :rule-status="activeComment.rule_content ? activeComment.rule_content.status : null"
             :focused-section="activeComment.section"
             :context-mode="contextMode"
@@ -270,6 +271,7 @@ export default {
     projectId: { type: [Number, String], default: null },
     adminPanelOpen: { type: Boolean, default: false },
     contextMode: { type: String, default: "commented" },
+    documentType: { type: String, default: "stig" },
   },
   setup() {
     const { toggle: toggleReactionApi } = useCommentReactions();

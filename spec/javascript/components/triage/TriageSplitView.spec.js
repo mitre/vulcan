@@ -182,6 +182,41 @@ describe("TriageSplitView", () => {
     expect(panel.props("focusedSection")).toBe("check_content");
   });
 
+  // ── document_type threading (kind-aware context panel) ─────────────
+
+  it("forwards document_type to RuleContextPanel", () => {
+    const w = mountView({ documentType: "srg" });
+    const panel = w.findComponent({ name: "RuleContextPanel" });
+    expect(panel.props("documentType")).toBe("srg");
+  });
+
+  it("defaults document_type to stig when not provided", () => {
+    const w = mountView();
+    const panel = w.findComponent({ name: "RuleContextPanel" });
+    expect(panel.props("documentType")).toBe("stig");
+  });
+
+  it("renders SRG field config (not STIG) for an SRG component", () => {
+    // An SRG-lifecycle status with a STIG-only field populated: under the
+    // srg config the field must not render; under the stig fallback
+    // (unknown status shows every populated field) it would.
+    const srgRow = {
+      ...rows[0],
+      rule_content: {
+        ...ruleContent1,
+        status: "Applicable",
+        vendor_comments: "vendor text that must not render",
+      },
+    };
+    // contextMode "all" so the commented-sections filter (orthogonal to
+    // kind) doesn't hide the fields this test inspects.
+    const w = mountView({ rows: [srgRow], documentType: "srg", contextMode: "all" });
+    const panel = w.findComponent({ name: "RuleContextPanel" });
+    const keys = panel.vm.visibleFields.map((f) => f.key);
+    expect(keys).toContain("title");
+    expect(keys).not.toContain("vendor_comments");
+  });
+
   // ── CommentTriageForm integration ──────────────────────────────────
 
   it("renders CommentTriageForm for the active comment", () => {
