@@ -38,7 +38,7 @@
             :text="tooltips['srg_vuln_discussion']"
           />
         </template>
-        {{ srg_rule.disa_rule_descriptions_attributes[0].vuln_discussion }}
+        {{ srgVulnDiscussion }}
       </b-form-group>
 
       <b-form-group label-cols-md="3" label-align-md="right" class="mb-2">
@@ -46,7 +46,7 @@
           SRG Check Text
           <InfoTooltip v-if="tooltips['srg_check_text']" :text="tooltips['srg_check_text']" />
         </template>
-        {{ srg_rule.checks_attributes[0].content }}
+        {{ srgCheckContent }}
       </b-form-group>
 
       <b-form-group label-cols-md="3" label-align-md="right" class="mb-2">
@@ -77,6 +77,7 @@
 </template>
 <script>
 import InfoTooltip from "../shared/InfoTooltip.vue";
+import { ruleArray } from "../../utils/ruleArray";
 
 export default {
   name: "RuleSecurityRequirementsGuideInformation",
@@ -119,6 +120,15 @@ export default {
       },
       showSrgInformation: false,
     };
+  },
+  computed: {
+    srgVulnDiscussion() {
+      return (ruleArray(this.srg_rule, "disa_rule_descriptions_attributes")[0] || {})
+        .vuln_discussion;
+    },
+    srgCheckContent() {
+      return (ruleArray(this.srg_rule, "checks_attributes")[0] || {}).content;
+    },
   },
 };
 </script>

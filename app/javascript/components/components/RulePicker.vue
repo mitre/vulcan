@@ -56,6 +56,7 @@
 
 <script>
 import { getRulesPicker } from "../../api/rulesApi";
+import { ruleArray } from "../../utils/ruleArray";
 
 // Picker for a target rule scoped to one component: the "move to rule"
 // admin action, per-comment addressed_by, and the bulk target modal.
@@ -84,12 +85,10 @@ export default {
       return this.rules.find((r) => r.id === Number(this.excludeRuleIds[0])) || null;
     },
     parentRuleIds() {
-      if (!this.sourceRule) return new Set();
-      return new Set((this.sourceRule.satisfied_by || []).map((r) => r.id));
+      return new Set(ruleArray(this.sourceRule, "satisfied_by").map((r) => r.id));
     },
     childRuleIds() {
-      if (!this.sourceRule) return new Set();
-      return new Set((this.sourceRule.satisfies || []).map((r) => r.id));
+      return new Set(ruleArray(this.sourceRule, "satisfies").map((r) => r.id));
     },
     filteredRules() {
       const exclude = new Set(this.excludeRuleIds.map(Number));

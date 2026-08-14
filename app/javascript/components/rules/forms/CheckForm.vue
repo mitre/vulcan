@@ -88,6 +88,7 @@
 import { toRef } from "vue";
 import { useFormFeedback } from "../../../composables/useFormFeedback";
 import { useCommentIconHost } from "../../../composables/useCommentIconHost";
+import { ruleArray } from "../../../utils/ruleArray";
 import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
 import RuleFormGroup from "../../shared/RuleFormGroup.vue";
 
@@ -160,20 +161,14 @@ export default {
   },
   computed: {
     check: function () {
-      const targetRule =
-        this.rule.satisfied_by && this.rule.satisfied_by.length > 0
-          ? this.rule.satisfied_by[0]
-          : this.rule;
+      const targetRule = ruleArray(this.rule, "satisfied_by")[0] || this.rule;
 
-      return targetRule && targetRule.checks_attributes && targetRule.checks_attributes.length > 0
-        ? targetRule.checks_attributes[0]
-        : {};
+      return ruleArray(targetRule, "checks_attributes")[0] || {};
     },
     tooltips: function () {
       // Rules with satisfied_by behave like Applicable - Configurable
-      // Note: satisfied_by may be undefined for STIG rules, so we check for its existence first
       const isConfigurable =
-        (this.rule.satisfied_by && this.rule.satisfied_by.length > 0) ||
+        ruleArray(this.rule, "satisfied_by").length > 0 ||
         this.rule.status === "Applicable - Configurable";
       // Status-KEYED data lookup: statuses outside the map (any vocabulary)
       // fall to the default check-content text.

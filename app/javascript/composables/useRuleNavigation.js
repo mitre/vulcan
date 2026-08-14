@@ -1,4 +1,5 @@
 import { ref, computed, watch } from "vue";
+import { ruleArray } from "../utils/ruleArray";
 import { getDefaultFilters } from "./useRuleFilters";
 import { persistedKeys } from "../constants/ruleFilterRegistry";
 import { searchTextForRule } from "../utils/searchHighlight";
@@ -80,8 +81,8 @@ export function useRuleNavigation(rules, projectPrefix, componentId, externalFil
 
   function ruleOpen(rule) {
     let count = (rule.comment_summary && rule.comment_summary.open) || 0;
-    if (rule.satisfies && rule.satisfies.length > 0) {
-      for (const sat of rule.satisfies) {
+    if (ruleArray(rule, "satisfies").length > 0) {
+      for (const sat of ruleArray(rule, "satisfies")) {
         const child = rules.value.find((r) => r.id === sat.id);
         if (child && child.comment_summary) {
           count += child.comment_summary.open || 0;
@@ -110,21 +111,21 @@ export function useRuleNavigation(rules, projectPrefix, componentId, externalFil
     }
 
     const downcaseSearch = filters.value.search.toLowerCase();
-    // satisfies/satisfied_by are Rule-shaped payload keys; authored SRG
-    // requirement payloads omit them entirely, so default to empty.
     let result = sortedRules.filter((rule) => {
       return (
         searchTextForRule(projectPrefix, rule).includes(downcaseSearch) &&
         doesRuleHaveFilteredStatus(rule) &&
         doesRuleHaveFilteredReviewStatus(rule) &&
-        (filters.value.nestSatisfiedRulesChecked ? (rule.satisfied_by || []).length === 0 : true) &&
+        (filters.value.nestSatisfiedRulesChecked
+          ? ruleArray(rule, "satisfied_by").length === 0
+          : true) &&
         (!filters.value.openCommentsOnly || ruleOpen(rule) > 0)
       );
     });
 
     if (filters.value.nestSatisfiedRulesChecked) {
-      const parents = result.filter((rule) => (rule.satisfies || []).length > 0);
-      const leaves = result.filter((rule) => (rule.satisfies || []).length === 0);
+      const parents = result.filter((rule) => ruleArray(rule, "satisfies").length > 0);
+      const leaves = result.filter((rule) => ruleArray(rule, "satisfies").length === 0);
       result = [...parents, ...leaves];
     }
 

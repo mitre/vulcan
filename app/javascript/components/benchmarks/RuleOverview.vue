@@ -146,6 +146,7 @@
 <script>
 import { RULE_TERM, SEVERITY_LABELS } from "../../constants/terminology";
 import { parseMitreAttack, parseCisControls } from "../../utils/identParser";
+import { ruleArray } from "../../utils/ruleArray";
 import { truncateRuleId } from "../../utils/ruleIdFormatter";
 import { truncateId } from "../../utils/idFormatter";
 
@@ -210,8 +211,8 @@ export default {
     satisfactionIds() {
       // Explicit property access (no optional chaining) so Vue 2 tracks dependencies
       if (!this.selectedRule) return [];
-      const descs = this.selectedRule.disa_rule_descriptions_attributes;
-      if (!descs || !descs[0]) return [];
+      const descs = ruleArray(this.selectedRule, "disa_rule_descriptions_attributes");
+      if (!descs[0]) return [];
       const vuln = descs[0].vuln_discussion || "";
       const match = vuln.match(/\b(?:Satisfi(?:ed\s+By|es))\s*:\s*(.+?)\.?\s*$/i);
       if (!match) return [];

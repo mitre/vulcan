@@ -16,7 +16,7 @@
       <b-icon icon="chat-left-text" aria-hidden="true" />
     </button>
     <b-icon
-      v-if="rule.satisfies && rule.satisfies.length > 0"
+      v-if="hasSatisfies"
       v-b-tooltip.hover
       icon="diagram-3"
       title="Satisfies other"
@@ -24,7 +24,7 @@
       data-test="icon-satisfies"
     />
     <b-icon
-      v-if="rule.satisfied_by && rule.satisfied_by.length > 0"
+      v-if="hasSatisfiedBy"
       v-b-tooltip.hover
       icon="files"
       :title="satisfiedByTooltip"
@@ -71,6 +71,7 @@
 
 <script>
 import { RELOCATION_TERM } from "../../constants/terminology";
+import { ruleArray } from "../../utils/ruleArray";
 
 export default {
   name: "RuleRowIcons",
@@ -96,8 +97,14 @@ export default {
     };
   },
   computed: {
+    hasSatisfies() {
+      return ruleArray(this.rule, "satisfies").length > 0;
+    },
+    hasSatisfiedBy() {
+      return ruleArray(this.rule, "satisfied_by").length > 0;
+    },
     satisfiedByTooltip() {
-      const parents = this.rule.satisfied_by || [];
+      const parents = ruleArray(this.rule, "satisfied_by");
       const names = parents
         .map((p) => (p.component_prefix ? `${p.component_prefix}-${p.rule_id}` : p.rule_id))
         .filter(Boolean);

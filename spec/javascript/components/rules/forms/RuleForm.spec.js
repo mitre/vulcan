@@ -106,6 +106,26 @@ describe("RuleForm", () => {
     if (wrapper) wrapper.destroy();
   });
 
+  // ─── Authored-payload resilience: Rule-only keys may be omitted ──
+  describe("authored SRG payload (Rule-only array keys omitted)", () => {
+    it("renders a rule whose payload omits all four Rule-only keys without throwing", () => {
+      const authored = makeRule();
+      delete authored.satisfied_by;
+      delete authored.satisfies;
+      delete authored.disa_rule_descriptions_attributes;
+      delete authored.checks_attributes;
+      wrapper = createWrapper({
+        rule: authored,
+        disa_fields: { displayed: ["vuln_discussion"], disabled: [] },
+        check_fields: { displayed: ["content"], disabled: [] },
+      });
+      expect(wrapper.find('[id^="ruleEditor-status-group-"]').exists()).toBe(true);
+      // Omitted collections render as absent sections, not crashes.
+      expect(wrapper.findComponent({ name: "DisaRuleDescriptionForm" }).exists()).toBe(false);
+      expect(wrapper.findComponent({ name: "CheckForm" }).exists()).toBe(false);
+    });
+  });
+
   // ─── R1: Fields render when in displayed, hidden when not ──
   describe("field visibility based on fields.displayed (R1)", () => {
     it("renders status dropdown when in displayed", () => {

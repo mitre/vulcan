@@ -252,6 +252,7 @@ import CommentItem from "../shared/CommentItem.vue";
 import { NAVIGATOR_LABELS } from "../../constants/terminology";
 import { commentsClosedTooltip } from "../../constants/triageVocabulary";
 import { truncateId } from "../../utils/idFormatter";
+import { ruleArray } from "../../utils/ruleArray";
 import { useRuleSelectionStore } from "../../stores/ruleSelection";
 import { useCommentReactions } from "../../composables/useCommentReactions";
 
@@ -321,7 +322,7 @@ export default {
   },
   computed: {
     hasParentRules() {
-      return this.filteredRules.some((r) => r.satisfies && r.satisfies.length > 0);
+      return this.filteredRules.some((r) => ruleArray(r, "satisfies").length > 0);
     },
     openRules() {
       return this.allRules.filter((rule) => this.ruleStore.openRuleIds.includes(rule.id));
@@ -349,9 +350,9 @@ export default {
   },
   methods: {
     // satisfies is a Rule-shaped payload key; authored SRG requirement
-    // payloads omit it entirely, so default to empty.
+    // payloads omit it entirely, so read through the shared accessor.
     childRules(rule) {
-      return rule.satisfies || [];
+      return ruleArray(rule, "satisfies");
     },
     // Satisfaction refs are id-only stubs — the child's status lives on
     // its full row in allRules (same lookup ruleOpen uses).
@@ -382,8 +383,8 @@ export default {
     },
     ruleOpen(rule) {
       let count = (rule.comment_summary && rule.comment_summary.open) || 0;
-      if (rule.satisfies && rule.satisfies.length > 0) {
-        for (const sat of rule.satisfies) {
+      if (ruleArray(rule, "satisfies").length > 0) {
+        for (const sat of ruleArray(rule, "satisfies")) {
           const child = this.allRules.find((r) => r.id === sat.id);
           if (child && child.comment_summary) {
             count += child.comment_summary.open || 0;

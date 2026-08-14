@@ -14,6 +14,8 @@ const FIELD_MAP = { check: "content" };
  * @param {string} backendField - Field name from the search API
  * @param {string} [searchQuery] - Search query to highlight within the field
  */
+import { ruleArray } from "./ruleArray";
+
 export function scrollToField(backendField, searchQuery) {
   const fieldName = FIELD_MAP[backendField] || backendField;
   setTimeout(() => {
@@ -104,10 +106,8 @@ export function searchTextForRule(projectPrefix, rule) {
   const checkDescriptionSearchAttrs = ["content"];
   const disaDescriptionSearchAttrs = ["vuln_discussion"];
 
-  // Nested attribute arrays are Rule-shaped payload keys; authored SRG
-  // requirement payloads omit them entirely, so default to empty.
-  const checks = rule.checks_attributes || [];
-  const disaDescriptions = rule.disa_rule_descriptions_attributes || [];
+  const checks = ruleArray(rule, "checks_attributes");
+  const disaDescriptions = ruleArray(rule, "disa_rule_descriptions_attributes");
 
   let searchText = `${projectPrefix}-${rule.rule_id}`;
   for (let i = 0; i < ruleSearchAttrs.length; i++) {

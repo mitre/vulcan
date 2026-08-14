@@ -8,6 +8,7 @@
  */
 
 import { REVIEW_ACTION_LABELS } from "../constants/terminology";
+import { ruleArray } from "./ruleArray";
 
 /**
  * Determine the disabled tooltip for "Request Review".
@@ -110,7 +111,7 @@ function lockControlTooltip(rule, isAdmin, isUnderReview) {
 
   const hasMissingMitigation =
     rule.status === "Applicable - Does Not Meet" &&
-    rule.disa_rule_descriptions_attributes?.[0]?.mitigations?.length === 0;
+    (ruleArray(rule, "disa_rule_descriptions_attributes")[0] || {}).mitigations?.length === 0;
 
   if (hasMissingMitigation) {
     return labels.mitigationRequired;

@@ -3,8 +3,8 @@
     <b-form>
       <!-- Satisfied-by indicator: shows parent relationship for child rules -->
       <SatisfiedByIndicator
-        v-if="rule.satisfied_by && rule.satisfied_by.length > 0"
-        :parent-rules="rule.satisfied_by"
+        v-if="ruleArray(rule, 'satisfied_by').length > 0"
+        :parent-rules="ruleArray(rule, 'satisfied_by')"
         :component-prefix="rule.component_prefix || ''"
         @navigate="$emit('navigate-to-rule', $event)"
       >
@@ -76,8 +76,8 @@
           <MarkdownTextarea
             :id="inputId"
             :value="
-              rule.disa_rule_descriptions_attributes[0] &&
-              rule.disa_rule_descriptions_attributes[0].severity_override_guidance
+              ruleArray(rule, 'disa_rule_descriptions_attributes')[0] &&
+              ruleArray(rule, 'disa_rule_descriptions_attributes')[0].severity_override_guidance
             "
             :input-class="inputClass('severity_override_guidance')"
             placeholder=""
@@ -89,7 +89,7 @@
                 'update:disaDescription',
                 rule,
                 {
-                  ...rule.disa_rule_descriptions_attributes[0],
+                  ...ruleArray(rule, 'disa_rule_descriptions_attributes')[0],
                   severity_override_guidance: $event,
                 },
                 0,
@@ -171,10 +171,10 @@
       <!-- DISA Rule Description (vuln discussion + advanced DISA metadata) -->
       <template v-if="disa_fields">
         <DisaRuleDescriptionForm
-          v-if="rule.disa_rule_descriptions_attributes.length >= 1"
+          v-if="ruleArray(rule, 'disa_rule_descriptions_attributes').length >= 1"
           :rule="rule"
           :index="0"
-          :description="rule.disa_rule_descriptions_attributes[0]"
+          :description="ruleArray(rule, 'disa_rule_descriptions_attributes')[0]"
           :disabled="disabled"
           :locked-sections="lockedSections"
           :can-manage-section-locks="canManageSectionLocks"
@@ -189,7 +189,7 @@
       <!-- Check -->
       <template v-if="check_fields">
         <CheckForm
-          v-if="rule.checks_attributes.length >= 1"
+          v-if="ruleArray(rule, 'checks_attributes').length >= 1"
           :rule="rule"
           :index="0"
           :disabled="disabled"
@@ -214,15 +214,16 @@
       >
         <template #default="{ inputId, isDisabled }">
           <b-alert
-            v-if="rule.satisfied_by && rule.satisfied_by.length > 0"
+            v-if="ruleArray(rule, 'satisfied_by').length > 0"
             show
             variant="info"
             class="mb-2 py-1 px-2 small"
           >
-            Inherited fix from {{ rule.satisfied_by[0].displayed_name || "parent rule" }}:
+            Inherited fix from
+            {{ ruleArray(rule, "satisfied_by")[0].displayed_name || "parent rule" }}:
             <em
-              >{{ (rule.satisfied_by[0].fixtext || "").substring(0, 200)
-              }}{{ (rule.satisfied_by[0].fixtext || "").length > 200 ? "…" : "" }}</em
+              >{{ (ruleArray(rule, "satisfied_by")[0].fixtext || "").substring(0, 200)
+              }}{{ (ruleArray(rule, "satisfied_by")[0].fixtext || "").length > 200 ? "…" : "" }}</em
             >
           </b-alert>
           <MarkdownTextarea
@@ -472,6 +473,7 @@ import {
   SEVERITY_OPTIONS,
   STATUS_DESCRIPTIONS_BY_DOCUMENT_TYPE,
 } from "../../../constants/terminology";
+import { ruleArray } from "../../../utils/ruleArray";
 
 // Display form of a status name (en-dash, matching published DISA copy).
 const displayStatus = (status) => status.replace(" - ", " – ");
@@ -605,7 +607,7 @@ export default {
       emit,
     });
     const { inputClass } = useFormFeedback(props);
-    return { commentIconListeners, commentIconProps, inputClass };
+    return { commentIconListeners, commentIconProps, inputClass, ruleArray };
   },
   data: function () {
     return {

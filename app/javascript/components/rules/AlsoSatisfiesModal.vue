@@ -56,6 +56,7 @@ import Multiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
 import { RULE_TERM, MESSAGE_LABELS, selectedCountLabel } from "../../constants/terminology";
 import { truncateId } from "../../utils/idFormatter";
+import { ruleArray } from "../../utils/ruleArray";
 
 export default {
   name: "AlsoSatisfiesModal",
@@ -95,8 +96,8 @@ export default {
         .filter((r) => {
           return (
             r.id !== rule.id &&
-            r.satisfies.length === 0 &&
-            !rule.satisfies.some((s) => s.id === r.id)
+            ruleArray(r, "satisfies").length === 0 &&
+            !ruleArray(rule, "satisfies").some((s) => s.id === r.id)
           );
         })
         .map((r) => {

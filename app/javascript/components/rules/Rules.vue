@@ -26,6 +26,7 @@ import {
 import RulesCodeEditorView from "./RulesCodeEditorView.vue";
 import { useSortRules } from "../../composables/useSortRules";
 import { useToast } from "../../composables/useToast";
+import { ruleArray } from "../../utils/ruleArray";
 export default {
   name: "Rules",
   components: { RulesCodeEditorView },
@@ -186,13 +187,17 @@ export default {
           if (ruleIndex >= 0) {
             const rule = this.reactiveRules[ruleIndex];
             // Remove from satisfied_by array
-            rule.satisfied_by = rule.satisfied_by.filter((r) => r.id !== satisfied_by_rule_id);
+            rule.satisfied_by = ruleArray(rule, "satisfied_by").filter(
+              (r) => r.id !== satisfied_by_rule_id,
+            );
           }
 
           if (satisfiedByIndex >= 0) {
             const satisfiedByRule = this.reactiveRules[satisfiedByIndex];
             // Remove from satisfies array
-            satisfiedByRule.satisfies = satisfiedByRule.satisfies.filter((r) => r.id !== rule_id);
+            satisfiedByRule.satisfies = ruleArray(satisfiedByRule, "satisfies").filter(
+              (r) => r.id !== rule_id,
+            );
           }
 
           if (successCallback) {

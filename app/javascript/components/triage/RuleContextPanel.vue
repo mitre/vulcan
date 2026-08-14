@@ -167,6 +167,7 @@
 <script>
 import { FIELD_LABELS, FIELD_DISPLAY_ORDER } from "../../composables/ruleFieldConfig";
 import { buildFieldSets } from "../../composables/fieldStateConfig";
+import { ruleArray } from "../../utils/ruleArray";
 import InfoTooltip from "../shared/InfoTooltip.vue";
 import SatisfiedByIndicator from "../shared/SatisfiedByIndicator.vue";
 
@@ -212,7 +213,7 @@ export default {
       return new Set(this.commentedSections);
     },
     satisfiedByParents() {
-      return (this.ruleContent && this.ruleContent.satisfied_by) || [];
+      return ruleArray(this.ruleContent, "satisfied_by");
     },
     visibleFields() {
       if (!this.ruleContent) return [];

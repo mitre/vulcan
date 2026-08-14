@@ -10,6 +10,7 @@
  * @returns composable API (see JSDoc on return)
  */
 import { computed } from "vue";
+import { ruleArray } from "../utils/ruleArray";
 import { LOCKABLE_SECTIONS } from "./ruleFieldConfig";
 import { buildFieldSets, hasHiddenFields, resolveFieldStates } from "./fieldStateConfig";
 
@@ -113,7 +114,7 @@ export function useRuleFormFields(rule, advancedMode, options = {}) {
 
     // satisfied_by disables specific fields, NOT entire form
     const r = rule.value;
-    if (r.satisfied_by && r.satisfied_by.length > 0) {
+    if (ruleArray(r, "satisfied_by").length > 0) {
       if (!result.disabled.includes("title")) result.disabled.push("title");
       if (!result.disabled.includes("fixtext")) result.disabled.push("fixtext");
     }

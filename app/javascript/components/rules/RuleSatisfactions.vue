@@ -1,12 +1,14 @@
 <template>
   <div>
-    <!-- Also Satisfies section (shown when not satisfied by another rule) -->
-    <div v-if="rule.satisfied_by && rule.satisfied_by.length === 0">
+    <!-- Also Satisfies section (shown when not satisfied by another rule).
+         Deliberate key-PRESENCE test, not a missing-key guard: authored SRG
+         payloads omit satisfied_by entirely and must not show this section. -->
+    <div v-if="rule.satisfied_by && ruleArray(rule, 'satisfied_by').length === 0">
       <div class="d-flex justify-content-between align-items-center mb-2">
         <div>
           <strong>Also Satisfies</strong>
           <b-badge v-if="rule.satisfies" pill variant="info" class="ml-1">{{
-            rule.satisfies.length
+            ruleArray(rule, "satisfies").length
           }}</b-badge>
         </div>
         <b-button
@@ -28,7 +30,7 @@
       </b-form-checkbox>
 
       <div
-        v-for="satisfies in rule.satisfies"
+        v-for="satisfies in ruleArray(rule, 'satisfies')"
         :key="satisfies.id"
         :class="ruleRowClass(satisfies)"
         class="d-flex justify-content-between align-items-center"
@@ -53,7 +55,7 @@
         </b-button>
       </div>
 
-      <p v-if="rule.satisfies.length === 0" class="text-muted small">
+      <p v-if="ruleArray(rule, 'satisfies').length === 0" class="text-muted small">
         No other controls satisfied by this one.
       </p>
 
@@ -77,10 +79,12 @@
     </div>
 
     <!-- Satisfied By section (shown when this rule is satisfied by another) -->
-    <div v-if="rule.satisfied_by && rule.satisfied_by.length > 0">
+    <div v-if="ruleArray(rule, 'satisfied_by').length > 0">
       <div class="mb-2">
         <strong>Satisfied By</strong>
-        <b-badge pill variant="info" class="ml-1">{{ rule.satisfied_by.length }}</b-badge>
+        <b-badge pill variant="info" class="ml-1">{{
+          ruleArray(rule, "satisfied_by").length
+        }}</b-badge>
       </div>
       <p v-if="readOnly" class="text-muted small mb-2">
         <em>Edit mode required to modify</em>
@@ -91,7 +95,7 @@
       </b-form-checkbox>
 
       <div
-        v-for="satisfied_by in rule.satisfied_by"
+        v-for="satisfied_by in ruleArray(rule, 'satisfied_by')"
         :key="satisfied_by.id"
         :class="ruleRowClass(satisfied_by)"
         class="d-flex justify-content-between align-items-center"
@@ -143,6 +147,7 @@
 
 <script>
 import { truncateId } from "../../utils/idFormatter";
+import { ruleArray } from "../../utils/ruleArray";
 import { useRuleSelectionStore } from "../../stores/ruleSelection";
 
 export default {
@@ -182,6 +187,7 @@ export default {
     };
   },
   methods: {
+    ruleArray,
     ruleSelected: function (rule) {
       if (!rule.histories) {
         this.$root.$emit("refresh:rule", rule.id);

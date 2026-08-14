@@ -220,6 +220,7 @@ import { useRuleNavigation } from "../../composables/useRuleNavigation";
 import { useRelocations } from "../../composables/useRelocations";
 import { scrollToField } from "../../utils/searchHighlight";
 import { roleGteTo } from "../../utils/roleComparison";
+import { ruleArray } from "../../utils/ruleArray";
 import RuleEditor from "../rules/RuleEditor.vue";
 import RelatedRulesModal from "../rules/RelatedRulesModal.vue";
 import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
@@ -540,7 +541,7 @@ export default {
       this.togglePanel("rule-reviews");
     },
     onOpenComposer(section, rule = this.selectedRule) {
-      const parent = rule?.satisfied_by?.[0];
+      const parent = ruleArray(rule, "satisfied_by")[0];
       this.openSectionComposer({
         ruleId: rule?.id,
         componentId: this.component.id,

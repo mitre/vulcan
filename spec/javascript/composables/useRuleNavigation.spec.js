@@ -70,6 +70,27 @@ describe("useRuleNavigation", () => {
     localStorage.clear();
   });
 
+  it("runs authored-shaped rows (Rule-only keys omitted) through the nest-satisfied pipeline", () => {
+    // Authored SRG payloads omit satisfies/satisfied_by/checks_attributes/
+    // disa_rule_descriptions_attributes entirely — the filter, partition,
+    // and search-text paths must read them through ruleArray, never bare.
+    const rules = ref([
+      {
+        id: 3,
+        rule_id: "003",
+        version: "SV-3",
+        status: "Not Yet Determined",
+        locked: false,
+        review_requestor_id: null,
+        comment_summary: null,
+      },
+    ]);
+    const { filteredRules, filters } = nav(rules);
+    filters.value.nestSatisfiedRulesChecked = true;
+    expect(filteredRules.value.length).toBe(1);
+    expect(filteredRules.value[0].rule_id).toBe("003");
+  });
+
   it("returns all rules when no filters are active (additive model)", () => {
     const { filteredRules } = nav(createRules());
     expect(filteredRules.value.length).toBe(2);

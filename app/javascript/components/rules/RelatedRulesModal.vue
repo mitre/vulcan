@@ -174,12 +174,7 @@
                       v-if="!readOnly"
                       class="mb-2"
                       size="sm"
-                      @click="
-                        copyDiscussionToRule(
-                          $root,
-                          relatedRule.disa_rule_descriptions_attributes[0].vuln_discussion,
-                        )
-                      "
+                      @click="copyDiscussionToRule($root, relatedDiscussion(relatedRule))"
                     >
                       Copy to {{ ruleStigId }}
                     </b-button>
@@ -191,11 +186,7 @@
                         height: 375px;
                         line-height: 1.5;
                       "
-                      v-html="
-                        formatAndHighlightSearchWord(
-                          relatedRule.disa_rule_descriptions_attributes[0].vuln_discussion,
-                        )
-                      "
+                      v-html="formatAndHighlightSearchWord(relatedDiscussion(relatedRule))"
                     />
                   </b-card-text>
                   <b-card-text
@@ -208,9 +199,7 @@
                       v-if="!readOnly"
                       class="mb-2"
                       size="sm"
-                      @click="
-                        copyCheckContentToRule($root, relatedRule.checks_attributes[0].content)
-                      "
+                      @click="copyCheckContentToRule($root, relatedCheckContent(relatedRule))"
                     >
                       Copy to {{ ruleStigId }}
                     </b-button>
@@ -222,9 +211,7 @@
                         height: 375px;
                         line-height: 1.5;
                       "
-                      v-html="
-                        formatAndHighlightSearchWord(relatedRule.checks_attributes[0].content)
-                      "
+                      v-html="formatAndHighlightSearchWord(relatedCheckContent(relatedRule))"
                     />
                   </b-card-text>
                   <b-card-text
@@ -263,6 +250,7 @@
 </template>
 <script>
 import { getRelatedRules } from "../../api/searchApi";
+import { ruleArray } from "../../utils/ruleArray";
 import DOMPurify from "dompurify";
 import VueMultiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
@@ -370,6 +358,12 @@ export default {
     },
   },
   methods: {
+    relatedDiscussion(relatedRule) {
+      return (ruleArray(relatedRule, "disa_rule_descriptions_attributes")[0] || {}).vuln_discussion;
+    },
+    relatedCheckContent(relatedRule) {
+      return (ruleArray(relatedRule, "checks_attributes")[0] || {}).content;
+    },
     getRelatedRules: async function () {
       this.resetModal();
       getRelatedRules(this.rule.id).then((response) => {
@@ -443,8 +437,8 @@ export default {
 
       return rules.filter((r) => {
         const title = convertLower(r.title);
-        const discussion = convertLower(r.disa_rule_descriptions_attributes[0].vuln_discussion);
-        const check = convertLower(r.checks_attributes[0].content);
+        const discussion = convertLower(this.relatedDiscussion(r));
+        const check = convertLower(this.relatedCheckContent(r));
         const fix = convertLower(r.fixtext);
 
         if (this.allFieldsSelected) {
@@ -480,7 +474,7 @@ export default {
       });
     },
     copyCheckContentToRule: function (root, checkContent) {
-      const check = this.rule.checks_attributes[0];
+      const check = ruleArray(this.rule, "checks_attributes")[0];
       const content = `${check.content}\n\n${checkContent}`;
       root.$emit("update:check", this.rule, { ...check, content }, 0);
       this.$bvToast.toast(`Check successfully copied to ${this.ruleStigId}`, {
@@ -490,7 +484,7 @@ export default {
       });
     },
     copyDiscussionToRule: function (root, vulnDiscussion) {
-      const discussion = this.rule.disa_rule_descriptions_attributes[0];
+      const discussion = ruleArray(this.rule, "disa_rule_descriptions_attributes")[0];
       const vuln_discussion = `${discussion.vuln_discussion}\n\n${vulnDiscussion}`;
       root.$emit("update:disaDescription", this.rule, { ...discussion, vuln_discussion }, 0);
       this.$bvToast.toast(`Discussion successfully copied to ${this.ruleStigId}`, {

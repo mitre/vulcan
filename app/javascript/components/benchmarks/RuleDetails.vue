@@ -10,8 +10,8 @@
       </div>
       <div class="card-body">
         <SatisfiedByIndicator
-          v-if="selectedRule.satisfied_by && selectedRule.satisfied_by.length > 0"
-          :parent-rules="selectedRule.satisfied_by"
+          v-if="satisfiedByParents.length > 0"
+          :parent-rules="satisfiedByParents"
         >
           Covered by its parent requirement in this release.
           <template #actions>
@@ -33,7 +33,7 @@
             <template #default="{ inputId, isDisabled }">
               <MarkdownTextarea
                 :id="inputId"
-                :value="selectedRule.disa_rule_descriptions_attributes[0].vuln_discussion"
+                :value="disaDescriptionValue"
                 placeholder=""
                 :disabled="isDisabled"
                 rows="1"
@@ -57,7 +57,7 @@
             <template #default="{ inputId, isDisabled }">
               <MarkdownTextarea
                 :id="inputId"
-                :value="selectedRule.checks_attributes[0].content"
+                :value="checkContentValue"
                 placeholder=""
                 :disabled="isDisabled"
                 rows="1"
@@ -124,6 +124,7 @@
 import RuleFormGroup from "../shared/RuleFormGroup.vue";
 import MarkdownTextarea from "../shared/MarkdownTextarea.vue";
 import SatisfiedByIndicator from "../shared/SatisfiedByIndicator.vue";
+import { ruleArray } from "../../utils/ruleArray";
 
 export default {
   name: "RuleDetails",
@@ -141,19 +142,21 @@ export default {
     },
   },
   computed: {
+    satisfiedByParents() {
+      return ruleArray(this.selectedRule, "satisfied_by");
+    },
     hasDisaDescription() {
-      return (
-        this.selectedRule &&
-        this.selectedRule.disa_rule_descriptions_attributes &&
-        this.selectedRule.disa_rule_descriptions_attributes.length > 0
-      );
+      return ruleArray(this.selectedRule, "disa_rule_descriptions_attributes").length > 0;
     },
     hasCheck() {
-      return (
-        this.selectedRule &&
-        this.selectedRule.checks_attributes &&
-        this.selectedRule.checks_attributes.length > 0
-      );
+      return ruleArray(this.selectedRule, "checks_attributes").length > 0;
+    },
+    disaDescriptionValue() {
+      return (ruleArray(this.selectedRule, "disa_rule_descriptions_attributes")[0] || {})
+        .vuln_discussion;
+    },
+    checkContentValue() {
+      return (ruleArray(this.selectedRule, "checks_attributes")[0] || {}).content;
     },
     vulnDiscussionFields() {
       return { displayed: ["vuln_discussion"], disabled: [] };

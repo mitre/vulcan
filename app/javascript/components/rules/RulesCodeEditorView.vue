@@ -323,6 +323,7 @@ import DeclineRelocationModal from "./DeclineRelocationModal.vue";
 import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
 import { MESSAGE_LABELS, RELOCATION_TERM } from "../../constants/terminology";
 import { scrollToField } from "../../utils/searchHighlight";
+import { ruleArray } from "../../utils/ruleArray";
 
 export default {
   name: "RulesCodeEditorView",
@@ -691,7 +692,7 @@ export default {
       this.togglePanel("rule-reviews");
     },
     onOpenComposer(section, rule = this.selectedRule) {
-      const parent = rule?.satisfied_by?.[0];
+      const parent = ruleArray(rule, "satisfied_by")[0];
       this.openSectionComposer({
         ruleId: rule?.id,
         componentId: this.component.id,
@@ -762,8 +763,8 @@ export default {
       const rule = this.selectedRule;
       if (rule) {
         this.$root.$emit("refresh:rule", rule.id, "all");
-        if (rule.satisfied_by?.length > 0) {
-          rule.satisfied_by.forEach((r) => {
+        if (ruleArray(rule, "satisfied_by").length > 0) {
+          ruleArray(rule, "satisfied_by").forEach((r) => {
             this.$root.$emit("refresh:rule", r.id, "all");
           });
         }
