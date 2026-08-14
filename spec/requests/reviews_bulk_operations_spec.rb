@@ -156,6 +156,7 @@ RSpec.describe 'Reviews' do
         }, as: :json
 
         expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body.dig('toast', 'title')).to eq('Could not save triage.')
         expect(comment_a.reload.triage_status).to eq('pending')
         expect(comment_b.reload.triage_status).to eq('pending')
       end
@@ -279,6 +280,64 @@ RSpec.describe 'Reviews' do
         expect(response.parsed_body['type']).to eq('/api/docs/errors#not_found')
         expect(concealed).to eq(missing)
       end
+    end
+  end
+
+  # A response comment must land on its PARENT'S commentable — the Rule-classed
+  # association returns nil for authored SrgRules and component-scoped parents,
+  # which left the response with no commentable (422) before the fix.
+  describe 'PATCH /reviews/bulk_triage responses on srg-kind and component-scoped parents' do
+    let_it_be(:srg_author) { create(:user) }
+    let_it_be(:srg_project) { create(:project) }
+    let_it_be(:srg_component) do
+      create(:component, :skip_rules, project: srg_project, document_type: 'srg', prefix: 'SRGX-00',
+                                      name: 'Authored SRG bulk', title: 'Authored SRG bulk')
+    end
+    let_it_be(:authored_a) { create(:srg_rule, :authored, component: srg_component, rule_id: '000001') }
+    let_it_be(:authored_b) { create(:srg_rule, :authored, component: srg_component, rule_id: '000002') }
+
+    before_all do
+      Membership.find_or_create_by!(user: srg_author, membership: srg_project) { |m| m.role = 'author' }
+    end
+
+    before { sign_in srg_author }
+
+    it 'creates each response on the parent authored requirement' do
+      one = create(:review, :comment, user: srg_author, rule: nil, commentable: authored_a,
+                                      comment: 'srg feedback one', section: 'fixtext')
+      two = create(:review, :comment, user: srg_author, rule: nil, commentable: authored_b,
+                                      comment: 'srg feedback two', section: 'fixtext')
+
+      patch '/reviews/bulk_triage', params: {
+        review_ids: [one.id, two.id],
+        triage_status: 'informational',
+        response_comment: 'Acknowledged for the authored requirement.'
+      }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      [one, two].each do |parent|
+        resp = Review.find_by!(responding_to_review_id: parent.id)
+        expect(resp.commentable_type).to eq('BaseRule')
+        expect(resp.commentable_id).to eq(parent.commentable_id)
+        expect(resp.rule_id).to eq(parent.commentable_id)
+      end
+    end
+
+    it 'creates the response on the component for a component-scoped parent' do
+      parent = create(:review, :component_comment, user: srg_author, commentable: srg_component,
+                                                   comment: 'overall srg feedback')
+
+      patch '/reviews/bulk_triage', params: {
+        review_ids: [parent.id],
+        triage_status: 'informational',
+        response_comment: 'Noted at the component level.'
+      }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      resp = Review.find_by!(responding_to_review_id: parent.id)
+      expect(resp.commentable_type).to eq('Component')
+      expect(resp.commentable_id).to eq(srg_component.id)
+      expect(resp.section).to be_nil
     end
   end
 

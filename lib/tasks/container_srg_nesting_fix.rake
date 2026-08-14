@@ -268,14 +268,10 @@ namespace :container_srg do
           audit_comment: "Auto-adjudicated: requirement addressed by #{component.prefix}-#{parent.rule_id}"
         )
 
-        Review.create!(
-          action: 'comment',
+        comment.create_response!(
           comment: "This requirement is addressed by #{component.prefix}-#{parent.rule_id}. " \
                    'Your feedback applies to that requirement.',
-          user: admin,
-          rule: comment.rule,
-          responding_to_review_id: comment.id,
-          section: comment.section
+          user: admin
         )
       end
     end

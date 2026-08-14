@@ -155,6 +155,19 @@ class Review < ApplicationRecord
       .order(updated_at: :desc).first&.user
   end
 
+  # Creates the child response that renders inline in this comment's
+  # thread (triage/adjudicate/bulk responses). commentable, not rule: —
+  # the parent may sit on an authored SrgRule or be component-scoped,
+  # where the Rule-classed association returns nil and the response
+  # would land with no commentable. A response always lives on its
+  # parent's commentable (rule as fallback for legacy rows whose
+  # dual-write never fired).
+  def create_response!(comment:, user:)
+    self.class.create!(action: ACTION_COMMENT, comment: comment, user: user,
+                       commentable: commentable || rule,
+                       responding_to_review_id: id, section: section)
+  end
+
   # Applies one triage decision (and an optional response, copied per-comment)
   # to many top-level comments in a single transaction. Each comment gets its
   # own response Review so threads stay self-contained. The per-row audits
@@ -185,8 +198,7 @@ class Review < ApplicationRecord
 
         next if response_comment.blank?
 
-        responses << create!(action: ACTION_COMMENT, comment: response_comment, user: user,
-                             rule: review.rule, responding_to_review_id: review.id, section: review.section)
+        responses << review.create_response!(comment: response_comment, user: user)
       end
     end
     { reviews: reviews, response_reviews: responses }

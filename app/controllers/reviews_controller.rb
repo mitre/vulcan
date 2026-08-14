@@ -67,6 +67,7 @@ class ReviewsController < ApplicationController
   # blocks that all rendered the same shape with a per-action title.
   record_invalid_titles(
     triage: 'Could not save triage.',
+    bulk_triage: 'Could not save triage.',
     adjudicate: 'Could not close.',
     reopen: 'Could not re-open.',
     withdraw: 'Could not withdraw.',
@@ -160,16 +161,7 @@ class ReviewsController < ApplicationController
         addressed_by_rule_id: params[:addressed_by_rule_id]
       )
 
-      if params[:response_comment].present?
-        response_review = Review.create!(
-          action: Review::ACTION_COMMENT,
-          comment: params[:response_comment],
-          user: current_user,
-          rule: @review.rule,
-          responding_to_review_id: @review.id,
-          section: @review.section
-        )
-      end
+      response_review = @review.create_response!(comment: params[:response_comment], user: current_user) if params[:response_comment].present?
     end
 
     render json: {
@@ -247,16 +239,7 @@ class ReviewsController < ApplicationController
     Review.transaction do
       @review.update!(adjudicated_at: Time.current, adjudicated_by_id: current_user.id)
 
-      if params[:resolution_comment].present?
-        response_review = Review.create!(
-          action: Review::ACTION_COMMENT,
-          comment: params[:resolution_comment],
-          user: current_user,
-          rule: @review.rule,
-          responding_to_review_id: @review.id,
-          section: @review.section
-        )
-      end
+      response_review = @review.create_response!(comment: params[:resolution_comment], user: current_user) if params[:resolution_comment].present?
     end
 
     render json: {
