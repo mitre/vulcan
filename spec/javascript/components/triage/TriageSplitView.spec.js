@@ -217,6 +217,26 @@ describe("TriageSplitView", () => {
     expect(keys).not.toContain("vendor_comments");
   });
 
+  it.each(["Applicable", "Not Applicable"])(
+    "renders the SRG lifecycle status %s via the kind config, never the fallback",
+    (status) => {
+      // If the srg kind were lost, these statuses resolve differently under
+      // the stig config, so the STIG-only field planted here would render
+      // (mutation-verified). "Not Yet Determined" is omitted: both kind
+      // configs render the identical author-tier field set for it, so no
+      // panel-level assertion can discriminate kind at that status.
+      const srgRow = {
+        ...rows[0],
+        rule_content: { ...ruleContent1, status, vendor_comments: "must not render" },
+      };
+      const w = mountView({ rows: [srgRow], documentType: "srg", contextMode: "all" });
+      const panel = w.findComponent({ name: "RuleContextPanel" });
+      const keys = panel.vm.visibleFields.map((f) => f.key);
+      expect(keys).toContain("status");
+      expect(keys).not.toContain("vendor_comments");
+    },
+  );
+
   // ── CommentTriageForm integration ──────────────────────────────────
 
   it("renders CommentTriageForm for the active comment", () => {

@@ -83,6 +83,31 @@ describe("TriageRuleSidebar", () => {
     expect(headers.at(1).classes()).toContain("sidebar-rule--active");
   });
 
+  // ── SRG identity on rule headers (kind-aware queue, SRG components) ─
+
+  it("renders srg_info title, version, and currency dot on the rule header", () => {
+    const srgRows = comments.map((c) =>
+      c.rule_id === 10
+        ? { ...c, srg_info: { title: "Application Core SRG", version: "V4R1", is_latest: false } }
+        : c,
+    );
+    const w = mount(TriageRuleSidebar, {
+      localVue,
+      propsData: baseProps({ comments: srgRows }),
+    });
+    const header = w.findAll("[data-testid='sidebar-rule-header']").at(1);
+    expect(header.text()).toContain("Application Core SRG V4R1");
+    const dot = header.findComponent({ name: "VersionCurrencyDot" });
+    expect(dot.exists()).toBe(true);
+    expect(dot.props("isLatest")).toBe(false);
+  });
+
+  it("renders no SRG identity line when rows carry no srg_info", () => {
+    const w = mount(TriageRuleSidebar, { localVue, propsData: baseProps() });
+    const header = w.findAll("[data-testid='sidebar-rule-header']").at(1);
+    expect(header.findComponent({ name: "VersionCurrencyDot" }).exists()).toBe(false);
+  });
+
   it("emits select with first comment id when clicking a rule header", async () => {
     const w = mount(TriageRuleSidebar, { localVue, propsData: baseProps() });
     const headers = w.findAll("[data-testid='sidebar-rule-header']");
