@@ -228,7 +228,9 @@ module Export
       end
 
       def serialize_reviews
-        all_reviews = rules_collection.flat_map { |rule| rule.reviews.order(:created_at).map { |r| [r, rule] } }
+        # sort_by, not .order — an SQL order on the association discards the
+        # eager-loaded set (reviews, users, reactions) and re-queries per row.
+        all_reviews = rules_collection.flat_map { |rule| rule.reviews.sort_by(&:created_at).map { |r| [r, rule] } }
         original_ids = all_reviews.filter_map { |r, _| r.original_commentable_id }.uniq
         @original_rule_id_map = original_ids.any? ? BaseRule.where(id: original_ids).pluck(:id, :rule_id).to_h : {}
         # Same BaseRule.id → stable rule_id string pattern for addressed_by FK.
@@ -292,7 +294,9 @@ module Export
       end
 
       def serialize_reactions(review)
-        review.reactions.includes(:user).map do |r|
+        # Plain traversal — reactions (and their users) arrive via the modes'
+        # eager-load plans; an .includes here would re-query per review.
+        review.reactions.map do |r|
           {
             id: r.id,
             user_email: r.user&.email,

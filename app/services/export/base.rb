@@ -76,8 +76,11 @@ module Export
 
     # The mode serving THIS component: the run's mode normally; the mode's
     # srg counterpart (memoized) for an srg component when the counterpart
-    # is a valid Registry combination for the requested format; nil when the
-    # purpose has no srg meaning for the component's kind.
+    # is a valid Registry combination for the requested format AND itself
+    # opts into srg kind; nil when the purpose has no srg meaning for the
+    # component's kind. The opt-in check keeps the never-silently-empty
+    # promise — a counterpart that cannot serve authored SrgRules would
+    # serialize zero requirements without it.
     def mode_for(component)
       return @mode unless component.document_type == 'srg'
       return @mode if @mode.supports_srg_kind?
@@ -85,7 +88,8 @@ module Export
       counterpart = @mode.srg_counterpart
       return nil unless counterpart && Registry.valid?(counterpart, @format)
 
-      srg_counterpart_mode(counterpart)
+      mode = srg_counterpart_mode(counterpart)
+      mode.supports_srg_kind? ? mode : nil
     end
 
     def srg_counterpart_mode(counterpart)

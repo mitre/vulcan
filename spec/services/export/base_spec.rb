@@ -107,6 +107,45 @@ RSpec.describe Export::Base do
     end
   end
 
+  # ==========================================================================
+  # REQUIREMENT: kind routing refuses LOUDLY. A purpose with no srg meaning
+  # never yields an empty archive: an srg-only selection raises
+  # NoExportableComponents, and mode_for routes to a counterpart only when
+  # that counterpart actually opts into srg kind — one that does not would
+  # serialize zero requirements silently.
+  # ==========================================================================
+  describe 'kind routing refusal' do
+    let_it_be(:refusal_srg) { create(:security_requirements_guide, :core, :skip_rules) }
+    let_it_be(:refusal_component) do
+      create(:component, :skip_rules, document_type: 'srg', based_on: refusal_srg)
+    end
+
+    it 'raises NoExportableComponents for an srg-only selection on a purpose with no srg meaning' do
+      export = described_class.new(exportable: refusal_component, mode: :working_copy, format: :csv)
+      expect { export.call }.to raise_error(
+        Export::Base::NoExportableComponents,
+        'None of the selected components support this export purpose.'
+      )
+    end
+
+    it 'refuses a counterpart mode that does not opt into srg kind' do
+      # No shipped mode misroutes today — construct the misconfiguration: a
+      # published_stig whose counterpart is working_copy (a valid Registry
+      # combination for :inspec, but NOT srg-capable). Without the mode_for
+      # guard this export would produce a silently empty archive.
+      misrouting_mode = Class.new(Export::Modes::PublishedStig) do
+        def srg_counterpart
+          :working_copy
+        end
+      end
+      allow(Export::Registry).to receive(:mode_class).and_call_original
+      allow(Export::Registry).to receive(:mode_class).with(:published_stig).and_return(misrouting_mode)
+
+      export = described_class.new(exportable: refusal_component, mode: :published_stig, format: :inspec)
+      expect { export.call }.to raise_error(Export::Base::NoExportableComponents)
+    end
+  end
+
   describe '#call with specific component_ids' do
     let_it_be(:component2_for_ids) { create(:component, project: project) }
 
@@ -234,6 +273,80 @@ RSpec.describe Export::Base do
       disposition_entries = entries.select { |n| n.include?('disposition-matrix') }
       expect(disposition_entries.length).to eq(1)
       expect(disposition_entries.first).to include(dpb_component.prefix)
+    end
+  end
+
+  # ==========================================================================
+  # REQUIREMENT: backup lineage emission (srg_rule_srg_id /
+  # derived_from_srg_rule_srg_id) arrives through the modes' eager-load
+  # plans, never one security_requirements_guides SELECT per row. Backup is
+  # the pre-delete archive path — a component's only recovery route — so an
+  # N+1 here scales with requirement count exactly when it hurts most.
+  # ==========================================================================
+  describe '#call with backup + json_archive — lineage preload' do
+    # Multi-parent on purpose: rows carry lineage into TWO different SRGs,
+    # so a per-row hop issues distinct SQL no cache can collapse. The count
+    # stays fixed only when the eager-load plans carry
+    # :security_requirements_guide.
+    let_it_be(:lineage_srg_a) { create(:security_requirements_guide, :skip_rules) }
+    let_it_be(:lineage_srg_b) { create(:security_requirements_guide, :skip_rules) }
+    let_it_be(:lineage_component) { create(:component, :skip_rules, based_on: lineage_srg_a) }
+    let_it_be(:core_srg_a) { create(:security_requirements_guide, :core, :skip_rules) }
+    let_it_be(:core_srg_b) { create(:security_requirements_guide, :core, :skip_rules) }
+    let_it_be(:srg_lineage_component) do
+      create(:component, :skip_rules, document_type: 'srg', based_on: core_srg_a)
+    end
+
+    let_it_be(:lineage_reviewer) { create(:user) }
+
+    before_all do
+      [lineage_srg_a, lineage_srg_a, lineage_srg_b, lineage_srg_b].each do |srg|
+        create(:rule, component: lineage_component,
+                      srg_rule: create(:srg_rule, security_requirements_guide: srg))
+      end
+      [core_srg_a, core_srg_a, core_srg_b, core_srg_b].each do |srg|
+        create(:srg_rule, :authored, component: srg_lineage_component,
+                                     derived_from: create(:srg_rule, security_requirements_guide: srg))
+      end
+      # Reviews + reactions ride the same archive path — their emission must
+      # come from the eager-loaded sets, not per-row re-queries.
+      rule_review = create(:review, :comment, user: lineage_reviewer,
+                                              rule: lineage_component.rules.order(:id).first)
+      srg_review = create(:review, :comment, user: lineage_reviewer, rule: nil,
+                                             commentable: srg_lineage_component.authored_srg_rules.order(:id).first)
+      [rule_review, srg_review].each do |review|
+        Reaction.create!(review: review, user: lineage_reviewer, kind: 'up')
+      end
+    end
+
+    it 'emits Rule lineage srg ids without per-row security_requirements_guide queries' do
+      export = described_class.new(exportable: lineage_component, mode: :backup, format: :json_archive)
+      report = count_queries { export.call }
+      # Fixed component-level loads only (based_on + source_srgs). A count
+      # that scales with rows means a plan lost :security_requirements_guide.
+      expect(report.by_name['SecurityRequirementsGuide Load']).to eq(2),
+                                                                  "expected lineage srg ids to arrive via the eager-load plan, got:\n#{report}"
+    end
+
+    it 'emits authored SrgRule lineage srg ids without per-row security_requirements_guide queries' do
+      export = described_class.new(exportable: srg_lineage_component, mode: :backup, format: :json_archive)
+      report = count_queries { export.call }
+      expect(report.by_name['SecurityRequirementsGuide Load']).to eq(2),
+                                                                  "expected lineage srg ids to arrive via the eager-load plan, got:\n#{report}"
+    end
+
+    it 'serializes Rule reviews and reactions from the eager-loaded sets, never per-row queries' do
+      export = described_class.new(exportable: lineage_component, mode: :backup, format: :json_archive)
+      report = count_queries { export.call }
+      expect(report.by_name.slice('Review Load', 'Reaction Load')).to eq({}),
+                                                                      "expected reviews + reactions to arrive via the eager-load plan, got:\n#{report}"
+    end
+
+    it 'serializes authored SrgRule reviews and reactions from the eager-loaded sets, never per-row queries' do
+      export = described_class.new(exportable: srg_lineage_component, mode: :backup, format: :json_archive)
+      report = count_queries { export.call }
+      expect(report.by_name.slice('Review Load', 'Reaction Load')).to eq({}),
+                                                                      "expected reviews + reactions to arrive via the eager-load plan, got:\n#{report}"
     end
   end
 

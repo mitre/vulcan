@@ -34,9 +34,13 @@ module Export
         [
           :disa_rule_descriptions, :rule_descriptions, :checks,
           :references, :satisfies, :satisfied_by,
-          { reviews: :user },
+          { reviews: [:user, { reactions: :user }] },
           { additional_answers: :additional_question },
-          { srg_rule: %i[disa_rule_descriptions rule_descriptions checks] }
+          # security_requirements_guide rides along for the serializer's
+          # portable lineage key (srg_rule_srg_id) — a belongs_to hop, so
+          # it joins without multiplying rows.
+          { srg_rule: %i[disa_rule_descriptions rule_descriptions checks
+                         security_requirements_guide] }
         ]
       end
     end

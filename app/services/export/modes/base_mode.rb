@@ -55,10 +55,14 @@ module Export
 
       # The BaseRule-shared association set — authored SrgRules carry none
       # of the Rule-only associations (satisfies, srg_rule, additional_answers).
+      # derived_from carries its security_requirements_guide for the
+      # serializer's portable lineage key (derived_from_srg_rule_srg_id) —
+      # a belongs_to hop, so it joins without multiplying rows.
       def srg_eager_load_associations
         [
           :disa_rule_descriptions, :rule_descriptions, :checks, :references,
-          :derived_from, { reviews: :user }
+          { derived_from: :security_requirements_guide },
+          { reviews: [:user, { reactions: :user }] }
         ]
       end
 
