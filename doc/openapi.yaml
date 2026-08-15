@@ -1469,6 +1469,12 @@ paths:
         - $ref: '#/components/parameters/TriageStatusFilter'
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PerPageParam'
+        - name: section
+          in: query
+          description: Filter by requirement section (fixtext, check_content, etc.).
+          schema:
+            type: string
+          example: fixtext
         - name: component_id
           in: query
           required: false
@@ -1497,6 +1503,7 @@ paths:
               - 'true'
               - 'false'
               - all
+          example: 'false'
       responses:
         '200':
           description: Paginated project comment rows with status counts
@@ -2204,6 +2211,27 @@ paths:
           schema:
             type: string
           example: container image
+        - name: resolved
+          in: query
+          required: false
+          description: Filter by resolved state (true/false/all).
+          schema:
+            type: string
+            enum:
+              - 'true'
+              - 'false'
+              - all
+          example: 'false'
+        - name: commentable_type
+          in: query
+          required: false
+          description: Restrict rows to comments on requirements ("rule") or on the component itself ("component"). Absent or any other value returns both.
+          schema:
+            type: string
+            enum:
+              - rule
+              - component
+          example: rule
         - name: include_rule_content
           in: query
           description: Include rule content fields for split-pane triage view.
@@ -5990,7 +6018,25 @@ paths:
       summary: My Comments page — user's comments across accessible projects
       description: Returns paginated comments authored by the specified user across all projects the requesting user can access. Scoped by project visibility, not identity — this is a filtered view, not a privacy boundary. Supports triage status filtering, project filtering, and pagination.
       parameters:
-        - $ref: '#/components/parameters/TriageStatusFilter'
+        - name: triage_status
+          in: query
+          required: false
+          description: Filter the user's comments by triage disposition. Absent or "all" returns comments in any status — this page has no default filter.
+          schema:
+            type: string
+            enum:
+              - all
+              - pending
+              - concur
+              - concur_with_comment
+              - non_concur
+              - duplicate
+              - informational
+              - needs_clarification
+              - withdrawn
+              - addressed_by
+            default: all
+          example: concur
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PerPageParam'
         - name: project_id
@@ -13598,7 +13644,7 @@ components:
     TriageStatusFilter:
       name: triage_status
       in: query
-      description: Filter comments by triage disposition. Use "all" to return comments in any status.
+      description: Filter comments by triage disposition. Defaults to "pending" — the triage table opens on undispositioned comments. Use "all" to return comments in any status.
       schema:
         type: string
         enum:
@@ -13607,11 +13653,12 @@ components:
           - concur
           - concur_with_comment
           - non_concur
-          - needs_clarification
           - duplicate
-          - addressed_by
+          - informational
+          - needs_clarification
           - withdrawn
-        default: all
+          - addressed_by
+        default: pending
       example: pending
     PageParam:
       name: page

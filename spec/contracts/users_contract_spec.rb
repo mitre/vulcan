@@ -121,6 +121,29 @@ RSpec.describe 'Users endpoint contracts', type: :request do
                       comment: 'User comments contract test', section: 'fixtext')
     end
 
+    it 'serves ALL statuses by default — My Comments has no triage filter, and its doc says so' do
+      # This endpoint's semantics differ from the triage endpoints: a user's
+      # own comments page shows everything unless they filter. The inline
+      # param on the users path (not the shared TriageStatusFilter) is the
+      # documented form of that difference.
+      adjudicated = create(:review, user: admin, rule: rule, action: 'comment',
+                                    comment: 'Adjudicated user comment', section: 'fixtext')
+      adjudicated.update!(triage_status: 'concur')
+
+      get "/users/#{admin.id}/comments", headers: json_headers
+      body = validate_and_parse!
+      expect(body['rows'].pluck('id')).to include(user_comment.id, adjudicated.id)
+
+      inline_param = YAML.safe_load(Rails.root.join('doc/openapi.yaml').read)
+                         .dig('paths', '/users/{userId}/comments', 'get', 'parameters')
+                         .find { |p| p.is_a?(Hash) && p['name'] == 'triage_status' }
+      expect(inline_param).to be_present, 'users comments must document its own triage_status ' \
+                                          '(the shared TriageStatusFilter defaults to pending, ' \
+                                          'which this endpoint does not do)'
+      expect(inline_param.dig('schema', 'enum')).to match_array(Review::TRIAGE_STATUSES + ['all'])
+      expect(inline_param.dig('schema', 'default')).to eq('all')
+    end
+
     it 'returns paginated user comments with project/component context' do
       get "/users/#{admin.id}/comments", headers: json_headers
       body = validate_and_parse!

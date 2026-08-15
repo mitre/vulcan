@@ -97,7 +97,7 @@ RSpec.describe Review do
         # The consumer surface directly: the triage-row decoration resolves
         # the cross-parent target's displayed name through the component-
         # scoped display map — proof no addressed_by surface reads based_on.
-        row = CommentQueryService.new(mp_component).call[:rows]
+        row = CommentQueryService.new(mp_component, { triage_status: 'all' }).call[:rows]
                                  .find { |r| r['id'] == review.id }
         expect(row['addressed_by_rule_name']).to eq('ADMP-00-400002')
       end

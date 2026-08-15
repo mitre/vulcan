@@ -58,7 +58,9 @@ RSpec.describe 'paginated_comments — PII shape' do
     end
 
     it 'Component#paginated_comments includes triager_display_name + triager_imported' do
-      row = component.paginated_comments[:rows].first
+      # The fixture is triaged (non-pending): these shape tests want the
+      # row regardless of disposition, not the pending default.
+      row = component.paginated_comments(triage_status: 'all')[:rows].first
       expect(row['triager_display_name']).to eq('Tri Ager')
       expect(row['triager_imported']).to be(false)
       expect(row).to have_key('adjudicator_display_name')
@@ -71,7 +73,7 @@ RSpec.describe 'paginated_comments — PII shape' do
         triage_set_by_imported_name: 'Old Triager',
         triage_set_by_imported_email: 'old@former.example'
       )
-      row = component.paginated_comments[:rows].first
+      row = component.paginated_comments(triage_status: 'all')[:rows].first
       expect(row['triager_display_name']).to eq('Old Triager')
       expect(row['triager_imported']).to be(true)
     end
@@ -87,7 +89,7 @@ RSpec.describe 'paginated_comments — PII shape' do
         triage_set_by_imported_name: nil,
         triage_set_by_imported_email: 'leak-me@example.com'
       )
-      row = component.paginated_comments[:rows].first
+      row = component.paginated_comments(triage_status: 'all')[:rows].first
       expect(row['triager_display_name']).to eq('(imported triager)')
       expect(row['triager_imported']).to be(true)
       expect(row.values).not_to include('leak-me@example.com')
@@ -99,14 +101,14 @@ RSpec.describe 'paginated_comments — PII shape' do
         commenter_imported_name: nil,
         commenter_imported_email: 'commenter-fallback@example.com'
       )
-      row = component.paginated_comments[:rows].first
+      row = component.paginated_comments(triage_status: 'all')[:rows].first
       expect(row['commenter_display_name']).to eq('(imported commenter)')
       expect(row['commenter_imported']).to be(true)
       expect(row['author_email']).to eq('commenter-fallback@example.com')
     end
 
     it 'Project#paginated_comments carries the same four display fields' do
-      row = project.paginated_comments[:rows].first
+      row = project.paginated_comments(triage_status: 'all')[:rows].first
       expect(row['triager_display_name']).to eq('Tri Ager')
       expect(row['triager_imported']).to be(false)
       expect(row).to have_key('adjudicator_display_name')

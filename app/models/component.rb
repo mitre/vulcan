@@ -771,7 +771,7 @@ class Component < ApplicationRecord
   # On-the-wire vocabulary is DISA-native: triage_status keys (concur,
   # non_concur, ...) and XCCDF section keys (check_content, fixtext, ...).
   # The frontend translates to friendly labels via triageVocabulary.js.
-  def paginated_comments(triage_status: 'all', section: nil, rule_id: nil, # rubocop:disable Metrics/ParameterLists
+  def paginated_comments(triage_status: 'pending', section: nil, rule_id: nil, # rubocop:disable Metrics/ParameterLists
                          author_id: nil, query: nil, page: 1, per_page: 25,
                          resolved: 'all', commentable_type: nil,
                          include_rule_content: false)

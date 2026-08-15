@@ -195,6 +195,38 @@ RSpec.describe 'Projects endpoint contracts', type: :request do
                               :comment, :triage_status, :responses_count, :reactions
       end
     end
+
+    it 'documents section and resolved on the projects comments path' do
+      params = YAML.safe_load(Rails.root.join('doc/openapi.yaml').read)
+                   .dig('paths', '/projects/{projectId}/comments', 'get', 'parameters')
+
+      section = params.find { |p| p.is_a?(Hash) && p['name'] == 'section' }
+      expect(section).to be_present
+      expect(section['description']).to be_present
+      expect(section['example']).to be_present
+
+      resolved = params.find { |p| p.is_a?(Hash) && p['name'] == 'resolved' }
+      expect(resolved).to be_present
+      expect(resolved.dig('schema', 'enum')).to match_array(%w[true false all])
+      expect(resolved['example']).to be_present
+    end
+
+    it 'serves the documented pending default and filters by the documented section param' do
+      other_section = create(:review, user: admin, rule: rule, action: 'comment',
+                                      comment: 'Check content note', section: 'check_content')
+      adjudicated = create(:review, user: admin, rule: rule, action: 'comment',
+                                    comment: 'Adjudicated row', section: 'fixtext')
+      adjudicated.update!(triage_status: 'concur')
+
+      get "/projects/#{project.id}/comments", headers: json_headers
+      body = validate_and_parse!
+      expect(body['rows'].pluck('id')).to contain_exactly(comment.id, other_section.id)
+
+      get "/projects/#{project.id}/comments",
+          params: { section: 'check_content' }, headers: json_headers
+      body = validate_and_parse!
+      expect(body['rows'].pluck('id')).to contain_exactly(other_section.id)
+    end
   end
 
   # ── GET /projects/:id/histories ──

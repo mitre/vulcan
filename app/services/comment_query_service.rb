@@ -4,7 +4,10 @@
 class CommentQueryService
   def initialize(component, params = {})
     @component = component
-    @triage_status = params[:triage_status] || 'all'
+    # The ruled default for the triage endpoints is pending — the triage
+    # table the endpoint powers opens on undispositioned comments. Callers
+    # wanting everything pass 'all' explicitly.
+    @triage_status = params[:triage_status] || 'pending'
     @section = params[:section]
     @rule_id = params[:rule_id]
     @author_id = params[:author_id]

@@ -11,7 +11,30 @@ get:
     not identity — this is a filtered view, not a privacy boundary. Supports
     triage status filtering, project filtering, and pagination.
   parameters:
-    - $ref: ../components/parameters/TriageStatusFilter.yaml
+    # Inline, not the shared TriageStatusFilter: My Comments applies NO
+    # default filter — absent (or "all") returns the user's comments in
+    # every status, unlike the triage endpoints' pending default.
+    - name: triage_status
+      in: query
+      required: false
+      description: >-
+        Filter the user's comments by triage disposition. Absent or "all"
+        returns comments in any status — this page has no default filter.
+      schema:
+        type: string
+        enum:
+          - all
+          - pending
+          - concur
+          - concur_with_comment
+          - non_concur
+          - duplicate
+          - informational
+          - needs_clarification
+          - withdrawn
+          - addressed_by
+        default: all
+      example: concur
     - $ref: ../components/parameters/PageParam.yaml
     - $ref: ../components/parameters/PerPageParam.yaml
     - name: project_id

@@ -38,6 +38,30 @@ get:
       schema:
         type: string
       example: "container image"
+    - name: resolved
+      in: query
+      required: false
+      description: Filter by resolved state (true/false/all).
+      schema:
+        type: string
+        enum:
+          - 'true'
+          - 'false'
+          - all
+      example: 'false'
+    - name: commentable_type
+      in: query
+      required: false
+      description: >-
+        Restrict rows to comments on requirements ("rule") or on the
+        component itself ("component"). Absent or any other value returns
+        both.
+      schema:
+        type: string
+        enum:
+          - rule
+          - component
+      example: rule
     - name: include_rule_content
       in: query
       description: Include rule content fields for split-pane triage view.

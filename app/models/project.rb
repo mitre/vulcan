@@ -121,7 +121,7 @@ class Project < ApplicationRecord
   #
   # Filters mirror the per-component endpoint. Vocabulary on the wire is
   # DISA-native; UI translates via triageVocabulary.js.
-  def paginated_comments(triage_status: 'all', section: nil, component_id: nil,
+  def paginated_comments(triage_status: 'pending', section: nil, component_id: nil,
                          author_id: nil, query: nil, page: 1, per_page: 25,
                          resolved: 'all')
     page = [page.to_i, 1].max

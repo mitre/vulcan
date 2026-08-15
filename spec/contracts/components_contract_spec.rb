@@ -210,6 +210,87 @@ RSpec.describe 'Components endpoint contracts', type: :request do
            'component_prefix' => component.prefix }]
       )
     end
+
+    it 'documents resolved and commentable_type on the comments path — fully, not just functionally' do
+      # The behavioral tests prove the params filter; this guards their
+      # DOCUMENTATION, which the behavioral tests cannot see — deleting the
+      # doc blocks would otherwise leave the suite green.
+      params = YAML.safe_load(Rails.root.join('doc/openapi.yaml').read)
+                   .dig('paths', '/components/{componentId}/comments', 'get', 'parameters')
+
+      resolved = params.find { |p| p.is_a?(Hash) && p['name'] == 'resolved' }
+      expect(resolved).to be_present
+      expect(resolved['description']).to be_present
+      expect(resolved.dig('schema', 'enum')).to match_array(%w[true false all])
+      expect(resolved['example']).to be_present
+
+      commentable = params.find { |p| p.is_a?(Hash) && p['name'] == 'commentable_type' }
+      expect(commentable).to be_present
+      expect(commentable['description']).to be_present
+      expect(commentable.dig('schema', 'enum')).to match_array(%w[rule component])
+      expect(commentable['example']).to be_present
+    end
+
+    it 'documents the triage filter as Review::TRIAGE_STATUSES plus all, defaulting to pending' do
+      # Correspondence guard, not a photocopy: the documented enum must track
+      # the model constant, and the documented default must be the ruled one
+      # the behavior pin below actually serves.
+      param = YAML.safe_load(Rails.root.join('doc/openapi.yaml').read)
+                  .dig('components', 'parameters', 'TriageStatusFilter')
+      expect(param.dig('schema', 'enum')).to match_array(Review::TRIAGE_STATUSES + ['all'])
+      expect(param.dig('schema', 'default')).to eq('pending')
+    end
+
+    it 'serves the documented default: a bare call returns only pending rows' do
+      adjudicated = create(:review, user: admin, rule: rule, action: 'comment',
+                                    comment: 'Adjudicated row', section: 'fixtext')
+      adjudicated.update!(triage_status: 'concur')
+
+      get "/components/#{component.id}/comments", headers: json_headers
+      body = validate_and_parse!
+      expect(body['rows'].pluck('id')).to contain_exactly(comment.id)
+
+      get "/components/#{component.id}/comments",
+          params: { triage_status: 'all' }, headers: json_headers
+      body = validate_and_parse!
+      expect(body['rows'].pluck('id')).to contain_exactly(comment.id, adjudicated.id)
+    end
+
+    it 'serves informational rows through the documented enum value' do
+      info = create(:review, user: admin, rule: rule, action: 'comment',
+                             comment: 'For awareness only', section: 'fixtext')
+      info.update!(triage_status: 'informational')
+
+      get "/components/#{component.id}/comments",
+          params: { triage_status: 'informational' }, headers: json_headers
+      body = validate_and_parse!
+      expect(body['rows'].pluck('id')).to contain_exactly(info.id)
+    end
+
+    it 'filters by the documented commentable_type and resolved params' do
+      component_comment = create(:review, user: admin, commentable: component, action: 'comment',
+                                          comment: 'On the component itself')
+      adjudicated = create(:review, user: admin, rule: rule, action: 'comment',
+                                    comment: 'Closed out', section: 'fixtext')
+      adjudicated.update!(triage_status: 'concur', adjudicated_at: Time.current)
+
+      get "/components/#{component.id}/comments",
+          params: { commentable_type: 'component' }, headers: json_headers
+      expect(validate_and_parse!['rows'].pluck('id')).to contain_exactly(component_comment.id)
+
+      get "/components/#{component.id}/comments",
+          params: { triage_status: 'all', commentable_type: 'rule' }, headers: json_headers
+      expect(validate_and_parse!['rows'].pluck('id')).to contain_exactly(comment.id, adjudicated.id)
+
+      get "/components/#{component.id}/comments",
+          params: { triage_status: 'all', resolved: 'true' }, headers: json_headers
+      expect(validate_and_parse!['rows'].pluck('id')).to contain_exactly(adjudicated.id)
+
+      get "/components/#{component.id}/comments",
+          params: { triage_status: 'all', resolved: 'false' }, headers: json_headers
+      expect(validate_and_parse!['rows'].pluck('id'))
+        .to contain_exactly(comment.id, component_comment.id)
+    end
   end
 
   # ── GET /components/:id/histories ──

@@ -14,6 +14,12 @@ get:
     - $ref: ../components/parameters/TriageStatusFilter.yaml
     - $ref: ../components/parameters/PageParam.yaml
     - $ref: ../components/parameters/PerPageParam.yaml
+    - name: section
+      in: query
+      description: Filter by requirement section (fixtext, check_content, etc.).
+      schema:
+        type: string
+      example: fixtext
     - name: component_id
       in: query
       required: false
@@ -42,6 +48,7 @@ get:
           - 'true'
           - 'false'
           - all
+      example: 'false'
   responses:
     '200':
       description: Paginated project comment rows with status counts

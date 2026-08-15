@@ -74,6 +74,25 @@ RSpec.describe CommentQueryService do
       expect(result[:rows].length).to eq(0)
     end
 
+    it 'defaults the triage filter to pending at every layer — the one ruled default' do
+      # The triage endpoints power the triage table, whose ruled default is
+      # pending. The controller, this service, and both paginated_comments
+      # entry points must agree — a layer defaulting to "all" here silently
+      # widens any future caller that omits the param.
+      comment.update!(triage_status: 'concur')
+      pending_comment = create(:review, :comment, rule: rule, user: commenter,
+                                                  comment: 'Still pending')
+
+      {
+        'CommentQueryService' => described_class.new(component, {}).call,
+        'Component#paginated_comments' => component.paginated_comments,
+        'Project#paginated_comments' => project.paginated_comments
+      }.each do |layer, result|
+        expect(result[:rows].map { |r| r['id'] }).to eq([pending_comment.id]),
+                                                     "#{layer} did not default to pending"
+      end
+    end
+
     it 'filters by rule_id' do
       other_rule = component.rules.second
       create(:review, :comment, commentable: other_rule, user: commenter)
