@@ -9,14 +9,12 @@
 # Test suite
 /spec
 
-# /docs is intentionally NOT excluded — the documentation site builds
-# from it during release, so the build needs the sources.
-# The rest of docs/ is the VitePress source (~1MB) which is harmless
-# to ship. Build artifacts (docs/.vitepress/cache + dist) and
-# docs/node_modules are gitignored already, so they aren't in the slug.
-
-# Archive (old backups, migration artifacts)
-/archive
+# /docs is intentionally NOT excluded — the documentation site builds from it
+# during asset precompilation, so the build needs the sources and the app
+# serves the result (docs/.vitepress/dist) at runtime. The dependency trees
+# this build installs (docs/node_modules, docs/.vitepress/cache) are created
+# DURING compile — after this file has already had its say — so
+# lib/tasks/heroku_cleanup.rake removes them, not this file.
 
 # Compiled macOS binary (arm64, useless on Heroku Linux dynos)
 bin/vulcan
@@ -26,7 +24,6 @@ bin/vulcan
 
 # Linter and code quality configs (not used at runtime)
 .eslintrc.js
-.overcommit.yml
 .prettierrc
 .rspec
 .rubocop.yml
@@ -40,7 +37,6 @@ bin/vulcan
 # Dev-only files
 Procfile.dev
 vitest.config.js
-docker-compose.prod.yml
 setup-docker-secrets.sh
 
 # Documentation files not needed at runtime

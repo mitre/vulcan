@@ -40,7 +40,6 @@
 /.github
 
 # Ignore development files
-/.devcontainer
 
 # Ignore Docker-related files
 /.dockerignore
@@ -58,13 +57,11 @@
 /docs/.vitepress/cache/
 /docs/.vitepress/dist/
 
-# Ignore development downloads and test artifacts
-/downloads
+# Ignore test coverage artifacts
 /coverage
 
 # Ignore development-only files
 /.beads
-/.overcommit.yml
 /lefthook.yml
 /.rubocop.yml
 /.eslintrc.js
@@ -102,11 +99,11 @@
 /setup-docker-secrets.sh
 
 # Ignore root-level markdown — working notes, handoffs and plans must not ship.
-# The exceptions below are documentation SOURCE: docs/ symlinks each of them and
-# renders it as a page, so excluding them leaves a dangling link in the build
-# context and the documentation build fails on the first one it reads.
+# The seven exceptions below are documentation SOURCE: docs/ symlinks each of
+# them and renders it as a page, so excluding one leaves a dangling link in the
+# build context and the documentation build fails on the first one it reads.
+# README.md is not among them — the site links it on GitHub instead.
 /*.md
-!/README.md
 !/CHANGELOG.md
 !/CODE_OF_CONDUCT.md
 !/CONTRIBUTING.md
@@ -116,7 +113,6 @@
 !/SECURITY.md
 
 # Other root files not needed at runtime
-/AGENT-STATUS
 /_config.yml
 /CNAME
 /create_admin.rb

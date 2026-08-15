@@ -20,8 +20,6 @@ routes:
         - GET
       - /users/edit:
         - GET
-        - PUT
-        - PATCH
       - /users/edit/password:
         - GET
       - /users/edit/activity:
@@ -29,7 +27,6 @@ routes:
       - /users/edit/tokens:
         - GET
       - /users/password:
-        - GET
         - POST
         - PUT
         - PATCH
@@ -39,18 +36,34 @@ routes:
       - /users/unlock:
         - GET
         - POST
-      # OAuth callbacks (browser redirect flow)
+      # OAuth callbacks (browser redirect flow). Provider routes register at
+      # boot from settings, so which of these exist depends on the deployment;
+      # callbacks are single GET|POST routes, matched by the combined verb.
       - /users/auth/oidc:
         - POST
       - /users/auth/oidc/callback:
+        - GET|POST
+      - /users/auth/okta:
+        - POST
+      - /users/auth/okta/callback:
+        - GET|POST
+      - /users/auth/login_gov:
+        - POST
+      - /users/auth/login_gov/callback:
+        - GET|POST
+      # Post-logout landing and identity linking (browser redirect flows)
+      - /users/signed_out:
         - GET
+      - /users/initiate_link:
+        - POST
+      - /users/complete_link:
         - POST
       # HTML page renders (Turbolinks navigation, not API)
       - /:
         - GET
       - /components/:id:
         - GET
-      - /components/:id/edit:
+      - /components/:component_id/edit:
         - GET
       - /components/:id/triage:
         - GET
@@ -63,20 +76,22 @@ routes:
       - /projects/:id/triage:
         - GET
       # Retired guide URLs — permanent redirects into the documentation site
-      - /disa-guide:
+      - /disa-guide(/:page):
         - GET
       - /disa-guide/attachments/:filename:
         - GET
-      # API docs viewer (HTML page, not API)
+      # Old API docs viewer URL — permanent redirect into the documentation site
       - /api/docs:
         - GET
-      - /api/docs/spec:
+      # The documentation site itself (HTML pages, not API)
+      - /docs(/*path):
         - GET
       # Consent (returns head :ok, no JSON body)
       - /consent/acknowledge:
         - POST
       # Health check + Rails internals (infrastructure, not API)
-      - /health_check
+      - /health_check(/:checks):
+        - GET|POST
       - /up:
         - GET
       # Devise registration (HTML form submissions)
@@ -87,12 +102,18 @@ routes:
         - DELETE
       - /users/sign_up:
         - GET
-      # Component HTML pages
-      - /components/:id/controls:
+      # Component controls page — permanent redirect to /edit
+      - /components/:component_id/controls:
         - GET
-      # API docs file download
+      # Machine-readable specification downloads (serve the spec, not part of it)
+      - /openapi.yaml:
+        - GET
+      - /openapi.json:
+        - GET
+      # Old spec paths — permanent redirects to the root filenames
       - /api/docs/openapi.yaml:
         - GET
-      # Rule comments (alias — documented under component comments)
-      - /rules/:rule_id/comments:
-        - POST
+      - /api/docs/openapi.yml:
+        - GET
+      - /api/docs/openapi.json:
+        - GET
