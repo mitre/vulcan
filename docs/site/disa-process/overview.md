@@ -36,7 +36,9 @@ A single product may require multiple SRGs. For example, a web application runni
 - Web Server SRG
 - Database SRG
 
-Each SRG becomes a separate **Component** in Vulcan.
+Each applicable SRG becomes the basis of a separate **Component** in Vulcan.
+
+SRGs play two roles in Vulcan: they are the basis STIG components implement, and they are themselves authored in Vulcan as SRG components — see the [SRG Authoring Workflow](./srg-authoring).
 
 **Source:** STIG_Questionnaire-Released-Nov-2017.pdf (V4.3) — available from [DISA Vendor Process page](https://public.cyber.mil/stigs/) (requires CAC)
 
@@ -112,11 +114,28 @@ For security features that don't align with any SRG requirement, use CCI-000366 
 | DISA Concept | Vulcan Concept |
 |---|---|
 | Product being STIGged | Project |
-| Technology layer (OS, Web, DB) | Component |
+| Technology layer (OS, Web, DB) | Component (STIG) |
 | SRG requirement | SRG Rule |
 | STIG rule/row in spreadsheet | Rule |
 | Vendor submission (spreadsheet) | DISA Excel export |
 | Published STIG (XCCDF) | XCCDF export |
+| Core SRG (SRG-NET / SRG-OS / SRG-APP) | Catalog SRG, uploaded by the SRG author community |
+| Derived SRG being authored | Component (SRG) |
+| Published SRG (XCCDF) | SRG release — catalog entry + SRG XCCDF |
+
+## Authoring an SRG vs Authoring a STIG
+
+This guide describes the vendor STIG process. Vulcan also supports authoring SRGs themselves — the documents the STIG process starts from. The two workflows differ at every stage:
+
+| | Authoring a STIG | Authoring an SRG |
+|---|---|---|
+| What you produce | A product STIG implementing derived SRG requirements | A derived SRG tailored from core SRG requirements |
+| Base documents | One or more derived SRGs from the catalog | One or more core SRGs |
+| Requirement statuses | The four DISA statuses (plus Not Yet Determined) | Applicable / Not Applicable (plus Not Yet Determined) |
+| Entry path | Intent Form and Questionnaire submitted to DISA | SRG author community working from the core SRGs — no vendor intake |
+| Publication | Public STIG plus CUI package, via DISA | SRG XCCDF released into Vulcan's catalog, where it seeds STIG components |
+
+The full SRG workflow — creation, lifecycle, public comment, and release — is covered in the [SRG Authoring Workflow](./srg-authoring).
 
 ## Reference Documents
 

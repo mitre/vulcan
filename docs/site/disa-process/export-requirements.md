@@ -18,6 +18,14 @@ DISA publishes STIGs in two tiers:
 | **Public STIG** | AC rules only | Cyber Exchange (public) | Unclassified |
 | **Confidential Package** | NA, AIM, ADNM rules + compliance report | Authorizing Officials upon request | CUI |
 
+## SRG Publication Model
+
+SRG components (see the [SRG Authoring Workflow](./srg-authoring)) publish differently from STIGs:
+
+- **The published document is XCCDF, not a spreadsheet** — there is no spreadsheet intermediary and no two-tier public/CUI split. The SRG XCCDF is the single published artifact.
+- **Only Applicable requirements publish.** Not Applicable requirements and their justifications stay on the component as the working record; Not Yet Determined requirements block release entirely.
+- **Releasing an SRG component** generates its XCCDF and stores it in Vulcan's SRG catalog, where it becomes a base for STIG components. An SRG component's XCCDF export produces the same published-SRG shape.
+
 ## How Vulcan's Export Purposes Map to the Process
 
 Project exports are **purpose-first**: you pick why you are exporting, and the mode

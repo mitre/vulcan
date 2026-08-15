@@ -2,6 +2,10 @@
 
 Analysis of the DISA Vendor STIG Intent Form and STIG Applicability Questionnaire, with mapping to Vulcan's data model.
 
+::: info SRG authors enter differently
+The Intent Form and Questionnaire are the **vendor STIG** intake — they apply when a vendor is creating a product STIG. Authoring an SRG follows a different entry path: SRG authors work directly from the core SRGs in Vulcan, with no DISA intake form. See the [SRG Authoring Workflow](./srg-authoring).
+:::
+
 ## Vendor STIG Intent Form
 
 ### Purpose
@@ -91,7 +95,7 @@ The Questionnaire determines which SRGs, STIGs, checklists, and SCAP benchmarks 
 | 1. Introduction | Product identification, device list | Product name, model, version, APL status |
 | 2. General Type/Function | UC category, device type, management, encryption | Voice/Video/Data, Firewall, VPN, FIPS 140-2, PKI, CAC |
 | 3. Network | Backbone, routers, switches, wireless | Cisco, Juniper, Router SRG, Firewall SRG |
-| 4. Operating System | OS family and version | Windows, Mac OS, Red Hat, GPOS SRG |
+| 4. Operating System | OS type and version | Windows, Mac OS, Red Hat, GPOS SRG |
 | 5. Software/Applications | Web servers, browsers, databases, app servers | Apache, IIS, Oracle, PostgreSQL, Database SRG |
 | 6. Mobile Devices | Mobile OS and MDM | Android, iOS, Samsung, MDM SRG |
 | 7. Other Features | Virtualization, exchange, IDS/IPS, VPN | ESXi, vCenter, Palo Alto, NAC |

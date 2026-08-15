@@ -48,14 +48,15 @@ An SRG requirement has three statuses: **Not Yet Determined**, **Applicable**, a
 
 | | Not Yet Determined | Applicable | Not Applicable |
 |---|---|---|---|
-| Title, Vulnerability Discussion, Check, Fix | editable | editable | hidden (content is retained) |
+| Title, Vulnerability Discussion | editable | editable | read-only |
+| Check, Fix | editable | editable | hidden (content is retained) |
 | Status Justification | — | — | shown and **required** |
-| Severity, CCI / IA Controls | inherited from the core, read-only | inherited from the core, read-only | hidden |
+| Severity, CCI / IA Controls | inherited from the core, read-only | inherited from the core, read-only | read-only |
 | At release | blocks release | included in the SRG | excluded from the SRG |
 
 - Requirements start **Not Yet Determined** and are fully editable — tailor content and decide applicability in either order; the status records the decision, it does not gate the work.
 - **Applicable** — the requirement applies to this technology and will be included in the released SRG.
-- **Not Applicable** — the requirement does not apply to this technology. A justification is required and the requirement is excluded from the released SRG. The requirement and its justification stay on the component as the working record of the decision.
+- **Not Applicable** — the requirement does not apply to this technology. A justification is required and the requirement is excluded from the released SRG. The requirement's identity stays visible read-only — so the author can see what was ruled out while writing the justification — while implementation guidance (Check, Fix) is hidden. Everything stays on the component as the working record of the decision.
 
 Severity and CCI / IA control values are inherited from the core requirement and shown read-only; overriding them is a publisher-level action.
 

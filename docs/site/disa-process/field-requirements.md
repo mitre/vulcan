@@ -158,25 +158,27 @@ From Section 4 of the Process Guide:
 - Standard (straight) quotes only
 - No special characters or Unicode formatting
 
+## SRG Authoring Field States
+
+The matrix above is the STIG vocabulary. SRG components use a different, three-status lifecycle — Not Yet Determined, Applicable, Not Applicable — with its own field behavior in the editor (see the [SRG Authoring Workflow](./srg-authoring)):
+
+| Field | Not Yet Determined | Applicable | Not Applicable |
+|-------|:---:|:---:|:---:|
+| Status | editable | editable | editable |
+| Requirement (Title) | editable | editable | read-only |
+| VulnDiscussion | editable | editable | read-only |
+| Check | editable | editable | hidden |
+| Fix | editable | editable | hidden |
+| Status Justification | hidden | hidden | editable, **required** |
+| Severity | read-only (inherited) | read-only (inherited) | read-only |
+| CCI / IA Control | read-only (inherited) | read-only (inherited) | read-only |
+
+- At **Not Applicable**, the requirement's identity (title, discussion, severity, CCI) stays visible read-only so the author can see what was ruled out while writing the justification; implementation guidance (Check, Fix) is hidden because it has no bearing on an NA ruling. All content is retained.
+- Severity and identifier fields are inherited from the core requirement; editing them is a publisher-level action.
+
 ## Vulcan Implementation Notes
 
-### Current STATUS_FIELD_CONFIG Alignment
+Vulcan enforces this matrix at two layers:
 
-Vulcan's `ruleFieldConfig.js` implements field visibility per status. Cross-reference with this matrix:
-
-| DISA Requirement | Vulcan Implementation | Status |
-|---|---|---|
-| Check/Fix blank for non-AC | Fields hidden for AIM, ADNM, NA | Correct |
-| Severity blank for NA | Severity shown but disabled for NA | Needs review |
-| VulnDiscussion blank for NA | Not currently enforced | Gap |
-| Mitigation required for ADNM | Shown with toggle for ADNM | Correct |
-| Artifact Description for AIM | Shown for AIM | Correct |
-| Status Justification for AIM/ADNM/NA | Shown for all three | Correct |
-
-### DISA Export vs Vendor Submission
-
-Vulcan's current DISA Excel export adds boilerplate Check/Fix text for non-AC statuses (e.g., "The technology supports this requirement and cannot be configured to be out of compliance..."). Per the Process Guide, these fields should be **blank** in vendor submissions. DISA adds this text during finalization.
-
-::: warning Current limitation
-Users submitting to DISA should verify that Check/Fix fields are blank for non-AC statuses before submission, as Vulcan currently populates them with boilerplate text.
-:::
+- **In the editor**, field visibility per status is driven by the field-state model: Check and Fix are hidden for AIM, ADNM, and NA; Mitigation appears for ADNM; Artifact Description for AIM; Status Justification for AIM, ADNM, and NA.
+- **At export**, the **DISA Vendor Submission** purpose applies the blanking rules above regardless of what was authored: STIGID is always blank, Check/Fix are blanked for non-AC statuses, and VulnDiscussion and Severity are blanked for NA. Not Yet Determined rules are excluded entirely. The **Working Copy** purpose keeps everything as authored for internal round-trip editing — use Vendor Submission for the DISA deliverable. See [Export Requirements](./export-requirements).
