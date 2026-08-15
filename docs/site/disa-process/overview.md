@@ -126,4 +126,7 @@ For security features that don't align with any SRG requirement, use CCI-000366 
 | STIG Applicability Questionnaire | V4.3 (2017-11) | Determines which SRGs apply to a product |
 | Vendor STIG Intent Form | Current | Initial declaration of intent to create a STIG |
 
-These documents are available from DISA and stored in the project's `downloads/` directory for reference.
+The Process Guide and Intent Form ship with this documentation —
+[Vendor STIG Process Guide V4R3](/attachments/U_Vendor_STIG_Process_Guide_V4R3.docx)
+and [Vendor STIG Intent Form](/attachments/U_Vendor_STIG_Intent_Form.pdf). The STIG
+Applicability Questionnaire is available from DISA.

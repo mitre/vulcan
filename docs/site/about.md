@@ -44,8 +44,8 @@ Vulcan is part of the [MITRE Security Automation Framework (SAF)](https://saf.mi
 
 - **[InSpec](https://www.inspec.io/)**: Compliance automation framework
 - **[Heimdall](https://github.com/mitre/heimdall2)**: Security results visualization
-- **[SAF CLI](https://github.com/mitre/saf-cli)**: Command-line tools for security automation
-- **[InSpec Profile Development](https://github.com/mitre/inspec-profile-developer-course)**: Training resources
+- **[SAF CLI](https://github.com/mitre/saf)**: Command-line tools for security automation
+- **[SAF Training](https://mitre.github.io/saf-training/)**: Training resources
 
 ## History
 

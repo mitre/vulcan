@@ -23,14 +23,26 @@ See [Authentication](./authentication) for full details on token scopes, IP allo
 
 ### 2. Try the API
 
-Every endpoint page in this reference includes an interactive **"Try it out"** section:
+Every endpoint page in this reference includes an interactive **"Try it out"**
+playground. What it looks like depends on where you are reading this reference:
+
+**Inside a running Vulcan instance** (the documentation served at `/docs`):
+
+- Requests go to the instance you are signed in to — there is no server picker.
+- **Reads (GET)** work immediately: your session authenticates them.
+- **Writes (POST/PUT/PATCH/DELETE)** require a Personal Access Token, because Vulcan
+  rejects session-authenticated writes that arrive without a CSRF token and the
+  playground cannot supply one. Paste your PAT **including the `Token ` prefix**
+  (e.g., `Token vulcan_abc123...`).
+
+**On the published documentation site**:
 
 1. Click **Select a server** and choose **Custom Server**
-2. Enter your Vulcan instance URL (e.g., `https://vulcan.example.com`). The default server (`/`) only works inside the app — external consumers need to enter their instance URL.
-3. Paste your PAT **including the `Token ` prefix** in the Token field (e.g., `Token vulcan_abc123...`). The field is pre-filled with a placeholder showing the correct format.
+2. Enter your Vulcan instance URL (e.g., `https://vulcan.example.com`)
+3. Paste your PAT **including the `Token ` prefix** in the Token field
 4. Click **Try it out**
 
-Your server URL and token are saved in your browser's `localStorage` for subsequent requests. Clear storage on shared machines.
+Your entries are saved in your browser's `localStorage` for subsequent requests. Clear storage on shared machines.
 
 ### 3. Or use cURL
 

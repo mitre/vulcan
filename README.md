@@ -9,11 +9,6 @@
 
 Vulcan is a comprehensive tool designed to streamline the creation of STIG-ready security guidance documentation and InSpec automated validation profiles. It bridges the gap between security requirements and practical implementation, enabling organizations to develop both human-readable instructions and machine-readable validation code simultaneously.
 
-### Live Deployments
-
-- **Production**: [https://mitre-vulcan-prod.herokuapp.com](https://mitre-vulcan-prod.herokuapp.com/users/sign_in)
-- **Staging**: [https://mitre-vulcan-staging.herokuapp.com](https://mitre-vulcan-staging.herokuapp.com/users/sign_in)
-
 ### What is Vulcan?
 
 Vulcan models the Security Technical Implementation Guide (STIG) creation process, facilitating the alignment of security controls from high-level DISA Security Requirements Guides (SRGs) into [STIGs](https://public.cyber.mil/stigs/) tailored to specific system components. Content developed with Vulcan can be submitted to DISA for peer review and formal publication as official STIGs.
@@ -52,11 +47,11 @@ For detailed release notes, see the [Changelog](./CHANGELOG.md).
 
 ## 📚 Documentation
 
-- **[📖 Full Documentation](https://mitre.github.io/vulcan/)** - Comprehensive guides and references
-- [Installation Guide](https://mitre.github.io/vulcan/getting-started/installation/)
-- [Configuration Reference](https://mitre.github.io/vulcan/getting-started/environment-variables/)
-- [User Guide](https://mitre.github.io/saf-training/courses/guidance/) - Complete training materials
-- [API Documentation](https://mitre.github.io/vulcan/api/overview/)
+- **[📖 Full Documentation](https://mitre.github.io/vulcan/)** - the published copy of
+  Vulcan's documentation site. A running Vulcan instance serves the same site at `/docs`.
+  The site's About page is the authoritative project overview; installation,
+  configuration, the user guide, and the API reference live there too.
+- [Security Guidance Training](https://mitre.github.io/saf-training/courses/guidance/) - MITRE SAF training course
 - [Contributing Guidelines](./CONTRIBUTING.md)
 
 ### Working with Documentation
@@ -83,8 +78,8 @@ yarn docs:preview  # Preview production build
 - **esbuild** for JavaScript bundling (replaced Webpacker)
 
 ### Testing & Quality
-- **RSpec** for Ruby testing (1600+ backend tests)
-- **Vitest** for Vue component testing (1900+ frontend tests)
+- **RSpec** for Ruby backend testing
+- **Vitest** for Vue component testing
 - **ESLint** & **Prettier** for JavaScript linting
 - **RuboCop** for Ruby style enforcement
 - **Brakeman** for security scanning
@@ -137,8 +132,8 @@ Access the application at `http://localhost:3000`
 ### Running Tests
 
 ```bash
-# Run full backend suite (parallel — 3-4x faster than serial)
-bundle exec parallel_rspec spec/
+# Run full backend suite (parallel — 3-4x faster than serial, capped at 8 workers)
+bin/parallel_rspec spec/
 
 # Run specific test file
 bundle exec rspec spec/models/user_spec.rb
@@ -214,7 +209,10 @@ Register **two** URIs in your provider's app settings:
 - Sign-in: `<app_url>/users/auth/oidc/callback`
 - Sign-out: `<app_url>/users/signed_out` (required — providers reject Vulcan's logout without it)
 
-See the [Okta/OIDC setup guide](https://mitre.github.io/vulcan/deployment/auth/oidc-okta) for the full settings tables, verification checklist, and troubleshooting.
+See the **Okta/OIDC setup guide** in the documentation — a running instance serves it
+at `/docs/deployment/auth/oidc-okta`, and the [published documentation](https://mitre.github.io/vulcan/)
+carries the same page — for the full settings tables, verification checklist, and
+troubleshooting.
 
 Supported providers:
 - **Okta**
@@ -301,8 +299,8 @@ Vulcan is part of the [MITRE Security Automation Framework (SAF)](https://saf.mi
 
 - **[InSpec](https://www.inspec.io/)**: Compliance automation framework
 - **[Heimdall](https://github.com/mitre/heimdall2)**: Security results visualization
-- **[SAF CLI](https://github.com/mitre/saf-cli)**: Command-line tools for security automation
-- **[InSpec Profile Development](https://github.com/mitre/inspec-profile-developer-course)**: Training resources
+- **[SAF CLI](https://github.com/mitre/saf)**: Command-line tools for security automation
+- **[SAF Training](https://mitre.github.io/saf-training/)**: Training resources
 
 ---
 

@@ -13,8 +13,8 @@ hero:
       text: Get Started
       link: /getting-started/quick-start
     - theme: alt
-      text: Try Production
-      link: https://mitre-vulcan-prod.herokuapp.com/users/sign_in
+      text: About Vulcan
+      link: /about
     - theme: alt
       text: View on GitHub
       link: https://github.com/mitre/vulcan
@@ -72,15 +72,6 @@ const involvement = [
 
 ## Quick Start
 
-### Quick Test with Docker
-
-```bash
-docker pull mitre/vulcan:release-latest
-docker run -p 3000:3000 mitre/vulcan:release-latest
-```
-
-### Full Setup with Docker Compose
-
 ```bash
 # Clone the repository
 git clone https://github.com/mitre/vulcan.git
@@ -89,9 +80,12 @@ cd vulcan
 # Generate secure configuration
 ./setup-docker-secrets.sh
 
-# Start the application stack
+# Start the application stack (Vulcan + PostgreSQL)
 docker compose up
 ```
+
+See the [Quick Start guide](/getting-started/quick-start) for the compose-file-only
+setup and first steps.
 
 ## Latest Release
 
@@ -153,7 +147,7 @@ Vulcan is a core component of the [MITRE Security Automation Framework (SAF)](ht
     <h4>Heimdall</h4>
     <p>Security results visualization</p>
   </a>
-  <a href="https://github.com/mitre/saf-cli" class="saf-tool">
+  <a href="https://github.com/mitre/saf" class="saf-tool">
     <h4>SAF CLI</h4>
     <p>Command-line security tools</p>
   </a>

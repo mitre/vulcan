@@ -8,6 +8,14 @@ When logged in through the web interface, your session cookie authenticates API 
 
 CSRF protection is active for session-based requests. The Rails UJS adapter handles CSRF tokens automatically for forms and AJAX.
 
+The same applies to this reference's "Try it out" playground when the documentation is
+served inside a running instance: **reads** are authenticated by your session
+automatically, while **writes** require a Personal Access Token — CSRF protection
+rejects session-authenticated writes that arrive without a CSRF token, and the
+playground cannot supply one. On the published documentation site the reference shows
+only token authentication, since a session cookie is meaningless outside a running
+instance.
+
 ## Personal Access Tokens (Programmatic)
 
 For scripts, CI/CD pipelines, and external tools, use Personal Access Tokens (PATs).
