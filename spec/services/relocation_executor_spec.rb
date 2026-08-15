@@ -273,4 +273,43 @@ RSpec.describe RelocationExecutor do
       expect(RequirementRelocation.executed_orphaned).to contain_exactly(relocation)
     end
   end
+
+  describe 'terminating-race guards (single connection)' do
+    it 'raises cleanly when the proposal went terminal after this executor loaded it' do
+      catalog_row = create(:srg_rule, security_requirements_guide: core_os, version: 'SRG-OS-000315')
+      source_component = srg_component('EXSR-00', core_os)
+      target_component = srg_component('EXTR-00', core_os)
+      source = authored_row(source_component, '310001', derived_from: catalog_row)
+      relocation = RequirementRelocation.create!(source_rule: source,
+                                                 target_technology_token: 'EXTR',
+                                                 requested_by: requester)
+      executor = described_class.new(relocation, target_component: target_component,
+                                                 accepted_by: requester)
+
+      # The lost half of a terminating race: another actor declines while
+      # this executor still holds the stale in-memory proposed record.
+      RequirementRelocation.find(relocation.id)
+                           .update!(declined_by: requester, declined_at: Time.current,
+                                    adjudication_rationale: 'raced')
+
+      expect { executor.execute! }
+        .to raise_error(described_class::ExecutionError, /no longer open/)
+      expect(SrgRule.where(component_id: target_component.id)).to be_empty
+      expect(relocation.reload.executed_at).to be_nil
+    end
+
+    it 'dry_run takes no locks' do
+      source_component = srg_component('EXSD-00', core_os)
+      target_component = srg_component('EXTD-00', core_os)
+      source = authored_row(source_component, '320001')
+      relocation = RequirementRelocation.create!(source_rule: source,
+                                                 target_technology_token: 'EXTD',
+                                                 requested_by: requester)
+
+      expect(relocation).not_to receive(:lock!)
+      expect(target_component).not_to receive(:lock!)
+
+      described_class.new(relocation, target_component: target_component).dry_run
+    end
+  end
 end

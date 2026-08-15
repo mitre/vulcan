@@ -51,8 +51,17 @@ class RelocationExecutor
     errors = validation_errors
     raise ExecutionError, errors.join('; ') if errors.any?
 
-    source = @relocation.source_rule
     ApplicationRecord.transaction do
+      # Serialize the two terminating actions (accept here, decline in the
+      # controller) on the proposal row, then the landing sequence on the
+      # target component row — concurrent executes queue and each computes
+      # its own landed number. Lock order is total: proposal first, then
+      # component; decline takes only the first.
+      @relocation.lock!
+      raise ExecutionError, 'proposal is no longer open' unless @relocation.proposed?
+
+      @target_component.lock!
+      source = @relocation.source_rule
       target = build_target_row(source)
       target.save!
       # Tombstone before stamping: the one-directional invariant

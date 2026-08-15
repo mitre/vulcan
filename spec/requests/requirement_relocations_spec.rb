@@ -371,6 +371,36 @@ RSpec.describe 'Requirement relocations' do
         expect(record.reload.declined_at).to be_nil
       end
 
+      it 'answers not-found when an accept lands between the decline load and its write' do
+        # The lost half of a terminating race, interposed deterministically:
+        # the acceptance commits while the decline request holds a stale
+        # proposed record (real cross-connection serialization is proven by
+        # the executor's threaded spec; this pins the controller guard).
+        record = open_proposal('910050', token: 'RRCV')
+        interposed = false
+        allow_any_instance_of(RelocationExecutor).to receive(:validation_errors)
+          .and_wrap_original do |original|
+            result = original.call
+            unless interposed
+              interposed = true
+              RelocationExecutor.new(RequirementRelocation.find(record.id),
+                                     target_component: receiving_component,
+                                     accepted_by: receiver).execute!
+            end
+            result
+          end
+        sign_in receiver
+
+        post "/requirement_relocations/#{record.id}/decline",
+             params: { target_component_id: receiving_component.id,
+                       requirement_relocation: { adjudication_rationale: 'Raced.' } }
+
+        expect(response).to have_http_status(:not_found)
+        record.reload
+        expect(record.executed_at).to be_present
+        expect(record.declined_at).to be_nil
+      end
+
       it 'forbids a viewer from declining' do
         record = open_proposal('910018')
         sign_in viewer

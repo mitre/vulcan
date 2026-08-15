@@ -117,7 +117,23 @@ class RequirementRelocationsController < ApplicationController
       }, status: :unprocessable_content
     end
 
-    if @relocation.update(decline_params.merge(declined_by: current_user, declined_at: Time.current))
+    # Decline is the second terminating action: serialize it on the same
+    # proposal row lock accept takes, and re-check openness under the lock.
+    # A proposal that went terminal in the gap answers exactly like
+    # set_open_proposal — terminal is indistinguishable from never-existed.
+    declined = nil
+    raced_to_terminal = false
+    @relocation.with_lock do
+      if @relocation.proposed?
+        declined = @relocation.update(decline_params.merge(declined_by: current_user,
+                                                           declined_at: Time.current))
+      else
+        raced_to_terminal = true
+      end
+    end
+    return render_resource_not_found if raced_to_terminal
+
+    if declined
       render_toast(title: 'Non-concurred.',
                    message: 'The source author can see your rationale in the backlog.',
                    variant: 'success', status: :ok)
