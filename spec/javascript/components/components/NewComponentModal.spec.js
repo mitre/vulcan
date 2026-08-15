@@ -659,6 +659,61 @@ describe("NewComponentModal", () => {
     });
   });
 
+  // ==========================================
+  // KIND-KEYED PREFIX FIELD COPY
+  //
+  // REQUIREMENTS:
+  // 1. The prefix field's label, helper, and placeholder resolve per the
+  //    chosen document kind — the SRG path never shows "STIG"-worded copy.
+  // 2. The STIG copy is byte-identical to the long-standing wording.
+  // 3. Flows without kind knowledge (duplicate/copy inherit server-side)
+  //    keep today's STIG copy — the deployment default.
+  // ==========================================
+  describe("kind-keyed prefix field copy", () => {
+    const ModalStub = { template: "<div><slot></slot></div>" };
+
+    const createMountedWrapper = (props = {}) => {
+      return mount(NewComponentModal, {
+        localVue,
+        propsData: { ...defaultProps, ...props },
+        stubs: { "b-modal": ModalStub, VueMultiselect: true },
+      });
+    };
+
+    it("shows the SRG prefix copy when SRG is chosen — no STIG-worded strings", async () => {
+      wrapper = createMountedWrapper();
+      await wrapper.setData({ document_type: "srg" });
+      const html = wrapper.html();
+      expect(html).toContain("Prefix");
+      expect(html).toContain(
+        "leading letters are the SRG's abbreviation (e.g. CNTR) — minted into every released requirement identifier",
+      );
+      expect(html).not.toContain("STIG ID Prefix");
+      expect(html).not.toContain("STIG IDs for each control");
+      const prefixInput = wrapper.find('input[placeholder="Example... CNTR-00"]');
+      expect(prefixInput.exists()).toBe(true);
+    });
+
+    it("keeps the STIG copy verbatim when STIG is chosen", async () => {
+      wrapper = createMountedWrapper();
+      await wrapper.setData({ document_type: "stig" });
+      const html = wrapper.html();
+      expect(html).toContain("STIG ID Prefix");
+      expect(html).toContain(
+        "STIG IDs for each control will be automatically generated based on this prefix value",
+      );
+      const prefixInput = wrapper.find('input[placeholder="Example... ABCD-EF, ABCD-00"]');
+      expect(prefixInput.exists()).toBe(true);
+    });
+
+    it("falls back to the STIG copy in duplicate mode (kind inherited server-side)", () => {
+      wrapper = createMountedWrapper({ component_to_duplicate: 7 });
+      const html = wrapper.html();
+      expect(html).toContain("STIG ID Prefix");
+      expect(wrapper.find('input[placeholder="Example... ABCD-EF, ABCD-00"]').exists()).toBe(true);
+    });
+  });
+
   describe("project_id prop", () => {
     it("accepts undefined project_id without error", () => {
       const spy = vi.spyOn(console, "error").mockImplementation(() => {});

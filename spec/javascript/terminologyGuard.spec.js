@@ -117,20 +117,20 @@ const mask = (s) => s.replace(/[^\n]/g, " ");
 
 const lineAt = (text, index) => text.slice(0, index).split("\n").length;
 
-const isProse = (s) => s.includes(" ") && ANY_NOUN.test(s);
+const isProse = (s, noun = ANY_NOUN) => s.includes(" ") && noun.test(s);
 
 function stripProperNoun(text) {
   return text.replace(/Security Requirements Guides?/g, mask);
 }
 
-function scanTemplate(template, offsetLines) {
+function scanTemplate(template, offsetLines, noun = ANY_NOUN) {
   const hits = [];
   const clean = stripProperNoun(template.replace(/<!--[\s\S]*?-->/g, mask));
 
   // Every static attribute value — directives (v-*, @*, :*) hold bound
   // expressions, not rendered text, and are excluded.
   for (const m of clean.matchAll(/[\s"](?!:|v-|@)[a-zA-Z][a-zA-Z-]*="([^"]*)"/gs)) {
-    if (isProse(m[1])) {
+    if (isProse(m[1], noun)) {
       hits.push({
         line: offsetLines + lineAt(clean, m.index),
         text: m[0].trim().slice(0, 100),
@@ -144,14 +144,14 @@ function scanTemplate(template, offsetLines) {
     .replace(/\{\{[\s\S]*?\}\}/g, mask)
     .replace(/<(?:[^>"']|"[^"]*"|'[^']*')*>/g, mask);
   textOnly.split("\n").forEach((line, idx) => {
-    if (ANY_NOUN.test(line)) {
+    if (noun.test(line)) {
       hits.push({ line: offsetLines + idx + 1, text: line.trim().slice(0, 100), value: line });
     }
   });
   return hits;
 }
 
-function scanScript(script, offsetLines) {
+function scanScript(script, offsetLines, noun = ANY_NOUN) {
   const hits = [];
   const clean = stripProperNoun(
     script.replace(/\/\*[\s\S]*?\*\//g, mask).replace(/\/\/[^\n]*/g, mask),
@@ -164,7 +164,7 @@ function scanScript(script, offsetLines) {
   const noInterp = clean.replace(/\$\{[^}]*\}/g, "");
   for (const m of noInterp.matchAll(/"([^"\n]*)"|'([^'\n]*)'|`([^`]*)`/gs)) {
     const value = m[1] ?? m[2] ?? m[3];
-    if (isProse(value)) {
+    if (isProse(value, noun)) {
       hits.push({
         line: offsetLines + lineAt(noInterp, m.index),
         text: m[0].trim().slice(0, 100),
@@ -175,23 +175,33 @@ function scanScript(script, offsetLines) {
   return hits;
 }
 
-function scanFile(file) {
+function scanFile(file, noun = ANY_NOUN) {
   const source = fs.readFileSync(file, "utf8");
-  if (file.endsWith(".js")) return scanScript(source, 0);
+  if (file.endsWith(".js")) return scanScript(source, 0, noun);
 
   const hits = [];
   const tplStart = source.search(/<template[^>]*>/);
   const tplEnd = source.lastIndexOf("</template>");
   if (tplStart !== -1 && tplEnd !== -1) {
     const openEnd = source.indexOf(">", tplStart) + 1;
-    hits.push(...scanTemplate(source.slice(openEnd, tplEnd), lineAt(source, openEnd) - 1));
+    hits.push(...scanTemplate(source.slice(openEnd, tplEnd), lineAt(source, openEnd) - 1, noun));
   }
   const scriptMatch = source.match(/<script[^>]*>([\s\S]*?)<\/script>/);
   if (scriptMatch) {
-    hits.push(...scanScript(scriptMatch[1], lineAt(source, scriptMatch.index) - 1));
+    hits.push(...scanScript(scriptMatch[1], lineAt(source, scriptMatch.index) - 1, noun));
   }
   return hits;
 }
+
+// Kind-shared surfaces render for BOTH document kinds, so prose naming one
+// kind ("STIG ID ...") must be BOUND — resolved per kind through the central
+// table — never a static string, which renders verbatim on the SRG path.
+// Each entry states why the surface is kind-shared.
+const STIG_KIND_WORD = /(?<![\w-])STIGs?(?![\w-])/;
+const KIND_SHARED_SURFACES = {
+  "components/components/NewComponentModal.vue":
+    "the creation modal serves both kinds — kind-specific copy resolves through the terminology table",
+};
 
 describe("terminology guard", () => {
   it("no rendered prose string hardcodes the entity noun outside its allowed direction", () => {
@@ -224,6 +234,25 @@ describe("terminology guard", () => {
         true,
       );
     }
+  });
+
+  it("kind-shared surfaces carry no static kind-naming copy", () => {
+    const failures = [];
+    for (const rel of Object.keys(KIND_SHARED_SURFACES)) {
+      const file = path.join(JS_ROOT, rel);
+      expect(fs.existsSync(file), `${rel} vanished — remove its entry`).toBe(true);
+      const seen = new Set();
+      for (const hit of scanFile(file, STIG_KIND_WORD)) {
+        if (seen.has(hit.line)) continue;
+        seen.add(hit.line);
+        failures.push(`${rel}:${hit.line}  ${hit.text}`);
+      }
+    }
+    expect(
+      failures,
+      `Static kind-naming copy on a kind-shared surface — bind it through ` +
+        `constants/terminology.js so it resolves per document kind:\n${failures.join("\n")}`,
+    ).toEqual([]);
   });
 });
 

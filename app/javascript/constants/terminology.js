@@ -158,6 +158,29 @@ const buildSidebarTitles = (term) => ({
 export const SIDEBAR_TITLES_BY_DOCUMENT_TYPE = byDocumentType(buildSidebarTitles);
 export const sidebarTitles = forKind(SIDEBAR_TITLES_BY_DOCUMENT_TYPE);
 
+// Create Component prefix field — kind-keyed copy for a kind-shared
+// surface. Both kinds share the AAAA-00 prefix format; the STIG copy
+// names the generated STIG IDs, the SRG copy names the abbreviation role
+// (the prefix's leading letters, minted into released requirement
+// identifiers). Flows without kind knowledge (duplicate/copy inherit
+// the kind server-side) resolve to the stig default via the accessor.
+export const PREFIX_FIELD_BY_DOCUMENT_TYPE = Object.freeze({
+  stig: Object.freeze({
+    label: "STIG ID Prefix",
+    description:
+      "STIG IDs for each control will be automatically generated based on this prefix value",
+    placeholder: "Example... ABCD-EF, ABCD-00",
+  }),
+  srg: Object.freeze({
+    label: "Prefix",
+    description:
+      "The prefix's leading letters are the SRG's abbreviation (e.g. CNTR) — " +
+      "minted into every released requirement identifier",
+    placeholder: "Example... CNTR-00",
+  }),
+});
+export const prefixField = forKind(PREFIX_FIELD_BY_DOCUMENT_TYPE);
+
 // Per-status helper copy, keyed by document kind. The status tooltip is
 // composed from the page's statuses vocabulary against this map, so a page
 // can never surface another kind's status names. STIG copy is verbatim

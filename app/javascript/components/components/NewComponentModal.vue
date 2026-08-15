@@ -143,15 +143,15 @@
                 accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
               />
             </b-form-group>
-            <!-- Set the prefix -->
+            <!-- Set the prefix — copy resolves per the chosen document kind -->
             <b-form-group
               v-else
-              label="STIG ID Prefix"
-              description="STIG IDs for each control will be automatically generated based on this prefix value"
+              :label="prefixFieldCopy.label"
+              :description="prefixFieldCopy.description"
             >
               <b-form-input
                 v-model="prefix"
-                placeholder="Example... ABCD-EF, ABCD-00"
+                :placeholder="prefixFieldCopy.placeholder"
                 required
                 autocomplete="off"
                 :disabled="awaitingProfileChoice"
@@ -216,6 +216,7 @@
 <script>
 import { getSrgs, getProjects, getProject } from "../../api/projectsApi";
 import { detectSrg, createComponentInProject } from "../../api/componentsApi";
+import { prefixField } from "../../constants/terminology";
 import { useAuthToken } from "../../composables/useAuthToken";
 import { useToast } from "../../composables/useToast";
 import { useDisplayedComponent } from "../../composables/useDisplayedComponent";
@@ -339,6 +340,11 @@ export default {
     },
     awaitingProfileChoice: function () {
       return this.profilePickerMode && !this.document_type;
+    },
+    // Kind-keyed prefix copy; flows without kind knowledge (duplicate,
+    // copy — the kind is inherited server-side) resolve the stig default.
+    prefixFieldCopy: function () {
+      return prefixField(this.document_type);
     },
     submitText: function () {
       if (this.spreadsheet_import) {
