@@ -22,9 +22,9 @@ The SAF Training site provides comprehensive coverage of:
 ### Core Concepts
 
 - **Projects**: Top-level containers for organizing security documentation work
-- **Components**: System elements requiring STIG documentation  
+- **Components**: Documents in progress — a STIG being authored for a system element, or an SRG being authored from core SRGs
 - **Rules**: Individual security controls with check/fix text and InSpec code
-- **SRGs**: High-level Security Requirements Guides from DISA
+- **SRGs**: High-level Security Requirements Guides from DISA — the basis STIG components implement, and themselves authorable in Vulcan (see the [SRG Authoring Workflow](../disa-process/srg-authoring))
 - **STIGs**: Specific Security Technical Implementation Guides for technologies
 
 ### Common Tasks
@@ -34,6 +34,7 @@ The SAF Training site provides comprehensive coverage of:
 | Create Project | Start a new documentation effort |
 | Import SRG | Load security requirements |
 | Create Component | Add system elements |
+| Author an SRG | Derive a new SRG from core SRGs |
 | Write Controls | Document check/fix procedures |
 | Add InSpec | Create automated validation |
 | Export STIG | Generate XCCDF output |

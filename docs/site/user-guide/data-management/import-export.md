@@ -35,7 +35,9 @@ bundle exec rails stig_and_srg_puller:pull
 
 ### Component from SRG
 
-When you create a new Component and select a base SRG, Vulcan automatically clones every SRG requirement as a rule in the new component. Each rule gets a sequential rule ID (000001, 000002, ...) prefixed with the component's prefix.
+When you create a new Component and select its base SRGs, Vulcan automatically clones every requirement from every selected source into the new component. Each rule gets a sequential rule ID (000001, 000002, ...) prefixed with the component's prefix.
+
+This works the same for both document kinds: a STIG component imports from derived SRGs in the catalog, and an SRG component imports from core SRGs (see the [SRG Authoring Workflow](../../disa-process/srg-authoring)). A released SRG component joins the SRG catalog just like an uploaded one, ready to serve as a STIG base.
 
 ### Component from Spreadsheet
 

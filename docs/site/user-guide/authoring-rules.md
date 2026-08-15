@@ -17,14 +17,18 @@ Projects are containers for one or more Components. From the Projects page, clic
 
 ### 2. Add a Component
 
-A Component is a STIG-in-progress. Each Component is based on an SRG (Security Requirements Guide).
+A Component is a document in progress — either a STIG implementing an SRG's requirements, or an SRG being authored from core SRGs. The New Component form asks **What are you authoring?** first, and the choice is permanent for the component. This page describes the STIG path.
 
 1. Open your project
-2. Click **New Component**
-3. Select the base SRG (e.g., "General Purpose Operating System V3R3")
+2. Click **New Component** → **Create New Component**
+3. Choose **STIG**, then select one or more base SRGs (e.g., "General Purpose Operating System V3R3")
 4. Set a **prefix** (4 chars + hyphen + 2 chars, e.g., `RHEL-09`)
 
-The SRG's requirements become your rule set.
+The SRGs' requirements become your rule set.
+
+::: tip Authoring an SRG instead?
+Choosing **SRG** bases the component on core SRGs and switches the authoring lifecycle to three statuses — Not Yet Determined, Applicable, Not Applicable. See the [SRG Authoring Workflow](../disa-process/srg-authoring).
+:::
 
 ### 3. Author Rules
 

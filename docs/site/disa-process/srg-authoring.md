@@ -38,9 +38,8 @@ The base-document pickers are mirror images: a core SRG is never a valid STIG ba
 1. Choose **SRG** as the document type.
 2. Select one or more **core SRGs** as source documents. Most SRGs derive from a single core (the Container Platform SRG derives from the APP core alone); a second core can be added later for selected requirements, so dual lineage is supported without being the default.
 3. Enter the component prefix. Its leading letters (for example `CTR`, `GPOS`, `DB`) serve as the SRG's **abbreviation** — the second half of every released requirement identifier.
-4. Choose the import mode: every requirement from every selected core (the default), or a selective pick.
 
-The component is created with its requirements imported in **Not Yet Determined** status. Requirements can also be added directly at any time — an SRG is not limited to what it imports from the cores. A directly added requirement has no core lineage and receives an abbreviation-only identifier at release.
+The component is created with every requirement from every selected core imported, in **Not Yet Determined** status. Requirements can also be added directly at any time — an SRG is not limited to what it imports from the cores. A directly added requirement has no core lineage and receives an abbreviation-only identifier at release.
 
 ## The Requirement Lifecycle
 

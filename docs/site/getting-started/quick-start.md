@@ -38,8 +38,8 @@ For automated deployments, you can pre-configure an admin account via environmen
 
 1. **Create a Project**: Click "New Project" to start organizing your security controls
 2. **Import an SRG**: Upload a Security Requirements Guide to begin tailoring
-3. **Create Components**: Add system components that need STIG documentation
-4. **Write Controls**: Begin documenting security controls with both human-readable guidance and InSpec validation code
+3. **Create a Component**: Click "New Component" → "Create New Component". The form first asks **What are you authoring?** — **STIG** (implement an SRG's requirements for a specific product) or **SRG** (author a new Security Requirements Guide derived from core SRGs). The choice is permanent for the component.
+4. **Write Controls**: Begin documenting security controls with both human-readable guidance and InSpec validation code — or, for an SRG component, decide and tailor each requirement (see the [SRG Authoring Workflow](../disa-process/srg-authoring))
 
 ## Next Steps
 
