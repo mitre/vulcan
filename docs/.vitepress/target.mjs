@@ -27,9 +27,10 @@ const TARGETS = {
   pages: {
     base: '/',
     inApp: false,
-    // Outbound chrome — the GitHub edit link, the social icons, and the
-    // external training nav entry — is meaningful only where the internet is:
-    // served in-app (possibly airgapped) every one of those links is dead.
+    // Outbound chrome — the GitHub edit link, the social icons, the external
+    // training nav entry, and the landing hero's external actions — is
+    // meaningful only where the internet is: served in-app (possibly
+    // airgapped) every one of those links is dead.
     outboundChrome: true,
     api: PUBLIC_API
   },

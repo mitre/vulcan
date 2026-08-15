@@ -42,17 +42,9 @@ export default defineConfig({
       : []),
   ],
 
-  // The landing hero is shared content; what differs in-app is one action.
-  // This is the generator's own build-time hook — the served HTML is never
-  // post-processed. Ruling: in-app, "Try Production" becomes "Go to Vulcan"
-  // pointing at the application root — the reader is already inside the
-  // instance the button used to advertise.
-  //
-  // The link is "/../" because the theme rebases every internal href under
-  // the site base: "/" would render as the site's own root, while "/../"
-  // renders as `${base}../`, which the browser resolves to the application
-  // root. target: "_self" rides through to the anchor, which is what stops
-  // the site's SPA router from intercepting a destination outside its base.
+  // The landing hero is shared content; what differs per target is decided
+  // here, in the generator's own build-time hook — the served HTML is never
+  // post-processed.
   transformPageData(pageData) {
     // Dynamic routes: frontmatter moustaches never interpolate, so the
     // generated API pages hand their titles through route params — without
@@ -61,14 +53,15 @@ export default defineConfig({
       pageData.title = pageData.params.pageTitle;
     }
 
-    if (!target.inApp || pageData.relativePath !== "index.md") return;
+    if (pageData.relativePath !== "index.md") return;
 
-    for (const action of pageData.frontmatter.hero?.actions || []) {
-      if (action.text === "Try Production") {
-        action.text = "Go To Vulcan";
-        action.link = "/../";
-        action.target = "_self";
-      }
+    // The hero's external actions are outbound chrome: served in-app —
+    // possibly airgapped — a github.com button is a dead link, so the build
+    // strips it exactly as it strips the social icons and edit links.
+    if (!target.outboundChrome && pageData.frontmatter.hero?.actions) {
+      pageData.frontmatter.hero.actions = pageData.frontmatter.hero.actions.filter(
+        (action) => !/^https?:\/\//.test(action.link),
+      );
     }
   },
 

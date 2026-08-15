@@ -38,6 +38,18 @@ RSpec.describe 'Docs site' do
       expect(response.body).to include('<title>DISA Vendor STIG Process | Vulcan</title>')
     end
 
+    # The hero's GitHub button is outbound chrome: served in-app — possibly
+    # airgapped — it is a dead link, so the in-app build strips it exactly as
+    # it already strips the social icons and edit links. The landing's own
+    # actions survive the strip.
+    it 'omits the GitHub hero action from the in-app landing' do
+      get '/docs'
+
+      expect(response.body).not_to include('href="https://github.com/mitre/vulcan"')
+      expect(response.body).to include('Get Started')
+      expect(response.body).to include('About Vulcan')
+    end
+
     # The application-palette stylesheet is what makes the served pages wear
     # the app's colours, and it arrives only through a build-time head entry —
     # nothing else fails if that entry is deleted, so this is the one pin.
