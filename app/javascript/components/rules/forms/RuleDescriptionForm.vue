@@ -4,7 +4,7 @@
       <!-- description -->
       <b-form-group :id="`ruleEditor-rule_description-group-${mod}`">
         <label :for="`ruleEditor-rule_description-${mod}`">
-          Rule Description
+          {{ ruleDescriptionLabel }}
           <InfoTooltip v-if="tooltips['rule_description']" :text="tooltips['rule_description']" />
         </label>
         <MarkdownTextarea
@@ -32,12 +32,18 @@
 
 <script>
 import { useFormFeedback } from "../../../composables/useFormFeedback";
+import { ruleTerm } from "../../../constants/terminology";
 import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
 import InfoTooltip from "../../shared/InfoTooltip.vue";
 
 export default {
   name: "RuleDescriptionForm",
   components: { MarkdownTextarea, InfoTooltip },
+  // Component kind from the editor page root; default keeps tests and
+  // isolated mounts green.
+  inject: {
+    injectedDocumentType: { default: "stig" },
+  },
   // `rule` and `index` are necessary if edits are to be made
   props: {
     description: {
@@ -77,6 +83,11 @@ export default {
         rule_description: null,
       },
     };
+  },
+  computed: {
+    ruleDescriptionLabel() {
+      return `${ruleTerm(this.injectedDocumentType).singular} Description`;
+    },
   },
 };
 </script>

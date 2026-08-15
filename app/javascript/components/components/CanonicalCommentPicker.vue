@@ -2,7 +2,7 @@
   <div>
     <b-form-input
       v-model="query"
-      placeholder="Search by author, rule, or comment text..."
+      :placeholder="msg.dedupSearchPlaceholder"
       debounce="300"
       aria-label="Search canonical candidates"
       size="sm"
@@ -50,6 +50,7 @@
 
 <script>
 import { getComments } from "../../api/componentsApi";
+import { messageLabels } from "../../constants/terminology";
 import SectionLabel from "../shared/SectionLabel.vue";
 
 // Picker for the "duplicate of" target on the triage modal and the bulk
@@ -62,6 +63,11 @@ import SectionLabel from "../shared/SectionLabel.vue";
 export default {
   name: "CanonicalCommentPicker",
   components: { SectionLabel },
+  // Component kind from the triage root (TriageSplitView / ComponentComments);
+  // default keeps tests and isolated mounts green.
+  inject: {
+    injectedDocumentType: { default: "stig" },
+  },
   props: {
     componentId: { type: [Number, String], required: true },
     excludeReviewIds: { type: Array, required: true },
@@ -71,6 +77,9 @@ export default {
     return { rows: [], loading: false, query: "" };
   },
   computed: {
+    msg() {
+      return messageLabels(this.injectedDocumentType);
+    },
     filteredRows() {
       const q = (this.query || "").toLowerCase().trim();
       const exclude = new Set(this.excludeReviewIds.map(Number));

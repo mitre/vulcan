@@ -101,9 +101,11 @@ export default {
       required: false,
     },
   },
-  setup() {
+  setup(props) {
     const { friendlyDateTime } = useDateFormat();
-    const { humanizedType } = useHumanizedTypes();
+    const { humanizedType } = useHumanizedTypes(
+      () => props.component && props.component.document_type,
+    );
     const { groupHistories } = useHistoryGrouping();
     return { friendlyDateTime, humanizedType, groupHistories };
   },

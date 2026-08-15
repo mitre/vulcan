@@ -103,6 +103,7 @@ import ReactionButtons from "../shared/ReactionButtons.vue";
 import CommentThread from "../shared/CommentThread.vue";
 import CommentAuthorLine from "../shared/CommentAuthorLine.vue";
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
+import { messageLabels } from "../../constants/terminology";
 import { sectionIndex } from "../../utils/sectionSortOrder";
 import { groupCommentsByRule } from "../../utils/groupCommentsByRule";
 import { normalizeComment } from "../../utils/normalizeComment";
@@ -110,6 +111,11 @@ import { normalizeComment } from "../../utils/normalizeComment";
 export default {
   name: "CommentsByRule",
   components: { CommentItem, ReactionButtons, CommentThread, CommentAuthorLine },
+  // Component kind from the triage root; default keeps tests and isolated
+  // mounts green.
+  inject: {
+    injectedDocumentType: { default: "stig" },
+  },
   props: {
     rows: { type: Array, required: true },
     allExpanded: { type: Boolean, default: false },
@@ -145,7 +151,10 @@ export default {
             })
             .map(([key, comments]) => ({
               key,
-              label: key === "(general)" ? "Overall Requirement" : SECTION_LABELS[key] || key,
+              label:
+                key === "(general)"
+                  ? messageLabels(this.injectedDocumentType).overallSection
+                  : SECTION_LABELS[key] || key,
               comments,
             })),
         };

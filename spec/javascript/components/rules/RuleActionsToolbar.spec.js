@@ -652,8 +652,11 @@ describe("RuleActionsToolbar", () => {
     it("keeps every kind-agnostic surface for srg-kind (comment/disposition surfaces have no kind gate)", () => {
       wrapper = createWrapper({ documentType: "srg", rule: authoredRule });
       const texts = buttonTexts();
-      expect(texts).toContain("Rule Changelog");
-      expect(texts).toContain("Rule Discussion");
+      // The panel labels are kind-keyed: srg surfaces read the
+      // Requirement noun (abbreviated for buttons), never Rule.
+      expect(texts).toContain("Req Changelog");
+      expect(texts).toContain("Req Discussion");
+      expect(texts).not.toContain("Rule Changelog");
       expect(texts).toContain("Comment");
       expect(texts).toContain("Change Review Status");
       expect(texts).toContain("Save");

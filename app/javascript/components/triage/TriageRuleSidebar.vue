@@ -8,7 +8,7 @@
         v-model="searchText"
         type="text"
         class="form-control form-control-sm flex-grow-1"
-        placeholder="Filter rules..."
+        :placeholder="filterPlaceholder"
         data-testid="sidebar-search"
       />
       <b-button
@@ -29,7 +29,7 @@
       data-testid="sidebar-list"
       class="sidebar-list"
       role="listbox"
-      aria-label="Comments by rule"
+      :aria-label="msg.commentsByRule"
       tabindex="0"
       @keydown="handleKeydown"
     >
@@ -99,6 +99,7 @@
 
 <script>
 import { groupCommentsByRule } from "../../utils/groupCommentsByRule";
+import { messageLabels, ruleTerm } from "../../constants/terminology";
 import VersionCurrencyDot from "../shared/VersionCurrencyDot.vue";
 
 export default {
@@ -107,6 +108,7 @@ export default {
   props: {
     comments: { type: Array, required: true },
     currentId: { type: [Number, String], default: null },
+    documentType: { type: String, default: "stig" },
   },
   data() {
     return {
@@ -116,6 +118,12 @@ export default {
     };
   },
   computed: {
+    msg() {
+      return messageLabels(this.documentType);
+    },
+    filterPlaceholder() {
+      return `Filter ${ruleTerm(this.documentType).plural.toLowerCase()}...`;
+    },
     normalizedCurrentId() {
       return this.currentId != null ? Number(this.currentId) : null;
     },

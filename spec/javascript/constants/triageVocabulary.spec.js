@@ -129,9 +129,26 @@ describe("triageVocabulary", () => {
     expect(commentsClosedTooltip("finalized")).toMatch(/finaliz/i);
   });
 
-  it("sectionLabel renders null as Overall Requirement", () => {
-    expect(sectionLabel(null)).toBe("Overall Requirement");
-    expect(sectionLabel(undefined)).toBe("Overall Requirement");
+  it("addressed_by labels carry the kind-keyed entity noun", async () => {
+    const { triageLabel, triageDisaLabel, triageTooltip } = await import(
+      "@/constants/triageVocabulary"
+    );
+    expect(triageLabel("addressed_by", "srg")).toBe("Addressed by Other Requirement");
+    expect(triageLabel("addressed_by", "stig")).toBe("Addressed by Other Rule");
+    expect(triageLabel("addressed_by")).toBe("Addressed by Other Rule");
+    expect(triageDisaLabel("addressed_by", "srg")).toBe("Addressed by another requirement");
+    expect(triageTooltip("addressed_by", "stig")).toBe("Addressed by another rule");
+    // Non-noun statuses pass through the static maps untouched.
+    expect(triageLabel("concur", "srg")).toBe("Accepted");
+    expect(triageDisaLabel("concur", "srg")).toBe("Concur");
+  });
+
+  it("sectionLabel renders null with the kind-keyed entity noun", () => {
+    // stig (and the no-kind default) speaks Rule; srg speaks Requirement.
+    expect(sectionLabel(null)).toBe("Overall Rule");
+    expect(sectionLabel(undefined)).toBe("Overall Rule");
+    expect(sectionLabel(null, "stig")).toBe("Overall Rule");
+    expect(sectionLabel(null, "srg")).toBe("Overall Requirement");
   });
 
   it("sectionLabel renders known keys via SECTION_LABELS", () => {

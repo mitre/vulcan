@@ -22,7 +22,7 @@
     <div v-if="parentRuleId" class="parent-redirect-notice alert alert-info py-2 mb-2">
       <small>
         <b-icon icon="info-circle" class="mr-1" />
-        This requirement is satisfied by <strong>{{ parentRuleName }}</strong
+        This {{ composerNoun }} is satisfied by <strong>{{ parentRuleName }}</strong
         >. Your comment will be posted there.
       </small>
     </div>
@@ -65,6 +65,7 @@
 import { useCommentComposer } from "../../composables/mutations/useCommentComposer";
 import { useToast } from "../../composables/useToast";
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
+import { messageLabels, ruleTerm } from "../../constants/terminology";
 import CommentDedupBanner from "./CommentDedupBanner.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
 
@@ -74,6 +75,11 @@ const COMPONENT_SECTION_VALUE = "__component__";
 export default {
   name: "CommentComposerModal",
   components: { CommentDedupBanner, FilterDropdown },
+  // Component kind from the page/panel root; default keeps tests and
+  // isolated mounts green.
+  inject: {
+    injectedDocumentType: { default: "stig" },
+  },
   props: {
     componentId: { type: [Number, String], required: true },
     ruleId: { type: [Number, String], default: null },
@@ -104,12 +110,15 @@ export default {
     };
   },
   computed: {
+    composerNoun() {
+      return ruleTerm(this.injectedDocumentType).singular.toLowerCase();
+    },
     sectionOptions() {
       const opts = [];
       if (this.componentDisplayedName) {
         opts.push({ value: COMPONENT_SECTION_VALUE, text: "Overall Component" });
       }
-      opts.push({ value: null, text: "Overall Requirement" });
+      opts.push({ value: null, text: messageLabels(this.injectedDocumentType).overallSection });
       opts.push(...Object.entries(SECTION_LABELS).map(([value, text]) => ({ value, text })));
       return opts;
     },

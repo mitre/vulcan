@@ -1,13 +1,13 @@
 /**
  * Shared helper for computing review action disabled tooltips.
  *
- * Used by RuleReviewDropdown and RuleReviewModal to determine which
- * review actions are available and why disabled ones are disabled.
+ * Used by RuleReviewModal to determine which review actions are
+ * available and why disabled ones are disabled.
  *
  * Each function returns a tooltip string (action is disabled) or null (action is enabled).
  */
 
-import { REVIEW_ACTION_LABELS } from "../constants/terminology";
+import { reviewActionLabels } from "../constants/terminology";
 import { ruleArray } from "./ruleArray";
 
 /**
@@ -17,9 +17,7 @@ import { ruleArray } from "./ruleArray";
  * - The rule is already under review
  * - The rule is locked
  */
-function requestReviewTooltip(rule, isUnderReview) {
-  const labels = REVIEW_ACTION_LABELS.requestReview;
-
+function requestReviewTooltip(rule, isUnderReview, labels) {
   if (isUnderReview) {
     return labels.alreadyUnderReview;
   }
@@ -36,9 +34,7 @@ function requestReviewTooltip(rule, isUnderReview) {
  * - The user is not an admin or the original requestor
  * - The rule is not currently under review
  */
-function revokeReviewTooltip(isAdmin, isRequestor, isUnderReview) {
-  const labels = REVIEW_ACTION_LABELS.revokeReview;
-
+function revokeReviewTooltip(isAdmin, isRequestor, isUnderReview, labels) {
   if (!(isAdmin || isRequestor)) {
     return labels.notAllowed;
   }
@@ -55,9 +51,7 @@ function revokeReviewTooltip(isAdmin, isRequestor, isUnderReview) {
  * - The user is not an admin or reviewer
  * - The rule is not currently under review
  */
-function requestChangesTooltip(isAdmin, isReviewer, isUnderReview) {
-  const labels = REVIEW_ACTION_LABELS.requestChanges;
-
+function requestChangesTooltip(isAdmin, isReviewer, isUnderReview, labels) {
   if (!(isAdmin || isReviewer)) {
     return labels.notAllowed;
   }
@@ -74,9 +68,7 @@ function requestChangesTooltip(isAdmin, isReviewer, isUnderReview) {
  * - The user is not an admin or reviewer
  * - The rule is not currently under review
  */
-function approveTooltip(isAdmin, isReviewer, isUnderReview) {
-  const labels = REVIEW_ACTION_LABELS.approve;
-
+function approveTooltip(isAdmin, isReviewer, isUnderReview, labels) {
   if (!(isAdmin || isReviewer)) {
     return labels.notAllowed;
   }
@@ -96,9 +88,7 @@ function approveTooltip(isAdmin, isReviewer, isUnderReview) {
  * - Status is "Applicable - Does Not Meet" with no mitigations
  * - Status is "Applicable - Inherently Meets" with no artifact description
  */
-function lockControlTooltip(rule, isAdmin, isUnderReview) {
-  const labels = REVIEW_ACTION_LABELS.lock;
-
+function lockControlTooltip(rule, isAdmin, isUnderReview, labels) {
   if (!isAdmin) {
     return labels.notAllowed;
   }
@@ -135,9 +125,7 @@ function lockControlTooltip(rule, isAdmin, isUnderReview) {
  * - The user is not an admin
  * - The rule is not currently locked
  */
-function unlockControlTooltip(rule, isAdmin) {
-  const labels = REVIEW_ACTION_LABELS.unlock;
-
+function unlockControlTooltip(rule, isAdmin, labels) {
   if (!isAdmin) {
     return labels.notAllowed;
   }
@@ -154,51 +142,68 @@ function unlockControlTooltip(rule, isAdmin) {
  * @param {boolean} readOnly - Whether the current user has read-only access
  * @param {string} effectivePermissions - "admin", "reviewer", or other
  * @param {number} currentUserId - The current user's ID
+ * @param {string} documentType - The owning component's document kind ("stig" | "srg")
  * @returns {Array} Array of review action objects with value, name, description, disabledTooltip
  */
-export function buildReviewActions(rule, readOnly, effectivePermissions, currentUserId) {
+export function buildReviewActions(
+  rule,
+  readOnly,
+  effectivePermissions,
+  currentUserId,
+  documentType,
+) {
   const isAdmin = !readOnly && effectivePermissions === "admin";
   const isReviewer = !readOnly && effectivePermissions === "reviewer";
   const isRequestor = !readOnly && currentUserId === rule.review_requestor_id;
   const isUnderReview = rule.review_requestor_id != null;
-  const labels = REVIEW_ACTION_LABELS;
+  const labels = reviewActionLabels(documentType);
 
   return [
     {
       value: "request_review",
       name: labels.requestReview.name,
       description: labels.requestReview.description,
-      disabledTooltip: requestReviewTooltip(rule, isUnderReview),
+      disabledTooltip: requestReviewTooltip(rule, isUnderReview, labels.requestReview),
     },
     {
       value: "revoke_review_request",
       name: labels.revokeReview.name,
       description: labels.revokeReview.description,
-      disabledTooltip: revokeReviewTooltip(isAdmin, isRequestor, isUnderReview),
+      disabledTooltip: revokeReviewTooltip(
+        isAdmin,
+        isRequestor,
+        isUnderReview,
+        labels.revokeReview,
+      ),
     },
     {
       value: "request_changes",
       name: labels.requestChanges.name,
       description: labels.requestChanges.description,
-      disabledTooltip: requestChangesTooltip(isAdmin, isReviewer, isUnderReview),
+      disabledTooltip: requestChangesTooltip(
+        isAdmin,
+        isReviewer,
+        isUnderReview,
+        labels.requestChanges,
+      ),
     },
     {
       value: "approve",
       name: labels.approve.name,
       description: labels.approve.description,
-      disabledTooltip: approveTooltip(isAdmin, isReviewer, isUnderReview),
+      disabledTooltip: approveTooltip(isAdmin, isReviewer, isUnderReview, labels.approve),
     },
     {
       value: "lock_control",
       name: labels.lock.name,
       description: labels.lock.description,
-      disabledTooltip: lockControlTooltip(rule, isAdmin, isUnderReview),
+      disabledTooltip: lockControlTooltip(rule, isAdmin, isUnderReview, labels.lock),
     },
     {
       value: "unlock_control",
       name: labels.unlock.name,
       description: labels.unlock.description,
-      disabledTooltip: unlockControlTooltip(rule, isAdmin),
+      disabledTooltip: unlockControlTooltip(rule, isAdmin, labels.unlock),
     },
   ];
 }

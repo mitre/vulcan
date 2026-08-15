@@ -21,6 +21,7 @@
       v-if="activeComment"
       :comments="sortedRows"
       :current-id="activeCommentId"
+      :document-type="documentType"
       class="mb-2"
       @select="onQueueSelect"
     />
@@ -32,6 +33,7 @@
           <TriageRuleSidebar
             :comments="sortedRows"
             :current-id="activeCommentId"
+            :document-type="documentType"
             @select="onQueueSelect"
           />
         </nav>
@@ -155,7 +157,7 @@
                 data-testid="admin-action-move-to-rule"
                 @click="adminAction = 'move-to-rule'"
               >
-                <b-icon icon="arrow-right-square" /> Move to rule
+                <b-icon icon="arrow-right-square" /> {{ msg.moveToRule }}
               </b-dropdown-item>
               <b-dropdown-divider />
               <b-dropdown-item
@@ -249,6 +251,7 @@ import PanelLayout from "../shared/PanelLayout.vue";
 import { useCommentReactions } from "../../composables/useCommentReactions";
 import { triageBgClass } from "../../utils/triageBgClass";
 import { compareBySectionOrder } from "../../utils/sectionSortOrder";
+import { messageLabels } from "../../constants/terminology";
 
 export default {
   name: "TriageSplitView",
@@ -263,6 +266,11 @@ export default {
     ReactionButtons,
     CommentAuthorLine,
     PanelLayout,
+  },
+  // Deep descendants (pickers, dedup banner) read the component kind via
+  // inject rather than prop chains — same pattern as isCommentsClosed.
+  provide() {
+    return { injectedDocumentType: this.documentType };
   },
   props: {
     rows: { type: Array, required: true },
@@ -304,6 +312,9 @@ export default {
     };
   },
   computed: {
+    msg() {
+      return messageLabels(this.documentType);
+    },
     triagePanels() {
       return [
         { name: "left", size: "sidebar", bgTier: "secondary" },

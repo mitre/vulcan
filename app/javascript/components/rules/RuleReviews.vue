@@ -87,7 +87,7 @@
 <script>
 import { useCommentReactions } from "../../composables/useCommentReactions";
 import { useDateFormat } from "../../composables/useDateFormat";
-import { ACTION_DESCRIPTIONS } from "../../constants/terminology";
+import { ACTION_DESCRIPTIONS, messageLabels } from "../../constants/terminology";
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
 import SectionLabel from "../shared/SectionLabel.vue";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
@@ -106,6 +106,11 @@ export default {
     CommentThread,
     ReactionButtons,
     UserBadge,
+  },
+  // Component kind from the page/panel root; default keeps tests and
+  // isolated mounts green.
+  inject: {
+    injectedDocumentType: { default: "stig" },
   },
   props: {
     effectivePermissions: {
@@ -151,7 +156,7 @@ export default {
     sectionFilterOptions() {
       return [
         { value: "all", text: "All sections" },
-        { value: "(general)", text: "Overall Requirement" },
+        { value: "(general)", text: messageLabels(this.injectedDocumentType).overallSection },
         ...Object.entries(SECTION_LABELS).map(([value, text]) => ({ value, text })),
       ];
     },

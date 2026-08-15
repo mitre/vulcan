@@ -2,10 +2,10 @@
 <template>
   <div class="card h-100 w-100">
     <div class="card-header">
-      <h5 class="card-title">{{ RULE_TERM.singular }} Overview</h5>
+      <h5 class="card-title">{{ itemTerm.singular }} Overview</h5>
     </div>
     <div v-if="!selectedRule" class="card-body text-center text-muted py-5">
-      <p>Select a {{ RULE_TERM.singular.toLowerCase() }} to view overview.</p>
+      <p>Select a {{ itemTerm.singular.toLowerCase() }} to view overview.</p>
     </div>
     <div v-else class="card-body">
       <ul class="list-group list-group-flush">
@@ -21,7 +21,7 @@
 
         <!-- Rule ID (both modes, with truncation + expand) -->
         <li class="list-group-item" data-testid="rule-id">
-          <strong>Rule ID</strong>:
+          <strong>{{ itemTerm.singular }} ID</strong>:
           <button
             type="button"
             data-testid="rule-id-toggle"
@@ -157,6 +157,12 @@ export default {
       type: String,
       required: true,
       validator: (value) => ["stig", "srg", "component"].includes(value),
+    },
+    // Resolved display noun from the parent viewer (kind-aware for
+    // released components); defaults to the deployment term.
+    itemTerm: {
+      type: Object,
+      default: () => RULE_TERM,
     },
     selectedRule: {
       type: Object,

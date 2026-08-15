@@ -8,7 +8,7 @@
     @hidden="clearSelectedRules"
   >
     <b-form-checkbox v-model="showRuleId" class="mb-2" switch size="sm">
-      Show Rule IDs instead of SRG IDs
+      {{ showRuleIdsLabel }}
     </b-form-checkbox>
     <b-form-group :label="msg.satisfiesPrompt">
       <multiselect
@@ -54,7 +54,14 @@
 <script>
 import Multiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
-import { RULE_TERM, MESSAGE_LABELS, selectedCountLabel } from "../../constants/terminology";
+// The satisfaction graph is a STIG-only surface — the stig vocabulary is
+// the correct fixed kind here, not a missing thread.
+import {
+  RULE_TERM,
+  messageLabels,
+  ruleTerm,
+  selectedCountLabel,
+} from "../../constants/terminology";
 import { truncateId } from "../../utils/idFormatter";
 import { ruleArray } from "../../utils/ruleArray";
 
@@ -84,10 +91,13 @@ export default {
       selectedRuleIds: [],
       showRuleId: false,
       term: RULE_TERM,
-      msg: MESSAGE_LABELS,
+      msg: messageLabels("stig"),
     };
   },
   computed: {
+    showRuleIdsLabel() {
+      return `Show ${ruleTerm("stig").singular} IDs instead of SRG IDs`;
+    },
     filteredSelectRules() {
       const rule = this.selectedRule;
       if (!rule) return [];

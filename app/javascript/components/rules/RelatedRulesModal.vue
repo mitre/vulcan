@@ -5,7 +5,7 @@
     <b-modal
       id="related-rules-modal"
       ref="modal"
-      :title="`Rules Related to ${ruleStigId}//${rule.version}`"
+      :title="`${relatedNoun} Related to ${ruleStigId}//${rule.version}`"
       class="responsive"
       centered
       ok-only
@@ -49,7 +49,7 @@
           placeholder="Search STIG/Component by name ..."
         />
         <small class="text-info">
-          {{ results }} Related Rules {{ selectedParent ? `in ${selectedParent}` : "" }}
+          {{ results }} Related {{ relatedNoun }} {{ selectedParent ? `in ${selectedParent}` : "" }}
         </small>
       </b-form-group>
 
@@ -252,6 +252,9 @@
 import { getRelatedRules } from "../../api/searchApi";
 import { ruleArray } from "../../utils/ruleArray";
 import DOMPurify from "dompurify";
+// Related-rules is a STIG-only surface (hidden for SRG kinds), so it reads
+// the stig term.
+import { ruleTerm } from "../../constants/terminology";
 import VueMultiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
 export default {
@@ -292,6 +295,9 @@ export default {
     };
   },
   computed: {
+    relatedNoun() {
+      return ruleTerm("stig").plural;
+    },
     selectedParent() {
       return this.selectedParentObj ? this.selectedParentObj.name : "";
     },

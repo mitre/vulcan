@@ -53,6 +53,7 @@ import { buildReviewActions } from "../../utils/reviewActionHelpers";
 export default {
   name: "RuleReviewModal",
   props: {
+    documentType: { type: String, default: "stig" },
     rule: {
       type: Object,
       required: true,
@@ -87,6 +88,7 @@ export default {
         this.readOnly,
         this.effectivePermissions,
         this.currentUserId,
+        this.documentType,
       );
     },
   },

@@ -44,7 +44,7 @@
           <div class="text-right">
             <b-badge v-if="component.rules_count > 0" variant="info" pill>
               <b-icon icon="shield-check" class="mr-1" />
-              {{ ruleCountLabel(component.rules_count) }}
+              {{ ruleCountLabel(component.rules_count, component.document_type) }}
               <span v-if="component.component_id" class="ml-1">(Overlaid)</span>
             </b-badge>
           </div>
@@ -124,6 +124,7 @@
             <LockControlsModal
               v-if="canReview"
               :component_id="component.id"
+              :document-type="component.document_type"
               @projectUpdated="$emit('projectUpdated')"
             >
               <template #opener>
@@ -131,7 +132,7 @@
                   v-b-tooltip.hover
                   variant="outline-warning"
                   size="sm"
-                  title="Lock all rules in this component"
+                  :title="msg.lockAllTooltip"
                 >
                   <b-icon icon="lock" font-scale="0.9" /> Lock
                 </b-button>
@@ -216,7 +217,7 @@ import { useConfirmRelease, RELEASE_CONFIRM_COPY } from "../../composables/useCo
 import LockControlsModal from "../components/LockControlsModal.vue";
 import NewComponentModal from "../components/NewComponentModal.vue";
 import UserBadge from "../shared/UserBadge.vue";
-import { ruleCountLabel } from "../../constants/terminology";
+import { messageLabels, ruleCountLabel } from "../../constants/terminology";
 
 export default {
   name: "ComponentCard",
@@ -262,6 +263,9 @@ export default {
     };
   },
   computed: {
+    msg: function () {
+      return messageLabels(this.component.document_type);
+    },
     releaseComponentTooltip: function () {
       if (this.component.released) {
         return "Component has already been released";
@@ -271,7 +275,7 @@ export default {
         return "Release Component";
       }
 
-      return "All rules must be locked to release a component";
+      return this.msg.releaseRequiresLock;
     },
   },
   methods: {

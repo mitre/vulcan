@@ -105,9 +105,16 @@ describe("RuleList", () => {
   // TERMINOLOGY INTEGRATION
   // ==========================================
   describe("RULE_TERM integration", () => {
-    it("uses RULE_TERM.plural for list title", () => {
+    it("defaults the list title to RULE_TERM.plural", () => {
       wrapper = createWrapper();
       expect(wrapper.text()).toContain(RULE_TERM.plural);
+    });
+
+    it("renders the itemTerm noun when the viewer passes one (released SRG)", async () => {
+      const { REQUIREMENT_TERM } = await import("@/constants/terminology");
+      wrapper = createWrapper({ type: "component", itemTerm: REQUIREMENT_TERM });
+      expect(wrapper.text()).toContain("Requirements");
+      expect(wrapper.text()).not.toContain(`${RULE_TERM.plural}`);
     });
   });
 

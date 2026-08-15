@@ -86,9 +86,10 @@
         <!-- Satisfied-by filter (working_copy/vendor_submission with csv/excel) -->
         <div v-if="showSatisfiedByToggle" class="mb-3">
           <b-form-checkbox v-model="excludeSatisfiedBy" data-testid="exclude-satisfied-by-checkbox">
-            Exclude satisfied-by rules
+            Exclude satisfied-by {{ ruleNoun.plural.toLowerCase() }}
             <small class="text-muted d-block ml-4"
-              >Omit rules whose requirements are covered by another rule</small
+              >Omit {{ ruleNoun.plural.toLowerCase() }} whose requirements are covered by another
+              {{ ruleNoun.singular.toLowerCase() }}</small
             >
           </b-form-checkbox>
         </div>
@@ -171,7 +172,7 @@
                   v-b-tooltip.hover
                   variant="warning"
                   class="ml-1"
-                  title="All rules are 'Not Yet Determined' — this component will produce empty output in DISA exports"
+                  :title="nydIconTitle"
                   data-testid="nyd-warning-icon"
                 />
               </b-form-checkbox>
@@ -228,7 +229,9 @@
 </template>
 
 <script>
-import { EXPORT_FORMATS } from "../../constants/terminology";
+// Export selection spans components of both kinds, so noun copy reads the
+// deployment-default term rather than a per-kind one.
+import { EXPORT_FORMATS, RULE_TERM } from "../../constants/terminology";
 import {
   EXPORT_MODES,
   MODE_FORMAT_MATRIX,
@@ -433,13 +436,20 @@ export default {
         this.selectedNydOnlyCount === this.selectedComponentIds.length
       );
     },
+    ruleNoun() {
+      return RULE_TERM;
+    },
+    nydIconTitle() {
+      return `All ${RULE_TERM.plural.toLowerCase()} are 'Not Yet Determined' — this component will produce empty output in DISA exports`;
+    },
     nydWarningMessage() {
       if (!this.isDISAMode || this.selectedNydOnlyCount === 0) return null;
+      const rules = RULE_TERM.plural.toLowerCase();
       if (this.allSelectedAreNydOnly) {
-        return "All selected components have only 'Not Yet Determined' rules and will produce empty output.";
+        return `All selected components have only 'Not Yet Determined' ${rules} and will produce empty output.`;
       }
       const noun = this.selectedNydOnlyCount === 1 ? "component has" : "components have";
-      return `${this.selectedNydOnlyCount} selected ${noun} only 'Not Yet Determined' rules and will produce empty worksheets.`;
+      return `${this.selectedNydOnlyCount} selected ${noun} only 'Not Yet Determined' ${rules} and will produce empty worksheets.`;
     },
     canExport() {
       return this.selectedFormat !== null && this.selectedComponentIds.length > 0;

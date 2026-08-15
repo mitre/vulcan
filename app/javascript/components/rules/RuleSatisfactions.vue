@@ -26,7 +26,7 @@
       </p>
 
       <b-form-checkbox v-model="showRuleIds" switch size="sm" class="mb-2">
-        Show Rule IDs
+        {{ showRuleIdsLabel }}
       </b-form-checkbox>
 
       <div
@@ -91,7 +91,7 @@
       </p>
 
       <b-form-checkbox v-model="showRuleIds" switch size="sm" class="mb-2">
-        Show Rule IDs
+        {{ showRuleIdsLabel }}
       </b-form-checkbox>
 
       <div
@@ -146,6 +146,7 @@
 </template>
 
 <script>
+import { ruleTerm } from "../../constants/terminology";
 import { truncateId } from "../../utils/idFormatter";
 import { ruleArray } from "../../utils/ruleArray";
 import { useRuleSelectionStore } from "../../stores/ruleSelection";
@@ -185,6 +186,13 @@ export default {
       showRuleIds: false,
       truncateId, // Expose utility for template
     };
+  },
+  computed: {
+    // Satisfaction graphs are a STIG-only surface, so the label reads the
+    // stig term from the central table.
+    showRuleIdsLabel() {
+      return `Show ${ruleTerm("stig").singular} IDs`;
+    },
   },
   methods: {
     ruleArray,

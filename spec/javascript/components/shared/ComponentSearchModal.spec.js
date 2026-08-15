@@ -106,9 +106,9 @@ describe("ComponentSearchModal", () => {
   });
 
   describe("initialization", () => {
-    it("renders with search input placeholder for rules mode", () => {
+    it("renders the kind-keyed search placeholder for rules mode", () => {
       wrapper = createWrapper();
-      expect(wrapper.vm.placeholder).toBe("Search requirements...");
+      expect(wrapper.vm.placeholder).toBe("Search rules...");
     });
 
     it("renders with search input placeholder for comments mode", () => {

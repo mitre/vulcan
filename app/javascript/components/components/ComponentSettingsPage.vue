@@ -123,7 +123,7 @@
             <b-form-group
               label="STIG ID Prefix"
               label-for="settings-prefix"
-              description="Each rule's STIG ID is generated from this prefix."
+              :description="prefixDescription"
             >
               <b-form-input
                 id="settings-prefix"
@@ -215,6 +215,7 @@
 
 <script>
 import { updateComponent } from "../../api/componentsApi";
+import { ruleTerm } from "../../constants/terminology";
 import { provide } from "vue";
 import { searchUsers } from "../../api/usersApi";
 import debounce from "lodash/debounce";
@@ -275,6 +276,10 @@ export default {
     };
   },
   computed: {
+    prefixDescription() {
+      const noun = ruleTerm(this.component.document_type).singular.toLowerCase();
+      return `Each ${noun}'s STIG ID is generated from this prefix.`;
+    },
     breadcrumbs() {
       return [
         { text: "Projects", href: "/projects" },

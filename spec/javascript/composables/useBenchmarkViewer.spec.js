@@ -177,12 +177,24 @@ describe("useBenchmarkViewer", () => {
       expect(composable.benchmarkType.value).toBe("stig");
     });
 
-    it("provides item type name from config", () => {
+    it("provides item type name from the central terminology table", () => {
       composable = useBenchmarkViewer(stigBenchmark, "stig");
       expect(composable.itemTypeName.value).toBe("rule");
 
       composable = useBenchmarkViewer(srgBenchmark, "srg");
       expect(composable.itemTypeName.value).toBe("requirement");
+    });
+
+    it("released components resolve the noun through their document_type", () => {
+      composable = useBenchmarkViewer(stigBenchmark, "component", "srg");
+      expect(composable.itemTypeName.value).toBe("requirement");
+
+      composable = useBenchmarkViewer(stigBenchmark, "component", "stig");
+      expect(composable.itemTypeName.value).toBe("rule");
+
+      // No document_type keeps the deployment default.
+      composable = useBenchmarkViewer(stigBenchmark, "component");
+      expect(composable.itemTypeName.value).toBe("rule");
     });
   });
 

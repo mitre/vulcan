@@ -205,7 +205,7 @@
 <script>
 import { getHistories } from "../../api/componentsApi";
 import { usePermissions } from "../../composables/usePermissions";
-import { SIDEBAR_TITLES } from "../../constants/terminology";
+import { sidebarTitles } from "../../constants/terminology";
 import History from "./History.vue";
 import RuleSatisfactions from "../rules/RuleSatisfactions.vue";
 import RuleReviews from "../rules/RuleReviews.vue";
@@ -266,7 +266,6 @@ export default {
   },
   data() {
     return {
-      titles: SIDEBAR_TITLES,
       localHistories: [],
       actionDescriptions: {
         comment: "Commented",
@@ -280,6 +279,9 @@ export default {
     };
   },
   computed: {
+    titles() {
+      return sidebarTitles(this.component?.document_type);
+    },
     commentsClosed() {
       return (this.component?.comment_phase || "open") !== "open";
     },

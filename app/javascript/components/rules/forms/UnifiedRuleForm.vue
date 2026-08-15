@@ -114,6 +114,7 @@
 import { computed } from "vue";
 import RuleForm from "./RuleForm.vue";
 import RuleSecurityRequirementsGuideInformation from "../RuleSecurityRequirementsGuideInformation.vue";
+import { messageLabels } from "../../../constants/terminology";
 import { useRuleFormFields } from "../../../composables/useRuleFormFields";
 import { useRuleSelectionStore } from "../../../stores/ruleSelection";
 import "../../../styles/field-states.css";
@@ -179,7 +180,11 @@ export default {
     lockStatusBadge() {
       const r = this.rule;
       if (r.locked) {
-        return { variant: "secondary", icon: "lock-fill", text: "Rule Locked" };
+        return {
+          variant: "secondary",
+          icon: "lock-fill",
+          text: messageLabels(this.documentType).lockedBadge,
+        };
       }
       if (r.review_requestor_id) {
         return { variant: "info", icon: "eye", text: "Under Review" };

@@ -1,5 +1,9 @@
 <template>
-  <BenchmarkViewer :benchmark="normalizedBenchmark" type="component" />
+  <BenchmarkViewer
+    :benchmark="normalizedBenchmark"
+    type="component"
+    :document-type="component.document_type"
+  />
 </template>
 
 <script>

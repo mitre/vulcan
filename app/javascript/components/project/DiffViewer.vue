@@ -16,7 +16,7 @@
                 class="mb-1 unselectable"
                 name="rcFilterChecked-filter"
               >
-                <strong>({{ ruleDiffFilterCounts.rc }})</strong> Rule Changed
+                <strong>({{ ruleDiffFilterCounts.rc }})</strong> {{ ruleChangedLabel }}
               </b-form-checkbox>
             </b-form-group>
             <div
@@ -138,6 +138,9 @@
 <script>
 import _ from "lodash";
 import { searchBasedOnSameSrg, compareComponents } from "../../api/componentsApi";
+// Compare spans components of both kinds, so the filter label reads the
+// deployment-default noun rather than a per-kind term.
+import { RULE_TERM } from "../../constants/terminology";
 import MonacoEditor from "vue-monaco";
 import { useToast } from "../../composables/useToast";
 import FilterDropdown from "../shared/FilterDropdown.vue";
@@ -187,6 +190,9 @@ export default {
     };
   },
   computed: {
+    ruleChangedLabel() {
+      return `${RULE_TERM.singular} Changed`;
+    },
     sidebarStyle: function () {
       return {
         "max-height": `calc(100vh - ${this.sidebarOffset}px - 20px)`,

@@ -70,6 +70,7 @@
         <RuleList
           :filtered-rules="navFilteredRules"
           :all-rules="rules"
+          :document-type="component.document_type"
           :component-id="component.id"
           :project-prefix="component.prefix"
           :read-only="true"
@@ -209,7 +210,7 @@ import { useReplyComposer } from "../../composables/useReplyComposer";
 import { useRuleFilters, useSidebar } from "../../composables";
 import { useRuleSelectionStore } from "../../stores/ruleSelection";
 import { getFirstVisibleRule } from "../../utils/ruleSelectionUtils";
-import { MESSAGE_LABELS, RELOCATION_TERM } from "../../constants/terminology";
+import { messageLabels, RELOCATION_TERM } from "../../constants/terminology";
 import ControlsPageLayout from "../rules/ControlsPageLayout.vue";
 import ControlsCommandBar from "../shared/ControlsCommandBar.vue";
 import RuleFilterBar from "../rules/RuleFilterBar.vue";
@@ -253,6 +254,7 @@ export default {
       getCommentPhase: () => this.component.comment_phase || "open",
       getClosedReason: () => this.component.closed_reason || null,
       isCommentsClosed: () => (this.component.comment_phase || "open") !== "open",
+      injectedDocumentType: this.component.document_type,
     };
   },
   props: {
@@ -400,7 +402,7 @@ export default {
     return {
       component: this.initialComponentState,
       localAdvancedFields: this.initialComponentState.advanced_fields,
-      msg: MESSAGE_LABELS,
+      msg: messageLabels(this.initialComponentState.document_type),
       relocationTerms: RELOCATION_TERM,
       showExportModal: false,
       availableExportModes: ["working_copy", "vendor_submission", "published_stig", "backup"],

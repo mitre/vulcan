@@ -108,11 +108,17 @@
 import _ from "lodash";
 import { globalSearch } from "../../api/searchApi";
 import { getComments } from "../../api/componentsApi";
+import { ruleTerm } from "../../constants/terminology";
 import Highlighter from "vue-highlight-words";
 
 export default {
   name: "ComponentSearchModal",
   components: { Highlighter },
+  // Component kind from the page/panel root; default keeps tests and
+  // isolated mounts green.
+  inject: {
+    injectedDocumentType: { default: "stig" },
+  },
   props: {
     componentId: { type: [Number, String], required: true },
     projectPrefix: { type: String, required: true },
@@ -132,7 +138,8 @@ export default {
   },
   computed: {
     placeholder() {
-      return this.searchType === "comments" ? "Search comments..." : "Search requirements...";
+      if (this.searchType === "comments") return "Search comments...";
+      return `Search ${ruleTerm(this.injectedDocumentType).plural.toLowerCase()}...`;
     },
     resultIcon() {
       return this.searchType === "comments" ? "chat-left-text" : "file-earmark-text";

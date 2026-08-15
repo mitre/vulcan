@@ -25,7 +25,7 @@
         Informational — note acknowledged, no action required
       </b-form-radio>
       <b-form-radio v-model="triageStatus" name="triage" value="addressed_by">
-        Addressed by another requirement
+        {{ addressedByLabel }}
       </b-form-radio>
       <RulePicker
         v-if="triageStatus === 'addressed_by' && resolvedComponentId"
@@ -101,7 +101,7 @@
 </template>
 
 <script>
-import { SINGLE_BUTTON_STATUSES } from "../../constants/triageVocabulary";
+import { SINGLE_BUTTON_STATUSES, triageDisaLabel } from "../../constants/triageVocabulary";
 import CanonicalCommentPicker from "../components/CanonicalCommentPicker.vue";
 import RulePicker from "../components/RulePicker.vue";
 import ResponseTemplateDropdown from "./ResponseTemplateDropdown.vue";
@@ -109,6 +109,11 @@ import ResponseTemplateDropdown from "./ResponseTemplateDropdown.vue";
 export default {
   name: "CommentTriageForm",
   components: { CanonicalCommentPicker, RulePicker, ResponseTemplateDropdown },
+  // Component kind from the triage root; default keeps tests and isolated
+  // mounts green.
+  inject: {
+    injectedDocumentType: { default: "stig" },
+  },
   props: {
     review: { type: Object, required: true },
     componentId: { type: [Number, String], default: null },
@@ -125,6 +130,9 @@ export default {
     };
   },
   computed: {
+    addressedByLabel() {
+      return triageDisaLabel("addressed_by", this.injectedDocumentType);
+    },
     resolvedComponentId() {
       return this.componentId || this.review?.component_id || null;
     },

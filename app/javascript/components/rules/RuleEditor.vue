@@ -73,8 +73,8 @@
             @close="cancelEnableAdvanced"
           >
             <p>
-              Advanced fields provide additional control over rule metadata. Most users do not need
-              to modify these fields.
+              Advanced fields provide additional control over
+              {{ advancedNoun }} metadata. Most users do not need to modify these fields.
             </p>
             <p class="mb-0">Are you sure you want to enable advanced fields?</p>
             <template #modal-footer="{ ok, cancel }">
@@ -122,6 +122,7 @@
 import UnifiedRuleForm from "./forms/UnifiedRuleForm.vue";
 import InspecControlEditor from "./InspecControlEditor.vue";
 import RuleActionsToolbar from "./RuleActionsToolbar.vue";
+import { ruleTerm } from "../../constants/terminology";
 
 export default {
   name: "RuleEditor",
@@ -185,6 +186,9 @@ export default {
   computed: {
     isSrg() {
       return this.documentType === "srg";
+    },
+    advancedNoun() {
+      return ruleTerm(this.documentType).singular.toLowerCase();
     },
     autosaveDisabledReason() {
       if (this.readOnly) return "view";

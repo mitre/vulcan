@@ -326,4 +326,26 @@ describe("TriageQueueNav", () => {
     expect(active.exists()).toBe(true);
     expect(active.text()).toContain("#3");
   });
+
+  // ── Kind-keyed noun ────────────────────────────────────────────────
+
+  it("srg documentType renders Requirement everywhere — tooltips, counter, no Rule noun", () => {
+    const w = mount(TriageQueueNav, {
+      localVue,
+      propsData: baseProps({ documentType: "srg" }),
+    });
+    const prev = w.find('[data-testid="prev-rule"]');
+    expect(prev.attributes("aria-label")).toBe("Previous requirement");
+    expect(w.find('[data-testid="position-counter"]').text()).toMatch(/^Requirement 1 of/);
+    // The whole srg render must be free of the capitalized entity noun —
+    // this is what catches an unconverted template string anywhere in the
+    // component, not just the sites asserted above.
+    expect(w.html()).not.toMatch(/\bRule\b/);
+  });
+
+  it("defaults to the deployment Rule noun without documentType", () => {
+    const w = mount(TriageQueueNav, { localVue, propsData: baseProps() });
+    expect(w.find('[data-testid="prev-rule"]').attributes("aria-label")).toBe("Previous rule");
+    expect(w.find('[data-testid="position-counter"]').text()).toMatch(/^Rule 1 of/);
+  });
 });

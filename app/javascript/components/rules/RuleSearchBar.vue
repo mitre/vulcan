@@ -19,7 +19,7 @@
       </span>
       <span
         v-b-tooltip.hover
-        title="Search requirements (Cmd+K)"
+        :title="searchTooltip"
         class="text-primary clickable float-right mr-2"
         @click="$bvModal.show('component-search-modal')"
       >
@@ -51,10 +51,16 @@
 import _ from "lodash";
 import FindAndReplace from "./FindAndReplace.vue";
 import ComponentSearchModal from "../shared/ComponentSearchModal.vue";
+import { ruleTerm } from "../../constants/terminology";
 
 export default {
   name: "RuleSearchBar",
   components: { FindAndReplace, ComponentSearchModal },
+  // Component kind from the editor page root; default keeps tests and
+  // isolated mounts green.
+  inject: {
+    injectedDocumentType: { default: "stig" },
+  },
   props: {
     componentId: {
       type: Number,
@@ -75,6 +81,11 @@ export default {
     searchValue: {
       type: String,
       default: "",
+    },
+  },
+  computed: {
+    searchTooltip() {
+      return `Search ${ruleTerm(this.injectedDocumentType).plural.toLowerCase()} (Cmd+K)`;
     },
   },
   methods: {

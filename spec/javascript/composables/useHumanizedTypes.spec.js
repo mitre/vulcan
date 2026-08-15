@@ -43,4 +43,22 @@ describe("HUMANIZED_TYPES constant", () => {
     expect(HUMANIZED_TYPES.locked).toBe("Locked");
     expect(HUMANIZED_TYPES.content).toBe("Check");
   });
+
+  describe("kind-keyed noun entries", () => {
+    it("srg document_type renders Requirement-flavored labels", () => {
+      const { humanizedType: srgHumanized } = useHumanizedTypes("srg");
+      expect(srgHumanized("BaseRule")).toBe("Requirement");
+      expect(srgHumanized("RuleDescription")).toBe("Requirement Description");
+      expect(srgHumanized("rule_severity")).toBe("Requirement Severity");
+      // Non-noun entries are untouched.
+      expect(srgHumanized("locked")).toBe("Locked");
+    });
+
+    it("accepts a getter and keeps the stig default without one", () => {
+      const { humanizedType: fromGetter } = useHumanizedTypes(() => "srg");
+      expect(fromGetter("rule_id")).toBe("Requirement ID");
+      const { humanizedType: noKind } = useHumanizedTypes();
+      expect(noKind("rule_id")).toBe("Rule ID");
+    });
+  });
 });

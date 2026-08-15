@@ -7,6 +7,8 @@
  * the successor to the four-list STATUS_FIELD_CONFIG shape that lived here.
  */
 
+import { RULE_TERM } from "../constants/terminology";
+
 // Canonical field-key-to-label mapping. Single source of truth for all
 // consumers: rule editor, triage context panel, export headers.
 // The "content" alias resolves to "check_content" at the registry level
@@ -27,7 +29,7 @@ export const FIELD_LABELS = Object.freeze({
   fix_id: "Fix ID",
   fixtext_fixref: "Fix Text Reference",
   version: "Version",
-  rule_weight: "Rule Weight",
+  rule_weight: `${RULE_TERM.singular} Weight`,
   ident: "Identifier",
   ident_system: "Identifier System",
   documentable: "Documentable",

@@ -8,7 +8,7 @@
         :component-prefix="rule.component_prefix || ''"
         @navigate="$emit('navigate-to-rule', $event)"
       >
-        Content fields are hidden — edit on the parent rule.
+        Content fields are hidden — edit on the {{ parentRuleFallback }}.
       </SatisfiedByIndicator>
 
       <!-- ============================================================ -->
@@ -112,7 +112,7 @@
           v-bind="formGroupProps"
           field-name="nist_control_family"
           label="IA Control"
-          tooltip="The NIST control family (e.g. AC-2) mapped to this requirement"
+          :tooltip="`The NIST control family (e.g. AC-2) mapped to this ${nounSingular}`"
           extra-class="col-md-6"
           read-only
         >
@@ -129,7 +129,7 @@
           v-bind="formGroupProps"
           field-name="cci"
           label="CCI"
-          tooltip="The Common Control Indicator (CCI) mapped to this requirement"
+          :tooltip="`The Common Control Indicator (CCI) mapped to this ${nounSingular}`"
           extra-class="col-md-6"
           read-only
         >
@@ -220,7 +220,7 @@
             class="mb-2 py-1 px-2 small"
           >
             Inherited fix from
-            {{ ruleArray(rule, "satisfied_by")[0].displayed_name || "parent rule" }}:
+            {{ ruleArray(rule, "satisfied_by")[0].displayed_name || parentRuleFallback }}:
             <em
               >{{ (ruleArray(rule, "satisfied_by")[0].fixtext || "").substring(0, 200)
               }}{{ (ruleArray(rule, "satisfied_by")[0].fixtext || "").length > 200 ? "…" : "" }}</em
@@ -394,7 +394,7 @@
         <RuleFormGroup
           v-bind="formGroupProps"
           field-name="rule_weight"
-          label="Rule Weight"
+          :label="ruleWeightLabel"
           :tooltip="tooltips['rule_weight']"
           extra-class="col-6"
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
@@ -474,6 +474,7 @@ import {
   STATUS_DESCRIPTIONS_BY_DOCUMENT_TYPE,
 } from "../../../constants/terminology";
 import { ruleArray } from "../../../utils/ruleArray";
+import { ruleTerm } from "../../../constants/terminology";
 
 // Display form of a status name (en-dash, matching published DISA copy).
 const displayStatus = (status) => status.replace(" - ", " – ");
@@ -498,13 +499,13 @@ const ARTIFACT_TOOLTIP_BY_STATUS = Object.freeze({
   "Applicable - Does Not Meet": null,
 });
 
-const FIXTEXT_TOOLTIP_BY_STATUS = Object.freeze({
-  "Applicable - Configurable":
-    "Describe how to correctly configure the requirement to remediate the system vulnerability",
-  "Applicable - Does Not Meet": null,
-  "Applicable - Inherently Meets": null,
-  "Not Applicable": null,
-});
+const fixtextTooltipByStatus = (noun) =>
+  Object.freeze({
+    "Applicable - Configurable": `Describe how to correctly configure the ${noun} to remediate the system vulnerability`,
+    "Applicable - Does Not Meet": null,
+    "Applicable - Inherently Meets": null,
+    "Not Applicable": null,
+  });
 
 export default {
   name: "RuleForm",
@@ -615,6 +616,15 @@ export default {
     };
   },
   computed: {
+    ruleWeightLabel() {
+      return `${ruleTerm(this.documentType).singular} Weight`;
+    },
+    nounSingular() {
+      return ruleTerm(this.documentType).singular.toLowerCase();
+    },
+    parentRuleFallback() {
+      return `parent ${this.nounSingular}`;
+    },
     formGroupPropsWithCommentIcon() {
       return { ...this.formGroupProps, ...this.commentIconProps };
     },
@@ -677,8 +687,8 @@ export default {
         fixtext_fixref: null,
         fixtext:
           this.nydTooltip ||
-          (Object.hasOwn(FIXTEXT_TOOLTIP_BY_STATUS, this.rule.status)
-            ? FIXTEXT_TOOLTIP_BY_STATUS[this.rule.status]
+          (Object.hasOwn(fixtextTooltipByStatus(this.nounSingular), this.rule.status)
+            ? fixtextTooltipByStatus(this.nounSingular)[this.rule.status]
             : "Explain how to fix the vulnerability discussed"),
         ident:
           "Typically the Common Control Indicator (CCI) that maps to the vulnerability being discussed in this control",

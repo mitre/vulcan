@@ -11,7 +11,7 @@
         <b-button
           v-if="!isSrg"
           v-b-tooltip.hover
-          title="View related rules from other components"
+          :title="msg.relatedTooltip"
           variant="outline-secondary"
           size="sm"
           @click="$emit('open-related-modal')"
@@ -21,7 +21,7 @@
         <b-button
           v-if="!isSrg"
           v-b-tooltip.hover
-          title="Rules this control satisfies or is satisfied by"
+          :title="msg.satisfiesTooltip"
           variant="outline-secondary"
           size="sm"
           @click="$emit('toggle-panel', 'satisfies')"
@@ -30,7 +30,7 @@
         </b-button>
         <b-button
           v-b-tooltip.hover
-          title="Rule changelog — field-level changes"
+          :title="msg.changelogTooltip"
           variant="outline-secondary"
           size="sm"
           @click="$emit('toggle-panel', 'rule-history')"
@@ -39,7 +39,7 @@
         </b-button>
         <b-button
           v-b-tooltip.hover
-          title="Comments, reviews, and triage decisions on this rule"
+          :title="msg.discussionTooltip"
           variant="outline-secondary"
           size="sm"
           @click="$emit('toggle-panel', 'rule-reviews')"
@@ -110,7 +110,7 @@
           button-icon="save"
           button-variant="outline-success"
           button-size="sm"
-          button-tooltip="Save rule with a comment"
+          :button-tooltip="msg.saveTooltip"
           :button-disabled="isReadOnly"
           wrapper-class="d-inline-flex"
           @comment="$emit('save', $event)"
@@ -120,7 +120,7 @@
         <b-button
           v-if="!isSrg"
           v-b-tooltip.hover
-          title="Duplicate this rule"
+          :title="msg.cloneTooltip"
           variant="outline-info"
           :disabled="readOnly"
           @click="$emit('clone')"
@@ -146,7 +146,7 @@
       <div v-if="effectivePermissions === 'admin'" class="toolbar-btn-group ml-3">
         <b-button
           v-b-tooltip.hover
-          title="Permanently delete this rule"
+          :title="msg.deleteTooltip"
           variant="outline-danger"
           :disabled="isReadOnly"
           @click="$emit('delete')"
@@ -162,7 +162,7 @@
           button-icon="unlock"
           button-variant="outline-warning"
           button-size="sm"
-          button-tooltip="Unlock this rule for editing"
+          :button-tooltip="msg.unlockTooltip"
           :button-disabled="readOnly"
           wrapper-class="d-inline-flex"
           @comment="$emit('unlock', $event)"
@@ -176,7 +176,7 @@
           button-icon="lock"
           button-variant="outline-secondary"
           button-size="sm"
-          button-tooltip="Lock this rule to prevent edits"
+          :button-tooltip="msg.lockTooltip"
           :button-disabled="readOnly || isUnderReview"
           wrapper-class="d-inline-flex"
           @comment="$emit('lock', $event)"
@@ -188,7 +188,7 @@
 
 <script>
 import CommentModal from "../shared/CommentModal.vue";
-import { MESSAGE_LABELS, PANEL_LABELS, RELOCATION_TERM } from "../../constants/terminology";
+import { messageLabels, panelLabels, RELOCATION_TERM } from "../../constants/terminology";
 import { commentsClosedTooltip } from "../../constants/triageVocabulary";
 import { roleGteTo } from "../../utils/roleComparison";
 
@@ -237,7 +237,6 @@ export default {
   },
   data() {
     return {
-      msg: MESSAGE_LABELS,
       relocationTerms: RELOCATION_TERM,
     };
   },
@@ -268,7 +267,10 @@ export default {
       return !!this.rule.review_requestor_id;
     },
     labels() {
-      return PANEL_LABELS;
+      return panelLabels(this.documentType);
+    },
+    msg() {
+      return messageLabels(this.documentType);
     },
     commentsClosedForComponent() {
       return this.isCommentsClosed();
@@ -282,12 +284,12 @@ export default {
     },
     commentButtonTooltip() {
       if (this.rule.locked) {
-        return "Rule is locked — comments are closed for this rule";
+        return this.msg.lockedCommentsClosed;
       }
       if (this.commentsClosedForComponent) {
         return commentsClosedTooltip(this.getClosedReason());
       }
-      return "Add a general comment on this rule";
+      return this.msg.addGeneralComment;
     },
   },
 };

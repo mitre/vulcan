@@ -7,7 +7,7 @@
       id="srg-id-search"
       v-model="searchText"
       debounce="300"
-      placeholder="Search projects, components, rules, SRGs, STIGs..."
+      :placeholder="searchPlaceholder"
     />
     <b-popover
       triggers="focus"
@@ -42,7 +42,7 @@
         </b-list-group>
       </b-card>
       <b-card v-if="showRules" no-body class="search-card overflow-auto shadow">
-        <b-card-header class="sticky-top search-card__header">Rules</b-card-header>
+        <b-card-header class="sticky-top search-card__header">{{ rulesHeader }}</b-card-header>
         <b-list-group flush>
           <b-list-group-item
             v-for="rule in rules"
@@ -78,7 +78,7 @@
         </b-list-group>
       </b-card>
       <b-card v-if="showStigRules" no-body class="search-card overflow-auto shadow">
-        <b-card-header class="sticky-top search-card__header">STIG Rules</b-card-header>
+        <b-card-header class="sticky-top search-card__header">{{ stigRulesHeader }}</b-card-header>
         <b-list-group flush>
           <b-list-group-item
             v-for="rule in stigRules"
@@ -92,7 +92,7 @@
         </b-list-group>
       </b-card>
       <b-card v-if="showSrgRules" no-body class="search-card overflow-auto shadow">
-        <b-card-header class="sticky-top search-card__header">SRG Rules</b-card-header>
+        <b-card-header class="sticky-top search-card__header">{{ srgRulesHeader }}</b-card-header>
         <b-list-group flush>
           <b-list-group-item
             v-for="rule in srgRules"
@@ -126,6 +126,7 @@
 
 <script>
 import { globalSearch } from "../../api/searchApi";
+import { RULE_TERM, ruleTerm } from "../../constants/terminology";
 
 export default {
   name: "GlobalSearch",
@@ -142,6 +143,20 @@ export default {
     };
   },
   computed: {
+    // Component search results span both kinds — deployment-default noun.
+    // Catalog sections are kind-fixed: published STIG rules, SRG requirements.
+    searchPlaceholder() {
+      return `Search projects, components, ${RULE_TERM.plural.toLowerCase()}, SRGs, STIGs...`;
+    },
+    rulesHeader() {
+      return RULE_TERM.plural;
+    },
+    stigRulesHeader() {
+      return `STIG ${ruleTerm("stig").plural}`;
+    },
+    srgRulesHeader() {
+      return `SRG ${ruleTerm("srg").plural}`;
+    },
     showProjects: function () {
       return this.projects?.length > 0;
     },

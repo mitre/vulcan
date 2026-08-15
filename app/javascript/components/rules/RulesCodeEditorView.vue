@@ -26,6 +26,7 @@
       <RuleReviewModal
         v-if="selectedRule"
         :rule="selectedRule"
+        :document-type="component.document_type"
         :effective-permissions="effectivePermissions"
         :current-user-id="currentUserId"
         :read-only="isViewerOnly"
@@ -69,6 +70,7 @@
       <RuleList
         :filtered-rules="navFilteredRules"
         :all-rules="rules"
+        :document-type="component.document_type"
         :component-id="component.id"
         :project-prefix="component.prefix"
         :read-only="false"
@@ -321,7 +323,7 @@ import MarkRelocationModal from "./MarkRelocationModal.vue";
 import AcceptRelocationModal from "./AcceptRelocationModal.vue";
 import DeclineRelocationModal from "./DeclineRelocationModal.vue";
 import ControlsSidepanels from "../shared/ControlsSidepanels.vue";
-import { MESSAGE_LABELS, RELOCATION_TERM } from "../../constants/terminology";
+import { messageLabels, RELOCATION_TERM } from "../../constants/terminology";
 import { scrollToField } from "../../utils/searchHighlight";
 import { ruleArray } from "../../utils/ruleArray";
 
@@ -352,6 +354,7 @@ export default {
       getCommentPhase: () => this.component.comment_phase || "open",
       getClosedReason: () => this.component.closed_reason || null,
       isCommentsClosed: () => (this.component.comment_phase || "open") !== "open",
+      injectedDocumentType: this.component.document_type,
     };
   },
   props: {
@@ -497,7 +500,7 @@ export default {
         isLocking: false,
         comment: "",
       },
-      msg: MESSAGE_LABELS,
+      msg: messageLabels(this.component.document_type),
       relocationTerms: RELOCATION_TERM,
       reviewsSectionFilter: "all",
       relocationModalVisible: false,

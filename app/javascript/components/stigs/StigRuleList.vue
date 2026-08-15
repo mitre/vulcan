@@ -11,7 +11,7 @@
             v-model="searchText"
             type="text"
             class="form-control"
-            placeholder="Search Rule by STIG ID or SRG ID"
+            :placeholder="searchPlaceholder"
           /><br />
           <span id="stig-severity-filter-label" class="small text-muted mb-1 d-block"
             >Severity</span
@@ -49,7 +49,7 @@
 
     <!-- Table of Rules -->
     <div class="mt-3" style="max-height: 700px; overflow-y: auto">
-      <h5 class="card-title">Requirements</h5>
+      <h5 class="card-title">{{ listHeading }}</h5>
       <table class="table table-hover">
         <thead>
           <tr>
@@ -57,7 +57,7 @@
               <FilterDropdown
                 v-model="field"
                 :options="ruleFieldOptions"
-                aria-label="Filter rules by ID type"
+                :aria-label="filterAriaLabel"
               />
               <b-icon
                 v-if="sortOrder === 'asc'"
@@ -91,6 +91,8 @@
 
 <script>
 import FilterDropdown from "../shared/FilterDropdown.vue";
+// Published-STIG viewer — a fixed stig-kind surface, so it reads the stig term.
+import { ruleTerm } from "../../constants/terminology";
 
 export default {
   name: "StigRuleList",
@@ -119,6 +121,15 @@ export default {
     };
   },
   computed: {
+    listHeading() {
+      return ruleTerm("stig").plural;
+    },
+    searchPlaceholder() {
+      return `Search ${ruleTerm("stig").singular} by STIG ID or SRG ID`;
+    },
+    filterAriaLabel() {
+      return `Filter ${ruleTerm("stig").plural.toLowerCase()} by ID type`;
+    },
     ruleFieldOptions() {
       return this.ruleFields.map((f) => ({ value: f, text: f }));
     },

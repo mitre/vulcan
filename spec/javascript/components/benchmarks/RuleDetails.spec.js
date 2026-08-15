@@ -211,6 +211,16 @@ describe("RuleDetails", () => {
 
       expect(wrapper.text()).toContain("Select a rule from the list to view details");
     });
+
+    it("renders the resolved itemTerm noun in the empty state (released SRG)", async () => {
+      const { REQUIREMENT_TERM } = await import("@/constants/terminology");
+      wrapper = shallowMount(RuleDetails, {
+        localVue,
+        propsData: { selectedRule: null, type: "component", itemTerm: REQUIREMENT_TERM },
+      });
+      expect(wrapper.text()).toContain("Select a requirement from the list to view details");
+      expect(wrapper.text()).not.toMatch(/\brule\b/);
+    });
   });
 
   describe("satisfied-by indicator", () => {

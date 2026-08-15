@@ -12,7 +12,8 @@
   >
     <p class="mb-3 small text-muted">
       Pick the survivor. Other comments will be marked
-      <strong>duplicate</strong> of the survivor (not deleted) and link back to it from their rules.
+      <strong>duplicate</strong> of the survivor (not deleted) and link back to it from their
+      {{ nounPlural }}.
     </p>
     <b-form-group label="Select survivor:" label-class="font-weight-bold">
       <div
@@ -47,8 +48,15 @@
 </template>
 
 <script>
+import { ruleTerm } from "../../constants/terminology";
+
 export default {
   name: "MergeCommentsModal",
+  // Component kind from the triage root; default keeps tests and isolated
+  // mounts green.
+  inject: {
+    injectedDocumentType: { default: "stig" },
+  },
   props: {
     selectedReviews: { type: Array, default: () => [] },
   },
@@ -56,6 +64,9 @@ export default {
     return { survivorId: null };
   },
   computed: {
+    nounPlural() {
+      return ruleTerm(this.injectedDocumentType).plural.toLowerCase();
+    },
     canConfirm() {
       return this.selectedReviews.length >= 2 && this.survivorId != null;
     },

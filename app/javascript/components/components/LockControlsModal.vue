@@ -28,17 +28,17 @@
         <b-form-group label="Lock Mode" class="mb-3">
           <b-form-radio-group v-model="lockMode" stacked>
             <b-form-radio value="full" data-testid="lock-mode-full">
-              <strong>Lock all rule fields</strong>
+              <strong>{{ msg.lockAllFullOption }}</strong>
               <br />
               <small class="text-muted">
-                Locks all fields on all unlocked rules (existing behavior)
+                {{ msg.lockAllFullHint }}
               </small>
             </b-form-radio>
             <b-form-radio value="sections" data-testid="lock-mode-sections">
               <strong>Lock selection of fields</strong>
               <br />
               <small class="text-muted">
-                Lock specific sections across all rules while leaving other sections editable
+                {{ msg.lockSectionsHint }}
               </small>
             </b-form-radio>
           </b-form-radio-group>
@@ -79,7 +79,7 @@
 import { lockComponent, lockSections as lockSectionsApi } from "../../api/componentsApi";
 import { useAuthToken } from "../../composables/useAuthToken";
 import { useToast } from "../../composables/useToast";
-import { MESSAGE_LABELS } from "../../constants/terminology";
+import { messageLabels } from "../../constants/terminology";
 import { LOCKABLE_SECTIONS } from "../../composables/ruleFieldConfig";
 
 export default {
@@ -89,6 +89,7 @@ export default {
       type: Number,
       required: true,
     },
+    documentType: { type: String, default: "stig" },
   },
   setup() {
     const { authenticityToken } = useAuthToken();
@@ -97,7 +98,6 @@ export default {
   },
   data: function () {
     return {
-      msg: MESSAGE_LABELS,
       comment: "",
       loading: false,
       lockMode: "full",
@@ -106,6 +106,9 @@ export default {
     };
   },
   computed: {
+    msg() {
+      return messageLabels(this.documentType);
+    },
     okButtonText() {
       if (this.lockMode === "sections") {
         return `Lock ${this.selectedSections.length} section(s)`;

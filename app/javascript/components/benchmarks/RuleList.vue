@@ -48,12 +48,12 @@
 
     <!-- Table of Rules -->
     <div class="mt-3">
-      <h5 class="card-title">{{ RULE_TERM.plural }}</h5>
+      <h5 class="card-title">{{ itemTerm.plural }}</h5>
       <div class="d-flex mb-2">
         <FilterDropdown
           v-model="field"
           :options="fieldOptions"
-          aria-label="Filter rules by ID type"
+          :aria-label="`Filter ${itemTerm.plural.toLowerCase()} by ID type`"
           size="sm"
         />
         <b-icon
@@ -76,7 +76,7 @@
         data-test="rule-list-scroll-container"
         style="max-height: 600px; overflow-y: auto"
       >
-        <div role="listbox" tabindex="0" :aria-label="RULE_TERM.plural" @keydown="handleKeydown">
+        <div role="listbox" tabindex="0" :aria-label="itemTerm.plural" @keydown="handleKeydown">
           <div
             v-for="(rule, index) in sortedRules"
             :key="rule.id"
@@ -118,10 +118,15 @@ export default {
       required: true,
       validator: (value) => ["stig", "srg", "component"].includes(value),
     },
+    // Resolved display noun from the parent viewer (kind-aware for
+    // released components); defaults to the deployment term.
+    itemTerm: {
+      type: Object,
+      default: () => RULE_TERM,
+    },
   },
   data() {
     return {
-      RULE_TERM,
       searchText: "",
       selectedSeverity: "",
       field: this.type === "srg" ? "srg_id" : "rule_id",
@@ -151,17 +156,18 @@ export default {
     },
     searchPlaceholder() {
       const primaryId = this.type === "stig" ? "STIG ID" : "SRG ID";
-      return `Search by ${primaryId}, Rule ID, or title`;
+      return `Search by ${primaryId}, ${this.itemTerm.singular} ID, or title`;
     },
     fieldOptions() {
+      const ruleIdLabel = `${this.itemTerm.singular} ID`;
       if (this.type === "srg") {
         return [
           { value: "srg_id", text: "SRG ID" },
-          { value: "rule_id", text: "Rule ID" },
+          { value: "rule_id", text: ruleIdLabel },
         ];
       }
       return [
-        { value: "rule_id", text: "Rule ID" },
+        { value: "rule_id", text: ruleIdLabel },
         { value: "stig_id", text: "STIG ID" },
         { value: "srg_id", text: "SRG ID" },
       ];

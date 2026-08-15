@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { buildReviewActions } from "../../../app/javascript/utils/reviewActionHelpers";
-import { REVIEW_ACTION_LABELS } from "../../../app/javascript/constants/terminology";
+import { reviewActionLabels } from "../../../app/javascript/constants/terminology";
+
+// The stig instance is the deployment default the pre-existing assertions
+// pin; buildReviewActions with no kind argument resolves to it.
+const REVIEW_ACTION_LABELS = reviewActionLabels("stig");
 
 /**
  * Requirements:
@@ -360,6 +364,35 @@ describe("buildReviewActions", () => {
       // Requestor actions should be disabled (readOnly negates requestor)
       expect(findAction(actions, "revoke_review_request").disabledTooltip).toBe(
         REVIEW_ACTION_LABELS.revokeReview.notAllowed,
+      );
+    });
+  });
+
+  describe("documentType keying (5th argument)", () => {
+    it("uses Requirement-flavored labels for srg", () => {
+      const actions = buildReviewActions(makeRule(), false, "admin", 1, "srg");
+
+      expect(findAction(actions, "lock_control").name).toBe("Lock Requirement");
+      expect(findAction(actions, "unlock_control").name).toBe("Unlock Requirement");
+      expect(findAction(actions, "request_review").description).toContain("requirement");
+      expect(findAction(actions, "request_review").description).not.toContain("rule");
+    });
+
+    it("keeps Rule-flavored labels for stig and when the argument is omitted", () => {
+      for (const actions of [
+        buildReviewActions(makeRule(), false, "admin", 1, "stig"),
+        buildReviewActions(makeRule(), false, "admin", 1),
+      ]) {
+        expect(findAction(actions, "lock_control").name).toBe("Lock Rule");
+        expect(findAction(actions, "request_review").description).toContain("rule");
+      }
+    });
+
+    it("srg disabled tooltips carry the srg noun", () => {
+      const rule = makeRule({ locked: true });
+      const actions = buildReviewActions(rule, false, "author", 1, "srg");
+      expect(findAction(actions, "request_review").disabledTooltip).toBe(
+        "Requirement is currently locked",
       );
     });
   });

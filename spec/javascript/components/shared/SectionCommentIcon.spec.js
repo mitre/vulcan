@@ -39,6 +39,17 @@ describe("SectionCommentIcon", () => {
     expect(btn.text()).toMatch(/add comment/i);
   });
 
+  it("locked tooltip reads the injected component kind (srg says requirement)", () => {
+    const w = mount(SectionCommentIcon, {
+      localVue,
+      propsData: { section: "fixtext", openCount: 0, locked: true },
+      provide: { injectedDocumentType: "srg" },
+    });
+    expect(w.vm.closedTooltip).toBe(
+      "Requirement is locked — editing disabled, comments still accepted",
+    );
+  });
+
   it("emits 'open-composer' with the section when Add is clicked", async () => {
     const w = mount(SectionCommentIcon, {
       localVue,

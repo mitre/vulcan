@@ -372,4 +372,19 @@ describe("UpdateFromSpreadsheetModal", () => {
       expect(wrapper.vm.truncate(null)).toBe("");
     });
   });
+
+  describe("kind-keyed noun", () => {
+    it("srg components get Requirement-flavored modal copy", () => {
+      wrapper = createWrapper({
+        component: { id: 42, name: "SRG Comp", prefix: "TSRG-00", document_type: "srg" },
+      });
+      expect(wrapper.vm.modalTitle).toBe("Update Requirements from Spreadsheet");
+      expect(wrapper.vm.msg.updatedRules).toBe("Updated Requirements");
+    });
+
+    it("stig components keep Rule-flavored modal copy", () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.modalTitle).toBe("Update Rules from Spreadsheet");
+    });
+  });
 });

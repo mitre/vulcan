@@ -51,6 +51,26 @@ describe("CommentComposerModal", () => {
     expect(w.vm.section).toBe("check_content");
   });
 
+  it("keys the composer noun and overall-section option by injected kind", () => {
+    const srg = mount(CommentComposerModal, {
+      localVue,
+      propsData: baseProps,
+      provide: { injectedDocumentType: "srg" },
+      stubs: visibleModalStub,
+    });
+    expect(srg.vm.composerNoun).toBe("requirement");
+    expect(srg.vm.sectionOptions.some((o) => o.text === "Overall Requirement")).toBe(true);
+    expect(srg.vm.sectionOptions.some((o) => o.text === "Overall Rule")).toBe(false);
+
+    const stig = mount(CommentComposerModal, {
+      localVue,
+      propsData: baseProps,
+      stubs: visibleModalStub,
+    });
+    expect(stig.vm.composerNoun).toBe("rule");
+    expect(stig.vm.sectionOptions.some((o) => o.text === "Overall Rule")).toBe(true);
+  });
+
   it("shows a dedup banner with existing comments on the same rule + section", async () => {
     getComments.mockResolvedValue({
       data: {

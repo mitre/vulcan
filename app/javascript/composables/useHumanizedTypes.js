@@ -1,3 +1,6 @@
+import { unref } from "vue";
+import { ruleTerm } from "../constants/terminology";
+
 export const HUMANIZED_TYPES = {
   AdditionalAnswer: "Additional Answer",
   AdditionalQuestion: "Additional Question",
@@ -38,8 +41,28 @@ export const HUMANIZED_TYPES = {
   ident: "Ident",
 };
 
-export function useHumanizedTypes() {
+// Entries whose label carries the entity noun — rebuilt per component kind
+// so SRG changelogs speak in Requirement terms.
+const kindKeyedOverrides = (noun) => ({
+  BaseRule: noun,
+  RuleDescription: `${noun} Description`,
+  DisaRuleDescription: `${noun} Description`,
+  rule_id: `${noun} ID`,
+  rule_severity: `${noun} Severity`,
+  rule_weight: `${noun} Weight`,
+});
+
+export function useHumanizedTypes(documentType) {
+  const resolveNoun = () => {
+    const dt = typeof documentType === "function" ? documentType() : unref(documentType);
+    return ruleTerm(dt).singular;
+  };
+
   function humanizedType(type) {
+    const overrides = kindKeyedOverrides(resolveNoun());
+    if (type in overrides) {
+      return overrides[type];
+    }
     if (type in HUMANIZED_TYPES) {
       return HUMANIZED_TYPES[type];
     }

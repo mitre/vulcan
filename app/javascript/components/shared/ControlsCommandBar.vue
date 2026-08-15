@@ -250,7 +250,7 @@ import { useDateFormat } from "../../composables/useDateFormat";
 import BaseCommandBar from "./BaseCommandBar.vue";
 import CommentStatusChip from "./CommentStatusChip.vue";
 import UpdateFromSpreadsheetModal from "../components/UpdateFromSpreadsheetModal.vue";
-import { PANEL_LABELS, RELOCATION_TERM } from "../../constants/terminology";
+import { messageLabels, panelLabels, RELOCATION_TERM } from "../../constants/terminology";
 
 export default {
   name: "ControlsCommandBar",
@@ -302,11 +302,13 @@ export default {
   },
   data() {
     return {
-      labels: PANEL_LABELS,
       relocationTerms: RELOCATION_TERM,
     };
   },
   computed: {
+    labels() {
+      return panelLabels(this.component.document_type);
+    },
     isSrg() {
       return this.component.document_type === "srg";
     },
@@ -326,7 +328,7 @@ export default {
       if (this.component.releasable) {
         return "Release Component";
       }
-      return "All rules must be locked to release a component";
+      return messageLabels(this.component.document_type).releaseRequiresLock;
     },
     hasSelectedRule() {
       return !!this.selectedRule;

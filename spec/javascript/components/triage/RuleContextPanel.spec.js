@@ -636,4 +636,26 @@ describe("RuleContextPanel", () => {
       expect(w.vm.visibleFields.length).toBeGreaterThan(0);
     });
   });
+
+  // ── Kind-keyed noun (both directions) ──────────────────────────────
+
+  describe("kind-keyed noun", () => {
+    it("srg says requirement in the covered-by-parent notice, never Rule", () => {
+      const w = mount(RuleContextPanel, {
+        localVue,
+        propsData: props({ documentType: "srg", parentRuleDisplayedName: "DSRG-00-000001" }),
+      });
+      expect(w.vm.contextNoun).toBe("requirement");
+      expect(w.html()).not.toMatch(/\bRule\b/);
+    });
+
+    it("stig (default) says rule, never Requirement", () => {
+      const w = mount(RuleContextPanel, {
+        localVue,
+        propsData: props({ parentRuleDisplayedName: "CNTR-01-000002" }),
+      });
+      expect(w.vm.contextNoun).toBe("rule");
+      expect(w.html()).not.toMatch(/\bRequirement\b/);
+    });
+  });
 });

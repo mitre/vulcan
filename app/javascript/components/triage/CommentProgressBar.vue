@@ -66,7 +66,7 @@
 </template>
 
 <script>
-import { TRIAGE_LABELS } from "../../constants/triageVocabulary";
+import { TRIAGE_LABELS, triageLabel } from "../../constants/triageVocabulary";
 
 const RESOLVED_STATUSES = Object.keys(TRIAGE_LABELS).filter((s) => s !== "pending");
 
@@ -74,6 +74,11 @@ const MIN_SEGMENT_PERCENT = 2;
 
 export default {
   name: "CommentProgressBar",
+  // Component kind from the page/panel root; default keeps tests and
+  // isolated mounts green.
+  inject: {
+    injectedDocumentType: { default: "stig" },
+  },
   props: {
     statusCounts: { type: Object, required: true },
     activeFilter: { type: String, default: null },
@@ -99,7 +104,7 @@ export default {
         .filter((s) => (this.statusCounts[s] || 0) > 0)
         .map((status) => ({
           status,
-          label: TRIAGE_LABELS[status] || status,
+          label: triageLabel(status, this.injectedDocumentType),
           count: this.statusCounts[status],
           rawPercent: (this.statusCounts[status] / this.total) * 100,
         }));
@@ -117,7 +122,7 @@ export default {
           const rawPercent = (count / this.total) * 100;
           return {
             status,
-            label: TRIAGE_LABELS[status] || status,
+            label: triageLabel(status, this.injectedDocumentType),
             count,
             rawPercent,
           };

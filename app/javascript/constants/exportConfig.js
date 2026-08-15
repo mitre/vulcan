@@ -2,6 +2,7 @@
  * Export mode + format configuration.
  * Mirrors Export::Registry on the backend — keep in sync.
  */
+import { RULE_TERM } from "./terminology";
 
 // Export modes — purpose-first selection
 export const EXPORT_MODES = {
@@ -19,7 +20,7 @@ export const EXPORT_MODES = {
   },
   backup: {
     label: "Backup",
-    description: "Full-fidelity archive of all rules",
+    description: `Full-fidelity archive of all ${RULE_TERM.plural.toLowerCase()}`,
   },
 };
 

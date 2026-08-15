@@ -73,7 +73,7 @@
       >
         <small class="text-muted">
           Expand All
-          <InfoTooltip text="Expand or collapse all rule groups" />
+          <InfoTooltip :text="msg.expandCollapseRuleGroups" />
         </small>
       </b-form-checkbox>
       <b-button-group
@@ -94,8 +94,8 @@
         <b-button
           v-b-tooltip.hover
           :variant="viewMode === 'by-rule' ? 'secondary' : 'outline-secondary'"
-          title="Group by rule"
-          aria-label="Group by rule"
+          :title="msg.groupByRule"
+          :aria-label="msg.groupByRule"
           data-testid="view-mode-by-rule"
           @click="setViewMode('by-rule')"
         >
@@ -121,8 +121,7 @@
       </b-badge>
       <b-alert v-if="filterParentRuleId && rows.length === 0" show variant="info" class="py-2 mt-2">
         <b-icon icon="info-circle" class="mr-1" />
-        This rule is satisfied by
-        <strong>{{ filterParentDisplayName }}</strong
+        This {{ ruleNounSingular }} is satisfied by <strong>{{ filterParentDisplayName }}</strong
         >. Comments are posted on the parent.
         <a href="#" class="alert-link" @click.prevent="viewParentComments">
           View parent comments
@@ -401,6 +400,7 @@ import BulkTriageTargetModal from "../triage/BulkTriageTargetModal.vue";
 import MergeCommentsModal from "../triage/MergeCommentsModal.vue";
 import Highlighter from "vue-highlight-words";
 import { ruleHref as buildRuleHref, rowTriageClass } from "../../utils/commentTableHelpers";
+import { messageLabels, ruleTerm } from "../../constants/terminology";
 
 export default {
   name: "ComponentComments",
@@ -421,6 +421,11 @@ export default {
     BulkTriageTargetModal,
     MergeCommentsModal,
     Highlighter,
+  },
+  // Deep descendants (composer dedup banner, bulk-triage picker) read the
+  // component kind via inject rather than prop chains.
+  provide() {
+    return { injectedDocumentType: this.documentType };
   },
   props: {
     // Either componentId (single-component scope) or projectId (aggregate
@@ -478,7 +483,7 @@ export default {
     const persisted = this.loadPersistedFilters();
     const fields = [
       { key: "id", label: "#", sortable: true },
-      { key: "rule_displayed_name", label: "Rule", sortable: true },
+      { key: "rule_displayed_name", label: ruleTerm(this.documentType).singular, sortable: true },
     ];
     // Project-scope view spans multiple components — show a Component
     // column so triagers know which component each row belongs to.
@@ -531,6 +536,12 @@ export default {
     };
   },
   computed: {
+    msg() {
+      return messageLabels(this.documentType);
+    },
+    ruleNounSingular() {
+      return ruleTerm(this.documentType).singular.toLowerCase();
+    },
     commentSearchWords() {
       const term = (this.filterText || "").trim();
       if (!term) return [];
@@ -621,7 +632,7 @@ export default {
       const friendly = Object.entries(SECTION_LABELS).map(([value, text]) => ({ value, text }));
       return [
         { value: null, text: "All sections" },
-        { value: "(general)", text: "Overall Requirement" },
+        { value: "(general)", text: this.msg.overallSection },
         ...friendly,
       ];
     },

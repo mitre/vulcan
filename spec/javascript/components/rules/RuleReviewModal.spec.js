@@ -91,4 +91,16 @@ describe("RuleReviewModal", () => {
 
     expect(createRuleReview).not.toHaveBeenCalled();
   });
+
+  it("threads documentType into the review actions (srg gets Requirement labels)", () => {
+    wrapper = createWrapper({ documentType: "srg" });
+    const lock = wrapper.vm.reviewActions.find((a) => a.value === "lock_control");
+    expect(lock.name).toBe("Lock Requirement");
+  });
+
+  it("defaults documentType to stig (Rule labels) when not bound", () => {
+    wrapper = createWrapper();
+    const lock = wrapper.vm.reviewActions.find((a) => a.value === "lock_control");
+    expect(lock.name).toBe("Lock Rule");
+  });
 });

@@ -28,9 +28,15 @@
 
 <script>
 import { sectionLabel, commentsClosedTooltip } from "../../constants/triageVocabulary";
+import { messageLabels } from "../../constants/terminology";
 
 export default {
   name: "SectionCommentIcon",
+  // Component kind from the editor page root; default keeps tests and
+  // isolated mounts green.
+  inject: {
+    injectedDocumentType: { default: "stig" },
+  },
   props: {
     section: { type: String, required: true },
     openCount: { type: Number, default: 0 },
@@ -46,7 +52,7 @@ export default {
       return this.commentsClosed;
     },
     closedTooltip() {
-      if (this.locked) return "Rule is locked — editing disabled, comments still accepted";
+      if (this.locked) return messageLabels(this.injectedDocumentType).lockedEditingDisabled;
       if (this.commentsClosed) return commentsClosedTooltip(this.closedReason);
       return null;
     },

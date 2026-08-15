@@ -25,18 +25,19 @@
           :rules="filteredItems"
           :initial-selected-rule="selectedItem"
           :type="type"
+          :item-term="itemTerm"
           @rule-selected="selectItem"
         />
       </b-col>
 
       <!-- Middle: Item Details -->
       <b-col md="6">
-        <RuleDetails :selected-rule="selectedItem" :type="type" />
+        <RuleDetails :selected-rule="selectedItem" :type="type" :item-term="itemTerm" />
       </b-col>
 
       <!-- Right: Item Overview -->
       <b-col md="3">
-        <RuleOverview :selected-rule="selectedItem" :type="type" />
+        <RuleOverview :selected-rule="selectedItem" :type="type" :item-term="itemTerm" />
       </b-col>
     </b-row>
 
@@ -56,12 +57,14 @@
 </template>
 
 <script>
+import { computed } from "vue";
 import BaseCommandBar from "./BaseCommandBar.vue";
 import ExportModal from "./ExportModal.vue";
 import RuleList from "../benchmarks/RuleList.vue";
 import RuleDetails from "../benchmarks/RuleDetails.vue";
 import RuleOverview from "../benchmarks/RuleOverview.vue";
 import { useBenchmarkViewer } from "../../composables";
+import { benchmarkItemTerm } from "../../constants/terminology";
 import { STIG_CSV_COLUMNS, SRG_CSV_COLUMNS } from "../../constants/csvColumns";
 
 export default {
@@ -83,6 +86,12 @@ export default {
       required: true,
       validator: (value) => ["stig", "srg", "cis", "component"].includes(value),
     },
+    // Kind of a released component ("stig" | "srg") — only meaningful when
+    // type is "component"; catalogs resolve their noun from type alone.
+    documentType: {
+      type: String,
+      default: null,
+    },
   },
   setup(props) {
     const {
@@ -96,9 +105,14 @@ export default {
       selectNext,
       selectPrevious,
       setSearch,
-    } = useBenchmarkViewer(props.benchmark, props.type);
+    } = useBenchmarkViewer(props.benchmark, props.type, props.documentType);
+
+    // Resolved noun for this viewer instance — released components pass
+    // their own document_type.
+    const itemTerm = computed(() => benchmarkItemTerm(props.type, props.documentType));
 
     return {
+      itemTerm,
       selectedItem,
       items,
       filteredItems,

@@ -13,14 +13,19 @@
 <script>
 import {
   triageDisplay,
-  TRIAGE_LABELS,
-  TRIAGE_DISA_LABELS,
+  triageLabel,
+  triageDisaLabel,
   ADJUDICATED_LABEL,
   ADJUDICATED_GLYPH,
 } from "../../constants/triageVocabulary";
 
 export default {
   name: "TriageStatusBadge",
+  // Component kind from the page/panel root; default keeps tests and
+  // isolated mounts green.
+  inject: {
+    injectedDocumentType: { default: "stig" },
+  },
   props: {
     status: { type: String, required: true },
     adjudicatedAt: { type: [String, Date], default: null },
@@ -44,12 +49,12 @@ export default {
         return `Addressed by ${this.addressedByRuleName || `#${this.addressedByRuleId}`}`;
       }
       if (this.isAdjudicated) {
-        return `${ADJUDICATED_LABEL} (${TRIAGE_LABELS[this.status] || this.status})`;
+        return `${ADJUDICATED_LABEL} (${triageLabel(this.status, this.injectedDocumentType)})`;
       }
-      return TRIAGE_LABELS[this.status] || this.status;
+      return triageLabel(this.status, this.injectedDocumentType);
     },
     tooltip() {
-      const disa = TRIAGE_DISA_LABELS[this.status];
+      const disa = triageDisaLabel(this.status, this.injectedDocumentType);
       return this.isAdjudicated ? `Adjudicated — ${disa}` : disa;
     },
     cssClass() {

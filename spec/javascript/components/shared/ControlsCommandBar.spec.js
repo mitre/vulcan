@@ -2,7 +2,9 @@ import { describe, it, expect, afterEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import ControlsCommandBar from "@/components/shared/ControlsCommandBar.vue";
-import { PANEL_LABELS } from "@/constants/terminology";
+import { panelLabels } from "@/constants/terminology";
+
+const PANEL_LABELS = panelLabels("stig");
 
 /**
  * ControlsCommandBar - Unified Command Bar for VIEW and EDIT pages

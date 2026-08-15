@@ -1,13 +1,13 @@
 <template>
   <div class="triage-queue-nav d-flex align-items-center" role="navigation">
     <template v-if="comments.length > 0">
-      <span v-b-tooltip.hover title="Previous rule" class="mr-1">
+      <span v-b-tooltip.hover :title="msg.prevRuleTooltip" class="mr-1">
         <b-button
           data-testid="prev-rule"
           size="sm"
           variant="outline-secondary"
           :disabled="!hasPrevRule"
-          aria-label="Previous rule"
+          :aria-label="msg.prevRuleTooltip"
           @click="goPrevRule"
         >
           <b-icon icon="skip-start-fill" />
@@ -27,7 +27,7 @@
       </span>
 
       <span class="small mr-2" aria-live="polite" data-testid="position-counter">
-        Rule <strong>{{ currentRuleIndex + 1 }}</strong> of
+        {{ noun }} <strong>{{ currentRuleIndex + 1 }}</strong> of
         <strong>{{ ruleGroups.length }}</strong>
         — Comment <strong>{{ currentCommentInRule + 1 }}</strong> of
         <strong>{{ currentRuleGroup ? currentRuleGroup.comments.length : 0 }}</strong>
@@ -45,13 +45,13 @@
           <b-icon icon="chevron-right" />
         </b-button>
       </span>
-      <span v-b-tooltip.hover title="Next rule" class="mr-3">
+      <span v-b-tooltip.hover :title="msg.nextRuleTooltip" class="mr-3">
         <b-button
           data-testid="next-rule"
           size="sm"
           variant="outline-secondary"
           :disabled="!hasNextRule"
-          aria-label="Next rule"
+          :aria-label="msg.nextRuleTooltip"
           @click="goNextRule"
         >
           <b-icon icon="skip-end-fill" />
@@ -77,7 +77,7 @@
               v-model="browseFilter"
               data-testid="browse-search"
               size="sm"
-              placeholder="Filter by rule or comment..."
+              :placeholder="msg.triageFilterPlaceholder"
               autofocus
             />
           </div>
@@ -143,6 +143,7 @@ import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import { SECTION_LABELS } from "../../constants/triageVocabulary";
 import { triageBgClass } from "../../utils/triageBgClass";
 import { groupCommentsByRule } from "../../utils/groupCommentsByRule";
+import { messageLabels, ruleTerm } from "../../constants/terminology";
 
 export default {
   name: "TriageQueueNav",
@@ -163,6 +164,7 @@ export default {
   props: {
     comments: { type: Array, required: true },
     currentId: { type: [Number, String], default: null },
+    documentType: { type: String, default: "stig" },
   },
   data() {
     return {
@@ -172,6 +174,12 @@ export default {
     };
   },
   computed: {
+    msg() {
+      return messageLabels(this.documentType);
+    },
+    noun() {
+      return ruleTerm(this.documentType).singular;
+    },
     normalizedCurrentId() {
       return this.currentId != null ? Number(this.currentId) : null;
     },

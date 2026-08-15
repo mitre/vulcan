@@ -71,7 +71,7 @@
       <hr class="rule-context-divider mt-4 mb-2" />
 
       <SatisfiedByIndicator v-if="satisfiedByParents.length" :parent-rules="satisfiedByParents">
-        This requirement is covered by its parent — content is edited there.
+        This {{ contextNoun }} is covered by its parent — content is edited there.
         <template #actions>
           <a
             v-for="parent in satisfiedByParents"
@@ -158,7 +158,7 @@
       <b-icon icon="building" class="mb-2" font-scale="1.5" />
       <p class="mb-0">Overall Component</p>
       <p class="small mb-0">
-        This comment applies to the component as a whole, not a specific rule.
+        This comment applies to the component as a whole, not a specific {{ contextNoun }}.
       </p>
     </div>
   </div>
@@ -168,6 +168,7 @@
 import { FIELD_LABELS, FIELD_DISPLAY_ORDER } from "../../composables/ruleFieldConfig";
 import { buildFieldSets } from "../../composables/fieldStateConfig";
 import { ruleArray } from "../../utils/ruleArray";
+import { ruleTerm } from "../../constants/terminology";
 import InfoTooltip from "../shared/InfoTooltip.vue";
 import SatisfiedByIndicator from "../shared/SatisfiedByIndicator.vue";
 
@@ -209,6 +210,9 @@ export default {
     };
   },
   computed: {
+    contextNoun() {
+      return ruleTerm(this.documentType).singular.toLowerCase();
+    },
     commentedSectionsSet() {
       return new Set(this.commentedSections);
     },

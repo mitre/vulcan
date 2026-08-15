@@ -42,6 +42,7 @@
 <script>
 import CanonicalCommentPicker from "../components/CanonicalCommentPicker.vue";
 import RulePicker from "../components/RulePicker.vue";
+import { ruleTerm } from "../../constants/terminology";
 
 // Target modal for bulk duplicate/addressed_by (the Merge-modal sibling
 // shape): the bar's Apply opens it, ONE shared target applies to every
@@ -52,6 +53,11 @@ import RulePicker from "../components/RulePicker.vue";
 export default {
   name: "BulkTriageTargetModal",
   components: { CanonicalCommentPicker, RulePicker },
+  // Component kind from the triage root; default keeps tests and isolated
+  // mounts green.
+  inject: {
+    injectedDocumentType: { default: "stig" },
+  },
   props: {
     targetType: {
       type: String,
@@ -67,16 +73,19 @@ export default {
     return { targetId: null };
   },
   computed: {
+    targetNoun() {
+      return ruleTerm(this.injectedDocumentType).singular.toLowerCase();
+    },
     title() {
       return this.targetType === "duplicate"
         ? "Mark as duplicate — pick the canonical comment"
-        : "Addressed by — pick the target requirement";
+        : `Addressed by — pick the target ${this.targetNoun}`;
     },
     explainer() {
       const noun = `comment${this.count === 1 ? "" : "s"}`;
       return this.targetType === "duplicate"
         ? `The ${this.count} selected ${noun} will be marked as duplicates of the canonical comment you pick. The canonical itself is not changed.`
-        : `The ${this.count} selected ${noun} will be marked as addressed by the requirement you pick.`;
+        : `The ${this.count} selected ${noun} will be marked as addressed by the ${this.targetNoun} you pick.`;
     },
     canConfirm() {
       return this.targetId != null;

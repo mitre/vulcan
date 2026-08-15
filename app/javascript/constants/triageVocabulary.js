@@ -5,6 +5,8 @@
 // Storage = DISA-native (what exports and the API speak). UI = friendly
 // English so commenters do not need to know DISA terminology.
 
+import { messageLabels, ruleTerm } from "./terminology";
+
 // Database / API key → friendly UI label (past tense for status display)
 export const TRIAGE_LABELS = Object.freeze({
   pending: "Pending",
@@ -15,7 +17,7 @@ export const TRIAGE_LABELS = Object.freeze({
   informational: "Informational",
   needs_clarification: "Needs clarification",
   withdrawn: "Withdrawn",
-  addressed_by: "Addressed by Other Requirement",
+  addressed_by: `Addressed by Other ${ruleTerm().singular}`,
 });
 
 // Database / API key → DISA-matrix term (for tooltips and CSV/OSCAL export)
@@ -28,7 +30,7 @@ export const TRIAGE_DISA_LABELS = Object.freeze({
   informational: "Informational",
   needs_clarification: "Needs clarification",
   withdrawn: "Withdrawn",
-  addressed_by: "Addressed by another requirement",
+  addressed_by: `Addressed by another ${ruleTerm().singular.toLowerCase()}`,
 });
 
 // Database / API key → tooltip text (DISA term + brief explanation)
@@ -41,8 +43,32 @@ export const TRIAGE_TOOLTIPS = Object.freeze({
   informational: "Note acknowledged, no action required",
   needs_clarification: "Awaiting more info from commenter",
   withdrawn: "Commenter retracted this comment",
-  addressed_by: "Addressed by another requirement",
+  addressed_by: `Addressed by another ${ruleTerm().singular.toLowerCase()}`,
 });
+
+// Kind-keyed reads for the one status whose label carries the entity noun.
+// The frozen maps above hold the deployment default; kind-aware surfaces
+// resolve through these. Backend en.yml stays kind-free by design.
+export function triageLabel(status, documentType) {
+  if (status === "addressed_by") {
+    return `Addressed by Other ${ruleTerm(documentType).singular}`;
+  }
+  return TRIAGE_LABELS[status] || status;
+}
+
+export function triageDisaLabel(status, documentType) {
+  if (status === "addressed_by") {
+    return `Addressed by another ${ruleTerm(documentType).singular.toLowerCase()}`;
+  }
+  return TRIAGE_DISA_LABELS[status];
+}
+
+export function triageTooltip(status, documentType) {
+  if (status === "addressed_by") {
+    return `Addressed by another ${ruleTerm(documentType).singular.toLowerCase()}`;
+  }
+  return TRIAGE_TOOLTIPS[status];
+}
 
 // Database / API key → glyph (text characters; pair with text label, never alone).
 // Glyphs are decorative — always render with `aria-hidden="true"` and pair
@@ -153,9 +179,14 @@ export function commentsClosedTooltip(reason) {
   return "Comments are not enabled for this component";
 }
 
-// Helper: render the section label for a possibly-null section value
-export function sectionLabel(section) {
-  if (section === null || section === undefined) return "Overall Requirement";
+// Helper: render the section label for a possibly-null section value.
+// A null section means the comment targets the whole requirement, so the
+// label carries the kind-keyed entity noun (Overall Rule / Overall
+// Requirement); named sections are kind-free.
+export function sectionLabel(section, documentType) {
+  if (section === null || section === undefined) {
+    return messageLabels(documentType).overallSection;
+  }
   return SECTION_LABELS[section] || section;
 }
 

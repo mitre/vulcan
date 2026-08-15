@@ -435,6 +435,7 @@
 
 <script>
 import { toRef } from "vue";
+import { ruleTerm } from "../../../constants/terminology";
 import { useFormFeedback } from "../../../composables/useFormFeedback";
 import { useCommentIconHost } from "../../../composables/useCommentIconHost";
 import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
@@ -459,6 +460,11 @@ const POAM_TOOLTIP_BY_STATUS = Object.freeze({
 export default {
   name: "DisaRuleDescriptionForm",
   components: { MarkdownTextarea, RuleFormGroup, InfoTooltip },
+  // Component kind from the editor page root; default keeps tests and
+  // isolated mounts green.
+  inject: {
+    injectedDocumentType: { default: "stig" },
+  },
   // `rule` and `index` are necessary if edits are to be made
   props: {
     description: {
@@ -555,7 +561,9 @@ export default {
       return {
         documentable:
           "DISA XCCDF metadata: indicates whether this finding should appear in the STIG checklist results. " +
-          "When checked, assessors must document their finding for this requirement during evaluation.",
+          `When checked, assessors must document their finding for this ${ruleTerm(
+            this.injectedDocumentType,
+          ).singular.toLowerCase()} during evaluation.`,
         vuln_discussion: "Discuss, in detail, the rationale for this control's vulnerability",
         false_positives: "List any likely false-positives associated with evaluating this control",
         false_negatives: "List any likely false-negatives associated with evaluating this control",

@@ -207,7 +207,7 @@
           </b-alert>
         </template>
         <template #empty>
-          <em>No comments on this requirement.</em>
+          <em>No comments on this {{ nounSingular }}.</em>
         </template>
         <template #item="{ comment, updateRow }">
           <div class="mb-2">
@@ -249,7 +249,7 @@ import NewRuleModalForm from "./forms/NewRuleModalForm.vue";
 import RuleRowIcons from "./RuleRowIcons.vue";
 import CommentList from "../containers/CommentList.vue";
 import CommentItem from "../shared/CommentItem.vue";
-import { NAVIGATOR_LABELS } from "../../constants/terminology";
+import { messageLabels, navigatorLabels, ruleTerm } from "../../constants/terminology";
 import { commentsClosedTooltip } from "../../constants/triageVocabulary";
 import { truncateId } from "../../utils/idFormatter";
 import { ruleArray } from "../../utils/ruleArray";
@@ -267,6 +267,7 @@ export default {
     getClosedReason: { default: () => () => null },
   },
   props: {
+    documentType: { type: String, default: "stig" },
     filteredRules: {
       type: Array,
       required: true,
@@ -313,7 +314,6 @@ export default {
   },
   data() {
     return {
-      navLabels: NAVIGATOR_LABELS,
       expandedParents: new Set(),
       truncateId,
       // The row whose comments the modal is showing; null until first open.
@@ -321,6 +321,15 @@ export default {
     };
   },
   computed: {
+    navLabels() {
+      return navigatorLabels(this.documentType);
+    },
+    msg() {
+      return messageLabels(this.documentType);
+    },
+    nounSingular() {
+      return ruleTerm(this.documentType).singular.toLowerCase();
+    },
     hasParentRules() {
       return this.filteredRules.some((r) => ruleArray(r, "satisfies").length > 0);
     },
@@ -340,12 +349,12 @@ export default {
     },
     addCommentTooltip() {
       if (this.commentsRule && this.commentsRule.locked) {
-        return "Rule is locked — comments are closed for this rule";
+        return this.msg.lockedCommentsClosed;
       }
       if (this.isCommentsClosed()) {
         return commentsClosedTooltip(this.getClosedReason());
       }
-      return "Add a comment on this requirement";
+      return this.msg.addGeneralComment;
     },
   },
   methods: {

@@ -1,4 +1,5 @@
 import { ref, computed } from "vue";
+import { benchmarkItemTerm } from "../constants/terminology";
 
 /**
  * Benchmark Type Configurations
@@ -7,25 +8,21 @@ import { ref, computed } from "vue";
  */
 const BENCHMARK_CONFIG = {
   stig: {
-    itemTypeName: "rule",
     itemsKey: "rules", // After stigToBenchmark adapter
     searchFields: ["rule_id", "title", "severity"],
     idField: "rule_id",
   },
   srg: {
-    itemTypeName: "requirement",
     itemsKey: "rules", // After srgToBenchmark adapter
     searchFields: ["rule_id", "title"],
     idField: "rule_id",
   },
   cis: {
-    itemTypeName: "control",
     itemsKey: "rules", // After adapter (CIS uses stigToBenchmark)
     searchFields: ["rule_id", "title", "level"],
     idField: "rule_id",
   },
   component: {
-    itemTypeName: "rule",
     itemsKey: "rules", // After componentToBenchmark adapter
     searchFields: ["rule_id", "title", "rule_severity"],
     idField: "rule_id",
@@ -59,7 +56,7 @@ const BENCHMARK_CONFIG = {
  * @param {String} type - Benchmark type ('stig' | 'srg' | 'cis')
  * @returns {Object} Reactive state and methods
  */
-export function useBenchmarkViewer(benchmarkData, type) {
+export function useBenchmarkViewer(benchmarkData, type, documentType) {
   // Get configuration for this benchmark type
   const config = BENCHMARK_CONFIG[type];
   if (!config) {
@@ -96,7 +93,9 @@ export function useBenchmarkViewer(benchmarkData, type) {
   });
 
   // Item type name from config
-  const itemTypeName = computed(() => config.itemTypeName);
+  // Noun comes from the central terminology table — a released component
+  // resolves through its own document_type; catalogs through their type.
+  const itemTypeName = computed(() => benchmarkItemTerm(type, documentType).singular.toLowerCase());
 
   /**
    * Select a specific item

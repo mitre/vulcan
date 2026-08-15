@@ -86,4 +86,30 @@ describe("BulkTriageTargetModal", () => {
     const w = factory({ count: 3 });
     expect(w.text()).toContain("Apply to 3 comments");
   });
+
+  describe("kind-keyed noun (both directions)", () => {
+    it("srg addressed-by copy says requirement, never rule", () => {
+      const w = mount(BulkTriageTargetModal, {
+        localVue,
+        propsData: {
+          targetType: "addressed_by",
+          componentId: 8,
+          excludeReviewIds: [10],
+          excludeRuleIds: [1],
+          count: 1,
+        },
+        provide: { injectedDocumentType: "srg" },
+        stubs: { BModal: true, CanonicalCommentPicker: true, RulePicker: true },
+      });
+      expect(w.vm.title).toBe("Addressed by — pick the target requirement");
+      expect(w.vm.explainer).not.toMatch(/\brule\b/);
+    });
+
+    it("stig (default) addressed-by copy says rule, never requirement", () => {
+      const w = factory({ targetType: "addressed_by" });
+      expect(w.vm.title).toBe("Addressed by — pick the target rule");
+      expect(w.vm.explainer).toContain("addressed by the rule you pick");
+      expect(w.vm.explainer).not.toMatch(/\brequirement\b/);
+    });
+  });
 });

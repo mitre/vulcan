@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { shallowMount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
-import { RULE_TERM, MESSAGE_LABELS } from "@/constants/terminology";
+import { RULE_TERM, REQUIREMENT_TERM, messageLabels } from "@/constants/terminology";
+
+const MESSAGE_LABELS = messageLabels("stig");
 
 /**
  * Integration tests to verify terminology constants are used consistently
@@ -59,6 +61,32 @@ describe("Terminology Integration - ComponentCard", () => {
 
     // Should use RULE_TERM.singular (Rule), not hardcoded "Control"
     expect(wrapper.text()).toContain(`1 ${RULE_TERM.singular}`);
+  });
+
+  it("shows the kind-keyed noun for an SRG component's count badge", async () => {
+    const ComponentCard = (await import("@/components/components/ComponentCard.vue")).default;
+
+    const wrapper = shallowMount(ComponentCard, {
+      localVue,
+      propsData: {
+        component: {
+          id: 2,
+          name: "Authored SRG",
+          document_type: "srg",
+          rules_count: 5,
+          based_on: "Test SRG",
+          prefix: "TEST",
+          admin_name: "Admin",
+          admin_email: "admin@test.com",
+          memberships: [],
+        },
+        effectivePermissions: "viewer",
+      },
+      stubs: ["router-link", "LockControlsModal"],
+    });
+
+    expect(wrapper.text()).toContain(`5 ${REQUIREMENT_TERM.plural}`);
+    expect(wrapper.text()).not.toContain(`5 ${RULE_TERM.plural}`);
   });
 });
 

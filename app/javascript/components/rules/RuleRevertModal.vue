@@ -116,7 +116,7 @@ import { revertRule } from "../../api/rulesApi";
 import { useDateFormat } from "../../composables/useDateFormat";
 import { useHumanizedTypes } from "../../composables/useHumanizedTypes";
 import { useToast } from "../../composables/useToast";
-import { MESSAGE_LABELS } from "../../constants/terminology";
+import { messageLabels } from "../../constants/terminology";
 import InfoTooltip from "../shared/InfoTooltip.vue";
 import UserBadge from "../shared/UserBadge.vue";
 
@@ -141,15 +141,16 @@ export default {
       required: true,
     },
   },
-  setup() {
+  setup(props) {
     const { friendlyDateTime } = useDateFormat();
-    const { humanizedType } = useHumanizedTypes();
+    const { humanizedType } = useHumanizedTypes(
+      () => props.component && props.component.document_type,
+    );
     const { alertOrNotifyResponse } = useToast();
     return { friendlyDateTime, humanizedType, alertOrNotifyResponse };
   },
   data: function () {
     return {
-      msg: MESSAGE_LABELS,
       showDetailsModal: false,
       showRevertConfirm: false,
       revertComment: "",
@@ -158,6 +159,9 @@ export default {
     };
   },
   computed: {
+    msg() {
+      return messageLabels(this.component.document_type);
+    },
     selectedRevertFields: function () {
       return this.selectedRevertRows.map((audit) => audit.field);
     },

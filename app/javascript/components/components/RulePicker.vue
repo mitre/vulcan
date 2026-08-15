@@ -2,15 +2,15 @@
   <div>
     <b-form-input
       v-model="query"
-      placeholder="Search by rule ID or title..."
+      :placeholder="msg.rulePickerPlaceholder"
       debounce="200"
-      aria-label="Search target rule"
+      :aria-label="msg.rulePickerAria"
       size="sm"
       class="mb-2"
     />
     <div v-if="loading" class="text-muted small">
       <b-spinner small />
-      Loading rules…
+      Loading {{ nounPlural }}…
     </div>
     <!-- Sonar Web:S6842: <li role="button"> assigns an
          interactive role to a non-interactive element. The semantically
@@ -24,7 +24,7 @@
       style="max-height: 280px; overflow-y: auto"
     >
       <li v-if="filteredRules.length === 0" class="text-muted small font-italic px-1">
-        No matching rules in this component.
+        No matching {{ nounPlural }} in this component.
       </li>
       <li
         v-for="rule in filteredRules"
@@ -56,6 +56,7 @@
 
 <script>
 import { getRulesPicker } from "../../api/rulesApi";
+import { messageLabels, ruleTerm } from "../../constants/terminology";
 import { ruleArray } from "../../utils/ruleArray";
 
 // Picker for a target rule scoped to one component: the "move to rule"
@@ -64,6 +65,11 @@ import { ruleArray } from "../../utils/ruleArray";
 // already on (single source) or any selected comment's own rule (bulk).
 export default {
   name: "RulePicker",
+  // Component kind from the triage root (TriageSplitView / ComponentComments);
+  // default keeps tests and isolated mounts green.
+  inject: {
+    injectedDocumentType: { default: "stig" },
+  },
   props: {
     componentId: { type: [Number, String], required: true },
     excludeRuleIds: { type: Array, required: true },
@@ -77,6 +83,12 @@ export default {
     };
   },
   computed: {
+    msg() {
+      return messageLabels(this.injectedDocumentType);
+    },
+    nounPlural() {
+      return ruleTerm(this.injectedDocumentType).plural.toLowerCase();
+    },
     sourceRule() {
       // Parent/Child relationship badges only make sense relative to ONE
       // source rule (per-comment triage, move-to-rule). A bulk selection

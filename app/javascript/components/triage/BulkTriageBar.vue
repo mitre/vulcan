@@ -61,7 +61,7 @@
 </template>
 
 <script>
-import { TRIAGE_LABELS } from "../../constants/triageVocabulary";
+import { triageLabel } from "../../constants/triageVocabulary";
 import FilterDropdown from "../shared/FilterDropdown.vue";
 import InfoTooltip from "../shared/InfoTooltip.vue";
 
@@ -82,6 +82,11 @@ const BULK_TRIAGE_STATUSES = [
 export default {
   name: "BulkTriageBar",
   components: { FilterDropdown, InfoTooltip },
+  // Component kind from the triage root; default keeps tests and isolated
+  // mounts green.
+  inject: {
+    injectedDocumentType: { default: "stig" },
+  },
   props: {
     count: {
       type: Number,
@@ -100,7 +105,10 @@ export default {
   },
   computed: {
     statusOptions() {
-      return BULK_TRIAGE_STATUSES.map((value) => ({ value, text: TRIAGE_LABELS[value] }));
+      return BULK_TRIAGE_STATUSES.map((value) => ({
+        value,
+        text: triageLabel(value, this.injectedDocumentType),
+      }));
     },
     responseRequired() {
       return this.triageStatus === "non_concur";

@@ -2,7 +2,7 @@
 <template>
   <div class="card h-100">
     <div v-if="!selectedRule" class="card-body text-center text-muted py-5">
-      <p>Select a rule from the list to view details.</p>
+      <p>Select a {{ itemTerm.singular.toLowerCase() }} from the list to view details.</p>
     </div>
     <template v-else>
       <div class="card-header">
@@ -13,7 +13,7 @@
           v-if="satisfiedByParents.length > 0"
           :parent-rules="satisfiedByParents"
         >
-          Covered by its parent requirement in this release.
+          Covered by its parent {{ itemTerm.singular.toLowerCase() }} in this release.
           <template #actions>
             <span />
           </template>
@@ -72,7 +72,7 @@
             v-if="selectedRule.fixtext"
             field-name="fixtext"
             label="Fix"
-            tooltip="Describe how to correctly configure the requirement to remediate the system vulnerability"
+            :tooltip="`Describe how to correctly configure the ${itemTerm.singular.toLowerCase()} to remediate the system vulnerability`"
             :fields="fixtextFields"
             :disabled="true"
             read-only
@@ -121,6 +121,7 @@
 </template>
 
 <script>
+import { RULE_TERM } from "../../constants/terminology";
 import RuleFormGroup from "../shared/RuleFormGroup.vue";
 import MarkdownTextarea from "../shared/MarkdownTextarea.vue";
 import SatisfiedByIndicator from "../shared/SatisfiedByIndicator.vue";
@@ -134,6 +135,12 @@ export default {
       type: String,
       required: true,
       validator: (value) => ["stig", "srg", "component"].includes(value),
+    },
+    // Resolved display noun from the parent viewer (kind-aware for
+    // released components); defaults to the deployment term.
+    itemTerm: {
+      type: Object,
+      default: () => RULE_TERM,
     },
     selectedRule: {
       type: Object,

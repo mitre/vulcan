@@ -50,10 +50,16 @@ import { sectionLabel } from "../../constants/triageVocabulary";
 import CommentList from "../containers/CommentList.vue";
 import CommentItem from "../shared/CommentItem.vue";
 import { useCommentReactions } from "../../composables/useCommentReactions";
+import { ruleTerm } from "../../constants/terminology";
 
 export default {
   name: "CommentDedupBanner",
   components: { CommentList, CommentItem },
+  // Component kind from the triage root (TriageSplitView / ComponentComments);
+  // default keeps tests and isolated mounts green.
+  inject: {
+    injectedDocumentType: { default: "stig" },
+  },
   props: {
     componentId: { type: [Number, String], required: true },
     ruleId: { type: [Number, String], default: null },
@@ -72,7 +78,9 @@ export default {
       return this.section && !this.componentScoped ? sectionLabel(this.section) : "";
     },
     scopeNoun() {
-      return this.componentScoped ? "component" : "rule";
+      return this.componentScoped
+        ? "component"
+        : ruleTerm(this.injectedDocumentType).singular.toLowerCase();
     },
     listId() {
       return `dedup-list-${this.componentId}-${this.componentScoped ? "component" : this.ruleId}`;

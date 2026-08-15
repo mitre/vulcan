@@ -131,6 +131,9 @@ import { useReplyComposer } from "../../composables/useReplyComposer";
 import TriageStatusBadge from "../shared/TriageStatusBadge.vue";
 import SectionLabel from "../shared/SectionLabel.vue";
 import FilterDropdown from "../shared/FilterDropdown.vue";
+// This view spans components of both kinds, so the column label reads the
+// deployment-default noun rather than a per-kind term.
+import { RULE_TERM } from "../../constants/terminology";
 import CommentThread from "../shared/CommentThread.vue";
 import CommentComposerModal from "../components/CommentComposerModal.vue";
 
@@ -179,7 +182,7 @@ export default {
       sortBy: "created_at",
       sortDesc: true,
       fields: [
-        { key: "rule_displayed_name", label: "Rule", sortable: true },
+        { key: "rule_displayed_name", label: RULE_TERM.singular, sortable: true },
         { key: "component_name", label: "Component / Project", sortable: true },
         { key: "section", label: "Section", sortable: true },
         { key: "comment", label: "Comment", sortable: false },
