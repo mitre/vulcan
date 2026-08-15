@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   RULE_TERM,
   REQUIREMENT_TERM,
@@ -435,6 +435,97 @@ describe("terminology constants", () => {
 
     it("component panel labels are independent of COMPONENT_TERM", () => {
       expect(PANEL_LABELS.compHistory).not.toContain(COMPONENT_TERM.label);
+    });
+  });
+
+  describe("deployment terminology overrides (vulcan-terminology meta tag)", () => {
+    // The layout emits Settings.terminology as one meta tag; terminology.js
+    // reads it once at module init, so overrides must be exercised on a
+    // FRESH module instance (resetModules + dynamic import).
+    const removeTag = () =>
+      document.head.querySelectorAll('meta[name="vulcan-terminology"]').forEach((t) => t.remove());
+
+    const importWithMetaTag = async (content) => {
+      vi.resetModules();
+      removeTag();
+      if (content !== null) {
+        const tag = document.createElement("meta");
+        tag.setAttribute("name", "vulcan-terminology");
+        tag.setAttribute(
+          "content",
+          typeof content === "string" ? content : JSON.stringify(content),
+        );
+        document.head.appendChild(tag);
+      }
+      return import("@/constants/terminology");
+    };
+
+    afterEach(() => {
+      removeTag();
+      vi.resetModules();
+    });
+
+    it("behaves identically to the built-in defaults when the tag is absent", async () => {
+      const mod = await importWithMetaTag(null);
+      expect(mod.RULE_TERM).toEqual({ singular: "Rule", plural: "Rules", label: "Rule" });
+      expect(mod.REQUIREMENT_TERM).toEqual({
+        singular: "Requirement",
+        plural: "Requirements",
+        label: "Req",
+      });
+      expect(mod.ruleTerm("srg").plural).toBe("Requirements");
+      expect(mod.navigatorLabels("srg").openRules).toBe("Open Requirements");
+    });
+
+    it("falls back to the defaults when the tag content is malformed JSON", async () => {
+      const mod = await importWithMetaTag("{not json");
+      expect(mod.ruleTerm("stig").singular).toBe("Rule");
+      expect(mod.ruleTerm("srg").singular).toBe("Requirement");
+    });
+
+    it("flows an srg override through every accessor family and leaves stig at its default", async () => {
+      const mod = await importWithMetaTag({
+        stig: { singular: "Rule", plural: "Rules", label: "Rule" },
+        srg: { singular: "Control", plural: "Controls", label: "Ctrl" },
+      });
+
+      // The exported constants themselves carry the override — this is how
+      // importers that interpolate at module init (csvColumns, exportConfig,
+      // ROLE_DESCRIPTIONS) pick it up without changes.
+      expect(mod.REQUIREMENT_TERM).toEqual({
+        singular: "Control",
+        plural: "Controls",
+        label: "Ctrl",
+      });
+
+      expect(mod.ruleTerm("srg").singular).toBe("Control");
+      expect(mod.ruleTerm("stig").singular).toBe("Rule");
+      expect(mod.panelLabels("srg").ruleHistory).toBe("Ctrl Changelog");
+      expect(mod.sidebarTitles("srg").ruleHistory).toBe("Control Changelog");
+      expect(mod.navigatorLabels("srg").openRules).toBe("Open Controls");
+      expect(mod.messageLabels("srg").overallSection).toBe("Overall Control");
+      expect(mod.reviewActionLabels("srg").lock.name).toBe("Lock Control");
+      expect(mod.ruleCountLabel(2, "srg")).toBe("2 Controls");
+      expect(mod.ruleCountLabel(1, "srg")).toBe("1 Control");
+      expect(mod.selectedCountLabel(1, "srg")).toBe("1 control selected");
+    });
+
+    it("merges a partial override per part, keeping the other parts at their defaults", async () => {
+      const mod = await importWithMetaTag({ srg: { singular: "Control" } });
+      expect(mod.REQUIREMENT_TERM).toEqual({
+        singular: "Control",
+        plural: "Requirements",
+        label: "Req",
+      });
+    });
+
+    it("ignores blank and non-string override values", async () => {
+      const mod = await importWithMetaTag({
+        stig: { singular: "", plural: 7 },
+        srg: { label: "   " },
+      });
+      expect(mod.RULE_TERM).toEqual({ singular: "Rule", plural: "Rules", label: "Rule" });
+      expect(mod.REQUIREMENT_TERM.label).toBe("Req");
     });
   });
 });

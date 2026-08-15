@@ -72,6 +72,16 @@ class Settings < Settingslogic
       self['banner']['background_color'] = '#007a33' if self['banner']['background_color'].blank?
       self['banner']['text_color'] = '#ffffff' if self['banner']['text_color'].blank?
 
+      self['terminology'] ||= Settingslogic.new({})
+      self['terminology']['stig'] ||= Settingslogic.new({})
+      self['terminology']['stig']['singular'] = 'Rule' if self['terminology']['stig']['singular'].blank?
+      self['terminology']['stig']['plural'] = 'Rules' if self['terminology']['stig']['plural'].blank?
+      self['terminology']['stig']['label'] = 'Rule' if self['terminology']['stig']['label'].blank?
+      self['terminology']['srg'] ||= Settingslogic.new({})
+      self['terminology']['srg']['singular'] = 'Requirement' if self['terminology']['srg']['singular'].blank?
+      self['terminology']['srg']['plural'] = 'Requirements' if self['terminology']['srg']['plural'].blank?
+      self['terminology']['srg']['label'] = 'Req' if self['terminology']['srg']['label'].blank?
+
       self['consent'] ||= Settingslogic.new({})
       self['consent']['enabled'] = false if self['consent']['enabled'].nil?
       self['consent']['version'] = '1' if self['consent']['version'].blank?

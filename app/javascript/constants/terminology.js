@@ -8,21 +8,57 @@
  * Change the values here to update labels throughout the app.
  */
 
-// Primary entity terms. Each kind has its own override point: a
-// deployment renames every stig surface by editing RULE_TERM, and every
-// srg surface by editing REQUIREMENT_TERM — the kind key layers on top
-// of the rename capability, never replaces it.
-export const RULE_TERM = {
+// Built-in entity terms — the fallbacks when the deployment sets no
+// VULCAN_TERM_* env vars, and the only values in environments without a
+// document (pure-node tests) or without the meta tag (vitest/jsdom).
+const DEFAULT_RULE_TERM = Object.freeze({
   singular: "Rule",
   plural: "Rules",
   label: "Rule", // For button/panel labels like "Rule History"
-};
+});
 
-export const REQUIREMENT_TERM = {
+const DEFAULT_REQUIREMENT_TERM = Object.freeze({
   singular: "Requirement",
   plural: "Requirements",
   label: "Req", // Abbreviated for button/panel labels
+});
+
+// The application layout emits Settings.terminology (the VULCAN_TERM_* env
+// vars) as one meta tag on every page. It is read ONCE here — before the
+// label families below are built and before any importer evaluates — so
+// modules that interpolate these terms at their own init (csvColumns,
+// exportConfig, ROLE_DESCRIPTIONS) see the deployment's noun without
+// changes. An absent tag, malformed JSON, or a blank/non-string part each
+// fall back to the built-in value for that part.
+const readDeploymentTerminology = () => {
+  if (typeof document === "undefined") return {};
+  const tag = document.querySelector('meta[name="vulcan-terminology"]');
+  if (!tag) return {};
+  try {
+    const parsed = JSON.parse(tag.getAttribute("content"));
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
 };
+
+const mergeTerm = (defaults, override) => {
+  const merged = { ...defaults };
+  for (const part of ["singular", "plural", "label"]) {
+    const value = override?.[part];
+    if (typeof value === "string" && value.trim() !== "") merged[part] = value;
+  }
+  return merged;
+};
+
+const deploymentTerms = readDeploymentTerminology();
+
+// Primary entity terms. Each kind has its own override point: a deployment
+// renames every stig surface via VULCAN_TERM_STIG_*, and every srg surface
+// via VULCAN_TERM_SRG_* — the kind key layers on top of the rename
+// capability, never replaces it.
+export const RULE_TERM = mergeTerm(DEFAULT_RULE_TERM, deploymentTerms.stig);
+export const REQUIREMENT_TERM = mergeTerm(DEFAULT_REQUIREMENT_TERM, deploymentTerms.srg);
 
 // Kind-keyed entity noun — same key set as
 // STATUS_DESCRIPTIONS_BY_DOCUMENT_TYPE. Surfaces without component

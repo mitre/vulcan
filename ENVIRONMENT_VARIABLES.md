@@ -291,6 +291,19 @@ Display a colored banner at the top and bottom of every page, commonly used for 
 | TOP SECRET | `#ff671f` | `#ffffff` |
 | TS/SCI | `#f7ea48` | `#000000` |
 
+## Terminology
+
+Rename the key entity noun per document kind. STIG components say "Rule" and SRG components say "Requirement" by default; an organization can override either set at deployment (for example, renaming to "Control"). The label form is the abbreviated variant used on buttons and panel tabs. Semi-static like the classification banner — read once per page load, no runtime setting.
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `VULCAN_TERM_STIG_SINGULAR` | Entity noun on STIG surfaces, singular | `Rule` | `Control` |
+| `VULCAN_TERM_STIG_PLURAL` | Entity noun on STIG surfaces, plural | `Rules` | `Controls` |
+| `VULCAN_TERM_STIG_LABEL` | Abbreviated form for STIG buttons/panels | `Rule` | `Ctrl` |
+| `VULCAN_TERM_SRG_SINGULAR` | Entity noun on SRG surfaces, singular | `Requirement` | `Control` |
+| `VULCAN_TERM_SRG_PLURAL` | Entity noun on SRG surfaces, plural | `Requirements` | `Controls` |
+| `VULCAN_TERM_SRG_LABEL` | Abbreviated form for SRG buttons/panels | `Req` | `Ctrl` |
+
 ## Consent / Terms of Use Modal
 
 Display a blocking consent modal that users must acknowledge before accessing the application. Acknowledgment is tracked server-side in the Rails session with a configurable TTL. Setting TTL to `0` (default) requires consent once per session (AC-8 compliant).

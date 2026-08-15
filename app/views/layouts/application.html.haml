@@ -7,6 +7,9 @@
     %link{ rel: 'icon', type: 'image/svg+xml', href: '/saf-logo.svg' }/
     = csrf_meta_tags
     = csp_meta_tag
+    / Deployment terminology (VULCAN_TERM_* env vars) — read once by
+    / constants/terminology.js at module init; built-in terms are the fallback.
+    %meta{ name: 'vulcan-terminology', content: Settings.terminology.to_h.to_json }/
     = stylesheet_link_tag 'application'
     = stylesheet_link_tag 'bootstrap-vue'
     %link{ rel: 'stylesheet', href: '/css/font-awesome.min.css' }/

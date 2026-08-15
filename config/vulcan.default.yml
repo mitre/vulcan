@@ -107,6 +107,15 @@ defaults: &defaults
     text: <%= (ENV['VULCAN_BANNER_TEXT'] || '').to_json %>
     background_color: <%= ENV.fetch('VULCAN_BANNER_BACKGROUND_COLOR', '#007a33').to_json %>
     text_color: <%= ENV.fetch('VULCAN_BANNER_TEXT_COLOR', '#ffffff').to_json %>
+  terminology:
+    stig:
+      singular: <%= ENV.fetch('VULCAN_TERM_STIG_SINGULAR', 'Rule').to_json %>
+      plural: <%= ENV.fetch('VULCAN_TERM_STIG_PLURAL', 'Rules').to_json %>
+      label: <%= ENV.fetch('VULCAN_TERM_STIG_LABEL', 'Rule').to_json %>
+    srg:
+      singular: <%= ENV.fetch('VULCAN_TERM_SRG_SINGULAR', 'Requirement').to_json %>
+      plural: <%= ENV.fetch('VULCAN_TERM_SRG_PLURAL', 'Requirements').to_json %>
+      label: <%= ENV.fetch('VULCAN_TERM_SRG_LABEL', 'Req').to_json %>
   consent:
     enabled: <%= ActiveModel::Type::Boolean.new.cast(ENV['VULCAN_CONSENT_ENABLED']) || false %>
     version: <%= ENV.fetch('VULCAN_CONSENT_VERSION', '1').to_i %>

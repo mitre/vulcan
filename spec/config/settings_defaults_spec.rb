@@ -100,6 +100,51 @@ RSpec.describe 'Settings defaults' do
     end
   end
 
+  describe 'terminology defaults when env vars are unset' do
+    # YAML pattern: `ENV.fetch('VULCAN_TERM_*', '<default>').to_json`, with
+    # blank-hardening in Settings.apply_defaults! following the banner block.
+    # Deployments rename the entity noun per kind (e.g. Requirement → Control);
+    # unset and blank env vars both resolve to the built-in defaults.
+    let(:unset_terminology_env) do
+      {
+        VULCAN_TERM_STIG_SINGULAR: nil, VULCAN_TERM_STIG_PLURAL: nil, VULCAN_TERM_STIG_LABEL: nil,
+        VULCAN_TERM_SRG_SINGULAR: nil, VULCAN_TERM_SRG_PLURAL: nil, VULCAN_TERM_SRG_LABEL: nil
+      }
+    end
+
+    it 'stig defaults to Rule/Rules/Rule' do
+      with_settings_env(**unset_terminology_env) do
+        expect(Settings.terminology.stig['singular']).to eq('Rule')
+        expect(Settings.terminology.stig['plural']).to eq('Rules')
+        expect(Settings.terminology.stig['label']).to eq('Rule')
+      end
+    end
+
+    it 'srg defaults to Requirement/Requirements/Req' do
+      with_settings_env(**unset_terminology_env) do
+        expect(Settings.terminology.srg['singular']).to eq('Requirement')
+        expect(Settings.terminology.srg['plural']).to eq('Requirements')
+        expect(Settings.terminology.srg['label']).to eq('Req')
+      end
+    end
+
+    it 'an env var overrides its term part' do
+      with_settings_env(VULCAN_TERM_SRG_SINGULAR: 'Control', VULCAN_TERM_SRG_PLURAL: 'Controls',
+                        VULCAN_TERM_SRG_LABEL: 'Ctrl') do
+        expect(Settings.terminology.srg['singular']).to eq('Control')
+        expect(Settings.terminology.srg['plural']).to eq('Controls')
+        expect(Settings.terminology.srg['label']).to eq('Ctrl')
+      end
+    end
+
+    it 'a blank env var falls back to the default (apply_defaults! hardening)' do
+      with_settings_env(VULCAN_TERM_STIG_SINGULAR: '', VULCAN_TERM_SRG_LABEL: '') do
+        expect(Settings.terminology.stig['singular']).to eq('Rule')
+        expect(Settings.terminology.srg['label']).to eq('Req')
+      end
+    end
+  end
+
   describe 'contact email fallback' do
     # Initializer: sets 'vulcan-support@example.com' if contact_email is blank
     # YAML: reads ENV.fetch('VULCAN_CONTACT_EMAIL', nil) (nil when unset)
