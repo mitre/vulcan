@@ -158,6 +158,7 @@ export default defineConfig({
         items: [
           { text: "Overview", link: "/disa-process/overview" },
           { text: "Vendor STIG Process Guide (V4R3)", link: "/disa-process/vendor-stig-process-guide" },
+          { text: "SRG Authoring Workflow", link: "/disa-process/srg-authoring" },
           { text: "Field Requirements", link: "/disa-process/field-requirements" },
           { text: "Export Requirements", link: "/disa-process/export-requirements" },
           { text: "Intent Form & Questionnaire", link: "/disa-process/intent-form" },
@@ -308,6 +309,7 @@ export default defineConfig({
           items: [
             { text: "Overview", link: "/disa-process/overview" },
             { text: "Vendor STIG Process Guide (V4R3)", link: "/disa-process/vendor-stig-process-guide" },
+            { text: "SRG Authoring Workflow", link: "/disa-process/srg-authoring" },
             { text: "Field Requirements by Status", link: "/disa-process/field-requirements" },
             { text: "Export Requirements", link: "/disa-process/export-requirements" },
             { text: "Intent Form & Questionnaire", link: "/disa-process/intent-form" },
