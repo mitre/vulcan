@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import RuleOverview from "@/components/benchmarks/RuleOverview.vue";
-import { RULE_TERM } from "@/constants/terminology";
+import { RULE_TERM, REQUIREMENT_TERM } from "@/constants/terminology";
 
 /**
  * RuleOverview Component Requirements
@@ -507,6 +507,32 @@ describe("RuleOverview", () => {
       expect(wrapper.text()).toContain(
         `Select a ${RULE_TERM.singular.toLowerCase()} to view overview`,
       );
+      spy.mockRestore();
+    });
+  });
+
+  describe("itemTerm rendering (kind-aware noun)", () => {
+    it("renders the resolved itemTerm noun (released SRG)", () => {
+      wrapper = createWrapper({ type: "srg", selectedRule: srgRule, itemTerm: REQUIREMENT_TERM });
+      const text = wrapper.text();
+      expect(text).toContain("Requirement Overview");
+      expect(text).toContain("Requirement ID");
+      // A component ignoring its itemTerm prop would render the deployment
+      // default noun here instead.
+      expect(text).not.toMatch(/\bRule Overview\b/);
+      expect(text).not.toMatch(/\bRule ID\b/);
+    });
+
+    it("defaults to the deployment term on stig surfaces", () => {
+      wrapper = createWrapper();
+      expect(wrapper.text()).toContain("Rule Overview");
+      expect(wrapper.text()).toContain("Rule ID");
+    });
+
+    it("renders the itemTerm noun in the empty state", () => {
+      const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+      wrapper = createWrapper({ selectedRule: null, itemTerm: REQUIREMENT_TERM });
+      expect(wrapper.text()).toContain("Select a requirement to view overview");
       spy.mockRestore();
     });
   });

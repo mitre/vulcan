@@ -527,5 +527,30 @@ describe("terminology constants", () => {
       expect(mod.RULE_TERM).toEqual({ singular: "Rule", plural: "Rules", label: "Rule" });
       expect(mod.REQUIREMENT_TERM.label).toBe("Req");
     });
+
+    it("a family builder that ignores its term argument fails for BOTH kinds", async () => {
+      // The falsifiable form of the deployment-rename pin: synthetic terms
+      // on BOTH kinds, so a builder hardcoding either noun — or reading one
+      // shared constant for both — cannot pass. Nothing here re-derives the
+      // expectation from the constants under test.
+      const mod = await importWithMetaTag({
+        stig: { singular: "Widget", plural: "Widgets", label: "Wgt" },
+        srg: { singular: "Gadget", plural: "Gadgets", label: "Gdt" },
+      });
+      expect(mod.navigatorLabels("stig").openRules).toBe("Open Widgets");
+      expect(mod.navigatorLabels("srg").openRules).toBe("Open Gadgets");
+      expect(mod.panelLabels("stig").ruleHistory).toBe("Wgt Changelog");
+      expect(mod.panelLabels("srg").ruleHistory).toBe("Gdt Changelog");
+      expect(mod.messageLabels("stig").saveTitle).toBe("Save Widget");
+      expect(mod.messageLabels("srg").saveTitle).toBe("Save Gadget");
+      expect(mod.reviewActionLabels("stig").lock.name).toBe("Lock Widget");
+      expect(mod.reviewActionLabels("srg").lock.name).toBe("Lock Gadget");
+    });
+
+    it("the merged term exports are frozen", async () => {
+      const mod = await importWithMetaTag(null);
+      expect(Object.isFrozen(mod.RULE_TERM)).toBe(true);
+      expect(Object.isFrozen(mod.REQUIREMENT_TERM)).toBe(true);
+    });
   });
 });

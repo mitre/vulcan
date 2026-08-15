@@ -10,12 +10,10 @@ export function createComponentEditorRouter() {
       {
         path: "/",
         name: "editor-root",
-        meta: { breadcrumb: "Editor" },
       },
       {
         path: "/rules/:ruleId",
         name: "rule",
-        meta: { breadcrumb: "Rule" },
         props: true,
       },
     ],

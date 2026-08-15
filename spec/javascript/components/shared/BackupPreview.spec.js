@@ -434,4 +434,25 @@ describe("BackupPreview", () => {
       expect(table.text()).toContain("SRGs to import");
     });
   });
+
+  describe("deployment-default count labels", () => {
+    // Project backups span components of both kinds, so all three count
+    // labels read the deployment default noun. Literal pins — deriving the
+    // expectation from RULE_TERM would pass no matter what the constant says.
+    it("pins the stat-card, per-component, and summary-table labels", () => {
+      wrapper = mount(BackupPreview, {
+        localVue,
+        propsData: { summary: BASIC_SUMMARY, componentDetails: COMPONENT_DETAILS },
+      });
+
+      const statCards = wrapper.find('[data-testid="stat-cards"]');
+      expect(statCards.text()).toContain("Rules");
+
+      expect(wrapper.text()).toContain("50 rules");
+
+      const table = wrapper.find('[data-testid="summary-table"]');
+      expect(table.text()).toContain("Rules");
+      expect(wrapper.text()).not.toMatch(/\bRequirements?\b/);
+    });
+  });
 });

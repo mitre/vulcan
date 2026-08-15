@@ -48,7 +48,7 @@ const mergeTerm = (defaults, override) => {
     const value = override?.[part];
     if (typeof value === "string" && value.trim() !== "") merged[part] = value;
   }
-  return merged;
+  return Object.freeze(merged);
 };
 
 const deploymentTerms = readDeploymentTerminology();

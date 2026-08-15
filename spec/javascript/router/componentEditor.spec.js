@@ -30,12 +30,12 @@ describe("componentEditorRouter", () => {
     expect(router.currentRoute.params.ruleId).toBe("000020");
   });
 
-  it("includes breadcrumb meta on routes", () => {
+  it("carries no route meta — nothing in the app reads it", () => {
     const root = router.resolve({ name: "editor-root" });
-    expect(root.route.meta.breadcrumb).toBe("Editor");
+    expect(root.route.meta).toEqual({});
 
     const rule = router.resolve({ name: "rule", params: { ruleId: "1" } });
-    expect(rule.route.meta.breadcrumb).toBe("Rule");
+    expect(rule.route.meta).toEqual({});
   });
 
   it("passes ruleId as prop when props: true", () => {
