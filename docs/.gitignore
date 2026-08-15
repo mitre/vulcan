@@ -4,3 +4,5 @@ node_modules/
 
 # Generated at build time from doc/openapi.yaml — do not commit
 site/data/openapi.json
+site/public/api/openapi.json
+site/public/api/openapi.yaml

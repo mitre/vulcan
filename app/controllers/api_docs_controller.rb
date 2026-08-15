@@ -1,10 +1,9 @@
 # frozen_string_literal: true
 
-# Serves the browsable Scalar API docs page (show) and the OpenAPI spec
-# (spec). Routed via GET /api-docs and /api-docs/openapi.yaml.
+# Serves the machine-readable OpenAPI specification at the recommended root
+# filenames, /openapi.yaml and /openapi.json. The browsable API reference
+# lives inside the built documentation site under /docs/api.
 class ApiDocsController < ApplicationController
-  def show; end
-
   def spec
     spec_path = Rails.root.join('doc/openapi.yaml')
     send_file spec_path, type: 'application/yaml', disposition: 'inline'

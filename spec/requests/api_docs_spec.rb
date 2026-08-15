@@ -2,40 +2,32 @@
 
 require 'rails_helper'
 
-RSpec.describe 'API Docs (Scalar viewer)' do
+RSpec.describe 'API Docs' do
   let(:user) { create(:user) }
 
   before { Rails.application.reload_routes! }
 
+  # The CDN-loaded viewer is gone: it fetched its script and the specification
+  # from external origins, so an airgapped deployment rendered an empty page.
+  # The reference now ships inside the built documentation site, and the old
+  # URL forwards readers there permanently.
   describe 'GET /api/docs' do
-    it 'requires authentication' do
+    it 'permanently redirects to the API reference in the documentation site' do
       get '/api/docs'
-      expect(response).to redirect_to(new_user_session_path)
+      expect(response).to have_http_status(:moved_permanently)
+      expect(response.headers['Location']).to end_with('/docs/api/overview')
     end
+  end
 
-    context 'when authenticated' do
-      before { sign_in user }
+  describe 'the API reference inside the built documentation site' do
+    before(:all) { DocsSiteHelpers.require_built_site! }
 
-      it 'returns 200 with HTML' do
-        get '/api/docs'
-        expect(response).to have_http_status(:ok)
-        expect(response.content_type).to include('text/html')
-      end
+    it 'serves a known operation page from the build with no CDN reference' do
+      get '/docs/api/operations/listProjects'
 
-      it 'includes the Scalar CDN script tag' do
-        get '/api/docs'
-        expect(response.body).to include('cdn.jsdelivr.net/npm/@scalar/api-reference')
-      end
-
-      it 'includes the api_docs pack for Scalar initialization' do
-        get '/api/docs'
-        expect(response.body).to include('api_docs')
-      end
-
-      it 'does not embed inline spec (loaded from Scalar registry via JS)' do
-        get '/api/docs'
-        expect(response.body).not_to include('openapi-spec')
-      end
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('List accessible projects')
+      expect(response.body).not_to include('cdn.jsdelivr.net')
     end
   end
 

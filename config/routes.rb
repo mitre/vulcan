@@ -200,7 +200,9 @@ Rails.application.routes.draw do
   get '/search/rules', to: 'rules#search'
   get '/rules/:id/search/related_rules', to: 'rules#related_rules'
 
-  get 'api/docs', to: 'api_docs#show'
+  # The API reference ships inside the built documentation site; the retired
+  # viewer's URL forwards readers there.
+  get 'api/docs', to: redirect('/docs/api/overview', status: 301)
   # The machine-readable specification lives at the OpenAPI-recommended root
   # filenames — the paths tooling guesses first — independent of the browser
   # viewer. The viewer-nested spellings redirect permanently; a client asking

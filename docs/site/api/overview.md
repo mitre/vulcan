@@ -98,7 +98,9 @@ Browse the API by resource using the sidebar. Each endpoint page includes reques
 The complete OpenAPI 3.2 specification is available for download:
 
 - **JSON**: [openapi.json](/api/openapi.json)
-- **YAML**: Available on the [Scalar Registry](https://registry.scalar.com/@mitre/apis/vulcan/latest?format=yaml)
+- **YAML**: [openapi.yaml](/api/openapi.yaml)
+
+Every Vulcan instance also serves both formats at `/openapi.json` and `/openapi.yaml`.
 
 Use these with tools like [Postman](https://www.postman.com/), [Bruno](https://www.usebruno.com/), or any OpenAPI-compatible client.
 

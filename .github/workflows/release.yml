@@ -100,25 +100,3 @@ jobs:
           git_commit_author_email: "saf@mitre.org"
           update_commands: |
             yq e -i '.tags[0]=\"${{ steps.version.outputs.version }}\" | .labels.\"org.opencontainers.image.version\"=\"${{ steps.version.outputs.version }}\" | .resources[0].tag=\"mitre/vulcan:${{ steps.version.outputs.version }}\" | .resources[0].url=\"docker://docker.io/mitre/vulcan@${{ steps.digests.outputs.amd64 }}\" | .resources[1].tag=\"mitre/vulcan:${{ steps.version.outputs.version }}.arm64\" | .resources[1].url=\"docker://docker.io/mitre/vulcan@${{ steps.digests.outputs.arm64 }}\"' hardening_manifest.yaml
-
-  # ─── OPENAPI REGISTRY PUBLISH ───
-  openapi-publish:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          fetch-depth: 1
-
-      - name: Publish OpenAPI spec to Scalar registry
-        run: |
-          npx @scalar/cli auth login --token "$SCALAR_TOKEN"
-          npx @scalar/cli registry publish doc/openapi.yaml \
-            --namespace mitre \
-            --slug vulcan \
-            --version "${{ github.event.release.tag_name }}" \
-            --force
-        env:
-          SCALAR_TOKEN: ${{ secrets.SCALAR_REGISTRY_TOKEN }}
