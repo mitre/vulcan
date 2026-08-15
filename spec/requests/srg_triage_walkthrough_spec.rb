@@ -57,14 +57,21 @@ RSpec.describe 'SRG triage walkthrough' do
       expect(review.adjudicated_at).to be_present
       expect(review.adjudicated_by_id).to eq(triager.id)
 
-      # 4. The disposition export carries the adjudicated comment.
+      # 4. The disposition export carries the adjudicated comment —
+      # asserted by PARSED CELL, not whole-body substring: the disposition
+      # rows are not adjudication-gated, so substring checks would still
+      # pass if adjudication never reached the CSV.
       get "/components/#{component.id}/export/disposition_csv"
       expect(response).to have_http_status(:ok)
       expect(response.content_type).to include('text/csv')
-      expect(response.body).to include('walkthrough: tighten the check text')
-      expect(response.body).to include("#{component.prefix}-#{requirement.rule_id}")
+
+      rows = CSV.parse(response.body, headers: true)
+      row = rows.find { |r| r['Comment'] == 'walkthrough: tighten the check text' }
+      expect(row).to be_present, 'walkthrough comment row missing from the disposition CSV'
+      expect(row['Rule']).to include("#{component.prefix}-#{requirement.rule_id}")
       # Raw DISA status key — the export emits data keys, not labels.
-      expect(response.body).to include('concur_with_comment')
+      expect(row['Triage Status']).to eq('concur_with_comment')
+      expect(row['Adjudicated']).to eq('true')
     end
   end
 
