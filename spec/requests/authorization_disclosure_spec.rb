@@ -70,7 +70,7 @@ RSpec.describe 'Authorization disclosure policy (visibility-driven 403 vs 404)' 
         expect(response).to have_http_status(:forbidden)
         expect(response.media_type).to eq('application/problem+json')
         body = response.parsed_body
-        expect(body['type']).to eq('/api/docs/errors#permission_denied')
+        expect(body['type']).to eq('/docs/api/errors#permission_denied')
         expect(body['admins']).to be_present
         expect(body['admins'].first).to include('name', 'email')
       end
@@ -110,7 +110,7 @@ RSpec.describe 'Authorization disclosure policy (visibility-driven 403 vs 404)' 
         get "/components/#{discoverable_component.id}", as: :json
 
         expect(response).to have_http_status(:forbidden)
-        expect(response.parsed_body['type']).to eq('/api/docs/errors#permission_denied')
+        expect(response.parsed_body['type']).to eq('/docs/api/errors#permission_denied')
         expect(response.parsed_body['admins']).to be_present
       end
     end
@@ -163,7 +163,7 @@ RSpec.describe 'Authorization disclosure policy (visibility-driven 403 vs 404)' 
       get "/api/projects/#{discoverable_project.id}/stats"
 
       expect(response).to have_http_status(:forbidden)
-      expect(response.parsed_body['type']).to eq('/api/docs/errors#permission_denied')
+      expect(response.parsed_body['type']).to eq('/docs/api/errors#permission_denied')
       expect(response.parsed_body['admins']).to be_present
     end
   end
@@ -182,7 +182,7 @@ RSpec.describe 'Authorization disclosure policy (visibility-driven 403 vs 404)' 
       get "/api/components/#{discoverable_component.id}/summary"
 
       expect(response).to have_http_status(:forbidden)
-      expect(response.parsed_body['type']).to eq('/api/docs/errors#permission_denied')
+      expect(response.parsed_body['type']).to eq('/docs/api/errors#permission_denied')
       expect(response.parsed_body['admins']).to be_present
     end
   end
@@ -202,7 +202,7 @@ RSpec.describe 'Authorization disclosure policy (visibility-driven 403 vs 404)' 
       put "/projects/#{hidden_project.id}", params: { project: { name: 'Renamed' } }, as: :json
 
       expect(response).to have_http_status(:forbidden)
-      expect(response.parsed_body['type']).to eq('/api/docs/errors#permission_denied')
+      expect(response.parsed_body['type']).to eq('/docs/api/errors#permission_denied')
     end
 
     it 'still conceals the same hidden project from a non-member (404)' do
@@ -210,7 +210,7 @@ RSpec.describe 'Authorization disclosure policy (visibility-driven 403 vs 404)' 
       put "/projects/#{hidden_project.id}", params: { project: { name: 'Renamed' } }, as: :json
 
       expect(response).to have_http_status(:not_found)
-      expect(response.parsed_body['type']).to eq('/api/docs/errors#not_found')
+      expect(response.parsed_body['type']).to eq('/docs/api/errors#not_found')
     end
   end
 

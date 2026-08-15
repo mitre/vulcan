@@ -56,7 +56,7 @@ content:
           description: >-
             Stable machine identifier for the error class — a URI reference
             anchoring into the live API docs.
-          example: /api/docs/errors#not_found
+          example: /docs/api/errors#not_found
         title:
           type: string
           description: Short human summary of the error class.
@@ -84,7 +84,7 @@ content:
       not_found:
         summary: Resource not found
         value:
-          type: /api/docs/errors#not_found
+          type: /docs/api/errors#not_found
           title: Not found
           status: 404
           detail: The requested resource could not be found.

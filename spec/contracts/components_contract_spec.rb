@@ -519,14 +519,14 @@ RSpec.describe 'Components endpoint contracts', type: :request do
       get "/api/components/#{component.id}/summary", headers: json_headers
       body = validate_and_parse!(expected_status: :unauthorized)
 
-      expect(body['type']).to eq('/api/docs/errors#not_authenticated')
+      expect(body['type']).to eq('/docs/api/errors#not_authenticated')
     end
 
     it 'matches the documented 404 shape for an unknown component' do
       get '/api/components/0/summary', headers: json_headers
       body = validate_and_parse!(expected_status: :not_found)
 
-      expect(body['type']).to eq('/api/docs/errors#not_found')
+      expect(body['type']).to eq('/docs/api/errors#not_found')
     end
   end
 end

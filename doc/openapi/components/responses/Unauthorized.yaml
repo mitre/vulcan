@@ -19,7 +19,7 @@ content:
           description: >-
             Stable machine identifier for the error class — a URI reference
             anchoring into the live API docs.
-          example: /api/docs/errors#not_authenticated
+          example: /docs/api/errors#not_authenticated
         title:
           type: string
           description: Short human summary of the error class.
@@ -57,7 +57,7 @@ content:
       not_authenticated:
         summary: No API token and no signed-in session
         value:
-          type: /api/docs/errors#not_authenticated
+          type: /docs/api/errors#not_authenticated
           title: Not authenticated
           status: 401
           detail: >-
@@ -75,7 +75,7 @@ content:
       invalid_token:
         summary: Authorization header token revoked, expired, or mistyped
         value:
-          type: /api/docs/errors#invalid_token
+          type: /docs/api/errors#invalid_token
           title: Invalid or expired API token
           status: 401
           detail: >-
@@ -93,7 +93,7 @@ content:
       session_superseded:
         summary: Session ended because the account signed in from another location
         value:
-          type: /api/docs/errors#session_superseded
+          type: /docs/api/errors#session_superseded
           title: Session ended — signed in elsewhere
           status: 401
           detail: >-
@@ -110,7 +110,7 @@ content:
       session_timed_out:
         summary: Session expired after inactivity
         value:
-          type: /api/docs/errors#session_timed_out
+          type: /docs/api/errors#session_timed_out
           title: Session timed out
           status: 401
           detail: >-

@@ -201,9 +201,15 @@ Rails.application.routes.draw do
   get '/rules/:id/search/related_rules', to: 'rules#related_rules'
 
   get 'api/docs', to: 'api_docs#show'
-  get 'api/docs/openapi.yaml', to: 'api_docs#spec', as: :api_docs_spec
-  get 'api/docs/openapi.yml', to: 'api_docs#spec'
-  get 'api/docs/openapi.json', to: 'api_docs#spec_json'
+  # The machine-readable specification lives at the OpenAPI-recommended root
+  # filenames — the paths tooling guesses first — independent of the browser
+  # viewer. The viewer-nested spellings redirect permanently; a client asking
+  # for a spec format never receives HTML.
+  get 'openapi.yaml', to: 'api_docs#spec', as: :api_docs_spec
+  get 'openapi.json', to: 'api_docs#spec_json', as: :api_docs_spec_json
+  get 'api/docs/openapi.yaml', to: redirect('/openapi.yaml', status: 301)
+  get 'api/docs/openapi.yml', to: redirect('/openapi.yaml', status: 301)
+  get 'api/docs/openapi.json', to: redirect('/openapi.json', status: 301)
 
   # API namespace for JSON endpoints
   namespace :api do

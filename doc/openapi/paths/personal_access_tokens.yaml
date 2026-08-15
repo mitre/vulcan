@@ -69,7 +69,7 @@ get:
               type:
                 type: string
                 description: Stable machine identifier for the error class.
-                example: /api/docs/errors#session_authentication_required
+                example: /docs/api/errors#session_authentication_required
               title:
                 type: string
                 description: Short human summary of the error class.
@@ -88,7 +88,7 @@ get:
             session_required:
               summary: API token used against token management
               value:
-                type: /api/docs/errors#session_authentication_required
+                type: /docs/api/errors#session_authentication_required
                 title: Session authentication required
                 status: 403
                 detail: >-
@@ -185,7 +185,7 @@ post:
               type:
                 type: string
                 description: Stable machine identifier for the error class.
-                example: /api/docs/errors#incorrect_password
+                example: /docs/api/errors#incorrect_password
               title:
                 type: string
                 description: Short human summary of the error class.
@@ -204,7 +204,7 @@ post:
             incorrect_password:
               summary: Password confirmation failed
               value:
-                type: /api/docs/errors#incorrect_password
+                type: /docs/api/errors#incorrect_password
                 title: Incorrect password
                 status: 401
                 detail: >-

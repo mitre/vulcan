@@ -12,7 +12,10 @@ module ErrorRendering
   extend ActiveSupport::Concern
 
   PROBLEM_MEDIA_TYPE = 'application/problem+json'
-  ERROR_DOCS_BASE = '/api/docs/errors'
+  # The docs-site errors page: every emitted type fragment has a matching
+  # heading anchor there, enforced by a correspondence guard in the error
+  # rendering request spec.
+  ERROR_DOCS_BASE = '/docs/api/errors'
 
   # Both authentication methods, spelled out for 401 bodies — a failed
   # request must say how to authenticate, not just that it did not.

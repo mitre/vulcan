@@ -146,7 +146,7 @@ RSpec.describe 'Component authorization' do
           params: { base_id: 999_999_999, diff_id: other_component.id },
           headers: json_headers
       expect(response).to have_http_status(:not_found)
-      expect(response.parsed_body['type']).to eq('/api/docs/errors#not_found')
+      expect(response.parsed_body['type']).to eq('/docs/api/errors#not_found')
     end
 
     it 'redirects unauthenticated' do

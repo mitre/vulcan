@@ -19,7 +19,7 @@ RSpec.describe 'JSON error responses' do
     expect(response).to have_http_status(:not_found)
     expect(response.media_type).to eq('application/problem+json')
     body = response.parsed_body
-    expect(body['type']).to eq('/api/docs/errors#not_found')
+    expect(body['type']).to eq('/docs/api/errors#not_found')
     expect(body['title']).to eq('Not found')
     expect(body['status']).to eq(404)
     expect(body['detail']).to eq('The requested resource could not be found.')

@@ -108,7 +108,7 @@ get:
               type:
                 type: string
                 description: Stable machine identifier for the error class.
-                example: /api/docs/errors#page_out_of_range
+                example: /docs/api/errors#page_out_of_range
               title:
                 type: string
                 description: Short human summary of the error class.
@@ -125,7 +125,7 @@ get:
             page_out_of_range:
               summary: Page beyond the last available page
               value:
-                type: /api/docs/errors#page_out_of_range
+                type: /docs/api/errors#page_out_of_range
                 title: Page out of range
                 status: 400
                 detail: Page 9999 is out of range (1..2)

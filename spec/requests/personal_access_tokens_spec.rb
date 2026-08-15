@@ -48,7 +48,7 @@ RSpec.describe 'PersonalAccessTokens management' do
            as: :json
 
       expect(response).to have_http_status(:unauthorized)
-      expect(response.parsed_body['type']).to eq('/api/docs/errors#incorrect_password')
+      expect(response.parsed_body['type']).to eq('/docs/api/errors#incorrect_password')
       expect(response.parsed_body['detail']).to include('password')
     end
 

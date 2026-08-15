@@ -66,7 +66,7 @@ post:
               type:
                 type: string
                 description: Stable machine identifier for the error class.
-                example: /api/docs/errors#invalid_credentials
+                example: /docs/api/errors#invalid_credentials
               title:
                 type: string
                 description: Short human summary of the error class.
@@ -83,7 +83,7 @@ post:
             invalid_credentials:
               summary: Bad credentials
               value:
-                type: /api/docs/errors#invalid_credentials
+                type: /docs/api/errors#invalid_credentials
                 title: Invalid credentials
                 status: 401
                 detail: The email or password is incorrect.

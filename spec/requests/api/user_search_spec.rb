@@ -57,7 +57,7 @@ RSpec.describe 'API User Search' do
         missing = { status: response.status, body: response.body }
 
         expect(concealed[:status]).to eq(404)
-        expect(response.parsed_body['type']).to eq('/api/docs/errors#not_found')
+        expect(response.parsed_body['type']).to eq('/docs/api/errors#not_found')
         expect(concealed).to eq(missing)
       end
     end

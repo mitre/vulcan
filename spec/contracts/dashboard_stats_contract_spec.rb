@@ -41,7 +41,7 @@ RSpec.describe 'Dashboard stats endpoint contracts', type: :request do
       get "/api/components/#{component.id}/stats", headers: json_headers
       body = validate_and_parse!(expected_status: :not_found)
 
-      expect(body['type']).to eq('/api/docs/errors#not_found')
+      expect(body['type']).to eq('/docs/api/errors#not_found')
       expect(body['detail']).to eq('The requested resource could not be found.')
     end
   end
@@ -62,7 +62,7 @@ RSpec.describe 'Dashboard stats endpoint contracts', type: :request do
       get "/api/components/#{component.id}/workflow_state", headers: json_headers
       body = validate_and_parse!(expected_status: :not_found)
 
-      expect(body['type']).to eq('/api/docs/errors#not_found')
+      expect(body['type']).to eq('/docs/api/errors#not_found')
       expect(body['detail']).to eq('The requested resource could not be found.')
     end
   end
@@ -83,7 +83,7 @@ RSpec.describe 'Dashboard stats endpoint contracts', type: :request do
       get "/api/components/#{component.id}/triage_summary", headers: json_headers
       body = validate_and_parse!(expected_status: :not_found)
 
-      expect(body['type']).to eq('/api/docs/errors#not_found')
+      expect(body['type']).to eq('/docs/api/errors#not_found')
       expect(body['detail']).to eq('The requested resource could not be found.')
     end
   end
@@ -104,7 +104,7 @@ RSpec.describe 'Dashboard stats endpoint contracts', type: :request do
       get "/api/projects/#{project.id}/stats", headers: json_headers
       body = validate_and_parse!(expected_status: :not_found)
 
-      expect(body['type']).to eq('/api/docs/errors#not_found')
+      expect(body['type']).to eq('/docs/api/errors#not_found')
       expect(body['detail']).to eq('The requested resource could not be found.')
     end
   end
@@ -124,7 +124,7 @@ RSpec.describe 'Dashboard stats endpoint contracts', type: :request do
       get "/api/projects/#{project.id}/triage_summary", headers: json_headers
       body = validate_and_parse!(expected_status: :unauthorized)
 
-      expect(body['type']).to eq('/api/docs/errors#not_authenticated')
+      expect(body['type']).to eq('/docs/api/errors#not_authenticated')
     end
 
     it 'conceals the hidden project from a non-member (documented 404 not_found shape)' do
@@ -133,7 +133,7 @@ RSpec.describe 'Dashboard stats endpoint contracts', type: :request do
       get "/api/projects/#{project.id}/triage_summary", headers: json_headers
       body = validate_and_parse!(expected_status: :not_found)
 
-      expect(body['type']).to eq('/api/docs/errors#not_found')
+      expect(body['type']).to eq('/docs/api/errors#not_found')
       expect(body['detail']).to eq('The requested resource could not be found.')
     end
   end

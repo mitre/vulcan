@@ -29,7 +29,7 @@ RSpec.describe 'API Token Authentication' do
       expect(response).to have_http_status(:unauthorized)
       expect(response.media_type).to eq('application/problem+json')
       body = response.parsed_body
-      expect(body['type']).to eq('/api/docs/errors#invalid_token')
+      expect(body['type']).to eq('/docs/api/errors#invalid_token')
       expect(body['title']).to eq('Invalid or expired API token')
       expect(body['how_to_authenticate']).to include('session', 'token')
     end
@@ -41,7 +41,7 @@ RSpec.describe 'API Token Authentication' do
 
       get '/srgs', headers: token_headers(raw).merge('Accept' => 'application/json')
       expect(response).to have_http_status(:unauthorized)
-      expect(response.parsed_body['type']).to eq('/api/docs/errors#invalid_token')
+      expect(response.parsed_body['type']).to eq('/docs/api/errors#invalid_token')
     end
 
     it 'rejects requests with an expired token' do
@@ -49,7 +49,7 @@ RSpec.describe 'API Token Authentication' do
                                                expires_at: 1.day.ago.to_date)
       get '/srgs', headers: token_headers(expired.raw_token).merge('Accept' => 'application/json')
       expect(response).to have_http_status(:unauthorized)
-      expect(response.parsed_body['type']).to eq('/api/docs/errors#invalid_token')
+      expect(response.parsed_body['type']).to eq('/docs/api/errors#invalid_token')
     end
 
     it 'falls back to Devise session auth when no Authorization header' do
@@ -77,7 +77,7 @@ RSpec.describe 'API Token Authentication' do
                      params: { file: '' }
       expect(response).to have_http_status(:forbidden)
       body = response.parsed_body
-      expect(body['type']).to eq('/api/docs/errors#insufficient_token_scope')
+      expect(body['type']).to eq('/docs/api/errors#insufficient_token_scope')
       expect(body['detail']).to eq('This request requires the write scope, and the token does not grant it.')
     end
 
@@ -115,7 +115,7 @@ RSpec.describe 'API Token Authentication' do
       get '/srgs', headers: token_headers(ip_token.raw_token).merge('Accept' => 'application/json')
       expect(response).to have_http_status(:forbidden)
       body = response.parsed_body
-      expect(body['type']).to eq('/api/docs/errors#ip_not_allowed')
+      expect(body['type']).to eq('/docs/api/errors#ip_not_allowed')
       expect(body['detail']).to eq("The request came from an IP address outside this token's allowlist.")
     end
   end

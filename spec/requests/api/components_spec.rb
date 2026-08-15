@@ -107,7 +107,7 @@ RSpec.describe 'Api::Components' do
       get '/api/components/latest'
 
       expect(response).to have_http_status(:unauthorized)
-      expect(response.parsed_body['type']).to eq('/api/docs/errors#not_authenticated')
+      expect(response.parsed_body['type']).to eq('/docs/api/errors#not_authenticated')
     end
   end
 end

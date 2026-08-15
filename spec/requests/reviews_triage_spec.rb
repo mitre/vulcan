@@ -298,7 +298,7 @@ RSpec.describe 'Reviews' do
               params: { triage_status: 'concur' }, as: :json
 
         expect(response).to have_http_status(:forbidden)
-        expect(response.parsed_body['type']).to eq('/api/docs/errors#permission_denied')
+        expect(response.parsed_body['type']).to eq('/docs/api/errors#permission_denied')
         expect(other_comment.reload.triage_status).to eq('pending')
       end
     end

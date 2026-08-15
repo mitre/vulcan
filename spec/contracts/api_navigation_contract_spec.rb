@@ -34,7 +34,7 @@ RSpec.describe 'Navigation endpoint contract', type: :request do
       get '/api/navigation', headers: json_headers
       body = validate_and_parse!(expected_status: :unauthorized)
 
-      expect(body['type']).to eq('/api/docs/errors#not_authenticated')
+      expect(body['type']).to eq('/docs/api/errors#not_authenticated')
     end
   end
 end

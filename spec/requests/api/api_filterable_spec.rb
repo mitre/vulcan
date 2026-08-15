@@ -51,7 +51,7 @@ RSpec.describe 'ApiFilterable concern' do
     it 'returns 400 for out-of-range page' do
       get '/api/projects', params: { page: 9999 }, as: :json
       expect(response).to have_http_status(:bad_request)
-      expect(response.parsed_body['type']).to eq('/api/docs/errors#page_out_of_range')
+      expect(response.parsed_body['type']).to eq('/docs/api/errors#page_out_of_range')
       expect(response.parsed_body['detail']).to match(/out of range/i)
     end
   end

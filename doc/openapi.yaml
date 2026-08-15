@@ -145,7 +145,7 @@ paths:
                   type:
                     type: string
                     description: Stable machine identifier for the error class.
-                    example: /api/docs/errors#invalid_credentials
+                    example: /docs/api/errors#invalid_credentials
                   title:
                     type: string
                     description: Short human summary of the error class.
@@ -162,7 +162,7 @@ paths:
                 invalid_credentials:
                   summary: Bad credentials
                   value:
-                    type: /api/docs/errors#invalid_credentials
+                    type: /docs/api/errors#invalid_credentials
                     title: Invalid credentials
                     status: 401
                     detail: The email or password is incorrect.
@@ -575,7 +575,7 @@ paths:
                   type:
                     type: string
                     description: Stable machine identifier for the error class.
-                    example: /api/docs/errors#page_out_of_range
+                    example: /docs/api/errors#page_out_of_range
                   title:
                     type: string
                     description: Short human summary of the error class.
@@ -592,7 +592,7 @@ paths:
                 page_out_of_range:
                   summary: Page beyond the last available page
                   value:
-                    type: /api/docs/errors#page_out_of_range
+                    type: /docs/api/errors#page_out_of_range
                     title: Page out of range
                     status: 400
                     detail: Page 9999 is out of range (1..2)
@@ -7315,7 +7315,7 @@ paths:
                   type:
                     type: string
                     description: Stable machine identifier for the error class.
-                    example: /api/docs/errors#session_authentication_required
+                    example: /docs/api/errors#session_authentication_required
                   title:
                     type: string
                     description: Short human summary of the error class.
@@ -7332,7 +7332,7 @@ paths:
                 session_required:
                   summary: API token used against token management
                   value:
-                    type: /api/docs/errors#session_authentication_required
+                    type: /docs/api/errors#session_authentication_required
                     title: Session authentication required
                     status: 403
                     detail: Token management requires a signed-in browser session; API tokens cannot create or revoke tokens.
@@ -7420,7 +7420,7 @@ paths:
                   type:
                     type: string
                     description: Stable machine identifier for the error class.
-                    example: /api/docs/errors#incorrect_password
+                    example: /docs/api/errors#incorrect_password
                   title:
                     type: string
                     description: Short human summary of the error class.
@@ -7437,7 +7437,7 @@ paths:
                 incorrect_password:
                   summary: Password confirmation failed
                   value:
-                    type: /api/docs/errors#incorrect_password
+                    type: /docs/api/errors#incorrect_password
                     title: Incorrect password
                     status: 401
                     detail: Creating or managing API tokens re-verifies your identity, and the current password provided does not match.
@@ -13300,7 +13300,7 @@ components:
               type:
                 type: string
                 description: Stable machine identifier for the error class — a URI reference anchoring into the live API docs.
-                example: /api/docs/errors#not_authenticated
+                example: /docs/api/errors#not_authenticated
               title:
                 type: string
                 description: Short human summary of the error class.
@@ -13330,7 +13330,7 @@ components:
             not_authenticated:
               summary: No API token and no signed-in session
               value:
-                type: /api/docs/errors#not_authenticated
+                type: /docs/api/errors#not_authenticated
                 title: Not authenticated
                 status: 401
                 detail: This request included no API token and no valid signed-in session. If you were signed in, the session may have timed out, been signed out, or ended because this account signed in from another location.
@@ -13340,7 +13340,7 @@ components:
             invalid_token:
               summary: Authorization header token revoked, expired, or mistyped
               value:
-                type: /api/docs/errors#invalid_token
+                type: /docs/api/errors#invalid_token
                 title: Invalid or expired API token
                 status: 401
                 detail: The Authorization header carried a token that does not match any active personal access token. It may be revoked, expired, or mistyped.
@@ -13350,7 +13350,7 @@ components:
             session_superseded:
               summary: Session ended because the account signed in from another location
               value:
-                type: /api/docs/errors#session_superseded
+                type: /docs/api/errors#session_superseded
                 title: Session ended — signed in elsewhere
                 status: 401
                 detail: You were signed out because this account signed in from another location. Only one active session per account is allowed at a time.
@@ -13360,7 +13360,7 @@ components:
             session_timed_out:
               summary: Session expired after inactivity
               value:
-                type: /api/docs/errors#session_timed_out
+                type: /docs/api/errors#session_timed_out
                 title: Session timed out
                 status: 401
                 detail: Your session timed out after a period of inactivity. Sign in again to continue.
@@ -13419,7 +13419,7 @@ components:
               type:
                 type: string
                 description: Stable machine identifier for the error class — a URI reference anchoring into the live API docs.
-                example: /api/docs/errors#not_found
+                example: /docs/api/errors#not_found
               title:
                 type: string
                 description: Short human summary of the error class.
@@ -13447,7 +13447,7 @@ components:
             not_found:
               summary: Resource not found
               value:
-                type: /api/docs/errors#not_found
+                type: /docs/api/errors#not_found
                 title: Not found
                 status: 404
                 detail: The requested resource could not be found.
@@ -13467,7 +13467,7 @@ components:
               type:
                 type: string
                 description: Stable machine identifier for the error class — a URI reference anchoring into the live API docs.
-                example: /api/docs/errors#not_found
+                example: /docs/api/errors#not_found
               title:
                 type: string
                 description: Short human summary of the error class.
@@ -13484,7 +13484,7 @@ components:
             not_found:
               summary: No such resource is reachable by this request
               value:
-                type: /api/docs/errors#not_found
+                type: /docs/api/errors#not_found
                 title: Not found
                 status: 404
                 detail: The requested resource could not be found.
@@ -13504,7 +13504,7 @@ components:
               type:
                 type: string
                 description: Stable machine identifier for the error class — a URI reference anchoring into the live API docs.
-                example: /api/docs/errors#permission_denied
+                example: /docs/api/errors#permission_denied
               title:
                 type: string
                 description: Short human summary of the error class.
@@ -13560,7 +13560,7 @@ components:
             permission_denied:
               summary: Authenticated but lacking the required project capability
               value:
-                type: /api/docs/errors#permission_denied
+                type: /docs/api/errors#permission_denied
                 title: Permission denied
                 status: 403
                 detail: You are not authorized to perform viewer actions on this project
@@ -13575,14 +13575,14 @@ components:
             insufficient_token_scope:
               summary: Token lacks the scope this request requires
               value:
-                type: /api/docs/errors#insufficient_token_scope
+                type: /docs/api/errors#insufficient_token_scope
                 title: Insufficient token scope
                 status: 403
                 detail: This request requires the write scope, and the token does not grant it.
             ip_not_allowed:
               summary: Request IP outside the token allowlist
               value:
-                type: /api/docs/errors#ip_not_allowed
+                type: /docs/api/errors#ip_not_allowed
                 title: IP address not allowed
                 status: 403
                 detail: The request came from an IP address outside this token's allowlist.

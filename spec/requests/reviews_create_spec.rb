@@ -144,7 +144,7 @@ RSpec.describe 'Reviews' do
         expect(response).to have_http_status(:forbidden)
 
         body = response.parsed_body
-        expect(body['type']).to eq('/api/docs/errors#permission_denied')
+        expect(body['type']).to eq('/docs/api/errors#permission_denied')
         expect(body['detail']).to match(/not authorized/i)
         expect(body['admins']).to be_an(Array)
         expect(body['admins']).to include(hash_including(

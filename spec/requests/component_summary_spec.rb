@@ -38,7 +38,7 @@ RSpec.describe 'Component summary' do
       get "/api/components/#{component.id}/summary"
 
       expect(response).to have_http_status(:unauthorized)
-      expect(response.parsed_body['type']).to eq('/api/docs/errors#not_authenticated')
+      expect(response.parsed_body['type']).to eq('/docs/api/errors#not_authenticated')
     end
 
     it 'conceals unreleased components from non-members (hidden project → 404)' do
@@ -153,7 +153,7 @@ RSpec.describe 'Component summary' do
       get '/api/components/0/summary'
 
       expect(response).to have_http_status(:not_found)
-      expect(response.parsed_body['type']).to eq('/api/docs/errors#not_found')
+      expect(response.parsed_body['type']).to eq('/docs/api/errors#not_found')
     end
   end
 end

@@ -136,7 +136,7 @@ describe("useToast#alertOrNotifyResponse", () => {
       response: {
         status: 403,
         data: {
-          type: "/api/docs/errors#permission_denied",
+          type: "/docs/api/errors#permission_denied",
           title: "Permission denied",
           status: 403,
           detail: "You do not have permission to perform that action.",
@@ -173,7 +173,7 @@ describe("useToast#alertOrNotifyResponse", () => {
       alertOrNotifyResponse({
         response: {
           status: 403,
-          data: { type: "/api/docs/errors#permission_denied", detail: "Forbidden" },
+          data: { type: "/docs/api/errors#permission_denied", detail: "Forbidden" },
         },
       });
       expect(detail).toEqual({
@@ -191,7 +191,7 @@ describe("useToast#alertOrNotifyResponse", () => {
         response: {
           status: 403,
           data: {
-            type: "/api/docs/errors#insufficient_token_scope",
+            type: "/docs/api/errors#insufficient_token_scope",
             detail: "This request requires the write scope, and the token does not grant it.",
             toast: { title: "Not Authorized.", message: "No scope", variant: "danger" },
           },

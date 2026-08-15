@@ -194,6 +194,7 @@ export default defineConfig({
         items: [
           { text: "Overview", link: "/api/overview" },
           { text: "Authentication", link: "/api/authentication" },
+          { text: "Errors", link: "/api/errors" },
                   ],
       },
       {
@@ -355,6 +356,7 @@ export default defineConfig({
           items: [
             { text: "Overview", link: "/api/overview" },
             { text: "Authentication", link: "/api/authentication" },
+            { text: "Errors", link: "/api/errors" },
           ],
         },
         ...useSidebar({

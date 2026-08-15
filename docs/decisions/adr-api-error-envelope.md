@@ -62,7 +62,7 @@ the RFC's vocabulary:
 
 - `type` — URI reference identifying the error class: the machine key.
   Vulcan uses absolute-path references that anchor into the live API
-  docs, e.g. `/api/docs/errors#not_authenticated`.
+  docs, e.g. `/docs/api/errors#not_authenticated`.
 - `title` — short human summary of the error class (stable per type).
 - `status` — the HTTP status code, repeated in the body.
 - `detail` — human explanation specific to this occurrence (the "why",
@@ -75,7 +75,7 @@ Concrete bodies (the contract; copy may be tuned in review):
 401, no credentials (`Api::BaseController`):
 
     {
-      "type": "/api/docs/errors#not_authenticated",
+      "type": "/docs/api/errors#not_authenticated",
       "title": "Not authenticated",
       "status": 401,
       "detail": "This request included no API token and no valid signed-in session. If you were signed in, the session may have timed out, been signed out, or ended because this account signed in from another location.",

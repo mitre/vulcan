@@ -19,7 +19,7 @@ content:
           description: >-
             Stable machine identifier for the error class — a URI reference
             anchoring into the live API docs.
-          example: /api/docs/errors#permission_denied
+          example: /docs/api/errors#permission_denied
         title:
           type: string
           description: Short human summary of the error class.
@@ -80,7 +80,7 @@ content:
       permission_denied:
         summary: Authenticated but lacking the required project capability
         value:
-          type: /api/docs/errors#permission_denied
+          type: /docs/api/errors#permission_denied
           title: Permission denied
           status: 403
           detail: You are not authorized to perform viewer actions on this project
@@ -95,14 +95,14 @@ content:
       insufficient_token_scope:
         summary: Token lacks the scope this request requires
         value:
-          type: /api/docs/errors#insufficient_token_scope
+          type: /docs/api/errors#insufficient_token_scope
           title: Insufficient token scope
           status: 403
           detail: This request requires the write scope, and the token does not grant it.
       ip_not_allowed:
         summary: Request IP outside the token allowlist
         value:
-          type: /api/docs/errors#ip_not_allowed
+          type: /docs/api/errors#ip_not_allowed
           title: IP address not allowed
           status: 403
           detail: The request came from an IP address outside this token's allowlist.

@@ -43,7 +43,7 @@ RSpec.describe 'Reactions' do
       it 'returns 403 with structured permission_denied payload' do
         post "/reviews/#{comment_review.id}/reactions", params: { kind: 'up' }, as: :json
         expect(response).to have_http_status(:forbidden)
-        expect(response.parsed_body['type']).to eq('/api/docs/errors#permission_denied')
+        expect(response.parsed_body['type']).to eq('/docs/api/errors#permission_denied')
       end
     end
 
@@ -61,7 +61,7 @@ RSpec.describe 'Reactions' do
         missing = { status: response.status, body: response.body }
 
         expect(concealed[:status]).to eq(404)
-        expect(response.parsed_body['type']).to eq('/api/docs/errors#not_found')
+        expect(response.parsed_body['type']).to eq('/docs/api/errors#not_found')
         expect(concealed).to eq(missing)
       end
     end
@@ -113,13 +113,13 @@ RSpec.describe 'Reactions' do
         non_comment.update_columns(action: 'approve')
         post "/reviews/#{non_comment.id}/reactions", params: { kind: 'up' }, as: :json
         expect(response).to have_http_status(:not_found)
-        expect(response.parsed_body['type']).to eq('/api/docs/errors#not_found')
+        expect(response.parsed_body['type']).to eq('/docs/api/errors#not_found')
       end
 
       it 'conceals a nonexistent review id as a 404 not_found' do
         post '/reviews/9999999/reactions', params: { kind: 'up' }, as: :json
         expect(response).to have_http_status(:not_found)
-        expect(response.parsed_body['type']).to eq('/api/docs/errors#not_found')
+        expect(response.parsed_body['type']).to eq('/docs/api/errors#not_found')
       end
 
       it 'rejects when the component is closed (comment_phase=closed)' do
@@ -173,7 +173,7 @@ RSpec.describe 'Reactions' do
     it 'conceals a nonexistent review id as a 404 not_found' do
       get '/reviews/9999999/reactions', as: :json
       expect(response).to have_http_status(:not_found)
-      expect(response.parsed_body['type']).to eq('/api/docs/errors#not_found')
+      expect(response.parsed_body['type']).to eq('/docs/api/errors#not_found')
     end
   end
 

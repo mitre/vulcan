@@ -51,7 +51,7 @@ RSpec.describe 'Api::Auth' do
         expect(response).to have_http_status(:unauthorized)
         expect(response.media_type).to eq('application/problem+json')
         body = response.parsed_body
-        expect(body['type']).to eq('/api/docs/errors#not_authenticated')
+        expect(body['type']).to eq('/docs/api/errors#not_authenticated')
         expect(body['title']).to eq('Not authenticated')
         expect(body['how_to_authenticate']).to include('session', 'token')
       end
@@ -73,7 +73,7 @@ RSpec.describe 'Api::Auth' do
       post '/api/auth/login', params: { email: user.email, password: 'wrong' }, as: :json
 
       expect(response).to have_http_status(:unauthorized)
-      expect(response.parsed_body['type']).to eq('/api/docs/errors#invalid_credentials')
+      expect(response.parsed_body['type']).to eq('/docs/api/errors#invalid_credentials')
     end
 
     it 'returns 401 for non-existent email' do

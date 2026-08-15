@@ -52,12 +52,12 @@ describe("baseApi", () => {
       kyPut.mockResolvedValueOnce({
         status: 200,
         headers: new Headers({ "content-type": "application/problem+json; charset=utf-8" }),
-        json: () => Promise.resolve({ type: "/api/docs/errors#not_found", title: "Not found" }),
+        json: () => Promise.resolve({ type: "/docs/api/errors#not_found", title: "Not found" }),
         text: () => Promise.resolve("SHOULD NOT BE USED"),
       });
       const { data, status } = await api.put("/anything", {});
       expect(status).toBe(200);
-      expect(data).toEqual({ type: "/api/docs/errors#not_found", title: "Not found" });
+      expect(data).toEqual({ type: "/docs/api/errors#not_found", title: "Not found" });
     });
 
     it("still parses plain application/json as JSON", async () => {

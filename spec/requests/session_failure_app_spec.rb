@@ -13,7 +13,7 @@ RSpec.describe 'Session-aware Devise failure app' do
   describe 'cause → problem-document mapping (SessionAwareFailureApp.problem_for)' do
     it 'reports a superseded session definitively' do
       doc = SessionAwareFailureApp.problem_for(:session_limited)
-      expect(doc[:type]).to eq('/api/docs/errors#session_superseded')
+      expect(doc[:type]).to eq('/docs/api/errors#session_superseded')
       expect(doc[:title]).to eq('Session ended — signed in elsewhere')
       expect(doc[:status]).to eq(401)
       expect(doc[:detail]).to eq(
@@ -25,7 +25,7 @@ RSpec.describe 'Session-aware Devise failure app' do
 
     it 'reports a timed-out session' do
       doc = SessionAwareFailureApp.problem_for(:timeout)
-      expect(doc[:type]).to eq('/api/docs/errors#session_timed_out')
+      expect(doc[:type]).to eq('/docs/api/errors#session_timed_out')
       expect(doc[:title]).to eq('Session timed out')
       expect(doc[:detail]).to eq('Your session timed out after a period of inactivity. Sign in again to continue.')
       expect(doc[:how_to_authenticate]).to eq(ErrorRendering::HOW_TO_AUTHENTICATE)
@@ -33,15 +33,15 @@ RSpec.describe 'Session-aware Devise failure app' do
 
     it 'falls back to the shared not-authenticated body for a generic cause' do
       doc = SessionAwareFailureApp.problem_for(:unauthenticated)
-      expect(doc[:type]).to eq('/api/docs/errors#not_authenticated')
+      expect(doc[:type]).to eq('/docs/api/errors#not_authenticated')
       expect(doc[:title]).to eq('Not authenticated')
       expect(doc[:detail]).to eq(ErrorRendering::NOT_AUTHENTICATED_DETAIL)
       expect(doc[:how_to_authenticate]).to eq(ErrorRendering::HOW_TO_AUTHENTICATE)
     end
 
     it 'falls back to not-authenticated for a nil / unknown cause' do
-      expect(SessionAwareFailureApp.problem_for(nil)[:type]).to eq('/api/docs/errors#not_authenticated')
-      expect(SessionAwareFailureApp.problem_for(:some_future_symbol)[:type]).to eq('/api/docs/errors#not_authenticated')
+      expect(SessionAwareFailureApp.problem_for(nil)[:type]).to eq('/docs/api/errors#not_authenticated')
+      expect(SessionAwareFailureApp.problem_for(:some_future_symbol)[:type]).to eq('/docs/api/errors#not_authenticated')
     end
   end
 
@@ -52,7 +52,7 @@ RSpec.describe 'Session-aware Devise failure app' do
       expect(response).to have_http_status(:unauthorized)
       expect(response.media_type).to eq('application/problem+json')
       body = response.parsed_body
-      expect(body['type']).to eq('/api/docs/errors#not_authenticated')
+      expect(body['type']).to eq('/docs/api/errors#not_authenticated')
       expect(body['title']).to eq('Not authenticated')
       expect(body['how_to_authenticate']).to include('session', 'token')
     end
@@ -116,7 +116,7 @@ RSpec.describe 'Session-aware Devise failure app' do
       expect(response).to have_http_status(:unauthorized)
       expect(response.media_type).to eq('application/problem+json')
       body = response.parsed_body
-      expect(body['type']).to eq('/api/docs/errors#session_superseded')
+      expect(body['type']).to eq('/docs/api/errors#session_superseded')
       expect(body['title']).to eq('Session ended — signed in elsewhere')
       expect(body['detail']).to eq(
         'You were signed out because this account signed in from another location. ' \
