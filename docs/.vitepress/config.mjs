@@ -164,7 +164,7 @@ export default defineConfig({
         text: "DISA Process",
         items: [
           { text: "Overview", link: "/disa-process/overview" },
-          { text: "Vendor STIG Process Guide", link: "/disa-process/vendor-stig-process-guide" },
+          { text: "Vendor STIG Process Guide (V4R3)", link: "/disa-process/vendor-stig-process-guide" },
           { text: "Field Requirements", link: "/disa-process/field-requirements" },
           { text: "Export Requirements", link: "/disa-process/export-requirements" },
           { text: "Intent Form & Questionnaire", link: "/disa-process/intent-form" },
@@ -203,7 +203,6 @@ export default defineConfig({
           {
             text: "About",
             items: [
-              { text: "README", link: "/README.md" },
               { text: "Changelog", link: "/CHANGELOG.md" },
               { text: "Roadmap", link: "/ROADMAP.md" },
               { text: "Contributing", link: "/CONTRIBUTING.md" },
@@ -315,7 +314,7 @@ export default defineConfig({
           text: "DISA STIG Process",
           items: [
             { text: "Overview", link: "/disa-process/overview" },
-            { text: "Vendor STIG Process Guide", link: "/disa-process/vendor-stig-process-guide" },
+            { text: "Vendor STIG Process Guide (V4R3)", link: "/disa-process/vendor-stig-process-guide" },
             { text: "Field Requirements by Status", link: "/disa-process/field-requirements" },
             { text: "Export Requirements", link: "/disa-process/export-requirements" },
             { text: "Intent Form & Questionnaire", link: "/disa-process/intent-form" },
@@ -328,10 +327,19 @@ export default defineConfig({
           items: [
             { text: "Development Setup", link: "/development/setup" },
             { text: "Documentation Guide", link: "/development/documentation" },
+            { text: "DISA Guide Migration", link: "/development/disa-guide-migration" },
             { text: "Architecture", link: "/development/architecture" },
+            { text: "Frontend Architecture", link: "/development/frontend-architecture" },
+            { text: "State Management", link: "/development/state-management" },
             { text: "Authorization", link: "/development/authorization" },
             { text: "Section Locks", link: "/development/section-locks" },
+            { text: "Rule Form Business Rules", link: "/development/rule-form-business-rules" },
+            { text: "Input Length Limits", link: "/development/input-length-limits" },
+            { text: "Data Management User Stories", link: "/development/data-management-user-stories" },
             { text: "Testing", link: "/development/testing" },
+            { text: "Testing Pinia & Composables", link: "/development/testing-pinia-composables" },
+            { text: "Test Account Safety", link: "/development/test-account-safety" },
+            { text: "Seed System", link: "/development/seed-system" },
             { text: "Design System", link: "/development/design-system" },
             { text: "HAML Serialization", link: "/development/haml-serialization" },
             { text: "Toast Contract", link: "/development/toast-contract" },
@@ -379,7 +387,7 @@ export default defineConfig({
         {
           text: "Overview",
           items: [
-            { text: "About Vulcan", link: "https://github.com/mitre/vulcan" },
+            { text: "About Vulcan", link: "/about" },
             { text: "Media Kit & Branding", link: "/about/media-kit" },
             { text: "Quick Start", link: "/getting-started/quick-start" },
           ],

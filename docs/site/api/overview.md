@@ -60,18 +60,18 @@ Vulcan uses a custom `Token` authentication scheme (not the more common `Bearer`
 
 Browse the API by resource using the sidebar. Each endpoint page includes request parameters, response schemas, code samples, and an interactive playground.
 
-- **Projects** — CRUD, export, import, member management
-- **Components** — CRUD, spreadsheet import, export, locking
-- **Rules** — CRUD, revert, section locks, satisfaction relationships
-- **Reviews** — Comments, triage, adjudication, admin actions
-- **Reactions** — Thumbs up/down on comment reviews
-- **Memberships** — Project and component member management
-- **Benchmarks** — Upload and browse published STIGs and SRGs
-- **Users** — User management and admin operations
-- **Search** — Global search across all resources
-- **Auth** — Login, logout, session identity
-- **System** — Version, settings, navigation, consent
-- **Personal Access Tokens** — Token CRUD and admin revocation
+- **[Projects](/api/tags/Projects)** — CRUD, export, import, member management
+- **[Components](/api/tags/Components)** — CRUD, spreadsheet import, export, locking
+- **[Rules](/api/tags/Rules)** — CRUD, revert, section locks, satisfaction relationships
+- **[Reviews](/api/tags/Reviews)** — Comments, triage, adjudication, admin actions
+- **[Reactions](/api/tags/Reactions)** — Thumbs up/down on comment reviews
+- **[Memberships](/api/tags/Memberships)** — Project and component member management
+- **[Benchmarks](/api/tags/Benchmarks)** — Upload and browse published STIGs and SRGs
+- **[Users](/api/tags/Users)** — User management and admin operations
+- **[Search](/api/tags/Search)** — Global search across all resources
+- **[Auth](/api/tags/Auth)** — Login, logout, session identity
+- **[System](/api/tags/System)** — Version, settings, navigation, consent
+- **[Personal Access Tokens](</api/tags/Personal Access Tokens>)** — Token CRUD and admin revocation
 
 ## Response Format
 
