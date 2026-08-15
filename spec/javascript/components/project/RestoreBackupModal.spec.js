@@ -285,6 +285,58 @@ describe("RestoreBackupModal", () => {
 
       expect(wrapper.vm.modalShow).toBe(false);
     });
+
+    it("degrades to an error toast when the request fails without an HTTP response", async () => {
+      // A client-side timeout or network failure rejects with a bare Error —
+      // no .response. The user must SEE the failure, and the modal must stay
+      // open so the outcome is visible (the server may still have finished).
+      importBackup.mockRejectedValue(new Error("Request timed out"));
+      wrapper = createWrapper();
+      wrapper.vm.showModal();
+      wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
+      wrapper.vm.step = "preview";
+      wrapper.vm.summary = MOCK_DRY_RUN_RESPONSE.data.summary;
+      wrapper.vm.selectedComponentCount = 2;
+
+      let toastDetail = null;
+      const listener = (event) => {
+        toastDetail = event.detail;
+      };
+      document.addEventListener("vulcan:toast", listener);
+      await expect(wrapper.vm.submitImport()).resolves.toBeUndefined();
+      document.removeEventListener("vulcan:toast", listener);
+
+      expect(toastDetail).toEqual({
+        title: "Error",
+        variant: "danger",
+        message: "Request timed out",
+      });
+      expect(wrapper.vm.modalShow).toBe(true);
+      expect(wrapper.vm.loading).toBe(false);
+    });
+
+    it("dry-run degrades the same way on a response-less failure", async () => {
+      importBackup.mockRejectedValue(new Error("Request timed out"));
+      wrapper = createWrapper();
+      wrapper.vm.showModal();
+      wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
+
+      let toastDetail = null;
+      const listener = (event) => {
+        toastDetail = event.detail;
+      };
+      document.addEventListener("vulcan:toast", listener);
+      await expect(wrapper.vm.submitDryRun()).resolves.toBeUndefined();
+      document.removeEventListener("vulcan:toast", listener);
+
+      expect(toastDetail).toEqual({
+        title: "Error",
+        variant: "danger",
+        message: "Request timed out",
+      });
+      expect(wrapper.vm.step).toBe("upload");
+      expect(wrapper.vm.loading).toBe(false);
+    });
   });
 
   // ==========================================

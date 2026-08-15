@@ -156,7 +156,8 @@ export default {
         this.selectedComponentCount = response.data.summary.components_imported || 0;
         this.step = "preview";
       } catch (error) {
-        this.alertOrNotifyResponse(error.response);
+        // The error itself — see submitImport's catch.
+        this.alertOrNotifyResponse(error);
       } finally {
         this.loading = false;
       }
@@ -169,7 +170,10 @@ export default {
         this.$emit("projectUpdated");
         this.modalShow = false;
       } catch (error) {
-        this.alertOrNotifyResponse(error.response);
+        // Pass the error itself — the notifier reads error.response for
+        // HTTP failures and error.message for transport failures (timeout,
+        // network), which carry no response at all.
+        this.alertOrNotifyResponse(error);
       } finally {
         this.loading = false;
       }

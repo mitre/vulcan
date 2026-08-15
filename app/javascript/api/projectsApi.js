@@ -49,8 +49,16 @@ export function deleteProject(projectId) {
  * @param {Object} [config={}] - Extra ky options.
  * @returns {Promise<{data: {summary, warnings, project_defaults?, redirect_url?}}>}
  */
+// Archive imports parse and insert hundreds of rows server-side; the client
+// must outwait a slow-but-succeeding import — an aborted request invites a
+// retry that duplicates the component. Callers may still override.
+const BACKUP_IMPORT_TIMEOUT_MS = 300000;
+
 export function createFromBackup(formData, config = {}) {
-  return api.post("/projects/create_from_backup", formData, config);
+  return api.post("/projects/create_from_backup", formData, {
+    timeout: BACKUP_IMPORT_TIMEOUT_MS,
+    ...config,
+  });
 }
 
 export function getSrgs() {
@@ -69,7 +77,10 @@ export function updateProject(projectId, data) {
  * @param {Object} [config={}] - Extra ky options.
  */
 export function importBackup(projectId, formData, config = {}) {
-  return api.post(`/projects/${projectId}/import_backup`, formData, config);
+  return api.post(`/projects/${projectId}/import_backup`, formData, {
+    timeout: BACKUP_IMPORT_TIMEOUT_MS,
+    ...config,
+  });
 }
 
 /**

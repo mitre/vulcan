@@ -61,29 +61,32 @@ describe("projectsApi", () => {
     expect(api.get).toHaveBeenCalledWith("/srgs");
   });
 
-  it("importBackup calls POST /projects/:id/import_backup", async () => {
+  it("importBackup calls POST /projects/:id/import_backup with an extended timeout", async () => {
+    // Archive imports parse and insert hundreds of rows server-side — a
+    // default client timeout aborts a still-succeeding import, and a retry
+    // would duplicate the component.
     api.post.mockResolvedValue({ data: {} });
     const fd = new FormData();
     await importBackup(5, fd);
-    expect(api.post).toHaveBeenCalledWith("/projects/5/import_backup", fd, {});
+    expect(api.post).toHaveBeenCalledWith("/projects/5/import_backup", fd, { timeout: 300000 });
   });
 
-  it("createFromBackup calls POST /projects/create_from_backup", async () => {
+  it("importBackup lets caller config override the extended timeout", async () => {
+    api.post.mockResolvedValue({ data: {} });
+    const fd = new FormData();
+    await importBackup(5, fd, { timeout: 1000 });
+    expect(api.post).toHaveBeenCalledWith("/projects/5/import_backup", fd, { timeout: 1000 });
+  });
+
+  it("createFromBackup calls POST /projects/create_from_backup with an extended timeout", async () => {
     api.post.mockResolvedValue({ data: {} });
     const fd = new FormData();
     await createFromBackup(fd);
-    expect(api.post).toHaveBeenCalledWith("/projects/create_from_backup", fd, {});
+    expect(api.post).toHaveBeenCalledWith("/projects/create_from_backup", fd, { timeout: 300000 });
   });
 
   it("restoreBackup is an alias for importBackup (same function reference)", () => {
     expect(restoreBackup).toBe(importBackup);
-  });
-
-  it("importBackup calls POST /projects/:id/import_backup", async () => {
-    api.post.mockResolvedValue({ data: {} });
-    const fd = new FormData();
-    await importBackup(5, fd);
-    expect(api.post).toHaveBeenCalledWith("/projects/5/import_backup", fd, {});
   });
 
   it("uploadBenchmark calls POST with provided path and formData", async () => {

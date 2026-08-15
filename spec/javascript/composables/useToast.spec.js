@@ -128,6 +128,20 @@ describe("useToast#alertOrNotifyResponse", () => {
     });
   });
 
+  describe("degenerate input (a caller bug or transport error must degrade, not throw)", () => {
+    it("does not throw and dispatches nothing when called with undefined", () => {
+      const { alertOrNotifyResponse } = useToast();
+      expect(() => alertOrNotifyResponse(undefined)).not.toThrow();
+      expect(detail).toBeNull();
+    });
+
+    it("shows a generic error toast from a bare Error (timeout/network — no .response)", () => {
+      const { alertOrNotifyResponse } = useToast();
+      alertOrNotifyResponse(new Error("Request timed out"));
+      expect(detail).toEqual({ title: "Error", variant: "danger", message: "Request timed out" });
+    });
+  });
+
   describe("structured permission denied", () => {
     // RFC 9457 problem body (application/problem+json): `type` is the
     // stable machine key, `detail` the human why, `admins` the who-to-ask

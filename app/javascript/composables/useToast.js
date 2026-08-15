@@ -102,8 +102,11 @@ function alertOrNotifyResponse(response) {
     return;
   }
 
-  // At this point it is likely an error has occurred.
-  if (response.message) {
+  // At this point it is likely an error has occurred. A transport-level
+  // failure (timeout, network) arrives as a bare Error; a caller bug may
+  // even pass undefined — degrade to a generic toast or silence, never
+  // throw from the notifier itself.
+  if (response?.message) {
     showError(response.message);
   }
 }
