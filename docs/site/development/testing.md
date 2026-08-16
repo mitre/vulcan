@@ -737,7 +737,7 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 3.4.9
+          ruby-version: '.ruby-version'
           bundler-cache: true
       
       - name: Setup Node

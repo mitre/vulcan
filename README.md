@@ -67,13 +67,13 @@ yarn docs:preview  # Preview production build
 ## 🛠️ Technology Stack
 
 ### Core Framework
-- **Ruby 3.4.9** with **Rails 8.0.2.1**
+- **Ruby 3.4.10** with **Rails 8.1.3.1**
 - **PostgreSQL 18** database
 - **Node.js 24 LTS** for JavaScript runtime
 
 ### Frontend
 - **Vue 2.7.16** (14 separate instances for different pages)
-- **Bootstrap 4.6.2** with Bootstrap-Vue 2.13.0
+- **Bootstrap 4.6.2** with Bootstrap-Vue 2.23.1
 - **Turbolinks 5.2.0** for navigation optimization
 - **esbuild** for JavaScript bundling (replaced Webpacker)
 
@@ -95,7 +95,7 @@ yarn docs:preview  # Preview production build
 
 ### Prerequisites
 
-- Ruby 3.4.9 (use rbenv or rvm)
+- Ruby 3.4.10 (use rbenv or rvm)
 - PostgreSQL 18
 - Node.js 24 LTS
 - Yarn package manager

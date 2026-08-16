@@ -9,7 +9,7 @@ import { useReplyComposer } from "@/composables/useReplyComposer";
 //
 // Instance APIs are replaced with injected callbacks:
 //   - onOpen: called after nextTick when an open* method fires (the mixin
-//     called $bvModal.show("comment-composer-modal") — Phase 2 consumers
+//     called $bvModal.show("comment-composer-modal") — migrated consumers
 //     decide their own show mechanism)
 //   - afterPosted(parentReviewId, stateSnapshot): replaces the mixin's
 //     afterComposerPosted override hook

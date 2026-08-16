@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-# REQUIREMENT (docs/decisions/adr-api-error-envelope.md §3): when warden throws
+# REQUIREMENT: when warden throws
 # during a request (evicted session, timeout, plain unauthenticated), the
 # custom Devise failure app answers JSON/non-navigational requests with the
 # RFC 9457 problem envelope naming the TRUE cause, while HTML/navigational

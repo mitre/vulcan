@@ -86,8 +86,8 @@ end
 # ── Dummy filler components ("Nothing to See Here") ──
 # Purpose: stress-test the project list and component views with many records.
 # Uses random hex names + varied released/unreleased states + rule satisfaction links.
-# TODO: Consider replacing with a dedicated stress-test rake task (dev:stress)
-#       that can create N components on demand without polluting the demo seed data.
+# A dedicated stress-test rake task could replace this, creating N components
+# on demand without polluting the demo seed data.
 needed = 20 - dummy_project.components.count
 if needed.positive?
   puts "  Creating #{needed} dummy components..."

@@ -475,8 +475,8 @@ describe("NewComponentModal", () => {
       const html = wrapper.html();
       const pickerAt = html.indexOf('data-testid="document-type-picker"');
       expect(pickerAt).toBeGreaterThan(-1);
-      // Profile choice comes before the source picker (§2.1.2 order:
-      // profile → sources → identity).
+      // Profile choice comes before the source picker (creation-walkthrough
+      // order: profile → sources → identity).
       expect(pickerAt).toBeLessThan(html.indexOf('data-testid="source-srg-picker"'));
       expect(pickerAt).toBeLessThan(html.indexOf("Component Name"));
     });

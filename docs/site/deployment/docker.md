@@ -70,7 +70,7 @@ docker run -d \
 
 ## Image Details
 
-- **Base**: Red Hat UBI 9 Minimal (`ubi-minimal:9.7`) with Ruby 3.4.9 compiled from source (YJIT enabled)
+- **Base**: Red Hat UBI 9 Minimal (`ubi-minimal:9.7`) with Ruby 3.4.10 compiled from source (YJIT enabled)
 - **Architectures**: linux/amd64, linux/arm64 (multi-arch, built natively via Docker Build Cloud)
 - **Size**: ~529MB
 - **Memory**: jemalloc compiled from source + `MALLOC_ARENA_MAX=2` for 20-40% memory reduction

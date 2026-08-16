@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-# REQUIREMENT (docs/decisions/adr-api-error-envelope.md): every JSON auth and
+# REQUIREMENT: every JSON auth and
 # infrastructure error is an RFC 9457 problem-details body served as
 # application/problem+json — a stable machine `type` anchoring into
 # /docs/api/errors, a `title` naming the error class, the `status` code

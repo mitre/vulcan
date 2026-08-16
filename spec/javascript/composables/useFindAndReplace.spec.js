@@ -3,8 +3,8 @@ import { useFindAndReplace, FIND_AND_REPLACE_FIELDS } from "@/composables/useFin
 
 // REQUIREMENT: useFindAndReplace must replicate FindAndReplaceMixin's engine —
 // grouping matches per rule, splitting values into highlighted segments, and
-// rebuilding field text on replace — with the same signatures so Phase 2
-// migration is drop-in.
+// rebuilding field text on replace — with the same signatures so migrating
+// consumers off the mixin is drop-in.
 //
 // Two INTENTIONAL fixes over the mixin (Gate 11, documented):
 //   1. Match scanning is non-overlapping (advance by find length, matching
