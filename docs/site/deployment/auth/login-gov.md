@@ -51,6 +51,31 @@ http://localhost:3000/users/signed_out
 
 5. Set the attribute bundle to: `email, x509_presented, x509_subject`
 
+### Recommended dev/test settings (worked out in practice)
+
+- **One app config per environment.** Give dev, staging, and production each
+  their own portal configuration with its own issuer URN suffix
+  (`...:vulcan-dev`, `...:vulcan-staging`), its own keypair, and its own URI
+  list. Never share a private key across environments — separate PEM files,
+  each stored only where that environment runs.
+- **One URI list serves both directions.** Unlike Okta, Login.gov has no
+  separate post-logout redirect field: the sign-in callback
+  (`.../users/auth/login_gov/callback`) and the sign-out landing
+  (`.../users/signed_out`) are registered in the **same** redirect URI list.
+  Both must be present or one half of the round trip fails.
+- **Flip the app to "Accessible."** A freshly created config exists but
+  rejects sign-ins until the Accessible toggle is on — an easy miss that
+  presents as a generic error at the IdP.
+- **Keep the legacy callback during migration.** If you're renaming an
+  existing single-provider setup (`oidc` → `login_gov`), leave
+  `.../users/auth/oidc/callback` registered until `vulcan:auth:rename_provider`
+  has run everywhere; remove it after.
+- **Calendar the certificate expiry.** The self-signed cert from step 1
+  defaults to 365 days; rotation is just uploading a new cert against the same
+  config (no downtime), but an expired cert fails token exchange with a
+  client-assertion error that doesn't say "expired." Set the reminder when you
+  upload.
+
 ## 3. Configure Vulcan Environment Variables
 
 ### Local Development (`.env`)
