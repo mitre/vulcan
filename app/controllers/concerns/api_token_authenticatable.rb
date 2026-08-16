@@ -60,8 +60,15 @@ module ApiTokenAuthenticatable
     auth = request.headers['Authorization']
     return nil unless auth
 
-    match = auth.match(/\AToken\s+(.+)\z/i)
-    match&.captures&.first
+    # String ops, not an anchored regex: `\s+` against `(.+)` backtracks
+    # polynomially on attacker-supplied space runs. Split keeps the exact
+    # accept/reject behavior — leading whitespace yields an empty scheme
+    # (rejected), the scheme match stays case-insensitive, and a bare
+    # "Token" with no value yields nil.
+    scheme, value = auth.split(/[ \t]+/, 2)
+    return nil unless scheme&.casecmp?('Token')
+
+    value.presence
   end
 
   def scope_sufficient?(token)

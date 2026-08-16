@@ -17,7 +17,7 @@ RSpec.describe 'Docs site content security policy' do
   end
 
   def inline_script_tags(body)
-    body.scan(/<script(?![^>]*\ssrc=)[^>]*>/)
+    body.scan(/<script(?![^>]*\ssrc=)[^>]*>/i)
   end
 
   # style-src legitimately carries unsafe-inline, so a whole-header assertion

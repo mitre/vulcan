@@ -52,6 +52,26 @@ RSpec.describe 'API Token Authentication' do
       expect(response.parsed_body['type']).to eq('/docs/api/errors#invalid_token')
     end
 
+    it 'accepts a lower-case token scheme (case-insensitive per RFC 7235)' do
+      read_token = create(:personal_access_token, user: user, scopes: %w[read])
+      get '/srgs', headers: { 'Authorization' => "token #{read_token.raw_token}",
+                              'Accept' => 'application/json' }
+      expect(response).to have_http_status(:ok)
+    end
+
+    it 'rejects an Authorization header with leading whitespace before the scheme' do
+      read_token = create(:personal_access_token, user: user, scopes: %w[read])
+      get '/srgs', headers: { 'Authorization' => " Token #{read_token.raw_token}",
+                              'Accept' => 'application/json' }
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it 'rejects a bare Token scheme with no value, without hanging on space runs' do
+      get '/srgs', headers: { 'Authorization' => "Token #{' ' * 5000}",
+                              'Accept' => 'application/json' }
+      expect(response).to have_http_status(:unauthorized)
+    end
+
     it 'falls back to Devise session auth when no Authorization header' do
       sign_in user
       get '/srgs', headers: { 'Accept' => 'application/json' }
