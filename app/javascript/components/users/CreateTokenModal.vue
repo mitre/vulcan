@@ -50,7 +50,7 @@
         <b-form-textarea
           id="token-ips"
           v-model="form.allowed_ips_text"
-          placeholder="10.0.0.0/8&#10;192.168.1.0/24"
+          :placeholder="'10.0.0.0/8\n192.168.1.0/24'"
           rows="3"
         />
       </b-form-group>

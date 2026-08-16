@@ -167,11 +167,18 @@ post:
             tokenId: '$response.body#/personal_access_token/id'
           description: Revoke the newly created token.
     '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '422':
       description: >-
-        Current password confirmation failed (RFC 9457 problem details).
-        Token creation re-verifies the signed-in user's password before
-        minting a credential.
+        Validation failed. Toast JSON for domain validation (invalid scopes,
+        max tokens reached, etc.); RFC 9457 problem details when the current
+        password re-verification fails — token creation re-verifies the
+        signed-in user's password before minting a credential, and 422 (not
+        401) says the authenticated caller's input was wrong.
       content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
         application/problem+json:
           schema:
             type: object
@@ -193,7 +200,7 @@ post:
               status:
                 type: integer
                 description: HTTP status code, repeated in the body.
-                example: 401
+                example: 422
               detail:
                 type: string
                 description: Occurrence-specific human explanation.
@@ -202,19 +209,13 @@ post:
                   and the current password provided does not match.
           examples:
             incorrect_password:
-              summary: Password confirmation failed
+              summary: Password re-verification failed
               value:
                 type: /docs/api/errors#incorrect_password
                 title: Incorrect password
-                status: 401
+                status: 422
                 detail: >-
                   Creating or managing API tokens re-verifies your identity,
                   and the current password provided does not match.
-    '422':
-      description: Validation failed (invalid scopes, max tokens reached, etc.)
-      content:
-        application/json:
-          schema:
-            $ref: ../components/schemas/ToastResponse.yaml
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

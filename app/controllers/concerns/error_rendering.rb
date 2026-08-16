@@ -77,9 +77,12 @@ module ErrorRendering
     )
   end
 
+  # 422, not 401: the caller IS authenticated — they failed the re-verification
+  # challenge. A 401 here collides with the client's session-death handling,
+  # which reloads the page before any message can render.
   def render_incorrect_password
     render_problem(
-      type: :incorrect_password, title: 'Incorrect password', status: :unauthorized,
+      type: :incorrect_password, title: 'Incorrect password', status: :unprocessable_content,
       detail: 'Creating or managing API tokens re-verifies your identity, and the current password ' \
               'provided does not match.'
     )

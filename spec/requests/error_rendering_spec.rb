@@ -138,13 +138,15 @@ RSpec.describe 'API error rendering (RFC 9457 problem details)' do
       expect(body).not_to have_key('how_to_authenticate')
     end
 
+    # 422, not 401: the caller is authenticated and failed the re-verification
+    # challenge — a 401 would collide with the client's session-death reload.
     it 'keeps the token-creation password re-check as its own problem type' do
       sign_in member_viewer
       post '/personal_access_tokens',
            params: { personal_access_token: { name: 'probe', scopes: ['read'], current_password: 'wrong' } },
            as: :json
 
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.media_type).to eq('application/problem+json')
       body = response.parsed_body
       expect(body['type']).to eq('/docs/api/errors#incorrect_password')

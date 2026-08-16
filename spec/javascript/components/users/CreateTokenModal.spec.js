@@ -78,4 +78,52 @@ describe("CreateTokenModal", () => {
       expect(wrapper.vm.creating).toBe(false);
     });
   });
+
+  // ── incorrect-password feedback ─────────────────────────────────────
+  // REQUIREMENT: a failed current-password re-verification (422 problem
+  // details) surfaces the problem's own title and detail as a danger toast —
+  // the user must learn the password was wrong, not watch a silent failure.
+  describe("incorrect-password feedback", () => {
+    it("surfaces the problem detail when the password re-verification fails", async () => {
+      const denied = Object.assign(new Error("Request failed with status code 422"), {
+        response: {
+          status: 422,
+          data: {
+            type: "/docs/api/errors#incorrect_password",
+            title: "Incorrect password",
+            status: 422,
+            detail:
+              "Creating or managing API tokens re-verifies your identity, " +
+              "and the current password provided does not match.",
+          },
+        },
+      });
+      createToken.mockRejectedValueOnce(denied);
+      wrapper = createWrapper();
+      wrapper.vm.form.name = "ci-token";
+      wrapper.vm.form.current_password = "wrong-password";
+
+      const toastDetail = await captureVulcanToast(() => wrapper.vm.onSubmit(), wrapper);
+
+      expect(toastDetail).toEqual({
+        title: "Incorrect password",
+        variant: "danger",
+        message:
+          "Creating or managing API tokens re-verifies your identity, " +
+          "and the current password provided does not match.",
+      });
+      expect(wrapper.vm.creating).toBe(false);
+    });
+  });
+
+  // The esbuild Vue pipeline does not decode HTML entities in template
+  // attributes — a raw entity in a placeholder reaches the user as literal
+  // text. The newline must be a real newline, bound from JavaScript.
+  describe("IP allowlist placeholder", () => {
+    it("renders a real newline between the CIDR examples, not a literal entity", () => {
+      wrapper = createWrapper();
+      const textarea = wrapper.find("textarea");
+      expect(textarea.attributes("placeholder")).toBe("10.0.0.0/8\n192.168.1.0/24");
+    });
+  });
 });

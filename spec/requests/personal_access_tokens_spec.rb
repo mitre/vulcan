@@ -47,8 +47,9 @@ RSpec.describe 'PersonalAccessTokens management' do
            headers: { 'Accept' => 'application/json' },
            as: :json
 
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body['type']).to eq('/docs/api/errors#incorrect_password')
+      expect(response.parsed_body['status']).to eq(422)
       expect(response.parsed_body['detail']).to include('password')
     end
 
@@ -63,7 +64,8 @@ RSpec.describe 'PersonalAccessTokens management' do
            headers: { 'Accept' => 'application/json' },
            as: :json
 
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body['type']).to eq('/docs/api/errors#incorrect_password')
     end
 
     it 'rejects invalid scopes' do

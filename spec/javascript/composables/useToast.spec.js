@@ -215,6 +215,66 @@ describe("useToast#alertOrNotifyResponse", () => {
     });
   });
 
+  describe("problem-detail fallback", () => {
+    // REQUIREMENT: a problem-details body without a toast payload must still
+    // reach the user — the detail is the human explanation, titled by the
+    // problem's own title. Incorrect-password on token creation (422) is the
+    // motivating case.
+    it("surfaces a non-403 problem body's detail as a danger toast titled by the problem", () => {
+      const { alertOrNotifyResponse } = useToast();
+      alertOrNotifyResponse({
+        response: {
+          status: 422,
+          data: {
+            type: "/docs/api/errors#incorrect_password",
+            title: "Incorrect password",
+            status: 422,
+            detail:
+              "Creating or managing API tokens re-verifies your identity, " +
+              "and the current password provided does not match.",
+          },
+        },
+      });
+      expect(detail).toEqual({
+        title: "Incorrect password",
+        variant: "danger",
+        message:
+          "Creating or managing API tokens re-verifies your identity, " +
+          "and the current password provided does not match.",
+      });
+    });
+
+    it("prefers an explicit toast payload over the problem detail", () => {
+      const { alertOrNotifyResponse } = useToast();
+      alertOrNotifyResponse({
+        response: {
+          status: 422,
+          data: {
+            detail: "should not be used",
+            toast: { title: "Saved anyway.", message: "explicit toast", variant: "warning" },
+          },
+        },
+      });
+      expect(detail).toEqual({
+        title: "Saved anyway.",
+        variant: "warning",
+        message: "explicit toast",
+      });
+    });
+
+    it("falls back to the Error title when the problem body has no title", () => {
+      const { alertOrNotifyResponse } = useToast();
+      alertOrNotifyResponse({
+        response: { status: 422, data: { detail: "Untitled problem detail." } },
+      });
+      expect(detail).toEqual({
+        title: "Error",
+        variant: "danger",
+        message: "Untitled problem detail.",
+      });
+    });
+  });
+
   describe("fallbacks", () => {
     it("dispatches a generic Error toast from response.message", () => {
       const { alertOrNotifyResponse } = useToast();

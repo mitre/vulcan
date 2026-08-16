@@ -28,10 +28,6 @@ The `Authorization` header carried a token that does not match any active person
 
 A sign-in attempt supplied an incorrect email or password.
 
-### incorrect_password
-
-Creating or managing API tokens re-verifies your identity, and the current password provided does not match.
-
 ### session_superseded
 
 You were signed out because this account signed in from another location. Only one active session per account is allowed at a time. Carries `how_to_authenticate`.
@@ -57,6 +53,12 @@ The request came from an IP address outside this token's allowlist.
 ### insufficient_token_scope
 
 The request requires a scope (named in `detail`) that the presented token does not grant. Create a token with the needed scope.
+
+## Validation errors (422)
+
+### incorrect_password
+
+Creating or managing API tokens re-verifies your identity, and the current password provided does not match. The caller is already signed in — the re-verification challenge failed — so the status is 422, not 401.
 
 ## Request errors (400 and 404)
 

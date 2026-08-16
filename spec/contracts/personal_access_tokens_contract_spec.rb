@@ -73,7 +73,7 @@ RSpec.describe 'Personal Access Tokens endpoint contracts', type: :request do
       assert_fields_absent body['personal_access_token'], :token_digest
     end
 
-    it 'returns 401 with incorrect password' do
+    it 'returns 422 problem details with incorrect password' do
       post '/personal_access_tokens',
            params: {
              personal_access_token: {
@@ -84,7 +84,9 @@ RSpec.describe 'Personal Access Tokens endpoint contracts', type: :request do
            },
            headers: json_headers, as: :json
 
-      expect(response).to have_http_status(:unauthorized)
+      body = validate_and_parse!(expected_status: :unprocessable_content)
+      expect(body['type']).to eq('/docs/api/errors#incorrect_password')
+      expect(body['title']).to eq('Incorrect password')
     end
   end
 
