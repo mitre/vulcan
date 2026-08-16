@@ -47,17 +47,28 @@
         {{ entry.label }}: {{ entry.count }}
       </span>
     </div>
-    <div data-testid="progress-bar" class="progress-bar-track d-flex rounded overflow-hidden mb-1">
+    <div data-testid="progress-bar" class="progress-rows mb-1">
       <div
         v-for="entry in barSegments"
         :key="entry.status"
-        data-testid="progress-segment"
-        class="progress-segment"
-        :class="'progress-segment--' + entry.status"
+        data-testid="progress-row"
+        class="progress-row"
         :data-triage="entry.status"
-        :style="{ width: entry.displayWidth }"
-        :title="entry.label + ': ' + entry.count"
-      />
+      >
+        <span class="progress-row-label">{{ entry.label }}</span>
+        <b-progress class="progress-row-track" :max="100" height="12px">
+          <b-progress-bar
+            data-testid="progress-segment"
+            class="progress-segment"
+            :class="'progress-segment--' + entry.status"
+            :data-triage="entry.status"
+            :value="entry.displayPercent"
+            striped
+            :title="entry.label + ': ' + entry.count"
+          />
+        </b-progress>
+        <span class="progress-row-count">{{ entry.count }}</span>
+      </div>
     </div>
     <small data-testid="progress-summary" class="text-muted d-block mb-3">
       {{ resolvedCount }} of {{ total }} resolved ({{ resolvedPercent }}%)
@@ -69,8 +80,6 @@
 import { TRIAGE_LABELS, triageLabel } from "../../constants/triageVocabulary";
 
 const RESOLVED_STATUSES = Object.keys(TRIAGE_LABELS).filter((s) => s !== "pending");
-
-const MIN_SEGMENT_PERCENT = 2;
 
 export default {
   name: "CommentProgressBar",
@@ -115,52 +124,18 @@ export default {
     barSegments() {
       if (this.total === 0) return [];
 
-      const entries = RESOLVED_STATUSES.concat(["pending"])
+      // Pending first, matching how the pills read left to right.
+      return ["pending", ...RESOLVED_STATUSES]
         .filter((s) => (this.statusCounts[s] || 0) > 0)
         .map((status) => {
           const count = this.statusCounts[status];
-          const rawPercent = (count / this.total) * 100;
           return {
             status,
             label: triageLabel(status, this.injectedDocumentType),
             count,
-            rawPercent,
+            displayPercent: (count / this.total) * 100,
           };
         });
-
-      const boosted = entries.filter((e) => e.rawPercent < MIN_SEGMENT_PERCENT);
-      const boostTotal = boosted.reduce((sum, e) => sum + (MIN_SEGMENT_PERCENT - e.rawPercent), 0);
-      const unboosted = entries.filter((e) => e.rawPercent >= MIN_SEGMENT_PERCENT);
-      const unboostedTotal = unboosted.reduce((sum, e) => sum + e.rawPercent, 0);
-
-      const computed = entries.map((e) => {
-        let displayPercent;
-        if (e.rawPercent < MIN_SEGMENT_PERCENT) {
-          displayPercent = MIN_SEGMENT_PERCENT;
-        } else if (unboostedTotal > 0 && boostTotal > 0) {
-          displayPercent = e.rawPercent - (e.rawPercent / unboostedTotal) * boostTotal;
-        } else {
-          displayPercent = e.rawPercent;
-        }
-        return { ...e, displayPercent };
-      });
-
-      // Defensive: absorb any remainder into the last segment so widths
-      // always sum to 100% and the track background never shows through.
-      // If statusCounts ever drifts from total (e.g. an unrecognized status
-      // key that doesn't get a bucket), the bug stays invisible.
-      if (computed.length) {
-        const sumOthers = computed.slice(0, -1).reduce((s, e) => s + e.displayPercent, 0);
-        computed[computed.length - 1].displayPercent = Math.max(0, 100 - sumOthers);
-      }
-
-      return computed.map((e) => ({
-        status: e.status,
-        label: e.label,
-        count: e.count,
-        rawPercent: e.rawPercent,
-        displayWidth: e.displayPercent.toFixed(1) + "%",
-      }));
     },
   },
   methods: {
@@ -179,20 +154,50 @@ export default {
   margin-bottom: 0.5rem;
 }
 
+/* ── Per-status bar rows: label | thin stock striped bar | count ── */
+.progress-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.progress-row-label {
+  flex: 0 0 auto;
+  min-width: 11rem;
+  font-size: 0.85rem;
+}
+
+/* Theme-aware track — Bootstrap's stock light-gray track glares in dark
+ * mode. Fills read the same status palette as the pills (one color system;
+ * bg-* variant utilities are !important and would fight it, so the bars
+ * carry no variant). */
+.progress-row-track {
+  flex: 1 1 auto;
+  background-color: var(--vulcan-bg-light);
+}
+
+.progress-segment[data-triage] {
+  background-color: var(--status-color);
+}
+
+.progress-row-count {
+  flex: 0 0 auto;
+  min-width: 2.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+}
+
 .progress-separator {
   width: 1px;
   align-self: stretch;
   background-color: var(--vulcan-border-light);
-}
-
-.progress-bar-track {
-  height: 10px;
-  background-color: var(--vulcan-bg-light);
-  border-radius: 2px;
-}
-
-.progress-segment {
-  min-width: 4px;
 }
 
 /* ── Pill colors (text on colored background) ── */
@@ -227,24 +232,5 @@ export default {
 .progress-pill[data-triage] {
   background-color: var(--status-color);
   color: var(--status-pill-fg, #fff);
-}
-
-/* ── Bar segment colors — ONE rule via intermediate variable ── */
-.progress-segment[data-triage] {
-  background-color: var(--status-color);
-}
-
-/* Pending is intentionally a neutral gray to read as "unresolved", but the
- * solid gray was easily confused with the track background when looked at
- * cold. A subtle diagonal stripe overlay distinguishes it without changing
- * the color or hurting contrast (title="Pending: N" still surfaces on hover). */
-.progress-segment[data-triage="pending"] {
-  background-image: repeating-linear-gradient(
-    45deg,
-    transparent,
-    transparent 4px,
-    var(--vulcan-overlay-light) 4px,
-    var(--vulcan-overlay-light) 8px
-  );
 }
 </style>

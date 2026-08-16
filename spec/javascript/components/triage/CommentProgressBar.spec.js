@@ -106,19 +106,6 @@ describe("CommentProgressBar", () => {
     expect(pendingWidth).toBeLessThan(80);
   });
 
-  it("enforces a minimum segment width so thin slivers are visible", () => {
-    const w = mount(CommentProgressBar, {
-      localVue,
-      propsData: baseProps({ statusCounts: { pending: 200, concur: 1 } }),
-    });
-    const segments = w.findAll("[data-testid='progress-segment']");
-    const thinSegment = segments.at(0);
-    const rawWidth = (1 / 201) * 100;
-    const renderedWidth = parseFloat(thinSegment.element.style.width);
-    expect(renderedWidth).toBeGreaterThanOrEqual(2);
-    expect(renderedWidth).toBeGreaterThan(rawWidth);
-  });
-
   // ── Summary line (progress-framed, left-aligned with bar) ─────────
 
   it("displays progress-framed summary: resolved count and percentage", () => {
@@ -208,33 +195,51 @@ describe("CommentProgressBar", () => {
     expect(summary.text()).toContain("100%");
   });
 
-  // Defensive: segment widths must sum to 100% even if statusCounts contains
-  // a key that doesn't map to a bucket — otherwise the unfilled remainder
-  // exposes the track background and reads as a mystery dark-gray segment.
-  it("normalizes segment widths to 100% even with unrecognized status keys", () => {
-    const w = mount(CommentProgressBar, {
-      localVue,
-      propsData: {
-        statusCounts: {
-          pending: 87,
-          concur: 1,
-          concur_with_comment: 19,
-          duplicate: 4,
-          informational: 1,
-          _ghost: 1,
-        },
-      },
-    });
-    const segments = w.findAll("[data-testid='progress-segment']");
-    const sum = segments.wrappers.reduce((s, seg) => s + parseFloat(seg.element.style.width), 0);
-    expect(sum).toBeCloseTo(100, 0);
-  });
-
   it("preserves the pending data-triage marker (drives the legibility stripe)", () => {
     const w = mount(CommentProgressBar, { localVue, propsData: baseProps() });
     const pending = w
       .findAll("[data-testid='progress-segment']")
       .wrappers.find((s) => s.attributes("data-triage") === "pending");
     expect(pending).toBeTruthy();
+  });
+
+  // ── Native progress semantics (b-progress track) ──────────────────
+
+  it("renders the track segments as native progressbars with ARIA value semantics", () => {
+    const w = mount(CommentProgressBar, { localVue, propsData: baseProps() });
+    const segments = w.findAll("[data-testid='progress-segment']");
+    expect(segments.length).toBeGreaterThan(0);
+    segments.wrappers.forEach((segment) => {
+      expect(segment.attributes("role")).toBe("progressbar");
+      expect(segment.attributes("aria-valuenow")).toBeDefined();
+      expect(segment.attributes("aria-valuemax")).toBeDefined();
+    });
+  });
+
+  // ── Per-status bar rows (the Bootstrap striped multiple-bars look) ─
+
+  it("renders each status as its own thin bar row with label and count", () => {
+    const w = mount(CommentProgressBar, { localVue, propsData: baseProps() });
+    const rows = w.findAll("[data-testid='progress-row']");
+    expect(rows.length).toBe(5);
+    const declined = rows.wrappers.find((r) => r.attributes("data-triage") === "non_concur");
+    expect(declined.text()).toContain("Declined");
+    expect(declined.text()).toContain("1");
+    expect(declined.find(".progress").element.style.height).toBe("12px");
+  });
+
+  it("orders rows pending-first to match the pills", () => {
+    const w = mount(CommentProgressBar, { localVue, propsData: baseProps() });
+    const rows = w.findAll("[data-testid='progress-row']");
+    expect(rows.at(0).attributes("data-triage")).toBe("pending");
+  });
+
+  it("stripes every bar (the Bootstrap striped presentation)", () => {
+    const w = mount(CommentProgressBar, { localVue, propsData: baseProps() });
+    const segments = w.findAll("[data-testid='progress-segment']");
+    expect(segments.length).toBeGreaterThan(0);
+    segments.wrappers.forEach((s) => {
+      expect(s.classes()).toContain("progress-bar-striped");
+    });
   });
 });
