@@ -2,11 +2,11 @@
 
 require 'rails_helper'
 
-# REQUIREMENT: when warden throws
-# during a request (evicted session, timeout, plain unauthenticated), the
-# custom Devise failure app answers JSON/non-navigational requests with the
-# RFC 9457 problem envelope naming the TRUE cause, while HTML/navigational
-# requests keep Devise's redirect + flash byte-identical.
+# REQUIREMENT: when warden throws during a request (evicted session, timeout,
+# plain unauthenticated), the custom Devise failure app answers
+# JSON/non-navigational requests with the RFC 9457 problem envelope naming the
+# TRUE cause, while HTML/navigational requests keep Devise's redirect + flash
+# byte-identical.
 RSpec.describe 'Session-aware Devise failure app' do
   before { Rails.application.reload_routes! }
 

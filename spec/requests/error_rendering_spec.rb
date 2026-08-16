@@ -2,15 +2,15 @@
 
 require 'rails_helper'
 
-# REQUIREMENT: every JSON auth and
-# infrastructure error is an RFC 9457 problem-details body served as
-# application/problem+json — a stable machine `type` anchoring into
-# /docs/api/errors, a `title` naming the error class, the `status` code
-# repeated in the body, an occurrence-specific `detail` saying why, and
-# Vulcan help carried as extension members (how_to_authenticate on 401s,
-# admins on permission denials). ONE renderer serves Api:: and legacy
-# controllers alike — this spec pins closed the defect where
-# Api::BaseController shadowed the rich admins-to-ask 403 with a bare body.
+# REQUIREMENT: every JSON auth and infrastructure error is an RFC 9457
+# problem-details body served as application/problem+json — a stable machine
+# `type` anchoring into /docs/api/errors, a `title` naming the error class,
+# the `status` code repeated in the body, an occurrence-specific `detail`
+# saying why, and Vulcan help carried as extension members
+# (how_to_authenticate on 401s, admins on permission denials). ONE renderer
+# serves Api:: and legacy controllers alike — this spec pins closed the defect
+# where Api::BaseController shadowed the rich admins-to-ask 403 with a bare
+# body.
 RSpec.describe 'API error rendering (RFC 9457 problem details)' do
   before { Rails.application.reload_routes! }
 

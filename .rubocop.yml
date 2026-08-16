@@ -227,8 +227,6 @@ Vulcan/KindSeamQuery:
     # Editor payload is kind-routed in-file; related_rules is deliberately
     # Rule-only (no authored equivalent surface).
     - app/controllers/rules_controller.rb
-    # ADNM automation walks the satisfies graph — structurally STIG-only.
-    - lib/tasks/fix_adnm_status.rake
     # Satisfaction-nesting maintenance for the container stig test dataset —
     # walks the satisfies graph, structurally STIG-only. Resolves its
     # component kind-scoped: two kinds share the CNTR-00 prefix.

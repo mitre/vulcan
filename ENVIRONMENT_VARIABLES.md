@@ -28,7 +28,7 @@ This document lists all environment variables that can be used to configure Vulc
 
 **Deprecated:** `VULCAN_VUE_DATABASE_PASSWORD` and `DB_SUFFIX` are removed. Use `POSTGRES_PASSWORD` and `DATABASE_NAME` respectively. `POSTGRES_DB` is no longer read by database.yml — use `DATABASE_NAME` for all environments. Test database name (`vulcan_test`) is hardcoded to prevent collision with development.
 
-**Multi-Project Development**: See [docs/site/development/port-registry.md](docs/site/development/port-registry.md) for recommended port assignments when running multiple projects simultaneously.
+**Multi-Project Development**: See the [port registry](/development/port-registry) for recommended port assignments when running multiple projects simultaneously.
 
 ## General Application Settings
 
@@ -36,7 +36,7 @@ This document lists all environment variables that can be used to configure Vulc
 |----------|-------------|---------|---------|
 | `VULCAN_APP_URL` | Application URL (for mailer links) | — (must be set for emails) | `https://vulcan.example.com` |
 | `VULCAN_WELCOME_TEXT` | Extra welcome text under the sign-in page heading | — (unset; the page carries its own heading) | `Welcome to MITRE Vulcan` |
-| `VULCAN_CONTACT_EMAIL` | Contact email for notifications and default SMTP username | `vulcan-support@example.com` | `support@mycompany.com` |
+| `VULCAN_CONTACT_EMAIL` | Contact email for notifications and default SMTP username | — (unset) | `support@mycompany.com` |
 | `VULCAN_DOCS_REQUIRE_LOGIN` | Require a signed-in user to read the in-app documentation site at `/docs` | `false` (public) | `true` |
 
 ## Authentication Settings
@@ -46,7 +46,7 @@ This document lists all environment variables that can be used to configure Vulc
 |----------|-------------|---------|---------|
 | `VULCAN_ENABLE_LOCAL_LOGIN` | Enable local username/password login | `true` | `true` or `false` |
 | `VULCAN_ENABLE_EMAIL_CONFIRMATION` | Require email confirmation for new users | `false` | `true` or `false` |
-| `VULCAN_SESSION_TIMEOUT` | Session inactivity timeout. Accepts explicit suffix (`30s`, `15m`, `1h`) or plain numbers (1-9 = hours, 10-299 = minutes, 300+ = seconds). | `1h` | `900` (DoD 15-min), `15m`, `1h` |
+| `VULCAN_SESSION_TIMEOUT` | Session inactivity timeout. Accepts explicit suffix (`30s`, `15m`, `1h`) or plain numbers (1-9 = hours, 10-299 = minutes, 300+ = seconds). | `600` (10 minutes) | `900` (DoD 15-min), `15m`, `1h` |
 | `VULCAN_ENABLE_REMEMBER_ME` | Show "Remember Me" checkbox on login forms | `true` | `false` for DoD |
 | `VULCAN_REMEMBER_ME_DURATION` | How long Remember Me keeps session alive. Same format as session timeout. | `8h` | `1d`, `28800` |
 
@@ -124,14 +124,14 @@ If an admin already exists from `admin:bootstrap`, the demo admin is skipped and
 > `<app_url>/users/signed_out` (built from `VULCAN_APP_URL`). Without the
 > sign-out entry, providers reject Vulcan's logout with
 > `400 invalid_request`. See the
-> [Okta/OIDC setup guide](docs/site/deployment/auth/oidc-okta.md) for the full
+> [Okta/OIDC setup guide](/deployment/auth/oidc-okta) for the full
 > settings tables.
 
 #### Multiple OIDC Providers (Registry — v2.3+)
 
 To offer **several OIDC providers simultaneously** (e.g. Okta **and** login.gov
 on one login page), set a registry and give each provider its own variable
-family. See [ADR: Multi-Provider OIDC](docs/decisions/adr-multi-provider-oidc.md).
+family.
 
 | Variable | Description | Example |
 |----------|-------------|---------|
@@ -364,7 +364,7 @@ Configurable maximum lengths for text fields. Defaults are based on analysis of 
 data across 1,785 rules. Group limits by category rather than individual fields — each env var
 controls a category of related fields.
 
-See [docs/site/development/input-length-limits.md](docs/site/development/input-length-limits.md) for the
+See [input length limits](/development/input-length-limits) for the
 complete field-to-setting mapping.
 
 | Variable | Description | Default | Example |
@@ -387,6 +387,7 @@ complete field-to-setting mapping.
 | `VULCAN_LIMIT_BENCHMARK_NAME` | SRG/STIG display name | `500` | `1000` |
 | `VULCAN_LIMIT_BENCHMARK_TITLE` | SRG/STIG title | `500` | `1000` |
 | `VULCAN_LIMIT_BENCHMARK_DESCRIPTION` | STIG description | `10000` | `20000` |
+| `VULCAN_IMPORT_JSON_ARCHIVE_SIZE_BUDGET_MB` | Maximum total uncompressed size (MB) of all entries in a json_archive zip upload — the zip-bomb guard behind the 100 MB upload cap | `500` | `1000` |
 
 ## Project Settings
 
@@ -457,6 +458,8 @@ This ensures OIDC auto-discovery events and all application logs are visible in 
 | `RAILS_LOG_TO_STDOUT` | Log to stdout instead of files | - | `true` |
 | `RAILS_SERVE_STATIC_FILES` | Serve static files in production | - | `true` |
 | `RAILS_FORCE_SSL` | Force HTTPS redirects (set to `false` for Docker without SSL termination) | `true` | `false` |
+| `RAILS_MAX_THREADS` | Database connection pool size per process | `5` | `10` |
+| `RAILS_LOG_LEVEL` | Production log verbosity | `info` | `debug` |
 
 ## Container Logging (Production)
 

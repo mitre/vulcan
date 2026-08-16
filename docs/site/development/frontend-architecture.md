@@ -326,14 +326,12 @@ app/javascript/
 └── packs/                      # Entry points (use createVulcanApp)
 ```
 
-## Migration Strategy (Current → Target)
+## Migration Path (Current → Target)
 
-**Phase 1 (NOW):** Install Pinia, create `createVulcanApp`, define `useCommentsStore` skeleton. Pilot with 2 pack files.
+The migration proceeds one layer at a time, so each step ships independently:
 
-**Phase 2:** Build composables (`useCommentReactions`, `useCommentThread`) that replace mixins for comment components. Store fetches + caches comments.
-
-**Phase 3:** Build compound presentational components (`CommentItem`, `CommentBody`, `CommentActions`). These are Layer 4 — pure props, zero store access.
-
-**Phase 4:** Migrate container components to use store + composables + presentational components. Remove mixin imports. Each migration is one component at a time.
-
-**Phase 5 (future):** When Vue 3 / SPA / 3NF happens, only the affected layer changes. The architecture absorbs it.
+1. Install Pinia, create `createVulcanApp`, and define the `useCommentsStore` skeleton, piloted on a small number of pack files.
+2. Build composables (`useCommentReactions`, `useCommentThread`) that replace mixins for comment components. The store fetches and caches comments.
+3. Build compound presentational components (`CommentItem`, `CommentBody`, `CommentActions`). These are Layer 4 — pure props, zero store access.
+4. Migrate container components to use the store, composables, and presentational components, removing mixin imports one component at a time.
+5. When Vue 3 / SPA / 3NF happens, only the affected layer changes. The architecture absorbs it.

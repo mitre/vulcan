@@ -72,7 +72,7 @@ yarn docs:preview  # Preview production build
 - **Node.js 24 LTS** for JavaScript runtime
 
 ### Frontend
-- **Vue 2.7.16** (14 separate instances for different pages)
+- **Vue 2.7.16** (separate instance per page — no shared SPA)
 - **Bootstrap 4.6.2** with Bootstrap-Vue 2.23.1
 - **Turbolinks 5.2.0** for navigation optimization
 - **esbuild** for JavaScript bundling (replaced Webpacker)

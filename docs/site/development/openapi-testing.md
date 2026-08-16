@@ -87,7 +87,7 @@ yarn openapi:bundle    # Regenerate doc/openapi.yaml from doc/openapi/ source
 yarn openapi:lint      # Validate the multi-file source
 ```
 
-Always run both after spec changes. See `doc/openapi/CLAUDE.md` for full spec authoring standards.
+Always run both after spec changes.
 
 ## File Map
 
