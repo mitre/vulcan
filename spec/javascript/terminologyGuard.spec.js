@@ -186,7 +186,7 @@ function scanFile(file, noun = ANY_NOUN) {
     const openEnd = source.indexOf(">", tplStart) + 1;
     hits.push(...scanTemplate(source.slice(openEnd, tplEnd), lineAt(source, openEnd) - 1, noun));
   }
-  const scriptMatch = source.match(/<script[^>]*>([\s\S]*?)<\/script>/i);
+  const scriptMatch = source.match(/<script[^>]*>([\s\S]*?)<\/script\s*>/i);
   if (scriptMatch) {
     hits.push(...scanScript(scriptMatch[1], lineAt(source, scriptMatch.index) - 1, noun));
   }

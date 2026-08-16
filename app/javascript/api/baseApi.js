@@ -78,7 +78,8 @@ async function parseBody(response) {
     .split(";", 1)[0]
     .trim()
     .toLowerCase();
-  return /\/(?:.*[.+-])?json$/.test(mimeType) ? response.json() : response.text();
+  const [, subtype = ""] = mimeType.split("/", 2);
+  return subtype === "json" || /[.+-]json$/.test(subtype) ? response.json() : response.text();
 }
 
 /**

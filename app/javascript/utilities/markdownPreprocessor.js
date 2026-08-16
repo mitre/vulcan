@@ -9,9 +9,11 @@
  * design: we re-indent the input, we do not fork the renderer.
  */
 
-const FENCE_RE = /^( *)(`{3,}|~{3,})(.*)$/;
-const ORDERED_RE = /^( *)(\d+)([.)])( +)(.*)$/;
-const UNORDERED_RE = /^( *)([-*+])( +)(.*)$/;
+// No trailing (.*) captures: the callers never read the line remainder, and
+// an unanchored tail next to a greedy run is what made these backtrack.
+const FENCE_RE = /^( *)(`{3,}|~{3,})/;
+const ORDERED_RE = /^( *)(\d+)([.)])( +)/;
+const UNORDERED_RE = /^( *)([-*+])( +)/;
 const BLANK_RE = /^\s*$/;
 const INDENT_PER_LEVEL = 4;
 

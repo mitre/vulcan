@@ -65,8 +65,10 @@ export const useCommentsStore = defineStore("comments", () => {
   }
 
   function cacheKey(componentId, params) {
+    // Explicit code-unit comparator: cache keys need deterministic,
+    // locale-independent ordering.
     const sorted = Object.keys(params || {})
-      .sort()
+      .sort((a, b) => (a > b) - (a < b))
       .reduce((acc, k) => {
         acc[k] = params[k];
         return acc;

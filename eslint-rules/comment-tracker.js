@@ -33,7 +33,11 @@
  *
  * @type {string}
  */
-const TRACKER_SRC = "\\b(?:vulcan-(?:v3\\.x|v2\\.x|clean)|v[23])-[\\w.]+(?:\\s*§[\\d.]+)?";
+// Dot-separated token runs (\w+(\.\w+)*) instead of [\w.]+: unambiguous, so
+// the composed strip patterns cannot backtrack super-linearly, and a
+// sentence-ending period is no longer swallowed into the identifier.
+const TRACKER_SRC =
+  "\\b(?:vulcan-(?:v3\\.x|v2\\.x|clean)|v[23])-\\w+(?:\\.\\w+)*(?:\\s*§\\d+(?:\\.\\d+)*)?";
 
 /**
  * Matches internal tracker prefixes followed by a card identifier.
