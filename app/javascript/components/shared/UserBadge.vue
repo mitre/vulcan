@@ -33,7 +33,7 @@
 // picks its own seed, so popoverIds don't collide when (e.g.) the navbar
 // pack and the project_component pack both render UserBadges on the same
 // page. Combined with this._uid for per-instance uniqueness within a pack.
-const moduleSeed = Math.random().toString(36).slice(2, 8);
+const moduleSeed = crypto.randomUUID().slice(0, 8);
 
 export default {
   name: "UserBadge",

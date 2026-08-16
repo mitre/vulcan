@@ -54,7 +54,7 @@ export default {
   },
   data() {
     return {
-      instanceId: Math.random().toString(36).slice(2, 9),
+      instanceId: crypto.randomUUID().slice(0, 8),
     };
   },
   methods: {
