@@ -95,22 +95,23 @@ RSpec.describe 'Remember Me Functionality' do
 
   describe 'OmniAuth login with remember_me' do
     # The callback action is shared by every omniauth provider (LDAP, OIDC),
-    # so the remember-me contract is driven through the provider registered
-    # in the test environment. The remember cookie comes from
-    # Devise::Controllers::Rememberable, which a callback controller must
+    # so the remember-me contract is driven through the OIDC provider this
+    # process registered at boot (oidc_test_provider — locally the registry
+    # names it, CI's legacy env registers :oidc). The remember cookie comes
+    # from Devise::Controllers::Rememberable, which a callback controller must
     # include explicitly — it is opt-in, not part of DeviseController.
     let(:email) { 'omniauth-remember@example.com' }
 
     before do
       OmniAuth.config.test_mode = true
-      mock_okta_auth(email: email, name: 'Remember Me User', uid: 'remember-123')
+      mock_oidc_auth(email: email, name: 'Remember Me User', uid: 'remember-123')
     end
 
-    after { reset_okta_mock }
+    after { reset_oidc_mock }
 
     context 'when remember_me is checked' do
       it 'signs the user in with the remember cookie set' do
-        post user_okta_omniauth_callback_path, params: { remember_me: '1' }
+        post oidc_callback_path, params: { remember_me: '1' }
 
         expect(response).to redirect_to(root_path)
         expect(User.find_by(email: email).remember_created_at).to be_present
@@ -120,7 +121,7 @@ RSpec.describe 'Remember Me Functionality' do
 
     context 'when remember_me is not checked' do
       it 'signs the user in without the remember cookie' do
-        post user_okta_omniauth_callback_path
+        post oidc_callback_path
 
         expect(response).to redirect_to(root_path)
         expect(User.find_by(email: email).remember_created_at).to be_nil
@@ -134,7 +135,7 @@ RSpec.describe 'Remember Me Functionality' do
       # at the callback — the delivery path for a checkbox that must survive
       # an external provider redirect.
       it 'signs the user in with the remember cookie set' do
-        post user_okta_omniauth_authorize_path(remember_me: '1')
+        post oidc_authorize_path(remember_me: '1')
         follow_redirect!
 
         expect(response).to redirect_to(root_path)
@@ -149,16 +150,18 @@ RSpec.describe 'Remember Me Functionality' do
     # :ldap_error type (no longer reported as invalid credentials). The
     # raw type humanizes to the meaningless 'Ldap error' — known types get
     # a readable reason from devise.omniauth_callbacks.reasons instead,
-    # and unknown types keep the humanized fallback.
+    # and unknown types keep the humanized fallback. The failure endpoint is
+    # provider-agnostic, so the error type is driven through the registered
+    # OIDC provider.
     before do
       OmniAuth.config.test_mode = true
-      OmniAuth.config.mock_auth[:okta] = :ldap_error
+      OmniAuth.config.mock_auth[oidc_test_provider] = :ldap_error
     end
 
-    after { reset_okta_mock }
+    after { reset_oidc_mock }
 
     it 'explains an unreachable directory instead of echoing the error type' do
-      post user_okta_omniauth_authorize_path
+      post oidc_authorize_path
       follow_redirect!
 
       expect(flash[:alert]).to include('could not be reached')
