@@ -99,7 +99,7 @@
 /setup-docker-secrets.sh
 
 # Ignore root-level markdown — working notes, handoffs and plans must not ship.
-# The seven exceptions below are documentation SOURCE: docs/ symlinks each of
+# The eight exceptions below are documentation SOURCE: docs/ symlinks each of
 # them and renders it as a page, so excluding one leaves a dangling link in the
 # build context and the documentation build fails on the first one it reads.
 # README.md is not among them — the site links it on GitHub instead.
@@ -107,6 +107,7 @@
 !/CHANGELOG.md
 !/CODE_OF_CONDUCT.md
 !/CONTRIBUTING.md
+!/ENVIRONMENT_VARIABLES.md
 !/LICENSE.md
 !/NOTICE.md
 !/ROADMAP.md
