@@ -5,14 +5,6 @@
       "note": "False positive: Integer() cast ensures only PKs from ActiveRecord are interpolated"
     },
     {
-      "fingerprint": "79355d36a8176b1d8128e298e0962a0fc42253f080325bc8b858d5c7ec369a51",
-      "note": "False positive: search terms sanitized via sanitize_sql_like in build_ilike_conditions"
-    },
-    {
-      "fingerprint": "67a915d17e2ebb4d1a83016b683cdf09d6e1553033eb2bcb4f6fd110051e054d",
-      "note": "False positive: File.basename strips path traversal; only serves files from fixed attachments directory"
-    },
-    {
       "fingerprint": "7a4ae4d318dc17fdf06f80697094b6296f14c85fed41cc6a598d91334e930784",
       "note": "False positive: the interpolated fragments are built from hardcoded column names with ? placeholders only; every user term passes through sanitize_sql_like and binds as a parameter (build_ilike_conditions / build_metadata_ilike_condition). Flagged by Brakeman 8's retuned SQL check; 7.x accepted the same pattern."
     },
@@ -21,6 +13,6 @@
       "note": "False positive: resolve() fails closed \u2014 candidates must be existing files whose realpath sits under the docs build root's realpath (contained?), so dot-segment traversal and out-of-root symlinks cannot reach send_file. Flagged by Brakeman 8's SendFile check at Weak confidence."
     }
   ],
-  "updated": "2026-08-08",
-  "brakeman_version": "7.1.0"
+  "updated": "2026-08-16",
+  "brakeman_version": "8.0.6"
 }

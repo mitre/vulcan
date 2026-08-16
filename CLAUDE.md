@@ -57,7 +57,7 @@ Vulcan helps security teams create STIG-ready security guidance documentation. U
 
 ## Tech Stack
 
-- **Backend**: Ruby 3.4.9, Rails 8.0.2.1, PostgreSQL 18
+- **Backend**: Ruby 3.4.10, Rails 8.1.3.1, PostgreSQL 18
 - **Frontend**: Vue 2.7.16 (14 separate instances), Bootstrap 4.6.2, Bootstrap-Vue 2.13.0
 - **Navigation**: Turbolinks 5.2.0 with vue-turbolinks adapter
 - **Build**: esbuild via jsbundling-rails, Propshaft asset pipeline
