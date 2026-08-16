@@ -131,7 +131,9 @@ If an admin already exists from `admin:bootstrap`, the demo admin is skipped and
 
 To offer **several OIDC providers simultaneously** (e.g. Okta **and** login.gov
 on one login page), set a registry and give each provider its own variable
-family.
+family. Step-by-step provider guides: [Okta/OIDC](/deployment/auth/oidc-okta)
+and [Login.gov (PIV/CAC)](/deployment/auth/login-gov) — the Login.gov guide
+covers keypair generation, sandbox portal registration, and end-to-end testing.
 
 | Variable | Description | Example |
 |----------|-------------|---------|
@@ -146,7 +148,7 @@ VULCAN_OIDC_OKTA_CLIENT_ID=...
 VULCAN_OIDC_OKTA_CLIENT_SECRET=...
 VULCAN_OIDC_OKTA_TITLE=Okta
 
-VULCAN_OIDC_LOGIN_GOV_ISSUER_URL=https://idp.int.identitysandbox.gov
+VULCAN_OIDC_LOGIN_GOV_ISSUER_URL=https://idp.int.identitysandbox.gov/   # trailing slash REQUIRED (issuer-mismatch otherwise)
 VULCAN_OIDC_LOGIN_GOV_CLIENT_ID=urn:gov:gsa:openidconnect:...
 VULCAN_OIDC_LOGIN_GOV_CLIENT_AUTH_METHOD=jwt_bearer        # login.gov: private_key_jwt
 VULCAN_OIDC_LOGIN_GOV_PRIVATE_KEY_PATH=/path/to/key.pem    # or _PRIVATE_KEY (inline PEM)

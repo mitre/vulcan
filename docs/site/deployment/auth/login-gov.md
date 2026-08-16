@@ -81,6 +81,47 @@ heroku config:set \
 
 Do NOT set `_PRIVATE_KEY_PATH` on Heroku — use `_PRIVATE_KEY` (inline).
 
+## 4. Test the Integration
+
+### Create a sandbox test account
+
+Sandbox test accounts are self-service: go to
+[idp.int.identitysandbox.gov](https://idp.int.identitysandbox.gov) and sign up
+with any email address (the sandbox delivers its confirmation codes on-screen —
+no real inbox required). Set up any MFA method; the authenticator-app and
+backup-code options work fully inside the sandbox.
+
+### Walk the sign-in flow
+
+1. Restart Vulcan after setting the environment variables — providers register
+   at boot, so a running server will not pick up registry changes.
+2. Open the sign-in page. A **Login.gov** tab (the `_TITLE` value) should
+   appear alongside your other providers. If it doesn't, the registry didn't
+   load — check `VULCAN_OIDC_PROVIDERS` and the boot log.
+3. Click **Sign in with Login.gov** → you land on the sandbox IdP → authenticate
+   with the test account (password + MFA, or PIV/CAC if your workstation has
+   one) → consent to sharing the attribute bundle.
+4. You return to Vulcan signed in. First sign-in creates the account (or links
+   to an existing one when verified auto-linking applies).
+
+### Verify the result
+
+- Your profile page lists the Login.gov identity under linked accounts
+  (provider, email, last used).
+- Sign out via the avatar menu: Vulcan performs RP-initiated logout at
+  Login.gov and must land back on `/users/signed_out` — this round trip is
+  exactly why that second URI is registered in the portal.
+
+### Troubleshooting
+
+| Symptom | Cause |
+|---|---|
+| "Issuer mismatch" on callback | Missing trailing slash on `_ISSUER_URL` (see below) |
+| `400 invalid_request` at sign-out | `/users/signed_out` not registered as a redirect URI in the portal |
+| Client-assertion / JWT signature error at token exchange | Private key doesn't match the certificate uploaded to the portal (regenerated key, wrong file, or stale cert) |
+| `redirect_uri` mismatch at the IdP | Callback URI in the portal doesn't byte-match `<app_url>/users/auth/login_gov/callback` (scheme, host, and port all count) |
+| No Login.gov button on the sign-in page | Registry not loaded — `VULCAN_OIDC_PROVIDERS` unset/typo, or the server wasn't restarted |
+
 ## Important Notes
 
 ### Issuer URL Trailing Slash
