@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
-import { localVue } from "@test/testHelper";
+import { localVue, captureVulcanToast } from "@test/testHelper";
 import RestoreProjectModal from "@/components/projects/RestoreProjectModal.vue";
 import { createFromBackup } from "@/api/projectsApi";
 
@@ -305,6 +305,46 @@ describe("RestoreProjectModal", () => {
       expect(wrapper.vm.step).toBe("upload");
       expect(wrapper.vm.projectName).toBe("");
       expect(wrapper.vm.file).toBe(null);
+    });
+  });
+
+  // ── transport-failure degradation ───────────────────────────────────
+  // REQUIREMENT: a client-side timeout or network failure rejects with a
+  // bare Error — no .response. The catch must hand the ERROR itself to
+  // alertOrNotifyResponse so the user SEES the failure.
+  describe("transport-failure degradation", () => {
+    it("dry run surfaces an error toast on a response-less failure", async () => {
+      createFromBackup.mockRejectedValue(new Error("Request timed out"));
+      wrapper = createWrapper();
+      wrapper.vm.showModal();
+      wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
+
+      const toastDetail = await captureVulcanToast(() => wrapper.vm.submitDryRun(), wrapper);
+
+      expect(toastDetail).toEqual({
+        title: "Error",
+        variant: "danger",
+        message: "Request timed out",
+      });
+      expect(wrapper.vm.loading).toBe(false);
+    });
+
+    it("create surfaces an error toast on a response-less failure", async () => {
+      createFromBackup.mockRejectedValue(new Error("Request timed out"));
+      wrapper = createWrapper();
+      wrapper.vm.showModal();
+      wrapper.vm.file = new File(["test"], "backup.zip", { type: "application/zip" });
+      wrapper.vm.projectName = "Restored Project";
+      wrapper.vm.step = "preview";
+
+      const toastDetail = await captureVulcanToast(() => wrapper.vm.submitCreate(), wrapper);
+
+      expect(toastDetail).toEqual({
+        title: "Error",
+        variant: "danger",
+        message: "Request timed out",
+      });
+      expect(wrapper.vm.loading).toBe(false);
     });
   });
 

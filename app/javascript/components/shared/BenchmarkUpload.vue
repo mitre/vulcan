@@ -91,7 +91,7 @@ export default {
       this.loading = false;
     },
     srgUploadError: function (response) {
-      this.alertOrNotifyResponse(response.response);
+      this.alertOrNotifyResponse(response);
     },
     srgUploadSuccess: function (response) {
       this.modalShow = false;

@@ -1,7 +1,8 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { mount } from "@vue/test-utils";
-import { localVue } from "@test/testHelper";
+import { localVue, captureVulcanToast } from "@test/testHelper";
 import CreateTokenModal from "@/components/users/CreateTokenModal.vue";
+import { createToken } from "@/api/tokensApi";
 
 vi.mock("@/api/baseApi", () => ({
   default: {
@@ -53,6 +54,28 @@ describe("CreateTokenModal", () => {
       expect(CreateTokenModal.mixins).toBeUndefined();
       wrapper = createWrapper();
       expect(typeof wrapper.vm.alertOrNotifyResponse).toBe("function");
+    });
+  });
+
+  // ── transport-failure degradation ───────────────────────────────────
+  // REQUIREMENT: the submit catch hands the ERROR itself to
+  // alertOrNotifyResponse — a transport failure rejects with a bare Error
+  // (no .response), and the user must see an error toast, not silence.
+  describe("transport-failure degradation", () => {
+    it("surfaces an error toast when creation fails without an HTTP response", async () => {
+      createToken.mockRejectedValueOnce(new Error("Request timed out"));
+      wrapper = createWrapper();
+      wrapper.vm.form.name = "ci-token";
+      wrapper.vm.form.current_password = "current-password";
+
+      const toastDetail = await captureVulcanToast(() => wrapper.vm.onSubmit(), wrapper);
+
+      expect(toastDetail).toEqual({
+        title: "Error",
+        variant: "danger",
+        message: "Request timed out",
+      });
+      expect(wrapper.vm.creating).toBe(false);
     });
   });
 });

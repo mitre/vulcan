@@ -181,7 +181,7 @@ export default {
 
         this.step = "preview";
       } catch (error) {
-        this.alertOrNotifyResponse(error.response);
+        this.alertOrNotifyResponse(error);
       } finally {
         this.loading = false;
       }
@@ -207,7 +207,7 @@ export default {
           this.modalShow = false;
         }
       } catch (error) {
-        this.alertOrNotifyResponse(error.response);
+        this.alertOrNotifyResponse(error);
       } finally {
         this.loading = false;
       }

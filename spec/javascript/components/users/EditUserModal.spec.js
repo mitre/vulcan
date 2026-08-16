@@ -1,6 +1,7 @@
 import { mount } from "@vue/test-utils";
-import { localVue } from "@test/testHelper";
+import { localVue, captureVulcanToast } from "@test/testHelper";
 import EditUserModal from "@/components/users/EditUserModal.vue";
+import { adminRevokeToken as apiAdminRevoke } from "@/api/tokensApi";
 import {
   lockUser,
   unlockUser,
@@ -28,6 +29,11 @@ vi.mock("@/api/usersApi", () => ({
   sendPasswordReset: vi.fn(() => Promise.resolve({ data: {} })),
   generateResetLink: vi.fn(() => Promise.resolve({ data: {} })),
   setPassword: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+
+vi.mock("@/api/tokensApi", () => ({
+  adminListTokens: vi.fn(() => Promise.resolve({ data: { personal_access_tokens: [] } })),
+  adminRevokeToken: vi.fn(() => Promise.resolve({ data: {} })),
 }));
 
 // BModal renders content outside the wrapper in jsdom.
@@ -428,6 +434,69 @@ describe("EditUserModal", () => {
       };
       await wrapper.setProps({ user: newUser });
       expect(wrapper.vm.localUser.name).toBe("Other");
+    });
+  });
+
+  // ── admin token revocation failure notification ─────────────────────
+  // REQUIREMENT: the revoke catch hands the ERROR itself to
+  // alertOrNotifyResponse. The notifier's permission-denied branch reads
+  // the error's OWN .response, so unwrapping first silences 403
+  // problem-details bodies, which carry no toast payload.
+  describe("admin token revocation failure notification", () => {
+    beforeEach(() => {
+      vi.stubGlobal(
+        "prompt",
+        vi.fn(() => "rotating credentials"),
+      );
+      mountModal();
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it("surfaces the permission-denied toast on a 403 problem-details failure", async () => {
+      const denied = Object.assign(new Error("Forbidden"), {
+        response: {
+          status: 403,
+          data: {
+            type: "/docs/api/errors#permission_denied",
+            detail: "You do not have permission to perform that action.",
+            admins: [],
+          },
+        },
+      });
+      apiAdminRevoke.mockRejectedValueOnce(denied);
+
+      const toastDetail = await captureVulcanToast(
+        () => wrapper.vm.adminRevokeToken({ id: 7, name: "ci-token" }),
+        wrapper,
+      );
+
+      expect(toastDetail).toEqual({
+        title: "Permission denied",
+        variant: "danger",
+        message: "You do not have permission to perform that action.",
+        admins: [],
+        autoHideDelay: 8000,
+      });
+      expect(wrapper.vm.adminRevoking).toBe(null);
+    });
+
+    it("still surfaces a bare transport Error as an error toast", async () => {
+      apiAdminRevoke.mockRejectedValueOnce(new Error("Request timed out"));
+
+      const toastDetail = await captureVulcanToast(
+        () => wrapper.vm.adminRevokeToken({ id: 7, name: "ci-token" }),
+        wrapper,
+      );
+
+      expect(toastDetail).toEqual({
+        title: "Error",
+        variant: "danger",
+        message: "Request timed out",
+      });
+      expect(wrapper.vm.adminRevoking).toBe(null);
     });
   });
 

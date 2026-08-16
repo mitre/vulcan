@@ -165,7 +165,7 @@ export default {
           this.$emit("hidden");
         })
         .catch((err) => {
-          this.alertOrNotifyResponse(err.response);
+          this.alertOrNotifyResponse(err);
         })
         .finally(() => {
           this.creating = false;

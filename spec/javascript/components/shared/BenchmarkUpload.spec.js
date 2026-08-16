@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { shallowMount } from "@vue/test-utils";
-import { localVue } from "@test/testHelper";
+import { localVue, captureVulcanToast } from "@test/testHelper";
 import BenchmarkUpload from "@/components/shared/BenchmarkUpload.vue";
 
 vi.mock("@/api/baseApi", () => ({
@@ -65,5 +65,22 @@ describe("BenchmarkUpload", () => {
     wrapper.vm.submitUpload();
 
     expect(uploadBenchmark).toHaveBeenCalledWith("/srgs", expect.any(FormData));
+  });
+
+  // REQUIREMENT: srgUploadError hands its argument through UNCHANGED — a
+  // transport failure rejects with a bare Error (no .response), and the
+  // user must see an error toast, not silence.
+  it("srgUploadError passes a bare Error through and surfaces an error toast", async () => {
+    wrapper = createWrapper();
+
+    const toastDetail = await captureVulcanToast(() =>
+      wrapper.vm.srgUploadError(new Error("Request timed out")),
+    );
+
+    expect(toastDetail).toEqual({
+      title: "Error",
+      variant: "danger",
+      message: "Request timed out",
+    });
   });
 });

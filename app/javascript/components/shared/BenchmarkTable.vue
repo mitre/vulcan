@@ -273,7 +273,7 @@ export default {
           },
         });
       } else if (error) {
-        this.alertOrNotifyResponse(error.response || error);
+        this.alertOrNotifyResponse(error);
       }
     },
   },

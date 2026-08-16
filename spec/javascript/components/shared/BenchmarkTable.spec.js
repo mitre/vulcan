@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { shallowMount } from "@vue/test-utils";
-import { localVue } from "@test/testHelper";
+import { localVue, captureVulcanToast } from "@test/testHelper";
 import SecurityRequirementsGuidesTable from "@/components/shared/BenchmarkTable.vue";
+import { deleteBenchmark } from "@/api/projectsApi";
 
 vi.mock("@/api/baseApi", () => ({
   default: {
@@ -424,6 +425,61 @@ describe("SecurityRequirementsGuidesTable", () => {
       wrapper.vm.visibleColumns = ["name", "component_version"];
       expect(wrapper.vm.isColumnVisible("name")).toBe(true);
       expect(wrapper.vm.isColumnVisible("based_on_title")).toBe(false);
+    });
+  });
+
+  // ==========================================
+  // DELETE-FAILURE NOTIFICATION
+  // ==========================================
+  // REQUIREMENT: the delete catch hands the ERROR itself to
+  // alertOrNotifyResponse. The notifier's permission-denied branch reads
+  // the error's OWN .response, so unwrapping first silences 403
+  // problem-details bodies, which carry no toast payload.
+  describe("delete-failure notification", () => {
+    const mountTable = () =>
+      shallowMount(SecurityRequirementsGuidesTable, {
+        localVue,
+        propsData: { srgs: sampleSRGs, is_vulcan_admin: true, type: "SRG" },
+      });
+
+    it("surfaces the permission-denied toast on a 403 problem-details failure", async () => {
+      const denied = Object.assign(new Error("Forbidden"), {
+        response: {
+          status: 403,
+          data: {
+            type: "/docs/api/errors#permission_denied",
+            detail: "You do not have permission to perform that action.",
+            admins: [],
+          },
+        },
+      });
+      deleteBenchmark.mockRejectedValueOnce(denied);
+      wrapper = mountTable();
+      wrapper.vm.openDeleteModal(sampleSRGs[0]);
+
+      const toastDetail = await captureVulcanToast(() => wrapper.vm.confirmDelete(), wrapper);
+
+      expect(toastDetail).toEqual({
+        title: "Permission denied",
+        variant: "danger",
+        message: "You do not have permission to perform that action.",
+        admins: [],
+        autoHideDelay: 8000,
+      });
+    });
+
+    it("still surfaces a bare transport Error as an error toast", async () => {
+      deleteBenchmark.mockRejectedValueOnce(new Error("Request timed out"));
+      wrapper = mountTable();
+      wrapper.vm.openDeleteModal(sampleSRGs[0]);
+
+      const toastDetail = await captureVulcanToast(() => wrapper.vm.confirmDelete(), wrapper);
+
+      expect(toastDetail).toEqual({
+        title: "Error",
+        variant: "danger",
+        message: "Request timed out",
+      });
     });
   });
 });

@@ -508,7 +508,7 @@ export default {
         this.alertOrNotifyResponse(res);
         if (this.localUser) this.loadUserTokens(this.localUser.id);
       } catch (err) {
-        this.alertOrNotifyResponse(err.response || err);
+        this.alertOrNotifyResponse(err);
       } finally {
         this.adminRevoking = null;
       }

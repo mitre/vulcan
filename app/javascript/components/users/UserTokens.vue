@@ -192,7 +192,7 @@ export default {
           this.loadTokens();
         })
         .catch((err) => {
-          this.alertOrNotifyResponse(err.response);
+          this.alertOrNotifyResponse(err);
         })
         .finally(() => {
           this.revoking = false;

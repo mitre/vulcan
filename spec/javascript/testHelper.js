@@ -21,4 +21,25 @@ async function flushPromises(wrapper) {
   if (wrapper) await wrapper.vm.$nextTick();
 }
 
-export { localVue, flushPromises };
+/**
+ * Run an action and capture the vulcan:toast event it dispatches (via the
+ * useToast composable), or null if none fires. Flushes pending promise
+ * chains so fire-and-forget handlers (.then/.catch pipelines) settle
+ * before the listener is removed.
+ */
+async function captureVulcanToast(run, wrapper) {
+  let detail = null;
+  const listener = (event) => {
+    detail = event.detail;
+  };
+  document.addEventListener("vulcan:toast", listener);
+  try {
+    await run();
+    await flushPromises(wrapper);
+  } finally {
+    document.removeEventListener("vulcan:toast", listener);
+  }
+  return detail;
+}
+
+export { localVue, flushPromises, captureVulcanToast };
