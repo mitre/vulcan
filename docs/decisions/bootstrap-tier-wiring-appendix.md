@@ -3,6 +3,15 @@
 > Companion to `bootstrap-tier-wiring-design.md`. Verbatim evidence tables from the
 > 2026-06-10 three-agent review. Line numbers: Bootstrap = `node_modules/bootstrap/scss/`
 > at 4.6.2; Vulcan = `app/javascript/application.scss` pre-implementation.
+>
+> **Currency note (2026-08-16):** the wiring is still unimplemented, and
+> `application.scss` has churned since this census (~1044 lines; dark
+> block starts ~180; Vulcan-side row cites drift roughly +20). Two
+> stylesheets added after the audit (`styles/field-states.css`,
+> `styles/rule-status-tints.css`) are outside this census entirely.
+> Treat every line-keyed table here as a historical snapshot: re-derive
+> the census before any demolition, and locate rules by selector, not
+> line.
 
 ## A. Bootstrap 4.6.2 variable inventory (bg / cap / border per component)
 

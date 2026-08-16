@@ -3,6 +3,17 @@
 **Companion to:** [ADR: API Filtering](adr-api-filtering-concern.md)
 **Cards:** v2-btu.38 (concern), v2-btu.39 (version sort fix), v2-btu.33 (list endpoints)
 
+> **Implementation status (2026-08-16).** The concern shipped essentially
+> verbatim from this doc's code block (`api_filterable.rb`), consumed
+> today by `Api::ProjectsController` only. The illustrative
+> `Api::SrgsController` pattern below was not built that way — SRG/STIG
+> API surfaces ship `latest`/`stats` via `LatestBenchmarkListable`, with
+> no filtered index and no `by_family` scope anywhere. The model-scope
+> sketch is superseded by the as-built homes: latest-release grouping
+> lives in `VersionSortable` keyed on series identity (`srg_id`/
+> `stig_id` — titles are display, never identity), and `search` comes
+> from `BenchmarkSearchable`.
+
 ## Gems
 
 ```bash

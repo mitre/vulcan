@@ -1,9 +1,20 @@
 # ADR: DISA Library Service — Catalog Sync, Version Currency, One-Click Import
 
-**Status:** Proposed
-**Date:** 2026-06-15
+**Status:** Proposed (library service); the version-currency phase is
+implemented
+**Date:** 2026-06-15 (status updated 2026-08-16)
 **Deciders:** Aaron Lippold
 **Epic:** v2-54tg (VersionCurrency) + new epic (DISA Library Service)
+
+> **Implementation status (2026-08-16).** Phase 1 (version currency)
+> SHIPPED, with different API names than sketched here:
+> `VersionSortable` provides `latest?` / `latest_release` (not
+> `is_latest?` / `latest_for_family`), and `VersionCurrencyDot.vue`
+> renders on the SRG/STIG list pages (`BenchmarkTable`), the comments
+> table, and the triage rule sidebar — so Context problem #3 ("no
+> version currency signal") is historical. The catalog-sync service
+> itself (DisaCatalog, one-click import, air-gapped mode) remains
+> genuinely proposed: none of that code exists yet.
 
 ## Context
 

@@ -1,7 +1,14 @@
 # Design: Migrate render_as_hash → render_as_json
 
-**Status:** Proposed
-**Date:** 2026-06-06
+**Status:** Completed
+**Date:** 2026-06-06 (status updated 2026-08-16)
+
+> **Implementation status (2026-08-16).** The migration is fully shipped:
+> zero `render_as_hash` call sites remain anywhere in the tree; ~150
+> `render_as_json` sites exist. The per-file call-site tables below are
+> the planning-time census — counts and line numbers have drifted with
+> normal churn and are kept only as the historical record of the
+> migration's scope.
 **Why:** `render_as_hash` returns symbol keys. `response.parsed_body` returns string keys.
 Same data, two key types = bugs (query_performance_spec.rb:135 proved it).
 Blueprinter provides `render_as_json` which returns string keys + JSONified values —

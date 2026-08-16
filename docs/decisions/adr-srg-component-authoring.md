@@ -1,5 +1,28 @@
 # ADR: Generalized XCCDF Document Authoring — SRG as the First New Profile
 
+> **Implementation status (2026-08-16).** The core design SHIPPED on
+> `feat/srg-authoring`. In the tree today: `components.document_type`
+> (default `stig`, NOT NULL) and the NOT-NULL `security_requirements_guide_id`
+> (§12.3 landed); the `BaseRule` STI seam with `SrgRule`'s own
+> `deleted_at` default scope and the type-scoped authored-XOR-catalog
+> CHECK; `Component#requirements` / `BaseRule.live_for_components` with
+> the §8 query-inventory migration COMPLETE (comment queries, lock,
+> review, backup serializer all kind-routed) and the kind-seam RuboCop
+> cop + guard specs enforcing it; `component_source_srgs` with
+> `srg_info_for_components` joining the whole parent set and backups
+> round-tripping `source_srgs`; requirement relocations end to end
+> (table with the decline-retention partial unique index, executor,
+> controller, five Vue surfaces, centralized DISA vocabulary); release
+> copy machinery (`ReleaseCopyService` + attachment + identifier
+> minter); `Export::Modes::PublishedSrg` with the kind-routed export
+> fetch; the authored editor blueprint and the kind × status × tier
+> field-state config. NOT built: §2.1.5's pre-delete backup system
+> (`deletion_backups`, retention settings) — note §2.1.4's
+> delete-and-recreate remedy currently rests on that unbuilt mitigation
+> — and phase 6 reference benchmarks. `ExportHelper` is deleted (§0.2
+> records this; §3.1's [P] row for it is historical). Line citations
+> throughout are writing-time; symbols are authoritative.
+
 - **Status:** DRAFT v8 — v5 core (authored SRG requirements are **expanded
   `SrgRule`s**, not `Rule`s behind a policy layer) stands unchanged; v6 added
   Will's scoping (§0.1) + user workflow (§2.1). v7 (Aaron, 2026-07-12)
@@ -429,8 +452,9 @@ NIST 800-53 control families and must not appear in design or UI language.
 ## 3. Decision (core): expand `SrgRule`; the STI hierarchy IS the seam
 
 An SRG component's requirements are **`SrgRule` rows linked to the
-component** (`srg_rules.component_id`, nullable — catalog rows keep it
-null). The type system already separates the two authoring worlds:
+component** (`base_rules.component_id` — the STI table's column, nullable —
+catalog rows keep it null; there is no separate `srg_rules` table, see
+§12.1). The type system already separates the two authoring worlds:
 
 - **Shared by construction** (lives on the `base_rules` table or the
   polymorphic layers, so it works for `SrgRule` today or nearly so):

@@ -9,6 +9,22 @@
   with contacts, non-discoverable → 404).
 - **Date:** 2026-07-15
 - **Deciders:** Aaron Lippold (all decisions, 2026-07-15 interview)
+- **Implementation status (2026-08-16):** SHIPPED IN FULL, and the
+  contract has since grown past this document. One shared renderer
+  (`app/controllers/concerns/error_rendering.rb`) serves eleven named
+  problem types — the six enumerated in §3 plus `invalid_credentials`
+  (401), `incorrect_password` (422), `session_authentication_required`
+  (403), `ip_not_allowed` (403), and `insufficient_token_scope` (403).
+  The 422 case supersedes §8's "422 out of scope" line: the
+  token-creation password re-check returns an RFC 9457 problem document
+  at 422 (a 401 there collided with the client's session-death hook).
+  The consumer migration in §6 shipped (`useToast` lives at
+  `app/javascript/composables/useToast.js` and keys on the `type`
+  anchor). `NotFound.yaml` and `UnprocessableEntity.yaml` exist as
+  shared OpenAPI responses. §1's four-dialect table describes the
+  pre-implementation world and is kept as the historical record. Line
+  citations throughout reflect the tree at decision time; symbol names,
+  not line numbers, are authoritative.
 - **Companion:** `docs/development/seed-system.md` (API test users used
   for live-proving these bodies); `doc/openapi/CLAUDE.md` (contract
   rules the implementation must satisfy)
@@ -122,8 +138,9 @@ A PAT holder is the same trust boundary as a signed-in browser user, so
 the 403 extension `admins` (project admin names and emails, already
 served to every signed-in user by the legacy JSON endpoints) is served
 on `Api::` 403s too. The thin `rescue_from NotAuthorizedError` in
-`Api::BaseController` that shadows the rich handler is removed; one
-renderer serves both worlds. The `toast` key survives inside the 403
+`Api::BaseController` no longer serves a thinner payload — as shipped it
+is retained purely as a format-negotiation shim that calls the same
+shared renderer; one renderer serves both worlds. The `toast` key survives inside the 403
 body only as a legacy compatibility field until the frontend consumes
 the problem fields directly — the toast *channel* for mutations is
 untouched.
@@ -178,4 +195,7 @@ admin contacts — that is the feature.
 
 - The toast mutation-feedback channel (locked contract).
 - Sign-in page / HTML flash wording and session-limit behavior.
-- 422 validation bodies (toast channel).
+- 422 validation bodies (toast channel) — superseded in part: the
+  token-creation password re-check now ships an RFC 9457 problem
+  document at 422 (`incorrect_password`); general model-validation 422s
+  remain on the toast channel.

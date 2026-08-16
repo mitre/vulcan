@@ -1,16 +1,31 @@
 # ADR: Dual-Version XCCDF Export — DISA-Style 1.1.4 and 1.2 From One Content Model
 
-- **Status:** DRAFT v1 — proposed 2026-07-12 per Aaron (phone discussion with
-  Will Dower). Awaiting Aaron's read + approval and Will's review.
-- **Date:** 2026-07-12
+- **Status:** PARTIALLY IMPLEMENTED (foundation shipped; the 1.2 profile
+  is the deferred remainder — see implementation status below). Originally
+  DRAFT v1 — proposed 2026-07-12 per Aaron (phone discussion with
+  Will Dower).
+- **Date:** 2026-07-12 (status updated 2026-08-16)
 - **Deciders:** Aaron Lippold (XCCDF/SCAP co-author; DISA SRG-author community).
 - **Part of:** the larger SRG-Component initiative alongside
-  `adr-srg-component-authoring.md` (epic `v2-0d2l`). **All of this lands on the
-  same branch** (`feat/comment-triage-context-panel`). It may be carded as its
-  **own epic** within that initiative (Aaron is carding the whole effort
-  together) — separate epic, same branch. Split into its own ADR file for
+  `adr-srg-component-authoring.md` (epic `v2-0d2l`), landing on the
+  `feat/srg-authoring` branch. Split into its own ADR file for
   readability (the SRG ADR is already large); multi-parent derivation (SRG ADR
   §5/§0.14) surfaces here as reference/ident cardinality (§4.4).
+
+> **Implementation status (2026-08-16).** The foundation this ADR
+> specifies SHIPPED on `feat/srg-authoring`:
+> `app/services/export/xccdf/version_profile.rb` (frozen `V1_1_4`
+> profile, centralized `format_id`), a version-agnostic
+> `XccdfFormatter.new(version: profile)` routing every namespace,
+> schemaLocation, and object id through the profile, the
+> `published_srg → xccdf` registry mode (`Export::Modes::PublishedSrg`),
+> and the kind-routed export fetch (`component.requirements` in export
+> base). The malformed pre-rebuild schemaLocation string is fixed and
+> recorded in the profile. STILL DEFERRED to the follow-on PR: the
+> `V1_2` profile itself, the export-level version selector, and
+> dual-emit. §1's "emits today" census describes the pre-rebuild
+> formatter and is kept as the historical record; line citations are
+> writing-time — symbols are authoritative.
 - **Motivating goal (Aaron):** let Vulcan emit DISA-conformant XCCDF in **both
   1.1.4 (today) and 1.2**, from one content model, to help DISA move to 1.2.
 

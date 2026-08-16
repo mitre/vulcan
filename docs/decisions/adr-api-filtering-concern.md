@@ -1,9 +1,20 @@
 # ADR: API Filtering, Pagination, and Sorting Concern
 
-**Status:** Proposed  
-**Date:** 2026-06-06  
+**Status:** Implemented\
+**Date:** 2026-06-06 (status updated 2026-08-16)\
 **Deciders:** Aaron Lippold  
 **Card:** v2-btu.37 → v2-btu.38
+
+> **Implementation status (2026-08-16).** Shipped:
+> `app/controllers/concerns/api_filterable.rb` with pagy (43.x — the
+> concern includes `Pagy::Method`, not `Pagy::Backend` as sketched
+> below, and does not include `HasScope`; `has_scope` is declared at the
+> controller level), `config/initializers/pagy.rb` as designed, and the
+> `{rows, pagination}` envelope on `Api::ProjectsController#index`. The
+> companion design doc reflects the as-built shape and is authoritative
+> where the two differ. Deliberately NOT done, superseding this ADR's
+> consequence list: `CommentQueryService` keeps its hand-rolled
+> pagination (the companion doc records that decision).
 
 ## Context
 
@@ -210,5 +221,5 @@ Each controller uses pagy + has_scope + the concern's helpers. No custom DSL —
 - GitHub pagination: https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api
 - Stripe pagination: https://docs.stripe.com/api/pagination
 - JSON:API filtering: https://jsonapi.org/format/#fetching-filtering
-- Pagy gem: https://github.com/ddnexus/pagy (evaluated, not adopted)
+- Pagy gem: https://github.com/ddnexus/pagy (adopted)
 - CommentQueryService: app/services/comment_query_service.rb (existing pattern)

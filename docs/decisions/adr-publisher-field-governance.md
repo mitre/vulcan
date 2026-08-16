@@ -10,6 +10,21 @@
   under this epic. Will reviews async — feedback folds in as revisions.
   v1 (same day): draft + three-lens cold-read (code-accuracy 10/10, two
   precision fixes).
+
+> **Implementation status (2026-08-16).** Phase A (§3, the field-state
+> config) SHIPPED: `app/javascript/composables/fieldStateConfig.js`
+> holds the kind × status × tier model (`hidden`/`readonly`/`editable`,
+> `TIERS = ["author","publisher"]`, `PUBLISHER_ONLY`), the interim
+> `advancedMode → tier` mapping lives in `useRuleFormFields.js`, the
+> retired `STATUS_FIELD_CONFIG` four-list shape is gone, and the
+> `custom-display-check` bypass below is already deleted — the IA/CCI
+> block renders through declared `readonly` states. The exported helpers
+> are `buildFieldSets` / `resolveFieldStates` / `hasHiddenFields` (the
+> singular `buildFieldSet` named below no longer exists). The
+> governance build (§4–§5: publisher capability, model guards,
+> determination record) is honestly NOT built yet. "Mechanically,
+> today" below describes the pre-implementation shape and is kept as
+> the historical record.
 - **Date:** 2026-07-14
 - **Deciders:** Aaron Lippold (all decisions, 2026-07-14 interview);
   Will Dower (the publisher/advanced-user framing originated in their
@@ -34,9 +49,12 @@ not need to modify advanced fields"). Mechanically, today
   "advanced" is an additive overlay that reveals more fields
   (e.g. `ia_controls`, `status_justification`, the DISA description
   extras for Applicable - Configurable).
-- The toggle is **UX-only**: nothing server-side distinguishes an
-  "advanced" edit from any other; any author with editor permissions can
-  submit any field.
+- The toggle is **UX-only** for field submission: any author with editor
+  permissions can submit any field regardless of the toggle. (Precision
+  note, 2026-08-16: flipping the toggle's *state* is server-gated —
+  `check_admin_for_advanced_fields` authorizes the `advanced_fields`
+  param on component update — but no server check ties an individual
+  field write to that state, which is the gap §4 closes.)
 - Verified config-bypass (2026-07-14): the edit page renders an
   always-on **read-only** IA Control / CCI reference block
   (`RuleForm.vue:106-142` — `nist_control_family`/`ident` via

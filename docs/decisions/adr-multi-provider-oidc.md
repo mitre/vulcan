@@ -1,9 +1,25 @@
 # ADR: Multi-Provider OIDC — N Simultaneous Providers
 
-**Status:** Proposed
-**Date:** 2026-06-11 (revised 2026-06-13)
+**Status:** Implemented (core; two designed pieces outstanding — see
+implementation status below)
+**Date:** 2026-06-11 (revised 2026-06-13; status updated 2026-08-16)
 **Deciders:** Aaron Lippold
 **Card:** v2-hf6q.7 (epic v2-hf6q — login.gov support)
+
+> **Implementation status (2026-08-16).** The design shipped:
+> `lib/oidc_provider_registry.rb` (registry + legacy single-`oidc` mode +
+> per-provider `client_auth_method`/`jwt_bearer` key loading), boot-time
+> per-provider Devise registration, the `identities` table exactly as
+> §6 specifies, verified linking with `unlink_identity`, session
+> `auth_method`-aware sign-out, and `vulcan:auth:rename_provider`. The
+> "current coupling points" table below describes the pre-implementation
+> world and is kept as the historical record. NOT yet built from this
+> design: the explicit "Connect account" link flow (§6a — only the
+> unlink half exists; `User::ProviderConflictError` is retained and
+> rescued for user guidance rather than retired) and the admin-view
+> identities listing (§ operator visibility — identities render only on
+> the self-service profile). Line citations reflect the tree at writing
+> time; symbols are authoritative.
 
 > **Revision 2026-06-13 — identity model.** The original draft kept Vulcan's
 > single `users.provider`/`uid` columns and *deferred* a multi-link identity

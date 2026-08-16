@@ -8,6 +8,15 @@
 > architecture + gap analysis, full Vulcan override audit. Findings logged on card v2-g4n.4.
 > Full variable inventory, var() safety map, and override census: see companion
 > `bootstrap-tier-wiring-appendix.md`.
+>
+> **Implementation status (2026-08-16):** NOT yet implemented — the
+> `.5a–.5d` split remains future work, and `application.scss` still opens
+> with the bare Bootstrap import this design replaces. The decisions
+> stand; note that the stylesheet has grown since the census (now ~1044
+> lines, dark block starting ~180, plus `styles/field-states.css` and
+> `styles/rule-status-tints.css` which postdate the audit), so the
+> appendix's line-keyed demolition map must be re-derived at
+> implementation time rather than followed by line number.
 
 ## 1. The error, stated plainly
 
