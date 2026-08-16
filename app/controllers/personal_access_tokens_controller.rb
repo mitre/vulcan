@@ -49,7 +49,7 @@ class PersonalAccessTokensController < ApplicationController
   def admin_revoke
     raise NotAuthorizedError, 'Admin access required.' unless current_user.admin?
 
-    token = PersonalAccessToken.find(params[:id])
+    token = PersonalAccessToken.find(params.expect(:id))
     token.audit_comment = params[:audit_comment] if token.respond_to?(:audit_comment=)
     token.revoke!
     render_toast(title: 'Token revoked.', message: ["Admin revoked '#{token.name}' for #{token.user.name}."],
@@ -75,14 +75,14 @@ class PersonalAccessTokensController < ApplicationController
   # create; see the comment there.
   def viewable_user
     if params[:user_id].present? && current_user.admin?
-      User.find(params[:user_id])
+      User.find(params.expect(:user_id))
     else
       current_user
     end
   end
 
   def set_token
-    @token = current_user.personal_access_tokens.find(params[:id])
+    @token = current_user.personal_access_tokens.find(params.expect(:id))
   rescue ActiveRecord::RecordNotFound
     render_not_found
   end

@@ -50,7 +50,7 @@ module Api
     private
 
     def set_component
-      @component = Component.find(params[:id])
+      @component = Component.find(params.expect(:id))
     end
 
     # Components are not public DISA documents — only released ones are

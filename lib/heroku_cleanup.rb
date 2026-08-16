@@ -26,7 +26,7 @@ module HerokuCleanup
     targets(root).each do |target|
       next unless target.exist?
 
-      logger.info "Heroku cleanup: removing #{target} (#{`du -sh #{target}`.split.first})"
+      logger.info "Heroku cleanup: removing #{target} (#{IO.popen(['du', '-sh', target.to_s], &:read).split.first})"
       FileUtils.remove_dir(target, true)
     end
     logger.info 'Heroku cleanup: build dependencies removed'

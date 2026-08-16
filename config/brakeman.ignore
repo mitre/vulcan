@@ -11,6 +11,14 @@
     {
       "fingerprint": "67a915d17e2ebb4d1a83016b683cdf09d6e1553033eb2bcb4f6fd110051e054d",
       "note": "False positive: File.basename strips path traversal; only serves files from fixed attachments directory"
+    },
+    {
+      "fingerprint": "7a4ae4d318dc17fdf06f80697094b6296f14c85fed41cc6a598d91334e930784",
+      "note": "False positive: the interpolated fragments are built from hardcoded column names with ? placeholders only; every user term passes through sanitize_sql_like and binds as a parameter (build_ilike_conditions / build_metadata_ilike_condition). Flagged by Brakeman 8's retuned SQL check; 7.x accepted the same pattern."
+    },
+    {
+      "fingerprint": "2419dc9a4b97f399892783ce44060846e29aafe480aba02c42cdb07753e9c60e",
+      "note": "False positive: resolve() fails closed \u2014 candidates must be existing files whose realpath sits under the docs build root's realpath (contained?), so dot-segment traversal and out-of-root symlinks cannot reach send_file. Flagged by Brakeman 8's SendFile check at Weak confidence."
     }
   ],
   "updated": "2026-08-08",

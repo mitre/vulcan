@@ -71,29 +71,31 @@ RSpec.describe 'Kind-seam query invariant' do
     # anywhere else FAILS this scan: rewrite it through the kind-aware
     # accessors (Review#requirement / Review#component), or justify it here
     # after reading the site.
-    justified_reads = {
-      # Fallback shape — reads commentable when the Rule association is nil.
-      'app/blueprints/comment_row_blueprint.rb' => [/review\.rule \|\| review\.commentable/],
-      # Component-scoped rows skipped first, then the same fallback shape,
-      # then a respond_to? guard before .component.
-      'app/controllers/users_controller.rb' => [/r\.rule \|\| r\.commentable/],
-      # Receiver is AdditionalAnswer inside the amoeba copy remap — answers
-      # exist only on Rules (SrgRules structurally carry none), so the
-      # Rule-typed association is the design, not a kind assumption.
-      'app/models/component.rb' => [/answer\.rule/, /benchmark\.rule/],
-      # redirect_to_parent_if_satisfied_by: guarded `return unless rule`
-      # above, and satisfies exists only on Rules — parent is always a Rule.
-      'app/models/review.rb' => [/self\.rule = parent/],
-      # XCCDF parser mapping objects (happenstance-named .rule accessor on
-      # parsed benchmark structures) — not ActiveRecord associations.
-      'app/models/security_requirements_guide.rb' => [/parsed_benchmark\.rule/],
-      'app/models/stig_rule.rb' => [/group_mapping\.rule/],
-      'lib/tasks/stig_and_srg_puller.rake' => [/parsed_benchmark\.rule/],
-      # Presence-guarded with an explicit commentable fallback branch.
-      'lib/seed_helpers.rb' => [/parent\.rule/]
-    }
+    let(:justified_reads) do
+      {
+        # Fallback shape — reads commentable when the Rule association is nil.
+        'app/blueprints/comment_row_blueprint.rb' => [/review\.rule \|\| review\.commentable/],
+        # Component-scoped rows skipped first, then the same fallback shape,
+        # then a respond_to? guard before .component.
+        'app/controllers/users_controller.rb' => [/r\.rule \|\| r\.commentable/],
+        # Receiver is AdditionalAnswer inside the amoeba copy remap — answers
+        # exist only on Rules (SrgRules structurally carry none), so the
+        # Rule-typed association is the design, not a kind assumption.
+        'app/models/component.rb' => [/answer\.rule/, /benchmark\.rule/],
+        # redirect_to_parent_if_satisfied_by: guarded `return unless rule`
+        # above, and satisfies exists only on Rules — parent is always a Rule.
+        'app/models/review.rb' => [/self\.rule = parent/],
+        # XCCDF parser mapping objects (happenstance-named .rule accessor on
+        # parsed benchmark structures) — not ActiveRecord associations.
+        'app/models/security_requirements_guide.rb' => [/parsed_benchmark\.rule/],
+        'app/models/stig_rule.rb' => [/group_mapping\.rule/],
+        'lib/tasks/stig_and_srg_puller.rake' => [/parsed_benchmark\.rule/],
+        # Presence-guarded with an explicit commentable fallback branch.
+        'lib/seed_helpers.rb' => [/parent\.rule/]
+      }
+    end
 
-    production_globs = %w[app/**/*.rb lib/**/*.rb lib/**/*.rake db/**/*.rb config/**/*.rb]
+    let(:production_globs) { %w[app/**/*.rb lib/**/*.rb lib/**/*.rake db/**/*.rb config/**/*.rb] }
 
     it 'has no unjustified Rule-STI rule reads in production code' do
       offenses = production_globs

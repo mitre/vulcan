@@ -13,7 +13,7 @@ RSpec.describe 'Terminology meta tag' do
   end
 
   def terminology_tags
-    Nokogiri::HTML(response.body).css('meta[name="vulcan-terminology"]')
+    response.parsed_body.css('meta[name="vulcan-terminology"]')
   end
 
   it 'emits exactly one meta tag with the default terms' do

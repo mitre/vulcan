@@ -17,7 +17,7 @@ module Api
     # Pure reference data (no usage lookup — components are based on SRGs),
     # public like the rest of the STIG catalog.
     def stats
-      render json: Stig.find(params[:id]).benchmark_stats
+      render json: Stig.find(params.expect(:id)).benchmark_stats
     end
   end
 end

@@ -105,7 +105,7 @@ RSpec.describe Export::Modes::PublishedSrg do
     expect(fix['id']).to eq("F-PSRG-00-#{applicable.rule_id}_fix")
     check = rule.nodes.find { |n| n.is_a?(Ox::Element) && n.name == 'check' }
     expect(check['system']).to eq("C-PSRG-00-#{applicable.rule_id}_chk")
-    ref, content = check.nodes.select { |n| n.is_a?(Ox::Element) }
+    ref, content = check.nodes.grep(Ox::Element)
     expect(ref.name).to eq('check-content-ref')
     expect(ref['href']).to eq('Published_SRG_Source_SRG.xml')
     expect(ref['name']).to eq('M')
@@ -142,7 +142,7 @@ RSpec.describe Export::Modes::PublishedSrg do
     doc = Ox.parse(xml)
     benchmark = doc.nodes.last
     group = benchmark.nodes.select { |n| n.is_a?(Ox::Element) && n.name == 'Group' }
-                     .find { |g| g['id'] == "V-PSRG-00-#{net_new.rule_id}" }
+                           .find { |g| g['id'] == "V-PSRG-00-#{net_new.rule_id}" }
     title = group.nodes.find { |n| n.is_a?(Ox::Element) && n.name == 'title' }
     rule = group.nodes.find { |n| n.is_a?(Ox::Element) && n.name == 'Rule' }
     version = rule.nodes.find { |n| n.is_a?(Ox::Element) && n.name == 'version' }

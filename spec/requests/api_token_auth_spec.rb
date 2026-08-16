@@ -85,7 +85,7 @@ RSpec.describe 'API Token Authentication' do
       write_token = create(:personal_access_token, user: user, scopes: %w[write])
       # POST to an endpoint that will process (may fail on params, but should not be 401/403)
       post '/projects', headers: token_headers(write_token.raw_token)
-        .merge('Accept' => 'application/json', 'Content-Type' => 'application/json'),
+                                 .merge('Accept' => 'application/json', 'Content-Type' => 'application/json'),
                         params: { project: { name: 'Token Test Project' } }.to_json
       # Accept any non-auth-failure status (the endpoint may return 422 for missing params, but NOT 401/403)
       expect(response).not_to have_http_status(:unauthorized)
@@ -125,7 +125,7 @@ RSpec.describe 'API Token Authentication' do
       write_token = create(:personal_access_token, user: user, scopes: %w[write])
 
       post '/projects', headers: token_headers(write_token.raw_token)
-        .merge('Accept' => 'application/json', 'Content-Type' => 'application/json'),
+                                 .merge('Accept' => 'application/json', 'Content-Type' => 'application/json'),
                         params: { project: { name: 'No CSRF Project' } }.to_json
 
       # Should NOT get 422 ActionController::InvalidAuthenticityToken

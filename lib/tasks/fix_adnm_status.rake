@@ -46,7 +46,7 @@ task fix_adnm_status: :environment do
 
     begin
       Rule.transaction do
-        # rubocop:disable Rails/SkipsModelValidations -- intentional: bypass v2.3.7 buggy callbacks
+        # Intentional: update_columns bypasses the v2.3.7 buggy callbacks.
         rule.update_columns(
           status: RuleConstants::STATUS_APPLICABLE_DNM,
           status_justification: justification
@@ -55,7 +55,6 @@ task fix_adnm_status: :environment do
         drd = rule.disa_rule_descriptions.first
         if drd
           drd.update_columns(mitigations: mitigation)
-        # rubocop:enable Rails/SkipsModelValidations
         else
           DisaRuleDescription.create!(
             rule: rule,

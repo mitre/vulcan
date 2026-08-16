@@ -26,7 +26,7 @@ module Api
     # caller can see (member projects or released) — count and list use the
     # SAME scope so the count never leaks hidden usage.
     def stats
-      srg = SecurityRequirementsGuide.find(params[:id])
+      srg = SecurityRequirementsGuide.find(params.expect(:id))
       render json: srg.benchmark_stats.merge(usage: usage_payload(srg))
     end
 

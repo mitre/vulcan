@@ -701,7 +701,7 @@ class Component < ApplicationRecord
 
   def reviews
     rule_names = if document_type != 'srg' && association_cached?(:rules)
-                   rules.each_with_object({}) { |r, h| h[r.id] = "#{prefix}-#{r.rule_id}" }
+                   rules.to_h { |r| [r.id, "#{prefix}-#{r.rule_id}"] }
                  else
                    # requirements: SRG-kind review labels come from authored
                    # SrgRules; reviews.rule_id is dual-written for both

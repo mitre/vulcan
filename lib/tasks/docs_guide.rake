@@ -134,7 +134,7 @@ def strip_front_matter(lines)
   result = []
 
   lines.each do |line|
-    in_body = true if !in_body && line.strip.match?(/\A[#]{1,2}\s+(Introduction|Planning|Development)\b/)
+    in_body = true if !in_body && line.strip.match?(/\A\#{1,2}\s+(Introduction|Planning|Development)\b/)
 
     result << line if in_body
   end
@@ -143,11 +143,11 @@ def strip_front_matter(lines)
 end
 
 def strip_toc(text)
-  text.gsub(/^\*\*TABLE OF CONTENTS\*\*.*?(?=^[#]{1,2}\s)/m, '')
+  text.gsub(/^\*\*TABLE OF CONTENTS\*\*.*?(?=^\#{1,2}\s)/m, '')
 end
 
 def strip_revision_history(text)
-  text.gsub(/^\*\*REVISION HISTORY\*\*.*?(?=^[#]{1,2}\s)/m, '')
+  text.gsub(/^\*\*REVISION HISTORY\*\*.*?(?=^\#{1,2}\s)/m, '')
 end
 
 def clean_pandoc_artifacts(text)
@@ -165,7 +165,7 @@ def remove_html_comments(text)
 end
 
 def convert_grid_tables(text)
-  text.gsub(/^  -[-]+\n(.*?)^  -[-]+$/m) do |match|
+  text.gsub(/^  --+\n(.*?)^  --+$/m) do |match|
     rows = Regexp.last_match(1)
     lines = rows.lines.map(&:strip).reject(&:empty?)
     header_line = lines.shift

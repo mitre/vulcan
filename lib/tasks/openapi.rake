@@ -40,9 +40,8 @@ namespace :openapi do
     at_exit do
       pat.revoke! if pat.persisted? && pat.revoked_at.nil?
       admin.unlock_access! if admin.access_locked?
-      # rubocop:disable Rails/SkipsModelValidations -- test cleanup: reset lockout counter directly
+      # Test cleanup: reset the lockout counter directly.
       admin.update_columns(failed_attempts: 0) if admin.failed_attempts.positive?
-      # rubocop:enable Rails/SkipsModelValidations
       PersonalAccessToken.where('name LIKE ?', 'schemathesis-%').find_each(&:revoke!)
     end
     pat.raw_token

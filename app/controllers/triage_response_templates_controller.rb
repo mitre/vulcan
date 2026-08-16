@@ -45,11 +45,11 @@ class TriageResponseTemplatesController < ApplicationController
   private
 
   def set_project
-    @project = Project.find(params[:project_id])
+    @project = Project.find(params.expect(:project_id))
   end
 
   def set_template
-    @template = @project.triage_response_templates.find(params[:id])
+    @template = @project.triage_response_templates.find(params.expect(:id))
   end
 
   def template_params

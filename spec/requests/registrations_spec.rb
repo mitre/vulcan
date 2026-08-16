@@ -435,7 +435,7 @@ RSpec.describe 'User Registrations' do
                                                 .select { |cb| cb.kind == :before && cb.filter == :authenticate_scope! }
       guarded_actions = callbacks.flat_map do |cb|
         cb.instance_variable_get(:@if)
-          &.select { |f| f.is_a?(AbstractController::Callbacks::ActionFilter) }
+          &.grep(AbstractController::Callbacks::ActionFilter)
           &.flat_map { |f| f.instance_variable_get(:@actions)&.to_a } || []
       end
 

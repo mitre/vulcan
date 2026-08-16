@@ -184,7 +184,6 @@ namespace :container_srg do
       puts "  ##{comment.id} on #{component.prefix}-#{comment.rule&.rule_id} → pending"
       next if dry_run
 
-      # rubocop:disable Rails/SkipsModelValidations
       comment.update_columns(
         triage_status: 'pending',
         addressed_by_rule_id: nil,
@@ -193,7 +192,6 @@ namespace :container_srg do
         adjudicated_at: nil,
         adjudicated_by_id: nil
       )
-      # rubocop:enable Rails/SkipsModelValidations
     end
 
     puts

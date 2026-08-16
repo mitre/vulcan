@@ -415,7 +415,7 @@ RSpec.describe Export::Serializers::BackupSerializer do
     # the same second on different instances. CSV / UI / API serializers
     # stay at iso8601 (second precision) — different contracts.
     describe 'timestamp precision contract — iso8601(6) for all round-trip surfaces' do
-      microsecond = /\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}/
+      let(:microsecond) { /\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}/ }
 
       it 'component.created_at uses microsecond precision' do
         expect(data[:component][:created_at]).to match(microsecond)

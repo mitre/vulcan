@@ -696,7 +696,7 @@ class ReviewsController < ApplicationController
   # Lifecycle endpoints (triage / adjudicate / withdraw / update) operate on
   # a Review by id. Look it up here so the action body never has to.
   def set_review
-    @review = Review.find(params[:id])
+    @review = Review.find(params.expect(:id))
   end
 
   # Loads the bulk-triage selection and enforces the component-scope invariant

@@ -164,7 +164,7 @@ RSpec.describe Export::Formatters::XccdfFormatter do
       xml_string = formatter.generate_from_component(component: srg_component,
                                                      rules: srg_component.authored_srg_rules)
       benchmark = Ox.parse(xml_string).nodes.last
-      children = benchmark.nodes.select { |n| n.is_a?(Ox::Element) }
+      children = benchmark.nodes.grep(Ox::Element)
       names = children.map(&:name)
       profiles = children.select { |n| n.name == 'Profile' }
       group_ids = children.select { |n| n.name == 'Group' }.pluck('id')

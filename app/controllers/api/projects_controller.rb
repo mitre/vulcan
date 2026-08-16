@@ -35,7 +35,7 @@ module Api
     private
 
     def set_project
-      @project = Project.find(params[:id])
+      @project = Project.find(params.expect(:id))
     end
   end
 end
