@@ -474,7 +474,7 @@ export default {
           });
         }
       }
-      return DOMPurify.sanitize(formattedText.replace(/\n/g, "<br />"), {
+      return DOMPurify.sanitize(formattedText.replaceAll("\n", "<br />"), {
         ALLOWED_TAGS: ["mark", "br"],
         ALLOWED_ATTR: ["class"],
       });

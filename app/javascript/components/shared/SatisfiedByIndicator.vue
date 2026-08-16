@@ -37,6 +37,7 @@
           <button
             v-for="parent in parentRules"
             :key="'nav-' + parent.id"
+            type="button"
             class="btn btn-sm btn-outline-info satisfied-by-indicator__go-btn"
             data-testid="go-to-parent"
             @click="goToParent(parent.id)"

@@ -1,5 +1,10 @@
 @import "bootstrap/scss/bootstrap";
 @import "bootstrap-vue/src/index.scss";
+// Plain-CSS tint layers. Imports must precede all rules per the CSS spec;
+// cascade is unaffected — the dark-theme [data-triage] overrides below win
+// on specificity (theme-block nesting), never on order.
+@import "./styles/triage-tints.css";
+@import "./styles/rule-status-tints.css";
 
 // ── Vulcan Design System: Layer 1 ──────────────────────────────────────
 // Bridge Bootstrap 4 Sass variables to CSS custom properties so Vue
@@ -865,9 +870,6 @@
     color-scheme: dark;
   }
 }
-
-@import "./styles/triage-tints.css";
-@import "./styles/rule-status-tints.css";
 
 // ── Vulcan Layout Utilities ──────────────────────────────────────────
 // Viewport-locked editor layout pattern (VS Code / GitHub / Linear style).

@@ -72,7 +72,7 @@ Rails.application.routes.draw do
   end
   resources :personal_access_tokens, only: %i[index create destroy] do
     member do
-      delete :admin_revoke
+      delete :admin_revoke, to: 'personal_access_tokens#admin_revoke'
     end
   end
 
@@ -81,12 +81,12 @@ Rails.application.routes.draw do
   # proposing nests under the source rule above.
   resources :requirement_relocations, only: %i[index destroy] do
     collection do
-      get :destinations
+      get :destinations, to: 'requirement_relocations#destinations'
     end
     member do
-      post :dry_run
-      post :accept
-      post :decline
+      post :dry_run, to: 'requirement_relocations#dry_run'
+      post :accept, to: 'requirement_relocations#accept'
+      post :decline, to: 'requirement_relocations#decline'
     end
   end
 

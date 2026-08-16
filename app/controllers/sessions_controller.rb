@@ -69,14 +69,16 @@ class SessionsController < Devise::SessionsController
     pending = session[:pending_link]
     unless pending
       flash.alert = 'No pending account link. Please try signing in again.'
-      redirect_to new_user_session_path and return
+      redirect_to new_user_session_path
+      return
     end
 
     user = User.find_by('LOWER(email) = ?', pending['email'].to_s.downcase)
     unless user
       session.delete(:pending_link)
       flash.alert = 'Account not found. Please try signing in again.'
-      redirect_to new_user_session_path and return
+      redirect_to new_user_session_path
+      return
     end
 
     unless user.valid_for_authentication? { user.valid_password?(params[:current_password].to_s) }
@@ -86,7 +88,8 @@ class SessionsController < Devise::SessionsController
       else
         flash.alert = 'Incorrect password. Please enter your existing account password to link.'
       end
-      redirect_to new_user_session_path(link_pending: true) and return
+      redirect_to new_user_session_path(link_pending: true)
+      return
     end
 
     title = OidcProviderRegistry.title_for(pending['provider'])

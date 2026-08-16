@@ -25,6 +25,7 @@
             type="text"
             class="form-control"
             :placeholder="searchPlaceholder"
+            :aria-label="searchPlaceholder"
           />
         </div>
       </div>

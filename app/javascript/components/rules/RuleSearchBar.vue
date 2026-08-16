@@ -33,6 +33,7 @@
         type="text"
         class="form-control"
         placeholder="Filter by ID..."
+        aria-label="Filter by ID"
         :value="searchValue"
         @input="onSearchInput($event.target.value)"
       />

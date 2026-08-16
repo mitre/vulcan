@@ -5,10 +5,12 @@
     </h6>
     <div class="px-2 py-1 d-flex align-items-center">
       <input
+        id="triage-sidebar-search"
         v-model="searchText"
         type="text"
         class="form-control form-control-sm flex-grow-1"
         :placeholder="filterPlaceholder"
+        :aria-label="filterPlaceholder"
         data-testid="sidebar-search"
       />
       <b-button

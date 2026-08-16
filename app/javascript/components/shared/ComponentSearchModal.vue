@@ -13,11 +13,13 @@
     <div class="search-header">
       <b-icon icon="search" class="text-muted mr-2" />
       <input
+        id="component-search-input"
         ref="searchInput"
         v-model="query"
         type="text"
         class="search-input"
         :placeholder="placeholder"
+        :aria-label="placeholder"
         @input="onInput"
         @keydown="onKeyDown"
       />
