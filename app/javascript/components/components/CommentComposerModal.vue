@@ -196,6 +196,16 @@ export default {
       }
     },
     onHidden() {
+      // Cancel any pending auto-close and clear the success state. Without
+      // this, a manual close (Cancel/Esc/backdrop) before the 3s timer fires
+      // leaves successMessage set — so a reopen within that window shows a
+      // stale "posted" alert with the textarea hidden, and the orphaned timer
+      // then slams the reopened modal shut.
+      if (this.autoCloseTimerId) {
+        clearTimeout(this.autoCloseTimerId);
+        this.autoCloseTimerId = null;
+      }
+      this.successMessage = null;
       this.commentText = "";
       // Reset reply mode on close so the next open is a fresh new-comment
       // (the parent decides via :reply-to-review-id when explicitly replying).

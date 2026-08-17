@@ -501,4 +501,27 @@ describe("CommentComposerModal", () => {
     // throw because this.$bvModal is undefined on a destroyed component.
     // The fact that destroy doesn't throw proves beforeDestroy cleanup works.
   });
+
+  it("resets success state and cancels the pending auto-close on manual hide", () => {
+    vi.useFakeTimers();
+    const w = mount(CommentComposerModal, {
+      localVue,
+      propsData: baseProps,
+      stubs: visibleModalStub,
+    });
+
+    // The post-success state: alert shown, textarea hidden, auto-close armed.
+    w.vm.successMessage = "Comment posted.";
+    w.vm.autoCloseTimerId = setTimeout(() => {}, 3000);
+
+    w.vm.onHidden();
+
+    expect(w.vm.successMessage).toBeNull();
+    expect(w.vm.autoCloseTimerId).toBeNull();
+
+    // The orphaned timer must not fire into a reopened modal.
+    vi.advanceTimersByTime(3500);
+    w.destroy();
+    vi.useRealTimers();
+  });
 });
