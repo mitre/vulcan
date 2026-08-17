@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { shallowMount } from "@vue/test-utils";
-import { localVue, captureVulcanToast } from "@test/testHelper";
+import { localVue, captureVulcanToast, flushPromises } from "@test/testHelper";
 import UserTokens from "@/components/users/UserTokens.vue";
 import { listTokens, revokeToken } from "@/api/tokensApi";
 
@@ -56,5 +56,51 @@ describe("UserTokens", () => {
       message: "Request timed out",
     });
     expect(wrapper.vm.revoking).toBe(false);
+  });
+
+  describe("copyToken", () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+      delete document.execCommand;
+    });
+
+    it("copies via navigator.clipboard when the API is available", async () => {
+      const writeText = vi.fn(() => Promise.resolve());
+      vi.stubGlobal("navigator", { clipboard: { writeText }, userAgent: navigator.userAgent });
+      wrapper = createWrapper();
+      await wrapper.setData({ newlyCreatedToken: "vulcan_secret" });
+
+      wrapper.vm.copyToken();
+      await flushPromises();
+
+      expect(writeText).toHaveBeenCalledWith("vulcan_secret");
+      expect(wrapper.vm.copied).toBe(true);
+    });
+
+    it("falls back to execCommand in a non-secure context (no clipboard API)", async () => {
+      vi.stubGlobal("navigator", { userAgent: navigator.userAgent });
+      const execCommand = vi.fn(() => true);
+      document.execCommand = execCommand;
+      wrapper = createWrapper();
+      await wrapper.setData({ newlyCreatedToken: "vulcan_secret" });
+
+      wrapper.vm.copyToken();
+
+      expect(execCommand).toHaveBeenCalledWith("copy");
+      expect(wrapper.vm.copied).toBe(true);
+    });
+
+    it("surfaces a toast when neither clipboard nor execCommand can copy", async () => {
+      vi.stubGlobal("navigator", { userAgent: navigator.userAgent });
+      document.execCommand = vi.fn(() => false);
+      wrapper = createWrapper();
+      await wrapper.setData({ newlyCreatedToken: "vulcan_secret" });
+
+      const toast = await captureVulcanToast(() => wrapper.vm.copyToken(), wrapper);
+
+      expect(toast).toMatchObject({ title: "Copy failed", variant: "warning" });
+      expect(wrapper.vm.copied).toBe(false);
+    });
   });
 });

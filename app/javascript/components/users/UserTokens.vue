@@ -172,12 +172,51 @@ export default {
       this.copied = false;
     },
     copyToken() {
-      navigator.clipboard.writeText(this.newlyCreatedToken).then(() => {
-        this.copied = true;
-        setTimeout(() => {
-          this.copied = false;
-        }, 3000);
-      });
+      // navigator.clipboard is only defined in a secure context. Vulcan
+      // defaults RAILS_FORCE_SSL=false, so an internal HTTP deployment has no
+      // clipboard API — guard for it, fall back to execCommand, and surface a
+      // toast rather than silently failing to copy the show-once token.
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard
+          .writeText(this.newlyCreatedToken)
+          .then(() => this.flagCopied())
+          .catch(() => this.legacyCopy());
+      } else {
+        this.legacyCopy();
+      }
+    },
+    flagCopied() {
+      this.copied = true;
+      setTimeout(() => {
+        this.copied = false;
+      }, 3000);
+    },
+    legacyCopy() {
+      try {
+        const textarea = document.createElement("textarea");
+        textarea.value = this.newlyCreatedToken;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        const ok = document.execCommand("copy");
+        document.body.removeChild(textarea);
+        if (!ok) throw new Error("execCommand copy returned false");
+        this.flagCopied();
+      } catch {
+        this.alertOrNotifyResponse({
+          response: {
+            data: {
+              toast: {
+                title: "Copy failed",
+                message: ["Could not copy the token automatically — select and copy it manually."],
+                variant: "warning",
+              },
+            },
+          },
+        });
+      }
     },
     confirmRevoke(token) {
       this.tokenToRevoke = token;
