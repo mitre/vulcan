@@ -719,7 +719,16 @@ class Component < ApplicationRecord
     # would swallow every review on authored requirements.
     review_records = if document_type != 'srg' && association_cached?(:rules) &&
                         rules.all? { |r| r.association(:reviews).loaded? }
-                       rules.flat_map(&:reviews).sort_by { |r| [r.created_at, r.id] }.last(20).reverse
+                       cached = rules.flat_map(&:reviews).sort_by { |r| [r.created_at, r.id] }.last(20).reverse
+                       # The cached path yields a plain Array, which the
+                       # blueprinter's relation-only auto-preloader cannot plan
+                       # against — batch-load the associations the blueprint
+                       # reads so it does not fire one query per review. The DB
+                       # branch below is a relation the auto-preloader covers.
+                       ActiveRecord::Associations::Preloader.new(
+                         records: cached, associations: %i[user responses triage_set_by adjudicated_by]
+                       ).call
+                       cached
                      else
                        Review.where(rule_id: rule_names.keys)
                              .preload(:user, :responses)
