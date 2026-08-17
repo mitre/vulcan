@@ -147,4 +147,18 @@ RSpec.describe SecurityRequirementsGuide do
       expect(loaded_srg.severity_low_count).to eq(expected_low)
     end
   end
+
+  describe '.currency_for' do
+    it 'derives is_latest and the latest-available pointer for a whole set in ONE query' do
+      v1 = create(:security_requirements_guide, :skip_rules, srg_id: 'SRG-CUR-A', version: 'V1R1')
+      v2 = create(:security_requirements_guide, :skip_rules, srg_id: 'SRG-CUR-A', version: 'V2R1')
+
+      report = count_queries { @currency = described_class.currency_for([v1, v2]) }
+
+      # One batched latest-per-series query — not a DISTINCT ON subquery per row.
+      expect(report.total).to eq(1)
+      expect(@currency[v2.id]).to eq(is_latest: true, latest_available_version: nil, latest_available_id: nil)
+      expect(@currency[v1.id]).to eq(is_latest: false, latest_available_version: 'V2R1', latest_available_id: v2.id)
+    end
+  end
 end

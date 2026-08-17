@@ -50,6 +50,29 @@ class SecurityRequirementsGuide < ApplicationRecord
   validates :title, length: { maximum: ->(_r) { Settings.input_limits.benchmark_title } }
   validates :name, length: { maximum: ->(_r) { Settings.input_limits.benchmark_name } }, allow_nil: true
 
+  # Batched version-currency for a set of SRGs, keyed by SRG id. Replaces the
+  # per-record latest?/latest_release the blueprint would fire for EVERY
+  # catalog row — the index renders the whole catalog, so those per-row
+  # DISTINCT ON subqueries are an N+1. One query builds the latest-per-series
+  # set; each SRG's currency is derived in memory (same pattern as
+  # srg_info_for_components).
+  def self.currency_for(srgs)
+    latest_rows = latest_versions.pluck(series_key_column, :id, :version)
+    latest_ids = latest_rows.map { |row| row[1] }.to_set
+    latest_by_series = latest_rows.to_h { |row| [row[0], { id: row[1], version: row[2] }] }
+
+    srgs.each_with_object({}) do |srg, map|
+      if latest_ids.include?(srg.id)
+        map[srg.id] = { is_latest: true, latest_available_version: nil, latest_available_id: nil }
+      else
+        latest = latest_by_series[srg.public_send(series_key_column)]
+        map[srg.id] = { is_latest: false,
+                        latest_available_version: latest&.dig(:version),
+                        latest_available_id: latest&.dig(:id) }
+      end
+    end
+  end
+
   def self.srg_info_for_components(components)
     latest_ids = latest_versions.pluck(:id).to_set
     # Currency covers the WHOLE parent set (title/version stay the

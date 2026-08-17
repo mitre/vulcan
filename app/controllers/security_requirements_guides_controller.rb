@@ -11,7 +11,11 @@ class SecurityRequirementsGuidesController < ApplicationController
 
   def index
     @srgs = SecurityRequirementsGuide.with_severity_counts.order(:srg_id, :version)
-    @srgs_json = SrgBlueprint.render(@srgs, view: :index)
+    # Batch the version-currency once for the whole catalog — the blueprint's
+    # is_latest / latest_available_* fields would otherwise fire ~3-5 queries
+    # per row on every index load.
+    @srgs_json = SrgBlueprint.render(@srgs, view: :index,
+                                            currency: SecurityRequirementsGuide.currency_for(@srgs))
 
     respond_to do |format|
       format.html
