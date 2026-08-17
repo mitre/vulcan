@@ -21,6 +21,7 @@ vi.mock("@/api/rulesApi", () => ({
   updateRule: vi.fn(() => Promise.resolve({ data: {} })),
   findInComponent: vi.fn(() => Promise.resolve({ data: {} })),
 }));
+import { findInComponent } from "@/api/rulesApi";
 
 /**
  * FindAndReplace requirements:
@@ -205,6 +206,20 @@ describe("FindAndReplace", () => {
       expect(segments.find((s) => s.highlighted).text).toBe("SSH");
       expect(wrapper.vm.total_results_match).toBe(1);
       expect(wrapper.vm.total_results_control).toBe(1);
+    });
+  });
+
+  describe("find() error handling", () => {
+    it("clears the loading flag and reports the error when the request rejects", async () => {
+      findInComponent.mockRejectedValueOnce(new Error("boom"));
+      wrapper = createWrapper();
+      const spy = vi.spyOn(wrapper.vm, "alertOrNotifyResponse");
+
+      wrapper.vm.find();
+      await flushPromises();
+
+      expect(spy).toHaveBeenCalled();
+      expect(wrapper.vm.loading).toBe(false);
     });
   });
 });
