@@ -132,6 +132,10 @@ module Import
 
       def insert_review(review_data, rule_db_id, commenter)
         created_at = parse_time(review_data['created_at']) || Time.current
+        # Restore the review's own edit timestamp when the archive carries it
+        # (backup_serializer emits it at microsecond precision) — mirrors
+        # rule_builder#restore_timestamps. Falls back to created_at otherwise.
+        updated_at = parse_time(review_data['updated_at']) || created_at
         attrs = {
           rule_id: rule_db_id,
           # Dual-write the polymorphic target. insert! skips
@@ -143,7 +147,7 @@ module Import
           action: review_data['action'],
           comment: review_data['comment'],
           created_at: created_at,
-          updated_at: created_at
+          updated_at: updated_at
         }
         attrs.merge!(commenter)
         attrs.merge!(lifecycle_attrs(review_data))

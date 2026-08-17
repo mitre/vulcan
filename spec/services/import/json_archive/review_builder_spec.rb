@@ -75,6 +75,18 @@ RSpec.describe Import::JsonArchive::ReviewBuilder do
       expect(component.paginated_comments[:rows].pluck('id')).to include(review.id)
     end
 
+    it 'restores the review updated_at from the archive (not forced to created_at)' do
+      created = 2.days.ago.change(usec: 0)
+      edited = 1.day.ago.change(usec: 0)
+      data = [review_attrs(external_id: 4001, comment: 'edited-after-post sample',
+                           created_at: created.iso8601, updated_at: edited.iso8601)]
+      described_class.new(data, rule_id_map, result).build_all
+
+      review = Review.find_by(comment: 'edited-after-post sample')
+      expect(review.created_at).to be_within(1.second).of(created)
+      expect(review.updated_at).to be_within(1.second).of(edited)
+    end
+
     it 'warns and removes a duplicate-status review with no target' do
       data = [review_attrs(
         external_id: 2001,
