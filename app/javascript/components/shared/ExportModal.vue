@@ -360,7 +360,10 @@ export default {
       });
     },
     allSelected() {
-      return this.selectedComponentIds.length === this.components.length;
+      return (
+        this.selectableComponentIds.length > 0 &&
+        this.selectedComponentIds.length === this.selectableComponentIds.length
+      );
     },
     someSelected() {
       return this.selectedComponentIds.length > 0;
@@ -392,6 +395,12 @@ export default {
     },
     srgComponentIds() {
       return this.components.filter((c) => c.document_type === "srg").map((c) => c.id);
+    },
+    // Components the current purpose+format actually exports — SRG components
+    // excluded by the kind routing are disabled in the checklist and must
+    // never be select-all'd or counted toward the "all selected" tri-state.
+    selectableComponentIds() {
+      return this.components.filter((c) => !this.isSrgExcluded(c.id)).map((c) => c.id);
     },
     // The selected purpose+format combination has no srg meaning — srg
     // components are excluded from the export (mirrors the server's kind
@@ -597,7 +606,9 @@ export default {
     },
     toggleSelectAll(checked) {
       if (checked) {
-        this.selectedComponentIds = this.components.map((c) => c.id);
+        // Honor the SRG exclusion — select only exportable components, never
+        // the disabled SRG rows (which would ship in the payload otherwise).
+        this.selectedComponentIds = [...this.selectableComponentIds];
       } else {
         this.selectedComponentIds = [];
       }

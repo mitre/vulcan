@@ -200,6 +200,34 @@ describe("ExportModal", () => {
   // 4. When hideComponentSelection is true, single-column layout (no right panel)
   // 5. Single component still shows simplified view in right panel (no checkbox grid)
   //
+  // Regression: "select all" used to grab every component id including the
+  // disabled SRG rows the current purpose excludes, so they shipped in the
+  // export payload and the tri-state could only reach "all" by pulling them in.
+  describe("SRG exclusion in select-all", () => {
+    const withSrg = [
+      { id: 1, name: "Comp A", version: "1", release: "1", document_type: "stig" },
+      { id: 2, name: "Comp B", version: "1", release: "1", document_type: "stig" },
+      { id: 3, name: "SRG Comp", version: "1", release: "1", document_type: "srg" },
+    ];
+
+    it("select-all skips excluded SRG components and the tri-state counts only selectable ones", async () => {
+      wrapper = createWrapper({ components: withSrg });
+      // working_copy has no SRG meaning → SRG components are excluded.
+      wrapper.vm.selectedMode = "working_copy";
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.vm.isSrgExcludedSelection).toBe(true);
+      expect(wrapper.vm.isSrgExcluded(3)).toBe(true);
+
+      wrapper.vm.toggleSelectAll(true);
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.vm.selectedComponentIds).toEqual([1, 2]);
+      expect(wrapper.vm.selectedComponentIds).not.toContain(3);
+      expect(wrapper.vm.allSelected).toBe(true);
+    });
+  });
+
   describe("two-panel layout", () => {
     it("shows config-panel and component-panel when components are visible", () => {
       wrapper = createWrapper({ components: multipleComponents });
