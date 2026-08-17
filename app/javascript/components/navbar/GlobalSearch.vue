@@ -8,6 +8,7 @@
       v-model="searchText"
       debounce="300"
       :placeholder="searchPlaceholder"
+      :aria-label="searchPlaceholder"
     />
     <b-popover
       triggers="focus"
