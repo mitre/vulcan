@@ -19,16 +19,13 @@
 # covers every authored row of the component, including tombstoned and
 # Not Applicable rows.
 #
-# Identifier shape, not the component's current abbreviation, decides
-# whether a row is already minted — so a prefix change between releases
-# can never trigger a renumber of previously published identifiers.
+# Whether a row is already minted is a PERSISTED fact (minted_sequence),
+# not something inferred from the identifier string — so neither a prefix
+# change between releases nor a variable-length SRG core (a 5-segment
+# container core is byte-indistinguishable from a minted 3-segment-core id)
+# can trigger a renumber of previously published identifiers.
 class ReleaseIdentifierMinter
   class MintError < StandardError; end
-
-  # Core requirement id (SRG-OS-000801) + abbreviation + sequence.
-  MINTED_WITH_LINEAGE = /\ASRG-[A-Z]+-\d+-[A-Z]+-\d+\z/
-  # Net-new shape: abbreviation + sequence, no core-half.
-  MINTED_NET_NEW = /\A(?!SRG-)[A-Z]+-\d+\z/
 
   def initialize(component)
     @component = component
@@ -42,9 +39,10 @@ class ReleaseIdentifierMinter
     raise MintError, 'component has no abbreviation to mint with' if token.blank?
 
     sequence = highest_minted_sequence
-    BaseRule.canonical_sort(rows.reject { |row| minted?(row.version) }).each do |row|
+    BaseRule.canonical_sort(rows.reject { |row| minted?(row) }).each do |row|
       sequence += 1
       row.update!(version: minted_identifier(row, token, sequence),
+                  minted_sequence: sequence,
                   audit_comment: 'Identifier minted at release')
     end
     rows
@@ -58,17 +56,14 @@ class ReleaseIdentifierMinter
     core_half.present? ? "#{core_half}-#{suffix}" : suffix
   end
 
-  def minted?(version)
-    version.present? && (version.match?(MINTED_WITH_LINEAGE) || version.match?(MINTED_NET_NEW))
+  def minted?(row)
+    row.minted_sequence.present?
   end
 
   # The document-wide high-water mark. Scans EVERY authored row of the
   # component — tombstoned and Not Applicable included — so a retired
   # sequence number is never reissued.
   def highest_minted_sequence
-    SrgRule.unscoped.where(component_id: @component.id).pluck(:version)
-           .select { |version| minted?(version) }
-           .map { |version| version[/-(\d+)\z/, 1].to_i }
-           .max || 0
+    SrgRule.unscoped.where(component_id: @component.id).maximum(:minted_sequence) || 0
   end
 end
