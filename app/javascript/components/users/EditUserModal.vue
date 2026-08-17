@@ -254,6 +254,25 @@
         </b-collapse>
       </template>
     </b-form>
+
+    <b-modal
+      id="admin-revoke-token-modal"
+      title="Revoke API token"
+      ok-title="Revoke token"
+      ok-variant="danger"
+      :ok-disabled="!revokeComment.trim()"
+      @ok="confirmAdminRevoke"
+      @hidden="resetRevokeState"
+    >
+      <p class="small text-muted mb-2">
+        Revoking this token is audited — a justification is required.
+      </p>
+      <b-form-textarea
+        v-model="revokeComment"
+        placeholder="Audit comment (required for admin revocation)"
+        rows="2"
+      />
+    </b-modal>
   </b-modal>
 </template>
 
@@ -322,6 +341,8 @@ export default {
       showManualPassword: false,
       userTokens: [],
       adminRevoking: null,
+      revokeTokenTarget: null,
+      revokeComment: "",
       showTokenSection: false,
     };
   },
@@ -498,9 +519,18 @@ export default {
         this.userTokens = [];
       }
     },
-    async adminRevokeToken(token) {
-      const comment = prompt("Audit comment (required for admin revocation):");
-      if (!comment) return;
+    adminRevokeToken(token) {
+      // A styled, non-blockable modal for the required audit justification,
+      // replacing window.prompt (suppressed in sandboxed iframes / after
+      // cross-origin navigations, and silent on cancel).
+      this.revokeTokenTarget = token;
+      this.revokeComment = "";
+      this.$bvModal.show("admin-revoke-token-modal");
+    },
+    async confirmAdminRevoke() {
+      const token = this.revokeTokenTarget;
+      const comment = this.revokeComment.trim();
+      if (!token || !comment) return;
 
       this.adminRevoking = token.id;
       try {
@@ -512,6 +542,10 @@ export default {
       } finally {
         this.adminRevoking = null;
       }
+    },
+    resetRevokeState() {
+      this.revokeTokenTarget = null;
+      this.revokeComment = "";
     },
     scopeBadgeVariant(scope) {
       const map = { read: "info", write: "warning", admin: "danger" };

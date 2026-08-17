@@ -444,15 +444,7 @@ describe("EditUserModal", () => {
   // problem-details bodies, which carry no toast payload.
   describe("admin token revocation failure notification", () => {
     beforeEach(() => {
-      vi.stubGlobal(
-        "prompt",
-        vi.fn(() => "rotating credentials"),
-      );
       mountModal();
-    });
-
-    afterEach(() => {
-      vi.unstubAllGlobals();
     });
 
     it("surfaces the permission-denied toast on a 403 problem-details failure", async () => {
@@ -468,10 +460,11 @@ describe("EditUserModal", () => {
       });
       apiAdminRevoke.mockRejectedValueOnce(denied);
 
-      const toastDetail = await captureVulcanToast(
-        () => wrapper.vm.adminRevokeToken({ id: 7, name: "ci-token" }),
-        wrapper,
-      );
+      await wrapper.setData({
+        revokeTokenTarget: { id: 7, name: "ci-token" },
+        revokeComment: "rotating credentials",
+      });
+      const toastDetail = await captureVulcanToast(() => wrapper.vm.confirmAdminRevoke(), wrapper);
 
       expect(toastDetail).toEqual({
         title: "Permission denied",
@@ -486,10 +479,11 @@ describe("EditUserModal", () => {
     it("still surfaces a bare transport Error as an error toast", async () => {
       apiAdminRevoke.mockRejectedValueOnce(new Error("Request timed out"));
 
-      const toastDetail = await captureVulcanToast(
-        () => wrapper.vm.adminRevokeToken({ id: 7, name: "ci-token" }),
-        wrapper,
-      );
+      await wrapper.setData({
+        revokeTokenTarget: { id: 7, name: "ci-token" },
+        revokeComment: "rotating credentials",
+      });
+      const toastDetail = await captureVulcanToast(() => wrapper.vm.confirmAdminRevoke(), wrapper);
 
       expect(toastDetail).toEqual({
         title: "Error",
@@ -507,6 +501,27 @@ describe("EditUserModal", () => {
       expect(EditUserModal.mixins).toBeUndefined();
       mountModal();
       expect(typeof wrapper.vm.alertOrNotifyResponse).toBe("function");
+    });
+  });
+
+  describe("admin token revoke", () => {
+    it("opens the audit-comment modal instead of window.prompt", () => {
+      mountModal();
+      const show = vi.spyOn(wrapper.vm.$bvModal, "show");
+
+      wrapper.vm.adminRevokeToken({ id: 7 });
+
+      expect(wrapper.vm.revokeTokenTarget).toEqual({ id: 7 });
+      expect(show).toHaveBeenCalledWith("admin-revoke-token-modal");
+    });
+
+    it("confirmAdminRevoke posts the token id and the trimmed comment", async () => {
+      mountModal();
+      await wrapper.setData({ revokeTokenTarget: { id: 7 }, revokeComment: "  compromised  " });
+
+      await wrapper.vm.confirmAdminRevoke();
+
+      expect(apiAdminRevoke).toHaveBeenCalledWith(7, "compromised");
     });
   });
 });
