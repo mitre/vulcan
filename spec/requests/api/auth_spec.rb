@@ -3,6 +3,8 @@
 require 'rails_helper'
 
 RSpec.describe 'Api::Auth' do
+  include LoginHelpers
+
   before { Rails.application.reload_routes! }
 
   let_it_be(:anchor_admin) { create(:user, admin: true) }
