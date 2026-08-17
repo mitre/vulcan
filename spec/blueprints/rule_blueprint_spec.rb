@@ -218,4 +218,24 @@ RSpec.describe 'RuleBlueprint' do
       expect(result.first).to have_key('id')
     end
   end
+
+  # vj3.7: the shared surface now lives in BaseRuleBlueprint. These guard both
+  # the inheritance and the byte-identity-critical field ORDER — a plain
+  # have_key check would pass even if the extraction reshuffled the payload.
+  describe 'shared BaseRuleBlueprint surface (byte-identity guard)' do
+    it 'inherits from BaseRuleBlueprint' do
+      expect(RuleBlueprint.ancestors).to include(BaseRuleBlueprint)
+    end
+
+    it 'keeps srg_id adjacent to the content attributes, satisfactions as the tail' do
+      keys = RuleBlueprint.render_as_json(rule, view: :viewer).keys
+      # Nothing sits between srg_id and the shared content attributes for a Rule.
+      expect(keys.index('srg_id')).to eq(keys.index('disa_rule_descriptions_attributes') - 1)
+      expect(keys.index('disa_rule_descriptions_attributes')).to eq(keys.index('checks_attributes') - 1)
+      # The satisfaction graph is the tail, in order.
+      expect(keys.index('checks_attributes')).to be < keys.index('satisfies')
+      expect(keys.index('satisfies')).to eq(keys.index('satisfied_by') - 1)
+      expect(keys.last).to eq('satisfied_by')
+    end
+  end
 end

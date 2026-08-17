@@ -1,93 +1,44 @@
 # frozen_string_literal: true
 
-# Serializes component-AUTHORED SrgRules for the editor.
+# Serializes component-AUTHORED SrgRules for the editor. Inherits the shared
+# requirement surface from BaseRuleBlueprint (identifier, default fields,
+# comment_summary, navigator, picker head, viewer head + srg_id, and the
+# :content_attributes composition) and adds only the authored-kind surface:
+# portable lineage (derived_from_version), the content attributes, and
+# reviews/histories.
 #
-# Deliberately NOT RuleBlueprint (its views call Rule-only methods —
-# satisfies/satisfied_by, srg_rule, additional_answers) and NOT
-# SrgRuleBlueprint (read-only nested catalog reference data with no
-# status/reviews/locked). Authored requirements share the BaseRule
-# surface: status, locking, reviews/comments, audit history, content.
+# Deliberately NOT the same as RuleBlueprint (its views call Rule-only methods —
+# satisfies/satisfied_by, srg_rule, additional_answers) and NOT SrgRuleBlueprint
+# (read-only nested catalog reference data with no status/reviews/locked). The
+# shared BaseRule surface — status, locking, reviews/comments, audit history,
+# content — comes from the base; only the Rule-only extras are absent here.
+#
+# srg_id is inherited from BaseRuleBlueprint unchanged: an authored requirement
+# holds the identifier in its own version column (Category 1, no preload), which
+# is exactly the base default — so this blueprint does not re-declare it.
 #
 # Views:
-#   :navigator — sidebar rule list (default fields)
+#   :navigator — sidebar rule list (inherited; default fields)
+#   :picker    — RulePicker dropdown (inherited head; no satisfaction graph)
+#   :viewer    — read-only content (lineage + content attrs)
 #   :editor    — full editing form (content + reviews + histories)
 #
-# PRELOAD DECLARATIONS — same categories as RuleBlueprint, which carries the
-# full explanation. In short: (1) reads a column, needs nothing; (2) an
-# association under its real reflection name, resolves on its own; (3) a field
-# whose block reaches an association, or an association named something the
-# model does not know, MUST carry `preload:` or its plan is silently empty;
-# (0) the audit trail, which is not an association and cannot be batched at all.
-# Every declaration that carries a block states its category; the bare `fields`
-# macros need none, having no block through which to reach an association.
-class AuthoredSrgRuleBlueprint < Blueprinter::Base
-  identifier :id
-
-  fields :rule_id, :title, :version, :status, :rule_severity, :locked,
-         :review_requestor_id, :changes_requested
-
-  # Category 3: the block reads reviews, which nothing outside it can infer.
-  field :comment_summary, preload: :reviews do |rule, _options|
-    CommentSummaryField.summarize(rule)
-  end
-
-  view :navigator do
-    # Default fields are sufficient for the navigator
-  end
-
-  # RulePicker dropdown — defaults plus the component-scoped display name.
-  # Authored requirements have no satisfaction graph, so the satisfies /
-  # satisfied_by keys are omitted entirely (consumers default with || []).
-  view :picker do
-    # Category 3: builds its name from the owning component's prefix.
-    field :displayed_name, preload: :component do |rule, _options|
-      rule.displayed_name
-    end
-  end
-
-  # Read-only content (non-member show) — no reviews, no histories.
+# PRELOAD DECLARATIONS — every block-bearing entry states its category; see
+# BaseRuleBlueprint for the full scheme.
+class AuthoredSrgRuleBlueprint < BaseRuleBlueprint
+  # === Viewer view: portable lineage + shared content attributes ===
   view :viewer do
-    fields :rule_weight, :fixtext, :fixtext_fixref, :ident, :ident_system,
-           :vendor_comments, :vuln_id, :legacy_ids,
-           :component_id, :status_justification, :artifact_description,
-           :locked_fields
-
-    # Category 1: derives from the ident column, reaching nothing.
-    field :nist_control_family do |rule, _options|
-      rule.nist_control_family
-    end
-
-    # One kind-agnostic srg_id across document kinds: requirement lists
-    # (the editor sidebar's SRG ID display and its sort) read rule.srg_id
-    # regardless of kind. The model answers which value that is for this
-    # kind — serializers never reconstruct it. CATEGORY 1: an authored
-    # requirement holds the identifier in its own version column, where a Rule
-    # would have to reach its source requirement for it.
-    field :srg_id do |rule, _options|
-      rule.srg_identifier
-    end
-
     # Category 3 — portable lineage, reaching the catalog requirement this row
-    # was derived from.
+    # was derived from. Sits between srg_id and the content attributes, matching
+    # the authored requirement list's display order.
     field :derived_from_version, preload: :derived_from do |rule, _options|
       rule.derived_from&.version
     end
 
-    # Category 3 by name, all three — the `_attributes` keys match no model
-    # association, so each names the real one.
-    association :disa_rule_descriptions_attributes, blueprint: DisaRuleDescriptionBlueprint,
-                                                    name: :disa_rule_descriptions_attributes,
-                                                    preload: :disa_rule_descriptions do |rule, _options|
-      ApplicationRecord.sorted_by_id(rule.disa_rule_descriptions)
-    end
+    include_view :content_attributes
 
-    association :checks_attributes, blueprint: CheckBlueprint,
-                                    name: :checks_attributes,
-                                    preload: :checks do |rule, _options|
-      ApplicationRecord.sorted_by_id(rule.checks)
-    end
-
-    # Category 3 by name.
+    # Category 3 by name. Authored requirements surface rule_descriptions in the
+    # read-only viewer (a Rule surfaces them only in its editor).
     association :rule_descriptions_attributes, blueprint: RuleDescriptionBlueprint,
                                                name: :rule_descriptions_attributes,
                                                preload: :rule_descriptions do |rule, _options|
@@ -95,6 +46,7 @@ class AuthoredSrgRuleBlueprint < Blueprinter::Base
     end
   end
 
+  # === Editor view: content + collaboration ===
   view :editor do
     include_view :viewer
 
@@ -102,9 +54,8 @@ class AuthoredSrgRuleBlueprint < Blueprinter::Base
     # requirement at a time. The audit trail is not an association — it is a
     # union of the record's own audits and those recorded against it as an
     # associated record, built per instance — so no preload can fetch it for a
-    # whole collection. Serializing it for every requirement cost one query per
-    # row to produce data the page shows for the selected row alone. The
-    # per-requirement endpoint asks for it; the collection does not.
+    # whole collection. The per-requirement endpoint asks for it; the collection
+    # does not. (Category 0.)
     field :histories,
           if: ->(_field, _rule, options) { options && options[:include_histories] } do |rule, _options|
       rule.histories
