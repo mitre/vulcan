@@ -3,7 +3,7 @@
 # Mark existing migrations as safe. Set to the latest migration that predates
 # the multi-parent SRG schema work, so all real history is grandfathered while
 # the new foundation migrations (and everything after) are policed.
-StrongMigrations.start_after = 20_260_713_220_000
+StrongMigrations.start_after = 20_260_614_170_000
 
 # Set timeouts for migrations
 # If you use PgBouncer in transaction mode, delete these lines and set timeouts on the database user
