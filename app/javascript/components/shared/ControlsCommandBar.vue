@@ -192,12 +192,12 @@
       </b-button-group>
     </template>
 
-    <!-- Hidden: UpdateFromSpreadsheetModal (triggered from overflow menu) -->
+    <!-- UpdateFromSpreadsheetModal renders no opener (showOpener defaults
+         false); it's triggered from the overflow menu via ref. -->
     <UpdateFromSpreadsheetModal
       v-if="canEdit"
       ref="spreadsheetModal"
       :component="component"
-      class="d-none"
       @spreadsheet-updated="onSpreadsheetUpdated"
     />
 

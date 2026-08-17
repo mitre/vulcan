@@ -88,7 +88,7 @@ describe("UpdateFromSpreadsheetModal", () => {
 
   describe("Step 1: File Select", () => {
     it("renders the opener button", () => {
-      wrapper = createWrapper();
+      wrapper = createWrapper({ showOpener: true });
       expect(wrapper.find('[data-testid="update-from-spreadsheet-btn"]').exists()).toBe(true);
       expect(wrapper.find('[data-testid="update-from-spreadsheet-btn"]').text()).toContain(
         "Update from Spreadsheet",
@@ -385,6 +385,13 @@ describe("UpdateFromSpreadsheetModal", () => {
     it("stig components keep Rule-flavored modal copy", () => {
       wrapper = createWrapper();
       expect(wrapper.vm.modalTitle).toBe("Update Rules from Spreadsheet");
+    });
+  });
+
+  describe("showOpener", () => {
+    it("renders no opener button by default (showOpener false)", () => {
+      wrapper = createWrapper();
+      expect(wrapper.find('[data-testid="update-from-spreadsheet-btn"]').exists()).toBe(false);
     });
   });
 });

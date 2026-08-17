@@ -1,15 +1,18 @@
 <template>
   <span>
-    <!-- Opener button -->
-    <b-button
-      class="mr-2"
-      variant="outline-warning"
-      size="sm"
-      data-testid="update-from-spreadsheet-btn"
-      @click="showModal()"
-    >
-      <b-icon icon="file-earmark-spreadsheet" /> Update from Spreadsheet
-    </b-button>
+    <!-- Opener button (only if showOpener prop is true) -->
+    <span v-if="showOpener" @click="showModal()">
+      <slot name="opener">
+        <b-button
+          class="mr-2"
+          variant="outline-warning"
+          size="sm"
+          data-testid="update-from-spreadsheet-btn"
+        >
+          <b-icon icon="file-earmark-spreadsheet" /> Update from Spreadsheet
+        </b-button>
+      </slot>
+    </span>
 
     <!-- Multi-step modal -->
     <b-modal
@@ -209,6 +212,10 @@ export default {
     component: {
       type: Object,
       required: true,
+    },
+    showOpener: {
+      type: Boolean,
+      default: false,
     },
   },
   data() {
