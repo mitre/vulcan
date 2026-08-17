@@ -96,16 +96,28 @@ class ContainerTransitionCarry
   def carry_comments(comment_ids, target_row)
     return 0 if comment_ids.empty?
 
-    parents = Review.where(id: comment_ids).order(:created_at)
-    id_map = parents.index_with { |src| insert_carried(src, target_row, responding_to: nil) }
-
-    replies = Review.where(responding_to_review_id: id_map.keys.map(&:id)).order(:created_at)
-    replies.each do |src|
-      new_parent_id = id_map[id_map.keys.find { |p| p.id == src.responding_to_review_id }]
-      insert_carried(src, target_row, responding_to: new_parent_id)
+    # src review id => newly-inserted review id. Seed with the planned
+    # top-level parents, then carry replies level by level to a fixpoint —
+    # threads of ANY depth come across, not just the first reply level.
+    id_map = {}
+    Review.where(id: comment_ids).order(:created_at).each do |src|
+      id_map[src.id] = insert_carried(src, target_row, responding_to: nil)
     end
 
-    id_map.size + replies.size
+    frontier = id_map.keys
+    until frontier.empty?
+      replies = Review.where(responding_to_review_id: frontier)
+                      .where.not(id: id_map.keys)
+                      .order(:created_at)
+      break if replies.empty?
+
+      replies.each do |src|
+        id_map[src.id] = insert_carried(src, target_row, responding_to: id_map[src.responding_to_review_id])
+      end
+      frontier = replies.map(&:id)
+    end
+
+    id_map.size
   end
 
   def insert_carried(src, target_row, responding_to:)

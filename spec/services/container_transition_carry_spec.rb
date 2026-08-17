@@ -123,6 +123,22 @@ RSpec.describe ContainerTransitionCarry do
       expect(reply.commenter_imported_name).to eq('STIG Author')
     end
 
+    it 'carries replies at ANY depth — a reply to a reply lands on the target thread' do
+      grandchild = create(:review, :comment, user: replier, rule: source_rule_a,
+                                             responding_to_review_id: na_reply.id,
+                                             comment: 'And CNTR-00-000030 is satisfied by the platform.')
+
+      run_carry
+
+      row_id = target_row('SRG-APP-000005').id
+      carried_reply = Review.where(rule_id: row_id)
+                            .find_by(comment: 'This requirement is addressed by CNTR-00-000030.')
+      carried_grandchild = Review.where(rule_id: row_id)
+                                 .find_by(comment: grandchild.comment)
+      expect(carried_grandchild).to be_present
+      expect(carried_grandchild.responding_to_review_id).to eq(carried_reply.id)
+    end
+
     it 'posts the research note as a clearly-labeled comment, distinct from carried team comments' do
       run_carry
 
