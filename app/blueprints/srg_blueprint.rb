@@ -13,16 +13,23 @@ class SrgBlueprint < Blueprinter::Base
     srg.severity_counts_hash
   end
 
-  field :is_latest do |srg, _options|
-    srg.latest?
+  # Currency fields read from a batched `currency:` option when present
+  # (SecurityRequirementsGuide.currency_for) — the catalog index passes it so
+  # the whole page costs one query instead of ~3-5 per row. The per-record
+  # fallback keeps single-record renders (which pass no option) correct.
+  field :is_latest do |srg, options|
+    entry = options[:currency]&.dig(srg.id)
+    entry ? entry[:is_latest] : srg.latest?
   end
 
-  field :latest_available_version do |srg, _options|
-    srg.latest? ? nil : srg.latest_release&.version
+  field :latest_available_version do |srg, options|
+    entry = options[:currency]&.dig(srg.id)
+    entry ? entry[:latest_available_version] : (srg.latest? ? nil : srg.latest_release&.version)
   end
 
-  field :latest_available_id do |srg, _options|
-    srg.latest? ? nil : srg.latest_release&.id
+  field :latest_available_id do |srg, options|
+    entry = options[:currency]&.dig(srg.id)
+    entry ? entry[:latest_available_id] : (srg.latest? ? nil : srg.latest_release&.id)
   end
 
   view :index do
