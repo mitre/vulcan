@@ -160,5 +160,65 @@ RSpec.describe ReleaseIdentifierMinter do
         expect(audit.comment).to eq('Identifier minted at release')
       end
     end
+
+    # Real DISA container SRGs number requirements with a 5-segment core
+    # (SRG-APP-000014-CTR-000035), not the 3-segment form the older specs
+    # use. A minted id built from a 5-segment core must still be recognized
+    # as minted on the next release, or the never-renumber invariant breaks.
+    describe 'with 5-segment (container) SRG cores' do
+      let_it_be(:core_ctr) do
+        create(:security_requirements_guide, :core, :skip_rules, srg_id: 'SRG-CORE-MINT-CTR', version: 'V1R1')
+      end
+      let_it_be(:ctr_rows) do
+        %w[SRG-APP-000014-CTR-000035 SRG-APP-000023-CTR-000090].map do |version|
+          create(:srg_rule, security_requirements_guide: core_ctr, version: version)
+        end
+      end
+
+      def ctr_component
+        Component.create!(project: project, name: "Mint ctr #{SecureRandom.hex(3)}",
+                          prefix: 'MINT-00', title: 'Minting source', document_type: 'srg',
+                          based_on: core_ctr)
+      end
+
+      it 'mints 5-segment cores and carries them forward byte-identical on re-release' do
+        component = ctr_component
+        rows = publishable_rows(component)
+        decide_applicable(rows)
+        described_class.new(component).mint!(rows)
+
+        first, second = component.authored_srg_rules.order(:rule_id).to_a
+        expect(first.version).to eq('SRG-APP-000014-CTR-000035-MINT-000001')
+        expect(second.version).to eq('SRG-APP-000023-CTR-000090-MINT-000002')
+
+        # Re-mint the same set: already-minted 5-segment ids must be
+        # recognized and left untouched (this is where the shape-only
+        # recognition failed — minted? returned false and renumbered).
+        described_class.new(component).mint!(publishable_rows(component))
+        expect(first.reload.version).to eq('SRG-APP-000014-CTR-000035-MINT-000001')
+        expect(second.reload.version).to eq('SRG-APP-000023-CTR-000090-MINT-000002')
+      end
+
+      it 'never reuses a retired sequence when a 5-segment-core row is tombstoned' do
+        component = ctr_component
+        rows = publishable_rows(component)
+        decide_applicable(rows)
+        described_class.new(component).mint!(rows)
+        first, second = component.authored_srg_rules.order(:rule_id).to_a
+        expect(second.version).to eq('SRG-APP-000023-CTR-000090-MINT-000002')
+
+        # Tombstone seq-2 and add a net-new requirement: it must take seq 3,
+        # never the retired 2, and the surviving published id must not move.
+        second.update_column(:deleted_at, Time.current)
+        net_new = create(:srg_rule, :authored, component: component, version: nil,
+                                               status: 'Not Yet Determined')
+        net_new.update!(status: 'Applicable', audit_comment: 'mint setup')
+
+        described_class.new(component).mint!(publishable_rows(component))
+
+        expect(net_new.reload.version).to eq('MINT-000003')
+        expect(first.reload.version).to eq('SRG-APP-000014-CTR-000035-MINT-000001')
+      end
+    end
   end
 end
