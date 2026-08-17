@@ -11,7 +11,6 @@
         <ControlsCommandBar
           :component="component"
           :selected-rule="selectedRule"
-          :effective-permissions="effective_permissions"
           :active-panel="activePanel"
           :read-only="true"
           :breadcrumbs="breadcrumbs"
