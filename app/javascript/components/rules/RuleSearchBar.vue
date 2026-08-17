@@ -89,11 +89,22 @@ export default {
       return `Search ${ruleTerm(this.injectedDocumentType).plural.toLowerCase()} (Cmd+K)`;
     },
   },
-  methods: {
-    onSearchInput: _.debounce(function (value) {
+  created() {
+    // Per-instance debounce — defining it inline in `methods` shares ONE
+    // timer across every RuleSearchBar instance. Cancelled on clear and on
+    // teardown so a trailing keystroke can't re-apply a search the user
+    // just cleared.
+    this.onSearchInput = _.debounce((value) => {
       this.$emit("search-updated", value);
-    }, 500),
+    }, 500);
+  },
+  beforeDestroy() {
+    this.onSearchInput.cancel();
+  },
+  methods: {
     setSearchValue(value) {
+      // A clear must win over any in-flight debounced keystroke.
+      this.onSearchInput.cancel();
       if (this.$refs.ruleSearch) {
         this.$refs.ruleSearch.value = value;
       }

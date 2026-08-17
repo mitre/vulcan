@@ -107,4 +107,30 @@ describe("RuleSearchBar", () => {
       expect(toggle.exists()).toBe(false);
     });
   });
+
+  describe("debounced search clear", () => {
+    it("cancels a pending debounced emit when the search is cleared", () => {
+      vi.useFakeTimers();
+      wrapper = createWrapper();
+
+      wrapper.vm.onSearchInput("AC-2");
+      // Clear before the 500ms debounce elapses — the clear must win.
+      wrapper.vm.setSearchValue("");
+      vi.advanceTimersByTime(600);
+
+      expect(wrapper.emitted("search-updated")).toBeFalsy();
+      vi.useRealTimers();
+    });
+
+    it("still emits search-updated after the debounce when not cleared", () => {
+      vi.useFakeTimers();
+      wrapper = createWrapper();
+
+      wrapper.vm.onSearchInput("AC-2");
+      vi.advanceTimersByTime(600);
+
+      expect(wrapper.emitted("search-updated")[0]).toEqual(["AC-2"]);
+      vi.useRealTimers();
+    });
+  });
 });
