@@ -24,12 +24,16 @@ class SrgBlueprint < Blueprinter::Base
 
   field :latest_available_version do |srg, options|
     entry = options[:currency]&.dig(srg.id)
-    entry ? entry[:latest_available_version] : (srg.latest? ? nil : srg.latest_release&.version)
+    next entry[:latest_available_version] if entry
+
+    srg.latest? ? nil : srg.latest_release&.version
   end
 
   field :latest_available_id do |srg, options|
     entry = options[:currency]&.dig(srg.id)
-    entry ? entry[:latest_available_id] : (srg.latest? ? nil : srg.latest_release&.id)
+    next entry[:latest_available_id] if entry
+
+    srg.latest? ? nil : srg.latest_release&.id
   end
 
   view :index do

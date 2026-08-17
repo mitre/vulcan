@@ -58,7 +58,7 @@ class SecurityRequirementsGuide < ApplicationRecord
   # srg_info_for_components).
   def self.currency_for(srgs)
     latest_rows = latest_versions.pluck(series_key_column, :id, :version)
-    latest_ids = latest_rows.map { |row| row[1] }.to_set
+    latest_ids = latest_rows.to_set { |row| row[1] }
     latest_by_series = latest_rows.to_h { |row| [row[0], { id: row[1], version: row[2] }] }
 
     srgs.each_with_object({}) do |srg, map|

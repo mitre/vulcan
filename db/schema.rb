@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_13_144500) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_17_120100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -80,6 +80,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_144500) do
     t.string "legacy_ids"
     t.boolean "locked", default: false
     t.jsonb "locked_fields", default: {}
+    t.integer "minted_sequence"
     t.bigint "review_requestor_id"
     t.string "rule_id", null: false
     t.string "rule_severity"
