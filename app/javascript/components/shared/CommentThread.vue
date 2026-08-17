@@ -138,7 +138,11 @@ export default {
       if (idx < 0) return;
       const prev = { ...reply.reactions };
       const apply = (reactions) => {
-        this.replies[idx] = { ...this.replies[idx], reactions };
+        // replies is a Vue 2.7 ref([]) backed by the Object.defineProperty
+        // observer, which cannot detect an assignment by array index — a
+        // plain `this.replies[idx] = …` renders nothing. splice is the
+        // reactivity-safe replacement (equivalent to this.$set here).
+        this.replies.splice(idx, 1, { ...this.replies[idx], reactions });
       };
       this.toggleReactionApi(reply.id, kind, prev, apply);
     },
