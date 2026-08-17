@@ -8,6 +8,7 @@ class ApplicationController < ActionController::Base
   include ErrorRendering
   include AuthorizationDisclosure
   include ApiTokenAuthenticatable
+  include LocalLoginEnforceable
 
   # Explicit CSRF protection. Rails 8 (load_defaults 8.0) enables this by
   # default, but declaring it explicitly makes the security posture auditable

@@ -4,6 +4,7 @@ module Api
   # JSON auth endpoints for SPA consumption: /api/auth/me, login, logout.
   class AuthController < BaseController
     skip_before_action :authenticate_user!, only: [:login]
+    before_action :require_local_login_enabled!, only: [:login]
 
     def me
       render json: CurrentUserBlueprint.render(current_user)
@@ -34,6 +35,20 @@ module Api
     def logout
       sign_out(current_user)
       render json: { message: 'Signed out successfully' }
+    end
+
+    private
+
+    # A distinct 401 for a :lockable account that has hit the failed-attempt
+    # threshold (STIG AC-07). Mirrors the HTML sign-in flow, which tells a
+    # locked user to wait rather than silently rejecting a correct password.
+    # render_problem comes from ErrorRendering (mixed into ApplicationController).
+    def render_account_locked
+      render_problem(
+        type: :account_locked, title: 'Account locked', status: :unauthorized,
+        detail: 'This account is temporarily locked due to too many failed sign-in attempts. ' \
+                'Please try again later or reset your password.'
+      )
     end
   end
 end

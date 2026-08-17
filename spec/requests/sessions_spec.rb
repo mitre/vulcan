@@ -290,4 +290,18 @@ RSpec.describe 'Sessions' do
       end
     end
   end
+
+  describe 'POST /users/sign_in when local login is disabled (SSO-only)' do
+    let!(:local_user) { create(:user, password: 'S3cure!#Pass999') }
+
+    before { stub_local_login_setting(enabled: false) }
+
+    it 'refuses a crafted local-login POST and redirects back to sign-in' do
+      post user_session_path, params: { user: { email: local_user.email, password: 'S3cure!#Pass999' } }
+
+      # A successful sign-in would redirect to the app root; the guard sends
+      # it back to the sign-in page instead — proof no session was made.
+      expect(response).to redirect_to(new_user_session_path)
+    end
+  end
 end

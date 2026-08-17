@@ -11,6 +11,10 @@ class SessionsController < Devise::SessionsController
   # the OIDC provider sends back — narrow skip, this action only.
   skip_before_action :authenticate_user!, only: %i[signed_out complete_link]
 
+  # SSO-only instances (Settings.local_login.enabled = false) hide the
+  # password form in the view; this refuses a crafted local-login POST too.
+  before_action :require_local_login_enabled!, only: [:create]
+
   # AC-8: Preserve consent acknowledgment across Devise's session reset.
   # Devise calls reset_session on login (session fixation protection).
   # We save the consent timestamp before and restore it after so the

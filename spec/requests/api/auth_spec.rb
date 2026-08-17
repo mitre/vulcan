@@ -118,6 +118,21 @@ RSpec.describe 'Api::Auth' do
       expect(response).to have_http_status(:unauthorized)
       expect(response.parsed_body['type']).to eq('/docs/api/errors#invalid_credentials')
     end
+
+    context 'when local login is disabled (SSO-only instance)' do
+      before { stub_local_login_setting(enabled: false) }
+
+      it 'refuses the login with 403 before verifying the password' do
+        post '/api/auth/login', params: { email: user.email, password: 'S3cure!#Pass999' }, as: :json
+
+        expect(response).to have_http_status(:forbidden)
+        expect(response.parsed_body['type']).to eq('/docs/api/errors#local_login_disabled')
+
+        # No session was established.
+        get '/api/auth/me', as: :json
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
   end
 
   describe 'DELETE /api/auth/logout' do

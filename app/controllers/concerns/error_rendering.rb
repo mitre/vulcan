@@ -77,17 +77,6 @@ module ErrorRendering
     )
   end
 
-  # A distinct 401 for a :lockable account that has hit the failed-attempt
-  # threshold (STIG AC-07). Mirrors the HTML sign-in flow, which tells a
-  # locked user to wait rather than silently rejecting a correct password.
-  def render_account_locked
-    render_problem(
-      type: :account_locked, title: 'Account locked', status: :unauthorized,
-      detail: 'This account is temporarily locked due to too many failed sign-in attempts. ' \
-              'Please try again later or reset your password.'
-    )
-  end
-
   # 422, not 401: the caller IS authenticated — they failed the re-verification
   # challenge. A 401 here collides with the client's session-death handling,
   # which reloads the page before any message can render.
