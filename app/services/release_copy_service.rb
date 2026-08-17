@@ -97,9 +97,7 @@ class ReleaseCopyService
     # Uploaded shape: the applicability decision stays on the component.
     copy.status = RuleConstants::STATUS_NYD
     copy.status_justification = nil
-    copy.locked = false
-    copy.locked_fields = {}
-    copy.review_requestor_id = nil
+    copy.reset_authored_copy_state
     raise ReleaseBlockedError, "release copy produced a #{copy.class}, expected SrgRule" unless copy.instance_of?(SrgRule)
 
     copy.save!

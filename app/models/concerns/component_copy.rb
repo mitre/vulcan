@@ -17,11 +17,7 @@ module ComponentCopy
   # filtered scope through the same seam.
   def copy_authored_requirements_onto(new_component, requirements: authored_srg_rules)
     new_component.authored_srg_rules = requirements.map do |requirement|
-      copy = requirement.dup_with_nested_records
-      copy.locked = false
-      copy.review_requestor_id = nil
-      copy.locked_fields = {}
-      copy
+      requirement.dup_with_nested_records.reset_authored_copy_state
     end
   end
 

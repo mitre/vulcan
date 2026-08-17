@@ -102,12 +102,10 @@ class RelocationExecutor
     # (final identifiers mint at release from lineage). Keeping the
     # source number would collide with the unique per-component index.
     row.rule_id = landed_rule_id
-    # The moved requirement keeps its core lineage and its authored state.
+    # The moved requirement keeps its core lineage; its lock/ownership state
+    # resets like every other authored copy (shared BaseRule primitive).
     row.deleted_at = nil
-    row.locked = false
-    row.locked_fields = {}
-    row.review_requestor_id = nil
-    row
+    row.reset_authored_copy_state
   end
 
   def landed_rule_id

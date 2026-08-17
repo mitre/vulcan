@@ -109,6 +109,19 @@ class BaseRule < ApplicationRecord
     copy
   end
 
+  # The reset every authored-requirement COPY must carry: a duplicated row is
+  # fresh authoring state — unlocked, unclaimed, no field-level locks — never
+  # the source row's lock/ownership. This is the ONE definition shared by
+  # Rule's amoeba block and every dup_with_nested_records copy site
+  # (ComponentCopy, ReleaseCopyService, RelocationExecutor), so the invariant
+  # cannot drift across them. Sets attributes only; the caller persists.
+  def reset_authored_copy_state
+    self.locked = false
+    self.review_requestor_id = nil
+    self.locked_fields = {}
+    self
+  end
+
   ##
   # Revert named fields on a requirement row from an audit entry. Works for
   # any audited requirement kind — Rules and authored SrgRules share the

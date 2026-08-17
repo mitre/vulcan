@@ -11,12 +11,12 @@ class Rule < BaseRule
   # the one scope. Rule inherits it with the STI type condition applied.
 
   amoeba do
-    # Using set review_requestor_id: nil does not work as expected, must use nullify
-    nullify :review_requestor_id
-    set locked: false
-    customize(lambda { |_original, copy|
-      copy.locked_fields = {}
-    })
+    # Fresh authoring state on every clone — unlocked, unclaimed, no
+    # field-level locks. Shared with the non-amoeba copy sites via one
+    # BaseRule primitive (see BaseRule#reset_authored_copy_state). A
+    # customize lambda (not amoeba's `set`/`nullify` directives, which did
+    # not apply here) makes the plain attribute assignments stick.
+    customize(->(_original, copy) { copy.reset_authored_copy_state })
 
     include_association :additional_answers, if: :single_rule_clone?
   end
