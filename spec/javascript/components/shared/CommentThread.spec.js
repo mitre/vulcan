@@ -3,7 +3,7 @@ import { mount } from "@vue/test-utils";
 import { setActivePinia, createPinia } from "pinia";
 import { localVue } from "@test/testHelper";
 import CommentThread from "@/components/shared/CommentThread.vue";
-import { getReviewResponses } from "@/api/reviewsApi";
+import { getReviewResponses, toggleReaction } from "@/api/reviewsApi";
 
 vi.mock("@/api/baseApi", () => ({
   default: {
@@ -355,6 +355,50 @@ describe("CommentThread", () => {
   });
 
   // ── useCommentThread composable integration ─────────────────────────
+
+  // Regression: replies is a Vue 2.7 ref([]) — assigning by array index
+  // (this.replies[idx] = …) is NOT reactive, so a toggled reaction rendered
+  // nothing. The fix uses splice; this test fails on the index assignment.
+  describe("reaction toggle reactivity", () => {
+    const oneReactable = {
+      data: {
+        rows: [
+          {
+            id: 7,
+            comment: "reactable reply",
+            commenter_display_name: "R",
+            commenter_imported: false,
+            created_at: "2026-05-04T00:00:00Z",
+            reactions: { up: 0, down: 0, mine: null },
+          },
+        ],
+      },
+    };
+
+    it("re-renders the reply's ReactionButtons after a toggle (optimistic + server)", async () => {
+      getReviewResponses.mockResolvedValue(oneReactable);
+      toggleReaction.mockResolvedValue({ data: { reactions: { up: 1, down: 0, mine: "up" } } });
+
+      const w = mount(CommentThread, {
+        localVue,
+        propsData: { parentReviewId: 1, responsesCount: 1 },
+      });
+      await w.find("button[aria-controls]").trigger("click");
+      await new Promise((r) => setTimeout(r, 0));
+
+      const initial = w.findAllComponents({ name: "ReactionButtons" });
+      expect(initial).toHaveLength(1);
+      expect(initial.at(0).props("reactions")).toEqual({ up: 0, down: 0, mine: null });
+
+      // The template wires ReactionButtons @toggle -> toggleReaction(reply, kind).
+      initial.at(0).vm.$emit("toggle", "up");
+      await new Promise((r) => setTimeout(r, 0));
+      await w.vm.$nextTick();
+
+      const updated = w.findAllComponents({ name: "ReactionButtons" });
+      expect(updated.at(0).props("reactions")).toEqual({ up: 1, down: 0, mine: "up" });
+    });
+  });
 
   describe("composable integration", () => {
     it("uses useCommentReactions composable (not ReactionToggleMixin)", () => {
