@@ -101,3 +101,7 @@ issues.jsonl
 # Local DB benchmark/profiling outputs from the db:analyze rake tasks —
 # never committed.
 db/benchmarks/
+
+# Repo-local Ruby (sandbox cannot write ~/.rbenv/versions)
+/.local/
+/vendor/bundle/
