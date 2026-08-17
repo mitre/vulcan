@@ -71,6 +71,43 @@ RSpec.describe 'Rack::Attack throttling' do
         expect(response).to have_http_status(:too_many_requests)
       end
     end
+
+    # The JSON SPA login endpoint must meter identically to the HTML form —
+    # otherwise it is an unthrottled brute-force oracle for local accounts.
+    it 'throttles POST /api/auth/login by IP after 5 attempts' do
+      test_ip = "10.10.#{rand(1..254)}.#{rand(1..254)}"
+
+      freeze_time do
+        5.times do |i|
+          post '/api/auth/login',
+               params: { email: "api-ip-#{i}-#{SecureRandom.hex(4)}@example.com", password: 'wrong' },
+               headers: { 'REMOTE_ADDR' => test_ip }, as: :json
+          expect(response.status).not_to eq(429), "Request #{i + 1} was throttled unexpectedly"
+        end
+
+        post '/api/auth/login',
+             params: { email: "api-ip-final-#{SecureRandom.hex(4)}@example.com", password: 'wrong' },
+             headers: { 'REMOTE_ADDR' => test_ip }, as: :json
+        expect(response).to have_http_status(:too_many_requests)
+      end
+    end
+
+    it 'throttles POST /api/auth/login by email across IPs (reads the JSON body)' do
+      target_email = "api-email-#{SecureRandom.hex(6)}@example.com"
+
+      freeze_time do
+        5.times do |i|
+          post '/api/auth/login',
+               params: { email: target_email, password: 'wrong' },
+               headers: { 'REMOTE_ADDR' => "10.20.#{rand(1..254)}.#{i + 1}" }, as: :json
+        end
+
+        post '/api/auth/login',
+             params: { email: target_email, password: 'wrong' },
+             headers: { 'REMOTE_ADDR' => "10.20.#{rand(1..254)}.99" }, as: :json
+        expect(response).to have_http_status(:too_many_requests)
+      end
+    end
   end
 
   describe 'comment-action throttling on POST /rules/:id/reviews' do

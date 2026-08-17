@@ -90,6 +90,34 @@ RSpec.describe 'Api::Auth' do
       expect(response).to have_http_status(:ok)
       expect(response.parsed_body['id']).to eq(user.id)
     end
+
+    # Local users below (never the shared let_it_be) — these mutate
+    # failed_attempts / locked_at, which must not bleed across examples.
+
+    it 'refuses a locked account even with the correct password (STIG AC-07)' do
+      locked = create(:user, password: 'S3cure!#Pass999')
+      locked.lock_access!
+
+      post '/api/auth/login', params: { email: locked.email, password: 'S3cure!#Pass999' }, as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(response.parsed_body['type']).to eq('/docs/api/errors#account_locked')
+
+      # The correct-but-locked attempt established no session.
+      get '/api/auth/me', as: :json
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it 'increments failed_attempts on a wrong password so lockout can trigger' do
+      target = create(:user, password: 'S3cure!#Pass999')
+
+      expect do
+        post '/api/auth/login', params: { email: target.email, password: 'not-it' }, as: :json
+      end.to change { target.reload.failed_attempts }.by(1)
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(response.parsed_body['type']).to eq('/docs/api/errors#invalid_credentials')
+    end
   end
 
   describe 'DELETE /api/auth/logout' do
