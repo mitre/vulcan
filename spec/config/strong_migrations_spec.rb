@@ -9,10 +9,12 @@ require 'rails_helper'
 # of on a production table.
 RSpec.describe 'strong_migrations enforcement' do
   describe 'configuration' do
-    it 'marks migrations through the adoption point as safe (does not police history)' do
-      # The latest migration that existed when the gem was adopted. Everything
-      # at or before this is grandfathered; everything after is checked.
-      expect(StrongMigrations.start_after).to eq(20_260_713_220_000)
+    it 'grandfathers history up to the pre-SRG-foundation point and polices everything after' do
+      # start_after is the latest migration predating the multi-parent SRG schema
+      # work: all real history is grandfathered, while the SRG foundation
+      # migrations (and everything after) are policed. Mirrors the value and
+      # rationale in config/initializers/strong_migrations.rb.
+      expect(StrongMigrations.start_after).to eq(20_260_614_170_000)
     end
 
     it 'targets the production Postgres major version for accurate checks' do
