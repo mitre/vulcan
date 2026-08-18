@@ -18,8 +18,8 @@
    so adding a status is one data-attribute block.
 
    Contrast (WCAG 2.1 SC 1.4.11, graphical indicators need >= 3:1 vs their
-   background) — measured 2026-08-17, all PASS:
-     dot on #fff (light)            dot on #343a40 (dark, --vulcan-component-bg)
+   background) — measured 2026-08-17 against --vulcan-component-bg, all PASS:
+     dot on light component bg      dot on dark component bg
      grey    4.69:1   green 3.13:1  grey  5.55:1   green 4.67:1
      blue    3.98:1   red   4.53:1  blue  3.77:1   red   3.31:1
      purple  6.51:1                 purple 3.37:1
