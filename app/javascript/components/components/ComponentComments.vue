@@ -764,25 +764,15 @@ export default {
       this.loading = true;
       this.selectedIds = [];
       try {
-        const loadAll = this.viewMode === "by-rule" || this.splitMode;
-        const params = {
-          page: loadAll ? 1 : this.page,
-          per_page: loadAll ? 1000 : this.perPage,
-          triage_status: this.filterStatus,
-        };
-        if (this.splitMode) params.include_rule_content = true;
-        if (this.filterText) params.q = this.filterText;
-        if (this.filterRuleId) params.rule_id = this.filterRuleId;
-        if (this.filterSection && this.filterSection !== "(general)") {
-          params.section = this.filterSection;
-        }
         if (this.scope !== "project" && this.componentId) {
           this.commentsStore.invalidateCache(this.componentId);
         }
-        const result =
-          this.scope === "project"
-            ? await this.commentsStore.fetchProjectComments(this.projectId, params)
-            : await this.commentsStore.fetchComments(this.componentId, params);
+        // The by-rule and split (triage) views drive a queue that must hold
+        // EVERY comment matching the filter; the table view is user-paginated.
+        const loadAll = this.viewMode === "by-rule" || this.splitMode;
+        const result = loadAll
+          ? await this.fetchAllMatching()
+          : await this.fetchPage(this.page, this.perPage);
         this.rows = result.rows;
         this.total = result.pagination.total;
         if (result.status_counts) this.statusCounts = result.status_counts;
@@ -791,6 +781,45 @@ export default {
       } finally {
         this.loading = false;
       }
+    },
+    // Params shared by every page of a fetch. Split view asks for rule content;
+    // the active filters narrow the set server-side.
+    buildFetchParams(page, perPage) {
+      const params = { page, per_page: perPage, triage_status: this.filterStatus };
+      if (this.splitMode) params.include_rule_content = true;
+      if (this.filterText) params.q = this.filterText;
+      if (this.filterRuleId) params.rule_id = this.filterRuleId;
+      if (this.filterSection && this.filterSection !== "(general)") {
+        params.section = this.filterSection;
+      }
+      return params;
+    },
+    fetchPage(page, perPage) {
+      const params = this.buildFetchParams(page, perPage);
+      return this.scope === "project"
+        ? this.commentsStore.fetchProjectComments(this.projectId, params)
+        : this.commentsStore.fetchComments(this.componentId, params);
+    },
+    // The triage queue (split / by-rule) must load ALL comments matching the
+    // filter. per_page is clamped to 100 server-side (CommentQueryService), so a
+    // single large-page request silently dropped comments 101+ from the queue —
+    // walk the pages until the accumulated rows reach pagination.total. The
+    // per-page cap (100) is the API contract; this respects it. status_counts is
+    // the full unpaginated distribution, identical on every page, so the first
+    // page's copy is kept.
+    async fetchAllMatching() {
+      const PER_PAGE = 100;
+      const first = await this.fetchPage(1, PER_PAGE);
+      const total = first.pagination?.total ?? first.rows.length;
+      const rows = [...first.rows];
+      let page = 2;
+      while (rows.length < total) {
+        const next = await this.fetchPage(page, PER_PAGE);
+        if (!next.rows.length) break; // guard against a stale/over-count total
+        rows.push(...next.rows);
+        page += 1;
+      }
+      return { ...first, rows };
     },
     // Rule-id link target — full-page navigates to the component editor
     // with the rule selected (Vulcan's existing rule deep-link format).

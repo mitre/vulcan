@@ -142,6 +142,45 @@ describe("ComponentComments", () => {
     expect(getComments.mock.calls.length).toBe(fetchesBefore);
   });
 
+  it("loads ALL matching comments in split mode, walking pages past the per_page=100 cap", async () => {
+    // The server clamps per_page to 100, so a 150-comment queue needs 2 pages.
+    const makeRows = (start, n) =>
+      Array.from({ length: n }, (_, i) => ({
+        id: start + i,
+        rule_id: 1,
+        triage_status: "pending",
+        reactions: { up: 0, down: 0, mine: null },
+      }));
+    getComments.mockImplementation((_id, params) =>
+      Promise.resolve({
+        data: {
+          rows: params.page === 1 ? makeRows(1, 100) : makeRows(101, 50),
+          pagination: { page: params.page, per_page: 100, total: 150 },
+          status_counts: { pending: 150 },
+        },
+      }),
+    );
+
+    const wrapper = mount(ComponentComments, {
+      propsData: { componentId: 42 },
+      stubs: SHARED_STUBS,
+    });
+    await flushPromises();
+
+    wrapper.vm.splitMode = true;
+    await wrapper.vm.fetch();
+    await flushPromises();
+
+    // All 150 loaded — not silently capped at the server's per_page=100.
+    expect(wrapper.vm.rows.length).toBe(150);
+    expect(wrapper.vm.statusCounts).toEqual({ pending: 150 });
+    // It walked to page 2 with the clamped per_page rather than asking for 1000.
+    expect(getComments).toHaveBeenCalledWith(
+      42,
+      expect.objectContaining({ page: 2, per_page: 100 }),
+    );
+  });
+
   it("does NOT hardcode DISA labels in the rendered template (display goes through TriageStatusBadge)", async () => {
     const wrapper = mount(ComponentComments, {
       propsData: { componentId: 42 },
