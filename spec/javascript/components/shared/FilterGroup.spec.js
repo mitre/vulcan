@@ -215,4 +215,29 @@ describe("FilterGroup", () => {
       wrapper2.destroy();
     });
   });
+
+  describe("status color dot", () => {
+    it("renders a .status-dot carrying the item's dot value as data-status", () => {
+      wrapper = createWrapper({
+        items: [{ key: "Applicable", label: "Applicable", dot: "Applicable", checked: true }],
+      });
+      const dot = wrapper.find(".status-dot");
+      expect(dot.exists()).toBe(true);
+      expect(dot.attributes("data-status")).toBe("Applicable");
+    });
+
+    it("marks the dot aria-hidden — the label conveys the status (WCAG 1.4.1)", () => {
+      wrapper = createWrapper({
+        items: [{ key: "Applicable", label: "Applicable", dot: "Applicable", checked: true }],
+      });
+      expect(wrapper.find(".status-dot").attributes("aria-hidden")).toBe("true");
+    });
+
+    it("renders no dot for items without a dot (Display/Review groups)", () => {
+      wrapper = createWrapper({
+        items: [{ key: "nest", label: "Nest Satisfied", checked: true }],
+      });
+      expect(wrapper.find(".status-dot").exists()).toBe(false);
+    });
+  });
 });

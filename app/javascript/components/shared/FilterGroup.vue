@@ -15,7 +15,17 @@
           size="sm"
           @change="onToggleChange(item.key, $event)"
         >
-          {{ item.label }}<template v-if="item.count !== undefined"> ({{ item.count }})</template>
+          <!-- Optional status color dot — reuses the single-source-of-truth
+               .status-dot[data-status] palette (rule-status-tints.css) so the
+               filter toggle carries the same color as the sidebar/badge for
+               that status. Decorative only: aria-hidden, the label conveys the
+               status to assistive tech (WCAG 1.4.1). -->
+          <span
+            v-if="item.dot"
+            class="status-dot mr-1"
+            :data-status="item.dot"
+            aria-hidden="true"
+          />{{ item.label }}<template v-if="item.count !== undefined"> ({{ item.count }})</template>
         </b-form-checkbox>
         <!-- The info icon carries the reason for SIGHTED users and is
              aria-hidden, so an aria-label on it would never be announced.
@@ -45,7 +55,9 @@ export default {
     items: {
       type: Array,
       required: true,
-      // items: [{ key: string, label: string, count?: number, checked: boolean }]
+      // items: [{ key: string, label: string, count?: number, checked: boolean,
+      //           dot?: string /* status value → colored .status-dot */,
+      //           disabled?: boolean, disabledReason?: string }]
     },
     disabled: {
       type: Boolean,

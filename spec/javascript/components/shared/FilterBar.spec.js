@@ -198,6 +198,14 @@ describe("FilterBar", () => {
       expect(items.map((i) => i.label)).toEqual(STIG_STATUSES);
     });
 
+    it("each status item carries dot=status so the toggle wears the status color", () => {
+      wrapper = createWrapper();
+      const items = wrapper.vm.statusItems;
+      // dot drives the .status-dot[data-status] palette in FilterGroup — it must
+      // equal the status value so the toggle matches the sidebar dot / badge.
+      expect(items.map((i) => i.dot)).toEqual(STIG_STATUSES);
+    });
+
     it("status items include counts from statusCounts", () => {
       wrapper = createWrapper();
       const items = wrapper.vm.statusItems;

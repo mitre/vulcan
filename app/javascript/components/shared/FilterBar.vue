@@ -89,6 +89,10 @@ export default {
       return Object.entries(this.filters.statusFilters).map(([status, checked]) => ({
         key: status,
         label: status,
+        // The status value doubles as the .status-dot data-status, so the
+        // toggle wears the same color as the sidebar dot / badge for it. Only
+        // the Status group sets dot; Display/Review items omit it (no dot).
+        dot: status,
         count: statusCounts[status],
         checked,
       }));
