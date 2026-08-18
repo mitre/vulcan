@@ -26,6 +26,17 @@
 # PRELOAD DECLARATIONS — every block-bearing entry states its category; see
 # BaseRuleBlueprint for the full scheme.
 class AuthoredSrgRuleBlueprint < BaseRuleBlueprint
+  # === Picker view: shared component-scoped display name, nothing more ===
+  # Re-opened (even though it adds no fields of its own) because Blueprinter
+  # only carries a parent view's fields into a subclass that re-declares that
+  # view — without this, the inherited base picker's displayed_name is dropped
+  # from the authored picker payload. Authored requirements have no satisfaction
+  # graph, so no satisfies/satisfied_by here.
+  view :picker do
+    # No fields of its own — the re-open exists solely to pull in the inherited
+    # base picker (displayed_name). See the comment above.
+  end
+
   # === Viewer view: portable lineage + shared content attributes ===
   view :viewer do
     # Category 3 — portable lineage, reaching the catalog requirement this row

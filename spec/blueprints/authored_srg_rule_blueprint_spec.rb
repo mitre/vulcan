@@ -84,5 +84,17 @@ RSpec.describe 'AuthoredSrgRuleBlueprint' do
                             "#{view} view leaked a non-head key"
       end
     end
+
+    # Regression guard: Blueprinter only carries a parent view's fields into a
+    # subclass that re-declares that view. The base picker's displayed_name was
+    # silently dropped from the authored picker until :picker was re-opened here.
+    it 'serves the shared displayed_name in the picker (and not the navigator)' do
+      picker = AuthoredSrgRuleBlueprint.render_as_json(authored, view: :picker)
+      expect(picker).to have_key('displayed_name')
+      expect(picker['displayed_name']).to eq(authored.displayed_name)
+
+      nav = AuthoredSrgRuleBlueprint.render_as_json(authored, view: :navigator)
+      expect(nav).not_to have_key('displayed_name')
+    end
   end
 end
