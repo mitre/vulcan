@@ -865,7 +865,23 @@ export default {
         return;
       }
       const normalized = this.commentsStore.normalizeComment(updatedReview);
+      // Keep the progress bar in sync WITHOUT a refetch: a triage decision moves
+      // the comment from its old triage_status bucket to the new one. The bar
+      // binds to statusCounts (a data field otherwise only set by fetch()), so
+      // without this delta it freezes until the next full load.
+      const prevStatus = this.rows[idx].triage_status;
+      const nextStatus = normalized.triage_status ?? prevStatus;
       this.rows.splice(idx, 1, { ...this.rows[idx], ...normalized });
+      this.applyStatusCountDelta(prevStatus, nextStatus);
+    },
+    // Reassign a fresh object so Vue 2.7 tracks the change; guard the pending
+    // bucket against going negative if a count and a row ever disagree.
+    applyStatusCountDelta(prevStatus, nextStatus) {
+      if (!prevStatus || prevStatus === nextStatus) return;
+      const counts = { ...this.statusCounts };
+      if (counts[prevStatus] > 0) counts[prevStatus] -= 1;
+      counts[nextStatus] = (counts[nextStatus] || 0) + 1;
+      this.statusCounts = counts;
     },
     onTriaged(payload) {
       this.updateRowInPlace(payload);

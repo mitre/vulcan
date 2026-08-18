@@ -117,6 +117,31 @@ describe("ComponentComments", () => {
     );
   });
 
+  it("updates statusCounts in place on triage so the progress bar moves without a refetch", async () => {
+    const wrapper = mount(ComponentComments, {
+      propsData: { componentId: 42 },
+      stubs: SHARED_STUBS,
+    });
+    await flushPromises();
+    expect(wrapper.vm.statusCounts).toEqual({ pending: 1, concur_with_comment: 1 });
+    const fetchesBefore = getComments.mock.calls.length;
+
+    // Triage the pending comment (142) as a terminal disposition; the bar binds
+    // to statusCounts, which must move out of pending without a full reload.
+    wrapper.vm.updateRowInPlace({
+      id: 142,
+      triage_status: "addressed_by",
+      adjudicated_at: "2026-04-28T10:00:00Z",
+    });
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.vm.statusCounts.pending).toBe(0);
+    expect(wrapper.vm.statusCounts.addressed_by).toBe(1);
+    expect(wrapper.vm.statusCounts.concur_with_comment).toBe(1);
+    // The in-place update triggered no additional fetch — the bar moved locally.
+    expect(getComments.mock.calls.length).toBe(fetchesBefore);
+  });
+
   it("does NOT hardcode DISA labels in the rendered template (display goes through TriageStatusBadge)", async () => {
     const wrapper = mount(ComponentComments, {
       propsData: { componentId: 42 },
