@@ -10,10 +10,25 @@ on:
       - 'doc/openapi.yaml'
       - 'doc/openapi/**'
       - '.github/workflows/docs.yml'
+  # Build-only check on PRs: a dead link (or any docs build failure) is caught
+  # in the pipeline BEFORE it reaches a Heroku deploy preview. Uses the same
+  # frozen-lockfile deps as the deploy build, so it reproduces Heroku exactly.
+  # The Pages/deploy steps stay push-only (guarded below).
+  pull_request:
+    branches:
+      - master
+      - main
+    paths:
+      - 'docs/**'
+      - 'doc/openapi.yaml'
+      - 'doc/openapi/**'
+      - '.github/workflows/docs.yml'
   workflow_dispatch:
 
 concurrency:
-  group: pages
+  # Per-ref so a PR build-check never cancels the Pages deploy or another PR's
+  # check. Master/main deploys keep their own serialized group.
+  group: pages-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -38,6 +53,7 @@ jobs:
           cache-dependency-path: docs/yarn.lock
 
       - name: Setup Pages
+        if: github.event_name == 'push'
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
 
       - name: Install root dependencies (for redocly CLI)
@@ -60,11 +76,13 @@ jobs:
           yarn build
 
       - name: Upload artifact
+        if: github.event_name == 'push'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: docs/.vitepress/dist
 
   deploy:
+    if: github.event_name == 'push'
     permissions:
       pages: write
       id-token: write
