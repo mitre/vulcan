@@ -14,6 +14,12 @@ plugins:
 AllCops:
   NewCops: enable
   SuggestExtensions: false
+  # Pinned to the runtime in .ruby-version. Without this, RuboCop auto-detects
+  # the target by globbing directories UPWARD from the repo for a gemspec, which
+  # fails under a sandbox that denies paths above the repo root — crashing the
+  # run before it lints anything. An explicit version is resolved from this
+  # config directly, so no upward filesystem walk happens.
+  TargetRubyVersion: 3.4
   Exclude:
     - bin/*
     - db/schema.rb
