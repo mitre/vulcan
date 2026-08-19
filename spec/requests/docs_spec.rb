@@ -212,4 +212,20 @@ RSpec.describe 'Docs site' do
       end
     end
   end
+
+  describe 'when the site is not built' do
+    # A dev checkout has no built site until `bin/rails docs:build` runs. The
+    # navbar "Documentation" link must not land on a bare "Not found" — the
+    # controller answers with build guidance instead.
+    it 'answers with build guidance rather than a bare Not found' do
+      allow(DocsSite).to receive(:output_directory)
+        .and_return(Rails.root.join('tmp', 'docs-build-absent-for-spec'))
+
+      get '/docs'
+
+      expect(response).to have_http_status(:service_unavailable)
+      expect(response.body).to include('has not been built')
+      expect(response.body).to include('bin/rails docs:build')
+    end
+  end
 end

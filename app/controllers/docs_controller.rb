@@ -36,6 +36,8 @@ class DocsController < ApplicationController
   skip_after_action :verify_same_origin_request
 
   def show
+    return render_unbuilt_site unless site_built?
+
     file = resolve(params[:path].to_s)
 
     return render_missing_page if file.nil?
@@ -102,5 +104,27 @@ class DocsController < ApplicationController
 
   def render_missing_page
     render plain: 'Not found', status: :not_found
+  end
+
+  # The site is a build artifact: the assets:precompile hook builds it for a
+  # released image, but a dev checkout has nothing under the output directory
+  # until `bin/rails docs:build` runs. Without this branch, clicking
+  # "Documentation" in a fresh dev environment lands on a bare "Not found" with
+  # no hint of what to do. Detect the whole-site-absent case (no index at the
+  # root) and say how to fix it. In production the site is always present, so
+  # this never fires there.
+  def site_built?
+    root.join('index.html').file?
+  end
+
+  def render_unbuilt_site
+    render plain: <<~MSG, status: :service_unavailable
+      The documentation site has not been built in this environment.
+
+      Build it once:   bin/rails docs:build
+      Or run it live:  yarn docs:dev   (hot-reload dev server on its own port)
+
+      In a released image the assets:precompile step builds it automatically.
+    MSG
   end
 end
