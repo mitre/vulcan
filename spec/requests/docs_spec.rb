@@ -219,7 +219,7 @@ RSpec.describe 'Docs site' do
     # controller answers with build guidance instead.
     it 'answers with build guidance rather than a bare Not found' do
       allow(DocsSite).to receive(:output_directory)
-        .and_return(Rails.root.join('tmp', 'docs-build-absent-for-spec'))
+        .and_return(Rails.root.join('tmp/docs-build-absent-for-spec'))
 
       get '/docs'
 
