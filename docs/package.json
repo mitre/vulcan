@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "lucide-vue-next": "^0.562.0",
-    "mermaid": "^10.9.3",
+    "mermaid": "^11.16.1",
     "vitepress-openapi": "^0.2.0"
   },
   "resolutions": {
