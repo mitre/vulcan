@@ -731,10 +731,12 @@
     "@parcel/watcher-win32-arm64" "2.6.0"
     "@parcel/watcher-win32-x64" "2.6.0"
 
-"@pinia/testing@^1.0.3":
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/@pinia/testing/-/testing-1.0.3.tgz#62e0813a7a8ac735505422bb7a4e38eb86f815dc"
-  integrity sha512-g+qR49GNdI1Z8rZxKrQC3GN+LfnGTNf5Kk8Nz5Cz6mIGva5WRS+ffPXQfzhA0nu6TveWzPNYTjGl4nJqd3Cu9Q==
+"@pinia/testing@^2.0.1":
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/@pinia/testing/-/testing-2.0.1.tgz#4886124ac5cd632aa29b82103a0afb7d0c2d4f7f"
+  integrity sha512-pQ4a4SCzdiLrhM4yv/TQG2ufNmktNlLZjjN6X/qMhXvZIiDN3L4L4WrChmcufX2LIarbl/ZPWOty1RB5KZIb2A==
+  dependencies:
+    nostics "^1.1.4"
 
 "@pkgjs/parseargs@^0.11.0":
   version "0.11.0"
@@ -3007,6 +3009,11 @@ normalize-path@^3.0.0, normalize-path@~3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/normalize-path/-/normalize-path-3.0.0.tgz#0dcd69ff23a1c9b11fd0978316644a0388216a65"
   integrity sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==
+
+nostics@^1.1.4:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/nostics/-/nostics-1.2.0.tgz#1362df6de2ca8456b521914501abf6c52c4d7fb5"
+  integrity sha512-FGqEfhQjrvo1lL8KFifdTQiNwwQHJxC1jtYE1Rc54qF/jxONUNL+kC9gS1krX8Q65PgrQ5fCqH/I4NhWBvdSqg==
 
 nth-check@^2.1.1:
   version "2.1.1"
