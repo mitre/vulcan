@@ -60,7 +60,7 @@ gem 'csv'
 gem 'audited', '~> 5.8.0'
 
 # Advisory locks for preventing race conditions (PostgreSQL/MySQL)
-gem 'with_advisory_lock', '~> 5.1'
+gem 'with_advisory_lock', '~> 7.6'
 
 # Health check endpoints for Kubernetes/Docker probes
 gem 'health_check', '~> 3.1'
