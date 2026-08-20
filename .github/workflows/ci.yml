@@ -40,7 +40,7 @@ jobs:
       # TEMPORARY: source-build Ruby because ruby-builder has no prebuilt binary
       # for the pinned version yet. Revert to ruby/setup-ruby once it does.
       - uses: ./.github/actions/setup-ruby-source
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: '.nvmrc'
           cache: 'yarn'
@@ -64,7 +64,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 1
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: '.nvmrc'
           cache: 'yarn'
@@ -148,7 +148,7 @@ jobs:
       # for the pinned version yet. Revert to ruby/setup-ruby once it does.
       # (This action also installs libpq-dev and the gem bundle.)
       - uses: ./.github/actions/setup-ruby-source
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: '.nvmrc'
           cache: 'yarn'
@@ -241,7 +241,7 @@ jobs:
       # TEMPORARY: source-build Ruby because ruby-builder has no prebuilt binary
       # for the pinned version yet. Revert to ruby/setup-ruby once it does.
       - uses: ./.github/actions/setup-ruby-source
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: '.nvmrc'
           cache: 'yarn'
