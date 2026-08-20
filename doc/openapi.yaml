@@ -130,7 +130,7 @@ paths:
                     admin: false
                     provider: null
         '401':
-          description: Invalid email or password (RFC 9457 problem details)
+          description: Invalid email or password, or the account is temporarily locked after too many failed attempts (RFC 9457 problem details).
           content:
             application/problem+json:
               schema:
@@ -166,6 +166,13 @@ paths:
                     title: Invalid credentials
                     status: 401
                     detail: The email or password is incorrect.
+                account_locked:
+                  summary: Account locked after too many failed attempts
+                  value:
+                    type: /docs/api/errors#account_locked
+                    title: Account locked
+                    status: 401
+                    detail: This account is temporarily locked due to too many failed sign-in attempts. Please try again later or reset your password.
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /api/auth/logout:
