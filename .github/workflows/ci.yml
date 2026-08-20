@@ -155,7 +155,7 @@ jobs:
       - run: yarn install --frozen-lockfile
 
       - name: Cache JS build
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: js-cache
         with:
           path: app/assets/builds
@@ -171,7 +171,7 @@ jobs:
       # covers the documentation sources, the target table, and the OpenAPI
       # sources the bundled specification is generated from.
       - name: Cache documentation site build
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: docs-cache
         with:
           path: docs/.vitepress/dist
@@ -251,7 +251,7 @@ jobs:
       # compiled JS (builds are gitignored) — same cache key as the backend
       # shards, so this is normally an instant cache hit.
       - name: Cache JS build
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: js-cache
         with:
           path: app/assets/builds
