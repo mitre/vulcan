@@ -1,0 +1,89 @@
+description: >-
+  Component detail for non-member read-only view. Serialized by ComponentBlueprint :show view.
+  Includes rules (viewer view), reviews, and effective_permissions.
+allOf:
+  - $ref: ./ComponentSummary.yaml
+  - type: object
+    properties:
+      effective_permissions:
+        type:
+          - string
+          - 'null'
+        description: >-
+          Current user's role on this component's project (admin, reviewer,
+          author, viewer). Null when user is not a member.
+        enum:
+          - admin
+          - reviewer
+          - author
+          - viewer
+          - null
+        example: viewer
+      title:
+        type:
+          - string
+          - 'null'
+        description: Full official title of the component.
+        example: "Photon OS 3 STIG Readiness Guide"
+      description:
+        type:
+          - string
+          - 'null'
+        description: Optional longer description.
+        example: null
+      admin_name:
+        type:
+          - string
+          - 'null'
+        description: Point of contact name.
+        example: Jane Doe
+      admin_email:
+        type:
+          - string
+          - 'null'
+        format: email
+        description: Point of contact email.
+        example: jane@example.com
+      released:
+        type: boolean
+        description: Whether the component has been released.
+        example: false
+      updated_at:
+        type: string
+        description: Last update timestamp.
+        example: "2026-05-28 15:00:00 UTC"
+      comment_phase:
+        type: string
+        description: Current comment workflow phase.
+        enum:
+          - open
+          - closed
+        example: open
+      closed_reason:
+        type:
+          - string
+          - 'null'
+        description: Reason for closure (adjudicating or finalized).
+        example: null
+      comment_period_starts_at:
+        type:
+          - string
+          - 'null'
+        description: When the comment period started.
+        example: null
+      comment_period_ends_at:
+        type:
+          - string
+          - 'null'
+        description: When the comment period ends.
+        example: null
+      rules:
+        type: array
+        description: Rules in viewer view.
+        items:
+          type: object
+      reviews:
+        type: array
+        description: Reviews with displayed_rule_name.
+        items:
+          type: object

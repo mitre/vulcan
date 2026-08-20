@@ -2,7 +2,10 @@
  * CSV column definitions for STIG/SRG export.
  * Used by ExportModal to render the column picker UI.
  * Keys must match the backend's ExportConstants::BENCHMARK_CSV_COLUMNS.
+ * Header strings are part of that backend contract and stay verbatim;
+ * only the example annotations read the deployment term.
  */
+import { RULE_TERM } from "./terminology";
 
 export const STIG_CSV_COLUMNS = [
   { key: "rule_id", header: "Rule ID", example: "SV-203591r557031_rule", default: true },
@@ -29,23 +32,28 @@ export const STIG_CSV_COLUMNS = [
   { key: "legacy_ids", header: "Legacy IDs", example: "V-56571, SV-70831", default: true },
   { key: "status", header: "Status", example: "Applicable - Configurable", default: false },
   { key: "rule_weight", header: "Weight", example: "10.0", default: false },
-  { key: "mitigations", header: "Mitigations", example: "(empty for most rules)", default: false },
+  {
+    key: "mitigations",
+    header: "Mitigations",
+    example: `(empty for most ${RULE_TERM.plural.toLowerCase()})`,
+    default: false,
+  },
   {
     key: "severity_override_guidance",
     header: "Severity Override",
-    example: "(empty for most rules)",
+    example: `(empty for most ${RULE_TERM.plural.toLowerCase()})`,
     default: false,
   },
   {
     key: "false_positives",
     header: "False Positives",
-    example: "(empty for most rules)",
+    example: `(empty for most ${RULE_TERM.plural.toLowerCase()})`,
     default: false,
   },
   {
     key: "false_negatives",
     header: "False Negatives",
-    example: "(empty for most rules)",
+    example: `(empty for most ${RULE_TERM.plural.toLowerCase()})`,
     default: false,
   },
 ];
@@ -73,23 +81,28 @@ export const SRG_CSV_COLUMNS = [
   { key: "legacy_ids", header: "Legacy IDs", example: "V-40000", default: true },
   { key: "status", header: "Status", example: "Applicable - Configurable", default: false },
   { key: "rule_weight", header: "Weight", example: "10.0", default: false },
-  { key: "mitigations", header: "Mitigations", example: "(empty for most rules)", default: false },
+  {
+    key: "mitigations",
+    header: "Mitigations",
+    example: `(empty for most ${RULE_TERM.plural.toLowerCase()})`,
+    default: false,
+  },
   {
     key: "severity_override_guidance",
     header: "Severity Override",
-    example: "(empty for most rules)",
+    example: `(empty for most ${RULE_TERM.plural.toLowerCase()})`,
     default: false,
   },
   {
     key: "false_positives",
     header: "False Positives",
-    example: "(empty for most rules)",
+    example: `(empty for most ${RULE_TERM.plural.toLowerCase()})`,
     default: false,
   },
   {
     key: "false_negatives",
     header: "False Negatives",
-    example: "(empty for most rules)",
+    example: `(empty for most ${RULE_TERM.plural.toLowerCase()})`,
     default: false,
   },
 ];

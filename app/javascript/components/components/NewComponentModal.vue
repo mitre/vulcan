@@ -13,18 +13,36 @@
       :title="submitText"
       size="lg"
       :ok-title="loading ? 'Loading...' : submitText"
-      :ok-disabled="loading || !(security_requirements_guide_id || component_to_duplicate)"
+      :ok-disabled="
+        loading ||
+        awaitingProfileChoice ||
+        !(security_requirements_guide_id || component_to_duplicate)
+      "
       @show="fetchData"
       @ok="createComponent"
     >
       <!-- Searchable projects -->
       <b-form @submit.prevent>
         <input
-          id="NewProjectAuthenticityToken"
+          id="NewComponentAuthenticityToken"
           type="hidden"
           name="authenticity_token"
           :value="authenticityToken"
         />
+        <!-- Creation-time profile choice — first step; the selection
+             gates the rest of the form. Duplicate/copy/spreadsheet
+             flows have a determined type and skip the picker. -->
+        <template v-if="profilePickerMode">
+          <DocumentTypePicker v-model="document_type" />
+          <small v-if="awaitingProfileChoice" class="text-muted d-block mb-3">
+            Choose one to enable the rest of the form.
+          </small>
+          <!-- Declared sources come right after the profile choice
+               (profile → sources → identity): 1..N eligible SRGs with
+               a primary designation, replacing the single-SRG select
+               for the create-new flow. -->
+          <SourceSrgPicker v-model="sourceSelection" :srgs="srgs" :document-type="document_type" />
+        </template>
         <b-row>
           <b-col>
             <!-- Select a SRG -->
@@ -57,9 +75,10 @@
               />
             </b-form-group>
 
-            <!-- Select a SRG -->
+            <!-- Select a SRG (single-source flows only: the create-new
+                 flow declares sources through SourceSrgPicker above) -->
             <b-form-group
-              v-if="predetermined_security_requirements_guide_id == null"
+              v-if="!profilePickerMode && predetermined_security_requirements_guide_id == null"
               label="Select a Security Requirements Guide"
             >
               <vue-multiselect
@@ -69,7 +88,7 @@
                 track-by="id"
                 :searchable="true"
                 :allow-empty="true"
-                :disabled="detecting"
+                :disabled="detecting || awaitingProfileChoice"
                 placeholder="Search for an SRG..."
                 @input="setSelectedSrg($event)"
               />
@@ -87,18 +106,27 @@
                 placeholder="Component Name"
                 required
                 autocomplete="off"
+                :disabled="awaitingProfileChoice"
               />
             </b-form-group>
             <!-- Version and Release -->
             <b-form-row>
               <b-col>
                 <b-form-group label="Version">
-                  <b-form-input v-model="version" autocomplete="off" />
+                  <b-form-input
+                    v-model="version"
+                    autocomplete="off"
+                    :disabled="awaitingProfileChoice"
+                  />
                 </b-form-group>
               </b-col>
               <b-col>
                 <b-form-group label="Release">
-                  <b-form-input v-model="release" autocomplete="off" />
+                  <b-form-input
+                    v-model="release"
+                    autocomplete="off"
+                    :disabled="awaitingProfileChoice"
+                  />
                 </b-form-group>
               </b-col>
             </b-form-row>
@@ -115,17 +143,18 @@
                 accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
               />
             </b-form-group>
-            <!-- Set the prefix -->
+            <!-- Set the prefix — copy resolves per the chosen document kind -->
             <b-form-group
               v-else
-              label="STIG ID Prefix"
-              description="STIG IDs for each control will be automatically generated based on this prefix value"
+              :label="prefixFieldCopy.label"
+              :description="prefixFieldCopy.description"
             >
               <b-form-input
                 v-model="prefix"
-                placeholder="Example... ABCD-EF, ABCD-00"
+                :placeholder="prefixFieldCopy.placeholder"
                 required
                 autocomplete="off"
+                :disabled="awaitingProfileChoice"
               />
             </b-form-group>
             <!-- Title -->
@@ -135,11 +164,17 @@
                 placeholder="Component Title"
                 required
                 autocomplete="off"
+                :disabled="awaitingProfileChoice"
               />
             </b-form-group>
             <!-- Description -->
             <b-form-group label="Description">
-              <b-form-textarea v-model="description" placeholder="" rows="3" />
+              <b-form-textarea
+                v-model="description"
+                placeholder=""
+                rows="3"
+                :disabled="awaitingProfileChoice"
+              />
             </b-form-group>
             <!-- Select PoC -->
             <b-form-group
@@ -154,6 +189,7 @@
                 track-by="id"
                 :searchable="true"
                 :allow-empty="true"
+                :disabled="awaitingProfileChoice"
                 placeholder="Search for eligible PoC..."
                 @input="setComponentPoc($event)"
               />
@@ -167,6 +203,7 @@
                 v-model="slackChannelId"
                 placeholder="Example... C123456, #general"
                 autocomplete="off"
+                :disabled="awaitingProfileChoice"
               />
             </b-form-group>
           </b-col>
@@ -177,19 +214,24 @@
 </template>
 
 <script>
-import axios from "axios";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import DisplayedComponentMixin from "../../mixins/DisplayedComponentMixin.vue";
+import { getSrgs, getProjects, getProject } from "../../api/projectsApi";
+import { detectSrg, createComponentInProject } from "../../api/componentsApi";
+import { prefixField } from "../../constants/terminology";
+import { useAuthToken } from "../../composables/useAuthToken";
+import { useToast } from "../../composables/useToast";
+import { useDisplayedComponent } from "../../composables/useDisplayedComponent";
+import DocumentTypePicker from "./DocumentTypePicker.vue";
+import SourceSrgPicker from "./SourceSrgPicker.vue";
 import VueMultiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
 
 export default {
   name: "NewComponentModal",
   components: {
+    DocumentTypePicker,
+    SourceSrgPicker,
     VueMultiselect,
   },
-  mixins: [AlertMixinVue, FormMixinVue, DisplayedComponentMixin],
   props: {
     spreadsheet_import: {
       type: Boolean,
@@ -205,7 +247,7 @@ export default {
     },
     project_id: {
       type: Number,
-      required: true,
+      default: null,
     },
     project: {
       type: Object,
@@ -226,9 +268,23 @@ export default {
       default: false,
     },
   },
+  // setup() runs before data(), so the setup-returned
+  // addDisplayNameToComponents is available to data() below.
+  setup() {
+    const { authenticityToken } = useAuthToken();
+    const { addDisplayNameToComponents } = useDisplayedComponent();
+    const { alertOrNotifyResponse } = useToast();
+    return { authenticityToken, addDisplayNameToComponents, alertOrNotifyResponse };
+  },
   data: function () {
     return {
       loading: false,
+      // The creation-time profile choice. Starts empty — the author
+      // must pick; posted as component[document_type] (immutable).
+      document_type: null,
+      // The declared source set + primary designation for the
+      // create-new flow (SourceSrgPicker v-model).
+      sourceSelection: { sourceIds: [], primaryId: null },
       selected_project_id: this.project_id,
       selected_component_id: null,
       security_requirements_guide: null,
@@ -244,7 +300,7 @@ export default {
       slackChannelId: "",
       projects: [],
       components: this.copy_component
-        ? this.addDisplayNameToComponents(this.project.components)
+        ? this.addDisplayNameToComponents(this.project?.components || [])
         : [],
       srgs: [],
       displayedSrgs: [],
@@ -252,7 +308,7 @@ export default {
       detecting: false,
       srgAutoDetected: false,
       componentKey: 0,
-      potentialPocs: this.project ? this.project.users : [],
+      potentialPocs: this.project?.users || [],
       admin_name: "",
       admin_email: "",
       selectedProjectObj: null,
@@ -276,6 +332,20 @@ export default {
     newComponent: function () {
       return !this.component_to_duplicate;
     },
+    // The "What are you authoring?" step exists only where a choice
+    // exists: duplicate/copy inherit the source's document_type and
+    // spreadsheet import is Rule-based (stig).
+    profilePickerMode: function () {
+      return this.newComponent && !this.copy_component && !this.spreadsheet_import;
+    },
+    awaitingProfileChoice: function () {
+      return this.profilePickerMode && !this.document_type;
+    },
+    // Kind-keyed prefix copy; flows without kind knowledge (duplicate,
+    // copy — the kind is inherited server-side) resolve the stig default.
+    prefixFieldCopy: function () {
+      return prefixField(this.document_type);
+    },
     submitText: function () {
       if (this.spreadsheet_import) {
         return "Import Component";
@@ -296,6 +366,17 @@ export default {
         this.srgAutoDetected = false;
       }
     },
+    // The primary designation IS security_requirements_guide_id (the
+    // backend contract), so the existing guards and ok-disabled
+    // bindings keep working unchanged in the picker flow. Deep: the
+    // mirror must hold whether the selection object is replaced (the
+    // picker emits fresh state) or mutated in place.
+    sourceSelection: {
+      deep: true,
+      handler: function (selection) {
+        this.security_requirements_guide_id = selection.primaryId;
+      },
+    },
   },
   methods: {
     detectSrg: function (file) {
@@ -303,10 +384,7 @@ export default {
       this.srgAutoDetected = false;
       let formData = new FormData();
       formData.append("file", file);
-      axios
-        .post("/components/detect_srg", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        })
+      detectSrg(formData)
         .then((response) => {
           const detected = response.data;
           this.security_requirements_guide_id = detected.id;
@@ -322,6 +400,8 @@ export default {
         });
     },
     showModal: function () {
+      this.document_type = null;
+      this.sourceSelection = { sourceIds: [], primaryId: null };
       this.selected_project_id = this.project_id;
       this.selected_component_id = null;
       this.security_requirements_guide = null;
@@ -350,13 +430,13 @@ export default {
       this.admin_name = user.name;
     },
     fetchData: function (_bvModalEvt) {
-      axios.get("/srgs").then((response) => {
+      getSrgs().then((response) => {
         this.srgs = response.data;
         this.srgs.forEach((srg) => {
           srg.displayed = `${srg.title} (${srg.version})`;
         });
       });
-      axios.get("/projects").then((response) => {
+      getProjects().then((response) => {
         this.projects = response.data;
       });
     },
@@ -366,7 +446,7 @@ export default {
         this.selected_component_id = null;
         this.security_requirements_guide_id = null;
         this.security_requirements_guide_displayed = null;
-        axios.get(`/projects/${project.id}`).then((response) => {
+        getProject(project.id).then((response) => {
           this.components = this.addDisplayNameToComponents(response.data.components);
           this.componentKey += 1;
         });
@@ -400,6 +480,14 @@ export default {
       let failed = false;
 
       // Guard before POST — preventDefault keeps modal open on validation errors
+      if (this.awaitingProfileChoice) {
+        this.$bvToast.toast("Please choose what you are authoring", {
+          title: "Error",
+          variant: "danger",
+          solid: true,
+        });
+        failed = true;
+      }
       if (!this.prefix && !this.spreadsheet_import) {
         this.$bvToast.toast("Please enter a prefix", {
           title: "Error",
@@ -454,6 +542,16 @@ export default {
         this.security_requirements_guide_id,
       );
       formData.append("component[name]", this.name);
+      // Only the picker flow posts the choice — duplicate/copy inherit
+      // the source's document_type server-side.
+      if (this.profilePickerMode) {
+        formData.append("component[document_type]", this.document_type);
+        // The full declared source set; the primary already rides
+        // security_requirements_guide_id above.
+        this.sourceSelection.sourceIds.forEach((id) => {
+          formData.append("component[declared_source_srg_ids][]", id);
+        });
+      }
       if (!this.newComponent) {
         formData.append("component[duplicate]", !this.newComponent);
         formData.append("component[id]", this.component_to_duplicate);
@@ -490,12 +588,7 @@ export default {
         formData.append("component[slack_channel_id]", this.slackChannelId);
       }
 
-      axios
-        .post(`/projects/${this.project_id}/components`, formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        })
+      createComponentInProject(this.project_id, formData)
         .then(this.addComponentSuccess)
         .catch(this.alertOrNotifyResponse)
         .finally(this.completeLoading);

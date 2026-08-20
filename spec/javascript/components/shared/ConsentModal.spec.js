@@ -14,10 +14,22 @@
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import ConsentModal from "@/components/shared/ConsentModal.vue";
-import axios from "axios";
+import { acknowledgeConsent } from "@/api/authApi";
 
-// Mock axios
-vi.mock("axios");
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/api/authApi", () => ({
+  acknowledgeConsent: vi.fn(() => Promise.resolve({ status: 200 })),
+}));
 
 describe("ConsentModal", () => {
   let wrapper;
@@ -85,26 +97,26 @@ describe("ConsentModal", () => {
 
   describe("when I Agree is clicked", () => {
     it("POSTs to /consent/acknowledge and hides modal on success", async () => {
-      axios.post.mockResolvedValue({ status: 200 });
+      acknowledgeConsent.mockResolvedValue({ status: 200 });
       wrapper = createWrapper();
       expect(wrapper.vm.showModal).toBe(true);
 
       await wrapper.vm.onAgree();
       await wrapper.vm.$nextTick();
 
-      expect(axios.post).toHaveBeenCalledWith("/consent/acknowledge");
+      expect(acknowledgeConsent).toHaveBeenCalled();
       expect(wrapper.vm.showModal).toBe(false);
     });
 
     it("re-shows modal if POST fails", async () => {
-      axios.post.mockRejectedValue(new Error("Network error"));
+      acknowledgeConsent.mockRejectedValue(new Error("Network error"));
       wrapper = createWrapper();
       expect(wrapper.vm.showModal).toBe(true);
 
       await wrapper.vm.onAgree();
       await wrapper.vm.$nextTick();
 
-      expect(axios.post).toHaveBeenCalled();
+      expect(acknowledgeConsent).toHaveBeenCalled();
       expect(wrapper.vm.showModal).toBe(true);
     });
   });

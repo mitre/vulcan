@@ -1,0 +1,13 @@
+description: >-
+  Response from project creation. Success includes a toast notification and a redirect URL
+  to the new project page. Error includes only the toast (no redirect_url).
+type: object
+required:
+  - toast
+properties:
+  toast:
+    $ref: ./ToastObject.yaml
+  redirect_url:
+    type: string
+    description: Relative URL to the newly created project page. Present on success, absent on error.
+    example: /projects/1

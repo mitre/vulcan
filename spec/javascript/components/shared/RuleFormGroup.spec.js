@@ -1,18 +1,20 @@
 /**
- * RuleFormGroup — Lock Icon Color Tests
+ * RuleFormGroup — Lock Button + Right-Aligned Actions
  *
  * REQUIREMENTS:
- * - Unlocked + active (canManageSectionLocks=true, not locked): GREEN (text-success), clickable
- * - Locked + active (canManageSectionLocks=true, locked): ORANGE/WARNING (text-warning), clickable
- * - Disabled/inactive (showSectionLocks=true, canManageSectionLocks=false): GRAY (text-muted opacity-50), not clickable
- * - Icons hidden entirely when showSectionLocks=false and canManageSectionLocks=false
+ * - Label text + tooltip left-aligned, actions right-aligned
+ * - Lock button: outlined, small, with lock/unlock icon
+ *   - Unlocked + active: outline-success, clickable
+ *   - Locked + active: outline-warning, clickable
+ *   - Inactive (canManageSectionLocks=false): disabled
+ *   - Hidden when showSectionLocks=false and canManageSectionLocks=false
+ * - Emits toggle-section-lock when active lock button clicked
  */
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import RuleFormGroup from "@/components/shared/RuleFormGroup.vue";
 
-// Mock the FIELD_TO_SECTION import so resolvedSection works
 vi.mock("@/composables/ruleFieldConfig", () => ({
   FIELD_TO_SECTION: {
     title: "General",
@@ -30,126 +32,101 @@ function createWrapper(props = {}) {
       ...props,
     },
     stubs: {
-      "b-form-group": {
-        template: "<div><slot /></div>",
-        props: ["id"],
-      },
-      "b-icon": {
-        template:
-          '<span :class="$attrs.class" :icon="icon" @click="$listeners.click && $listeners.click($event)"></span>',
-        props: ["icon"],
-      },
-      "b-form-valid-feedback": { template: "<span />" },
-      "b-form-invalid-feedback": { template: "<span />" },
+      SectionCommentIcon: true,
+      InfoTooltip: true,
     },
   });
 }
 
-function findLockIcon(wrapper) {
-  const icons = wrapper.findAllComponents({ name: "b-icon" });
-  return icons.wrappers.find(
-    (w) => w.props("icon") === "lock-fill" || w.props("icon") === "unlock",
-  );
+function findLockBtn(wrapper) {
+  return wrapper.find("[data-test=section-lock-btn]");
 }
 
-describe("RuleFormGroup lock icon colors", () => {
+describe("RuleFormGroup", () => {
   let wrapper;
 
   afterEach(() => {
     if (wrapper) wrapper.destroy();
   });
 
-  // ─── Unlocked + active = GREEN ───────────────────────────
-  it("unlocked active icon has text-success and clickable class", () => {
+  // ─── Layout ─────────────────────────────────────────────
+  it("renders action bar below the label", () => {
     wrapper = createWrapper({
       showSectionLocks: true,
       canManageSectionLocks: true,
       lockedSections: {},
     });
-    const icon = findLockIcon(wrapper);
-    expect(icon).toBeTruthy();
-    expect(icon.props("icon")).toBe("unlock");
-    expect(icon.attributes("class")).toContain("text-success");
-    expect(icon.attributes("class")).toContain("clickable");
-    expect(icon.attributes("class")).not.toContain("opacity-50");
+    const bar = wrapper.find(".rfg-action-bar");
+    expect(bar.exists()).toBe(true);
+    expect(bar.classes()).toContain("rfg-action-bar");
   });
 
-  // ─── Locked + active = WARNING/ORANGE ────────────────────
-  it("locked active icon has text-warning and clickable class", () => {
+  // ─── Lock button: unlocked + active = outline-success ───
+  it("unlocked active lock button has outline-success variant", () => {
+    wrapper = createWrapper({
+      showSectionLocks: true,
+      canManageSectionLocks: true,
+      lockedSections: {},
+    });
+    const btn = findLockBtn(wrapper);
+    expect(btn.exists()).toBe(true);
+    expect(btn.attributes("class")).toContain("btn-outline-success");
+    expect(btn.attributes("disabled")).toBeUndefined();
+  });
+
+  // ─── Lock button: locked + active = outline-warning ─────
+  it("locked active lock button has outline-warning variant", () => {
     wrapper = createWrapper({
       showSectionLocks: true,
       canManageSectionLocks: true,
       lockedSections: { General: true },
     });
-    const icon = findLockIcon(wrapper);
-    expect(icon).toBeTruthy();
-    expect(icon.props("icon")).toBe("lock-fill");
-    expect(icon.attributes("class")).toContain("text-warning");
-    expect(icon.attributes("class")).toContain("clickable");
+    const btn = findLockBtn(wrapper);
+    expect(btn.exists()).toBe(true);
+    expect(btn.attributes("class")).toContain("btn-outline-warning");
   });
 
-  // ─── Disabled/inactive = GRAY + opacity ──────────────────
-  it("disabled unlocked icon has text-muted opacity-50 and no clickable", () => {
+  // ─── Lock button: inactive = disabled ───────────────────
+  it("disabled lock button when canManageSectionLocks is false", () => {
     wrapper = createWrapper({
       showSectionLocks: true,
       canManageSectionLocks: false,
       lockedSections: {},
     });
-    const icon = findLockIcon(wrapper);
-    expect(icon).toBeTruthy();
-    expect(icon.props("icon")).toBe("unlock");
-    expect(icon.attributes("class")).toContain("text-muted");
-    expect(icon.attributes("class")).toContain("opacity-50");
-    expect(icon.attributes("class")).not.toContain("clickable");
-    expect(icon.attributes("class")).not.toContain("text-success");
+    const btn = findLockBtn(wrapper);
+    expect(btn.exists()).toBe(true);
+    expect(btn.attributes("disabled")).toBeDefined();
   });
 
-  it("disabled locked icon has text-muted and no clickable", () => {
-    wrapper = createWrapper({
-      showSectionLocks: true,
-      canManageSectionLocks: false,
-      lockedSections: { General: true },
-    });
-    const icon = findLockIcon(wrapper);
-    expect(icon).toBeTruthy();
-    expect(icon.props("icon")).toBe("lock-fill");
-    expect(icon.attributes("class")).toContain("text-muted");
-    expect(icon.attributes("class")).not.toContain("clickable");
-    expect(icon.attributes("class")).not.toContain("text-warning");
-  });
-
-  // ─── Hidden when both false ──────────────────────────────
-  it("no lock icon when showSectionLocks and canManageSectionLocks are both false", () => {
+  // ─── Lock button: hidden when both false ────────────────
+  it("no lock button when showSectionLocks and canManageSectionLocks are both false", () => {
     wrapper = createWrapper({
       showSectionLocks: false,
       canManageSectionLocks: false,
       lockedSections: {},
     });
-    const icon = findLockIcon(wrapper);
-    expect(icon).toBeUndefined();
+    expect(findLockBtn(wrapper).exists()).toBe(false);
   });
 
-  // ─── Click behavior ──────────────────────────────────────
-  it("emits toggle-section-lock when active icon is clicked", async () => {
+  // ─── Click behavior ────────────────────────────────────
+  it("emits toggle-section-lock when active lock button is clicked", async () => {
     wrapper = createWrapper({
       showSectionLocks: true,
       canManageSectionLocks: true,
       lockedSections: {},
     });
-    const icon = findLockIcon(wrapper);
-    await icon.trigger("click");
+    await findLockBtn(wrapper).trigger("click");
     expect(wrapper.emitted("toggle-section-lock")).toBeTruthy();
     expect(wrapper.emitted("toggle-section-lock")[0]).toEqual(["General"]);
   });
 
-  it("does NOT emit toggle-section-lock when disabled icon is clicked", async () => {
+  it("does NOT emit toggle-section-lock when disabled lock button is clicked", async () => {
     wrapper = createWrapper({
       showSectionLocks: true,
       canManageSectionLocks: false,
       lockedSections: {},
     });
-    const icon = findLockIcon(wrapper);
-    await icon.trigger("click");
+    await findLockBtn(wrapper).trigger("click");
     expect(wrapper.emitted("toggle-section-lock")).toBeFalsy();
   });
 });

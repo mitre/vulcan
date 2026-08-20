@@ -9,13 +9,13 @@
       </template>
     </BaseCommandBar>
 
-    <b-alert v-if="isProviderManaged" show variant="info">
-      <b-icon icon="shield-check" /> Password changes are managed by your identity provider (<strong
-        >{{ linkedProvider }}</strong
-      >). This page is unavailable for SSO accounts.
+    <b-alert v-if="passwordAutoSet" show variant="info" class="mb-3">
+      <b-icon icon="info-circle" /> Your account was created via
+      <strong>{{ linkedProvider || "SSO" }}</strong
+      >. Set a password below to enable local sign-in.
     </b-alert>
 
-    <b-card v-else no-body>
+    <b-card no-body>
       <b-card-header>
         <h5 class="mb-0"><b-icon icon="shield-lock" class="mr-1" /> Change Password</h5>
       </b-card-header>
@@ -50,6 +50,7 @@
             </b-col>
           </b-form-row>
           <b-form-group
+            v-if="!passwordAutoSet"
             label="Current Password"
             label-for="user-current-password"
             description="Required to confirm your changes."
@@ -69,19 +70,21 @@
 </template>
 
 <script>
-import axios from "axios";
+import { updateProfile } from "../../api/usersApi";
 import BaseCommandBar from "../shared/BaseCommandBar.vue";
 import PasswordField from "../shared/PasswordField.vue";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { useToast } from "../../composables/useToast";
 
 export default {
   name: "UserPasswordPage",
   components: { BaseCommandBar, PasswordField },
-  mixins: [FormMixinVue, AlertMixinVue],
   props: {
     user: { type: Object, required: true },
     passwordPolicy: { type: Object, default: null },
+  },
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
   },
   data() {
     return {
@@ -90,21 +93,21 @@ export default {
     };
   },
   computed: {
-    isProviderManaged() {
-      return !!this.user.provider;
+    passwordAutoSet() {
+      return !!this.user.password_automatically_set;
     },
     linkedProvider() {
       if (!this.user.provider) return null;
-      const map = { oidc: "OIDC (SSO)", ldap: "LDAP", github: "GitHub" };
+      const map = { okta: "Okta", login_gov: "Login.gov", ldap: "LDAP", github: "GitHub" };
       return map[this.user.provider.toString().toLowerCase()] || this.user.provider;
     },
   },
   methods: {
     async savePassword() {
-      if (this.saving || this.isProviderManaged) return;
+      if (this.saving) return;
       this.saving = true;
       try {
-        const response = await axios.put("/users", { user: this.form });
+        const response = await updateProfile(this.form);
         this.alertOrNotifyResponse(response);
         this.form.password = "";
         this.form.password_confirmation = "";

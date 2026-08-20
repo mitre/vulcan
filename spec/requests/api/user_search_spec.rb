@@ -40,6 +40,28 @@ RSpec.describe 'API User Search' do
       end
     end
 
+    # A non-member must not learn a hidden project exists by searching it: the
+    # denial is concealed as a 404 identical to a nonexistent target id.
+    context 'as a non-member of a hidden project (concealment, no oracle)' do
+      let_it_be(:outsider) { create(:user, admin: false) }
+
+      before { sign_in outsider }
+
+      it 'answers a hidden project identically to a nonexistent target (404 not_found)' do
+        get '/api/users/search',
+            params: { q: 'jane', membership_type: 'Project', membership_id: project.id, scope: 'members' }
+        concealed = { status: response.status, body: response.body }
+
+        get '/api/users/search',
+            params: { q: 'jane', membership_type: 'Project', membership_id: 999_999_999, scope: 'members' }
+        missing = { status: response.status, body: response.body }
+
+        expect(concealed[:status]).to eq(404)
+        expect(response.parsed_body['type']).to eq('/docs/api/errors#not_found')
+        expect(concealed).to eq(missing)
+      end
+    end
+
     context 'when authenticated as project admin' do
       before { sign_in admin }
 

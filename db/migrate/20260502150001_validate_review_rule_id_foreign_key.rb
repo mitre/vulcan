@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-# PR-717 review remediation .j4a step A4 — pass 2 of 2 (Strong Migrations
+# Pass 2 of 2 (Strong Migrations
 # canonical pattern). Validates the FK added in 20260502150000 outside a
 # DDL transaction so existing-row validation does not hold ACCESS
 # EXCLUSIVE on `reviews` for the duration of the scan.
 #
-# Orphan handling (different shape than the user_id step A3 pair):
+# Orphan handling (different shape than the user_id FK pair):
 # `reviews.rule_id` references `base_rules.id`. Orphans here would mean
 # a review pointing at a deleted base_rule — those rows can never be
 # rebuilt (no canonical "deleted rule attribution" pattern in Vulcan,

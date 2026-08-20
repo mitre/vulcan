@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Three-column triage split-pane** — triagers see a persistent rule sidebar (col-2), rule content (col-5), and comment + triage form (col-5) side by side, replacing the prev/next nav + modal workflow. Sidebar shows rules grouped with pending/total counts, search filter, and keyboard navigation. Reuses BenchmarkViewer layout pattern. (PR #746)
+- **Triage progress bar** — summary pills with clickable status filter + thin stacked bar above the comments table. Shows per-status counts (All, Pending, Accepted, Declined, etc.) with "N of M resolved (X%)" summary. Click a pill to filter; click again to reset. Works on both component and project triage pages. (PR #746)
+- **DRY triage color palette** — centralized CSS custom properties in `triage-tints.css` as single source of truth. Colors: green (Accepted), blue (Accepted with Changes — ISO 3864 mandatory-action), red (Declined), yellow (Informational), grey (Pending), purple (Withdrawn — GitHub pattern), teal (Duplicate — Linear pattern). (PR #746)
+- **ARIA landmarks + focus management** — split-pane uses `<nav>`, `role="main"`, `role="complementary"` landmarks. Skip links for keyboard users. Focus lands on content heading on entry and after Save & Next (WAI-ARIA APG content-first pattern). Sidebar is a composite widget (single Tab stop, arrow keys inside). (PR #746)
+- **InfoTooltip + InfoNotice shared components** — consistent (i) icon tooltip pattern (15 instances migrated) and inline info notice pattern (2 instances) across the app. (PR #746)
+- **2D queue navigation** — skip-start/end icons for rule-level nav, chevrons for comment-level, Browse popover panel with search + keyboard nav. (PR #746)
+- **By-rule accordion view** — collapsible groups by rule with pending/total counts, Expand All toggle, auto-expand on filter change. (PR #746)
+- **Staleness badge** — "Section updated since this comment" when rule content changed after comment was posted. (PR #746)
+- **Admin actions inline** — dropdown on triage form button row (replaces sidebar). Force-withdraw, restore, move-to-rule, hard-delete with typed-ID confirmation. (PR #746)
+- **Status color dots on the requirement-status filter toggles** — each Status filter switch now renders the same single-source `.status-dot` used by sidebar rows and badges, giving the filter an at-a-glance color key. Dots are decorative for screen readers (the label carries the status) and every dot color meets 3:1 contrast in light and dark mode. (PR #746)
+- **Documentation build as a PR gate** — the VitePress build (with its dead-link check) now runs on pull requests that touch docs, reproducing the deploy build exactly instead of surfacing dead links at the Heroku deploy preview. In development, visiting `/docs` before the site is built now answers with build instructions instead of a bare "Not found". (PR #746)
+
+### Changed
+
+- **Show Resolved toggle removed** — replaced by clickable progress bar pills that serve as both status indicators and filter controls. "Pending" pill replaces the default filter; "All" pill shows everything. Eliminates the state model conflict between toggle and pill filters. (PR #746)
+- Renamed "Triage Queue" to "Comments" (heading, breadcrumbs, aria labels). (PR #746)
+- Commented/All toggle moved to rule ID row as simple switch. (PR #746)
+- Locked fields now allow comments (lock prevents editing, not commenting). (PR #746)
+- **Backup format version bumped to 1.1** — exports now declare `backup_format_version: "1.1"` (was 1.0). The format itself is a forward-compatible bump: review `created_at`/`updated_at` carry microsecond precision (already emitted as `iso8601(6)`), and `ManifestValidator` accepts both `1.0` and `1.1`. The matcher's `legacy_format?` branch (second-precision normalization) now triggers only on `1.0`, so two reviews <1s apart with identical rule_id and comment no longer collapse into `pair_degenerate` on fresh exports. Old 1.0 archives are still importable. (PR #746)
+- **Minted requirement identifiers are tracked by a persisted sequence** — recognizing a minted (authored-derivation) requirement no longer parses its identifier string, which could not distinguish a raw five-segment DISA container core from a minted one and broke the never-renumber invariant on re-release. `mint!` now stamps a `minted_sequence` column, recognition reads it, and the next-sequence high-water mark derives from it — immune to SRG rebases and abbreviation changes. Schema migration `20260817120000` + per-row backfill `20260817120100`; production deploys require `db:migrate`. (PR #746)
+
+### Fixed
+
+- SRG viewer sidebar highlighted all rules instead of first selected — `SrgRuleBlueprint` was missing `identifier :id`. (PR #746)
+- Split-pane exits when filter changes — watcher now selects first available comment instead of exiting when the active comment is filtered out. (PR #746)
+- `doSave` only adjudicates on "Save & next", not "Save decision". (PR #746)
+- Factory traits `after(:build)` DB writes fixed to `before(:create)`. (PR #746)
+- **Triage queue loads every comment past the server page cap** — the split-view/by-rule queue silently dropped comments beyond the server's 100-per-page limit (a 150-comment component showed only 100, and the tail could not be selected or triaged); it now pages until the full total is loaded. (PR #746)
+- **Triage progress bar updates live on in-place triage/adjudicate** — the bar's counts previously froze until the next full reload, making an adjudication look like a no-op until a filter switch. (PR #746)
+- **Archive import preserves review edit timestamps** — imported reviews hardcoded `updated_at` to `created_at`, discarding the edit time the backup carries. (PR #746)
+- **Comment moves carry the entire reply subtree** — replies-to-replies at any depth now survive a comment's transition between containers; previously only direct replies were carried, silently dropping deeper descendants. (PR #746)
+- **Catalog and review N+1 queries removed** — the SRG catalog index computed latest-release currency with several queries per row (now one query for the whole catalog), and the cached component-reviews path re-queried user/response associations per review (now batch-preloaded). (PR #746)
+- Reaction toggles on comment replies render immediately (Vue reactivity: index assignment replaced with `splice`). (PR #746)
+- Export modal's select-all no longer includes the disabled SRG component rows in the export payload. (PR #746)
+- Comment composer fully resets on close — reopening after a manual close no longer shows a stale success alert or auto-closes from an orphaned timer. (PR #746)
+- Rule search cancels its in-flight debounce on clear, so a trailing keystroke no longer re-applies a cleared search; the timer is per-instance. (PR #746)
+- Find & Replace surfaces search failures instead of leaving the spinner stuck with buttons disabled. (PR #746)
+- Copying a personal access token works in non-HTTPS deployments (clipboard API fallback + failure toast). (PR #746)
+- Admin token-revoke justification is captured in a modal instead of `window.prompt`, which is blockable in sandboxed contexts and silent on cancel. (PR #746)
+- Navbar global search input has an accessible name for screen readers. (PR #746)
+
+### Security
+
+- **Login lockout and rate limiting enforced on the JSON login path** — `/api/auth/login` previously authenticated with a bare password check, bypassing Devise lockout (failed attempts were never counted and locked accounts could still sign in — STIG AC-07) and all login throttling. It now authenticates through the full Devise checks, returns a distinct `account_locked` 401, and both login paths share generalized IP- and email-keyed throttles. (PR #746)
+- **Local-login toggle enforced server-side** — disabling local login previously only hid the form; a crafted POST to either login path could still sign in with local credentials on an SSO-only instance. A shared guard now rejects both paths server-side. (PR #746)
+
 ## [v2.3.7] - 2026-05-10
 
 ### Added

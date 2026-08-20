@@ -12,9 +12,27 @@ class StigBlueprint < Blueprinter::Base
     stig.severity_counts_hash
   end
 
+  field :is_latest do |stig, _options|
+    stig.latest?
+  end
+
+  field :latest_available_version do |stig, _options|
+    stig.latest? ? nil : stig.latest_release&.version
+  end
+
+  field :latest_available_id do |stig, _options|
+    stig.latest? ? nil : stig.latest_release&.id
+  end
+
   # === Index view: listing page ===
   view :index do
     # Default fields + severity_counts are sufficient
+  end
+
+  # === Latest view: dropdown population ===
+  # Reference identity only — no per-record severity/currency queries.
+  view :latest do
+    excludes :severity_counts, :is_latest, :latest_available_version, :latest_available_id, :benchmark_date
   end
 
   # === Show view: detail page ===
@@ -22,7 +40,7 @@ class StigBlueprint < Blueprinter::Base
     field :description
 
     association :stig_rules, blueprint: StigRuleBlueprint do |stig, _options|
-      stig.stig_rules
+      BaseRule.canonical_sort(stig.stig_rules)
     end
   end
 end

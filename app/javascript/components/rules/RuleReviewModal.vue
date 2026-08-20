@@ -46,14 +46,14 @@
 </template>
 
 <script>
-import axios from "axios";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { createRuleReview } from "../../api/reviewsApi";
+import { useToast } from "../../composables/useToast";
 import { buildReviewActions } from "../../utils/reviewActionHelpers";
 
 export default {
   name: "RuleReviewModal",
-  mixins: [AlertMixinVue],
   props: {
+    documentType: { type: String, default: "stig" },
     rule: {
       type: Object,
       required: true,
@@ -71,6 +71,10 @@ export default {
       default: false,
     },
   },
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
+  },
   data() {
     return {
       selectedReviewAction: null,
@@ -84,6 +88,7 @@ export default {
         this.readOnly,
         this.effectivePermissions,
         this.currentUserId,
+        this.documentType,
       );
     },
   },
@@ -97,14 +102,11 @@ export default {
         return;
       }
 
-      axios
-        .post(`/rules/${this.rule.id}/reviews`, {
-          review: {
-            component_id: this.rule.component_id,
-            action: this.selectedReviewAction,
-            comment: this.reviewComment.trim(),
-          },
-        })
+      createRuleReview(this.rule.id, {
+        component_id: this.rule.component_id,
+        action: this.selectedReviewAction,
+        comment: this.reviewComment.trim(),
+      })
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.resetForm();

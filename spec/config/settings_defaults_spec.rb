@@ -37,29 +37,46 @@ RSpec.describe 'Settings defaults' do
     end
   end
 
-  describe 'opt-in services default to false when env vars are unset' do
+  describe 'opt-in services default to false when their env vars are unset' do
     # YAML pattern: `ActiveModel::Type::Boolean.new.cast(ENV['...']) || false`
-    # When env var is unset: cast(nil) => nil, nil || false => false
-    # Initializer backup: sets false if value is nil
-
-    it 'ldap is disabled by default' do
-      skip 'VULCAN_ENABLE_LDAP is set in environment' if ENV.fetch('VULCAN_ENABLE_LDAP', nil).present?
-      expect(Settings.ldap['enabled']).to be false
+    # → false when the env var is unset.
+    #
+    # Asserted deterministically: with_settings_env unsets the controlling env
+    # var and reloads Settings, so the assertion RUNS regardless of the dev/CI
+    # environment (and restores Settings afterward). No skip-guards — a test
+    # that passes by skipping asserts nothing.
+    {
+      'ldap' => :VULCAN_ENABLE_LDAP,
+      'oidc' => :VULCAN_ENABLE_OIDC,
+      'smtp' => :VULCAN_ENABLE_SMTP,
+      'slack' => :VULCAN_ENABLE_SLACK_COMMS,
+      'banner' => :VULCAN_BANNER_ENABLED,
+      'consent' => :VULCAN_CONSENT_ENABLED
+    }.each do |section, env_var|
+      it "#{section} is disabled by default" do
+        with_settings_env(env_var => nil) do
+          expect(Settings[section]['enabled']).to be false
+        end
+      end
     end
+  end
 
-    it 'oidc is disabled by default' do
-      skip 'VULCAN_ENABLE_OIDC is set in environment' if ENV.fetch('VULCAN_ENABLE_OIDC', nil).present?
-      expect(Settings.oidc['enabled']).to be false
-    end
-
-    it 'smtp is disabled by default' do
-      skip 'VULCAN_ENABLE_SMTP is set in environment' if ENV.fetch('VULCAN_ENABLE_SMTP', nil).present?
-      expect(Settings.smtp['enabled']).to be false
-    end
-
-    it 'slack is disabled by default' do
-      skip 'VULCAN_ENABLE_SLACK_COMMS is set in environment' if ENV.fetch('VULCAN_ENABLE_SLACK_COMMS', nil).present?
-      expect(Settings.slack['enabled']).to be false
+  describe 'password policy defaults to its documented values when env vars are unset' do
+    # YAML pattern: `ENV.fetch('VULCAN_PASSWORD_MIN_*', '<n>').to_i`.
+    # Asserted deterministically via with_settings_env so a locally-set
+    # VULCAN_PASSWORD_MIN_* cannot mask the default value.
+    {
+      'min_length' => [15, :VULCAN_PASSWORD_MIN_LENGTH],
+      'min_uppercase' => [2, :VULCAN_PASSWORD_MIN_UPPERCASE],
+      'min_lowercase' => [2, :VULCAN_PASSWORD_MIN_LOWERCASE],
+      'min_number' => [2, :VULCAN_PASSWORD_MIN_NUMBER],
+      'min_special' => [2, :VULCAN_PASSWORD_MIN_SPECIAL]
+    }.each do |key, (value, env_var)|
+      it "password.#{key} defaults to #{value}" do
+        with_settings_env(env_var => nil) do
+          expect(Settings.password[key]).to eq(value)
+        end
+      end
     end
   end
 
@@ -80,6 +97,51 @@ RSpec.describe 'Settings defaults' do
 
       expect(oidc.keys).not_to include('discovery'),
                                'oidc section should not have a top-level discovery key (it belongs in oidc.args)'
+    end
+  end
+
+  describe 'terminology defaults when env vars are unset' do
+    # YAML pattern: `ENV.fetch('VULCAN_TERM_*', '<default>').to_json`, with
+    # blank-hardening in Settings.apply_defaults! following the banner block.
+    # Deployments rename the entity noun per kind (e.g. Requirement → Control);
+    # unset and blank env vars both resolve to the built-in defaults.
+    let(:unset_terminology_env) do
+      {
+        VULCAN_TERM_STIG_SINGULAR: nil, VULCAN_TERM_STIG_PLURAL: nil, VULCAN_TERM_STIG_LABEL: nil,
+        VULCAN_TERM_SRG_SINGULAR: nil, VULCAN_TERM_SRG_PLURAL: nil, VULCAN_TERM_SRG_LABEL: nil
+      }
+    end
+
+    it 'stig defaults to Rule/Rules/Rule' do
+      with_settings_env(**unset_terminology_env) do
+        expect(Settings.terminology.stig['singular']).to eq('Rule')
+        expect(Settings.terminology.stig['plural']).to eq('Rules')
+        expect(Settings.terminology.stig['label']).to eq('Rule')
+      end
+    end
+
+    it 'srg defaults to Requirement/Requirements/Req' do
+      with_settings_env(**unset_terminology_env) do
+        expect(Settings.terminology.srg['singular']).to eq('Requirement')
+        expect(Settings.terminology.srg['plural']).to eq('Requirements')
+        expect(Settings.terminology.srg['label']).to eq('Req')
+      end
+    end
+
+    it 'an env var overrides its term part' do
+      with_settings_env(VULCAN_TERM_SRG_SINGULAR: 'Control', VULCAN_TERM_SRG_PLURAL: 'Controls',
+                        VULCAN_TERM_SRG_LABEL: 'Ctrl') do
+        expect(Settings.terminology.srg['singular']).to eq('Control')
+        expect(Settings.terminology.srg['plural']).to eq('Controls')
+        expect(Settings.terminology.srg['label']).to eq('Ctrl')
+      end
+    end
+
+    it 'a blank env var falls back to the default (apply_defaults! hardening)' do
+      with_settings_env(VULCAN_TERM_STIG_SINGULAR: '', VULCAN_TERM_SRG_LABEL: '') do
+        expect(Settings.terminology.stig['singular']).to eq('Rule')
+        expect(Settings.terminology.srg['label']).to eq('Req')
+      end
     end
   end
 
@@ -134,6 +196,61 @@ RSpec.describe 'Settings defaults' do
 
     it 'providers section exists' do
       expect(Settings['providers']).not_to be_nil
+    end
+  end
+
+  describe 'numeric settings are Integer, not String' do
+    {
+      'consent.version' => -> { Settings.consent.version },
+      'consent.ttl' => -> { Settings.consent.ttl },
+      'password.min_length' => -> { Settings.password.min_length },
+      'password.min_uppercase' => -> { Settings.password.min_uppercase },
+      'password.min_lowercase' => -> { Settings.password.min_lowercase },
+      'password.min_number' => -> { Settings.password.min_number },
+      'password.min_special' => -> { Settings.password.min_special },
+      'local_login.session_timeout' => -> { Settings.local_login.session_timeout },
+      'local_login.remember_me_duration' => -> { Settings.local_login.remember_me_duration },
+      'lockout.maximum_attempts' => -> { Settings.lockout.maximum_attempts },
+      'lockout.unlock_in_minutes' => -> { Settings.lockout.unlock_in_minutes },
+      'session_limits.max_sessions' => -> { Settings.session_limits.max_sessions },
+      'input_limits.short_string' => -> { Settings.input_limits.short_string },
+      'input_limits.long_text' => -> { Settings.input_limits.long_text },
+      'api_tokens.max_tokens_per_user' => -> { Settings.api_tokens.max_tokens_per_user },
+      'api_tokens.max_lifetime_days' => -> { Settings.api_tokens.max_lifetime_days },
+      'api_tokens.auto_revoke_idle_days' => -> { Settings.api_tokens.auto_revoke_idle_days }
+    }.each do |path, accessor|
+      it "Settings.#{path} is Integer" do
+        value = accessor.call
+        expect(value).to be_a(Integer),
+                         "Expected Settings.#{path} to be Integer, got #{value.class} (#{value.inspect})"
+      end
+    end
+  end
+
+  describe 'auditing is disabled by default in test environment' do
+    it 'Audited.auditing_enabled is false' do
+      expect(Audited.auditing_enabled).to be(false)
+    end
+
+    it 'factory-created records do NOT generate audit records' do
+      expect { create(:project) }.not_to change(Audited::Audit, :count)
+    end
+
+    context 'with auditing re-enabled via shared context' do
+      include_context 'with auditing'
+
+      it 'Audited.auditing_enabled is true inside the context' do
+        expect(Audited.auditing_enabled).to be(true)
+      end
+
+      it 'factory-created records DO generate audit records' do
+        expect { create(:project) }.to change(Audited::Audit, :count).by(1)
+      end
+    end
+
+    it 'restores auditing to false after shared context exits' do
+      expect(Audited.auditing_enabled).to be(false)
+      expect { create(:project) }.not_to change(Audited::Audit, :count)
     end
   end
 end

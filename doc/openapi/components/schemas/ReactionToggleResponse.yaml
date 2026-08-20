@@ -1,0 +1,28 @@
+description: Response after toggling a reaction on a comment, returning updated aggregate counts and the current user's reaction.
+type: object
+required:
+  - reactions
+additionalProperties: false
+properties:
+  reactions:
+    type: object
+    description: Updated reaction state for the comment.
+    required:
+      - up
+      - down
+      - mine
+    properties:
+      up:
+        type: integer
+        description: Total number of upvote reactions.
+        example: 4
+      down:
+        type: integer
+        description: Total number of downvote reactions.
+        example: 1
+      mine:
+        type:
+          - string
+          - 'null'
+        description: The current user's reaction type (up or down). Null if the user has no active reaction.
+        example: up

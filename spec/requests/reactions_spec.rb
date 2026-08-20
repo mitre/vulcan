@@ -4,15 +4,23 @@ require 'rails_helper'
 
 RSpec.describe 'Reactions' do
   let_it_be(:anchor_admin) { create(:user, admin: true) }
-  let_it_be(:project) { create(:project) }
+  # Discoverable so an outsider's denial is a 403 permission_denied (the body
+  # this spec asserts) rather than a concealing 404.
+  let_it_be(:project) { create(:project, :discoverable) }
   let_it_be(:srg) { create(:security_requirements_guide) }
   let_it_be(:component) { create(:component, project: project, based_on: srg, comment_phase: 'open') }
+  # A hidden project + its comment, for the concealment / no-oracle pin.
+  let_it_be(:hidden_project) { create(:project, :hidden) }
+  let_it_be(:hidden_component) { create(:component, project: hidden_project, based_on: srg, comment_phase: 'open') }
   let_it_be(:viewer) { create(:user) }
   let_it_be(:other_viewer) { create(:user) }
   let_it_be(:outsider) { create(:user) }
   let(:rule) { component.rules.first }
   let(:comment_review) do
-    Review.create!(action: 'comment', comment: 'a comment', user: viewer, rule: rule)
+    create(:review, :comment, comment: 'a comment', user: viewer, rule: rule)
+  end
+  let(:hidden_comment_review) do
+    create(:review, :comment, comment: 'hidden comment', user: viewer, rule: hidden_component.rules.first)
   end
 
   before do
@@ -35,7 +43,26 @@ RSpec.describe 'Reactions' do
       it 'returns 403 with structured permission_denied payload' do
         post "/reviews/#{comment_review.id}/reactions", params: { kind: 'up' }, as: :json
         expect(response).to have_http_status(:forbidden)
-        expect(response.parsed_body['error']).to eq('permission_denied')
+        expect(response.parsed_body['type']).to eq('/docs/api/errors#permission_denied')
+      end
+    end
+
+    # A comment in a HIDDEN project must be indistinguishable from a review
+    # that does not exist — otherwise the 404 becomes an existence oracle a
+    # non-member could use to probe review ids.
+    context 'as an outsider to a hidden project (concealment, no oracle)' do
+      before { sign_in outsider }
+
+      it 'answers a comment in a hidden project identically to a nonexistent review (404 not_found)' do
+        post "/reviews/#{hidden_comment_review.id}/reactions", params: { kind: 'up' }, as: :json
+        concealed = { status: response.status, body: response.body }
+
+        post '/reviews/9999999/reactions', params: { kind: 'up' }, as: :json
+        missing = { status: response.status, body: response.body }
+
+        expect(concealed[:status]).to eq(404)
+        expect(response.parsed_body['type']).to eq('/docs/api/errors#not_found')
+        expect(concealed).to eq(missing)
       end
     end
 
@@ -73,26 +100,26 @@ RSpec.describe 'Reactions' do
       end
 
       it 'allows reacting to a reply (Decision 7)' do
-        reply = Review.create!(action: 'comment', comment: 'reply', user: viewer, rule: rule,
-                               responding_to_review_id: comment_review.id)
+        reply = create(:review, :comment, comment: 'reply', user: viewer, rule: rule,
+                                          responding_to_review_id: comment_review.id)
         expect do
           post "/reviews/#{reply.id}/reactions", params: { kind: 'up' }, as: :json
         end.to change(Reaction, :count).by(1)
         expect(response).to have_http_status(:ok)
       end
 
-      it 'rejects reacting to a non-comment review with the structured 403' do
+      it 'conceals a non-comment review as a 404 not_found (no existence tell)' do
         non_comment = comment_review
         non_comment.update_columns(action: 'approve')
         post "/reviews/#{non_comment.id}/reactions", params: { kind: 'up' }, as: :json
-        expect(response).to have_http_status(:forbidden)
-        expect(response.parsed_body['error']).to eq('permission_denied')
+        expect(response).to have_http_status(:not_found)
+        expect(response.parsed_body['type']).to eq('/docs/api/errors#not_found')
       end
 
-      it 'returns the soft 403 for a nonexistent review id' do
+      it 'conceals a nonexistent review id as a 404 not_found' do
         post '/reviews/9999999/reactions', params: { kind: 'up' }, as: :json
-        expect(response).to have_http_status(:forbidden)
-        expect(response.parsed_body.dig('toast', 'message')).to match(/isn't available/i)
+        expect(response).to have_http_status(:not_found)
+        expect(response.parsed_body['type']).to eq('/docs/api/errors#not_found')
       end
 
       it 'rejects when the component is closed (comment_phase=closed)' do
@@ -143,9 +170,10 @@ RSpec.describe 'Reactions' do
       expect(response.parsed_body['up'].size).to eq(2)
     end
 
-    it 'returns the soft 403 for a nonexistent review id' do
+    it 'conceals a nonexistent review id as a 404 not_found' do
       get '/reviews/9999999/reactions', as: :json
-      expect(response).to have_http_status(:forbidden)
+      expect(response).to have_http_status(:not_found)
+      expect(response.parsed_body['type']).to eq('/docs/api/errors#not_found')
     end
   end
 

@@ -2,52 +2,91 @@
 <template>
   <div class="card h-100">
     <div v-if="!selectedRule" class="card-body text-center text-muted py-5">
-      <p>Select a rule from the list to view details.</p>
+      <p>Select a {{ itemTerm.singular.toLowerCase() }} from the list to view details.</p>
     </div>
     <template v-else>
       <div class="card-header">
         <h5 class="card-title">{{ selectedRule.title }}</h5>
       </div>
       <div class="card-body">
+        <SatisfiedByIndicator
+          v-if="satisfiedByParents.length > 0"
+          :parent-rules="satisfiedByParents"
+        >
+          Covered by its parent {{ itemTerm.singular.toLowerCase() }} in this release.
+          <template #actions>
+            <span />
+          </template>
+        </SatisfiedByIndicator>
         <b-form>
           <!-- Vulnerability Discussion -->
-          <DisaRuleDescriptionForm
+          <RuleFormGroup
             v-if="hasDisaDescription"
-            :rule="selectedRule"
-            :index="0"
-            :description="selectedRule.disa_rule_descriptions_attributes[0]"
+            field-name="vuln_discussion"
+            label="Vulnerability Discussion"
+            tooltip="Description of the vulnerability with details and context"
+            :fields="vulnDiscussionFields"
             :disabled="true"
-            :fields="disaDescriptionFormFields"
-          />
+            read-only
+            id-prefix="rule"
+          >
+            <template #default="{ inputId, isDisabled }">
+              <MarkdownTextarea
+                :id="inputId"
+                :value="disaDescriptionValue"
+                placeholder=""
+                :disabled="isDisabled"
+                rows="1"
+                max-rows="99"
+                plain-text
+              />
+            </template>
+          </RuleFormGroup>
 
           <!-- Check Content -->
-          <CheckForm
+          <RuleFormGroup
             v-if="hasCheck"
-            :rule="selectedRule"
-            :index="0"
+            field-name="content"
+            label="Check"
+            tooltip="Procedure or script to verify system compliance"
+            :fields="checkFields"
             :disabled="true"
-            :fields="checkFormFields"
-          />
+            read-only
+            id-prefix="rule"
+          >
+            <template #default="{ inputId, isDisabled }">
+              <MarkdownTextarea
+                :id="inputId"
+                :value="checkContentValue"
+                placeholder=""
+                :disabled="isDisabled"
+                rows="1"
+                max-rows="99"
+                plain-text
+              />
+            </template>
+          </RuleFormGroup>
 
           <!-- Fix Text -->
           <RuleFormGroup
             v-if="selectedRule.fixtext"
             field-name="fixtext"
             label="Fix"
-            tooltip="Describe how to correctly configure the requirement to remediate the system vulnerability"
+            :tooltip="`Describe how to correctly configure the ${itemTerm.singular.toLowerCase()} to remediate the system vulnerability`"
             :fields="fixtextFields"
             :disabled="true"
             read-only
             id-prefix="rule"
           >
             <template #default="{ inputId, isDisabled }">
-              <b-form-textarea
+              <MarkdownTextarea
                 :id="inputId"
                 :value="selectedRule.fixtext"
                 placeholder=""
                 :disabled="isDisabled"
                 rows="1"
                 max-rows="99"
+                plain-text
               />
             </template>
           </RuleFormGroup>
@@ -64,13 +103,14 @@
             id-prefix="rule"
           >
             <template #default="{ inputId, isDisabled }">
-              <b-form-textarea
+              <MarkdownTextarea
                 :id="inputId"
                 :value="selectedRule.vendor_comments"
                 placeholder=""
                 :disabled="isDisabled"
                 rows="1"
                 max-rows="99"
+                plain-text
               />
             </template>
           </RuleFormGroup>
@@ -81,18 +121,26 @@
 </template>
 
 <script>
-import DisaRuleDescriptionForm from "../rules/forms/DisaRuleDescriptionForm";
-import CheckForm from "../rules/forms/CheckForm";
+import { RULE_TERM } from "../../constants/terminology";
 import RuleFormGroup from "../shared/RuleFormGroup.vue";
+import MarkdownTextarea from "../shared/MarkdownTextarea.vue";
+import SatisfiedByIndicator from "../shared/SatisfiedByIndicator.vue";
+import { ruleArray } from "../../utils/ruleArray";
 
 export default {
   name: "RuleDetails",
-  components: { DisaRuleDescriptionForm, CheckForm, RuleFormGroup },
+  components: { RuleFormGroup, MarkdownTextarea, SatisfiedByIndicator },
   props: {
     type: {
       type: String,
       required: true,
       validator: (value) => ["stig", "srg", "component"].includes(value),
+    },
+    // Resolved display noun from the parent viewer (kind-aware for
+    // released components); defaults to the deployment term.
+    itemTerm: {
+      type: Object,
+      default: () => RULE_TERM,
     },
     selectedRule: {
       type: Object,
@@ -101,24 +149,26 @@ export default {
     },
   },
   computed: {
+    satisfiedByParents() {
+      return ruleArray(this.selectedRule, "satisfied_by");
+    },
     hasDisaDescription() {
-      return (
-        this.selectedRule &&
-        this.selectedRule.disa_rule_descriptions_attributes &&
-        this.selectedRule.disa_rule_descriptions_attributes.length > 0
-      );
+      return ruleArray(this.selectedRule, "disa_rule_descriptions_attributes").length > 0;
     },
     hasCheck() {
-      return (
-        this.selectedRule &&
-        this.selectedRule.checks_attributes &&
-        this.selectedRule.checks_attributes.length > 0
-      );
+      return ruleArray(this.selectedRule, "checks_attributes").length > 0;
     },
-    disaDescriptionFormFields() {
+    disaDescriptionValue() {
+      return (ruleArray(this.selectedRule, "disa_rule_descriptions_attributes")[0] || {})
+        .vuln_discussion;
+    },
+    checkContentValue() {
+      return (ruleArray(this.selectedRule, "checks_attributes")[0] || {}).content;
+    },
+    vulnDiscussionFields() {
       return { displayed: ["vuln_discussion"], disabled: [] };
     },
-    checkFormFields() {
+    checkFields() {
       return { displayed: ["content"], disabled: [] };
     },
     fixtextFields() {

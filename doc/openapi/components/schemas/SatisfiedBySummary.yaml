@@ -1,0 +1,27 @@
+description: Satisfied-by relationship — extends SatisfactionSummary with the parent rule's fix text.
+type: object
+required:
+  - id
+  - rule_id
+additionalProperties: false
+properties:
+  id:
+    type: integer
+    description: Unique satisfaction record identifier.
+    example: 50
+  rule_id:
+    type: integer
+    description: ID of the parent rule that satisfies this one.
+    example: 100
+  srg_id:
+    type:
+      - string
+      - 'null'
+    description: SRG requirement version identifier.
+    example: "CNTR-00-000050"
+  fixtext:
+    type:
+      - string
+      - 'null'
+    description: Fix text from the parent rule (inherited content).
+    example: "Configure the container platform to restrict access..."

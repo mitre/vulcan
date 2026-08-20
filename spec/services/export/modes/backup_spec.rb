@@ -55,11 +55,11 @@ RSpec.describe Export::Modes::Backup do
       expect(flat_symbols).to include(:satisfied_by)
     end
 
-    it 'includes reviews with user for attribution' do
+    it 'includes reviews with user for attribution and reactions for archive fidelity' do
       assocs = mode.eager_load_associations
       review_assoc = assocs.find { |a| a.is_a?(Hash) && a.key?(:reviews) }
       expect(review_assoc).to be_present
-      expect(review_assoc[:reviews]).to eq(:user)
+      expect(review_assoc[:reviews]).to eq([:user, { reactions: :user }])
     end
 
     it 'includes additional_answers with question for name mapping' do
@@ -67,6 +67,29 @@ RSpec.describe Export::Modes::Backup do
       answer_assoc = assocs.find { |a| a.is_a?(Hash) && a.key?(:additional_answers) }
       expect(answer_assoc).to be_present
       expect(answer_assoc[:additional_answers]).to eq(:additional_question)
+    end
+
+    it 'carries the srg_rule lineage hop the serializer emits as srg_rule_srg_id' do
+      assocs = mode.eager_load_associations
+      srg_rule_assoc = assocs.find { |a| a.is_a?(Hash) && a.key?(:srg_rule) }
+      expect(srg_rule_assoc).to be_present
+      expect(srg_rule_assoc[:srg_rule]).to include(:security_requirements_guide)
+    end
+  end
+
+  describe '#srg_eager_load_associations' do
+    it 'carries the derived_from lineage hop the serializer emits as derived_from_srg_rule_srg_id' do
+      assocs = mode.srg_eager_load_associations
+      derived_assoc = assocs.find { |a| a.is_a?(Hash) && a.key?(:derived_from) }
+      expect(derived_assoc).to be_present
+      expect(derived_assoc[:derived_from]).to eq(:security_requirements_guide)
+    end
+
+    it 'includes reviews with user for attribution and reactions for archive fidelity' do
+      assocs = mode.srg_eager_load_associations
+      review_assoc = assocs.find { |a| a.is_a?(Hash) && a.key?(:reviews) }
+      expect(review_assoc).to be_present
+      expect(review_assoc[:reviews]).to eq([:user, { reactions: :user }])
     end
   end
 

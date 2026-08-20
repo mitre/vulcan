@@ -1,7 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import DisaRuleDescriptionForm from "@/components/rules/forms/DisaRuleDescriptionForm.vue";
+
+vi.mock("@/composables/useFormFeedback", { spy: true });
+import { useFormFeedback } from "@/composables/useFormFeedback";
 
 describe("DisaRuleDescriptionForm", () => {
   const createWrapper = (propsOverrides = {}) => {
@@ -358,6 +361,53 @@ describe("DisaRuleDescriptionForm", () => {
         'textarea, [id^="ruleEditor-disa_rule_description-severity_override_guidance-"]',
       );
       expect(textarea.exists()).toBe(true);
+    });
+  });
+
+  // ── composable contracts ────────────────────────────────────────────
+  // REQUIREMENT: input state classes derive via useFormFeedback — no
+  // FormFeedbackMixin remains. The validFeedback/invalidFeedback props
+  // stay declared on the component (prop API parity with the mixin).
+  describe("composable contracts", () => {
+    it("derives input state classes via useFormFeedback", () => {
+      const wrapper = createWrapper({
+        invalidFeedback: { vuln_discussion: "Discussion is required" },
+        validFeedback: { mitigations: "Mitigations look good" },
+      });
+      expect(useFormFeedback).toHaveBeenCalled();
+      expect(wrapper.vm.inputClass("vuln_discussion")).toBe("is-invalid");
+      expect(wrapper.vm.inputClass("mitigations")).toBe("is-valid");
+      expect(wrapper.vm.inputClass("poam")).toBe("");
+    });
+  });
+
+  // ── Leak regression: SRG vocabulary never surfaces STIG-only fields ──
+  describe("SRG vocabulary leak regression", () => {
+    it("with the SRG-resolved field set, only vuln_discussion renders — no vendor-metadata groups", () => {
+      const wrapper = createWrapper({
+        rule: { status: "Applicable", satisfied_by: [], locked: false, review_requestor_id: null },
+        fields: { displayed: ["vuln_discussion"], disabled: [] },
+      });
+      expect(
+        wrapper.find('[id^="ruleEditor-disa_rule_description-vuln_discussion-group"]').exists(),
+      ).toBe(true);
+      ["mitigations", "poam", "ia_controls", "documentable"].forEach((field) => {
+        expect(
+          wrapper.find(`[id^="ruleEditor-disa_rule_description-${field}-group"]`).exists(),
+        ).toBe(false);
+      });
+    });
+
+    it("an SRG status resolves tooltip lookups without STIG-only branches crashing", () => {
+      const wrapper = createWrapper({
+        rule: { status: "Applicable", satisfied_by: [], locked: false, review_requestor_id: null },
+        fields: { displayed: ["vuln_discussion"], disabled: [] },
+      });
+      // Statuses outside the STIG-keyed maps fall to defaults, never throw.
+      expect(wrapper.vm.tooltips.mitigations).toBe(
+        "Discuss how the system mitigates this vulnerability in the absence of a configuration that would eliminate it",
+      );
+      expect(wrapper.vm.tooltips.poam).toBeNull();
     });
   });
 });

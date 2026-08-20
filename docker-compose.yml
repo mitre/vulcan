@@ -1,3 +1,4 @@
+name: vulcan
 # Vulcan Docker Compose (default — production deployment)
 #
 # ============================================================================
@@ -37,7 +38,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}  #ggignore
-      POSTGRES_DB: ${POSTGRES_DB:-vulcan_postgres_production}
+      POSTGRES_DB: ${POSTGRES_DB:-vulcan_production}
     expose:
       - "5432"
     healthcheck:
@@ -54,7 +55,7 @@ services:
       target: production
     environment:
       # Database connection (deployment-specific)
-      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB:-vulcan_postgres_production}  #ggignore
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB:-vulcan_production}  #ggignore
       NODE_ENV: production
       # Default to HTTP — enable SSL via proxy profiles (caddy/nginx) and set to true
       RAILS_FORCE_SSL: "${RAILS_FORCE_SSL:-false}"

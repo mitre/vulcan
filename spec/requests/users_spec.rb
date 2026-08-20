@@ -13,6 +13,21 @@ RSpec.describe 'Users' do
   let(:regular_user) { create(:user, admin: false) }
   let(:target_user) { create(:user, admin: false) }
 
+  describe 'GET /users JSON format' do
+    before { sign_in admin_user }
+
+    it 'includes locked_at, failed_attempts, and last_sign_in_at in response' do
+      get '/users', headers: { 'Accept' => 'application/json' }
+      expect(response).to have_http_status(:ok)
+
+      body = response.parsed_body
+      user_keys = body.first.keys
+      expect(user_keys).to include('locked_at')
+      expect(user_keys).to include('failed_attempts')
+      expect(user_keys).to include('last_sign_in_at')
+    end
+  end
+
   describe 'PUT /users/:id HTML format with admin user' do
     before { sign_in admin_user }
 
@@ -190,6 +205,36 @@ RSpec.describe 'Users' do
     end
   end
 
+  describe 'sole project admin protection' do
+    let(:json_headers) { { 'Accept' => 'application/json', 'Content-Type' => 'application/json' } }
+    let(:project) { create(:project, name: 'Orphan Risk Project') }
+
+    before do
+      create(:membership, user: target_user, membership: project, role: 'admin')
+      sign_in admin_user
+    end
+
+    it 'returns 422 naming the project and keeps the user' do
+      delete "/users/#{target_user.id}", headers: json_headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      json = response.parsed_body
+      expect(json['toast']['title']).to eq('Cannot delete user.')
+      expect(json['toast']['message'].join)
+        .to include("the only admin of: 'Orphan Risk Project'")
+      expect(User.exists?(target_user.id)).to be(true)
+    end
+
+    it 'allows deletion once another project admin exists' do
+      create(:membership, user: create(:user), membership: project, role: 'admin')
+
+      delete "/users/#{target_user.id}", headers: json_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(User.exists?(target_user.id)).to be(false)
+    end
+  end
+
   describe 'last admin protection' do
     let(:json_headers) { { 'Accept' => 'application/json', 'Content-Type' => 'application/json' } }
 
@@ -266,7 +311,7 @@ RSpec.describe 'Users' do
 
         expect(response).to have_http_status(:ok)
         json = response.parsed_body
-        expect(json['toast']).to include('newuser@example.com')
+        expect(json['toast']['message']).to include(a_string_including('newuser@example.com'))
         expect(json['user']['email']).to eq('newuser@example.com')
         expect(json['user']['name']).to eq('New User')
       end
@@ -570,28 +615,68 @@ RSpec.describe 'Users' do
   end
 
   describe 'GET /users/:id/comments (My Comments)' do
-    let!(:my_project) { create(:project) }
-    let!(:srg) { create(:security_requirements_guide) }
-    let!(:my_component) { create(:component, project: my_project, based_on: srg) }
-    let!(:other_project) { create(:project) }
-    let!(:other_component) { create(:component, project: other_project, based_on: srg) }
-    let!(:viewer) { create(:user) }
-    let!(:other_viewer) { create(:user) }
+    # Shared read-only documents: the SRG parse + two component imports are
+    # the expensive part; reviews/memberships stay per-example (they roll
+    # back, so the exact-id assertions below see only their own records).
+    let_it_be(:my_project) { create(:project) }
+    let_it_be(:srg) { create(:security_requirements_guide) }
+    let_it_be(:my_component) { create(:component, project: my_project, based_on: srg) }
+    let_it_be(:other_project) { create(:project) }
+    let_it_be(:other_component) { create(:component, project: other_project, based_on: srg) }
+    let_it_be(:viewer) { create(:user) }
+    let_it_be(:other_viewer) { create(:user) }
 
     before do
       Membership.find_or_create_by!(user: viewer, membership: my_project) { |m| m.role = 'viewer' }
       Membership.find_or_create_by!(user: viewer, membership: other_project) { |m| m.role = 'viewer' }
       Membership.find_or_create_by!(user: other_viewer, membership: my_project) { |m| m.role = 'viewer' }
 
-      @my_c1 = Review.create!(action: 'comment', comment: 'one', user: viewer,
-                              rule: my_component.rules.first, section: 'check_content')
-      @my_c2 = Review.create!(action: 'comment', comment: 'two', user: viewer,
-                              rule: other_component.rules.first, section: nil)
-      @other_users_c = Review.create!(action: 'comment', comment: 'theirs', user: other_viewer,
-                                      rule: my_component.rules.first)
-      @my_reply = Review.create!(action: 'comment', comment: 'reply', user: viewer,
-                                 rule: my_component.rules.first,
-                                 responding_to_review_id: @other_users_c.id)
+      @my_c1 = create(:review, :comment, comment: 'one', user: viewer,
+                                         rule: my_component.rules.first, section: 'check_content')
+      @my_c2 = create(:review, :comment, comment: 'two', user: viewer,
+                                         rule: other_component.rules.first, section: nil)
+      @other_users_c = create(:review, :comment, comment: 'theirs', user: other_viewer,
+                                                 rule: my_component.rules.first)
+      @my_reply = create(:review, :comment, comment: 'reply', user: viewer,
+                                            rule: my_component.rules.first,
+                                            responding_to_review_id: @other_users_c.id)
+    end
+
+    # Authored-SRG comments carry the requirement on the polymorphic
+    # commentable (legacy rule_id is nil) — the display map must key by the
+    # requirement id or every SRG row collapses onto one nil key and rows
+    # show each other's display names.
+    context 'with comments on authored SRG requirements' do
+      before do
+        core_srg = create(:security_requirements_guide, :skip_rules, :core,
+                          srg_id: 'SRG-CORE-MYCOM', version: 'V1R1')
+        srg_component = create(:component, :skip_rules, project: my_project,
+                                                        document_type: 'srg', based_on: core_srg,
+                                                        prefix: 'SRGT-00', name: 'Authored SRG',
+                                                        title: 'Authored SRG')
+        authored_one = create(:srg_rule, :authored, component: srg_component,
+                                                    rule_id: '000001', status: 'Applicable')
+        authored_two = create(:srg_rule, :authored, component: srg_component,
+                                                    rule_id: '000002', status: 'Applicable')
+        @srg_comment_one = create(:review, :comment, comment: 'srg one', user: viewer,
+                                                     rule: nil, commentable: authored_one,
+                                                     section: 'fixtext')
+        @srg_comment_two = create(:review, :comment, comment: 'srg two', user: viewer,
+                                                     rule: nil, commentable: authored_two,
+                                                     section: 'fixtext')
+        sign_in viewer
+      end
+
+      it 'decorates each SRG row with its OWN requirement display name and component' do
+        get "/users/#{viewer.id}/comments", as: :json
+
+        rows = response.parsed_body['rows']
+        row_one = rows.find { |r| r['id'] == @srg_comment_one.id }
+        row_two = rows.find { |r| r['id'] == @srg_comment_two.id }
+        expect(row_one['rule_displayed_name']).to eq('SRGT-00-000001')
+        expect(row_two['rule_displayed_name']).to eq('SRGT-00-000002')
+        expect(row_one['component_name']).to eq('Authored SRG')
+      end
     end
 
     context 'as the viewer requesting their own comments' do
@@ -641,8 +726,8 @@ RSpec.describe 'Users' do
       before { sign_in viewer }
 
       let!(:my_component_comment) do
-        Review.create!(action: 'comment', comment: 'overall component', user: viewer,
-                       commentable: my_component)
+        create(:review, :component_comment, comment: 'overall component', user: viewer,
+                                            commentable: my_component)
       end
 
       it "includes the user's component-scoped reviews alongside rule-scoped ones" do

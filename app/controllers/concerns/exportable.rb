@@ -5,6 +5,17 @@
 module Exportable
   extend ActiveSupport::Concern
 
+  included do
+    # Kind routing can exclude every selected component (a purpose with no
+    # srg meaning applied to srg components only) — refuse loudly instead
+    # of sending an empty artifact.
+    rescue_from Export::Base::NoExportableComponents do |e|
+      render json: {
+        toast: Toast.new(title: 'Export not available.', message: e.message, variant: 'danger')
+      }, status: :unprocessable_content
+    end
+  end
+
   private
 
   # Perform an export using the service layer.

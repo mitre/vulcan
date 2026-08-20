@@ -24,8 +24,12 @@ RSpec.describe 'OIDC Discovery Integration' do
     # Mock OIDC settings for tests
 
     oidc_args = double('oidc_args')
-    allow(oidc_args).to receive(:issuer).and_return('https://example.okta.com')
-    allow(Settings.oidc).to receive_messages(enabled: true, discovery: true, args: oidc_args)
+    client_options = double('client_options', identifier: 'test-client')
+    allow(oidc_args).to receive_messages(issuer: 'https://example.okta.com', client_options: client_options)
+    allow(Settings.oidc).to receive_messages(
+      enabled: true, discovery: true, args: oidc_args,
+      providers: [{ 'name' => 'oidc', 'issuer' => 'https://example.okta.com', 'client_id' => 'test-client' }]
+    )
 
     # Mock discovery endpoint with WebMock
     stub_request(:get, 'https://example.okta.com/.well-known/openid-configuration')
@@ -40,7 +44,7 @@ RSpec.describe 'OIDC Discovery Integration' do
       Rails.cache.clear
 
       # Test that discovery is used for logout endpoint
-      logout_endpoint = controller.send(:fetch_oidc_logout_endpoint)
+      logout_endpoint = controller.send(:fetch_oidc_logout_endpoint_for, { 'name' => 'oidc', 'issuer' => 'https://example.okta.com', 'client_id' => 'test-client' })
       expect(logout_endpoint).to eq('https://example.okta.com/oauth2/v1/logout')
 
       # Verify that the discovery endpoint was called
@@ -53,7 +57,7 @@ RSpec.describe 'OIDC Discovery Integration' do
       Rails.cache.clear
 
       # First call should hit the discovery endpoint
-      controller.send(:fetch_oidc_logout_endpoint)
+      controller.send(:fetch_oidc_logout_endpoint_for, { 'name' => 'oidc', 'issuer' => 'https://example.okta.com', 'client_id' => 'test-client' })
       expect(a_request(:get, 'https://example.okta.com/.well-known/openid-configuration')).to have_been_made.once
 
       # Verify cache was populated in Rails.cache
@@ -63,7 +67,7 @@ RSpec.describe 'OIDC Discovery Integration' do
       expect(cached_data['end_session_endpoint']).to eq('https://example.okta.com/oauth2/v1/logout')
 
       # Second call should use cache, not hit endpoint again
-      controller.send(:fetch_oidc_logout_endpoint)
+      controller.send(:fetch_oidc_logout_endpoint_for, { 'name' => 'oidc', 'issuer' => 'https://example.okta.com', 'client_id' => 'test-client' })
       expect(a_request(:get, 'https://example.okta.com/.well-known/openid-configuration')).to have_been_made.once
     end
   end
@@ -78,7 +82,7 @@ RSpec.describe 'OIDC Discovery Integration' do
       allow(controller).to receive(:session).and_return({})
 
       # Should fall back to manual Okta-style URL without hitting discovery
-      logout_endpoint = controller.send(:fetch_oidc_logout_endpoint)
+      logout_endpoint = controller.send(:fetch_oidc_logout_endpoint_for, { 'name' => 'oidc', 'issuer' => 'https://example.okta.com', 'client_id' => 'test-client' })
       expect(logout_endpoint).to eq('https://example.okta.com/oauth2/v1/logout')
 
       # Verify discovery endpoint was not called
@@ -99,7 +103,7 @@ RSpec.describe 'OIDC Discovery Integration' do
       Rails.cache.clear
 
       # Should fall back to manual Okta-style URL
-      logout_endpoint = controller.send(:fetch_oidc_logout_endpoint)
+      logout_endpoint = controller.send(:fetch_oidc_logout_endpoint_for, { 'name' => 'oidc', 'issuer' => 'https://example.okta.com', 'client_id' => 'test-client' })
       expect(logout_endpoint).to eq('https://example.okta.com/oauth2/v1/logout')
 
       # Verify discovery was attempted but fallback was used

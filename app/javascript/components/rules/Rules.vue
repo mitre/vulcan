@@ -1,13 +1,13 @@
 <template>
-  <div>
+  <div class="vulcan-editor-layout">
     <b-breadcrumb :items="breadcrumbs" />
 
+    <!-- Permissions flow via provide("effectivePermissions") from setup() -->
     <RulesCodeEditorView
       :project="project"
       :component="reactiveComponent"
       :rules="reactiveRules"
       :statuses="statuses"
-      :effective-permissions="effective_permissions"
       :current-user-id="current_user_id"
       :available-roles="available_roles"
     />
@@ -15,20 +15,22 @@
 </template>
 
 <script>
-import axios from "axios";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { provide } from "vue";
+import {
+  getRule,
+  deleteRule,
+  createRuleInComponent,
+  addSatisfaction,
+  removeSatisfaction,
+} from "../../api/rulesApi";
 import RulesCodeEditorView from "./RulesCodeEditorView.vue";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import SortRulesMixin from "../../mixins/SortRulesMixin.vue";
+import { useSortRules } from "../../composables/useSortRules";
+import { useToast } from "../../composables/useToast";
+import { ruleArray } from "../../utils/ruleArray";
 export default {
   name: "Rules",
   components: { RulesCodeEditorView },
-  mixins: [AlertMixinVue, FormMixinVue, SortRulesMixin],
   props: {
-    effective_permissions: {
-      type: String,
-      required: true,
-    },
     current_user_id: {
       type: Number,
       required: true,
@@ -53,6 +55,14 @@ export default {
       type: Array,
       required: true,
     },
+  },
+  setup(props) {
+    const effective_permissions = props.component?.effective_permissions || null;
+    provide("effectivePermissions", effective_permissions);
+    // setup-before-data: data() reads this.compareRules for the initial sort
+    const { compareRules } = useSortRules();
+    const { alertOrNotifyResponse } = useToast();
+    return { effective_permissions, compareRules, alertOrNotifyResponse };
   },
   data: function () {
     return {
@@ -111,8 +121,7 @@ export default {
      * Previously called refreshRule() which overwrote local changes with server data.
      */
     addSatisfiedRule: function (rule_id, satisfied_by_rule_id, successCallback = null) {
-      axios
-        .post(`/rule_satisfactions`, { rule_id, satisfied_by_rule_id })
+      addSatisfaction(rule_id, satisfied_by_rule_id)
         .then((response) => {
           this.alertOrNotifyResponse(response);
 
@@ -164,8 +173,7 @@ export default {
      * Previously called refreshRule() which overwrote local changes with server data.
      */
     removeSatisfiedRule: function (rule_id, satisfied_by_rule_id, successCallback = null) {
-      axios
-        .delete(`/rule_satisfactions/${rule_id}`, { data: { rule_id, satisfied_by_rule_id } })
+      removeSatisfaction(rule_id, satisfied_by_rule_id)
         .then((response) => {
           this.alertOrNotifyResponse(response);
 
@@ -179,13 +187,17 @@ export default {
           if (ruleIndex >= 0) {
             const rule = this.reactiveRules[ruleIndex];
             // Remove from satisfied_by array
-            rule.satisfied_by = rule.satisfied_by.filter((r) => r.id !== satisfied_by_rule_id);
+            rule.satisfied_by = ruleArray(rule, "satisfied_by").filter(
+              (r) => r.id !== satisfied_by_rule_id,
+            );
           }
 
           if (satisfiedByIndex >= 0) {
             const satisfiedByRule = this.reactiveRules[satisfiedByIndex];
             // Remove from satisfies array
-            satisfiedByRule.satisfies = satisfiedByRule.satisfies.filter((r) => r.id !== rule_id);
+            satisfiedByRule.satisfies = ruleArray(satisfiedByRule, "satisfies").filter(
+              (r) => r.id !== rule_id,
+            );
           }
 
           if (successCallback) {
@@ -200,8 +212,7 @@ export default {
      * Event handler for @delete:rule
      */
     deleteRule: function (rule_id, successCallback = null) {
-      axios
-        .delete(`/rules/${rule_id}`)
+      deleteRule(rule_id)
         .then((response) => {
           this.alertOrNotifyResponse(response);
 
@@ -223,8 +234,7 @@ export default {
      * Event handler for @create:rule
      */
     createRule: function (rule, successCallback = null) {
-      axios
-        .post(`/components/${this.reactiveComponent.id}/rules`, { rule: rule })
+      createRuleInComponent(this.reactiveComponent.id, rule)
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.ruleFetchSuccess(response);
@@ -358,8 +368,7 @@ export default {
      * updated: How the rule is expected to have been changed. Expects any of ['all', 'comments']
      */
     refreshRule: function (id, updated = "all") {
-      axios
-        .get(`/rules/${id}`)
+      getRule(id)
         .then((response) => this.ruleFetchSuccess(response, updated))
         .catch(this.alertOrNotifyResponse);
     },
@@ -373,14 +382,23 @@ export default {
      * changes just beause a user has commented.
      */
     ruleFetchSuccess: function (response, updated = "all") {
-      if (response.data.id === undefined) {
+      // Only the legacy string payload needs parsing — the create body
+      // carries data as an already-parsed object, and JSON.parse on an
+      // object throws, silently dropping the insert and selection.
+      if (response.data.id === undefined && typeof response.data.data === "string") {
         response.data.data = JSON.parse(response.data.data);
       }
       const ruleIndex = this.reactiveRules.findIndex((r) => r.id == response.data.id);
 
-      // If the rule is not in the reactive rules then add it and return early
+      // If the rule is not in the reactive rules then add it and return
+      // early. A modern rule response IS response.data; only the legacy
+      // string-payload shape (no top-level id) carries the rule under
+      // .data.data — pushing .data.data unconditionally inserted
+      // undefined and crashed every consumer of the rules array.
       if (ruleIndex < 0) {
-        this.reactiveRules.push(response.data.data);
+        this.reactiveRules.push(
+          response.data.id === undefined ? response.data.data : response.data,
+        );
         return;
       }
 

@@ -12,11 +12,11 @@ RSpec.describe 'Rule section locks' do
     srg
   end
   let_it_be(:project) { Project.create(name: 'Section Lock Test') }
-  let_it_be(:component, refind: true) do
+  let_it_be(:component) do
     Component.create!(project: project, name: 'SL Test', title: 'SL', version: 'V1R1',
                       prefix: 'SLCK-01', based_on: shared_srg)
   end
-  let_it_be(:rule, refind: true) do
+  let_it_be(:rule) do
     Rule.create!(component: component, rule_id: 'SL-R1',
                  status: 'Applicable - Configurable', rule_severity: 'medium',
                  srg_rule: shared_srg.srg_rules.first)

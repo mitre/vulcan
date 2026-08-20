@@ -53,23 +53,36 @@ RSpec.describe 'Session auth method tracking' do
     end
   end
 
-  describe 'OmniAuth login (OIDC/LDAP/GitHub)' do
-    # OmniAuth test mode doesn't trigger the real callback controller path easily,
-    # so we verify the controller code contains the correct session write logic.
-    let(:controller_code) do
-      Rails.root.join('app/controllers/users/omniauth_callbacks_controller.rb').read
+  describe 'OmniAuth login records the provider used for the session' do
+    # OmniAuth test mode DOES drive the real callback controller via
+    # post '/users/auth/<provider>' + follow_redirect!, so assert the behavior
+    # directly. With multi-provider OIDC the callback sets session[:auth_method]
+    # from auth.provider, which is the per-provider strategy name (:okta,
+    # :login_gov, ...) — verified at the model level in user_multi_provider_spec.
+    let(:provider) { Devise.omniauth_providers.first }
+    let(:user) { create(:user, provider: provider.to_s, uid: 'oidc-session-uid') }
+
+    before do
+      OmniAuth.config.test_mode = true
+      OmniAuth.config.mock_auth[provider] = OmniAuth::AuthHash.new(
+        provider: provider.to_s,
+        uid: user.uid,
+        info: { name: user.name, email: user.email },
+        credentials: { id_token: 'fake-id-token' },
+        extra: { raw_info: {} }
+      )
     end
 
-    it 'OmniauthCallbacksController sets session[:auth_method] from auth.provider' do
-      # The controller must write session[:auth_method] so the profile can show
-      # "Signed in via Okta" vs "Signed in via email and password".
-      expect(controller_code).to include('session[:auth_method]'),
-                                 'OmniauthCallbacksController must set session[:auth_method]'
+    after do
+      OmniAuth.config.mock_auth[provider] = nil
+      OmniAuth.config.test_mode = false
     end
 
-    it 'sets auth_method using to_sym of auth.provider' do
-      # :oidc, :ldap, :github — symbols for consistency with local login (:local)
-      expect(controller_code).to match(/session\[:auth_method\]\s*=\s*auth\.provider.*\.to_sym/)
+    it 'sets session[:auth_method] to the provider name after the OIDC callback' do
+      post "/users/auth/#{provider}"
+      follow_redirect!
+
+      expect(session[:auth_method]).to eq(provider)
     end
   end
 end

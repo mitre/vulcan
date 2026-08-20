@@ -9,16 +9,26 @@ import RuleActionsToolbar from "@/components/rules/RuleActionsToolbar.vue";
  * REQUIREMENTS:
  *
  * 1. BUTTON ORDER (left to right, safe → destructive):
- *    Info/Reference: Related, Satisfies, History, Comment History (read-only panels)
+ *    Info/Reference: Related, Satisfies, Changelog, Discussion (read-only panels)
  *    Collaboration: Comment, Change Review Status (team interaction)
  *    Edit: Save, Clone (modify/create data)
  *    Admin: Delete, Lock/Unlock (destructive/restricted)
  *
  * 2. PANEL BUTTONS (info/reference):
- *    - Related: Opens RelatedRulesModal (always available)
- *    - Satisfies: Opens satisfies panel (always available)
- *    - History: Opens rule history panel (always available)
- *    - Comment History: Opens rule reviews panel (always available)
+ *    - Related: Opens RelatedRulesModal (STIG-kind only — the related
+ *      search keys off Rule SRG linkage; no authored surface exists)
+ *    - Satisfies: Opens satisfies panel (STIG-kind only — absent for
+ *      SRG, deliberately: the backend omits the data entirely)
+ *    - Changelog: Opens rule changelog panel (always available)
+ *    - Discussion: Opens rule discussion panel (always available)
+ *
+ * 5. DOCUMENT KIND:
+ *    - Rule-only affordances (Related, Satisfies, Clone) are ABSENT for
+ *      SRG-kind components — not disabled. The backend 404s/422s these
+ *      by design; absence is the meaning (authored requirements come
+ *      from source SRGs, not manual creation).
+ *    - Comment/discussion/changelog/review/save/delete/lock surfaces
+ *      are kind-agnostic and render for both kinds.
  *
  * 3. ACTION BUTTONS:
  *    - Comment: Always available
@@ -76,12 +86,11 @@ describe("RuleActionsToolbar", () => {
       const buttons = wrapper.findAll("button, .comment-modal-stub");
       const buttonTexts = buttons.wrappers.map((b) => b.text().trim());
 
-      // Expected order: Related, Satisfies, History, Comment History, Comment, Change Review Status, Save, Clone, Delete, Lock
       const expectedOrder = [
         "Related",
         "Satisfies",
-        "History",
-        "Comment History",
+        "Changelog",
+        "Discussion",
         "Comment",
         "Change Review Status",
         "Save",
@@ -93,6 +102,20 @@ describe("RuleActionsToolbar", () => {
       expectedOrder.forEach((label, index) => {
         expect(buttonTexts[index]).toContain(label);
       });
+    });
+  });
+
+  // ==========================================
+  // DISA GUIDE LINK
+  // ==========================================
+  describe("DISA guide link", () => {
+    it("links the guide button at the served documentation site", () => {
+      // The old hand-built guide URL died silently because nothing asserted
+      // this href — the link is pinned to the page that actually serves.
+      wrapper = createWrapper();
+      const link = wrapper.find('a[href="/docs/disa-process/overview"]');
+      expect(link.exists()).toBe(true);
+      expect(link.text()).toContain("DISA Guide");
     });
   });
 
@@ -110,14 +133,14 @@ describe("RuleActionsToolbar", () => {
       expect(wrapper.text()).toContain("Satisfies");
     });
 
-    it("shows History button", () => {
+    it("shows Changelog button", () => {
       wrapper = createWrapper();
-      expect(wrapper.text()).toContain("History");
+      expect(wrapper.text()).toContain("Changelog");
     });
 
-    it("shows Comment History button", () => {
+    it("shows Discussion button", () => {
       wrapper = createWrapper();
-      expect(wrapper.text()).toContain("Comment History");
+      expect(wrapper.text()).toContain("Discussion");
     });
 
     it("emits open-related-modal when Related clicked", async () => {
@@ -135,19 +158,17 @@ describe("RuleActionsToolbar", () => {
       expect(wrapper.emitted("toggle-panel")[0]).toEqual(["satisfies"]);
     });
 
-    it('emits toggle-panel with "rule-history" when History clicked', async () => {
+    it('emits toggle-panel with "rule-history" when Changelog clicked', async () => {
       wrapper = createWrapper();
-      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("History"));
+      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Changelog"));
       await btn.trigger("click");
       expect(wrapper.emitted("toggle-panel")).toBeTruthy();
       expect(wrapper.emitted("toggle-panel")[0]).toEqual(["rule-history"]);
     });
 
-    it('emits toggle-panel with "rule-reviews" when Comment History clicked', async () => {
+    it('emits toggle-panel with "rule-reviews" when Discussion clicked', async () => {
       wrapper = createWrapper();
-      const btn = wrapper
-        .findAll("button")
-        .wrappers.find((b) => b.text().includes("Comment History"));
+      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Discussion"));
       await btn.trigger("click");
       expect(wrapper.emitted("toggle-panel")).toBeTruthy();
       expect(wrapper.emitted("toggle-panel")[0]).toEqual(["rule-reviews"]);
@@ -163,10 +184,10 @@ describe("RuleActionsToolbar", () => {
         .wrappers.find((b) => b.text().includes("Satisfies"));
       const historyBtn = wrapper
         .findAll("button")
-        .wrappers.find((b) => b.text().includes("History"));
+        .wrappers.find((b) => b.text().includes("Changelog"));
       const reviewsBtn = wrapper
         .findAll("button")
-        .wrappers.find((b) => b.text().includes("Comment History"));
+        .wrappers.find((b) => b.text().includes("Discussion"));
 
       expect(relatedBtn.attributes("disabled")).toBeUndefined();
       expect(satisfiesBtn.attributes("disabled")).toBeUndefined();
@@ -334,6 +355,106 @@ describe("RuleActionsToolbar", () => {
         expect(wrapper.emitted("clone")).toBeTruthy();
       });
     });
+
+    describe("Propose relocation button (SRG kind only)", () => {
+      const relocateBtn = () =>
+        wrapper.findAll("button").wrappers.find((b) => b.text().includes("Propose relocation"));
+
+      it("is ABSENT for stig-kind components (relocation is SRG authoring)", () => {
+        wrapper = createWrapper();
+        expect(relocateBtn()).toBeUndefined();
+      });
+
+      it("emits open-relocation-modal for an srg-kind component", async () => {
+        wrapper = createWrapper({ documentType: "srg" });
+        await relocateBtn().trigger("click");
+        expect(wrapper.emitted("open-relocation-modal")).toBeTruthy();
+      });
+
+      it("is disabled-not-hidden with a tooltip when the requirement is already marked", () => {
+        wrapper = createWrapper({
+          documentType: "srg",
+          pendingRelocation: { id: 7, target_technology_token: "CTR" },
+        });
+        const btn = relocateBtn();
+        expect(btn.attributes("disabled")).toBe("disabled");
+        expect(wrapper.find('[data-test="relocate-tip"]').attributes("title")).toContain(
+          "Already proposed",
+        );
+      });
+
+      it("is disabled in read-only mode", () => {
+        wrapper = createWrapper({ documentType: "srg", readOnly: true });
+        expect(relocateBtn().attributes("disabled")).toBe("disabled");
+      });
+
+      // The tooltip states the TRUE reason for each read-only source:
+      // the view page is a mode barrier (the editor is the path), while
+      // a viewer role is a permission barrier the editor cannot cure.
+      it("explains the role barrier for an edit-page viewer", () => {
+        wrapper = createWrapper({
+          documentType: "srg",
+          readOnly: true,
+          effectivePermissions: "viewer",
+        });
+        expect(wrapper.find('[data-test="relocate-tip"]').attributes("title")).toBe(
+          "Requires author role",
+        );
+      });
+
+      it("points an author-capable user at the editor on the view page", () => {
+        wrapper = createWrapper({
+          documentType: "srg",
+          readOnly: true,
+          viewOnlyPage: true,
+          effectivePermissions: "author",
+        });
+        expect(wrapper.find('[data-test="relocate-tip"]').attributes("title")).toBe(
+          "Available in the editor — open the editor to propose relocation",
+        );
+      });
+
+      it("keeps the role barrier for a viewer on the view page — the editor would not help", () => {
+        wrapper = createWrapper({
+          documentType: "srg",
+          readOnly: true,
+          viewOnlyPage: true,
+          effectivePermissions: "viewer",
+        });
+        expect(wrapper.find('[data-test="relocate-tip"]').attributes("title")).toBe(
+          "Requires author role",
+        );
+      });
+
+      it("points the already-marked message at the editor on the view page", () => {
+        wrapper = createWrapper({
+          documentType: "srg",
+          readOnly: true,
+          viewOnlyPage: true,
+          effectivePermissions: "author",
+          pendingRelocation: { id: 7, target_technology_token: "CTR" },
+        });
+        expect(wrapper.find('[data-test="relocate-tip"]').attributes("title")).toBe(
+          "Already proposed for relocation to the CTR SRG — open the editor to withdraw",
+        );
+      });
+    });
+
+    describe("Backlog button (SRG kind only)", () => {
+      const backlogBtn = () =>
+        wrapper.findAll("button").wrappers.find((b) => b.text().includes("Backlog"));
+
+      it("is ABSENT for stig-kind components", () => {
+        wrapper = createWrapper();
+        expect(backlogBtn()).toBeUndefined();
+      });
+
+      it("opens the relocations panel for an srg-kind component, even read-only", async () => {
+        wrapper = createWrapper({ documentType: "srg", readOnly: true });
+        await backlogBtn().trigger("click");
+        expect(wrapper.emitted("toggle-panel")).toEqual([["relocations"]]);
+      });
+    });
   });
 
   // ==========================================
@@ -394,6 +515,153 @@ describe("RuleActionsToolbar", () => {
           .wrappers.find((b) => b.text().includes("Lock"));
         expect(lockStub.attributes("disabled")).toBe("disabled");
       });
+    });
+  });
+
+  // ==========================================
+  // TOOLTIPS
+  // ==========================================
+  describe("tooltips", () => {
+    it("Related button has tooltip", () => {
+      wrapper = createWrapper();
+      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Related"));
+      expect(btn.attributes("title")).toBe("View related rules from other components");
+    });
+
+    it("Satisfies button has tooltip", () => {
+      wrapper = createWrapper();
+      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Satisfies"));
+      expect(btn.attributes("title")).toBe("Rules this control satisfies or is satisfied by");
+    });
+
+    it("Changelog button has tooltip", () => {
+      wrapper = createWrapper();
+      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Changelog"));
+      expect(btn.attributes("title")).toBe("Rule changelog — field-level changes");
+    });
+
+    it("Discussion button has tooltip", () => {
+      wrapper = createWrapper();
+      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Discussion"));
+      expect(btn.attributes("title")).toBe("Comments, reviews, and triage decisions on this rule");
+    });
+
+    it("DISA Guide button has tooltip", () => {
+      wrapper = createWrapper();
+      const btn = wrapper.findAll("a").wrappers.find((b) => b.text().includes("DISA Guide"));
+      expect(btn.attributes("title")).toBe("Open DISA Vendor STIG Process Guide");
+    });
+
+    it("Change Review Status button has tooltip", () => {
+      wrapper = createWrapper();
+      const btn = wrapper
+        .findAll("button")
+        .wrappers.find((b) => b.text().includes("Change Review Status"));
+      expect(btn.attributes("title")).toBe("Submit or change the review status");
+    });
+
+    it("Clone button has tooltip", () => {
+      wrapper = createWrapper();
+      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Clone"));
+      expect(btn.attributes("title")).toBe("Duplicate this rule");
+    });
+
+    it("Delete button has tooltip", () => {
+      wrapper = createWrapper();
+      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().includes("Delete"));
+      expect(btn.attributes("title")).toBe("Permanently delete this rule");
+    });
+
+    it("Comment button has tooltip when enabled", () => {
+      wrapper = createWrapper();
+      const btn = wrapper.findAll("button").wrappers.find((b) => b.text().trim() === "Comment");
+      expect(btn.attributes("title")).toBe("Add a general comment on this rule");
+    });
+
+    it("Save button has tooltip", () => {
+      wrapper = createWrapper();
+      const saveStub = wrapper
+        .findAll(".comment-modal-stub")
+        .wrappers.find((b) => b.text().includes("Save"));
+      expect(saveStub.attributes("button-tooltip")).toBe("Save rule with a comment");
+    });
+
+    it("Lock button has tooltip", () => {
+      wrapper = createWrapper();
+      const lockStub = wrapper
+        .findAll(".comment-modal-stub")
+        .wrappers.find((b) => b.text().includes("Lock"));
+      expect(lockStub.attributes("button-tooltip")).toBe("Lock this rule to prevent edits");
+    });
+
+    it("Unlock button has tooltip", () => {
+      wrapper = createWrapper({ rule: { ...defaultRule, locked: true } });
+      const unlockStub = wrapper
+        .findAll(".comment-modal-stub")
+        .wrappers.find((b) => b.text().includes("Unlock"));
+      expect(unlockStub.attributes("button-tooltip")).toBe("Unlock this rule for editing");
+    });
+  });
+
+  // ==========================================
+  // DOCUMENT KIND — Rule-only affordances absent for SRG
+  //
+  // REQUIREMENT: on an SRG-kind component the Related, Satisfies, and
+  // Clone buttons do not exist in the DOM (absent, NOT disabled) — the
+  // backend 404s related, omits satisfies data entirely, and 422s Rule
+  // creation by design. Kind-agnostic surfaces (comment, discussion,
+  // changelog, review, save, delete, lock) render for both kinds.
+  // ==========================================
+  describe("document kind gating", () => {
+    // Authored SRG rows omit Rule-only keys entirely — authentic shape.
+    const authoredRule = {
+      id: 7,
+      rule_id: "000007",
+      status: "Applicable",
+      locked: false,
+      review_requestor_id: null,
+    };
+
+    const buttonTexts = () =>
+      wrapper.findAll("button, .comment-modal-stub").wrappers.map((b) => b.text().trim());
+
+    it("defaults to stig and renders every affordance (regression)", () => {
+      wrapper = createWrapper();
+      expect(wrapper.props("documentType")).toBe("stig");
+      const texts = buttonTexts();
+      expect(texts).toContain("Related");
+      expect(texts).toContain("Satisfies");
+      expect(texts).toContain("Clone");
+    });
+
+    it("renders NO Satisfies button for srg-kind — absent, not disabled", () => {
+      wrapper = createWrapper({ documentType: "srg", rule: authoredRule });
+      expect(buttonTexts()).not.toContain("Satisfies");
+    });
+
+    it("renders NO Related button for srg-kind", () => {
+      wrapper = createWrapper({ documentType: "srg", rule: authoredRule });
+      expect(buttonTexts()).not.toContain("Related");
+    });
+
+    it("renders NO Clone button for srg-kind", () => {
+      wrapper = createWrapper({ documentType: "srg", rule: authoredRule });
+      expect(buttonTexts()).not.toContain("Clone");
+    });
+
+    it("keeps every kind-agnostic surface for srg-kind (comment/disposition surfaces have no kind gate)", () => {
+      wrapper = createWrapper({ documentType: "srg", rule: authoredRule });
+      const texts = buttonTexts();
+      // The panel labels are kind-keyed: srg surfaces read the
+      // Requirement noun (abbreviated for buttons), never Rule.
+      expect(texts).toContain("Req Changelog");
+      expect(texts).toContain("Req Discussion");
+      expect(texts).not.toContain("Rule Changelog");
+      expect(texts).toContain("Comment");
+      expect(texts).toContain("Change Review Status");
+      expect(texts).toContain("Save");
+      expect(texts).toContain("Delete");
+      expect(texts).toContain("Lock");
     });
   });
 });

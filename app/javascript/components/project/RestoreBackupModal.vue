@@ -76,20 +76,22 @@
 </template>
 
 <script>
-import axios from "axios";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { importBackup } from "../../api/projectsApi";
+import { useToast } from "../../composables/useToast";
 import BackupPreview from "../shared/BackupPreview.vue";
 
 export default {
   name: "RestoreBackupModal",
   components: { BackupPreview },
-  mixins: [FormMixinVue, AlertMixinVue],
   props: {
     project_id: {
       type: Number,
       required: true,
     },
+  },
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
   },
   data() {
     return {
@@ -144,11 +146,7 @@ export default {
     async submitDryRun() {
       this.loading = true;
       try {
-        const response = await axios.post(
-          `/projects/${this.project_id}/import_backup`,
-          this.buildFormData(true),
-          { headers: { "Content-Type": "multipart/form-data" } },
-        );
+        const response = await importBackup(this.project_id, this.buildFormData(true));
         this.summary = response.data.summary;
         this.warnings = response.data.warnings || [];
         // Extract existing names from conflicting components
@@ -158,7 +156,8 @@ export default {
         this.selectedComponentCount = response.data.summary.components_imported || 0;
         this.step = "preview";
       } catch (error) {
-        this.alertOrNotifyResponse(error.response);
+        // The error itself — see submitImport's catch.
+        this.alertOrNotifyResponse(error);
       } finally {
         this.loading = false;
       }
@@ -166,16 +165,15 @@ export default {
     async submitImport() {
       this.loading = true;
       try {
-        const response = await axios.post(
-          `/projects/${this.project_id}/import_backup`,
-          this.buildFormData(false),
-          { headers: { "Content-Type": "multipart/form-data" } },
-        );
+        const response = await importBackup(this.project_id, this.buildFormData(false));
         this.alertOrNotifyResponse(response);
         this.$emit("projectUpdated");
         this.modalShow = false;
       } catch (error) {
-        this.alertOrNotifyResponse(error.response);
+        // Pass the error itself — the notifier reads error.response for
+        // HTTP failures and error.message for transport failures (timeout,
+        // network), which carry no response at all.
+        this.alertOrNotifyResponse(error);
       } finally {
         this.loading = false;
       }

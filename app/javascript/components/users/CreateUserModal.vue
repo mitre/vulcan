@@ -52,6 +52,18 @@
         />
       </b-form-group>
 
+      <b-form-group label="Slack Member ID (optional)" label-for="create-user-slack">
+        <b-form-input
+          id="create-user-slack"
+          v-model="form.slack_user_id"
+          placeholder="U0123456789"
+          autocomplete="off"
+        />
+        <small class="form-text text-muted">
+          Drives the user's Slack notifications; they can change it later.
+        </small>
+      </b-form-group>
+
       <!-- Admin -->
       <b-form-group>
         <b-form-checkbox id="create-user-admin" v-model="form.admin">
@@ -100,15 +112,13 @@
 </template>
 
 <script>
-import axios from "axios";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { createUser } from "../../api/usersApi";
+import { useToast } from "../../composables/useToast";
 import PasswordField from "../shared/PasswordField.vue";
 
 export default {
   name: "CreateUserModal",
   components: { PasswordField },
-  mixins: [FormMixinVue, AlertMixinVue],
   model: {
     prop: "visible",
     event: "update:visible",
@@ -127,12 +137,17 @@ export default {
       default: null,
     },
   },
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
+  },
   data() {
     return {
       form: {
         name: "",
         email: "",
         admin: false,
+        slack_user_id: "",
         password: "",
         passwordConfirm: "",
       },
@@ -142,7 +157,14 @@ export default {
   watch: {
     visible(newVal) {
       if (newVal) {
-        this.form = { name: "", email: "", admin: false, password: "", passwordConfirm: "" };
+        this.form = {
+          name: "",
+          email: "",
+          admin: false,
+          slack_user_id: "",
+          password: "",
+          passwordConfirm: "",
+        };
         this.createdResetUrl = null;
       }
     },
@@ -161,15 +183,17 @@ export default {
         email: this.form.email,
         admin: this.form.admin,
       };
+      // Only include the Slack id if the admin typed one
+      if (this.form.slack_user_id) {
+        payload.slack_user_id = this.form.slack_user_id;
+      }
       // Only include password if admin typed one
       if (this.form.password) {
         payload.password = this.form.password;
       }
 
       try {
-        const response = await axios.post("/users/admin_create", {
-          user: payload,
-        });
+        const response = await createUser(payload);
         this.alertOrNotifyResponse(response);
         this.$emit("user-created", response.data.user);
 

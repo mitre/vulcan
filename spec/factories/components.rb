@@ -5,7 +5,18 @@ FactoryBot.define do
     project { create(:project) }
     # Reuse existing SRG to avoid re-parsing 604KB XML + importing ~250 rules each time.
     # The SRG import is the single most expensive factory operation (~500ms per call).
-    based_on { SecurityRequirementsGuide.first || create(:security_requirements_guide) }
+    # Kind-aware: parent eligibility requires core SRGs for srg-kind
+    # components and derived (non-core) for stig-kind — each kind reuses
+    # its own shared eligible SRG.
+    based_on do
+      if document_type == 'srg'
+        SecurityRequirementsGuide.where(core: true).first ||
+          create(:security_requirements_guide, :core)
+      else
+        SecurityRequirementsGuide.where(core: false).first ||
+          create(:security_requirements_guide)
+      end
+    end
 
     prefix { 'ABCD-00' }
     name { FFaker::Name.name }
@@ -27,6 +38,29 @@ FactoryBot.define do
 
     trait :released_component do
       released { true }
+    end
+
+    trait :open_comment_period do
+      comment_phase { 'open' }
+      comment_period_starts_at { 1.day.ago }
+      comment_period_ends_at { 14.days.from_now }
+    end
+
+    trait :closed_comment_phase do
+      comment_phase { 'closed' }
+      closed_reason { 'adjudicating' }
+    end
+
+    trait :with_poc do
+      admin_name { 'Test Maintainer' }
+      admin_email { 'maintainer@example.com' }
+    end
+
+    trait :released do
+      released { true }
+      after(:create) do |component|
+        component.rules.update_all(locked: true)
+      end
     end
 
     factory :released_component, traits: [:released_component]

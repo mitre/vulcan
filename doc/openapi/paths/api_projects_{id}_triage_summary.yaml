@@ -1,0 +1,47 @@
+get:
+  operationId: projectTriageSummary
+  tags:
+    - Projects
+  summary: Get triage summary for a project
+  description: >-
+    Returns triage metrics aggregated across all of the project's
+    components — top-level comment counts per triage status plus the
+    adjudication percentage. Requires viewer permission on the project.
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: Numeric ID of the project.
+      schema:
+        type: integer
+      example: 7
+  responses:
+    '200':
+      description: Project-wide triage summary
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/TriageSummaryResponse.yaml
+          examples:
+            summary:
+              summary: Project with comments in triage
+              value:
+                by_triage_status:
+                  pending: 3
+                  concur: 1
+                  concur_with_comment: 0
+                  non_concur: 0
+                  duplicate: 0
+                  informational: 1
+                  needs_clarification: 0
+                  withdrawn: 0
+                  addressed_by: 0
+                total: 5
+                adjudicated: 1
+                adjudication_pct: 20.0
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '404':
+      $ref: ../components/responses/NotFound.yaml

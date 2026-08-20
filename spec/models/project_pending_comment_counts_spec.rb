@@ -21,20 +21,20 @@ RSpec.describe Project do
       create(:membership, user: viewer, membership: project_b, role: 'viewer')
 
       # Project A: 2 pending top-level comments + 1 reply (excluded) + 1 concur
-      Review.create!(action: 'comment', comment: 'a1-pending', user: viewer,
-                     rule: component_a1.rules.first)
-      Review.create!(action: 'comment', comment: 'a2-pending', user: viewer,
-                     rule: component_a2.rules.first)
-      parent = Review.create!(action: 'comment', comment: 'a1-parent', user: viewer,
-                              rule: component_a1.rules.first)
-      Review.create!(action: 'comment', comment: 'a1-reply', user: viewer,
-                     rule: component_a1.rules.first,
-                     responding_to_review_id: parent.id)
+      create(:review, :comment, comment: 'a1-pending', user: viewer,
+                                rule: component_a1.rules.first)
+      create(:review, :comment, comment: 'a2-pending', user: viewer,
+                                rule: component_a2.rules.first)
+      parent = create(:review, :comment, comment: 'a1-parent', user: viewer,
+                                         rule: component_a1.rules.first)
+      create(:review, :comment, comment: 'a1-reply', user: viewer,
+                                rule: component_a1.rules.first,
+                                responding_to_review_id: parent.id)
       parent.update!(triage_status: 'concur', triage_set_by_id: author.id, triage_set_at: Time.current)
 
       # Project B: 1 pending top-level comment
-      Review.create!(action: 'comment', comment: 'b1-pending', user: viewer,
-                     rule: component_b1.rules.first)
+      create(:review, :comment, comment: 'b1-pending', user: viewer,
+                                rule: component_b1.rules.first)
     end
 
     it 'returns a hash keyed by project_id with pending top-level counts' do
@@ -89,21 +89,17 @@ RSpec.describe Project do
 
     before_all do
       # Project P: 2 pending + 1 closed = 3 total
-      Review.create!(action: 'comment', user: viewer, rule: p_component.rules.first, comment: 'p1')
-      Review.create!(action: 'comment', user: viewer, rule: p_component.rules.first, comment: 'p2')
-      closed = Review.create!(action: 'comment', user: viewer,
-                              rule: p_component.rules.first, comment: 'p-closed')
-      closed.update!(triage_status: 'concur', triage_set_by_id: author.id, triage_set_at: Time.current,
-                     adjudicated_by_id: author.id, adjudicated_at: Time.current)
+      create(:review, :comment, user: viewer, rule: p_component.rules.first, comment: 'p1')
+      create(:review, :comment, user: viewer, rule: p_component.rules.first, comment: 'p2')
+      closed = create(:review, :comment, :concur, :adjudicated, user: viewer,
+                                                                rule: p_component.rules.first, comment: 'p-closed')
       # Reply (excluded from totals — only top-level counts)
-      Review.create!(action: 'comment', user: viewer, rule: p_component.rules.first,
-                     comment: 'reply', responding_to_review_id: closed.id)
+      create(:review, :comment, user: viewer, rule: p_component.rules.first,
+                                comment: 'reply', responding_to_review_id: closed.id)
 
       # Project Q: 0 pending + 1 closed = 1 total
-      q_closed = Review.create!(action: 'comment', user: viewer,
-                                rule: q_component.rules.first, comment: 'q1')
-      q_closed.update!(triage_status: 'concur', triage_set_by_id: author.id, triage_set_at: Time.current,
-                       adjudicated_by_id: author.id, adjudicated_at: Time.current)
+      create(:review, :comment, :concur, :adjudicated, user: viewer,
+                                                       rule: q_component.rules.first, comment: 'q1')
     end
 
     it 'returns pending and total per project keyed by project_id' do
@@ -147,12 +143,12 @@ RSpec.describe Project do
     let_it_be(:viewer) { create(:user) }
 
     before_all do
-      Review.create!(action: 'comment', comment: 'single', user: viewer,
-                     rule: single_component.rules.first)
-      Review.create!(action: 'comment', comment: 'multi-a', user: viewer,
-                     rule: multi_a.rules.first)
-      Review.create!(action: 'comment', comment: 'multi-b', user: viewer,
-                     rule: multi_b.rules.first)
+      create(:review, :comment, comment: 'single', user: viewer,
+                                rule: single_component.rules.first)
+      create(:review, :comment, comment: 'multi-a', user: viewer,
+                                rule: multi_a.rules.first)
+      create(:review, :comment, comment: 'multi-b', user: viewer,
+                                rule: multi_b.rules.first)
     end
 
     it 'returns the component_id when a project has exactly one pending component' do

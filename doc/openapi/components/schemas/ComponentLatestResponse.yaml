@@ -1,0 +1,51 @@
+description: >-
+  Latest released component per prefix for dropdown population. A
+  component is a STIG in progress — released ones are instance-wide
+  reference data. Ranking is numeric on the integer version/release pair;
+  unreleased drafts never appear.
+type: object
+required:
+  - rows
+additionalProperties: false
+properties:
+  rows:
+    type: array
+    description: One entry per prefix, ordered by prefix.
+    items:
+      type: object
+      required:
+        - id
+        - prefix
+        - name
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          description: Unique component identifier.
+          example: 38
+        prefix:
+          type: string
+          description: STIG ID prefix — the component's identity across releases.
+          example: RHEL-09
+        name:
+          type: string
+          description: Component name.
+          example: RHEL 9 Hardened Baseline
+        title:
+          type:
+            - string
+            - 'null'
+          description: Component title. Null when not set.
+          example: Red Hat Enterprise Linux 9
+        version:
+          type:
+            - integer
+            - 'null'
+          description: Component version number.
+          example: 2
+        release:
+          type:
+            - integer
+            - 'null'
+          description: Component release number within the version.
+          example: 1

@@ -179,7 +179,7 @@ RSpec.describe Import::JsonArchiveImporter do
       let(:zip_with_named_review) do
         Membership.create!(user: named_user, membership: source_project, role: 'admin')
         rule = source_component.rules.first
-        Review.create!(user: named_user, rule: rule, action: 'lock_control', comment: 'Locking')
+        create(:review, user: named_user, rule: rule, action: 'lock_control', comment: 'Locking')
         Export::Base.new(
           exportable: source_component,
           mode: :backup,
@@ -205,7 +205,7 @@ RSpec.describe Import::JsonArchiveImporter do
         ghost_user = create(:user, email: 'ghost@example.com', name: 'Ghost')
         Membership.create!(user: ghost_user, membership: source_project, role: 'admin')
         rule = source_component.rules.first
-        Review.create!(user: ghost_user, rule: rule, action: 'lock_control', comment: 'Haunted')
+        create(:review, user: ghost_user, rule: rule, action: 'lock_control', comment: 'Haunted')
 
         zip = Export::Base.new(
           exportable: source_component,
@@ -364,14 +364,54 @@ RSpec.describe Import::JsonArchiveImporter do
       before do
         create(:component,
                project: target_project,
-               name: source_component.name,
-               based_on: source_component.based_on)
+               name: source_component.name)
       end
 
       it 'fails with conflict error' do
         result = import_archive(single_backup_zip, target_project)
         expect(result).not_to be_success
         expect(result.errors.first).to match(/already exists/)
+      end
+    end
+
+    # ==========================================
+    # ADDRESSED_BY ROUND-TRIP
+    # ==========================================
+    context 'with addressed_by triage status round-trip' do
+      let_it_be(:addressed_proj) { create(:project) }
+      let_it_be(:addressed_component) do
+        create(:component, project: addressed_proj,
+                           comment_phase: 'open',
+                           comment_period_starts_at: 1.day.ago,
+                           comment_period_ends_at: 1.day.from_now)
+      end
+      let_it_be(:addressed_commenter) { create(:user, name: 'Addressed Commenter') }
+      let_it_be(:addressed_triager) { create(:user, name: 'Addressed Triager') }
+
+      let_it_be(:addressed_zip) do
+        Membership.find_or_create_by!(user: addressed_commenter, membership: addressed_proj) { |m| m.role = 'viewer' }
+        Membership.find_or_create_by!(user: addressed_triager, membership: addressed_proj) { |m| m.role = 'author' }
+        rules = addressed_component.rules.order(:rule_id).to_a
+        create(:review, :comment,
+               user: addressed_commenter, rule: rules[0],
+               comment: 'addressed-by round-trip',
+               triage_status: 'addressed_by',
+               addressed_by_rule_id: rules[1].id,
+               triage_set_by: addressed_triager, triage_set_at: 1.hour.ago)
+        Export::Base.new(exportable: addressed_component, mode: :backup, format: :json_archive).call.data
+      end
+
+      let(:addressed_target_project) { create(:project) }
+
+      it 'exports + imports addressed_by_rule_id with the correct cross-instance FK' do
+        result = import_archive(addressed_zip, addressed_target_project, include_reviews: true)
+        expect(result).to be_success
+
+        imported = addressed_target_project.components.find_by(name: addressed_component.name)
+        imported_rules = imported.rules.order(:rule_id).to_a
+        round = Review.where(comment: 'addressed-by round-trip').last
+        expect(round.triage_status).to eq('addressed_by')
+        expect(round.addressed_by_rule_id).to eq(imported_rules[1].id)
       end
     end
 
@@ -455,8 +495,7 @@ RSpec.describe Import::JsonArchiveImporter do
       it 'detects conflicts with existing components' do
         create(:component,
                project: target_project,
-               name: source_component.name,
-               based_on: source_component.based_on)
+               name: source_component.name)
 
         filter = { second_component.name => second_component.name }
         result = import_archive(project_backup_zip, target_project,
@@ -469,8 +508,7 @@ RSpec.describe Import::JsonArchiveImporter do
       it 'allows importing conflicting component with renamed name via filter' do
         create(:component,
                project: target_project,
-               name: source_component.name,
-               based_on: source_component.based_on)
+               name: source_component.name)
 
         new_name = "#{source_component.name} (restored)"
         filter = {
@@ -490,8 +528,7 @@ RSpec.describe Import::JsonArchiveImporter do
       before do
         create(:component,
                project: target_project,
-               name: source_component.name,
-               based_on: source_component.based_on)
+               name: source_component.name)
       end
 
       it 'treats conflicts as warnings (not errors) when component_filter is provided' do
@@ -524,35 +561,30 @@ RSpec.describe Import::JsonArchiveImporter do
         Membership.find_or_create_by!(
           user: lifecycle_triager, membership: lifecycle_project
         ) { |m| m.role = 'author' }
-        Review.create!(
-          user: lifecycle_commenter, rule: lifecycle_component.rules.first,
-          action: 'comment', comment: 'TLS 1.2 EOL',
-          section: 'check_content',
-          triage_status: 'concur_with_comment',
-          triage_set_by: lifecycle_triager, triage_set_at: 1.day.ago,
-          adjudicated_at: 12.hours.ago, adjudicated_by: lifecycle_triager
-        )
+        create(:review, :comment, :concur_with_comment, :adjudicated,
+               user: lifecycle_commenter, rule: lifecycle_component.rules.first,
+               comment: 'TLS 1.2 EOL',
+               section: 'check_content',
+               triage_set_by: lifecycle_triager, triage_set_at: 1.day.ago,
+               adjudicated_at: 12.hours.ago, adjudicated_by: lifecycle_triager)
       end
       let_it_be(:lifecycle_reply) do
-        Review.create!(
-          user: lifecycle_triager, rule: lifecycle_component.rules.first,
-          action: 'comment', comment: 'will fix in next revision',
-          responding_to_review_id: lifecycle_top_review.id
-        )
+        create(:review, :comment,
+               user: lifecycle_triager, rule: lifecycle_component.rules.first,
+               comment: 'will fix in next revision',
+               responding_to_review_id: lifecycle_top_review.id)
       end
       let_it_be(:lifecycle_dup_target) do
-        Review.create!(
-          user: lifecycle_commenter, rule: lifecycle_component.rules.second,
-          action: 'comment', comment: 'duplicate target'
-        )
+        create(:review, :comment,
+               user: lifecycle_commenter, rule: lifecycle_component.rules.second,
+               comment: 'duplicate target')
       end
       let_it_be(:lifecycle_dup) do
-        Review.create!(
-          user: lifecycle_commenter, rule: lifecycle_component.rules.second,
-          action: 'comment', comment: 'duplicate source',
-          duplicate_of_review_id: lifecycle_dup_target.id,
-          triage_status: 'duplicate'
-        )
+        create(:review, :comment,
+               user: lifecycle_commenter, rule: lifecycle_component.rules.second,
+               comment: 'duplicate source',
+               duplicate_of_review_id: lifecycle_dup_target.id,
+               triage_status: 'duplicate')
       end
 
       let_it_be(:lifecycle_zip) do
@@ -639,19 +671,17 @@ RSpec.describe Import::JsonArchiveImporter do
         let_it_be(:orphan_proj) { create(:project) }
         let_it_be(:orphan_component) { create(:component, project: orphan_proj) }
         let_it_be(:orphan_commenter) { create(:user, name: 'Orphan Commenter') }
-        let_it_be(:orphan_triager, refind: true) do
+        let_it_be(:orphan_triager) do
           create(:user, name: 'Orphan Triager', email: 'orphan-triager@example.com')
         end
         let_it_be(:orphan_review) do
           Membership.find_or_create_by!(user: orphan_commenter, membership: orphan_proj) { |m| m.role = 'viewer' }
           Membership.find_or_create_by!(user: orphan_triager, membership: orphan_proj) { |m| m.role = 'author' }
-          Review.create!(
-            user: orphan_commenter, rule: orphan_component.rules.first,
-            action: 'comment', comment: 'orphan-test comment',
-            triage_status: 'concur',
-            triage_set_by: orphan_triager, triage_set_at: 1.day.ago,
-            adjudicated_at: 12.hours.ago, adjudicated_by: orphan_triager
-          )
+          create(:review, :comment, :concur, :adjudicated,
+                 user: orphan_commenter, rule: orphan_component.rules.first,
+                 comment: 'orphan-test comment',
+                 triage_set_by: orphan_triager, triage_set_at: 1.day.ago,
+                 adjudicated_at: 12.hours.ago, adjudicated_by: orphan_triager)
         end
         let_it_be(:orphan_zip) do
           Export::Base.new(
@@ -704,10 +734,9 @@ RSpec.describe Import::JsonArchiveImporter do
           plain_component = create(:component, project: plain_proj)
           plain_commenter = create(:user, name: 'Plain Commenter')
           Membership.find_or_create_by!(user: plain_commenter, membership: plain_proj) { |m| m.role = 'viewer' }
-          Review.create!(
-            user: plain_commenter, rule: plain_component.rules.first,
-            action: 'comment', comment: 'plain comment without triage'
-          )
+          create(:review, :comment,
+                 user: plain_commenter, rule: plain_component.rules.first,
+                 comment: 'plain comment without triage')
           plain_zip = Export::Base.new(
             exportable: plain_component, mode: :backup, format: :json_archive
           ).call.data
@@ -815,6 +844,8 @@ RSpec.describe Import::JsonArchiveImporter do
     # AuditEventBundle.bundled_with(audit_id) reconstructs the entire
     # import as one logical operation.
     context 'with request_uuid correlation' do
+      include_context 'with auditing'
+
       before { Audited.store.delete(:current_request_uuid) }
 
       after { Audited.store.delete(:current_request_uuid) }
@@ -854,6 +885,118 @@ RSpec.describe Import::JsonArchiveImporter do
         Audited.store[:current_request_uuid] = 'outer-scope-uuid'
         import_archive(single_backup_zip, target_project)
         expect(Audited.store[:current_request_uuid]).to eq('outer-scope-uuid')
+      end
+    end
+
+    context 'with multi-parent lineage' do
+      # The restore's lineage lookup must resolve across ALL declared
+      # source SRGs, keyed (srg_id, version) — a version string is only
+      # unique within one SRG. Old archives carry no lineage SRG identity
+      # and fall back to a version match across the parent set.
+      let_it_be(:mp_core_a) do
+        create(:security_requirements_guide, :core, :skip_rules,
+               srg_id: 'SRG-CORE-MPRESTORE-A', version: 'V1R1',
+               name: 'MP Restore Core A')
+      end
+      let_it_be(:mp_row_a) do
+        create(:srg_rule, security_requirements_guide: mp_core_a, version: 'SRG-OS-000901')
+      end
+      let_it_be(:mp_core_b) do
+        create(:security_requirements_guide, :core, :skip_rules,
+               srg_id: 'SRG-CORE-MPRESTORE-B', version: 'V1R1',
+               name: 'MP Restore Core B')
+      end
+      let_it_be(:mp_row_b) do
+        create(:srg_rule, security_requirements_guide: mp_core_b, version: 'SRG-NET-000902')
+      end
+      let_it_be(:mp_srg_source) do
+        c = Component.create!(project: source_project, name: 'MP SRG Restore Source',
+                              prefix: 'MPRA-00', title: 'Multi-parent srg source',
+                              document_type: 'srg', based_on: mp_core_a)
+        c.add_source_parent!(mp_core_b)
+        c
+      end
+      let_it_be(:mp_srg_zip) do
+        # reload: srg-kind creation caches source_srgs mid-generation, and
+        # add_source_parent! does not invalidate that cache — a stale
+        # in-memory set would serialize a single-parent archive.
+        Export::Base.new(exportable: mp_srg_source.reload, mode: :backup, format: :json_archive).call.data
+      end
+
+      # The stig import path is XML-driven (from_mapping parses the SRG's
+      # benchmark), so the secondary needs a REAL rule import — selective,
+      # one version, to keep the fixture light.
+      let_it_be(:stig_secondary_srg) do
+        create(:security_requirements_guide,
+               srg_id: 'SRG-DERIVED-MPRESTORE', version: 'V1R1',
+               name: 'MP Restore Stig Secondary')
+      end
+      let_it_be(:stig_secondary_row) { stig_secondary_srg.srg_rules.order(:version).first }
+      let_it_be(:mp_stig_source) do
+        c = create(:component, project: source_project, name: 'MP STIG Restore Source')
+        c.add_source_parent!(stig_secondary_srg, versions: [stig_secondary_row.version])
+        c
+      end
+      let_it_be(:mp_stig_zip) do
+        Export::Base.new(exportable: mp_stig_source, mode: :backup, format: :json_archive).call.data
+      end
+
+      it 'restores secondary-parent lineage on an srg component' do
+        import_archive(mp_srg_zip, target_project)
+
+        imported = target_project.components.find_by!(name: 'MP SRG Restore Source')
+        expect(imported.authored_srg_rules.find_by(derived_from_srg_rule_id: mp_row_b.id)).to be_present
+        expect(imported.authored_srg_rules.find_by(derived_from_srg_rule_id: mp_row_a.id)).to be_present
+      end
+
+      it 'restores secondary-parent srg_rule linkage on a stig component' do
+        import_archive(mp_stig_zip, target_project)
+
+        imported = target_project.components.find_by!(name: 'MP STIG Restore Source')
+        expect(imported.rules.find_by(srg_rule_id: stig_secondary_row.id)).to be_present
+      end
+
+      it 'falls back to a version match across the parent set for archives without lineage SRG identity' do
+        import_archive(strip_lineage_srg_ids(mp_srg_zip), target_project)
+
+        imported = target_project.components.find_by!(name: 'MP SRG Restore Source')
+        expect(imported.authored_srg_rules.find_by(derived_from_srg_rule_id: mp_row_b.id)).to be_present
+      end
+
+      # Rewrites the archive as an old-format one: removes the lineage SRG
+      # identity keys from every rules entry. Self-checking — raises if the
+      # strip removed nothing, so this fixture can never silently test the
+      # exact-resolution path instead of the fallback.
+      def strip_lineage_srg_ids(zip_data)
+        stripped = 0
+        buffer = Zip::OutputStream.write_buffer do |out|
+          Zip::InputStream.open(StringIO.new(zip_data)) do |input|
+            while (entry = input.get_next_entry)
+              content, count = without_lineage_srg_ids(entry.name, input.read)
+              stripped += count
+              out.put_next_entry(entry.name)
+              out.write(content)
+            end
+          end
+        end
+        raise 'fixture strip removed no lineage SRG identity keys' if stripped.zero?
+
+        buffer.string
+      end
+
+      def without_lineage_srg_ids(name, content)
+        return [content, 0] unless name.end_with?('.json')
+
+        parsed = JSON.parse(content)
+        return [content, 0] unless parsed.is_a?(Array)
+
+        lineage_keys = %w[derived_from_srg_rule_srg_id srg_rule_srg_id]
+        count = parsed.sum do |row|
+          next 0 unless row.is_a?(Hash)
+
+          lineage_keys.count { |k| !row.delete(k).nil? }
+        end
+        [JSON.generate(parsed), count]
       end
     end
   end

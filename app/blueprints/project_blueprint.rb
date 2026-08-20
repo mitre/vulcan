@@ -9,11 +9,15 @@ class ProjectBlueprint < Blueprinter::Base
 
   view :index do
     association :memberships, blueprint: MembershipBlueprint do |project, _options|
-      project.memberships
+      ApplicationRecord.sorted_by_id(project.memberships)
     end
   end
 
   view :show do
+    field :effective_permissions do |project, options|
+      options[:current_user]&.effective_permissions(project)
+    end
+
     # Aggregate of pending comments across this project's components — sum
     # of the per-component counts passed in via options[:pending_comment_counts].
     # Renders a project-level discovery banner near the page header.
@@ -35,11 +39,11 @@ class ProjectBlueprint < Blueprinter::Base
     end
 
     association :memberships, blueprint: MembershipBlueprint do |project, _options|
-      project.memberships
+      ApplicationRecord.sorted_by_id(project.memberships)
     end
 
     association :components, blueprint: ComponentBlueprint, view: :index do |project, _options|
-      project.components
+      ApplicationRecord.sorted_by_id(project.components)
     end
 
     association :available_components, blueprint: ComponentBlueprint, view: :index do |project, _options|
@@ -50,13 +54,11 @@ class ProjectBlueprint < Blueprinter::Base
     # to prevent information disclosure of the full user directory
 
     association :users, blueprint: UserBlueprint do |project, _options|
-      project.users
+      ApplicationRecord.sorted_by_id(project.users)
     end
 
-    field :access_requests do |project, _options|
-      project.access_requests.eager_load(:user, :project).map do |ar|
-        { id: ar.id, user: UserBlueprint.render_as_hash(ar.user), project_id: ar.project_id }
-      end
+    association :access_requests, blueprint: ProjectAccessRequestBlueprint do |project, _options|
+      project.access_requests.eager_load(:user, :project).order(:id)
     end
   end
 end

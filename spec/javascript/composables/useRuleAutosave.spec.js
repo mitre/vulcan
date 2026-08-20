@@ -13,11 +13,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { ref } from "vue";
 import { useRuleAutosave } from "@/composables/useRuleAutosave";
-import axios from "axios";
+import api from "@/api/baseApi";
 
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
+    get: vi.fn(),
+    post: vi.fn(),
     put: vi.fn(() => Promise.resolve({ data: { toast: "saved" } })),
+    patch: vi.fn(),
+    delete: vi.fn(),
     defaults: { headers: { common: {} } },
   },
 }));
@@ -98,7 +102,7 @@ describe("useRuleAutosave", () => {
     it("does NOT save immediately when dirty", () => {
       autosave.toggle(); // enable
       autosave.markDirty();
-      expect(axios.put).not.toHaveBeenCalled();
+      expect(api.put).not.toHaveBeenCalled();
     });
 
     it("saves after debounce delay when enabled and dirty", async () => {
@@ -108,7 +112,7 @@ describe("useRuleAutosave", () => {
       vi.advanceTimersByTime(6000);
       await vi.runAllTimersAsync();
 
-      expect(axios.put).toHaveBeenCalledWith(
+      expect(api.put).toHaveBeenCalledWith(
         "/rules/1",
         expect.objectContaining({
           rule: expect.objectContaining({
@@ -125,7 +129,7 @@ describe("useRuleAutosave", () => {
       vi.advanceTimersByTime(6000);
       await vi.runAllTimersAsync();
 
-      expect(axios.put).not.toHaveBeenCalled();
+      expect(api.put).not.toHaveBeenCalled();
     });
 
     it("does NOT save when rule is locked", async () => {
@@ -136,7 +140,7 @@ describe("useRuleAutosave", () => {
       vi.advanceTimersByTime(6000);
       await vi.runAllTimersAsync();
 
-      expect(axios.put).not.toHaveBeenCalled();
+      expect(api.put).not.toHaveBeenCalled();
     });
 
     it("does NOT save when rule is under review", async () => {
@@ -147,7 +151,7 @@ describe("useRuleAutosave", () => {
       vi.advanceTimersByTime(6000);
       await vi.runAllTimersAsync();
 
-      expect(axios.put).not.toHaveBeenCalled();
+      expect(api.put).not.toHaveBeenCalled();
     });
   });
 
@@ -165,7 +169,7 @@ describe("useRuleAutosave", () => {
       await vi.runAllTimersAsync();
 
       // Should NOT have auto-saved (manual save took over)
-      expect(axios.put).not.toHaveBeenCalled();
+      expect(api.put).not.toHaveBeenCalled();
     });
   });
 
@@ -188,7 +192,7 @@ describe("useRuleAutosave", () => {
     });
 
     it("does NOT invoke onAutoSave callback on failed autosave", async () => {
-      axios.put.mockRejectedValueOnce(new Error("Network error"));
+      api.put.mockRejectedValueOnce(new Error("Network error"));
       const onAutoSave = vi.fn();
       const callbackAutosave = useRuleAutosave(rule, {
         componentId: 1,
@@ -201,10 +205,45 @@ describe("useRuleAutosave", () => {
       await vi.advanceTimersByTimeAsync(6000);
       // Give time for the rejected promise .catch() to settle
       await vi.waitFor(() => {
-        expect(axios.put).toHaveBeenCalled();
+        expect(api.put).toHaveBeenCalled();
       });
 
       expect(onAutoSave).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("rule switch safety regression", () => {
+    it("skips autosave when user switches to a different rule before timer fires", async () => {
+      const childRule = ref({ id: 100, status: "Applicable - Configurable", locked: false });
+      const autosave = useRuleAutosave(childRule, { componentId: 1 });
+      autosave.toggle();
+
+      autosave.markDirty();
+      expect(autosave.isDirty.value).toBe(true);
+
+      childRule.value = { id: 200, status: "Applicable - Configurable", locked: false };
+
+      await vi.advanceTimersByTimeAsync(6000);
+
+      expect(api.put).not.toHaveBeenCalled();
+      expect(autosave.isDirty.value).toBe(false);
+    });
+
+    it("saves correctly when user stays on the same rule", async () => {
+      const ruleRef = ref({ id: 100, status: "Not Yet Determined", locked: false });
+      const autosave = useRuleAutosave(ruleRef, { componentId: 1 });
+      autosave.toggle();
+
+      autosave.markDirty();
+
+      await vi.advanceTimersByTimeAsync(6000);
+
+      expect(api.put).toHaveBeenCalledWith(
+        "/rules/100",
+        expect.objectContaining({
+          rule: expect.objectContaining({ id: 100, audit_comment: "[Auto-saved]" }),
+        }),
+      );
     });
   });
 });

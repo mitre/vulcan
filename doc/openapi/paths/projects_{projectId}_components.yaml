@@ -1,0 +1,91 @@
+parameters:
+  - $ref: ../components/parameters/ProjectId.yaml
+post:
+  operationId: createComponent
+  tags:
+    - Components
+  summary: Create or duplicate a component in a project
+  description: >-
+    Creates a new component in the project from one or more declared source
+    SRGs, duplicates an existing component, or imports from an uploaded
+    XCCDF/CSV file. Requires admin role on the project. The component is
+    initialized with requirements from every declared source (full union by
+    default, or the requirement_selections subset) —
+    security_requirements_guide_id designates the primary.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            component:
+              $ref: ../components/schemas/ComponentInput.yaml
+        examples:
+          from_srg:
+            summary: Create from an SRG baseline
+            value:
+              component:
+                name: Container SRG
+                prefix: CNTR
+                title: Container Platform Security Technical Implementation Guide
+                version: 1
+                release: 1
+                security_requirements_guide_id: 1
+          multi_source_srg:
+            summary: Create a dual-home SRG component from two core sources
+            value:
+              component:
+                name: Container Platform SRG
+                prefix: CNTR
+                title: Container Platform Security Requirements Guide
+                version: 1
+                release: 1
+                document_type: srg
+                security_requirements_guide_id: 1
+                declared_source_srg_ids: [1, 2]
+          one_call_with_extras:
+            summary: Create complete in one call — metadata, questions, advanced fields
+            value:
+              component:
+                name: Container SRG
+                prefix: CNTR
+                title: Container Platform Security Technical Implementation Guide
+                version: 1
+                release: 1
+                security_requirements_guide_id: 1
+                advanced_fields: true
+                component_metadata_attributes:
+                  data:
+                    Vendor: Acme
+                    POC: Sam
+                additional_questions_attributes:
+                  - name: Deployment environment
+                    question_type: dropdown
+                    options: [Cloud, On-prem]
+      multipart/form-data:
+        schema:
+          type: object
+          properties:
+            file:
+              type: string
+              format: binary
+              description: XCCDF XML or CSV file to import as a component.
+  responses:
+    '200':
+      description: Component created
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            created:
+              summary: Component created from SRG
+              value:
+                toast:
+                  title: Component created.
+                  message:
+                    - "Successfully created component Container SRG."
+                  variant: success
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

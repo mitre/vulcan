@@ -1,10 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
-import axios from "axios";
 import CanonicalCommentPicker from "@/components/components/CanonicalCommentPicker.vue";
+import { getComments } from "@/api/componentsApi";
 
-vi.mock("axios");
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/api/componentsApi", () => ({
+  getComments: vi.fn(() => Promise.resolve({ data: { rows: [] } })),
+}));
 
 // REQUIREMENT: the canonical comment picker is the
 // search/select widget shown when a triager marks a comment as duplicate.
@@ -22,7 +35,7 @@ describe("CanonicalCommentPicker", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    axios.get.mockResolvedValue({
+    getComments.mockResolvedValue({
       data: {
         rows: [
           {
@@ -44,19 +57,19 @@ describe("CanonicalCommentPicker", () => {
   it("fetches comments scoped to the same component on mount", async () => {
     const w = mount(CanonicalCommentPicker, {
       localVue,
-      propsData: { componentId: 8, excludeReviewId: 50 },
+      propsData: { componentId: 8, excludeReviewIds: [50] },
     });
     await flushAll(w);
-    expect(axios.get).toHaveBeenCalledWith(
-      "/components/8/comments",
+    expect(getComments).toHaveBeenCalledWith(
+      8,
       expect.objectContaining({
-        params: expect.objectContaining({ triage_status: "all" }),
+        triage_status: "all",
       }),
     );
   });
 
   it("excludes the review being marked from the candidate list", async () => {
-    axios.get.mockResolvedValueOnce({
+    getComments.mockResolvedValueOnce({
       data: {
         rows: [
           {
@@ -85,7 +98,7 @@ describe("CanonicalCommentPicker", () => {
     });
     const w = mount(CanonicalCommentPicker, {
       localVue,
-      propsData: { componentId: 8, excludeReviewId: 50 },
+      propsData: { componentId: 8, excludeReviewIds: [50] },
     });
     await flushAll(w);
     expect(w.text()).not.toContain("This is the duplicate itself");
@@ -93,7 +106,7 @@ describe("CanonicalCommentPicker", () => {
   });
 
   it("excludes rows that are themselves duplicates (no chained)", async () => {
-    axios.get.mockResolvedValueOnce({
+    getComments.mockResolvedValueOnce({
       data: {
         rows: [
           {
@@ -119,17 +132,59 @@ describe("CanonicalCommentPicker", () => {
     });
     const w = mount(CanonicalCommentPicker, {
       localVue,
-      propsData: { componentId: 8, excludeReviewId: 50 },
+      propsData: { componentId: 8, excludeReviewIds: [50] },
     });
     await flushAll(w);
     expect(w.text()).not.toContain("already a dup");
     expect(w.text()).toContain("fresh canonical");
   });
 
+  it("excludes every id in the exclusion array (bulk selection)", async () => {
+    getComments.mockResolvedValueOnce({
+      data: {
+        rows: [
+          {
+            id: 50,
+            triage_status: "pending",
+            comment: "selected member one",
+            rule_displayed_name: "X",
+            author_name: "A",
+            created_at: "2026-04-25T10:00:00Z",
+          },
+          {
+            id: 99,
+            triage_status: "pending",
+            comment: "selected member two",
+            rule_displayed_name: "Y",
+            author_name: "B",
+            created_at: "2026-04-26T10:00:00Z",
+          },
+          {
+            id: 100,
+            triage_status: "pending",
+            comment: "outside the selection",
+            rule_displayed_name: "Z",
+            author_name: "C",
+            created_at: "2026-04-27T10:00:00Z",
+          },
+        ],
+        pagination: { total: 3 },
+      },
+    });
+    const w = mount(CanonicalCommentPicker, {
+      localVue,
+      propsData: { componentId: 8, excludeReviewIds: [50, 99] },
+    });
+    await flushAll(w);
+    expect(w.text()).not.toContain("selected member one");
+    expect(w.text()).not.toContain("selected member two");
+    expect(w.text()).toContain("outside the selection");
+  });
+
   it("emits 'selected' with the review id when a candidate is clicked", async () => {
     const w = mount(CanonicalCommentPicker, {
       localVue,
-      propsData: { componentId: 8, excludeReviewId: 50 },
+      propsData: { componentId: 8, excludeReviewIds: [50] },
     });
     await flushAll(w);
     await w.find('[data-test="canonical-candidate-99"]').trigger("click");
@@ -139,7 +194,7 @@ describe("CanonicalCommentPicker", () => {
   it("highlights the currently-selected candidate", async () => {
     const w = mount(CanonicalCommentPicker, {
       localVue,
-      propsData: { componentId: 8, excludeReviewId: 50, selectedReviewId: 99 },
+      propsData: { componentId: 8, excludeReviewIds: [50], selectedReviewId: 99 },
     });
     await flushAll(w);
     const selected = w.find('[data-test="canonical-candidate-99"]');
@@ -147,7 +202,7 @@ describe("CanonicalCommentPicker", () => {
   });
 
   it("widens client-side filter to match author name + rule name", async () => {
-    axios.get.mockResolvedValue({
+    getComments.mockResolvedValue({
       data: {
         rows: [
           {
@@ -172,7 +227,7 @@ describe("CanonicalCommentPicker", () => {
     });
     const w = mount(CanonicalCommentPicker, {
       localVue,
-      propsData: { componentId: 8, excludeReviewId: 50 },
+      propsData: { componentId: 8, excludeReviewIds: [50] },
     });
     await flushAll(w);
     w.vm.query = "Sarah";

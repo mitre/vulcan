@@ -1,0 +1,51 @@
+description: >-
+  Latest-version benchmark listing for dropdown population. One row per
+  benchmark, ranked by numeric V{major}R{minor} version (V10R1 above
+  V4R4). SRG rows carry srg_id; STIG rows carry stig_id.
+type: object
+required:
+  - rows
+additionalProperties: false
+properties:
+  rows:
+    type: array
+    description: One entry per benchmark, ordered by title.
+    items:
+      type: object
+      required:
+        - id
+        - title
+        - version
+        - name
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          description: Unique benchmark record identifier.
+          example: 42
+        srg_id:
+          type: string
+          description: >-
+            The SRG's stable benchmark identifier across releases.
+            Present only in /api/srgs/latest responses.
+          example: General_Purpose_Operating_System
+        stig_id:
+          type: string
+          description: >-
+            The STIG's stable benchmark identifier across releases.
+            Present only in /api/stigs/latest responses.
+          example: RHEL_9_STIG
+        title:
+          type: string
+          description: Full benchmark title.
+          example: General Purpose Operating System Security Requirements Guide
+        version:
+          type: string
+          description: DISA version string in V{major}R{minor} format.
+          example: V3R3
+        name:
+          type:
+            - string
+            - 'null'
+          description: Human-friendly display name with version and release.
+          example: General Purpose Operating System - Ver 3, Rel 3

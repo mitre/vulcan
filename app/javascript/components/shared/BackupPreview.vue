@@ -19,7 +19,7 @@
       </div>
       <div class="text-center px-3 border-left">
         <div class="h5 mb-0 font-weight-bold">{{ displayRuleCount }}</div>
-        <small class="text-muted">Rules</small>
+        <small class="text-muted">{{ ruleNounPlural }}</small>
       </div>
       <div class="text-center px-3 border-left">
         <div class="h5 mb-0 font-weight-bold">{{ summary.satisfactions_imported }}</div>
@@ -113,7 +113,9 @@
                   conflict
                 </b-badge>
               </template>
-              <small class="text-muted ml-auto">{{ comp.rule_count }} rules</small>
+              <small class="text-muted ml-auto"
+                >{{ comp.rule_count }} {{ ruleNounPlural.toLowerCase() }}</small
+              >
             </div>
             <!-- Parent SRG (second line) -->
             <small v-if="comp.srg_title" class="text-muted" data-testid="parent-srg">
@@ -153,7 +155,7 @@
       </thead>
       <tbody>
         <tr>
-          <td>Rules</td>
+          <td>{{ ruleNounPlural }}</td>
           <td class="text-right font-weight-bold">{{ displayRuleCount }}</td>
         </tr>
         <tr>
@@ -178,6 +180,10 @@
 </template>
 
 <script>
+// Project backups span components of both kinds, so the count labels read
+// the deployment-default noun rather than a per-kind term.
+import { RULE_TERM } from "../../constants/terminology";
+
 export default {
   name: "BackupPreview",
   props: {
@@ -208,6 +214,9 @@ export default {
     };
   },
   computed: {
+    ruleNounPlural() {
+      return RULE_TERM.plural;
+    },
     displayComponents() {
       return this.componentDetails;
     },

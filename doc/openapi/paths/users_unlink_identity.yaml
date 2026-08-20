@@ -1,0 +1,56 @@
+post:
+  operationId: unlinkIdentity
+  tags:
+    - Users
+  summary: Unlink an OAuth provider from the current user
+  description: >-
+    Removes an OAuth provider link (GitHub, LDAP, OIDC) from the current
+    user's account. Requires the user's current password to confirm. The
+    user must have local login credentials before unlinking to avoid being
+    locked out. Available from the user profile page.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - current_password
+            - provider
+          properties:
+            current_password:
+              type: string
+              description: Current password to confirm the action.
+              example: MyCurrentP@ssw0rd!
+            provider:
+              type: string
+              description: OAuth provider to unlink.
+              enum:
+                - github
+                - ldap
+                - oidc
+              example: github
+        examples:
+          unlink_github:
+            summary: Unlink GitHub provider
+            value:
+              current_password: MyCurrentP@ssw0rd!
+              provider: github
+  responses:
+    '200':
+      description: Provider unlinked
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            unlinked:
+              summary: GitHub unlinked
+              value:
+                toast:
+                  title: Provider unlinked.
+                  message:
+                    - GitHub identity removed from your account.
+                  variant: success
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

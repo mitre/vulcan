@@ -26,4 +26,22 @@ RSpec.describe 'Content-Security-Policy header' do
     csp = response.headers['Content-Security-Policy']
     expect(csp).to match(/script-src\s/)
   end
+
+  # The retired CDN API viewer was the only consumer of these origins; the
+  # documentation build now serves the reference entirely from the app. Each
+  # origin is asserted individually so a partial regression cannot hide
+  # behind the group.
+  describe 'retired API-viewer origins' do
+    [
+      'https://cdn.jsdelivr.net',
+      'https://api.scalar.com',
+      'https://registry.scalar.com',
+      'https://fonts.scalar.com'
+    ].each do |origin|
+      it "does not allow #{origin} anywhere in the policy" do
+        get root_path
+        expect(response.headers['Content-Security-Policy']).not_to include(origin)
+      end
+    end
+  end
 end

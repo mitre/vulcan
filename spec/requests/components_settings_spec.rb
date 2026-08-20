@@ -64,9 +64,9 @@ RSpec.describe 'GET /components/:id/settings' do
 
     before { sign_in outsider }
 
-    it 'is denied' do
+    it 'is concealed (hidden project → 404, not a redirect that reveals it exists)' do
       get "/components/#{component.id}/settings"
-      expect(response).to redirect_to(root_path)
+      expect(response).to have_http_status(:not_found)
     end
   end
 
@@ -74,6 +74,42 @@ RSpec.describe 'GET /components/:id/settings' do
     it 'redirects to sign-in' do
       get "/components/#{component.id}/settings"
       expect(response).to redirect_to(new_user_session_path)
+    end
+  end
+
+  context 'when updating the comment-phase fieldset' do
+    let(:admin_user) { create(:user, admin: false) }
+
+    before do
+      Membership.create!(user: admin_user, membership: project, role: 'admin')
+      sign_in admin_user
+    end
+
+    it 'permits comment_phase, closed_reason, and date params' do
+      put "/components/#{component.id}", params: {
+        component: {
+          comment_phase: 'closed',
+          closed_reason: 'adjudicating',
+          comment_period_starts_at: '2026-04-29',
+          comment_period_ends_at: '2026-05-14'
+        }
+      }
+
+      expect(response).to have_http_status(:success)
+      component.reload
+      expect(component.comment_phase).to eq('closed')
+      expect(component.closed_reason).to eq('adjudicating')
+      expect(component.comment_period_starts_at).not_to be_nil
+      expect(component.comment_period_ends_at).not_to be_nil
+    end
+
+    it 'rejects invalid comment_phase via the model validator' do
+      put "/components/#{component.id}", params: {
+        component: { comment_phase: 'not-a-real-phase' }
+      }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(component.reload.comment_phase).not_to eq('not-a-real-phase')
     end
   end
 end

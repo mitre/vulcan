@@ -1,0 +1,82 @@
+description: >-
+  Security Requirements Guide (SRG) listing entry. Serialized by SrgBlueprint (default/index view).
+  SRGs use release_date (not benchmark_date — that is STIGs).
+type: object
+required:
+  - id
+  - srg_id
+  - severity_counts
+  - core
+properties:
+  id:
+    type: integer
+    description: Unique SRG identifier.
+    example: 1
+  srg_id:
+    type:
+      - string
+      - 'null'
+    description: DISA SRG identifier string.
+    example: Container_Platform_SRG
+  core:
+    type: boolean
+    description: >-
+      Whether this is a core SRG. Core SRGs are the raw material
+      SRG-kind components derive from; derived (non-core) SRGs are
+      the valid sources for STIG-kind components. Drives the
+      creation-flow source picker's eligibility filtering.
+    example: false
+  name:
+    type:
+      - string
+      - 'null'
+    description: Short name including version and release.
+    example: "Container Platform SRG - Ver 2, Rel 4"
+  title:
+    type:
+      - string
+      - 'null'
+    description: Full official title.
+    example: Container Platform Security Requirements Guide
+  version:
+    type:
+      - string
+      - 'null'
+    description: Version string (e.g. V2R4).
+    example: V2R4
+  release_date:
+    type:
+      - string
+      - 'null'
+    format: date
+    description: Date the SRG was published by DISA.
+    example: "2025-10-28"
+  is_latest:
+    type: boolean
+    description: Whether this is the latest available release of this SRG.
+    example: true
+  latest_available_version:
+    type:
+      - string
+      - 'null'
+    description: Version string of this SRG's latest available release. Null when is_latest=true.
+    example: null
+  latest_available_id:
+    type:
+      - integer
+      - 'null'
+    description: ID of the latest available SRG for linking. Null when is_latest=true.
+    example: null
+  severity_counts:
+    type: object
+    description: Count of rules at each severity level within this SRG.
+    properties:
+      high:
+        type: integer
+        example: 8
+      medium:
+        type: integer
+        example: 177
+      low:
+        type: integer
+        example: 3

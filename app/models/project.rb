@@ -7,6 +7,7 @@ class Project < ApplicationRecord
   enum :visibility, { discoverable: 0, hidden: 1 }
 
   include VulcanAuditable
+  include PercentageMath
 
   vulcan_audited except: %i[id admin_name admin_email memberships_count]
   has_associated_audits
@@ -16,6 +17,7 @@ class Project < ApplicationRecord
   has_many :components, dependent: :destroy
   has_many :rules, through: :components
   has_many :access_requests, class_name: 'ProjectAccessRequest', dependent: :destroy
+  has_many :triage_response_templates, dependent: :destroy
   has_one :project_metadata, dependent: :destroy
   accepts_nested_attributes_for :project_metadata, :memberships
 
@@ -26,6 +28,10 @@ class Project < ApplicationRecord
             length: { maximum: ->(_r) { Settings.input_limits.short_string } }, allow_nil: true
 
   scope :alphabetical, -> { order(:name) }
+  scope :search, lambda { |q|
+    sanitized = sanitize_sql_like(q)
+    where('projects.name ILIKE :q OR projects.description ILIKE :q', q: "%#{sanitized}%")
+  }
 
   # Inner SELECT body that unions rule-scoped and component-scoped top-level
   # comment Reviews. Two ? placeholders (one per UNION branch) bind the
@@ -115,20 +121,23 @@ class Project < ApplicationRecord
   #
   # Filters mirror the per-component endpoint. Vocabulary on the wire is
   # DISA-native; UI translates via triageVocabulary.js.
-  def paginated_comments(triage_status: 'all', section: nil, component_id: nil,
+  def paginated_comments(triage_status: 'pending', section: nil, component_id: nil,
                          author_id: nil, query: nil, page: 1, per_page: 25,
                          resolved: 'all')
     page = [page.to_i, 1].max
     per_page = per_page.to_i.clamp(1, 100)
 
-    project_components = components.to_a
+    project_components = components.includes(:based_on).to_a
     component_ids_in_project = project_components.map(&:id)
-    return { rows: [], pagination: { page: 1, per_page: per_page, total: 0 } } if component_ids_in_project.empty?
+    empty_result = { rows: [], pagination: { page: 1, per_page: per_page, total: 0 }, status_counts: {} }
+    return empty_result if component_ids_in_project.empty?
 
     scope_components = component_id.present? ? [component_id.to_i] & component_ids_in_project : component_ids_in_project
-    return { rows: [], pagination: { page: 1, per_page: per_page, total: 0 } } if scope_components.empty?
+    return empty_result if scope_components.empty?
 
-    rule_id_subquery = Rule.where(component_id: scope_components).select(:id)
+    # base_rules-scoped: the Rule STI query would hide comments on
+    # authored SrgRules from the project-level comment view.
+    rule_id_subquery = BaseRule.live_for_components(scope_components).select(:id)
     rule_scoped = Review.top_level_comments
                         .where(commentable_type: 'BaseRule', commentable_id: rule_id_subquery)
     component_scoped = Review.top_level_comments
@@ -136,6 +145,7 @@ class Project < ApplicationRecord
     scope = rule_scoped.or(component_scoped)
                        .preload(:user, :triage_set_by, :adjudicated_by, :commentable)
 
+    base_scope_for_counts = scope
     scope = scope.where(triage_status: triage_status) unless triage_status == 'all'
     scope = scope.where(section: section) if section.present? && section != 'all'
     scope = scope.where(user_id: author_id) if author_id.present?
@@ -165,8 +175,11 @@ class Project < ApplicationRecord
                         .offset((page - 1) * per_page)
                         .limit(per_page)
                         .to_a
+    # BaseRule, not Rule: rule_id is dual-written for authored SrgRule
+    # comments too, and the Rule STI scope would drop those ids — leaving
+    # SRG rows with nil rule/component decoration.
     page_rule_ids = page_reviews.filter_map(&:rule_id).uniq
-    rule_lookup = Rule.where(id: page_rule_ids).pluck(:id, :rule_id, :component_id).to_h do |rid, rule_id, cid|
+    rule_lookup = BaseRule.where(id: page_rule_ids).pluck(:id, :rule_id, :component_id).to_h do |rid, rule_id, cid|
       [rid, { rule_id: rule_id, component_id: cid, prefix: component_lookup[cid]&.prefix }]
     end
 
@@ -176,42 +189,31 @@ class Project < ApplicationRecord
                                    .count
     reaction_counts = Reaction.where(review_id: page_review_ids).group(:review_id, :kind).count
 
-    rows = page_reviews.map do |r|
-      component_scoped_row = r.commentable_type == 'Component'
-      rule_meta = component_scoped_row ? {} : (rule_lookup[r.rule_id] || {})
-      cid = component_scoped_row ? r.commentable_id : rule_meta[:component_id]
-      {
-        id: r.id,
-        rule_id: component_scoped_row ? nil : r.rule_id,
-        rule_displayed_name: if component_scoped_row
-                               '(component)'
-                             else
-                               (rule_meta[:prefix] ? "#{rule_meta[:prefix]}-#{rule_meta[:rule_id]}" : nil)
-                             end,
-        commentable_type: r.commentable_type,
-        component_id: cid,
-        component_name: component_lookup[cid]&.name,
-        section: r.section,
-        author_name: r.user&.name,
-        # author_email intentionally omitted — see Component#paginated_comments
-        # for rationale (PII scraping during public review windows).
-        comment: r.comment,
-        created_at: r.created_at,
-        triage_status: r.triage_status,
-        triage_set_at: r.triage_set_at,
-        adjudicated_at: r.adjudicated_at,
-        duplicate_of_review_id: r.duplicate_of_review_id,
-        triager_display_name: r.triager_display_name,
-        triager_imported: r.triager_imported?,
-        adjudicator_display_name: r.adjudicator_display_name,
-        adjudicator_imported: r.adjudicator_imported?,
-        responses_count: responses_count_lookup[r.id] || 0,
-        reactions: { up: reaction_counts[[r.id, 'up']] || 0,
-                     down: reaction_counts[[r.id, 'down']] || 0 }
-      }
-    end
+    rule_display_map = rule_lookup.transform_values { |m| m[:prefix] ? "#{m[:prefix]}-#{m[:rule_id]}" : nil }
+    rule_component_map = rule_lookup.transform_values { |m| m[:component_id] }
+    component_name_map = component_lookup.transform_values(&:name)
+    srg_info_map = SecurityRequirementsGuide.srg_info_for_components(component_lookup.values)
 
-    { rows: rows, pagination: { page: page, per_page: per_page, total: total } }
+    child_to_parent = RuleSatisfaction.where(rule_id: page_rule_ids)
+                                      .pluck(:rule_id, :satisfied_by_rule_id).to_h
+    parent_rule_map = child_to_parent.transform_values { |pid| rule_display_map[pid] }
+
+    blueprint_options = {
+      view: :project,
+      rule_display_map: rule_display_map,
+      rule_component_map: rule_component_map,
+      component_name_map: component_name_map,
+      srg_info_map: srg_info_map,
+      parent_rule_map: parent_rule_map,
+      responses_counts: responses_count_lookup,
+      reaction_counts: reaction_counts
+    }
+
+    rows = page_reviews.map { |r| CommentRowBlueprint.render_as_json(r, **blueprint_options) }
+
+    status_counts = base_scope_for_counts.group(:triage_status).count
+
+    { rows: rows, pagination: { page: page, per_page: per_page, total: total }, status_counts: status_counts }
   end
 
   # Helper method to extract data from Project Metadata
@@ -259,23 +261,61 @@ class Project < ApplicationRecord
          .limit(limit)
   end
 
+  # Per-document-type sections: stig and srg buckets never collapse into
+  # each other; type-agnostic numbers (locks, review state, total) stay
+  # top-level.
   def details
-    status_counts = rules.group(:status).count
-    lock_counts = rules.group(:locked).count
-    review_counts = rules.where(locked: false).group(
+    component_types = components.pluck(:id, :document_type).to_h
+    live_rows = BaseRule.live_for_components(component_types.keys)
+    status_rows = live_rows.group(:component_id, :status).count
+    lock_counts = live_rows.group(:locked).count
+    review_counts = live_rows.where(locked: false).group(
       Arel.sql('CASE WHEN review_requestor_id IS NULL THEN \'nur\' ELSE \'ur\' END')
     ).count
 
+    stig_counts, srg_counts = split_status_rows_by_type(status_rows, component_types)
+    stig_buckets = Component.status_buckets(stig_counts)
+    srg_buckets = Component.srg_status_buckets(srg_counts)
+
     {
-      ac: status_counts['Applicable - Configurable'] || 0,
-      aim: status_counts['Applicable - Inherently Meets'] || 0,
-      adnm: status_counts['Applicable - Does Not Meet'] || 0,
-      na: status_counts['Not Applicable'] || 0,
-      nyd: status_counts['Not Yet Determined'] || 0,
+      stig: {
+        ac: stig_buckets[:applicable_configurable],
+        aim: stig_buckets[:applicable_inherently_meets],
+        adnm: stig_buckets[:applicable_does_not_meet],
+        na: stig_buckets[:not_applicable],
+        nyd: stig_buckets[:not_yet_determined],
+        total: stig_buckets.values.sum
+      },
+      srg: {
+        applicable: srg_buckets[:applicable],
+        na: srg_buckets[:not_applicable],
+        nyd: srg_buckets[:not_yet_determined],
+        total: srg_buckets.values.sum
+      },
       nur: review_counts['nur'] || 0,
       ur: review_counts['ur'] || 0,
       lck: lock_counts[true] || 0,
-      total: status_counts.values.sum
+      total: stig_buckets.values.sum + srg_buckets.values.sum
+    }
+  end
+
+  # Dashboard aggregates across all components — grouped SQL (one GROUP BY
+  # per metric), assembled per component from the RESULT ROWS, never by
+  # enumerating rules. Percentages are nil when a denominator is zero.
+  def dashboard_stats
+    comps = components.select(:id, :name, :prefix, :document_type).order(:prefix)
+    ids = comps.map(&:id)
+    # base_rules-scoped: the Rule STI query excluded authored SrgRules
+    # (and SrgRule tombstones need the explicit deleted_at filter).
+    live_rows = BaseRule.live_for_components(ids)
+    status_rows = live_rows.group(:component_id, :status).count
+    severity_rows = live_rows.group(:rule_severity).count
+    locked_rows = live_rows.where(locked: true).group(:component_id).count
+    component_types = comps.to_h { |c| [c.id, c.document_type] }
+
+    {
+      aggregate: dashboard_aggregate(status_rows, severity_rows, locked_rows, component_types),
+      components: comps.map { |comp| dashboard_component_row(comp, status_rows, locked_rows) }
     }
   end
 
@@ -290,6 +330,64 @@ class Project < ApplicationRecord
     Component.where(released: true).where.not(id: reject_component_ids)
              .select(:id, :name, :prefix, :version, :release, :project_id,
                      :security_requirements_guide_id, :released, :updated_at,
-                     :rules_count, :component_id)
+                     :rules_count, :component_id, :admin_name, :admin_email,
+                     :description, :document_type)
+             .order(:id) # deterministic serialized order
+  end
+
+  private
+
+  # Project-wide totals summed from the per-component GROUP BY rows.
+  def dashboard_aggregate(status_rows, severity_rows, locked_rows, component_types)
+    stig_counts, srg_counts = split_status_rows_by_type(status_rows, component_types)
+    stig_buckets = Component.status_buckets(stig_counts)
+    srg_buckets = Component.srg_status_buckets(srg_counts)
+    total = stig_buckets.values.sum + srg_buckets.values.sum
+    undecided = stig_buckets[:not_yet_determined] + srg_buckets[:not_yet_determined]
+    {
+      rules_by_status_by_type: { stig: stig_buckets, srg: srg_buckets },
+      rules_by_severity: {
+        high: severity_rows['high'] || 0,
+        medium: severity_rows['medium'] || 0,
+        low: severity_rows['low'] || 0
+      },
+      rule_count: total,
+      # Completion is type-agnostic: not-NYD over live rows — both
+      # vocabularies share the Not Yet Determined key.
+      completion_pct: percentage_of(total - undecided, total),
+      lock_pct: percentage_of(locked_rows.values.sum, total)
+    }
+  end
+
+  # Splits the { [component_id, status] => count } GROUP BY rows into
+  # per-document-type { status => count } hashes.
+  def split_status_rows_by_type(status_rows, component_types)
+    stig = Hash.new(0)
+    srg = Hash.new(0)
+    status_rows.each do |(component_id, status), count|
+      target = component_types[component_id] == 'srg' ? srg : stig
+      target[status] += count
+    end
+    [stig, srg]
+  end
+
+  # One breakdown row per component, built from the shared GROUP BY rows.
+  def dashboard_component_row(comp, status_rows, locked_rows)
+    counts = status_rows.each_with_object({}) do |((component_id, status), count), acc|
+      acc[status] = count if component_id == comp.id
+    end
+    # Rows carry their own kind; the completion math is type-agnostic —
+    # both vocabularies share the Not Yet Determined key.
+    total = counts.values.sum
+    undecided = counts[RuleConstants::STATUS_NYD] || 0
+    {
+      id: comp.id,
+      name: comp.name,
+      prefix: comp.prefix,
+      document_type: comp.document_type,
+      rule_count: total,
+      completion_pct: percentage_of(total - undecided, total),
+      lock_pct: percentage_of(locked_rows[comp.id] || 0, total)
+    }
   end
 end

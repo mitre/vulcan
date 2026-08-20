@@ -1,0 +1,156 @@
+parameters:
+  - $ref: ../components/parameters/ComponentId.yaml
+get:
+  operationId: listComponentRules
+  tags:
+    - Rules
+  summary: List all rules for a component
+  description: >-
+    Returns all rules in the component with full content fields (title, fixtext,
+    check_content, vuln_discussion, etc.). Used by the component editor to
+    populate the rule list. Requires project membership.
+  responses:
+    '200':
+      description: All component rules
+      content:
+        application/json:
+          schema:
+            type: array
+            description: >-
+              Items are shaped by the component's document_type: STIG rules
+              or authored SRG requirements.
+            items:
+              oneOf:
+                - $ref: ../components/schemas/RuleEditorResponse.yaml
+                - $ref: ../components/schemas/AuthoredSrgRuleEditorResponse.yaml
+          examples:
+            rules:
+              summary: Two rules
+              value:
+                - id: 100
+                  rule_id: "CNTR-00-000050"
+                  title: "Container images must be signed"
+                  status: "Applicable - Configurable"
+                  locked: false
+                  satisfies: []
+                  satisfied_by: []
+                - id: 101
+                  rule_id: "CNTR-00-000051"
+                  title: "Container images must come from approved registries"
+                  status: "Applicable - Configurable"
+                  locked: false
+                  satisfies: []
+                  satisfied_by: []
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+post:
+  operationId: createRule
+  tags:
+    - Rules
+  summary: Create a new requirement in a component
+  description: >-
+    Creates a requirement in one call, shaped by the component's
+    document_type — a STIG rule (seeded from the source SRG's CCI-000366
+    baseline row; severity and weight are inherited from it) or an
+    authored SRG requirement. Content fields apply at creation: provided
+    values win over seeded defaults, and provided nested attributes
+    replace the built defaults. Duplicate mode copies an existing
+    requirement of THIS component. Requirement numbers are server-owned
+    and assigned from the component's sequence. Blank/content creation
+    requires project admin; duplication requires author. Returns 422
+    when a STIG component's source SRG has no CCI-000366 baseline row,
+    or when provided content fails the kind's validations.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            rule:
+              description: >-
+                Creation mode plus the one-call content surface (the same
+                fields the update endpoint accepts; nested attributes
+                carry no id at creation).
+              allOf:
+                - type: object
+                  properties:
+                    duplicate:
+                      type: boolean
+                      description: Duplicate an existing requirement instead of creating a blank one.
+                      example: false
+                    id:
+                      type: integer
+                      description: Source requirement id to duplicate (required when duplicate is true; must belong to this component).
+                      example: 100
+                - $ref: ../components/schemas/RuleInput.yaml
+        examples:
+          create:
+            summary: Create a blank requirement
+            value:
+              rule:
+                duplicate: false
+          one_call_content:
+            summary: Create a STIG rule with content in one call
+            value:
+              rule:
+                duplicate: false
+                title: The container platform must enforce approved authorizations.
+                status: Applicable - Configurable
+                vendor_comments: Met by the recommended runtime configuration.
+          authored_srg:
+            summary: Create an authored SRG requirement with content
+            value:
+              rule:
+                duplicate: false
+                title: The application must enforce approved authorizations for logical access.
+                status: Applicable
+                fixtext: Configure the application to enforce approved authorizations.
+          duplicate:
+            summary: Duplicate an existing requirement
+            value:
+              rule:
+                duplicate: true
+                id: 100
+  responses:
+    '200':
+      description: Rule created
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/RuleCreateResponse.yaml
+          examples:
+            created:
+              summary: Control created
+              value:
+                toast:
+                  title: Control created.
+                  message:
+                    - Successfully created control.
+                  variant: success
+                data:
+                  id: 5000
+                  rule_id: "000204"
+                  title: "New container security requirement"
+                  status: "Not Yet Determined"
+                  locked: false
+                  satisfies: []
+                  satisfied_by: []
+      links:
+        GetCreatedRule:
+          operationId: getRule
+          parameters:
+            ruleId: '$response.body#/data/id'
+          description: Fetch the newly created rule.
+        UpdateCreatedRule:
+          operationId: updateRule
+          parameters:
+            ruleId: '$response.body#/data/id'
+          description: Update the newly created rule.
+        DeleteCreatedRule:
+          operationId: deleteRule
+          parameters:
+            ruleId: '$response.body#/data/id'
+          description: Delete the newly created rule.
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

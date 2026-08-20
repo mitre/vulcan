@@ -1,0 +1,108 @@
+description: >-
+  Insufficient permissions (RFC 9457 problem details). The `type` URI names
+  the denial class; permission denials carry the project `admins` to ask for
+  access, plus a legacy `toast` extension kept until every consumer reads
+  the problem fields directly.
+content:
+  application/problem+json:
+    schema:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+          description: >-
+            Stable machine identifier for the error class — a URI reference
+            anchoring into the live API docs.
+          example: /docs/api/errors#permission_denied
+        title:
+          type: string
+          description: Short human summary of the error class.
+          example: Permission denied
+        status:
+          type: integer
+          description: HTTP status code, repeated in the body.
+          example: 403
+        detail:
+          type: string
+          description: Occurrence-specific human explanation of why.
+          example: You are not authorized to perform viewer actions on this project
+        admins:
+          type: array
+          description: >-
+            Project admin contacts to ask for access (extension member,
+            present on permission denials when a project or component is in
+            scope; empty otherwise).
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - name
+              - email
+            properties:
+              name:
+                type: string
+                description: Admin display name.
+                example: Alice Admin
+              email:
+                type: string
+                format: email
+                description: Admin contact email.
+                example: alice@example.com
+        toast:
+          type: object
+          additionalProperties: false
+          description: >-
+            Legacy toast extension for older consumers (permission denials
+            only).
+          properties:
+            title:
+              type: string
+              description: Toast heading.
+              example: Not Authorized.
+            message:
+              type: array
+              description: Toast body lines.
+              items:
+                type: string
+              example:
+                - You are not authorized to perform viewer actions on this project
+            variant:
+              type: string
+              description: Bootstrap alert variant.
+              example: danger
+    examples:
+      permission_denied:
+        summary: Authenticated but lacking the required project capability
+        value:
+          type: /docs/api/errors#permission_denied
+          title: Permission denied
+          status: 403
+          detail: You are not authorized to perform viewer actions on this project
+          admins:
+            - name: Alice Admin
+              email: alice@example.com
+          toast:
+            title: Not Authorized.
+            message:
+              - You are not authorized to perform viewer actions on this project
+            variant: danger
+      insufficient_token_scope:
+        summary: Token lacks the scope this request requires
+        value:
+          type: /docs/api/errors#insufficient_token_scope
+          title: Insufficient token scope
+          status: 403
+          detail: This request requires the write scope, and the token does not grant it.
+      ip_not_allowed:
+        summary: Request IP outside the token allowlist
+        value:
+          type: /docs/api/errors#ip_not_allowed
+          title: IP address not allowed
+          status: 403
+          detail: The request came from an IP address outside this token's allowlist.

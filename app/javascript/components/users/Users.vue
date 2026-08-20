@@ -25,6 +25,7 @@
     <UsersTable
       :users="localUsers"
       :lockout-enabled="lockoutEnabled"
+      :api-tokens-enabled="apiTokensEnabled"
       @edit-user="openEditModal"
       @user-deleted="onUserDeleted"
     />
@@ -44,6 +45,7 @@
       :smtp-enabled="smtpEnabled"
       :password-policy="passwordPolicy"
       :lockout-enabled="lockoutEnabled"
+      :api-tokens-enabled="apiTokensEnabled"
       @user-updated="onUserUpdated"
     />
 
@@ -93,6 +95,10 @@ export default {
       default: null,
     },
     lockoutEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    apiTokensEnabled: {
       type: Boolean,
       default: false,
     },

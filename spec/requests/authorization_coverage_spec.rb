@@ -27,6 +27,7 @@ AUTHORIZE_METHODS = %w[
   authorize_admin_component
   authorize_review_component
   authorize_author_component
+  authorize_author_target
   authorize_viewer_component
   authorize_admin_membership
   authorize_membership_create
@@ -35,6 +36,8 @@ AUTHORIZE_METHODS = %w[
   authorize_section_lock
   authorize_review_owner
   authorize_review_visibility
+  authorize_bulk_selection
+  authorize_merge_selection
   check_admin_for_advanced_fields
   set_and_authorize_access_request
 ].freeze
@@ -46,6 +49,9 @@ SKIP_CONTROLLER_PREFIXES = %w[
   sessions
   users/registrations
   users/omniauth_callbacks
+  users/passwords
+  users/confirmations
+  users/unlocks
   rails/
   active_storage/
   health_check/
@@ -61,13 +67,43 @@ AUTHENTICATE_ONLY_ACTIONS = {
   # Authorization is data-scoped (users only see what they have access to),
   # not action-scoped. Any authenticated user can search.
   'api/search#global' => 'Data-scoped auth via current_user.available_projects',
-  # DisaGuideController serves static documentation to any authenticated user.
-  'disa_guide#show' => 'Static docs page — any authenticated user',
-  'disa_guide#attachment' => 'Static docs attachment — any authenticated user',
+  # DocsController serves the built documentation site. It is the only action whose
+  # authentication is CONDITIONAL: Settings.docs.require_login decides, defaulting to
+  # public, because the readers who most need the setup and troubleshooting pages are
+  # the ones who cannot sign in yet. There is nothing to authorize beyond that — the
+  # site is identical for every reader, and requests are contained to the build
+  # directory. Both positions of the setting are covered in spec/requests/docs_spec.rb.
+  'docs#show' => 'Static documentation site — public by default, login conditional on Settings.docs.require_login',
   # UserSearchController uses custom authorization in authorize_search before_action:
   # admin-only for non-member searches; any member for scope=members (PoC selection).
   'api/user_search#index' => 'Custom authorization in before_action: admin-only for non-member ' \
-                             'searches; any member for scope=members'
+                             'searches; any member for scope=members',
+  # PersonalAccessTokensController is session-only (require_session_auth rejects token auth).
+  # Ownership-scoped: index/create/destroy operate on current_user.personal_access_tokens.
+  # admin_revoke checks current_user.admin? in-action (raises NotAuthorizedError otherwise).
+  'personal_access_tokens#index' => 'Ownership-scoped: current_user tokens only; session-only via require_session_auth',
+  'personal_access_tokens#create' => 'Ownership-scoped: builds on current_user; password re-entry required; session-only',
+  'personal_access_tokens#destroy' => 'Ownership-scoped: finds via current_user.personal_access_tokens; session-only',
+  'personal_access_tokens#admin_revoke' => 'Admin-gated in action body (current_user.admin? else NotAuthorizedError); session-only',
+  # ApiDocsController serves the machine-readable OpenAPI spec at the root
+  # filenames. Static documentation — any authenticated user can view.
+  'api_docs#spec' => 'Static OpenAPI spec file (YAML) — any authenticated user',
+  'api_docs#spec_json' => 'Static OpenAPI spec file (JSON) — any authenticated user',
+  'api/auth#me' => 'Returns current session user — ownership-scoped by definition',
+  'api/auth#login' => 'Public login endpoint — skip_before_action :authenticate_user!',
+  'api/auth#logout' => 'Session teardown — ownership-scoped by definition',
+  'api/settings#show' => 'Public pre-auth UI config — skip_before_action :authenticate_user!',
+  'api/srgs#latest' => 'Public DISA reference data — skip_before_action :authenticate_user!',
+  'api/srgs#stats' => 'Data-scoped: usage lists only components in caller-visible projects ' \
+                      '(available_projects or released); rule counts are public reference data',
+  'api/stigs#latest' => 'Public DISA reference data — skip_before_action :authenticate_user!',
+  'api/stigs#stats' => 'Public DISA reference data (rule counts only, no usage) — ' \
+                       'skip_before_action :authenticate_user!',
+  'api/components#latest' => 'Data-scoped: released components only — instance-wide reference ' \
+                             'data for any authenticated user (matches components#index)',
+  'api/navigation#show' => 'App shell data scoped to current_user session',
+  'api/projects#index' => 'Data-scoped: current_user.available_projects (member projects + discoverable); ' \
+                          'non-discoverable projects are not listed to non-members'
 }.freeze
 
 RSpec.describe 'Authorization coverage' do

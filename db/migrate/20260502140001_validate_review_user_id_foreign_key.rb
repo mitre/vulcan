@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# PR-717 review remediation .j4a step A3 — pass 2 of 2 (Strong Migrations
+# Pass 2 of 2 (Strong Migrations
 # canonical pattern). Validates the FK added in 20260502140000 outside a
 # DDL transaction so existing-row validation does not hold ACCESS
 # EXCLUSIVE on `reviews` for the duration of the scan.

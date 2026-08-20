@@ -1,3 +1,8 @@
+require:
+  - ./lib/rubocop/cop/vulcan/comment_tracker
+  - ./lib/rubocop/cop/vulcan/kind_seam_query
+  - ./lib/rubocop/cop/vulcan/let_it_be_refind
+
 plugins:
   - rubocop-rails
   - rubocop-performance
@@ -9,6 +14,12 @@ plugins:
 AllCops:
   NewCops: enable
   SuggestExtensions: false
+  # Pinned to the runtime in .ruby-version. Without this, RuboCop auto-detects
+  # the target by globbing directories UPWARD from the repo for a gemspec, which
+  # fails under a sandbox that denies paths above the repo root — crashing the
+  # run before it lints anything. An explicit version is resolved from this
+  # config directly, so no upward filesystem walk happens.
+  TargetRubyVersion: 3.4
   Exclude:
     - bin/*
     - db/schema.rb
@@ -19,6 +30,7 @@ AllCops:
     - "vendor/**/*"
     - tmp/**/*
     - downloads/**/*
+    - "**/*.haml"
 # DISABLED: Following Standard Ruby - line length auto-correction is destructive
 # It can corrupt code when combined with other cops (e.g., Rails/FilePath path duplication)
 # See: https://github.com/standardrb/standard
@@ -90,6 +102,10 @@ Style/OpenStructUse:
 Rails/SkipsModelValidations:
   Exclude:
     - spec/**/*
+    - lib/tasks/**/*
+    # Migrations operate at the schema/data level via migration-local models
+    # with no validations — bulk backfills legitimately use insert_all/update_all.
+    - db/migrate/**/*
 # FactoryBot/FactoryAssociationWithStrategy changes build vs create behavior —
 # fixing requires verifying all tests still pass with implicit associations.
 # TODO: Fix factories to use implicit associations in dedicated session.
@@ -175,10 +191,10 @@ RSpec/LetSetup:
 RSpec/MessageChain:
   Enabled: false
 
-# Repeated examples flagged in components_spec are intentional parametric tests
+# Repeated examples flagged in components satisfaction spec are intentional parametric tests
 RSpec/RepeatedExample:
   Exclude:
-    - spec/models/components_spec.rb
+    - spec/models/components_satisfactions_spec.rb
 
 # Test let statements with numbers in names
 RSpec/IndexedLet:
@@ -189,3 +205,44 @@ RSpec/IndexedLet:
     - spec/models/rule_search_spec.rb
     - spec/models/srg_csv_export_spec.rb
     - spec/models/stig_csv_export_spec.rb
+
+# The kind-seam query invariant: requirement-scoped queries route through
+# Component#requirements / BaseRule.live_for_components — Rule is the STIG
+# STI subclass and structurally excludes authored SRG requirements. Each
+# excluded file below is either a deliberately STIG-only surface or the
+# seam's own implementation; in-flight gaps are marked and leave the list
+# when their kind-routing lands. Never quiet this cop inline.
+Vulcan/KindSeamQuery:
+  Include:
+    - app/**/*.rb
+    - db/seeds/**/*.rb
+    - lib/**/*.rb
+    - lib/tasks/**/*.rake
+  Exclude:
+    # The kind seam's own home — requirements routes to rules for stig kind,
+    # and the Rule-only copy/import internals are guarded at their doors.
+    - app/models/component.rb
+    # Rule-internal counter-cache maintenance (SRG counts are live queries).
+    - app/models/rule.rb
+    # Kind-routed at the mode seam — the rules branch serves non-SRG modes.
+    - app/services/export/base.rb
+    # Kind-routed builder — the rules branch is the stig import path.
+    - app/services/import/json_archive/rule_builder.rb
+    # InSpec control-file diff — InSpec is structurally STIG-only.
+    - app/controllers/components_controller.rb
+    # Editor payload is kind-routed in-file; related_rules is deliberately
+    # Rule-only (no authored equivalent surface).
+    - app/controllers/rules_controller.rb
+    # Satisfaction-nesting maintenance for the container stig test dataset —
+    # walks the satisfies graph, structurally STIG-only. Resolves its
+    # component kind-scoped: two kinds share the CNTR-00 prefix.
+    - lib/tasks/container_srg_nesting_fix.rake
+    # Stig demo-data seeds — each queries rules on stig components it
+    # creates itself, kind-known by construction. The srg demo seed
+    # (14_srg_authoring_demo.rb) uses the seam and stays enforced.
+    - db/seeds/data/04_components.rb
+    - db/seeds/data/06_rule_statuses.rb
+    - db/seeds/data/07_additional_questions.rb
+    - db/seeds/data/08_rule_descriptions.rb
+    - db/seeds/data/11_cross_project.rb
+    - db/seeds/data/13_container_srg_test.rb

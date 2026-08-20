@@ -47,13 +47,13 @@
     </div>
 
     <!-- Table of Rules -->
-    <div ref="ruleListContainer" class="mt-3" style="max-height: 700px; overflow-y: auto">
-      <h5 class="card-title">{{ RULE_TERM.plural }}</h5>
+    <div class="mt-3">
+      <h5 class="card-title">{{ itemTerm.plural }}</h5>
       <div class="d-flex mb-2">
         <FilterDropdown
           v-model="field"
           :options="fieldOptions"
-          aria-label="Filter rules by ID type"
+          :aria-label="`Filter ${itemTerm.plural.toLowerCase()} by ID type`"
           size="sm"
         />
         <b-icon
@@ -71,18 +71,24 @@
           @click="sortOrder = 'asc'"
         />
       </div>
-      <div role="listbox" tabindex="0" :aria-label="RULE_TERM.plural" @keydown="handleKeydown">
-        <div
-          v-for="(rule, index) in sortedRules"
-          :key="rule.id"
-          :class="rowClass(rule, index)"
-          :tabindex="index === focusedIndex || (focusedIndex === -1 && index === 0) ? 0 : -1"
-          role="option"
-          :aria-selected="String(selectedRule && selectedRule.id === rule.id)"
-          class="p-2 border-bottom cursor-pointer"
-          @click="selectRule(rule)"
-        >
-          {{ displayField(rule) }}
+      <div
+        ref="ruleListContainer"
+        data-test="rule-list-scroll-container"
+        style="max-height: 600px; overflow-y: auto"
+      >
+        <div role="listbox" tabindex="0" :aria-label="itemTerm.plural" @keydown="handleKeydown">
+          <div
+            v-for="(rule, index) in sortedRules"
+            :key="rule.id"
+            :class="rowClass(rule, index)"
+            :tabindex="index === focusedIndex || (focusedIndex === -1 && index === 0) ? 0 : -1"
+            role="option"
+            :aria-selected="String(selectedRule && selectedRule.id === rule.id)"
+            class="p-2 border-bottom cursor-pointer"
+            @click="selectRule(rule)"
+          >
+            {{ displayField(rule) }}
+          </div>
         </div>
       </div>
     </div>
@@ -112,10 +118,15 @@ export default {
       required: true,
       validator: (value) => ["stig", "srg", "component"].includes(value),
     },
+    // Resolved display noun from the parent viewer (kind-aware for
+    // released components); defaults to the deployment term.
+    itemTerm: {
+      type: Object,
+      default: () => RULE_TERM,
+    },
   },
   data() {
     return {
-      RULE_TERM,
       searchText: "",
       selectedSeverity: "",
       field: this.type === "srg" ? "srg_id" : "rule_id",
@@ -145,17 +156,18 @@ export default {
     },
     searchPlaceholder() {
       const primaryId = this.type === "stig" ? "STIG ID" : "SRG ID";
-      return `Search by ${primaryId}, Rule ID, or title`;
+      return `Search by ${primaryId}, ${this.itemTerm.singular} ID, or title`;
     },
     fieldOptions() {
+      const ruleIdLabel = `${this.itemTerm.singular} ID`;
       if (this.type === "srg") {
         return [
           { value: "srg_id", text: "SRG ID" },
-          { value: "rule_id", text: "Rule ID" },
+          { value: "rule_id", text: ruleIdLabel },
         ];
       }
       return [
-        { value: "rule_id", text: "Rule ID" },
+        { value: "rule_id", text: ruleIdLabel },
         { value: "stig_id", text: "STIG ID" },
         { value: "srg_id", text: "SRG ID" },
       ];
@@ -216,10 +228,10 @@ export default {
     },
     rowClass(rule, index) {
       if (this.selectedRule && this.selectedRule.id === rule.id) {
-        return "bg-secondary text-white";
+        return "rule-list-item--active";
       }
       if (index === this.focusedIndex) {
-        return "bg-light";
+        return "rule-list-item--focused";
       }
       return "";
     },
@@ -270,3 +282,15 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.rule-list-item--active {
+  background-color: var(--vulcan-active-bg);
+  border-left: 3px solid var(--vulcan-active-border);
+  color: var(--vulcan-emphasis-color);
+}
+
+.rule-list-item--focused {
+  background-color: var(--vulcan-hover-bg);
+}
+</style>

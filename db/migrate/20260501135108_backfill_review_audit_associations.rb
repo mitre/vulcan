@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# PR-717 review remediation .7 — backfill associated_id / associated_type
+# Backfill associated_id / associated_type
 # for existing Review audits.
 #
 # Pre-PR-717 (and pre-this-migration), Review audits were written with NULL

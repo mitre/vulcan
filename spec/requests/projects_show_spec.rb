@@ -50,4 +50,51 @@ RSpec.describe 'GET /projects/:id' do
     get "/projects/#{project.id}", as: :json
     expect(response).to have_http_status(:success)
   end
+
+  describe 'component card counts (ComponentBlueprint :index)' do
+    it 'serves the authored requirement count for an srg-kind component under rules_count' do
+      srg_component = create(:component, :skip_rules, project: project, document_type: 'srg',
+                                                      prefix: 'PSRG-00', name: 'Project SRG',
+                                                      title: 'Project SRG')
+      create(:srg_rule, :authored, component: srg_component, rule_id: '000001')
+
+      get "/projects/#{project.id}", as: :json
+
+      row = response.parsed_body['components'].find { |c| c['id'] == srg_component.id }
+      expect(row['rules_count']).to eq(1)
+    end
+
+    it 'serves the kind-aware count through the column-limited available_components path' do
+      other_project = create(:project)
+      released_srg = create(:component, :skip_rules, project: other_project, document_type: 'srg',
+                                                     prefix: 'ASRG-00', name: 'Available SRG',
+                                                     title: 'Available SRG')
+      create(:srg_rule, :authored, component: released_srg, rule_id: '000001',
+                                   status: 'Applicable', locked: true)
+      released_srg.update!(released: true, via_release_flow: true)
+
+      get "/projects/#{project.id}", as: :json
+
+      expect(response).to have_http_status(:success)
+      row = response.parsed_body['available_components'].find { |c| c['id'] == released_srg.id }
+      expect(row['rules_count']).to eq(1)
+    end
+  end
+
+  describe 'effective_permissions in JSON response' do
+    it 'includes effective_permissions=admin for project admin' do
+      get "/projects/#{project.id}", as: :json
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body['effective_permissions']).to eq('admin')
+    end
+
+    it 'includes effective_permissions=viewer for viewer member' do
+      viewer = create(:user)
+      Membership.create!(user: viewer, membership: project, role: 'viewer')
+      sign_in viewer
+      get "/projects/#{project.id}", as: :json
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body['effective_permissions']).to eq('viewer')
+    end
+  end
 end

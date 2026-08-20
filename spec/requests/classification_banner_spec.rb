@@ -3,6 +3,23 @@
 require 'rails_helper'
 
 RSpec.describe 'Classification Banner' do
+  # Settings is a process-wide singleton. Every key a context mutates MUST be
+  # restored to its ORIGINAL value afterward — a partial restore leaks the
+  # mutation into whichever spec the parallel worker runs next (found live: a
+  # String consent version from this file failing the Settings-defaults type
+  # pins under example randomization). Originals are captured, never
+  # hardcoded, so a yml default change cannot silently diverge from the
+  # restore.
+  def override_settings(section, overrides)
+    originals = overrides.keys.index_with { |key| section[key] }
+    overrides.each { |key, value| section[key] = value }
+    originals
+  end
+
+  def restore_settings(section, originals)
+    originals.each { |key, value| section[key] = value }
+  end
+
   before do
     Rails.application.reload_routes!
   end
@@ -12,16 +29,14 @@ RSpec.describe 'Classification Banner' do
 
   context 'when banner is enabled' do
     before do
-      Settings.banner['enabled'] = true
-      Settings.banner['text'] = 'UNCLASSIFIED'
-      Settings.banner['background_color'] = '#007a33'
-      Settings.banner['text_color'] = '#ffffff'
+      @banner_originals = override_settings(
+        Settings.banner,
+        'enabled' => true, 'text' => 'UNCLASSIFIED',
+        'background_color' => '#007a33', 'text_color' => '#ffffff'
+      )
     end
 
-    after do
-      Settings.banner['enabled'] = false
-      Settings.banner['text'] = ''
-    end
+    after { restore_settings(Settings.banner, @banner_originals) }
 
     it 'renders the banner text at top and bottom' do
       get new_user_session_path
@@ -42,9 +57,9 @@ RSpec.describe 'Classification Banner' do
   end
 
   context 'when banner is disabled' do
-    before do
-      Settings.banner['enabled'] = false
-    end
+    before { @banner_originals = override_settings(Settings.banner, 'enabled' => false) }
+
+    after { restore_settings(Settings.banner, @banner_originals) }
 
     it 'does not render the banner' do
       get new_user_session_path
@@ -54,13 +69,10 @@ RSpec.describe 'Classification Banner' do
 
   context 'when banner is enabled but text is blank' do
     before do
-      Settings.banner['enabled'] = true
-      Settings.banner['text'] = ''
+      @banner_originals = override_settings(Settings.banner, 'enabled' => true, 'text' => '')
     end
 
-    after do
-      Settings.banner['enabled'] = false
-    end
+    after { restore_settings(Settings.banner, @banner_originals) }
 
     it 'does not render the banner' do
       get new_user_session_path
@@ -70,15 +82,14 @@ RSpec.describe 'Classification Banner' do
 
   context 'consent config is passed to navbar' do
     before do
-      Settings.consent['enabled'] = true
-      Settings.consent['version'] = '2'
-      Settings.consent['title'] = 'Accept Terms'
-      Settings.consent['content'] = 'You must agree.'
+      @consent_originals = override_settings(
+        Settings.consent,
+        'enabled' => true, 'version' => 2,
+        'title' => 'Accept Terms', 'content' => 'You must agree.'
+      )
     end
 
-    after do
-      Settings.consent['enabled'] = false
-    end
+    after { restore_settings(Settings.consent, @consent_originals) }
 
     it 'includes consent config JSON in the navbar element' do
       get new_user_session_path

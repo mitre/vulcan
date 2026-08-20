@@ -1,0 +1,158 @@
+# frozen_string_literal: true
+
+require 'rails_helper'
+
+RSpec.describe 'Api::Auth' do
+  include LoginHelpers
+
+  before { Rails.application.reload_routes! }
+
+  let_it_be(:anchor_admin) { create(:user, admin: true) }
+  let_it_be(:user) { create(:user, email: 'test@example.com', password: 'S3cure!#Pass999') }
+
+  describe 'GET /api/auth/me' do
+    context 'when authenticated' do
+      before { sign_in user }
+
+      it 'returns current user identity with admin status' do
+        get '/api/auth/me', as: :json
+
+        expect(response).to have_http_status(:ok)
+        body = response.parsed_body
+        expect(body['id']).to eq(user.id)
+        expect(body['name']).to eq(user.name)
+        expect(body['email']).to eq(user.email)
+        expect(body['admin']).to be(false)
+      end
+
+      it 'returns admin=true for admin users' do
+        sign_in anchor_admin
+        get '/api/auth/me', as: :json
+
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body['admin']).to be(true)
+      end
+
+      it 'does NOT include sensitive fields (encrypted_password, reset_password_token)' do
+        get '/api/auth/me', as: :json
+
+        body = response.parsed_body
+        expect(body).not_to have_key('encrypted_password')
+        expect(body).not_to have_key('reset_password_token')
+        expect(body).not_to have_key('confirmation_token')
+      end
+    end
+
+    context 'when not authenticated' do
+      # The 401 is an RFC 9457 problem body saying WHY and HOW to
+      # authenticate — canonical field-by-field pins live in
+      # error_rendering_spec; this pins the endpoint serves that contract.
+      it 'returns the not_authenticated problem body' do
+        get '/api/auth/me', as: :json
+
+        expect(response).to have_http_status(:unauthorized)
+        expect(response.media_type).to eq('application/problem+json')
+        body = response.parsed_body
+        expect(body['type']).to eq('/docs/api/errors#not_authenticated')
+        expect(body['title']).to eq('Not authenticated')
+        expect(body['how_to_authenticate']).to include('session', 'token')
+      end
+    end
+  end
+
+  describe 'POST /api/auth/login' do
+    it 'authenticates with valid email and password' do
+      post '/api/auth/login', params: { email: user.email, password: 'S3cure!#Pass999' }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      body = response.parsed_body
+      expect(body['id']).to eq(user.id)
+      expect(body['name']).to eq(user.name)
+      expect(body['email']).to eq(user.email)
+    end
+
+    it 'returns 401 for invalid credentials' do
+      post '/api/auth/login', params: { email: user.email, password: 'wrong' }, as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(response.parsed_body['type']).to eq('/docs/api/errors#invalid_credentials')
+    end
+
+    it 'returns 401 for non-existent email' do
+      post '/api/auth/login', params: { email: 'nobody@example.com', password: 'anything' }, as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it 'sets a session so subsequent /me calls succeed' do
+      post '/api/auth/login', params: { email: user.email, password: 'S3cure!#Pass999' }, as: :json
+      expect(response).to have_http_status(:ok)
+
+      get '/api/auth/me', as: :json
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body['id']).to eq(user.id)
+    end
+
+    # Local users below (never the shared let_it_be) — these mutate
+    # failed_attempts / locked_at, which must not bleed across examples.
+
+    it 'refuses a locked account even with the correct password (STIG AC-07)' do
+      locked = create(:user, password: 'S3cure!#Pass999')
+      locked.lock_access!
+
+      post '/api/auth/login', params: { email: locked.email, password: 'S3cure!#Pass999' }, as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(response.parsed_body['type']).to eq('/docs/api/errors#account_locked')
+
+      # The correct-but-locked attempt established no session.
+      get '/api/auth/me', as: :json
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it 'increments failed_attempts on a wrong password so lockout can trigger' do
+      target = create(:user, password: 'S3cure!#Pass999')
+
+      expect do
+        post '/api/auth/login', params: { email: target.email, password: 'not-it' }, as: :json
+      end.to change { target.reload.failed_attempts }.by(1)
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(response.parsed_body['type']).to eq('/docs/api/errors#invalid_credentials')
+    end
+
+    context 'when local login is disabled (SSO-only instance)' do
+      before { stub_local_login_setting(enabled: false) }
+
+      it 'refuses the login with 403 before verifying the password' do
+        post '/api/auth/login', params: { email: user.email, password: 'S3cure!#Pass999' }, as: :json
+
+        expect(response).to have_http_status(:forbidden)
+        expect(response.parsed_body['type']).to eq('/docs/api/errors#local_login_disabled')
+
+        # No session was established.
+        get '/api/auth/me', as: :json
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+  end
+
+  describe 'DELETE /api/auth/logout' do
+    before { sign_in user }
+
+    it 'destroys the session and returns 200' do
+      delete '/api/auth/logout', as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body['message']).to include('Signed out')
+    end
+
+    it 'subsequent /me call returns 401' do
+      delete '/api/auth/logout', as: :json
+      expect(response).to have_http_status(:ok)
+
+      get '/api/auth/me', as: :json
+      expect(response).to have_http_status(:unauthorized)
+    end
+  end
+end

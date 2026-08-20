@@ -1,93 +1,54 @@
 # frozen_string_literal: true
 
-# Serializes Rule records with context-specific views.
-#
-# Views:
-#   :navigator — sidebar rule list (minimal fields for sorting/filtering)
-#   :viewer    — read-only detail (adds text fields and nested associations)
-#   :editor    — full editing form (adds reviews, SRG data, satisfactions)
+# Serializes STIG Rule records. Inherits the shared requirement surface from
+# BaseRuleBlueprint (identifier, default fields, comment_summary, navigator,
+# picker head, viewer head + srg_id, and the :content_attributes composition)
+# and adds the Rule-only surface: the satisfaction graph, inspec content, the
+# source SRG requirement, additional answers, and reviews/histories.
 #
 # Replaces Rule#as_json and BaseRule#as_json overrides.
-class RuleBlueprint < Blueprinter::Base
-  identifier :id
-
-  # === Default view: fields shared by ALL views ===
-  fields :rule_id, :title, :version, :status, :rule_severity, :locked,
-         :review_requestor_id, :changes_requested
-
-  # per-rule comment summary surfaced on the navigator + section
-  # icon badges so triagers + commenters can spot rules with active
-  # work without drilling in. Computed in-memory against the eager-
-  # loaded :reviews association (set_component already eager-loads
-  # rules → :reviews) so this is zero additional queries.
-  #
-  # `open` = comments not yet adjudicated (pending OR triaged-but-
-  # not-yet-closed OR needs_clarification). Includes replies under
-  # those open parents — replies are comments. Once a parent is
-  # adjudicated (adjudicated_at set), it and its replies leave the
-  # `open` count.
-  field :comment_summary do |rule, _options|
-    comments = rule.reviews.select { |r| r.action == 'comment' }
-    top_level = comments.select { |r| r.responding_to_review_id.nil? }
-    open_root_ids = top_level.reject { |r| r.adjudicated_at.present? }.map(&:id)
-
-    children_by_parent = comments.reject { |r| r.responding_to_review_id.nil? }
-                                 .group_by(&:responding_to_review_id)
-    open_count = open_root_ids.size
-    queue = open_root_ids.dup
-    visited = Set.new(open_root_ids)
-    until queue.empty?
-      current = queue.shift
-      (children_by_parent[current] || []).each do |child|
-        next if visited.include?(child.id)
-
-        visited << child.id
-        queue << child.id
-        open_count += 1
-      end
-    end
-
-    { open: open_count, total: comments.size }
-  end
-
-  # === Navigator view: sidebar list ===
-  # Only fields needed for the rule navigator sidebar (sorting, filtering, badges).
-  # No heavy text fields, no nested associations.
-  view :navigator do
-    # Default fields are sufficient for navigator
-  end
-
-  # === Viewer view: read-only detail ===
-  view :viewer do
-    fields :rule_weight, :fixtext, :fixtext_fixref, :ident, :ident_system,
-           :vendor_comments, :vuln_id, :legacy_ids,
-           :component_id, :status_justification, :artifact_description,
-           :locked_fields
-
-    field :nist_control_family do |rule, _options|
-      rule.nist_control_family
-    end
-
-    field :srg_id do |rule, _options|
-      rule.srg_rule&.version
-    end
-
-    association :disa_rule_descriptions_attributes, blueprint: DisaRuleDescriptionBlueprint,
-                                                    name: :disa_rule_descriptions_attributes do |rule, _options|
-      rule.disa_rule_descriptions
-    end
-
-    association :checks_attributes, blueprint: CheckBlueprint,
-                                    name: :checks_attributes do |rule, _options|
-      rule.checks
-    end
-
+#
+# Views:
+#   :navigator — sidebar rule list (inherited; minimal fields for sort/filter)
+#   :picker    — RulePicker dropdown (inherited head + satisfaction IDs)
+#   :viewer    — read-only detail (srg_id preload + content attrs + satisfactions)
+#   :editor    — full editing form (adds reviews, SRG data, satisfactions)
+#
+# PRELOAD DECLARATIONS — every block-bearing entry states its category; see
+# BaseRuleBlueprint for the full scheme.
+class RuleBlueprint < BaseRuleBlueprint
+  # === Picker view: satisfaction relationship IDs for parent/child badges ===
+  # Appends to the inherited head (displayed_name). No text blobs, no reviews.
+  view :picker do
+    # Category 2, both.
     association :satisfies, blueprint: SatisfactionBlueprint do |rule, _options|
-      rule.satisfies
+      ApplicationRecord.sorted_by_id(rule.satisfies)
+    end
+
+    association :satisfied_by, blueprint: SatisfactionBlueprint do |rule, _options|
+      ApplicationRecord.sorted_by_id(rule.satisfied_by)
+    end
+  end
+
+  # === Viewer view: srg_id preload + shared content attrs + satisfactions ===
+  view :viewer do
+    # Category 3: a Rule answers for its SRG identifier by reaching its source
+    # requirement, unlike an authored requirement which holds the value itself.
+    # Overrides the base srg_id (Category 1) in place — same output, same
+    # position, now batched. See BaseRuleBlueprint#srg_id.
+    field :srg_id, preload: :srg_rule do |rule, _options|
+      rule.srg_identifier
+    end
+
+    include_view :content_attributes
+
+    # Category 2, both.
+    association :satisfies, blueprint: SatisfactionBlueprint do |rule, _options|
+      ApplicationRecord.sorted_by_id(rule.satisfies)
     end
 
     association :satisfied_by, blueprint: SatisfiedByBlueprint do |rule, _options|
-      rule.satisfied_by
+      ApplicationRecord.sorted_by_id(rule.satisfied_by)
     end
   end
 
@@ -99,25 +60,49 @@ class RuleBlueprint < Blueprinter::Base
            :inspec_control_body_lang, :inspec_control_file_lang,
            :fix_id
 
+    # Opt-in, because it cannot be batched and is only ever displayed for one
+    # requirement at a time. The audit trail is not an association — it is a
+    # union of the record's own audits and those recorded against it as an
+    # associated record, built per instance — so no preload can fetch it for a
+    # whole collection. The per-requirement endpoint asks for it; the collection
+    # does not. (Category 0.)
+    field :histories,
+          if: ->(_field, _rule, options) { options && options[:include_histories] } do |rule, _options|
+      rule.histories
+    end
+
+    # Category 3 by name.
     association :rule_descriptions_attributes, blueprint: RuleDescriptionBlueprint,
-                                               name: :rule_descriptions_attributes do |rule, _options|
-      rule.rule_descriptions
+                                               name: :rule_descriptions_attributes,
+                                               preload: :rule_descriptions do |rule, _options|
+      ApplicationRecord.sorted_by_id(rule.rule_descriptions)
     end
 
+    # Category 2.
     association :reviews, blueprint: ReviewBlueprint do |rule, _options|
-      rule.reviews
+      ApplicationRecord.chronological(rule.reviews)
     end
 
+    # Category 3 by name.
     association :additional_answers_attributes, blueprint: AdditionalAnswerBlueprint,
-                                                name: :additional_answers_attributes do |rule, _options|
-      rule.additional_answers
+                                                name: :additional_answers_attributes,
+                                                preload: :additional_answers do |rule, _options|
+      ApplicationRecord.sorted_by_id(rule.additional_answers)
     end
 
-    field :srg_rule_attributes do |rule, _options|
-      SrgRuleBlueprint.render_as_hash(rule.srg_rule) if rule.srg_rule
+    # Category 3, declaring the source requirement AND what gets read from it.
+    # This is a field rather than an association, so the extension cannot follow
+    # it into SrgRuleBlueprint and discover that nested content on its own —
+    # preloading only the source requirement would still leave its checks and
+    # descriptions to be fetched one requirement at a time.
+    field :srg_rule_attributes,
+          preload: { srg_rule: %i[checks disa_rule_descriptions rule_descriptions] } do |rule, _options|
+      SrgRuleBlueprint.render_as_json(rule.srg_rule) if rule.srg_rule
     end
 
-    field :srg_info do |rule, _options|
+    # Category 3, reaching one step further than the others: through the source
+    # requirement to the guide it came from.
+    field :srg_info, preload: { srg_rule: :security_requirements_guide } do |rule, _options|
       { version: rule.srg_rule&.security_requirements_guide&.version }
     end
   end

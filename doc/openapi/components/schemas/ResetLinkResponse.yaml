@@ -1,0 +1,14 @@
+description: Response containing a toast notification and a one-time password reset URL for admin-generated resets.
+type: object
+required:
+  - toast
+  - reset_url
+additionalProperties: false
+properties:
+  toast:
+    $ref: ./ToastObject.yaml
+  reset_url:
+    type: string
+    format: uri
+    description: One-time password reset URL to share with the user.
+    example: "https://vulcan.example.org/users/password/edit?reset_password_token=abc123def456"

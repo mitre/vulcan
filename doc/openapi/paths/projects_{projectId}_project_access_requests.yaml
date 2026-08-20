@@ -1,0 +1,50 @@
+post:
+  operationId: createProjectAccessRequest
+  tags:
+    - Projects
+  summary: Request access to a project
+  description: >-
+    Creates an access request for the current user on the specified project.
+    Project admins are notified via email (if SMTP is enabled). Returns JSON
+    with toast and the new request ID, or an HTML redirect for browser
+    requests. Returns 422 if the user has already requested access.
+  parameters:
+    - name: projectId
+      in: path
+      required: true
+      description: Numeric ID of the project to request access to.
+      schema:
+        type: integer
+      example: 7
+  responses:
+    '200':
+      description: Access request created successfully
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AccessRequestToastResponse.yaml
+          examples:
+            submitted:
+              summary: Access request submitted
+              value:
+                toast:
+                  title: Access request submitted.
+                  message:
+                    - Your request for access has been sent.
+                  variant: success
+                id: 42
+    '422':
+      description: Validation error — the user has already requested access
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            duplicate_request:
+              summary: Duplicate access request
+              value:
+                toast:
+                  title: Could not request access.
+                  message:
+                    - User has already requested access to this project
+                  variant: danger

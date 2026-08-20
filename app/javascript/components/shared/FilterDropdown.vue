@@ -3,6 +3,7 @@
     :text="currentLabel"
     :variant="variant"
     :size="size"
+    :disabled="effectiveDisabled"
     :menu-class="menuClass"
     :toggle-attrs="{ 'aria-label': ariaLabel }"
     :class="dropdownClass"
@@ -52,11 +53,17 @@ export default {
     size: { type: String, default: "sm" },
     variant: { type: String, default: "outline-secondary" },
     placeholder: { type: String, default: "Select..." },
+    disabled: { type: Boolean, default: false },
     maxWidthPx: { type: Number, default: null },
     dropdownClass: { type: [String, Array, Object], default: null },
     menuClass: { type: [String, Array, Object], default: null },
   },
   computed: {
+    // Disabled-not-hidden: a dropdown with nothing to offer renders
+    // disabled showing its placeholder — never an empty open menu.
+    effectiveDisabled() {
+      return this.disabled || this.options.length === 0;
+    },
     currentLabel() {
       const match = this.options.find((o) => o.value === this.value);
       return match ? match.text : this.placeholder;

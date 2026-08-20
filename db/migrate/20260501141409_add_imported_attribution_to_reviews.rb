@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# PR-717 review remediation .8 — preserve original attribution per-review
+# Preserve original attribution per-review
 # on cross-instance restore.
 #
 # When a json_archive is imported and a triage_set_by_email or

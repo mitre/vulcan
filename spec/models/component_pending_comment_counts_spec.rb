@@ -20,20 +20,20 @@ RSpec.describe Component do
       create(:membership, user: viewer, membership: project, role: 'viewer')
 
       # Component A: 2 pending top-level + 1 reply (excluded) + 1 already-triaged (excluded)
-      Review.create!(action: 'comment', comment: 'a-pending-1', user: viewer,
-                     rule: component_a.rules.first)
-      Review.create!(action: 'comment', comment: 'a-pending-2', user: viewer,
-                     rule: component_a.rules.first)
-      parent = Review.create!(action: 'comment', comment: 'a-parent', user: viewer,
-                              rule: component_a.rules.first)
-      Review.create!(action: 'comment', comment: 'a-reply', user: viewer,
-                     rule: component_a.rules.first,
-                     responding_to_review_id: parent.id)
+      create(:review, :comment, comment: 'a-pending-1', user: viewer,
+                                rule: component_a.rules.first)
+      create(:review, :comment, comment: 'a-pending-2', user: viewer,
+                                rule: component_a.rules.first)
+      parent = create(:review, :comment, comment: 'a-parent', user: viewer,
+                                         rule: component_a.rules.first)
+      create(:review, :comment, comment: 'a-reply', user: viewer,
+                                rule: component_a.rules.first,
+                                responding_to_review_id: parent.id)
       parent.update!(triage_status: 'concur', triage_set_by_id: author.id, triage_set_at: Time.current)
 
       # Component B: 1 pending top-level
-      Review.create!(action: 'comment', comment: 'b-pending', user: viewer,
-                     rule: component_b.rules.first)
+      create(:review, :comment, comment: 'b-pending', user: viewer,
+                                rule: component_b.rules.first)
 
       # Component C: zero pending — should be omitted from result
     end
@@ -55,6 +55,16 @@ RSpec.describe Component do
 
     it 'returns an empty hash when given an empty array' do
       expect(described_class.pending_comment_counts([])).to eq({})
+    end
+
+    it 'counts component-level comments (commentable = Component, no rule) alongside rule comments' do
+      create(:review, :component_comment, commentable: component_c, user: viewer)
+
+      counts = described_class.pending_comment_counts(
+        [component_a.id, component_b.id, component_c.id]
+      )
+      expect(counts[component_c.id]).to eq(1)
+      expect(counts[component_a.id]).to eq(2)
     end
 
     it 'issues a single SQL query (no N+1 across components)' do

@@ -40,7 +40,6 @@
 /.github
 
 # Ignore development files
-/.devcontainer
 
 # Ignore Docker-related files
 /.dockerignore
@@ -49,18 +48,20 @@
 # Ignore test files
 /spec
 
-# /docs is intentionally NOT excluded — DisaGuideController reads
-# markdown from docs/disa-process at runtime. The VitePress source is
-# ~1MB and harmless to ship; build artifacts + node_modules are
-# gitignored.
+# /docs is intentionally NOT excluded — the documentation site builds from it
+# during asset precompilation, and the Dockerfile prunes the sources out of the
+# image afterwards. Docker does not read .gitignore, so the
+# generated trees under docs/ have to be listed here or they are copied into
+# the build context on every build (~400MB of dependencies and build output).
+/docs/node_modules/
+/docs/.vitepress/cache/
+/docs/.vitepress/dist/
 
-# Ignore development downloads and test artifacts
-/downloads
+# Ignore test coverage artifacts
 /coverage
 
 # Ignore development-only files
 /.beads
-/.overcommit.yml
 /lefthook.yml
 /.rubocop.yml
 /.eslintrc.js
@@ -97,11 +98,22 @@
 /nginx.conf*
 /setup-docker-secrets.sh
 
-# Ignore root-level markdown (docs/ is kept — read at runtime by DisaGuideController)
+# Ignore root-level markdown — working notes, handoffs and plans must not ship.
+# The eight exceptions below are documentation SOURCE: docs/ symlinks each of
+# them and renders it as a page, so excluding one leaves a dangling link in the
+# build context and the documentation build fails on the first one it reads.
+# README.md is not among them — the site links it on GitHub instead.
 /*.md
+!/CHANGELOG.md
+!/CODE_OF_CONDUCT.md
+!/CONTRIBUTING.md
+!/ENVIRONMENT_VARIABLES.md
+!/LICENSE.md
+!/NOTICE.md
+!/ROADMAP.md
+!/SECURITY.md
 
 # Other root files not needed at runtime
-/AGENT-STATUS
 /_config.yml
 /CNAME
 /create_admin.rb

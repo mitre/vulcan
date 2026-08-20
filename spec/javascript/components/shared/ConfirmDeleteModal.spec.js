@@ -183,6 +183,53 @@ describe("ConfirmDeleteModal", () => {
   // ==========================================
   // V-MODEL
   // ==========================================
+  // ==========================================
+  // RE-AUTHENTICATION (requirePassword)
+  // REQUIREMENT: sensitive deletions re-authenticate with the current
+  // password (OWASP ASVS 3.7.1). Confirm stays disabled until a password
+  // is typed and the confirm event carries it. Default consumers are
+  // unaffected (no password field, no payload).
+  // ==========================================
+  describe("requirePassword", () => {
+    it("does not render a password field by default", () => {
+      wrapper = createWrapper();
+      expect(wrapper.find('[data-testid="confirm-delete-password"]').exists()).toBe(false);
+    });
+
+    it("emits confirm with no payload by default", async () => {
+      wrapper = createWrapper();
+      await wrapper.find('[data-testid="confirm-delete-btn"]').trigger("click");
+      expect(wrapper.emitted("confirm")[0]).toEqual([]);
+    });
+
+    it("renders a password field and disables confirm until a password is typed", async () => {
+      wrapper = createWrapper({ requirePassword: true });
+      expect(wrapper.find('[data-testid="confirm-delete-password"]').exists()).toBe(true);
+      expect(wrapper.find('[data-testid="confirm-delete-btn"]').attributes("disabled")).toBe(
+        "disabled",
+      );
+
+      await wrapper.find('[data-testid="confirm-delete-password"] input').setValue("S3cret!Pass");
+      expect(
+        wrapper.find('[data-testid="confirm-delete-btn"]').attributes("disabled"),
+      ).toBeUndefined();
+    });
+
+    it("emits confirm with the typed password as currentPassword", async () => {
+      wrapper = createWrapper({ requirePassword: true });
+      await wrapper.find('[data-testid="confirm-delete-password"] input').setValue("S3cret!Pass");
+      await wrapper.find('[data-testid="confirm-delete-btn"]').trigger("click");
+      expect(wrapper.emitted("confirm")[0]).toEqual([{ currentPassword: "S3cret!Pass" }]);
+    });
+
+    it("clears the password when the modal is cancelled", async () => {
+      wrapper = createWrapper({ requirePassword: true });
+      await wrapper.find('[data-testid="confirm-delete-password"] input').setValue("S3cret!Pass");
+      await wrapper.find('[data-testid="cancel-delete-btn"]').trigger("click");
+      expect(wrapper.vm.password).toBe("");
+    });
+  });
+
   describe("v-model support", () => {
     it("modal is visible when visible prop is true", () => {
       wrapper = createWrapper({ visible: true });

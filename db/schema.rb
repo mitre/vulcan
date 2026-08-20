@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_08_210000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_17_120100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -67,6 +67,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_08_210000) do
     t.bigint "component_id"
     t.datetime "created_at", null: false
     t.datetime "deleted_at", precision: nil
+    t.bigint "derived_from_srg_rule_id"
     t.string "fix_id"
     t.text "fixtext"
     t.string "fixtext_fixref"
@@ -79,10 +80,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_08_210000) do
     t.string "legacy_ids"
     t.boolean "locked", default: false
     t.jsonb "locked_fields", default: {}
+    t.integer "minted_sequence"
     t.bigint "review_requestor_id"
     t.string "rule_id", null: false
     t.string "rule_severity"
     t.string "rule_weight"
+    t.tsvector "searchable"
     t.bigint "security_requirements_guide_id"
     t.string "srg_id"
     t.bigint "srg_rule_id"
@@ -97,16 +100,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_08_210000) do
     t.string "version"
     t.string "vuln_id"
     t.index ["component_id", "deleted_at", "rule_severity"], name: "index_base_rules_on_component_deleted_severity"
+    t.index ["component_id", "deleted_at", "status"], name: "index_base_rules_on_component_deleted_status"
+    t.index ["component_id", "locked", "review_requestor_id"], name: "index_base_rules_on_component_locked_requestor"
     t.index ["component_id"], name: "index_base_rules_on_component_id"
     t.index ["deleted_at"], name: "index_base_rules_on_deleted_at"
+    t.index ["derived_from_srg_rule_id"], name: "index_base_rules_on_derived_from_srg_rule_id"
+    t.index ["ident"], name: "index_base_rules_on_ident_trgm", opclass: :gin_trgm_ops, using: :gin
     t.index ["review_requestor_id"], name: "index_base_rules_on_review_requestor_id"
     t.index ["rule_id", "component_id"], name: "rule_id_and_component_id", unique: true
+    t.index ["rule_id"], name: "index_base_rules_on_rule_id_trgm", opclass: :gin_trgm_ops, using: :gin
+    t.index ["searchable"], name: "index_base_rules_on_searchable", using: :gin
     t.index ["security_requirements_guide_id", "type", "rule_severity"], name: "index_base_rules_on_srg_type_severity"
     t.index ["security_requirements_guide_id"], name: "index_base_rules_on_security_requirements_guide_id"
     t.index ["srg_rule_id"], name: "index_base_rules_on_srg_rule_id"
     t.index ["stig_id", "type", "rule_severity"], name: "index_base_rules_on_stig_type_severity"
     t.index ["stig_id"], name: "index_base_rules_on_stig_id"
     t.index ["stig_rule_id"], name: "index_base_rules_on_stig_rule_id"
+    t.index ["vuln_id"], name: "index_base_rules_on_vuln_id_trgm", opclass: :gin_trgm_ops, using: :gin
+    t.check_constraint "type::text <> 'SrgRule'::text OR (component_id IS NULL) <> (security_requirements_guide_id IS NULL)", name: "base_rules_srg_authored_xor_catalog"
   end
 
   create_table "checks", force: :cascade do |t|
@@ -118,14 +129,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_08_210000) do
     t.string "system"
     t.datetime "updated_at", null: false
     t.index ["base_rule_id"], name: "index_checks_on_base_rule_id"
+    t.index ["content"], name: "index_checks_on_content_trgm", opclass: :gin_trgm_ops, using: :gin
   end
 
   create_table "component_metadata", force: :cascade do |t|
     t.bigint "component_id"
     t.datetime "created_at", null: false
-    t.json "data", null: false
+    t.jsonb "data", null: false
     t.datetime "updated_at", null: false
     t.index ["component_id"], name: "by_component_id", unique: true
+  end
+
+  create_table "component_source_srgs", force: :cascade do |t|
+    t.bigint "component_id", null: false
+    t.datetime "created_at", null: false
+    t.bigint "security_requirements_guide_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["component_id", "security_requirements_guide_id"], name: "index_component_source_srgs_on_component_and_srg", unique: true
+    t.index ["component_id"], name: "index_component_source_srgs_on_component_id"
+    t.index ["security_requirements_guide_id"], name: "index_component_source_srgs_on_security_requirements_guide_id"
   end
 
   create_table "components", force: :cascade do |t|
@@ -139,6 +161,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_08_210000) do
     t.bigint "component_id"
     t.datetime "created_at", null: false
     t.text "description"
+    t.string "document_type", default: "stig", null: false
     t.integer "memberships_count", default: 0
     t.string "name"
     t.string "prefix"
@@ -146,7 +169,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_08_210000) do
     t.integer "release"
     t.boolean "released", default: false, null: false
     t.integer "rules_count", default: 0
-    t.bigint "security_requirements_guide_id"
+    t.bigint "security_requirements_guide_id", null: false
     t.string "title"
     t.datetime "updated_at", null: false
     t.integer "version"
@@ -180,6 +203,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_08_210000) do
     t.index ["base_rule_id"], name: "index_disa_rule_descriptions_on_base_rule_id"
   end
 
+  create_table "identities", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "email"
+    t.datetime "last_sign_in_at"
+    t.string "provider", null: false
+    t.string "uid", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["provider", "uid"], name: "index_identities_on_provider_and_uid", unique: true
+    t.index ["user_id"], name: "index_identities_on_user_id"
+  end
+
   create_table "memberships", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "membership_id"
@@ -190,6 +225,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_08_210000) do
     t.index ["membership_id"], name: "index_memberships_on_membership_id"
     t.index ["user_id", "membership_type", "membership_id"], name: "by_user_and_membership", unique: true
     t.index ["user_id"], name: "index_memberships_on_user_id"
+  end
+
+  create_table "personal_access_tokens", force: :cascade do |t|
+    t.text "allowed_ips"
+    t.datetime "created_at", null: false
+    t.date "expires_at"
+    t.datetime "last_used_at"
+    t.string "name", null: false
+    t.datetime "revoked_at"
+    t.text "scopes", default: "[]", null: false
+    t.string "token_digest", null: false
+    t.string "token_prefix", limit: 12
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["token_digest"], name: "index_personal_access_tokens_on_token_digest", unique: true
+    t.index ["user_id", "revoked_at"], name: "index_pats_on_user_id_and_active"
+    t.index ["user_id"], name: "index_personal_access_tokens_on_user_id"
   end
 
   create_table "project_access_requests", force: :cascade do |t|
@@ -204,7 +256,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_08_210000) do
 
   create_table "project_metadata", force: :cascade do |t|
     t.datetime "created_at", null: false
-    t.json "data", null: false
+    t.jsonb "data", null: false
     t.bigint "project_id"
     t.datetime "updated_at", null: false
     t.index ["project_id"], name: "by_project_id", unique: true
@@ -255,8 +307,31 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_08_210000) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "requirement_relocations", force: :cascade do |t|
+    t.datetime "accepted_at"
+    t.bigint "accepted_by_id"
+    t.text "adjudication_rationale"
+    t.datetime "created_at", null: false
+    t.datetime "declined_at"
+    t.bigint "declined_by_id"
+    t.datetime "executed_at"
+    t.bigint "requested_by_id"
+    t.bigint "source_rule_id", null: false
+    t.bigint "target_rule_id"
+    t.string "target_technology_token", null: false
+    t.datetime "updated_at", null: false
+    t.index ["accepted_by_id"], name: "index_requirement_relocations_on_accepted_by_id"
+    t.index ["declined_by_id"], name: "index_requirement_relocations_on_declined_by_id"
+    t.index ["requested_by_id"], name: "index_requirement_relocations_on_requested_by_id"
+    t.index ["source_rule_id"], name: "index_requirement_relocations_on_source_rule_id"
+    t.index ["source_rule_id"], name: "index_requirement_relocations_open_proposal", unique: true, where: "((executed_at IS NULL) AND (declined_at IS NULL))"
+    t.index ["target_rule_id"], name: "index_requirement_relocations_on_target_rule_id"
+    t.index ["target_technology_token"], name: "index_requirement_relocations_on_target_technology_token"
+  end
+
   create_table "reviews", force: :cascade do |t|
     t.string "action"
+    t.bigint "addressed_by_rule_id"
     t.datetime "adjudicated_at"
     t.bigint "adjudicated_by_id"
     t.string "adjudicated_by_imported_email"
@@ -268,6 +343,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_08_210000) do
     t.string "commenter_imported_name"
     t.datetime "created_at", null: false
     t.bigint "duplicate_of_review_id"
+    t.bigint "original_commentable_id"
     t.bigint "responding_to_review_id"
     t.bigint "rule_id"
     t.string "section"
@@ -279,6 +355,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_08_210000) do
     t.datetime "updated_at", null: false
     t.bigint "user_id"
     t.index ["action", "triage_status"], name: "index_reviews_on_action_and_triage_status"
+    t.index ["addressed_by_rule_id"], name: "index_reviews_on_addressed_by_rule_id"
+    t.index ["commentable_type", "commentable_id", "action", "triage_status", "responding_to_review_id"], name: "index_reviews_on_commentable_action_triage_responding"
     t.index ["commentable_type", "commentable_id"], name: "index_reviews_on_commentable"
     t.index ["duplicate_of_review_id"], name: "index_reviews_on_duplicate_of_review_id"
     t.index ["responding_to_review_id"], name: "index_reviews_on_responding_to_review_id"
@@ -286,6 +364,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_08_210000) do
     t.index ["rule_id"], name: "index_reviews_on_rule_id"
     t.index ["triage_status", "created_at"], name: "idx_reviews_top_level_triage_recent", where: "(((action)::text = 'comment'::text) AND (responding_to_review_id IS NULL))"
     t.index ["user_id"], name: "index_reviews_on_user_id"
+    t.check_constraint "NOT triage_status::text IS DISTINCT FROM 'addressed_by'::text OR addressed_by_rule_id IS NULL", name: "chk_review_addressed_by_fk_consistency"
+    t.check_constraint "NOT triage_status::text IS DISTINCT FROM 'duplicate'::text OR duplicate_of_review_id IS NULL", name: "chk_review_duplicate_fk_consistency"
   end
 
   create_table "rule_descriptions", force: :cascade do |t|
@@ -316,6 +396,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_08_210000) do
   end
 
   create_table "security_requirements_guides", force: :cascade do |t|
+    t.boolean "core", default: false, null: false
     t.datetime "created_at", null: false
     t.string "name"
     t.date "release_date"
@@ -370,6 +451,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_08_210000) do
     t.index ["title"], name: "index_stigs_on_title_trigram", opclass: :gin_trgm_ops, using: :gin
   end
 
+  create_table "triage_response_templates", force: :cascade do |t|
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.bigint "created_by_id", null: false
+    t.string "name", limit: 200, null: false
+    t.bigint "project_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_by_id"], name: "index_triage_response_templates_on_created_by_id"
+    t.index ["project_id", "name"], name: "idx_triage_templates_unique_name_per_project", unique: true
+    t.index ["project_id"], name: "index_triage_response_templates_on_project_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.boolean "admin", default: false
     t.datetime "confirmation_sent_at", precision: nil
@@ -385,6 +478,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_08_210000) do
     t.string "last_sign_in_ip"
     t.datetime "locked_at"
     t.string "name"
+    t.boolean "password_automatically_set", default: false, null: false
     t.string "password_salt"
     t.string "provider"
     t.datetime "remember_created_at", precision: nil
@@ -406,23 +500,106 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_08_210000) do
 
   add_foreign_key "additional_answers", "additional_questions"
   add_foreign_key "additional_answers", "base_rules", column: "rule_id"
+  add_foreign_key "base_rules", "base_rules", column: "derived_from_srg_rule_id", on_delete: :nullify
   add_foreign_key "base_rules", "base_rules", column: "srg_rule_id"
   add_foreign_key "base_rules", "base_rules", column: "stig_rule_id"
   add_foreign_key "base_rules", "components"
   add_foreign_key "base_rules", "security_requirements_guides"
   add_foreign_key "base_rules", "stigs"
   add_foreign_key "base_rules", "users", column: "review_requestor_id"
+  add_foreign_key "component_source_srgs", "components", on_delete: :cascade
+  add_foreign_key "component_source_srgs", "security_requirements_guides"
   add_foreign_key "components", "components"
+  add_foreign_key "identities", "users", on_delete: :cascade
   add_foreign_key "memberships", "users"
+  add_foreign_key "personal_access_tokens", "users"
   add_foreign_key "project_access_requests", "projects"
   add_foreign_key "project_access_requests", "users"
   add_foreign_key "reactions", "reviews", on_delete: :cascade
   add_foreign_key "reactions", "users", on_delete: :cascade
+  add_foreign_key "requirement_relocations", "base_rules", column: "source_rule_id"
+  add_foreign_key "requirement_relocations", "base_rules", column: "target_rule_id", on_delete: :nullify
+  add_foreign_key "requirement_relocations", "users", column: "accepted_by_id", on_delete: :nullify
+  add_foreign_key "requirement_relocations", "users", column: "declined_by_id", on_delete: :nullify
+  add_foreign_key "requirement_relocations", "users", column: "requested_by_id", on_delete: :nullify
+  add_foreign_key "reviews", "base_rules", column: "addressed_by_rule_id", on_delete: :restrict
   add_foreign_key "reviews", "base_rules", column: "rule_id", on_delete: :restrict
   add_foreign_key "reviews", "reviews", column: "duplicate_of_review_id", on_delete: :nullify
   add_foreign_key "reviews", "reviews", column: "responding_to_review_id", on_delete: :restrict
   add_foreign_key "reviews", "users", column: "adjudicated_by_id", on_delete: :nullify
   add_foreign_key "reviews", "users", column: "triage_set_by_id", on_delete: :nullify
   add_foreign_key "reviews", "users", on_delete: :nullify
+  add_foreign_key "rule_satisfactions", "base_rules", column: "rule_id", on_delete: :cascade
+  add_foreign_key "rule_satisfactions", "base_rules", column: "satisfied_by_rule_id", on_delete: :cascade
   add_foreign_key "search_abbreviations", "users", column: "created_by_id"
+  add_foreign_key "triage_response_templates", "projects"
+  add_foreign_key "triage_response_templates", "users", column: "created_by_id"
+
+  create_function :base_rule_searchable_vector, sql_definition: <<-'SQL'
+      CREATE OR REPLACE FUNCTION public.base_rule_searchable_vector(p_id bigint, p_title text, p_fixtext text, p_vendor_comments text, p_status_justification text, p_artifact_description text)
+       RETURNS tsvector
+       LANGUAGE sql
+       STABLE
+      AS $function$
+        SELECT setweight(to_tsvector('english', coalesce(p_title, '')), 'A') ||
+               setweight(to_tsvector('english', coalesce(p_fixtext, '')), 'B') ||
+               setweight(to_tsvector('english', coalesce(p_vendor_comments, '')), 'C') ||
+               setweight(to_tsvector('english', coalesce(p_status_justification, '')), 'C') ||
+               setweight(to_tsvector('english', coalesce(p_artifact_description, '')), 'D') ||
+               to_tsvector('english',
+                 coalesce((SELECT string_agg(coalesce(c.content, ''), ' ')
+                             FROM checks c WHERE c.base_rule_id = p_id), '') || ' ' ||
+                 coalesce((SELECT string_agg(coalesce(d.vuln_discussion, '') || ' ' || coalesce(d.mitigations, ''), ' ')
+                             FROM disa_rule_descriptions d WHERE d.base_rule_id = p_id), '')
+               )
+      $function$
+  SQL
+
+  create_function :base_rules_searchable_trigger, sql_definition: <<-'SQL'
+      CREATE OR REPLACE FUNCTION public.base_rules_searchable_trigger()
+       RETURNS trigger
+       LANGUAGE plpgsql
+      AS $function$
+      BEGIN
+        NEW.searchable := base_rule_searchable_vector(
+          NEW.id, NEW.title, NEW.fixtext, NEW.vendor_comments,
+          NEW.status_justification, NEW.artifact_description
+        );
+        RETURN NEW;
+      END;
+      $function$
+  SQL
+
+  create_function :base_rule_children_searchable_trigger, sql_definition: <<-'SQL'
+      CREATE OR REPLACE FUNCTION public.base_rule_children_searchable_trigger()
+       RETURNS trigger
+       LANGUAGE plpgsql
+      AS $function$
+      BEGIN
+        IF TG_OP = 'DELETE' THEN
+          UPDATE base_rules SET searchable = NULL WHERE id = OLD.base_rule_id;
+          RETURN OLD;
+        END IF;
+
+        IF TG_OP = 'UPDATE' AND NEW.base_rule_id IS DISTINCT FROM OLD.base_rule_id THEN
+          UPDATE base_rules SET searchable = NULL WHERE id = OLD.base_rule_id;
+        END IF;
+
+        UPDATE base_rules SET searchable = NULL WHERE id = NEW.base_rule_id;
+        RETURN NEW;
+      END;
+      $function$
+  SQL
+
+  create_trigger :base_rules_searchable, sql_definition: <<-SQL
+      CREATE TRIGGER base_rules_searchable BEFORE INSERT OR UPDATE OF searchable, title, fixtext, vendor_comments, status_justification, artifact_description ON public.base_rules FOR EACH ROW EXECUTE FUNCTION base_rules_searchable_trigger()
+  SQL
+
+  create_trigger :checks_searchable, sql_definition: <<-SQL
+      CREATE TRIGGER checks_searchable AFTER INSERT OR DELETE OR UPDATE OF content, base_rule_id ON public.checks FOR EACH ROW EXECUTE FUNCTION base_rule_children_searchable_trigger()
+  SQL
+
+  create_trigger :disa_rule_descriptions_searchable, sql_definition: <<-SQL
+      CREATE TRIGGER disa_rule_descriptions_searchable AFTER INSERT OR DELETE OR UPDATE OF vuln_discussion, mitigations, base_rule_id ON public.disa_rule_descriptions FOR EACH ROW EXECUTE FUNCTION base_rule_children_searchable_trigger()
+  SQL
 end

@@ -1,0 +1,139 @@
+patch:
+  operationId: updateTriageResponseTemplate
+  tags:
+    - Projects
+  summary: Update a triage response template
+  description: >-
+    Updates an existing response template. Admin role required.
+    Name uniqueness is enforced within the project.
+  parameters:
+    - name: projectId
+      in: path
+      required: true
+      description: Numeric ID of the project.
+      schema:
+        type: integer
+      example: 42
+    - name: id
+      in: path
+      required: true
+      description: Numeric ID of the template.
+      schema:
+        type: integer
+      example: 1
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - triage_response_template
+          properties:
+            triage_response_template:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Accept - updated
+                body:
+                  type: string
+                  example: Updated response text.
+  responses:
+    "200":
+      description: Template updated
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              triage_response_template:
+                $ref: ../components/schemas/TriageResponseTemplate.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+
+put:
+  operationId: replaceTriageResponseTemplate
+  tags:
+    - Projects
+  summary: Replace a triage response template
+  description: >-
+    Full replacement of an existing template. Same behavior as PATCH.
+    Admin role required.
+  parameters:
+    - name: projectId
+      in: path
+      required: true
+      description: Numeric ID of the project.
+      schema:
+        type: integer
+      example: 42
+    - name: id
+      in: path
+      required: true
+      description: Numeric ID of the template.
+      schema:
+        type: integer
+      example: 1
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - triage_response_template
+          properties:
+            triage_response_template:
+              type: object
+              required:
+                - name
+                - body
+              properties:
+                name:
+                  type: string
+                  example: Accept - standard
+                body:
+                  type: string
+                  example: Concur with the finding as written.
+  responses:
+    "200":
+      description: Template replaced
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              triage_response_template:
+                $ref: ../components/schemas/TriageResponseTemplate.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+
+delete:
+  operationId: deleteTriageResponseTemplate
+  tags:
+    - Projects
+  summary: Delete a triage response template
+  description: >-
+    Permanently deletes a response template. Admin role required.
+    Returns 204 No Content on success.
+  parameters:
+    - name: projectId
+      in: path
+      required: true
+      description: Numeric ID of the project.
+      schema:
+        type: integer
+      example: 42
+    - name: id
+      in: path
+      required: true
+      description: Numeric ID of the template.
+      schema:
+        type: integer
+      example: 1
+  responses:
+    "204":
+      description: Template deleted
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

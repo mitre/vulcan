@@ -181,10 +181,7 @@ Devise.setup do |config|
   config.lock_strategy = :failed_attempts
   config.unlock_keys = [:email]
   if Settings.lockout&.enabled
-    # In test environment, use :time strategy to avoid SMTP dependency.
-    # Devise sends unlock instructions email with :both/:email strategies,
-    # which fails in CI where no SMTP server is available.
-    config.unlock_strategy = Rails.env.test? ? :time : Settings.lockout.unlock_strategy.to_sym
+    config.unlock_strategy = Settings.lockout.unlock_strategy.to_sym
     config.maximum_attempts = Settings.lockout.maximum_attempts
     config.unlock_in = Settings.lockout.unlock_in_minutes.minutes
     config.last_attempt_warning = Settings.lockout.last_attempt_warning
@@ -276,13 +273,12 @@ Devise.setup do |config|
   end
 
   # ==> Warden configuration
-  # If you want to use other strategies, that are not supported by Devise, or
-  # change the failure app, you can configure them inside the config.warden block.
-  #
-  # config.warden do |manager|
-  #   manager.intercept_401 = false
-  #   manager.default_strategies(scope: :user).unshift :some_external_strategy
-  # end
+  # Custom failure app: JSON / non-navigational auth failures answer with the
+  # RFC 9457 problem envelope naming the true cause (superseded session,
+  # timeout, unauthenticated); HTML requests keep Devise's redirect + flash.
+  config.warden do |manager|
+    manager.failure_app = SessionAwareFailureApp
+  end
 
   # ==> Mountable engine configurations
   # When using Devise inside an engine, let's call it `MyEngine`, and this engine
@@ -298,13 +294,6 @@ Devise.setup do |config|
   # so you need to do it manually. For the users scope, it would be:
   # config.omniauth_path_prefix = '/my_engine/users/auth'
 
-  # ==> Turbolinks configuration
-  # If your app is using Turbolinks, Turbolinks::Controller needs to be included to make redirection work correctly:
-  #
-  # ActiveSupport.on_load(:devise_failure_app) do
-  #   include Turbolinks::Controller
-  # end
-
   # ==> Configuration for :registerable
 
   # When set to false, does not sign a user in automatically after their password is
@@ -315,5 +304,14 @@ Devise.setup do |config|
   # We are defining OmniAuth strategy authenticating with OpenID Connect providers.
   # With the configuration below users can sign in with an OpenID Connect provider to
   # access protected resources in the vulcan app.
-  config.omniauth Settings.oidc.strategy, Settings.oidc.args if Settings.oidc.enabled
+  # Register one OmniAuth OpenID Connect strategy per configured provider
+  # (Settings.oidc.providers — a single legacy `oidc` entry when no registry is
+  # set). Each provider gets its own /users/auth/<name> route via the explicit
+  # name: in omniauth_args, and strategy_class is pinned so Devise resolves the
+  # OpenIDConnect constant directly rather than via the fragile camelize lookup.
+  if Settings.oidc.enabled
+    Settings.oidc.providers.each do |provider|
+      config.omniauth :openid_connect, OidcProviderRegistry.omniauth_args(provider)
+    end
+  end
 end

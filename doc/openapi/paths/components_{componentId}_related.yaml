@@ -1,0 +1,60 @@
+parameters:
+  - $ref: ../components/parameters/ComponentId.yaml
+get:
+  operationId: searchRelatedComponents
+  tags:
+    - Components
+  summary: Find components sharing the same SRG baseline
+  description: >-
+    Returns other components that are based on the same SRG as this component.
+    Used by the DiffViewer to find peer components for side-by-side comparison.
+    Scoped to components the current user can access plus released components.
+    Returns a hand-built hash (NOT ComponentBlueprint).
+  responses:
+    '200':
+      description: Related components sharing the same SRG
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                id:
+                  type: integer
+                  example: 4
+                name:
+                  type: string
+                  example: Photon OS 3
+                version:
+                  type:
+                    - integer
+                    - 'null'
+                  example: 1
+                prefix:
+                  type: string
+                  example: PHOS-03
+                release:
+                  type:
+                    - integer
+                    - 'null'
+                  example: 1
+                project_id:
+                  type: integer
+                  example: 3
+                project_name:
+                  type: string
+                  example: vSphere 7.0
+          examples:
+            related:
+              summary: Two peer components from different projects
+              value:
+                - id: 4
+                  name: Photon OS 3
+                  version: 1
+                  prefix: PHOS-03
+                  release: 1
+                  project_id: 3
+                  project_name: vSphere 7.0
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

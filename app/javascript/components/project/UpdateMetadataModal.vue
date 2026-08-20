@@ -33,9 +33,8 @@
 </template>
 
 <script>
-import axios from "axios";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { updateProject } from "../../api/projectsApi";
+import { useToast } from "../../composables/useToast";
 
 function initialState(project) {
   return {
@@ -47,12 +46,15 @@ function initialState(project) {
 
 export default {
   name: "UpdateMetadataModal",
-  mixins: [AlertMixinVue, FormMixinVue],
   props: {
     project: {
       type: Object,
       required: true,
     },
+  },
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
   },
   data: function () {
     return initialState(this.project);
@@ -69,19 +71,14 @@ export default {
     },
     updateMetadata: function () {
       this.$refs["updateMetadataModal"].hide();
-      let payload = {
-        project: {
-          project_metadata_attributes: {
-            data: this.metadata.reduce((acc, curr) => {
-              acc[curr.key] = curr.value;
-              return acc;
-            }, {}),
-          },
+      updateProject(this.project.id, {
+        project_metadata_attributes: {
+          data: this.metadata.reduce((acc, curr) => {
+            acc[curr.key] = curr.value;
+            return acc;
+          }, {}),
         },
-      };
-
-      axios
-        .put(`/projects/${this.project.id}`, payload)
+      })
         .then(this.updateMetadataSuccess)
         .catch(this.alertOrNotifyResponse);
     },

@@ -20,29 +20,50 @@
         <hr />
 
         <h6>Status Summary</h6>
+        <!-- Counts read the typed sections; percentages stay against
+             the type-agnostic total, so the two kind sections together
+             account for the Total row. -->
+        <p class="mb-1 font-weight-bold">STIG ({{ project.details.stig.total }})</p>
         <p class="mb-1">
-          <strong>Applicable - Configurable:</strong> {{ project.details.ac }} ({{
-            percentage(project.details.ac)
+          <strong>Applicable - Configurable:</strong> {{ project.details.stig.ac }} ({{
+            percentage(project.details.stig.ac)
           }}%)
         </p>
         <p class="mb-1">
-          <strong>Applicable - Inherently Meets:</strong> {{ project.details.aim }} ({{
-            percentage(project.details.aim)
+          <strong>Applicable - Inherently Meets:</strong> {{ project.details.stig.aim }} ({{
+            percentage(project.details.stig.aim)
           }}%)
         </p>
         <p class="mb-1">
-          <strong>Applicable - Does Not Meet:</strong> {{ project.details.adnm }} ({{
-            percentage(project.details.adnm)
+          <strong>Applicable - Does Not Meet:</strong> {{ project.details.stig.adnm }} ({{
+            percentage(project.details.stig.adnm)
           }}%)
         </p>
         <p class="mb-1">
-          <strong>Not Applicable:</strong> {{ project.details.na }} ({{
-            percentage(project.details.na)
+          <strong>Not Applicable:</strong> {{ project.details.stig.na }} ({{
+            percentage(project.details.stig.na)
           }}%)
         </p>
         <p class="mb-1">
-          <strong>Not Yet Determined:</strong> {{ project.details.nyd }} ({{
-            percentage(project.details.nyd)
+          <strong>Not Yet Determined:</strong> {{ project.details.stig.nyd }} ({{
+            percentage(project.details.stig.nyd)
+          }}%)
+        </p>
+
+        <p class="mb-1 mt-2 font-weight-bold">SRG ({{ project.details.srg.total }})</p>
+        <p class="mb-1">
+          <strong>Applicable:</strong> {{ project.details.srg.applicable }} ({{
+            percentage(project.details.srg.applicable)
+          }}%)
+        </p>
+        <p class="mb-1">
+          <strong>Not Applicable:</strong> {{ project.details.srg.na }} ({{
+            percentage(project.details.srg.na)
+          }}%)
+        </p>
+        <p class="mb-1">
+          <strong>Not Yet Determined:</strong> {{ project.details.srg.nyd }} ({{
+            percentage(project.details.srg.nyd)
           }}%)
         </p>
 
@@ -70,7 +91,7 @@
         <p class="mb-2"><strong>Total:</strong> {{ project.details.total }}</p>
 
         <UpdateProjectDetailsModal
-          v-if="isAdmin"
+          v-if="canAdmin"
           :project="project"
           @projectUpdated="$emit('project-updated')"
         />
@@ -98,23 +119,23 @@
         </div>
         <p v-else class="text-muted">No metadata defined.</p>
 
-        <small v-if="isAdmin && !hasSlackChannel" class="text-muted d-block mt-3">
+        <small v-if="canAdmin && !hasSlackChannel" class="text-muted d-block mt-3">
           For Slack notifications, add metadata with key "Slack Channel ID".
         </small>
 
         <UpdateMetadataModal
-          v-if="canEditMetadata"
+          v-if="canEdit"
           :project="project"
           @projectUpdated="$emit('project-updated')"
         />
       </div>
     </b-sidebar>
 
-    <!-- Project Activity Sidebar -->
+    <!-- Project Changelog Sidebar -->
     <b-sidebar
       id="proj-history-sidebar"
       data-testid="proj-history-sidebar"
-      title="Project Activity"
+      title="Project Changelog"
       right
       shadow
       backdrop
@@ -126,11 +147,11 @@
       </div>
     </b-sidebar>
 
-    <!-- Project Revisions Sidebar -->
+    <!-- Version Comparison Sidebar -->
     <b-sidebar
       id="proj-revision-history-sidebar"
       data-testid="proj-revision-history-sidebar"
-      title="Component Revisions"
+      title="Version Comparison"
       right
       shadow
       backdrop
@@ -145,7 +166,7 @@
 </template>
 
 <script>
-import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
+import { usePermissions } from "../../composables/usePermissions";
 import History from "../shared/History.vue";
 import UpdateProjectDetailsModal from "../projects/UpdateProjectDetailsModal.vue";
 import UpdateMetadataModal from "./UpdateMetadataModal.vue";
@@ -159,14 +180,9 @@ export default {
     UpdateMetadataModal,
     RevisionHistory,
   },
-  mixins: [RoleComparisonMixin],
   props: {
     project: {
       type: Object,
-      required: true,
-    },
-    effectivePermissions: {
-      type: String,
       required: true,
     },
     activePanel: {
@@ -178,13 +194,12 @@ export default {
       default: () => [],
     },
   },
+  setup() {
+    // Permissions are provided by the page root (Project.vue) — see usePermissions.
+    const { canAdmin, canEdit } = usePermissions();
+    return { canAdmin, canEdit };
+  },
   computed: {
-    isAdmin() {
-      return this.effectivePermissions === "admin";
-    },
-    canEditMetadata() {
-      return this.role_gte_to(this.effectivePermissions, "author");
-    },
     hasMetadata() {
       return this.project.metadata && Object.keys(this.project.metadata).length > 0;
     },

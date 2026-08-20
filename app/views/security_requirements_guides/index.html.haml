@@ -2,7 +2,8 @@
   = javascript_include_tag 'security_requirements_guides'
 
 #SecurityRequirementsGuides
-  %SecurityRequirementsGuides{                                          |
-    'v-bind:givensrgs': @srgs_json,                                     |
-    'v-bind:is_vulcan_admin': (current_user&.admin ? "true" : "false" ) |
+  %benchmark-list-page{                                                   |
+    'v-bind:given-items': @srgs_json,                                     |
+    'v-bind:is-admin': (current_user&.admin ? "true" : "false" ),         |
+    type: "SRG"                                                           |
   }

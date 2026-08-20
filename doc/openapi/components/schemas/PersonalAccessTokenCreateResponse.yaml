@@ -1,0 +1,16 @@
+type: object
+required:
+  - token
+  - personal_access_token
+additionalProperties: false
+description: >-
+  Returned only on token creation. The `token` field contains the raw token
+  value — this is the ONLY time it is ever returned. After this response,
+  only the SHA-256 digest is stored server-side.
+properties:
+  token:
+    type: string
+    example: vulcan_a8BfDtSxd28fDXCuYaKxkeToqqJsmq5PekL6
+    description: The raw API token. Show to user once, then discard. Never stored or returned again.
+  personal_access_token:
+    $ref: PersonalAccessTokenSummary.yaml

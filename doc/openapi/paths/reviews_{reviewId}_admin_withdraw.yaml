@@ -1,0 +1,38 @@
+parameters:
+  - $ref: ../components/parameters/ReviewId.yaml
+patch:
+  operationId: adminWithdrawReview
+  tags:
+    - Reviews
+  summary: Admin force-withdraws a comment
+  description: Admin-only force withdrawal that bypasses the frozen-for-writes check. Requires an audit comment explaining the action.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - audit_comment
+          properties:
+            audit_comment:
+              type: string
+              maxLength: 4096
+              description: >-
+                Operator-supplied reason for the force-withdrawal, recorded on
+                the audit trail. Required — a blank comment returns 422.
+              example: Removing PII discovered after the comment window closed.
+  responses:
+    '200':
+      description: Review withdrawn by admin
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ReviewWrapper.yaml
+      links:
+        AdminRestoreWithdrawnReview:
+          operationId: adminRestoreReview
+          parameters:
+            reviewId: '$response.body#/review/id'
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

@@ -8,26 +8,50 @@ Rails.application.routes.draw do
   # Provides /health_check, /health_check/database, /health_check/migrations etc.
   health_check_routes
 
-  # In-app DISA process guidance (works in airgapped environments)
-  get '/disa-guide/attachments/:filename', to: 'disa_guide#attachment', as: :disa_guide_attachment, constraints: { filename: %r{[^/]+} }
-  get '/disa-guide(/:page)', to: 'disa_guide#show', as: :disa_guide
+  # The documentation site, served from the build so access stays governable.
+  # The path here has to match the base the site was built under.
+  get '/docs(/*path)', to: 'docs#show', as: :docs, format: false
+
+  # The retired hand-built guide's URLs live on as permanent redirects into
+  # the documentation site — bookmarks and links from released material must
+  # keep working. Attachments are published verbatim under the site's
+  # attachments directory; the legacy release slug folds into the page map.
+  legacy_guide_slugs = { 'vendor-stig-process-guide-v4r1' => 'vendor-stig-process-guide' }
+  get '/disa-guide/attachments/:filename',
+      to: redirect('/docs/attachments/%{filename}', status: 301),
+      constraints: { filename: %r{[^/]+} }
+  get '/disa-guide(/:page)', to: redirect(status: 301) { |params, _request|
+    page = params[:page].presence || 'overview'
+    "/docs/disa-process/#{legacy_guide_slugs.fetch(page, page)}"
+  }
 
   devise_for :users, controllers: {
     omniauth_callbacks: 'users/omniauth_callbacks',
     registrations: 'users/registrations',
-    sessions: 'sessions'
+    sessions: 'sessions',
+    passwords: 'users/passwords',
+    confirmations: 'users/confirmations',
+    unlocks: 'users/unlocks'
   }
 
   # Unlink an external identity (OIDC/LDAP/GitHub) from the current user account.
   # Requires current password. See Users::RegistrationsController#unlink_identity.
   devise_scope :user do
+    # RP-initiated logout landing: the OIDC provider redirects here after
+    # ending its session; the action sets the AC-12(02) signed-out flash and
+    # forwards to the sign-in page. Must be registered with the provider as
+    # an allowed post-logout redirect URI. See SessionsController#signed_out.
+    get '/users/signed_out', to: 'sessions#signed_out', as: :signed_out
     post '/users/unlink_identity', to: 'users/registrations#unlink_identity', as: :unlink_identity
+    post '/users/initiate_link', to: 'users/registrations#initiate_link', as: :initiate_link
+    post '/users/complete_link', to: 'sessions#complete_link', as: :complete_link
     # Settings shell sub-pages — each section gets its own URL so it's
     # bookmarkable and can be linked to directly from notifications,
     # navbar dropdowns, etc. /users/edit (Devise's default) renders the
     # Profile Information section.
     get '/users/edit/password', to: 'users/registrations#edit_password', as: :edit_user_password_form
     get '/users/edit/activity', to: 'users/registrations#edit_activity', as: :edit_user_activity
+    get '/users/edit/tokens', to: 'users/registrations#edit_tokens', as: :edit_user_tokens
   end
 
   resources :users, only: %i[index update destroy] do
@@ -42,14 +66,39 @@ Rails.application.routes.draw do
       post :unlock
       # Privacy: only the user themselves can read their own comment list
       # (no admin override — see UsersController#authorize_self).
-      # PR-717 .bpy — explicit action mapping per Sonar rubydre:S7875.
+      # Explicit action mapping per Sonar rubydre:S7875.
       get :comments, to: 'users#comments'
     end
   end
+  resources :personal_access_tokens, only: %i[index create destroy] do
+    member do
+      delete :admin_revoke, to: 'personal_access_tokens#admin_revoke'
+    end
+  end
+
+  # The per-SRG relocation backlog (index), withdraw (destroy), and
+  # the adjudication set (zero-write dry_run + accept + decline);
+  # proposing nests under the source rule above.
+  resources :requirement_relocations, only: %i[index destroy] do
+    collection do
+      get :destinations, to: 'requirement_relocations#destinations'
+    end
+    member do
+      post :dry_run, to: 'requirement_relocations#dry_run'
+      post :accept, to: 'requirement_relocations#accept'
+      post :decline, to: 'requirement_relocations#decline'
+    end
+  end
+
   resources :srgs, only: %i[index show create destroy], controller: 'security_requirements_guides'
   resources :stigs, only: %i[index show create destroy]
 
   resources :memberships, only: %i[create update destroy]
+
+  # /components/history must precede `resources :components` below or it
+  # binds to components#show with :id="history" → 404. Same trap as /related.
+  get '/components/history', to: 'components#history'
+
   resources :projects, except: %i[new edit] do
     resources :components, only: %i[show create update destroy], shallow: true do
       post 'lock', to: 'reviews#lock_controls'
@@ -59,11 +108,12 @@ Rails.application.routes.draw do
         post 'revert', on: :member
         patch 'section_locks', on: :member
         patch 'bulk_section_locks', on: :member
-        resources :comments, only: %i[create]
         resources :reviews, only: %i[create]
+        resources :relocations, only: %i[create], controller: 'requirement_relocations'
       end
     end
     resources :project_access_requests, only: %i[create destroy]
+    resources :triage_response_templates, only: %i[index create update destroy]
   end
   resources :rule_satisfactions, only: %i[create destroy]
   # Edit controls for a component (rules#index with editor view)
@@ -79,7 +129,9 @@ Rails.application.routes.draw do
   get '/components/:id/histories', to: 'components#histories'
   # Public-comment-review triage table (PR #717) — MUST be before :stig_id catch-all
   get '/components/:id/comments', to: 'components#comments'
+  get '/components/:id/rules_picker', to: 'components#rules_picker'
   get '/components/:id/triage',   to: 'components#triage', as: :component_triage
+  post '/components/:id/release', to: 'components#release', as: :component_release
   # Component admin settings page (PR #717 Task 22) — MUST be before :stig_id catch-all
   get '/components/:id/settings', to: 'components#settings', as: :component_settings
   get '/projects/:id/comments',   to: 'projects#comments'
@@ -87,17 +139,20 @@ Rails.application.routes.draw do
   # Public-comment-review lifecycle endpoints (PR #717): triage / adjudicate /
   # reopen / withdraw / update operate on a Review by id. See ReviewsController.
   # Task 33: reply-chain reader. Auth via parent component's released-vs-member gate.
+  # Bulk triage — declared before /reviews/:id/* so the literal segment wins.
+  patch '/reviews/bulk_triage',         to: 'reviews#bulk_triage'
+  patch '/reviews/merge',               to: 'reviews#merge'
   get   '/reviews/:id/responses',       to: 'reviews#responses'
   patch '/reviews/:id/triage',          to: 'reviews#triage'
   patch '/reviews/:id/adjudicate',      to: 'reviews#adjudicate'
   patch '/reviews/:id/reopen',          to: 'reviews#reopen'
   patch '/reviews/:id/withdraw',        to: 'reviews#withdraw'
-  # PR-717 Task 25 — admin overrides on a comment. Audit-comment required.
+  # Admin overrides on a comment (PR #717). Audit-comment required.
   patch '/reviews/:id/admin_withdraw',  to: 'reviews#admin_withdraw'
   patch '/reviews/:id/admin_restore',   to: 'reviews#admin_restore'
   patch '/reviews/:id/move_to_rule',    to: 'reviews#move_to_rule'
   delete '/reviews/:id/admin_destroy',  to: 'reviews#admin_destroy'
-  # PR-717 Task 30 — author+ retags a comment's section retroactively.
+  # Author+ retags a comment's section retroactively (PR #717).
   patch '/reviews/:id/section',         to: 'reviews#section'
   put '/reviews/:id', to: 'reviews#update'
   # Reactions: POST toggles current_user's 👍/👎 on the review;
@@ -106,22 +161,24 @@ Rails.application.routes.draw do
     resources :reactions, only: %i[index create]
   end
   # Add deep linking to specific rule (stig_id of format XXXX-XX-000000)
-  get '/components/:id/:stig_id', to: 'components#show'
+  # keep specific named routes ABOVE the :stig_id catch-all,
+  # otherwise /components/:id/<anything> binds to components#show with
+  # :stig_id="<anything>" and rule-context filters 404 on a missing rule_id.
+  get '/components/:id/related', to: 'components#based_on_same_srg'
+  get '/components/:id/:stig_id', to: 'components#show', as: :component_rule
 
   # Make components#index not a child of project
   get '/components', to: 'components#index'
-  # Revision history between components
-  post '/components/history', to: 'components#history'
+  # /components/history is defined ABOVE `resources :components` (see comment there)
   # Export component
   get '/components/:id/export/:type', to: 'components#export'
   # Export STIG
   get '/stigs/:id/export/:type', to: 'stigs#export'
   # Export SRG
   get '/srgs/:id/export/:type', to: 'security_requirements_guides#export'
-  # Components based on same srg
-  get '/components/:id/search/based_on_same_srg', to: 'components#based_on_same_srg'
-  # Compare components
-  get '/components/:id/compare/:diff_id', to: 'components#compare'
+  # /related is defined ABOVE /components/:id/:stig_id (see comment there)
+  # peer-shaped diff endpoint moved to /api/components/compare
+  # (see Api namespace below). The old sub-resource path is removed.
   # Detect SRG from spreadsheet (auto-populate dropdown on import)
   post '/components/detect_srg', to: 'components#detect_srg'
   # Spreadsheet round-trip update
@@ -143,11 +200,48 @@ Rails.application.routes.draw do
   get '/search/rules', to: 'rules#search'
   get '/rules/:id/search/related_rules', to: 'rules#related_rules'
 
+  # The API reference ships inside the built documentation site; the retired
+  # viewer's URL forwards readers there.
+  get 'api/docs', to: redirect('/docs/api/overview', status: 301)
+  # The machine-readable specification lives at the OpenAPI-recommended root
+  # filenames — the paths tooling guesses first — independent of the browser
+  # viewer. The viewer-nested spellings redirect permanently; a client asking
+  # for a spec format never receives HTML.
+  get 'openapi.yaml', to: 'api_docs#spec', as: :api_docs_spec
+  get 'openapi.json', to: 'api_docs#spec_json', as: :api_docs_spec_json
+  get 'api/docs/openapi.yaml', to: redirect('/openapi.yaml', status: 301)
+  get 'api/docs/openapi.yml', to: redirect('/openapi.yaml', status: 301)
+  get 'api/docs/openapi.json', to: redirect('/openapi.json', status: 301)
+
   # API namespace for JSON endpoints
   namespace :api do
+    get 'auth/me', to: 'auth#me'
+    post 'auth/login', to: 'auth#login'
+    delete 'auth/logout', to: 'auth#logout'
+    get 'settings', to: 'settings#show'
+    get 'navigation', to: 'navigation#show'
+
     get 'search/global', to: 'search#global'
     get 'users/search', to: 'user_search#index'
     get 'version', to: 'version#show'
+
+    get 'srgs/latest', to: 'srgs#latest'
+    get 'srgs/:id/stats', to: 'srgs#stats'
+    get 'stigs/latest', to: 'stigs#latest'
+    get 'stigs/:id/stats', to: 'stigs#stats'
+    get 'components/latest', to: 'components#latest'
+    get 'components/:id/summary', to: 'components#summary'
+    get 'components/:id/stats', to: 'components#stats'
+    get 'components/:id/workflow_state', to: 'components#workflow_state'
+    get 'components/:id/triage_summary', to: 'components#triage_summary'
+    get 'projects/:id/stats', to: 'projects#stats'
+    get 'projects/:id/triage_summary', to: 'projects#triage_summary'
+
+    resources :projects, only: [:index]
+    # peer-shaped diff endpoint. Route points at the existing
+    # ComponentsController#compare action (not a new Api::ComponentsController)
+    # to keep blast radius small for one endpoint.
+    get 'components/compare', to: '/components#compare'
   end
 
   # AC-8: Server-side consent acknowledgment

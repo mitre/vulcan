@@ -51,14 +51,24 @@ module OktaTestHelpers
     oidc_enabled? && okta_test_issuer.present?
   end
 
+  def okta_endpoint_reachable?(timeout: 3)
+    return false if okta_test_issuer.blank?
+
+    uri = URI.parse(okta_test_issuer)
+    Socket.tcp(uri.host, uri.port || 443, connect_timeout: timeout).close
+    true
+  rescue Errno::EBADF, Errno::EINVAL, Errno::ECONNREFUSED, Errno::EHOSTUNREACH,
+         Errno::ENETUNREACH, Errno::ETIMEDOUT, SocketError, Timeout::Error
+    false
+  end
+
   def okta_discovery_url
     "#{okta_test_issuer}/.well-known/openid-configuration" if okta_test_issuer
   end
 
   def skip_unless_okta_configured
-    return if okta_test_configured?
-
-    skip 'OIDC not configured - set VULCAN_ENABLE_OIDC=true and VULCAN_OIDC_ISSUER_URL to run these tests'
+    skip 'OIDC not configured — set VULCAN_ENABLE_OIDC=true and VULCAN_OIDC_ISSUER_URL' unless okta_test_configured?
+    skip "Okta endpoint unreachable (#{okta_test_issuer}) — skipping live integration test" unless okta_endpoint_reachable?
   end
 end
 

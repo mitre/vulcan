@@ -1,0 +1,90 @@
+description: >-
+  Catch-all 4XX error response. Domain and validation feedback arrives as
+  the canonical toast object (application/json); auth and infrastructure
+  errors (401/403/404/400) arrive as RFC 9457 problem details
+  (application/problem+json) with a stable `type` URI, `title`, `status`,
+  and `detail`.
+content:
+  application/json:
+    schema:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Human-readable error message (domain errors).
+          example: No SRG IDs found in spreadsheet
+        toast:
+          type: object
+          description: Optional toast notification with structured error details.
+          properties:
+            title:
+              type: string
+              description: Short error summary.
+              example: Validation failed.
+            message:
+              type: array
+              description: Detail lines describing what went wrong.
+              items:
+                type: string
+              example:
+                - "Name can't be blank."
+                - "Prefix is too short (minimum is 2 characters)."
+            variant:
+              type: string
+              description: Bootstrap alert variant (always danger for errors).
+              example: danger
+    examples:
+      validation_error:
+        summary: Validation failure
+        value:
+          toast:
+            title: Validation failed.
+            message:
+              - "Name can't be blank."
+            variant: danger
+  application/problem+json:
+    schema:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+          description: >-
+            Stable machine identifier for the error class — a URI reference
+            anchoring into the live API docs.
+          example: /docs/api/errors#not_found
+        title:
+          type: string
+          description: Short human summary of the error class.
+          example: Not found
+        status:
+          type: integer
+          description: HTTP status code, repeated in the body.
+          example: 404
+        detail:
+          type: string
+          description: Occurrence-specific human explanation.
+          example: The requested resource could not be found.
+        how_to_authenticate:
+          type: object
+          description: Extension member on 401s — both authentication methods.
+        admins:
+          type: array
+          description: Extension member on permission denials — who to ask.
+          items:
+            type: object
+        toast:
+          type: object
+          description: Legacy toast extension on permission denials.
+    examples:
+      not_found:
+        summary: Resource not found
+        value:
+          type: /docs/api/errors#not_found
+          title: Not found
+          status: 404
+          detail: The requested resource could not be found.

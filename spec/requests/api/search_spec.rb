@@ -20,8 +20,9 @@ RSpec.describe 'Api::Search' do
   let_it_be(:admin_user) { create(:user, admin: true) }
   let_it_be(:user) { create(:user) }
   # Create test data
-  # Note: Set visibility to 'hidden' for project2 so it only appears via membership
-  # (default visibility is 'discoverable' which would show in search)
+  # Note: the visibility column DEFAULTS TO HIDDEN — both projects here are
+  # hidden, so they appear only via membership. project2 states it
+  # explicitly for reading clarity.
   let_it_be(:project1) { create(:project, name: 'Security Baseline Project') }
   let_it_be(:project2) { create(:project, name: 'Another Secret Project', visibility: :hidden) }
 
@@ -44,6 +45,141 @@ RSpec.describe 'Api::Search' do
         get search_path, params: { q: 'Security' }
 
         expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    # Content is membership-gated: a discoverable project grants existence
+    # and request-access, never content. Rule and component content is
+    # served only from the caller's memberships (project or component) and
+    # released components; the SRG requirement catalog is instance-global.
+    context 'when authenticated as a non-member (content is membership-gated)' do
+      let_it_be(:outsider) { create(:user) }
+      let_it_be(:discoverable_project) { create(:project, :discoverable, name: 'Discoverable Search Project') }
+      let_it_be(:discoverable_component) do
+        create(:component, project: discoverable_project, name: 'Discoverable Web Component',
+                           prefix: 'DISC-01', based_on: srg)
+      end
+      let_it_be(:discoverable_content_rule) do
+        create(:rule, component: discoverable_component, rule_id: '999802',
+                      title: 'Numbat termite survey requirement for the discoverable platform')
+      end
+      let_it_be(:member_rule) do
+        create(:rule, component: component1, rule_id: '999801',
+                      title: 'Quokka burrow inspection requirement for the demonstration platform')
+      end
+      let_it_be(:hidden_srg_component) do
+        create(:component, :skip_rules, project: project2, document_type: 'srg',
+                                        prefix: 'HIDE-00', name: 'Hidden Authoring SRG',
+                                        title: 'Hidden Authoring SRG')
+      end
+      let_it_be(:authored_requirement) do
+        create(:srg_rule, :authored, component: hidden_srg_component, rule_id: '000001',
+                                     title: 'Wallaby isolation requirement for the hidden platform')
+      end
+
+      before { sign_in outsider }
+
+      it 'serves the discoverable project itself — request-access discovery, by design' do
+        get search_path, params: { q: 'Discoverable Search' }
+
+        expect(response.parsed_body['projects'].pluck('name')).to include('Discoverable Search Project')
+      end
+
+      it 'does not serve component rows from the discoverable project' do
+        get search_path, params: { q: 'Discoverable Web' }
+
+        expect(response.parsed_body['components']).to eq([])
+      end
+
+      it 'does not serve rule content from the discoverable project' do
+        get search_path, params: { q: 'Numbat' }
+
+        expect(response.parsed_body['rules']).to eq([])
+      end
+
+      it 'does not serve authored requirement content in srg_rules results' do
+        get search_path, params: { q: 'Wallaby' }
+
+        expect(response.parsed_body['srg_rules']).to eq([])
+      end
+
+      it 'does not serve authored requirement content in the rules section either' do
+        get search_path, params: { q: 'Wallaby' }
+
+        expect(response.parsed_body['rules']).to eq([])
+      end
+
+      it 'still serves the public SRG requirement catalog in srg_rules results' do
+        get search_path, params: { q: 'operating system' }
+
+        rows = response.parsed_body['srg_rules']
+        expect(rows).not_to be_empty
+        expect(rows).to all(include('srg_id' => be_present))
+      end
+
+      it 'serves released components regardless of project visibility' do
+        released = create(:component, project: project2, name: 'Released Hidden Component',
+                                      prefix: 'RELH-01', based_on: srg, released: true)
+
+        get search_path, params: { q: 'Released Hidden' }
+
+        expect(response.parsed_body['components'].pluck('id')).to include(released.id)
+      end
+
+      it 'serves rules of released components in the rules section (non-member)' do
+        released = create(:component, project: project2, name: 'Released Rules Component',
+                                      prefix: 'RELR-01', based_on: srg, released: true)
+        released_rule = create(:rule, component: released, rule_id: '999803',
+                                      title: 'Wombat perimeter fencing requirement for the released platform')
+
+        get search_path, params: { q: 'Wombat' }
+
+        expect(response.parsed_body['rules'].pluck('id')).to include(released_rule.id)
+      end
+
+      it 'serves rule content to a member of the project (scoping does not over-narrow)' do
+        sign_in user
+
+        get search_path, params: { q: 'Quokka' }
+
+        expect(response.parsed_body['rules'].pluck('id')).to include(member_rule.id)
+      end
+    end
+
+    # Authored SRG requirements are project content: full-text findable by
+    # members through the RULES section (same access scoping as stig rules).
+    # The srg_rules section stays catalog-only by the no-leak ruling — the
+    # member-side positive pins here are what make the non-member rules
+    # concealment assertions above non-vacuous.
+    describe 'authored SRG requirements in the rules section' do
+      let_it_be(:member_srg_component) do
+        create(:component, :skip_rules, project: project1, document_type: 'srg',
+                                        prefix: 'MSRG-00', name: 'Member Authoring SRG',
+                                        title: 'Member Authoring SRG')
+      end
+      let_it_be(:member_authored_requirement) do
+        create(:srg_rule, :authored, component: member_srg_component, rule_id: '000001',
+                                     title: 'Capybara telemetry requirement for the member platform')
+      end
+
+      before { sign_in user }
+
+      it 'finds an authored SRG requirement by its title text for a project member' do
+        get search_path, params: { q: 'Capybara' }
+
+        row = response.parsed_body['rules'].find { |r| r['id'] == member_authored_requirement.id }
+        expect(row).to be_present
+        expect(row['title']).to eq('Capybara telemetry requirement for the member platform')
+        expect(row['component_prefix']).to eq('MSRG-00')
+      end
+
+      it 'serves null parent fields for authored rows (satisfied_by is stig-only)' do
+        get search_path, params: { q: 'Capybara' }
+
+        row = response.parsed_body['rules'].find { |r| r['id'] == member_authored_requirement.id }
+        expect(row).to be_present
+        expect(row['parent_rule_id']).to be_nil
+        expect(row['parent_display_name']).to be_nil
       end
     end
 
@@ -149,9 +285,7 @@ RSpec.describe 'Api::Search' do
     end
 
     context 'rules search' do
-      before { sign_in user }
-
-      let!(:rule1) do
+      let_it_be(:rule1) do
         rule = component1.rules.first
         rule.update!(
           title: 'Xylophone Configuration Requirements',
@@ -160,6 +294,8 @@ RSpec.describe 'Api::Search' do
         rule
       end
 
+      before { sign_in user }
+
       it 'searches rules by title' do
         get search_path, params: { q: 'Xylophone' }
 
@@ -167,6 +303,26 @@ RSpec.describe 'Api::Search' do
         json = response.parsed_body
         expect(json['rules'].length).to be >= 1
         expect(json['rules'][0]['title']).to eq('Xylophone Configuration Requirements')
+      end
+
+      it 'returns matched_field indicating which field matched' do
+        get search_path, params: { q: 'Xylophone' }
+
+        expect(response).to have_http_status(:success)
+        json = response.parsed_body
+        rule_result = json['rules'].find { |r| r['title'] == 'Xylophone Configuration Requirements' }
+        expect(rule_result).not_to be_nil
+        expect(rule_result['matched_field']).to eq('title')
+      end
+
+      it 'returns matched_field for fixtext matches' do
+        get search_path, params: { q: 'strict policy' }
+
+        expect(response).to have_http_status(:success)
+        json = response.parsed_body
+        rule_result = json['rules'].find { |r| r['rule_id'] == rule1.rule_id }
+        expect(rule_result).not_to be_nil
+        expect(rule_result['matched_field']).to eq('fixtext')
       end
 
       it 'only returns rules from accessible components' do
@@ -189,23 +345,25 @@ RSpec.describe 'Api::Search' do
       # - Search by name, title, or srg_id
       # - Return useful metadata: id, name, title, version
 
-      before { sign_in user }
-
-      let!(:srg_rhel) do
-        create(:security_requirements_guide,
+      # Shared read-only fixtures; :skip_rules because this block asserts SRG
+      # document metadata only, never parsed requirement content.
+      let_it_be(:srg_rhel) do
+        create(:security_requirements_guide, :skip_rules,
                srg_id: 'RHEL_9_SRG',
                title: 'Red Hat Enterprise Linux 9 Security Requirements Guide',
                name: 'RHEL 9 SRG - Ver 1, Rel 1',
                version: 'V1R1')
       end
 
-      let!(:srg_windows) do
-        create(:security_requirements_guide,
+      let_it_be(:srg_windows) do
+        create(:security_requirements_guide, :skip_rules,
                srg_id: 'WIN_SERVER_2022_SRG',
                title: 'Windows Server 2022 Security Requirements Guide',
                name: 'Windows Server 2022 SRG - Ver 1, Rel 2',
                version: 'V1R2')
       end
+
+      before { sign_in user }
 
       it 'searches SRGs by title' do
         get search_path, params: { q: 'Red Hat' }
@@ -266,10 +424,10 @@ RSpec.describe 'Api::Search' do
       # - Search by name, title, stig_id, or description
       # - Return useful metadata: id, name, title, version, description
 
-      before { sign_in user }
-
-      let!(:stig_apache) do
-        create(:stig,
+      # Shared read-only fixtures; :skip_rules because this block asserts STIG
+      # document metadata only, never parsed rule content.
+      let_it_be(:stig_apache) do
+        create(:stig, :skip_rules,
                stig_id: 'Apache_Server_2_4_STIG',
                title: 'Apache Server 2.4 Security Technical Implementation Guide',
                name: 'Apache Server 2.4 STIG - Ver 2, Rel 3',
@@ -277,14 +435,16 @@ RSpec.describe 'Api::Search' do
                description: 'Security configuration for Apache HTTP Server')
       end
 
-      let!(:stig_nginx) do
-        create(:stig,
+      let_it_be(:stig_nginx) do
+        create(:stig, :skip_rules,
                stig_id: 'NGINX_Web_Server_STIG',
                title: 'NGINX Web Server Security Technical Implementation Guide',
                name: 'NGINX Web Server STIG - Ver 1, Rel 1',
                version: 'V1R1',
                description: 'Security configuration for NGINX web server')
       end
+
+      before { sign_in user }
 
       it 'searches STIGs by title' do
         get search_path, params: { q: 'Apache' }
@@ -356,27 +516,25 @@ RSpec.describe 'Api::Search' do
       # - Example: searching '/etc/sudoers' should find rules with that in check content
       # - Return useful metadata: id, rule_id, vuln_id, title, stig name
 
-      let(:sudoers_vuln_id) { 'V-258217' }
-      let(:sshd_rule_id) { 'RHEL-09-252010' }
-      let(:sudoers_path) { '/etc/sudoers' }
-      let(:status_applicable) { 'Applicable - Configurable' }
-      # Create a simple STIG without importing rules from XML
-      let!(:rhel_stig) do
-        # Skip after_create callback to avoid XML import
-        Stig.skip_callback(:create, :after, :import_stig_rules)
-        stig = Stig.create!(
-          stig_id: 'RHEL_9_STIG',
-          title: 'Red Hat Enterprise Linux 9 STIG',
-          name: 'RHEL 9 STIG - Ver 1, Rel 3',
-          version: 'V1R3',
-          description: 'RHEL 9 security configuration',
-          xml: '<Benchmark/>'
-        )
-        Stig.set_callback(:create, :after, :import_stig_rules)
-        stig
+      # let_it_be (not plain let) so the fixture blocks below, which run in
+      # before(:all) context, can reference these values.
+      let_it_be(:sudoers_vuln_id) { 'V-258217' }
+      let_it_be(:sshd_rule_id) { 'RHEL-09-252010' }
+      let_it_be(:sudoers_path) { '/etc/sudoers' }
+      let_it_be(:status_applicable) { 'Applicable - Configurable' }
+      # A simple STIG without importing rules from XML — the factory
+      # trait skips the import per-instance (never a global
+      # skip_callback, which leaks across parallel workers).
+      let_it_be(:rhel_stig) do
+        create(:stig, :skip_rules,
+               stig_id: 'RHEL_9_STIG',
+               title: 'Red Hat Enterprise Linux 9 STIG',
+               name: 'RHEL 9 STIG - Ver 1, Rel 3',
+               version: 'V1R3',
+               description: 'RHEL 9 security configuration')
       end
 
-      let!(:sudoers_rule) do
+      let_it_be(:sudoers_rule) do
         rule = StigRule.create!(
           stig: rhel_stig,
           rule_id: 'RHEL-09-654215',
@@ -392,7 +550,7 @@ RSpec.describe 'Api::Search' do
         rule
       end
 
-      let!(:sshd_rule) do
+      let_it_be(:sshd_rule) do
         rule = StigRule.create!(
           stig: rhel_stig,
           rule_id: sshd_rule_id,
@@ -458,6 +616,50 @@ RSpec.describe 'Api::Search' do
         expect(json['stig_rules'][0]['fixtext']).to include('sshd_config')
       end
 
+      it 'finds a catalog rule by a check-content fragment even when component-rule checks flood it' do
+        # The check arm must intersect the CATALOG scope before any bound
+        # applies — a globally bounded check lookup lets component-rule
+        # checks consume the window and starve genuine catalog matches.
+        # The needle is a MID-WORD fragment: only the substring check arm
+        # can serve it (the word arm indexes whole stems).
+        component1.rules.first(3).each do |rule|
+          10.times { |i| Check.create!(base_rule: rule, content: "authored xlotstarx filler #{i}") }
+        end
+        Check.create!(base_rule: sudoers_rule, content: 'Verify the ocelotstarve catalog ledger')
+
+        get search_path, params: { q: 'lotstar' }
+
+        expect(response).to have_http_status(:success)
+        json = response.parsed_body
+        expect(json['stig_rules'].pluck('rule_id')).to include(sudoers_rule.rule_id)
+      end
+
+      it 'returns distinct catalog rules when one rule has many matching checks' do
+        # The check arm bounds DISTINCT rules, not join rows — a rule with
+        # many matching checks must not crowd a sibling out of the window.
+        5.times { |i| Check.create!(base_rule: sudoers_rule, content: "crowded xkremlinx check #{i}") }
+        Check.create!(base_rule: sshd_rule, content: 'single xkremlinx check')
+
+        get search_path, params: { q: 'kremlin' }
+
+        expect(response).to have_http_status(:success)
+        json = response.parsed_body
+        expect(json['stig_rules'].pluck('rule_id'))
+          .to include(sudoers_rule.rule_id, sshd_rule.rule_id)
+      end
+
+      it 'matches prose by word stem, not raw substring' do
+        # Title: "RHEL 9 must configure sshd to use approved encryption" —
+        # 'configuring' stems to the same root as 'configure'; a raw
+        # substring match can never find it.
+        get search_path, params: { q: 'configuring encryption' }
+
+        expect(response).to have_http_status(:success)
+        json = response.parsed_body
+        expect(json['stig_rules'].length).to eq(1)
+        expect(json['stig_rules'][0]['rule_id']).to eq(sshd_rule_id)
+      end
+
       it 'returns STIG rule metadata' do
         get search_path, params: { q: sudoers_path }
 
@@ -498,25 +700,25 @@ RSpec.describe 'Api::Search' do
       # - Search by rule_id, title, fixtext, ident (CCIs), check content
       # - Return useful metadata: id, rule_id, title, srg name
 
-      let(:firewall_query) { 'firewall rules' }
-      let(:cci_identifier) { 'CCI-002385' }
+      # let_it_be (not plain let) so the fixture blocks below, which run in
+      # before(:all) context, can reference these values.
+      let_it_be(:firewall_query) { 'firewall rules' }
+      let_it_be(:cci_identifier) { 'CCI-002385' }
       # Use an existing SRG from the test setup (created for component factory)
       # Note: The SRG created by the component factory already has srg_rules
-      let!(:custom_srg) do
-        # Skip after_create callback to avoid XML import
-        SecurityRequirementsGuide.skip_callback(:create, :after, :import_srg_rules)
-        srg = SecurityRequirementsGuide.create!(
-          srg_id: 'Custom_Test_SRG',
-          title: 'Custom Test Security Requirements Guide',
-          name: 'Custom Test SRG - Ver 1, Rel 1',
-          version: 'V1R1',
-          xml: '<Benchmark/>'
-        )
-        SecurityRequirementsGuide.set_callback(:create, :after, :import_srg_rules)
-        srg
+      # The intent flag (via :skip_rules) replaces the old global
+      # skip_callback hack — that mutation leaked across parallel
+      # workers, and the factory-stamped XML keeps the row consistent
+      # with the header validation.
+      let_it_be(:custom_srg) do
+        create(:security_requirements_guide, :skip_rules,
+               srg_id: 'Custom_Test_SRG',
+               title: 'Custom Test Security Requirements Guide',
+               name: 'Custom Test SRG - Ver 1, Rel 1',
+               version: 'V1R1')
       end
 
-      let!(:firewall_srg_rule) do
+      let_it_be(:firewall_srg_rule) do
         SrgRule.create!(
           security_requirements_guide: custom_srg,
           rule_id: 'SRG-OS-000480-GPOS-00232',
@@ -532,12 +734,14 @@ RSpec.describe 'Api::Search' do
 
       before { sign_in user }
 
-      it 'searches SRG rules by rule_id' do
+      it 'searches SRG rules by rule_id, id match first' do
         get search_path, params: { q: 'SRG-OS-000480' }
 
         expect(response).to have_http_status(:success)
         json = response.parsed_body
-        expect(json['srg_rules'].length).to eq(1)
+        # The exact-id match leads (arm-priority ordering guarantees it
+        # survives the limit window); requirements whose text references
+        # the id may follow as word matches.
         expect(json['srg_rules'][0]['rule_id']).to include('SRG-OS-000480')
       end
 
@@ -657,6 +861,145 @@ RSpec.describe 'Api::Search' do
       expect(response).to have_http_status(:success)
       expect(xml_queries).to be_empty,
                              'Search loaded srgs.xml — should use .select() to exclude xml'
+    end
+
+    # search_rules ran `rule.reviews.where(...).size` per
+    # result row (N queries for N rules), and search_projects ran
+    # `project.components.count` per row. Replace both with one GROUP BY COUNT
+    # batched lookup per kind.
+    context 'N+1 prevention' do
+      let_it_be(:rules_with_comments) do
+        rules = component1.rules.first(3)
+        rules.each_with_index do |rule, i|
+          rule.update!(title: "Wallaby Unique Result #{i}")
+          2.times { |c| create(:review, rule: rule, action: 'comment', comment: "c#{i}-#{c}") }
+        end
+        rules
+      end
+
+      before { sign_in user }
+
+      it 'search_rules returns comment_count without N+1' do
+        per_rule_counts = []
+        cb = lambda do |_, _, _, _, payload|
+          sql = payload[:sql].to_s
+          # Per-rule N+1 form is COUNT(*) ... WHERE rule_id = ? AND action = ?
+          # (no GROUP BY, no IN). The batched form uses GROUP BY rule_id with IN.
+          if sql.match?(/COUNT.*FROM\s+["']?reviews/i) &&
+             sql.match?(/rule_id["']?\s*=/i) && !sql.match?(/GROUP\s+BY/i)
+            per_rule_counts << sql
+          end
+        end
+
+        ActiveSupport::Notifications.subscribed(cb, 'sql.active_record') do
+          get search_path, params: { q: 'Wallaby' }
+        end
+
+        expect(per_rule_counts).to be_empty,
+                                   "expected 0 per-rule COUNT queries (batched via GROUP BY); got #{per_rule_counts.size}:\n#{per_rule_counts.join("\n")}"
+
+        # Functional check: counts still correct.
+        json = response.parsed_body
+        rules_with_comments.each do |rule|
+          row = json['rules'].find { |r| r['rule_id'] == rule.rule_id }
+          expect(row['comment_count']).to eq(2)
+        end
+      end
+
+      it 'search_projects returns components_count without N+1' do
+        # Make sure project1 matches by name so it lands in the results.
+        per_project_counts = []
+        cb = lambda do |_, _, _, _, payload|
+          sql = payload[:sql].to_s
+          if sql.match?(/COUNT.*FROM\s+["']?components/i) &&
+             sql.match?(/project_id["']?\s*=/i) && !sql.match?(/GROUP\s+BY/i)
+            per_project_counts << sql
+          end
+        end
+
+        ActiveSupport::Notifications.subscribed(cb, 'sql.active_record') do
+          get search_path, params: { q: 'Security' }
+        end
+
+        expect(per_project_counts).to be_empty,
+                                      "expected 0 per-project COUNT queries (batched via GROUP BY); got #{per_project_counts.size}:\n#{per_project_counts.join("\n")}"
+      end
+    end
+
+    context 'result metadata (comment_count + parent_info)' do
+      let_it_be(:rule_with_comments) do
+        rule = component1.rules.first
+        rule.update!(title: 'Quokka Unique Metadata Test')
+        create(:review, rule: rule, action: 'comment', comment: 'Test comment')
+        create(:review, rule: rule, action: 'comment', comment: 'Another comment')
+        rule
+      end
+
+      before { sign_in user }
+
+      it 'returns comment_count for each rule result' do
+        get search_path, params: { q: 'Quokka' }
+
+        json = response.parsed_body
+        result = json['rules'].find { |r| r['rule_id'] == rule_with_comments.rule_id }
+        expect(result).not_to be_nil
+        expect(result['comment_count']).to eq(2)
+      end
+
+      it 'returns null parent_rule_id for standalone rules' do
+        get search_path, params: { q: 'Quokka' }
+
+        json = response.parsed_body
+        result = json['rules'].find { |r| r['rule_id'] == rule_with_comments.rule_id }
+        expect(result).to have_key('parent_rule_id')
+        expect(result['parent_rule_id']).to be_nil
+        expect(result).to have_key('parent_display_name')
+        expect(result['parent_display_name']).to be_nil
+      end
+    end
+
+    context 'component-scoped search' do
+      let_it_be(:rule_scoped) do
+        rule = component1.rules.first
+        rule.update!(title: 'Zeppelin Unique Scoped Title')
+        rule
+      end
+
+      before { sign_in user }
+
+      it 'scopes rules to the specified component_id' do
+        get search_path, params: { q: 'Zeppelin', component_id: component1.id }
+
+        expect(response).to have_http_status(:success)
+        json = response.parsed_body
+        expect(json['rules'].length).to be >= 1
+        json['rules'].each do |rule|
+          expect(rule['component_id']).to eq(component1.id)
+        end
+      end
+
+      it 'returns empty when component_id belongs to inaccessible project' do
+        rule2 = component2.rules.first
+        rule2.update!(title: 'Zeppelin Secret Rule')
+
+        get search_path, params: { q: 'Zeppelin', component_id: component2.id }
+
+        expect(response).to have_http_status(:success)
+        json = response.parsed_body
+        expect(json['rules']).to eq([])
+      end
+
+      it 'returns all accessible rules when no component_id provided' do
+        get search_path, params: { q: 'Zeppelin' }
+
+        expect(response).to have_http_status(:success)
+        json = response.parsed_body
+        expect(json['rules'].length).to be >= 1
+        unscoped_hit = json['rules'].find do |r|
+          r['rule_id'] == rule_scoped.rule_id && r['component_id'] == component1.id
+        end
+        expect(unscoped_hit).not_to be_nil
+      end
     end
   end
 end

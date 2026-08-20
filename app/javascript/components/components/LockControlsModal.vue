@@ -18,7 +18,7 @@
     >
       <b-form @submit.prevent="handleOk">
         <input
-          id="NewProjectAuthenticityToken"
+          id="LockControlsAuthenticityToken"
           type="hidden"
           name="authenticity_token"
           :value="authenticityToken"
@@ -28,17 +28,17 @@
         <b-form-group label="Lock Mode" class="mb-3">
           <b-form-radio-group v-model="lockMode" stacked>
             <b-form-radio value="full" data-testid="lock-mode-full">
-              <strong>Lock all rule fields</strong>
+              <strong>{{ msg.lockAllFullOption }}</strong>
               <br />
               <small class="text-muted">
-                Locks all fields on all unlocked rules (existing behavior)
+                {{ msg.lockAllFullHint }}
               </small>
             </b-form-radio>
             <b-form-radio value="sections" data-testid="lock-mode-sections">
               <strong>Lock selection of fields</strong>
               <br />
               <small class="text-muted">
-                Lock specific sections across all rules while leaving other sections editable
+                {{ msg.lockSectionsHint }}
               </small>
             </b-form-radio>
           </b-form-radio-group>
@@ -76,24 +76,28 @@
 </template>
 
 <script>
-import axios from "axios";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import { MESSAGE_LABELS } from "../../constants/terminology";
+import { lockComponent, lockSections as lockSectionsApi } from "../../api/componentsApi";
+import { useAuthToken } from "../../composables/useAuthToken";
+import { useToast } from "../../composables/useToast";
+import { messageLabels } from "../../constants/terminology";
 import { LOCKABLE_SECTIONS } from "../../composables/ruleFieldConfig";
 
 export default {
   name: "LockControlsModal",
-  mixins: [AlertMixinVue, FormMixinVue],
   props: {
     component_id: {
       type: Number,
       required: true,
     },
+    documentType: { type: String, default: "stig" },
+  },
+  setup() {
+    const { authenticityToken } = useAuthToken();
+    const { alertOrNotifyResponse } = useToast();
+    return { authenticityToken, alertOrNotifyResponse };
   },
   data: function () {
     return {
-      msg: MESSAGE_LABELS,
       comment: "",
       loading: false,
       lockMode: "full",
@@ -102,6 +106,9 @@ export default {
     };
   },
   computed: {
+    msg() {
+      return messageLabels(this.documentType);
+    },
     okButtonText() {
       if (this.lockMode === "sections") {
         return `Lock ${this.selectedSections.length} section(s)`;
@@ -138,22 +145,18 @@ export default {
     },
     lockControls: function () {
       this.loading = true;
-      axios
-        .post(`/components/${this.component_id}/lock`, {
-          review: { action: "lock_control", comment: this.comment },
-        })
+      lockComponent(this.component_id, { action: "lock_control", comment: this.comment })
         .then(this.lockControlsSuccess)
         .catch(this.alertOrNotifyResponse)
         .finally(this.completeLoading);
     },
     lockSections: function () {
       this.loading = true;
-      axios
-        .patch(`/components/${this.component_id}/lock_sections`, {
-          sections: this.selectedSections,
-          locked: true,
-          comment: this.comment,
-        })
+      lockSectionsApi(this.component_id, {
+        sections: this.selectedSections,
+        locked: true,
+        comment: this.comment,
+      })
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.$refs["LockControlsModal"].hide();

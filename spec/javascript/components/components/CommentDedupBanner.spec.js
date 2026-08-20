@@ -1,15 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
-import { localVue } from "@test/testHelper";
-import axios from "axios";
+import { setActivePinia, createPinia } from "pinia";
+import { localVue, flushPromises } from "@test/testHelper";
 import CommentDedupBanner from "@/components/components/CommentDedupBanner.vue";
+import { useCommentsStore } from "@/stores/comments";
+import { getComments } from "@/api/componentsApi";
 
-vi.mock("axios");
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
 
-const flushPromises = async (wrapper) => {
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  if (wrapper) await wrapper.vm.$nextTick();
-};
+vi.mock("@/api/componentsApi", () => ({
+  getComments: vi.fn(() => Promise.resolve({ data: { rows: [], pagination: { total: 0 } } })),
+}));
 
 const baseProps = { componentId: 8, ruleId: 2976 };
 
@@ -20,6 +30,7 @@ const sampleRows = [
     section: "check_content",
     comment: "Check text issue",
     created_at: "2026-04-27T10:00:00Z",
+    reactions: { up: 0, down: 0, mine: null },
   },
   {
     id: 2,
@@ -27,6 +38,7 @@ const sampleRows = [
     section: "fixtext",
     comment: "Fix mention is wrong",
     created_at: "2026-04-26T10:00:00Z",
+    reactions: { up: 0, down: 0, mine: null },
   },
   {
     id: 3,
@@ -34,6 +46,7 @@ const sampleRows = [
     section: null,
     comment: "General concern",
     created_at: "2026-04-25T10:00:00Z",
+    reactions: { up: 0, down: 0, mine: null },
   },
 ];
 
@@ -55,11 +68,12 @@ const sampleRows = [
  */
 describe("CommentDedupBanner", () => {
   beforeEach(() => {
+    setActivePinia(createPinia());
     vi.clearAllMocks();
   });
 
   const mountWith = async (sectionProp = null, rows = sampleRows) => {
-    axios.get.mockResolvedValue({ data: { rows, pagination: { total: rows.length } } });
+    getComments.mockResolvedValue({ data: { rows, pagination: { total: rows.length } } });
     const w = mount(CommentDedupBanner, {
       localVue,
       propsData: { ...baseProps, section: sectionProp },
@@ -70,7 +84,7 @@ describe("CommentDedupBanner", () => {
 
   it("fetches ALL rule-level comments — no section param sent", async () => {
     await mountWith("check_content");
-    const params = axios.get.mock.calls[0][1].params;
+    const params = getComments.mock.calls[0][1];
     expect(params.rule_id).toBe(2976);
     expect(params.section).toBeUndefined();
   });
@@ -83,7 +97,7 @@ describe("CommentDedupBanner", () => {
   it("shows total comment count (replies included) in the header", async () => {
     // Server reports 3 top-level rows, 7 total comments (3 root + 4 replies).
     // A reply counts as a comment for display purposes.
-    axios.get.mockResolvedValue({
+    getComments.mockResolvedValue({
       data: {
         rows: sampleRows,
         pagination: { total: 3, total_comments: 7 },
@@ -137,26 +151,139 @@ describe("CommentDedupBanner", () => {
 
   it("does NOT re-fetch when only the section prop changes", async () => {
     const w = await mountWith("check_content");
-    axios.get.mockClear();
+    getComments.mockClear();
     await w.setProps({ section: "fixtext" });
     await flushPromises(w);
-    expect(axios.get).not.toHaveBeenCalled();
+    expect(getComments).not.toHaveBeenCalled();
   });
 
   it("does re-fetch when ruleId changes (different rule = different conversation)", async () => {
     const w = await mountWith();
-    axios.get.mockClear();
+    getComments.mockClear();
     await w.setProps({ ruleId: 9999 });
     await flushPromises(w);
-    expect(axios.get).toHaveBeenCalled();
+    expect(getComments).toHaveBeenCalled();
   });
 
-  it("recomputes inSection when section prop changes (no refetch)", async () => {
+  describe("section-matching visual highlight", () => {
+    it("dims comments that do not match the selected section", async () => {
+      const w = await mountWith("check_content");
+      await w.find("button").trigger("click");
+      const items = w.findAll(".dedup-row");
+      expect(items.at(0).classes()).not.toContain("dedup-dimmed"); // check_content matches
+      expect(items.at(1).classes()).toContain("dedup-dimmed"); // fixtext does not match
+      expect(items.at(2).classes()).toContain("dedup-dimmed"); // null does not match
+    });
+
+    it("does not dim any comments when no section is selected", async () => {
+      const w = await mountWith(null);
+      await w.find("button").trigger("click");
+      const dimmed = w.findAll(".dedup-dimmed");
+      expect(dimmed.length).toBe(0);
+    });
+
+    it("updates dimming when section prop changes", async () => {
+      const w = await mountWith("check_content");
+      await w.find("button").trigger("click");
+      expect(w.findAll(".dedup-dimmed").length).toBe(2); // fixtext + null dimmed
+
+      await w.setProps({ section: "fixtext" });
+      expect(w.findAll(".dedup-dimmed").length).toBe(2); // check_content + null dimmed
+
+      await w.setProps({ section: null });
+      expect(w.findAll(".dedup-dimmed").length).toBe(0); // nothing dimmed
+    });
+  });
+
+  it("handles missing pagination gracefully (no TypeError)", async () => {
+    getComments.mockResolvedValue({ data: { rows: [], pagination: undefined } });
+    const w = mount(CommentDedupBanner, {
+      localVue,
+      propsData: { ...baseProps, section: null },
+    });
+    await flushPromises(w);
+    // No alert header (zero comments), no items, no crash.
+    expect(w.find(".alert").exists()).toBe(false);
+    expect(w.findAllComponents({ name: "CommentItem" }).length).toBe(0);
+  });
+
+  it("recomputes the section count in the header when section changes (no refetch)", async () => {
     const w = await mountWith("check_content");
-    expect(w.vm.inSection).toBe(1); // 1 row in check_content
+    expect(w.find(".alert").text()).toContain("(1 on Check)");
     await w.setProps({ section: "fixtext" });
-    expect(w.vm.inSection).toBe(1); // 1 row in fixtext
+    expect(w.find(".alert").text()).toContain("(1 on Fix)");
     await w.setProps({ section: null });
-    expect(w.vm.inSection).toBe(0); // null section never matches
+    expect(w.find(".alert").text()).not.toMatch(/\(\d+ on /);
+    expect(getComments).toHaveBeenCalledTimes(1); // section changes never refetch
+  });
+
+  it("fetches via store.fetchComments, not direct getComments API", async () => {
+    getComments.mockResolvedValue({ data: { rows: sampleRows, pagination: { total: 3 } } });
+    const w = mount(CommentDedupBanner, {
+      localVue,
+      propsData: { ...baseProps, section: null },
+    });
+    await flushPromises(w);
+    const store = useCommentsStore();
+    expect(Object.keys(store.cache).length).toBeGreaterThan(0);
+  });
+
+  it("passes pre-normalized rows to CommentItem (camelCase shape)", async () => {
+    const w = await mountWith("check_content");
+    w.vm.expanded = true;
+    await w.vm.$nextTick();
+    const first = w.findComponent({ name: "CommentItem" });
+    expect(first.props("comment").authorName).toBe("John Doe");
+    expect(first.props("comment").author_name).toBe("John Doe");
+  });
+
+  it("renders CommentItem for each comment row", async () => {
+    const w = await mountWith("check_content");
+    w.vm.expanded = true;
+    await w.vm.$nextTick();
+    const items = w.findAllComponents({ name: "CommentItem" });
+    expect(items.length).toBe(3);
+  });
+
+  it("passes normalized comment data to CommentItem", async () => {
+    const w = await mountWith("check_content");
+    w.vm.expanded = true;
+    await w.vm.$nextTick();
+    const first = w.findComponent({ name: "CommentItem" });
+    expect(first.props("comment").id).toBe(1);
+    expect(first.props("comment").authorName).toBe("John Doe");
+  });
+
+  // ── CommentList container delegation ─────────────────────────────
+
+  describe("CommentList container delegation", () => {
+    it("fetches and renders rows through the CommentList container", async () => {
+      const w = await mountWith("check_content");
+      const list = w.findComponent({ name: "CommentList" });
+      expect(list.exists()).toBe(true);
+      expect(list.props("componentId")).toBe(8);
+      expect(list.props("filterRuleId")).toBe(2976);
+      w.vm.expanded = true;
+      await w.vm.$nextTick();
+      expect(w.findAllComponents({ name: "CommentItem" }).length).toBe(3);
+    });
+
+    it("applies a reaction update through the container's row state", async () => {
+      const baseApi = (await import("@/api/baseApi")).default;
+      baseApi.post.mockResolvedValueOnce({
+        data: { reactions: { up: 1, down: 0, mine: "up" } },
+      });
+
+      const w = await mountWith("check_content");
+      w.vm.expanded = true;
+      await w.vm.$nextTick();
+      const first = w.findComponent({ name: "CommentItem" });
+      expect(first.props("comment").reactions.up).toBe(0);
+
+      first.vm.$emit("toggle-reaction", "up");
+      await flushPromises(w);
+
+      expect(w.findComponent({ name: "CommentItem" }).props("comment").reactions.up).toBe(1);
+    });
   });
 });

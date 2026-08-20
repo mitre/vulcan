@@ -129,7 +129,8 @@
 </template>
 
 <script>
-import axios from "axios";
+import { searchUsers } from "../../api/usersApi";
+import { useAuthToken } from "../../composables/useAuthToken";
 import VueMultiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
 import capitalize from "lodash/capitalize";
@@ -167,6 +168,10 @@ export default {
       required: false,
     },
   },
+  setup() {
+    const { authenticityToken } = useAuthToken();
+    return { authenticityToken };
+  },
   data: function () {
     return {
       search: "",
@@ -179,9 +184,6 @@ export default {
     };
   },
   computed: {
-    authenticityToken: function () {
-      return document.querySelector("meta[name='csrf-token']").getAttribute("content");
-    },
     isSubmitDisabled: function () {
       return !(this.selectedUser !== null && this.selectedRole !== null);
     },
@@ -207,12 +209,9 @@ export default {
       }
       this.isSearching = true;
       try {
-        const { data } = await axios.get("/api/users/search", {
-          params: {
-            q: query,
-            membership_type: this.membership_type,
-            membership_id: this.membership_id,
-          },
+        const { data } = await searchUsers(query, {
+          membership_type: this.membership_type,
+          membership_id: this.membership_id,
         });
         this.searchResults = data.users;
       } catch {

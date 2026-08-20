@@ -173,8 +173,8 @@ RSpec.describe 'Project Create From Backup' do
       end
 
       it 'handles include_reviews param' do
-        Review.create!(user: admin_user, rule: source_component.rules.first,
-                       action: 'request_review', comment: 'Test')
+        create(:review, user: admin_user, rule: source_component.rules.first,
+                        comment: 'Test')
 
         zip = Export::Base.new(
           exportable: source_project,
@@ -195,6 +195,38 @@ RSpec.describe 'Project Create From Backup' do
         expect(response).to have_http_status(:ok)
         json = response.parsed_body
         expect(json['summary']['reviews_imported']).to eq(0)
+      end
+
+      # REQUIREMENT: the archive's project.json carries the source project's
+      # metadata (json_archive_formatter writes it); a restored project must
+      # carry it too — losing it silently is data loss in the round-trip.
+      it 'restores the archived project metadata' do
+        metadata_project = create(:project)
+        create(:component, project: metadata_project)
+        ProjectMetadata.create!(
+          project: metadata_project,
+          data: { 'POC Name' => 'Sam Roundtrip', 'Slack Channel ID' => 'C0424242424' }
+        )
+
+        zip = Export::Base.new(
+          exportable: metadata_project,
+          mode: :backup,
+          format: :json_archive,
+          zip_filename: 'metadata-backup.zip'
+        ).call.data
+        file = Rack::Test::UploadedFile.new(
+          StringIO.new(zip), BACKUP_ZIP_CONTENT_TYPE, true, original_filename: 'metadata-backup.zip'
+        )
+
+        post BACKUP_ENDPOINT, params: {
+          file: file,
+          project_name: 'Metadata Restored'
+        }
+
+        expect(response).to have_http_status(:ok)
+        restored = Project.find_by!(name: 'Metadata Restored')
+        expect(restored.project_metadata.data)
+          .to eq('POC Name' => 'Sam Roundtrip', 'Slack Channel ID' => 'C0424242424')
       end
     end
 

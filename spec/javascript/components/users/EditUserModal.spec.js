@@ -1,9 +1,40 @@
 import { mount } from "@vue/test-utils";
-import { localVue } from "@test/testHelper";
+import { localVue, captureVulcanToast } from "@test/testHelper";
 import EditUserModal from "@/components/users/EditUserModal.vue";
-import axios from "axios";
+import { adminRevokeToken as apiAdminRevoke } from "@/api/tokensApi";
+import {
+  lockUser,
+  unlockUser,
+  updateUser,
+  sendPasswordReset,
+  generateResetLink,
+  setPassword,
+} from "@/api/usersApi";
 
-vi.mock("axios");
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/api/usersApi", () => ({
+  lockUser: vi.fn(() => Promise.resolve({ data: {} })),
+  unlockUser: vi.fn(() => Promise.resolve({ data: {} })),
+  updateUser: vi.fn(() => Promise.resolve({ data: {} })),
+  sendPasswordReset: vi.fn(() => Promise.resolve({ data: {} })),
+  generateResetLink: vi.fn(() => Promise.resolve({ data: {} })),
+  setPassword: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+
+vi.mock("@/api/tokensApi", () => ({
+  adminListTokens: vi.fn(() => Promise.resolve({ data: { personal_access_tokens: [] } })),
+  adminRevokeToken: vi.fn(() => Promise.resolve({ data: {} })),
+}));
 
 // BModal renders content outside the wrapper in jsdom.
 // Test via wrapper.vm (data/methods) and document.querySelector for DOM.
@@ -99,12 +130,12 @@ describe("EditUserModal", () => {
     });
 
     it("sends password reset on click", async () => {
-      axios.post.mockResolvedValue({ data: { toast: "Reset sent." } });
+      sendPasswordReset.mockResolvedValue({ data: { toast: "Reset sent." } });
       mountModal({ smtpEnabled: true });
 
       await wrapper.vm.sendPasswordReset();
 
-      expect(axios.post).toHaveBeenCalledWith("/users/42/send_password_reset");
+      expect(sendPasswordReset).toHaveBeenCalledWith(42);
     });
   });
 
@@ -119,19 +150,41 @@ describe("EditUserModal", () => {
         admin: true,
         provider: null,
       };
-      axios.put.mockResolvedValue({ data: { toast: "OK", user: updatedUser } });
+      updateUser.mockResolvedValue({ data: { toast: "OK", user: updatedUser } });
 
       wrapper.vm.localUser.name = "Updated";
       wrapper.vm.localUser.email = "updated@test.com";
 
       await wrapper.vm.onSubmit({ preventDefault: vi.fn() });
 
-      expect(axios.put).toHaveBeenCalledWith("/users/42", {
-        user: expect.objectContaining({
+      expect(updateUser).toHaveBeenCalledWith(
+        42,
+        expect.objectContaining({
           name: "Updated",
           email: "updated@test.com",
         }),
-      });
+      );
+    });
+
+    it("sends the edited slack_user_id", async () => {
+      updateUser.mockResolvedValue({ data: { toast: "OK", user: { id: 42 } } });
+
+      wrapper.vm.localUser.slack_user_id = "U0EDIT789";
+      await wrapper.vm.onSubmit({ preventDefault: vi.fn() });
+
+      expect(updateUser).toHaveBeenCalledWith(
+        42,
+        expect.objectContaining({ slack_user_id: "U0EDIT789" }),
+      );
+    });
+
+    it("sends an empty slack_user_id to clear it", async () => {
+      updateUser.mockResolvedValue({ data: { toast: "OK", user: { id: 42 } } });
+
+      wrapper.vm.localUser.slack_user_id = "";
+      await wrapper.vm.onSubmit({ preventDefault: vi.fn() });
+
+      expect(updateUser).toHaveBeenCalledWith(42, expect.objectContaining({ slack_user_id: "" }));
     });
 
     it("emits user-updated on success", async () => {
@@ -142,7 +195,7 @@ describe("EditUserModal", () => {
         admin: false,
         provider: null,
       };
-      axios.put.mockResolvedValue({ data: { toast: "OK", user: updatedUser } });
+      updateUser.mockResolvedValue({ data: { toast: "OK", user: updatedUser } });
 
       await wrapper.vm.onSubmit({ preventDefault: vi.fn() });
 
@@ -156,16 +209,20 @@ describe("EditUserModal", () => {
 
     it("calls generate_reset_link endpoint", async () => {
       const resetUrl = "http://localhost:3000/users/password/edit?reset_password_token=abc123";
-      axios.post.mockResolvedValue({ data: { toast: "Link generated.", reset_url: resetUrl } });
+      generateResetLink.mockResolvedValue({
+        data: { toast: "Link generated.", reset_url: resetUrl },
+      });
 
       await wrapper.vm.generateResetLink();
 
-      expect(axios.post).toHaveBeenCalledWith("/users/42/generate_reset_link");
+      expect(generateResetLink).toHaveBeenCalledWith(42);
     });
 
     it("stores the returned reset URL", async () => {
       const resetUrl = "http://localhost:3000/users/password/edit?reset_password_token=abc123";
-      axios.post.mockResolvedValue({ data: { toast: "Link generated.", reset_url: resetUrl } });
+      generateResetLink.mockResolvedValue({
+        data: { toast: "Link generated.", reset_url: resetUrl },
+      });
 
       await wrapper.vm.generateResetLink();
 
@@ -197,16 +254,14 @@ describe("EditUserModal", () => {
       expect(wrapper.vm.showManualPassword).toBe(true);
     });
 
-    it("calls set_password endpoint with provided password", async () => {
-      axios.post.mockResolvedValue({ data: { toast: "Password set." } });
+    it("calls setPassword with userId and passwords", async () => {
+      setPassword.mockResolvedValue({ data: { toast: "Password set." } });
       wrapper.vm.directPassword = "N3wSecure!!Pass99";
       wrapper.vm.directPasswordConfirm = "N3wSecure!!Pass99";
 
       await wrapper.vm.setPasswordDirectly();
 
-      expect(axios.post).toHaveBeenCalledWith("/users/42/set_password", {
-        user: { password: "N3wSecure!!Pass99" },
-      });
+      expect(setPassword).toHaveBeenCalledWith(42, "N3wSecure!!Pass99", "N3wSecure!!Pass99");
     });
 
     it("does not submit when passwords do not match", async () => {
@@ -215,11 +270,11 @@ describe("EditUserModal", () => {
 
       await wrapper.vm.setPasswordDirectly();
 
-      expect(axios.post).not.toHaveBeenCalled();
+      expect(setPassword).not.toHaveBeenCalled();
     });
 
     it("clears both password fields after success", async () => {
-      axios.post.mockResolvedValue({ data: { toast: "Password set." } });
+      setPassword.mockResolvedValue({ data: { toast: "Password set." } });
       wrapper.vm.directPassword = "N3wSecure!!Pass99";
       wrapper.vm.directPasswordConfirm = "N3wSecure!!Pass99";
 
@@ -230,7 +285,7 @@ describe("EditUserModal", () => {
     });
 
     it("does not clear password fields on error", async () => {
-      axios.post.mockRejectedValue({
+      setPassword.mockRejectedValue({
         response: {
           data: { toast: { title: "Error", message: ["Too short"], variant: "danger" } },
         },
@@ -269,7 +324,7 @@ describe("EditUserModal", () => {
 
     it("sends POST to unlock endpoint on click", async () => {
       const unlockedUser = { ...testUser, locked_at: null, failed_attempts: 0 };
-      axios.post.mockResolvedValue({
+      unlockUser.mockResolvedValue({
         data: { toast: "Unlocked.", user: unlockedUser },
       });
       mountModal({
@@ -279,12 +334,12 @@ describe("EditUserModal", () => {
 
       await wrapper.vm.unlockUser();
 
-      expect(axios.post).toHaveBeenCalledWith("/users/42/unlock");
+      expect(unlockUser).toHaveBeenCalledWith(42);
     });
 
     it("emits user-updated with unlocked user data", async () => {
       const unlockedUser = { ...testUser, locked_at: null, failed_attempts: 0 };
-      axios.post.mockResolvedValue({
+      unlockUser.mockResolvedValue({
         data: { toast: "Unlocked.", user: unlockedUser },
       });
       mountModal({
@@ -330,7 +385,7 @@ describe("EditUserModal", () => {
 
     it("sends POST to lock endpoint on click", async () => {
       const lockedUser = { ...testUser, locked_at: "2026-02-20T00:00:00Z", failed_attempts: 0 };
-      axios.post.mockResolvedValue({
+      lockUser.mockResolvedValue({
         data: { toast: "Locked.", user: lockedUser },
       });
       mountModal({
@@ -340,12 +395,12 @@ describe("EditUserModal", () => {
 
       await wrapper.vm.lockUser();
 
-      expect(axios.post).toHaveBeenCalledWith("/users/42/lock");
+      expect(lockUser).toHaveBeenCalledWith(42);
     });
 
     it("emits user-updated with locked user data", async () => {
       const lockedUser = { ...testUser, locked_at: "2026-02-20T00:00:00Z", failed_attempts: 0 };
-      axios.post.mockResolvedValue({
+      lockUser.mockResolvedValue({
         data: { toast: "Locked.", user: lockedUser },
       });
       mountModal({
@@ -379,6 +434,94 @@ describe("EditUserModal", () => {
       };
       await wrapper.setProps({ user: newUser });
       expect(wrapper.vm.localUser.name).toBe("Other");
+    });
+  });
+
+  // ── admin token revocation failure notification ─────────────────────
+  // REQUIREMENT: the revoke catch hands the ERROR itself to
+  // alertOrNotifyResponse. The notifier's permission-denied branch reads
+  // the error's OWN .response, so unwrapping first silences 403
+  // problem-details bodies, which carry no toast payload.
+  describe("admin token revocation failure notification", () => {
+    beforeEach(() => {
+      mountModal();
+    });
+
+    it("surfaces the permission-denied toast on a 403 problem-details failure", async () => {
+      const denied = Object.assign(new Error("Forbidden"), {
+        response: {
+          status: 403,
+          data: {
+            type: "/docs/api/errors#permission_denied",
+            detail: "You do not have permission to perform that action.",
+            admins: [],
+          },
+        },
+      });
+      apiAdminRevoke.mockRejectedValueOnce(denied);
+
+      await wrapper.setData({
+        revokeTokenTarget: { id: 7, name: "ci-token" },
+        revokeComment: "rotating credentials",
+      });
+      const toastDetail = await captureVulcanToast(() => wrapper.vm.confirmAdminRevoke(), wrapper);
+
+      expect(toastDetail).toEqual({
+        title: "Permission denied",
+        variant: "danger",
+        message: "You do not have permission to perform that action.",
+        admins: [],
+        autoHideDelay: 8000,
+      });
+      expect(wrapper.vm.adminRevoking).toBe(null);
+    });
+
+    it("still surfaces a bare transport Error as an error toast", async () => {
+      apiAdminRevoke.mockRejectedValueOnce(new Error("Request timed out"));
+
+      await wrapper.setData({
+        revokeTokenTarget: { id: 7, name: "ci-token" },
+        revokeComment: "rotating credentials",
+      });
+      const toastDetail = await captureVulcanToast(() => wrapper.vm.confirmAdminRevoke(), wrapper);
+
+      expect(toastDetail).toEqual({
+        title: "Error",
+        variant: "danger",
+        message: "Request timed out",
+      });
+      expect(wrapper.vm.adminRevoking).toBe(null);
+    });
+  });
+
+  // ── mixin contract ──────────────────────────────────────────────────
+  // REQUIREMENT: no mixins remain; toasts come from the useToast composable.
+  describe("mixin contract", () => {
+    it("declares no mixins and gets alertOrNotifyResponse from useToast", () => {
+      expect(EditUserModal.mixins).toBeUndefined();
+      mountModal();
+      expect(typeof wrapper.vm.alertOrNotifyResponse).toBe("function");
+    });
+  });
+
+  describe("admin token revoke", () => {
+    it("opens the audit-comment modal instead of window.prompt", () => {
+      mountModal();
+      const show = vi.spyOn(wrapper.vm.$bvModal, "show");
+
+      wrapper.vm.adminRevokeToken({ id: 7 });
+
+      expect(wrapper.vm.revokeTokenTarget).toEqual({ id: 7 });
+      expect(show).toHaveBeenCalledWith("admin-revoke-token-modal");
+    });
+
+    it("confirmAdminRevoke posts the token id and the trimmed comment", async () => {
+      mountModal();
+      await wrapper.setData({ revokeTokenTarget: { id: 7 }, revokeComment: "  compromised  " });
+
+      await wrapper.vm.confirmAdminRevoke();
+
+      expect(apiAdminRevoke).toHaveBeenCalledWith(7, "compromised");
     });
   });
 });

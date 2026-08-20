@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# PR-717 review remediation .2kp — companion to 20260429145530's pivot
+# Companion to 20260429145530's pivot
 # to Strong Migrations 2-pass FK adds. Validates the 3 lifecycle FKs
 # outside a DDL transaction so existing-row validation does not hold
 # ACCESS EXCLUSIVE on `reviews` for the duration of the scan.

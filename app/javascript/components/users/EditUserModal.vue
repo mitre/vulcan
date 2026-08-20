@@ -16,6 +16,18 @@
         />
       </b-form-group>
 
+      <b-form-group label="Slack Member ID" label-for="edit-user-slack">
+        <b-form-input
+          id="edit-user-slack"
+          v-model="localUser.slack_user_id"
+          placeholder="U0123456789"
+          autocomplete="off"
+        />
+        <small class="form-text text-muted">
+          Drives this user's Slack notifications. Leave blank to disable. Changes are audited.
+        </small>
+      </b-form-group>
+
       <b-form-group label="Authentication Provider">
         <b-badge :variant="providerVariant">{{ providerLabel }}</b-badge>
       </b-form-group>
@@ -186,21 +198,101 @@
           </div>
         </template>
       </template>
+
+      <!-- ── API Tokens (admin view) ── -->
+      <template v-if="apiTokensEnabled">
+        <hr />
+        <b-button
+          variant="link"
+          size="sm"
+          class="p-0 font-weight-bold text-dark"
+          @click="showTokenSection = !showTokenSection"
+        >
+          <b-icon :icon="showTokenSection ? 'chevron-down' : 'chevron-right'" class="mr-1" />
+          <b-icon icon="key" class="mr-1" />
+          API Tokens
+          <b-badge variant="info" class="ml-1">{{ activeTokenCount }}</b-badge>
+        </b-button>
+
+        <b-collapse :visible="showTokenSection" class="mt-2">
+          <b-table
+            v-if="activeTokens.length > 0"
+            :items="activeTokens"
+            :fields="tokenFields"
+            small
+            striped
+            responsive
+          >
+            <template #cell(scopes)="data">
+              <b-badge
+                v-for="scope in data.value"
+                :key="scope"
+                :variant="scopeBadgeVariant(scope)"
+                class="mr-1"
+              >
+                {{ scope }}
+              </b-badge>
+            </template>
+            <template #cell(last_used_at)="data">
+              <span v-if="data.value">{{ formatTokenDate(data.value) }}</span>
+              <span v-else class="text-muted">Never</span>
+            </template>
+            <template #cell(admin_actions)="data">
+              <b-button
+                variant="outline-danger"
+                size="sm"
+                :disabled="adminRevoking === data.item.id"
+                @click="adminRevokeToken(data.item)"
+              >
+                <b-spinner v-if="adminRevoking === data.item.id" small />
+                <b-icon v-else icon="x-circle" />
+                Revoke
+              </b-button>
+            </template>
+          </b-table>
+          <p v-else class="text-muted small">No active API tokens for this user.</p>
+        </b-collapse>
+      </template>
     </b-form>
+
+    <b-modal
+      id="admin-revoke-token-modal"
+      title="Revoke API token"
+      ok-title="Revoke token"
+      ok-variant="danger"
+      :ok-disabled="!revokeComment.trim()"
+      @ok="confirmAdminRevoke"
+      @hidden="resetRevokeState"
+    >
+      <p class="small text-muted mb-2">
+        Revoking this token is audited — a justification is required.
+      </p>
+      <b-form-textarea
+        v-model="revokeComment"
+        placeholder="Audit comment (required for admin revocation)"
+        rows="2"
+      />
+    </b-modal>
   </b-modal>
 </template>
 
 <script>
-import axios from "axios";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import {
+  lockUser,
+  unlockUser,
+  updateUser,
+  sendPasswordReset,
+  generateResetLink,
+  setPassword,
+} from "../../api/usersApi";
+import { adminListTokens, adminRevokeToken as apiAdminRevoke } from "../../api/tokensApi";
+import { useToast } from "../../composables/useToast";
 import PasswordField from "../shared/PasswordField.vue";
 import { EVENTS, dispatch } from "../../utils/notificationEvents";
 
 export default {
   name: "EditUserModal",
   components: { PasswordField },
-  mixins: [FormMixinVue, AlertMixinVue],
   model: {
     prop: "visible",
     event: "update:visible",
@@ -226,6 +318,14 @@ export default {
       type: Boolean,
       default: false,
     },
+    apiTokensEnabled: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
   },
   data() {
     return {
@@ -239,6 +339,11 @@ export default {
       directPasswordConfirm: "",
       settingPassword: false,
       showManualPassword: false,
+      userTokens: [],
+      adminRevoking: null,
+      revokeTokenTarget: null,
+      revokeComment: "",
+      showTokenSection: false,
     };
   },
   computed: {
@@ -264,6 +369,21 @@ export default {
       };
       return variants[this.localUser.provider] || "secondary";
     },
+    activeTokens() {
+      return this.userTokens.filter((t) => !t.revoked_at);
+    },
+    activeTokenCount() {
+      return this.activeTokens.length;
+    },
+    tokenFields() {
+      return [
+        { key: "name", label: "Name" },
+        { key: "token_prefix", label: "Token" },
+        { key: "scopes", label: "Scopes" },
+        { key: "last_used_at", label: "Last Used" },
+        { key: "admin_actions", label: "" },
+      ];
+    },
   },
   watch: {
     user: {
@@ -275,6 +395,10 @@ export default {
           this.directPassword = "";
           this.directPasswordConfirm = "";
           this.showManualPassword = false;
+          this.userTokens = [];
+          this.adminRevoking = null;
+          this.showTokenSection = false;
+          if (this.apiTokensEnabled) this.loadUserTokens(newUser.id);
         }
       },
       immediate: true,
@@ -286,7 +410,7 @@ export default {
       this.locking = true;
 
       try {
-        const response = await axios.post(`/users/${this.localUser.id}/lock`);
+        const response = await lockUser(this.localUser.id);
         this.alertOrNotifyResponse(response);
         this.$emit("user-updated", response.data.user);
         this.localUser.locked_at = response.data.user.locked_at;
@@ -303,7 +427,7 @@ export default {
       this.unlocking = true;
 
       try {
-        const response = await axios.post(`/users/${this.localUser.id}/unlock`);
+        const response = await unlockUser(this.localUser.id);
         this.alertOrNotifyResponse(response);
         this.$emit("user-updated", response.data.user);
         this.localUser.locked_at = null;
@@ -320,12 +444,12 @@ export default {
       if (!this.localUser) return;
 
       try {
-        const response = await axios.put(`/users/${this.localUser.id}`, {
-          user: {
-            name: this.localUser.name,
-            email: this.localUser.email,
-            admin: this.localUser.admin,
-          },
+        const response = await updateUser(this.localUser.id, {
+          name: this.localUser.name,
+          email: this.localUser.email,
+          admin: this.localUser.admin,
+          // Empty string clears the Slack id (audited server-side).
+          slack_user_id: this.localUser.slack_user_id || "",
         });
         this.alertOrNotifyResponse(response);
         this.$emit("user-updated", response.data.user);
@@ -339,7 +463,7 @@ export default {
       this.resetSending = true;
 
       try {
-        const response = await axios.post(`/users/${this.localUser.id}/send_password_reset`);
+        const response = await sendPasswordReset(this.localUser.id);
         this.alertOrNotifyResponse(response);
       } catch (error) {
         this.alertOrNotifyResponse(error);
@@ -352,7 +476,7 @@ export default {
       this.resetLinkGenerating = true;
 
       try {
-        const response = await axios.post(`/users/${this.localUser.id}/generate_reset_link`);
+        const response = await generateResetLink(this.localUser.id);
         this.alertOrNotifyResponse(response);
         this.generatedResetUrl = response.data.reset_url;
       } catch (error) {
@@ -367,9 +491,11 @@ export default {
       this.settingPassword = true;
 
       try {
-        const response = await axios.post(`/users/${this.localUser.id}/set_password`, {
-          user: { password: this.directPassword },
-        });
+        const response = await setPassword(
+          this.localUser.id,
+          this.directPassword,
+          this.directPasswordConfirm,
+        );
         this.alertOrNotifyResponse(response);
         this.directPassword = "";
         this.directPasswordConfirm = "";
@@ -384,6 +510,50 @@ export default {
     },
     onHidden() {
       this.$emit("update:visible", false);
+    },
+    async loadUserTokens(userId) {
+      try {
+        const res = await adminListTokens(userId);
+        this.userTokens = res.data.personal_access_tokens;
+      } catch {
+        this.userTokens = [];
+      }
+    },
+    adminRevokeToken(token) {
+      // A styled, non-blockable modal for the required audit justification,
+      // replacing window.prompt (suppressed in sandboxed iframes / after
+      // cross-origin navigations, and silent on cancel).
+      this.revokeTokenTarget = token;
+      this.revokeComment = "";
+      this.$bvModal.show("admin-revoke-token-modal");
+    },
+    async confirmAdminRevoke() {
+      const token = this.revokeTokenTarget;
+      const comment = this.revokeComment.trim();
+      if (!token || !comment) return;
+
+      this.adminRevoking = token.id;
+      try {
+        const res = await apiAdminRevoke(token.id, comment);
+        this.alertOrNotifyResponse(res);
+        if (this.localUser) this.loadUserTokens(this.localUser.id);
+      } catch (err) {
+        this.alertOrNotifyResponse(err);
+      } finally {
+        this.adminRevoking = null;
+      }
+    },
+    resetRevokeState() {
+      this.revokeTokenTarget = null;
+      this.revokeComment = "";
+    },
+    scopeBadgeVariant(scope) {
+      const map = { read: "info", write: "warning", admin: "danger" };
+      return map[scope] || "secondary";
+    },
+    formatTokenDate(dateStr) {
+      if (!dateStr) return "";
+      return new Date(dateStr).toLocaleDateString();
     },
   },
 };

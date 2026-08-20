@@ -1,0 +1,45 @@
+get:
+  operationId: latestSrgs
+  tags:
+    - Benchmarks
+  summary: List the latest release of each SRG
+  description: >-
+    Returns one row per SRG — its numerically highest V{major}R{minor}
+    release — for dropdown population. Public reference data, no
+    authentication required. The q parameter filters SRGs by
+    case-insensitive substring with abbreviation expansion (GPOS matches
+    General Purpose Operating System); queries shorter than 2 characters
+    return no rows.
+  security: []
+  parameters:
+    - name: q
+      in: query
+      required: false
+      description: >-
+        SRG filter — case-insensitive substring matched against name,
+        title, and srg_id, with abbreviation expansion (minimum 2 characters).
+      schema:
+        type: string
+      example: GPOS
+  responses:
+    '200':
+      description: Latest release of each SRG, ordered by title
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/BenchmarkLatestResponse.yaml
+          examples:
+            latest:
+              summary: Latest SRGs
+              value:
+                rows:
+                  - id: 42
+                    srg_id: General_Purpose_Operating_System
+                    title: General Purpose Operating System Security Requirements Guide
+                    version: V3R3
+                    name: General Purpose Operating System - Ver 3, Rel 3
+                  - id: 43
+                    srg_id: Web_Server_SRG
+                    title: Web Server Security Requirements Guide
+                    version: V4R4
+                    name: Web Server SRG - Ver 4, Rel 4

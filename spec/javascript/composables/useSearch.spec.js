@@ -1,14 +1,26 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import axios from "axios";
 import { useSearch } from "@/composables/useSearch";
+import { globalSearch } from "@/api/searchApi";
 
-// Mock axios
-vi.mock("axios");
+vi.mock("@/api/baseApi", () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
+  },
+}));
+
+vi.mock("@/api/searchApi", () => ({
+  globalSearch: vi.fn(() => Promise.resolve({ data: {} })),
+}));
 
 describe("useSearch", () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    axios.get.mockReset();
+    globalSearch.mockReset();
   });
 
   afterEach(() => {
@@ -48,11 +60,11 @@ describe("useSearch", () => {
       searchTerm.value = "a";
       await search();
 
-      expect(axios.get).not.toHaveBeenCalled();
+      expect(globalSearch).not.toHaveBeenCalled();
     });
 
     it("searches for queries of 2 or more characters", async () => {
-      axios.get.mockResolvedValueOnce({
+      globalSearch.mockResolvedValueOnce({
         data: { projects: [], components: [], rules: [] },
       });
 
@@ -60,19 +72,16 @@ describe("useSearch", () => {
       searchTerm.value = "ab";
       await search();
 
-      expect(axios.get).toHaveBeenCalledWith("/api/search/global", {
-        params: { q: "ab", limit: 10 },
-      });
+      expect(globalSearch).toHaveBeenCalledWith({ q: "ab", limit: 10 });
     });
 
     it("sets isLoading to true during search", async () => {
       let resolvePromise;
-      axios.get.mockImplementationOnce(
+      globalSearch.mockImplementationOnce(
         () =>
           new Promise((resolve) => {
-            resolvePromise = () =>
-              resolve({ data: { projects: [], components: [], rules: [] } });
-          })
+            resolvePromise = () => resolve({ data: { projects: [], components: [], rules: [] } });
+          }),
       );
 
       const { searchTerm, search, isLoading } = useSearch();
@@ -91,13 +100,11 @@ describe("useSearch", () => {
       const mockResponse = {
         data: {
           projects: [{ id: 1, name: "Project 1", description: "Desc" }],
-          components: [
-            { id: 2, name: "Component 1", project_name: "Project 1" },
-          ],
+          components: [{ id: 2, name: "Component 1", project_name: "Project 1" }],
           rules: [{ id: 3, rule_id: "RULE-001", title: "Rule Title" }],
         },
       };
-      axios.get.mockResolvedValueOnce(mockResponse);
+      globalSearch.mockResolvedValueOnce(mockResponse);
 
       const { searchTerm, search, projects, components, rules } = useSearch();
       searchTerm.value = "test";
@@ -119,7 +126,7 @@ describe("useSearch", () => {
           rules: [],
         },
       };
-      axios.get.mockResolvedValueOnce(mockResponse);
+      globalSearch.mockResolvedValueOnce(mockResponse);
 
       const { searchTerm, search, projects, clearResults } = useSearch();
       searchTerm.value = "test";
@@ -135,7 +142,7 @@ describe("useSearch", () => {
 
   describe("error handling", () => {
     it("sets error state on API failure", async () => {
-      axios.get.mockRejectedValueOnce(new Error("Network error"));
+      globalSearch.mockRejectedValueOnce(new Error("Network error"));
 
       const { searchTerm, search, error } = useSearch();
       searchTerm.value = "test";
@@ -145,7 +152,7 @@ describe("useSearch", () => {
     });
 
     it("clears error on successful search", async () => {
-      axios.get.mockRejectedValueOnce(new Error("Network error"));
+      globalSearch.mockRejectedValueOnce(new Error("Network error"));
 
       const { searchTerm, search, error } = useSearch();
       searchTerm.value = "test";
@@ -153,7 +160,7 @@ describe("useSearch", () => {
 
       expect(error.value).toBe("Network error");
 
-      axios.get.mockResolvedValueOnce({
+      globalSearch.mockResolvedValueOnce({
         data: { projects: [], components: [], rules: [] },
       });
       await search();
@@ -169,7 +176,7 @@ describe("useSearch", () => {
     });
 
     it("returns true when projects exist", async () => {
-      axios.get.mockResolvedValueOnce({
+      globalSearch.mockResolvedValueOnce({
         data: {
           projects: [{ id: 1, name: "Project" }],
           components: [],

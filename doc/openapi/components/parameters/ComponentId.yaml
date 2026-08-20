@@ -1,0 +1,7 @@
+name: componentId
+in: path
+required: true
+description: Numeric ID of the target component.
+schema:
+  type: integer
+example: 29

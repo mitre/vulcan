@@ -23,9 +23,12 @@ require 'rails_helper'
 #
 # Defined outside RSpec.describe to avoid Lint/ConstantDefinitionInBlock.
 SEED_XCCDF_EXPECTED_SRG_TITLES = {
+  'U_Application_Core_SRG_V4R1_Manual-xccdf.xml' => 'Application Core Security Requirements Guide',
   'U_Container_Platform_SRG_V2R4_Manual-xccdf.xml' => 'Container Platform Security Requirements Guide',
   'U_Database_SRG_V4R4_Manual-xccdf.xml' => 'Database Security Requirements Guide',
   'U_GPOS_SRG_V3R3_Manual-xccdf.xml' => 'General Purpose Operating System Security Requirements Guide',
+  'U_Network_Core_SRG_V4R3_Manual-xccdf.xml' => 'Network Core Security Requirements Guide',
+  'U_Operating_System_Core_SRG_V3R1_Manual-xccdf.xml' => 'Operating System Core Security Requirements Guide',
   'U_Web_Server_SRG_V4R4_Manual-xccdf.xml' => 'Web Server Security Requirements Guide'
 }.freeze
 

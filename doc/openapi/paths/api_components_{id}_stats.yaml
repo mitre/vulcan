@@ -1,0 +1,49 @@
+get:
+  operationId: componentStats
+  tags:
+    - Components
+  summary: Get rule statistics for a component
+  description: >-
+    Returns rule counts by status and severity plus completion and lock
+    percentages, computed as SQL aggregates. Access matches the component
+    show rules: released components are readable by any authenticated
+    user; unreleased ones require viewer permission.
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: Numeric ID of the component.
+      schema:
+        type: integer
+      example: 38
+  responses:
+    '200':
+      description: Component rule statistics
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ComponentStatsResponse.yaml
+          examples:
+            stats:
+              summary: Component stats
+              value:
+                document_type: stig
+                rules_by_status:
+                  not_yet_determined: 50
+                  applicable_configurable: 120
+                  applicable_inherently_meets: 15
+                  applicable_does_not_meet: 8
+                  not_applicable: 10
+                rules_by_severity:
+                  high: 20
+                  medium: 173
+                  low: 10
+                rule_count: 203
+                completion_pct: 75.4
+                lock_pct: 12.3
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '404':
+      $ref: ../components/responses/NotFound.yaml

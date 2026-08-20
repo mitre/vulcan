@@ -4,9 +4,10 @@
     <!-- Read-only preview (shown when disabled) -->
     <div
       v-if="disabled"
-      class="markdown-preview form-control bg-light"
+      class="markdown-preview form-control"
+      style="background-color: var(--vulcan-component-bg, #fff)"
       :class="containerClass"
-      :style="previewStyle"
+      :style="[previewStyle, plainText ? { whiteSpace: 'pre-wrap' } : {}]"
       v-html="renderedContent"
     />
 
@@ -20,9 +21,11 @@
 <script>
 import EasyMDE from "easymde";
 import "easymde/dist/easymde.min.css";
+import "../../styles/shiki-preview.css";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import { highlightCode } from "../../utilities/syntaxHighlighter";
+import { normalizeListFences } from "../../utilities/markdownPreprocessor";
 
 // Configure marked with custom code block renderer for syntax highlighting
 const renderer = new marked.Renderer();
@@ -51,6 +54,10 @@ export default {
       type: Boolean,
       default: false,
     },
+    plainText: {
+      type: Boolean,
+      default: false,
+    },
     rows: {
       type: [Number, String],
       default: 1,
@@ -71,6 +78,11 @@ export default {
   data() {
     return {
       easyMDE: null,
+      currentTheme:
+        typeof document !== "undefined"
+          ? document.documentElement.getAttribute("data-bs-theme") || "light"
+          : "light",
+      themeObserver: null,
     };
   },
   computed: {
@@ -78,7 +90,14 @@ export default {
       if (!this.value) {
         return '<span class="text-muted font-italic">No content</span>';
       }
-      const html = marked.parse(this.value, { breaks: false, renderer });
+      if (this.plainText) {
+        return DOMPurify.sanitize(this.value);
+      }
+      // Touch currentTheme to force re-render when dark mode toggles.
+      // The module-level renderer's highlightCode() auto-detects the
+      // theme from data-bs-theme at call time — no duplicate renderer.
+      void this.currentTheme;
+      const html = marked.parse(normalizeListFences(this.value), { breaks: false, renderer });
       return DOMPurify.sanitize(html);
     },
     previewStyle() {
@@ -116,9 +135,24 @@ export default {
     if (!this.disabled) {
       this.initEasyMDE();
     }
+    this.themeObserver = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        if (m.attributeName === "data-bs-theme") {
+          this.currentTheme = document.documentElement.getAttribute("data-bs-theme") || "light";
+        }
+      }
+    });
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-bs-theme"],
+    });
   },
   beforeDestroy() {
     this.destroyEasyMDE();
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+      this.themeObserver = null;
+    }
   },
   methods: {
     initEasyMDE() {
@@ -165,7 +199,7 @@ export default {
           sideBySideFullscreen: false,
           // Use our custom renderer with Shiki highlighting
           previewRender: function (plainText) {
-            const html = marked.parse(plainText, { breaks: false, renderer });
+            const html = marked.parse(normalizeListFences(plainText), { breaks: false, renderer });
             return DOMPurify.sanitize(html);
           },
           renderingConfig: {
@@ -204,7 +238,7 @@ export default {
         toolbar.style.overflowX = "auto";
         toolbar.style.display = "block";
         toolbar.style.padding = "4px 5px";
-        toolbar.style.background = "#f8f9fa";
+        toolbar.style.background = "var(--vulcan-component-bg-alt, #f8f9fa)";
 
         // Compact button sizing
         const buttons = toolbar.querySelectorAll("button");
@@ -249,14 +283,14 @@ export default {
 }
 
 .markdown-preview :deep(code) {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: var(--vulcan-component-bg-alt, #f1f3f5);
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
   font-size: 0.875em;
 }
 
 .markdown-preview :deep(pre) {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: var(--vulcan-component-bg-alt, #f1f3f5);
   padding: 0.5rem;
   border-radius: 0.25rem;
   overflow-x: auto;
@@ -269,35 +303,18 @@ export default {
   padding: 0;
 }
 
-/* Shiki syntax highlighting styles */
-.markdown-preview :deep(.shiki) {
-  background-color: #f6f8fa !important;
-  padding: 0.75rem;
-  border-radius: 0.375rem;
-  overflow-x: auto;
-  margin-bottom: 0.5rem;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  white-space: pre-wrap;
-}
-
-.markdown-preview :deep(.shiki code) {
-  background-color: transparent;
-  padding: 0;
-  font-family:
-    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-}
+/* Shiki styles imported from shared shiki-preview.css via @import below */
 
 .markdown-preview :deep(blockquote) {
-  border-left: 3px solid #dee2e6;
+  border-left: 3px solid var(--vulcan-gray-300);
   padding-left: 0.75rem;
   margin-left: 0;
   margin-bottom: 0.5rem;
-  color: #6c757d;
+  color: var(--vulcan-secondary);
 }
 
 .markdown-preview :deep(a) {
-  color: #007bff;
+  color: var(--vulcan-primary);
   text-decoration: none;
 }
 
@@ -324,12 +341,12 @@ export default {
 
 .markdown-preview :deep(th),
 .markdown-preview :deep(td) {
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--vulcan-gray-300);
   padding: 0.25rem 0.5rem;
 }
 
 .markdown-preview :deep(th) {
-  background-color: rgba(0, 0, 0, 0.03);
+  background-color: var(--vulcan-component-bg-alt, #f1f3f5);
 }
 
 /* EasyMDE customizations */
@@ -337,7 +354,7 @@ export default {
 /* to bypass CSS specificity issues with EasyMDE's dynamically created elements */
 
 .easymde-wrapper :deep(.CodeMirror) {
-  border: 1px solid #ced4da;
+  border: 1px solid var(--vulcan-gray-400);
   border-radius: 0 0 0.25rem 0.25rem;
   font-size: 0.875rem;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
@@ -345,12 +362,12 @@ export default {
 }
 
 .easymde-wrapper :deep(.CodeMirror-focused) {
-  border-color: #80bdff;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  border-color: var(--vulcan-input-focus-border, #80bdff);
+  box-shadow: 0 0 0 0.2rem var(--vulcan-primary-tint, rgba(0, 123, 255, 0.25));
 }
 
 .easymde-wrapper :deep(.editor-toolbar) {
-  border: 1px solid #ced4da;
+  border: 1px solid var(--vulcan-gray-400);
   border-bottom: none;
   border-radius: 0.25rem 0.25rem 0 0;
 }
@@ -368,7 +385,7 @@ export default {
 .easymde-wrapper :deep(.editor-preview),
 .easymde-wrapper :deep(.editor-preview-side) {
   padding: 0.75rem;
-  background: #fff;
+  background: var(--vulcan-component-bg, #fff);
 }
 
 /* Constrain fullscreen/side-by-side to component */
@@ -382,7 +399,7 @@ export default {
   right: 0;
   bottom: 0;
   left: 50%;
-  border-left: 1px solid #ced4da;
+  border-left: 1px solid var(--vulcan-gray-400);
 }
 
 /* Disable true fullscreen - keep within container */
@@ -392,30 +409,12 @@ export default {
   z-index: 10;
 }
 
-/* Shiki styles in EasyMDE preview */
-.easymde-wrapper :deep(.editor-preview .shiki),
-.easymde-wrapper :deep(.editor-preview-side .shiki) {
-  background-color: #f6f8fa !important;
-  padding: 0.75rem;
-  border-radius: 0.375rem;
-  overflow-x: auto;
-  margin-bottom: 0.5rem;
-  font-size: 0.875rem;
-  line-height: 1.5;
-}
+/* Shiki styles in EasyMDE preview — shared .shiki rules from shiki-preview.css apply via :deep */
 
-.easymde-wrapper :deep(.editor-preview .shiki code),
-.easymde-wrapper :deep(.editor-preview-side .shiki code) {
-  background-color: transparent;
-  padding: 0;
-  font-family:
-    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-}
-
-/* Make preview code blocks look consistent */
+/* Make EasyMDE preview code blocks consistent with standalone preview */
 .easymde-wrapper :deep(.editor-preview pre),
 .easymde-wrapper :deep(.editor-preview-side pre) {
-  background-color: #f6f8fa;
+  background-color: var(--vulcan-component-bg-alt, #f6f8fa);
   padding: 0.75rem;
   border-radius: 0.375rem;
   overflow-x: auto;

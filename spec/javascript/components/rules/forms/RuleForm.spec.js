@@ -9,7 +9,7 @@
  * correctly RESPONDS to those props — catching v-if bugs, binding errors,
  * and missing fields.
  *
- * REQUIREMENTS (from docs/development/rule-form-business-rules.md):
+ * REQUIREMENTS (from docs/site/development/rule-form-business-rules.md):
  * R1: Fields render when in fields.displayed, hidden when not
  * R2: Fields disable when in fields.disabled or when form disabled prop is true
  * R3: IA Control/CCI always visible when rule has data (not status-gated)
@@ -18,10 +18,15 @@
  * R6: Check section rendered when check_fields prop provided
  * R7: Status text reflects satisfied_by
  */
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
+import { createPinia } from "pinia";
+import { createTestRouter } from "@test/support/routerTestHelper";
 import RuleForm from "@/components/rules/forms/RuleForm.vue";
+
+vi.mock("@/composables/useFormFeedback", { spy: true });
+import { useFormFeedback } from "@/composables/useFormFeedback";
 
 // Lightweight stub — exposes disabled state via native <textarea>
 const MarkdownTextareaStub = {
@@ -76,6 +81,8 @@ describe("RuleForm", () => {
   const createWrapper = (propsOverrides = {}) => {
     return mount(RuleForm, {
       localVue,
+      pinia: createPinia(),
+      router: createTestRouter(),
       stubs: {
         MarkdownTextarea: MarkdownTextareaStub,
         DisaRuleDescriptionForm: true,
@@ -97,6 +104,26 @@ describe("RuleForm", () => {
 
   afterEach(() => {
     if (wrapper) wrapper.destroy();
+  });
+
+  // ─── Authored-payload resilience: Rule-only keys may be omitted ──
+  describe("authored SRG payload (Rule-only array keys omitted)", () => {
+    it("renders a rule whose payload omits all four Rule-only keys without throwing", () => {
+      const authored = makeRule();
+      delete authored.satisfied_by;
+      delete authored.satisfies;
+      delete authored.disa_rule_descriptions_attributes;
+      delete authored.checks_attributes;
+      wrapper = createWrapper({
+        rule: authored,
+        disa_fields: { displayed: ["vuln_discussion"], disabled: [] },
+        check_fields: { displayed: ["content"], disabled: [] },
+      });
+      expect(wrapper.find('[id^="ruleEditor-status-group-"]').exists()).toBe(true);
+      // Omitted collections render as absent sections, not crashes.
+      expect(wrapper.findComponent({ name: "DisaRuleDescriptionForm" }).exists()).toBe(false);
+      expect(wrapper.findComponent({ name: "CheckForm" }).exists()).toBe(false);
+    });
   });
 
   // ─── R1: Fields render when in displayed, hidden when not ──
@@ -245,27 +272,39 @@ describe("RuleForm", () => {
     });
   });
 
-  // ─── R3: IA Control/CCI always visible ─────────────────────
-  describe("IA Control/CCI always visible when rule has data (R3)", () => {
+  // ─── R3: IA Control/CCI reference display (config-declared) ───
+  // The former always-on template bypass is absorbed into the config:
+  // fieldStateConfig supplies nist_control_family + cci as readonly in
+  // displayed/disabled at EVERY status (pinned in fieldStateConfig.spec).
+  // RuleForm renders exactly what the config declares.
+  const fieldsWithReferenceKeys = (displayed, disabled = []) => ({
+    displayed: [...displayed, "nist_control_family", "cci"],
+    disabled: [...disabled, "nist_control_family", "cci"],
+  });
+
+  describe("IA Control/CCI reference display (R3 — config-declared)", () => {
+    const refFields = () =>
+      fieldsWithReferenceKeys(["status", "rule_severity", "title", "fixtext", "vendor_comments"]);
+
     it("renders IA Control/CCI section when rule has nist_control_family and ident", () => {
-      wrapper = createWrapper();
+      wrapper = createWrapper({ fields: refFields() });
       expect(wrapper.find('[data-testid="ia-control-cci"]').exists()).toBe(true);
     });
 
     it("displays the correct IA Control value", () => {
-      wrapper = createWrapper();
+      wrapper = createWrapper({ fields: refFields() });
       const iaInput = wrapper.find('input[id^="ruleEditor-nist_control_family-"]');
       expect(iaInput.element.value).toBe("AC-2 (1)");
     });
 
     it("displays the correct CCI value", () => {
-      wrapper = createWrapper();
+      wrapper = createWrapper({ fields: refFields() });
       const cciInput = wrapper.find('input[id^="ruleEditor-cci-"]');
       expect(cciInput.element.value).toBe("CCI-000015");
     });
 
     it("IA Control and CCI inputs are readonly", () => {
-      wrapper = createWrapper();
+      wrapper = createWrapper({ fields: refFields() });
       const iaInput = wrapper.find('input[id^="ruleEditor-nist_control_family-"]');
       const cciInput = wrapper.find('input[id^="ruleEditor-cci-"]');
       expect(iaInput.attributes("readonly")).toBeDefined();
@@ -274,20 +313,25 @@ describe("RuleForm", () => {
 
     it("does NOT render when rule has no nist_control_family or ident", () => {
       wrapper = createWrapper({
+        fields: refFields(),
         rule: makeRule({ nist_control_family: null, ident: null }),
       });
       expect(wrapper.find('[data-testid="ia-control-cci"]').exists()).toBe(false);
     });
 
-    it("renders regardless of which fields are in displayed", () => {
-      // Even with minimal fields (Inherently Meets-like), IA Control/CCI renders
+    it("renders with a minimal field set as long as the config declares the reference keys", () => {
       wrapper = createWrapper({
-        fields: {
-          displayed: ["status", "rule_severity", "status_justification"],
-          disabled: [],
-        },
+        fields: fieldsWithReferenceKeys(["status", "rule_severity", "status_justification"]),
       });
       expect(wrapper.find('[data-testid="ia-control-cci"]').exists()).toBe(true);
+    });
+
+    it("does NOT render when the config omits the reference keys (no more template bypass)", () => {
+      wrapper = createWrapper({
+        fields: { displayed: ["status", "status_justification"], disabled: [] },
+      });
+      expect(wrapper.find('input[id^="ruleEditor-nist_control_family-"]').exists()).toBe(false);
+      expect(wrapper.find('input[id^="ruleEditor-cci-"]').exists()).toBe(false);
     });
   });
 
@@ -362,20 +406,21 @@ describe("RuleForm", () => {
   });
 
   // ─── R7: satisfied_by status display ────────────────────────
+  // Backend sets ADNM when satisfied_by. Frontend displays the actual status.
   describe("satisfied_by status display (R7)", () => {
-    it('shows "Applicable - Configurable" in status dropdown when satisfied_by is set', () => {
+    it('shows "Applicable - Does Not Meet" in status dropdown when satisfied_by is set', () => {
       wrapper = createWrapper({
         rule: makeRule({
-          status: "Not Yet Determined",
+          status: "Applicable - Does Not Meet",
           satisfied_by: [{ id: 1, fixtext: "parent fix" }],
         }),
         fields: {
-          displayed: ["status", "rule_severity", "title", "fixtext", "vendor_comments"],
-          disabled: ["title", "fixtext"],
+          displayed: ["status", "rule_severity", "status_justification", "vendor_comments"],
+          disabled: [],
         },
       });
       const select = wrapper.find('select[id^="ruleEditor-status-"]');
-      expect(select.element.value).toBe("Applicable - Configurable");
+      expect(select.element.value).toBe("Applicable - Does Not Meet");
     });
   });
 
@@ -407,7 +452,7 @@ describe("RuleForm", () => {
     });
   });
 
-  // ─── PR #717 — Section comment icon wiring (Task 16) ──────
+  // ─── PR #717 — Section comment icon wiring ────────────────
   /**
    * REQUIREMENTS:
    * The first RuleFormGroup of each section in RuleForm must opt in to the
@@ -508,6 +553,83 @@ describe("RuleForm", () => {
       await wrapper.vm.$nextTick();
       expect(wrapper.emitted("open-composer")).toBeTruthy();
       expect(wrapper.emitted("open-composer")[0]).toEqual(["title"]);
+    });
+  });
+
+  // ── composable contracts ────────────────────────────────────────────
+  // REQUIREMENT: input state classes derive via useFormFeedback — no
+  // FormFeedbackMixin remains. The validFeedback/invalidFeedback props
+  // stay declared on the component (prop API parity with the mixin).
+  describe("composable contracts", () => {
+    it("derives input state classes via useFormFeedback", () => {
+      wrapper = createWrapper({
+        invalidFeedback: { title: "Title is too long" },
+        validFeedback: { fixtext: "Fix text looks good" },
+      });
+      expect(useFormFeedback).toHaveBeenCalled();
+      expect(wrapper.vm.inputClass("title")).toBe("is-invalid");
+      expect(wrapper.vm.inputClass("fixtext")).toBe("is-valid");
+      expect(wrapper.vm.inputClass("vendor_comments")).toBe("");
+    });
+  });
+
+  // ─── Tooltip copy derives from the statuses vocabulary ─────
+  // REQUIREMENT: RuleForm must never surface a status string that is not
+  // in its `statuses` prop — the vocabulary is the single source. SRG
+  // pages pass the 3-status vocabulary; STIG pages keep today's copy.
+  describe("status tooltips derive from the vocabulary (leak regression)", () => {
+    const SRG_STATUSES = ["Not Yet Determined", "Applicable", "Not Applicable"];
+    const STIG_ONLY = [
+      "Applicable - Configurable",
+      "Applicable - Inherently Meets",
+      "Applicable - Does Not Meet",
+    ];
+
+    it("SRG vocabulary: nydTooltip lists exactly the SRG unlock statuses, no STIG-only strings", () => {
+      wrapper = createWrapper({
+        statuses: SRG_STATUSES,
+        documentType: "srg",
+        rule: makeRule({ status: "Not Yet Determined" }),
+      });
+      const tooltip = wrapper.vm.nydTooltip;
+      expect(tooltip).toContain("Applicable");
+      expect(tooltip).toContain("Not Applicable");
+      STIG_ONLY.forEach((s) => expect(tooltip).not.toContain(s.replace(" - ", " – ")));
+      STIG_ONLY.forEach((s) => expect(tooltip).not.toContain(s));
+    });
+
+    it("SRG vocabulary: the status tooltip describes only vocabulary statuses", () => {
+      wrapper = createWrapper({
+        statuses: SRG_STATUSES,
+        documentType: "srg",
+        rule: makeRule({ status: "Applicable" }),
+      });
+      const tooltip = wrapper.vm.tooltips.status;
+      STIG_ONLY.forEach((s) => expect(tooltip).not.toContain(s));
+      // The en-dash display variants and unique STIG phrases must be gone too.
+      ["Configurable", "Inherently Meets", "Does Not Meet"].forEach((phrase) =>
+        expect(tooltip).not.toContain(phrase),
+      );
+      expect(tooltip).toMatch(/(^|<br>|\s)Applicable:/);
+      expect(tooltip).toContain("Not Applicable:");
+    });
+
+    it("STIG vocabulary: nydTooltip lists all four unlock statuses (equivalence)", () => {
+      wrapper = createWrapper({ rule: makeRule({ status: "Not Yet Determined" }) });
+      const tooltip = wrapper.vm.nydTooltip;
+      STIG_ONLY.forEach((s) => expect(tooltip).toContain(s.replace(" - ", " – ")));
+      expect(tooltip).toContain("Not Applicable");
+    });
+
+    it("STIG vocabulary: the status tooltip keeps today's four descriptions (equivalence)", () => {
+      wrapper = createWrapper();
+      const tooltip = wrapper.vm.tooltips.status;
+      expect(tooltip).toContain("Applicable – Configurable: The product requires configuration");
+      expect(tooltip).toContain("Inherently Meets: The product is compliant in its initial state");
+      expect(tooltip).toContain("Does Not Meet: There are no technical means");
+      expect(tooltip).toContain(
+        "Not Applicable: The requirement addresses a capability or use case",
+      );
     });
   });
 });

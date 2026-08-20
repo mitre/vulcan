@@ -4,7 +4,7 @@
 # Used as nested data inside RuleBlueprint :editor view for the srg_rule_attributes field.
 # Excludes internal fields that the editor doesn't need (id, locked, timestamps, etc.).
 class SrgRuleBlueprint < Blueprinter::Base
-  # No identifier — this is always nested, never fetched by ID
+  identifier :id
 
   fields :rule_id, :title, :version, :rule_severity, :rule_weight,
          :ident, :ident_system, :fixtext, :fixtext_fixref, :fix_id,
@@ -14,16 +14,16 @@ class SrgRuleBlueprint < Blueprinter::Base
 
   association :rule_descriptions_attributes, blueprint: RuleDescriptionBlueprint,
                                              name: :rule_descriptions_attributes do |srg_rule, _options|
-    srg_rule.rule_descriptions
+    ApplicationRecord.sorted_by_id(srg_rule.rule_descriptions)
   end
 
   association :disa_rule_descriptions_attributes, blueprint: DisaRuleDescriptionBlueprint,
                                                   name: :disa_rule_descriptions_attributes do |srg_rule, _options|
-    srg_rule.disa_rule_descriptions
+    ApplicationRecord.sorted_by_id(srg_rule.disa_rule_descriptions)
   end
 
   association :checks_attributes, blueprint: CheckBlueprint,
                                   name: :checks_attributes do |srg_rule, _options|
-    srg_rule.checks
+    ApplicationRecord.sorted_by_id(srg_rule.checks)
   end
 end

@@ -13,9 +13,12 @@
     >
       <!-- Column template for Name -->
       <template #cell(name)="data">
-        {{ data.item.name }}
-        <br />
-        <small>{{ data.item.email }}</small>
+        <UserBadge
+          :name="data.item.name"
+          :email="data.item.email"
+          :role="data.item.role"
+          :show-name="true"
+        />
       </template>
 
       <!-- Column template for Actions -->
@@ -100,9 +103,12 @@
     >
       <!-- Column template for Name -->
       <template #cell(name)="data">
-        {{ data.item.name }}
-        <br />
-        <small>{{ data.item.email }}</small>
+        <UserBadge
+          :name="data.item.name"
+          :email="data.item.email"
+          :role="data.item.role"
+          :show-name="true"
+        />
       </template>
 
       <!-- Column template for Role -->
@@ -148,17 +154,15 @@
 </template>
 
 <script>
-import axios from "axios";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { updateMembership, deleteMembership, deleteAccessRequest } from "../../api/membershipsApi";
+import { useToast } from "../../composables/useToast";
 import NewMembership from "./NewMembership.vue";
+import UserBadge from "../shared/UserBadge.vue";
 import { EVENTS, dispatch } from "../../utils/notificationEvents";
 
 export default {
   name: "MembershipsTable",
-  components: { NewMembership },
-  mixins: [FormMixinVue, RoleComparisonMixin, AlertMixinVue],
+  components: { NewMembership, UserBadge },
   props: {
     memberships: {
       type: Array,
@@ -198,6 +202,10 @@ export default {
       type: String,
       default: "Members",
     },
+  },
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
   },
   data: function () {
     return {
@@ -259,9 +267,7 @@ export default {
     async roleChanged(event, project_member) {
       const previousRole = event?.target?.dataset?.previousValue || project_member.role;
       try {
-        const response = await axios.put(`/memberships/${project_member.id}.json`, {
-          membership: { role: project_member.role },
-        });
+        const response = await updateMembership(project_member.id, project_member.role);
         this.alertOrNotifyResponse(response);
       } catch (error) {
         project_member.role = previousRole;
@@ -272,7 +278,7 @@ export default {
       if (!confirm("Are you sure you want to remove this user?")) return;
       this.removingId = project_member.id;
       try {
-        const response = await axios.delete(`/memberships/${project_member.id}.json`);
+        const response = await deleteMembership(project_member.id);
         this.alertOrNotifyResponse(response);
         this.$emit("memberRemoved", project_member);
       } catch (error) {
@@ -286,9 +292,7 @@ export default {
       this.rejectingId = requestId;
 
       try {
-        const response = await axios.delete(
-          `/projects/${this.membership_id}/project_access_requests/${requestId}.json`,
-        );
+        const response = await deleteAccessRequest(this.membership_id, requestId);
         this.alertOrNotifyResponse(response);
         this.localAccessRequests = this.localAccessRequests.filter((r) => r.id !== requestId);
         dispatch(EVENTS.ACCESS_REQUEST_CHANGED, { action: "resolved", id: requestId });

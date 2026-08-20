@@ -4,7 +4,6 @@ process.env.BOOTSTRAP_VUE_NO_WARN = "true";
 
 import Vue from "vue";
 import { BootstrapVue, IconsPlugin } from "bootstrap-vue";
-import axios from "axios";
 import { Wormhole } from "portal-vue";
 
 Vue.use(BootstrapVue);
@@ -25,9 +24,8 @@ if (typeof document !== "undefined") {
   document.head.appendChild(meta);
 }
 
-// Initialize axios defaults for FormMixin
-axios.defaults.headers = axios.defaults.headers || {};
-axios.defaults.headers.common = axios.defaults.headers.common || {};
+// baseApi.js reads the CSRF meta tag above via getCsrfToken().
+// No axios.defaults initialization needed — ofetch handles CSRF per-request.
 
 // Fix localStorage for Node 22+ (native localStorage shadows jsdom's).
 // Node 22+ provides globalThis.localStorage via --localstorage-file, but without
@@ -51,4 +49,32 @@ if (typeof localStorage === "undefined" || typeof localStorage.clear !== "functi
       return Object.keys(store).length;
     },
   };
+}
+
+// jsdom has no layout engine — Range measurement APIs are missing.
+// CodeMirror (via MarkdownTextarea) calls range.getBoundingClientRect()
+// and range.getClientRects() while measuring text. Stub them with empty
+// rects so editor-bearing components mount cleanly in tests.
+// Standard jsdom + CodeMirror fix; remove if jsdom ever implements layout.
+if (typeof Range !== "undefined") {
+  const emptyRect = {
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    width: 0,
+    height: 0,
+    x: 0,
+    y: 0,
+  };
+  if (typeof Range.prototype.getBoundingClientRect !== "function") {
+    Range.prototype.getBoundingClientRect = () => emptyRect;
+  }
+  if (typeof Range.prototype.getClientRects !== "function") {
+    Range.prototype.getClientRects = () => ({
+      length: 0,
+      item: () => null,
+      [Symbol.iterator]: [][Symbol.iterator],
+    });
+  }
 }

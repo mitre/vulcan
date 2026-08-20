@@ -1,0 +1,532 @@
+# frozen_string_literal: true
+
+require 'rails_helper'
+require 'openapi_first'
+require_relative 'support/openapi_contract_helpers'
+
+RSpec.describe 'Components endpoint contracts', type: :request do
+  include Devise::Test::IntegrationHelpers
+  include OpenAPIContractHelpers
+
+  let_it_be(:admin) { create(:user, admin: true) }
+  let_it_be(:srg) { SecurityRequirementsGuide.first || create(:security_requirements_guide) }
+  let_it_be(:project) { create(:project, name: 'Components Contract Project') }
+  let_it_be(:component) do
+    create(:component, project: project, based_on: srg, name: 'Comp Contract Test',
+                       prefix: 'CCTT-01', title: 'Components Contract Test Guide',
+                       comment_phase: 'open', comment_period_starts_at: 1.day.ago,
+                       comment_period_ends_at: 14.days.from_now)
+  end
+  let_it_be(:membership) do
+    Membership.find_or_create_by!(user: admin, membership: project, membership_type: 'Project') do |m|
+      m.role = 'admin'
+    end
+  end
+  let_it_be(:rule) { component.rules.first || create(:rule, component: component) }
+
+  before do
+    Rails.application.reload_routes!
+    sign_in admin
+  end
+
+  # ── GET /components (index) ──
+
+  describe 'GET /components (JSON)' do
+    let_it_be(:released_component) do
+      c = create(:component, project: project, based_on: srg, name: 'Released For Index',
+                             prefix: 'RELI-01', title: 'Released Index Test')
+      c.rules.update_all(locked: true)
+      c.update!(released: true)
+      c
+    end
+
+    it 'returns ComponentIndexResponse array with released components' do
+      get '/components', headers: json_headers
+      body = validate_and_parse!
+
+      expect(body).to be_an(Array)
+      expect(body).not_to be_empty
+
+      found = body.find { |c| c['id'] == released_component.id }
+      expect(found).not_to be_nil, "Released component #{released_component.id} not in response"
+      assert_fields_present found, :id, :name, :prefix, :version, :release,
+                            :based_on_title, :based_on_version, :severity_counts,
+                            :pending_comment_count, :updated_at, :released, :rules_count, :component_id
+      expect(found['released']).to be(true)
+      expect(found['id']).to eq(released_component.id)
+    end
+  end
+
+  # ── GET /components/:id (member — editor view) ──
+
+  describe 'GET /components/:id (JSON, member)' do
+    it 'returns ComponentEditorResponse with 35 fields' do
+      get "/components/#{component.id}", headers: json_headers
+      body = validate_and_parse!
+
+      expect(body['id']).to eq(component.id)
+      expect(body['name']).to eq(component.name)
+      assert_fields_present body, :id, :name, :prefix, :version, :release,
+                            :based_on_title, :based_on_version, :severity_counts,
+                            :pending_comment_count, :title, :description, :admin_name,
+                            :admin_email, :released, :advanced_fields, :project_id,
+                            :component_id, :security_requirements_guide_id,
+                            :memberships_count, :rules_count, :updated_at, :created_at,
+                            :comment_phase, :releasable, :status_counts, :moved_out_count,
+                            :additional_questions, :rules, :reviews, :histories,
+                            :memberships, :metadata, :inherited_memberships,
+                            :effective_permissions
+
+      expect(body['rules']).to be_an(Array)
+      expect(body['memberships']).to be_an(Array)
+      expect(body['inherited_memberships']).to be_an(Array)
+      expect(body['status_counts']).to be_a(Hash)
+      expect(body['project_id']).to eq(project.id)
+      expect(body['effective_permissions']).to eq('admin')
+    end
+  end
+
+  # ── POST /components (create) ──
+
+  describe 'POST /projects/:id/components (JSON)' do
+    it 'returns ToastResponse on successful component creation' do
+      post "/projects/#{project.id}/components",
+           params: { component: { name: 'New Contract Comp', prefix: 'NCON-01',
+                                  title: 'New Contract Component', security_requirements_guide_id: srg.id } },
+           headers: json_headers, as: :json
+      body = validate_and_parse!
+
+      assert_fields_present body, :toast
+      expect(body.dig('toast', 'variant')).to eq('success')
+      expect(body.dig('toast', 'title')).to eq('Component added.')
+      expect(body.dig('toast', 'message')).to be_an(Array)
+      assert_fields_absent body, :component, :data
+    end
+
+    it 'returns ToastResponse when creating with a declared source set and a selection filter' do
+      core_one = create(:security_requirements_guide, :core, :skip_rules,
+                        srg_id: 'SRG-CORE-CONTRACT-A', version: 'V1R1')
+      core_two = create(:security_requirements_guide, :core, :skip_rules,
+                        srg_id: 'SRG-CORE-CONTRACT-B', version: 'V1R1')
+      create(:srg_rule, security_requirements_guide: core_one, version: 'SRG-OS-000901')
+      create(:srg_rule, security_requirements_guide: core_two, version: 'SRG-APP-000902')
+
+      post "/projects/#{project.id}/components",
+           params: { component: { name: 'Multi-source Contract Comp', prefix: 'MSCC-01',
+                                  title: 'Multi-source Contract Component', document_type: 'srg',
+                                  security_requirements_guide_id: core_one.id,
+                                  declared_source_srg_ids: [core_one.id, core_two.id],
+                                  requirement_selections: { core_two.id => ['SRG-APP-000902'] } } },
+           headers: json_headers, as: :json
+      body = validate_and_parse!
+
+      expect(body.dig('toast', 'variant')).to eq('success')
+      created = Component.find_by!(project: project, name: 'Multi-source Contract Comp')
+      expect(created.source_srgs.count).to eq(2)
+      expect(created.authored_srg_rules.pluck(:version)).to eq(['SRG-APP-000902'])
+    end
+  end
+
+  # ── PUT /components/:id (update) ──
+
+  describe 'PUT /components/:id (JSON)' do
+    it 'returns ToastResponse with update confirmation' do
+      put "/components/#{component.id}",
+          params: { component: { description: 'Updated by contract test' } },
+          headers: json_headers, as: :json
+      body = validate_and_parse!
+
+      assert_fields_present body, :toast
+      expect(body.dig('toast', 'variant')).to eq('success')
+      expect(body.dig('toast', 'title')).to eq('Component updated.')
+      expect(body.dig('toast', 'message')).to be_an(Array)
+      assert_fields_absent body, :component, :data
+    end
+  end
+
+  # ── GET /components/:id (non-member — kind-routed show view) ──
+
+  describe 'GET /components/:id (JSON, non-member show branch)' do
+    let_it_be(:outsider) { create(:user) }
+    let_it_be(:released_for_show) do
+      c = create(:component, project: project, based_on: srg, name: 'Released For Show',
+                             prefix: 'RELS-01', title: 'Released Show Test')
+      c.rules.update_all(locked: true)
+      c.update!(released: true)
+      c
+    end
+
+    it 'returns the read-only show view for a non-member on a released component' do
+      sign_out admin
+      sign_in outsider
+
+      get "/components/#{released_for_show.id}", headers: json_headers
+      body = validate_and_parse!
+
+      expect(body['id']).to eq(released_for_show.id)
+      expect(body['effective_permissions']).to be_nil
+      expect(body).to have_key('rules')
+      # What DISCRIMINATES the show branch from a regression back to the
+      # editor view is the absence of the editor-only keys — the shared
+      # fields above hold under both views for a non-member.
+      assert_fields_absent body, :releasable, :status_counts, :project_id,
+                           :advanced_fields, :memberships_count, :created_at
+    end
+  end
+
+  # ── GET /components/:id/comments ──
+
+  describe 'GET /components/:id/comments (JSON)' do
+    let_it_be(:comment) do
+      create(:review, user: admin, rule: rule, action: 'comment',
+                      comment: 'Component comments contract test', section: 'fixtext')
+    end
+
+    it 'returns PaginatedComments with CommentRow items' do
+      get "/components/#{component.id}/comments", headers: json_headers
+      body = validate_and_parse!
+
+      assert_fields_present body, :rows, :pagination, :status_counts
+      expect(body['rows']).to be_an(Array)
+      assert_fields_present body['pagination'], :page, :per_page, :total, :total_comments
+      expect(body['status_counts']).to be_a(Hash)
+    end
+
+    it 'validates rule_content with satisfied_by when include_rule_content is requested' do
+      child = create(:rule, component: component, rule_id: '999901')
+      parent = create(:rule, component: component, rule_id: '999902')
+      child_comment = create(:review, user: admin, rule: child, action: 'comment',
+                                      comment: 'Child rule comment', section: 'fixtext')
+      child.satisfied_by << parent
+
+      get "/components/#{component.id}/comments",
+          params: { include_rule_content: 'true' }, headers: json_headers
+      body = validate_and_parse!
+
+      row = body['rows'].find { |r| r['id'] == child_comment.id }
+      expect(row['rule_content']).to be_a(Hash)
+      expect(row['rule_content']['satisfied_by']).to eq(
+        [{ 'id' => parent.id, 'rule_id' => parent.rule_id,
+           'component_prefix' => component.prefix }]
+      )
+    end
+
+    it 'documents resolved and commentable_type on the comments path — fully, not just functionally' do
+      # The behavioral tests prove the params filter; this guards their
+      # DOCUMENTATION, which the behavioral tests cannot see — deleting the
+      # doc blocks would otherwise leave the suite green.
+      params = YAML.safe_load(Rails.root.join('doc/openapi.yaml').read)
+                   .dig('paths', '/components/{componentId}/comments', 'get', 'parameters')
+
+      resolved = params.find { |p| p.is_a?(Hash) && p['name'] == 'resolved' }
+      expect(resolved).to be_present
+      expect(resolved['description']).to be_present
+      expect(resolved.dig('schema', 'enum')).to match_array(%w[true false all])
+      expect(resolved['example']).to be_present
+
+      commentable = params.find { |p| p.is_a?(Hash) && p['name'] == 'commentable_type' }
+      expect(commentable).to be_present
+      expect(commentable['description']).to be_present
+      expect(commentable.dig('schema', 'enum')).to match_array(%w[rule component])
+      expect(commentable['example']).to be_present
+    end
+
+    it 'documents the triage filter as Review::TRIAGE_STATUSES plus all, defaulting to pending' do
+      # Correspondence guard, not a photocopy: the documented enum must track
+      # the model constant, and the documented default must be the ruled one
+      # the behavior pin below actually serves.
+      param = YAML.safe_load(Rails.root.join('doc/openapi.yaml').read)
+                  .dig('components', 'parameters', 'TriageStatusFilter')
+      expect(param.dig('schema', 'enum')).to match_array(Review::TRIAGE_STATUSES + ['all'])
+      expect(param.dig('schema', 'default')).to eq('pending')
+    end
+
+    it 'serves the documented default: a bare call returns only pending rows' do
+      adjudicated = create(:review, user: admin, rule: rule, action: 'comment',
+                                    comment: 'Adjudicated row', section: 'fixtext')
+      adjudicated.update!(triage_status: 'concur')
+
+      get "/components/#{component.id}/comments", headers: json_headers
+      body = validate_and_parse!
+      expect(body['rows'].pluck('id')).to contain_exactly(comment.id)
+
+      get "/components/#{component.id}/comments",
+          params: { triage_status: 'all' }, headers: json_headers
+      body = validate_and_parse!
+      expect(body['rows'].pluck('id')).to contain_exactly(comment.id, adjudicated.id)
+    end
+
+    it 'serves informational rows through the documented enum value' do
+      info = create(:review, user: admin, rule: rule, action: 'comment',
+                             comment: 'For awareness only', section: 'fixtext')
+      info.update!(triage_status: 'informational')
+
+      get "/components/#{component.id}/comments",
+          params: { triage_status: 'informational' }, headers: json_headers
+      body = validate_and_parse!
+      expect(body['rows'].pluck('id')).to contain_exactly(info.id)
+    end
+
+    it 'filters by the documented commentable_type and resolved params' do
+      component_comment = create(:review, user: admin, commentable: component, action: 'comment',
+                                          comment: 'On the component itself')
+      adjudicated = create(:review, user: admin, rule: rule, action: 'comment',
+                                    comment: 'Closed out', section: 'fixtext')
+      adjudicated.update!(triage_status: 'concur', adjudicated_at: Time.current)
+
+      get "/components/#{component.id}/comments",
+          params: { commentable_type: 'component' }, headers: json_headers
+      expect(validate_and_parse!['rows'].pluck('id')).to contain_exactly(component_comment.id)
+
+      get "/components/#{component.id}/comments",
+          params: { triage_status: 'all', commentable_type: 'rule' }, headers: json_headers
+      expect(validate_and_parse!['rows'].pluck('id')).to contain_exactly(comment.id, adjudicated.id)
+
+      get "/components/#{component.id}/comments",
+          params: { triage_status: 'all', resolved: 'true' }, headers: json_headers
+      expect(validate_and_parse!['rows'].pluck('id')).to contain_exactly(adjudicated.id)
+
+      get "/components/#{component.id}/comments",
+          params: { triage_status: 'all', resolved: 'false' }, headers: json_headers
+      expect(validate_and_parse!['rows'].pluck('id'))
+        .to contain_exactly(comment.id, component_comment.id)
+    end
+  end
+
+  # ── GET /components/:id/histories ──
+
+  describe 'GET /components/:id/histories (JSON)' do
+    include_context 'with auditing'
+
+    before do
+      component.update!(description: 'History test trigger')
+    end
+
+    it 'returns AuditEntry array with audit trail data' do
+      get "/components/#{component.id}/histories", headers: json_headers
+      body = validate_and_parse!
+
+      expect(body).to be_an(Array)
+      expect(body).not_to be_empty, 'Expected at least one audit entry after update'
+      first = body.first
+      assert_fields_present first, :id, :action, :auditable_type, :auditable_id, :created_at, :audited_changes
+      expect(first['auditable_type']).to eq('Component')
+      expect(first['auditable_id']).to eq(component.id)
+    end
+  end
+
+  # ── POST /components/:id/find ──
+
+  describe 'POST /components/:id/find (JSON)' do
+    it 'returns RuleEditorResponse array with matching rules' do
+      search_term = rule.title.to_s.split.first(2).join(' ')
+      post "/components/#{component.id}/find",
+           params: { find: search_term },
+           headers: json_headers, as: :json
+      body = validate_and_parse!
+
+      expect(body).to be_an(Array)
+      if body.any?
+        first_rule = body.first
+        assert_fields_present first_rule, :id, :rule_id, :title, :component_id
+        expect(first_rule['component_id']).to eq(component.id)
+      end
+    end
+  end
+
+  # ── GET /components/:id/related ──
+
+  describe 'GET /components/:id/related (JSON)' do
+    it 'returns array of related components with project context' do
+      get "/components/#{component.id}/related", headers: json_headers
+      body = validate_and_parse!
+
+      expect(body).to be_an(Array)
+      if body.any?
+        first = body.first
+        assert_fields_present first, :id, :name, :prefix, :project_id, :project_name
+      end
+    end
+  end
+
+  # ── GET /components/:id/rules/picker ──
+  # (already tested in rules_contract_spec.rb)
+
+  # ── GET /components/history (version diff) ──
+
+  describe 'GET /components/history (JSON)' do
+    it 'returns history array with at least one milestone entry' do
+      get '/components/history',
+          params: { project_id: project.id, name: component.name },
+          headers: json_headers
+      body = validate_and_parse!
+
+      expect(body).to be_an(Array)
+      expect(body).not_to be_empty, "Expected history for component '#{component.name}' in project #{project.id}"
+      milestone = body.find { |e| e.key?('component') }
+      expect(milestone).not_to be_nil, 'Expected at least one milestone entry'
+      assert_fields_present milestone['component'], :id, :name, :prefix, :version, :release
+      expect(milestone['component']['name']).to eq(component.name)
+    end
+  end
+
+  # ── GET /api/components/compare ──
+
+  describe 'GET /api/components/compare (JSON)' do
+    let_it_be(:other_component) do
+      Component.where(based_on: srg).where.not(id: component.id).first ||
+        create(:component, project: project, based_on: srg, name: 'Compare Target',
+                           prefix: 'CMPR-01', title: 'Compare Target')
+    end
+
+    it 'returns { data: rule_diffs, meta: comparison_info }' do
+      get '/api/components/compare',
+          params: { base_id: component.id, diff_id: other_component.id },
+          headers: json_headers
+      body = validate_and_parse!
+
+      assert_fields_present body, :data, :meta
+      expect(body['data']).to be_a(Hash)
+      expect(body['meta']).to be_a(Hash)
+      assert_fields_present body['meta'], :base_id, :diff_id, :rules_count
+      expect(body['meta']['base_id']).to eq(component.id)
+      expect(body['meta']['diff_id']).to eq(other_component.id)
+    end
+  end
+
+  # ── POST /components/detect_srg ──
+  # Requires file upload — skipping in contract tests (would need fixture XLSX)
+
+  # ── POST /components/:id/preview_spreadsheet_update ──
+  # Requires file upload — skipping in contract tests
+
+  # ── PATCH /components/:id/apply_spreadsheet_update ──
+  # Requires file upload — skipping in contract tests
+
+  # ── DELETE /components/:id ──
+
+  describe 'DELETE /components/:id (JSON)' do
+    let!(:deletable_component) do
+      create(:component, project: project, based_on: srg, name: 'Deletable',
+                         prefix: 'DELE-01', title: 'Deletable Component')
+    end
+
+    it 'returns ToastResponse on success' do
+      delete "/components/#{deletable_component.id}", headers: json_headers, as: :json
+      body = validate_and_parse!
+
+      assert_fields_present body, :toast
+      expect(body.dig('toast', 'variant')).to eq('success')
+      expect(body.dig('toast', 'title')).to eq('Component removed.')
+      assert_fields_absent body, :component
+    end
+  end
+
+  # ── POST /components/:id/lock (reviews#lock_controls) ──
+
+  describe 'POST /components/:id/lock (JSON)' do
+    # A local component with one lockable rule: the shared fixture's rules
+    # are all Not Yet Determined, which lock_controls SKIPS (422 when every
+    # candidate is skipped) — the prior form of this test posted the invalid
+    # action 'lock', guaranteed itself a 422, and skipped schema validation.
+    it 'locks the lockable rules and returns the documented ToastResponse' do
+      lock_component = create(:component, :skip_rules, project: project)
+      rule = create(:rule, component: lock_component, status: 'Applicable - Configurable')
+
+      post "/components/#{lock_component.id}/lock",
+           params: { review: { action: 'lock_control', comment: 'Contract test lock all' } },
+           headers: json_headers, as: :json
+
+      body = validate_and_parse!
+      expect(body.dig('toast', 'title')).to eq('Locked 1 control.')
+      expect(body.dig('toast', 'message')).to eq(["Locked: #{rule.displayed_name}"])
+      expect(rule.reload.locked).to be(true)
+    end
+  end
+
+  # ── POST /components/:id/reviews (component-level comment) ──
+
+  describe 'POST /components/:id/reviews (JSON)' do
+    it 'returns ToastResponse on component-level comment creation' do
+      post "/components/#{component.id}/reviews",
+           params: { review: { action: 'comment', comment: 'Component-level contract test comment' } },
+           headers: json_headers, as: :json
+      body = validate_and_parse!
+
+      assert_fields_present body, :toast
+      expect(body.dig('toast', 'variant')).to eq('success')
+      expect(body.dig('toast', 'title')).to eq('Comment posted.')
+    end
+  end
+
+  # ── PATCH /components/:id/lock_sections (reviews#lock_sections) ──
+
+  describe 'PATCH /components/:id/lock_sections (JSON)' do
+    it 'returns ToastResponse with section lock confirmation' do
+      patch "/components/#{component.id}/lock_sections",
+            params: { sections: ['Fix'], locked: true, comment: 'Contract lock sections' },
+            headers: json_headers, as: :json
+      body = validate_and_parse!
+
+      assert_fields_present body, :toast
+      expect(body.dig('toast', 'variant')).to eq('success')
+      expect(body.dig('toast', 'title')).to include('Section lock')
+      expect(body.dig('toast', 'message')).to be_an(Array)
+    end
+
+    it 'returns the documented 422 for a section outside the vocabulary' do
+      patch "/components/#{component.id}/lock_sections",
+            params: { sections: ['fixtext'], locked: true, comment: 'Contract invalid section' },
+            headers: json_headers, as: :json
+
+      body = validate_and_parse!(expected_status: :unprocessable_content)
+      expect(body.dig('toast', 'title')).to eq('Invalid sections')
+    end
+  end
+
+  # ── GET /search/components ──
+
+  describe 'GET /search/components (JSON)' do
+    it 'returns components as compact tuples with correct wrapper' do
+      get '/search/components', params: { q: srg.srg_id }, headers: json_headers
+      body = validate_and_parse!
+
+      assert_fields_present body, :components
+      expect(body['components']).to be_an(Array)
+      expect(body.keys).to contain_exactly('components')
+    end
+  end
+
+  # ── GET /api/components/:id/summary ──
+
+  describe 'GET /api/components/:id/summary (JSON)' do
+    it 'matches ComponentSummaryResponse schema with phase state and no heavy arrays' do
+      get "/api/components/#{component.id}/summary", headers: json_headers
+      body = validate_and_parse!
+
+      assert_fields_present body, :id, :name, :prefix, :severity_counts,
+                            :effective_permissions, :comment_phase,
+                            :accepting_new_comments, :triaging_active,
+                            :frozen_for_writes, :comment_period_days_remaining
+      assert_fields_absent body, :rules, :reviews, :histories
+      expect(body['accepting_new_comments']).to be(true)
+      expect(body['effective_permissions']).to eq('admin')
+    end
+
+    it 'matches the documented 401 shape when unauthenticated' do
+      sign_out admin
+
+      get "/api/components/#{component.id}/summary", headers: json_headers
+      body = validate_and_parse!(expected_status: :unauthorized)
+
+      expect(body['type']).to eq('/docs/api/errors#not_authenticated')
+    end
+
+    it 'matches the documented 404 shape for an unknown component' do
+      get '/api/components/0/summary', headers: json_headers
+      body = validate_and_parse!(expected_status: :not_found)
+
+      expect(body['type']).to eq('/docs/api/errors#not_found')
+    end
+  end
+end

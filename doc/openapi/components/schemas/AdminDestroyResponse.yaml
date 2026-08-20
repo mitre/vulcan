@@ -1,0 +1,17 @@
+description: >-
+  Response from admin hard-delete of a review. Returns null for the review
+  (confirming deletion) and the destroyed review's ID for frontend cleanup.
+type: object
+required:
+  - review
+  - destroyed_id
+additionalProperties: false
+properties:
+  review:
+    type: 'null'
+    description: Always null — confirms the review was destroyed.
+    example: null
+  destroyed_id:
+    type: integer
+    description: ID of the destroyed review, for frontend to remove from local state.
+    example: 44

@@ -12,16 +12,17 @@
 # (which uses pre-compiled SFC templates via build step).
 
 Rails.application.configure do
+  # A per-request nonce lets specifically marked inline scripts run without
+  # admitting inline script generally. It is generated fresh per request rather
+  # than derived from the session, so a nonce observed in one response is
+  # useless in the next. Nothing weakens here: script-src gains no
+  # unsafe-inline and no new origin, and a tag only runs if it carries the
+  # nonce the response itself issued.
+  config.content_security_policy_nonce_generator = ->(_request) { SecureRandom.base64(16) }
+  config.content_security_policy_nonce_directives = %w[script-src]
+
   config.content_security_policy do |policy|
-    # Derive OIDC provider origin from issuer URL when OIDC is enabled.
-    # OmniAuth redirects the browser to the provider's authorization endpoint
-    # via form POST (requires form-action). The navbar also checks GitHub for
-    # release updates (requires connect-src).
-    oidc_origin = begin
-      URI.parse(Settings.oidc.args.issuer).then { |u| "#{u.scheme}://#{u.host}" } if Settings.oidc&.enabled
-    rescue URI::InvalidURIError, NoMethodError
-      nil
-    end
+    oidc_origins = Settings.oidc&.enabled ? OidcProviderRegistry.provider_origins : []
 
     policy.default_src :self
     policy.font_src    :self, :data
@@ -29,9 +30,10 @@ Rails.application.configure do
     policy.object_src  :none
     policy.script_src  :self, :unsafe_eval
     policy.style_src   :self, :unsafe_inline
-    policy.connect_src :self, 'https://api.github.com', *[oidc_origin].compact
+    policy.connect_src :self, 'https://api.github.com',
+                       'https://vulcan.mitre.org', *oidc_origins
     policy.frame_src   :none
     policy.base_uri    :self
-    policy.form_action :self, *[oidc_origin].compact
+    policy.form_action :self, *oidc_origins
   end
 end

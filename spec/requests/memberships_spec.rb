@@ -95,4 +95,25 @@ RSpec.describe 'Memberships' do
       expect(response).to redirect_to(root_path)
     end
   end
+
+  # A non-member of a hidden project must not learn that a membership exists:
+  # the denial is concealed as a 404 identical to a truly missing membership,
+  # so membership ids cannot be probed.
+  describe 'DELETE /memberships/:id concealment for a non-member of a hidden project' do
+    let(:outsider) { create(:user, admin: false) }
+
+    before { sign_in outsider }
+
+    it 'answers a hidden-project membership identically to a nonexistent one (404 not_found)' do
+      delete "/memberships/#{target_membership.id}", headers: { 'Accept' => application_json }
+      concealed = { status: response.status, body: response.body }
+
+      delete '/memberships/999999999', headers: { 'Accept' => application_json }
+      missing = { status: response.status, body: response.body }
+
+      expect(concealed[:status]).to eq(404)
+      expect(response.parsed_body['type']).to eq('/docs/api/errors#not_found')
+      expect(concealed).to eq(missing)
+    end
+  end
 end

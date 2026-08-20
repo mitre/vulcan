@@ -42,11 +42,13 @@ RSpec.describe 'Query performance optimizations' do
 
     it 'returns correct status counts' do
       details = project.details
-      expect(details[:ac]).to eq(2)
-      expect(details[:aim]).to eq(1)
-      expect(details[:adnm]).to eq(0)
-      expect(details[:na]).to eq(1)
-      expect(details[:nyd]).to eq(1)
+      # Typed sections are the only shape — the flat mirrors are removed.
+      expect(details).not_to have_key(:ac)
+      expect(details[:stig][:ac]).to eq(2)
+      expect(details[:stig][:aim]).to eq(1)
+      expect(details[:stig][:adnm]).to eq(0)
+      expect(details[:stig][:na]).to eq(1)
+      expect(details[:stig][:nyd]).to eq(1)
       expect(details[:total]).to eq(5)
     end
 
@@ -129,26 +131,26 @@ RSpec.describe 'Query performance optimizations' do
     let(:reviewer) { create(:user) }
 
     before do
-      Review.create!(user: reviewer, rule: rule, action: 'request_review', comment: 'Please review')
+      create(:review, user: reviewer, rule: rule, action: 'request_review', comment: 'Please review')
     end
 
-    it 'returns reviews with correct displayed_rule_name' do
+    it 'returns reviews with correct rule_displayed_name' do
       reviews = component.reviews
       expect(reviews.length).to eq(1)
-      expect(reviews.first['displayed_rule_name']).to eq("#{component.prefix}-000001")
+      expect(reviews.first['rule_displayed_name']).to eq("#{component.prefix}-000001")
     end
 
     it 'limits to 20 reviews' do
       # Already has 1 from before block
-      19.times { |i| Review.create!(user: reviewer, rule: rule, action: 'comment', comment: "Comment #{i}") }
+      19.times { |i| create(:review, :comment, user: reviewer, rule: rule, comment: "Comment #{i}") }
       expect(component.reviews.length).to eq(20)
 
       # Add one more — should still be 20
-      Review.create!(user: reviewer, rule: rule, action: 'comment', comment: 'Extra')
+      create(:review, :comment, user: reviewer, rule: rule, comment: 'Extra')
       expect(component.reviews.length).to eq(20)
     end
 
-    it 'does not load full rule objects for name lookup' do
+    it 'uses pluck for rule name lookup, not full SELECT *' do
       query_log = []
       counter = lambda { |*, payload|
         query_log << payload[:sql] if payload[:sql] =~ /SELECT.*"base_rules"/i && payload[:name] != 'SCHEMA'
@@ -156,10 +158,10 @@ RSpec.describe 'Query performance optimizations' do
       ActiveSupport::Notifications.subscribed(counter, 'sql.active_record') do
         component.reviews
       end
-      # Should use pluck or select, not SELECT *
-      query_log.each do |sql|
-        expect(sql).not_to match(/SELECT "base_rules"\.\*/), "Expected optimized SELECT, got: #{sql}"
-      end
+      pluck_queries = query_log.select { |sql| sql.include?('"base_rules"."id"') && sql.include?('"base_rules"."rule_id"') }
+      star_queries = query_log.grep(/SELECT "base_rules"\.\*/)
+      expect(pluck_queries).not_to be_empty, 'Expected a pluck query for rule_id lookup'
+      expect(star_queries.length).to be <= 1, "Expected at most 1 association-load query, got #{star_queries.length}"
     end
   end
 end

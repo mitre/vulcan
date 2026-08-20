@@ -1,19 +1,30 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   RULE_TERM,
+  REQUIREMENT_TERM,
+  RULE_TERM_BY_DOCUMENT_TYPE,
+  STATUS_DESCRIPTIONS_BY_DOCUMENT_TYPE,
+  ruleTerm,
   COMPONENT_TERM,
-  PANEL_LABELS,
-  SIDEBAR_TITLES,
-  ACTION_LABELS,
-  NAVIGATOR_LABELS,
-  MESSAGE_LABELS,
-  REVIEW_ACTION_LABELS,
   ROLE_DESCRIPTIONS,
   SEVERITY_LABELS,
   SEVERITY_OPTIONS,
+  navigatorLabels,
+  messageLabels,
+  panelLabels,
+  sidebarTitles,
+  reviewActionLabels,
   ruleCountLabel,
   selectedCountLabel,
 } from "@/constants/terminology";
+
+// The stig instances are the deployment defaults — the pre-existing DRY
+// assertions below verify each family derives from RULE_TERM through them.
+const PANEL_LABELS = panelLabels("stig");
+const SIDEBAR_TITLES = sidebarTitles("stig");
+const NAVIGATOR_LABELS = navigatorLabels("stig");
+const MESSAGE_LABELS = messageLabels("stig");
+const REVIEW_ACTION_LABELS = reviewActionLabels("stig");
 
 /**
  * Terminology Constants Tests
@@ -24,6 +35,92 @@ import {
  * If terminology changes (e.g., "Rule" → "Requirement"), these tests
  * verify the change propagates correctly throughout the app.
  */
+describe("kind-keyed entity nouns", () => {
+  it("ruleCountLabel keys the noun by document_type", () => {
+    expect(ruleCountLabel(3, "srg")).toBe("3 Requirements");
+    expect(ruleCountLabel(1, "srg")).toBe("1 Requirement");
+    expect(ruleCountLabel(3, "stig")).toBe(`3 ${RULE_TERM.plural}`);
+  });
+
+  it("defaults to the deployment noun when no kind is given", () => {
+    expect(ruleCountLabel(2)).toBe(`2 ${RULE_TERM.plural}`);
+    expect(selectedCountLabel(2)).toBe(`2 ${RULE_TERM.plural.toLowerCase()} selected`);
+  });
+
+  it("ruleTerm keys by document_type with the same key set as the status map", () => {
+    expect(Object.keys(RULE_TERM_BY_DOCUMENT_TYPE).sort()).toEqual(
+      Object.keys(STATUS_DESCRIPTIONS_BY_DOCUMENT_TYPE).sort(),
+    );
+    expect(ruleTerm("srg")).toBe(REQUIREMENT_TERM);
+    expect(ruleTerm("stig")).toBe(RULE_TERM);
+    expect(ruleTerm(undefined)).toBe(RULE_TERM);
+  });
+
+  it("deployment-wide rename composes with the kind key (regression pin)", () => {
+    // stig labels derive from RULE_TERM — the deployment override point —
+    // so editing RULE_TERM still renames every stig surface; srg labels
+    // derive from REQUIREMENT_TERM, its own override point.
+    expect(navigatorLabels("stig").openRules).toBe(`Open ${RULE_TERM.plural}`);
+    expect(navigatorLabels("srg").openRules).toBe(`Open ${REQUIREMENT_TERM.plural}`);
+    // Literal pins on BOTH sides — the derived comparisons alone would pass
+    // if a builder hardcoded its noun.
+    expect(navigatorLabels("stig").openRules).toBe("Open Rules");
+    expect(navigatorLabels("srg").openRules).toBe("Open Requirements");
+  });
+
+  it("label families key by kind", () => {
+    expect(messageLabels("srg").saveTitle).toBe("Save Requirement");
+    expect(messageLabels("stig").saveTitle).toBe(`Save ${RULE_TERM.singular}`);
+    expect(panelLabels("srg").ruleHistory).toBe(`${REQUIREMENT_TERM.label} Changelog`);
+    expect(sidebarTitles("srg").ruleHistory).toBe("Requirement Changelog");
+    expect(reviewActionLabels("srg").lock.name).toBe("Lock Requirement");
+    expect(reviewActionLabels("stig").lock.name).toBe(`Lock ${RULE_TERM.singular}`);
+    expect(selectedCountLabel(2, "srg")).toBe("2 requirements selected");
+  });
+
+  it("tooltip/triage/table keys carry the kind noun", () => {
+    expect(messageLabels("srg").lockedBadge).toBe("Requirement Locked");
+    expect(messageLabels("srg").groupByRule).toBe("Group by requirement");
+    expect(messageLabels("srg").moveToRule).toBe("Move to requirement");
+    expect(messageLabels("srg").prevRuleTooltip).toBe("Previous requirement");
+    expect(messageLabels("srg").spreadsheetTitle).toBe("Update Requirements from Spreadsheet");
+    expect(messageLabels("srg").releaseRequiresLock).toBe(
+      "All requirements must be locked to release a component",
+    );
+    expect(messageLabels("stig").lockedBadge).toBe(`${RULE_TERM.singular} Locked`);
+    expect(messageLabels("stig").groupByRule).toBe(`Group by ${RULE_TERM.singular.toLowerCase()}`);
+  });
+
+  it("benchmarkItemTerm resolves viewer nouns through the central table", async () => {
+    const { benchmarkItemTerm, CONTROL_TERM } = await import("@/constants/terminology");
+    expect(benchmarkItemTerm("stig")).toBe(RULE_TERM);
+    expect(benchmarkItemTerm("srg")).toBe(REQUIREMENT_TERM);
+    expect(benchmarkItemTerm("cis")).toBe(CONTROL_TERM);
+    expect(benchmarkItemTerm("component", "srg")).toBe(REQUIREMENT_TERM);
+    expect(benchmarkItemTerm("component", "stig")).toBe(RULE_TERM);
+    expect(benchmarkItemTerm("component", undefined)).toBe(RULE_TERM);
+  });
+
+  it("no srg-kind label in any family contains the bare rule noun", () => {
+    // The family-level guard: every srg string must speak in Requirement
+    // terms. A newly added key with a hardcoded "rule" fails here without
+    // needing a per-key assertion.
+    const flatten = (value) =>
+      typeof value === "string" ? [value] : Object.values(value).flatMap(flatten);
+    const srgStrings = [
+      messageLabels("srg"),
+      panelLabels("srg"),
+      sidebarTitles("srg"),
+      navigatorLabels("srg"),
+      reviewActionLabels("srg"),
+    ].flatMap(flatten);
+    expect(srgStrings.length).toBeGreaterThan(50);
+    for (const s of srgStrings) {
+      expect(s).not.toMatch(/\brules?\b/i);
+    }
+  });
+});
+
 describe("terminology constants", () => {
   describe("RULE_TERM", () => {
     it("has required properties", () => {
@@ -67,8 +164,7 @@ describe("terminology constants", () => {
     });
 
     it("component panel labels are concise (no prefix)", () => {
-      // REQUIREMENT: wdower review — "Comp Activity" → "Activity"
-      expect(PANEL_LABELS.compHistory).toBe("Activity");
+      expect(PANEL_LABELS.compHistory).toBe("Changelog");
     });
 
     it("rule labels use RULE_TERM.label", () => {
@@ -98,27 +194,6 @@ describe("terminology constants", () => {
     it("rule sidebar titles use RULE_TERM.singular", () => {
       expect(SIDEBAR_TITLES.ruleHistory).toContain(RULE_TERM.singular);
       expect(SIDEBAR_TITLES.ruleReviews).toContain(RULE_TERM.singular);
-    });
-  });
-
-  describe("ACTION_LABELS", () => {
-    it("has all required action labels", () => {
-      expect(ACTION_LABELS).toHaveProperty("save");
-      expect(ACTION_LABELS).toHaveProperty("clone");
-      expect(ACTION_LABELS).toHaveProperty("delete");
-      expect(ACTION_LABELS).toHaveProperty("lock");
-      expect(ACTION_LABELS).toHaveProperty("unlock");
-      expect(ACTION_LABELS).toHaveProperty("comment");
-      expect(ACTION_LABELS).toHaveProperty("review");
-      expect(ACTION_LABELS).toHaveProperty("related");
-    });
-
-    it("action labels for rule operations use RULE_TERM.singular", () => {
-      expect(ACTION_LABELS.save).toContain(RULE_TERM.singular);
-      expect(ACTION_LABELS.clone).toContain(RULE_TERM.singular);
-      expect(ACTION_LABELS.delete).toContain(RULE_TERM.singular);
-      expect(ACTION_LABELS.lock).toContain(RULE_TERM.singular);
-      expect(ACTION_LABELS.unlock).toContain(RULE_TERM.singular);
     });
   });
 
@@ -351,20 +426,131 @@ describe("terminology constants", () => {
 
   describe("DRY principle verification", () => {
     it("changing RULE_TERM would update all derived labels", () => {
-      // This test documents the expected behavior:
-      // If RULE_TERM.label = 'Rule', then ruleHistory = 'Rule History'
-      // If RULE_TERM.label = 'Req', then ruleHistory = 'Req History'
-      const expectedRuleHistoryPattern = new RegExp(`${RULE_TERM.label}.*History`);
-      const expectedRuleReviewsPattern = new RegExp(`${RULE_TERM.label}.*Reviews`);
+      const expectedRuleHistoryPattern = new RegExp(`${RULE_TERM.label}.*Changelog`);
+      const expectedRuleDiscussionPattern = new RegExp(`${RULE_TERM.label}.*Discussion`);
 
       expect(PANEL_LABELS.ruleHistory).toMatch(expectedRuleHistoryPattern);
-      expect(PANEL_LABELS.ruleReviews).toMatch(expectedRuleReviewsPattern);
+      expect(PANEL_LABELS.ruleReviews).toMatch(expectedRuleDiscussionPattern);
     });
 
     it("component panel labels are independent of COMPONENT_TERM", () => {
-      // REQUIREMENT: Panel label "Activity" is concise — it doesn't
-      // derive from COMPONENT_TERM since the panel context is obvious.
       expect(PANEL_LABELS.compHistory).not.toContain(COMPONENT_TERM.label);
+    });
+  });
+
+  describe("deployment terminology overrides (vulcan-terminology meta tag)", () => {
+    // The layout emits Settings.terminology as one meta tag; terminology.js
+    // reads it once at module init, so overrides must be exercised on a
+    // FRESH module instance (resetModules + dynamic import).
+    const removeTag = () =>
+      document.head.querySelectorAll('meta[name="vulcan-terminology"]').forEach((t) => t.remove());
+
+    const importWithMetaTag = async (content) => {
+      vi.resetModules();
+      removeTag();
+      if (content !== null) {
+        const tag = document.createElement("meta");
+        tag.setAttribute("name", "vulcan-terminology");
+        tag.setAttribute(
+          "content",
+          typeof content === "string" ? content : JSON.stringify(content),
+        );
+        document.head.appendChild(tag);
+      }
+      return import("@/constants/terminology");
+    };
+
+    afterEach(() => {
+      removeTag();
+      vi.resetModules();
+    });
+
+    it("behaves identically to the built-in defaults when the tag is absent", async () => {
+      const mod = await importWithMetaTag(null);
+      expect(mod.RULE_TERM).toEqual({ singular: "Rule", plural: "Rules", label: "Rule" });
+      expect(mod.REQUIREMENT_TERM).toEqual({
+        singular: "Requirement",
+        plural: "Requirements",
+        label: "Req",
+      });
+      expect(mod.ruleTerm("srg").plural).toBe("Requirements");
+      expect(mod.navigatorLabels("srg").openRules).toBe("Open Requirements");
+    });
+
+    it("falls back to the defaults when the tag content is malformed JSON", async () => {
+      const mod = await importWithMetaTag("{not json");
+      expect(mod.ruleTerm("stig").singular).toBe("Rule");
+      expect(mod.ruleTerm("srg").singular).toBe("Requirement");
+    });
+
+    it("flows an srg override through every accessor family and leaves stig at its default", async () => {
+      const mod = await importWithMetaTag({
+        stig: { singular: "Rule", plural: "Rules", label: "Rule" },
+        srg: { singular: "Control", plural: "Controls", label: "Ctrl" },
+      });
+
+      // The exported constants themselves carry the override — this is how
+      // importers that interpolate at module init (csvColumns, exportConfig,
+      // ROLE_DESCRIPTIONS) pick it up without changes.
+      expect(mod.REQUIREMENT_TERM).toEqual({
+        singular: "Control",
+        plural: "Controls",
+        label: "Ctrl",
+      });
+
+      expect(mod.ruleTerm("srg").singular).toBe("Control");
+      expect(mod.ruleTerm("stig").singular).toBe("Rule");
+      expect(mod.panelLabels("srg").ruleHistory).toBe("Ctrl Changelog");
+      expect(mod.sidebarTitles("srg").ruleHistory).toBe("Control Changelog");
+      expect(mod.navigatorLabels("srg").openRules).toBe("Open Controls");
+      expect(mod.messageLabels("srg").overallSection).toBe("Overall Control");
+      expect(mod.reviewActionLabels("srg").lock.name).toBe("Lock Control");
+      expect(mod.ruleCountLabel(2, "srg")).toBe("2 Controls");
+      expect(mod.ruleCountLabel(1, "srg")).toBe("1 Control");
+      expect(mod.selectedCountLabel(1, "srg")).toBe("1 control selected");
+    });
+
+    it("merges a partial override per part, keeping the other parts at their defaults", async () => {
+      const mod = await importWithMetaTag({ srg: { singular: "Control" } });
+      expect(mod.REQUIREMENT_TERM).toEqual({
+        singular: "Control",
+        plural: "Requirements",
+        label: "Req",
+      });
+    });
+
+    it("ignores blank and non-string override values", async () => {
+      const mod = await importWithMetaTag({
+        stig: { singular: "", plural: 7 },
+        srg: { label: "   " },
+      });
+      expect(mod.RULE_TERM).toEqual({ singular: "Rule", plural: "Rules", label: "Rule" });
+      expect(mod.REQUIREMENT_TERM.label).toBe("Req");
+    });
+
+    it("a family builder that ignores its term argument fails for BOTH kinds", async () => {
+      // The falsifiable form of the deployment-rename pin: synthetic terms
+      // on BOTH kinds, so a builder hardcoding either noun — or reading one
+      // shared constant for both — cannot pass. Nothing here re-derives the
+      // expectation from the constants under test.
+      const mod = await importWithMetaTag({
+        stig: { singular: "Widget", plural: "Widgets", label: "Wgt" },
+        srg: { singular: "Gadget", plural: "Gadgets", label: "Gdt" },
+      });
+      expect(mod.navigatorLabels("stig").openRules).toBe("Open Widgets");
+      expect(mod.navigatorLabels("srg").openRules).toBe("Open Gadgets");
+      expect(mod.panelLabels("stig").ruleHistory).toBe("Wgt Changelog");
+      expect(mod.panelLabels("srg").ruleHistory).toBe("Gdt Changelog");
+      expect(mod.messageLabels("stig").saveTitle).toBe("Save Widget");
+      expect(mod.messageLabels("srg").saveTitle).toBe("Save Gadget");
+      expect(mod.reviewActionLabels("stig").lock.name).toBe("Lock Widget");
+      expect(mod.reviewActionLabels("srg").lock.name).toBe("Lock Gadget");
+    });
+
+    it("the merged term exports are frozen", async () => {
+      const mod = await importWithMetaTag(null);
+      expect(Object.isFrozen(mod.RULE_TERM)).toBe(true);
+      expect(Object.isFrozen(mod.REQUIREMENT_TERM)).toBe(true);
     });
   });
 });

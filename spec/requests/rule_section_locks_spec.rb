@@ -3,6 +3,8 @@
 require 'rails_helper'
 
 RSpec.describe 'Rule section locks API' do
+  include_context 'with auditing'
+
   let_it_be(:admin_user) { create(:user, admin: true) }
   let_it_be(:project) { create(:project) }
   let_it_be(:component) { create(:component, project: project) }
@@ -150,7 +152,7 @@ RSpec.describe 'Rule section locks API' do
               params: { section: 'Title', locked: true },
               headers: { 'Accept' => 'application/json' }
         expect(response).to have_http_status(:forbidden)
-        expect(response.parsed_body['error']).to eq('permission_denied')
+        expect(response.parsed_body['type']).to eq('/docs/api/errors#permission_denied')
       end
     end
 
@@ -167,7 +169,7 @@ RSpec.describe 'Rule section locks API' do
               params: { section: 'Title', locked: true },
               headers: { 'Accept' => 'application/json' }
         expect(response).to have_http_status(:forbidden)
-        expect(response.parsed_body['error']).to eq('permission_denied')
+        expect(response.parsed_body['type']).to eq('/docs/api/errors#permission_denied')
       end
     end
   end
@@ -199,6 +201,14 @@ RSpec.describe 'Rule section locks API' do
       patch "/rules/#{rule.id}/bulk_section_locks",
             params: { sections: %w[Title Bogus], locked: true }
       expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    # Pins the full bulk surface: sections (plural) + locked + comment.
+    it 'records the provided comment on the audit trail' do
+      patch "/rules/#{rule.id}/bulk_section_locks",
+            params: { sections: %w[Title Check], locked: true, comment: 'Bulk lock for release prep' }
+      expect(response).to have_http_status(:ok)
+      expect(rule.reload.audits.last.comment).to eq('Bulk lock for release prep')
     end
   end
 end

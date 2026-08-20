@@ -17,10 +17,17 @@ RSpec.describe Rule, '#field_editable?' do
     Rails.application.reload_routes!
   end
 
-  let(:component) { create(:component) }
+  # Each group shares ONE component via a group-local let_it_be: the
+  # groups' mutations are idempotent same-state writes confined to their
+  # own component (locking the same rule to the same state each example),
+  # so semantics match the old per-example component exactly while the
+  # expensive component creation runs once per group instead of per
+  # example. A single top-level shared component would NOT be safe — lock
+  # and satisfied_by state would leak across groups.
   let(:rule) { component.rules.first }
 
   describe 'direct, unlocked rule' do
+    let_it_be(:component) { create(:component) }
     it 'returns true for any valid field' do
       expect(rule.field_editable?(:title)).to be true
       expect(rule.field_editable?(:status)).to be true
@@ -37,6 +44,8 @@ RSpec.describe Rule, '#field_editable?' do
   end
 
   describe 'whole-locked rule' do
+    let_it_be(:component) { create(:component) }
+
     before { rule.update!(locked: true) }
 
     it 'returns false for all fields' do
@@ -52,6 +61,8 @@ RSpec.describe Rule, '#field_editable?' do
   end
 
   describe 'inherited rule (has satisfied_by)' do
+    let_it_be(:component) { create(:component) }
+
     let(:other_rule) { component.rules.second || component.rules.last }
 
     before do
@@ -72,6 +83,8 @@ RSpec.describe Rule, '#field_editable?' do
 
   describe 'section-locked rule' do
     context 'with Title section locked' do
+      let_it_be(:component) { create(:component) }
+
       before { rule.update!(locked_fields: { 'Title' => true }) }
 
       it 'returns false for fields in the locked section' do
@@ -91,6 +104,8 @@ RSpec.describe Rule, '#field_editable?' do
     end
 
     context 'with multiple sections locked' do
+      let_it_be(:component) { create(:component) }
+
       before { rule.update!(locked_fields: { 'Title' => true, 'Status' => true, 'Fix' => true }) }
 
       it 'returns false for fields in any locked section' do
@@ -108,6 +123,8 @@ RSpec.describe Rule, '#field_editable?' do
     end
 
     context 'with Check section locked' do
+      let_it_be(:component) { create(:component) }
+
       before { rule.update!(locked_fields: { 'Check' => true }) }
 
       it 'returns false for check-related fields' do
@@ -123,6 +140,8 @@ RSpec.describe Rule, '#field_editable?' do
 
   describe 'combined locks' do
     context 'whole-locked AND section-locked' do
+      let_it_be(:component) { create(:component) }
+
       before do
         rule.update!(locked_fields: { 'Title' => true })
         rule.update!(locked: true)
@@ -136,6 +155,11 @@ RSpec.describe Rule, '#field_editable?' do
   end
 
   describe 'edge cases' do
+    # Shared safely: the group's mutations (locked_fields nil / {}) all
+    # leave the rule unlocked, which is what every example here expects,
+    # in any order.
+    let_it_be(:component) { create(:component) }
+
     it 'raises ArgumentError for unknown field keys' do
       expect { rule.field_editable?(:nonexistent_field) }.to raise_error(ArgumentError, /unknown/i)
     end

@@ -1,0 +1,33 @@
+post:
+  operationId: addSatisfaction
+  tags:
+    - Rules
+  summary: Create a satisfaction relationship between two rules
+  description: Links a child rule to a parent rule that satisfies it. Triggers ADNM status automation on the child.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - rule_id
+            - satisfied_by_rule_id
+          properties:
+            rule_id:
+              type: integer
+              description: The rule that is satisfied. Absence is a 400.
+              example: 101
+            satisfied_by_rule_id:
+              type: integer
+              description: The rule that satisfies it. Absence is a 400.
+              example: 102
+  responses:
+    '200':
+      description: Satisfaction created
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

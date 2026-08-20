@@ -1,0 +1,24 @@
+description: >-
+  A single rule change between two component versions. Part of the
+  component version history diff. The change type determines which
+  fields are present: 'added' has only diff, 'removed' has only base,
+  'updated' has both.
+type: object
+required:
+  - change
+additionalProperties: false
+properties:
+  change:
+    type: string
+    description: Type of change between versions.
+    enum:
+      - added
+      - removed
+      - updated
+    example: updated
+  base:
+    description: Rule content in the previous version. Present for 'removed' and 'updated' changes.
+    $ref: ./RuleBasicFields.yaml
+  diff:
+    description: Rule content in the new version. Present for 'added' and 'updated' changes.
+    $ref: ./RuleBasicFields.yaml

@@ -6,16 +6,20 @@ module Import
     # Links each rule to its SRG rule by version match.
     # Returns a mapping of { rule_id_string => new_db_id } for satisfaction rebuilding.
     class RuleBuilder
-      # base_rules columns that map directly from the serialized data.
-      # Excludes timestamps (restored separately) and nested records.
-      DIRECT_COLUMNS = %w[
-        locked locked_fields status status_justification artifact_description vendor_comments
-        rule_id rule_severity rule_weight version title ident ident_system
-        fixtext fixtext_fixref fix_id changes_requested
-        inspec_control_body inspec_control_file
-        inspec_control_body_lang inspec_control_file_lang
-        deleted_at srg_id vuln_id legacy_ids
-      ].freeze
+      # base_rules columns assigned directly from serialized archive data.
+      # Excludes timestamps (restored separately by restore_timestamps)
+      # and nested records (associations, see build_nested_records).
+      #
+      # Derives from Rule::MERGEABLE_FIELDS (the canonical content list)
+      # plus identity columns (rule_id, srg_id), lifecycle columns
+      # (locked, locked_fields, deleted_at), and derived columns
+      # (inspec_control_file — hydrated from the archive then regenerated
+      # by Rule#update_inspec_code after_save).
+      DIRECT_COLUMNS = (
+        Rule::MERGEABLE_FIELDS +
+        %w[rule_id srg_id locked locked_fields deleted_at] +
+        Rule::DERIVED_COLUMNS
+      ).freeze
 
       def initialize(rules_data, component, result)
         @rules_data = rules_data
@@ -35,27 +39,40 @@ module Import
           rule_id_map[rule.rule_id] = rule.id
         end
 
-        @component.update_columns(rules_count: @component.rules.where(deleted_at: nil).count) # rubocop:disable Rails/SkipsModelValidations -- reset counter cache after bulk import
+        unless srg_kind?
+          # Rule-only counter cache — the SRG requirement count is a live
+          # scoped query and must never ride rules_count.
+          @component.update_columns(rules_count: @component.rules.where(deleted_at: nil).count) # rubocop:disable Rails/SkipsModelValidations -- reset counter cache after bulk import
+        end
         rule_id_map
       end
 
       private
 
+      # Lineage lookup across ALL declared parents, keyed [srg_id, version]
+      # — a version string is only unique within one SRG, and a
+      # multi-parent component's rows carry lineage into every parent, not
+      # just the primary. Stable srg_id order makes the old-archive
+      # fallback deterministic.
       def load_srg_rules
-        srg_id = @component.security_requirements_guide_id
-        return {} unless srg_id
+        @component.source_srgs.sort_by(&:srg_id).each_with_object({}) do |srg, lookup|
+          srg.srg_rules.each { |row| lookup[[srg.srg_id, row.version]] = row }
+        end
+      end
 
-        SrgRule.where(security_requirements_guide_id: srg_id).index_by(&:version)
+      # Exact resolution when the archive carries the lineage SRG identity;
+      # archives written before that field fall back to the first version
+      # match across the parent set.
+      def resolve_lineage_row(version, lineage_srg_id)
+        return @srg_rules[[lineage_srg_id, version]] if lineage_srg_id.present?
+
+        @srg_rules.find { |(_srg_id, row_version), _row| row_version == version }&.last
       end
 
       def build_rule(rule_data)
-        srg_rule = resolve_srg_rule(rule_data)
-
-        rule = @component.rules.new
-        rule.skip_update_inspec_code = true
+        rule = srg_kind? ? build_authored_srg_rule(rule_data) : build_stig_rule_row(rule_data)
 
         assign_direct_columns(rule, rule_data)
-        rule.srg_rule_id = srg_rule&.id
         rule.component_id = @component.id
 
         build_nested_records(rule, rule_data)
@@ -66,8 +83,36 @@ module Import
         end
 
         restore_timestamps(rule, rule_data)
-        build_additional_answers(rule, rule_data)
+        # additional_answers exist on Rule only.
+        build_additional_answers(rule, rule_data) unless srg_kind?
 
+        rule
+      end
+
+      def srg_kind?
+        @component.document_type == 'srg'
+      end
+
+      def build_stig_rule_row(rule_data)
+        rule = @component.rules.new
+        rule.srg_rule_id = resolve_srg_rule(rule_data)&.id
+        rule
+      end
+
+      # SRG-kind archives rebuild authored SrgRules, never Rules.
+      # Lineage is re-linked by portable catalog version.
+      def build_authored_srg_rule(rule_data)
+        rule = @component.authored_srg_rules.new
+        derived_version = rule_data['derived_from_srg_rule_version']
+        if derived_version.present?
+          derived = resolve_lineage_row(derived_version, rule_data['derived_from_srg_rule_srg_id'])
+          if derived
+            rule.derived_from_srg_rule_id = derived.id
+          else
+            @result.add_warning("SRG rule '#{derived_version}' not found for derived_from of " \
+                                "rule #{rule_data['rule_id']}")
+          end
+        end
         rule
       end
 
@@ -75,7 +120,7 @@ module Import
         version = rule_data['srg_rule_version']
         return nil unless version
 
-        srg_rule = @srg_rules[version]
+        srg_rule = resolve_lineage_row(version, rule_data['srg_rule_srg_id'])
         @result.add_warning("SRG rule '#{version}' not found for rule #{rule_data['rule_id']}") unless srg_rule
         srg_rule
       end

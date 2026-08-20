@@ -1,0 +1,45 @@
+post:
+  operationId: createMembership
+  tags:
+    - Memberships
+  summary: Add a user to a project or component
+  description: >-
+    Creates a membership linking a user to a project or component with the
+    specified role (viewer, author, reviewer, admin). Requires admin role on
+    the target project. Duplicate memberships are rejected.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            membership:
+              $ref: ../components/schemas/MembershipInput.yaml
+        examples:
+          add_author:
+            summary: Add a user as author
+            value:
+              membership:
+                user_id: 42
+                membership_id: 4
+                membership_type: Project
+                role: author
+  responses:
+    '200':
+      description: Membership created
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            added:
+              summary: User added to project
+              value:
+                toast:
+                  title: Member added.
+                  message:
+                    - "Jane Doe added as author."
+                  variant: success
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

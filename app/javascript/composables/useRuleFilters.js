@@ -1,72 +1,53 @@
 import { ref, computed } from "vue";
+import { registryDefaults, countsAsActiveFilter } from "../constants/ruleFilterRegistry";
 
 /**
- * Default filter state - all status/review filters enabled, nest + sort by SRG enabled
- * Exported so other components can use the same defaults (DRY)
+ * Default filter state, built from the page's statuses vocabulary.
+ *
+ * `statusFilters` is a map keyed by status value (vocabulary order) — the
+ * composable never hardcodes a status name, so STIG pages get five entries
+ * and SRG pages three from the same code. Review filters and display
+ * toggles are kind-free named keys.
+ *
+ * Additive model: unchecked = no filter (show all). Per NNG, Baymard,
+ * Carbon Design System: check to narrow, not uncheck to hide.
+ *
+ * @param {Array<string>} statuses - the page's status vocabulary
  */
-export function getDefaultFilters() {
+export function getDefaultFilters(statuses) {
+  // Every key, label, default, persistence flag and kind applicability lives
+  // in the registry. Restating any of them here is what let the four
+  // definition sites drift apart.
   return {
     search: "",
-    // Status filters
-    acFilterChecked: true, // Applicable - Configurable
-    aimFilterChecked: true, // Applicable - Inherently Meets
-    adnmFilterChecked: true, // Applicable - Does Not Meet
-    naFilterChecked: true, // Not Applicable
-    nydFilterChecked: true, // Not Yet Determined
-    // Review filters
-    nurFilterChecked: true, // Not Under Review
-    urFilterChecked: true, // Under Review
-    lckFilterChecked: true, // Locked
-    // Display options
-    nestSatisfiedRulesChecked: true,
-    showSRGIdChecked: false,
-    sortBySRGIdChecked: true,
-    // comment-aware filter — narrows to rules with open (non-adjudicated)
-    // comments, including replies under open parents.
-    openCommentsOnly: false,
+    ...registryDefaults(statuses),
   };
 }
-
-/**
- * Status value to filter key mapping
- */
-const STATUS_FILTER_MAP = {
-  "Applicable - Configurable": "acFilterChecked",
-  "Applicable - Inherently Meets": "aimFilterChecked",
-  "Applicable - Does Not Meet": "adnmFilterChecked",
-  "Not Applicable": "naFilterChecked",
-  "Not Yet Determined": "nydFilterChecked",
-};
 
 /**
  * Composable for managing rule filter state.
  *
  * @param {Ref<Array>} rules - Reactive ref containing array of rule objects
  * @param {number} componentId - Component ID (for potential persistence)
+ * @param {Array<string>} statuses - the page's status vocabulary
  * @returns {Object} Filter state and methods
  */
-export function useRuleFilters(rules, componentId) {
+export function useRuleFilters(rules, componentId, statuses) {
   // State
-  const filters = ref(getDefaultFilters());
+  const filters = ref(getDefaultFilters(statuses));
 
-  // Computed: Rule status counts
+  // Computed: Rule status counts, keyed by status value
   const counts = computed(() => {
-    let ac = 0,
-      aim = 0,
-      adnm = 0,
-      na = 0,
-      nyd = 0;
+    const statusCounts = {};
+    for (const status of statuses) {
+      statusCounts[status] = 0;
+    }
     let nur = 0,
       ur = 0,
       lck = 0;
 
     for (const rule of rules.value) {
-      // Status counts
-      if (rule.status === "Applicable - Configurable") ac++;
-      else if (rule.status === "Applicable - Inherently Meets") aim++;
-      else if (rule.status === "Applicable - Does Not Meet") adnm++;
-      else if (rule.status === "Not Applicable") na++;
-      else if (rule.status === "Not Yet Determined") nyd++;
+      if (rule.status in statusCounts) statusCounts[rule.status]++;
 
       // Review counts
       if (rule.locked) lck++;
@@ -74,49 +55,30 @@ export function useRuleFilters(rules, componentId) {
       else nur++;
     }
 
-    return { ac, aim, adnm, na, nyd, nur, ur, lck };
+    return { statusCounts, nur, ur, lck };
   });
 
-  // Computed: Filtered rules based on current filter state
-  const filteredRules = computed(() => {
-    return rules.value.filter((rule) => {
-      // Status filter
-      const statusFilterKey = STATUS_FILTER_MAP[rule.status];
-      if (statusFilterKey && !filters.value[statusFilterKey]) {
-        return false;
-      }
-
-      // Review filter
-      if (rule.locked) {
-        if (!filters.value.lckFilterChecked) return false;
-      } else if (rule.review_requestor_id) {
-        if (!filters.value.urFilterChecked) return false;
-      } else if (!filters.value.nurFilterChecked) {
-        return false;
-      }
-
-      // Search filter
-      if (filters.value.search) {
-        const searchLower = filters.value.search.toLowerCase();
-        const ruleIdLower = (rule.rule_id || "").toLowerCase();
-        if (!ruleIdLower.includes(searchLower)) {
-          return false;
-        }
-      }
-
-      return true;
-    });
+  const anyStatusFilterActive = computed(() => {
+    return Object.values(filters.value.statusFilters).some(Boolean);
   });
+
+  const anyReviewFilterActive = computed(() => {
+    return (
+      filters.value.nurFilterChecked ||
+      filters.value.urFilterChecked ||
+      filters.value.lckFilterChecked
+    );
+  });
+
+  // NOTE: this composable owns filter STATE only. Deriving the visible rule
+  // list belongs to useRuleNavigation, which the pages wire to this same
+  // state ref. A second pipeline used to live here — unconsumed, and
+  // matching search against rule_id alone while the live one matched the
+  // broader search text — so the two silently disagreed. One pipeline.
 
   // Computed: Are all status filters enabled?
   const allStatusFiltersEnabled = computed(() => {
-    return (
-      filters.value.acFilterChecked &&
-      filters.value.aimFilterChecked &&
-      filters.value.adnmFilterChecked &&
-      filters.value.naFilterChecked &&
-      filters.value.nydFilterChecked
-    );
+    return Object.values(filters.value.statusFilters).every(Boolean);
   });
 
   // Computed: Are all review filters enabled?
@@ -128,21 +90,40 @@ export function useRuleFilters(rules, componentId) {
     );
   });
 
-  // Methods
+  // Which keys narrow the list is declared in the registry, not restated
+  // here — that judgement previously lived in two places that disagreed.
+  const activeFilterCount = computed(() => {
+    const f = filters.value;
+    let count = Object.values(f.statusFilters).filter(Boolean).length;
+    if (f.search) count++;
+    Object.entries(f).forEach(([key, value]) => {
+      if (key === "statusFilters" || key === "search") return;
+      if (value === true && countsAsActiveFilter(key)) count++;
+    });
+    return count;
+  });
+
+  // Methods — a filter name is either a status value (statusFilters key)
+  // or a kind-free named key. Status values can never collide with the
+  // named keys, so the lookup order is safe.
   function toggleFilter(filterName) {
-    if (filterName in filters.value) {
+    if (filterName in filters.value.statusFilters) {
+      filters.value.statusFilters[filterName] = !filters.value.statusFilters[filterName];
+    } else if (filterName in filters.value) {
       filters.value[filterName] = !filters.value[filterName];
     }
   }
 
   function setFilter(filterName, value) {
-    if (filterName in filters.value) {
+    if (filterName in filters.value.statusFilters) {
+      filters.value.statusFilters[filterName] = value;
+    } else if (filterName in filters.value) {
       filters.value[filterName] = value;
     }
   }
 
   function resetFilters() {
-    filters.value = getDefaultFilters();
+    filters.value = getDefaultFilters(statuses);
   }
 
   return {
@@ -151,9 +132,9 @@ export function useRuleFilters(rules, componentId) {
 
     // Computed
     counts,
-    filteredRules,
     allStatusFiltersEnabled,
     allReviewFiltersEnabled,
+    activeFilterCount,
 
     // Methods
     toggleFilter,

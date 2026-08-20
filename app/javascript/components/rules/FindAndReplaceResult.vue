@@ -32,7 +32,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import CommentModal from "../shared/CommentModal.vue";
 
 export default {
@@ -61,10 +60,10 @@ export default {
 
 <style scoped>
 .text-highlighted-red {
-  background-color: #e39d9b;
+  background-color: var(--vulcan-highlight-removed, #e39d9b);
 }
 
 .text-highlighted-green {
-  background-color: #abd5ac;
+  background-color: var(--vulcan-highlight-added, #abd5ac);
 }
 </style>

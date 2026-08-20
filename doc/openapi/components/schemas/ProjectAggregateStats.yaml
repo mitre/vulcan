@@ -1,0 +1,46 @@
+description: >-
+  Project-wide requirement statistics aggregated across every component.
+  Per-document-type status sections never collapse into each other;
+  rule_count, completion and lock percentages are type-agnostic.
+type: object
+required:
+  - rules_by_status_by_type
+  - rules_by_severity
+  - rule_count
+  - completion_pct
+  - lock_pct
+additionalProperties: false
+properties:
+  rules_by_status_by_type:
+    type: object
+    description: Per-document-type status sections.
+    required:
+      - stig
+      - srg
+    additionalProperties: false
+    properties:
+      stig:
+        $ref: ./RulesByStatus.yaml
+      srg:
+        $ref: ./SrgRulesByStatus.yaml
+  rules_by_severity:
+    $ref: ./SeverityBuckets.yaml
+  rule_count:
+    type: integer
+    description: Total live requirements across all components, every document kind.
+    example: 207
+  completion_pct:
+    type:
+      - number
+      - 'null'
+    description: >-
+      Percentage of determined requirements (anything other than Not Yet
+      Determined) across all kinds. Null when the project has no
+      requirements.
+    example: 75.4
+  lock_pct:
+    type:
+      - number
+      - 'null'
+    description: Percentage of locked requirements across all kinds. Null when empty.
+    example: 12.3

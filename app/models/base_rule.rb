@@ -13,21 +13,252 @@ class BaseRule < ApplicationRecord
 
   include RuleConstants
   include CciMap::Constants
+  include PgSearch::Model
 
+  # Full-text search — defined on the base so BOTH requirement kinds (stig
+  # Rules and authored SrgRules) are findable through one scope. Served
+  # entirely by the stored, GIN-indexed base_rules.searchable vector, which
+  # triggers keep current (see db/functions/base_rule_searchable_vector):
+  # title (A), fixtext (B), vendor_comments/status_justification (C),
+  # artifact_description (D), plus associated check text and DISA
+  # description discussion/mitigations at default weight. Ranking is
+  # tsearch-only — a trigram arm in the WHERE clause cannot use the index
+  # and would force sequential scans back.
+  pg_search_scope :search_content,
+                  using: {
+                    tsearch: {
+                      prefix: true,                  # Enable partial word matching
+                      dictionary: 'english',         # Stemming (finds "systems" when searching "system")
+                      any_word: false,               # Require ALL words in multi-word queries
+                      tsvector_column: 'searchable'  # The stored, GIN-indexed vector
+                    }
+                  }
+
+  ##
+  # Phrase search using PostgreSQL's websearch_to_tsquery
+  # Supports Google-like syntax: "exact phrase", -excluded, OR
+  #
+  # @param query [String] the search query with optional quoted phrases
+  # @return [ActiveRecord::Relation] matching requirement rows
+  #
+  scope :search_phrase, lambda { |query|
+    return none if query.blank?
+
+    # Served by the stored, GIN-indexed vector — same document as
+    # search_content, so phrases match across the weighted base columns and
+    # the associated content the triggers fold in.
+    where("#{table_name}.searchable @@ websearch_to_tsquery('english', ?)", query)
+      .order(Arel.sql("ts_rank(#{table_name}.searchable, websearch_to_tsquery('english', #{connection.quote(query)})) DESC"))
+  }
+
+  # Canonical DISA display order for a rule collection: by `version` (the
+  # STIG-ID / SRG-ID — DISA's published document order, zero-padded so a
+  # lexical sort equals the canonical order), then `rule_id`, with `id` as the
+  # unique tiebreaker so the ordering is a deterministic TOTAL order (a
+  # non-unique key alone still leaves ties non-deterministic). Mirrors the
+  # export path (Export::Base uses order(:version, :rule_id)).
+  CANONICAL_ORDER_COLUMNS = %i[version rule_id id].freeze
+
+  # SQL ordering for query paths (lazy loads, pagination, non-serialized use).
+  scope :canonical_order, -> { order(*CANONICAL_ORDER_COLUMNS) }
+
+  # The LIVE requirement rows of the given component(s), regardless of STI
+  # type — Rules for stig-kind, authored SrgRules for srg-kind. This is the
+  # canonical scoping subquery for comment/triage/lock/release queries:
+  # querying through the Rule STI association structurally excludes
+  # authored SrgRules. BaseRule has no soft-delete default scope, so
+  # deleted_at is excluded explicitly.
+  scope :live_for_components, lambda { |component_ids|
+    where(component_id: component_ids, deleted_at: nil)
+  }
+
+  # The SRG requirement this requirement corresponds to, as its published
+  # identifier. The answer differs by document kind — a STIG requirement
+  # DERIVES from a source SRG requirement, while an authored requirement IS
+  # one — so each kind answers for itself and every consumer (serializers,
+  # sidebar display, sidebar sort) reads the one answer instead of
+  # reconstructing it. nil when there is no corresponding requirement; never
+  # a fabricated value.
+  def srg_identifier
+    raise NotImplementedError, "#{self.class} must answer srg_identifier"
+  end
+
+  # The requirement fields the revision-history diff compares — one shape
+  # for every document kind. This base implementation reads the row's own
+  # check and fix text; Rule overrides it because a STIG requirement
+  # satisfied by another resolves those through the satisfying rule.
+  def basic_fields
+    {
+      rule_id: rule_id,
+      title: title,
+      vuln_discussion: disa_rule_descriptions.first&.vuln_discussion,
+      check: checks.first&.content,
+      fix: fixtext
+    }
+  end
+
+  # A plain dup carrying the four nested record collections — the shared
+  # copy mechanic for authored-row generation and relocation moves.
+  # Deliberately NOT amoeba: SrgRule's amoeba block retypes to Rule (the
+  # import path), which is exactly wrong for same-type copies.
+  def dup_with_nested_records
+    copy = dup
+    %i[rule_descriptions disa_rule_descriptions checks references].each do |assoc|
+      copy.public_send(:"#{assoc}=", public_send(assoc).map(&:dup))
+    end
+    copy
+  end
+
+  # The reset every authored-requirement COPY must carry: a duplicated row is
+  # fresh authoring state — unlocked, unclaimed, no field-level locks — never
+  # the source row's lock/ownership. This is the ONE definition shared by
+  # Rule's amoeba block and every dup_with_nested_records copy site
+  # (ComponentCopy, ReleaseCopyService, RelocationExecutor), so the invariant
+  # cannot drift across them. Sets attributes only; the caller persists.
+  def reset_authored_copy_state
+    self.locked = false
+    self.review_requestor_id = nil
+    self.locked_fields = {}
+    self
+  end
+
+  ##
+  # Revert named fields on a requirement row from an audit entry. Works for
+  # any audited requirement kind — Rules and authored SrgRules share the
+  # audit machinery and the child-record associations this restores.
+  #
+  # Parameters:
+  #    rule (BaseRule) - the requirement row to revert a change on
+  #    audit_id (integer) - a specific ID for an audited record
+  #    fields (Array<String>) - the fields to revert from the audit record
+  #
+  def self.revert(rule, audit_id, fields, audit_comment)
+    audit = rule.own_and_associated_audits.find(audit_id)
+
+    # nil check for audit
+    raise(RuleRevertError, 'Could not locate history for this control.') if audit.nil?
+
+    if audit.action == 'update'
+      record = audit.auditable
+
+      # nil check for record
+      raise(RuleRevertError, 'Could not locate record for this history.') if record.nil?
+
+      # An update-revert with no named fields would no-op behind a success
+      # toast (and a missing param crashed to the global rescue) — refuse it
+      # loudly like every other invalid revert request.
+      raise(RuleRevertError, 'Fields to revert are required.') if fields.blank?
+
+      fields.each do |field|
+        # The only field we can revert on AdditionalAnswers is answer
+        revert_field = audit.auditable_type.eql?('AdditionalAnswer') ? 'answer' : field
+
+        raise(RuleRevertError, "Field to revert (#{revert_field.humanize}) does not exist in this history.") unless audit.audited_changes.include?(revert_field)
+
+        # The audited change can either be an array `[prev_val, new_val]`
+        # or just the `val`
+        value = if audit.audited_changes[revert_field].is_a?(Array)
+                  audit.audited_changes[revert_field][0]
+                else
+                  audit.audited_changes[revert_field]
+                end
+
+        # Special case for AdditionalAnswer since it stores in the 'answer' field always
+        if audit.auditable_type.eql?('AdditionalAnswer')
+          record.answer = value
+        else
+          record[revert_field] = value
+        end
+      end
+      record.audit_comment = audit_comment if record.changed?
+      # A refused save must surface — a silent no-op behind a success toast
+      # hides the failure (authored rows carry validations, e.g. the
+      # justification required while Not Applicable).
+      unless record.save
+        raise(RuleRevertError,
+              "Encountered error while reverting this history. #{record.errors.full_messages.join(', ')}")
+      end
+      return
+    end
+
+    raise(RuleRevertError, 'Cannot revert this history.') unless audit.action == 'destroy'
+
+    auditable_type = case audit.auditable_type
+                     when 'RuleDescription'
+                       RuleDescription
+                     when 'DisaRuleDescription'
+                       DisaRuleDescription
+                     when 'Check'
+                       Check
+                     else
+                       raise(RuleRevertError, 'Cannot revert this history type.')
+                     end
+    begin
+      # The child tables key on base_rule_id — a rule_id key here raised
+      # UnknownAttributeError past the RecordInvalid rescue (a 500).
+      auditable_type.create!(audit.audited_changes.merge({ base_rule_id: rule.id, audit_comment: audit_comment }))
+    rescue ActiveRecord::RecordInvalid => e
+      raise(RuleRevertError, "Encountered error while reverting this history. #{e.message}")
+    end
+  end
+
+  # In-memory ordering for ALREADY-loaded collections (the serialization path).
+  # Sorting the eager-loaded records in Ruby reorders them with zero extra
+  # queries — calling the .canonical_order SQL scope on a loaded association
+  # would instead re-query and drop the preload (an N+1). Produces the SAME
+  # order as the SQL scope, including NULLs-last for a nil `version` (Postgres'
+  # default for ORDER BY ASC), so the two primitives never disagree. `rule_id`
+  # is NOT NULL and `id` is always unique, giving a deterministic total order.
+  def self.canonical_sort(rules)
+    rules.sort_by { |rule| [rule.version.nil? ? 1 : 0, rule.version.to_s, rule.rule_id.to_s, rule.id] }
+  end
+
+  # ONE numbering assignment for both requirement kinds: a blank-numbered
+  # component row takes the next number from the component's kind-agnostic
+  # sequence (largest_rule_id spans Rules and authored SrgRules and never
+  # reissues tombstoned numbers). Catalog rows carry their own ids and no
+  # component, so this never touches them.
+  before_validation :set_rule_id
   before_create :ensure_disa_description_exists
   before_create :ensure_check_exists
+  before_destroy :prevent_destroy_if_under_review_or_locked
+
+  # Lock/review-state invariants shared across Rule and authored SrgRule —
+  # locking behaves identically for both. Vacuous for catalog/StigRule
+  # rows, which never carry locked/review state.
+  validate :cannot_be_locked_and_under_review
+  validate :locked_fields_must_be_valid_sections
 
   has_many :rule_descriptions, dependent: :destroy
   has_many :disa_rule_descriptions, dependent: :destroy
   has_many :checks, dependent: :destroy
   has_many :references, dependent: :destroy
+  # Source-side relocation records cascade with a hard-destroyed source
+  # row (open, declined, and executed alike) — declared HERE, not on
+  # SrgRule,
+  # because the component-destroy path traverses BaseRule-classed
+  # all_requirement_rows and an SrgRule-only association would leave the
+  # restrictive FK blocking that cascade. Vacuous for Rule/StigRule and
+  # catalog rows, which never carry relocation records.
+  has_many :requirement_relocations, foreign_key: :source_rule_id,
+                                     inverse_of: :source_rule, dependent: :destroy
+  # Target-side: destroying a landed requirement releases the link with
+  # an audit note rather than blocking or silently nullifying — the
+  # executed history row survives as the orphan the sweep finds. The
+  # database-level nullify remains the backstop for bulk deletes.
+  before_destroy :release_incoming_relocations
+  # Reviews attach to any requirement row (Rule or authored SrgRule) via
+  # the dual-written rule_id column — one shared review machinery.
+  # inverse_of: false — Review#rule is Rule-classed (legacy back-compat)
+  # and must not receive an SrgRule through inverse assignment.
+  has_many :reviews, foreign_key: :rule_id, inverse_of: false, dependent: :destroy
 
   accepts_nested_attributes_for :rule_descriptions, :disa_rule_descriptions, :checks, :references, allow_destroy: true
 
   validates :status, inclusion: {
     in: STATUSES,
     message: "is not an acceptable value, acceptable values are: '#{STATUSES.compact_blank.join("', '")}'"
-  }
+  }, if: :legacy_status_vocabulary?
 
   validates :rule_severity, inclusion: {
     in: SEVERITIES,
@@ -59,7 +290,7 @@ class BaseRule < ApplicationRecord
   def self.from_mapping(rule_class, rule_mapping)
     rule = rule_class.new(
       rule_id: rule_mapping.id,
-      status: rule_mapping.status.first&.status || 'Not Yet Determined',
+      status: rule_mapping.status.first&.status || RuleConstants::STATUS_NYD,
       rule_severity: rule_mapping.severity || 'medium',
       rule_weight: rule_mapping.weight || '10.0',
       version: rule_mapping.version.first&.version,
@@ -113,7 +344,73 @@ class BaseRule < ApplicationRecord
     end
   end
 
+  # The component-scoped display name (e.g. "SRGX-00-000001"). Meaningful
+  # only for requirement rows (component-linked Rule / authored SrgRule).
+  def displayed_name
+    "#{component[:prefix]}-#{rule_id}"
+  end
+
   private
+
+  # System-side release of executed relocation links pointing at this
+  # row as their landed target — audited, unlike the DB-level nullify.
+  def release_incoming_relocations
+    RequirementRelocation.executed.where(target_rule_id: id).find_each do |relocation|
+      relocation.audit_comment = 'Relocation target destroyed — link released'
+      relocation.update!(target_rule_id: nil)
+    end
+  end
+
+  def cannot_be_locked_and_under_review
+    return unless locked && review_requestor_id.present?
+
+    errors.add(:base, 'Control cannot be under review and locked at the same time.')
+  end
+
+  def locked_fields_must_be_valid_sections
+    return if locked_fields.blank?
+
+    invalid = locked_fields.keys - LOCKABLE_SECTION_NAMES
+    return if invalid.empty?
+
+    errors.add(:locked_fields, "contains invalid section names: #{invalid.join(', ')}")
+  end
+
+  ##
+  # Requirement rows are never deleted while under review or locked.
+  # Checks *_was to cover the case where an attribute was changed before
+  # attempting to destroy.
+  def prevent_destroy_if_under_review_or_locked
+    # Allow deletion if it is due to the parent being deleted
+    return if destroyed_by_association.present?
+
+    # Abort if under review and trying to delete
+    if review_requestor_id_was.present?
+      errors.add(:base, 'Control is under review and cannot be destroyed')
+      throw(:abort)
+    end
+
+    # Abort if locked and trying to delete
+    return unless locked_was
+
+    errors.add(:base, 'Control is locked and cannot be destroyed')
+    throw(:abort)
+  end
+
+  # Seam for per-profile status vocabularies: subclasses whose
+  # rows are governed by an authoring profile (authored SrgRules) override
+  # this to opt out of the legacy STIG-shaped inclusion and validate
+  # against their profile's vocabulary instead. Rule and catalog rows keep
+  # today's behavior.
+  def legacy_status_vocabulary?
+    true
+  end
+
+  def set_rule_id
+    return if rule_id.present? || component_id.blank?
+
+    self.rule_id = (component.largest_rule_id + 1).to_s.rjust(6, '0')
+  end
 
   def ensure_disa_description_exists
     return unless disa_rule_descriptions.empty?

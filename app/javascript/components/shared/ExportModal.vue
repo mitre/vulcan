@@ -29,6 +29,7 @@
               v-for="mode in availableModes"
               :key="mode"
               :value="mode"
+              :disabled="!isModeAvailableForKinds(mode)"
               class="mb-2"
               :data-testid="`mode-${mode}`"
             >
@@ -60,6 +61,7 @@
               :key="fmt"
               :value="fmt"
               :disabled="!isFormatEnabled(fmt)"
+              :data-testid="`format-${fmt}`"
               class="mb-2"
             >
               <span class="font-weight-medium">{{ getFormatLabel(fmt) }}</span>
@@ -84,9 +86,10 @@
         <!-- Satisfied-by filter (working_copy/vendor_submission with csv/excel) -->
         <div v-if="showSatisfiedByToggle" class="mb-3">
           <b-form-checkbox v-model="excludeSatisfiedBy" data-testid="exclude-satisfied-by-checkbox">
-            Exclude satisfied-by rules
+            Exclude satisfied-by {{ ruleNoun.plural.toLowerCase() }}
             <small class="text-muted d-block ml-4"
-              >Omit rules whose requirements are covered by another rule</small
+              >Omit {{ ruleNoun.plural.toLowerCase() }} whose requirements are covered by another
+              {{ ruleNoun.singular.toLowerCase() }}</small
             >
           </b-form-checkbox>
         </div>
@@ -152,14 +155,24 @@
           <!-- Individual Component Checkboxes (two-column grid) -->
           <div class="row ml-2 component-scroll" data-testid="component-list">
             <div v-for="opt in componentOptions" :key="opt.value" class="col-6">
-              <b-form-checkbox v-model="selectedComponentIds" :value="opt.value">
-                {{ opt.text }}
+              <b-form-checkbox
+                v-model="selectedComponentIds"
+                :value="opt.value"
+                :disabled="isSrgExcluded(opt.value)"
+              >
+                <span
+                  v-if="isSrgExcluded(opt.value)"
+                  v-b-tooltip.hover
+                  title="This purpose has no meaning for SRG components — excluded from the export"
+                  >{{ opt.text }}</span
+                >
+                <template v-else>{{ opt.text }}</template>
                 <b-icon-exclamation-triangle-fill
                   v-if="isNydOnlyComponent(opt.value)"
                   v-b-tooltip.hover
                   variant="warning"
                   class="ml-1"
-                  title="All rules are 'Not Yet Determined' — this component will produce empty output in DISA exports"
+                  :title="nydIconTitle"
                   data-testid="nyd-warning-icon"
                 />
               </b-form-checkbox>
@@ -179,6 +192,18 @@
     >
       <b-icon-exclamation-triangle-fill class="mr-1" />
       {{ nydWarningMessage }}
+    </b-alert>
+
+    <!-- SRG kind exclusion notice -->
+    <b-alert
+      v-if="srgExclusionMessage"
+      show
+      variant="info"
+      class="mt-3 mb-0"
+      data-testid="srg-exclusion-warning"
+    >
+      <b-icon-exclamation-triangle-fill class="mr-1" />
+      {{ srgExclusionMessage }}
     </b-alert>
 
     <!-- Inline Summary (mode-aware only) -->
@@ -204,13 +229,16 @@
 </template>
 
 <script>
-import { EXPORT_FORMATS } from "../../constants/terminology";
+// Export selection spans components of both kinds, so noun copy reads the
+// deployment-default term rather than a per-kind one.
+import { EXPORT_FORMATS, RULE_TERM } from "../../constants/terminology";
 import {
   EXPORT_MODES,
   MODE_FORMAT_MATRIX,
   FORMAT_LABELS,
   MODE_FORMAT_OVERRIDES,
   ALL_FORMATS,
+  SRG_VALID_MODE_FORMATS,
 } from "../../constants/exportConfig";
 
 /**
@@ -332,7 +360,10 @@ export default {
       });
     },
     allSelected() {
-      return this.selectedComponentIds.length === this.components.length;
+      return (
+        this.selectableComponentIds.length > 0 &&
+        this.selectedComponentIds.length === this.selectableComponentIds.length
+      );
     },
     someSelected() {
       return this.selectedComponentIds.length > 0;
@@ -362,6 +393,34 @@ export default {
         (this.selectedMode === "vendor_submission" || this.selectedMode === "published_stig")
       );
     },
+    srgComponentIds() {
+      return this.components.filter((c) => c.document_type === "srg").map((c) => c.id);
+    },
+    // Components the current purpose+format actually exports — SRG components
+    // excluded by the kind routing are disabled in the checklist and must
+    // never be select-all'd or counted toward the "all selected" tri-state.
+    selectableComponentIds() {
+      return this.components.filter((c) => !this.isSrgExcluded(c.id)).map((c) => c.id);
+    },
+    // The selected purpose+format combination has no srg meaning — srg
+    // components are excluded from the export (mirrors the server's kind
+    // routing, which resolves per purpose AND format: publication serves
+    // srg components as XCCDF only).
+    isSrgExcludedSelection() {
+      if (this.selectedMode === null) return false;
+      const srgFormats = SRG_VALID_MODE_FORMATS[this.selectedMode] || [];
+      if (srgFormats.length === 0) return true;
+      return this.selectedFormat !== null && !srgFormats.includes(this.selectedFormat);
+    },
+    srgExclusionMessage() {
+      if (!this.isSrgExcludedSelection || this.srgComponentIds.length === 0) return null;
+      if (this.hideComponentSelection) {
+        return "This purpose has no meaning for SRG components.";
+      }
+      const count = this.srgComponentIds.length;
+      const noun = count === 1 ? "SRG component is" : "SRG components are";
+      return `${count} ${noun} not included in this purpose and will be excluded from the export.`;
+    },
     nydOnlyComponentIds() {
       return this.components
         .filter((c) => {
@@ -386,13 +445,20 @@ export default {
         this.selectedNydOnlyCount === this.selectedComponentIds.length
       );
     },
+    ruleNoun() {
+      return RULE_TERM;
+    },
+    nydIconTitle() {
+      return `All ${RULE_TERM.plural.toLowerCase()} are 'Not Yet Determined' — this component will produce empty output in DISA exports`;
+    },
     nydWarningMessage() {
       if (!this.isDISAMode || this.selectedNydOnlyCount === 0) return null;
+      const rules = RULE_TERM.plural.toLowerCase();
       if (this.allSelectedAreNydOnly) {
-        return "All selected components have only 'Not Yet Determined' rules and will produce empty output.";
+        return `All selected components have only 'Not Yet Determined' ${rules} and will produce empty output.`;
       }
       const noun = this.selectedNydOnlyCount === 1 ? "component has" : "components have";
-      return `${this.selectedNydOnlyCount} selected ${noun} only 'Not Yet Determined' rules and will produce empty worksheets.`;
+      return `${this.selectedNydOnlyCount} selected ${noun} only 'Not Yet Determined' ${rules} and will produce empty worksheets.`;
     },
     canExport() {
       return this.selectedFormat !== null && this.selectedComponentIds.length > 0;
@@ -418,6 +484,18 @@ export default {
       // Auto-select when only one format available
       if (validFormats.length === 1) {
         this.selectedFormat = validFormats[0];
+      }
+    },
+    // A purpose+format selection with no srg meaning deselects srg
+    // components — they are excluded from the export (the checkboxes
+    // disable with a tooltip and the exclusion notice explains it).
+    // Watching the computed covers both causes: picking an excluding
+    // purpose and picking an excluding format under a serving purpose.
+    isSrgExcludedSelection(excluded) {
+      if (excluded && this.srgComponentIds.length > 0) {
+        this.selectedComponentIds = this.selectedComponentIds.filter(
+          (id) => !this.srgComponentIds.includes(id),
+        );
       }
     },
     visible: {
@@ -453,10 +531,32 @@ export default {
     isNydOnlyComponent(componentId) {
       return this.nydOnlyComponentIds.includes(componentId);
     },
+    // A purpose is offered only when at least one component's kind supports
+    // it — a set of only srg components disables the stig-only purposes
+    // (disabled with an explanatory description, never hidden).
+    isModeAvailableForKinds(mode) {
+      if ((SRG_VALID_MODE_FORMATS[mode] || []).length > 0) return true;
+      return this.srgComponentIds.length < this.components.length;
+    },
+    // A format is offered under the selected purpose only when at least one
+    // component's kind can be served through it — a set of only srg
+    // components disables formats the srg publication path cannot produce
+    // (e.g. InSpec under the publication purpose).
+    isFormatAvailableForKinds(fmt) {
+      const srgFormats = SRG_VALID_MODE_FORMATS[this.selectedMode] || [];
+      if (srgFormats.includes(fmt)) return true;
+      return this.srgComponentIds.length < this.components.length;
+    },
+    isSrgExcluded(componentId) {
+      return this.isSrgExcludedSelection && this.srgComponentIds.includes(componentId);
+    },
     getModeLabel(mode) {
       return EXPORT_MODES[mode]?.label || mode;
     },
     getModeDescription(mode) {
+      if (!this.isModeAvailableForKinds(mode)) {
+        return "Not available for SRG components";
+      }
       return EXPORT_MODES[mode]?.description || "";
     },
     getFormatLabel(fmt) {
@@ -481,6 +581,9 @@ export default {
             .join(" or ");
           return `Available in ${enabledBy} mode`;
         }
+        if (!this.isFormatAvailableForKinds(fmt)) {
+          return "Not available for SRG components";
+        }
       }
       // Standard descriptions
       if (this.hasModes) {
@@ -499,11 +602,13 @@ export default {
     isFormatEnabled(fmt) {
       if (!this.hasModes || !this.selectedMode) return true;
       const validFormats = MODE_FORMAT_MATRIX[this.selectedMode] || [];
-      return validFormats.includes(fmt);
+      return validFormats.includes(fmt) && this.isFormatAvailableForKinds(fmt);
     },
     toggleSelectAll(checked) {
       if (checked) {
-        this.selectedComponentIds = this.components.map((c) => c.id);
+        // Honor the SRG exclusion — select only exportable components, never
+        // the disabled SRG rows (which would ship in the payload otherwise).
+        this.selectedComponentIds = [...this.selectableComponentIds];
       } else {
         this.selectedComponentIds = [];
       }

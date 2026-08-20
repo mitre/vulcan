@@ -1,0 +1,28 @@
+parameters:
+  - $ref: ../components/parameters/RuleId.yaml
+post:
+  operationId: createRuleReview
+  tags:
+    - Reviews
+  summary: Create a review on a rule (comment, request_review, etc.)
+  description: Posts a new comment or review action on the specified rule. Requires viewer role or above on the component.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            review:
+              $ref: ../components/schemas/ReviewInput.yaml
+  responses:
+    '200':
+      description: Review created
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    '422':
+      $ref: ../components/responses/UnprocessableEntity.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

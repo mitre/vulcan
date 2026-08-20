@@ -11,8 +11,6 @@ module Export
     # Each component becomes:
     #   [dir/]inspec.yml         — profile metadata
     #   [dir/]controls/PREFIX-RULE_ID.rb — one file per AC rule (uses rule.inspec_control_file)
-    #
-    # Moved from ExportHelper#inspec_helper.
     class InspecFormatter < BaseFormatter
       def component_based?
         true
@@ -30,7 +28,9 @@ module Export
       end
 
       # Multiple components: produces zip with subdirectories per component.
-      def generate_batch(component_rule_pairs:)
+      # Discards the interface's project keyword — InSpec profiles carry no
+      # project-level document.
+      def generate_batch(component_rule_pairs:, **)
         Zip::OutputStream.write_buffer do |zio|
           component_rule_pairs.each do |pair|
             component = pair[:component]

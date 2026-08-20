@@ -1,0 +1,211 @@
+description: >-
+  A component-authored SRG requirement for the editing form. Shares the
+  common requirement surface with STIG rules — status, locking, reviews,
+  audit history, content — but its status vocabulary is the three-value
+  SRG set, and it carries none of the STIG-only surfaces: no
+  satisfies/satisfied_by, no srg_rule_attributes, no additional answers,
+  no InSpec fields. Lineage is the portable derived_from_version identifier.
+type: object
+required:
+  - id
+  - rule_id
+  - locked
+  - srg_id
+  - derived_from_version
+additionalProperties: false
+properties:
+  id:
+    type: integer
+    description: Unique requirement identifier.
+    example: 10633
+  rule_id:
+    type: string
+    description: Six-digit zero-padded requirement number combined with the component prefix to form the displayed ID.
+    example: "000001"
+  title:
+    type:
+      - string
+      - 'null'
+    description: Title of the requirement. Null if not yet authored.
+    example: The container platform must enforce approved authorizations.
+  version:
+    type:
+      - string
+      - 'null'
+    description: Requirement version identifier. Minted at release for authored requirements.
+    example: null
+  status:
+    type:
+      - string
+      - 'null'
+    description: Applicability status in the SRG authoring vocabulary.
+    enum:
+      - Not Yet Determined
+      - Applicable
+      - Not Applicable
+      - null
+    example: Applicable
+  rule_severity:
+    type:
+      - string
+      - 'null'
+    description: DISA severity level.
+    enum:
+      - low
+      - medium
+      - high
+      - null
+    example: medium
+  locked:
+    type: boolean
+    description: Whether the requirement is locked from further edits.
+    example: false
+  review_requestor_id:
+    type:
+      - integer
+      - 'null'
+    description: ID of the user who requested review. Null if no review requested.
+    example: null
+  changes_requested:
+    type: boolean
+    description: Whether changes have been requested during review.
+    example: false
+  comment_summary:
+    type: object
+    description: Per-requirement comment counts.
+    required:
+      - open
+      - total
+    additionalProperties: false
+    properties:
+      open:
+        type: integer
+        description: Comments not yet adjudicated, including replies under open parents.
+        example: 1
+      total:
+        type: integer
+        description: Total comment count across all statuses.
+        example: 1
+  rule_weight:
+    type:
+      - string
+      - 'null'
+    description: Rule weight for DISA scoring.
+    example: "10.0"
+  fixtext:
+    type:
+      - string
+      - 'null'
+    description: Remediation guidance authored for this requirement.
+    example: Configure the container platform to enforce approved authorizations.
+  fixtext_fixref:
+    type:
+      - string
+      - 'null'
+    description: Fix reference identifier.
+    example: null
+  ident:
+    type:
+      - string
+      - 'null'
+    description: Comma-separated CCI identifiers.
+    example: CCI-000366
+  ident_system:
+    type:
+      - string
+      - 'null'
+    description: Identifier system URI.
+    example: http://iase.disa.mil/cci
+  vendor_comments:
+    type:
+      - string
+      - 'null'
+    description: Vendor comments.
+    example: null
+  vuln_id:
+    type:
+      - string
+      - 'null'
+    description: Vulnerability identifier. Assigned at release for authored requirements.
+    example: null
+  legacy_ids:
+    type:
+      - string
+      - 'null'
+    description: Comma-separated legacy identifiers.
+    example: null
+  component_id:
+    type: integer
+    description: The SRG-kind component this requirement is authored on.
+    example: 46
+  status_justification:
+    type:
+      - string
+      - 'null'
+    description: Justification for the chosen status.
+    example: null
+  artifact_description:
+    type:
+      - string
+      - 'null'
+    description: Artifact description.
+    example: null
+  locked_fields:
+    type: object
+    description: Per-section lock map (section name to true).
+    example: {}
+  nist_control_family:
+    type: string
+    description: NIST control families derived from the CCI identifiers.
+    example: CM
+  srg_id:
+    type:
+      - string
+      - 'null'
+    description: >-
+      The SRG requirement identifier shown by requirement lists (the
+      editor sidebar's SRG ID display) — one kind-agnostic key across
+      document kinds. For an authored requirement this is the row's
+      version value, the same identifier the editor header displays.
+      Null when the row has no requirement identifier yet.
+    example: SRG-APP-000003
+  derived_from_version:
+    type:
+      - string
+      - 'null'
+    description: >-
+      Version (SRG-ID) of the core-catalog requirement this authored
+      requirement was derived from. Null for requirements authored from
+      scratch. Always present — it distinguishes authored requirements
+      from STIG rules wherever the two shapes appear in a oneOf.
+    example: SRG-OS-000023
+  disa_rule_descriptions_attributes:
+    type: array
+    description: DISA rule description records.
+    items:
+      $ref: ./DisaRuleDescription.yaml
+  checks_attributes:
+    type: array
+    description: Check content records.
+    items:
+      $ref: ./CheckSummary.yaml
+  rule_descriptions_attributes:
+    type: array
+    description: Raw rule description records.
+    items:
+      $ref: ./RuleDescriptionSummary.yaml
+  histories:
+    type: array
+    description: >-
+      Audit trail entries for this requirement, ordered by creation time. Present
+      only when a single requirement is requested. The trail cannot be fetched for
+      a whole collection in one query, so a component response omits it for every
+      requirement and callers read it from the per-requirement endpoint for the
+      one being shown.
+    items:
+      $ref: ./AuditEntry.yaml
+  reviews:
+    type: array
+    description: Review actions on this requirement (comments, locks, etc.).
+    items:
+      $ref: ./ReviewSummary.yaml

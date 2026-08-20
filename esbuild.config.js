@@ -27,6 +27,7 @@ const entryPoints = {
   user_password: "app/javascript/packs/user_password.js",
   user_activity: "app/javascript/packs/user_activity.js",
   user_comments: "app/javascript/packs/user_comments.js",
+  user_tokens: "app/javascript/packs/user_tokens.js",
 };
 
 // Check if we're in watch mode

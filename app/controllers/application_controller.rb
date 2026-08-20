@@ -5,6 +5,17 @@
 class ApplicationController < ActionController::Base
   helper :all
   include SlackNotificationsHelper
+  include ErrorRendering
+  include AuthorizationDisclosure
+  include ApiTokenAuthenticatable
+  include LocalLoginEnforceable
+
+  # Explicit CSRF protection. Rails 8 (load_defaults 8.0) enables this by
+  # default, but declaring it explicitly makes the security posture auditable
+  # and documents that ApiTokenAuthenticatable#handle_unverified_request
+  # intentionally exempts token-authenticated (stateless) requests while
+  # session requests stay protected. Verified by api_token_auth_spec.
+  protect_from_forgery with: :exception
 
   before_action :setup_navigation, :authenticate_user!
   before_action :check_access_request_notifications
@@ -36,13 +47,17 @@ class ApplicationController < ActionController::Base
   # so NotAuthorizedError must be declared AFTER StandardError.
   rescue_from StandardError, with: :helpful_errors unless Rails.env.development?
 
+  rescue_from ActiveRecord::RecordNotFound do |_e|
+    render_resource_not_found
+  end
+
   rescue_from NotAuthorizedError, with: :not_authorized
 
   # toast helper. The Vue frontend's
-  # alertOrNotifyResponse mixin reads `{ toast: { title, message, variant } }`
+  # alertOrNotifyResponse (useToast) reads `{ toast: { title, message, variant } }`
   # from JSON responses and renders a Bootstrap-Vue toast. Pre-fix the JSON
   # shape was hand-written at ~45 sites in reviews_controller alone — typos
-  # in `variant:` (e.g. 'unprocessable_entity' instead of 'warning') shipped
+  # in `variant:` (e.g. 'unprocessable_content' instead of 'warning') shipped
   # silently and broke the toast styling. This single helper centralizes
   # the contract.
   #
@@ -52,17 +67,12 @@ class ApplicationController < ActionController::Base
   # `variant` defaults to 'danger' (the most common case). Caller can
   # override to 'warning' / 'success' / 'info'.
   #
-  # `status` defaults to :unprocessable_entity (matches the most common
+  # `status` defaults to :unprocessable_content (matches the most common
   # caller — a validation rejection). Caller overrides for 200 success
   # toasts (e.g. idempotent reopen returning the current state).
-  def render_toast(title:, message:, variant: 'danger', status: :unprocessable_entity)
-    render json: {
-      toast: {
-        title: title,
-        message: Array(message),
-        variant: variant
-      }
-    }, status: status
+  def render_toast(title:, message:, variant: 'danger', status: :unprocessable_content, **extra)
+    render json: { toast: Toast.new(title: title, message: message, variant: variant), **extra },
+           status: status
   end
 
   # generic RecordInvalid handler. Each
@@ -174,6 +184,17 @@ class ApplicationController < ActionController::Base
     raise(NotAuthorizedError, 'You are not authorized to perform viewer actions on this component')
   end
 
+  # Read access to a component: released components are instance-wide
+  # reference data for any authenticated user; unreleased ones require
+  # viewer permission. Shared by ComponentsController and the API.
+  def authorize_component_access
+    if @component&.released
+      authorize_logged_in
+    else
+      authorize_viewer_component
+    end
+  end
+
   # Wrap a side-effect notification call (Slack, SMTP, in-app) so a failure
   # does not bubble out and turn a successful state-change action into a 500.
   # The state change has already committed by the time we notify; from the
@@ -232,6 +253,15 @@ class ApplicationController < ActionController::Base
 
   private
 
+  # Devise hook (documented override point): land on the sign-in page
+  # directly after sign-out. The default (root) triggers a second auth
+  # redirect that consumes the "Signed out successfully." flash before the
+  # sign-in page renders, so the Toaster never shows it — flash survives
+  # exactly one redirect. AC-12(02) requires the explicit logoff message.
+  def after_sign_out_path_for(_resource_or_scope)
+    new_user_session_path
+  end
+
   # Parses duration strings like "1h", "30m", "24h", "3600" into seconds.
   def parse_duration(value)
     str = value.to_s.strip
@@ -247,11 +277,13 @@ class ApplicationController < ActionController::Base
   def find_slack_channel(object, notification_type)
     channels = []
     # In all case except for review request, the general channel
-    # (default configured with the Vulcan instance) will be notified
-    channels << Settings.slack.channel_id unless object.is_a?(Rule)
+    # (default configured with the Vulcan instance) will be notified.
+    # Requirement rows of either kind route to their component's channel.
+    requirement_row = object.is_a?(Rule) || object.is_a?(SrgRule)
+    channels << Settings.slack.channel_id unless requirement_row
     # Usecase: requesting a review, revoking review request, approving or requesting changes on a control
     case object
-    when Rule
+    when Rule, SrgRule
       # Getting the component or project slack channel
       comp = object.component
       channels << (comp.metadata&.dig('Slack Channel ID') || comp.project.metadata&.dig('Slack Channel ID'))
@@ -275,11 +307,7 @@ class ApplicationController < ActionController::Base
   end
 
   def latest_reviewer_slack_id(rule)
-    latest_review = Review.where(
-      rule_id: Rule.find_by(rule_id: rule.rule_id.to_s, component_id: rule.component_id).id,
-      action: 'request_review'
-    ).order(updated_at: :desc).first
-    latest_review&.user&.slack_user_id
+    Review.latest_requestor_for(rule)&.slack_user_id
   end
 
   def membership_action?(action)
@@ -295,6 +323,13 @@ class ApplicationController < ActionController::Base
   end
 
   def helpful_errors(exception)
+    # The rescue must never swallow silently — without this log line a 500's
+    # root cause is invisible everywhere (the response body is a generic toast).
+    Rails.logger.error(
+      "[helpful_errors] #{exception.class}: #{exception.message}\n" \
+      "#{exception.backtrace&.first(15)&.join("\n")}"
+    )
+
     # Based on the accepted response type, either send a JSON response with the
     # alert message, or redirect to home and display the alert.
     message = if current_user&.admin?
@@ -309,63 +344,54 @@ class ApplicationController < ActionController::Base
       end
       format.json do
         render json: {
-          toast: {
+          toast: Toast.new(
             title: 'An error occurred processing your request.',
             message: message,
             variant: 'danger'
-          }
+          )
         }, status: :internal_server_error
       end
     end
   end
 
   def not_authorized(exception)
-    # Based on the accepted response type, either send a JSON response with the
-    # alert message, or redirect to home and display the alert.
+    # Disclosure policy: a denial on a non-discoverable project conceals
+    # existence — answer exactly as a true miss, on every format, so nothing
+    # distinguishes the two.
+    return render_resource_not_found if permission_denied_conceals_existence?
+
+    # Discoverable (or no project context): either send a JSON problem body
+    # with the who-to-ask contacts, or redirect to home and display the alert.
     respond_to do |format|
       format.html do
         flash.alert = not_authorized_html_message(exception)
         redirect_back_or_to(root_path)
       end
       format.json do
-        render json: permission_denied_payload(exception), status: :forbidden
+        render_permission_denied(exception)
       end
+    end
+  end
+
+  # HTML+JSON "not found" negotiation. Both a genuine ActiveRecord::RecordNotFound
+  # and a concealed authorization denial render through this one method, so a
+  # concealed 404 is byte-identical to a true miss on every format.
+  def render_resource_not_found
+    respond_to do |format|
+      format.json { render_not_found }
+      format.html { render plain: 'Not Found', status: :not_found }
+      format.any  { render_not_found }
     end
   end
 
   # Builds the HTML flash message for an authorization denial. Non-admins get
   # an appended hint to contact an administrator — the JSON path already
-  # surfaces structured admin contacts via permission_denied_payload, so this
+  # surfaces structured admin contacts via render_permission_denied, so this
   # keeps the HTML and JSON paths aligned in user-helpfulness.
   def not_authorized_html_message(exception)
     return exception.message if current_user&.admin?
 
     "#{exception.message} Please contact an administrator if you believe this message is in error."
-  end
-
-  # Builds the structured permission-denied JSON body. Includes the project
-  # admin contacts when a project (or component-with-project) is in scope so
-  # the frontend can tell the user exactly who to ask for access. The legacy
-  # `toast` shape is preserved alongside so AlertMixin keeps rendering a
-  # basic toast without changes.
-  def permission_denied_payload(exception)
-    project = permission_denied_project_context
-    admins = project ? project.admins.map { |a| { name: a.name, email: a.email } } : []
-
-    {
-      error: 'permission_denied',
-      message: exception.message,
-      admins: admins,
-      toast: {
-        title: 'Not Authorized.',
-        message: exception.message,
-        variant: 'danger'
-      }
-    }
-  end
-
-  def permission_denied_project_context
-    @project || @component&.project
   end
 
   def setup_navigation
@@ -393,23 +419,16 @@ class ApplicationController < ActionController::Base
                                              .eager_load(:user, :project)
                        end
 
-    @access_requests = pending_requests.map do |ar|
-      {
-        id: ar.id,
-        user: UserBlueprint.render_as_hash(ar.user),
-        project: { id: ar.project.id, name: ar.project.name }
-      }
-    end
+    @access_requests = ProjectAccessRequestBlueprint.render_as_json(pending_requests)
   end
 
   def check_locked_user_notifications
     @locked_users = []
     return unless user_signed_in? && current_user.admin? && Settings.lockout&.enabled
 
-    @locked_users = User.where.not(locked_at: nil)
-                        .limit(100)
-                        .select(:id, :name, :email)
-                        .as_json(only: %i[id name email])
+    @locked_users = UserBlueprint.render_as_json(
+      User.where.not(locked_at: nil).limit(100)
+    )
   end
 
   # Mutates each row hash by adding `mine: 'up' | 'down' | nil` inside
@@ -417,7 +436,7 @@ class ApplicationController < ActionController::Base
   # full { up:0, down:0, mine: } injected. Callers pass the array of
   # rows (any iterable producing hashes) and the row id key (defaults
   # to :id). Single batched query for current_user's reactions.
-  def inject_reactions_mine!(rows, id_key: :id)
+  def inject_reactions_mine!(rows, id_key: 'id')
     return rows if rows.blank? || current_user.nil?
 
     ids = rows.filter_map { |row| row[id_key] }
@@ -425,8 +444,8 @@ class ApplicationController < ActionController::Base
 
     mine = Reaction.where(review_id: ids, user_id: current_user.id).pluck(:review_id, :kind).to_h
     rows.each do |row|
-      row[:reactions] ||= { up: 0, down: 0 }
-      row[:reactions][:mine] = mine[row[id_key]]
+      row['reactions'] ||= { 'up' => 0, 'down' => 0 }
+      row['reactions']['mine'] = mine[row[id_key]]
     end
   end
 end

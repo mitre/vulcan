@@ -9,7 +9,7 @@
       id-prefix="ruleEditor-disa_rule_description"
       :tooltip="tooltips['documentable']"
       @toggle-section-lock="$emit('toggle-section-lock', $event)"
-      @open-composer="bubbleOpenComposer"
+      v-on="commentIconListeners"
     >
       <template #default="{ isDisabled }">
         <b-form-checkbox
@@ -25,12 +25,7 @@
           "
         >
           Documentable
-          <b-icon
-            v-if="tooltips['documentable']"
-            v-b-tooltip.hover.html="tooltips['documentable']"
-            icon="info-circle"
-            aria-hidden="true"
-          />
+          <InfoTooltip v-if="tooltips['documentable']" :text="tooltips['documentable']" />
         </b-form-checkbox>
       </template>
     </RuleFormGroup>
@@ -42,11 +37,8 @@
       label="Vulnerability Discussion"
       id-prefix="ruleEditor-disa_rule_description"
       :tooltip="tooltips['vuln_discussion']"
-      :custom-display-check="
-        () => fields.displayed.includes('vuln_discussion') || rule.status == 'Not Yet Determined'
-      "
       @toggle-section-lock="$emit('toggle-section-lock', $event)"
-      @open-composer="bubbleOpenComposer"
+      v-on="commentIconListeners"
     >
       <template #default="{ inputId, isDisabled }">
         <MarkdownTextarea
@@ -54,7 +46,7 @@
           :value="description.vuln_discussion"
           :input-class="inputClass('vuln_discussion')"
           placeholder=""
-          :disabled="isDisabled || rule.status == 'Not Yet Determined'"
+          :disabled="isDisabled"
           rows="1"
           max-rows="99"
           @input="
@@ -442,14 +434,37 @@
 </template>
 
 <script>
-import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
-import CommentIconHostMixin from "../../../mixins/CommentIconHostMixin.vue";
+import { toRef } from "vue";
+import { ruleTerm } from "../../../constants/terminology";
+import { useFormFeedback } from "../../../composables/useFormFeedback";
+import { useCommentIconHost } from "../../../composables/useCommentIconHost";
 import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
 import RuleFormGroup from "../../shared/RuleFormGroup.vue";
+import InfoTooltip from "../../shared/InfoTooltip.vue";
+
+// Statuses whose mitigations field carries no tooltip (the field is either
+// hidden or self-explanatory there). Data lookup, not control flow — other
+// vocabularies miss and get the default text.
+const MITIGATIONS_TOOLTIP_EXEMPT = Object.freeze({
+  "Not Yet Determined": true,
+  "Applicable - Configurable": true,
+  "Applicable - Inherently Meets": true,
+  "Not Applicable": true,
+});
+
+const POAM_TOOLTIP_BY_STATUS = Object.freeze({
+  "Applicable - Does Not Meet":
+    "Discuss the action of the POA&M in place for this vulnerability, including the start date and end date of the action",
+});
+
 export default {
   name: "DisaRuleDescriptionForm",
-  components: { MarkdownTextarea, RuleFormGroup },
-  mixins: [FormFeedbackMixinVue, CommentIconHostMixin],
+  components: { MarkdownTextarea, RuleFormGroup, InfoTooltip },
+  // Component kind from the editor page root; default keeps tests and
+  // isolated mounts green.
+  inject: {
+    injectedDocumentType: { default: "stig" },
+  },
   // `rule` and `index` are necessary if edits are to be made
   props: {
     description: {
@@ -507,8 +522,29 @@ export default {
         };
       },
     },
+    validFeedback: {
+      type: Object,
+      required: false,
+      default: () => ({}),
+    },
+    invalidFeedback: {
+      type: Object,
+      required: false,
+      default: () => ({}),
+    },
+  },
+  setup(props, { emit }) {
+    const { commentIconListeners, commentIconProps } = useCommentIconHost({
+      rule: toRef(props, "rule"),
+      emit,
+    });
+    const { inputClass } = useFormFeedback(props);
+    return { commentIconListeners, commentIconProps, inputClass };
   },
   computed: {
+    formGroupPropsWithCommentIcon() {
+      return { ...this.formGroupProps, ...this.commentIconProps };
+    },
     formGroupProps() {
       return {
         fields: this.fields,
@@ -525,26 +561,22 @@ export default {
       return {
         documentable:
           "DISA XCCDF metadata: indicates whether this finding should appear in the STIG checklist results. " +
-          "When checked, assessors must document their finding for this requirement during evaluation.",
+          `When checked, assessors must document their finding for this ${ruleTerm(
+            this.injectedDocumentType,
+          ).singular.toLowerCase()} during evaluation.`,
         vuln_discussion: "Discuss, in detail, the rationale for this control's vulnerability",
         false_positives: "List any likely false-positives associated with evaluating this control",
         false_negatives: "List any likely false-negatives associated with evaluating this control",
         mitigations_available:
           "Toggle ON if a compensating control or mitigation exists for this vulnerability. Mutually exclusive with POA&M.",
-        mitigations: [
-          "Not Yet Determined",
-          "Applicable - Configurable",
-          "Applicable - Inherently Meets",
-          "Not Applicable",
-        ].includes(this.rule.status)
+        // Status-KEYED data lookup: statuses outside the map (Applicable -
+        // Does Not Meet, or any other vocabulary) fall to the default text.
+        mitigations: Object.hasOwn(MITIGATIONS_TOOLTIP_EXEMPT, this.rule.status)
           ? null
           : "Discuss how the system mitigates this vulnerability in the absence of a configuration that would eliminate it",
         poam_available:
           "Toggle ON if a Plan of Action & Milestones exists for this vulnerability. Only available when Mitigations is OFF.",
-        poam:
-          this.rule.status === "Applicable - Does Not Meet"
-            ? "Discuss the action of the POA&M in place for this vulnerability, including the start date and end date of the action"
-            : null,
+        poam: POAM_TOOLTIP_BY_STATUS[this.rule.status] || null,
         severity_override_guidance:
           "Guidance for when the severity of this finding may be adjusted based on operational context or compensating controls",
         potential_impacts:

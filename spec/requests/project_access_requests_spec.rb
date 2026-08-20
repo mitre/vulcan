@@ -51,6 +51,10 @@ RSpec.describe 'ProjectAccessRequests' do
       expect do
         delete "/projects/#{project.id}/project_access_requests/#{other_request.id}"
       end.not_to change(ProjectAccessRequest, :count)
+
+      # project is non-discoverable and `user` is a non-member, so the denial
+      # is concealed as a 404 rather than revealing the request exists.
+      expect(response).to have_http_status(:not_found)
     end
   end
 end

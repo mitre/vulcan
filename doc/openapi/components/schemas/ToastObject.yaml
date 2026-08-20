@@ -1,0 +1,31 @@
+description: >-
+  The inner toast notification object with title, message array, and variant.
+  This is the reusable shape — ToastResponse wraps it as { toast: ToastObject }.
+  Use this via $ref when composing multi-key responses (toast + user, toast + reset_url, etc.).
+type: object
+required:
+  - title
+  - message
+  - variant
+additionalProperties: false
+properties:
+  title:
+    type: string
+    description: Short human-readable summary of the outcome.
+    example: User updated.
+  message:
+    type: array
+    description: Detail lines providing additional context about the operation result.
+    items:
+      type: string
+    example:
+      - Successfully updated user.
+  variant:
+    type: string
+    description: Bootstrap alert variant controlling how the toast is styled in the UI.
+    enum:
+      - success
+      - danger
+      - warning
+      - info
+    example: success

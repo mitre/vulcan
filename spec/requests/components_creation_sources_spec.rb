@@ -1,0 +1,281 @@
+# frozen_string_literal: true
+
+require 'rails_helper'
+
+# REQUIREMENT (multi-parent creation API): component creation accepts the
+# full declared source-SRG set plus the primary designation
+# (security_requirements_guide_id IS the primary), lands every source as a
+# join row through the parent-set reconciliation, and imports requirements
+# from ALL declared parents through the one import machinery — full union
+# by default, selective when a requirement filter is supplied. Both kinds.
+RSpec.describe 'Component creation with declared sources' do
+  let_it_be(:admin) { create(:user, admin: true) }
+  let_it_be(:project) { create(:project) }
+  let_it_be(:membership) { Membership.create!(user: admin, membership: project, role: 'admin') }
+
+  let_it_be(:core_a) do
+    create(:security_requirements_guide, :core, :skip_rules, srg_id: 'SRG-CORE-OS-API', version: 'V1R1')
+  end
+  let_it_be(:core_a_rows) do
+    %w[SRG-OS-000001 SRG-OS-000002].map do |version|
+      create(:srg_rule, security_requirements_guide: core_a, version: version)
+    end
+  end
+  let_it_be(:core_b) do
+    create(:security_requirements_guide, :core, :skip_rules, srg_id: 'SRG-CORE-APP-API', version: 'V1R1')
+  end
+  let_it_be(:core_b_rows) do
+    [create(:srg_rule, security_requirements_guide: core_b, version: 'SRG-APP-000101')]
+  end
+  # Full-XML derived SRG — the stig-kind import path parses the benchmark.
+  let_it_be(:derived_a) { create(:security_requirements_guide) }
+
+  before do
+    Rails.application.reload_routes!
+    sign_in admin
+  end
+
+  def created_component(name)
+    Component.find_by!(project: project, name: name)
+  end
+
+  describe 'srg-kind multi-source creation' do
+    it 'creates the component with all join rows, the designated primary, and union-imported requirements' do
+      post "/projects/#{project.id}/components",
+           params: { component: { name: 'Dual-home SRG', prefix: 'DUAL-00', title: 'Dual-home SRG',
+                                  version: 1, release: 1, document_type: 'srg',
+                                  security_requirements_guide_id: core_a.id,
+                                  declared_source_srg_ids: [core_a.id, core_b.id] } }
+
+      expect(response).to have_http_status(:ok)
+      component = created_component('Dual-home SRG')
+      expect(component.source_srgs).to contain_exactly(core_a, core_b)
+      expect(component.security_requirements_guide_id).to eq(core_a.id)
+
+      rows = component.authored_srg_rules
+      expect(rows.map(&:version)).to match_array(%w[SRG-OS-000001 SRG-OS-000002 SRG-APP-000101])
+      expect(rows.map(&:derived_from_srg_rule_id))
+        .to match_array((core_a_rows + core_b_rows).map(&:id))
+    end
+
+    it 'honors selective mode through the requirement filter' do
+      post "/projects/#{project.id}/components",
+           params: { component: { name: 'Selective SRG', prefix: 'SELE-00', title: 'Selective SRG',
+                                  version: 1, release: 1, document_type: 'srg',
+                                  security_requirements_guide_id: core_a.id,
+                                  declared_source_srg_ids: [core_a.id, core_b.id],
+                                  requirement_selections: {
+                                    core_a.id => ['SRG-OS-000002'],
+                                    core_b.id => ['SRG-APP-000101']
+                                  } } }
+
+      expect(response).to have_http_status(:ok)
+      component = created_component('Selective SRG')
+      expect(component.source_srgs).to contain_exactly(core_a, core_b)
+      expect(component.authored_srg_rules.pluck(:version))
+        .to match_array(%w[SRG-OS-000002 SRG-APP-000101])
+    end
+
+    it 'rejects an ineligible declared source with a 422 toast and creates nothing' do
+      post "/projects/#{project.id}/components",
+           params: { component: { name: 'Bad-source SRG', prefix: 'BADS-00', title: 'Bad-source SRG',
+                                  version: 1, release: 1, document_type: 'srg',
+                                  security_requirements_guide_id: core_a.id,
+                                  declared_source_srg_ids: [core_a.id, derived_a.id] } }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body.dig('toast', 'message').join).to include('must be a core SRG')
+      expect(Component.find_by(project: project, name: 'Bad-source SRG')).to be_nil
+    end
+  end
+
+  describe 'srg rebase duplicate' do
+    let_it_be(:core_a_v2) do
+      create(:security_requirements_guide, :core, :skip_rules, srg_id: 'SRG-CORE-OS-API', version: 'V2R1',
+                                                               name: 'OS Core API - Ver 2, Rel 1')
+    end
+    let_it_be(:core_a_v2_rows) do
+      [create(:srg_rule, security_requirements_guide: core_a_v2, version: 'SRG-OS-000001',
+                         fixtext: 'Changed core fix guidance'),
+       create(:srg_rule, security_requirements_guide: core_a_v2, version: 'SRG-OS-000003')]
+    end
+
+    def create_rebase_source(name)
+      Component.create!(project: project, name: name, prefix: 'REBA-00', title: 'Rebase source',
+                        document_type: 'srg', based_on: core_a)
+    end
+
+    it 'reports the reconcile in the toast and never resets the Rule counter on the srg path' do
+      source = create_rebase_source('Rebase Toast Source')
+      allow(Component).to receive(:reset_counters).and_call_original
+
+      post "/projects/#{project.id}/components",
+           params: { component: { name: 'Rebased Copy', prefix: 'REBA-01', title: 'Rebased',
+                                  version: 1, release: 2, duplicate: true, id: source.id,
+                                  project_id: project.id,
+                                  security_requirements_guide_id: core_a_v2.id } }
+
+      expect(response).to have_http_status(:ok)
+      toast = response.parsed_body['toast']
+      rebase_line = toast['message'].find { |m| m.include?('Core rebase') }
+      expect(rebase_line).to eq(
+        'Core rebase: 1 re-linked (1 with changed core content), ' \
+        '1 kept without a core counterpart, 1 added as Not Yet Determined.'
+      )
+      expect(Component).not_to have_received(:reset_counters)
+
+      copy = created_component('Rebased Copy')
+      expect(copy.rules.count).to eq(0)
+      expect(copy.authored_srg_rules.count).to eq(3)
+    end
+  end
+
+  describe 'stig-kind multi-source creation' do
+    let_it_be(:derived_b) { create(:security_requirements_guide) }
+
+    it 'creates the component with both join rows and one Rule sequence across parents' do
+      post "/projects/#{project.id}/components",
+           params: { component: { name: 'Dual-source STIG', prefix: 'DSTG-00', title: 'Dual-source STIG',
+                                  version: 1, release: 1,
+                                  security_requirements_guide_id: derived_a.id,
+                                  declared_source_srg_ids: [derived_a.id, derived_b.id] } }
+
+      expect(response).to have_http_status(:ok)
+      component = created_component('Dual-source STIG')
+      expect(component.source_srgs).to contain_exactly(derived_a, derived_b)
+      expect(component.security_requirements_guide_id).to eq(derived_a.id)
+
+      rules = component.rules
+      expect(rules.size).to eq(derived_a.srg_rules.count + derived_b.srg_rules.count)
+      expect(rules.map { |rule| rule.rule_id.to_i }.sort).to eq((1..rules.size).to_a)
+    end
+  end
+
+  describe 'single-source creation (existing contract unchanged)' do
+    it 'still creates a stig component from security_requirements_guide_id alone' do
+      post "/projects/#{project.id}/components",
+           params: { component: { name: 'Classic STIG', prefix: 'CLAS-00', title: 'Classic STIG',
+                                  version: 1, release: 1,
+                                  security_requirements_guide_id: derived_a.id } }
+
+      expect(response).to have_http_status(:ok)
+      component = created_component('Classic STIG')
+      expect(component.source_srgs).to contain_exactly(derived_a)
+      expect(component.rules.count).to eq(derived_a.srg_rules.count)
+    end
+  end
+
+  # REQUIREMENT (one-call component creation): metadata, additional
+  # questions, and advanced_fields are part of the update surface, so
+  # creation accepts them too — one shared nested-attribute shape, both
+  # document kinds. Provided values replace copied ones on the duplicate
+  # path; the slack_channel_id convenience merges into the one metadata
+  # shape and wins on conflict.
+  describe 'creation extras — metadata, additional questions, advanced fields' do
+    let(:extras) do
+      {
+        advanced_fields: true,
+        component_metadata_attributes: { data: { 'Vendor' => 'Acme', 'POC' => 'Sam' } },
+        additional_questions_attributes: [
+          { name: 'Deployment model?', question_type: 'dropdown', options: %w[cloud onprem] }
+        ]
+      }
+    end
+
+    it 'persists all three at stig-kind creation' do
+      post "/projects/#{project.id}/components",
+           params: { component: { name: 'Extras STIG', prefix: 'EXTS-00', title: 'Extras STIG',
+                                  version: 1, release: 1,
+                                  security_requirements_guide_id: derived_a.id }.merge(extras) }
+
+      expect(response).to have_http_status(:ok)
+      component = created_component('Extras STIG')
+      expect(component.advanced_fields).to be true
+      expect(component.component_metadata.data).to eq('Vendor' => 'Acme', 'POC' => 'Sam')
+      question = component.additional_questions.sole
+      expect(question.name).to eq('Deployment model?')
+      expect(question.question_type).to eq('dropdown')
+      expect(question.options).to eq(%w[cloud onprem])
+    end
+
+    it 'persists all three at srg-kind creation (kind parity)' do
+      post "/projects/#{project.id}/components",
+           params: { component: { name: 'Extras SRG', prefix: 'EXSR-00', title: 'Extras SRG',
+                                  version: 1, release: 1, document_type: 'srg',
+                                  security_requirements_guide_id: core_a.id,
+                                  declared_source_srg_ids: [core_a.id] }.merge(extras) }
+
+      expect(response).to have_http_status(:ok)
+      component = created_component('Extras SRG')
+      expect(component.advanced_fields).to be true
+      expect(component.component_metadata.data).to eq('Vendor' => 'Acme', 'POC' => 'Sam')
+      expect(component.additional_questions.sole.options).to eq(%w[cloud onprem])
+    end
+
+    it 'replaces copied questions and metadata with provided ones on duplicate' do
+      source = created_or_create_duplicate_source
+
+      post "/projects/#{project.id}/components",
+           params: { component: { duplicate: true, id: source.id, name: 'Dup With Extras',
+                                  prefix: 'DUPE-00',
+                                  component_metadata_attributes: { data: { 'Vendor' => 'NewCo' } },
+                                  additional_questions_attributes: [
+                                    { name: 'Replacement question?', question_type: 'freeform' }
+                                  ] } }
+
+      expect(response).to have_http_status(:ok)
+      component = created_component('Dup With Extras')
+      expect(component.component_metadata.data).to eq('Vendor' => 'NewCo')
+      expect(component.additional_questions.sole.name).to eq('Replacement question?')
+    end
+
+    it 'keeps copied questions and metadata on duplicate when none are provided' do
+      source = created_or_create_duplicate_source
+
+      post "/projects/#{project.id}/components",
+           params: { component: { duplicate: true, id: source.id, name: 'Dup Plain', prefix: 'DUPP-00' } }
+
+      expect(response).to have_http_status(:ok)
+      component = created_component('Dup Plain')
+      expect(component.component_metadata.data).to eq('Origin' => 'Copied')
+      expect(component.additional_questions.sole.name).to eq('Copied question?')
+    end
+
+    it 'merges the slack convenience param into provided metadata — param wins on conflict' do
+      post "/projects/#{project.id}/components",
+           params: { component: { name: 'Slack Merge', prefix: 'SLKM-00', title: 'Slack Merge',
+                                  version: 1, release: 1,
+                                  security_requirements_guide_id: derived_a.id,
+                                  slack_channel_id: 'C0111111111',
+                                  component_metadata_attributes: {
+                                    data: { 'Vendor' => 'Acme', 'Slack Channel ID' => 'C0000000000' }
+                                  } } }
+
+      expect(response).to have_http_status(:ok)
+      expect(created_component('Slack Merge').component_metadata.data)
+        .to eq('Vendor' => 'Acme', 'Slack Channel ID' => 'C0111111111')
+    end
+
+    it 'keeps the slack_channel_id convenience path working alone (regression)' do
+      post "/projects/#{project.id}/components",
+           params: { component: { name: 'Slack Only', prefix: 'SLKO-00', title: 'Slack Only',
+                                  version: 1, release: 1,
+                                  security_requirements_guide_id: derived_a.id,
+                                  slack_channel_id: 'C0222222222' } }
+
+      expect(response).to have_http_status(:ok)
+      expect(created_component('Slack Only').component_metadata.data)
+        .to eq('Slack Channel ID' => 'C0222222222')
+    end
+
+    def created_or_create_duplicate_source
+      Component.find_by(project: project, name: 'Dup Source') || begin
+        source = create(:component, project: project, name: 'Dup Source', prefix: 'DUPS-00',
+                                    based_on: derived_a)
+        ComponentMetadata.create!(component: source, data: { 'Origin' => 'Copied' })
+        AdditionalQuestion.create!(component: source, name: 'Copied question?', question_type: 'freeform')
+        source
+      end
+    end
+  end
+end

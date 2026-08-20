@@ -1,0 +1,31 @@
+delete:
+  operationId: deleteAuthLogout
+  tags:
+    - Auth
+  summary: Sign out and destroy session
+  description: >-
+    Destroys the current session. Subsequent requests require
+    re-authentication. Returns a confirmation message.
+  responses:
+    '200':
+      description: Session destroyed
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - message
+            properties:
+              message:
+                type: string
+                description: Confirmation message.
+                example: Signed out successfully
+          examples:
+            success:
+              summary: Signed out
+              value:
+                message: Signed out successfully
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

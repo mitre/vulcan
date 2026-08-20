@@ -1,0 +1,152 @@
+parameters:
+  - $ref: ../components/parameters/ComponentId.yaml
+get:
+  operationId: getComponent
+  tags:
+    - Components
+  summary: Component detail with rules
+  description: >-
+    Returns full component details including all rules with their content
+    fields, for either document kind. Members (any role) receive the editor
+    view; a non-member receives the read-only show view for a RELEASED
+    component (released components are never concealed, whatever the
+    project's visibility). An unreleased component answers a non-member per
+    the disclosure policy: 403 with the project admins to ask when the
+    project is discoverable, or the concealment 404 when it is hidden.
+  responses:
+    '200':
+      description: >-
+        Component with rules — the editor view for members, the read-only
+        show view otherwise. A null effective_permissions marks the show
+        branch. The two shapes share their core fields, so they are
+        documented as anyOf.
+      content:
+        application/json:
+          schema:
+            anyOf:
+              - $ref: ../components/schemas/ComponentEditorResponse.yaml
+              - $ref: ../components/schemas/ComponentShowResponse.yaml
+          examples:
+            component:
+              summary: Component editor view (project member)
+              value:
+                id: 1
+                name: Photon OS 3
+                prefix: PHOS-03
+                title: "Photon OS 3 STIG Readiness Guide"
+                rules_count: 203
+                comment_phase: open
+                version: 1
+                release: 1
+                released: false
+            non_member_show:
+              summary: Read-only show view (non-member, released component)
+              value:
+                id: 1
+                name: Photon OS 3
+                prefix: PHOS-03
+                title: "Photon OS 3 STIG Readiness Guide"
+                released: true
+                effective_permissions: null
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '404':
+      $ref: ../components/responses/NotFound.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+put:
+  operationId: updateComponent
+  tags:
+    - Components
+  summary: Update component attributes
+  description: >-
+    Updates component metadata (name, prefix, version, release, description).
+    Requires admin role on the parent project. Does not modify rules — use
+    the rule endpoints for rule content changes.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            component:
+              $ref: ../components/schemas/ComponentUpdateInput.yaml
+        examples:
+          update:
+            summary: Update version and release
+            value:
+              component:
+                version: 2
+                release: 1
+  responses:
+    '200':
+      description: Component updated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            updated:
+              summary: Component updated
+              value:
+                toast:
+                  title: Component updated.
+                  message:
+                    - Successfully updated component.
+                  variant: success
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+patch:
+  operationId: patchComponent
+  tags:
+    - Components
+  summary: Partial update of component attributes
+  description: >-
+    Partial update — same behavior as PUT but only supplied fields are changed.
+    Requires admin role on the parent project.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            component:
+              $ref: ../components/schemas/ComponentUpdateInput.yaml
+  responses:
+    '200':
+      description: Component updated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+delete:
+  operationId: deleteComponent
+  tags:
+    - Components
+  summary: Delete a component and all its rules
+  description: >-
+    Permanently deletes the component, all its rules, reviews, and associated
+    data. Requires admin role on the parent project. This action cannot be
+    undone.
+  responses:
+    '200':
+      description: Component deleted
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            deleted:
+              summary: Component deleted
+              value:
+                toast:
+                  title: Component deleted.
+                  message:
+                    - Successfully deleted component.
+                  variant: success
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

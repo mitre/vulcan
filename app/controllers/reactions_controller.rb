@@ -5,9 +5,10 @@
 # of the parent project AND comment_phase='open'; GET works in any
 # phase so historical reactions stay visible during closed periods.
 #
-# Existence-oracle hardening: set_review returns the same structured 403
-# for missing/non-comment/non-member reviews so a non-member can't probe
-# review IDs.
+# Existence-oracle hardening: set_review conceals missing, non-comment, and
+# non-discoverable-project reviews behind the same 404 not_found so a
+# non-member can't probe review IDs. (Members of a discoverable project still
+# get an honest 403 — they can already see the project exists.)
 class ReactionsController < ApplicationController
   before_action :set_review
   before_action :authorize_viewer_project
@@ -61,24 +62,17 @@ class ReactionsController < ApplicationController
 
   def set_review
     @review = Review.find_by(id: params[:review_id])
-    return deny_existence! unless @review && @review.action == 'comment'
+    return deny_existence! unless @review && @review.action == Review::ACTION_COMMENT
 
     @project = @review.component&.project
   end
 
-  # Soft 403: same shape as authz denial regardless of whether the
-  # review is missing, non-comment, or unreachable. Closes the
-  # existence-oracle path; "isn't available" wording avoids misleading
-  # users who hit a stale link to a deleted comment.
+  # Conceal as a plain 404 not_found — byte-identical to a true miss and to
+  # the concealed denial a non-member gets for a comment in a non-discoverable
+  # project. A missing or non-comment review must be indistinguishable from a
+  # real comment the caller may not reach, so review ids cannot be probed.
   def deny_existence!
-    render json: {
-      error: 'permission_denied',
-      message: "The requested comment isn't available.",
-      admins: [],
-      toast: { title: 'Not available.',
-               message: "The requested comment isn't available.",
-               variant: 'danger' }
-    }, status: :forbidden
+    render_resource_not_found
   end
 
   def verify_comments_open

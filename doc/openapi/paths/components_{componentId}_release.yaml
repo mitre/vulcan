@@ -1,0 +1,70 @@
+parameters:
+  - $ref: ../components/parameters/ComponentId.yaml
+post:
+  operationId: releaseComponent
+  tags:
+    - Components
+  summary: Release an SRG component to the catalog
+  description: >-
+    Releases an SRG-kind component in one transaction: verifies every live
+    requirement is decided (never Not Yet Determined) and locked, mints the
+    final published identifiers, generates the published SRG XCCDF, creates
+    the catalog SecurityRequirementsGuide entry with its columns derived from
+    that document, copies the published requirements onto the entry, and
+    flags the component released. The released entry behaves exactly like an
+    uploaded SRG — new components can base on it immediately. Requires the
+    author role on the component. STIG readiness components do not use this
+    endpoint (their release is the released flag on component update).
+  responses:
+    '200':
+      description: Component released and attached to the catalog
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ComponentReleaseResponse.yaml
+          examples:
+            released:
+              summary: First release of a derived SRG
+              value:
+                toast:
+                  title: Component released.
+                  message:
+                    - Container Best Practice SRG - Ver 1, Rel 1 is now in the SRG catalog.
+                  variant: success
+                catalog_srg:
+                  id: 42
+                  srg_id: Container_Best_Practice_SRG
+                  version: V1R1
+                  name: Container Best Practice SRG - Ver 1, Rel 1
+                changelog:
+                  version: V1R1
+                  removals: []
+                  text: |-
+                    Container Best Practice SRG V1R1 — Release Changelog
+
+                    No requirements were removed in this release.
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '404':
+      $ref: ../components/responses/NotFound.yaml
+    '422':
+      description: >-
+        Release blocked — the component is not an SRG component, is already
+        released, is missing its version/release pair or abbreviation, still
+        has Not Yet Determined requirements, or has unlocked requirements.
+        The toast messages carry every blocking reason.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            undecided:
+              summary: Undecided requirements block the release
+              value:
+                toast:
+                  title: Could not release component.
+                  message:
+                    - 'release is blocked: 3 live requirement(s) still Not Yet Determined — every requirement must be decided'
+                  variant: danger

@@ -1,15 +1,16 @@
 <template>
   <span>
     <b-button
-      v-b-tooltip.hover="disabled ? disabledTitle : ''"
-      class="px-2 m-2"
-      :variant="is_project_table ? 'primary' : 'success'"
+      v-b-tooltip.hover="disabled ? disabledTitle : is_project_table ? 'Edit' : ''"
+      :class="is_project_table ? '' : 'px-2 m-2'"
+      :size="is_project_table ? 'sm' : undefined"
+      :variant="is_project_table ? 'outline-secondary' : 'success'"
       :disabled="disabled"
-      :title="disabled ? disabledTitle : ''"
+      :title="disabled ? disabledTitle : is_project_table ? 'Edit' : ''"
       @click="showModal()"
     >
-      <b-icon v-if="is_project_table" icon="wrench" aria-hidden="true" />
-      {{ is_project_table ? "Update" : "Update Details" }}
+      <b-icon :icon="is_project_table ? 'pencil' : 'wrench'" aria-hidden="true" />
+      <span v-if="!is_project_table">Update Details</span>
     </b-button>
     <b-modal
       ref="updateProjectDetailsModal"
@@ -37,13 +38,11 @@
 </template>
 
 <script>
-import axios from "axios";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { updateProject } from "../../api/projectsApi";
+import { useToast } from "../../composables/useToast";
 
 export default {
   name: "UpdateProjectDetailsModal",
-  mixins: [AlertMixinVue, FormMixinVue],
   props: {
     project: {
       type: Object,
@@ -66,6 +65,10 @@ export default {
       default: "",
     },
   },
+  setup() {
+    const { alertOrNotifyResponse } = useToast();
+    return { alertOrNotifyResponse };
+  },
   data: function () {
     return {
       name: this.project.name,
@@ -82,9 +85,7 @@ export default {
     },
     updateProjectDetails: function () {
       this.$refs["updateProjectDetailsModal"].hide();
-      let payload = { project: { name: this["name"], description: this["description"] } };
-      axios
-        .put(`/projects/${this.project.id}`, payload)
+      updateProject(this.project.id, { name: this["name"], description: this["description"] })
         .then(this.editProjectSuccess)
         .catch(this.alertOrNotifyResponse);
     },

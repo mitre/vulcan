@@ -1,0 +1,66 @@
+get:
+  operationId: componentSummary
+  tags:
+    - Components
+  summary: Get a lightweight component summary
+  description: >-
+    Returns the component header — identity, counts, SRG info, the caller's
+    effective permissions, and the serialized comment-phase state machine —
+    without the heavy rules/reviews/histories arrays. Access matches the
+    component show rules: released components are readable by any
+    authenticated user; unreleased ones require viewer permission.
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: Numeric ID of the component.
+      schema:
+        type: integer
+      example: 38
+  responses:
+    '200':
+      description: Component summary with phase state
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ComponentSummaryResponse.yaml
+          examples:
+            open_period:
+              summary: Component in an open comment period
+              value:
+                id: 38
+                name: RHEL 9 Hardened Baseline
+                prefix: RHEL-09
+                document_type: stig
+                title: Red Hat Enterprise Linux 9
+                version: 2
+                release: 1
+                released: false
+                project_id: 7
+                component_id: null
+                security_requirements_guide_id: 3
+                based_on_title: General Purpose Operating System Security Requirements Guide
+                based_on_version: V3R3
+                rules_count: 203
+                memberships_count: 4
+                severity_counts:
+                  high: 20
+                  medium: 173
+                  low: 10
+                pending_comment_count: 5
+                effective_permissions: viewer
+                updated_at: "2026-07-10T14:07:37.142Z"
+                comment_phase: open
+                closed_reason: null
+                comment_period_starts_at: "2026-07-01T00:00:00.000Z"
+                comment_period_ends_at: "2026-07-15T00:00:00.000Z"
+                accepting_new_comments: true
+                triaging_active: true
+                frozen_for_writes: false
+                comment_period_days_remaining: 5
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '404':
+      $ref: ../components/responses/NotFound.yaml

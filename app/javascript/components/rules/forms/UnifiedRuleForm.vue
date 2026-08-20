@@ -24,8 +24,8 @@
           style="
             width: 12px;
             height: 12px;
-            border-left: 3px solid #ffc107;
-            background: rgba(255, 193, 7, 0.15);
+            border-left: 3px solid var(--vulcan-warning, #ffc107);
+            background: var(--vulcan-warning-tint, rgba(255, 193, 7, 0.15));
           "
         />
         Section locked
@@ -39,8 +39,8 @@
           style="
             width: 12px;
             height: 12px;
-            border-left: 3px solid #17a2b8;
-            background: rgba(23, 162, 184, 0.15);
+            border-left: 3px solid var(--vulcan-info, #17a2b8);
+            background: var(--vulcan-info-tint, rgba(23, 162, 184, 0.15));
           "
         />
         Under review
@@ -54,18 +54,32 @@
           style="
             width: 12px;
             height: 12px;
-            border-left: 3px solid #6c757d;
-            background: rgba(108, 117, 125, 0.15);
+            border-left: 3px solid var(--vulcan-secondary, #6c757d);
+            background: var(--vulcan-secondary-tint, rgba(108, 117, 125, 0.15));
           "
         />
         Locked
       </span>
     </div>
 
-    <b-form>
+    <!-- Status hint: above form so user sees it before the fields.
+         Config-derived per kind — SRG working statuses hide nothing. -->
+    <b-alert
+      v-if="fieldsHiddenByStatus"
+      variant="info"
+      show
+      class="py-2 mb-2"
+      data-testid="fields-hidden-alert"
+    >
+      <b-icon icon="info-circle-fill" class="mr-1" />
+      Some fields are hidden due to the control's status.
+    </b-alert>
+
+    <b-form data-testid="rule-form-wrapper">
       <RuleForm
         :rule="rule"
         :statuses="statuses"
+        :document-type="documentType"
         :disabled="isFormDisabled"
         :fields="ruleFormFields"
         :locked-sections="lockedSections"
@@ -78,23 +92,21 @@
         :additional_questions="additional_questions"
         @toggle-section-lock="onToggleSectionLock"
         @open-composer="$emit('open-composer', $event)"
+        @view-comments="$emit('view-comments', $event)"
+        @navigate-to-rule="goToParentRule"
       />
     </b-form>
 
+    <!-- SRG reference block is Rule-only: an authored SRG row IS the
+         requirement, and the backend omits srg_rule/srg_info entirely —
+         absent for SRG-kind, deliberately. -->
     <RuleSecurityRequirementsGuideInformation
+      v-if="documentType !== 'srg'"
       :nist_control_family="rule.nist_control_family"
       :srg_rule="rule.srg_rule_attributes"
       :cci="rule.ident"
       :srg_info="rule.srg_info"
     />
-
-    <!-- Status hint -->
-    <div v-if="effectiveStatus !== 'Applicable - Configurable'">
-      <hr />
-      <p>
-        <small>Some fields are hidden due to the control's status.</small>
-      </p>
-    </div>
   </div>
 </template>
 
@@ -102,7 +114,9 @@
 import { computed } from "vue";
 import RuleForm from "./RuleForm.vue";
 import RuleSecurityRequirementsGuideInformation from "../RuleSecurityRequirementsGuideInformation.vue";
+import { messageLabels } from "../../../constants/terminology";
 import { useRuleFormFields } from "../../../composables/useRuleFormFields";
+import { useRuleSelectionStore } from "../../../stores/ruleSelection";
 import "../../../styles/field-states.css";
 
 export default {
@@ -124,6 +138,10 @@ export default {
       type: Boolean,
       default: false,
     },
+    documentType: {
+      type: String,
+      default: "stig",
+    },
     advancedMode: {
       type: Boolean,
       default: false,
@@ -142,11 +160,17 @@ export default {
     const ruleRef = computed(() => props.rule);
     const advancedRef = computed(() => props.advancedMode);
     const readOnlyRef = computed(() => props.readOnly);
+    const documentTypeRef = computed(() => props.documentType);
 
-    const composable = useRuleFormFields(ruleRef, advancedRef, { readOnly: readOnlyRef });
+    const composable = useRuleFormFields(ruleRef, advancedRef, {
+      readOnly: readOnlyRef,
+      documentType: documentTypeRef,
+    });
+    const ruleSelectionStore = useRuleSelectionStore();
 
     return {
       ...composable,
+      ruleSelectionStore,
     };
   },
   data() {
@@ -156,7 +180,11 @@ export default {
     lockStatusBadge() {
       const r = this.rule;
       if (r.locked) {
-        return { variant: "secondary", icon: "lock-fill", text: "Rule Locked" };
+        return {
+          variant: "secondary",
+          icon: "lock-fill",
+          text: messageLabels(this.documentType).lockedBadge,
+        };
       }
       if (r.review_requestor_id) {
         return { variant: "info", icon: "eye", text: "Under Review" };
@@ -172,17 +200,21 @@ export default {
       return this.rule.locked_fields || {};
     },
     showSectionLocks() {
-      if (this.readOnly || this.rule.locked || this.rule.review_requestor_id) return false;
-      return ["admin", "reviewer"].includes(this.effectivePermissions);
+      if (this.rule.locked || this.rule.review_requestor_id) return false;
+      return ["admin", "reviewer"].includes(this.effectivePermissions) || this.readOnly;
     },
     canManageSectionLocks() {
+      if (this.readOnly) return false;
       if (!this.showSectionLocks) return false;
-      return this.rule.status !== "Not Yet Determined";
+      return true;
     },
   },
   methods: {
     onToggleSectionLock(section) {
       this.$emit("toggle-section-lock", section);
+    },
+    goToParentRule(parentId) {
+      this.ruleSelectionStore.selectRule(parentId);
     },
   },
 };

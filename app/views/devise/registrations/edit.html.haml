@@ -4,6 +4,6 @@
 = render 'users/settings_layout', active: :profile do
   #user-profile
     %userprofile{
-      'v-bind:user': current_user.to_json,
+      'v-bind:user': UserBlueprint.render(current_user, view: :profile),
       'v-bind:session-auth-method': (session[:auth_method] || 'local').to_json
     }

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# PR-717 review remediation .2 — columns + FKs only. Index creation is
+# Columns + FKs only. Index creation is
 # split into a separate concurrent-index migration
 # (20260501171000_add_review_lifecycle_indexes_concurrently) so deployment
 # does not acquire ACCESS EXCLUSIVE on `reviews` for the duration of all
@@ -21,7 +21,7 @@ class AddLifecycleColumnsToReviews < ActiveRecord::Migration[8.0]
       t.string   :section
     end
 
-    # PR-717 review remediation .2kp — Strong Migrations 2-pass: add FK
+    # Strong Migrations 2-pass: add FK
     # with validate: false (no ACCESS EXCLUSIVE during validation).
     # Companion migration 20260502160000 runs validate_foreign_key inside
     # disable_ddl_transaction! to validate without the long lock on

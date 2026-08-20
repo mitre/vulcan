@@ -36,6 +36,36 @@ module Export
         raise NotImplementedError
       end
 
+      # Whether this mode can serve SRG-kind components (authored SrgRules).
+      # Modes that opt in load requirements through srg_eager_load_associations;
+      # everything else stays on the Rule association.
+      def supports_srg_kind?
+        false
+      end
+
+      # The mode an SRG-kind component routes to when this mode cannot serve
+      # it (e.g. the stig publication mode routes srg components to the srg
+      # publication mode). Nil means no counterpart exists — multi-component
+      # exports EXCLUDE srg components for this mode, and a single-component
+      # export refuses loudly. The route only engages when the counterpart is
+      # a valid Registry combination for the requested format.
+      def srg_counterpart
+        nil
+      end
+
+      # The BaseRule-shared association set — authored SrgRules carry none
+      # of the Rule-only associations (satisfies, srg_rule, additional_answers).
+      # derived_from carries its security_requirements_guide for the
+      # serializer's portable lineage key (derived_from_srg_rule_srg_id) —
+      # a belongs_to hop, so it joins without multiplying rows.
+      def srg_eager_load_associations
+        [
+          :disa_rule_descriptions, :rule_descriptions, :checks, :references,
+          { derived_from: :security_requirements_guide },
+          { reviews: [:user, { reactions: :user }] }
+        ]
+      end
+
       # Whether to include the Source column (Direct/Inherited) in Excel exports.
       # Override in modes where inherited row distinction is useful.
       def include_source_column?

@@ -1,0 +1,141 @@
+/* Triage status color palette — SINGLE SOURCE OF TRUTH.
+   All triage-colored UI (row tints, badges, progress bar pills/segments)
+   must use these CSS custom properties, not hardcoded hex values.
+
+   Palette rationale (ISO 3864 + USWDS + UX research):
+   - Green  = Accepted (unconditional positive)
+   - Blue   = Accepted with Changes (positive + action required — ISO blue = mandatory action)
+   - Red    = Declined (negative)
+   - Yellow = Informational / Needs clarification (neutral advisory)
+   - Grey   = Pending, Withdrawn, Duplicate (inactive / terminal) */
+
+:root {
+  /* Layer 1 core variables are defined in application.scss (:root + [data-bs-theme="dark"]).
+     Do NOT redefine --vulcan-* here — duplicates override dark mode values.
+     This file defines only Layer 2 (--triage-*) and Layer 3 ([data-triage]) selectors. */
+
+  /* ── Layer 2: Triage status → core palette mapping ──────────────
+     Each --triage-* references a --vulcan-* core color from Layer 1
+     (application.scss). To change a triage color, either:
+       (a) Override the --vulcan-* core color (changes ALL consumers), or
+       (b) Override the --triage-* alias (changes only triage).
+     Text contrast colors use Bootstrap color-yiq via Layer 1 for
+     solid backgrounds; custom overrides below for tint backgrounds
+     where color-yiq's white/dark binary is insufficient. */
+
+  --triage-concur: var(--vulcan-success);
+  --triage-concur-tint: var(--vulcan-success-tint);
+  --triage-concur-text: var(--vulcan-success-text);
+
+  --triage-concur-with-comment: var(--vulcan-primary);
+  --triage-concur-with-comment-tint: var(--vulcan-primary-tint);
+  --triage-concur-with-comment-text: var(--vulcan-primary-text);
+
+  --triage-non-concur: var(--vulcan-danger);
+  --triage-non-concur-tint: var(--vulcan-danger-tint);
+  --triage-non-concur-text: var(--vulcan-danger-text);
+
+  --triage-informational: var(--vulcan-warning);
+  --triage-informational-tint: var(--vulcan-warning-tint);
+  --triage-informational-text: var(--vulcan-warning-text);
+
+  --triage-pending: var(--vulcan-secondary);
+  --triage-pending-tint: var(--vulcan-secondary-tint);
+  --triage-pending-text: var(--vulcan-secondary);
+
+  --triage-withdrawn: var(--vulcan-purple);
+  --triage-withdrawn-tint: var(--vulcan-purple-tint);
+  --triage-withdrawn-text: var(--vulcan-purple-text);
+
+  --triage-duplicate: var(--vulcan-teal);
+  --triage-duplicate-tint: var(--vulcan-teal-tint);
+  --triage-duplicate-text: var(--vulcan-teal-text);
+
+  --triage-addressed-by: var(--vulcan-indigo);
+  --triage-addressed-by-tint: var(--vulcan-indigo-tint);
+  --triage-addressed-by-text: var(--vulcan-indigo-text);
+}
+
+/* ── Layer 3: Data-attribute selectors → intermediate variables ────────
+   Components set data-triage="status" on elements. These selectors map
+   each status to intermediate CSS custom properties that components read.
+   Adding a new status = add ONE block here. Zero component CSS changes.
+
+   Intermediate variables:
+     --status-color    solid color (pills, segments, borders)
+     --status-tint     light background (badges, row tints)
+     --status-fg       text on tint background
+     --status-pill-fg  text on solid background (white or dark) */
+
+[data-triage="pending"] {
+  --status-color: var(--triage-pending);
+  --status-tint: var(--triage-pending-tint);
+  --status-fg: var(--triage-pending-text);
+  --status-pill-fg: var(--vulcan-component-bg);
+}
+
+[data-triage="concur"] {
+  --status-color: var(--triage-concur);
+  --status-tint: var(--triage-concur-tint);
+  --status-fg: var(--triage-concur-text);
+  --status-pill-fg: var(--triage-concur-text);
+}
+
+[data-triage="concur_with_comment"] {
+  --status-color: var(--triage-concur-with-comment);
+  --status-tint: var(--triage-concur-with-comment-tint);
+  --status-fg: var(--triage-concur-with-comment-text);
+  --status-pill-fg: var(--vulcan-component-bg);
+}
+
+[data-triage="non_concur"] {
+  --status-color: var(--triage-non-concur);
+  --status-tint: var(--triage-non-concur-tint);
+  --status-fg: var(--triage-non-concur-text);
+  --status-pill-fg: var(--vulcan-component-bg);
+}
+
+[data-triage="informational"],
+[data-triage="needs_clarification"] {
+  --status-color: var(--triage-informational);
+  --status-tint: var(--triage-informational-tint);
+  --status-fg: var(--triage-informational-text);
+  --status-pill-fg: var(--vulcan-text);
+}
+
+[data-triage="withdrawn"] {
+  --status-color: var(--triage-withdrawn);
+  --status-tint: var(--triage-withdrawn-tint);
+  --status-fg: var(--triage-withdrawn-text);
+  --status-pill-fg: var(--vulcan-component-bg);
+}
+
+[data-triage="duplicate"] {
+  --status-color: var(--triage-duplicate);
+  --status-tint: var(--triage-duplicate-tint);
+  --status-fg: var(--triage-duplicate-text);
+  --status-pill-fg: var(--vulcan-component-bg);
+}
+
+[data-triage="addressed_by"] {
+  --status-color: var(--triage-addressed-by);
+  --status-tint: var(--triage-addressed-by-tint);
+  --status-fg: var(--triage-addressed-by-text);
+  --status-pill-fg: var(--vulcan-component-bg);
+}
+
+/* Row background tints — ONE rule reads the intermediate variables.
+   Consumer sets data-triage="status" on the element with class triage-bg. */
+.triage-bg[data-triage] {
+  background-color: var(--status-tint) !important;
+  border-left-color: var(--status-color) !important;
+}
+
+/* Legacy class-based row tints (for triageBgClass() consumers not yet migrated) */
+.triage-bg--concur { background-color: var(--triage-concur-tint) !important; border-left-color: var(--triage-concur) !important; }
+.triage-bg--concur_with_comment { background-color: var(--triage-concur-with-comment-tint) !important; border-left-color: var(--triage-concur-with-comment) !important; }
+.triage-bg--non_concur { background-color: var(--triage-non-concur-tint) !important; border-left-color: var(--triage-non-concur) !important; }
+.triage-bg--informational, .triage-bg--needs_clarification { background-color: var(--triage-informational-tint) !important; border-left-color: var(--triage-informational) !important; }
+.triage-bg--withdrawn { background-color: var(--triage-withdrawn-tint) !important; border-left-color: var(--triage-withdrawn) !important; }
+.triage-bg--duplicate { background-color: var(--triage-duplicate-tint) !important; border-left-color: var(--triage-duplicate) !important; }
+.triage-bg--addressed_by { background-color: var(--triage-addressed-by-tint) !important; border-left-color: var(--triage-addressed-by) !important; }

@@ -25,7 +25,7 @@ RSpec.describe Reaction do
   before { Membership.find_or_create_by!(user: reactor, membership: project) { |m| m.role = 'viewer' } }
 
   let(:comment_review) do
-    Review.create!(action: 'comment', comment: 'a comment', user: reactor, rule: rule)
+    create(:review, :comment, comment: 'a comment', user: reactor, rule: rule)
   end
 
   describe 'KINDS' do
@@ -87,8 +87,8 @@ RSpec.describe Reaction do
 
     it 'allows a reaction on a reply (Decision 7)' do
       parent = comment_review
-      reply = Review.create!(action: 'comment', comment: 'reply', user: reactor, rule: rule,
-                             responding_to_review_id: parent.id)
+      reply = create(:review, :comment, comment: 'reply', user: reactor, rule: rule,
+                                        responding_to_review_id: parent.id)
       r = described_class.new(review: reply, user: other_user, kind: 'up')
       expect(r.valid?).to be(true)
     end
@@ -110,7 +110,7 @@ RSpec.describe Reaction do
 
   describe '.summary' do
     let_it_be(:second_review) do
-      Review.create!(action: 'comment', comment: 'second', user: reactor, rule: rule)
+      create(:review, :comment, comment: 'second', user: reactor, rule: rule)
     end
 
     it 'returns an empty hash when given an empty array' do
@@ -157,6 +157,8 @@ RSpec.describe Reaction do
   end
 
   describe 'audit trail' do
+    include_context 'with auditing'
+
     it 'writes an audit row on create' do
       review = comment_review
       expect do

@@ -53,4 +53,16 @@ describe("StigRuleList — Task 28 FilterDropdown migration", () => {
     await w.vm.$nextTick();
     expect(w.vm.field).toBe("STIG ID");
   });
+
+  // This is a STIG-only catalog surface: its nouns read ruleTerm("stig")
+  // explicitly, and these literal pins hold the corrected user-visible
+  // wording (a kind-WRONG "Requirements" here was a shipped bug).
+  it("pins the stig-kind list heading and search placeholder", () => {
+    const w = mountIt();
+    const headings = w.findAll("h5.card-title").wrappers.map((h) => h.text());
+    expect(headings).toContain("Rules");
+    expect(w.text()).not.toMatch(/\bRequirements\b/);
+    const search = w.find('input[placeholder^="Search"]');
+    expect(search.attributes("placeholder")).toBe("Search Rule by STIG ID or SRG ID");
+  });
 });

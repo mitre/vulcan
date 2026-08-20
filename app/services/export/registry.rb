@@ -12,6 +12,7 @@ module Export
       working_copy: %i[csv excel inspec],
       vendor_submission: %i[excel],
       published_stig: %i[xccdf inspec],
+      published_srg: %i[xccdf],
       backup: %i[json_archive]
     }.freeze
 
@@ -19,6 +20,7 @@ module Export
       working_copy: 'Export::Modes::WorkingCopy',
       vendor_submission: 'Export::Modes::VendorSubmission',
       published_stig: 'Export::Modes::PublishedStig',
+      published_srg: 'Export::Modes::PublishedSrg',
       backup: 'Export::Modes::Backup'
     }.freeze
 

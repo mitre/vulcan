@@ -38,9 +38,7 @@
     >
       <!-- Column template for Name -->
       <template #cell(name)="data">
-        {{ data.item.name }}
-        <br />
-        <small>{{ data.item.email }}</small>
+        <UserBadge :name="data.item.name" :email="data.item.email" :show-name="true" />
       </template>
 
       <!-- Column template for Type -->
@@ -56,6 +54,13 @@
         <b-badge v-if="lockoutEnabled && data.item.locked_at" variant="warning" class="ml-1">
           Locked
         </b-badge>
+        <b-badge
+          v-if="apiTokensEnabled && data.item.active_token_count > 0"
+          variant="info"
+          class="ml-1"
+        >
+          <b-icon icon="key" scale="0.8" /> {{ data.item.active_token_count }}
+        </b-badge>
       </template>
 
       <!-- Column template for Last Sign In -->
@@ -65,23 +70,12 @@
 
       <!-- Column template for Actions -->
       <template #cell(actions)="data">
-        <b-button
-          size="sm"
-          variant="outline-secondary"
-          class="mr-1"
-          :aria-label="'Edit ' + data.item.name"
-          @click="$emit('edit-user', data.item)"
-        >
-          <b-icon icon="pencil" aria-hidden="true" />
-        </b-button>
-        <b-button
-          size="sm"
-          variant="outline-danger"
-          :aria-label="'Remove ' + data.item.name"
-          @click="confirmDelete(data.item)"
-        >
-          <b-icon icon="trash" aria-hidden="true" />
-        </b-button>
+        <TableActionButtons
+          :item-name="data.item.name"
+          :show-edit="true"
+          @edit="$emit('edit-user', data.item)"
+          @delete="confirmDelete(data.item)"
+        />
       </template>
     </b-table>
 
@@ -101,20 +95,23 @@
       :is-deleting="isDeleting"
       warning-message="This action cannot be undone. All user data will be permanently removed."
       @confirm="handleDelete"
+      @cancel="cancelDelete"
     />
   </div>
 </template>
 
 <script>
-import axios from "axios";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { deleteUser } from "../../api/usersApi";
+import { useToast } from "../../composables/useToast";
 import ConfirmDeleteModal from "../shared/ConfirmDeleteModal.vue";
+import TableActionButtons from "../shared/TableActionButtons.vue";
+import UserBadge from "../shared/UserBadge.vue";
+import { useDeleteConfirmation } from "../../composables/useDeleteConfirmation";
+import { useTableSearch } from "../../composables/useTableSearch";
 
 export default {
   name: "UsersTable",
-  components: { ConfirmDeleteModal },
-  mixins: [FormMixinVue, AlertMixinVue],
+  components: { ConfirmDeleteModal, TableActionButtons, UserBadge },
   props: {
     users: {
       type: Array,
@@ -124,36 +121,56 @@ export default {
       type: Boolean,
       default: false,
     },
+    apiTokensEnabled: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  setup(props) {
+    const {
+      showModal: showDeleteModal,
+      itemToDelete: userToDelete,
+      isDeleting,
+      openModal: openDeleteModal,
+      cancel: cancelDelete,
+      confirm: confirmDeleteAction,
+    } = useDeleteConfirmation();
+
+    const { search, perPage, currentPage, filteredItems, totalRows } = useTableSearch(
+      () => props.users,
+      (user, q) =>
+        (user.email || "").toLowerCase().includes(q) || (user.name || "").toLowerCase().includes(q),
+    );
+
+    const { alertOrNotifyResponse } = useToast();
+
+    return {
+      showDeleteModal,
+      userToDelete,
+      isDeleting,
+      openDeleteModal,
+      cancelDelete,
+      confirmDeleteAction,
+      search,
+      perPage,
+      currentPage,
+      searchedUsers: filteredItems,
+      rows: totalRows,
+      alertOrNotifyResponse,
+    };
   },
   data: function () {
     return {
-      search: "",
-      perPage: 10,
-      currentPage: 1,
-      showDeleteModal: false,
-      userToDelete: null,
-      isDeleting: false,
       fields: [
         { key: "name", label: "User", sortable: true },
         { key: "provider", label: "Type", sortable: true },
         { key: "role", label: "Role", sortable: true },
         { key: "last_sign_in_at", label: "Last Sign In", sortable: true },
-        { key: "actions", label: "" },
+        { key: "actions", label: "", tdClass: "text-center align-middle" },
       ],
     };
   },
   computed: {
-    searchedUsers: function () {
-      let downcaseSearch = this.search.toLowerCase();
-      return this.users.filter(
-        (user) =>
-          (user.email || "").toLowerCase().includes(downcaseSearch) ||
-          (user.name || "").toLowerCase().includes(downcaseSearch),
-      );
-    },
-    rows: function () {
-      return this.searchedUsers.length;
-    },
     userCount: function () {
       return this.users.length;
     },
@@ -172,23 +189,17 @@ export default {
       });
     },
     confirmDelete(user) {
-      this.userToDelete = user;
-      this.showDeleteModal = true;
+      this.openDeleteModal(user);
     },
     async handleDelete() {
-      if (!this.userToDelete) return;
-      this.isDeleting = true;
-
-      try {
-        const response = await axios.delete(`/users/${this.userToDelete.id}`);
+      const { success, error } = await this.confirmDeleteAction(async (user) => {
+        const response = await deleteUser(user.id);
         this.alertOrNotifyResponse(response);
-        this.$emit("user-deleted", this.userToDelete);
-      } catch (error) {
+        this.$emit("user-deleted", user);
+      });
+
+      if (error) {
         this.alertOrNotifyResponse(error);
-      } finally {
-        this.isDeleting = false;
-        this.showDeleteModal = false;
-        this.userToDelete = null;
       }
     },
   },

@@ -3,12 +3,25 @@ import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import RuleRevertModal from "@/components/rules/RuleRevertModal.vue";
 
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
     post: vi.fn(() => Promise.resolve({ data: { toast: "Reverted" } })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
     defaults: { headers: { common: {} } },
   },
 }));
+
+vi.mock("@/api/rulesApi", () => ({
+  revertRule: vi.fn(() => Promise.resolve({ data: { toast: "Reverted" } })),
+}));
+
+vi.mock("@/composables/useDateFormat", { spy: true });
+vi.mock("@/composables/useHumanizedTypes", { spy: true });
+import { useDateFormat } from "@/composables/useDateFormat";
+import { useHumanizedTypes } from "@/composables/useHumanizedTypes";
 
 /**
  * RuleRevertModal — Two-phase revert flow (C4)
@@ -141,15 +154,17 @@ describe("RuleRevertModal", () => {
   // REVERT ACTION
   // ==========================================
   describe("revert action", () => {
-    it("sends POST to /rules/:id/revert with selected fields and comment", async () => {
-      const axios = (await import("axios")).default;
+    it("calls revertRule with rule id and payload", async () => {
+      const { revertRule } = await import("@/api/rulesApi");
+      revertRule.mockResolvedValueOnce({ data: { toast: "Reverted" } });
+
       wrapper = createWrapper();
       wrapper.vm.selectedRevertRows = [defaultHistory.audited_changes[0]];
       wrapper.vm.revertComment = "Fixing mistake";
 
       await wrapper.vm.revertHistory("Fixing mistake");
 
-      expect(axios.post).toHaveBeenCalledWith("/rules/1/revert", {
+      expect(revertRule).toHaveBeenCalledWith(1, {
         audit_id: 10,
         fields: ["title"],
         audit_comment: "Fixing mistake",
@@ -163,6 +178,32 @@ describe("RuleRevertModal", () => {
       await wrapper.vm.revertSuccess({ data: { toast: "Reverted" } });
 
       expect(wrapper.vm.showDetailsModal).toBe(false);
+    });
+  });
+
+  // ── composable contracts ────────────────────────────────────────────
+  // REQUIREMENTS: the auditable type humanizes via useHumanizedTypes and
+  // the change timestamp renders via useDateFormat — no DateFormatMixin
+  // or HumanizedTypesMixIn remains (toasts come from the useToast
+  // composable).
+  describe("composable contracts", () => {
+    it("humanizes the auditable type via useHumanizedTypes", () => {
+      wrapper = createWrapper({
+        history: { ...defaultHistory, auditable_type: "DisaRuleDescription" },
+      });
+      expect(useHumanizedTypes).toHaveBeenCalled();
+      // mapped label, never the raw class name
+      expect(wrapper.text()).toContain("Rule Description was Updated...");
+      expect(wrapper.text()).not.toContain("DisaRuleDescription");
+    });
+
+    it("renders the change timestamp via useDateFormat", () => {
+      wrapper = createWrapper();
+      expect(useDateFormat).toHaveBeenCalled();
+      // BModal portals its body out of wrapper in jsdom — assert the bound
+      // formatter directly. moment "lll" renders the month name, never the
+      // raw ISO string.
+      expect(wrapper.vm.friendlyDateTime(defaultHistory.created_at)).toContain("Mar 30, 2026");
     });
   });
 

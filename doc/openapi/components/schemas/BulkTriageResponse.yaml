@@ -1,0 +1,22 @@
+description: >-
+  Response from bulk-triaging multiple reviews at once. Returns the updated
+  reviews and any auto-created response reviews (one per triaged comment if
+  a response_comment was provided).
+type: object
+required:
+  - reviews
+  - response_reviews
+additionalProperties: false
+properties:
+  reviews:
+    type: array
+    description: The triaged reviews with updated triage_status.
+    items:
+      $ref: ./ReviewSummary.yaml
+  response_reviews:
+    type: array
+    description: >-
+      Auto-created response reviews (one per triaged comment when
+      response_comment is provided). Empty array if no response_comment.
+    items:
+      $ref: ./ReviewSummary.yaml

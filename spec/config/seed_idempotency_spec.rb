@@ -11,7 +11,10 @@ RSpec.describe 'seed file idempotency and completeness' do
 
   include ConfigFileHelpers
 
-  let(:seeds) { Rails.root.join('db/seeds.rb').read }
+  let(:seeds) do
+    Rails.root.glob('db/seeds/data/*.rb').map { |f| File.read(f) }.join("\n")
+  end
+  let(:loader) { Rails.root.join('db/seeds.rb').read }
 
   describe 'idempotency' do
     it 'does not use bare create! for Projects' do
@@ -22,8 +25,9 @@ RSpec.describe 'seed file idempotency and completeness' do
     end
 
     it 'SRG/STIG seeding checks for existing records before save' do
-      expect(seeds).to match(/find_by.*srg_id|find_by.*stig_id/),
-                       'seed_xccdf must check for existing records before save!'
+      helpers = Rails.root.join('lib/seed_helpers.rb').read
+      expect(helpers).to match(/find_by.*srg_id|find_by.*stig_id/),
+                         'SeedHelpers.seed_xccdf must check for existing records before save!'
     end
 
     it 'does not use bare Membership.import without dedup' do
@@ -33,10 +37,11 @@ RSpec.describe 'seed file idempotency and completeness' do
   end
 
   describe 'Component title requirement' do
-    it 'all named Component.create/find_or_create calls include title' do
-      # The seed_component helper must require title (either as a named param or via fetch)
-      expect(seeds).to match(/def seed_component/).and(match(/\.fetch\(:title\)/)),
-                       'seed_component helper must require title parameter'
+    let(:seed_helpers) { Rails.root.join('lib/seed_helpers.rb').read }
+
+    it 'SeedHelpers.seed_component requires title parameter' do
+      expect(seed_helpers).to match(/def self\.seed_component/).and(match(/\.fetch\(:title\)/)),
+                              'SeedHelpers.seed_component must require title parameter'
     end
   end
 
@@ -73,7 +78,7 @@ RSpec.describe 'seed file idempotency and completeness' do
   # across all projects (not just Container Platform / Photon OS 4). Caught live
   # 2026-05-01 — projects 1 (Photon 3) and 5 (Nothing to See Here) had blank PoC.
   describe 'component PoC coverage' do
-    let(:seed_component_calls) { seeds.scan(/seed_component\(.*?\n\)/m) }
+    let(:seed_component_calls) { seeds.scan(/(?:SeedHelpers\.)?seed_component\(.*?\n\)/m) }
 
     it 'has at least one seed_component call (sanity check)' do
       expect(seed_component_calls).not_to be_empty,
@@ -126,6 +131,55 @@ RSpec.describe 'seed file idempotency and completeness' do
                        'expected at least one component to set comment_period_starts_at for banner coverage'
       expect(seeds).to match(/comment_period_ends_at:/),
                        'expected at least one component to set comment_period_ends_at for banner countdown coverage'
+    end
+  end
+
+  # REQUIREMENT: the SRG authoring demo seed must exist and stay idempotent —
+  # authored requirements are created directly (no importer), so bare create!
+  # would duplicate rows on every reseed.
+  describe 'SRG authoring demo seed' do
+    let(:srg_seed) { Rails.root.join('db/seeds/data/14_srg_authoring_demo.rb').read }
+
+    it 'creates the srg-kind component through the shared seed_component helper' do
+      expect(srg_seed).to match(/SeedHelpers\.seed_component/),
+                          'expected the SRG demo to use SeedHelpers.seed_component'
+      expect(srg_seed).to match(/document_type:\s*['"]srg['"]/),
+                          'expected the seeded component to be srg-kind'
+    end
+
+    it 'guards authored requirement creation with find_or_create' do
+      expect(srg_seed).to match(/SrgRule\.find_or_create_by!?/),
+                          'authored requirements must use find_or_create_by, not bare create! (reseed duplicates)'
+    end
+
+    # Derived rows must carry their core requirement's version — exactly what
+    # the requirement import produces by dupping the catalog row — so seeded
+    # rows are findable in the global requirement search. Runs the real seed
+    # file, twice, against a factory-built Application Core SRG.
+    it 'stamps derived rows with the core version, heals pre-fix rows, and stays idempotent' do
+      create(:security_requirements_guide, srg_id: 'Application_Core_SRG',
+                                           title: 'Application Core SRG')
+      seed_file = Rails.root.join('db/seeds/data/14_srg_authoring_demo.rb').to_s
+
+      capture_stdout { load seed_file }
+
+      demo = Component.find_by(name: 'Demo Application SRG')
+      expect(demo).to be_present
+      derived, net_new = demo.requirements.partition { |r| r.derived_from_srg_rule_id.present? }
+      expect(derived.size).to eq(7)
+      derived.each do |row|
+        expect(row.version).to eq(row.derived_from.version),
+                               "derived row #{row.rule_id} must carry its core requirement's version"
+      end
+      expect(net_new.map(&:version)).to eq([nil])
+
+      # Rows seeded before the stamp existed converge on reseed.
+      healed_target = derived.first
+      healed_target.update_column(:version, nil)
+      capture_stdout { load seed_file }
+
+      expect(healed_target.reload.version).to eq(healed_target.derived_from.version)
+      expect(demo.requirements.count).to eq(8)
     end
   end
 end

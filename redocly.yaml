@@ -1,0 +1,14 @@
+apis:
+  vulcan:
+    root: doc/openapi/openapi.yaml
+    output: doc/openapi.yaml
+
+rules:
+  no-unresolved-refs: error
+  no-unused-components: error
+  operation-description: error
+  parameter-description: error
+  tag-description: error
+  # Examples must validate against their media-type schemas — a stale
+  # example showing a removed field is documentation lying about the API.
+  no-invalid-media-type-examples: error

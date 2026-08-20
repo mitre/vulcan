@@ -6,23 +6,41 @@
 class ComponentsController < ApplicationController
   include Exportable
   include UploadValidatable
+  include SearchScoping
 
   EXPORT_ERROR_TITLE = 'Export error'
   NO_FILE_PROVIDED = 'No file provided'
   CONTROL_NOT_FOUND_TITLE = 'Control not found'
 
-  before_action :set_component, only: %i[show update destroy export preview_spreadsheet_update apply_spreadsheet_update triage settings]
-  before_action :set_component_basic, only: %i[find based_on_same_srg histories comments]
+  # Creation params applied through ONE seam after the component is built
+  # (apply_creation_extras) so every creation mode — blank, spreadsheet,
+  # duplicate, overlay — treats them identically. slack_channel_id is not a
+  # Component attribute; mass-assigning it crashed the blank and spreadsheet
+  # paths.
+  CREATION_EXTRAS = %i[slack_channel_id advanced_fields
+                       additional_questions_attributes component_metadata_attributes].freeze
+
+  # destroy uses the basic loader deliberately: the eager loader's in-memory
+  # rules association would be re-walked by destroy! after the bulk cleanup
+  # already emptied the tables — hundreds of per-row no-op destroys.
+  before_action :set_component, only: %i[show update export preview_spreadsheet_update apply_spreadsheet_update triage settings]
+  before_action :set_component_basic, only: %i[find based_on_same_srg histories comments rules_picker release destroy]
   before_action :set_project, only: %i[show create history triage settings]
   before_action :set_component_permissions, only: %i[show triage settings]
-  before_action :set_rule, only: %i[show]
   before_action :authorize_admin_project, only: %i[create]
   before_action :authorize_admin_component, only: %i[destroy settings]
-  before_action :authorize_author_component, only: %i[update preview_spreadsheet_update apply_spreadsheet_update]
+  before_action :authorize_author_component,
+                only: %i[update preview_spreadsheet_update apply_spreadsheet_update release]
   before_action :check_permission_to_update_slackchannel, only: %i[update]
   before_action :check_admin_for_advanced_fields, only: %i[update]
-  before_action :authorize_component_access, only: %i[show export find histories comments triage]
-  before_action :authorize_logged_in, only: %i[search index based_on_same_srg bulk_export detect_srg]
+  before_action :authorize_component_access,
+                only: %i[show export find histories comments triage rules_picker based_on_same_srg]
+  # set_rule runs AFTER authorization so a deep-link with an unknown rule id
+  # cannot become an existence oracle: a non-member of a hidden component is
+  # concealed (404) before rule lookup; only authorized viewers reach the
+  # friendly "control not found" response.
+  before_action :set_rule, only: %i[show]
+  before_action :authorize_logged_in, only: %i[search index bulk_export detect_srg]
   before_action :authorize_compare_access, only: %i[compare]
   before_action :authorize_viewer_project, only: %i[history]
   before_action :validate_component_upload, only: %i[create detect_srg]
@@ -32,26 +50,20 @@ class ComponentsController < ApplicationController
                           .eager_load(:based_on)
                           .where(released: true)
 
+    @components_json = ComponentBlueprint.render(components, view: :index)
     respond_to do |format|
-      format.html { @components_json = ComponentBlueprint.render(components, view: :index) }
-      format.json { @components_json = components } # Jbuilder uses the relation
+      format.html
+      format.json { render body: @components_json, content_type: 'application/json' }
     end
   end
 
   def search
     query = params[:q]
-    components = Component.joins(:project, :based_on)
-                          .tap do |o|
-      unless current_user.admin
-        o.left_joins(project: :memberships)
-         .where({ memberships: { user_id: current_user.id } })
-      end
-    end
-                          .and(SecurityRequirementsGuide.where(srg_id: query))
-                          .or(Component.where(released: true).and(SecurityRequirementsGuide.where(srg_id: query)))
-                          .limit(100)
-                          .distinct
-                          .pluck(:id, :name)
+    components = searchable_components.joins(:based_on)
+                                      .where(security_requirements_guides: { srg_id: query })
+                                      .limit(100)
+                                      .distinct
+                                      .pluck(:id, :name)
     render json: {
       components: components
     }
@@ -65,22 +77,16 @@ class ComponentsController < ApplicationController
         @project_json = @component.project.to_json
       end
       format.json do
-        if @effective_permissions
-          # Editor refresh: use blueprint directly so the refreshComponent() response
-          # shape exactly matches the initial render and nothing drifts (e.g.,
-          # memberships losing their MembershipBlueprint name/email decoration).
-          render json: ComponentBlueprint.render(@component, view: :editor, **blueprint_render_options)
-        else
-          # Non-member: jbuilder produces a BenchmarkViewer-specific lightweight
-          # rule shape that the :show blueprint view does not.
-          render :show
-        end
+        view = @effective_permissions ? :editor : :show
+        render body: ComponentBlueprint.render(@component, view: view, **blueprint_render_options),
+               content_type: 'application/json'
       end
     end
   end
 
   def create
     component = create_or_duplicate
+    apply_creation_extras(component)
     # When importing from an existing spreadsheet, some errors are set before
     # save, this makes sure those errors are shown and not overwritten by the
     # component validators.
@@ -88,36 +94,43 @@ class ComponentsController < ApplicationController
     # original audit history is copied in bulk by duplicate_reviews_and_history.
     # This avoids creating 200+ redundant audit records per rule.
     is_duplicate = component_create_params[:duplicate] || component_create_params[:copy_component]
-    Audited.auditing_enabled = false if is_duplicate
-    begin
+    save_block = lambda {
       if component.errors.empty? && component.save
-        Audited.auditing_enabled = true
         component.admin_name = component_create_params[:admin_name].presence || current_user.name
         component.admin_email = component_create_params[:admin_email].presence || current_user.email
         component.duplicate_reviews_and_history(component_create_params[:id])
         component.create_rule_satisfactions if component_create_params[:file]
-        component.rules_count = component.rules.where(deleted_at: nil).size
-        if component_create_params[:slack_channel_id].present?
-          component.component_metadata_attributes = { data: {
-            'Slack Channel ID' => component_create_params[:slack_channel_id]
-          } }
-        end
+        # The Rule counter is stig-kind only — srg components count live
+        # authored requirements, and reset_counters(:rules) on the srg
+        # path would write the class-Rule count over it.
+        Component.reset_counters(component.id, :rules) unless component.document_type == 'srg'
         component.save
         safely_notify('create_component') { send_slack_notification(:create_component, component) } if Settings.slack.enabled
+        message = ['Successfully added component to project.']
+        if component.rebase_report
+          report = component.rebase_report
+          message << "Core rebase: #{report[:relinked]} re-linked " \
+                     "(#{report[:content_changed]} with changed core content), " \
+                     "#{report[:vanished]} kept without a core counterpart, " \
+                     "#{report[:arrived]} added as Not Yet Determined."
+        end
         render_toast(title: 'Component added.',
-                     message: 'Successfully added component to project.',
+                     message: message,
                      variant: 'success', status: :ok)
       else
         render json: {
-          toast: {
+          toast: Toast.new(
             title: 'Could not add component to project.',
             message: component.errors.full_messages,
             variant: 'danger'
-          }
+          )
         }, status: :unprocessable_content
       end
-    ensure
-      Audited.auditing_enabled = true
+    }
+    if is_duplicate
+      Component.without_auditing(&save_block)
+    else
+      save_block.call
     end
   end
 
@@ -128,13 +141,39 @@ class ComponentsController < ApplicationController
                    variant: 'success', status: :ok)
     else
       render json: {
-        toast: {
+        toast: Toast.new(
           title: 'Could not update component.',
           message: @component.errors.full_messages,
           variant: 'danger'
-        }
+        )
       }, status: :unprocessable_content
     end
+  end
+
+  # Releases an SRG component: undecided-requirement gate, identifier
+  # minting, catalog attachment, release copy, and the released flag —
+  # ONE transaction, so a failure anywhere (including the locked-rules
+  # validation on the released flag) leaves no catalog row. Author-level
+  # authorization, matching the update path that flips released today.
+  def release
+    service = ReleaseAttachmentService.new(@component)
+    blockers = release_blockers(service)
+    return render_release_blocked(blockers) if blockers.any?
+
+    catalog = nil
+    ActiveRecord::Base.transaction do
+      catalog = service.attach!
+      @component.via_release_flow = true
+      @component.update!(released: true)
+    end
+    render_toast(title: 'Component released.',
+                 message: ["#{catalog.name} is now in the SRG catalog."],
+                 variant: 'success', status: :ok,
+                 catalog_srg: { id: catalog.id, srg_id: catalog.srg_id,
+                                version: catalog.version, name: catalog.name },
+                 changelog: service.changelog_data.merge(text: service.changelog_text))
+  rescue ActiveRecord::RecordInvalid => e
+    render_release_blocked(e.record.errors.full_messages)
   end
 
   def destroy
@@ -143,18 +182,29 @@ class ComponentsController < ApplicationController
     # commit phase raised (e.g. deadlock, serialization failure), the rescue
     # below would call render a second time and surface a 500 to the user.
     ActiveRecord::Base.transaction do
-      rule_ids = Rule.unscoped.where(component_id: @component.id).ids
+      # BaseRule, not Rule: an SRG component's requirements are authored
+      # SrgRules, which a Rule-typed collection misses entirely — its whole
+      # bulk block no-oped and deletion fell to the per-row cascade. One
+      # fast path, both kinds. unscoped reaches tombstoned rows too.
+      rule_ids = BaseRule.unscoped.where(component_id: @component.id).ids
 
       if rule_ids.any?
         # Bulk-delete dependent records first (avoid N+1 destroy callbacks)
         Review.where(rule_id: rule_ids).delete_all
         AdditionalAnswer.where(rule_id: rule_ids).delete_all
         RuleSatisfaction.where(rule_id: rule_ids).or(RuleSatisfaction.where(satisfied_by_rule_id: rule_ids)).delete_all
+        # Source-side relocation records RESTRICT deletes of their rule;
+        # target-side links use the database-level nullify, the documented
+        # bulk backstop.
+        RequirementRelocation.where(source_rule_id: rule_ids).delete_all
         Audited::Audit.where(auditable_type: 'BaseRule', auditable_id: rule_ids).delete_all
         Check.where(base_rule_id: rule_ids).delete_all
         DisaRuleDescription.where(base_rule_id: rule_ids).delete_all
         RuleDescription.where(base_rule_id: rule_ids).delete_all
-        Rule.unscoped.where(id: rule_ids).delete_all
+        # references has no database foreign key — without this line the
+        # bulk path leaves its rows orphaned.
+        Reference.where(base_rule_id: rule_ids).delete_all
+        BaseRule.unscoped.where(id: rule_ids).delete_all
       end
 
       @component.destroy!
@@ -164,13 +214,14 @@ class ComponentsController < ApplicationController
     render_toast(title: 'Component removed.',
                  message: 'Successfully removed component from project.',
                  variant: 'success', status: :ok)
-  rescue StandardError
+  rescue ActiveRecord::StatementInvalid, ActiveRecord::RecordNotDestroyed => e
+    Rails.logger.error("[ComponentsController#destroy] Failed to remove component #{@component.id}: #{e.class} — #{e.message}")
     render json: {
-      toast: {
+      toast: Toast.new(
         title: 'Error',
-        message: 'Could not remove component from project.',
+        message: ["Could not remove component: #{e.message.truncate(200)}"],
         variant: 'danger'
-      }
+      )
     }, status: :unprocessable_content
   end
 
@@ -180,11 +231,11 @@ class ComponentsController < ApplicationController
     # Other export types will be included in the future
     unless %i[csv inspec xccdf json_archive disposition_csv].include?(export_type)
       render json: {
-        toast: {
+        toast: Toast.new(
           title: EXPORT_ERROR_TITLE,
           message: "Unsupported export type: #{export_type}",
           variant: 'danger'
-        }
+        )
       }, status: :bad_request
       return
     end
@@ -193,8 +244,9 @@ class ComponentsController < ApplicationController
     # Task 29). Viewers must NOT be able to export PII-adjacent data even
     # though they can read it in the in-app triage table.
     if export_type == :disposition_csv && !current_user.can_author_project?(@component.project)
-      head :forbidden
-      return
+      raise NotAuthorizedError,
+            'You are not authorized to export the disposition matrix for this component — ' \
+            'author tier or higher is required'
     end
 
     respond_to do |format|
@@ -215,8 +267,12 @@ class ComponentsController < ApplicationController
             filename: "#{@component[:name].tr(' ', '-')}-#{version}#{release}-stig-baseline.zip"
           )
         when :xccdf
+          # Kind-derived publication mode: SRG components publish their
+          # authored requirements; the STIG mode's Rule association is
+          # structurally empty for them.
+          xccdf_mode = @component.document_type == 'srg' ? :published_srg : :published_stig
           perform_export(
-            exportable: @component, mode: :published_stig, format: :xccdf,
+            exportable: @component, mode: xccdf_mode, format: :xccdf,
             filename: "#{@component[:name].tr(' ', '-')}-#{version}#{release}-xccdf.xml"
           )
         when :json_archive
@@ -239,11 +295,11 @@ class ComponentsController < ApplicationController
 
     unless %i[csv xccdf inspec].include?(export_type)
       render json: {
-        toast: {
+        toast: Toast.new(
           title: EXPORT_ERROR_TITLE,
           message: "Unsupported export type: #{export_type}",
           variant: 'danger'
-        }
+        )
       }, status: :bad_request
       return
     end
@@ -251,11 +307,11 @@ class ComponentsController < ApplicationController
     component_ids = params[:component_ids]&.split(',')&.map(&:to_i)
     if component_ids.blank?
       render json: {
-        toast: {
+        toast: Toast.new(
           title: EXPORT_ERROR_TITLE,
           message: 'No components selected for export.',
           variant: 'danger'
-        }
+        )
       }, status: :bad_request
       return
     end
@@ -281,7 +337,7 @@ class ComponentsController < ApplicationController
             zip_filename: 'components_inspec.zip'
           )
         else
-          head :unprocessable_content
+          render json: { error: 'Unprocessable entity' }, status: :unprocessable_content
         end
       end
       format.json { render json: { status: :ok } }
@@ -289,7 +345,7 @@ class ComponentsController < ApplicationController
   end
 
   def histories
-    return head :not_found unless @component
+    return render_not_found unless @component
 
     render json: @component.histories(50)
   end
@@ -305,7 +361,7 @@ class ComponentsController < ApplicationController
   def triage
     respond_to do |format|
       format.html do
-        @component_json = ComponentBlueprint.render(@component, view: :show)
+        @component_json = ComponentBlueprint.render(@component, view: :show, current_user: current_user)
         @project_json = @component.project.to_json
       end
       # Explicit 406 for non-HTML formats so the catch-all StandardError
@@ -337,54 +393,93 @@ class ComponentsController < ApplicationController
   #
   # Sets Cache-Control: no-store so concurrent triagers cannot get a stale
   # snapshot from a browser/proxy cache during a public-comment window.
+  def rules_picker
+    return render_not_found unless @component
+
+    # Deliberately a plain relation: the blueprint declares what the picker view
+    # reads, and preloading is applied from that declaration on the way in. An
+    # includes list written here would be a second, drifting copy of it.
+    # Blueprint selection is kind-routed through the one requirement seam —
+    # authored SRG requirements serve the picker fields that exist for them.
+    blueprint = ComponentBlueprint.requirement_blueprint(@component)
+    render json: { rules: blueprint.render_as_json(@component.requirements, view: :picker) }
+  end
+
   def comments
-    return head :not_found unless @component
+    return render_not_found unless @component
 
-    result = @component.paginated_comments(
-      triage_status: params[:triage_status].presence || 'pending',
-      section: params[:section].presence,
-      rule_id: params[:rule_id].presence,
-      author_id: params[:author_id].presence,
-      query: params[:q].presence,
-      page: params[:page].presence || 1,
-      per_page: params[:per_page].presence || 25,
-      resolved: params[:resolved].presence || 'all',
-      commentable_type: params[:commentable_type].presence
-    )
+    respond_to do |format|
+      format.html { redirect_to "/components/#{@component.id}/triage" }
+      format.json do
+        result = @component.paginated_comments(
+          triage_status: params[:triage_status].presence || 'pending',
+          section: params[:section].presence,
+          rule_id: params[:rule_id].presence,
+          author_id: params[:author_id].presence,
+          query: params[:q].presence,
+          page: params[:page].presence || 1,
+          per_page: params[:per_page].presence || 25,
+          resolved: params[:resolved].presence || 'all',
+          commentable_type: params[:commentable_type].presence,
+          include_rule_content: ActiveModel::Type::Boolean.new.cast(params[:include_rule_content])
+        )
 
-    inject_reactions_mine!(result[:rows])
-    response.headers['Cache-Control'] = 'no-store'
-    render json: result
+        inject_reactions_mine!(result[:rows])
+        response.headers['Cache-Control'] = 'no-store'
+        render json: result
+      end
+    end
   end
 
   def based_on_same_srg
-    return head :not_found unless @component&.based_on
+    return render_not_found unless @component&.based_on
 
     srg_title = @component.based_on.title
     accessible_project_ids = current_user.available_projects.ids
-    render json: Component.where(based_on: SecurityRequirementsGuide.where(title: srg_title))
-                 .where.not(id: @component.id)
+    components = Component.where(based_on: SecurityRequirementsGuide.where(title: srg_title))
+                          .where.not(id: @component.id)
                           .where(project_id: accessible_project_ids)
                           .or(Component.where(based_on: SecurityRequirementsGuide.where(title: srg_title))
-                 .where.not(id: @component.id)
+                                       .where.not(id: @component.id)
                                        .where(released: true))
                           .distinct
                           .order(:project_id)
                           .joins(:project)
                           .select('components.id, components.name, components.version, components.prefix, ' \
                                   'components.release, components.project_id, projects.name AS project_name')
-                          .map(&:attributes)
+    # Explicit allowlist — `.map(&:attributes)` leaked all AR columns
+    # (timestamps, internal FKs) for any consumer that bypassed the SELECT.
+    render json: components.map { |c|
+      { id: c.id, name: c.name, version: c.version, prefix: c.prefix,
+        release: c.release, project_id: c.project_id, project_name: c.project_name }
+    }
   end
 
+  # reads peer ids from query params and returns an envelope
+  # with data + meta (base_id/diff_id/rules_count). Wired at GET
+  # /api/components/compare?base_id=&diff_id=.
   def compare
-    base_component = Component.find_by(id: params[:id])
+    base_component = Component.find_by(id: params[:base_id])
     diff_component = Component.find_by(id: params[:diff_id])
-    return head :not_found unless base_component && diff_component
+    return render_not_found unless base_component && diff_component
+
+    # The comparison is InSpec content, which only STIG requirements carry —
+    # an SRG or mixed-kind pair guards loudly instead of diffing two empty
+    # sets and reporting every requirement unchanged.
+    unless [base_component, diff_component].all? { |c| c.document_type == 'stig' }
+      return render json: { error: 'InSpec comparison applies to STIG components.' },
+                    status: :unprocessable_content
+    end
 
     base = base_component.rules.pluck(:rule_id, :inspec_control_file).to_h
     diff = diff_component.rules.pluck(:rule_id, :inspec_control_file).to_h
-    render json: base.keys.union(diff.keys).sort.index_with { |rule_id|
+    rule_ids = base.keys.union(diff.keys).sort
+    data = rule_ids.index_with do |rule_id|
       { base: base[rule_id], diff: diff[rule_id], changed: base[rule_id] != diff[rule_id] }
+    end
+    render json: {
+      data: data,
+      meta: { base_id: base_component.id, diff_id: diff_component.id, rules_count: rule_ids.size }
     }
   end
 
@@ -396,10 +491,8 @@ class ComponentsController < ApplicationController
       # nothing to compare first component to
       unless idx.zero?
         prev_component = components[idx - 1]
-        base = prev_component.rules.eager_load(:satisfied_by, :checks, :disa_rule_descriptions)
-                             .map(&:basic_fields).index_by { |r| r[:rule_id] }
-        diff = component.rules.eager_load(:satisfied_by, :checks, :disa_rule_descriptions)
-                        .map(&:basic_fields).index_by { |r| r[:rule_id] }
+        base = requirement_diff_fields(prev_component)
+        diff = requirement_diff_fields(component)
         changes = {}
 
         # added
@@ -420,13 +513,13 @@ class ComponentsController < ApplicationController
         end
 
         history << {
-          baseComponent: prev_component,
-          diffComponent: component,
+          base_component: ComponentBlueprint.render_as_json(prev_component),
+          diff_component: ComponentBlueprint.render_as_json(component),
           changes: changes
         }
       end
 
-      history << { component: component }
+      history << { component: ComponentBlueprint.render_as_json(component) }
     end
 
     render json: history
@@ -495,15 +588,18 @@ class ComponentsController < ApplicationController
   end
 
   def find
-    find_param = params.require(:find).downcase
-    component_id = params.require(:id)
+    find_param = ActiveRecord::Base.sanitize_sql_like(params.require(:find).downcase)
 
-    rules = Component.find_by(id: component_id).rules
-    checks = Check.where(base_rule: rules).where('LOWER(content) LIKE ?', "%#{find_param}%")
-    descriptions = DisaRuleDescription.where(base_rule: rules).where(
+    # One searched-field list serves BOTH document kinds: every column below
+    # is a base_rules column and both child tables key on base_rule, so only
+    # the base scope is kind-specific — routed through the requirements seam
+    # (@component is already loaded by set_component_basic).
+    requirements = @component.requirements
+    checks = Check.where(base_rule: requirements).where('LOWER(content) LIKE ?', "%#{find_param}%")
+    descriptions = DisaRuleDescription.where(base_rule: requirements).where(
       'LOWER(vuln_discussion) LIKE ? OR LOWER(mitigations) LIKE ?', "%#{find_param}%", "%#{find_param}%"
     )
-    rules = rules.where(
+    requirements = requirements.where(
       "LOWER(title) LIKE ? OR
       LOWER(fixtext) LIKE ? OR
       LOWER(vendor_comments) LIKE ? OR
@@ -512,12 +608,23 @@ class ComponentsController < ApplicationController
       id IN (?) ", "%#{find_param}%", "%#{find_param}%", "%#{find_param}%", "%#{find_param}%",
       "%#{find_param}%", checks.pluck(:base_rule_id) | descriptions.pluck(:base_rule_id)
     )
-                 .order(:rule_id)
+                               .order(:rule_id)
 
-    render json: RuleBlueprint.render_as_hash(rules, view: :editor)
+    blueprint = ComponentBlueprint.requirement_blueprint(@component)
+    render json: blueprint.render_as_json(requirements.preload_blueprint(blueprint, :editor), view: :editor)
   end
 
   private
+
+  # One traversal per version over the kind-agnostic requirement set for the
+  # revision-history diff. The field shape is basic_fields for both kinds;
+  # only the satisfaction eager-load is STIG-specific, because the
+  # association exists solely on the Rule branch.
+  def requirement_diff_fields(component)
+    includes = %i[checks disa_rule_descriptions]
+    includes << :satisfied_by if component.document_type == 'stig'
+    component.requirements.eager_load(*includes).map(&:basic_fields).index_by { |r| r[:rule_id] }
+  end
 
   # DISA disposition matrix CSV export. Email column is
   # opt-in and admin-tier-only (server-side enforcement, not just UI hiding).
@@ -549,9 +656,30 @@ class ComponentsController < ApplicationController
   # pending_comment_count + pending_comment_counts so the page header
   # banner (CommentPeriodBanner) and any per-rule callouts have the
   # accurate count. Without this, the blueprint defaults to zero.
+  #
+  # Reaction summaries are scoped to the most recent REACTION_SUMMARY_LIMIT
+  # reviews. The editor renders at most ~25 visible
+  # reviews per page; 100 gives ample headroom and stops the two
+  # 3000+ row GROUP BYs that used to fire on every editor refresh.
+  # rubocop:disable Lint/UselessConstantScoping -- co-located with sole consumer
+  REACTION_SUMMARY_LIMIT = 100
+  # rubocop:enable Lint/UselessConstantScoping
+
   def blueprint_render_options
-    review_ids = @component ? Review.joins(:rule).merge(Rule.where(component_id: @component.id)).pluck(:id) : []
+    review_ids = if @component
+                   # Reviews on any requirement kind — the old Rule join
+                   # excluded authored SrgRules, emptying SRG reaction
+                   # summaries.
+                   Review.where(commentable_type: 'BaseRule',
+                                commentable_id: BaseRule.live_for_components(@component.id).select(:id))
+                         .order(created_at: :desc)
+                         .limit(REACTION_SUMMARY_LIMIT)
+                         .pluck(:id)
+                 else
+                   []
+                 end
     {
+      current_user: current_user,
       pending_comment_counts: Component.pending_comment_counts([@component.id]),
       reactions_summary: Reaction.summary(review_ids, current_user&.id)
     }
@@ -572,13 +700,56 @@ class ComponentsController < ApplicationController
       Component.find(component_create_params[:component_id]).overlay(@project.id)
     elsif component_create_params[:file]
       # Create a new component from the provided parameters and then pass the spreadsheet
-      # to the component for further parsing
-      component = @project.components.new(component_create_params.except(:id, :duplicate, :file))
+      # to the component for further parsing. The profile choice is not honoured
+      # here: spreadsheet imports are Rule-based by definition, so document_type
+      # stays at its stig default — only the plain-create branch below accepts it,
+      # matching how the duplicate and overlay branches scope their parameters.
+      component = @project.components.new(
+        component_create_params.except(:id, :duplicate, :file, :document_type, *CREATION_EXTRAS)
+      )
       component.from_spreadsheet(component_create_params[:file])
       component
     else
-      Component.new(component_create_params.except(:id, :duplicate, :component_id, :file).merge({ project: @project }))
+      Component.new(
+        component_create_params.except(:id, :duplicate, :component_id, :file, *CREATION_EXTRAS)
+                               .merge({ project: @project })
+      )
     end
+  end
+
+  # Provided values replace copied ones (requirement-create precedent); the
+  # slack_channel_id convenience merges into the one metadata shape and wins
+  # over a same-key entry in the provided data.
+  def apply_creation_extras(component)
+    permitted = component_create_params
+    component.advanced_fields = permitted[:advanced_fields] unless permitted[:advanced_fields].nil?
+    if permitted[:additional_questions_attributes].present?
+      component.additional_questions = []
+      component.additional_questions_attributes = permitted[:additional_questions_attributes]
+    end
+    metadata = creation_component_metadata
+    component.component_metadata_attributes = { data: metadata } if metadata.present?
+  end
+
+  def creation_component_metadata
+    data = component_create_params.dig(:component_metadata_attributes, :data).to_h
+    data['Slack Channel ID'] = component_create_params[:slack_channel_id] if component_create_params[:slack_channel_id].present?
+    data
+  end
+
+  # The srg-kind and already-released checks answer before the service
+  # runs; STIG readiness components keep releasing through update.
+  def release_blockers(service)
+    return ['component must be an SRG component — STIG readiness components release via update'] unless
+      @component.document_type == 'srg'
+    return ['component is already released'] if @component.released
+
+    service.validation_errors
+  end
+
+  def render_release_blocked(messages)
+    render_toast(title: 'Could not release component.', message: messages,
+                 variant: 'danger', status: :unprocessable_content)
   end
 
   # Defines the set_component method.
@@ -596,24 +767,11 @@ class ComponentsController < ApplicationController
     # Returns out of the method If the Component instance variable does exist.
     return if @component.present?
 
-    message = 'The requested component could not be found.'
-    respond_to do |format|
-      # Return an HTML response with an alert flash message if request format is HTML.
-      format.html do
-        flash.alert = message
-        redirect_back_or_to(root_path)
-      end
-      # Return a JSON response with a toast message if request formt is JSON.
-      format.json do
-        render json: {
-          toast: {
-            title: CONTROL_NOT_FOUND_TITLE,
-            message: message,
-            variant: 'danger'
-          }
-        }, status: :not_found
-      end
-    end
+    # A missing component answers exactly as any other miss (problem+json /
+    # bare 404). This must match the concealed-denial body so that a component
+    # in a non-discoverable project is indistinguishable from one that never
+    # existed.
+    render_resource_not_found
   end
 
   # This function sets the rule based on the specified parameters
@@ -624,12 +782,13 @@ class ComponentsController < ApplicationController
     # Returns out of the function if stig ID is blank or empty
     return if stig_id.blank?
 
-    # Queries the Rule model with component_id and rule_id as arguments to find a specific rule.
-    @rule = Rule.find_by(component_id: params[:id], rule_id: stig_id)
+    # Kind-routed through the requirement seam: the deep-linked row is an
+    # authored SrgRule on srg components and a Rule on stig components.
+    @rule = @component.requirements.find_by(rule_id: stig_id)
 
     # If a record for the rule exists, set the instance variable @rule_json to the rule's JSON attribute
     if @rule.present?
-      @rule_json = RuleBlueprint.render(@rule, view: :editor)
+      @rule_json = ComponentBlueprint.requirement_blueprint(@component).render(@rule, view: :editor)
 
       # Else, create an error message and respond to either HTML or JSON requests
     else
@@ -645,11 +804,11 @@ class ComponentsController < ApplicationController
           # Render a json response in a toast message format
           # as well as setting status code of the response to not_found (404)
           render json: {
-            toast: {
+            toast: Toast.new(
               title: CONTROL_NOT_FOUND_TITLE,
               message: message,
               variant: 'danger'
-            }
+            )
           }, status: :not_found
         end
       end
@@ -665,31 +824,14 @@ class ComponentsController < ApplicationController
     @component = Component.find_by(id: params[:id])
     return if @component.present?
 
-    message = 'The requested component could not be found.'
-    respond_to do |format|
-      format.html do
-        flash.alert = message
-        redirect_back_or_to(root_path)
-      end
-      format.json do
-        render json: {
-          toast: { title: CONTROL_NOT_FOUND_TITLE, message: message, variant: 'danger' }
-        }, status: :not_found
-      end
-    end
+    # Match the concealed-denial body so a component in a non-discoverable
+    # project is indistinguishable from one that never existed.
+    render_resource_not_found
   end
 
   # Authorize access to component based on released status:
   # - Released components: any authenticated user
   # - Unreleased components: must be project/component member
-  def authorize_component_access
-    if @component&.released
-      authorize_logged_in
-    else
-      authorize_viewer_component
-    end
-  end
-
   # Authorize admin for advanced_fields changes on update
   def check_admin_for_advanced_fields
     return if params.dig(:component, :advanced_fields).nil?
@@ -699,11 +841,16 @@ class ComponentsController < ApplicationController
 
   # Authorize access to both components in a compare operation
   def authorize_compare_access
-    base = Component.find_by(id: params[:id])
+    # peer params (base_id/diff_id) instead of the old
+    # sub-resource :id/:diff_id.
+    base = Component.find_by(id: params[:base_id])
     diff = Component.find_by(id: params[:diff_id])
 
     [base, diff].each do |component|
-      next if component.nil?
+      # A missing component answers 404 (not a silent skip) so it is
+      # indistinguishable from a component in a non-discoverable project the
+      # caller cannot reach — no existence oracle via a bogus peer id.
+      raise ActiveRecord::RecordNotFound if component.nil?
       next if component.released
 
       @component = component
@@ -742,7 +889,12 @@ class ComponentsController < ApplicationController
     params.require(:component).permit(
       :id, :duplicate, :copy_component, :component_id, :project_id,
       :security_requirements_guide_id, :name, :prefix, :version, :release,
-      :title, :description, :admin_name, :admin_email, :file, :slack_channel_id
+      :title, :description, :admin_name, :admin_email, :file, :slack_channel_id,
+      :document_type, :advanced_fields,
+      declared_source_srg_ids: [],
+      requirement_selections: {},
+      additional_questions_attributes: [:name, :question_type, { options: [] }],
+      component_metadata_attributes: { data: {} }
     )
     # rubocop:enable Rails/StrongParametersExpect
   end

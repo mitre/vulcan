@@ -1,0 +1,37 @@
+description: >-
+  Lightweight rule snapshot used for version-to-version diff comparisons.
+  Produced by Rule#basic_fields. Contains only the fields needed to detect
+  content changes between component releases.
+type: object
+required:
+  - rule_id
+additionalProperties: false
+properties:
+  rule_id:
+    type: string
+    description: Six-digit zero-padded rule number.
+    example: "000001"
+  title:
+    type:
+      - string
+      - 'null'
+    description: Rule title.
+    example: "The operating system must provide automated mechanisms for account management."
+  vuln_discussion:
+    type:
+      - string
+      - 'null'
+    description: Vulnerability discussion text (from first DISA rule description).
+    example: "Without automated mechanisms, account management becomes error-prone..."
+  check:
+    type:
+      - string
+      - 'null'
+    description: Check procedure text (exported format from checks).
+    example: "Verify the operating system provides automated mechanisms..."
+  fix:
+    type:
+      - string
+      - 'null'
+    description: Fix text (exported format).
+    example: "Configure the operating system to provide automated mechanisms..."

@@ -1,0 +1,72 @@
+post:
+  operationId: resendConfirmation
+  tags:
+    - Auth
+  security: []
+  summary: Resend email confirmation instructions
+  description: >-
+    Sends a new confirmation email to the given address. In paranoid mode
+    (default), always returns success — even if the email is not registered
+    or already confirmed — to prevent email enumeration. Blank email
+    returns 422.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - user
+          properties:
+            user:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Email address to send confirmation to.
+                  example: jane@example.com
+        examples:
+          resend:
+            summary: Resend confirmation
+            value:
+              user:
+                email: jane@example.com
+  responses:
+    '200':
+      description: Instructions sent (or paranoid success)
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            sent:
+              summary: Confirmation instructions sent
+              value:
+                toast:
+                  title: Instructions sent.
+                  message:
+                    - >-
+                      If your email address exists in our database, you will
+                      receive an email with instructions for how to confirm
+                      your email address in a few minutes.
+                  variant: success
+    '422':
+      description: Validation error (blank email)
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            blank_email:
+              summary: Email is blank
+              value:
+                toast:
+                  title: Could not send instructions.
+                  message:
+                    - Email can't be blank
+                  variant: danger
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

@@ -1,0 +1,95 @@
+parameters:
+  - $ref: ../components/parameters/ComponentId.yaml
+post:
+  operationId: lockComponent
+  tags:
+    - Components
+  summary: Lock all unlocked rules in a component
+  description: >-
+    Locks every currently-unlocked rule in the component, preventing further
+    edits. Requires component-admin authority. Already-locked rules are
+    unaffected.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - review
+          properties:
+            review:
+              description: >-
+                The bulk-lock surface is action + comment only — one review
+                row is generated per locked requirement carrying both, and
+                the comment is required (each generated review validates
+                comment presence). Other review keys (section,
+                responding_to_review_id, component_id) are ignored.
+              type: object
+              required:
+                - action
+                - comment
+              properties:
+                action:
+                  type: string
+                  description: The review action recorded on every generated row.
+                  enum:
+                    - lock_control
+                  example: lock_control
+                comment:
+                  type: string
+                  description: Audit trail comment explaining why the component was locked.
+                  example: "Locking for DISA submission review."
+        examples:
+          lock:
+            summary: Lock with audit comment
+            value:
+              review:
+                action: lock_control
+                comment: "Locking for DISA submission review."
+  responses:
+    '200':
+      description: >-
+        Lockable rules locked. Rules with incomplete data are SKIPPED, not
+        failed — Not Yet Determined without satisfactions, Does Not Meet
+        without mitigations, Inherently Meets without an artifact
+        description — and each skip is named in a warning line appended to
+        the message (variant becomes warning).
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            locked:
+              summary: All candidates locked
+              value:
+                toast:
+                  title: Locked 2 controls.
+                  message:
+                    - "Locked: CNTR-00-000001, CNTR-00-000002"
+                  variant: success
+            locked_with_skips:
+              summary: Some rules skipped for incomplete data
+              value:
+                toast:
+                  title: Locked 1 control.
+                  message:
+                    - "Locked: CNTR-00-000001\n\nNot Yet Determined (skipped): CNTR-00-000002"
+                  variant: warning
+    '422':
+      description: Every candidate rule was skipped — nothing could be locked.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            nothing_lockable:
+              summary: All candidates skipped
+              value:
+                toast:
+                  title: No controls could be locked.
+                  message:
+                    - "Not Yet Determined (skipped): CNTR-00-000001, CNTR-00-000002"
+                  variant: warning
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

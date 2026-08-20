@@ -1,0 +1,75 @@
+description: >-
+  Zero-write preview of executing a relocation: whether the move can run,
+  every reason it cannot, and exactly what would be created and
+  tombstoned.
+type: object
+additionalProperties: false
+required:
+  - valid
+  - errors
+  - source_displayed_name
+  - would_create
+  - would_tombstone_source
+properties:
+  valid:
+    type: boolean
+    description: Whether execute would run with these inputs.
+    example: true
+  errors:
+    type: array
+    description: Every reason the move cannot run. Empty when valid.
+    items:
+      type: string
+    example: []
+  source_displayed_name:
+    type: string
+    description: Component-prefixed name of the source requirement.
+    example: CNTR-00-000051
+  target_component_id:
+    type:
+      - integer
+      - 'null'
+    description: The destination component.
+    example: 42
+  target_component_name:
+    type:
+      - string
+      - 'null'
+    description: Name of the destination component.
+    example: Container Platform SRG
+  would_create:
+    type: object
+    additionalProperties: false
+    description: The requirement that execute would create in the target.
+    properties:
+      title:
+        type:
+          - string
+          - 'null'
+        description: Title carried over from the source.
+        example: The application must enforce approved authorizations
+      status:
+        type:
+          - string
+          - 'null'
+        description: Authoring status carried over from the source.
+        example: Applicable
+      rule_id:
+        type:
+          - string
+          - 'null'
+        description: >-
+          The number the moved requirement would land under — the next in
+          the target component's own sequence (working numbers are local
+          ordinals; identifiers mint at release).
+        example: "000003"
+      derived_from_srg_rule_id:
+        type:
+          - integer
+          - 'null'
+        description: Core-requirement lineage preserved on the move.
+        example: 5137
+  would_tombstone_source:
+    type: boolean
+    description: Execute soft-deletes the source row — always true.
+    example: true

@@ -62,7 +62,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import { getReviewReactions } from "../../api/reviewsApi";
 import { REACTION_ICONS } from "../../constants/reactionVocabulary";
 
 export default {
@@ -113,9 +113,7 @@ export default {
       this.loading = true;
       this.loadError = false;
       try {
-        const { data } = await axios.get(`/reviews/${this.reviewId}/reactions`, {
-          headers: { Accept: "application/json" },
-        });
+        const { data } = await getReviewReactions(this.reviewId);
         this.reactors = data;
         this.loaded = true;
       } catch {

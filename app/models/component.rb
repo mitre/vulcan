@@ -7,13 +7,44 @@ class Component < ApplicationRecord
   include ExportConstants
   include ActionView::Helpers::TextHelper
   include SeverityCounts
+  include ComponentParentSet
+  include ComponentCopy
+  include RequirementBuckets
   include XccdfParseable
+  include BenchmarkSearchable
+  include PercentageMath
 
   attr_accessor :skip_import_srg_rules
+
+  # The reconcile summary of the most recent SRG rebase performed by
+  # #duplicate on this instance — counts for relinked / content_changed /
+  # vanished / arrived, surfaced by the copy controller's toast. Durable
+  # form lives in the component's audit trail.
+  attr_accessor :rebase_report
+
+  def self.search_columns
+    %w[name prefix title]
+  end
+
+  # One component per prefix — the numerically highest
+  # (version, release) pair. Unlike SRGs/STIGs (VersionSortable parses
+  # V{major}R{minor} strings), component version/release are integer
+  # columns. Operates on the current relation, so visibility filters
+  # (e.g. released: true) constrain WHICH records compete for latest.
+  def self.latest_versions
+    subquery = reselect(Arel.sql('DISTINCT ON (prefix) components.id'))
+               .reorder(
+                 Arel.sql('prefix'),
+                 Arel.sql('version DESC NULLS LAST'),
+                 Arel.sql('release DESC NULLS LAST')
+               )
+    unscoped.where(id: subquery)
+  end
 
   amoeba do
     include_association :component_metadata
     include_association :rules
+    include_association :component_source_srgs
     include_association :additional_questions
     set released: false
     # Don't set rules_count - it will be recalculated after save
@@ -31,6 +62,13 @@ class Component < ApplicationRecord
           answer.rule = new_component.rules.find { |r| r.rule_id == answer.rule.rule_id }
         end
       end
+
+      # Authored SrgRules cannot ride the :rules include above (that
+      # association is Rule-scoped) and cannot ride amoeba at all —
+      # SrgRule's own amoeba block retypes copies to Rule for the import
+      # path. The ONE kind-aware copy seam handles them; empty (and so a
+      # no-op) for stig components.
+      original_component.copy_authored_requirements_onto(new_component)
 
       # Cloning the habtm relationship just doesn't work here since it tries to create a new rule
       # and doesn't intelligently link to the existing rule. This code loops over every rules satisfies
@@ -54,12 +92,26 @@ class Component < ApplicationRecord
   belongs_to :project, inverse_of: :components
   belongs_to :based_on,
              lambda {
-               select(:srg_id, :title, :version)
+               # Trimmed select skips the multi-hundred-KB xml column, but the
+               # primary key MUST stay in the list: without :id every fresh
+               # load returns an instance whose id reads nil (silently), so
+               # assigning that based_on to another component writes a NULL FK.
+               select(:id, :srg_id, :title, :version)
              },
              class_name: :SecurityRequirementsGuide,
              foreign_key: 'security_requirements_guide_id',
              inverse_of: 'components'
   has_many :rules, dependent: :destroy
+  # Requirements of an srg-kind component: authored SrgRules share the
+  # base_rules component_id column with Rules; the STI type keeps the
+  # two collections disjoint. No counter_cache — SRG counting is a live
+  # scoped count (see #requirements_count).
+  has_many :authored_srg_rules, class_name: 'SrgRule', inverse_of: :component, dependent: :destroy
+  # Subclass default scopes (Rule/SrgRule hide soft-deleted rows) do not
+  # apply to BaseRule queries, so this cascade reaches tombstoned rows the
+  # scoped associations above cannot. Without it the base_rules FK blocks
+  # destroying any component that has a soft-deleted requirement.
+  has_many :all_requirement_rows, class_name: 'BaseRule', inverse_of: false, dependent: :destroy
   belongs_to :component, class_name: 'Component', inverse_of: :child_components, optional: true
   has_many :child_components, class_name: 'Component', inverse_of: :component, dependent: :destroy
   has_many :memberships, -> { includes :user }, inverse_of: :membership, as: :membership, dependent: :destroy
@@ -82,10 +134,24 @@ class Component < ApplicationRecord
   validates :description, length: { maximum: ->(_r) { Settings.input_limits.component_description } }
   validates :admin_name, :admin_email,
             length: { maximum: ->(_r) { Settings.input_limits.short_string } }, allow_nil: true
+  # SRG release runs mint -> catalog attachment -> copy in one
+  # transaction; flipping released through a plain update would strand a
+  # released SRG outside the catalog. The release action sets this
+  # intent flag around its own update (the Review#save_intent pattern).
+  attr_accessor :via_release_flow
+
   validate :associated_component_must_be_released,
            :rules_must_be_locked_to_release_component,
            :cannot_unrelease_component,
-           :cannot_overlay_self
+           :cannot_overlay_self,
+           :srg_release_uses_the_release_flow
+
+  # document_type is the authoring-profile key — it routes source
+  # eligibility, status vocabulary, and field config through the
+  # AuthoringProfile registry. The user picks it at creation and it never
+  # changes; changing your mind means a new component.
+  validates :document_type, inclusion: { in: AuthoringProfile.keys }
+  validate :document_type_cannot_change, on: :update
 
   COMMENT_PHASES = %w[open closed].freeze
   CLOSED_REASONS = %w[adjudicating finalized].freeze
@@ -97,6 +163,38 @@ class Component < ApplicationRecord
   # (vulcan_audited captures every phase change with optional audit_comment)
   # plus frozen_for_writes? (blocks Review writes whenever the component IS
   # currently closed+finalized, regardless of how it got there).
+
+  # Unified requirement access, kind-routed by the authoring profile:
+  # a stig component's requirements are its Rules; an srg component's are
+  # its live authored SrgRules.
+  def requirements
+    document_type == 'srg' ? authored_srg_rules : rules
+  end
+
+  # SeverityCounts fallback path counts through the kind-routed accessor
+  # (the with_severity_counts SQL scope is already type-agnostic — it
+  # counts base_rules rows by component_id).
+  def rules_association
+    requirements
+  end
+
+  # STIG counting keeps the existing rules_count counter cache. SRG
+  # counting is a live scoped count — authored SrgRules have no counter
+  # column, and reset_counters(:rules) must never be the SRG path (it
+  # counts class Rule and would zero the count).
+  def requirements_count
+    document_type == 'srg' ? authored_srg_rules.count : rules_count
+  end
+
+  # Requirements that relocated OUT of this component — a lifecycle fact
+  # from executed relocation records, never a status bucket. The source
+  # rows are tombstoned, so the join reads base_rules unscoped.
+  def moved_out_count
+    RequirementRelocation.executed
+                         .joins('INNER JOIN base_rules ON base_rules.id = requirement_relocations.source_rule_id')
+                         .where(base_rules: { component_id: id })
+                         .count
+  end
 
   def accepting_new_comments?
     comment_phase == 'open'
@@ -136,16 +234,70 @@ class Component < ApplicationRecord
     )
   end
 
-  # Returns a hash of rule counts grouped by status.
-  # Used by the frontend export modal to warn about NYD-only components.
+  # Returns a hash of rule counts grouped by status, bucketed by the
+  # component's authoring profile: five STIG buckets or three SRG buckets —
+  # never a shared flat list.
   def status_counts
-    counts = rules.where(deleted_at: nil).group(:status).count
+    if document_type == 'srg'
+      # Live authored rows only — SrgRule's default scope excludes
+      # tombstones; SRG counting never rides the Rule counter machinery.
+      return self.class.srg_status_buckets(authored_srg_rules.group(:status).count)
+    end
+
+    counts = if association_cached?(:rules)
+               # In-memory grouping: set_component already
+               # preloaded rules for the editor; don't re-query base_rules.
+               rules.reject(&:deleted_at).group_by(&:status).transform_values(&:size)
+             else
+               rules.where(deleted_at: nil).group(:status).count
+             end
+    self.class.status_buckets(counts)
+  end
+
+  # Dashboard aggregates — SQL only (GROUP BY via status_counts /
+  # severity_counts + one COUNT for locks). Percentages are nil when the
+  # component has no rules.
+  def dashboard_stats
+    by_status = status_counts
+    total = by_status.values.sum
+    determined = total - by_status[:not_yet_determined]
     {
-      not_yet_determined: counts['Not Yet Determined'] || 0,
-      applicable_configurable: counts[STATUS_APPLICABLE_CONFIGURABLE] || 0,
-      applicable_inherently_meets: counts['Applicable - Inherently Meets'] || 0,
-      applicable_does_not_meet: counts['Applicable - Does Not Meet'] || 0,
-      not_applicable: counts['Not Applicable'] || 0
+      # The client's routing key for the kind-shaped buckets below.
+      document_type: document_type,
+      rules_by_status: by_status,
+      rules_by_severity: severity_counts,
+      rule_count: total,
+      completion_pct: percentage_of(determined, total),
+      lock_pct: percentage_of(requirements.where(locked: true).count, total)
+    }
+  end
+
+  # Workflow readiness for the SPA dashboard: where the component stands
+  # in authoring -> lock -> review -> comment -> triage -> export. Counts
+  # come from SQL aggregates; comment-phase booleans from the state-machine
+  # methods above (single source).
+  def workflow_state
+    by_status = status_counts
+    total = by_status.values.sum
+    locked_count = requirements.where(locked: true).count
+    pending = self.class.pending_comment_counts([id])[id] || 0
+    {
+      document_type: document_type,
+      authoring: { rules_total: total, rules_determined: total - by_status[:not_yet_determined] },
+      locks: { locked: locked_count, total: total, all_locked: total.positive? && locked_count == total },
+      reviews: { under_review: requirements.where.not(review_requestor_id: nil).count },
+      comment: {
+        phase: comment_phase,
+        accepting_new_comments: accepting_new_comments?,
+        triaging_active: triaging_active?,
+        frozen_for_writes: frozen_for_writes?,
+        pending_comments: pending
+      },
+      triage: {
+        pending: pending,
+        awaiting_adjudication: Review.awaiting_adjudication.for_components([id]).count
+      },
+      export: { released: released, releasable: releasable }
     }
   end
 
@@ -291,8 +443,14 @@ class Component < ApplicationRecord
     # If already released, then it cannot be released again
     return false if released_was
 
-    # If all rules are locked, then component may be released
-    rules.where(locked: false).empty?
+    # Every LIVE requirement must be locked — authored SrgRules for
+    # srg-kind, Rules for stig-kind. Prefer the in-memory rules collection
+    # when preloaded (stig path only; srg counts are always live queries).
+    if document_type != 'srg' && association_cached?(:rules)
+      rules.none? { |r| !r.locked }
+    else
+      requirements.where(locked: false).empty?
+    end
   end
 
   # Duplicate this component. The returned component has auditing suppressed
@@ -319,10 +477,25 @@ class Component < ApplicationRecord
     # Manual Updates required for any 'configurable' requirements with updated underlying SRG requirements
 
     new_srg = SecurityRequirementsGuide.find_by(id: new_srg_id)
-    return copied_component if new_srg.nil? || (new_srg.srg_id == based_on.srg_id && new_srg.version == based_on.version)
+    # The revision guard compares the FULL parent set: an exact
+    # (srg_id, version) already declared as ANY parent needs no rebase —
+    # a primary-only compare mis-detected secondary-parent revisions.
+    return copied_component if new_srg.nil? ||
+                               source_srgs.any? { |s| s.srg_id == new_srg.srg_id && s.version == new_srg.version }
 
-    # update the based_on field to the new srg
-    copied_component.based_on = new_srg
+    # A primary-parent upgrade moves based_on (reconciliation replaces the
+    # member); a SECONDARY-parent upgrade replaces that member — the older
+    # release of the same SRG — and leaves the primary designation alone.
+    if new_srg.srg_id == based_on.srg_id
+      copied_component.based_on = new_srg
+    else
+      copied_component.replace_parent_srg(new_srg)
+    end
+
+    # Authored SRG requirements reconcile through their own kind path —
+    # the class-Rule machinery below (from_mapping, reset_counters(:rules))
+    # must never run for srg kind.
+    return SrgRebaseService.new(copied_component, new_srg).call if document_type == 'srg'
 
     new_srg_rules = new_srg.srg_rules.index_by(&:version)
 
@@ -375,73 +548,13 @@ class Component < ApplicationRecord
     copied_component
   end
 
-  # Copy audit history and reviews from the original component's rules to the
-  # duplicated component's rules. Uses bulk SQL (4 queries total) instead of
-  # per-rule queries (4 * N rules) for dramatically better performance.
-  def duplicate_reviews_and_history(component_id)
-    return unless component_id
-
-    orig = Component.find(component_id)
-    conn = ActiveRecord::Base.connection
-
-    # Build rule_id → new rule id mapping (matched by rule_id field)
-    new_rules_by_rule_id = rules.index_by(&:rule_id)
-    id_map = orig.rules.filter_map do |orig_rule|
-      new_rule = new_rules_by_rule_id[orig_rule.rule_id]
-      [orig_rule.id, new_rule.id] if new_rule
-    end
-    return if id_map.empty?
-
-    new_ids = id_map.map(&:last)
-
-    # Create a temporary mapping table for bulk operations.
-    # Values are integer PKs from ActiveRecord — safe for interpolation.
-    # Cast to Integer explicitly to satisfy Brakeman's SQL injection scanner.
-    safe_values = id_map.map { |o, n| "(#{Integer(o)}, #{Integer(n)})" }.join(', ')
-    mapping_cte = "rule_map AS (SELECT * FROM (VALUES #{safe_values}) AS t(orig_id, new_id))"
-    safe_new_ids = new_ids.map { |id| Integer(id) }.join(', ')
-
-    # 1. Preserve original timestamps on duplicated rules
-    conn.exec_update(
-      "WITH #{mapping_cte} UPDATE base_rules " \
-      'SET created_at = orig.created_at, updated_at = orig.updated_at ' \
-      'FROM rule_map JOIN base_rules orig ON orig.id = rule_map.orig_id ' \
-      'WHERE base_rules.id = rule_map.new_id'
-    )
-
-    # 2. Remove auto-generated audits from the duplication save
-    conn.exec_delete(
-      "DELETE FROM audits WHERE auditable_type = 'BaseRule' " \
-      "AND auditable_id IN (#{safe_new_ids})"
-    )
-
-    # 3. Copy original audit history to new rules
-    conn.exec_insert(
-      "WITH #{mapping_cte} " \
-      'INSERT INTO audits (auditable_id, auditable_type, associated_id, associated_type, ' \
-      'user_id, user_type, username, action, audited_changes, version, ' \
-      'comment, remote_address, request_uuid, created_at, audited_user_id, audited_username) ' \
-      'SELECT rule_map.new_id, a.auditable_type, a.associated_id, a.associated_type, ' \
-      'a.user_id, a.user_type, a.username, a.action, a.audited_changes, a.version, ' \
-      'a.comment, a.remote_address, a.request_uuid, a.created_at, ' \
-      'a.audited_user_id, a.audited_username FROM audits a ' \
-      "JOIN rule_map ON a.auditable_id = rule_map.orig_id WHERE a.auditable_type = 'BaseRule'"
-    )
-
-    # 4. Copy reviews from original rules
-    conn.exec_insert(
-      "WITH #{mapping_cte} " \
-      'INSERT INTO reviews (user_id, rule_id, action, comment, created_at, updated_at) ' \
-      'SELECT r.user_id, rule_map.new_id, r.action, r.comment, r.created_at, r.updated_at ' \
-      'FROM reviews r JOIN rule_map ON r.rule_id = rule_map.orig_id'
-    )
-  end
-
   def create_rule_satisfactions
     # Build lookup maps for identifier resolution
-    # SRG IDs (SRG-OS-000480-GPOS-00227) → rule via srg_rule.version
+    # SRG IDs (SRG-OS-000480-GPOS-00227) → rule, keyed by the requirement's
+    # own answer for its SRG identifier.
     srg_version_map = rules.includes(:srg_rule).each_with_object({}) do |rule, map|
-      map[rule.srg_rule.version] = rule if rule.srg_rule&.version.present?
+      identifier = rule.srg_identifier
+      map[identifier] = rule if identifier.present?
     end
     # STIG IDs (PREFIX-000123) → rule via rule_id
     rule_id_map = rules.index_by(&:rule_id)
@@ -536,8 +649,13 @@ class Component < ApplicationRecord
     if id.nil?
       rules.collect { |rule| rule.rule_id.to_i }.max
     else
-      Rule.connection.execute("SELECT MAX(TO_NUMBER(rule_id, '999999')) FROM base_rules
-                              WHERE component_id = #{id}")&.values&.flatten&.first.to_i
+      # ONE numbering primitive for both kinds: base_rules scoped by
+      # component covers Rules AND authored SrgRules (catalog rows carry
+      # no component_id), unscoped so tombstoned numbers are never
+      # reissued against the unique (rule_id, component_id) index.
+      # component_id flows through bind params via .where; only the trusted
+      # TO_NUMBER literal is wrapped in Arel.sql for safe integer sorting.
+      BaseRule.unscoped.where(component_id: id).maximum(Arel.sql("TO_NUMBER(rule_id, '999999')")).to_i
     end
   end
 
@@ -582,11 +700,42 @@ class Component < ApplicationRecord
   end
 
   def reviews
-    rule_names = rules.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
-    Review.where(rule_id: rule_names.keys).order(created_at: :desc).limit(20).as_json.map do |review|
-      review['displayed_rule_name'] = rule_names[review['rule_id'].to_i]
-      review
-    end
+    rule_names = if document_type != 'srg' && association_cached?(:rules)
+                   rules.to_h { |r| [r.id, "#{prefix}-#{r.rule_id}"] }
+                 else
+                   # requirements: SRG-kind review labels come from authored
+                   # SrgRules; reviews.rule_id is dual-written for both
+                   # kinds so the id-keyed lookup below is type-safe.
+                   requirements.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
+                 end
+
+    # :id breaks created_at ties so the 20 most-recent reviews come out in a
+    # deterministic order (both the cached and DB paths agree: newest first,
+    # higher id first on a tie).
+    #
+    # The cached fast path is stig-only, same guard as rule_names above: on an
+    # srg component the eager-loaded :rules association is empty-but-loaded, so
+    # without the kind guard the all? check is vacuously true and the branch
+    # would swallow every review on authored requirements.
+    review_records = if document_type != 'srg' && association_cached?(:rules) &&
+                        rules.all? { |r| r.association(:reviews).loaded? }
+                       cached = rules.flat_map(&:reviews).sort_by { |r| [r.created_at, r.id] }.last(20).reverse
+                       # The cached path yields a plain Array, which the
+                       # blueprinter's relation-only auto-preloader cannot plan
+                       # against — batch-load the associations the blueprint
+                       # reads so it does not fire one query per review. The DB
+                       # branch below is a relation the auto-preloader covers.
+                       ActiveRecord::Associations::Preloader.new(
+                         records: cached, associations: %i[user responses triage_set_by adjudicated_by]
+                       ).call
+                       cached
+                     else
+                       Review.where(rule_id: rule_names.keys)
+                             .preload(:user, :responses)
+                             .order(created_at: :desc, id: :desc).limit(20)
+                     end
+
+    ReviewBlueprint.render_as_json(review_records, rule_names: rule_names)
   end
 
   # Paginated, filterable accessor for top-level comment Reviews scoped to
@@ -599,15 +748,30 @@ class Component < ApplicationRecord
   #
   # Returns a sparse hash: { component_id => count } — components with
   # zero pending comments are omitted so callers can `counts[id] || 0`.
+  # LEFT JOIN so component-level comments (commentable = Component, no
+  # rule) survive the join — the old INNER rule join silently undercounted
+  # them. Deleted rules are excluded in the join condition because the raw
+  # join bypasses Rule's default_scope.
+  PENDING_COMMENT_RULE_JOIN = <<~SQL.squish
+    LEFT JOIN base_rules
+      ON reviews.commentable_type = 'BaseRule'
+     AND base_rules.id = reviews.commentable_id
+     AND base_rules.deleted_at IS NULL
+  SQL
+  private_constant :PENDING_COMMENT_RULE_JOIN
+
   def self.pending_comment_counts(component_ids)
     return {} if component_ids.blank?
 
-    Review.where(action: 'comment',
+    Review.where(action: Review::ACTION_COMMENT,
                  responding_to_review_id: nil,
                  triage_status: 'pending')
-          .joins(:rule)
-          .merge(Rule.where(component_id: component_ids))
-          .group('base_rules.component_id')
+          .joins(PENDING_COMMENT_RULE_JOIN)
+          .where('base_rules.component_id IN (:ids) OR ' \
+                 "(reviews.commentable_type = 'Component' AND reviews.commentable_id IN (:ids))",
+                 ids: component_ids)
+          .group(Arel.sql("CASE WHEN reviews.commentable_type = 'Component' " \
+                          'THEN reviews.commentable_id ELSE base_rules.component_id END'))
           .count
   end
 
@@ -616,125 +780,34 @@ class Component < ApplicationRecord
   # On-the-wire vocabulary is DISA-native: triage_status keys (concur,
   # non_concur, ...) and XCCDF section keys (check_content, fixtext, ...).
   # The frontend translates to friendly labels via triageVocabulary.js.
-  def paginated_comments(triage_status: 'all', section: nil, rule_id: nil, # rubocop:disable Metrics/ParameterLists
+  def paginated_comments(triage_status: 'pending', section: nil, rule_id: nil, # rubocop:disable Metrics/ParameterLists
                          author_id: nil, query: nil, page: 1, per_page: 25,
-                         resolved: 'all', commentable_type: nil)
-    page = [page.to_i, 1].max
-    per_page = per_page.to_i.clamp(1, 100)
-
-    # Polymorphic union: rule-scoped reviews on this component's rules OR
-    # component-scoped reviews on this component (backfill in 20260508210000).
-    rule_id_subquery = rules.select(:id)
-    rule_scoped = Review.top_level_comments
-                        .where(commentable_type: 'BaseRule', commentable_id: rule_id_subquery)
-    component_scoped = Review.top_level_comments
-                             .where(commentable_type: 'Component', commentable_id: id)
-    scope = case commentable_type.to_s.downcase
-            when 'component' then component_scoped
-            when 'rule'      then rule_scoped
-            else                  rule_scoped.or(component_scoped)
-            end
-    scope = scope.preload(:user, :triage_set_by, :adjudicated_by, :commentable)
-
-    scope = scope.where(triage_status: triage_status) unless triage_status == 'all'
-    scope = scope.where(section: section) if section.present? && section != 'all'
-    scope = scope.where(commentable_type: 'BaseRule', commentable_id: rule_id) if rule_id.present?
-    scope = scope.where(user_id: author_id) if author_id.present?
-
-    case resolved.to_s
-    when 'true'  then scope = scope.where.not(adjudicated_at: nil)
-    when 'false' then scope = scope.where(adjudicated_at: nil)
-    end
-
-    if query.present?
-      escaped = ActiveRecord::Base.sanitize_sql_like(query.to_s)
-      scope = scope.where('reviews.comment ILIKE ?', "%#{escaped}%")
-    end
-
-    total = scope.count
-
-    # Total-including-replies drives the dedup banner header.
-    rule_replies = Review.where(action: 'comment',
-                                commentable_type: 'BaseRule',
-                                commentable_id: rule_id_subquery)
-    component_replies = Review.where(action: 'comment',
-                                     commentable_type: 'Component',
-                                     commentable_id: id)
-    total_comments_scope = case commentable_type.to_s.downcase
-                           when 'component' then component_replies
-                           when 'rule'      then rule_replies
-                           else                  rule_replies.or(component_replies)
-                           end
-    total_comments_scope = total_comments_scope.where(commentable_type: 'BaseRule', commentable_id: rule_id) if rule_id.present?
-    total_comments_scope = total_comments_scope.where(section: section) if section.present? && section != 'all'
-    if query.present?
-      escaped = ActiveRecord::Base.sanitize_sql_like(query.to_s)
-      total_comments_scope = total_comments_scope.where('reviews.comment ILIKE ?', "%#{escaped}%")
-    end
-    total_comments = total_comments_scope.count
-
-    rule_id_to_displayed = rules.pluck(:id, :rule_id).to_h.transform_values { |rid| "#{prefix}-#{rid}" }
-
-    page_records = scope.order(created_at: :desc)
-                        .offset((page - 1) * per_page)
-                        .limit(per_page)
-                        .to_a
-
-    page_review_ids = page_records.map(&:id)
-    responses_count_lookup = Review.where(responding_to_review_id: page_review_ids)
-                                   .group(:responding_to_review_id)
-                                   .count
-    reaction_counts = Reaction.where(review_id: page_review_ids).group(:review_id, :kind).count
-
-    rows = page_records.map do |r|
-      component_scoped_row = r.commentable_type == 'Component'
-      {
-        id: r.id,
-        rule_id: component_scoped_row ? nil : r.rule_id,
-        rule_displayed_name: component_scoped_row ? '(component)' : rule_id_to_displayed[r.rule_id],
-        commentable_type: r.commentable_type,
-        section: r.section,
-        author_name: r.user&.name,
-        # email omitted — see comment-endpoint PII guard.
-        comment: r.comment,
-        created_at: r.created_at,
-        triage_status: r.triage_status,
-        triage_set_at: r.triage_set_at,
-        adjudicated_at: r.adjudicated_at,
-        duplicate_of_review_id: r.duplicate_of_review_id,
-        triager_display_name: r.triager_display_name,
-        triager_imported: r.triager_imported?,
-        adjudicator_display_name: r.adjudicator_display_name,
-        adjudicator_imported: r.adjudicator_imported?,
-        commenter_display_name: r.commenter_display_name,
-        commenter_imported: r.commenter_imported?,
-        responses_count: responses_count_lookup[r.id] || 0,
-        reactions: { up: reaction_counts[[r.id, 'up']] || 0,
-                     down: reaction_counts[[r.id, 'down']] || 0 }
-      }
-    end
-
-    {
-      rows: rows,
-      pagination: { page: page, per_page: per_page, total: total, total_comments: total_comments }
-    }
+                         resolved: 'all', commentable_type: nil,
+                         include_rule_content: false)
+    CommentQueryService.new(
+      self,
+      triage_status: triage_status, section: section, rule_id: rule_id,
+      author_id: author_id, query: query, page: page, per_page: per_page,
+      resolved: resolved, commentable_type: commentable_type,
+      include_rule_content: include_rule_content
+    ).call
   end
 
-  def csv_export
-    ::CSV.generate(headers: true) do |csv|
-      csv << ExportConstants::EXPORT_HEADERS
-      rules.eager_load(:reviews, :disa_rule_descriptions, :rule_descriptions, :checks, :additional_answers, :satisfies,
-                       :satisfied_by, srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
-           .order(:version, :rule_id).each do |rule|
-        csv << rule.csv_attributes.append(rule.inspec_control_body)
-      end
-    end
-  end
+  # An SRG component's requirements are authored SrgRules; the spreadsheet
+  # pipeline addresses the Rule family, so against an srg component an update
+  # would silently no-op at best and write to the wrong rows at worst. Both
+  # entry points below refuse through this one message — the single door for
+  # every caller.
+  SPREADSHEET_UPDATE_UNSUPPORTED_FOR_SRG =
+    'Spreadsheet update is not available for SRG components — their ' \
+    'requirements are authored in the editor, not imported from a spreadsheet.'
 
   # Preview changes from a spreadsheet without saving.
   # Returns a hash with :updated, :unchanged, :skipped_locked, :warnings keys,
   # or { error: "message" } on validation failure.
   def update_from_spreadsheet(spreadsheet, _user = nil)
+    return { error: SPREADSHEET_UPDATE_UNSUPPORTED_FOR_SRG } if document_type == 'srg'
+
     result = SpreadsheetParser.new(spreadsheet, security_requirements_guide_id).parse_and_validate
     return { error: result[:error] } if result.key?(:error)
 
@@ -744,13 +817,15 @@ class Component < ApplicationRecord
   # Apply changes from a spreadsheet to the database.
   # Returns { success: true, count: N } or { error: "message" }.
   def apply_spreadsheet_update(spreadsheet, _user = nil)
+    return { error: SPREADSHEET_UPDATE_UNSUPPORTED_FOR_SRG } if document_type == 'srg'
+
     result = SpreadsheetParser.new(spreadsheet, security_requirements_guide_id).parse_and_validate
     return { error: result[:error] } if result.key?(:error)
 
     loaded_rules = rules.eager_load(:disa_rule_descriptions, :checks, :satisfies, :satisfied_by,
                                     srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
     rule_by_rule_id = loaded_rules.index_by(&:rule_id)
-    rule_by_srg_id = loaded_rules.index_by { |r| r.srg_rule&.version }
+    rule_by_srg_id = loaded_rules.index_by(&:srg_identifier)
     updated_count = 0
 
     ActiveRecord::Base.transaction do
@@ -774,6 +849,15 @@ class Component < ApplicationRecord
   end
 
   private
+
+  # The profile gates the source picker, status vocabulary, and export
+  # mode — flipping it mid-life would strand requirements authored under
+  # the other profile's rules.
+  def document_type_cannot_change
+    return unless document_type_changed?
+
+    errors.add(:document_type, 'cannot be changed after creation')
+  end
 
   # closed_reason is meaningless on an open component; reject the
   # combination rather than silently storing an inert value.
@@ -805,7 +889,7 @@ class Component < ApplicationRecord
   # Resolve a satisfaction identifier to a rule.
   # Supports both STIG IDs (PREFIX-000123) and SRG IDs (SRG-OS-000480-GPOS-00227).
   def resolve_satisfaction_identifier(identifier, rule_id_map, srg_version_map)
-    # Try SRG ID first (exact match on srg_rule.version)
+    # Try SRG ID first (exact match on the requirement's SRG identifier)
     return srg_version_map[identifier] if srg_version_map.key?(identifier)
 
     # Fall back to STIG ID (extract numeric part after last hyphen)
@@ -821,7 +905,7 @@ class Component < ApplicationRecord
     # Build lookup by rule_id (numeric portion of STIG ID)
     rule_by_rule_id = loaded_rules.index_by(&:rule_id)
     # Also build SRG ID lookup for rows without STIG ID
-    rule_by_srg_id = loaded_rules.index_by { |r| r.srg_rule&.version }
+    rule_by_srg_id = loaded_rules.index_by(&:srg_identifier)
     result = { updated: [], unchanged: [], skipped_locked: [], warnings: [] }
 
     rows.each do |row|
@@ -881,7 +965,8 @@ class Component < ApplicationRecord
 
   # Compare a rule's current fields against a spreadsheet row.
   # Returns a hash of { field_sym => { from: old, to: new } } for changed fields.
-  # Uses the same values as csv_export to ensure idempotent round-trip.
+  # Reads the same csv_attributes the working-copy export serializes, so an
+  # unmodified exported CSV round-trips as zero changes.
   def compute_rule_changes(rule, row)
     changes = {}
 
@@ -963,17 +1048,18 @@ class Component < ApplicationRecord
   end
 
   def import_srg_rules
-    # We assume that we will automatically add the SRG rules within the transaction of the inital creation
-    # if the `component_id` is `nil` and if `security_requirements_guide_id` if present
+    # Requirements are imported within the creation transaction only for
+    # plain creates — overlays (component_id set) and duplicates/
+    # spreadsheet imports (skip_import_srg_rules) carry their own rows.
     return unless component_id.nil? && security_requirements_guide_id.present?
-
-    # Break early if the `skip_import_srg_rules` has been set to a true value
     return if skip_import_srg_rules
 
-    # Break early if all rules imported without any issues
-    return if from_mapping(SecurityRequirementsGuide.find(security_requirements_guide_id))
-
-    raise ActiveRecord::RecordInvalid, self
+    # ONE import machinery for both kinds: stig components receive Rule
+    # rows, srg components authored SrgRules — a full union across the
+    # declared parent set (the common single-parent create imports
+    # exactly its based_on), or selective when a requirement filter was
+    # supplied at creation. Failures raise and roll back the create.
+    RequirementImportService.new(self).import_all!(selections: requirement_selections)
   end
 
   def cannot_overlay_self
@@ -981,6 +1067,13 @@ class Component < ApplicationRecord
     return if component_id.nil? || id != component_id
 
     errors.add(:component_id, 'cannot overlay itself')
+  end
+
+  def srg_release_uses_the_release_flow
+    return unless document_type == 'srg' && released && !released_was && !via_release_flow
+
+    errors.add(:base, 'SRG components release through the release flow — ' \
+                      'the release endpoint runs the full catalog attachment')
   end
 
   def cannot_unrelease_component
@@ -1008,4 +1101,48 @@ class Component < ApplicationRecord
 
     errors.add(:base, 'Cannot release a component that contains rules that are not yet locked')
   end
+
+  def serialize_rule_content(review, component_scoped)
+    return nil if component_scoped
+
+    rule = review.commentable
+    disa = rule&.disa_rule_descriptions&.first
+    check = rule&.checks&.first
+    {
+      title: rule&.title,
+      rule_severity: rule&.rule_severity,
+      status: rule&.status,
+      fixtext: rule&.fixtext,
+      status_justification: rule&.status_justification,
+      vendor_comments: rule&.vendor_comments,
+      artifact_description: rule&.artifact_description,
+      fix_id: rule&.fix_id,
+      fixtext_fixref: rule&.fixtext_fixref,
+      version: rule&.version,
+      rule_weight: rule&.rule_weight,
+      ident: rule&.ident,
+      ident_system: rule&.ident_system,
+      vuln_discussion: disa&.vuln_discussion,
+      documentable: disa&.documentable,
+      false_positives: disa&.false_positives,
+      false_negatives: disa&.false_negatives,
+      mitigations_available: disa&.mitigations_available,
+      mitigations: disa&.mitigations,
+      poam_available: disa&.poam_available,
+      poam: disa&.poam,
+      potential_impacts: disa&.potential_impacts,
+      third_party_tools: disa&.third_party_tools,
+      mitigation_control: disa&.mitigation_control,
+      responsibility: disa&.responsibility,
+      ia_controls: disa&.ia_controls,
+      severity_override_guidance: disa&.severity_override_guidance,
+      check_content: check&.content,
+      locked: rule&.locked,
+      rule_updated_at: rule&.updated_at&.iso8601,
+      satisfied_by: (rule.respond_to?(:satisfied_by) ? rule.satisfied_by : []).map do |parent|
+        { id: parent.id, rule_id: parent.rule_id, component_prefix: prefix }
+      end
+    }
+  end
+  public :serialize_rule_content
 end

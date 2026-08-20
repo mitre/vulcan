@@ -52,20 +52,12 @@
         </b-form-checkbox>
         <b-form-checkbox v-model="filter.myProjectsToggled" size="lg" class="ml-3" switch>
           <small>Show My Projects</small>
-          <b-icon
-            v-b-tooltip.hover.html="'Projects I am a member of'"
-            icon="info-circle"
-            aria-hidden="true"
-          />
+          <InfoTooltip text="Projects I am a member of" />
         </b-form-checkbox>
         <b-form-checkbox v-model="filter.discoverableToggled" size="lg" class="ml-3" switch>
           <small>Show Discoverable Projects</small>
-          <b-icon
-            v-b-tooltip.hover.html="
-              'Projects intended to be discovered and potentially collaborated upon by other users. Interested users can request access to the project'
-            "
-            icon="info-circle"
-            aria-hidden="true"
+          <InfoTooltip
+            text="Projects intended to be discovered and potentially collaborated upon by other users. Interested users can request access to the project"
           />
         </b-form-checkbox>
       </div>
@@ -164,18 +156,12 @@
             Cancel Access Request
           </b-button>
         </span>
-        <b-button
-          v-b-tooltip.hover="canAdminProject(data.item) ? '' : ADMIN_ONLY_TOOLTIP"
-          class="px-2 m-2"
-          variant="danger"
-          data-testid="remove-project-btn"
+        <TableActionButtons
+          :item-name="data.item.name"
           :disabled="!canAdminProject(data.item)"
-          :title="canAdminProject(data.item) ? '' : ADMIN_ONLY_TOOLTIP"
-          @click="openDeleteModal(data.item)"
-        >
-          <b-icon icon="trash" aria-hidden="true" />
-          Remove
-        </b-button>
+          :disabled-tooltip="ADMIN_ONLY_TOOLTIP"
+          @delete="openDeleteModal(data.item)"
+        />
       </template>
     </b-table>
 
@@ -190,23 +176,18 @@
 </template>
 
 <script>
-import axios from "axios";
-import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import FormMixin from "../../mixins/FormMixin.vue";
+import { deleteProject } from "../../api/projectsApi";
+import { useDateFormat } from "../../composables/useDateFormat";
+import { useToast } from "../../composables/useToast";
 import UpdateProjectDetailsModal from "./UpdateProjectDetailsModal.vue";
 import ConfirmDeleteModal from "../shared/ConfirmDeleteModal.vue";
+import InfoTooltip from "../shared/InfoTooltip.vue";
+import TableActionButtons from "../shared/TableActionButtons.vue";
 import { useDeleteConfirmation } from "../../composables";
 
 export default {
   name: "ProjectsTable",
-  components: { UpdateProjectDetailsModal, ConfirmDeleteModal },
-  // FormMixin sets axios.defaults['X-CSRF-Token'] on mount. Required because
-  // each esbuild pack has its own axios singleton (bundle isolation) — the
-  // navbar pack's FormMixin doesn't reach the consuming pack. The DELETE
-  // /projects/:id.json call would 422 on CSRF in a pack that lacks
-  // pack-level CSRF setup.
-  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixin],
+  components: { UpdateProjectDetailsModal, ConfirmDeleteModal, InfoTooltip, TableActionButtons },
   props: {
     projects: {
       type: Array,
@@ -215,7 +196,6 @@ export default {
     is_vulcan_admin: {
       type: Boolean,
       required: true,
-      default: false,
     },
   },
   setup() {
@@ -227,6 +207,8 @@ export default {
       cancel: cancelDelete,
       confirm: confirmDeleteAction,
     } = useDeleteConfirmation();
+    const { friendlyDateTime } = useDateFormat();
+    const { alertOrNotifyResponse } = useToast();
 
     return {
       showDeleteModal,
@@ -235,6 +217,8 @@ export default {
       openDeleteModal,
       cancelDelete,
       confirmDeleteAction,
+      friendlyDateTime,
+      alertOrNotifyResponse,
     };
   },
   data: function () {
@@ -266,9 +250,9 @@ export default {
         { key: "updated_at", label: "Last Updated", sortable: true },
         {
           key: "actions",
-          label: "Actions",
-          thClass: "text-right",
-          tdClass: "p-0 text-right",
+          label: "",
+          thClass: "text-center",
+          tdClass: "text-center align-middle",
         },
       ],
     };
@@ -343,9 +327,6 @@ export default {
       }
     }
   },
-  destroyed() {
-    window.removeEventListener("scroll", this.handleScroll);
-  },
   created: function () {
     this.projects.forEach((project) => {
       this.$set(this.truncated, project.id, true);
@@ -404,7 +385,7 @@ export default {
     },
     async confirmDelete() {
       const { success, error } = await this.confirmDeleteAction(async (project) => {
-        const response = await axios.delete(`/projects/${project.id}.json`);
+        const response = await deleteProject(project.id);
         this.alertOrNotifyResponse(response);
       });
 

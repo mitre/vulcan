@@ -116,6 +116,18 @@ module SeverityCounts
   end
 
   ##
+  # Aggregate stats for the benchmark stats endpoints — pure SQL
+  # (one COUNT + one GROUP BY), no Ruby enumeration over rules.
+  #
+  # @return [Hash] { rule_count:, severity_counts: { high:, medium:, low: } }
+  def benchmark_stats
+    {
+      rule_count: rules_association.count,
+      severity_counts: severity_counts
+    }
+  end
+
+  ##
   # Override in including model to specify which association contains the rules
   # Default: :rules
   def rules_association

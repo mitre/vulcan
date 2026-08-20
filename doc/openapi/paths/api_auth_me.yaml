@@ -1,0 +1,37 @@
+get:
+  operationId: getAuthMe
+  tags:
+    - Auth
+  summary: Current authenticated user identity
+  description: >-
+    Returns the authenticated user's identity, admin status, and provider.
+    Used by the SPA on every page load to determine auth state, populate
+    the navbar, and guard routes. Returns 401 when not authenticated.
+  responses:
+    '200':
+      description: Authenticated user identity
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/CurrentUserResponse.yaml
+          examples:
+            regular_user:
+              summary: Non-admin local user
+              value:
+                id: 42
+                name: Jane Doe
+                email: jane@example.com
+                admin: false
+                provider: null
+            admin_user:
+              summary: Admin user via OIDC
+              value:
+                id: 1
+                name: Admin
+                email: admin@example.com
+                admin: true
+                provider: oidc
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

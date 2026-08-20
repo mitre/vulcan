@@ -3,12 +3,22 @@ import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import ProjectsTable from "@/components/projects/ProjectsTable.vue";
 
-// Mock axios
-vi.mock("axios", () => ({
+vi.mock("@/composables/useDateFormat", { spy: true });
+import { useDateFormat } from "@/composables/useDateFormat";
+
+vi.mock("@/api/baseApi", () => ({
   default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
     delete: vi.fn(() => Promise.resolve({ data: {} })),
     defaults: { headers: { common: {} } },
   },
+}));
+
+vi.mock("@/api/projectsApi", () => ({
+  deleteProject: vi.fn(() => Promise.resolve({ data: {} })),
 }));
 
 /**
@@ -196,7 +206,7 @@ describe("ProjectsTable", () => {
   describe("admin action buttons (disabled-not-hidden)", () => {
     it("renders enabled Remove button for vulcan site admin (on all projects)", () => {
       wrapper = createWrapper({ is_vulcan_admin: true });
-      const removeBtns = wrapper.findAll('[data-testid="remove-project-btn"]');
+      const removeBtns = wrapper.findAll('[data-testid="action-delete"]');
       expect(removeBtns.length).toBe(sampleProjects.length);
       removeBtns.wrappers.forEach((btn) => {
         expect(btn.attributes("disabled")).toBeUndefined();
@@ -206,7 +216,7 @@ describe("ProjectsTable", () => {
     it("renders enabled Remove button for project admin on their projects, disabled elsewhere", () => {
       // sampleProjects[0] has admin: true, sampleProjects[1] has admin: false
       wrapper = createWrapper({ is_vulcan_admin: false });
-      const removeBtns = wrapper.findAll('[data-testid="remove-project-btn"]');
+      const removeBtns = wrapper.findAll('[data-testid="action-delete"]');
       expect(removeBtns.length).toBe(sampleProjects.length);
       // Table sorts by name — "Another Project" (admin: false) is first, "Test Project" (admin: true) is second
       expect(removeBtns.at(0).attributes("disabled")).toBeDefined();
@@ -223,7 +233,7 @@ describe("ProjectsTable", () => {
         propsData: { projects: nonAdminProjects, is_vulcan_admin: false },
         stubs: { UpdateProjectDetailsModal: true },
       });
-      const removeBtns = wrapper.findAll('[data-testid="remove-project-btn"]');
+      const removeBtns = wrapper.findAll('[data-testid="action-delete"]');
       expect(removeBtns.length).toBe(nonAdminProjects.length);
       removeBtns.wrappers.forEach((btn) => {
         expect(btn.attributes("disabled")).toBeDefined();
@@ -264,7 +274,7 @@ describe("ProjectsTable", () => {
       wrapper = createWrapper({ is_vulcan_admin: true });
       expect(wrapper.vm.showDeleteModal).toBe(false);
 
-      const removeBtn = wrapper.find('[data-testid="remove-project-btn"]');
+      const removeBtn = wrapper.find('[data-testid="action-delete"]');
       await removeBtn.trigger("click");
 
       expect(wrapper.vm.showDeleteModal).toBe(true);
@@ -272,7 +282,7 @@ describe("ProjectsTable", () => {
 
     it("stores project to delete when modal opens", async () => {
       wrapper = createWrapper({ is_vulcan_admin: true });
-      const removeBtn = wrapper.find('[data-testid="remove-project-btn"]');
+      const removeBtn = wrapper.find('[data-testid="action-delete"]');
       await removeBtn.trigger("click");
 
       // Table sorts by name — "Another Project" is first alphabetically
@@ -281,7 +291,7 @@ describe("ProjectsTable", () => {
 
     it("shows project name in modal", async () => {
       wrapper = createWrapper({ is_vulcan_admin: true });
-      const removeBtn = wrapper.find('[data-testid="remove-project-btn"]');
+      const removeBtn = wrapper.find('[data-testid="action-delete"]');
       await removeBtn.trigger("click");
       await wrapper.vm.$nextTick();
 
@@ -292,7 +302,7 @@ describe("ProjectsTable", () => {
     it("Cancel closes modal without deleting", async () => {
       wrapper = createWrapper({ is_vulcan_admin: true });
       // Open modal
-      const removeBtn = wrapper.find('[data-testid="remove-project-btn"]');
+      const removeBtn = wrapper.find('[data-testid="action-delete"]');
       await removeBtn.trigger("click");
       expect(wrapper.vm.showDeleteModal).toBe(true);
 
@@ -327,20 +337,20 @@ describe("ProjectsTable", () => {
   // DELETE EXECUTION
   // ==========================================
   describe("delete execution", () => {
-    it("confirmDelete calls axios.delete with correct URL (JSON format)", async () => {
-      const axios = (await import("axios")).default;
+    it("confirmDelete calls deleteProject with project id", async () => {
+      const { deleteProject } = await import("@/api/projectsApi");
       wrapper = createWrapper({ is_vulcan_admin: true });
       wrapper.vm.projectToDelete = sampleProjects[0];
       wrapper.vm.showDeleteModal = true;
 
       await wrapper.vm.confirmDelete();
 
-      expect(axios.delete).toHaveBeenCalledWith("/projects/1.json");
+      expect(deleteProject).toHaveBeenCalledWith(1);
     });
 
     it("confirmDelete sets isDeleting to true during request", async () => {
-      const axios = (await import("axios")).default;
-      axios.delete.mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 100)));
+      const { deleteProject } = await import("@/api/projectsApi");
+      deleteProject.mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 100)));
 
       wrapper = createWrapper({ is_vulcan_admin: true });
       wrapper.vm.projectToDelete = sampleProjects[0];
@@ -352,8 +362,8 @@ describe("ProjectsTable", () => {
     });
 
     it("emits projectUpdated on success", async () => {
-      const axios = (await import("axios")).default;
-      axios.delete.mockResolvedValue({ data: {} });
+      const { deleteProject } = await import("@/api/projectsApi");
+      deleteProject.mockResolvedValue({ data: {} });
 
       wrapper = createWrapper({ is_vulcan_admin: true });
       wrapper.vm.projectToDelete = sampleProjects[0];
@@ -365,8 +375,8 @@ describe("ProjectsTable", () => {
     });
 
     it("closes modal on success", async () => {
-      const axios = (await import("axios")).default;
-      axios.delete.mockResolvedValue({ data: {} });
+      const { deleteProject } = await import("@/api/projectsApi");
+      deleteProject.mockResolvedValue({ data: {} });
 
       wrapper = createWrapper({ is_vulcan_admin: true });
       wrapper.vm.projectToDelete = sampleProjects[0];
@@ -379,8 +389,8 @@ describe("ProjectsTable", () => {
     });
 
     it("resets state on success", async () => {
-      const axios = (await import("axios")).default;
-      axios.delete.mockResolvedValue({ data: {} });
+      const { deleteProject } = await import("@/api/projectsApi");
+      deleteProject.mockResolvedValue({ data: {} });
 
       wrapper = createWrapper({ is_vulcan_admin: true });
       wrapper.vm.projectToDelete = sampleProjects[0];
@@ -389,6 +399,22 @@ describe("ProjectsTable", () => {
       await wrapper.vm.confirmDelete();
 
       expect(wrapper.vm.projectToDelete).toBe(null);
+    });
+  });
+
+  // ── composable contracts ────────────────────────────────────────────
+  // REQUIREMENT: the updated-at column renders via useDateFormat — no
+  // DateFormatMixin remains. FormMixin was verified dead (its stale
+  // comment claimed axios-era CSRF setup; baseApi hooks own CSRF now).
+  // Toasts come from the useToast composable.
+  describe("composable contracts", () => {
+    it("renders the updated-at column via useDateFormat", () => {
+      vi.clearAllMocks();
+      wrapper = createWrapper();
+      expect(useDateFormat).toHaveBeenCalled();
+      // moment "lll" renders the month name, never the raw ISO string
+      expect(wrapper.text()).toContain("Jan 15, 2024");
+      expect(wrapper.text()).not.toContain("2024-01-15T10:00:00Z");
     });
   });
 });

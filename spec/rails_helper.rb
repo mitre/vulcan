@@ -15,6 +15,27 @@ $VERBOSE = original_verbose
 abort('The Rails environment is running in production mode!') if Rails.env.production?
 require 'rspec/rails'
 require 'test_prof/recipes/rspec/let_it_be'
+require 'test_prof/recipes/rspec/before_all'
+
+# Global refind: true — every let_it_be record gets a fresh AR instance
+# (Model.unscoped.find(id)) per example. Without this, the in-memory Ruby
+# object is shared across examples and retains mutated attributes + cached
+# associations even though the DB row is rolled back by the SAVEPOINT.
+# See: https://test-prof.evilmartians.io/recipes/let_it_be#refind
+TestProf::LetItBe.configure do |config|
+  config.default_modifiers[:refind] = true
+end
+
+# test-prof profiling — all zero-overhead when ENV vars are not set.
+# Usage:
+#   TAG_PROF=type bundle exec rspec                    # profile by test type
+#   TAG_PROF=type TAG_PROF_EVENT=factory.create ...    # + factory event tracking
+#   EVENT_PROF=sql.active_record bundle exec rspec     # SQL query profiling
+#   EVENT_PROF=factory.create bundle exec rspec        # factory usage profiling
+#   FPROF=1 bundle exec rspec                          # factory cascade detection
+#   FPROF=flamegraph bundle exec rspec                 # factory cascade flamegraph
+#   TEST_PROF_SAMPLE=10 bundle exec rspec              # sample 10 slowest groups
+
 # Add additional requires below this line. Rails is not loaded until this point!
 
 # Check that JavaScript assets are built before running tests
@@ -89,6 +110,14 @@ RSpec.configure do |config|
   # See: https://github.com/grosser/parallel_tests/issues/301
   config.before(:suite) do
     DatabaseCleaner.clean_with(:deletion)
+
+    # Disable auditing globally to eliminate PostgreSQL deadlocks in parallel
+    # tests. The audited gem's after_create callback inserts into the audits
+    # table on every factory create(), and FK triggers on base_rules cause
+    # lock ordering conflicts between parallel workers.
+    # Specs that test audit behavior re-enable via include_context 'with auditing'.
+    # See: audited gem issue #410, parallel_tests issue #301
+    Audited.auditing_enabled = false
   end
 
   config.before do
@@ -144,6 +173,12 @@ RSpec.configure do |config|
   config.filter_rails_from_backtrace!
   # arbitrary gems may also be filtered via:
   # config.filter_gems_from_backtrace("gem name")
+
+  # Exclude seed_pipeline specs from normal and parallel_rspec runs.
+  # The seed pipeline spec uses DatabaseCleaner.strategy = :truncation in
+  # before(:all), which corrupts parallel test databases. Run it standalone:
+  #   bundle exec rspec spec/seeds/seed_pipeline_spec.rb --tag seed_pipeline
+  config.filter_run_excluding seed_pipeline: true
   config.include FactoryBot::Syntax::Methods
 
   config.include Devise::Test::ControllerHelpers, type: :controller

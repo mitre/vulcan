@@ -15,8 +15,7 @@ RSpec.describe 'Okta OIDC Discovery Integration' do
   # against actual provider responses without requiring authentication
 
   before do
-    # Skip if OIDC is not enabled or no issuer configured
-    skip 'OIDC not configured - set VULCAN_ENABLE_OIDC=true and VULCAN_OIDC_ISSUER_URL to run these tests' unless oidc_enabled? && okta_test_issuer.present?
+    skip_unless_okta_configured
   end
 
   describe 'Real Okta Discovery Endpoint Testing' do

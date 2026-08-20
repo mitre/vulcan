@@ -17,7 +17,7 @@ module VulcanVue
     # Please, add to the `ignore` list any other `lib` subdirectories that do
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
     # Common ones are `templates`, `generators`, or `middleware`, for example.
-    config.autoload_lib(ignore: %w[assets tasks vulcan])
+    config.autoload_lib(ignore: %w[assets tasks vulcan rubocop])
 
     # YAML serialization permitted classes — affects Psych safe-dump used by
     # Rails 7+ for serialized columns. The audited gem stores audited_changes

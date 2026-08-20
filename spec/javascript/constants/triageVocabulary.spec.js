@@ -8,10 +8,14 @@ import {
   DISPLAY_TO_XCCDF_SECTION,
   COMMENT_PHASE_LABELS,
   CLOSED_REASON_LABELS,
+  COMMENT_PHASE_HELP,
+  CLOSED_REASON_HELP,
+  commentPhaseHelpItems,
   commentPhaseStatusText,
   commentsClosedTooltip,
   sectionLabel,
   triageDisplay,
+  buildStatusFilterOptions,
 } from "@/constants/triageVocabulary";
 
 const expectedStatuses = [
@@ -66,6 +70,52 @@ describe("triageVocabulary", () => {
     ["adjudicating", "finalized"].forEach((r) => expect(CLOSED_REASON_LABELS[r]).toBeDefined());
   });
 
+  // The settings page renders its radio options AND its help bullets from
+  // these constants — one source of truth, so the two lists cannot drift.
+  it("COMMENT_PHASE_HELP describes every phase", () => {
+    expect(COMMENT_PHASE_HELP.open).toBe(
+      "commenters can post. End date is optional — when set, it surfaces a banner with a countdown.",
+    );
+    expect(COMMENT_PHASE_HELP.closed).toBe(
+      "commenting is paused without commitment to a workflow stage.",
+    );
+    expect(Object.keys(COMMENT_PHASE_HELP)).toEqual(Object.keys(COMMENT_PHASE_LABELS));
+  });
+
+  it("CLOSED_REASON_HELP describes every closed reason", () => {
+    expect(CLOSED_REASON_HELP.adjudicating).toBe("window is closed but triage continues.");
+    expect(CLOSED_REASON_HELP.finalized).toBe(
+      "disposition published — the component is frozen for writes.",
+    );
+    expect(Object.keys(CLOSED_REASON_HELP)).toEqual(Object.keys(CLOSED_REASON_LABELS));
+  });
+
+  it("commentPhaseHelpItems derives one item per phase/reason state, labels via commentPhaseStatusText", () => {
+    expect(commentPhaseHelpItems()).toEqual([
+      {
+        label: "Open",
+        suffix: "",
+        description:
+          "commenters can post. End date is optional — when set, it surfaces a banner with a countdown.",
+      },
+      {
+        label: "Closed (Adjudicating)",
+        suffix: "",
+        description: "window is closed but triage continues.",
+      },
+      {
+        label: "Closed (Finalized)",
+        suffix: "",
+        description: "disposition published — the component is frozen for writes.",
+      },
+      {
+        label: "Closed",
+        suffix: " (no reason)",
+        description: "commenting is paused without commitment to a workflow stage.",
+      },
+    ]);
+  });
+
   it("commentPhaseStatusText composes the inline status badge text", () => {
     expect(commentPhaseStatusText("open", null)).toBe("Open");
     expect(commentPhaseStatusText("closed", null)).toBe("Closed");
@@ -79,9 +129,26 @@ describe("triageVocabulary", () => {
     expect(commentsClosedTooltip("finalized")).toMatch(/finaliz/i);
   });
 
-  it("sectionLabel renders null as Overall Requirement", () => {
-    expect(sectionLabel(null)).toBe("Overall Requirement");
-    expect(sectionLabel(undefined)).toBe("Overall Requirement");
+  it("addressed_by labels carry the kind-keyed entity noun", async () => {
+    const { triageLabel, triageDisaLabel, triageTooltip } = await import(
+      "@/constants/triageVocabulary"
+    );
+    expect(triageLabel("addressed_by", "srg")).toBe("Addressed by Other Requirement");
+    expect(triageLabel("addressed_by", "stig")).toBe("Addressed by Other Rule");
+    expect(triageLabel("addressed_by")).toBe("Addressed by Other Rule");
+    expect(triageDisaLabel("addressed_by", "srg")).toBe("Addressed by another requirement");
+    expect(triageTooltip("addressed_by", "stig")).toBe("Addressed by another rule");
+    // Non-noun statuses pass through the static maps untouched.
+    expect(triageLabel("concur", "srg")).toBe("Accepted");
+    expect(triageDisaLabel("concur", "srg")).toBe("Concur");
+  });
+
+  it("sectionLabel renders null with the kind-keyed entity noun", () => {
+    // stig (and the no-kind default) speaks Rule; srg speaks Requirement.
+    expect(sectionLabel(null)).toBe("Overall Rule");
+    expect(sectionLabel(undefined)).toBe("Overall Rule");
+    expect(sectionLabel(null, "stig")).toBe("Overall Rule");
+    expect(sectionLabel(null, "srg")).toBe("Overall Requirement");
   });
 
   it("sectionLabel renders known keys via SECTION_LABELS", () => {
@@ -91,7 +158,7 @@ describe("triageVocabulary", () => {
   it("triageDisplay returns glyph + label + tooltip + cssClass", () => {
     const r = triageDisplay("concur_with_comment");
     expect(r.glyph).toBe("◐");
-    expect(r.label).toBe("Accept with changes");
+    expect(r.label).toBe("Accepted with Changes");
     expect(r.tooltip).toMatch(/incorporate with changes/i);
     expect(r.cssClass).toBe("triage-status--concur_with_comment");
   });
@@ -99,6 +166,27 @@ describe("triageVocabulary", () => {
   it("freezes all the maps", () => {
     expect(Object.isFrozen(TRIAGE_LABELS)).toBe(true);
     expect(Object.isFrozen(TRIAGE_GLYPHS)).toBe(true);
+  });
+
+  describe("buildStatusFilterOptions", () => {
+    it("returns 'All statuses' as first option", () => {
+      const opts = buildStatusFilterOptions();
+      expect(opts[0]).toEqual({ value: "all", text: "All statuses" });
+    });
+
+    it("returns 'Pending' as second option", () => {
+      const opts = buildStatusFilterOptions();
+      expect(opts[1]).toEqual({ value: "pending", text: "Pending" });
+    });
+
+    it("includes all non-pending TRIAGE_LABELS entries after Pending", () => {
+      const opts = buildStatusFilterOptions();
+      const nonPending = Object.entries(TRIAGE_LABELS).filter(([k]) => k !== "pending");
+      expect(opts.length).toBe(2 + nonPending.length);
+      nonPending.forEach(([value, text], i) => {
+        expect(opts[2 + i]).toEqual({ value, text });
+      });
+    });
   });
 
   it("DISPLAY_TO_XCCDF_SECTION is the inverse of SECTION_LABELS (parity)", () => {

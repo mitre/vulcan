@@ -1,0 +1,86 @@
+description: Project listing entry with per-user computed fields (admin, is_member, access_request_id).
+type: object
+required:
+  - id
+  - name
+additionalProperties: false
+properties:
+  id:
+    type: integer
+    description: Unique project identifier.
+    example: 4
+  name:
+    type: string
+    description: Project name.
+    example: Container Platform
+  description:
+    type:
+      - string
+      - 'null'
+    description: Project description.
+    example: "STIG for container orchestration platforms"
+  visibility:
+    type: string
+    description: Project visibility level.
+    enum:
+      - discoverable
+      - hidden
+    example: discoverable
+  memberships_count:
+    type: integer
+    description: Number of members in this project.
+    example: 14
+  admin_name:
+    type:
+      - string
+      - 'null'
+    description: Name of the project's point of contact.
+    example: Demo Admin
+  admin_email:
+    type:
+      - string
+      - 'null'
+    format: email
+    description: Email of the project's point of contact.
+    example: admin@example.org
+  created_at:
+    type: string
+    description: When the project was created. Format is "YYYY-MM-DD HH:MM:SS UTC" (Blueprinter default).
+    example: "2026-05-19 14:07:37 UTC"
+  updated_at:
+    type: string
+    description: When the project was last modified. Format is "YYYY-MM-DD HH:MM:SS UTC" (Blueprinter default).
+    example: "2026-05-19 14:08:17 UTC"
+  memberships:
+    type: array
+    description: Project members with roles.
+    items:
+      $ref: ./MembershipSummary.yaml
+  admin:
+    type: boolean
+    description: Whether the current user is an admin on this project.
+    example: true
+  is_member:
+    type: boolean
+    description: Whether the current user is a member of this project.
+    example: true
+  access_request_id:
+    type:
+      - integer
+      - 'null'
+    description: ID of the current user's pending access request, if any.
+    example: null
+  pending_comment_count:
+    type: integer
+    description: Number of pending (untriaged) comments across all components.
+    example: 10
+  total_comment_count:
+    type: integer
+    description: Total comment count across all components.
+    example: 108
+  pending_comment_link:
+    type:
+      - string
+      - 'null'
+    description: Deep-link to the triage page for pending comments. Null if no comments exist.
+    example: "/components/29/triage"

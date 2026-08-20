@@ -1,0 +1,80 @@
+type: object
+description: >-
+  Successful release of an SRG component. The component's requirements are
+  published to the SRG catalog: the catalog entry is shaped exactly like an
+  uploaded SRG (other components can base on it immediately, and is-latest
+  tracks it), and the changelog summarizes what left the document via
+  executed relocations.
+required:
+  - toast
+  - catalog_srg
+  - changelog
+properties:
+  toast:
+    $ref: ./ToastObject.yaml
+  catalog_srg:
+    type: object
+    description: The catalog entry created by this release.
+    required:
+      - id
+      - srg_id
+      - version
+      - name
+    properties:
+      id:
+        type: integer
+        description: Catalog SecurityRequirementsGuide record id.
+      srg_id:
+        type: string
+        description: >-
+          The released document's benchmark id — the component name with
+          spaces underscored.
+        example: Container_Best_Practice_SRG
+      version:
+        type: string
+        description: Catalog version string mapped from the component's integer version/release pair.
+        example: V1R1
+      name:
+        type: string
+        description: Display name composed from the benchmark id and version.
+        example: Container Best Practice SRG - Ver 1, Rel 1
+  changelog:
+    type: object
+    description: >-
+      Release changelog content. Removals are the component's executed
+      relocation records — requirements that left this document for another
+      SRG. Storage is not implied; this is the generated content.
+    required:
+      - version
+      - removals
+      - text
+    properties:
+      version:
+        type: string
+        example: V1R1
+      removals:
+        type: array
+        items:
+          type: object
+          required:
+            - identifier
+            - destination_abbreviation
+            - executed_on
+          properties:
+            identifier:
+              type: string
+              description: >-
+                The requirement's published identifier (its working display
+                name if it was never minted).
+              example: SRG-OS-000811-CTR-000042
+            destination_abbreviation:
+              type: string
+              description: The destination SRG's short abbreviation.
+              example: WEB
+            executed_on:
+              type: string
+              format: date
+              example: '2026-07-20'
+      text:
+        type: string
+        description: Plain-text rendering of the changelog.

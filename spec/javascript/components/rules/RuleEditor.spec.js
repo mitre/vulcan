@@ -74,16 +74,16 @@ describe("RuleEditor", () => {
       wrapper = createWrapper();
       const tabs = wrapper.findComponent({ name: "BTabs" });
       // b-tabs contains multiple b-tab children
-      const btabs = tabs.findAll({ name: "BTab" });
+      const btabs = tabs.findAllComponents({ name: "BTab" });
       expect(btabs.length).toBe(3);
     });
 
     it("second tab is 'Test Script' for InSpec control body editing", () => {
       wrapper = createWrapper();
       const tabs = wrapper.findComponent({ name: "BTabs" });
-      const btabs = tabs.findAll({ name: "BTab" });
+      const btabs = tabs.findAllComponents({ name: "BTab" });
       // Verify second tab (index 1) has title "Test Script" via props
-      expect(btabs.wrappers[1].props("title")).toBe("Test Script");
+      expect(btabs.at(1).props("title")).toBe("Test Script");
     });
   });
 
@@ -105,22 +105,22 @@ describe("RuleEditor", () => {
       expect(wrapper.emitted("toggle-panel")[0]).toEqual(["satisfies"]);
     });
 
-    it("forwards toggle-panel event when History button is clicked", async () => {
+    it("forwards toggle-panel event when Changelog button is clicked", async () => {
       wrapper = createWrapper();
       const historyBtn = wrapper
         .findAll("button")
-        .wrappers.find((b) => b.text().includes("History"));
+        .wrappers.find((b) => b.text().includes("Changelog"));
       expect(historyBtn).toBeDefined();
       await historyBtn.trigger("click");
       expect(wrapper.emitted("toggle-panel")).toBeTruthy();
       expect(wrapper.emitted("toggle-panel")[0]).toEqual(["rule-history"]);
     });
 
-    it("forwards toggle-panel event when Comment History button is clicked", async () => {
+    it("forwards toggle-panel event when Discussion button is clicked", async () => {
       wrapper = createWrapper();
       const reviewsBtn = wrapper
         .findAll("button")
-        .wrappers.find((b) => b.text().includes("Comment History"));
+        .wrappers.find((b) => b.text().includes("Discussion"));
       expect(reviewsBtn).toBeDefined();
       await reviewsBtn.trigger("click");
       expect(wrapper.emitted("toggle-panel")).toBeTruthy();
@@ -474,6 +474,102 @@ describe("RuleEditor", () => {
       const lastPayload =
         wrapper.emitted("open-composer")[wrapper.emitted("open-composer").length - 1];
       expect(lastPayload).toEqual(["check_content"]);
+    });
+  });
+
+  describe("viewport-locked layout (toolbar pinned, content scrolls)", () => {
+    it("root element is a flex column that fills its parent", () => {
+      wrapper = createWrapper();
+      const root = wrapper.element;
+      expect(root.classList.contains("d-flex")).toBe(true);
+      expect(root.classList.contains("flex-column")).toBe(true);
+      expect(root.classList.contains("h-100")).toBe(true);
+    });
+
+    it("RuleActionsToolbar wrapper is flex-shrink-0 (pinned)", () => {
+      wrapper = createWrapper();
+      const toolbar = wrapper.find('[data-test="rule-toolbar-pinned"]');
+      expect(toolbar.exists()).toBe(true);
+      expect(toolbar.classes()).toContain("flex-shrink-0");
+    });
+
+    it("tabs content wrapper is flex-grow-1 overflow-auto (scrollable)", () => {
+      wrapper = createWrapper();
+      const tabsWrapper = wrapper.find('[data-test="rule-content-scrollable"]');
+      expect(tabsWrapper.exists()).toBe(true);
+      expect(tabsWrapper.classes()).toContain("flex-grow-1");
+      expect(tabsWrapper.classes()).toContain("overflow-auto");
+    });
+  });
+
+  // ==========================================
+  // DOCUMENT KIND — InSpec surfaces absent for SRG
+  //
+  // REQUIREMENT: authored SRG rows carry no InSpec content (the backend
+  // omits inspec_control_body/inspec_control_file entirely), so the
+  // Test Script and Generated Control tabs do not exist for SRG-kind.
+  // The kind flows down to the toolbar and the form.
+  // ==========================================
+  describe("document kind gating", () => {
+    // Authored SRG rows omit Rule-only keys entirely — authentic shape.
+    const authoredRule = {
+      id: 7,
+      rule_id: "000007",
+      status: "Applicable",
+      locked: false,
+      review_requestor_id: null,
+      rule_severity: "medium",
+    };
+    const srgStatuses = ["Not Yet Determined", "Applicable", "Not Applicable"];
+
+    const tabTitles = () =>
+      wrapper
+        .findComponent({ name: "BTabs" })
+        .findAllComponents({ name: "BTab" })
+        .wrappers.map((t) => t.props("title"));
+
+    it("defaults to stig and renders the InSpec tabs (regression)", () => {
+      wrapper = createWrapper();
+      expect(wrapper.props("documentType")).toBe("stig");
+      expect(tabTitles()).toEqual([
+        "Documentation",
+        "Test Script",
+        "Generated Control (Read-Only)",
+      ]);
+    });
+
+    it("renders NO InSpec tabs for srg-kind — Documentation only", () => {
+      wrapper = createWrapper({
+        documentType: "srg",
+        rule: authoredRule,
+        statuses: srgStatuses,
+      });
+      expect(tabTitles()).toEqual(["Documentation"]);
+    });
+
+    it("forwards documentType to the toolbar and the form", () => {
+      wrapper = createWrapper({
+        documentType: "srg",
+        rule: authoredRule,
+        statuses: srgStatuses,
+      });
+      expect(wrapper.findComponent({ name: "RuleActionsToolbar" }).props("documentType")).toBe(
+        "srg",
+      );
+      expect(wrapper.findComponent({ name: "UnifiedRuleForm" }).props("documentType")).toBe("srg");
+    });
+
+    it("forwards viewOnlyPage to the toolbar so read-only tooltips state the true reason", () => {
+      wrapper = createWrapper({
+        documentType: "srg",
+        rule: authoredRule,
+        statuses: srgStatuses,
+        readOnly: true,
+        viewOnlyPage: true,
+      });
+      expect(wrapper.findComponent({ name: "RuleActionsToolbar" }).props("viewOnlyPage")).toBe(
+        true,
+      );
     });
   });
 });

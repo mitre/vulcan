@@ -2,7 +2,7 @@
 
 FactoryBot.define do
   factory :stig_rule do
-    stig
+    stig factory: %i[stig skip_rules]
     sequence(:rule_id) { |n| "RHEL-09-#{654_000 + n}" }
     sequence(:vuln_id) { |n| "V-#{258_000 + n}" }
     title { 'Audit configuration changes' }

@@ -9,18 +9,47 @@ module Rack
   # Rate limiting rules for login and upload endpoints.
   class Attack
     ### Throttle login attempts ###
+    # Both the HTML sign-in form and the JSON SPA endpoint are credential
+    # oracles and must meter identically — otherwise /api/auth/login is an
+    # unthrottled brute-force surface. One shared matcher covers both paths.
+    LOGIN_PATHS = ['/users/sign_in', '/api/auth/login'].freeze
+
+    # The email discriminator (prevents credential stuffing across IPs). The
+    # HTML form nests it under user[email]; the JSON endpoint sends a
+    # top-level email. rack-attack runs before Rails parses a JSON body, so
+    # for the JSON path we read and rewind the body ourselves — same
+    # technique as the comment throttle below.
+    login_email = lambda do |req|
+      next nil unless req.post? && LOGIN_PATHS.include?(req.path)
+
+      raw =
+        if req.path == '/api/auth/login'
+          if req.media_type.to_s.match?(%r{application/json}i)
+            begin
+              body = JSON.parse(req.body.read)
+              req.body.rewind
+              body['email']
+            rescue JSON::ParserError
+              req.body.rewind
+              nil
+            end
+          else
+            req.params['email']
+          end
+        else
+          req.params.dig('user', 'email')
+        end
+      # Normalize email to prevent bypass via case/whitespace
+      raw&.strip&.downcase
+    end
+
     # 5 attempts per 60 seconds per IP address
     throttle('logins/ip', limit: 5, period: 60.seconds) do |req|
-      req.ip if req.path == '/users/sign_in' && req.post?
+      req.ip if req.post? && LOGIN_PATHS.include?(req.path)
     end
 
     # 5 attempts per 60 seconds per email (prevents credential stuffing across IPs)
-    throttle('logins/email', limit: 5, period: 60.seconds) do |req|
-      if req.path == '/users/sign_in' && req.post?
-        # Normalize email to prevent bypass via case/whitespace
-        req.params.dig('user', 'email')&.strip&.downcase
-      end
-    end
+    throttle('logins/email', limit: 5, period: 60.seconds, &login_email)
 
     ### Throttle file uploads ###
     # 10 uploads per 60 seconds per user session (generous for batch operations)
@@ -81,12 +110,17 @@ module Rack
       reactions_user.call(req) if req.get?
     end
 
+    ### Throttle API token requests ###
+    throttle('api_token/ip', limit: 300, period: 60.seconds) do |req|
+      req.ip if req.env['HTTP_AUTHORIZATION']&.start_with?('Token ')
+    end
+
     ### Custom throttle response ###
     self.throttled_responder = lambda do |_req|
       [
         429,
         { 'Content-Type' => 'application/json' },
-        [{ toast: { title: 'Rate limited', message: 'Too many requests. Please wait and try again.',
+        [{ toast: { title: 'Rate limited', message: ['Too many requests. Please wait and try again.'],
                     variant: 'danger' } }.to_json]
       ]
     end

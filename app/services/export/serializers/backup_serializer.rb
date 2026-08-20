@@ -10,12 +10,21 @@ module Export
     #   data = serializer.serialize
     #   # => { component: {}, rules: [], satisfactions: [], reviews: [] }
     class BackupSerializer
-      BACKUP_FORMAT_VERSION = '1.0'
+      # v1.1 — emit iso8601(6) (microsecond) on review created_at/updated_at
+      # so ReviewMatcher uses microsecond precision (legacy_format? only
+      # triggers on '1.0'). Two reviews <1s apart with identical rule_id
+      # and comment no longer collapse into pair_degenerate.
+      BACKUP_FORMAT_VERSION = '1.1'
 
-      # base_rules columns to EXCLUDE from export (internal/relational IDs)
+      # base_rules columns to EXCLUDE from export (internal/relational IDs).
+      # Complement of Rule::MERGEABLE_FIELDS + Rule::DERIVED_COLUMNS +
+      # %w[rule_id srg_id locked locked_fields deleted_at] + timestamps;
+      # those constants are the canonical source of truth for what
+      # round-trips through backup/restore. See Rule::MERGEABLE_FIELDS.
       EXCLUDED_RULE_COLUMNS = %w[
         id type component_id srg_rule_id review_requestor_id
         security_requirements_guide_id stig_id stig_rule_id
+        derived_from_srg_rule_id
       ].freeze
 
       # @param component [Component] the component to serialize
@@ -46,6 +55,9 @@ module Export
           srg_id: @component.based_on&.srg_id,
           srg_title: @component.based_on&.title,
           srg_version: @component.based_on&.version,
+          # The full source set, so pre-flight can check every lineage
+          # dependency — the singular fields above cover only based_on.
+          source_srgs: serialize_source_srgs,
           rule_count: rules_collection.size
         }
       end
@@ -64,23 +76,38 @@ module Export
           admin_name: @component.admin_name,
           admin_email: @component.admin_email,
           advanced_fields: @component.advanced_fields,
+          document_type: @component.document_type,
           # closed_reason is 'adjudicating' / 'finalized' when closed,
           # null when open.
           comment_phase: @component.comment_phase,
           closed_reason: @component.closed_reason,
-          comment_period_starts_at: @component.comment_period_starts_at&.iso8601,
-          comment_period_ends_at: @component.comment_period_ends_at&.iso8601,
-          created_at: @component.created_at&.iso8601,
-          updated_at: @component.updated_at&.iso8601,
+          # Microsecond precision: backup → restore is a round-trip
+          # surface. iso8601 (second) would lose data on every cycle.
+          comment_period_starts_at: @component.comment_period_starts_at&.iso8601(6),
+          comment_period_ends_at: @component.comment_period_ends_at&.iso8601(6),
+          created_at: @component.created_at&.iso8601(6),
+          updated_at: @component.updated_at&.iso8601(6),
           based_on: {
             srg_id: @component.based_on&.srg_id,
             title: @component.based_on&.title,
             version: @component.based_on&.version
           },
+          source_srgs: serialize_source_srgs,
           overlay_parent: serialize_overlay_parent,
           metadata: @component.component_metadata&.data,
           additional_questions: serialize_additional_questions
         }
+      end
+
+      # Every declared parent, identified the same portable way based_on is —
+      # srg_id plus version, never a database id, because the archive is
+      # restored into a different instance with its own catalog. based_on is
+      # a member of this set, so it appears here too; the restore rebuilds
+      # the whole set from this one key. Sorted for a stable archive.
+      def serialize_source_srgs
+        @component.source_srgs.sort_by(&:srg_id).map do |srg|
+          { srg_id: srg.srg_id, title: srg.title, version: srg.version }
+        end
       end
 
       def serialize_overlay_parent
@@ -105,7 +132,10 @@ module Export
       end
 
       def rules_collection
-        @preloaded_rules || @component.rules
+        # requirements, not rules: an SRG-kind component's archive must
+        # carry its authored SrgRules — the Rule STI association would
+        # serialize an EMPTY archive.
+        @preloaded_rules || @component.requirements
       end
 
       def serialize_rules
@@ -114,21 +144,35 @@ module Export
 
       def serialize_rule(rule)
         attrs = rule_base_attributes(rule)
-        attrs[:srg_rule_version] = rule.srg_rule&.version
+        # Portable lineage tokens (catalog versions, never DB ids):
+        # srg_rule_version for Rules, derived_from_srg_rule_version for
+        # authored SrgRules — each paired with the owning SRG's stable
+        # srg_id (the same key the source_srgs entries use), because a
+        # version string is only unique within one SRG and a multi-parent
+        # component carries lineage into several. srg_rule /
+        # additional_answers exist on Rule only.
+        if rule.is_a?(Rule)
+          attrs[:srg_rule_version] = rule.srg_identifier
+          attrs[:srg_rule_srg_id] = rule.srg_rule&.security_requirements_guide&.srg_id
+          attrs[:additional_answers] = serialize_additional_answers(rule)
+        else
+          attrs[:derived_from_srg_rule_version] = rule.derived_from&.version
+          attrs[:derived_from_srg_rule_srg_id] = rule.derived_from&.security_requirements_guide&.srg_id
+          attrs[:additional_answers] = []
+        end
         attrs[:disa_rule_descriptions] = serialize_disa_rule_descriptions(rule)
         attrs[:checks] = serialize_checks(rule)
         attrs[:rule_descriptions] = serialize_rule_descriptions(rule)
         attrs[:references] = serialize_references(rule)
-        attrs[:additional_answers] = serialize_additional_answers(rule)
         attrs
       end
 
       def rule_base_attributes(rule)
         attrs = rule.attributes.except(*EXCLUDED_RULE_COLUMNS)
-        # Ensure timestamps are ISO8601 strings
-        attrs['created_at'] = rule.created_at&.iso8601
-        attrs['updated_at'] = rule.updated_at&.iso8601
-        attrs['deleted_at'] = rule.deleted_at&.iso8601
+        # Microsecond precision: backup → restore is a round-trip surface.
+        attrs['created_at'] = rule.created_at&.iso8601(6)
+        attrs['updated_at'] = rule.updated_at&.iso8601(6)
+        attrs['deleted_at'] = rule.deleted_at&.iso8601(6)
         attrs.symbolize_keys
       end
 
@@ -168,6 +212,9 @@ module Export
       def serialize_satisfactions
         satisfactions = []
         rules_collection.each do |rule|
+          # Satisfies is structurally absent on authored SrgRules.
+          next unless rule.respond_to?(:satisfies)
+
           rule.satisfies.each do |satisfied_rule|
             # rule is the satisfier (satisfied_by_rule_id in DB)
             # satisfied_rule is the one being satisfied (rule_id in DB)
@@ -181,35 +228,82 @@ module Export
       end
 
       def serialize_reviews
-        rules_collection.flat_map do |rule|
-          rule.reviews.order(:created_at).map { |review| serialize_review(review, rule) }
-        end
+        # sort_by, not .order — an SQL order on the association discards the
+        # eager-loaded set (reviews, users, reactions) and re-queries per row.
+        all_reviews = rules_collection.flat_map { |rule| rule.reviews.sort_by(&:created_at).map { |r| [r, rule] } }
+        original_ids = all_reviews.filter_map { |r, _| r.original_commentable_id }.uniq
+        @original_rule_id_map = original_ids.any? ? BaseRule.where(id: original_ids).pluck(:id, :rule_id).to_h : {}
+        # Same BaseRule.id → stable rule_id string pattern for addressed_by FK.
+        addressed_ids = all_reviews.filter_map { |r, _| r.addressed_by_rule_id }.uniq
+        @addressed_by_rule_id_map = addressed_ids.any? ? BaseRule.where(id: addressed_ids).pluck(:id, :rule_id).to_h : {}
+        all_reviews.map { |review, rule| serialize_review(review, rule) }
       end
 
       # external_id is the original DB id used as a stable in-archive key so
       # parent / duplicate cross-references can be re-linked on import without
       # the original DB ids surviving (re-import generates fresh ids).
       def serialize_review(review, rule)
+        user_email, user_name = attribution(review.user, review.commenter_imported_email,
+                                            review.commenter_imported_name)
+        triager_email, triager_name = attribution(review.triage_set_by, review.triage_set_by_imported_email,
+                                                  review.triage_set_by_imported_name)
+        adjudicator_email, adjudicator_name = attribution(review.adjudicated_by, review.adjudicated_by_imported_email,
+                                                          review.adjudicated_by_imported_name)
         {
           external_id: review.id,
           rule_id: rule.rule_id,
           action: review.action,
           comment: review.comment,
-          user_email: review.user&.email,
-          user_name: review.user&.name,
+          user_email: user_email,
+          user_name: user_name,
           # public-comment-review lifecycle
           section: review.section,
           triage_status: review.triage_status,
-          triage_set_by_email: review.triage_set_by&.email,
-          triage_set_by_name: review.triage_set_by&.name,
-          triage_set_at: review.triage_set_at&.iso8601,
-          adjudicated_by_email: review.adjudicated_by&.email,
-          adjudicated_by_name: review.adjudicated_by&.name,
-          adjudicated_at: review.adjudicated_at&.iso8601,
+          triage_set_by_email: triager_email,
+          triage_set_by_name: triager_name,
+          triage_set_at: review.triage_set_at&.iso8601(6),
+          adjudicated_by_email: adjudicator_email,
+          adjudicated_by_name: adjudicator_name,
+          adjudicated_at: review.adjudicated_at&.iso8601(6),
           responding_to_external_id: review.responding_to_review_id,
           duplicate_of_external_id: review.duplicate_of_review_id,
-          created_at: review.created_at&.iso8601
+          original_rule_id: review.original_commentable_id ? @original_rule_id_map[review.original_commentable_id] : nil,
+          # Stable rule_id string (not the cross-instance-unstable DB id); the
+          # import side remaps via rule_id_map in ReviewBuilder#lifecycle_attrs.
+          addressed_by_rule_id: review.addressed_by_rule_id ? @addressed_by_rule_id_map[review.addressed_by_rule_id] : nil,
+          # Microsecond precision throughout: backup is a round-trip surface,
+          # and ReviewMatcher's composite key (rule_id, created_at, digest)
+          # needs sub-second resolution to distinguish reviews posted within
+          # the same second on different instances during merge.
+          created_at: review.created_at&.iso8601(6),
+          updated_at: review.updated_at&.iso8601(6),
+          reactions: serialize_reactions(review)
         }
+      end
+
+      # A review can hold attribution on its *_imported_email/_name columns with
+      # a NULL user FK — a prior import without a matching local user, or an
+      # author whose User row was destroyed (User#preserve_review_attribution).
+      # The archive must carry that snapshot or the attribution dies on the
+      # second export → import trip: ReviewBuilder skips reviews whose archive
+      # attribution is blank. The linked user always wins when present.
+      def attribution(user, imported_email, imported_name)
+        return [user.email, user.name] if user
+
+        [imported_email, imported_name]
+      end
+
+      def serialize_reactions(review)
+        # Plain traversal — reactions (and their users) arrive via the modes'
+        # eager-load plans; an .includes here would re-query per review.
+        review.reactions.map do |r|
+          {
+            id: r.id,
+            user_email: r.user&.email,
+            kind: r.kind,
+            created_at: r.created_at&.iso8601(6)
+          }
+        end
       end
     end
   end

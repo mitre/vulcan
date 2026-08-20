@@ -1,0 +1,21 @@
+name: triage_status
+in: query
+description: >-
+  Filter comments by triage disposition. Defaults to "pending" — the triage
+  table opens on undispositioned comments. Use "all" to return comments in
+  any status.
+schema:
+  type: string
+  enum:
+    - all
+    - pending
+    - concur
+    - concur_with_comment
+    - non_concur
+    - duplicate
+    - informational
+    - needs_clarification
+    - withdrawn
+    - addressed_by
+  default: pending
+example: pending

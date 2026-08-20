@@ -1,0 +1,29 @@
+description: >-
+  Lightweight rule for picker dropdowns. Serialized by RuleBlueprint :picker view.
+  Extends RuleSummary defaults with displayed_name and satisfaction relationships.
+  13 total fields.
+allOf:
+  - $ref: ./RuleSummary.yaml
+  - type: object
+    # The satisfaction arrays are always present on STIG rules and never
+    # on authored SRG requirements — they keep the two picker row shapes
+    # disjoint wherever they appear together in a oneOf.
+    required:
+      - displayed_name
+      - satisfies
+      - satisfied_by
+    properties:
+      displayed_name:
+        type: string
+        description: Human-readable rule identifier (PREFIX-rule_id).
+        example: "PHOS-03-000001"
+      satisfies:
+        type: array
+        description: Rules that this rule satisfies.
+        items:
+          $ref: ./SatisfactionSummary.yaml
+      satisfied_by:
+        type: array
+        description: Rules that satisfy this rule.
+        items:
+          $ref: ./SatisfiedBySummary.yaml

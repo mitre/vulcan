@@ -12,7 +12,10 @@ module ApplicationHelper
       { icon: 'folder2-open', name: 'Projects', link: projects_path },
       { icon: 'patch-check-fill', name: 'Released Components', link: components_path },
       { icon: 'clipboard-check', name: 'STIGs', link: stigs_path },
-      { icon: 'clipboard', name: 'SRGs', link: srgs_path }
+      { icon: 'clipboard', name: 'SRGs', link: srgs_path },
+      # The documentation site covers the DISA guide and everything else, so
+      # the old single-child Resources dropdown became one top-level entry.
+      { icon: 'book', name: 'Documentation', link: docs_path }
     ]
   end
 end

@@ -1,15 +1,18 @@
 <template>
   <span>
-    <!-- Opener button -->
-    <b-button
-      class="mr-2"
-      variant="outline-warning"
-      size="sm"
-      data-testid="update-from-spreadsheet-btn"
-      @click="showModal()"
-    >
-      <b-icon icon="file-earmark-spreadsheet" /> Update from Spreadsheet
-    </b-button>
+    <!-- Opener button (only if showOpener prop is true) -->
+    <span v-if="showOpener" @click="showModal()">
+      <slot name="opener">
+        <b-button
+          class="mr-2"
+          variant="outline-warning"
+          size="sm"
+          data-testid="update-from-spreadsheet-btn"
+        >
+          <b-icon icon="file-earmark-spreadsheet" /> Update from Spreadsheet
+        </b-button>
+      </slot>
+    </span>
 
     <!-- Multi-step modal -->
     <b-modal
@@ -43,8 +46,9 @@
         </b-alert>
 
         <p class="small text-muted">
-          <strong>Tip:</strong> Export this component as CSV, modify the rules in a spreadsheet,
-          then upload to update. Locked rules will not be changed.
+          <strong>Tip:</strong> Export this component as CSV, modify the
+          {{ noun.plural.toLowerCase() }} in a spreadsheet, then upload to update. Locked
+          {{ noun.plural.toLowerCase() }} will not be changed.
         </p>
       </div>
 
@@ -65,13 +69,14 @@
         <!-- No changes message -->
         <b-alert v-if="!hasUpdates" variant="success" show data-testid="no-changes-message">
           <b-icon icon="check-circle" />
-          Your spreadsheet matches the current component. No rules need updating.
+          Your spreadsheet matches the current component. No {{ noun.plural.toLowerCase() }} need
+          updating.
         </b-alert>
 
         <!-- Updated rules -->
         <b-card v-if="previewData.updated.length" class="mb-3">
           <template #header>
-            <strong>Updated Rules</strong>
+            <strong>{{ msg.updatedRules }}</strong>
             <b-badge variant="primary" class="ml-2">{{ previewData.updated.length }}</b-badge>
           </template>
           <b-table
@@ -110,17 +115,17 @@
         <!-- Unchanged rules -->
         <b-card v-if="previewData.unchanged.length" class="mb-3">
           <template #header>
-            <strong>Unchanged Rules</strong>
+            <strong>{{ msg.unchangedRules }}</strong>
           </template>
           <small class="text-muted">
-            {{ previewData.unchanged.length }} rules have no changes
+            {{ previewData.unchanged.length }} {{ noun.plural.toLowerCase() }} have no changes
           </small>
         </b-card>
 
         <!-- Skipped (locked/inherited) rules -->
         <b-card v-if="previewData.skipped_locked.length" class="mb-3" border-variant="warning">
           <template #header>
-            <strong>Protected Rules (Skipped)</strong>
+            <strong>{{ msg.protectedRules }}</strong>
             <b-badge variant="warning" class="ml-2">
               {{ previewData.skipped_locked.length }}
             </b-badge>
@@ -152,10 +157,12 @@
       <div v-if="step === 3" data-testid="step-confirm">
         <p>
           Are you sure you want to update
-          <strong>{{ previewData.updated.length }} rules</strong>?
+          <strong>{{ previewData.updated.length }} {{ noun.plural.toLowerCase() }}</strong
+          >?
         </p>
         <p class="text-muted small">
-          <strong>{{ previewData.skipped_locked.length }}</strong> locked rules will be skipped.
+          <strong>{{ previewData.skipped_locked.length }}</strong> locked
+          {{ noun.plural.toLowerCase() }} will be skipped.
         </p>
         <p class="text-muted small">
           This action cannot be undone. All changes will be logged in the audit trail.
@@ -164,8 +171,14 @@
 
       <!-- Step 4: Progress -->
       <div v-if="step === 4" class="text-center py-4" data-testid="step-progress">
-        <b-spinner label="Updating rules..." data-testid="progress-spinner" />
-        <p class="mt-3">Updating {{ previewData.updated.length }} rules from spreadsheet...</p>
+        <b-spinner
+          :label="`Updating ${noun.plural.toLowerCase()}...`"
+          data-testid="progress-spinner"
+        />
+        <p class="mt-3">
+          Updating {{ previewData.updated.length }} {{ noun.plural.toLowerCase() }} from
+          spreadsheet...
+        </p>
       </div>
 
       <!-- Step 5: Results -->
@@ -190,16 +203,19 @@
 </template>
 
 <script>
-import axios from "axios";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
+import { previewSpreadsheetUpdate, applySpreadsheetUpdate } from "../../api/componentsApi";
+import { messageLabels, ruleTerm } from "../../constants/terminology";
 
 export default {
   name: "UpdateFromSpreadsheetModal",
-  mixins: [AlertMixinVue],
   props: {
     component: {
       type: Object,
       required: true,
+    },
+    showOpener: {
+      type: Boolean,
+      default: false,
     },
   },
   data() {
@@ -216,28 +232,38 @@ export default {
       updateInProgress: false,
       updateResult: null,
       previewFields: [
-        { key: "rule_id", label: "Rule ID", sortable: true },
+        {
+          key: "rule_id",
+          label: `${ruleTerm(this.component.document_type).singular} ID`,
+          sortable: true,
+        },
         { key: "srg_id", label: "SRG ID", sortable: true },
         { key: "changes", label: "Changes" },
       ],
     };
   },
   computed: {
+    msg() {
+      return messageLabels(this.component.document_type);
+    },
+    noun() {
+      return ruleTerm(this.component.document_type);
+    },
     hasUpdates() {
       return this.previewData.updated.length > 0;
     },
     modalTitle() {
       switch (this.step) {
         case 1:
-          return "Update Rules from Spreadsheet";
+          return this.msg.spreadsheetTitle;
         case 2:
           return this.hasUpdates
-            ? `Review Changes \u2014 ${this.previewData.updated.length} rules to update`
+            ? `Review Changes \u2014 ${this.previewData.updated.length} ${this.noun.plural.toLowerCase()} to update`
             : "No Changes Detected";
         case 3:
           return "Confirm Update";
         case 4:
-          return "Updating rules...";
+          return `Updating ${this.noun.plural.toLowerCase()}...`;
         case 5:
           return this.updateResult && this.updateResult.success
             ? "Update Complete"
@@ -363,10 +389,7 @@ export default {
       const formData = new FormData();
       formData.append("file", this.selectedFile);
 
-      return axios
-        .post(`/components/${this.component.id}/preview_spreadsheet_update`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        })
+      return previewSpreadsheetUpdate(this.component.id, formData)
         .then((response) => {
           this.previewData = response.data;
           this.step = 2;
@@ -386,14 +409,11 @@ export default {
       const formData = new FormData();
       formData.append("file", this.selectedFile);
 
-      return axios
-        .patch(`/components/${this.component.id}/apply_spreadsheet_update`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        })
+      return applySpreadsheetUpdate(this.component.id, formData)
         .then((response) => {
           this.updateResult = {
             success: true,
-            message: response.data.toast || "Rules updated successfully.",
+            message: response.data.toast || this.msg.rulesUpdated,
           };
           this.step = 5;
         })
@@ -483,12 +503,12 @@ export default {
 
 <style scoped>
 .diff-old {
-  background-color: #f8d7da;
+  background-color: var(--vulcan-danger-tint);
   white-space: pre-wrap;
   word-break: break-word;
 }
 .diff-new {
-  background-color: #d4edda;
+  background-color: var(--vulcan-success-tint);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -497,13 +517,13 @@ export default {
   user-select: none;
 }
 .diff-highlight-old {
-  background-color: #f5c6cb;
+  background-color: var(--vulcan-highlight-error, #f5c6cb);
   font-weight: bold;
   border-radius: 2px;
   padding: 0 1px;
 }
 .diff-highlight-new {
-  background-color: #a3cfbb;
+  background-color: var(--vulcan-highlight-success, #a3cfbb);
   font-weight: bold;
   border-radius: 2px;
   padding: 0 1px;

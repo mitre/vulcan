@@ -1,0 +1,41 @@
+parameters:
+  - $ref: ../components/parameters/RuleId.yaml
+post:
+  operationId: revertRule
+  tags:
+    - Rules
+  summary: Revert requirement fields to a previous audit version
+  description: >-
+    Restores the named audited fields to their prior values from the
+    specified history entry. Applies to both document kinds — stig rules
+    and authored SRG requirements. Requires author or admin role.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            audit_id:
+              type: integer
+              description: The audit history entry to revert from.
+              example: 4211
+            fields:
+              type: array
+              description: The audited field names to restore.
+              items:
+                type: string
+              example: [title]
+            audit_comment:
+              type: string
+              description: Recorded on the audit trail with the revert.
+              example: Restore the original wording
+  responses:
+    '200':
+      description: Rule reverted
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

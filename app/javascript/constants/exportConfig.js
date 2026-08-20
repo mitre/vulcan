@@ -2,6 +2,7 @@
  * Export mode + format configuration.
  * Mirrors Export::Registry on the backend — keep in sync.
  */
+import { RULE_TERM } from "./terminology";
 
 // Export modes — purpose-first selection
 export const EXPORT_MODES = {
@@ -19,7 +20,7 @@ export const EXPORT_MODES = {
   },
   backup: {
     label: "Backup",
-    description: "Full-fidelity archive of all rules",
+    description: `Full-fidelity archive of all ${RULE_TERM.plural.toLowerCase()}`,
   },
 };
 
@@ -52,3 +53,14 @@ export const MODE_FORMAT_OVERRIDES = {
 
 // Canonical format order for mode-aware display
 export const ALL_FORMATS = ["csv", "excel", "xccdf", "inspec", "json_archive"];
+
+// Purpose × format combinations with meaning for SRG-kind components.
+// Publication kind-routes server-side ONLY as XCCDF (the srg publication
+// mode is xccdf-only in the export registry — there is no srg InSpec);
+// backup serves both kinds. Every other purpose+format combination
+// EXCLUDES srg components — mirrors the export service's kind routing,
+// keep in sync.
+export const SRG_VALID_MODE_FORMATS = {
+  published_stig: ["xccdf"],
+  backup: ["json_archive"],
+};

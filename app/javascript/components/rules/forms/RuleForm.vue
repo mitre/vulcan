@@ -1,13 +1,23 @@
 <template>
   <div>
     <b-form>
+      <!-- Satisfied-by indicator: shows parent relationship for child rules -->
+      <SatisfiedByIndicator
+        v-if="ruleArray(rule, 'satisfied_by').length > 0"
+        :parent-rules="ruleArray(rule, 'satisfied_by')"
+        :component-prefix="rule.component_prefix || ''"
+        @navigate="$emit('navigate-to-rule', $event)"
+      >
+        Content fields are hidden — edit on the {{ parentRuleFallback }}.
+      </SatisfiedByIndicator>
+
       <!-- ============================================================ -->
       <!-- SECTION 1: Policy Decision (Status + Severity)               -->
       <!-- User's first action: decide the status and severity          -->
       <!-- ============================================================ -->
       <div
         v-if="fields.displayed.includes('status') || fields.displayed.includes('rule_severity')"
-        class="row"
+        class="form-row"
       >
         <!-- status -->
         <RuleFormGroup
@@ -15,9 +25,9 @@
           field-name="status"
           label="Status"
           :tooltip="tooltips['status']"
-          extra-class="col-md-8"
+          extra-class="col-md-6"
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
-          @open-composer="bubbleOpenComposer"
+          v-on="commentIconListeners"
         >
           <template #default="{ inputId, isDisabled }">
             <b-form-select
@@ -37,9 +47,9 @@
           field-name="rule_severity"
           label="Severity"
           :tooltip="tooltips['rule_severity']"
-          extra-class="col-md-4"
+          extra-class="col-md-6"
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
-          @open-composer="bubbleOpenComposer"
+          v-on="commentIconListeners"
         >
           <template #default="{ inputId, isDisabled }">
             <b-form-select
@@ -66,8 +76,8 @@
           <MarkdownTextarea
             :id="inputId"
             :value="
-              rule.disa_rule_descriptions_attributes[0] &&
-              rule.disa_rule_descriptions_attributes[0].severity_override_guidance
+              ruleArray(rule, 'disa_rule_descriptions_attributes')[0] &&
+              ruleArray(rule, 'disa_rule_descriptions_attributes')[0].severity_override_guidance
             "
             :input-class="inputClass('severity_override_guidance')"
             placeholder=""
@@ -79,7 +89,7 @@
                 'update:disaDescription',
                 rule,
                 {
-                  ...rule.disa_rule_descriptions_attributes[0],
+                  ...ruleArray(rule, 'disa_rule_descriptions_attributes')[0],
                   severity_override_guidance: $event,
                 },
                 0,
@@ -93,15 +103,18 @@
       <!-- SECTION 2: Reference Context (read-only SRG info)            -->
       <!-- User reads the SRG requirement context before writing        -->
       <!-- ============================================================ -->
-      <div v-if="rule.nist_control_family || rule.ident" class="row" data-testid="ia-control-cci">
+      <div
+        v-if="rule.nist_control_family || rule.ident"
+        class="form-row"
+        data-testid="ia-control-cci"
+      >
         <RuleFormGroup
           v-bind="formGroupProps"
           field-name="nist_control_family"
           label="IA Control"
-          tooltip="The NIST control family (e.g. AC-2) mapped to this requirement"
+          :tooltip="`The NIST control family (e.g. AC-2) mapped to this ${nounSingular}`"
           extra-class="col-md-6"
           read-only
-          :custom-display-check="() => true"
         >
           <template #default="{ inputId }">
             <b-form-input
@@ -116,10 +129,9 @@
           v-bind="formGroupProps"
           field-name="cci"
           label="CCI"
-          tooltip="The Common Control Indicator (CCI) mapped to this requirement"
+          :tooltip="`The Common Control Indicator (CCI) mapped to this ${nounSingular}`"
           extra-class="col-md-6"
           read-only
-          :custom-display-check="() => true"
         >
           <template #default="{ inputId }">
             <b-form-input :id="inputId" :value="rule.ident || '\u2014'" readonly class="bg-light" />
@@ -140,7 +152,7 @@
         label="Title"
         :tooltip="tooltips['title']"
         @toggle-section-lock="$emit('toggle-section-lock', $event)"
-        @open-composer="bubbleOpenComposer"
+        v-on="commentIconListeners"
       >
         <template #default="{ inputId, isDisabled }">
           <MarkdownTextarea
@@ -159,10 +171,10 @@
       <!-- DISA Rule Description (vuln discussion + advanced DISA metadata) -->
       <template v-if="disa_fields">
         <DisaRuleDescriptionForm
-          v-if="rule.disa_rule_descriptions_attributes.length >= 1"
+          v-if="ruleArray(rule, 'disa_rule_descriptions_attributes').length >= 1"
           :rule="rule"
           :index="0"
-          :description="rule.disa_rule_descriptions_attributes[0]"
+          :description="ruleArray(rule, 'disa_rule_descriptions_attributes')[0]"
           :disabled="disabled"
           :locked-sections="lockedSections"
           :can-manage-section-locks="canManageSectionLocks"
@@ -170,14 +182,14 @@
           :field-state-class-fn="fieldStateClassFn"
           :fields="disa_fields"
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
-          @open-composer="bubbleOpenComposer"
+          v-on="commentIconListeners"
         />
       </template>
 
       <!-- Check -->
       <template v-if="check_fields">
         <CheckForm
-          v-if="rule.checks_attributes.length >= 1"
+          v-if="ruleArray(rule, 'checks_attributes').length >= 1"
           :rule="rule"
           :index="0"
           :disabled="disabled"
@@ -187,7 +199,7 @@
           :show-section-locks="showSectionLocks"
           :field-state-class-fn="fieldStateClassFn"
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
-          @open-composer="bubbleOpenComposer"
+          v-on="commentIconListeners"
         />
       </template>
 
@@ -198,12 +210,25 @@
         label="Fix"
         :tooltip="tooltips['fixtext']"
         @toggle-section-lock="$emit('toggle-section-lock', $event)"
-        @open-composer="bubbleOpenComposer"
+        v-on="commentIconListeners"
       >
         <template #default="{ inputId, isDisabled }">
+          <b-alert
+            v-if="ruleArray(rule, 'satisfied_by').length > 0"
+            show
+            variant="info"
+            class="mb-2 py-1 px-2 small"
+          >
+            Inherited fix from
+            {{ ruleArray(rule, "satisfied_by")[0].displayed_name || parentRuleFallback }}:
+            <em
+              >{{ (ruleArray(rule, "satisfied_by")[0].fixtext || "").substring(0, 200)
+              }}{{ (ruleArray(rule, "satisfied_by")[0].fixtext || "").length > 200 ? "…" : "" }}</em
+            >
+          </b-alert>
           <MarkdownTextarea
             :id="inputId"
-            :value="rule.satisfied_by.length > 0 ? rule.satisfied_by[0].fixtext : rule.fixtext"
+            :value="rule.fixtext"
             :input-class="inputClass('fixtext')"
             placeholder=""
             :disabled="isDisabled"
@@ -248,7 +273,7 @@
         label="Artifact Description"
         :tooltip="tooltips['artifact_description']"
         @toggle-section-lock="$emit('toggle-section-lock', $event)"
-        @open-composer="bubbleOpenComposer"
+        v-on="commentIconListeners"
       >
         <template #default="{ inputId, isDisabled }">
           <MarkdownTextarea
@@ -271,7 +296,7 @@
         label="Vendor Comments"
         :tooltip="tooltips['vendor_comments']"
         @toggle-section-lock="$emit('toggle-section-lock', $event)"
-        @open-composer="bubbleOpenComposer"
+        v-on="commentIconListeners"
       >
         <template #default="{ inputId, isDisabled }">
           <MarkdownTextarea
@@ -306,7 +331,7 @@
         label="Version"
         :tooltip="tooltips['version']"
         @toggle-section-lock="$emit('toggle-section-lock', $event)"
-        @open-composer="bubbleOpenComposer"
+        v-on="commentIconListeners"
       >
         <template #default="{ inputId, isDisabled }">
           <b-form-input
@@ -320,7 +345,7 @@
         </template>
       </RuleFormGroup>
 
-      <div class="row">
+      <div class="form-row">
         <!-- fix_id -->
         <RuleFormGroup
           v-bind="formGroupProps"
@@ -364,12 +389,12 @@
         </RuleFormGroup>
       </div>
 
-      <div class="row">
+      <div class="form-row">
         <!-- rule_weight -->
         <RuleFormGroup
           v-bind="formGroupProps"
           field-name="rule_weight"
-          label="Rule Weight"
+          :label="ruleWeightLabel"
           :tooltip="tooltips['rule_weight']"
           extra-class="col-6"
           @toggle-section-lock="$emit('toggle-section-lock', $event)"
@@ -387,7 +412,7 @@
         </RuleFormGroup>
       </div>
 
-      <div class="row">
+      <div class="form-row">
         <!-- ident -->
         <RuleFormGroup
           v-bind="formGroupProps"
@@ -435,14 +460,52 @@
 </template>
 
 <script>
-import FormFeedbackMixinVue from "../../../mixins/FormFeedbackMixin.vue";
-import CommentIconHostMixin from "../../../mixins/CommentIconHostMixin.vue";
+import { toRef } from "vue";
+import { useFormFeedback } from "../../../composables/useFormFeedback";
+import { useCommentIconHost } from "../../../composables/useCommentIconHost";
 import MarkdownTextarea from "../../shared/MarkdownTextarea.vue";
 import RuleFormGroup from "../../shared/RuleFormGroup.vue";
+import SatisfiedByIndicator from "../../shared/SatisfiedByIndicator.vue";
 import DisaRuleDescriptionForm from "./DisaRuleDescriptionForm";
 import AdditionalQuestions from "./AdditionalQuestions";
 import CheckForm from "./CheckForm";
-import { SEVERITY_OPTIONS } from "../../../constants/terminology";
+import {
+  SEVERITY_OPTIONS,
+  STATUS_DESCRIPTIONS_BY_DOCUMENT_TYPE,
+} from "../../../constants/terminology";
+import { ruleArray } from "../../../utils/ruleArray";
+import { ruleTerm } from "../../../constants/terminology";
+
+// Display form of a status name (en-dash, matching published DISA copy).
+const displayStatus = (status) => status.replace(" - ", " – ");
+
+// Oxford-style join of <em>-wrapped items: "A, B, or C" / "A or B".
+const emJoin = (items) => {
+  const wrapped = items.map((s) => `<em>${s}</em>`);
+  if (wrapped.length <= 1) return wrapped.join("");
+  if (wrapped.length === 2) return `${wrapped[0]} or ${wrapped[1]}`;
+  return `${wrapped.slice(0, -1).join(", ")}, or ${wrapped[wrapped.length - 1]}`;
+};
+
+// Status-KEYED helper-copy exceptions. These are data lookups against the
+// current row's status — an SRG status simply misses and falls through to
+// the kind-neutral default; STIG statuses keep today's copy exactly
+// (explicit nulls mean "no tooltip for this status").
+const ARTIFACT_TOOLTIP_BY_STATUS = Object.freeze({
+  "Not Applicable":
+    "Provide evidence that the control is not applicable to the system - code files, documentation, screenshots, etc.",
+  "Not Yet Determined": null,
+  "Applicable - Configurable": null,
+  "Applicable - Does Not Meet": null,
+});
+
+const fixtextTooltipByStatus = (noun) =>
+  Object.freeze({
+    "Applicable - Configurable": `Describe how to correctly configure the ${noun} to remediate the system vulnerability`,
+    "Applicable - Does Not Meet": null,
+    "Applicable - Inherently Meets": null,
+    "Not Applicable": null,
+  });
 
 export default {
   name: "RuleForm",
@@ -452,8 +515,8 @@ export default {
     AdditionalQuestions,
     MarkdownTextarea,
     RuleFormGroup,
+    SatisfiedByIndicator,
   },
-  mixins: [FormFeedbackMixinVue, CommentIconHostMixin],
   props: {
     rule: {
       type: Object,
@@ -462,6 +525,14 @@ export default {
     statuses: {
       type: Array,
       required: true,
+    },
+    // STIG is the documented default: the only kind existing pages serve
+    // until the SRG editor threads document_type through. Selects the
+    // per-status helper copy; the vocabulary itself comes from `statuses`.
+    documentType: {
+      type: String,
+      default: "stig",
+      validator: (value) => ["stig", "srg"].includes(value),
     },
     disabled: {
       type: Boolean,
@@ -520,6 +591,24 @@ export default {
         };
       },
     },
+    validFeedback: {
+      type: Object,
+      required: false,
+      default: () => ({}),
+    },
+    invalidFeedback: {
+      type: Object,
+      required: false,
+      default: () => ({}),
+    },
+  },
+  setup(props, { emit }) {
+    const { commentIconListeners, commentIconProps } = useCommentIconHost({
+      rule: toRef(props, "rule"),
+      emit,
+    });
+    const { inputClass } = useFormFeedback(props);
+    return { commentIconListeners, commentIconProps, inputClass, ruleArray };
   },
   data: function () {
     return {
@@ -527,8 +616,18 @@ export default {
     };
   },
   computed: {
-    // formGroupPropsWithCommentIcon and bubbleOpenComposer are provided by
-    // CommentIconHostMixin — keep this list focused on RuleForm-specific.
+    ruleWeightLabel() {
+      return `${ruleTerm(this.documentType).singular} Weight`;
+    },
+    nounSingular() {
+      return ruleTerm(this.documentType).singular.toLowerCase();
+    },
+    parentRuleFallback() {
+      return `parent ${this.nounSingular}`;
+    },
+    formGroupPropsWithCommentIcon() {
+      return { ...this.formGroupProps, ...this.commentIconProps };
+    },
     formGroupProps() {
       return {
         fields: this.fields,
@@ -545,25 +644,35 @@ export default {
       return SEVERITY_OPTIONS;
     },
     status_text: function () {
-      return this.rule.satisfied_by.length > 0 ? "Applicable - Configurable" : this.rule.status;
+      return this.rule.status;
     },
     nydTooltip() {
       if (this.rule.status !== "Not Yet Determined") return null;
+      // The unlock list is the page's vocabulary minus NYD \u2014 never a
+      // hardcoded status list, so SRG pages describe SRG statuses.
+      const unlockStatuses = this.statuses
+        .filter((s) => s !== "Not Yet Determined")
+        .map(displayStatus);
       return (
         "Fields are locked while status is <strong>Not Yet Determined</strong>. " +
-        "Change the status to <em>Applicable \u2013 Configurable</em>, " +
-        "<em>Applicable \u2013 Does Not Meet</em>, " +
-        "<em>Applicable \u2013 Inherently Meets</em>, or " +
-        "<em>Not Applicable</em> to unlock."
+        `Change the status to ${emJoin(unlockStatuses)} to unlock.`
       );
     },
     tooltips: function () {
+      // Per-status helper copy comes from the kind-keyed map, composed
+      // against the page's vocabulary \u2014 statuses without an entry (NYD)
+      // are simply not described. Status-KEYED lookups below are data,
+      // not control flow: an SRG status misses STIG-only entries and
+      // falls through to the kind-neutral default.
+      const descriptions = STATUS_DESCRIPTIONS_BY_DOCUMENT_TYPE[this.documentType];
+      const statusTooltip = this.statuses
+        .filter((s) => descriptions[s])
+        .map((s) => `${displayStatus(s)}: ${descriptions[s]}`)
+        .join("<br><br>");
+      const justificationExempt = { "Applicable - Configurable": true, "Not Yet Determined": true };
       return {
-        status:
-          "Applicable \u2013 Configurable: The product requires configuration or the application of policy settings to achieve compliance.<br><br>Applicable \u2013 Inherently Meets: The product is compliant in its initial state and cannot be subsequently reconfigured to a noncompliant state.<br><br> Applicable \u2013 Does Not Meet: There are no technical means to achieve compliance.<br><br> Not Applicable: The requirement addresses a capability or use case that the product does not support.",
-        status_justification: ["Applicable - Configurable", "Not Yet Determined"].includes(
-          this.rule.status,
-        )
+        status: statusTooltip,
+        status_justification: justificationExempt[this.rule.status]
           ? null
           : "Explain the rationale behind selecting one of the above statuses",
         title: this.nydTooltip || "Describe the vulnerability for this control",
@@ -571,29 +680,16 @@ export default {
         rule_severity:
           "CAT I (High): a grave or critical problem, CAT II (Medium): a fairly serious problem, CAT III (Low): a relatively minor problem",
         rule_weight: null,
-        artifact_description:
-          this.rule.status === "Not Applicable"
-            ? "Provide evidence that the control is not applicable to the system - code files, documentation, screenshots, etc."
-            : [
-                  "Not Yet Determined",
-                  "Applicable - Configurable",
-                  "Applicable - Does Not Meet",
-                ].includes(this.rule.status)
-              ? null
-              : "Provide evidence that the control is inherently met by the system - code files, documentation, screenshots, etc.",
+        artifact_description: Object.hasOwn(ARTIFACT_TOOLTIP_BY_STATUS, this.rule.status)
+          ? ARTIFACT_TOOLTIP_BY_STATUS[this.rule.status]
+          : "Provide evidence that the control is inherently met by the system - code files, documentation, screenshots, etc.",
         fix_id: null,
         fixtext_fixref: null,
         fixtext:
           this.nydTooltip ||
-          (this.rule.status === "Applicable - Configurable"
-            ? "Describe how to correctly configure the requirement to remediate the system vulnerability"
-            : [
-                  "Applicable - Does Not Meet",
-                  "Applicable - Inherently Meets",
-                  "Not Applicable",
-                ].includes(this.rule.status)
-              ? null
-              : "Explain how to fix the vulnerability discussed"),
+          (Object.hasOwn(fixtextTooltipByStatus(this.nounSingular), this.rule.status)
+            ? fixtextTooltipByStatus(this.nounSingular)[this.rule.status]
+            : "Explain how to fix the vulnerability discussed"),
         ident:
           "Typically the Common Control Indicator (CCI) that maps to the vulnerability being discussed in this control",
         ident_system: null,

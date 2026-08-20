@@ -13,11 +13,20 @@ class ReviewsController < ApplicationController
   # their own pending comments. The comment itself stays put (project record
   # stability); the actor just loses the ability to alter it after leaving.
   before_action :set_project_from_review, only: %i[triage adjudicate reopen withdraw update admin_withdraw admin_restore admin_destroy move_to_rule section responses]
+  # Bulk triage operates on many reviews; load+validate them and derive
+  # @component/@project here so the standard authorize_*_project filters apply.
+  before_action :set_bulk_reviews, only: %i[bulk_triage]
+  before_action :set_merge_reviews, only: %i[merge]
   before_action :set_project
   before_action :authorize_viewer_project, only: %i[create withdraw update]
   before_action :authorize_admin_component, only: %i[lock_controls]
   before_action :authorize_review_component, only: %i[lock_sections]
   before_action :authorize_author_project, only: %i[triage adjudicate reopen section]
+  # bulk_triage/merge authorize every project in the selection before the
+  # selection's shape is revealed (concealment precedes cross-component/survivor
+  # validation).
+  before_action :authorize_bulk_selection, only: %i[bulk_triage]
+  before_action :authorize_merge_selection, only: %i[merge]
   before_action :authorize_review_owner, only: %i[withdraw update]
   # admin override actions are gated to project admins.
   # Authorization runs from set_project_from_review, so @project is set.
@@ -31,7 +40,7 @@ class ReviewsController < ApplicationController
   # the whole point and must work even after the comment window closes
   # (e.g., remove PII discovered post-final).
   before_action :reject_if_comments_closed, only: %i[create]
-  before_action :reject_if_frozen_for_writes, only: %i[triage adjudicate reopen withdraw update section]
+  before_action :reject_if_frozen_for_writes, only: %i[triage adjudicate reopen withdraw update section bulk_triage merge]
   # single audit-comment gate. Each
   # mutating endpoint that requires an operator-supplied reason was
   # open-coding the same blank-check + 422 toast (5 sites, ~8 lines each).
@@ -58,6 +67,7 @@ class ReviewsController < ApplicationController
   # blocks that all rendered the same shape with a per-action title.
   record_invalid_titles(
     triage: 'Could not save triage.',
+    bulk_triage: 'Could not save triage.',
     adjudicate: 'Could not close.',
     reopen: 'Could not re-open.',
     withdraw: 'Could not withdraw.',
@@ -66,12 +76,15 @@ class ReviewsController < ApplicationController
     move_to_rule: 'Could not move.',
     admin_destroy: 'Could not hard-delete.',
     section: 'Could not save section.',
-    update: 'Could not save edit.'
+    update: 'Could not save edit.',
+    merge: 'Could not merge comments.'
   )
 
   def create
     base = review_params.except('component_id').merge(user: current_user)
-    base = @rule ? base.merge(rule: @rule) : base.merge(commentable: @component, action: 'comment', section: nil)
+    # commentable, not rule: — @rule may be an authored SrgRule; the
+    # dual-write callback still sets rule_id for Rule targets.
+    base = @rule ? base.merge(commentable: @rule) : base.merge(commentable: @component, action: Review::ACTION_COMMENT, section: nil)
     review = Review.new(base)
 
     saved = false
@@ -101,7 +114,17 @@ class ReviewsController < ApplicationController
         end
       end
 
-      render_toast(title: 'Comment posted.', message: '', variant: 'success', status: :ok)
+      if review.original_commentable_id
+        # requirement, not rule: the Rule-STI association is nil for
+        # authored-SrgRule commentables (kind seam).
+        parent_requirement = review.requirement
+        parent_label = "#{parent_requirement.component.prefix}-#{parent_requirement.rule_id}"
+        render_toast(title: 'Comment posted.',
+                     message: ["Posted on parent control #{parent_label}"],
+                     variant: 'success', status: :ok)
+      else
+        render_toast(title: 'Comment posted.', message: [''], variant: 'success', status: :ok)
+      end
     else
       render_toast(title: 'Could not add review.', message: review.errors.full_messages)
     end
@@ -112,7 +135,7 @@ class ReviewsController < ApplicationController
   # creates a child Review (action='comment', responding_to_review_id) so
   # the response renders inline in the rule's existing thread.
   #
-  # Validation per design §3.5:
+  # Validation:
   #   - triage_status must be one of Review::TRIAGE_STATUSES
   #   - non_concur (Decline) requires response_comment
   #   - duplicate requires duplicate_of_review_id
@@ -137,25 +160,60 @@ class ReviewsController < ApplicationController
         triage_status: params[:triage_status],
         triage_set_by_id: current_user.id,
         triage_set_at: Time.current,
-        duplicate_of_review_id: params[:duplicate_of_review_id]
+        duplicate_of_review_id: params[:duplicate_of_review_id],
+        addressed_by_rule_id: params[:addressed_by_rule_id]
       )
 
-      if params[:response_comment].present?
-        response_review = Review.create!(
-          action: 'comment',
-          comment: params[:response_comment],
-          user: current_user,
-          rule: @review.rule,
-          responding_to_review_id: @review.id,
-          section: @review.section
-        )
-      end
+      response_review = @review.create_response!(comment: params[:response_comment], user: current_user) if params[:response_comment].present?
     end
 
     render json: {
-      review: ReviewBlueprint.render_as_hash(@review),
-      response_review: response_review ? ReviewBlueprint.render_as_hash(response_review) : nil
+      review: ReviewBlueprint.render_as_json(@review),
+      response_review: response_review ? ReviewBlueprint.render_as_json(response_review) : nil
     }
+  end
+
+  # PATCH /reviews/bulk_triage — author+ applies one triage decision (and an
+  # optional response, copied per-comment) to many selected comments at once.
+  # Component-scoped: @reviews is loaded + same-component-validated in
+  # set_bulk_reviews. Per-comment audits share the request's request_uuid.
+  def bulk_triage
+    if (validation_error = validate_triage_params)
+      return render_toast(title: 'Could not save triage.', message: validation_error)
+    end
+
+    result = Review.bulk_triage(
+      reviews: @reviews,
+      triage_status: params[:triage_status],
+      response_comment: params[:response_comment],
+      duplicate_of_review_id: params[:duplicate_of_review_id],
+      addressed_by_rule_id: params[:addressed_by_rule_id],
+      user: current_user
+    )
+
+    render json: {
+      reviews: result[:reviews].map { |r| ReviewBlueprint.render_as_json(r) },
+      response_reviews: result[:response_reviews].map { |r| ReviewBlueprint.render_as_json(r) }
+    }
+  rescue ArgumentError => e
+    render_toast(title: 'Could not save triage.', message: e.message)
+  end
+
+  # PATCH /reviews/merge — admin merges N same-author comments within one
+  # component into a designated survivor. set_merge_reviews has already
+  # loaded + validated the selection and derived @component/@project.
+  def merge
+    result = Review.merge_comments!(
+      survivor: @survivor,
+      duplicates: @duplicates_to_merge,
+      merged_by: current_user
+    )
+    render json: {
+      survivor: ReviewBlueprint.render_as_json(result[:survivor].reload),
+      duplicates: result[:duplicates].map { |r| ReviewBlueprint.render_as_json(r.reload) }
+    }
+  rescue ArgumentError => e
+    render_toast(title: 'Could not merge comments.', message: e.message)
   end
 
   # PATCH /reviews/:id/adjudicate — author+ marks a triaged comment as
@@ -169,7 +227,7 @@ class ReviewsController < ApplicationController
   def adjudicate
     if @review.adjudicated_at.present?
       return render json: {
-        review: ReviewBlueprint.render_as_hash(@review),
+        review: ReviewBlueprint.render_as_json(@review),
         response_review: nil
       }
     end
@@ -184,21 +242,12 @@ class ReviewsController < ApplicationController
     Review.transaction do
       @review.update!(adjudicated_at: Time.current, adjudicated_by_id: current_user.id)
 
-      if params[:resolution_comment].present?
-        response_review = Review.create!(
-          action: 'comment',
-          comment: params[:resolution_comment],
-          user: current_user,
-          rule: @review.rule,
-          responding_to_review_id: @review.id,
-          section: @review.section
-        )
-      end
+      response_review = @review.create_response!(comment: params[:resolution_comment], user: current_user) if params[:resolution_comment].present?
     end
 
     render json: {
-      review: ReviewBlueprint.render_as_hash(@review),
-      response_review: response_review ? ReviewBlueprint.render_as_hash(response_review) : nil
+      review: ReviewBlueprint.render_as_json(@review),
+      response_review: response_review ? ReviewBlueprint.render_as_json(response_review) : nil
     }
   end
 
@@ -220,14 +269,15 @@ class ReviewsController < ApplicationController
                           variant: 'warning')
     end
 
+    @review.save_intent = :reopen
     @review.update!(adjudicated_at: nil, adjudicated_by_id: nil)
-    render json: { review: ReviewBlueprint.render_as_hash(@review) }
+    render json: { review: ReviewBlueprint.render_as_json(@review) }
   end
 
   # PATCH /reviews/:id/withdraw — commenter retracts their own comment
   # before triage. Allowed only when triage_status is 'pending' or
   # 'needs_clarification'. The Review#auto_set_adjudicated_for_terminal_statuses
-  # callback (Task 06) fills in adjudicated_at + adjudicated_by_id=self.
+  # callback fills in adjudicated_at + adjudicated_by_id=self.
   def withdraw
     unless %w[pending needs_clarification].include?(@review.triage_status)
       return render_toast(title: 'Cannot withdraw.',
@@ -236,7 +286,7 @@ class ReviewsController < ApplicationController
     end
 
     @review.update!(triage_status: 'withdrawn')
-    render json: { review: ReviewBlueprint.render_as_hash(@review) }
+    render json: { review: ReviewBlueprint.render_as_json(@review) }
   end
 
   # PATCH /reviews/:id/admin_withdraw.
@@ -250,12 +300,15 @@ class ReviewsController < ApplicationController
   # component is frozen_for_writes (admin override is the whole point).
   def admin_withdraw
     @review.audit_comment = "Admin force-withdraw: #{@audit_comment}"
+    # save_intent not needed — adjudicated_at is explicitly set, so
+    # auto_set_adjudicated_for_terminal_statuses returns early on its
+    # adjudicated_at.present? guard (review.rb:644).
     @review.update!(
       triage_status: 'withdrawn',
       adjudicated_at: Time.current,
       adjudicated_by_id: current_user.id
     )
-    render json: { review: ReviewBlueprint.render_as_hash(@review) }
+    render json: { review: ReviewBlueprint.render_as_json(@review) }
   end
 
   # PATCH /reviews/:id/admin_restore.
@@ -276,10 +329,14 @@ class ReviewsController < ApplicationController
     @review.audit_comment = "Admin restore: #{@audit_comment}"
     @review.update!(
       triage_status: 'pending',
+      duplicate_of_review_id: nil,
+      addressed_by_rule_id: nil,
+      triage_set_by_id: nil,
+      triage_set_at: nil,
       adjudicated_at: nil,
       adjudicated_by_id: nil
     )
-    render json: { review: ReviewBlueprint.render_as_hash(@review) }
+    render json: { review: ReviewBlueprint.render_as_json(@review) }
   end
 
   # PATCH /reviews/:id/move_to_rule.
@@ -302,10 +359,14 @@ class ReviewsController < ApplicationController
                           variant: 'warning')
     end
 
-    target_rule = Rule.find_by(id: target_rule_id)
-    return head :not_found unless target_rule
+    # Requirement rows of any STI type (Rule or authored SrgRule) — a bare
+    # Rule.find_by can't reach SRG-kind targets. Global lookup first so a
+    # cross-component target still gets the explanatory 422 below, not 404.
+    target_rule = BaseRule.where(deleted_at: nil).where.not(component_id: nil)
+                          .find_by(id: target_rule_id)
+    return render_not_found unless target_rule
 
-    unless target_rule.component_id == @review.rule.component_id
+    unless target_rule.component_id == @review.requirement.component_id
       return render_toast(title: 'Cannot move.',
                           message: 'Target rule must be in the same component.',
                           variant: 'warning')
@@ -326,7 +387,9 @@ class ReviewsController < ApplicationController
       # This row closes that forensic asymmetry: reviewers auditing the
       # source rule's history see "review X moved out to rule Y" with
       # full context.
-      source_rule = @review.rule
+      # requirement, not rule: nil for authored-SrgRule commentables
+      # (kind seam) — the same accessor the component check above uses.
+      source_rule = @review.requirement
       source_rule.audits.create!(
         user: current_user,
         action: 'review_moved_out',
@@ -339,9 +402,12 @@ class ReviewsController < ApplicationController
         }
       )
 
-      move_review_subtree!(@review, target_rule.id, @audit_comment)
+      # model-level move records first-move provenance
+      # (original_commentable_id), prepends a "[Moved from …]" marker, and
+      # recurses to depth-N replies in one transaction.
+      @review.move_to_rule!(target_rule, reason: @audit_comment, moved_by: current_user)
     end
-    render json: { review: ReviewBlueprint.render_as_hash(@review.reload) }
+    render json: { review: ReviewBlueprint.render_as_json(@review.reload) }
   end
 
   # DELETE /reviews/:id/admin_destroy.
@@ -364,7 +430,10 @@ class ReviewsController < ApplicationController
       # only for the executing statement otherwise.
       @review.lock!
 
-      component = @review.rule.component
+      # Review#component, not rule.component: the Rule-STI association is
+      # nil for authored-SrgRule commentables (kind seam) — without this,
+      # PII hard-delete is impossible on SRG-kind components.
+      component = @review.component
       component_audit_payload = {
         review_id: @review.id,
         rule_id: @review.rule_id,
@@ -416,16 +485,16 @@ class ReviewsController < ApplicationController
     # would be tautological — Rails update!(same_value) writes no audit
     # regardless of whether the short-circuit is in place).
     if new_section == @review.section # rubocop:disable Style/IfUnlessModifier -- modifier form > 120 chars
-      return render json: { review: ReviewBlueprint.render_as_hash(@review), idempotent: true }
+      return render json: { review: ReviewBlueprint.render_as_json(@review), idempotent: true }
     end
 
     @review.audit_comment = "Section change: #{@audit_comment}"
     @review.update!(section: new_section)
-    render json: { review: ReviewBlueprint.render_as_hash(@review) }
+    render json: { review: ReviewBlueprint.render_as_json(@review) }
   end
 
   # PUT /reviews/:id — commenter edits their own comment text. Allowed
-  # only while triage_status='pending'. Audited gem (Task 06) captures
+  # only while triage_status='pending'. The audited gem captures
   # the prior text on the audit trail. Strong params lock to :comment
   # only — lifecycle fields stay server-controlled.
   def update
@@ -436,7 +505,7 @@ class ReviewsController < ApplicationController
     end
 
     @review.update!(review_update_params)
-    render json: { review: ReviewBlueprint.render_as_hash(@review) }
+    render json: { review: ReviewBlueprint.render_as_json(@review) }
   end
 
   # GET /reviews/:id/responses — fetch the reply chain under a top-level
@@ -446,36 +515,27 @@ class ReviewsController < ApplicationController
   # uses for nested replies.
   def responses
     replies = @review.responses
-                     .preload(:user)
+                     .preload(:user, :responses)
                      .order(:created_at)
-    reaction_counts = Reaction.where(review_id: replies.map(&:id)).group(:review_id, :kind).count
-    rows = replies.map do |r|
-      {
-        id: r.id,
-        responding_to_review_id: r.responding_to_review_id,
-        section: r.section,
-        comment: r.comment,
-        created_at: r.created_at,
-        commenter_display_name: r.commenter_display_name,
-        commenter_imported: r.commenter_imported?,
-        reactions: { up: reaction_counts[[r.id, 'up']] || 0,
-                     down: reaction_counts[[r.id, 'down']] || 0 }
-      }
-    end
-    inject_reactions_mine!(rows)
+    reactions_summary = Reaction.summary(replies.map(&:id), current_user&.id)
+    rows = ReviewBlueprint.render_as_json(replies,
+                                          reactions_summary: reactions_summary,
+                                          include_email: true)
     response.headers['Cache-Control'] = 'no-store'
     render json: { rows: rows }
   end
 
   def lock_controls
-    unlocked = @component.rules.where(locked: false)
+    # requirements, not rules: lock-all must reach authored SrgRules on
+    # SRG-kind components or the release gate is unsatisfiable.
+    unlocked = @component.requirements.where(locked: false)
 
     # Identify rules that can't be locked due to incomplete data (B10: warn but proceed)
     skipped_ids = Set.new
     warnings = []
 
     # NYD rules without satisfactions
-    nyd_rules = unlocked.where(status: 'Not Yet Determined')
+    nyd_rules = unlocked.where(status: RuleConstants::STATUS_NYD)
     satisfied_ids = RuleSatisfaction.where(rule_id: nyd_rules).pluck(:rule_id)
     nyd_skipped = nyd_rules.where.not(id: satisfied_ids).order(:rule_id)
     if nyd_skipped.any?
@@ -486,7 +546,7 @@ class ReviewsController < ApplicationController
 
     # ADNM without mitigations
     adnm_skipped = unlocked.includes(:disa_rule_descriptions)
-                           .where(status: 'Applicable - Does Not Meet',
+                           .where(status: RuleConstants::STATUS_APPLICABLE_DNM,
                                   disa_rule_descriptions: { mitigations: [nil, ''] })
                            .distinct.order(:rule_id)
     if adnm_skipped.any?
@@ -496,7 +556,7 @@ class ReviewsController < ApplicationController
     end
 
     # AIM without artifact description
-    aim_skipped = unlocked.where(status: 'Applicable - Inherently Meets',
+    aim_skipped = unlocked.where(status: RuleConstants::STATUS_APPLICABLE_IM,
                                  artifact_description: [nil, '']).order(:rule_id)
     if aim_skipped.any?
       skipped_ids.merge(aim_skipped.ids)
@@ -518,7 +578,9 @@ class ReviewsController < ApplicationController
     save_failure_messages = nil
     Review.transaction do
       lockable.each do |rule|
-        review = Review.new(review_params.merge({ user: current_user, rule: rule }))
+        # commentable, not rule: — the polymorphic target reaches authored
+        # SrgRules; the dual-write callback still sets rule_id for Rules.
+        review = Review.new(lock_review_params.merge({ user: current_user, commentable: rule }))
         next if review.save
 
         save_failure_messages = review.errors.full_messages
@@ -548,9 +610,14 @@ class ReviewsController < ApplicationController
     comment = params[:comment]
 
     invalid = sections - RuleConstants::LOCKABLE_SECTION_NAMES
-    return render json: { error: "Invalid sections: #{invalid.join(', ')}" }, status: :unprocessable_content if invalid.any?
+    if invalid.any?
+      return render_toast(title: 'Invalid sections',
+                          message: "Not recognized: #{invalid.join(', ')}",
+                          variant: 'danger',
+                          status: :unprocessable_content)
+    end
 
-    rules = @component.rules.where(locked: false)
+    rules = @component.requirements.where(locked: false)
     count = 0
 
     # Wrap the per-rule updates in a single transaction so a failure on
@@ -611,21 +678,10 @@ class ReviewsController < ApplicationController
                           "(received #{@audit_comment.length}).")
   end
 
-  # recursive parent-first walk for move_to_rule.
-  # Updates the review's rule_id with the audit comment captured by the
-  # vulcan_audited gem, then recurses into each child (replies pointing
-  # at this review). Children see the parent already at the target rule
-  # by the time the validator (responding_to_must_be_same_rule) runs.
-  def move_review_subtree!(review, new_rule_id, audit_comment)
-    review.audit_comment = "Admin move-to-rule (rule #{new_rule_id}): #{audit_comment}"
-    review.update!(rule_id: new_rule_id)
-    review.responses.find_each do |child|
-      move_review_subtree!(child, new_rule_id, audit_comment)
-    end
-  end
-
   def set_rule
-    @rule = Rule.find(params.expect(:rule_id))
+    # Requirement rows of any STI type (Rule or authored SrgRule) — a
+    # Rule-classed find would 404 review actions on SRG-kind requirements.
+    @rule = BaseRule.where(deleted_at: nil).where.not(component_id: nil).find(params.expect(:rule_id))
   end
 
   def set_component
@@ -640,8 +696,96 @@ class ReviewsController < ApplicationController
   # Lifecycle endpoints (triage / adjudicate / withdraw / update) operate on
   # a Review by id. Look it up here so the action body never has to.
   def set_review
-    @review = Review.find_by(id: params[:id])
-    head :not_found unless @review
+    @review = Review.find(params.expect(:id))
+  end
+
+  # Loads the bulk-triage selection and enforces the component-scope invariant
+  # before authorization runs, deriving @component/@project for the standard
+  # authorize_*_project filters. Renders a 422 toast on empty or cross-component
+  # selections (the anti-pattern guard for cross-component bulk triage).
+  def set_bulk_reviews
+    ids = Array(params[:review_ids]).map(&:to_i).uniq.reject(&:zero?)
+    # Nothing referenced at all: a plain bad-request (no ids to probe).
+    return render_toast(title: 'Could not save triage.', message: 'No comments selected.') if ids.empty?
+
+    @reviews = Review.where(id: ids).to_a
+    # Referenced ids that resolve to nothing are concealed as a 404 identical to
+    # a true miss, so a hidden-project review cannot be told apart from one that
+    # never existed.
+    render_resource_not_found if @reviews.empty?
+  end
+
+  # Authorizes a loaded bulk selection BEFORE its shape is revealed: every
+  # distinct project must be reachable (else the caller is concealed), then the
+  # single-component invariant is enforced. Runs as an authorize_* before_action
+  # so the deny-by-default coverage guard recognizes it.
+  def authorize_bulk_selection
+    authorize_selection_projects(@reviews) { authorize_author_project }
+
+    components = @reviews.filter_map(&:component).uniq
+    if components.size != 1
+      return render_toast(title: 'Could not save triage.',
+                          message: 'Bulk triage cannot span multiple components.')
+    end
+
+    @component = components.first
+    @project = @component.project
+  end
+
+  # Authorize the current user against every distinct project represented in a
+  # bulk selection, deferring selection-shape validation until afterward. The
+  # per-project authorize (yielded) raises + conceals through the standard
+  # disclosure policy for the first project the caller cannot reach.
+  def authorize_selection_projects(reviews)
+    reviews.filter_map { |r| r.component&.project }.uniq.each do |project|
+      @project = project
+      @component = nil
+      yield
+    end
+  end
+
+  # Loads the merge selection: review_ids must include the survivor_id, and
+  # all selections must belong to one component. Sets @survivor /
+  # @duplicates_to_merge / @component / @project for the action + authorize_*.
+  def set_merge_reviews
+    ids = Array(params[:review_ids]).map(&:to_i).uniq.reject(&:zero?)
+    # Nothing referenced at all: a plain bad-request (no ids to probe).
+    return render_toast(title: 'Could not merge comments.', message: 'No comments selected.') if ids.empty?
+
+    @merge_selection = Review.where(id: ids).to_a
+    # Referenced ids that resolve to nothing are concealed as a 404 identical to
+    # a true miss.
+    render_resource_not_found if @merge_selection.empty?
+  end
+
+  # Authorizes a loaded merge selection BEFORE its shape is revealed: every
+  # distinct project must be reachable (else the caller is concealed), then the
+  # survivor/duplicate/single-component invariants are enforced. Runs as an
+  # authorize_* before_action so the deny-by-default coverage guard recognizes it.
+  def authorize_merge_selection
+    authorize_selection_projects(@merge_selection) { authorize_admin_project }
+
+    survivor_id = params[:survivor_id].to_i
+    @survivor = @merge_selection.find { |r| r.id == survivor_id }
+    if @survivor.nil?
+      return render_toast(title: 'Could not merge comments.',
+                          message: 'Survivor must be one of the selected comments.')
+    end
+
+    @duplicates_to_merge = @merge_selection.reject { |r| r.id == @survivor.id }
+    if @duplicates_to_merge.empty?
+      return render_toast(title: 'Could not merge comments.',
+                          message: 'Select at least one duplicate to merge into the survivor.')
+    end
+
+    components = @merge_selection.filter_map(&:component).uniq
+    if components.size != 1
+      return render_toast(title: 'Could not merge comments.',
+                          message: 'Merge cannot span multiple components.')
+    end
+
+    @component = components.first
+    @project = @component.project
   end
 
   # Derives @project from @review's rule chain so the standard
@@ -679,7 +823,7 @@ class ReviewsController < ApplicationController
   # authorize_viewer_component delegate.
   def authorize_review_visibility
     @component = @review&.component
-    return head :not_found unless @component
+    return render_not_found unless @component
 
     if @component.released
       authorize_logged_in
@@ -694,13 +838,14 @@ class ReviewsController < ApplicationController
 
   def validate_triage_params
     status = params[:triage_status]
-    return I18n.t('vulcan.triage.errors.cannot_edit_after_triage') unless Review::TRIAGE_STATUSES.include?(status)
+    return I18n.t('vulcan.triage.errors.invalid_status') unless Review::TRIAGE_STATUSES.include?(status)
     # 'pending' is the INITIAL state; submitting it as a triage decision
     # would silently re-stamp triage_set_by_id / triage_set_at on a still-
     # untriaged comment. Reject — there's no decision being made.
     return 'Triage decision cannot be "pending" — pick a real status.' if status == 'pending'
     return I18n.t('vulcan.triage.errors.decline_requires_response') if status == 'non_concur' && params[:response_comment].blank?
     return I18n.t('vulcan.triage.errors.duplicate_requires_target') if status == 'duplicate' && params[:duplicate_of_review_id].blank?
+    return 'Addressed-by requires a target rule.' if status == 'addressed_by' && params[:addressed_by_rule_id].blank?
 
     nil
   end
@@ -713,6 +858,16 @@ class ReviewsController < ApplicationController
     params.expect(review: %i[component_id action comment section responding_to_review_id])
   end
 
+  # The bulk lock creates one review per requirement — its surface is only
+  # the action and the shared comment. The single-comment keys are
+  # meaningless here: a body section would mislabel every generated row, a
+  # responding_to_review_id would thread them all under one parent, and
+  # component_id is not a Review attribute at all (mass-assigning it
+  # crashed the endpoint).
+  def lock_review_params
+    params.expect(review: %i[action comment])
+  end
+
   # Phase-gates new top-level comments to comment_phase=open. Replies (with
   # responding_to_review_id) are allowed during any triaging-active phase.
   # The component route always creates comments (action is forced to 'comment'
@@ -720,7 +875,7 @@ class ReviewsController < ApplicationController
   # the request body's action is 'comment' — other rule actions like
   # 'request_review' bypass the comment-period gate by design.
   def reject_if_comments_closed
-    creating_comment = @component.present? || params.dig(:review, :action) == 'comment'
+    creating_comment = @component.present? || params.dig(:review, :action) == Review::ACTION_COMMENT
     return unless creating_comment
 
     component = @rule&.component || @component
@@ -739,9 +894,9 @@ class ReviewsController < ApplicationController
     return false unless target_component
 
     parent = Review.find_by(id: responding_to_id)
-    return false unless parent && parent.action == 'comment'
+    return false unless parent && parent.action == Review::ACTION_COMMENT
 
-    parent_component = parent.rule&.component || (parent.commentable if parent.commentable_type == 'Component')
+    parent_component = parent.component
     return false unless parent_component&.id == target_component.id
 
     target_component.triaging_active?
@@ -752,7 +907,7 @@ class ReviewsController < ApplicationController
   # withdrawals, or self-edits can be applied to its Reviews. The
   # disposition matrix is published; the trail is immutable.
   def reject_if_frozen_for_writes
-    component = @review&.component
+    component = @review&.component || @component
     return unless component&.frozen_for_writes?
 
     render_toast(title: 'Cannot modify review.',

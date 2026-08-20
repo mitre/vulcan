@@ -1,0 +1,74 @@
+/* Requirement status color palette — SINGLE SOURCE OF TRUTH.
+   All requirement-status-colored UI (sidebar status dots, and any future
+   status-colored toggles or badges) must use these CSS custom properties,
+   not hardcoded hex values.
+
+   Palette rationale (mirrors the triage palette rationale):
+   - Grey   = Not Yet Determined (undecided)
+   - Green  = Applicable / Applicable - Inherently Meets (determined in;
+              meets without configuration)
+   - Blue   = Applicable - Configurable (positive + action required —
+              ISO blue = mandatory action)
+   - Red    = Applicable - Does Not Meet (fails the requirement)
+   - Purple = Not Applicable (terminal exclusion — matches the withdrawn
+              semantics in the triage palette)
+
+   The status vocabulary is kind-agnostic here: srg rows use three of
+   these values, stig rows five; the selectors key on the status VALUE,
+   so adding a status is one data-attribute block.
+
+   Contrast (WCAG 2.1 SC 1.4.11, graphical indicators need >= 3:1 vs their
+   background) — measured 2026-08-17 against --vulcan-component-bg, all PASS:
+     dot on light component bg      dot on dark component bg
+     grey    4.69:1   green 3.13:1  grey  5.55:1   green 4.67:1
+     blue    3.98:1   red   4.53:1  blue  3.77:1   red   3.31:1
+     purple  6.51:1                 purple 3.37:1
+   Status is never conveyed by color alone: every dot is paired with the
+   status text label and marked aria-hidden (SC 1.4.1). */
+
+:root {
+  /* ── Layer 2: Requirement status → core palette mapping ────────── */
+  --rule-status-not-yet-determined: var(--vulcan-secondary);
+  --rule-status-applicable: var(--vulcan-success);
+  --rule-status-applicable-configurable: var(--vulcan-primary);
+  --rule-status-applicable-inherently-meets: var(--vulcan-success);
+  --rule-status-applicable-does-not-meet: var(--vulcan-danger);
+  --rule-status-not-applicable: var(--vulcan-purple);
+}
+
+/* ── Layer 3: Data-attribute selectors → the dot color ──────────────
+   One rule per status. The base rule's var() fallback keeps an unknown
+   or missing status visibly neutral rather than invisible. */
+.status-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  vertical-align: baseline;
+  background-color: var(--dot-color, var(--vulcan-secondary));
+}
+
+.status-dot[data-status="Not Yet Determined"] {
+  --dot-color: var(--rule-status-not-yet-determined);
+}
+
+.status-dot[data-status="Applicable"] {
+  --dot-color: var(--rule-status-applicable);
+}
+
+.status-dot[data-status="Applicable - Configurable"] {
+  --dot-color: var(--rule-status-applicable-configurable);
+}
+
+.status-dot[data-status="Applicable - Inherently Meets"] {
+  --dot-color: var(--rule-status-applicable-inherently-meets);
+}
+
+.status-dot[data-status="Applicable - Does Not Meet"] {
+  --dot-color: var(--rule-status-applicable-does-not-meet);
+}
+
+.status-dot[data-status="Not Applicable"] {
+  --dot-color: var(--rule-status-not-applicable);
+}

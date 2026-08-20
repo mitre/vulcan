@@ -188,8 +188,21 @@ RUN --mount=type=cache,target=/usr/local/bundle/cache,uid=1000 \
 RUN --mount=type=cache,target=/tmp/.yarn-cache,uid=1000 \
     yarn install --frozen-lockfile --production=false --network-timeout 100000 --cache-folder /tmp/.yarn-cache
 
-RUN bundle exec bootsnap precompile app/ lib/ && \
-    SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile && \
+# Strip build-only inputs from the application tree. One thing under docs/ is
+# read at runtime and must survive: the documentation site that asset
+# precompilation just built. Everything else — the website sources (including
+# the DISA process pages, which ship only as built HTML), the documentation
+# build's own dependencies, and its cache — exists only to produce that build.
+# Deleting the built site here would be invisible in CI and would 404 every
+# documentation request in the released image.
+#
+# `set -eu` is load-bearing. This was previously an `&&` chain ending in
+# `|| true`, and `||` binds looser than `&&`, so that tolerance applied to the
+# WHOLE chain: asset precompilation could fail and the image still built
+# successfully, shipping without assets. Failures must abort the build.
+RUN set -eu; \
+    bundle exec bootsnap precompile app/ lib/; \
+    SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile; \
     rm -rf \
     node_modules \
     .cache \
@@ -199,17 +212,18 @@ RUN bundle exec bootsnap precompile app/ lib/ && \
     spec \
     test \
     .git \
-    docs \
     .node-version \
     .nvmrc \
     .browserslistrc \
     yarn.lock \
     package.json \
-    esbuild.config.js && \
-    find public/assets -name '*.map' -delete 2>/dev/null || true && \
-    find "${BUNDLE_PATH}" -name '*.o' -o -name '*.c' -o -name '*.h' | xargs rm -f 2>/dev/null || true && \
-    find /rails -type f ! -path '/rails/bin/*' -exec chmod 440 {} + && \
-    find /rails/bin -type f -exec chmod 550 {} + && \
+    esbuild.config.js; \
+    find docs -mindepth 1 -maxdepth 1 ! -name .vitepress -exec rm -rf {} +; \
+    find docs/.vitepress -mindepth 1 -maxdepth 1 ! -name dist -exec rm -rf {} +; \
+    if [ -d public/assets ]; then find public/assets -name '*.map' -delete; fi; \
+    find "${BUNDLE_PATH}" \( -name '*.o' -o -name '*.c' -o -name '*.h' \) -delete; \
+    find /rails -type f ! -path '/rails/bin/*' -exec chmod 440 {} +; \
+    find /rails/bin -type f -exec chmod 550 {} +; \
     find /rails -type d -exec chmod 550 {} +
 
 # Strip /usr/local build-only artifacts so production COPY gets a lean tree.
@@ -217,11 +231,14 @@ RUN bundle exec bootsnap precompile app/ lib/ && \
 # from the Ruby + jemalloc `make install` in build-base.
 # Node is already at /opt/node (not copied to production). jemalloc .so stays.
 USER 0
-RUN rm -rf /usr/local/include \
+# Same `set -eu` reasoning as the build-stage cleanup: the previous form ended
+# each find with `|| true`, which applied to everything before it in the chain.
+RUN set -eu; \
+    rm -rf /usr/local/include \
            /usr/local/share/man /usr/local/share/doc /usr/local/share/ri \
-           /usr/local/lib/pkgconfig && \
-    find /usr/local/lib -name '*.a' -delete 2>/dev/null || true && \
-    find /usr/local -name '*.o' | xargs rm -f 2>/dev/null || true && \
+           /usr/local/lib/pkgconfig; \
+    find /usr/local/lib -name '*.a' -delete; \
+    find /usr/local -name '*.o' -delete; \
     ldconfig
 USER 1000
 

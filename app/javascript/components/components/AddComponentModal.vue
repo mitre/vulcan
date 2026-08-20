@@ -60,10 +60,10 @@
 </template>
 
 <script>
-import axios from "axios";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import DisplayedComponentMixin from "../../mixins/DisplayedComponentMixin.vue";
+import { createComponentInProject } from "../../api/componentsApi";
+import { useAuthToken } from "../../composables/useAuthToken";
+import { useToast } from "../../composables/useToast";
+import { useDisplayedComponent } from "../../composables/useDisplayedComponent";
 import ComponentCard from "../components/ComponentCard.vue";
 import VueMultiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
@@ -81,7 +81,6 @@ export default {
     VueMultiselect,
     ComponentCard,
   },
-  mixins: [AlertMixinVue, FormMixinVue, DisplayedComponentMixin],
   props: {
     project_id: {
       type: Number,
@@ -95,6 +94,12 @@ export default {
       type: Boolean,
       default: false,
     },
+  },
+  setup() {
+    const { authenticityToken } = useAuthToken();
+    const { addDisplayNameToComponents } = useDisplayedComponent();
+    const { alertOrNotifyResponse } = useToast();
+    return { authenticityToken, addDisplayNameToComponents, alertOrNotifyResponse };
   },
   data: function () {
     return initialState();
@@ -126,8 +131,7 @@ export default {
         },
       };
 
-      axios
-        .post(`/projects/${this.project_id}/components`, payload)
+      createComponentInProject(this.project_id, payload)
         .then(this.addComponentSuccess)
         .catch(this.alertOrNotifyResponse);
     },

@@ -1,0 +1,13 @@
+description: >-
+  Combined response containing a toast notification and the updated user.
+  Used by PUT /users/:id, POST /users/:id/lock, POST /users/:id/unlock.
+type: object
+required:
+  - toast
+  - user
+additionalProperties: false
+properties:
+  toast:
+    $ref: ./ToastObject.yaml
+  user:
+    $ref: ./UserSummary.yaml

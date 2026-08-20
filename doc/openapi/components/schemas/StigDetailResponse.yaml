@@ -1,0 +1,18 @@
+description: >-
+  Full STIG detail with nested rules. Serialized by StigBlueprint :show view.
+  Extends StigSummary with description and stig_rules array.
+allOf:
+  - $ref: ./StigSummary.yaml
+  - type: object
+    properties:
+      description:
+        type:
+          - string
+          - 'null'
+        description: Full description of the STIG.
+        example: "This Security Technical Implementation Guide is published as a tool to improve the security of Department of Defense information systems."
+      stig_rules:
+        type: array
+        description: All rules in this STIG, each with full DISA metadata and check content.
+        items:
+          $ref: ./StigRuleSummary.yaml

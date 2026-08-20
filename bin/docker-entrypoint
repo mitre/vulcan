@@ -3,16 +3,23 @@
 # Remove stale PID file if present (prevents "server is already running" errors)
 rm -f /rails/tmp/pids/server.pid
 
-# If running the rails server then create or migrate existing database
-# db:prepare is idempotent: creates DB if missing, runs pending migrations if exists
-# This also triggers admin:bootstrap (hooked into db:prepare)
-#
-# IMPORTANT: db:prepare does NOT need DISABLE_DATABASE_ENVIRONMENT_CHECK=1
-# Unlike db:schema:load (rake task), db:prepare calls load_schema() directly
-# as a Ruby method, bypassing the protected environment check entirely.
-# This is by design — see Rails source: DatabaseTasks#initialize_database
+# If running the rails server then upgrade + create/migrate database
 if [[ "$@" == *"server"* ]]; then
+  # Pre-boot legacy DB rename (shell, before Rails can connect).
+  # Handles the chicken-and-egg case where database.yml expects the new
+  # name but the DB still has the old name — Rails can't boot to run
+  # the Ruby upgrade tasks. Once renamed, db:prepare + upgrade:auto
+  # handle everything else.
+  ./bin/db-rename-legacy
+
+  # db:prepare is idempotent: creates DB if missing, runs pending migrations
+  # This also triggers admin:bootstrap (hooked into db:prepare)
   ./bin/rails db:prepare
+
+  # Data-level upgrade fixes (backfills, counter cache resets).
+  # Runs after db:prepare so the schema is current. Exits 0 when nothing to do.
+  # Exits 1 on blockers or errors — do NOT suppress with || true.
+  ./bin/rails upgrade:auto
 fi
 
 exec "${@}"

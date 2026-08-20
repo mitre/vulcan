@@ -7,15 +7,15 @@ class StigRuleBlueprint < Blueprinter::Base
 
   fields :rule_id, :title, :version, :rule_severity, :rule_weight,
          :ident, :ident_system, :fixtext, :fixtext_fixref, :fix_id,
-         :vuln_id, :legacy_ids
+         :srg_id, :vuln_id, :legacy_ids, :vendor_comments
 
   association :disa_rule_descriptions_attributes, blueprint: DisaRuleDescriptionBlueprint,
                                                   name: :disa_rule_descriptions_attributes do |rule, _options|
-    rule.disa_rule_descriptions
+    ApplicationRecord.sorted_by_id(rule.disa_rule_descriptions)
   end
 
   association :checks_attributes, blueprint: CheckBlueprint,
                                   name: :checks_attributes do |rule, _options|
-    rule.checks
+    ApplicationRecord.sorted_by_id(rule.checks)
   end
 end

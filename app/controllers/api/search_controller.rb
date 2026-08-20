@@ -6,6 +6,8 @@ module Api
   # Returns search results across projects, components, rules, SRGs, and STIGs
   #
   class SearchController < BaseController
+    include SearchScoping
+
     before_action :authenticate_user!
 
     def global
@@ -48,15 +50,21 @@ module Api
     def search_projects(limit)
       return [] unless current_user
 
-      current_user.available_projects
-                  .where(*build_ilike_conditions(%w[name description]))
-                  .limit(limit)
-                  .map do |project|
+      projects = current_user.available_projects
+                             .where(*build_ilike_conditions(%w[name description]))
+                             .limit(limit)
+                             .to_a
+
+      # Batch the per-project components_count via one GROUP BY.
+      counts = Component.where(project_id: projects.map(&:id))
+                        .group(:project_id).count
+
+      projects.map do |project|
         {
           id: project.id,
           name: project.name,
           description: project.description,
-          components_count: project.components.count
+          components_count: counts[project.id] || 0
         }
       end
     end
@@ -64,15 +72,16 @@ module Api
     def search_components(limit)
       return [] unless current_user
 
-      # Get components from user's available projects
-      project_ids = current_user.available_projects.ids
-
       # Build conditions: search name, prefix, AND metadata JSON values (F2)
       name_prefix_conds = build_ilike_conditions(%w[components.name components.prefix])
       metadata_cond = build_metadata_ilike_condition
 
+      # Content is membership-gated: memberships or released components,
+      # never discoverable-but-not-joined projects (those grant existence
+      # via the projects section, not content). Materialized ids for the
+      # same planner reason as the rules search below.
       Component.left_joins(:component_metadata)
-               .where(project_id: project_ids)
+               .where(id: searchable_components.ids)
                .where("(#{name_prefix_conds[0]}) OR (#{metadata_cond[0]})",
                       *name_prefix_conds[1..], *metadata_cond[1..])
                .includes(:project, :component_metadata)
@@ -94,13 +103,25 @@ module Api
     def search_rules(limit)
       return [] unless current_user
 
-      # Get components from user's available projects
-      project_ids = current_user.available_projects.ids
-      component_ids = Component.where(project_id: project_ids).ids
+      # Content is membership-gated — same scope as the component results.
+      # The id set is MATERIALIZED, never passed as a subselect: pg_search's
+      # ts_rank subquery computes tsvectors on the fly, and a subselect here
+      # let the planner re-execute that work per row — a runaway query that
+      # hung the suite for an hour until its backend was terminated.
+      component_ids = if params[:component_id].present?
+                        comp = searchable_components.where(id: params[:component_id]).first
+                        return [] unless comp
 
-      # Use phrase search (websearch_to_tsquery) for quoted phrases
-      # Otherwise use pg_search with word matching
-      rules_scope = Rule.where(component_id: component_ids)
+                        [comp.id]
+                      else
+                        searchable_components.ids
+                      end
+
+      # Requirement rows of BOTH document kinds — stig Rules and authored
+      # SRG requirements — through the kind seam (a Rule-classed query
+      # structurally excludes authored rows; the seam also excludes
+      # tombstoned and catalog rows).
+      rules_scope = BaseRule.live_for_components(component_ids)
 
       rules_scope = if @has_phrases
                       # Phrase search - use websearch_to_tsquery which supports "exact phrase"
@@ -111,17 +132,39 @@ module Api
                       rules_scope.search_content(search_term)
                     end
 
-      rules_scope.includes(:component, :disa_rule_descriptions, :checks)
-                 .limit(limit)
-                 .map do |rule|
+      # Kind-shared associations preload on the relation; the component
+      # association lives on the subclasses, so prefixes come from a batch
+      # lookup on the base column instead.
+      rules = rules_scope.includes(:disa_rule_descriptions, :checks)
+                         .limit(limit)
+                         .to_a
+      prefixes = Component.where(id: rules.map(&:component_id).uniq).pluck(:id, :prefix).to_h
+
+      # satisfied_by exists on the stig kind only — preload it for just
+      # those rows (authored rows carry null parent fields).
+      stig_rows = rules.grep(Rule)
+      ActiveRecord::Associations::Preloader.new(records: stig_rows, associations: :satisfied_by).call if stig_rows.any?
+
+      # Batch the per-rule comment_count via one GROUP BY.
+      comment_counts = Review.where(rule_id: rules.map(&:id), action: Review::ACTION_COMMENT)
+                             .group(:rule_id).count
+
+      rules.map do |rule|
+        snippet_data = generate_snippet_with_field(rule, @query[:normalized])
+        parent = rule.is_a?(Rule) ? rule.satisfied_by.first : nil
+        prefix = prefixes[rule.component_id]
         {
           id: rule.id,
           rule_id: rule.rule_id,
           title: rule.title,
           status: rule.status,
           component_id: rule.component_id,
-          component_prefix: rule.component&.prefix,
-          snippet: generate_snippet(rule, @query[:normalized])
+          component_prefix: prefix,
+          snippet: snippet_data[:snippet],
+          matched_field: snippet_data[:matched_field],
+          comment_count: comment_counts[rule.id] || 0,
+          parent_rule_id: parent&.id,
+          parent_display_name: parent ? "#{prefix}-#{parent.rule_id}" : nil
         }
       end
     end
@@ -170,112 +213,111 @@ module Api
     ##
     # Search STIG Rules (rules within published STIGs)
     # STIG rules are public resources - any authenticated user can search them
-    # Searches: rule_id, vuln_id, title, fixtext, ident (CCIs), check content
+    # Searches by SUBSTRING: rule_id, vuln_id, ident (CCIs), check content;
+    # by WORD (stemmed + prefixed, through the stored vector): title,
+    # fixtext, and the rest of the indexed prose
     #
     def search_stig_rules(limit)
-      # Build search across rule fields and joined check content
-      conditions = build_stig_rule_conditions
+      ids = catalog_rule_match_ids(StigRule.all, limit: limit,
+                                                 fragment_columns: %w[rule_id vuln_id ident])
 
-      StigRule
-        .left_joins(:checks)
-        .where(conditions)
-        .includes(:stig)
-        .distinct
-        .limit(limit)
-        .map do |rule|
-          {
-            id: rule.id,
-            rule_id: rule.rule_id,
-            vuln_id: rule.vuln_id,
-            title: rule.title,
-            fixtext: rule.fixtext,
-            ident: rule.ident,
-            stig_id: rule.stig_id,
-            stig_name: rule.stig&.name
-          }
-        end
+      # Fetch by id and restore arm-priority order; parent names come from a
+      # batch pluck — never a stigs.* load, which drags the multi-MB xml.
+      rows = StigRule.where(id: ids).index_by(&:id)
+      ordered = ids.filter_map { |id| rows[id] }
+      stig_names = Stig.where(id: ordered.map(&:stig_id).uniq).pluck(:id, :name).to_h
+
+      ordered.map do |rule|
+        {
+          id: rule.id,
+          rule_id: rule.rule_id,
+          vuln_id: rule.vuln_id,
+          title: rule.title,
+          fixtext: rule.fixtext,
+          ident: rule.ident,
+          stig_id: rule.stig_id,
+          stig_name: stig_names[rule.stig_id]
+        }
+      end
     end
 
     ##
     # Search SRG Rules (rules within Security Requirements Guides)
     # SRG rules are public resources - any authenticated user can search them
-    # Searches: rule_id, title, fixtext, ident (CCIs), check content
+    # Searches by SUBSTRING: rule_id, ident (CCIs), check content; by WORD
+    # (stemmed + prefixed, through the stored vector): title, fixtext, and
+    # the rest of the indexed prose
     #
     def search_srg_rules(limit)
-      # Build search across rule fields and joined check content
-      conditions = build_srg_rule_conditions
+      # Catalog rows only: component-authored SrgRules are project content
+      # and are never served here — this search type is the instance-global
+      # published SRG requirement catalog.
+      catalog = SrgRule.where(component_id: nil)
+      ids = catalog_rule_match_ids(catalog, limit: limit, fragment_columns: %w[rule_id ident])
 
-      SrgRule
-        .left_joins(:checks)
-        .where(conditions)
-        .includes(:security_requirements_guide)
-        .distinct
-        .limit(limit)
-        .map do |rule|
-          {
-            id: rule.id,
-            rule_id: rule.rule_id,
-            title: rule.title,
-            fixtext: rule.fixtext,
-            ident: rule.ident,
-            srg_id: rule.security_requirements_guide_id,
-            srg_name: rule.security_requirements_guide&.name
-          }
-        end
+      # Fetch by id and restore arm-priority order; parent names come from a
+      # batch pluck — never an srgs.* load, which drags the multi-MB xml.
+      rows = catalog.where(id: ids).index_by(&:id)
+      ordered = ids.filter_map { |id| rows[id] }
+      srg_names = SecurityRequirementsGuide.where(id: ordered.map(&:security_requirements_guide_id).uniq)
+                                           .pluck(:id, :name).to_h
+
+      ordered.map do |rule|
+        {
+          id: rule.id,
+          rule_id: rule.rule_id,
+          title: rule.title,
+          fixtext: rule.fixtext,
+          ident: rule.ident,
+          srg_id: rule.security_requirements_guide_id,
+          srg_name: srg_names[rule.security_requirements_guide_id]
+        }
+      end
     end
 
     ##
-    # Build ILIKE conditions for STIG rule search across multiple fields
-    # Including check content via join
+    # Catalog rule matching for the stig_rules/srg_rules sections — every
+    # arm is served by an index, never a cross-table OR (the planner can
+    # only evaluate that as a post-join filter, which no index can serve):
+    # - prose (title/fixtext + associated content) matches by WORD through
+    #   the stored searchable vector — stemmed and prefixed, GIN-indexed
+    # - ids and CCIs match by SUBSTRING through their trigram indexes, so
+    #   fragment searches like "258217" keep finding V-258217
+    # - check content matches by SUBSTRING through its trigram index in a
+    #   bounded single-table lookup
+    # Terms union across arms (the sections' established OR-across-terms
+    # semantics); each arm is capped at the section limit so id pulls stay
+    # bounded.
     #
-    # Security: Column names are hardcoded literals below, user input is parameterized via ?.
-    # See build_ilike_conditions for detailed security explanation.
+    # Security: Column names come from hardcoded literals at the call
+    # sites; user input is parameterized. See build_ilike_conditions for
+    # the detailed explanation.
     #
-    def build_stig_rule_conditions
-      columns = %w[base_rules.rule_id base_rules.vuln_id base_rules.title base_rules.fixtext base_rules.ident]
-      check_columns = %w[checks.content]
-
-      conditions = []
-      values = []
+    # Returns ids in ARM-PRIORITY order — id/CCI fragment hits first, check
+    # content hits second, word hits last — so an exact-id search always
+    # survives the limit window and leads the results, while word matches
+    # fill the remainder.
+    def catalog_rule_match_ids(scope, limit:, fragment_columns:)
+      fragment_sql = fragment_columns.map { |col| "base_rules.#{col} ILIKE :term" }.join(' OR ')
+      fragment_ids = []
+      check_ids = []
+      word_ids = []
 
       @search_terms.each do |term|
-        sanitized_term = ActiveRecord::Base.sanitize_sql_like(term)
-        rule_conditions = columns.map { |col| "#{col} ILIKE ?" }.join(' OR ')
-        check_conditions = check_columns.map { |col| "#{col} ILIKE ?" }.join(' OR ')
-        conditions << "(#{rule_conditions} OR #{check_conditions})"
-
-        columns.size.times { values << "%#{sanitized_term}%" }
-        check_columns.size.times { values << "%#{sanitized_term}%" }
+        sanitized = "%#{ActiveRecord::Base.sanitize_sql_like(term)}%"
+        # Stable :id ordering inside each substring arm makes the limit
+        # window deterministic (the word arm already orders by rank, id).
+        # The check arm joins WITHIN the catalog scope before the bound
+        # applies — a globally bounded check lookup would let
+        # component-rule checks starve catalog matches. The ILIKE stays
+        # single-column on checks, so its trigram index serves the join.
+        fragment_ids.concat(scope.where(fragment_sql, term: sanitized).order(:id).limit(limit).ids)
+        check_ids.concat(scope.joins(:checks).where('checks.content ILIKE ?', sanitized)
+                              .distinct.order(:id).limit(limit).ids)
+        word_ids.concat(scope.search_content(term).limit(limit).ids)
       end
 
-      [conditions.join(' OR ')] + values
-    end
-
-    ##
-    # Build ILIKE conditions for SRG rule search across multiple fields
-    # Including check content via join
-    #
-    # Security: Column names are hardcoded literals below, user input is parameterized via ?.
-    # See build_ilike_conditions for detailed security explanation.
-    #
-    def build_srg_rule_conditions
-      columns = %w[base_rules.rule_id base_rules.title base_rules.fixtext base_rules.ident]
-      check_columns = %w[checks.content]
-
-      conditions = []
-      values = []
-
-      @search_terms.each do |term|
-        sanitized_term = ActiveRecord::Base.sanitize_sql_like(term)
-        rule_conditions = columns.map { |col| "#{col} ILIKE ?" }.join(' OR ')
-        check_conditions = check_columns.map { |col| "#{col} ILIKE ?" }.join(' OR ')
-        conditions << "(#{rule_conditions} OR #{check_conditions})"
-
-        columns.size.times { values << "%#{sanitized_term}%" }
-        check_columns.size.times { values << "%#{sanitized_term}%" }
-      end
-
-      [conditions.join(' OR ')] + values
+      (fragment_ids + check_ids + word_ids).uniq.take(limit)
     end
 
     ##
@@ -322,7 +364,7 @@ module Api
     # Generate a snippet showing context around the search match
     # Searches through title, fixtext, vuln_discussion, and check content
     #
-    def generate_snippet(rule, query)
+    def generate_snippet_with_field(rule, query)
       searchable_fields = [
         { field: 'title', content: rule.title },
         { field: 'fixtext', content: rule.fixtext },
@@ -330,7 +372,6 @@ module Api
         { field: 'check', content: rule.checks.first&.content }
       ]
 
-      # Find which field contains the match
       query_words = query.downcase.split(/\s+/)
 
       match = searchable_fields.find do |field_info|
@@ -341,9 +382,10 @@ module Api
         query_words.all? { |word| content_lower.include?(word) }
       end
 
-      return nil unless match
+      return { snippet: nil, matched_field: nil } unless match
 
-      extract_snippet(match[:content].to_s, query_words.first, match[:field])
+      snippet = extract_snippet(match[:content].to_s, query_words.first, match[:field])
+      { snippet: snippet, matched_field: match[:field] }
     end
 
     ##

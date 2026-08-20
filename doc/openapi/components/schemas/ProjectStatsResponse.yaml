@@ -1,0 +1,62 @@
+description: >-
+  Project-level rule statistics: totals aggregated across every component
+  plus a per-component breakdown. Percentages are null when a denominator
+  is zero.
+type: object
+required:
+  - aggregate
+  - components
+additionalProperties: false
+properties:
+  aggregate:
+    $ref: ./ProjectAggregateStats.yaml
+  components:
+    type: array
+    description: Per-component breakdown, ordered by prefix.
+    items:
+      type: object
+      required:
+        - id
+        - name
+        - prefix
+        - document_type
+        - rule_count
+        - completion_pct
+        - lock_pct
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          description: Component identifier.
+          example: 38
+        name:
+          type: string
+          description: Component name.
+          example: RHEL 9 Hardened Baseline
+        prefix:
+          type: string
+          description: STIG ID prefix.
+          example: RHEL-09
+        document_type:
+          type: string
+          description: Authoring profile of the component — each row carries its own kind.
+          enum:
+            - stig
+            - srg
+          example: stig
+        rule_count:
+          type: integer
+          description: Rules in this component.
+          example: 203
+        completion_pct:
+          type:
+            - number
+            - 'null'
+          description: Percentage of determined rules. Null when the component has no rules.
+          example: 75.4
+        lock_pct:
+          type:
+            - number
+            - 'null'
+          description: Percentage of locked rules. Null when the component has no rules.
+          example: 12.3

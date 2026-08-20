@@ -44,7 +44,7 @@ RSpec.describe 'stig_and_srg_puller:save_data' do
     end
 
     TOPLEVEL_BINDING.eval('@process_data = []')
-    Rake::Task['stig_and_srg_puller:save_data'].execute
+    capture_stdout { Rake::Task['stig_and_srg_puller:save_data'].execute }
 
     expect(VulcanAudit).to have_received(:with_correlation_scope).at_least(:once)
     expect(captured_uuid).to match(/\A[0-9a-f-]{36}\z/)
@@ -53,7 +53,7 @@ RSpec.describe 'stig_and_srg_puller:save_data' do
   it 'restores Audited.store[:current_request_uuid] to its prior value after the task body' do
     Audited.store[:current_request_uuid] = 'outer-uuid'
     TOPLEVEL_BINDING.eval('@process_data = []')
-    Rake::Task['stig_and_srg_puller:save_data'].execute
+    capture_stdout { Rake::Task['stig_and_srg_puller:save_data'].execute }
     expect(Audited.store[:current_request_uuid]).to eq('outer-uuid')
   end
 end

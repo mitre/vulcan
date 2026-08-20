@@ -1,0 +1,19 @@
+description: >-
+  Response from triage or adjudicate actions. Contains the updated review
+  and an optional response_review (child comment created atomically when
+  the triager provides a response comment alongside the triage decision).
+type: object
+required:
+  - review
+additionalProperties: false
+properties:
+  review:
+    $ref: ./ReviewSummary.yaml
+  response_review:
+    description: >-
+      Child review created as a response to the decision. Null if no
+      response text was provided. Present when the request includes
+      response_comment (triage) or resolution_comment (adjudicate).
+    oneOf:
+      - $ref: ./ReviewSummary.yaml
+      - type: 'null'

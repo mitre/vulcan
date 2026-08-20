@@ -40,15 +40,15 @@ describe("useRuleFormFields", () => {
       expect(effectiveStatus.value).toBe("Not Applicable");
     });
 
-    it('forces "Applicable - Configurable" when satisfied_by is non-empty', () => {
+    it("returns rule.status as-is when satisfied_by is non-empty (backend sets ADNM)", () => {
       const rule = ref(
         makeRule({
-          status: "Not Yet Determined",
+          status: "Applicable - Does Not Meet",
           satisfied_by: [{ id: 1, fixtext: "parent fix" }],
         }),
       );
       const { effectiveStatus } = useRuleFormFields(rule, ref(false));
-      expect(effectiveStatus.value).toBe("Applicable - Configurable");
+      expect(effectiveStatus.value).toBe("Applicable - Does Not Meet");
     });
   });
 
@@ -219,7 +219,8 @@ describe("useRuleFormFields", () => {
       expect(ruleFormFields.value.displayed).toEqual(
         expect.arrayContaining(["status", "rule_severity", "title", "fixtext", "vendor_comments"]),
       );
-      expect(ruleFormFields.value.disabled).toEqual([]);
+      // Only the absorbed IA/CCI reference display is read-only here.
+      expect([...ruleFormFields.value.disabled].sort()).toEqual(["cci", "nist_control_family"]);
     });
 
     it("Not Yet Determined: shows status, rule_severity, title, fixtext; disables title, rule_severity, fixtext", () => {
@@ -245,7 +246,8 @@ describe("useRuleFormFields", () => {
           "vendor_comments",
         ]),
       );
-      expect(ruleFormFields.value.disabled).toEqual([]);
+      // Only the absorbed IA/CCI reference display is read-only here.
+      expect([...ruleFormFields.value.disabled].sort()).toEqual(["cci", "nist_control_family"]);
     });
 
     it("Does Not Meet: shows status, rule_severity, status_justification, vendor_comments", () => {
@@ -259,10 +261,11 @@ describe("useRuleFormFields", () => {
           "vendor_comments",
         ]),
       );
-      expect(ruleFormFields.value.disabled).toEqual([]);
+      // Only the absorbed IA/CCI reference display is read-only here.
+      expect([...ruleFormFields.value.disabled].sort()).toEqual(["cci", "nist_control_family"]);
     });
 
-    it("Not Applicable: shows status, rule_severity, status_justification, artifact_description, vendor_comments; disables rule_severity", () => {
+    it("Not Applicable: shows status, rule_severity, status_justification, vendor_comments; disables rule_severity; NO artifact_description (AIM only per §4.1.16)", () => {
       const rule = ref(makeRule({ status: "Not Applicable" }));
       const { ruleFormFields } = useRuleFormFields(rule, advancedMode);
       expect(ruleFormFields.value.displayed).toEqual(
@@ -270,10 +273,10 @@ describe("useRuleFormFields", () => {
           "status",
           "rule_severity",
           "status_justification",
-          "artifact_description",
           "vendor_comments",
         ]),
       );
+      expect(ruleFormFields.value.displayed).not.toContain("artifact_description");
       expect(ruleFormFields.value.disabled).toEqual(expect.arrayContaining(["rule_severity"]));
     });
   });
@@ -340,7 +343,7 @@ describe("useRuleFormFields", () => {
       );
     });
 
-    it("Not Applicable: same as basic in advanced mode", () => {
+    it("Not Applicable: same as basic in advanced mode (no artifact_description per §4.1.16)", () => {
       const rule = ref(makeRule({ status: "Not Applicable" }));
       const { ruleFormFields } = useRuleFormFields(rule, advancedMode);
       expect(ruleFormFields.value.displayed).toEqual(
@@ -348,10 +351,10 @@ describe("useRuleFormFields", () => {
           "status",
           "rule_severity",
           "status_justification",
-          "artifact_description",
           "vendor_comments",
         ]),
       );
+      expect(ruleFormFields.value.displayed).not.toContain("artifact_description");
       expect(ruleFormFields.value.disabled).toEqual(expect.arrayContaining(["rule_severity"]));
     });
   });
@@ -590,42 +593,51 @@ describe("useRuleFormFields", () => {
       expect(checkFormFields.value.displayed).toEqual([]);
     });
 
-    it("satisfied_by: shows content (effective status is Configurable)", () => {
+    it("satisfied_by: hides check content (effective status is ADNM)", () => {
       const rule = ref(
         makeRule({
-          status: "Not Yet Determined",
+          status: "Applicable - Does Not Meet",
           satisfied_by: [{ id: 1 }],
         }),
       );
       const { checkFormFields } = useRuleFormFields(rule, ref(false));
-      expect(checkFormFields.value.displayed).toEqual(["content"]);
+      expect(checkFormFields.value.displayed).toEqual([]);
     });
   });
 
   // ─── satisfied_by behavior (R3) ────────────────────────────
+  // Backend sets status to ADNM when satisfied_by. Frontend shows ADNM fields.
   describe("satisfied_by behavior (R3)", () => {
-    it("uses Configurable field set when satisfied_by is set", () => {
+    it("uses ADNM field set when satisfied_by is set (backend sets ADNM)", () => {
       const rule = ref(
         makeRule({
-          status: "Not Yet Determined",
+          status: "Applicable - Does Not Meet",
           satisfied_by: [{ id: 1, fixtext: "parent fix" }],
         }),
       );
       const { ruleFormFields } = useRuleFormFields(rule, ref(false));
       expect(ruleFormFields.value.displayed).toEqual(
-        expect.arrayContaining(["status", "rule_severity", "title", "fixtext", "vendor_comments"]),
+        expect.arrayContaining([
+          "status",
+          "rule_severity",
+          "status_justification",
+          "vendor_comments",
+        ]),
       );
     });
 
-    it("disables title and fixtext when satisfied_by is set", () => {
+    it("does not disable title/fixtext (they are simply not displayed for ADNM)", () => {
       const rule = ref(
         makeRule({
-          status: "Not Yet Determined",
+          status: "Applicable - Does Not Meet",
           satisfied_by: [{ id: 1 }],
         }),
       );
       const { ruleFormFields } = useRuleFormFields(rule, ref(false));
-      expect(ruleFormFields.value.disabled).toEqual(expect.arrayContaining(["title", "fixtext"]));
+      // ADNM doesn't show title/fixtext at all — they're not in displayed
+      expect(ruleFormFields.value.displayed).not.toEqual(
+        expect.arrayContaining(["title", "fixtext"]),
+      );
     });
 
     it("does NOT disable the entire form (isFormDisabled stays false)", () => {
@@ -730,7 +742,7 @@ describe("useRuleFormFields", () => {
 
   // ─── Exact field sets per status (strict assertions) ──────
   // These use toEqual (not arrayContaining) to catch accidental field additions/omissions.
-  // Business rules source: docs/development/rule-form-business-rules.md
+  // Business rules source: docs/site/development/rule-form-business-rules.md
   describe("exact field sets per status", () => {
     const STATUSES = {
       "Applicable - Configurable": {
@@ -876,13 +888,7 @@ describe("useRuleFormFields", () => {
       "Not Applicable": {
         basic: {
           rule: {
-            displayed: [
-              "status",
-              "rule_severity",
-              "status_justification",
-              "artifact_description",
-              "vendor_comments",
-            ],
+            displayed: ["status", "rule_severity", "status_justification", "vendor_comments"],
             disabled: ["rule_severity"],
           },
           disa: { displayed: [], disabled: [] },
@@ -890,13 +896,7 @@ describe("useRuleFormFields", () => {
         },
         advanced: {
           rule: {
-            displayed: [
-              "status",
-              "rule_severity",
-              "status_justification",
-              "artifact_description",
-              "vendor_comments",
-            ],
+            displayed: ["status", "rule_severity", "status_justification", "vendor_comments"],
             disabled: ["rule_severity"],
           },
           disa: { displayed: [], disabled: [] },
@@ -904,6 +904,14 @@ describe("useRuleFormFields", () => {
         },
       },
     };
+
+    // The IA Control / CCI reference display is part of the rule group at
+    // every status: shown read-only (absorbed from the former template
+    // bypass into the declared config). Field ORDER is not part of the
+    // contract — consumers resolve via .includes or re-sort by
+    // FIELD_DISPLAY_ORDER — so membership is compared sorted.
+    const REFERENCE_KEYS = ["nist_control_family", "cci"];
+    const sorted = (arr) => [...arr].sort();
 
     for (const [status, modes] of Object.entries(STATUSES)) {
       describe(status, () => {
@@ -913,22 +921,32 @@ describe("useRuleFormFields", () => {
           it(`${mode} mode: exact ruleFormFields`, () => {
             const rule = ref(makeRule({ status }));
             const { ruleFormFields } = useRuleFormFields(rule, ref(isAdvanced));
-            expect(ruleFormFields.value.displayed).toEqual(expected.rule.displayed);
-            expect(ruleFormFields.value.disabled).toEqual(expected.rule.disabled);
+            expect(sorted(ruleFormFields.value.displayed)).toEqual(
+              sorted([...expected.rule.displayed, ...REFERENCE_KEYS]),
+            );
+            expect(sorted(ruleFormFields.value.disabled)).toEqual(
+              sorted([...expected.rule.disabled, ...REFERENCE_KEYS]),
+            );
           });
 
           it(`${mode} mode: exact disaDescriptionFields`, () => {
             const rule = ref(makeRule({ status }));
             const { disaDescriptionFields } = useRuleFormFields(rule, ref(isAdvanced));
-            expect(disaDescriptionFields.value.displayed).toEqual(expected.disa.displayed);
-            expect(disaDescriptionFields.value.disabled).toEqual(expected.disa.disabled);
+            expect(sorted(disaDescriptionFields.value.displayed)).toEqual(
+              sorted(expected.disa.displayed),
+            );
+            expect(sorted(disaDescriptionFields.value.disabled)).toEqual(
+              sorted(expected.disa.disabled),
+            );
           });
 
           it(`${mode} mode: exact checkFormFields`, () => {
             const rule = ref(makeRule({ status }));
             const { checkFormFields } = useRuleFormFields(rule, ref(isAdvanced));
-            expect(checkFormFields.value.displayed).toEqual(expected.check.displayed);
-            expect(checkFormFields.value.disabled).toEqual(expected.check.disabled);
+            expect(sorted(checkFormFields.value.displayed)).toEqual(
+              sorted(expected.check.displayed),
+            );
+            expect(sorted(checkFormFields.value.disabled)).toEqual(sorted(expected.check.disabled));
           });
         }
       });

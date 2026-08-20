@@ -1,0 +1,119 @@
+# Swagcov — OpenAPI documentation coverage for Rails routes.
+# Ensures every JSON API route has a matching OpenAPI path spec.
+# Run: bundle exec swagcov
+# CI exit code 1 = undocumented routes found.
+
+docs:
+  paths:
+    - doc/openapi.yaml
+
+routes:
+  paths:
+    ignore:
+      # Devise authentication views (HTML pages, not JSON API)
+      - /users/sign_in:
+        - GET
+        - POST
+      - /users/sign_out:
+        - DELETE
+      - /users/cancel:
+        - GET
+      - /users/edit:
+        - GET
+      - /users/edit/password:
+        - GET
+      - /users/edit/activity:
+        - GET
+      - /users/edit/tokens:
+        - GET
+      - /users/password:
+        - POST
+        - PUT
+        - PATCH
+      - /users/confirmation:
+        - GET
+        - POST
+      - /users/unlock:
+        - GET
+        - POST
+      # OAuth callbacks (browser redirect flow). Provider routes register at
+      # boot from settings, so which of these exist depends on the deployment;
+      # callbacks are single GET|POST routes, matched by the combined verb.
+      - /users/auth/oidc:
+        - POST
+      - /users/auth/oidc/callback:
+        - GET|POST
+      - /users/auth/okta:
+        - POST
+      - /users/auth/okta/callback:
+        - GET|POST
+      - /users/auth/login_gov:
+        - POST
+      - /users/auth/login_gov/callback:
+        - GET|POST
+      # Post-logout landing and identity linking (browser redirect flows)
+      - /users/signed_out:
+        - GET
+      - /users/initiate_link:
+        - POST
+      - /users/complete_link:
+        - POST
+      # HTML page renders (Turbolinks navigation, not API)
+      - /:
+        - GET
+      - /components/:id:
+        - GET
+      - /components/:component_id/edit:
+        - GET
+      - /components/:id/triage:
+        - GET
+      - /components/:id/settings:
+        - GET
+      - /components/:id/:stig_id:
+        - GET
+      - /projects/:id:
+        - GET
+      - /projects/:id/triage:
+        - GET
+      # Retired guide URLs — permanent redirects into the documentation site
+      - /disa-guide(/:page):
+        - GET
+      - /disa-guide/attachments/:filename:
+        - GET
+      # Old API docs viewer URL — permanent redirect into the documentation site
+      - /api/docs:
+        - GET
+      # The documentation site itself (HTML pages, not API)
+      - /docs(/*path):
+        - GET
+      # Consent (returns head :ok, no JSON body)
+      - /consent/acknowledge:
+        - POST
+      # Health check + Rails internals (infrastructure, not API)
+      - /health_check(/:checks):
+        - GET|POST
+      - /up:
+        - GET
+      # Devise registration (HTML form submissions)
+      - /users:
+        - POST
+        - PATCH
+        - PUT
+        - DELETE
+      - /users/sign_up:
+        - GET
+      # Component controls page — permanent redirect to /edit
+      - /components/:component_id/controls:
+        - GET
+      # Machine-readable specification downloads (serve the spec, not part of it)
+      - /openapi.yaml:
+        - GET
+      - /openapi.json:
+        - GET
+      # Old spec paths — permanent redirects to the root filenames
+      - /api/docs/openapi.yaml:
+        - GET
+      - /api/docs/openapi.yml:
+        - GET
+      - /api/docs/openapi.json:
+        - GET

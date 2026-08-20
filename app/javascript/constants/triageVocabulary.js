@@ -1,19 +1,23 @@
 // Single source of truth for triage vocabulary in the frontend.
 // Mirrors config/locales/en.yml#vulcan.triage. If you add a status key,
-// update both files and the canonical table in DESIGN §3.1.2.
+// update both files.
 //
-// Storage = DISA-native. UI = friendly English. See DESIGN §3.1.1 for why.
+// Storage = DISA-native (what exports and the API speak). UI = friendly
+// English so commenters do not need to know DISA terminology.
 
-// Database / API key → friendly UI label
+import { messageLabels, ruleTerm } from "./terminology";
+
+// Database / API key → friendly UI label (past tense for status display)
 export const TRIAGE_LABELS = Object.freeze({
   pending: "Pending",
-  concur: "Accept",
-  concur_with_comment: "Accept with changes",
-  non_concur: "Decline",
+  concur: "Accepted",
+  concur_with_comment: "Accepted with Changes",
+  non_concur: "Declined",
   duplicate: "Duplicate",
   informational: "Informational",
   needs_clarification: "Needs clarification",
   withdrawn: "Withdrawn",
+  addressed_by: `Addressed by Other ${ruleTerm().singular}`,
 });
 
 // Database / API key → DISA-matrix term (for tooltips and CSV/OSCAL export)
@@ -26,6 +30,7 @@ export const TRIAGE_DISA_LABELS = Object.freeze({
   informational: "Informational",
   needs_clarification: "Needs clarification",
   withdrawn: "Withdrawn",
+  addressed_by: `Addressed by another ${ruleTerm().singular.toLowerCase()}`,
 });
 
 // Database / API key → tooltip text (DISA term + brief explanation)
@@ -38,7 +43,32 @@ export const TRIAGE_TOOLTIPS = Object.freeze({
   informational: "Note acknowledged, no action required",
   needs_clarification: "Awaiting more info from commenter",
   withdrawn: "Commenter retracted this comment",
+  addressed_by: `Addressed by another ${ruleTerm().singular.toLowerCase()}`,
 });
+
+// Kind-keyed reads for the one status whose label carries the entity noun.
+// The frozen maps above hold the deployment default; kind-aware surfaces
+// resolve through these. Backend en.yml stays kind-free by design.
+export function triageLabel(status, documentType) {
+  if (status === "addressed_by") {
+    return `Addressed by Other ${ruleTerm(documentType).singular}`;
+  }
+  return TRIAGE_LABELS[status] || status;
+}
+
+export function triageDisaLabel(status, documentType) {
+  if (status === "addressed_by") {
+    return `Addressed by another ${ruleTerm(documentType).singular.toLowerCase()}`;
+  }
+  return TRIAGE_DISA_LABELS[status];
+}
+
+export function triageTooltip(status, documentType) {
+  if (status === "addressed_by") {
+    return `Addressed by another ${ruleTerm(documentType).singular.toLowerCase()}`;
+  }
+  return TRIAGE_TOOLTIPS[status];
+}
 
 // Database / API key → glyph (text characters; pair with text label, never alone).
 // Glyphs are decorative — always render with `aria-hidden="true"` and pair
@@ -52,6 +82,7 @@ export const TRIAGE_GLYPHS = Object.freeze({
   informational: "ⓘ",
   needs_clarification: "?",
   withdrawn: "⊘",
+  addressed_by: "↗",
 });
 
 // "Closed" indicator (when adjudicated_at is set on a triaged review)
@@ -95,12 +126,45 @@ export const CLOSED_REASON_LABELS = Object.freeze({
   finalized: "Finalized",
 });
 
+// Help copy for each phase/reason state. The settings page renders its radio
+// options AND its explanatory bullets from these constants — one source of
+// truth, so the two lists cannot drift when a phase or reason changes.
+export const COMMENT_PHASE_HELP = Object.freeze({
+  open: "commenters can post. End date is optional — when set, it surfaces a banner with a countdown.",
+  closed: "commenting is paused without commitment to a workflow stage.",
+});
+
+export const CLOSED_REASON_HELP = Object.freeze({
+  adjudicating: "window is closed but triage continues.",
+  finalized: "disposition published — the component is frozen for writes.",
+});
+
 // Render "Open" / "Closed" / "Closed (Adjudicating)" / "Closed (Finalized)".
 export function commentPhaseStatusText(phase, reason) {
   const phaseLabel = COMMENT_PHASE_LABELS[phase] || phase;
   if (phase !== "closed" || !reason) return phaseLabel;
   const reasonLabel = CLOSED_REASON_LABELS[reason] || reason;
   return `${phaseLabel} (${reasonLabel})`;
+}
+
+// One help item per selectable state: Open, Closed (each reason), and the
+// reasonless Closed fallback. Labels compose via commentPhaseStatusText so
+// they always match the inline status badges; `suffix` carries unbolded
+// qualifier text.
+export function commentPhaseHelpItems() {
+  return [
+    { label: COMMENT_PHASE_LABELS.open, suffix: "", description: COMMENT_PHASE_HELP.open },
+    ...Object.keys(CLOSED_REASON_LABELS).map((reason) => ({
+      label: commentPhaseStatusText("closed", reason),
+      suffix: "",
+      description: CLOSED_REASON_HELP[reason],
+    })),
+    {
+      label: COMMENT_PHASE_LABELS.closed,
+      suffix: " (no reason)",
+      description: COMMENT_PHASE_HELP.closed,
+    },
+  ];
 }
 
 // Tooltip copy for a disabled comment-related affordance, parameterized
@@ -115,10 +179,43 @@ export function commentsClosedTooltip(reason) {
   return "Comments are not enabled for this component";
 }
 
-// Helper: render the section label for a possibly-null section value
-export function sectionLabel(section) {
-  if (section === null || section === undefined) return "Overall Requirement";
+// Helper: render the section label for a possibly-null section value.
+// A null section means the comment targets the whole requirement, so the
+// label carries the kind-keyed entity noun (Overall Rule / Overall
+// Requirement); named sections are kind-free.
+export function sectionLabel(section, documentType) {
+  if (section === null || section === undefined) {
+    return messageLabels(documentType).overallSection;
+  }
   return SECTION_LABELS[section] || section;
+}
+
+// Statuses the server auto-adjudicates (sets adjudicated_at on save).
+// Matches Ruby Review::TERMINAL_AUTO_ADJUDICATE_STATUSES exactly.
+export const TERMINAL_AUTO_ADJUDICATE = new Set([
+  "duplicate",
+  "informational",
+  "withdrawn",
+  "addressed_by",
+]);
+
+// Statuses that collapse the triage form footer to a single button.
+// Superset of TERMINAL_AUTO_ADJUDICATE: includes needs_clarification, which
+// round-trips with the commenter (no adjudicate) but still doesn't need
+// a separate "Save decision" vs "Save & close" distinction.
+export const SINGLE_BUTTON_STATUSES = new Set([...TERMINAL_AUTO_ADJUDICATE, "needs_clarification"]);
+
+// Bootstrap-Vue <b-form-select> options for triage status filters.
+// "All statuses" + "Pending" first, then remaining statuses in TRIAGE_LABELS order.
+export function buildStatusFilterOptions() {
+  const friendly = Object.entries(TRIAGE_LABELS)
+    .filter(([value]) => value !== "pending")
+    .map(([value, text]) => ({ value, text }));
+  return [
+    { value: "all", text: "All statuses" },
+    { value: "pending", text: "Pending" },
+    ...friendly,
+  ];
 }
 
 // Helper: triage status pair (glyph + label) for templates that need both

@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { abbreviateSrgName } from '@/utils/srgNameAbbreviator'
+import { describe, it, expect } from "vitest";
+import { abbreviateSrgName } from "@/utils/srgNameAbbreviator";
 
 /**
  * SRG Name Abbreviator Tests
@@ -18,64 +18,68 @@ import { abbreviateSrgName } from '@/utils/srgNameAbbreviator'
  * - "Database Security Requirements Guide" → "Database SRG"
  * - "Web Server Security Requirements Guide" → "Web Server SRG"
  */
-describe('abbreviateSrgName', () => {
-  it('abbreviates General Purpose Operating System SRG', () => {
-    const result = abbreviateSrgName('General Purpose Operating System Security Requirements Guide')
-    expect(result).toBe('GPOS SRG')
-  })
+describe("abbreviateSrgName", () => {
+  it("abbreviates General Purpose Operating System SRG", () => {
+    const result = abbreviateSrgName(
+      "General Purpose Operating System Security Requirements Guide",
+    );
+    expect(result).toBe("GPOS SRG");
+  });
 
-  it('abbreviates Database SRG', () => {
-    const result = abbreviateSrgName('Database Security Requirements Guide')
-    expect(result).toBe('Database SRG')
-  })
+  it("abbreviates Database SRG", () => {
+    const result = abbreviateSrgName("Database Security Requirements Guide");
+    expect(result).toBe("Database SRG");
+  });
 
-  it('abbreviates Web Server SRG', () => {
-    const result = abbreviateSrgName('Web Server Security Requirements Guide')
-    expect(result).toBe('Web Server SRG')
-  })
+  it("abbreviates Web Server SRG", () => {
+    const result = abbreviateSrgName("Web Server Security Requirements Guide");
+    expect(result).toBe("Web Server SRG");
+  });
 
-  it('abbreviates Windows Server SRG', () => {
-    const result = abbreviateSrgName('Windows Server Security Requirements Guide')
-    expect(result).toBe('Windows Server SRG')
-  })
+  it("abbreviates Windows Server SRG", () => {
+    const result = abbreviateSrgName("Windows Server Security Requirements Guide");
+    expect(result).toBe("Windows Server SRG");
+  });
 
-  it('abbreviates Application Security and Development SRG', () => {
-    const result = abbreviateSrgName('Application Security and Development Security Requirements Guide')
-    expect(result).toBe('App Sec & Dev SRG')
-  })
+  it("abbreviates Application Security and Development SRG", () => {
+    const result = abbreviateSrgName(
+      "Application Security and Development Security Requirements Guide",
+    );
+    expect(result).toBe("App Sec & Dev SRG");
+  });
 
-  it('abbreviates Container Platform SRG', () => {
-    const result = abbreviateSrgName('Container Platform Security Requirements Guide')
-    expect(result).toBe('Container Platform SRG')
-  })
+  it("abbreviates Container Platform SRG", () => {
+    const result = abbreviateSrgName("Container Platform Security Requirements Guide");
+    expect(result).toBe("Container Platform SRG");
+  });
 
-  it('keeps unknown SRG names with first few words', () => {
-    const result = abbreviateSrgName('Custom Security Thing Security Requirements Guide')
-    expect(result).toBe('Custom Security Thing SRG')
-  })
+  it("keeps unknown SRG names with first few words", () => {
+    const result = abbreviateSrgName("Custom Security Thing Security Requirements Guide");
+    expect(result).toBe("Custom Security Thing SRG");
+  });
 
-  it('handles already short names', () => {
-    const result = abbreviateSrgName('Test SRG')
-    expect(result).toBe('Test SRG')
-  })
+  it("handles already short names", () => {
+    const result = abbreviateSrgName("Test SRG");
+    expect(result).toBe("Test SRG");
+  });
 
   it('handles names without "Security Requirements Guide"', () => {
-    const result = abbreviateSrgName('Some Other Document')
-    expect(result).toBe('Some Other Document')
-  })
+    const result = abbreviateSrgName("Some Other Document");
+    expect(result).toBe("Some Other Document");
+  });
 
-  it('handles null gracefully', () => {
-    const result = abbreviateSrgName(null)
-    expect(result).toBe('')
-  })
+  it("handles null gracefully", () => {
+    const result = abbreviateSrgName(null);
+    expect(result).toBe("");
+  });
 
-  it('handles undefined gracefully', () => {
-    const result = abbreviateSrgName(undefined)
-    expect(result).toBe('')
-  })
+  it("handles undefined gracefully", () => {
+    const result = abbreviateSrgName(undefined);
+    expect(result).toBe("");
+  });
 
-  it('handles empty string', () => {
-    const result = abbreviateSrgName('')
-    expect(result).toBe('')
-  })
-})
+  it("handles empty string", () => {
+    const result = abbreviateSrgName("");
+    expect(result).toBe("");
+  });
+});

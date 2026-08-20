@@ -5,7 +5,7 @@
     <b-modal
       id="related-rules-modal"
       ref="modal"
-      :title="`Rules Related to ${ruleStigId}//${rule.version}`"
+      :title="`${relatedNoun} Related to ${ruleStigId}//${rule.version}`"
       class="responsive"
       centered
       ok-only
@@ -49,12 +49,12 @@
           placeholder="Search STIG/Component by name ..."
         />
         <small class="text-info">
-          {{ results }} Related Rules {{ selectedParent ? `in ${selectedParent}` : "" }}
+          {{ results }} Related {{ relatedNoun }} {{ selectedParent ? `in ${selectedParent}` : "" }}
         </small>
       </b-form-group>
 
       <!-- FILTER RESULTS BY FIELDS  & SEARCH KEYWORD -->
-      <div class="row">
+      <div class="form-row">
         <div class="col-6">
           <b-form-group>
             <template #label>
@@ -174,23 +174,19 @@
                       v-if="!readOnly"
                       class="mb-2"
                       size="sm"
-                      @click="
-                        copyDiscussionToRule(
-                          $root,
-                          relatedRule.disa_rule_descriptions_attributes[0].vuln_discussion,
-                        )
-                      "
+                      @click="copyDiscussionToRule($root, relatedDiscussion(relatedRule))"
                     >
                       Copy to {{ ruleStigId }}
                     </b-button>
                     <div
                       class="border p-2 overflow-auto"
-                      style="background: #e9ecef; opacity: 1; height: 375px; line-height: 1.5"
-                      v-html="
-                        formatAndHighlightSearchWord(
-                          relatedRule.disa_rule_descriptions_attributes[0].vuln_discussion,
-                        )
+                      style="
+                        background: var(--vulcan-disabled-bg, #e9ecef);
+                        opacity: 1;
+                        height: 375px;
+                        line-height: 1.5;
                       "
+                      v-html="formatAndHighlightSearchWord(relatedDiscussion(relatedRule))"
                     />
                   </b-card-text>
                   <b-card-text
@@ -203,18 +199,19 @@
                       v-if="!readOnly"
                       class="mb-2"
                       size="sm"
-                      @click="
-                        copyCheckContentToRule($root, relatedRule.checks_attributes[0].content)
-                      "
+                      @click="copyCheckContentToRule($root, relatedCheckContent(relatedRule))"
                     >
                       Copy to {{ ruleStigId }}
                     </b-button>
                     <div
                       class="border p-2 overflow-auto"
-                      style="background: #e9ecef; opacity: 1; height: 375px; line-height: 1.5"
-                      v-html="
-                        formatAndHighlightSearchWord(relatedRule.checks_attributes[0].content)
+                      style="
+                        background: var(--vulcan-disabled-bg, #e9ecef);
+                        opacity: 1;
+                        height: 375px;
+                        line-height: 1.5;
                       "
+                      v-html="formatAndHighlightSearchWord(relatedCheckContent(relatedRule))"
                     />
                   </b-card-text>
                   <b-card-text
@@ -233,7 +230,12 @@
                     </b-button>
                     <div
                       class="border p-2 overflow-auto"
-                      style="background: #e9ecef; opacity: 1; height: 375px; line-height: 1.5"
+                      style="
+                        background: var(--vulcan-disabled-bg, #e9ecef);
+                        opacity: 1;
+                        height: 375px;
+                        line-height: 1.5;
+                      "
                       v-html="formatAndHighlightSearchWord(relatedRule.fixtext)"
                     />
                   </b-card-text>
@@ -247,7 +249,12 @@
   </div>
 </template>
 <script>
-import axios from "axios";
+import { getRelatedRules } from "../../api/searchApi";
+import { ruleArray } from "../../utils/ruleArray";
+import DOMPurify from "dompurify";
+// Related-rules is a STIG-only surface (hidden for SRG kinds), so it reads
+// the stig term.
+import { ruleTerm } from "../../constants/terminology";
 import VueMultiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
 export default {
@@ -288,6 +295,9 @@ export default {
     };
   },
   computed: {
+    relatedNoun() {
+      return ruleTerm("stig").plural;
+    },
     selectedParent() {
       return this.selectedParentObj ? this.selectedParentObj.name : "";
     },
@@ -354,9 +364,15 @@ export default {
     },
   },
   methods: {
+    relatedDiscussion(relatedRule) {
+      return (ruleArray(relatedRule, "disa_rule_descriptions_attributes")[0] || {}).vuln_discussion;
+    },
+    relatedCheckContent(relatedRule) {
+      return (ruleArray(relatedRule, "checks_attributes")[0] || {}).content;
+    },
     getRelatedRules: async function () {
       this.resetModal();
-      axios.get(`/rules/${this.rule.id}/search/related_rules`).then((response) => {
+      getRelatedRules(this.rule.id).then((response) => {
         this.fields = this.controlFields;
         this.relatedRules = response.data.rules;
         this.relatedRulesParents = response.data.parents;
@@ -427,8 +443,8 @@ export default {
 
       return rules.filter((r) => {
         const title = convertLower(r.title);
-        const discussion = convertLower(r.disa_rule_descriptions_attributes[0].vuln_discussion);
-        const check = convertLower(r.checks_attributes[0].content);
+        const discussion = convertLower(this.relatedDiscussion(r));
+        const check = convertLower(this.relatedCheckContent(r));
         const fix = convertLower(r.fixtext);
 
         if (this.allFieldsSelected) {
@@ -448,7 +464,7 @@ export default {
 
     formatAndHighlightSearchWord: function (text) {
       if (!text) return;
-      let formattedText = this.escapeHtml(text);
+      let formattedText = DOMPurify.sanitize(text, { ALLOWED_TAGS: [] });
       if (this.keywordList.length) {
         const words = this.keywordList.map((w) => w.toLowerCase());
         for (let word of words) {
@@ -458,19 +474,13 @@ export default {
           });
         }
       }
-      return formattedText.replace(/\n/g, "<br />");
-    },
-    escapeHtml: function (text) {
-      if (!text) return;
-      return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+      return DOMPurify.sanitize(formattedText.replaceAll("\n", "<br />"), {
+        ALLOWED_TAGS: ["mark", "br"],
+        ALLOWED_ATTR: ["class"],
+      });
     },
     copyCheckContentToRule: function (root, checkContent) {
-      const check = this.rule.checks_attributes[0];
+      const check = ruleArray(this.rule, "checks_attributes")[0];
       const content = `${check.content}\n\n${checkContent}`;
       root.$emit("update:check", this.rule, { ...check, content }, 0);
       this.$bvToast.toast(`Check successfully copied to ${this.ruleStigId}`, {
@@ -480,7 +490,7 @@ export default {
       });
     },
     copyDiscussionToRule: function (root, vulnDiscussion) {
-      const discussion = this.rule.disa_rule_descriptions_attributes[0];
+      const discussion = ruleArray(this.rule, "disa_rule_descriptions_attributes")[0];
       const vuln_discussion = `${discussion.vuln_discussion}\n\n${vulnDiscussion}`;
       root.$emit("update:disaDescription", this.rule, { ...discussion, vuln_discussion }, 0);
       this.$bvToast.toast(`Discussion successfully copied to ${this.ruleStigId}`, {
@@ -519,10 +529,10 @@ export default {
 <style scoped>
 .keyword-bubble {
   display: inline-block;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  margin: 5px;
+  padding: 0.625rem;
+  border: 1px solid var(--vulcan-border-color, #ccc);
+  border-radius: 0.625rem;
+  margin: 0.3125rem;
   width: 50px;
   height: 5px;
   font-size: xx-small;

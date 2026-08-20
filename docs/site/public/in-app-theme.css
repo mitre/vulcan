@@ -1,0 +1,57 @@
+/*
+ * Served in-app only — linked by the app target's build-time head entry
+ * (docs/.vitepress/config.mjs); the published targets never load this file.
+ *
+ * Aligns the documentation's accent palette and dark-mode surfaces with the
+ * application's design system: the --vulcan-* tokens bridged from Bootstrap
+ * in app/javascript/application.scss. Each value below names its source
+ * token, so this file restates the design system with provenance rather
+ * than colors picked by eye. If the application ever themes its palette,
+ * these values follow application.scss, not taste.
+ *
+ * Selectors are html-qualified so these overrides outrank the bundled
+ * theme's :root/.dark declarations regardless of stylesheet order.
+ */
+
+html:root {
+  /* --vulcan-primary = Bootstrap $primary (#007bff) */
+  --vp-c-brand-1: #007bff;
+  /* hover step = --vulcan-primary-dark / --vulcan-link-hover-color (#0056b3) */
+  --vp-c-brand-2: #0056b3;
+  /* solid fills (buttons) = the primary itself */
+  --vp-c-brand-3: #007bff;
+  /* soft = --vulcan-primary-tint (rgba($primary, 0.10)) */
+  --vp-c-brand-soft: rgba(0, 123, 255, 0.1);
+  /* mute = --vulcan-focus-tint (rgba(0, 123, 255, 0.04)) */
+  --vp-c-brand-mute: rgba(0, 123, 255, 0.04);
+}
+
+html.dark {
+  /* --vulcan-primary (dark) = mix(white, $primary, 20%) = #3395ff */
+  --vp-c-brand-1: #3395ff;
+  /* hover step = --vulcan-link-hover-color dark (mix(white, $primary, 60%)) */
+  --vp-c-brand-2: #99caff;
+  --vp-c-brand-3: #3395ff;
+  /* soft = --vulcan-primary-tint dark (rgba($primary-dark, 0.22)) */
+  --vp-c-brand-soft: rgba(51, 149, 255, 0.22);
+  /* mute = --vulcan-focus-tint dark (rgba($primary-dark, 0.08)) */
+  --vp-c-brand-mute: rgba(51, 149, 255, 0.08);
+
+  /* Three-tier surface hierarchy — the app's dark-mode background system:
+     --vulcan-body-bg ($gray-900), --vulcan-tertiary-bg (recessed, #2b3035),
+     --vulcan-secondary-bg (elevated, $gray-800). */
+  --vp-c-bg: #212529;
+  --vp-c-bg-alt: #2b3035;
+  --vp-c-bg-soft: #2b3035;
+  --vp-c-bg-elv: #343a40;
+
+  /* Text tiers — --vulcan-body-color ($gray-300) down through $gray-500,
+     $gray-600; borders — --vulcan-border-subtle ($gray-700) for dividers,
+     --vulcan-border-color ($gray-600) for visible borders. */
+  --vp-c-text-1: #dee2e6;
+  --vp-c-text-2: #adb5bd;
+  --vp-c-text-3: #6c757d;
+  --vp-c-divider: #495057;
+  --vp-c-border: #6c757d;
+  --vp-c-gutter: #212529;
+}

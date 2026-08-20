@@ -1,0 +1,54 @@
+# Quick Start
+
+Get Vulcan up and running in minutes with Docker.
+
+## Prerequisites
+
+- Docker and Docker Compose installed
+- 4GB+ RAM available
+- Port 3000 available
+
+## Quick Installation
+
+### 1. Pull and Run with Docker
+
+```bash
+# Pull the latest released image
+docker pull mitre/vulcan:release-latest
+
+# Or use docker compose for a complete setup
+wget https://raw.githubusercontent.com/mitre/vulcan/master/docker-compose.yml
+wget https://raw.githubusercontent.com/mitre/vulcan/master/setup-docker-secrets.sh
+chmod +x setup-docker-secrets.sh
+./setup-docker-secrets.sh
+docker compose up
+```
+
+### 2. Access Vulcan
+
+Open your browser and navigate to: `http://localhost:3000`
+
+The first user to register becomes admin automatically.
+
+::: tip Admin Bootstrap
+For automated deployments, you can pre-configure an admin account via environment variables (`VULCAN_ADMIN_EMAIL` and `VULCAN_ADMIN_PASSWORD`). See [Environment Variables](environment-variables.md) for details.
+:::
+
+### 3. First Steps
+
+1. **Create a Project**: Click "New Project" to start organizing your security controls
+2. **Import an SRG**: Upload a Security Requirements Guide to begin tailoring
+3. **Create a Component**: Click "New Component" → "Create New Component". The form first asks **What are you authoring?** — **STIG** (implement an SRG's requirements for a specific product) or **SRG** (author a new Security Requirements Guide derived from core SRGs). The choice is permanent for the component.
+4. **Write Controls**: Begin documenting security controls with both human-readable guidance and InSpec validation code — or, for an SRG component, decide and tailor each requirement (see the [SRG Authoring Workflow](../disa-process/srg-authoring))
+
+## Next Steps
+
+- [Full Installation Guide](installation.md) - Production deployment options
+- [Configuration Guide](configuration.md) - Authentication, email, and advanced settings
+- [User Guide](../user-guide/overview.md) - Complete walkthrough of Vulcan features
+
+## Getting Help
+
+- **Issues**: [GitHub Issues](https://github.com/mitre/vulcan/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/mitre/vulcan/discussions)
+- **Email**: saf@mitre.org

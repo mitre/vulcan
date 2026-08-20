@@ -200,6 +200,34 @@ describe("ExportModal", () => {
   // 4. When hideComponentSelection is true, single-column layout (no right panel)
   // 5. Single component still shows simplified view in right panel (no checkbox grid)
   //
+  // Regression: "select all" used to grab every component id including the
+  // disabled SRG rows the current purpose excludes, so they shipped in the
+  // export payload and the tri-state could only reach "all" by pulling them in.
+  describe("SRG exclusion in select-all", () => {
+    const withSrg = [
+      { id: 1, name: "Comp A", version: "1", release: "1", document_type: "stig" },
+      { id: 2, name: "Comp B", version: "1", release: "1", document_type: "stig" },
+      { id: 3, name: "SRG Comp", version: "1", release: "1", document_type: "srg" },
+    ];
+
+    it("select-all skips excluded SRG components and the tri-state counts only selectable ones", async () => {
+      wrapper = createWrapper({ components: withSrg });
+      // working_copy has no SRG meaning → SRG components are excluded.
+      wrapper.vm.selectedMode = "working_copy";
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.vm.isSrgExcludedSelection).toBe(true);
+      expect(wrapper.vm.isSrgExcluded(3)).toBe(true);
+
+      wrapper.vm.toggleSelectAll(true);
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.vm.selectedComponentIds).toEqual([1, 2]);
+      expect(wrapper.vm.selectedComponentIds).not.toContain(3);
+      expect(wrapper.vm.allSelected).toBe(true);
+    });
+  });
+
   describe("two-panel layout", () => {
     it("shows config-panel and component-panel when components are visible", () => {
       wrapper = createWrapper({ components: multipleComponents });
@@ -1377,6 +1405,101 @@ describe("ExportModal", () => {
       });
 
       expect(wrapper.find('[data-testid="nyd-warning-icon"]').exists()).toBe(false);
+    });
+  });
+
+  // REQUIREMENT (kind awareness): the modal offers only valid purposes per
+  // document kind. Purposes with no srg meaning (working copy, vendor
+  // submission) are disabled when every component is srg, and srg components
+  // are visibly excluded from the selection while such a purpose is chosen.
+  // Publication and backup serve both kinds (publication kind-routes
+  // server-side).
+  describe("document kind awareness", () => {
+    const allModes = ["working_copy", "vendor_submission", "published_stig", "backup"];
+    const stigComponent = {
+      id: 1,
+      name: "Stig Comp",
+      version: "1",
+      release: "1",
+      document_type: "stig",
+    };
+    const srgComponent = {
+      id: 9,
+      name: "Srg Comp",
+      version: "1",
+      release: "2",
+      document_type: "srg",
+    };
+
+    const modeInput = (mode) => wrapper.find(`[data-testid="mode-${mode}"]`);
+    const formatInput = (fmt) => wrapper.find(`[data-testid="format-${fmt}"]`);
+
+    it("disables purposes with no srg meaning when every component is srg", () => {
+      wrapper = createWrapper({ components: [srgComponent], availableModes: allModes });
+
+      expect(modeInput("working_copy").attributes("disabled")).toBeDefined();
+      expect(modeInput("vendor_submission").attributes("disabled")).toBeDefined();
+      expect(modeInput("published_stig").attributes("disabled")).toBeUndefined();
+      expect(modeInput("backup").attributes("disabled")).toBeUndefined();
+      expect(wrapper.text()).toContain("Not available for SRG components");
+    });
+
+    it("excludes srg components from the selection under a purpose with no srg meaning", async () => {
+      wrapper = createWrapper({
+        components: [stigComponent, srgComponent],
+        availableModes: allModes,
+      });
+
+      wrapper.vm.selectedComponentIds = [1, 9];
+      wrapper.vm.selectedMode = "working_copy";
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.vm.selectedComponentIds).toEqual([1]);
+      expect(wrapper.find('[data-testid="srg-exclusion-warning"]').exists()).toBe(true);
+      expect(wrapper.text()).toContain("1 SRG component is not included in this purpose");
+    });
+
+    it("keeps srg components selectable under the publication purpose", async () => {
+      wrapper = createWrapper({
+        components: [stigComponent, srgComponent],
+        availableModes: allModes,
+      });
+
+      wrapper.vm.selectedComponentIds = [1, 9];
+      wrapper.vm.selectedMode = "published_stig";
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.vm.selectedComponentIds).toEqual([1, 9]);
+      expect(wrapper.find('[data-testid="srg-exclusion-warning"]').exists()).toBe(false);
+    });
+
+    it("disables InSpec under the publication purpose when every component is srg", async () => {
+      wrapper = createWrapper({ components: [srgComponent], availableModes: allModes });
+
+      wrapper.vm.selectedMode = "published_stig";
+      await wrapper.vm.$nextTick();
+
+      expect(formatInput("inspec").attributes("disabled")).toBeDefined();
+      expect(formatInput("xccdf").attributes("disabled")).toBeUndefined();
+      expect(wrapper.text()).toContain("Not available for SRG components");
+    });
+
+    it("deselects srg components and warns when the publication format is InSpec", async () => {
+      wrapper = createWrapper({
+        components: [stigComponent, srgComponent],
+        availableModes: allModes,
+      });
+
+      wrapper.vm.selectedComponentIds = [1, 9];
+      wrapper.vm.selectedMode = "published_stig";
+      await wrapper.vm.$nextTick();
+      expect(wrapper.vm.selectedComponentIds).toEqual([1, 9]);
+
+      wrapper.vm.selectedFormat = "inspec";
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.vm.selectedComponentIds).toEqual([1]);
+      expect(wrapper.find('[data-testid="srg-exclusion-warning"]').exists()).toBe(true);
     });
   });
 });

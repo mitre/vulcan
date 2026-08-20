@@ -1,16 +1,52 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { shallowMount } from "@vue/test-utils";
-import { localVue } from "@test/testHelper";
-import axios from "axios";
+import { localVue, flushPromises } from "@test/testHelper";
+import { createPinia } from "pinia";
+import { createTestRouter } from "@test/support/routerTestHelper";
 import ProjectComponent from "@/components/components/ProjectComponent.vue";
+import { getComponent, patchComponent } from "@/api/componentsApi";
+import { getRule } from "@/api/rulesApi";
 
-// Mock axios
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
     get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
     patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    defaults: { headers: { common: {} } },
   },
 }));
+
+vi.mock("@/api/componentsApi", () => ({
+  getComponent: vi.fn(() => Promise.resolve({ data: {} })),
+  patchComponent: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+
+vi.mock("@/api/rulesApi", () => ({
+  getRule: vi.fn(() => Promise.resolve({ data: {} })),
+  getRelocations: vi.fn(() => Promise.resolve({ data: [] })),
+  getRelocationDestinations: vi.fn(() => Promise.resolve({ data: [] })),
+  markRelocation: vi.fn(() => Promise.resolve({ data: {} })),
+  unmarkRelocation: vi.fn(() => Promise.resolve({ data: {} })),
+  dryRunRelocation: vi.fn(() => Promise.resolve({ data: {} })),
+  acceptRelocation: vi.fn(() => Promise.resolve({ data: {} })),
+  declineRelocation: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+import { getRelocations, getRelocationDestinations } from "@/api/rulesApi";
+
+vi.mock("@/api/projectsApi", () => ({
+  exportProjectData: vi.fn(() => Promise.resolve("/projects/1/export/csv?component_ids=41")),
+}));
+
+// Spy-wrap (real implementations preserved) so tests can pin that sorting,
+// the release confirmation, and the reply composer flow through composables.
+vi.mock("@/composables/useSortRules", { spy: true });
+vi.mock("@/composables/useConfirmRelease", { spy: true });
+vi.mock("@/composables/useReplyComposer", { spy: true });
+import { useSortRules } from "@/composables/useSortRules";
+import { useConfirmRelease } from "@/composables/useConfirmRelease";
+import { useReplyComposer } from "@/composables/useReplyComposer";
 
 describe("ProjectComponent", () => {
   let wrapper;
@@ -27,6 +63,8 @@ describe("ProjectComponent", () => {
       histories: [{ name: "Test User" }],
       reviews: [],
       version: "SV-001",
+      checks_attributes: [],
+      disa_rule_descriptions_attributes: [],
     },
     {
       id: 2,
@@ -39,14 +77,16 @@ describe("ProjectComponent", () => {
       histories: [],
       reviews: [],
       version: "SV-002",
+      checks_attributes: [],
+      disa_rule_descriptions_attributes: [],
     },
   ];
 
   const defaultProps = {
-    effective_permissions: "admin",
     current_user_id: 1,
     project: { id: 1, name: "Test Project" },
     initialComponentState: {
+      effective_permissions: "admin",
       id: 41,
       name: "Test Component",
       prefix: "TEST",
@@ -79,9 +119,15 @@ describe("ProjectComponent", () => {
     available_roles: ["admin", "author", "viewer"],
   };
 
-  const createWrapper = (props = {}) => {
+  const createWrapper = (props = {}, stubOverrides = {}) => {
+    const router = createTestRouter([
+      { path: "/", name: "editor-root" },
+      { path: "/rules/:ruleId", name: "rule", props: true },
+    ]);
     return shallowMount(ProjectComponent, {
       localVue,
+      pinia: createPinia(),
+      router,
       propsData: {
         ...defaultProps,
         ...props,
@@ -90,16 +136,18 @@ describe("ProjectComponent", () => {
         ControlsPageLayout: true,
         ControlsCommandBar: true,
         ControlsSidepanels: true,
-        RuleNavigator: true,
+        RuleSearchBar: true,
+        RuleList: true,
+        ActiveFilterPills: true,
         RuleEditor: true,
         RuleSatisfactions: true,
         RuleReviews: true,
         RuleHistories: true,
         RelatedRulesModal: true,
-        MembersModal: true,
         BSidebar: true,
         BModal: true,
         BIcon: true,
+        ...stubOverrides,
       },
     });
   };
@@ -130,9 +178,19 @@ describe("ProjectComponent", () => {
       expect(wrapper.findComponent({ name: "ControlsCommandBar" }).exists()).toBe(true);
     });
 
-    it("renders RuleNavigator", () => {
+    it("renders RuleSearchBar in sidebar header (pinned)", () => {
       wrapper = createWrapper();
-      expect(wrapper.findComponent({ name: "RuleNavigator" }).exists()).toBe(true);
+      expect(wrapper.findComponent({ name: "RuleSearchBar" }).exists()).toBe(true);
+    });
+
+    it("renders ActiveFilterPills in sidebar header (pinned)", () => {
+      wrapper = createWrapper();
+      expect(wrapper.findComponent({ name: "ActiveFilterPills" }).exists()).toBe(true);
+    });
+
+    it("renders RuleList in sidebar body (scrollable)", () => {
+      wrapper = createWrapper();
+      expect(wrapper.findComponent({ name: "RuleList" }).exists()).toBe(true);
     });
   });
 
@@ -163,6 +221,15 @@ describe("ProjectComponent", () => {
       wrapper.vm.selectRule(1);
       expect(localStorage.getItem("selectedRuleId-41")).toBe("1");
     });
+
+    // REGRESSION: a persisted selection can reference a requirement that
+    // no longer exists (e.g. relocated away since the last visit) — the
+    // stale id is cleared and the first rule selected, never an empty pane.
+    it("clears a stale persisted selection and falls back to the first rule", () => {
+      localStorage.setItem("selectedRuleId-41", "999");
+      wrapper = createWrapper();
+      expect(wrapper.vm.selectedRuleId).toBe(1);
+    });
   });
 
   describe("useSidebar composable integration", () => {
@@ -185,53 +252,34 @@ describe("ProjectComponent", () => {
     });
   });
 
-  describe("component panels", () => {
-    it("has details slideover", () => {
-      wrapper = createWrapper();
-      // Component should have slideover for details
-      expect(wrapper.vm.componentPanels).toContain("details");
+  // The related-rules surface is structurally stig-only (it keys off Rule
+  // SRG-version linkage) — the editor page guards its modal mount by kind,
+  // and this read-only view must match its sibling. The stig leg proves the
+  // harness renders the modals slot at all, so the srg absence is a real
+  // guard rather than a vacuous pass.
+  describe("RelatedRulesModal document kind guard", () => {
+    const slotRenderingLayout = { template: "<div><slot name='modals' /></div>" };
+
+    it("mounts the modal for a stig component once a rule is selected", async () => {
+      wrapper = createWrapper({}, { ControlsPageLayout: slotRenderingLayout });
+      wrapper.vm.selectRule(1);
+      await wrapper.vm.$nextTick();
+      expect(wrapper.findComponent({ name: "RelatedRulesModal" }).exists()).toBe(true);
     });
 
-    it("has metadata slideover", () => {
-      wrapper = createWrapper();
-      expect(wrapper.vm.componentPanels).toContain("metadata");
-    });
-
-    it("has questions slideover", () => {
-      wrapper = createWrapper();
-      expect(wrapper.vm.componentPanels).toContain("questions");
-    });
-
-    it("has comp-history slideover", () => {
-      wrapper = createWrapper();
-      expect(wrapper.vm.componentPanels).toContain("comp-history");
-    });
-
-    // comp-reviews retired in PR #717 — slideover replaced by the
-    // full-page /components/:id/triage route. The Triage button on
-    // the command bar links there directly.
-    it("does NOT register a comp-reviews slideover panel anymore", () => {
-      wrapper = createWrapper();
-      expect(wrapper.vm.componentPanels).not.toContain("comp-reviews");
-    });
-  });
-
-  describe("rule panels (enabled when rule selected)", () => {
-    // REQUIREMENT: Rule panels use namespaced IDs to avoid collision with component panels
-    // 'rule-reviews' instead of 'reviews', 'rule-history' instead of 'history'
-    it("has satisfies slideover", () => {
-      wrapper = createWrapper();
-      expect(wrapper.vm.rulePanels).toContain("satisfies");
-    });
-
-    it("has rule-reviews slideover", () => {
-      wrapper = createWrapper();
-      expect(wrapper.vm.rulePanels).toContain("rule-reviews");
-    });
-
-    it("has rule-history slideover", () => {
-      wrapper = createWrapper();
-      expect(wrapper.vm.rulePanels).toContain("rule-history");
+    it("does NOT mount the modal for an srg component with a rule selected", async () => {
+      wrapper = createWrapper(
+        {
+          initialComponentState: {
+            ...defaultProps.initialComponentState,
+            document_type: "srg",
+          },
+        },
+        { ControlsPageLayout: slotRenderingLayout },
+      );
+      wrapper.vm.selectRule(1);
+      await wrapper.vm.$nextTick();
+      expect(wrapper.findComponent({ name: "RelatedRulesModal" }).exists()).toBe(false);
     });
   });
 
@@ -252,6 +300,18 @@ describe("ProjectComponent", () => {
   describe("RuleEditor event forwarding", () => {
     // CRITICAL: RuleEditor must forward toggle-panel events so panel buttons work.
     // This was a regression where buttons did nothing because events weren't wired up.
+
+    it("threads the component's document_type into RuleEditor (kind-aware editor)", async () => {
+      wrapper = createWrapper({
+        initialComponentState: {
+          ...defaultProps.initialComponentState,
+          document_type: "srg",
+        },
+      });
+      wrapper.vm.selectRule(1);
+      await wrapper.vm.$nextTick();
+      expect(wrapper.findComponent({ name: "RuleEditor" }).props("documentType")).toBe("srg");
+    });
 
     it("forwards toggle-panel events from RuleEditor to togglePanel", async () => {
       wrapper = createWrapper();
@@ -303,25 +363,22 @@ describe("ProjectComponent", () => {
     // the component properties in-place for Vue reactivity.
 
     it("fetches component data as JSON", async () => {
-      const axios = (await import("axios")).default;
       wrapper = createWrapper();
 
       // Call refreshComponent
       wrapper.vm.refreshComponent();
 
-      // Verify axios.get was called with .json extension
-      expect(axios.get).toHaveBeenCalledWith("/components/41.json");
+      expect(getComponent).toHaveBeenCalledWith(41);
     });
 
     it("updates component properties in-place on successful fetch", async () => {
-      const axios = (await import("axios")).default;
       const updatedData = {
         id: 41,
         name: "Updated Component Name",
         title: "Updated Title",
         description: "Updated Description",
       };
-      axios.get.mockResolvedValueOnce({ data: updatedData });
+      getComponent.mockResolvedValueOnce({ data: updatedData });
 
       wrapper = createWrapper();
 
@@ -337,8 +394,7 @@ describe("ProjectComponent", () => {
     });
 
     it("does NOT reload the page", async () => {
-      const axios = (await import("axios")).default;
-      axios.get.mockResolvedValueOnce({ data: { id: 41, name: "Test" } });
+      getComponent.mockResolvedValueOnce({ data: { id: 41, name: "Test" } });
 
       // Mock location.reload to track if it's called
       const originalReload = globalThis.location.reload;
@@ -355,6 +411,83 @@ describe("ProjectComponent", () => {
 
       // Restore
       globalThis.location.reload = originalReload;
+    });
+  });
+
+  // ==========================================================================
+  // Chrome condensation: breadcrumbs, banner chip, filter toggle
+  // ==========================================================================
+  describe("chrome condensation", () => {
+    it("root element has vulcan-editor-layout class for flex chain continuity", () => {
+      wrapper = createWrapper();
+      expect(wrapper.classes()).toContain("vulcan-editor-layout");
+    });
+
+    it("does NOT render a standalone b-breadcrumb row", () => {
+      wrapper = createWrapper();
+      expect(wrapper.findComponent({ name: "BBreadcrumb" }).exists()).toBe(false);
+    });
+
+    it("passes breadcrumbs to ControlsCommandBar", () => {
+      wrapper = createWrapper();
+      const commandBar = wrapper.findComponent({ name: "ControlsCommandBar" });
+      const breadcrumbs = commandBar.props("breadcrumbs");
+      expect(breadcrumbs).toBeDefined();
+      expect(breadcrumbs.length).toBe(3);
+      expect(breadcrumbs[0].text).toBe("Projects");
+      expect(breadcrumbs[0].href).toBe("/projects");
+      expect(breadcrumbs[2].active).toBe(true);
+    });
+
+    it("does NOT render a standalone CommentPeriodBanner", () => {
+      wrapper = createWrapper();
+      expect(wrapper.findComponent({ name: "CommentPeriodBanner" }).exists()).toBe(false);
+    });
+
+    it("passes showFilterToggle=true to ControlsCommandBar", () => {
+      wrapper = createWrapper();
+      const commandBar = wrapper.findComponent({ name: "ControlsCommandBar" });
+      expect(commandBar.props("showFilterToggle")).toBe(true);
+    });
+
+    it("filter bar is hidden by default", () => {
+      wrapper = createWrapper();
+      const layout = wrapper.findComponent({ name: "ControlsPageLayout" });
+      expect(layout.props("showFilterBar")).toBe(false);
+    });
+
+    it("toggles filter bar visibility when command bar emits toggle-filter-bar", async () => {
+      wrapper = createWrapper();
+      const commandBar = wrapper.findComponent({ name: "ControlsCommandBar" });
+      commandBar.vm.$emit("toggle-filter-bar");
+      await wrapper.vm.$nextTick();
+      const layout = wrapper.findComponent({ name: "ControlsPageLayout" });
+      expect(layout.props("showFilterBar")).toBe(true);
+    });
+
+    it("persists filter bar visibility to localStorage", async () => {
+      wrapper = createWrapper();
+      const commandBar = wrapper.findComponent({ name: "ControlsCommandBar" });
+      commandBar.vm.$emit("toggle-filter-bar");
+      await wrapper.vm.$nextTick();
+      expect(localStorage.getItem("filterBarVisible-41")).toBe("true");
+    });
+
+    it("restores filter bar visibility from localStorage", () => {
+      localStorage.setItem("filterBarVisible-41", "true");
+      wrapper = createWrapper();
+      const layout = wrapper.findComponent({ name: "ControlsPageLayout" });
+      expect(layout.props("showFilterBar")).toBe(true);
+    });
+
+    it("has openCommentsPanel method for command bar event forwarding", () => {
+      wrapper = createWrapper();
+      expect(typeof wrapper.vm.openCommentsPanel).toBe("function");
+    });
+
+    it("clearAllFilters resets both filter bar and nav filters", () => {
+      wrapper = createWrapper();
+      expect(typeof wrapper.vm.clearAllFilters).toBe("function");
     });
   });
 
@@ -387,18 +520,30 @@ describe("ProjectComponent", () => {
       expect(wrapper.vm.showExportModal).toBe(false);
     });
 
-    it("executeExport hits the project export route with the component_id", () => {
+    it("executeExport calls exportProjectData with project id, type, and options", async () => {
+      const { exportProjectData } = await import("@/api/projectsApi");
+      // window.open is the real side effect (browser performs the download).
+      // Spy + assert so jsdom never receives the un-implemented call (zero-noise).
+      const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+
       wrapper = createWrapper();
-      axios.get.mockClear();
       wrapper.vm.executeExport({
         type: "csv",
         mode: "working_copy",
         componentIds: [41],
       });
-      expect(axios.get).toHaveBeenCalledTimes(1);
-      const calledUrl = axios.get.mock.calls[0][0];
-      expect(calledUrl).toContain("/projects/1/export/csv?component_ids=41");
-      expect(calledUrl).toContain("mode=working_copy");
+
+      expect(exportProjectData).toHaveBeenCalledWith(1, "csv", {
+        componentIds: [41],
+        mode: "working_copy",
+        includeSrg: undefined,
+        includeMemberships: undefined,
+        excludeSatisfiedBy: undefined,
+      });
+
+      await flushPromises(wrapper);
+      expect(openSpy).toHaveBeenCalledWith("/projects/1/export/csv?component_ids=41");
+      openSpy.mockRestore();
     });
 
     it("passes the available Working Copy / Vendor Submission / Publish Draft / Backup modes to ExportModal", () => {
@@ -418,6 +563,267 @@ describe("ProjectComponent", () => {
       expect(modal.props("hideComponentSelection")).toBe(true);
       expect(modal.props("components").length).toBe(1);
       expect(modal.props("components")[0].id).toBe(41);
+    });
+  });
+
+  describe("permissions via provide", () => {
+    it("reads effective_permissions from initialComponentState", () => {
+      wrapper = createWrapper();
+      expect(wrapper.vm.effective_permissions).toBe("admin");
+    });
+
+    it("derives viewer permissions from initialComponentState", () => {
+      wrapper = createWrapper({
+        initialComponentState: {
+          ...defaultProps.initialComponentState,
+          effective_permissions: "viewer",
+        },
+      });
+      expect(wrapper.vm.effective_permissions).toBe("viewer");
+    });
+
+    it("defaults to null when initialComponentState has no permissions", () => {
+      const stateWithout = { ...defaultProps.initialComponentState };
+      delete stateWithout.effective_permissions;
+      // REQUIREMENT: null permissions is the designed non-member contract —
+      // every child prop in the tree must accept it without Vue warnings.
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      wrapper = createWrapper({ initialComponentState: stateWithout });
+      expect(wrapper.vm.effective_permissions).toBeNull();
+      const propWarnings = errorSpy.mock.calls.filter((call) =>
+        String(call[0]).includes('type check failed for prop "effectivePermissions"'),
+      );
+      errorSpy.mockRestore();
+      expect(propWarnings).toEqual([]);
+    });
+  });
+
+  // ── composable contracts ────────────────────────────────────────────
+  // REQUIREMENTS: rule ordering flows through useSortRules, the release
+  // confirmation through useConfirmRelease (declarative modal, error keeps
+  // dialog open), and the reply composer through useReplyComposer with the
+  // onOpen/afterPosted bridge. ProjectComponent stays the PROVIDER for
+  // effectivePermissions (no self-inject).
+
+  describe("composable contracts", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("wires useSortRules — rules render sorted by rule_id", async () => {
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+      expect(useSortRules).toHaveBeenCalled();
+      expect(wrapper.vm.rules.map((r) => r.rule_id)).toEqual(["001", "002"]);
+    });
+
+    it("requestRelease opens the declarative dialog for a releasable component", async () => {
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+      expect(useConfirmRelease).toHaveBeenCalled();
+      expect(wrapper.vm.showModal).toBe(false);
+      wrapper.vm.requestRelease(wrapper.vm.component);
+      expect(wrapper.vm.showModal).toBe(true);
+    });
+
+    it("requestRelease refuses to open for a non-releasable component (mixin guard parity)", async () => {
+      wrapper = createWrapper({
+        initialComponentState: { ...defaultProps.initialComponentState, releasable: false },
+      });
+      await flushPromises(wrapper);
+      wrapper.vm.requestRelease(wrapper.vm.component);
+      expect(wrapper.vm.showModal).toBe(false);
+    });
+
+    it("onConfirmRelease patches released:true and emits projectUpdated on success", async () => {
+      patchComponent.mockResolvedValueOnce({ data: { toast: { message: ["Released"] } } });
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+      wrapper.vm.requestRelease(wrapper.vm.component);
+      await wrapper.vm.onConfirmRelease({ preventDefault: () => {} });
+      expect(patchComponent).toHaveBeenCalledWith(41, { released: true });
+      expect(wrapper.emitted("projectUpdated")).toBeTruthy();
+      expect(wrapper.vm.showModal).toBe(false);
+    });
+
+    it("wires useReplyComposer — reply opens composer state and shows the modal via the bridge", async () => {
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+      expect(useReplyComposer).toHaveBeenCalled();
+
+      const showSpy = vi.spyOn(wrapper.vm.$bvModal, "show").mockImplementation(() => {});
+      wrapper.vm.onOpenReplyComposer(99);
+      expect(wrapper.vm.composerState.mode).toBe("reply");
+      expect(wrapper.vm.composerState.reviewId).toBe(99);
+      await wrapper.vm.$nextTick();
+      expect(showSpy).toHaveBeenCalledWith("comment-composer-modal");
+    });
+
+    it("afterPosted bridge refreshes the posted rule via getRule", async () => {
+      getRule.mockResolvedValueOnce({ data: { ...mockRules[0], title: "updated" } });
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+
+      wrapper.vm.selectRule(1);
+      wrapper.vm.onOpenReplyComposer(99);
+      wrapper.vm.onComposerPosted();
+      await flushPromises(wrapper);
+
+      expect(getRule).toHaveBeenCalledWith(1);
+      expect(wrapper.vm.composerActive).toBe(false);
+    });
+
+    // The collection no longer carries a requirement's audit trail, so selecting
+    // one fetches it. That fetch must never be able to damage the sidebar: if the
+    // response is not a requirement, the row already in hand is kept.
+    it("keeps the existing row when a refresh returns something that is not a requirement", async () => {
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+      const before = wrapper.vm.localRules.map((rule) => rule.rule_id);
+
+      getRule.mockResolvedValueOnce({ data: {} });
+      wrapper.vm.refreshRule(1);
+      await flushPromises(wrapper);
+
+      expect(wrapper.vm.localRules.map((rule) => rule.rule_id)).toEqual(before);
+    });
+
+    it("replaces the row when a refresh returns the requirement", async () => {
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+
+      getRule.mockResolvedValueOnce({ data: { ...mockRules[0], title: "hydrated" } });
+      wrapper.vm.refreshRule(1);
+      await flushPromises(wrapper);
+
+      expect(wrapper.vm.localRules.find((rule) => rule.id === 1).title).toBe("hydrated");
+    });
+  });
+
+  // ==========================================================================
+  // Relocation surfaces on the VIEW page (SRG kind)
+  //
+  // REQUIREMENTS: the read-only view page shows the same relocation STATE
+  // the editor shows — row badges, the backlog panel (read-only: actions
+  // disabled with editor-pointing tooltips), and the command-bar opener
+  // with its count badge. Authoring stays in the editor; the view page
+  // never mutates.
+  // ==========================================================================
+  describe("relocation surfaces (SRG kind, view page)", () => {
+    const srgState = { ...defaultProps.initialComponentState, document_type: "srg" };
+    const MARKER = {
+      id: 7,
+      source_rule_id: 1,
+      component_id: 41,
+      target_technology_token: "TEST",
+      source_displayed_name: "TEST-001",
+      component_name: "Test Component",
+      declined_at: null,
+    };
+
+    beforeEach(() => vi.clearAllMocks());
+
+    it("fetches relocation markers for an srg component", async () => {
+      wrapper = createWrapper({ initialComponentState: srgState });
+      await flushPromises(wrapper);
+      expect(getRelocations).toHaveBeenCalled();
+    });
+
+    it("fetches the destination vocabulary and feeds named options to the backlog filter", async () => {
+      getRelocationDestinations.mockResolvedValueOnce({
+        data: [{ token: "RCVA", name: "Walkthrough receiving SRG", released: false }],
+      });
+      wrapper = createWrapper({ initialComponentState: srgState });
+      await flushPromises(wrapper);
+
+      expect(getRelocationDestinations).toHaveBeenCalled();
+      expect(
+        wrapper.findComponent({ name: "RelocationBacklogPanel" }).props("destinationOptions"),
+      ).toEqual([{ value: "RCVA", text: "Walkthrough receiving SRG" }]);
+    });
+
+    it("does NOT fetch relocation markers for stig-kind", async () => {
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+      expect(getRelocations).not.toHaveBeenCalled();
+    });
+
+    it("feeds the badge map to RuleList so relocation badges render on the view page", async () => {
+      getRelocations.mockResolvedValueOnce({ data: [MARKER] });
+      wrapper = createWrapper({ initialComponentState: srgState });
+      await flushPromises(wrapper);
+      expect(wrapper.findComponent({ name: "RuleList" }).props("pendingRelocations")).toEqual({
+        1: MARKER,
+      });
+    });
+
+    it("passes the open-proposal count to the command bar", async () => {
+      getRelocations.mockResolvedValueOnce({ data: [MARKER] });
+      wrapper = createWrapper({ initialComponentState: srgState });
+      await flushPromises(wrapper);
+      expect(wrapper.findComponent({ name: "ControlsCommandBar" }).props("relocationCount")).toBe(
+        1,
+      );
+    });
+
+    it("mounts the backlog panel read-only — viewOnlyPage with real role and released state", async () => {
+      getRelocations.mockResolvedValueOnce({ data: [MARKER] });
+      wrapper = createWrapper({ initialComponentState: srgState });
+      await flushPromises(wrapper);
+      const panel = wrapper.findComponent({ name: "RelocationBacklogPanel" });
+      expect(panel.exists()).toBe(true);
+      expect(panel.props("viewOnlyPage")).toBe(true);
+      expect(panel.props("canAuthor")).toBe(true);
+      expect(panel.props("componentReleased")).toBe(false);
+    });
+
+    it("derives canAuthor=false for a viewer session", async () => {
+      wrapper = createWrapper({
+        initialComponentState: { ...srgState, effective_permissions: "viewer" },
+      });
+      await flushPromises(wrapper);
+      expect(wrapper.findComponent({ name: "RelocationBacklogPanel" }).props("canAuthor")).toBe(
+        false,
+      );
+    });
+
+    it("does NOT mount the backlog panel for stig-kind", async () => {
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+      expect(wrapper.findComponent({ name: "RelocationBacklogPanel" }).exists()).toBe(false);
+    });
+
+    it("threads viewOnlyPage and the selected rule's marker into RuleEditor", async () => {
+      getRelocations.mockResolvedValueOnce({ data: [MARKER] });
+      wrapper = createWrapper({ initialComponentState: srgState });
+      await flushPromises(wrapper);
+      wrapper.vm.selectRule(1);
+      await wrapper.vm.$nextTick();
+      const editor = wrapper.findComponent({ name: "RuleEditor" });
+      expect(editor.props("viewOnlyPage")).toBe(true);
+      expect(editor.props("pendingRelocation")).toEqual(MARKER);
+    });
+  });
+
+  describe("sidebar comments-modal composer wiring", () => {
+    it("add-comment opens the section composer for the EMITTED rule, not the selected rule", async () => {
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+      const sidebarRule = { id: 42, rule_id: "000042", satisfied_by: [] };
+      wrapper.vm.onSidebarAddComment(sidebarRule);
+      expect(wrapper.vm.composerProps.ruleId).toBe(42);
+      expect(wrapper.vm.composerProps.ruleDisplayedName).toBe("TEST-000042");
+      expect(wrapper.vm.composerProps.initialSection).toBe(null);
+      expect(wrapper.vm.composerProps.replyToReviewId).toBe(null);
+    });
+
+    it("reply-comment opens the reply composer with the comment row's identity", async () => {
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+      const row = { id: 77, rule_id: 42, component_id: 5, rule_displayed_name: "TEST-000042" };
+      wrapper.vm.onSidebarReplyComment(row);
+      expect(wrapper.vm.composerProps.replyToReviewId).toBe(77);
+      expect(wrapper.vm.composerProps.ruleId).toBe(42);
+      expect(wrapper.vm.composerProps.componentId).toBe(5);
+      expect(wrapper.vm.composerProps.ruleDisplayedName).toBe("TEST-000042");
     });
   });
 });

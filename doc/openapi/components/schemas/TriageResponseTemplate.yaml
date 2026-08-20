@@ -1,0 +1,30 @@
+description: A reusable response template for triage decisions, scoped to a project.
+type: object
+required:
+  - id
+  - name
+  - body
+properties:
+  id:
+    type: integer
+    description: Unique template identifier.
+    example: 1
+  name:
+    type: string
+    description: Short name displayed in the template picker dropdown.
+    example: Accept - standard
+  body:
+    type: string
+    description: Markdown response text inserted into the triage response field.
+    example: Concur with the finding as written. No changes needed.
+  created_by_id:
+    type:
+      - integer
+      - "null"
+    description: ID of the user who created this template.
+    example: 42
+  created_at:
+    type: string
+    format: date-time
+    description: When the template was created.
+    example: "2026-06-03T01:00:00Z"

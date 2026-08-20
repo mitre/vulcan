@@ -2,16 +2,36 @@ import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { shallowMount, mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import NewComponentModal from "@/components/components/NewComponentModal.vue";
-import axios from "axios";
+import { detectSrg, createComponentInProject } from "@/api/componentsApi";
 
-// Mock axios (used by fetchData, createComponent, detectSrg)
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
     get: vi.fn(() => Promise.resolve({ data: [] })),
     post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
     defaults: { headers: { common: {} } },
   },
 }));
+
+vi.mock("@/api/componentsApi", () => ({
+  detectSrg: vi.fn(() => Promise.resolve({ data: {} })),
+  createComponentInProject: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+
+vi.mock("@/api/projectsApi", () => ({
+  getSrgs: vi.fn(() => Promise.resolve({ data: [] })),
+  getProjects: vi.fn(() => Promise.resolve({ data: [] })),
+  getProject: vi.fn(() => Promise.resolve({ data: {} })),
+}));
+
+// Spy-wrap (real implementations preserved) so tests can pin that the hidden
+// form token and component display names flow through the composables.
+vi.mock("@/composables/useAuthToken", { spy: true });
+vi.mock("@/composables/useDisplayedComponent", { spy: true });
+import { useAuthToken } from "@/composables/useAuthToken";
+import { useDisplayedComponent } from "@/composables/useDisplayedComponent";
 
 /**
  * NewComponentModal Contract Tests
@@ -38,7 +58,7 @@ describe("NewComponentModal", () => {
 
   const defaultProps = {
     project_id: 1,
-    project: { id: 1, name: "Test Project" },
+    project: { id: 1, name: "Test Project", components: [], users: [] },
   };
 
   const createWrapper = (props = {}) => {
@@ -233,24 +253,20 @@ describe("NewComponentModal", () => {
       const detectResponse = {
         data: { id: 42, srg_id: "SRG-APP-000001", title: "App SRG", version: "V3R3" },
       };
-      axios.post.mockResolvedValueOnce(detectResponse);
+      detectSrg.mockResolvedValueOnce(detectResponse);
 
       wrapper = createMountedWrapper();
       await wrapper.setData({ file: mockFile });
       await vi.dynamicImportSettled();
 
-      expect(axios.post).toHaveBeenCalledWith(
-        "/components/detect_srg",
-        expect.any(FormData),
-        expect.objectContaining({ headers: { "Content-Type": "multipart/form-data" } }),
-      );
+      expect(detectSrg).toHaveBeenCalledWith(expect.any(FormData));
     });
 
     it("auto-populates SRG when detection succeeds", async () => {
       const detectResponse = {
         data: { id: 42, srg_id: "SRG-APP-000001", title: "App SRG", version: "V3R3" },
       };
-      axios.post.mockResolvedValueOnce(detectResponse);
+      detectSrg.mockResolvedValueOnce(detectResponse);
 
       wrapper = createMountedWrapper();
       await wrapper.setData({ file: mockFile });
@@ -263,7 +279,7 @@ describe("NewComponentModal", () => {
     });
 
     it("falls back silently when detection fails", async () => {
-      axios.post.mockRejectedValueOnce(new Error("422"));
+      detectSrg.mockRejectedValueOnce(new Error("422"));
 
       wrapper = createMountedWrapper();
       await wrapper.setData({ file: mockFile });
@@ -276,7 +292,7 @@ describe("NewComponentModal", () => {
 
     it("sets detecting=true while request is in flight", async () => {
       let resolveDetect;
-      axios.post.mockReturnValueOnce(
+      detectSrg.mockReturnValueOnce(
         new Promise((resolve) => {
           resolveDetect = resolve;
         }),
@@ -305,15 +321,11 @@ describe("NewComponentModal", () => {
       await new Promise((r) => setTimeout(r, 10));
 
       // Only the fetchData calls — no detect_srg POST
-      expect(axios.post).not.toHaveBeenCalledWith(
-        "/components/detect_srg",
-        expect.anything(),
-        expect.anything(),
-      );
+      expect(detectSrg).not.toHaveBeenCalled();
     });
 
     it("resets srgAutoDetected when file is cleared", async () => {
-      axios.post.mockResolvedValueOnce({
+      detectSrg.mockResolvedValueOnce({
         data: { id: 42, title: "SRG", version: "V1R1" },
       });
 
@@ -325,6 +337,58 @@ describe("NewComponentModal", () => {
       // Clear the file
       await wrapper.setData({ file: null });
       expect(wrapper.vm.srgAutoDetected).toBe(false);
+    });
+  });
+
+  // ==========================================
+  // HIDDEN AUTHENTICITY TOKEN (useAuthToken) +
+  // DISPLAY NAMES (useDisplayedComponent)
+  // REQUIREMENT: the in-modal form carries the CSRF token as a hidden
+  // input, sourced from the useAuthToken composable (single source of
+  // truth). Copy-component options get "Name (Version X, Release Y)"
+  // display names via useDisplayedComponent — which data() consumes,
+  // so the setup-returned method must exist before data initializes.
+  // ==========================================
+  describe("composable contracts", () => {
+    const ModalStub = { template: "<div><slot></slot></div>" };
+
+    const createMountedWrapper = (props = {}) => {
+      return mount(NewComponentModal, {
+        localVue,
+        propsData: { ...defaultProps, ...props },
+        stubs: { "b-modal": ModalStub, VueMultiselect: true },
+      });
+    };
+
+    it("renders the hidden authenticity_token input with the CSRF meta value", () => {
+      wrapper = createMountedWrapper();
+      const input = wrapper.find('input[name="authenticity_token"]');
+      expect(input.exists()).toBe(true);
+      // setup.js sets the csrf-token meta to "test-csrf-token"
+      expect(input.element.value).toBe("test-csrf-token");
+    });
+
+    it("sources the token from the useAuthToken composable", () => {
+      useAuthToken.mockReturnValueOnce({ authenticityToken: "composable-sentinel-token" });
+      wrapper = createMountedWrapper();
+      expect(useAuthToken).toHaveBeenCalled();
+      const input = wrapper.find('input[name="authenticity_token"]');
+      expect(input.element.value).toBe("composable-sentinel-token");
+    });
+
+    it("builds copy-component display names via useDisplayedComponent during data()", () => {
+      wrapper = createMountedWrapper({
+        copy_component: true,
+        project: {
+          id: 1,
+          name: "Test Project",
+          components: [{ id: 7, name: "Comp", version: "1", release: "2" }],
+          users: [],
+        },
+      });
+      expect(useDisplayedComponent).toHaveBeenCalled();
+      // data() maps project.components through the setup-returned method
+      expect(wrapper.vm.components[0].displayed).toBe("Comp (Version 1, Release 2)");
     });
   });
 
@@ -360,11 +424,10 @@ describe("NewComponentModal", () => {
     });
 
     it("does NOT call preventDefault when validation passes (modal closes naturally)", async () => {
-      wrapper = createWrapper();
+      wrapper = createWrapper({ component_to_duplicate: 1 });
       wrapper.vm.name = "Test Component";
       wrapper.vm.prefix = "TST-01";
       wrapper.vm.security_requirements_guide_id = 1;
-      wrapper.vm.component_to_duplicate = 1;
 
       const mockEvent = { preventDefault: vi.fn() };
       wrapper.vm.createComponent(mockEvent);
@@ -372,6 +435,297 @@ describe("NewComponentModal", () => {
       // preventDefault should NOT be called — modal closes via default @ok
       expect(mockEvent.preventDefault).not.toHaveBeenCalled();
       expect(wrapper.vm.loading).toBe(true);
+    });
+  });
+
+  // ==========================================
+  // DOCUMENT-TYPE PROFILE PICKER (creation-time choice)
+  //
+  // REQUIREMENTS:
+  // 1. Creating a NEW component asks "What are you authoring?" FIRST —
+  //    before any other input. STIG/SRG, exclusive, no default.
+  // 2. The choice only exists where a choice exists: duplicate, copy,
+  //    and spreadsheet-import flows have a determined type (inherited
+  //    or stig) and must NOT render the picker.
+  // 3. The selection gates the downstream steps: form fields stay
+  //    disabled until a profile is chosen.
+  // 4. The create request posts component[document_type] with the
+  //    chosen profile — and only in the picker flow (duplicate/copy
+  //    inherit server-side).
+  // 5. Submitting without a choice keeps the modal open (guard), like
+  //    the existing missing-name/missing-SRG guards.
+  // ==========================================
+  describe("document-type profile picker", () => {
+    const ModalStub = { template: "<div><slot></slot></div>" };
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    const createMountedWrapper = (props = {}) => {
+      return mount(NewComponentModal, {
+        localVue,
+        propsData: { ...defaultProps, ...props },
+        stubs: { "b-modal": ModalStub, VueMultiselect: true },
+      });
+    };
+
+    it("renders the picker BEFORE every other input in create-new mode", () => {
+      wrapper = createMountedWrapper();
+      const html = wrapper.html();
+      const pickerAt = html.indexOf('data-testid="document-type-picker"');
+      expect(pickerAt).toBeGreaterThan(-1);
+      // Profile choice comes before the source picker (creation-walkthrough
+      // order: profile → sources → identity).
+      expect(pickerAt).toBeLessThan(html.indexOf('data-testid="source-srg-picker"'));
+      expect(pickerAt).toBeLessThan(html.indexOf("Component Name"));
+    });
+
+    it("starts with no profile selected", () => {
+      wrapper = createMountedWrapper();
+      expect(wrapper.vm.document_type).toBeNull();
+    });
+
+    it("does NOT render the picker in spreadsheet-import mode", () => {
+      wrapper = createMountedWrapper({ spreadsheet_import: true });
+      expect(wrapper.find('[data-testid="document-type-picker"]').exists()).toBe(false);
+    });
+
+    it("does NOT render the picker in copy-component mode", () => {
+      wrapper = createMountedWrapper({ copy_component: true });
+      expect(wrapper.find('[data-testid="document-type-picker"]').exists()).toBe(false);
+    });
+
+    it("does NOT render the picker in duplicate mode", () => {
+      wrapper = createMountedWrapper({ component_to_duplicate: 7 });
+      expect(wrapper.find('[data-testid="document-type-picker"]').exists()).toBe(false);
+    });
+
+    it("disables downstream fields until a profile is chosen", async () => {
+      wrapper = createMountedWrapper();
+      const nameInput = wrapper.find('input[placeholder="Component Name"]');
+      const titleInput = wrapper.find('input[placeholder="Component Title"]');
+      expect(nameInput.attributes("disabled")).toBeDefined();
+      expect(titleInput.attributes("disabled")).toBeDefined();
+
+      await wrapper.setData({ document_type: "stig" });
+      expect(nameInput.attributes("disabled")).toBeUndefined();
+      expect(titleInput.attributes("disabled")).toBeUndefined();
+    });
+
+    it("does NOT disable fields in duplicate mode (no picker, no gate)", () => {
+      wrapper = createMountedWrapper({ component_to_duplicate: 7 });
+      const nameInput = wrapper.find('input[placeholder="Component Name"]');
+      expect(nameInput.attributes("disabled")).toBeUndefined();
+    });
+
+    it("posts component[document_type]=srg when SRG is chosen", async () => {
+      wrapper = createMountedWrapper();
+      await wrapper.setData({
+        document_type: "srg",
+        name: "Container SRG",
+        prefix: "CTR-00",
+        security_requirements_guide_id: 1,
+      });
+      wrapper.vm.createComponent({ preventDefault: vi.fn() });
+
+      expect(createComponentInProject).toHaveBeenCalled();
+      const formData = createComponentInProject.mock.calls[0][1];
+      expect(formData.get("component[document_type]")).toBe("srg");
+    });
+
+    it("posts component[document_type]=stig when STIG is chosen", async () => {
+      wrapper = createMountedWrapper();
+      await wrapper.setData({
+        document_type: "stig",
+        name: "OpenShift STIG",
+        prefix: "OSHF-00",
+        security_requirements_guide_id: 1,
+      });
+      wrapper.vm.createComponent({ preventDefault: vi.fn() });
+
+      const formData = createComponentInProject.mock.calls[0][1];
+      expect(formData.get("component[document_type]")).toBe("stig");
+    });
+
+    it("does NOT post document_type in duplicate mode (inherited server-side)", async () => {
+      wrapper = createMountedWrapper({ component_to_duplicate: 7 });
+      await wrapper.setData({
+        name: "Dup",
+        prefix: "DUP-00",
+        security_requirements_guide_id: 1,
+      });
+      wrapper.vm.createComponent({ preventDefault: vi.fn() });
+
+      const formData = createComponentInProject.mock.calls[0][1];
+      expect(formData.get("component[document_type]")).toBeNull();
+    });
+
+    it("keeps the modal open when no profile is chosen (guard)", async () => {
+      wrapper = createMountedWrapper();
+      await wrapper.setData({
+        name: "No Choice",
+        prefix: "NOCH-00",
+        security_requirements_guide_id: 1,
+      });
+      const mockEvent = { preventDefault: vi.fn() };
+      wrapper.vm.createComponent(mockEvent);
+
+      expect(mockEvent.preventDefault).toHaveBeenCalled();
+      expect(createComponentInProject).not.toHaveBeenCalled();
+      expect(wrapper.vm.loading).toBe(false);
+    });
+
+    it("resets the profile choice when the modal reopens", async () => {
+      wrapper = createWrapper();
+      await wrapper.setData({ document_type: "srg" });
+      wrapper.vm.$refs.AddComponentModal = { show: vi.fn() };
+      wrapper.vm.showModal();
+      expect(wrapper.vm.document_type).toBeNull();
+    });
+  });
+
+  describe("multi-parent source picker wiring", () => {
+    const ModalStub = { template: "<div><slot></slot></div>" };
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    const createMountedWrapper = (props = {}) => {
+      return mount(NewComponentModal, {
+        localVue,
+        propsData: { ...defaultProps, ...props },
+        stubs: { "b-modal": ModalStub, VueMultiselect: true },
+      });
+    };
+
+    it("renders the source picker and NOT the legacy single-SRG select in create-new mode", () => {
+      wrapper = createMountedWrapper();
+      expect(wrapper.find('[data-testid="source-srg-picker"]').exists()).toBe(true);
+      expect(wrapper.html()).not.toContain("Select a Security Requirements Guide<");
+    });
+
+    it("does NOT render the source picker in spreadsheet, copy, or duplicate modes", () => {
+      [
+        { spreadsheet_import: true },
+        { copy_component: true },
+        { component_to_duplicate: 7 },
+      ].forEach((props) => {
+        const modal = createMountedWrapper(props);
+        expect(modal.find('[data-testid="source-srg-picker"]').exists()).toBe(false);
+        modal.destroy();
+      });
+    });
+
+    it("posts every declared source and the designated primary", async () => {
+      wrapper = createMountedWrapper();
+      await wrapper.setData({
+        document_type: "srg",
+        name: "Dual-home SRG",
+        prefix: "DUAL-00",
+        sourceSelection: { sourceIds: [11, 12], primaryId: 12 },
+      });
+      wrapper.vm.createComponent({ preventDefault: vi.fn() });
+
+      expect(createComponentInProject).toHaveBeenCalled();
+      const formData = createComponentInProject.mock.calls[0][1];
+      expect(formData.getAll("component[declared_source_srg_ids][]")).toEqual(["11", "12"]);
+      expect(formData.get("component[security_requirements_guide_id]")).toBe("12");
+    });
+
+    it("keeps the modal open when no source is selected (SRG guard)", async () => {
+      wrapper = createMountedWrapper();
+      await wrapper.setData({
+        document_type: "srg",
+        name: "No sources",
+        prefix: "NOSR-00",
+      });
+      const mockEvent = { preventDefault: vi.fn() };
+      wrapper.vm.createComponent(mockEvent);
+
+      expect(mockEvent.preventDefault).toHaveBeenCalled();
+      expect(createComponentInProject).not.toHaveBeenCalled();
+    });
+
+    it("resets the source selection when the modal reopens", async () => {
+      wrapper = createMountedWrapper();
+      wrapper.vm.$refs.AddComponentModal.show = vi.fn();
+      await wrapper.setData({ sourceSelection: { sourceIds: [11], primaryId: 11 } });
+
+      wrapper.vm.showModal();
+
+      expect(wrapper.vm.sourceSelection).toEqual({ sourceIds: [], primaryId: null });
+    });
+  });
+
+  // ==========================================
+  // KIND-KEYED PREFIX FIELD COPY
+  //
+  // REQUIREMENTS:
+  // 1. The prefix field's label, helper, and placeholder resolve per the
+  //    chosen document kind — the SRG path never shows "STIG"-worded copy.
+  // 2. The STIG copy is byte-identical to the long-standing wording.
+  // 3. Flows without kind knowledge (duplicate/copy inherit server-side)
+  //    keep today's STIG copy — the deployment default.
+  // ==========================================
+  describe("kind-keyed prefix field copy", () => {
+    const ModalStub = { template: "<div><slot></slot></div>" };
+
+    const createMountedWrapper = (props = {}) => {
+      return mount(NewComponentModal, {
+        localVue,
+        propsData: { ...defaultProps, ...props },
+        stubs: { "b-modal": ModalStub, VueMultiselect: true },
+      });
+    };
+
+    it("shows the SRG prefix copy when SRG is chosen — no STIG-worded strings", async () => {
+      wrapper = createMountedWrapper();
+      await wrapper.setData({ document_type: "srg" });
+      const html = wrapper.html();
+      expect(html).toContain("Prefix");
+      expect(html).toContain(
+        "leading letters are the SRG's abbreviation (e.g. CNTR) — minted into every released requirement identifier",
+      );
+      expect(html).not.toContain("STIG ID Prefix");
+      expect(html).not.toContain("STIG IDs for each control");
+      const prefixInput = wrapper.find('input[placeholder="Example... CNTR-00"]');
+      expect(prefixInput.exists()).toBe(true);
+    });
+
+    it("keeps the STIG copy verbatim when STIG is chosen", async () => {
+      wrapper = createMountedWrapper();
+      await wrapper.setData({ document_type: "stig" });
+      const html = wrapper.html();
+      expect(html).toContain("STIG ID Prefix");
+      expect(html).toContain(
+        "STIG IDs for each control will be automatically generated based on this prefix value",
+      );
+      const prefixInput = wrapper.find('input[placeholder="Example... ABCD-EF, ABCD-00"]');
+      expect(prefixInput.exists()).toBe(true);
+    });
+
+    it("falls back to the STIG copy in duplicate mode (kind inherited server-side)", () => {
+      wrapper = createMountedWrapper({ component_to_duplicate: 7 });
+      const html = wrapper.html();
+      expect(html).toContain("STIG ID Prefix");
+      expect(wrapper.find('input[placeholder="Example... ABCD-EF, ABCD-00"]').exists()).toBe(true);
+    });
+  });
+
+  describe("project_id prop", () => {
+    it("accepts undefined project_id without error", () => {
+      const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+      wrapper = createWrapper({ project_id: undefined });
+      const propWarnings = spy.mock.calls.filter((c) => c[0]?.toString().includes("project_id"));
+      expect(propWarnings).toHaveLength(0);
+      spy.mockRestore();
+    });
+
+    it("defaults selected_project_id to null when project_id not provided", () => {
+      wrapper = createWrapper({ project_id: undefined });
+      expect(wrapper.vm.selected_project_id).toBeNull();
     });
   });
 });

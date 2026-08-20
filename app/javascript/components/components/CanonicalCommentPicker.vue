@@ -2,7 +2,7 @@
   <div>
     <b-form-input
       v-model="query"
-      placeholder="Search by author, rule, or comment text..."
+      :placeholder="msg.dedupSearchPlaceholder"
       debounce="300"
       aria-label="Search canonical candidates"
       size="sm"
@@ -49,31 +49,42 @@
 </template>
 
 <script>
-import axios from "axios";
+import { getComments } from "../../api/componentsApi";
+import { messageLabels } from "../../constants/terminology";
 import SectionLabel from "../shared/SectionLabel.vue";
 
-// Picker for the "duplicate of" target on the triage modal. Scoped to the
-// same component as the comment being marked (server enforces this via
-// duplicate_of_must_be_same_component). Excludes the self row + any row
-// that is itself a duplicate (defense in depth — server's
-// duplicate_of_must_not_be_a_duplicate validator is authoritative).
+// Picker for the "duplicate of" target on the triage modal and the bulk
+// target modal. Scoped to the same component as the comment(s) being marked
+// (server enforces this via duplicate_of_must_be_same_component). Excludes
+// the excluded rows (the self row, or the whole bulk selection — the server
+// rejects a canonical among the selection) + any row that is itself a
+// duplicate (defense in depth — server's duplicate_of_must_not_be_a_duplicate
+// validator is authoritative).
 export default {
   name: "CanonicalCommentPicker",
   components: { SectionLabel },
+  // Component kind from the triage root (TriageSplitView / ComponentComments);
+  // default keeps tests and isolated mounts green.
+  inject: {
+    injectedDocumentType: { default: "stig" },
+  },
   props: {
     componentId: { type: [Number, String], required: true },
-    excludeReviewId: { type: [Number, String], required: true },
+    excludeReviewIds: { type: Array, required: true },
     selectedReviewId: { type: [Number, String], default: null },
   },
   data() {
     return { rows: [], loading: false, query: "" };
   },
   computed: {
+    msg() {
+      return messageLabels(this.injectedDocumentType);
+    },
     filteredRows() {
       const q = (this.query || "").toLowerCase().trim();
-      const exclude = Number(this.excludeReviewId);
+      const exclude = new Set(this.excludeReviewIds.map(Number));
       return this.rows
-        .filter((r) => r.id !== exclude)
+        .filter((r) => !exclude.has(r.id))
         .filter((r) => r.triage_status !== "duplicate")
         .filter((r) => {
           if (!q) return true;
@@ -106,7 +117,7 @@ export default {
       try {
         const params = { triage_status: "all", per_page: 25 };
         if (this.query) params.q = this.query;
-        const { data } = await axios.get(`/components/${this.componentId}/comments`, { params });
+        const { data } = await getComments(this.componentId, params);
         this.rows = data.rows || [];
       } catch (err) {
         // Log so a backend 500 / auth error / network failure is visible

@@ -1,0 +1,6 @@
+- content_for :assets do
+  = javascript_include_tag 'user_tokens'
+
+= render 'users/settings_layout', active: :tokens do
+  #user-tokens-page
+    %usertokens

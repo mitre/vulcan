@@ -1,0 +1,169 @@
+parameters:
+  - $ref: ../components/parameters/MembershipId.yaml
+patch:
+  operationId: patchMembership
+  tags:
+    - Memberships
+  summary: Partial update of membership role
+  description: >-
+    Partial update — send only the fields to change. Changes the role
+    (viewer, author, reviewer, admin) for an existing membership.
+    Requires admin role on the parent project. Cannot demote the last
+    admin on a project.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            membership:
+              $ref: ../components/schemas/MembershipUpdateInput.yaml
+        examples:
+          promote:
+            summary: Promote to reviewer
+            value:
+              membership:
+                role: reviewer
+  responses:
+    '200':
+      description: Membership updated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            promoted:
+              summary: Role changed
+              value:
+                toast:
+                  title: Role updated.
+                  message:
+                    - "Jane Doe is now a reviewer."
+                  variant: success
+    '422':
+      description: Validation failed — e.g. downgrading the project's last admin
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            last_admin:
+              summary: Last project admin cannot be downgraded
+              value:
+                toast:
+                  title: Could not update membership.
+                  message:
+                    - >-
+                      Role cannot be changed — this user is the last admin of
+                      project 'Photon OS 5'. Transfer the admin role to
+                      another member first.
+                  variant: danger
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+put:
+  operationId: updateMembership
+  tags:
+    - Memberships
+  summary: Full replacement of membership role
+  description: >-
+    Full replacement — all fields required. Changes the role
+    (viewer, author, reviewer, admin) for an existing membership.
+    Requires admin role on the parent project. Cannot demote
+    the last admin on a project.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            membership:
+              $ref: ../components/schemas/MembershipUpdateInput.yaml
+        examples:
+          promote:
+            summary: Promote to reviewer
+            value:
+              membership:
+                role: reviewer
+  responses:
+    '200':
+      description: Membership updated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            promoted:
+              summary: Role changed
+              value:
+                toast:
+                  title: Role updated.
+                  message:
+                    - "Jane Doe is now a reviewer."
+                  variant: success
+    '422':
+      description: Validation failed — e.g. downgrading the project's last admin
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            last_admin:
+              summary: Last project admin cannot be downgraded
+              value:
+                toast:
+                  title: Could not update membership.
+                  message:
+                    - >-
+                      Role cannot be changed — this user is the last admin of
+                      project 'Photon OS 5'. Transfer the admin role to
+                      another member first.
+                  variant: danger
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+delete:
+  operationId: deleteMembership
+  tags:
+    - Memberships
+  summary: Remove a user from a project or component
+  description: >-
+    Deletes the membership, revoking the user's access. Requires admin role
+    on the parent project. Removed users lose authority over all project-scoped
+    resources including their own pending comments. The last admin of a
+    project cannot be removed — transfer the admin role first.
+  responses:
+    '200':
+      description: Membership removed
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            removed:
+              summary: User removed from project
+              value:
+                toast:
+                  title: Member removed.
+                  message:
+                    - "Jane Doe removed from project."
+                  variant: success
+    '422':
+      description: Removal blocked — the project's last admin
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            last_admin:
+              summary: Last project admin cannot be removed
+              value:
+                toast:
+                  title: Could not remove membership.
+                  message:
+                    - >-
+                      Cannot remove the last admin of project 'Photon OS 5'.
+                      Transfer the admin role to another member first.
+                  variant: danger
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

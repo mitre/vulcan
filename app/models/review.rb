@@ -4,6 +4,7 @@
 class Review < ApplicationRecord
   include VulcanAuditable
   include ImportedAttribution
+  extend PercentageMath
 
   # see app/models/concerns/
   # imported_attribution.rb for the macro implementation. The three
@@ -13,9 +14,9 @@ class Review < ApplicationRecord
   imported_attribution :commenter,   via: :user, column_prefix: :commenter
 
   # optional so reviews.user_id
-  # can be NULL after step A3's FK on_delete: :nullify removes the User.
+  # can be NULL after the FK's on_delete: :nullify removes the User.
   # Original commenter attribution lives on commenter_imported_email/name
-  # columns; #commenter_display_name (step B1) provides the display fallback.
+  # columns; #commenter_display_name provides the display fallback.
   belongs_to :user, optional: true
   # Polymorphic target: a Review can be on a Rule (existing — rule-scoped
   # comments) or a Component (issue #725 — overall component feedback).
@@ -36,12 +37,24 @@ class Review < ApplicationRecord
     (commentable || rule)&.component
   end
 
+  # The BaseRule-typed target of a review ACTION (lock/unlock/review-request
+  # mechanics). Prefers the polymorphic commentable — it reaches authored
+  # SrgRules, which the Rule-classed `rule` association structurally
+  # cannot. The rule fallback covers legacy rows whose dual-write callback
+  # never fired.
+  def requirement
+    return commentable if commentable_type == 'BaseRule' && commentable.present?
+
+    rule
+  end
+
   belongs_to :triage_set_by, class_name: 'User', optional: true
   belongs_to :adjudicated_by, class_name: 'User', optional: true
   belongs_to :duplicate_of, class_name: 'Review', foreign_key: 'duplicate_of_review_id',
                             optional: true, inverse_of: :duplicates
   has_many :duplicates, class_name: 'Review', foreign_key: 'duplicate_of_review_id',
                         dependent: :nullify, inverse_of: :duplicate_of
+  belongs_to :addressed_by_rule, class_name: 'BaseRule', optional: true
   belongs_to :responding_to, class_name: 'Review', foreign_key: 'responding_to_review_id',
                              optional: true, inverse_of: :responses
   has_many :responses, class_name: 'Review', foreign_key: 'responding_to_review_id',
@@ -50,20 +63,20 @@ class Review < ApplicationRecord
 
   TRIAGE_STATUSES = %w[
     pending concur concur_with_comment non_concur
-    duplicate informational needs_clarification withdrawn
+    duplicate informational needs_clarification withdrawn addressed_by
   ].freeze
 
-  TERMINAL_AUTO_ADJUDICATE_STATUSES = %w[duplicate informational withdrawn].freeze
+  TERMINAL_AUTO_ADJUDICATE_STATUSES = %w[duplicate informational withdrawn addressed_by].freeze
 
   SECTION_KEYS = %w[
     title severity status fixtext check_content vuln_discussion
     disa_metadata vendor_comments artifact_description xccdf_metadata
   ].freeze
 
-  # adjudicated_at is intentionally NOT audited. Auditing a datetime column
-  # trips Rails 7.1's safe-YAML dump for ActiveSupport::TimeWithZone. The
-  # transition timestamp is recoverable from the audit's created_at on the
-  # triage_status record that captured the terminal-state change.
+  # adjudicated_at and triage_set_at are intentionally NOT audited.
+  # Auditing a datetime column trips Rails 7.1's safe-YAML dump for
+  # ActiveSupport::TimeWithZone. Both timestamps are recoverable from
+  # the audit row's created_at on the triage_status change record.
   # Audit-tracked columns. PR-717:
   # - `rule_id` added for Task 26 (admin move-to-rule) so the column-change
   #   diff is captured on the trail, not just the audit_comment text.
@@ -73,15 +86,165 @@ class Review < ApplicationRecord
   # remain queryable through Rule after admin_destroy cascades a subtree
   # (auditable_id points to a deleted Review; associated_id still points
   # to a valid Rule). Matches the pattern on every other audited model.
-  vulcan_audited only: %i[triage_status adjudicated_by_id duplicate_of_review_id comment rule_id section],
+  vulcan_audited only: %i[triage_status adjudicated_by_id duplicate_of_review_id addressed_by_rule_id comment rule_id section],
                  associated_with: :rule
 
-  scope :top_level_comments, -> { where(action: 'comment', responding_to_review_id: nil) }
+  scope :top_level_comments, -> { where(action: ACTION_COMMENT, responding_to_review_id: nil) }
   scope :pending_triage, -> { top_level_comments.where(triage_status: 'pending') }
   scope :awaiting_adjudication, lambda {
     top_level_comments.where(triage_status: %w[concur concur_with_comment non_concur])
                       .where(adjudicated_at: nil)
   }
+
+  # Canonical "top-level comments belonging to these components" scope —
+  # rule-attached (commentable BaseRule via the components' rules) OR
+  # component-attached. Mirrors CommentQueryService#build_base_scope; uses
+  # subqueries (no joins) so it stays .or-composable with other scopes.
+  scope :for_components, lambda { |component_ids|
+    rule_scoped = top_level_comments.where(
+      commentable_type: 'BaseRule',
+      # base_rules-scoped, not Rule: the STI association excludes authored
+      # SrgRules and dashboard aggregates would omit SRG comments.
+      commentable_id: BaseRule.live_for_components(component_ids).select(:id)
+    )
+    component_scoped = top_level_comments.where(commentable_type: 'Component', commentable_id: component_ids)
+    rule_scoped.or(component_scoped)
+  }
+
+  # Triage aggregates for the dashboard endpoints — one GROUP BY + one
+  # COUNT, no Ruby enumeration over reviews. Every TRIAGE_STATUSES key is
+  # present (zero-filled). adjudication_pct is nil when there are no
+  # top-level comments.
+  def self.triage_summary(component_ids)
+    scope = for_components(component_ids)
+    counts = scope.group(:triage_status).count
+    total = counts.values.sum
+    adjudicated = scope.where.not(adjudicated_at: nil).count
+    {
+      by_triage_status: TRIAGE_STATUSES.index_with { |status| counts[status] || 0 },
+      total: total,
+      adjudicated: adjudicated,
+      adjudication_pct: percentage_of(adjudicated, total)
+    }
+  end
+
+  # Rule-scoped reviews whose polymorphic commentable columns were never
+  # populated: legacy `rule_id` is set but `commentable_*` is NULL. Bulk
+  # INSERT paths (Import::JsonArchive::ReviewBuilder, Component#
+  # duplicate_reviews_and_history) bypass sync_commentable_from_rule, so the
+  # read paths (paginated_comments) that filter on commentable would miss them.
+  scope :missing_commentable, -> { where(commentable_id: nil).where.not(rule_id: nil) }
+
+  # Defensive net for the bulk-insert paths above: backfill commentable from
+  # rule_id (mirrors migration 20260508210000). Single UPDATE, idempotent,
+  # callback-free. Chainable onto a relation, e.g.
+  # `Review.where(id: ids).repair_missing_commentable!`.
+  def self.repair_missing_commentable!
+    # rubocop:disable Rails/SkipsModelValidations
+    missing_commentable.update_all("commentable_type = 'BaseRule', commentable_id = rule_id")
+    # rubocop:enable Rails/SkipsModelValidations
+  end
+
+  # The user who filed the latest review request on a requirement row —
+  # the one notification-recipient lookup (mail and Slack). rule_id is
+  # the base_rules primary key, so STIG Rules and authored SrgRules
+  # resolve identically; the row in hand is queried directly, never
+  # re-fetched through a kind subclass.
+  def self.latest_requestor_for(requirement)
+    where(rule_id: requirement.id, action: 'request_review')
+      .order(updated_at: :desc).first&.user
+  end
+
+  # Creates the child response that renders inline in this comment's
+  # thread (triage/adjudicate/bulk responses). commentable, not rule: —
+  # the parent may sit on an authored SrgRule or be component-scoped,
+  # where the Rule-classed association returns nil and the response
+  # would land with no commentable. A response always lives on its
+  # parent's commentable (rule as fallback for legacy rows whose
+  # dual-write never fired).
+  def create_response!(comment:, user:)
+    self.class.create!(action: ACTION_COMMENT, comment: comment, user: user,
+                       commentable: commentable || rule,
+                       responding_to_review_id: id, section: section)
+  end
+
+  # Applies one triage decision (and an optional response, copied per-comment)
+  # to many top-level comments in a single transaction. Each comment gets its
+  # own response Review so threads stay self-contained. The per-row audits
+  # share the request's request_uuid, so the bulk action is recoverable as one
+  # correlated group. Raises if the selection spans more than one component.
+  #
+  # duplicate/addressed_by carry ONE shared target applied to every selected
+  # comment (many comments duplicating one canonical thread, or addressed by
+  # one rule). A canonical target inside the selection is rejected outright —
+  # the pick-the-canonical-from-within flow is merge_comments!, not this one.
+  # Every per-comment validator (same-component target, chained-duplicate
+  # rejection) still runs per row; any failing row rolls back the batch.
+  def self.bulk_triage(reviews:, triage_status:, user:, response_comment: nil,
+                       duplicate_of_review_id: nil, addressed_by_rule_id: nil)
+    reviews = Array(reviews)
+    raise ArgumentError, 'No comments selected.' if reviews.empty?
+    raise ArgumentError, 'Bulk triage cannot span multiple components.' if reviews.map { |r| r.component&.id }.uniq.size > 1
+
+    canonical_selected = triage_status == 'duplicate' && reviews.any? { |r| r.id == duplicate_of_review_id.to_i }
+    raise ArgumentError, 'The canonical target cannot be among the selected comments.' if canonical_selected
+
+    responses = []
+    transaction do
+      reviews.each do |review|
+        review.audit_comment = "Bulk triage: #{triage_status}"
+        review.update!(triage_status: triage_status, triage_set_by_id: user.id, triage_set_at: Time.current,
+                       duplicate_of_review_id: duplicate_of_review_id, addressed_by_rule_id: addressed_by_rule_id)
+
+        next if response_comment.blank?
+
+        responses << review.create_response!(comment: response_comment, user: user)
+      end
+    end
+    { reviews: reviews, response_reviews: responses }
+  end
+
+  # Merges N same-author comments within one component into a designated
+  # survivor: secondaries get triage_status='duplicate' pointing at the
+  # survivor (auto-adjudicated via auto_set_adjudicated_for_terminal_statuses),
+  # the survivor's comment is prepended with a marker naming the originating
+  # rule labels. Per-row audits share the request's request_uuid so the
+  # operation is recoverable as one correlated group.
+  def self.merge_comments!(survivor:, duplicates:, merged_by:)
+    raise ArgumentError, 'merged_by is required.' if merged_by.nil?
+
+    duplicates = Array(duplicates).reject { |r| r.id == survivor.id }
+    raise ArgumentError, 'At least one duplicate required.' if duplicates.empty?
+    raise ArgumentError, 'All comments must be from the same commenter.' if duplicates.any? { |r| r.user_id != survivor.user_id }
+    raise ArgumentError, 'Merge cannot span multiple components.' unless duplicates.all? { |r| r.component&.id == survivor.component&.id }
+
+    transaction do
+      labels = duplicates.map { |r| merge_source_label(r) }.uniq
+      marker = "[Merged: originally posted on #{labels.join(', ')}]"
+      survivor.audit_comment = "Merge survivor (#{duplicates.size} duplicates)"
+      survivor.update!(comment: "#{marker}\n\n#{survivor.comment}")
+
+      duplicates.each do |dup|
+        dup.audit_comment = "Merged into ##{survivor.id}"
+        dup.update!(triage_status: 'duplicate', duplicate_of_review_id: survivor.id,
+                    triage_set_by_id: merged_by.id, triage_set_at: Time.current)
+      end
+    end
+    { survivor: survivor, duplicates: duplicates }
+  end
+
+  # A duplicate's original location for the merge marker — kind- and
+  # scope-aware: requirement rows of either kind label as PREFIX-rule_id;
+  # a component-scoped comment's location is the component itself (bare
+  # prefix). The Rule-STI `rule` association must not be read here — it is
+  # nil for authored SrgRules (kind seam) and for component-scoped rows.
+  def self.merge_source_label(review)
+    requirement = review.requirement
+    return "#{review.component.prefix}-#{requirement.rule_id}" if requirement
+
+    review.component.prefix
+  end
+  private_class_method :merge_source_label
 
   # recursive subtree fetch via
   # Postgres WITH RECURSIVE CTE. Returns root + every descendant via
@@ -134,6 +297,7 @@ class Review < ApplicationRecord
   # Back-compat alias — derived from ACTION_PERMISSIONS so adding a new action
   # is one map entry instead of two.
   VALID_ACTIONS = ACTION_PERMISSIONS.keys.freeze
+  ACTION_COMMENT = 'comment'
 
   validates :comment, :action, presence: true
   # rubocop:disable Rails/I18nLocaleTexts
@@ -146,7 +310,7 @@ class Review < ApplicationRecord
   validates :comment, length: {
     maximum: lambda { |r|
       cap = Settings.input_limits.review_comment
-      r.action == 'comment' ? [cap, 4000].min : cap
+      r.action == ACTION_COMMENT ? [cap, 4000].min : cap
     }
   }
 
@@ -161,16 +325,21 @@ class Review < ApplicationRecord
                       allow_nil: true
   # rubocop:enable Rails/I18nLocaleTexts
   validate :duplicate_status_requires_target
-  # duplicate_of_review_id only makes
-  # sense when triage_status='duplicate'. The existing
-  # duplicate_status_requires_target validator catches duplicate-WITHOUT-
-  # target; this one catches the opposite (target-without-duplicate-status,
-  # e.g. concur + stray duplicate_of_review_id). Without it, a bogus
-  # cross-link silently persists and corrupts the disposition matrix
-  # "Duplicate Of" column.
+  # Retained as documentation + regression guard. clear_stale_foreign_keys
+  # (before_validation) nils these fields before this validator fires, so
+  # it will never produce an error under normal operation. If the callback
+  # is ever removed, this validator catches the gap. The DB CHECK
+  # constraint (chk_review_duplicate_fk_consistency) is the final safety net.
   # rubocop:disable Rails/I18nLocaleTexts -- consistent with neighbor validators on this model
   validates :duplicate_of_review_id, absence: { message: 'must be blank when triage_status is not duplicate' },
                                      unless: -> { triage_status == 'duplicate' }
+  # rubocop:enable Rails/I18nLocaleTexts
+  validate :addressed_by_status_requires_rule
+  # Same layered defense as duplicate_of_review_id above — see
+  # chk_review_addressed_by_fk_consistency DB CHECK constraint.
+  # rubocop:disable Rails/I18nLocaleTexts -- consistent with neighbor validators on this model
+  validates :addressed_by_rule_id, absence: { message: 'must be blank when triage_status is not addressed_by' },
+                                   unless: -> { triage_status == 'addressed_by' }
   # rubocop:enable Rails/I18nLocaleTexts
   validate :no_self_responding_reference
   validate :no_self_duplicate_reference
@@ -179,6 +348,9 @@ class Review < ApplicationRecord
   validate :duplicate_of_must_not_be_a_duplicate
   validate :replies_cannot_have_triage_status, on: %i[create update]
 
+  attr_accessor :save_intent
+
+  before_validation :clear_stale_foreign_keys
   before_save :auto_set_adjudicated_for_terminal_statuses
 
   before_create :take_review_action
@@ -191,6 +363,7 @@ class Review < ApplicationRecord
   # (responding_to_review_id present) and non-comment actions
   # (request_review/approve/etc.) stay NULL — they're not triage candidates.
   before_create :default_triage_status_for_new_top_level_comment
+  before_create :redirect_to_parent_if_satisfied_by
 
   # user-action validators are explicitly
   # scoped to :create + :update so they run on normal saves but NOT in
@@ -242,7 +415,7 @@ class Review < ApplicationRecord
     id user_id rule_id action comment section
     triage_status triage_set_by_id triage_set_at
     adjudicated_at adjudicated_by_id
-    duplicate_of_review_id responding_to_review_id
+    duplicate_of_review_id addressed_by_rule_id responding_to_review_id
     triage_set_by_imported_email triage_set_by_imported_name
     adjudicated_by_imported_email adjudicated_by_imported_name
     commenter_imported_email commenter_imported_name
@@ -256,16 +429,79 @@ class Review < ApplicationRecord
     end
   end
 
+  # Admin action: move this comment to a different rule in the same component.
+  # Records first-move provenance via original_commentable_id, prepends a
+  # "[Moved from …]" marker to the comment, cascades to replies, and attaches
+  # an audit_comment so vulcan_audited's row names the move.
+  def move_to_rule!(target_rule, reason:, moved_by:)
+    raise ArgumentError, 'reason is required' if reason.to_s.strip.blank?
+
+    # requirement, not rule: the Rule-STI association is nil for
+    # authored-SrgRule commentables (kind seam) — both kinds move.
+    source = requirement
+    raise ArgumentError, 'target rule must be in the same component' \
+      unless source && target_rule&.component_id == source.component_id
+
+    transaction do
+      prefix = source.component&.prefix || 'RULE'
+      audit_msg = "Moved to #{prefix}-#{target_rule.rule_id} by #{moved_by&.email || 'unknown'}: #{reason}"
+      apply_move!(target_rule, "[Moved from #{prefix}-#{source.rule_id}: #{reason}] ", audit_msg)
+      cascade_replies_to_rule(target_rule, moved_by)
+    end
+    self
+  end
+
   private
+
+  # Internal: apply a single move to this review. Used by move_to_rule! for
+  # both the parent and its cascaded replies.
+  def apply_move!(target_rule, marker, audit_msg)
+    self.original_commentable_id ||= rule_id
+    self.comment = "#{marker}#{comment}" if marker
+    # rule_id column, not the rule association: the Rule-typed belongs_to
+    # cannot accept an SrgRule target, and the dual-write callback never
+    # overwrites a stale non-blank rule_id (kind seam). The column write
+    # keeps both kinds consistent.
+    self.rule_id = target_rule.id
+    self.commentable = target_rule
+    self.audit_comment = audit_msg
+    save!
+  end
+
+  # Recursively move every descendant reply to the same target rule. Walk
+  # parent-first so responding_to_must_be_same_rule sees the parent already
+  # at the target by the time each child saves.
+  def cascade_replies_to_rule(target_rule, moved_by)
+    responses.find_each do |reply|
+      reply_audit_msg = "Auto-moved with parent review ##{id} by #{moved_by&.email || 'unknown'}"
+      reply.send(:apply_move!, target_rule, nil, reply_audit_msg)
+      reply.send(:cascade_replies_to_rule, target_rule, moved_by)
+    end
+  end
+
+  def redirect_to_parent_if_satisfied_by
+    return unless rule
+    return unless action == ACTION_COMMENT
+
+    parent = rule.satisfied_by.first
+    return unless parent
+
+    prefix = rule.component&.prefix || 'RULE'
+    self.original_commentable_id = rule_id
+    self.comment = "[Re: #{prefix}-#{rule.rule_id}] #{comment}"
+    self.rule = parent
+    self.commentable = parent
+  end
 
   # Dual-write so existing call sites that set only `rule:` keep the
   # polymorphic columns populated. New component-scoped code sets
   # `commentable:` directly.
   def sync_commentable_from_rule
-    return if commentable.present?
-    return if rule.blank?
-
-    self.commentable = rule
+    if commentable.blank? && rule.present?
+      self.commentable = rule
+    elsif commentable_type == 'BaseRule' && commentable_id.present? && rule_id.blank?
+      self.rule_id = commentable_id
+    end
   end
 
   def commentable_must_be_present
@@ -305,9 +541,9 @@ class Review < ApplicationRecord
     perms = project_permissions
     if perms != 'admin' && perms != 'reviewer' && perms != 'author'
       errors.add(:base, 'Only admins, reviewers, and authors can request a review')
-    elsif rule.locked
+    elsif requirement.locked
       errors.add(:base, 'Cannot request a review on a locked control')
-    elsif !rule.review_requestor_id.nil?
+    elsif !requirement.review_requestor_id.nil?
       errors.add(:base, 'Control is already under review')
     end
   end
@@ -317,9 +553,9 @@ class Review < ApplicationRecord
   # - current user is admin
   # - OR current user originally requested the review
   def can_revoke_review_request
-    if rule.review_requestor_id.nil?
+    if requirement.review_requestor_id.nil?
       errors.add(:base, 'Control is not currently under review')
-    elsif !(user.id == rule.review_requestor_id || project_permissions == 'admin')
+    elsif !(user.id == requirement.review_requestor_id || project_permissions == 'admin')
       errors.add(:base, 'Only the requestor or an admin can revoke a review request')
     end
   end
@@ -331,11 +567,11 @@ class Review < ApplicationRecord
   # - control is currently under review
   def can_request_changes
     perms = project_permissions
-    if rule.review_requestor_id.nil?
+    if requirement.review_requestor_id.nil?
       errors.add(:base, 'Control is not currently under review')
     elsif perms != 'admin' && perms != 'reviewer'
       errors.add(:base, 'Only admins and reviewers can request changes')
-    elsif perms == 'reviewer' && user.id == rule.review_requestor_id
+    elsif perms == 'reviewer' && user.id == requirement.review_requestor_id
       errors.add(:base, 'Reviewers cannot review their own review requests')
     end
   end
@@ -347,11 +583,11 @@ class Review < ApplicationRecord
   # - control is currently under review
   def can_approve
     perms = project_permissions
-    if rule.review_requestor_id.nil?
+    if requirement.review_requestor_id.nil?
       errors.add(:base, 'Control is not currently under review')
     elsif perms != 'admin' && perms != 'reviewer'
       errors.add(:base, 'Only admins and reviewers can approve')
-    elsif perms == 'reviewer' && user.id == rule.review_requestor_id
+    elsif perms == 'reviewer' && user.id == requirement.review_requestor_id
       errors.add(:base, 'Reviewers cannot review their own review requests')
     end
   end
@@ -364,9 +600,9 @@ class Review < ApplicationRecord
   def can_lock_control
     if project_permissions != 'admin'
       errors.add(:base, 'Only an admin can lock')
-    elsif !rule.review_requestor_id.nil?
+    elsif !requirement.review_requestor_id.nil?
       errors.add(:base, 'Cannot lock a control that is currently under review')
-    elsif rule.locked
+    elsif requirement.locked
       errors.add(:base, 'Control is already locked')
     end
   end
@@ -378,16 +614,16 @@ class Review < ApplicationRecord
   def can_unlock_control
     if project_permissions != 'admin'
       errors.add(:base, 'Only an admin can unlock')
-    elsif !rule.review_requestor_id.nil?
+    elsif !requirement.review_requestor_id.nil?
       errors.add(:base, 'Cannot unlock a control that is currently under review')
-    elsif !rule.locked
-      errors.add(:base, 'Control is already unlocked') unless rule.locked
+    elsif !requirement.locked
+      errors.add(:base, 'Control is already unlocked')
     end
   end
 
   def default_triage_status_for_new_top_level_comment
     return if triage_status.present?
-    return unless action == 'comment' && responding_to_review_id.nil?
+    return unless action == ACTION_COMMENT && responding_to_review_id.nil?
 
     self.triage_status = 'pending'
   end
@@ -409,16 +645,22 @@ class Review < ApplicationRecord
   end
 
   def set_rule_review_params(requestor_id:, locked:, changes_requested:)
-    rule.review_requestor_id = requestor_id
-    rule.locked = locked
-    rule.changes_requested = changes_requested
-    rule.save!
+    requirement.review_requestor_id = requestor_id
+    requirement.locked = locked
+    requirement.changes_requested = changes_requested
+    requirement.save!
   end
 
   def duplicate_status_requires_target
     return unless triage_status == 'duplicate' && duplicate_of_review_id.blank?
 
     errors.add(:duplicate_of_review_id, 'is required when triage_status is duplicate')
+  end
+
+  def addressed_by_status_requires_rule
+    return unless triage_status == 'addressed_by' && addressed_by_rule_id.blank?
+
+    errors.add(:addressed_by_rule_id, 'is required when triage_status is addressed_by')
   end
 
   def no_self_responding_reference
@@ -451,16 +693,17 @@ class Review < ApplicationRecord
   # A duplicate marker (duplicate_of_review_id) must point to a
   # top-level comment within the SAME COMPONENT. Cross-component or
   # cross-project duplicate references are meaningless to a triager
-  # and risk leaking review IDs across project boundaries.
+  # and risk leaking review IDs across project boundaries. Component
+  # resolution goes through the kind-agnostic #component accessor: the
+  # previous Rule STI lookup returned nil for comments on authored
+  # SrgRules (and the rule_id guard skipped component-level comments),
+  # silently waiving the check for both.
   def duplicate_of_must_be_same_component
     return if duplicate_of_review_id.blank?
     return if duplicate_of_review_id == id # self-ref handled separately
-    return if rule_id.blank?
 
-    self_component_id = Rule.where(id: rule_id).pick(:component_id)
-    target_component_id = Rule.joins(:reviews)
-                              .where(reviews: { id: duplicate_of_review_id })
-                              .pick('base_rules.component_id')
+    self_component_id = component&.id
+    target_component_id = duplicate_of&.component&.id
     return if self_component_id.nil? || target_component_id.nil?
     return if self_component_id == target_component_id
 
@@ -492,7 +735,27 @@ class Review < ApplicationRecord
     errors.add(:triage_status, 'cannot be set on a reply (replies are not adjudicable)')
   end
 
+  # Placed in before_validation (not before_save) so that the absence
+  # validators on lines 243-249 don't reject stale FKs before this
+  # callback can clear them. Moving to before_save would break status
+  # transitions away from duplicate/addressed_by.
+  #
+  # Fires on EVERY save, not just when triage_status changes. This is
+  # intentional: it self-heals stale FK data from prior bugs or raw SQL
+  # on any subsequent save, not just the transition that caused it.
+  #
+  # Silent FK clearing is correct data normalization, not data loss.
+  # The triage_status change is audited via vulcan_audited; the FK
+  # value is recoverable from the audit diff on that transition.
+  # The DB CHECK constraints (chk_review_*_fk_consistency) enforce
+  # the same invariant as a non-bypassable safety net.
+  def clear_stale_foreign_keys
+    self.duplicate_of_review_id = nil unless triage_status == 'duplicate'
+    self.addressed_by_rule_id = nil unless triage_status == 'addressed_by'
+  end
+
   def auto_set_adjudicated_for_terminal_statuses
+    return if save_intent == :reopen
     return unless TERMINAL_AUTO_ADJUDICATE_STATUSES.include?(triage_status)
     return if adjudicated_at.present?
 

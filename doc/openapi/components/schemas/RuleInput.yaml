@@ -1,0 +1,273 @@
+description: >-
+  The full write surface for a requirement — every field the server
+  accepts, shared by the update endpoint and the one-call create body.
+  The endpoint serves both document kinds. Per-kind behavior is noted on
+  the fields that carry it: the status vocabulary is per-kind, and the
+  STIG-only nested attributes (additional_answers_attributes) are
+  dropped server-side when the target is an authored SRG requirement.
+  Nested attributes follow Rails semantics — include id to update an
+  existing record, omit id to create one, send _destroy true to remove
+  (where accepted); at one-call creation ids and _destroy are stripped
+  server-side.
+type: object
+properties:
+  status:
+    type: string
+    description: >-
+      Applicability status. The accepted vocabulary depends on the
+      parent component's document_type — STIG rules accept Not Yet
+      Determined, Applicable - Configurable, Applicable - Inherently
+      Meets, Applicable - Does Not Meet, and Not Applicable; authored
+      SRG requirements accept Not Yet Determined, Applicable, and Not
+      Applicable. A value outside the target's vocabulary returns 422.
+    enum:
+      - Not Yet Determined
+      - Applicable - Configurable
+      - Applicable - Inherently Meets
+      - Applicable - Does Not Meet
+      - Applicable
+      - Not Applicable
+    example: Applicable - Configurable
+  status_justification:
+    type: string
+    description: >-
+      Justification for the status decision. For an authored SRG
+      requirement the server requires it whenever status is Not
+      Applicable (422 otherwise) — the justification records the
+      decision and is excluded from the released catalog copy.
+    example: The platform provides no wireless interfaces to configure.
+  title:
+    type: string
+    description: Title of the security control.
+    example: The container platform must enforce approved authorizations for access.
+  artifact_description:
+    type: string
+    description: Description of artifacts or evidence supporting the rule implementation.
+    example: Screenshot of the container platform access control configuration panel.
+  vendor_comments:
+    type: string
+    description: Vendor-provided comments or implementation notes for this rule.
+    example: This requirement is met by default when using the recommended container runtime configuration.
+  rule_severity:
+    type: string
+    description: >-
+      Severity category (maps to DISA CAT III / CAT II / CAT I). A value
+      outside the accepted list returns 422.
+    enum:
+      - low
+      - medium
+      - high
+    example: medium
+  rule_weight:
+    type: string
+    description: Rule weight for DISA scoring.
+    example: '10.0'
+  version:
+    type: string
+    description: SRG requirement version identifier mapping this rule to its SRG source.
+    example: SRG-OS-000001-GPOS-00001
+  ident:
+    type: string
+    description: CCI identifiers (comma-separated).
+    example: CCI-000015
+  ident_system:
+    type: string
+    description: >-
+      Identifier system URI for the ident value. Server default is
+      http://iase.disa.mil/cci when never set.
+    example: http://cyber.mil/cci
+  fixtext:
+    type: string
+    description: Remediation instructions describing how to fix a non-compliant finding.
+    example: Configure the container platform to enforce approved authorizations for logical access.
+  fix_id:
+    type: string
+    description: Fix identifier.
+    example: F-3716r557030_fix
+  fixtext_fixref:
+    type: string
+    description: Fix reference identifier linking the fixtext to its fix element.
+    example: F-3716r557030_fix
+  audit_comment:
+    type: string
+    description: >-
+      Free-text comment recorded on the audit-trail entry for this
+      change. Not stored on the requirement itself — it annotates the
+      history row that documents who changed what and why.
+    example: Adjusted severity per authorizing official direction.
+  inspec_control_body:
+    type: string
+    description: >-
+      InSpec control Ruby source code. InSpec is a stig-kind surface: the
+      server accepts this field on an authored SRG requirement but no read
+      surface returns it for that kind — sending it there writes data
+      nothing serves back.
+    example: "control 'CNTR-00-000050' do\n  impact 0.5\nend"
+  inspec_control_file:
+    type: string
+    description: >-
+      InSpec control file path. Stig-kind surface — same write/read
+      asymmetry on authored SRG requirements as inspec_control_body.
+    example: controls/CNTR-00-000050.rb
+  inspec_control_body_lang:
+    type: string
+    description: >-
+      Language of the InSpec control body. Server default is ruby.
+      Stig-kind surface — same write/read asymmetry on authored SRG
+      requirements as inspec_control_body.
+    example: ruby
+  inspec_control_file_lang:
+    type: string
+    description: >-
+      Language of the InSpec control file. Server default is ruby.
+      Stig-kind surface — same write/read asymmetry on authored SRG
+      requirements as inspec_control_body.
+    example: ruby
+  checks_attributes:
+    type: array
+    description: >-
+      Check content records (the XCCDF check element). Rails nested
+      attributes — id updates, no id creates, _destroy true removes.
+    items:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Existing check record to update. Omit to create a new one.
+          example: 311
+        system:
+          type: string
+          description: Check system identifier.
+          example: C-Container Platform
+        content_ref_name:
+          type: string
+          description: Name of the referenced check content document.
+          example: M
+        content_ref_href:
+          type: string
+          description: Href of the referenced check content document.
+          example: DPMS_XCCDF_Benchmark_Container_Platform_SRG.xml
+        content:
+          type: string
+          description: The check procedure text.
+          example: Review the container platform configuration to verify approved authorizations are enforced.
+        _destroy:
+          type: boolean
+          description: Send true to delete this check record.
+          example: false
+  rule_descriptions_attributes:
+    type: array
+    description: >-
+      Plain rule description records. Rails nested attributes — id
+      updates, no id creates, _destroy true removes.
+    items:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Existing description record to update. Omit to create a new one.
+          example: 154
+        description:
+          type: string
+          description: The description text.
+          example: Enforcing approved authorizations limits lateral movement inside the platform.
+        _destroy:
+          type: boolean
+          description: Send true to delete this description record.
+          example: false
+  additional_answers_attributes:
+    type: array
+    description: >-
+      Answers to the project's additional questions. STIG rules only —
+      dropped server-side when the target is an authored SRG requirement
+      (on update and at one-call creation alike). One answer per
+      question per rule; records are created or updated, never destroyed
+      through this surface (_destroy is not accepted).
+    items:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Existing answer record to update. Omit to create a new one.
+          example: 87
+        additional_question_id:
+          type: integer
+          description: The additional question this answer belongs to.
+          example: 3
+        answer:
+          type: string
+          description: The answer text.
+          example: Yes — enforced through the platform's admission controller.
+  disa_rule_descriptions_attributes:
+    type: array
+    description: >-
+      DISA rule description records (the vulnerability discussion and
+      DISA metadata block). Rails nested attributes — id updates, no id
+      creates, _destroy true removes.
+    items:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Existing DISA description record to update. Omit to create a new one.
+          example: 209
+        vuln_discussion:
+          type: string
+          description: Vulnerability discussion text.
+          example: Unapproved authorizations allow users to exceed their intended privileges.
+        false_positives:
+          type: string
+          description: Known false-positive conditions for the check.
+          example: None identified.
+        false_negatives:
+          type: string
+          description: Known false-negative conditions for the check.
+          example: None identified.
+        documentable:
+          type: boolean
+          description: Whether a finding may be addressed through documentation.
+          example: false
+        mitigations_available:
+          type: boolean
+          description: Whether mitigations are available for this requirement.
+          example: true
+        mitigations:
+          type: string
+          description: Available mitigation description.
+          example: Network segmentation limits exposure until the control is configured.
+        poam_available:
+          type: boolean
+          description: Whether a plan of action and milestones applies.
+          example: false
+        poam:
+          type: string
+          description: Plan of action and milestones text.
+          example: Remediation scheduled for the next maintenance window.
+        severity_override_guidance:
+          type: string
+          description: Guidance for overriding the assigned severity.
+          example: Severity may be lowered when the platform is not internet-facing.
+        potential_impacts:
+          type: string
+          description: Potential operational impacts of applying the fix.
+          example: Existing sessions may be terminated when authorization enforcement is enabled.
+        third_party_tools:
+          type: string
+          description: Third-party tool considerations.
+          example: None.
+        mitigation_control:
+          type: string
+          description: Mitigation control description.
+          example: Compensating access controls at the ingress proxy.
+        responsibility:
+          type: string
+          description: Responsible party for the requirement.
+          example: System Administrator
+        ia_controls:
+          type: string
+          description: Legacy IA control mapping.
+          example: ECAN-1
+        _destroy:
+          type: boolean
+          description: Send true to delete this DISA description record.
+          example: false

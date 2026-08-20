@@ -1,0 +1,67 @@
+parameters:
+  - name: type
+    in: path
+    required: true
+    description: Export format for the bulk download.
+    schema:
+      type: string
+      enum:
+        - csv
+        - xccdf
+        - inspec
+    example: csv
+get:
+  operationId: bulkExportComponents
+  tags:
+    - Components
+  summary: Bulk export multiple released components
+  description: >-
+    Exports multiple released components as a single download in the specified
+    format. Component IDs are passed as a comma-separated query parameter.
+    Returns a binary file (zip for multiple components). Returns a JSON error
+    toast if the export type is unsupported or no component IDs are provided.
+  parameters:
+    - name: component_ids
+      in: query
+      required: true
+      description: Comma-separated list of released component IDs to export.
+      schema:
+        type: string
+      example: "29,30,31"
+  responses:
+    '200':
+      description: Binary file download
+      content:
+        application/zip:
+          schema:
+            type: string
+            format: binary
+        application/xml:
+          schema:
+            type: string
+            format: binary
+    '400':
+      description: Invalid export type or no components selected
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            bad_type:
+              summary: Unsupported export type
+              value:
+                toast:
+                  title: Export error.
+                  message:
+                    - "Unsupported export type: pdf"
+                  variant: danger
+            no_components:
+              summary: No components selected
+              value:
+                toast:
+                  title: Export error.
+                  message:
+                    - No components selected for export.
+                  variant: danger
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

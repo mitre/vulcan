@@ -1,0 +1,68 @@
+get:
+  operationId: projectStats
+  tags:
+    - Projects
+  summary: Get rule statistics for a project
+  description: >-
+    Returns rule statistics aggregated across every component in the
+    project plus a per-component breakdown, computed from grouped SQL
+    queries. Requires viewer permission on the project.
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: Numeric ID of the project.
+      schema:
+        type: integer
+      example: 7
+  responses:
+    '200':
+      description: Project rule statistics with per-component breakdown
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ProjectStatsResponse.yaml
+          examples:
+            stats:
+              summary: Project with two components
+              value:
+                aggregate:
+                  rules_by_status_by_type:
+                    stig:
+                      not_yet_determined: 51
+                      applicable_configurable: 121
+                      applicable_inherently_meets: 15
+                      applicable_does_not_meet: 8
+                      not_applicable: 10
+                    srg:
+                      not_yet_determined: 2
+                      applicable: 1
+                      not_applicable: 0
+                  rules_by_severity:
+                    high: 21
+                    medium: 176
+                    low: 11
+                  rule_count: 208
+                  completion_pct: 74.5
+                  lock_pct: 12.0
+                components:
+                  - id: 38
+                    name: RHEL 9 Hardened Baseline
+                    prefix: RHEL-09
+                    document_type: stig
+                    rule_count: 203
+                    completion_pct: 75.4
+                    lock_pct: 12.3
+                  - id: 41
+                    name: Photon OS 5 Baseline
+                    prefix: PHTN-50
+                    document_type: srg
+                    rule_count: 5
+                    completion_pct: 40.0
+                    lock_pct: 0.0
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '404':
+      $ref: ../components/responses/NotFound.yaml

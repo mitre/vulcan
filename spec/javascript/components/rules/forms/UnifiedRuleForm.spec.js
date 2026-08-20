@@ -7,11 +7,18 @@
  * 3. Severity override guidance appears dynamically when severity differs from SRG default
  * 4. satisfied_by forces Configurable behavior, disables title+fixtext only
  * 5. Collapsible DISA/Checks sections visible only in advanced mode
- * 6. RuleSecurityRequirementsGuideInformation always rendered
+ * 6. RuleSecurityRequirementsGuideInformation rendered for STIG-kind;
+ *    ABSENT for SRG-kind (authored rows ARE the SRG requirement — the
+ *    backend omits srg_rule/srg_info reference data entirely)
+ * 7. The fields-hidden hint derives from the field config per kind —
+ *    never from a hardcoded status string
  */
 import { describe, it, expect, afterEach } from "vitest";
 import { shallowMount } from "@vue/test-utils";
+import { createPinia, setActivePinia } from "pinia";
 import { localVue } from "@test/testHelper";
+import { createTestRouter } from "@test/support/routerTestHelper";
+import { useRuleSelectionStore } from "@/stores/ruleSelection";
 import UnifiedRuleForm from "@/components/rules/forms/UnifiedRuleForm.vue";
 
 function makeRule(overrides = {}) {
@@ -56,8 +63,11 @@ describe("UnifiedRuleForm", () => {
   ];
 
   const createWrapper = (ruleOverrides = {}, props = {}) => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
     return shallowMount(UnifiedRuleForm, {
       localVue,
+      pinia,
       propsData: {
         rule: makeRule(ruleOverrides),
         statuses: defaultStatuses,
@@ -94,7 +104,8 @@ describe("UnifiedRuleForm", () => {
       expect(fields.displayed).toEqual(
         expect.arrayContaining(["status", "rule_severity", "title", "fixtext", "vendor_comments"]),
       );
-      expect(fields.disabled).toEqual([]);
+      // Only the absorbed IA/CCI reference display is read-only here.
+      expect([...fields.disabled].sort()).toEqual(["cci", "nist_control_family"]);
     });
 
     it("passes correct fields for Not Yet Determined (includes fixtext for context)", () => {
@@ -147,7 +158,6 @@ describe("UnifiedRuleForm", () => {
           "status",
           "rule_severity",
           "status_justification",
-          "artifact_description",
           "vendor_comments",
         ]),
       );
@@ -324,7 +334,7 @@ describe("UnifiedRuleForm", () => {
 
   // ─── satisfied_by behavior (R3) ────────────────────────────
   describe("satisfied_by behavior (R3)", () => {
-    it("uses Configurable fields when satisfied_by is set", () => {
+    it("uses actual status fields when satisfied_by is set (no AC override)", () => {
       wrapper = createWrapper(
         {
           status: "Not Yet Determined",
@@ -334,9 +344,12 @@ describe("UnifiedRuleForm", () => {
       );
       const ruleForm = wrapper.findComponent({ name: "RuleForm" });
       const fields = ruleForm.props("fields");
+      // NYD field set: status, rule_severity, title, fixtext — no vendor_comments
+      // (AC override was removed per DISA V4R3 — backend sets ADNM, not frontend)
       expect(fields.displayed).toEqual(
-        expect.arrayContaining(["status", "rule_severity", "title", "fixtext", "vendor_comments"]),
+        expect.arrayContaining(["status", "rule_severity", "title", "fixtext"]),
       );
+      expect(fields.displayed).not.toContain("vendor_comments");
     });
 
     it("disables title and fixtext when satisfied_by is set", () => {
@@ -523,9 +536,9 @@ describe("UnifiedRuleForm", () => {
       });
       ruleForm = wrapper.findComponent({ name: "RuleForm" });
       const fields = ruleForm.props("fields");
-      // Now uses Configurable displayed fields
-      expect(fields.displayed).toContain("vendor_comments");
-      // But title and fixtext still disabled by satisfied_by
+      // Still NYD field set — no AC override (removed per DISA V4R3)
+      expect(fields.displayed).not.toContain("vendor_comments");
+      // Title and fixtext still disabled by NYD config
       expect(fields.disabled).toContain("title");
       expect(fields.disabled).toContain("fixtext");
     });
@@ -533,14 +546,28 @@ describe("UnifiedRuleForm", () => {
 
   // ─── Status hint ───────────────────────────────────────────
   describe("status hint", () => {
-    it('shows "fields hidden" hint when status is not Configurable', () => {
+    it('shows "fields hidden" alert when status is not Configurable', () => {
       wrapper = createWrapper({ status: "Not Applicable" });
-      expect(wrapper.text()).toContain("Some fields are hidden");
+      const alert = wrapper.find('[data-testid="fields-hidden-alert"]');
+      expect(alert.exists()).toBe(true);
+      expect(alert.attributes("variant")).toBe("info");
     });
 
-    it("does not show hint when status is Configurable", () => {
+    it("does not show alert when status is Configurable", () => {
       wrapper = createWrapper({ status: "Applicable - Configurable" });
-      expect(wrapper.text()).not.toContain("Some fields are hidden");
+      const alert = wrapper.find('[data-testid="fields-hidden-alert"]');
+      expect(alert.exists()).toBe(false);
+    });
+
+    it("renders alert ABOVE the form, not below", () => {
+      wrapper = createWrapper({ status: "Not Applicable" });
+      const children = wrapper.findAll("[data-testid]");
+      const testIds = children.wrappers.map((w) => w.attributes("data-testid"));
+      const alertIdx = testIds.indexOf("fields-hidden-alert");
+      const formIdx = testIds.indexOf("rule-form-wrapper");
+      expect(alertIdx).toBeGreaterThanOrEqual(0);
+      expect(formIdx).toBeGreaterThanOrEqual(0);
+      expect(alertIdx).toBeLessThan(formIdx);
     });
   });
 
@@ -558,12 +585,12 @@ describe("UnifiedRuleForm", () => {
       expect(wrapper.vm.showSectionLocks).toBe(true);
     });
 
-    it("canManageSectionLocks is false when status is Not Yet Determined", () => {
+    it("canManageSectionLocks is true for admin even when status is NYD (prevents circular lock)", () => {
       wrapper = createWrapper(
         { status: "Not Yet Determined", locked: false, review_requestor_id: null },
         { effectivePermissions: "admin" },
       );
-      expect(wrapper.vm.canManageSectionLocks).toBe(false);
+      expect(wrapper.vm.canManageSectionLocks).toBe(true);
     });
 
     it("both showSectionLocks and canManageSectionLocks true for Configurable admin", () => {
@@ -607,7 +634,124 @@ describe("UnifiedRuleForm", () => {
       );
       const ruleForm = wrapper.findComponent({ name: "RuleForm" });
       expect(ruleForm.props("showSectionLocks")).toBe(true);
-      expect(ruleForm.props("canManageSectionLocks")).toBe(false);
+      expect(ruleForm.props("canManageSectionLocks")).toBe(true);
+    });
+  });
+
+  describe("satisfied-by parent navigation", () => {
+    it("selects the parent rule in the ruleSelection store on navigate-to-rule", async () => {
+      const pinia = createPinia();
+      setActivePinia(pinia);
+      const router = createTestRouter([
+        { path: "/", name: "editor-root" },
+        { path: "/rules/:ruleId", name: "rule", props: true },
+      ]);
+      const store = useRuleSelectionStore();
+      store.init(router, 1);
+
+      wrapper = shallowMount(UnifiedRuleForm, {
+        localVue,
+        pinia,
+        router,
+        propsData: {
+          rule: makeRule({ satisfied_by: [{ id: 100, rule_id: "000020" }] }),
+          statuses: defaultStatuses,
+        },
+      });
+
+      const ruleForm = wrapper.findComponent({ name: "RuleForm" });
+      ruleForm.vm.$emit("navigate-to-rule", 100);
+      await wrapper.vm.$nextTick();
+      expect(store.selectedRuleId).toBe(100);
+    });
+  });
+
+  // ─── Document kind — authored SRG rows ─────────────────────
+  //
+  // REQUIREMENTS:
+  // - Authored SRG rows omit Rule-only keys ENTIRELY (no srg_rule
+  //   reference data, no srg_info, no satisfied_by) — the form renders
+  //   them without the SRG-information reference block: the row IS the
+  //   SRG requirement, so absence is the design, not a fallback.
+  // - documentType flows into the field resolver and RuleForm so the
+  //   SRG vocabulary and field config drive the form.
+  // - The fields-hidden hint is config-derived per kind: SRG Applicable
+  //   hides nothing (full working form), SRG Not Applicable hides the
+  //   content fields (justification-only).
+  describe("document kind — authored SRG rows", () => {
+    // Authentic authored-row shape: Rule-only keys OMITTED, not empty.
+    function makeAuthoredRule(overrides = {}) {
+      return {
+        status: "Applicable",
+        rule_severity: "medium",
+        locked: false,
+        review_requestor_id: null,
+        title: "Authored requirement",
+        fixtext: "Authored fix",
+        nist_control_family: "AC-2 (1)",
+        ident: "CCI-000015",
+        derived_from_version: "SRG-OS-000001",
+        disa_rule_descriptions_attributes: [
+          { _destroy: false, vuln_discussion: "Authored discussion" },
+        ],
+        checks_attributes: [{ content: "Authored check", _destroy: false }],
+        ...overrides,
+      };
+    }
+
+    const srgStatuses = ["Not Yet Determined", "Applicable", "Not Applicable"];
+
+    const createSrgWrapper = (ruleOverrides = {}, props = {}) => {
+      const pinia = createPinia();
+      setActivePinia(pinia);
+      return shallowMount(UnifiedRuleForm, {
+        localVue,
+        pinia,
+        propsData: {
+          rule: makeAuthoredRule(ruleOverrides),
+          statuses: srgStatuses,
+          documentType: "srg",
+          ...props,
+        },
+      });
+    };
+
+    it("renders NO RuleSecurityRequirementsGuideInformation for srg-kind — absent, not empty", () => {
+      wrapper = createSrgWrapper();
+      expect(
+        wrapper.findComponent({ name: "RuleSecurityRequirementsGuideInformation" }).exists(),
+      ).toBe(false);
+    });
+
+    it("passes documentType through to RuleForm", () => {
+      wrapper = createSrgWrapper();
+      expect(wrapper.findComponent({ name: "RuleForm" }).props("documentType")).toBe("srg");
+    });
+
+    it("resolves fields from the SRG config: Applicable serves the full editable working form", () => {
+      wrapper = createSrgWrapper();
+      const fields = wrapper.findComponent({ name: "RuleForm" }).props("fields");
+      expect(fields.displayed).toContain("title");
+      expect(fields.displayed).toContain("fixtext");
+      expect(fields.disabled).not.toContain("title");
+      expect(fields.disabled).not.toContain("fixtext");
+      // Inherited identifiers render readonly at author tier
+      expect(fields.disabled).toContain("rule_severity");
+    });
+
+    it("shows NO fields-hidden hint at srg Applicable (nothing is hidden)", () => {
+      wrapper = createSrgWrapper();
+      expect(wrapper.find('[data-testid="fields-hidden-alert"]').exists()).toBe(false);
+    });
+
+    it("shows NO fields-hidden hint at srg Not Yet Determined", () => {
+      wrapper = createSrgWrapper({ status: "Not Yet Determined" });
+      expect(wrapper.find('[data-testid="fields-hidden-alert"]').exists()).toBe(false);
+    });
+
+    it("shows the fields-hidden hint at srg Not Applicable (justification-only form)", () => {
+      wrapper = createSrgWrapper({ status: "Not Applicable" });
+      expect(wrapper.find('[data-testid="fields-hidden-alert"]').exists()).toBe(true);
     });
   });
 });

@@ -164,6 +164,22 @@ jobs:
         if: steps.js-cache.outputs.cache-hit != 'true'
         run: yarn build
 
+      # The docs serving specs read real files from the built documentation
+      # site — a runner without one errors on every docs example, and a suite
+      # that is green only when a stale dist happens to sit on a developer's
+      # disk is not evidence. Same cache pattern as the JS build; the key
+      # covers the documentation sources, the target table, and the OpenAPI
+      # sources the bundled specification is generated from.
+      - name: Cache documentation site build
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        id: docs-cache
+        with:
+          path: docs/.vitepress/dist
+          key: docs-build-${{ hashFiles('docs/**/*.md', 'docs/.vitepress/**', 'docs/package.json', 'docs/yarn.lock', 'doc/openapi/**') }}
+      - name: Build documentation site
+        if: steps.docs-cache.outputs.cache-hit != 'true'
+        run: bundle exec rails docs:build
+
       - name: Setup database
         run: |
           bundle exec rails db:create
@@ -183,6 +199,77 @@ jobs:
           name: coverage-shard-${{ matrix.ci_node_index }}
           path: coverage
           retention-days: 5
+
+  # ─── SEED PIPELINE (standalone — truncation strategy, must not shard) ───
+  seed-pipeline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    services:
+      db:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: vulcan_vue_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_INITDB_ARGS: "--nosync"
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 500ms
+          --health-timeout 3s
+          --health-retries 20
+
+    env:
+      DATABASE_HOST: localhost
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      RAILS_ENV: test
+      RUBY_YJIT_ENABLE: "1"
+      CI: "true"
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 1
+      # TEMPORARY: source-build Ruby because ruby-builder has no prebuilt binary
+      # for the pinned version yet. Revert to ruby/setup-ruby once it does.
+      - uses: ./.github/actions/setup-ruby-source
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'yarn'
+      - run: yarn install --frozen-lockfile
+
+      # rails_helper aborts every spec run unless app/assets/builds has
+      # compiled JS (builds are gitignored) — same cache key as the backend
+      # shards, so this is normally an instant cache hit.
+      - name: Cache JS build
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        id: js-cache
+        with:
+          path: app/assets/builds
+          key: js-build-${{ hashFiles('app/javascript/**', 'yarn.lock', 'esbuild.config.js', 'package.json') }}
+      - name: Build JavaScript assets
+        if: steps.js-cache.outputs.cache-hit != 'true'
+        run: yarn build
+
+      - name: Setup database
+        run: |
+          bundle exec rails db:create
+          bundle exec rails db:schema:load
+
+      # Runs the full seed pipeline into a clean database and verifies seed
+      # truth + idempotency. Deliberately NOT part of the sharded backend
+      # matrix: the spec's truncation strategy corrupts parallel test DBs.
+      - name: Run seed pipeline spec
+        run: bundle exec rspec spec/seeds/seed_pipeline_spec.rb --tag seed_pipeline
 
   docker:
     runs-on: ubuntu-24.04
@@ -204,11 +291,11 @@ jobs:
         run: >-
           docker buildx bake
           --file docker-bake.hcl
-          --set *.cache-from=type=gha
-          --set *.cache-to=type=gha,mode=max
-          --set *.output=type=docker
-          --set *.platform=linux/amd64
-          --set *.tags=${IMAGE_NAME}
+          --set "*.cache-from=type=gha"
+          --set "*.cache-to=type=gha,mode=max"
+          --set "*.output=type=docker"
+          --set "*.platform=linux/amd64"
+          --set "*.tags=${IMAGE_NAME}"
           ci
 
       - name: Save Docker image tarball
@@ -252,7 +339,7 @@ jobs:
             exit 1
           fi
 
-          for attempt in $(seq 1 60); do
+          for _ in $(seq 1 60); do
             status="$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$container_id")"
             if [ "$status" = "healthy" ]; then
               echo "Vulcan is healthy"
@@ -281,7 +368,7 @@ jobs:
 
   # ─── GATE — single required status check for branch protection ───
   ci-gate:
-    needs: [lint, frontend, backend, docker]
+    needs: [lint, frontend, backend, seed-pipeline, docker]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 2

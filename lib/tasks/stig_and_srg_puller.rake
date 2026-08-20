@@ -57,8 +57,8 @@ namespace :stig_and_srg_puller do
   end
 
   task save_data: :process_data do
-    # PR-717 review remediation .vb4 — request_uuid producer side.
-    # Pulling STIGs/SRGs from cyber.mil creates / updates many database
+    # request_uuid producer side:
+    # pulling STIGs/SRGs from cyber.mil creates / updates many database
     # rows in one rake invocation; wrapping the body in
     # VulcanAudit.with_correlation_scope guarantees that any audit row
     # emitted (today: none — Stig/SRG/StigRule/SrgRule are not

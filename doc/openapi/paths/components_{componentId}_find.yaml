@@ -1,0 +1,66 @@
+parameters:
+  - $ref: ../components/parameters/ComponentId.yaml
+post:
+  operationId: findRulesInComponent
+  tags:
+    - Components
+  summary: Search requirements within a component by text
+  description: >-
+    Full-text search across requirement titles, fix text, vendor comments,
+    status justification, artifact description, vulnerability discussion,
+    mitigations, and check content within a single component. The same field
+    list applies to both document kinds; results are shaped by the
+    component's document_type. Returns matching requirements in rule_id
+    order. Used by the in-component search feature.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - find
+          properties:
+            find:
+              type: string
+              description: Case-insensitive search term matched against all rule text fields.
+              example: "container image"
+        examples:
+          search:
+            summary: Search for container image references
+            value:
+              find: "container image"
+  responses:
+    '200':
+      description: >-
+        Matching requirements in rule_id order, shaped by the component's
+        document_type: STIG rule objects for stig components, authored SRG
+        requirement objects for srg components.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              oneOf:
+                - $ref: ../components/schemas/RuleEditorResponse.yaml
+                - $ref: ../components/schemas/AuthoredSrgRuleEditorResponse.yaml
+          examples:
+            results:
+              summary: Two matching rules
+              value:
+                - id: 100
+                  rule_id: "CNTR-00-000050"
+                  title: "Container images must be signed"
+                  status: "Applicable - Configurable"
+                  locked: false
+                  satisfies: []
+                  satisfied_by: []
+                - id: 101
+                  rule_id: "CNTR-00-000051"
+                  title: "Container images must come from approved registries"
+                  status: "Applicable - Configurable"
+                  locked: false
+                  satisfies: []
+                  satisfied_by: []
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

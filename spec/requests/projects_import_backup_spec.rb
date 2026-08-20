@@ -10,12 +10,18 @@ require 'rails_helper'
 IMPORT_ZIP_CONTENT_TYPE = 'application/zip'
 
 RSpec.describe 'Project Import Backup' do
+  # Shared read-only source documents — the component import is the
+  # expensive part. The zips below stay LAZY per example on purpose: the
+  # include_reviews context adds a review to the source before its zip
+  # builds, and per-example review/membership writes roll back, so each
+  # example's archive reflects exactly its own setup.
+  let_it_be(:source_project) { create(:project) }
+  let_it_be(:source_component) { create(:component, project: source_project) }
+
   let(:admin_user) { create(:user) }
   let(:viewer_user) { create(:user) }
   let(:non_member_user) { create(:user) }
   let(:project) { create(:project) }
-  let(:source_project) { create(:project) }
-  let(:source_component) { create(:component, project: source_project) }
 
   let(:backup_zip_data) do
     Export::Base.new(
@@ -49,11 +55,11 @@ RSpec.describe 'Project Import Backup' do
       expect(response).to redirect_to(new_user_session_path)
     end
 
-    it 'rejects non-members' do
+    it 'conceals the project from non-members (hidden → 404, not a redirect)' do
       sign_in non_member_user
       post "/projects/#{project.id}/import_backup",
            params: { file: uploaded_file }
-      expect(response).to have_http_status(:found) # redirected
+      expect(response).to have_http_status(:not_found)
     end
 
     it 'rejects viewers (non-admin members)' do
@@ -82,7 +88,7 @@ RSpec.describe 'Project Import Backup' do
 
       body = response.parsed_body
       expect(body['toast']['title']).to eq('Import error')
-      expect(body['toast']['message']).to eq('No file provided')
+      expect(body['toast']['message']).to eq(['No file provided.'])
     end
   end
 
@@ -97,7 +103,9 @@ RSpec.describe 'Project Import Backup' do
 
       expect(response).to have_http_status(:success)
       body = response.parsed_body
-      expect(body['toast']).to eq('Backup restored successfully.')
+      expect(body['toast']['title']).to eq('Backup restored.')
+      expect(body['toast']['message']).to include(a_string_including('Backup restored'))
+      expect(body['toast']['variant']).to eq('success')
       expect(body['summary']['components_imported']).to eq(1)
       expect(body['summary']['rules_imported']).to eq(source_component.rules.count)
     end
@@ -131,7 +139,9 @@ RSpec.describe 'Project Import Backup' do
            params: { file: uploaded_file, dry_run: 'true' }
 
       body = response.parsed_body
-      expect(body['toast']).to eq('Dry run complete. No records were created.')
+      expect(body['toast']['title']).to eq('Dry run complete.')
+      expect(body['toast']['message']).to include(a_string_including('No records were created'))
+      expect(body['toast']['variant']).to eq('success')
       expect(body['summary']['dry_run']).to be true
     end
   end
@@ -143,7 +153,7 @@ RSpec.describe 'Project Import Backup' do
       sign_in admin_user
       # Add a review to the source component
       rule = source_component.rules.first
-      Review.create!(user: admin_user, rule: rule, action: 'request_review', comment: 'Test')
+      create(:review, user: admin_user, rule: rule, comment: 'Test')
     end
 
     it 'includes reviews by default' do
@@ -225,21 +235,20 @@ RSpec.describe 'Project Import Backup' do
 
       expect(response).to have_http_status(:unprocessable_content)
       body = response.parsed_body
-      expect(body['toast']['title']).to eq('Import failed')
+      expect(body['toast']['title']).to eq('Import failed.')
       expect(body['toast']['variant']).to eq('danger')
     end
 
     it 'returns 422 when component name conflicts' do
       # Create a component with same name as source
-      create(:component, project: project, name: source_component.name,
-                         based_on: source_component.based_on)
+      create(:component, project: project, name: source_component.name)
 
       post "/projects/#{project.id}/import_backup",
            params: { file: uploaded_file }
 
       expect(response).to have_http_status(:unprocessable_content)
       body = response.parsed_body
-      expect(body['toast']['message']).to match(/already exists/)
+      expect(body['toast']['message']).to include(a_string_matching(/already exists/))
     end
   end
 end

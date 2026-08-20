@@ -2,7 +2,7 @@
 
 module Export
   module Modes
-    # VendorSubmission mode: strict DISA-compliant export per Vendor STIG Process Guide V4R1.
+    # VendorSubmission mode: strict DISA-compliant export per Vendor STIG Process Guide V4R3.
     #
     # - Exactly 17 columns (Table 8-1)
     # - STIGID blank (DISA fills during finalization)
@@ -13,7 +13,7 @@ module Export
     # - Status Justification only for AIM, ADNM, NA
     # - NYD rules excluded (not a DISA-recognized status)
     #
-    # See docs/disa-process/field-requirements.md for the full matrix.
+    # See docs/site/disa-process/field-requirements.md for the full matrix.
     class VendorSubmission < BaseMode
       # The 17 DISA columns — no Vendor Comments, no Satisfies, no InSpec.
       VENDOR_SUBMISSION_KEYS = Export::ExportableRule::CSV_KEYS[0..16].freeze
@@ -22,7 +22,7 @@ module Export
       VENDOR_SUBMISSION_HEADERS = ExportConstants::DISA_EXPORT_HEADERS[0..16].freeze
 
       # Fields that are blanked per-status. Keyed by status, value is set of column keys to blank.
-      # Derived directly from docs/disa-process/field-requirements.md requirements matrix.
+      # Derived directly from docs/site/disa-process/field-requirements.md requirements matrix.
       BLANK_FIELDS = {
         'Applicable - Configurable' => %i[stig_id mitigation artifact_description status_justification].to_set,
         'Applicable - Inherently Meets' => %i[stig_id check_content fixtext mitigation].to_set,

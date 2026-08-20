@@ -1,0 +1,126 @@
+description: >-
+  Authentication required (RFC 9457 problem details). Either no API token
+  and no signed-in session, or an Authorization header token that is
+  revoked, expired, or mistyped. The `type` URI names which case applied
+  and `how_to_authenticate` spells out both supported methods.
+content:
+  application/problem+json:
+    schema:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+          description: >-
+            Stable machine identifier for the error class — a URI reference
+            anchoring into the live API docs.
+          example: /docs/api/errors#not_authenticated
+        title:
+          type: string
+          description: Short human summary of the error class.
+          example: Not authenticated
+        status:
+          type: integer
+          description: HTTP status code, repeated in the body.
+          example: 401
+        detail:
+          type: string
+          description: Occurrence-specific human explanation of why.
+          example: >-
+            This request included no API token and no valid signed-in session.
+            If you were signed in, the session may have timed out, been signed
+            out, or ended because this account signed in from another location.
+        how_to_authenticate:
+          type: object
+          additionalProperties: false
+          description: Both supported authentication methods (extension member).
+          properties:
+            session:
+              type: string
+              description: How to authenticate with a browser session.
+              example: >-
+                Sign in through the web UI (/users/sign_in) and retry with the
+                session cookie.
+            token:
+              type: string
+              description: How to authenticate with a personal access token.
+              example: >-
+                Create a personal access token (your profile page, or POST
+                /personal_access_tokens) and send it in the request header:
+                Authorization: Token <your-token>.
+    examples:
+      not_authenticated:
+        summary: No API token and no signed-in session
+        value:
+          type: /docs/api/errors#not_authenticated
+          title: Not authenticated
+          status: 401
+          detail: >-
+            This request included no API token and no valid signed-in session.
+            If you were signed in, the session may have timed out, been signed
+            out, or ended because this account signed in from another location.
+          how_to_authenticate:
+            session: >-
+              Sign in through the web UI (/users/sign_in) and retry with the
+              session cookie.
+            token: >-
+              Create a personal access token (your profile page, or POST
+              /personal_access_tokens) and send it in the request header:
+              Authorization: Token <your-token>.
+      invalid_token:
+        summary: Authorization header token revoked, expired, or mistyped
+        value:
+          type: /docs/api/errors#invalid_token
+          title: Invalid or expired API token
+          status: 401
+          detail: >-
+            The Authorization header carried a token that does not match any
+            active personal access token. It may be revoked, expired, or
+            mistyped.
+          how_to_authenticate:
+            session: >-
+              Sign in through the web UI (/users/sign_in) and retry with the
+              session cookie.
+            token: >-
+              Create a personal access token (your profile page, or POST
+              /personal_access_tokens) and send it in the request header:
+              Authorization: Token <your-token>.
+      session_superseded:
+        summary: Session ended because the account signed in from another location
+        value:
+          type: /docs/api/errors#session_superseded
+          title: Session ended — signed in elsewhere
+          status: 401
+          detail: >-
+            You were signed out because this account signed in from another
+            location. Only one active session per account is allowed at a time.
+          how_to_authenticate:
+            session: >-
+              Sign in through the web UI (/users/sign_in) and retry with the
+              session cookie.
+            token: >-
+              Create a personal access token (your profile page, or POST
+              /personal_access_tokens) and send it in the request header:
+              Authorization: Token <your-token>.
+      session_timed_out:
+        summary: Session expired after inactivity
+        value:
+          type: /docs/api/errors#session_timed_out
+          title: Session timed out
+          status: 401
+          detail: >-
+            Your session timed out after a period of inactivity. Sign in again
+            to continue.
+          how_to_authenticate:
+            session: >-
+              Sign in through the web UI (/users/sign_in) and retry with the
+              session cookie.
+            token: >-
+              Create a personal access token (your profile page, or POST
+              /personal_access_tokens) and send it in the request header:
+              Authorization: Token <your-token>.

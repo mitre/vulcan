@@ -1,0 +1,98 @@
+parameters:
+  - $ref: ../components/parameters/ComponentId.yaml
+patch:
+  operationId: lockSections
+  tags:
+    - Components
+  summary: Lock or unlock sections on every unlocked rule
+  description: >-
+    Locks (or unlocks) the named content sections across all unlocked
+    requirement rows in the component — both document kinds. Section names
+    come from the lockable-section vocabulary (Title, Severity, Status, Fix,
+    Check, ...). Locked sections cannot be edited until unlocked. Requires
+    reviewer role or higher on the component. Returns 422 when any section
+    name is not in the vocabulary.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - sections
+            - locked
+          properties:
+            sections:
+              type: array
+              description: Section names to lock or unlock.
+              items:
+                type: string
+                enum:
+                  - Title
+                  - Severity
+                  - Status
+                  - Fix
+                  - Check
+                  - Vulnerability Discussion
+                  - DISA Metadata
+                  - Vendor Comments
+                  - Artifact Description
+                  - XCCDF Metadata
+              example:
+                - Fix
+                - Check
+            locked:
+              type: boolean
+              description: True locks the named sections; false unlocks them.
+              example: true
+            comment:
+              type:
+                - string
+                - 'null'
+              description: >-
+                Optional audit comment recorded on each changed rule. When
+                blank, a generated comment naming the action and sections is
+                recorded instead.
+              example: Content freeze for the review window.
+        examples:
+          lock_fix_check:
+            summary: Lock the Fix and Check sections
+            value:
+              sections:
+                - Fix
+                - Check
+              locked: true
+              comment: Content freeze for the review window.
+  responses:
+    '200':
+      description: Section lock applied across all unlocked rules
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            locked:
+              summary: Sections locked
+              value:
+                toast:
+                  title: Section lock applied
+                  message:
+                    - "Locked 2 section(s) on 264 rule(s)"
+                  variant: success
+    '422':
+      description: A section name is not in the lockable vocabulary
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            invalid_section:
+              summary: Unknown section name
+              value:
+                toast:
+                  title: Invalid sections
+                  message:
+                    - "Not recognized: fixtext"
+                  variant: danger
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

@@ -3,12 +3,21 @@ import { mount } from "@vue/test-utils";
 import { localVue } from "@test/testHelper";
 import MembershipsTable from "@/components/memberships/MembershipsTable.vue";
 
-vi.mock("axios", () => ({
+vi.mock("@/api/baseApi", () => ({
   default: {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
     put: vi.fn(() => Promise.resolve({ data: { toast: "Updated" } })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
     delete: vi.fn(() => Promise.resolve({ data: { toast: "Removed" } })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
     defaults: { headers: { common: {} } },
   },
+}));
+
+vi.mock("@/api/membershipsApi", () => ({
+  updateMembership: vi.fn(() => Promise.resolve({ data: { toast: "Updated" } })),
+  deleteMembership: vi.fn(() => Promise.resolve({ data: { toast: "Removed" } })),
+  deleteAccessRequest: vi.fn(() => Promise.resolve({ data: { toast: "Resolved" } })),
 }));
 
 /**
@@ -269,13 +278,16 @@ describe("MembershipsTable", () => {
       expect(wrapper.find("#project-members-table").exists()).toBe(true);
     });
 
-    it("shows name and email for each member in the table", () => {
+    it("shows UserBadge with name and email for each member", () => {
       wrapper = createWrapper();
-      const text = wrapper.text();
-      expect(text).toContain("Alice Admin");
-      expect(text).toContain("alice@example.com");
-      expect(text).toContain("Bob Author");
-      expect(text).toContain("bob@example.com");
+      const badges = wrapper.findAllComponents({ name: "UserBadge" });
+      expect(badges.length).toBeGreaterThanOrEqual(3);
+      const props = badges.wrappers.map((b) => ({
+        name: b.props("name"),
+        email: b.props("email"),
+      }));
+      expect(props).toContainEqual({ name: "Alice Admin", email: "alice@example.com" });
+      expect(props).toContainEqual({ name: "Bob Author", email: "bob@example.com" });
     });
 
     it("shows remove button when editable", () => {
@@ -355,16 +367,14 @@ describe("MembershipsTable", () => {
   // AJAX ROLE CHANGE (B4)
   // ==========================================
   describe("AJAX role change", () => {
-    it("sends PUT request with new role", async () => {
-      const axios = (await import("axios")).default;
+    it("calls updateMembership with id and role", async () => {
+      const { updateMembership } = await import("@/api/membershipsApi");
       wrapper = createWrapper({ editable: true });
       const member = { id: 1, role: "reviewer" };
 
       await wrapper.vm.roleChanged({}, member);
 
-      expect(axios.put).toHaveBeenCalledWith("/memberships/1.json", {
-        membership: { role: "reviewer" },
-      });
+      expect(updateMembership).toHaveBeenCalledWith(1, "reviewer");
     });
   });
 
@@ -372,29 +382,28 @@ describe("MembershipsTable", () => {
   // AJAX REMOVE MEMBER (B4)
   // ==========================================
   describe("AJAX remove member", () => {
-    it("sends DELETE request and emits memberRemoved", async () => {
-      const axios = (await import("axios")).default;
-      // Mock confirm to return true
+    it("calls deleteMembership and emits memberRemoved", async () => {
+      const { deleteMembership } = await import("@/api/membershipsApi");
       vi.spyOn(window, "confirm").mockReturnValue(true);
       wrapper = createWrapper({ editable: true });
       const member = { id: 2, name: "Bob", email: "bob@example.com" };
 
       await wrapper.vm.removeMember(member);
 
-      expect(axios.delete).toHaveBeenCalledWith("/memberships/2.json");
+      expect(deleteMembership).toHaveBeenCalledWith(2);
       expect(wrapper.emitted("memberRemoved")).toBeTruthy();
       expect(wrapper.emitted("memberRemoved")[0][0]).toEqual(member);
     });
 
-    it("does not send DELETE when confirm is cancelled", async () => {
-      const axios = (await import("axios")).default;
-      axios.delete.mockClear();
+    it("does not call deleteMembership when confirm is cancelled", async () => {
+      const { deleteMembership } = await import("@/api/membershipsApi");
+      deleteMembership.mockClear();
       vi.spyOn(window, "confirm").mockReturnValue(false);
       wrapper = createWrapper({ editable: true });
 
       await wrapper.vm.removeMember({ id: 2 });
 
-      expect(axios.delete).not.toHaveBeenCalled();
+      expect(deleteMembership).not.toHaveBeenCalled();
     });
 
     it("sets removingId during request", async () => {

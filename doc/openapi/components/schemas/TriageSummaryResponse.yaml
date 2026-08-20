@@ -1,0 +1,80 @@
+description: >-
+  Triage aggregates over top-level comments — rule-attached and
+  component-attached both count. Served for a single component or
+  aggregated across a project's components. adjudication_pct is null when
+  there are no top-level comments.
+type: object
+required:
+  - by_triage_status
+  - total
+  - adjudicated
+  - adjudication_pct
+additionalProperties: false
+properties:
+  by_triage_status:
+    type: object
+    description: Count of top-level comments per triage status (every status key present).
+    required:
+      - pending
+      - concur
+      - concur_with_comment
+      - non_concur
+      - duplicate
+      - informational
+      - needs_clarification
+      - withdrawn
+      - addressed_by
+    additionalProperties: false
+    properties:
+      pending:
+        type: integer
+        description: Comments awaiting triage.
+        example: 3
+      concur:
+        type: integer
+        description: Comments triaged as concur.
+        example: 1
+      concur_with_comment:
+        type: integer
+        description: Comments triaged as concur with comment.
+        example: 0
+      non_concur:
+        type: integer
+        description: Comments triaged as non-concur.
+        example: 0
+      duplicate:
+        type: integer
+        description: Comments marked duplicate of another comment.
+        example: 0
+      informational:
+        type: integer
+        description: Comments triaged as informational.
+        example: 1
+      needs_clarification:
+        type: integer
+        description: Comments needing clarification from the author.
+        example: 0
+      withdrawn:
+        type: integer
+        description: Comments withdrawn by their author.
+        example: 0
+      addressed_by:
+        type: integer
+        description: Comments addressed by another rule.
+        example: 0
+  total:
+    type: integer
+    description: Total top-level comments.
+    example: 5
+  adjudicated:
+    type: integer
+    description: Top-level comments with an adjudication timestamp.
+    example: 1
+  adjudication_pct:
+    type:
+      - number
+      - 'null'
+    description: >-
+      Percentage of top-level comments adjudicated, rounded to one decimal.
+      Null when there are no top-level comments.
+    example: 20.0

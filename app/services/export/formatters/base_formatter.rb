@@ -44,7 +44,10 @@ module Export
       end
 
       # -- abstract interface
-      def generate_batch(component_rule_pairs:)
+      # project: the batch's owning project, supplied by Export::Base even
+      # when it has no components (a component-less backup still carries
+      # project identity). Formatters that emit no project data ignore it.
+      def generate_batch(component_rule_pairs:, project: nil)
         raise NotImplementedError
       end
 

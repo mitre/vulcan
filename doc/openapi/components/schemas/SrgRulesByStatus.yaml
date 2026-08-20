@@ -1,0 +1,23 @@
+description: >-
+  Requirement counts for an SRG-kind component, grouped into the three-value
+  SRG authoring vocabulary. Disjoint from the five-bucket STIG shape — the
+  two never collapse into one list.
+type: object
+required:
+  - not_yet_determined
+  - applicable
+  - not_applicable
+additionalProperties: false
+properties:
+  not_yet_determined:
+    type: integer
+    description: Authored requirements with status Not Yet Determined.
+    example: 12
+  applicable:
+    type: integer
+    description: Authored requirements with status Applicable.
+    example: 180
+  not_applicable:
+    type: integer
+    description: Authored requirements with status Not Applicable.
+    example: 3

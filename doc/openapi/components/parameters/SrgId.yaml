@@ -1,0 +1,7 @@
+name: id
+in: path
+required: true
+description: Numeric ID of the target Security Requirements Guide (SRG).
+schema:
+  type: integer
+example: 1

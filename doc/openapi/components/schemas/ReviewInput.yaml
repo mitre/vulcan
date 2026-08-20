@@ -1,0 +1,39 @@
+description: Input fields for creating a review action (comment, approval, review request, or lock) on a rule.
+type: object
+required:
+  - action
+  - comment
+properties:
+  action:
+    type: string
+    description: >-
+      The review action to perform. Vocabulary and role tiers come from
+      Review::ACTION_PERMISSIONS — comment (viewer+), request_review /
+      revoke_review_request (author+), request_changes / approve
+      (reviewer+), lock_control / unlock_control (admin).
+    enum:
+      - comment
+      - request_review
+      - revoke_review_request
+      - request_changes
+      - approve
+      - lock_control
+      - unlock_control
+    example: comment
+  comment:
+    type: string
+    description: The comment text accompanying this review action.
+    example: The fix text should reference the container runtime configuration file.
+  section:
+    type:
+      - string
+      - 'null'
+    description: >-
+      Rule section this comment applies to (e.g. fixtext, check_content,
+      vuln_discussion). Null for general comments; component-level
+      comments are always stored section-less.
+    example: fixtext
+  responding_to_review_id:
+    type: integer
+    description: ID of the parent review when creating a threaded reply.
+    example: 43

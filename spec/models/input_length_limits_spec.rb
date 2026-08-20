@@ -17,5 +17,7 @@ RSpec.describe 'Input length limits' do
     it { is_expected.to validate_length_of(:prefix).is_at_most(10) }
     it { is_expected.to validate_length_of(:title).is_at_most(500) }
     it { is_expected.to validate_length_of(:description).is_at_most(5000) }
+    it { is_expected.to validate_length_of(:admin_name).is_at_most(255) }
+    it { is_expected.to validate_length_of(:admin_email).is_at_most(255) }
   end
 end

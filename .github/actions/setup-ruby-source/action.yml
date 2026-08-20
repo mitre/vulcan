@@ -35,8 +35,26 @@ runs:
     - name: Install build dependencies
       shell: bash
       run: |
-        sudo apt-get update -qq
-        sudo apt-get install -yqq --no-install-recommends \
+        # A GitHub runner's apt mirror occasionally stalls with no output;
+        # unbounded, that eats the whole job timeout as a silent hang (a
+        # cancelled job, not a failed one). Bound each attempt with `timeout`
+        # and retry; give apt its own retry and connection-timeout so a slow
+        # mirror fails fast. `retry` returns non-zero once attempts are
+        # exhausted, so a genuinely broken mirror still fails the step loudly
+        # under `set -e` rather than silently continuing into the Ruby build.
+        retry() {
+          local attempt
+          for attempt in 1 2 3; do
+            "$@" && return 0
+            echo "attempt ${attempt} failed or stalled; retrying: $*" >&2
+            sleep 5
+          done
+          echo "giving up after 3 attempts: $*" >&2
+          return 1
+        }
+        apt_opts="-o Acquire::Retries=3 -o Acquire::http::Timeout=30"
+        retry timeout 120 sudo apt-get $apt_opts update -qq
+        retry timeout 300 sudo apt-get $apt_opts install -yqq --no-install-recommends \
           autoconf bison build-essential libffi-dev libgmp-dev libpq-dev \
           libreadline-dev libssl-dev libyaml-dev rustc zlib1g-dev
 

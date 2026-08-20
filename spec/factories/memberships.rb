@@ -6,6 +6,10 @@ FactoryBot.define do
     membership factory: :project
     role { 'viewer' }
 
+    trait :viewer do
+      role { 'viewer' }
+    end
+
     trait :admin do
       role { 'admin' }
     end

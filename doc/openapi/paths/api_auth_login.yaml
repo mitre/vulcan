@@ -1,0 +1,102 @@
+post:
+  operationId: postAuthLogin
+  tags:
+    - Auth
+  security: []
+  summary: Authenticate with email and password
+  description: >-
+    Creates a session for local (email/password) authentication. Returns the
+    authenticated user identity on success. Sets a session cookie for subsequent
+    requests. OIDC and LDAP providers use their own OAuth callback flows.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - email
+            - password
+          properties:
+            email:
+              type: string
+              format: email
+              description: User's login email address.
+              example: jane@example.com
+            password:
+              type: string
+              format: password
+              description: User's password.
+              example: "••••••••••••••••"
+        examples:
+          login:
+            summary: Local login
+            value:
+              email: jane@example.com
+              password: "S3cure!#Pass001"
+  responses:
+    '200':
+      description: Authentication successful — session created
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/CurrentUserResponse.yaml
+          examples:
+            success:
+              summary: Successful login
+              value:
+                id: 42
+                name: Jane Doe
+                email: jane@example.com
+                admin: false
+                provider: null
+    '401':
+      description: >-
+        Invalid email or password, or the account is temporarily locked after
+        too many failed attempts (RFC 9457 problem details).
+      content:
+        application/problem+json:
+          schema:
+            type: object
+            additionalProperties: false
+            required:
+              - type
+              - title
+              - status
+              - detail
+            properties:
+              type:
+                type: string
+                description: Stable machine identifier for the error class.
+                example: /docs/api/errors#invalid_credentials
+              title:
+                type: string
+                description: Short human summary of the error class.
+                example: Invalid credentials
+              status:
+                type: integer
+                description: HTTP status code, repeated in the body.
+                example: 401
+              detail:
+                type: string
+                description: Occurrence-specific human explanation.
+                example: The email or password is incorrect.
+          examples:
+            invalid_credentials:
+              summary: Bad credentials
+              value:
+                type: /docs/api/errors#invalid_credentials
+                title: Invalid credentials
+                status: 401
+                detail: The email or password is incorrect.
+            account_locked:
+              summary: Account locked after too many failed attempts
+              value:
+                type: /docs/api/errors#account_locked
+                title: Account locked
+                status: 401
+                detail: >-
+                  This account is temporarily locked due to too many failed
+                  sign-in attempts. Please try again later or reset your password.
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

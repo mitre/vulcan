@@ -5,67 +5,18 @@ require 'inspec/objects'
 # Rules, also known as Controls, are the smallest unit of enforceable configuration found in a
 # Benchmark XCCDF.
 class Rule < BaseRule
-  include PgSearch::Model
-
-  attr_accessor :skip_update_inspec_code
-
-  # pg_search scope for full-text search across searchable columns
-  # Weighted by importance: title (A), fixtext (B), vendor_comments/status_justification (C), artifact_description (D)
-  pg_search_scope :search_content,
-                  against: {
-                    title: 'A',                    # Highest weight
-                    fixtext: 'B',                  # High weight
-                    vendor_comments: 'C',          # Medium weight
-                    status_justification: 'C',
-                    artifact_description: 'D'      # Lower weight
-                  },
-                  associated_against: {
-                    checks: :content,
-                    disa_rule_descriptions: %i[vuln_discussion mitigations]
-                  },
-                  using: {
-                    tsearch: {
-                      prefix: true,           # Enable partial word matching
-                      dictionary: 'english',  # Stemming (finds "systems" when searching "system")
-                      any_word: false         # Require ALL words in multi-word queries
-                    },
-                    trigram: {
-                      threshold: 0.2          # Fuzzy matching (typo tolerance)
-                    }
-                  },
-                  ranked_by: ':tsearch + (0.5 * :trigram)' # Prioritize exact matches, but allow fuzzy
-
-  ##
-  # Phrase search using PostgreSQL's websearch_to_tsquery
-  # Supports Google-like syntax: "exact phrase", -excluded, OR
-  #
-  # @param query [String] the search query with optional quoted phrases
-  # @return [ActiveRecord::Relation] matching rules
-  #
-  scope :search_phrase, lambda { |query|
-    return none if query.blank?
-
-    # Build tsvector from searchable columns
-    # Use table_name (base_rules) instead of hardcoded name due to STI
-    tsvector_sql = <<~SQL.squish
-      setweight(to_tsvector('english', coalesce(#{table_name}.title, '')), 'A') ||
-      setweight(to_tsvector('english', coalesce(#{table_name}.fixtext, '')), 'B') ||
-      setweight(to_tsvector('english', coalesce(#{table_name}.vendor_comments, '')), 'C') ||
-      setweight(to_tsvector('english', coalesce(#{table_name}.status_justification, '')), 'C') ||
-      setweight(to_tsvector('english', coalesce(#{table_name}.artifact_description, '')), 'D')
-    SQL
-
-    where("(#{tsvector_sql}) @@ websearch_to_tsquery('english', ?)", query)
-      .order(Arel.sql("ts_rank((#{tsvector_sql}), websearch_to_tsquery('english', #{connection.quote(query)})) DESC"))
-  }
+  # Full-text search (search_content / search_phrase) lives on BaseRule —
+  # every weighted column is a base_rules column and the associated tables
+  # key on base_rule_id, so both requirement kinds are searchable through
+  # the one scope. Rule inherits it with the STI type condition applied.
 
   amoeba do
-    # Using set review_requestor_id: nil does not work as expected, must use nullify
-    nullify :review_requestor_id
-    set locked: false
-    customize(lambda { |_original, copy|
-      copy.locked_fields = {}
-    })
+    # Fresh authoring state on every clone — unlocked, unclaimed, no
+    # field-level locks. Shared with the non-amoeba copy sites via one
+    # BaseRule primitive (see BaseRule#reset_authored_copy_state). A
+    # customize lambda (not amoeba's `set`/`nullify` directives, which did
+    # not apply here) makes the plain attribute assignments stick.
+    customize(->(_original, copy) { copy.reset_authored_copy_state })
 
     include_association :additional_answers, if: :single_rule_clone?
   end
@@ -79,7 +30,8 @@ class Rule < BaseRule
   belongs_to :component, counter_cache: true
   belongs_to :srg_rule
   belongs_to :review_requestor, class_name: 'User', inverse_of: :reviews, optional: true
-  has_many :reviews, dependent: :destroy
+  # has_many :reviews lives on BaseRule — reviews attach to authored
+  # SrgRules through the same rule_id column.
   has_many :additional_answers, dependent: :destroy
 
   accepts_nested_attributes_for :additional_answers
@@ -95,21 +47,42 @@ class Rule < BaseRule
                           foreign_key: :satisfied_by_rule_id,
                           association_foreign_key: :rule_id
 
-  before_validation :set_rule_id
   before_save :apply_audit_comment, :sort_ident
   after_create :seed_inspec_control_body
-  before_destroy :prevent_destroy_if_under_review_or_locked
   after_destroy :update_component_rules_count
   after_save :update_component_rules_count, :update_inspec_code
 
+  # Lock/review-state invariants (cannot_be_locked_and_under_review,
+  # locked_fields validation, destroy guard) live on BaseRule — shared
+  # lock semantics across Rule and authored SrgRule.
   validates_with RuleSatisfactionValidator
-  validate :cannot_be_locked_and_under_review
   validate :review_fields_cannot_change_with_other_fields, on: :update
 
-  validate :locked_fields_must_be_valid_sections
   validates :rule_id, allow_blank: false, presence: true, uniqueness: { scope: :component_id }
 
   default_scope { where(deleted_at: nil) }
+
+  # Canonical set of authored content columns on a rule. Excludes
+  # identity columns (rule_id, srg_id — used as join keys), lifecycle
+  # columns (locked, locked_fields, deleted_at), and derived columns
+  # (see DERIVED_COLUMNS).
+  #
+  # RuleBuilder::DIRECT_COLUMNS derives from this list, as does the
+  # backup/restore round-trip field set — keeping one canonical set on
+  # the model avoids the silent drift that came from parallel lists.
+  MERGEABLE_FIELDS = %w[
+    status status_justification artifact_description vendor_comments
+    title fixtext fixtext_fixref fix_id
+    rule_severity rule_weight version
+    ident ident_system changes_requested
+    inspec_control_body inspec_control_body_lang inspec_control_file_lang
+    legacy_ids vuln_id
+  ].freeze
+
+  # Columns regenerated by callbacks from other state (see
+  # update_inspec_code on inspec_control_file). Imported from archives
+  # for fidelity but excluded from the authored-content set above.
+  DERIVED_COLUMNS = %w[inspec_control_file].freeze
 
   INSPEC_STUB_BODY = <<~RUBY
     # describe file('/tmp') do
@@ -118,6 +91,13 @@ class Rule < BaseRule
   RUBY
 
   @single_rule_clone = false
+
+  # A STIG requirement DERIVES from a source SRG requirement, so its SRG
+  # identifier is that source's published version — NOT this rule's own
+  # version, which is the STIG-side identifier and is free to differ.
+  def srg_identifier
+    srg_rule&.version
+  end
 
   # If rule clone not coming from a "copy component" action, allow "answers" to be also cloned
   def update_single_rule_clone(rule_clone)
@@ -135,86 +115,47 @@ class Rule < BaseRule
     rule
   end
 
-  # Overrides for satisfied controls
-  def status
-    satisfied_by.size.positive? ? 'Applicable - Configurable' : self[:status]
+  # DISA ADNM nesting automation (V4R3 §4.1.9/§4.1.15).
+  # Called by RuleSatisfactionsController AND rake tasks.
+  def apply_nesting_status!(parent)
+    parent_label = "#{parent.component.prefix}-#{parent.rule_id}"
+    parent_title = parent.title.presence || parent.srg_rule&.title || parent_label
+
+    update!(
+      status: RuleConstants::STATUS_APPLICABLE_DNM,
+      status_justification: "This requirement is addressed by #{parent_label} (#{parent_title}).",
+      audit_comment: "Auto-set ADNM: satisfied by #{parent_label} (was: #{status})"
+    )
+
+    drd = disa_rule_descriptions.first_or_create!
+    drd.update!(
+      mitigations: "This requirement is fully mitigated by #{parent_label}. " \
+                   'With the implementation of this mitigation, the overall risk is fully mitigated.'
+    )
   end
 
-  def status=(value)
-    super unless satisfied_by.size.positive?
+  def revert_nesting_status!
+    original = find_pre_nesting_status
+
+    update!(
+      status: original,
+      status_justification: nil,
+      audit_comment: "Reverted to #{original}: satisfaction removed"
+    )
+
+    disa_rule_descriptions.first&.update!(mitigations: nil)
   end
 
   ##
   # Serialization is handled by RuleBlueprint.
   # See app/blueprints/rule_blueprint.rb for :navigator, :viewer, :editor views.
-
-  ##
-  # Revert a specific field on a rule from an audit
   #
-  # Parameters:
-  #    rule (Rule) - A Rule object to revert a change on
-  #    audit_id (integer) - A specific ID for an audited record
-  #    field (string) - A specific field to revert from the audit record
-  #
-  def self.revert(rule, audit_id, fields, audit_comment)
-    audit = rule.own_and_associated_audits.find(audit_id)
+  # History revert lives on BaseRule — one kind-agnostic path shared with
+  # authored SRG requirements.
 
-    # nil check for audit
-    raise(RuleRevertError, 'Could not locate history for this control.') if audit.nil?
-
-    if audit.action == 'update'
-      record = audit.auditable
-
-      # nil check for record
-      raise(RuleRevertError, 'Could not locate record for this history.') if record.nil?
-
-      fields.each do |field|
-        # The only field we can revert on AdditionalAnswers is answer
-        revert_field = audit.auditable_type.eql?('AdditionalAnswer') ? 'answer' : field
-
-        raise(RuleRevertError, "Field to revert (#{revert_field.humanize}) does not exist in this history.") unless audit.audited_changes.include?(revert_field)
-
-        # The audited change can either be an array `[prev_val, new_val]`
-        # or just the `val`
-        value = if audit.audited_changes[revert_field].is_a?(Array)
-                  audit.audited_changes[revert_field][0]
-                else
-                  audit.audited_changes[revert_field]
-                end
-
-        # Special case for AdditionalAnswer since it stores in the 'answer' field always
-        if audit.auditable_type.eql?('AdditionalAnswer')
-          record.answer = value
-        else
-          record[revert_field] = value
-        end
-      end
-      record.audit_comment = audit_comment if record.changed?
-      record.save
-      return
-    end
-
-    raise(RuleRevertError, 'Cannot revert this history.') unless audit.action == 'destroy'
-
-    auditable_type = case audit.auditable_type
-                     when 'RuleDescription'
-                       RuleDescription
-                     when 'DisaRuleDescription'
-                       DisaRuleDescription
-                     when 'Check'
-                       Check
-                     else
-                       raise(RuleRevertError, 'Cannot revert this history type.')
-                     end
-    begin
-      auditable_type.create!(audit.audited_changes.merge({ rule_id: rule.id, audit_comment: audit_comment }))
-    rescue ActiveRecord::RecordInvalid => e
-      raise(RuleRevertError, "Encountered error while reverting this history. #{e.message}")
-    end
-  end
-
-  # Returns export data as a hash keyed by DISA header name.
-  # Used by export_helper to build rows in header order without fragile positional indices.
+  # Returns export data as a hash keyed by DISA header name, so csv_attributes
+  # and ExportableRule build rows in header order without fragile positional
+  # indices.
   def csv_attributes_hash
     {
       'IA Control' => nist_control_family,
@@ -244,14 +185,14 @@ class Rule < BaseRule
     csv_attributes_hash.values_at(*ExportConstants::DISA_EXPORT_HEADERS)
   end
 
-  def displayed_name
-    "#{component[:prefix]}-#{rule_id}"
-  end
-
+  # Runs inside the parent save's transaction (after_save, not after_commit).
+  # update_column participates in the transaction — rolls back if the
+  # transaction fails. Does NOT update updated_at — inspec_control_file
+  # is a derived column and regeneration should not trigger cache
+  # invalidation or misleading audit signals. Errors from Inspec::Object
+  # propagate as StatementInvalid and roll back the parent save — this is
+  # correct (a rule save that fails InSpec generation should not persist).
   def update_inspec_code
-    return if skip_update_inspec_code
-
-    self.skip_update_inspec_code = true
     desc = disa_rule_descriptions.first
     control = Inspec::Object::Control.new
     control.add_header('# -*- encoding : utf-8 -*-')
@@ -264,9 +205,9 @@ class Rule < BaseRule
     control.impact = RuleConstants::IMPACTS_MAP[rule_severity]
     control.add_tag(Inspec::Object::Tag.new('severity', rule_severity))
     control.add_tag(Inspec::Object::Tag.new('gtitle', version))
-    control.add_tag(Inspec::Object::Tag.new('satisfies', satisfies.includes(:srg_rule).filter_map { |r| r.srg_rule&.version }.uniq.sort)) if satisfies.present?
-    control.add_tag(Inspec::Object::Tag.new('gid', "V-#{component[:prefix]}-#{rule_id}"))
-    control.add_tag(Inspec::Object::Tag.new('rid', "SV-#{component[:prefix]}-#{rule_id}"))
+    control.add_tag(Inspec::Object::Tag.new('satisfies', satisfies.includes(:srg_rule).filter_map(&:srg_identifier).uniq.sort)) if satisfies.present?
+    control.add_tag(Inspec::Object::Tag.new('gid', PublishedIdentifiers.group(component[:prefix], rule_id)))
+    control.add_tag(Inspec::Object::Tag.new('rid', PublishedIdentifiers.rule(component[:prefix], rule_id)))
     control.add_tag(Inspec::Object::Tag.new('stig_id', "#{component[:prefix]}-#{rule_id}"))
     control.add_tag(Inspec::Object::Tag.new('cci', format_inspec_control_cci.uniq.sort)) if ident.present?
     control.add_tag(Inspec::Object::Tag.new('nist', format_inspec_control_nist.uniq.sort))
@@ -277,8 +218,9 @@ class Rule < BaseRule
       end
     end
     control.add_post_body(inspec_control_body) if inspec_control_body.present?
-    self.inspec_control_file = control.to_ruby
-    save
+    # rubocop:disable Rails/SkipsModelValidations -- derived column, bypass callbacks to avoid recursion
+    update_column(:inspec_control_file, control.to_ruby)
+    # rubocop:enable Rails/SkipsModelValidations
   end
 
   def basic_fields
@@ -305,7 +247,7 @@ class Rule < BaseRule
     label = direction == :satisfies ? 'Satisfies' : 'Satisfied By'
     ids = case format
           when :srg
-            relations.filter_map { |r| r.srg_rule&.version }
+            relations.filter_map(&:srg_identifier)
           when :stig
             relations.map { |r| "#{component.prefix}-#{r.rule_id}" }
           else
@@ -349,13 +291,17 @@ class Rule < BaseRule
 
   private
 
-  def locked_fields_must_be_valid_sections
-    return if locked_fields.blank?
+  def find_pre_nesting_status
+    nesting_audit = audits
+                    .where("comment LIKE 'Auto-set ADNM:%'")
+                    .order(created_at: :desc)
+                    .first
 
-    invalid = locked_fields.keys - LOCKABLE_SECTION_NAMES
-    return if invalid.empty?
-
-    errors.add(:locked_fields, "contains invalid section names: #{invalid.join(', ')}")
+    if nesting_audit&.comment&.match(/\(was: (.+)\)/)
+      Regexp.last_match(1)
+    else
+      RuleConstants::STATUS_NYD
+    end
   end
 
   def sort_ident
@@ -379,17 +325,15 @@ class Rule < BaseRule
   end
 
   def export_fixtext
+    return nil if status == RuleConstants::STATUS_APPLICABLE_DNM && satisfied_by.any?
+
     satisfied_by.size.positive? ? satisfied_by.order(:id).first.fixtext : fixtext
   end
 
   def export_checktext
+    return nil if status == RuleConstants::STATUS_APPLICABLE_DNM && satisfied_by.any?
+
     satisfied_by.size.positive? ? satisfied_by.order(:id).first.checks.first&.content : checks.first&.content
-  end
-
-  def cannot_be_locked_and_under_review
-    return unless locked && review_requestor_id.present?
-
-    errors.add(:base, 'Control cannot be under review and locked at the same time.')
   end
 
   ##
@@ -407,36 +351,12 @@ class Rule < BaseRule
     errors.add(:base, 'Cannot update review-related attributes with other non-review-related attributes')
   end
 
-  def set_rule_id
-    self.rule_id = (component.largest_rule_id + 1).to_s.rjust(6, '0') if rule_id.blank?
-  end
-
   def seed_inspec_control_body
     return if inspec_control_body.present?
 
     # rubocop:disable Rails/SkipsModelValidations -- avoid retriggering callbacks on create
     update_column(:inspec_control_body, INSPEC_STUB_BODY)
     # rubocop:enable Rails/SkipsModelValidations
-  end
-
-  ##
-  # Rules should never be deleted if they are under review or locked
-  # This checks *_was to cover the case where an attrubute was changed before attempting to destroy
-  def prevent_destroy_if_under_review_or_locked
-    # Allow deletion if it is due to the parent being deleted
-    return if destroyed_by_association.present?
-
-    # Abort if under review and trying to delete
-    if review_requestor_id_was.present?
-      errors.add(:base, 'Control is under review and cannot be destroyed')
-      throw(:abort)
-    end
-
-    # Abort if locked and trying to delete
-    return unless locked_was
-
-    errors.add(:base, 'Control is locked and cannot be destroyed')
-    throw(:abort)
   end
 
   ##

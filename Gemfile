@@ -8,14 +8,15 @@ ruby '3.4.10'
 gem 'rails', '~> 8.1.0'
 # Use postgresql as the database for Active Record
 gem 'pg', '>= 0.18', '< 2.0'
+# Catch unsafe migrations (table locks, blocking backfills) in dev/CI before
+# they reach a production table. Config in config/initializers/strong_migrations.rb.
+gem 'strong_migrations', '~> 2.8'
 # Use Puma as the app server
 gem 'puma', '~> 8.0'
 # Asset pipeline for JavaScript bundling
 gem 'jsbundling-rails'
 # Asset pipeline for Rails
 gem 'propshaft'
-# Turbolinks makes navigating your web application faster. Read more: https://github.com/turbolinks/turbolinks
-gem 'turbolinks', '~> 5'
 # Build JSON APIs with ease. Read more: https://github.com/rails/jbuilder
 gem 'jbuilder', '~> 2.7'
 # Use HAML instead of ERB
@@ -26,7 +27,7 @@ gem 'devise', '~> 5.0'
 gem 'devise-encryptable'
 # Session limiting (AC-10), session tracking, and server-side session store
 gem 'activerecord-session_store'
-gem 'devise-security', github: 'mitre/devise-security', ref: '9f560ed125c096205ba9434de8feea532ce97b4c'
+gem 'devise-security', github: 'mitre/devise-security', ref: '54a79d0'
 # Use Omniauth to support additional login providers
 gem 'omniauth', '~> 2.1'
 # LDAP Auth — original omniauth-ldap (actively maintained, no nkf/kconv dependency).
@@ -64,8 +65,12 @@ gem 'with_advisory_lock', '~> 5.1'
 # Health check endpoints for Kubernetes/Docker probes
 gem 'health_check', '~> 3.1'
 
-# PostgreSQL full-text search with trigrams, fuzzy matching, and ranking
+# PostgreSQL full-text search with prefix matching and weighted ranking
 gem 'pg_search'
+
+# Versioned SQL functions and triggers that survive schema.rb dumps —
+# maintains the base_rules.searchable full-text vector
+gem 'fx', '~> 0.11'
 
 gem 'activerecord-import'
 
@@ -148,6 +153,11 @@ group :development, :test do
   gem 'rspec-rails', '~> 8.0'
   # Load environment variables from .env files in development and test
   gem 'dotenv-rails'
+  # OpenAPI 3.2 contract testing (MITRE forks until upstream merges 3.2 support)
+  # Upstream PRs: json_schemer#230, openapi_first#479, swagcov#202
+  gem 'json_schemer', github: 'aaronlippold/json_schemer', branch: 'feat/openapi-3.2-support'
+  gem 'openapi_first', github: 'aaronlippold/openapi_first', branch: 'feat/openapi-3.2-support'
+  gem 'swagcov', github: 'aaronlippold/swagcov', branch: 'fix/optional-route-segments'
 end
 
 # Windows and Mac do not include zoneinfo files, so bundle the tzinfo-data gem
@@ -164,5 +174,8 @@ gem 'blueprinter', '~> 1.2'
 gem 'blueprinter-activerecord', '~> 1.3'
 
 gem 'oj', '~> 3.16'
+
+gem 'has_scope', '~> 0.9.0'
+gem 'pagy', '~> 43.5'
 
 gem 'faraday', '~> 2.0'

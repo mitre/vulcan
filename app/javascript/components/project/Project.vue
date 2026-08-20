@@ -6,7 +6,6 @@
     <ProjectCommandBar
       ref="commandBar"
       :project="project"
-      :effective-permissions="effective_permissions"
       :active-panel="activePanel"
       @toggle-visibility="showVisibilityConfirm"
       @new-component="openNewComponentModal"
@@ -44,7 +43,6 @@
               <b-col v-for="component in sortedRegularComponents()" :key="component.id">
                 <ComponentCard
                   :component="component"
-                  :effective-permissions="effective_permissions"
                   @deleteComponent="deleteComponent($event)"
                   @projectUpdated="refreshProject"
                 />
@@ -60,7 +58,6 @@
               <b-col v-for="component in sortedOverlayComponents()" :key="component.id">
                 <ComponentCard
                   :component="component"
-                  :effective-permissions="effective_permissions"
                   @deleteComponent="deleteComponent($event)"
                   @projectUpdated="refreshProject"
                 />
@@ -79,7 +76,6 @@
     <!-- Slideover Panels -->
     <ProjectSidepanels
       :project="project"
-      :effective-permissions="effective_permissions"
       :active-panel="activePanel"
       :unique-component-names="uniqueComponentNames"
       @close-panel="closePanel"
@@ -89,21 +85,21 @@
     <!-- Component Action Picker (NEW) -->
     <ComponentActionPicker
       v-model="showComponentActionPicker"
-      :show-restore="role_gte_to(effective_permissions, 'admin')"
+      :show-restore="canAdmin"
       @next="handleComponentAction"
       @cancel="showComponentActionPicker = false"
     />
 
     <!-- Component Creation Modals (showOpener=false, triggered via refs) -->
     <NewComponentModal
-      v-if="role_gte_to(effective_permissions, 'admin')"
+      v-if="canAdmin"
       ref="newComponentModal"
       :project_id="project.id"
       :project="project"
       @projectUpdated="refreshProject"
     />
     <NewComponentModal
-      v-if="role_gte_to(effective_permissions, 'admin')"
+      v-if="canAdmin"
       ref="importComponentModal"
       :project_id="project.id"
       :project="project"
@@ -111,7 +107,7 @@
       @projectUpdated="refreshProject"
     />
     <NewComponentModal
-      v-if="role_gte_to(effective_permissions, 'admin')"
+      v-if="canAdmin"
       ref="copyComponentModal"
       :project_id="project.id"
       :project="project"
@@ -119,25 +115,21 @@
       @projectUpdated="refreshProject"
     />
     <AddComponentModal
-      v-if="role_gte_to(effective_permissions, 'admin')"
+      v-if="canAdmin"
       ref="addComponentModal"
       :project_id="project.id"
       :available_components="sortedAvailableComponents"
       @projectUpdated="refreshProject"
     />
     <RestoreBackupModal
-      v-if="role_gte_to(effective_permissions, 'admin')"
+      v-if="canAdmin"
       ref="restoreBackupModal"
       :project_id="project.id"
       @projectUpdated="refreshProject"
     />
 
     <!-- Project Members Modal -->
-    <ProjectMembersModal
-      :project="project"
-      :effective-permissions="effective_permissions"
-      :available-roles="available_roles"
-    />
+    <ProjectMembersModal :project="project" :available-roles="available_roles" />
 
     <!-- Export Modal (reusable) -->
     <ExportModal
@@ -151,13 +143,13 @@
 </template>
 
 <script>
+import { provide } from "vue";
 import _ from "lodash";
-import axios from "axios";
-import DateFormatMixinVue from "../../mixins/DateFormatMixin.vue";
-import FormMixinVue from "../../mixins/FormMixin.vue";
-import AlertMixinVue from "../../mixins/AlertMixin.vue";
-import RoleComparisonMixin from "../../mixins/RoleComparisonMixin.vue";
+import { getProject, updateProject, exportProjectData } from "../../api/projectsApi";
+import { deleteComponent } from "../../api/componentsApi";
 import { useSidebar } from "../../composables";
+import { useToast } from "../../composables/useToast";
+import { roleGteTo } from "../../utils/roleComparison";
 import ComponentCard from "../components/ComponentCard.vue";
 import AddComponentModal from "../components/AddComponentModal.vue";
 import NewComponentModal from "../components/NewComponentModal.vue";
@@ -183,11 +175,7 @@ export default {
     ComponentActionPicker,
     RestoreBackupModal,
   },
-  mixins: [DateFormatMixinVue, AlertMixinVue, FormMixinVue, RoleComparisonMixin],
   props: {
-    effective_permissions: {
-      type: String,
-    },
     initialProjectState: {
       type: Object,
       required: true,
@@ -204,9 +192,26 @@ export default {
       required: true,
     },
   },
-  setup() {
+  setup(props) {
     const { activePanel, togglePanel, closePanel } = useSidebar();
-    return { activePanel, togglePanel, closePanel };
+
+    const effective_permissions = props.initialProjectState?.effective_permissions || null;
+    provide("effectivePermissions", effective_permissions);
+
+    // Provider side of the permissions contract — children inject via
+    // usePermissions; Project.vue itself derives gates from the same util.
+    const canAdmin = roleGteTo(effective_permissions, "admin");
+
+    const { alertOrNotifyResponse } = useToast();
+
+    return {
+      activePanel,
+      togglePanel,
+      closePanel,
+      effective_permissions,
+      canAdmin,
+      alertOrNotifyResponse,
+    };
   },
   data: function () {
     return {
@@ -272,6 +277,12 @@ export default {
         localStorage.removeItem(`projectTabIndex-${this.project.id}`);
       }
     }
+
+    // Auto-open members modal when linked from access request notification
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("members")) {
+      this.$nextTick(() => this.openMembersModal());
+    }
   },
   methods: {
     sortedComponents: function () {
@@ -288,7 +299,7 @@ export default {
       return this.sortedComponents().filter((e) => e.component_id == null);
     },
     refreshProject: function () {
-      axios.get(`/projects/${this.project.id}`).then((response) => {
+      getProject(this.project.id).then((response) => {
         this.project = response.data;
         this.visible = this.project.visibility === "discoverable";
       });
@@ -299,9 +310,9 @@ export default {
     },
     updateVisibility: function () {
       this.showVisibilityModal = false;
-      let payload = { project: { visibility: this.pendingVisibility ? "discoverable" : "hidden" } };
-      axios
-        .put(`/projects/${this.project.id}`, payload)
+      updateProject(this.project.id, {
+        visibility: this.pendingVisibility ? "discoverable" : "hidden",
+      })
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.refreshProject();
@@ -382,8 +393,7 @@ export default {
     // disappear almost immediately because the component gets
     // destroyed once `refreshProject` executes
     deleteComponent: function (componentId) {
-      axios
-        .delete(`/components/${componentId}`)
+      deleteComponent(componentId)
         .then((response) => {
           this.alertOrNotifyResponse(response);
           this.refreshProject();
@@ -398,22 +408,14 @@ export default {
       includeMemberships,
       excludeSatisfiedBy,
     ) {
-      let url = `/projects/${this.project.id}/export/${type}?component_ids=${componentIds.join(",")}`;
-      if (mode) {
-        url += `&mode=${mode}`;
-      }
-      if (includeSrg) {
-        url += `&include_srg=true`;
-      }
-      if (includeMemberships === false) {
-        url += `&include_memberships=false`;
-      }
-      if (excludeSatisfiedBy) {
-        url += `&exclude_satisfied_by=true`;
-      }
-      axios
-        .get(url)
-        .then((_res) => {
+      exportProjectData(this.project.id, type, {
+        componentIds,
+        mode,
+        includeSrg,
+        includeMemberships,
+        excludeSatisfiedBy,
+      })
+        .then((url) => {
           window.open(url);
         })
         .catch(this.alertOrNotifyResponse);

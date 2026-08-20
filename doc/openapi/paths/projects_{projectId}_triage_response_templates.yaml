@@ -1,0 +1,116 @@
+get:
+  operationId: listTriageResponseTemplates
+  tags:
+    - Projects
+  summary: List triage response templates for a project
+  description: >-
+    Returns all response templates for the specified project, ordered by name.
+    Viewer+ role required. Templates are reusable canned responses that triagers
+    can insert into the response textarea when making triage decisions.
+  parameters:
+    - name: projectId
+      in: path
+      required: true
+      description: Numeric ID of the project.
+      schema:
+        type: integer
+      example: 42
+  responses:
+    "200":
+      description: List of templates
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - triage_response_templates
+            properties:
+              triage_response_templates:
+                type: array
+                items:
+                  $ref: ../components/schemas/TriageResponseTemplate.yaml
+          examples:
+            with_templates:
+              summary: Project with templates
+              value:
+                triage_response_templates:
+                  - id: 1
+                    name: Accept - standard
+                    body: Concur with the finding as written.
+                    created_by_id: 42
+                    created_at: "2026-06-01T10:00:00Z"
+            empty:
+              summary: No templates yet
+              value:
+                triage_response_templates: []
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+
+post:
+  operationId: createTriageResponseTemplate
+  tags:
+    - Projects
+  summary: Create a triage response template
+  description: >-
+    Creates a new reusable response template for the project. Admin role required.
+    Template names must be unique within the project (case-insensitive).
+  parameters:
+    - name: projectId
+      in: path
+      required: true
+      description: Numeric ID of the project.
+      schema:
+        type: integer
+      example: 42
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - triage_response_template
+          properties:
+            triage_response_template:
+              type: object
+              required:
+                - name
+                - body
+              properties:
+                name:
+                  type: string
+                  description: Short display name (max 200 chars).
+                  example: Decline - needs evidence
+                body:
+                  type: string
+                  description: Markdown response text.
+                  example: Unable to incorporate without supporting evidence.
+        examples:
+          basic:
+            summary: Create a template
+            value:
+              triage_response_template:
+                name: Decline - needs evidence
+                body: Unable to incorporate without supporting evidence.
+  responses:
+    "201":
+      description: Template created
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              triage_response_template:
+                $ref: ../components/schemas/TriageResponseTemplate.yaml
+          examples:
+            created:
+              summary: Newly created template
+              value:
+                triage_response_template:
+                  id: 3
+                  name: Decline - needs evidence
+                  body: Unable to incorporate without supporting evidence.
+                  created_by_id: 42
+                  created_at: "2026-06-03T01:00:00Z"
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

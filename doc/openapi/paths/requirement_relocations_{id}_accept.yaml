@@ -1,0 +1,76 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    description: Numeric ID of the open relocation proposal.
+    schema:
+      type: integer
+    example: 12
+post:
+  operationId: acceptRequirementRelocation
+  tags:
+    - Rules
+  summary: Concur with a relocation proposal — land the requirement
+  description: >-
+    Receiver-side adjudication (displayed as Concur): acceptance and
+    landing are ONE transaction — creates the requirement in the
+    destination component with content and core lineage carried over,
+    tombstones the source row, and stamps the record executed with the
+    accepting actor — atomically, or not at all. Requires author role on
+    the DESTINATION component only; the proposal itself carries source
+    consent. Audited. Adjudicated proposals (declined or executed)
+    answer 404 like a record that never existed.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - target_component_id
+          properties:
+            target_component_id:
+              type: integer
+              description: The destination SRG component.
+              example: 42
+        examples:
+          accept:
+            summary: Concur — land the move into component 42
+            value:
+              target_component_id: 42
+  responses:
+    '200':
+      description: Proposal concurred with and requirement landed
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/RequirementRelocationAcceptResponse.yaml
+          examples:
+            accepted:
+              summary: Move landed
+              value:
+                toast:
+                  title: Concurred.
+                  message:
+                    - Moved to Container Platform SRG — the source requirement is now history.
+                  variant: success
+                landed_rule_id: 5137
+    '422':
+      description: The move cannot run (validation errors from the preview)
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            invalid:
+              summary: Ineligible destination
+              value:
+                toast:
+                  title: Could not accept the proposal.
+                  message:
+                    - target component must be an SRG component
+                  variant: danger
+    '404':
+      $ref: ../components/responses/NotFound.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

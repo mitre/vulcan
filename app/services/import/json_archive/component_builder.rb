@@ -28,6 +28,9 @@ module Import
           admin_name: @data['admin_name'],
           admin_email: @data['admin_email'],
           advanced_fields: @data['advanced_fields'] || false,
+          # Legacy archives predate the authoring-profile discriminator —
+          # every pre-existing archive is a STIG.
+          document_type: @data['document_type'] || 'stig',
           security_requirements_guide_id: srg.id,
           # Legacy archives (draft / adjudication / final) are remapped
           # to the current open/closed shape via #normalize_comment_phase.
@@ -39,6 +42,7 @@ module Import
         component.skip_import_srg_rules = true
 
         resolve_overlay_parent(component)
+        resolve_source_srgs(component)
         build_additional_questions(component)
 
         unless component.save
@@ -76,12 +80,49 @@ module Import
         based_on = @data['based_on']
         return nil unless based_on
 
-        srg = SecurityRequirementsGuide.find_by(srg_id: based_on['srg_id'], version: based_on['version'])
-        srg ||= SecurityRequirementsGuide.find_by(srg_id: based_on['srg_id'])
+        srg = find_catalog_srg(based_on['srg_id'], based_on['version'])
 
         @result.add_error("Cannot find SRG: #{based_on['title']} (#{based_on['srg_id']})") unless srg
 
         srg
+      end
+
+      # Match the destination catalog on the exact release first, then fall
+      # back to any release of the same SRG — a restore target may carry a
+      # different release than the source instance did.
+      def find_catalog_srg(srg_id, version)
+        SecurityRequirementsGuide.find_by(srg_id: srg_id, version: version) ||
+          SecurityRequirementsGuide.find_by(srg_id: srg_id)
+      end
+
+      # Rebuild the declared parent set. Assigning before save is deliberate:
+      # the membership and eligibility validations must see these rows on the
+      # component's first save. based_on is added by the model's own
+      # reconciliation, so only the remaining sources matter here.
+      #
+      # A missing secondary is a warning, not an error: unlike based_on, whose
+      # absence leaves no component to build, a missing secondary costs one
+      # lineage link and the rest of the component still restores intact.
+      def resolve_source_srgs(component)
+        entries = @data['source_srgs']
+        # Archives written before multi-parent support have no such key, and
+        # an archive is external input that may carry a malformed value —
+        # anything but an array falls back to the based_on reconciliation
+        # alone, the same tolerant posture build_additional_questions takes.
+        return unless entries.is_a?(Array)
+
+        component.declared_source_srg_ids = entries.filter_map { |entry| catalog_id_for_source(entry) }
+      end
+
+      def catalog_id_for_source(entry)
+        srg = find_catalog_srg(entry['srg_id'], entry['version'])
+        return srg.id if srg
+
+        @result.add_warning(
+          "Source SRG '#{entry['title']}' (#{entry['srg_id']}) not found. " \
+          'Imported without that lineage link.'
+        )
+        nil
       end
 
       def resolve_overlay_parent(component)

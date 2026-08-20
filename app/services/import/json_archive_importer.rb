@@ -282,6 +282,8 @@ module Import
         ).build_all
       end
 
+      restore_project_metadata(archive)
+
       result.merge_summary(
         components_imported: imported_count,
         rules_imported: total_rules,
@@ -291,6 +293,18 @@ module Import
         srgs_imported: @srgs_imported || 0,
         component_details: component_details
       )
+    end
+
+    # The archive's project.json carries the source project's metadata
+    # (json_archive_formatter writes it) — a restored project keeps it.
+    # Runs only on real imports; a freshly created target has no metadata,
+    # and an existing record (import into an existing project) is never
+    # overwritten by the archive.
+    def restore_project_metadata(archive)
+      data = archive.dig(:project, 'metadata')
+      return if data.blank? || @project.project_metadata.present?
+
+      @project.create_project_metadata!(data: data)
     end
 
     def import_srgs(archive, result)

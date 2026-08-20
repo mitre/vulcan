@@ -1,0 +1,5 @@
+# Verbatim upstream XCCDF documents (DISA-published SRGs/STIGs seeded as-is).
+# They contain trailing whitespace as published; whitespace checks must not
+# flag or alter them — byte fidelity is the requirement.
+db/seeds/srgs/*.xml -whitespace
+db/seeds/stigs/*.xml -whitespace

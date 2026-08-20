@@ -9,11 +9,6 @@
 
 Vulcan is a comprehensive tool designed to streamline the creation of STIG-ready security guidance documentation and InSpec automated validation profiles. It bridges the gap between security requirements and practical implementation, enabling organizations to develop both human-readable instructions and machine-readable validation code simultaneously.
 
-### Live Deployments
-
-- **Production**: [https://mitre-vulcan-prod.herokuapp.com](https://mitre-vulcan-prod.herokuapp.com/users/sign_in)
-- **Staging**: [https://mitre-vulcan-staging.herokuapp.com](https://mitre-vulcan-staging.herokuapp.com/users/sign_in)
-
 ### What is Vulcan?
 
 Vulcan models the Security Technical Implementation Guide (STIG) creation process, facilitating the alignment of security controls from high-level DISA Security Requirements Guides (SRGs) into [STIGs](https://public.cyber.mil/stigs/) tailored to specific system components. Content developed with Vulcan can be submitted to DISA for peer review and formal publication as official STIGs.
@@ -52,48 +47,39 @@ For detailed release notes, see the [Changelog](./CHANGELOG.md).
 
 ## 📚 Documentation
 
-- **[📖 Full Documentation](https://mitre.github.io/vulcan/)** - Comprehensive guides and references
-- [Installation Guide](https://mitre.github.io/vulcan/getting-started/installation/)
-- [Configuration Reference](https://mitre.github.io/vulcan/getting-started/environment-variables/)
-- [User Guide](https://mitre.github.io/saf-training/courses/guidance/) - Complete training materials
-- [API Documentation](https://mitre.github.io/vulcan/api/overview/)
+- **[📖 Full Documentation](https://mitre.github.io/vulcan/)** - the published copy of
+  Vulcan's documentation site. A running Vulcan instance serves the same site at `/docs`.
+  The site's About page is the authoritative project overview; installation,
+  configuration, the user guide, and the API reference live there too.
+- [Security Guidance Training](https://mitre.github.io/saf-training/courses/guidance/) - MITRE SAF training course
 - [Contributing Guidelines](./CONTRIBUTING.md)
 
 ### Working with Documentation
 
-The documentation uses [VitePress](https://vitepress.dev/) and is located in the `docs/` directory.
-
-**Important:** The documentation has its own `package.json` separate from the main application to avoid Vue version conflicts (main app uses Vue 2, VitePress uses Vue 3). This separation will be removed once the main application migrates to Vue 3.
+The documentation uses [VitePress](https://vitepress.dev/) in `docs/` with its own Vue 3 dependencies (isolated from the Rails app's Vue 2). All commands run from the project root:
 
 ```bash
-# Start documentation dev server
-yarn docs:dev  # Runs at http://localhost:5173/vulcan/
-
-# Build documentation (only works in CI/CD currently)
-yarn docs:build
-
-# Work directly in docs directory
-cd docs
-yarn install  # Install docs-specific dependencies
-yarn dev      # Start dev server
+yarn docs:dev      # Dev server at http://localhost:5173/vulcan/
+yarn docs:build    # Build static site
+yarn docs:preview  # Preview production build
 ```
 
 ## 🛠️ Technology Stack
 
 ### Core Framework
-- **Ruby 3.4.9** with **Rails 8.0.2.1**
+- **Ruby 3.4.10** with **Rails 8.1.3.1**
 - **PostgreSQL 18** database
 - **Node.js 24 LTS** for JavaScript runtime
 
 ### Frontend
-- **Vue 2.7.16** (14 separate instances for different pages)
-- **Bootstrap 4.6.2** with Bootstrap-Vue 2.13.0
+- **Vue 2.7.16** (separate instance per page — no shared SPA)
+- **Bootstrap 4.6.2** with Bootstrap-Vue 2.23.1
 - **Turbolinks 5.2.0** for navigation optimization
 - **esbuild** for JavaScript bundling (replaced Webpacker)
 
 ### Testing & Quality
-- **RSpec** for Ruby testing (1600+ backend tests)
-- **Vitest** for Vue component testing (1900+ frontend tests)
+- **RSpec** for Ruby backend testing
+- **Vitest** for Vue component testing
 - **ESLint** & **Prettier** for JavaScript linting
 - **RuboCop** for Ruby style enforcement
 - **Brakeman** for security scanning
@@ -109,7 +95,7 @@ yarn dev      # Start dev server
 
 ### Prerequisites
 
-- Ruby 3.4.9 (use rbenv or rvm)
+- Ruby 3.4.10 (use rbenv or rvm)
 - PostgreSQL 18
 - Node.js 24 LTS
 - Yarn package manager
@@ -146,8 +132,8 @@ Access the application at `http://localhost:3000`
 ### Running Tests
 
 ```bash
-# Run full backend suite (parallel — 3-4x faster than serial)
-bundle exec parallel_rspec spec/
+# Run full backend suite (parallel — 3-4x faster than serial, capped at 8 workers)
+bin/parallel_rspec spec/
 
 # Run specific test file
 bundle exec rspec spec/models/user_spec.rb
@@ -208,14 +194,25 @@ bundle exec bundler-audit
 
 ### OIDC/OKTA Setup (Auto-Discovery)
 
-Vulcan v2.2+ includes automatic OIDC endpoint discovery, requiring only 4 configuration variables:
+Vulcan v2.2+ includes automatic OIDC endpoint discovery — the essential configuration:
 
 ```bash
 VULCAN_ENABLE_OIDC=true
-VULCAN_OIDC_ISSUER_URL=https://your-domain.okta.com
+VULCAN_APP_URL=https://your-vulcan-app.com
+VULCAN_OIDC_ISSUER_URL=https://your-domain.okta.com/oauth2/default
 VULCAN_OIDC_CLIENT_ID=your-client-id
 VULCAN_OIDC_CLIENT_SECRET=your-client-secret
+VULCAN_OIDC_REDIRECT_URI=https://your-vulcan-app.com/users/auth/oidc/callback
 ```
+
+Register **two** URIs in your provider's app settings:
+- Sign-in: `<app_url>/users/auth/oidc/callback`
+- Sign-out: `<app_url>/users/signed_out` (required — providers reject Vulcan's logout without it)
+
+See the **Okta/OIDC setup guide** in the documentation — a running instance serves it
+at `/docs/deployment/auth/oidc-okta`, and the [published documentation](https://mitre.github.io/vulcan/)
+carries the same page — for the full settings tables, verification checklist, and
+troubleshooting.
 
 Supported providers:
 - **Okta**
@@ -302,8 +299,8 @@ Vulcan is part of the [MITRE Security Automation Framework (SAF)](https://saf.mi
 
 - **[InSpec](https://www.inspec.io/)**: Compliance automation framework
 - **[Heimdall](https://github.com/mitre/heimdall2)**: Security results visualization
-- **[SAF CLI](https://github.com/mitre/saf-cli)**: Command-line tools for security automation
-- **[InSpec Profile Development](https://github.com/mitre/inspec-profile-developer-course)**: Training resources
+- **[SAF CLI](https://github.com/mitre/saf)**: Command-line tools for security automation
+- **[SAF Training](https://mitre.github.io/saf-training/)**: Training resources
 
 ---
 

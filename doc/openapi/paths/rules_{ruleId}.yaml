@@ -1,0 +1,147 @@
+parameters:
+  - $ref: ../components/parameters/RuleId.yaml
+get:
+  operationId: getRule
+  tags:
+    - Rules
+  summary: Rule detail
+  description: >-
+    Returns the full requirement editor payload for either document kind —
+    checks, descriptions, and review history for both; satisfactions
+    (satisfies/satisfied_by) appear on stig rules only, and authored SRG
+    requirements omit those keys entirely.
+  responses:
+    '200':
+      description: Rule data
+      content:
+        application/json:
+          schema:
+            description: >-
+              Shaped by the parent component's document_type: a STIG rule
+              or an authored SRG requirement.
+            oneOf:
+              - $ref: ../components/schemas/RuleEditorResponse.yaml
+              - $ref: ../components/schemas/AuthoredSrgRuleEditorResponse.yaml
+      links:
+        UpdateThisRule:
+          operationId: updateRule
+          parameters:
+            ruleId: '$response.body#/id'
+        DeleteThisRule:
+          operationId: deleteRule
+          parameters:
+            ruleId: '$response.body#/id'
+        RevertThisRule:
+          operationId: revertRule
+          parameters:
+            ruleId: '$response.body#/id'
+        CreateReviewOnRule:
+          operationId: createRuleReview
+          parameters:
+            ruleId: '$response.body#/id'
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+patch:
+  operationId: patchRule
+  tags:
+    - Rules
+  summary: Partial update of rule attributes
+  description: >-
+    Partial update — send only changed fields. Updates one or more rule
+    fields. Requires author or admin role on the component.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            rule:
+              $ref: ../components/schemas/RuleInput.yaml
+        examples:
+          stig_update:
+            summary: STIG rule status change
+            value:
+              rule:
+                status: Applicable - Configurable
+                vendor_comments: Met by the recommended runtime configuration.
+          authored_srg_update:
+            summary: Authored SRG requirement decided Not Applicable
+            value:
+              rule:
+                status: Not Applicable
+                status_justification: The platform provides no wireless interfaces to configure.
+          nested_content:
+            summary: Update check content and record an audit comment
+            value:
+              rule:
+                audit_comment: Check procedure clarified per review feedback.
+                checks_attributes:
+                  - id: 311
+                    content: Review the container platform configuration to verify approved authorizations are enforced.
+  responses:
+    '200':
+      description: Rule updated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+put:
+  operationId: updateRule
+  tags:
+    - Rules
+  summary: Full replacement of rule attributes
+  description: >-
+    Full replacement — all fields required. Updates rule fields.
+    Requires author or admin role on the component.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            rule:
+              $ref: ../components/schemas/RuleInput.yaml
+        examples:
+          stig_update:
+            summary: STIG rule full update
+            value:
+              rule:
+                status: Applicable - Configurable
+                title: The container platform must enforce approved authorizations.
+                fixtext: Configure the container platform to enforce approved authorizations.
+                vendor_comments: Met by the recommended runtime configuration.
+          authored_srg_update:
+            summary: Authored SRG requirement update
+            value:
+              rule:
+                status: Applicable
+                title: The application must enforce approved authorizations for logical access.
+                fixtext: Configure the application to enforce approved authorizations.
+  responses:
+    '200':
+      description: Rule updated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
+delete:
+  operationId: deleteRule
+  tags:
+    - Rules
+  summary: Soft-delete a rule
+  description: Marks the rule as deleted. Requires admin role on the component.
+  responses:
+    '200':
+      description: Rule deleted
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

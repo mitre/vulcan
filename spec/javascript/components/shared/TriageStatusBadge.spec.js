@@ -29,6 +29,13 @@ describe("TriageStatusBadge", () => {
     expect(root.attributes("title")).toMatch(/non.concur/i);
   });
 
+  it("sets data-triage attribute matching the status prop", () => {
+    const w = mount(TriageStatusBadge, {
+      propsData: { status: "concur_with_comment" },
+    });
+    expect(w.find("[data-test=badge]").attributes("data-triage")).toBe("concur_with_comment");
+  });
+
   it("uses stable DISA key as CSS class hook", () => {
     const w = mount(TriageStatusBadge, {
       propsData: { status: "concur_with_comment" },

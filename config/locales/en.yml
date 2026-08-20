@@ -31,6 +31,22 @@
 
 en:
   hello: "Hello world"
+  activerecord:
+    attributes:
+      requirement_relocation:
+        # User vocabulary: the SRG short code is its "abbreviation" —
+        # the column name stays target_technology_token.
+        target_technology_token: "Destination SRG abbreviation"
+    errors:
+      models:
+        requirement_relocation:
+          attributes:
+            source_rule_id:
+              open_proposal_exists: "already has an open relocation proposal"
+        srg_rule:
+          attributes:
+            status_justification:
+              required_when_not_applicable: "is required when the requirement is Not Applicable"
   vulcan:
     triage:
       status:
@@ -42,6 +58,7 @@ en:
         informational: "Informational"
         needs_clarification: "Needs clarification"
         withdrawn: "Withdrawn"
+        addressed_by: "Addressed by"
       disa_status:
         pending: "Pending"
         concur: "Concur"
@@ -51,12 +68,14 @@ en:
         informational: "Informational"
         needs_clarification: "Needs clarification"
         withdrawn: "Withdrawn"
+        addressed_by: "Addressed by another requirement"
       adjudicated:
         label: "Closed"
         tooltip: "Adjudicated — work complete"
       errors:
         decline_requires_response: "Decline requires a response — explain why so the commenter understands."
         duplicate_requires_target: "Mark-as-duplicate requires selecting the canonical comment."
+        invalid_status: "Triage status is missing or not a recognized value."
         cannot_withdraw_already_triaged: "This comment has already been triaged and can't be withdrawn."
         cannot_edit_after_triage: "Comments can only be edited while pending triage."
         permission_denied_comment: "You do not have permission to comment on this component. Ask a project administrator to grant you membership."

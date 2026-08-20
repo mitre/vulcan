@@ -1,0 +1,17 @@
+description: >-
+  Update for an existing membership — the membership is addressed by the
+  URL and only the role may change; user and membership type are fixed
+  at creation.
+type: object
+required:
+  - role
+properties:
+  role:
+    type: string
+    description: Access role granted to the user (viewer < author < reviewer < admin).
+    enum:
+      - viewer
+      - author
+      - reviewer
+      - admin
+    example: reviewer

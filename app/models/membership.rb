@@ -13,6 +13,14 @@ class Membership < ApplicationRecord
   belongs_to :user
 
   validate :cannot_have_equal_or_lesser_component_permissions
+  # Project admin continuity (GitLab/GitHub last-owner pattern): a project
+  # must never drop to zero admins through the membership API — transfer
+  # ownership first. Component memberships are exempt (project admins govern
+  # components via effective_permissions). Cascades are exempt via
+  # destroyed_by_association: deleting the project (or, until the user-level
+  # guard lands, the user) legitimately removes its memberships.
+  validate :cannot_downgrade_last_project_admin, on: :update
+  before_destroy :prevent_last_project_admin_removal
   after_destroy -> { membership.update_admin_contact_info }
   after_save -> { membership.update_admin_contact_info }
   after_save :remove_equal_or_lesser_component_permissions, if: -> { membership_type == 'Project' }
@@ -39,6 +47,29 @@ class Membership < ApplicationRecord
 
   private
 
+  def last_project_admin?
+    membership_type == 'Project' &&
+      !Membership.where(membership_type: 'Project', membership_id: membership_id, role: 'admin')
+                 .where.not(id: id).exists?
+  end
+
+  def cannot_downgrade_last_project_admin
+    return unless role_changed? && role_was == 'admin' && role != 'admin'
+    return unless last_project_admin?
+
+    errors.add(:role, "cannot be changed — this user is the last admin of project '#{membership.name}'. " \
+                      'Transfer the admin role to another member first.')
+  end
+
+  def prevent_last_project_admin_removal
+    return if destroyed_by_association
+    return unless role == 'admin' && last_project_admin?
+
+    errors.add(:base, "Cannot remove the last admin of project '#{membership.name}'. " \
+                      'Transfer the admin role to another member first.')
+    throw :abort
+  end
+
   ##
   # When the current membership is on a project, then we
   # should be removing any component level memberships that are of
@@ -59,8 +90,13 @@ class Membership < ApplicationRecord
       PROJECT_MEMBER_ROLES.index(membership.role) <= PROJECT_MEMBER_ROLES.index(role)
     end
 
-    # Delete those memberships that are of equal or lesser permissions
-    component_memberships.each(&:destroy)
+    # Sorted by ID for deterministic lock ordering (deadlock prevention
+    # when concurrent project membership creates overlap on components).
+    # destroy! for fail-fast — silent destroy swallows failures.
+    # No Membership.transaction wrapper — after_save already runs inside
+    # the parent save's transaction; an explicit wrapper just creates a
+    # redundant SAVEPOINT.
+    component_memberships.sort_by(&:id).each(&:destroy!)
   end
 
   ##

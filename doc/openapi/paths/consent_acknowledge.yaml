@@ -1,0 +1,14 @@
+post:
+  operationId: acknowledgeConsent
+  tags:
+    - System
+  summary: Acknowledge consent banner (AC-8)
+  description: >-
+    Records the user's acknowledgment of the system consent banner in the
+    Rails session. Required by NIST AC-8 before interacting with the
+    application. Does not require authentication — the consent modal
+    appears before login.
+  security: []
+  responses:
+    '200':
+      description: Consent acknowledged (timestamp stored in session)

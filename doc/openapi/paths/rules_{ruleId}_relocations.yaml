@@ -1,0 +1,75 @@
+parameters:
+  - $ref: ../components/parameters/RuleId.yaml
+post:
+  operationId: createRequirementRelocation
+  tags:
+    - Rules
+  summary: Propose relocating an authored SRG requirement
+  description: >-
+    Creates an OPEN relocation proposal for an authored requirement of
+    an SRG component, naming the destination SRG's abbreviation.
+    Requires author role on the component. One open proposal per
+    requirement; a second returns 422. The proposal is a record, never a
+    status change on the requirement — the destination SRG's authors
+    concur or non-concur.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - requirement_relocation
+          properties:
+            requirement_relocation:
+              type: object
+              required:
+                - target_technology_token
+              properties:
+                target_technology_token:
+                  type: string
+                  description: >-
+                    The destination SRG's abbreviation — the short code
+                    its requirement IDs start with (CTR, GPOS, DB).
+                  example: CTR
+        examples:
+          mark:
+            summary: Propose relocation to the Container SRG
+            value:
+              requirement_relocation:
+                target_technology_token: CTR
+  responses:
+    '200':
+      description: Relocation proposed
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            proposed:
+              summary: Proposal created
+              value:
+                toast:
+                  title: Relocation proposed.
+                  message:
+                    - Proposed for the CTR SRG.
+                  variant: success
+    '422':
+      description: Duplicate open proposal or ineligible source
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ToastResponse.yaml
+          examples:
+            duplicate:
+              summary: Already proposed
+              value:
+                toast:
+                  title: Could not propose the relocation.
+                  message:
+                    - Source rule already has a pending relocation
+                  variant: danger
+    '404':
+      $ref: ../components/responses/NotFound.yaml
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml

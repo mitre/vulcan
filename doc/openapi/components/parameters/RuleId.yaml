@@ -1,0 +1,7 @@
+name: ruleId
+in: path
+required: true
+description: Numeric ID of the target rule.
+schema:
+  type: integer
+example: 100

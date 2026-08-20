@@ -1,18 +1,15 @@
 <template>
-  <div>
-    <b-input-group class="search-input">
-      <b-input-group-prepend>
-        <b-input-group-text class="form-control">
-          <b-icon icon="search" aria-hidden="true" />
-        </b-input-group-text>
-      </b-input-group-prepend>
-      <b-form-input
-        id="srg-id-search"
-        v-model="searchText"
-        debounce="300"
-        placeholder="Search projects, components, rules, SRGs, STIGs..."
-      />
-    </b-input-group>
+  <b-input-group size="sm" class="search-input">
+    <b-input-group-prepend is-text>
+      <b-icon icon="search" aria-hidden="true" />
+    </b-input-group-prepend>
+    <b-form-input
+      id="srg-id-search"
+      v-model="searchText"
+      debounce="300"
+      :placeholder="searchPlaceholder"
+      :aria-label="searchPlaceholder"
+    />
     <b-popover
       triggers="focus"
       target="srg-id-search"
@@ -21,8 +18,8 @@
     >
       <!-- Render an empty div so that the popover detects the first focus (when there are not yet search results) -->
       <div />
-      <b-card v-if="showProjects" no-body class="search-card overflow-auto shadow border-light">
-        <b-card-header class="sticky-top bg-light">Projects</b-card-header>
+      <b-card v-if="showProjects" no-body class="search-card overflow-auto shadow">
+        <b-card-header class="sticky-top search-card__header">Projects</b-card-header>
         <b-list-group flush>
           <b-list-group-item
             v-for="project in projects"
@@ -33,8 +30,8 @@
           >
         </b-list-group>
       </b-card>
-      <b-card v-if="showComponents" no-body class="search-card overflow-auto shadow border-light">
-        <b-card-header class="sticky-top bg-light">Components</b-card-header>
+      <b-card v-if="showComponents" no-body class="search-card overflow-auto shadow">
+        <b-card-header class="sticky-top search-card__header">Components</b-card-header>
         <b-list-group flush>
           <b-list-group-item
             v-for="comp in components"
@@ -45,8 +42,8 @@
           >
         </b-list-group>
       </b-card>
-      <b-card v-if="showRules" no-body class="search-card overflow-auto shadow border-light">
-        <b-card-header class="sticky-top bg-light">Rules</b-card-header>
+      <b-card v-if="showRules" no-body class="search-card overflow-auto shadow">
+        <b-card-header class="sticky-top search-card__header">{{ rulesHeader }}</b-card-header>
         <b-list-group flush>
           <b-list-group-item
             v-for="rule in rules"
@@ -57,8 +54,8 @@
           >
         </b-list-group>
       </b-card>
-      <b-card v-if="showSrgs" no-body class="search-card overflow-auto shadow border-light">
-        <b-card-header class="sticky-top bg-light">SRGs</b-card-header>
+      <b-card v-if="showSrgs" no-body class="search-card overflow-auto shadow">
+        <b-card-header class="sticky-top search-card__header">SRGs</b-card-header>
         <b-list-group flush>
           <b-list-group-item
             v-for="srg in srgs"
@@ -69,8 +66,8 @@
           >
         </b-list-group>
       </b-card>
-      <b-card v-if="showStigs" no-body class="search-card overflow-auto shadow border-light">
-        <b-card-header class="sticky-top bg-light">STIGs</b-card-header>
+      <b-card v-if="showStigs" no-body class="search-card overflow-auto shadow">
+        <b-card-header class="sticky-top search-card__header">STIGs</b-card-header>
         <b-list-group flush>
           <b-list-group-item
             v-for="stig in stigs"
@@ -81,8 +78,8 @@
           >
         </b-list-group>
       </b-card>
-      <b-card v-if="showStigRules" no-body class="search-card overflow-auto shadow border-light">
-        <b-card-header class="sticky-top bg-light">STIG Rules</b-card-header>
+      <b-card v-if="showStigRules" no-body class="search-card overflow-auto shadow">
+        <b-card-header class="sticky-top search-card__header">{{ stigRulesHeader }}</b-card-header>
         <b-list-group flush>
           <b-list-group-item
             v-for="rule in stigRules"
@@ -95,8 +92,8 @@
           </b-list-group-item>
         </b-list-group>
       </b-card>
-      <b-card v-if="showSrgRules" no-body class="search-card overflow-auto shadow border-light">
-        <b-card-header class="sticky-top bg-light">SRG Rules</b-card-header>
+      <b-card v-if="showSrgRules" no-body class="search-card overflow-auto shadow">
+        <b-card-header class="sticky-top search-card__header">{{ srgRulesHeader }}</b-card-header>
         <b-list-group flush>
           <b-list-group-item
             v-for="rule in srgRules"
@@ -120,16 +117,17 @@
           !showSrgRules
         "
         no-body
-        class="search-card overflow-auto shadow border-light"
+        class="search-card overflow-auto shadow"
       >
-        <b-card-header class="sticky-top bg-light">No Results</b-card-header>
+        <b-card-header class="sticky-top search-card__header">No Results</b-card-header>
       </b-card>
     </b-popover>
-  </div>
+  </b-input-group>
 </template>
 
 <script>
-import axios from "axios";
+import { globalSearch } from "../../api/searchApi";
+import { RULE_TERM, ruleTerm } from "../../constants/terminology";
 
 export default {
   name: "GlobalSearch",
@@ -146,6 +144,20 @@ export default {
     };
   },
   computed: {
+    // Component search results span both kinds — deployment-default noun.
+    // Catalog sections are kind-fixed: published STIG rules, SRG requirements.
+    searchPlaceholder() {
+      return `Search projects, components, ${RULE_TERM.plural.toLowerCase()}, SRGs, STIGs...`;
+    },
+    rulesHeader() {
+      return RULE_TERM.plural;
+    },
+    stigRulesHeader() {
+      return `STIG ${ruleTerm("stig").plural}`;
+    },
+    srgRulesHeader() {
+      return `SRG ${ruleTerm("srg").plural}`;
+    },
     showProjects: function () {
       return this.projects?.length > 0;
     },
@@ -184,9 +196,7 @@ export default {
 
       try {
         // Use new unified search API
-        const response = await axios.get("/api/search/global", {
-          params: { q: query, limit: 10 },
-        });
+        const response = await globalSearch({ q: query, limit: 10 });
 
         // Transform API response to match expected format
         // projects: [[id, name], ...]
@@ -245,6 +255,14 @@ export default {
 <style scoped>
 .search-card {
   max-height: 192px;
+  background: var(--vulcan-body-bg);
+  border-color: var(--vulcan-border-color);
+}
+
+.search-card__header {
+  background: var(--vulcan-secondary-bg);
+  color: var(--vulcan-body-color);
+  border-bottom-color: var(--vulcan-border-color);
 }
 
 .search-input {

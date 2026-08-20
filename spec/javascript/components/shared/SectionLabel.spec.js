@@ -8,9 +8,14 @@ describe("SectionLabel", () => {
     expect(w.text()).toBe("Check");
   });
 
-  it("renders Overall Requirement for null", () => {
+  it("renders the kind-keyed overall label for null", () => {
     const w = mount(SectionLabel, { propsData: { section: null } });
-    expect(w.text()).toBe("Overall Requirement");
+    expect(w.text()).toBe("Overall Rule");
+    const srg = mount(SectionLabel, {
+      propsData: { section: null },
+      provide: { injectedDocumentType: "srg" },
+    });
+    expect(srg.text()).toBe("Overall Requirement");
   });
 
   it("renders em-dash placeholder for null when 'placeholder' prop is set", () => {

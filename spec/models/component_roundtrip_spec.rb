@@ -29,7 +29,7 @@ RSpec.describe Component, '#update_from_spreadsheet / #apply_spreadsheet_update'
     srg
   end
   let_it_be(:shared_project) { Project.create!(name: 'Roundtrip Test Project') }
-  let_it_be(:shared_component, refind: true) do
+  let_it_be(:shared_component) do
     Component.create!(project: shared_project, name: 'Roundtrip Test', title: 'Roundtrip STIG',
                       version: 'V1R1', prefix: 'RNDT-00', based_on: shared_srg)
   end
@@ -42,7 +42,7 @@ RSpec.describe Component, '#update_from_spreadsheet / #apply_spreadsheet_update'
 
   # Helper: export CSV, parse it, optionally modify rows, write to tempfile
   def export_and_parse_csv(component)
-    csv_string = component.csv_export
+    csv_string = working_copy_csv(component)
     CSV.parse(csv_string, headers: true)
   end
 

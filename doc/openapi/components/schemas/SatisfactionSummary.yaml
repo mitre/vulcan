@@ -1,0 +1,21 @@
+description: Rule satisfaction relationship — this rule satisfies (implements) an SRG requirement.
+type: object
+required:
+  - id
+  - rule_id
+additionalProperties: false
+properties:
+  id:
+    type: integer
+    description: Unique satisfaction record identifier.
+    example: 50
+  rule_id:
+    type: integer
+    description: ID of the rule that is satisfied.
+    example: 100
+  srg_id:
+    type:
+      - string
+      - 'null'
+    description: SRG requirement version identifier (from the SRG rule's version field).
+    example: "CNTR-00-000050"

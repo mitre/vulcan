@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# PR-717 review remediation .1 — the original lifecycle migration
+# The original lifecycle migration
 # (20260429145530_add_lifecycle_columns_to_reviews) added
 # `triage_status` as NOT NULL DEFAULT 'pending'. On instances upgrading
 # with pre-PR-717 `comment` reviews already in the DB, every legacy row
