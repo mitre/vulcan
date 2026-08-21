@@ -1,10 +1,11 @@
 # Vulcan Database Complete Redesign
 
 **Created:** 2025-11-30 (v1)
-**Updated:** 2026-05-20 (v2)
-**Status:** Design Document v2
+**Updated:** 2026-05-21 (v3)
+**Status:** Design Document v3
 **Scope:** Complete 3NF redesign of entire Vulcan database
-**Revision:** Incorporates expert review findings (DB design, Rails/AR, PostgreSQL performance) and v2.3.4 shipped work.
+**Branch:** `feat/database-3nf-redesign` (source of truth)
+**Revision:** v3 adds live data audit, 3-agent expert review findings, corrected phase plans, FK/polymorphic migration checklist, ASCII schema diagrams, and ORM clarification.
 
 ---
 
@@ -12,16 +13,29 @@
 
 1. [Changes Since v1](#changes-since-v1)
 2. [Current State Analysis](#current-state-analysis)
-3. [Problems Identified](#problems-identified)
-4. [Proposed 3NF Schema](#proposed-3nf-schema)
-5. [Review Workflow](#review-workflow)
-6. [Diff & Changelog Features](#diff--changelog-features)
-7. [SRG Upgrade Workflow](#srg-upgrade-workflow)
-8. [Migration Strategy](#migration-strategy)
-9. [Performance Optimizations](#performance-optimizations)
-10. [Implementation Phases](#implementation-phases)
-11. [Expert Review Findings](#expert-review-findings)
-12. [Next Steps](#next-steps)
+3. [Live Data Audit (2026-05-21)](#live-data-audit-2026-05-21)
+4. [Schema Diagrams](#schema-diagrams)
+5. [Problems Identified](#problems-identified)
+6. [Proposed 3NF Schema](#proposed-3nf-schema)
+7. [Review Workflow](#review-workflow-updated)
+8. [Diff & Changelog Features](#diff--changelog-features)
+9. [SRG Upgrade Workflow](#srg-upgrade-workflow)
+10. [Migration Strategy](#migration-strategy)
+11. [FK & Polymorphic Migration Checklist](#fk--polymorphic-migration-checklist)
+12. [Performance Optimizations](#performance-optimizations-updated)
+13. [Implementation Phases](#implementation-phases)
+14. [Rollback Plan](#rollback-plan)
+15. [Success Metrics](#success-metrics)
+16. [Expert Review Findings (v2)](#expert-review-findings)
+17. [Three-Agent Expert Review (v3)](#three-agent-expert-review-v3)
+18. [ORM Strategy](#orm-strategy)
+19. [Rollback Strategy](#rollback-strategy)
+20. [Post-Migration Data Validation](#post-migration-data-validation)
+21. [Performance Benchmarks](#performance-benchmarks)
+22. [Performance Analysis (2026-05-21)](#performance-analysis-2026-05-21)
+23. [Performance Regression Testing Strategy](#performance-regression-testing-strategy)
+24. [Frontend Data Access & Abstraction Layer](#frontend-data-access--abstraction-layer)
+25. [Next Steps](#next-steps)
 
 ---
 
@@ -177,6 +191,227 @@ base_rules (Single Table Inheritance)
 
 **Current Column Count:** 34 columns in base_rules
 **Storage:** Massive duplication -- every Component copies ALL SRG content
+
+---
+
+## Live Data Audit (2026-05-21)
+
+Captured from dev database on `feat/database-3nf-redesign` branch.
+
+### Table Inventory
+
+| Table | Rows | Cols | Notes |
+|-------|-----:|-----:|-------|
+| base_rules | 5,683 | 35 | STI: Rule=3,898, StigRule=1,126, SrgRule=659 |
+| checks | 5,683 | 8 | 1:1 with base_rules (ALL duplicated) |
+| disa_rule_descriptions | 5,683 | 18 | 1:1 with base_rules (ALL duplicated) |
+| references | 5,480 | 19 | Rule=3,695, StigRule=1,126, SrgRule=659 |
+| audits | 4,077 | 17 | 3,899 with auditable_type='BaseRule' |
+| sessions | 211 | 5 | |
+| reviews | 34 | 23 | commentable_type: 'BaseRule' and 'Component' |
+| memberships | 59 | 7 | |
+| components | 28 | 22 | |
+| users | 14 | 27 | |
+| security_requirements_guides | 4 | 9 | |
+| stigs | 4 | 10 | |
+| projects | 5 | 9 | |
+| reactions | 3 | 6 | |
+| rule_satisfactions | 0 | 2 | EMPTY -- nesting not exercised in dev |
+| rule_descriptions | 0 | 5 | EMPTY -- non-DISA descriptions unused |
+| additional_answers | 0 | 6 | FK to base_rules (rule_id) |
+| additional_questions | 0 | 7 | |
+| component_metadata | 0 | 5 | EMPTY -- candidate for drop |
+| project_metadata | 0 | 5 | EMPTY -- candidate for drop |
+| search_abbreviations | 0 | 7 | |
+| session_histories | 9 | 10 | |
+
+### Duplication Analysis
+
+**94.8% of all Rule content is byte-identical to its SRG template:**
+
+| Metric | Count | % of 3,898 Rules |
+|--------|------:|------------------:|
+| Check content identical to SRG | 3,695 | 94.8% |
+| Check content different from SRG | 0 | 0.0% |
+| vuln_discussion identical to SRG | 3,695 | 94.8% |
+| vuln_discussion different from SRG | 0 | 0.0% |
+| Title overrides (differs from SRG) | 0 | 0.0% |
+| Fixtext overrides (differs from SRG) | 0 | 0.0% |
+| Vendor comments set (non-empty) | 0 | 0.0% |
+| Status != 'Not Yet Determined' | 2 | 0.1% |
+| Rules with NULL srg_rule_id | 0 | 0.0% |
+
+**Conclusion:** In dev, 100% of Rule content is duplicated from SRG templates. The 203 Rules without SRG-matched checks (3,898 - 3,695 = 203) are in components using a different SRG version. Zero user overrides exist. This validates the override-not-copy design: post-migration, ~95% of check/description records can be eliminated.
+
+### Storage Impact
+
+| Table | Current Size |
+|-------|-------------:|
+| base_rules | 10.27 MB |
+| disa_rule_descriptions | 4.23 MB |
+| checks | 2.88 MB |
+| references | 0.96 MB |
+| **TOTAL** | **18.34 MB** |
+| **Estimated post-3NF** | **~6.42 MB (~65% reduction)** |
+
+### FK Audit: All Foreign Keys Referencing `base_rules`
+
+| Source Table | Column | Constraint | On Delete |
+|--------------|--------|------------|-----------|
+| additional_answers | rule_id | fk_rails_bd4cc5536a | (none -- default RESTRICT) |
+| base_rules | srg_rule_id | fk_rails_f50b94bb79 | (none -- self-ref) |
+| base_rules | stig_rule_id | fk_rails_6268ce03c4 | (none -- self-ref) |
+| reviews | rule_id | fk_rails_ddfe64a616 | ON DELETE RESTRICT |
+
+**NOTE:** `checks`, `disa_rule_descriptions`, `references`, `rule_descriptions` have `base_rule_id` columns but no FK constraints at the DB level (only Rails-level `belongs_to`).
+
+### Polymorphic Type Audit: 'BaseRule' References
+
+| Location | Count | Migration Action Needed |
+|----------|------:|-------------------------|
+| audits.auditable_type = 'BaseRule' | 3,899 | UPDATE to 'Rule' |
+| audits.associated_type = 'BaseRule' | 40 | UPDATE to 'Rule' |
+| reviews.commentable_type = 'BaseRule' | (in use) | UPDATE to 'Rule' |
+| Ruby code: hardcoded 'BaseRule' strings | 8+ locations | Code change required |
+
+**Ruby files with hardcoded 'BaseRule':**
+- `app/models/project.rb` (lines 39, 135)
+- `app/models/component.rb` (lines 414, 428, 629, 641, 658, 668)
+- `app/controllers/users_controller.rb` (line 288)
+- `app/controllers/components_controller.rb` (lines 153, 502-513)
+
+---
+
+## Schema Diagrams
+
+### Current Schema (STI + Duplication)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Projects                                                         │
+│ - name, description, visibility                                 │
+└────────────┬────────────────────────────────────────────────────┘
+             │ has_many
+             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Components                                                       │
+│ - name, prefix, version, release                                │
+│ - security_requirements_guide_id (which SRG template)           │
+│ - component_id (for overlays - optional)                        │
+└────────────┬───────────────────────┬────────────────────────────┘
+             │ has_many              │ belongs_to
+             ▼                       ▼
+┌─────────────────────────┐   ┌──────────────────────────────────┐
+│ base_rules (STI)        │   │ SecurityRequirementsGuides       │
+│ ==================      │   │ - srg_id, title, version         │
+│ Type = "Rule"           │   │ - xml (full XCCDF)               │
+│ - rule_id, version      │   └──────────────────────────────────┘
+│ - title, fixtext        │               │ has_many
+│ - status                │               ▼
+│ - vendor_comments       │   ┌──────────────────────────────────┐
+│ - srg_rule_id ──────────┼──▶│ base_rules (STI)                 │
+│ - component_id          │   │ Type = "SrgRule"                 │
+│                         │   │ - version (SRG-OS-000023)        │
+│ Type = "StigRule"       │   │ - title, fixtext (templates)     │
+│ - stig_id, vuln_id      │   │ - security_requirements_guide_id │
+└─────────┬───────────────┘   └──────────────────────────────────┘
+          │ has_many
+          ▼
+┌──────────────────────────────────────┐
+│ disa_rule_descriptions               │
+│ - vuln_discussion, mitigations       │
+│ - false_positives, etc. (11 fields)  │
+└──────────────────────────────────────┘
+┌──────────────────────────────────────┐
+│ checks                               │
+│ - content (check text)               │
+└──────────────────────────────────────┘
+┌──────────────────────────────────────┐
+│ references (Dublin Core)             │
+│ - 19 columns, 5,480 rows            │
+│ - base_rule_id (no FK constraint)    │
+└──────────────────────────────────────┘
+┌──────────────────────────────────────┐
+│ rule_satisfactions (join table)      │
+│ - rule_id                            │
+│ - satisfied_by_rule_id               │
+│ (Currently: Rule → Rule — WRONG)     │
+└──────────────────────────────────────┘
+```
+
+### Proposed 3NF Schema (Overrides, Not Copies)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ SrgRule (TEMPLATE - read-only, shared across all components)    │
+│ - version (SRG-OS-000023)                                       │
+│ - title, fixtext (DEFAULT content)                              │
+│ - has_many :checks (DEFAULT check content)                      │
+│ - has_many :disa_rule_descriptions (DEFAULT vuln_discussion)    │
+│ - has_many :references (Dublin Core metadata)                   │
+└─────────────────────────────────────────────────────────────────┘
+                              ▲
+                              │ belongs_to :srg_rule
+                              │
+┌─────────────────────────────────────────────────────────────────┐
+│ Rule (USER'S IMPLEMENTATION - stores only overrides)            │
+│ - belongs_to :component                                         │
+│ - belongs_to :srg_rule (the requirement this implements)        │
+│                                                                 │
+│ OVERRIDE FIELDS (NULL = use SRG default):                       │
+│ - title (NULL or user override)                                 │
+│ - fixtext (NULL or user override)                               │
+│                                                                 │
+│ USER-SPECIFIC FIELDS (always on Rule):                          │
+│ - status, vendor_comments, status_justification                 │
+│ - inspec_control_body, artifact_description                     │
+│                                                                 │
+│ ASSOCIATED OVERRIDES:                                           │
+│ - checks: only if user modified (else use srg_rule.checks)      │
+│ - disa_rule_descriptions: only if modified                      │
+│ - references: only if modified                                  │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│ rule_satisfactions (CORRECTED)                                  │
+│ - rule_id (the primary control in component)                    │
+│ - srg_rule_id (the SRG requirement it satisfies)               │
+│                                                                 │
+│ Example: RHEL SSH control satisfies 3 SRG requirements         │
+│ ┌──────────┬─────────────┐                                      │
+│ │ rule_id  │ srg_rule_id │                                      │
+│ ├──────────┼─────────────┤                                      │
+│ │    5     │     23      │  Rule #5 satisfies SRG-OS-000023    │
+│ │    5     │     24      │  Rule #5 satisfies SRG-OS-000024    │
+│ │    5     │     25      │  Rule #5 satisfies SRG-OS-000025    │
+│ └──────────┴─────────────┘                                      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Display Logic (Fallback Pattern)
+
+```ruby
+class Rule < ApplicationRecord
+  belongs_to :srg_rule
+
+  def display_title
+    title.presence || srg_rule&.title
+  end
+
+  def display_fixtext
+    fixtext.presence || srg_rule&.fixtext
+  end
+
+  def display_check_content
+    check_override&.content.presence || srg_rule&.checks&.first&.content
+  end
+
+  def display_vuln_discussion
+    description_override&.vuln_discussion.presence ||
+      srg_rule&.disa_rule_descriptions&.first&.vuln_discussion
+  end
+end
+```
 
 ---
 
@@ -1315,6 +1550,60 @@ Phase dependencies:
 
 ---
 
+## FK & Polymorphic Migration Checklist
+
+**Generated from live data audit on 2026-05-21.** Every item must be addressed during the migration phases.
+
+### Foreign Keys Pointing to `base_rules`
+
+| # | Source | Column | Constraint | Migration Phase | Action |
+|---|--------|--------|------------|-----------------|--------|
+| 1 | additional_answers | rule_id | fk_rails_bd4cc5536a | Phase 2 | Re-point FK to `rules` table |
+| 2 | base_rules | srg_rule_id | fk_rails_f50b94bb79 | Phase 2 | Becomes `rules.srg_rule_id → srg_rules` |
+| 3 | base_rules | stig_rule_id | fk_rails_6268ce03c4 | Phase 2 | Drop (stig_rules is separate table) |
+| 4 | reviews | rule_id | fk_rails_ddfe64a616 | Phase 2.5 | Re-point to `rules`, keep ON DELETE RESTRICT |
+
+### Columns with `base_rule_id` (No DB-level FK)
+
+| # | Table | Rows | Migration Phase | Action |
+|---|-------|-----:|-----------------|--------|
+| 5 | checks | 5,683 | Phase 2 | Split into srg_checks + stig_checks + rule_check_overrides |
+| 6 | disa_rule_descriptions | 5,683 | Phase 2 | Split into srg_descriptions + stig_descriptions + rule_description_overrides |
+| 7 | references | 5,480 | Phase 2 | Split into srg_references + stig_references + rule_reference_overrides |
+| 8 | rule_descriptions | 0 | Phase 8 | Drop (empty, unused) |
+
+### Polymorphic 'BaseRule' Strings in Database
+
+| # | Table.Column | Rows | Migration Phase | Action |
+|---|-------------|-----:|-----------------|--------|
+| 9 | audits.auditable_type | 3,899 | Phase 2 | `UPDATE SET 'Rule'` for Rule-type, add SrgRule/StigRule types |
+| 10 | audits.associated_type | 40 | Phase 2 | Same treatment |
+| 11 | reviews.commentable_type | (in use) | Phase 2.5 | `UPDATE SET 'Rule' WHERE 'BaseRule'` |
+
+### Hardcoded 'BaseRule' Strings in Ruby Code
+
+| # | File | Lines | Action |
+|---|------|-------|--------|
+| 12 | app/models/project.rb | 39, 135 | Change to 'Rule' (or dual-read during transition) |
+| 13 | app/models/component.rb | 414, 428, 629, 641, 658, 668 | Change to 'Rule' |
+| 14 | app/controllers/users_controller.rb | 288 | Change to 'Rule' |
+| 15 | app/controllers/components_controller.rb | 153 | Change to 'Rule' |
+| 16 | app/models/concerns/severity_counts.rb | 55-80 | References `base_rules` table name directly |
+
+### Tables Not Addressed in Prior Plan Versions
+
+| Table | Rows | Status | Decision Needed |
+|-------|-----:|--------|-----------------|
+| references | 5,480 | **MISSING from plan** | Must split by STI type like checks/descriptions |
+| rule_descriptions | 0 | **MISSING from plan** | Drop in Phase 8 (confirmed empty) |
+| additional_answers | 0 | **MISSING from plan** | Re-point FK to rules table in Phase 2 |
+| component_metadata | 0 | Mentioned but no migration code | Drop in Phase 8 (confirmed empty) |
+| project_metadata | 0 | Mentioned but no migration code | Drop in Phase 8 (confirmed empty) |
+| search_abbreviations | 0 | Not mentioned | No change needed |
+| session_histories | 9 | Not mentioned | No change needed |
+
+---
+
 ## Performance Optimizations [UPDATED]
 
 ### Indexes
@@ -1429,20 +1718,37 @@ end
 ### Phase 0: Preparation & Backup
 
 **Claude-pace estimate: 8-15 min**
+**Goal:** Baseline metrics, FK audit, full backup
 
 ```bash
-# Full database backup
-pg_dump vulcan_production > vulcan_pre_migration_$(date +%Y%m%d).sql
+# 1. Run FK audit — enumerate every dependency on base_rules
+psql -d vulcan_production -c "
+  SELECT conname, conrelid::regclass, confrelid::regclass, pg_get_constraintdef(oid)
+  FROM pg_constraint WHERE confrelid = 'base_rules'::regclass
+  ORDER BY conrelid::regclass::text;
+"
 
-# Record current counts for verification
+# 2. Run baseline benchmarks and validation
+PHASE=0 bundle exec rails db:benchmark
+bundle exec rails db:validate
+
+# 3. Full database backup (custom format for selective restore)
+pg_dump -Fc --no-owner --no-acl vulcan_production > checkpoint_phase_0_$(date +%Y%m%d_%H%M).dump
+
+# 4. Verify backup integrity
+pg_restore --list checkpoint_phase_0_*.dump | tail -5
+
+# 5. Record current counts for verification
 rails runner "
   puts 'Rules: ' + Rule.count.to_s
   puts 'SrgRules: ' + SrgRule.count.to_s
   puts 'StigRules: ' + StigRule.count.to_s
   puts 'Checks: ' + Check.count.to_s
   puts 'DisaRuleDescriptions: ' + DisaRuleDescription.count.to_s
+  puts 'References: ' + Reference.count.to_s
   puts 'Reviews: ' + Review.count.to_s
   puts 'Reactions: ' + Reaction.count.to_s
+  puts 'Audits (BaseRule): ' + Audited::Audit.where(auditable_type: 'BaseRule').count.to_s
   puts 'Satisfactions: ' + ActiveRecord::Base.connection.execute(
     'SELECT COUNT(*) FROM rule_satisfactions').first['count']
 "
@@ -1451,17 +1757,26 @@ rails runner "
 ### Phase 1: Add Fallback Display Methods
 
 **Claude-pace estimate: 25-45 min**
-**Goal:** Establish pattern without changing database
+**Goal:** Establish display_* pattern without changing database. Ships independently.
+
+**CRITICAL (v3 review fix):** The eager-loading scope must ONLY include `:srg_rule` in Phase 1.
+The `:check_override` and `:description_override` associations do not exist until Phase 3.
+Including them here crashes the app if Phase 1 deploys before Phase 3.
 
 ```ruby
 # app/models/concerns/display_fallback.rb
 module DisplayFallback
   extend ActiveSupport::Concern
 
+  DISPLAYABLE_FIELDS = %w[
+    title fixtext ident ident_system rule_severity rule_weight
+    fix_id fixtext_fixref legacy_ids
+  ].freeze
+
   included do
-    # [FIX] Eager-loading scope prevents N+1 on collections
+    # Phase 1: only :srg_rule. Phase 3 adds :check_override, :description_override
     scope :with_display_fallbacks, -> {
-      includes(:srg_rule, :check_override, :description_override)
+      includes(:srg_rule)
     }
 
     def display_title
@@ -1472,7 +1787,7 @@ module DisplayFallback
       self[:fixtext].presence || srg_rule&.fixtext
     end
 
-    # [CRITICAL FIX] Use respond_to? not rescue nil
+    # [v3 FIX] Allowlist prevents public_send injection
     def display_field(field)
       override_method = "#{field}_override"
       override_value = if respond_to?(override_method, true)
@@ -1493,16 +1808,28 @@ end
 
 Update all blueprints and views to use `display_*` methods.
 
-### Phase 2: Split STI into Separate Tables
+### Phase 2: Split STI + Rename base_rules + Migrate All Dependents
 
 **Claude-pace estimate: 45-90 min**
-**Goal:** Separate SrgRule, StigRule, Rule into distinct tables
+**Goal:** Extract SrgRule/StigRule into new tables, rename base_rules → rules, migrate ALL dependent tables.
+**Requires:** 5-minute maintenance window. Combined with Phase 2.5 as single deploy.
+**Checkpoint:** `pg_dump -Fc --no-owner --no-acl` BEFORE running.
+
+**v3 review corrections applied:**
+- Explicit `ALTER TABLE base_rules RENAME TO rules` (was missing — C2)
+- `references` table split (5,480 rows — was completely missing — C1)
+- `additional_answers.rule_id` FK re-pointed (was missing — C5)
+- Polymorphic type updates for audits (3,899 rows — was missing — C8)
+- `LOCK TABLE ... SHARE MODE` around INSERT+setval (race condition fix — I3)
 
 ```ruby
 # db/migrate/YYYYMMDD_split_sti_tables.rb
 class SplitStiTables < ActiveRecord::Migration[8.0]
   def up
-    # Create srg_rules table
+    # === LOCK to prevent concurrent writes during migration ===
+    execute "LOCK TABLE base_rules IN SHARE MODE"
+
+    # === 1. Create srg_rules table ===
     create_table :srg_rules do |t|
       t.references :security_requirements_guide, foreign_key: true
       t.string :rule_identifier, null: false
@@ -1518,12 +1845,10 @@ class SplitStiTables < ActiveRecord::Migration[8.0]
       t.string :legacy_ids
       t.timestamps
     end
-
-    # [FIX] Composite index for upgrade workflow
     add_index :srg_rules, [:security_requirements_guide_id, :version],
               name: 'idx_srg_rules_srg_version'
 
-    # Create stig_rules table
+    # === 2. Create stig_rules table ===
     create_table :stig_rules do |t|
       t.references :stig, foreign_key: true
       t.string :rule_identifier, null: false
@@ -1534,54 +1859,93 @@ class SplitStiTables < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    # Migrate data (ID-preserving for FK stability)
+    # === 3. ID-preserving data migration ===
     execute <<~SQL
       INSERT INTO srg_rules (id, security_requirements_guide_id, rule_identifier, ...)
       SELECT id, security_requirements_guide_id, rule_id, ...
       FROM base_rules WHERE type = 'SrgRule'
     SQL
-
-    # [FIX] Reset sequence after ID-preserving migration
     execute <<~SQL
-      SELECT setval('srg_rules_id_seq', (SELECT MAX(id) FROM srg_rules));
-      SELECT setval('stig_rules_id_seq', (SELECT MAX(id) FROM stig_rules));
+      INSERT INTO stig_rules (id, stig_id, rule_identifier, ...)
+      SELECT id, stig_id, rule_id, ...
+      FROM base_rules WHERE type = 'StigRule'
     SQL
 
-    # ... similar for stig_rules
+    # === 4. Reset sequences ===
+    execute "SELECT setval('srg_rules_id_seq', (SELECT COALESCE(MAX(id), 0) FROM srg_rules))"
+    execute "SELECT setval('stig_rules_id_seq', (SELECT COALESCE(MAX(id), 0) FROM stig_rules))"
 
-    # Create srg_checks, srg_descriptions, stig_checks, stig_descriptions
-    # ... migrate check and description data
+    # === 5. Create srg_checks, srg_descriptions, srg_references ===
+    # (split from checks/disa_rule_descriptions/references where base_rule type = 'SrgRule')
+    create_table :srg_checks do |t|
+      t.references :srg_rule, null: false, foreign_key: true
+      t.text :content
+      # ... other check fields
+      t.timestamps
+    end
+    # ... similar for srg_descriptions, srg_references
+    # ... similar for stig_checks, stig_descriptions, stig_references
+    # Migrate data using JOIN on base_rules.type
+
+    # === 6. Delete extracted rows from base_rules ===
+    execute "DELETE FROM base_rules WHERE type IN ('SrgRule', 'StigRule')"
+
+    # === 7. Rename base_rules → rules (v3 review fix C2) ===
+    rename_table :base_rules, :rules
+
+    # === 8. Re-point FKs that referenced base_rules ===
+    # additional_answers (v3 review fix C5)
+    remove_foreign_key :additional_answers, :base_rules, column: :rule_id, if_exists: true
+    add_foreign_key :additional_answers, :rules, column: :rule_id
+
+    # srg_rule_id self-ref → now points to srg_rules
+    remove_foreign_key :rules, :base_rules, column: :srg_rule_id, if_exists: true
+    add_foreign_key :rules, :srg_rules, column: :srg_rule_id
+
+    # Drop stig_rule_id FK (stig_rules is separate table now)
+    remove_foreign_key :rules, :base_rules, column: :stig_rule_id, if_exists: true
+    remove_column :rules, :stig_rule_id
+
+    # === 9. Update polymorphic type strings (v3 review fix C8) ===
+    execute "UPDATE audits SET auditable_type = 'Rule' WHERE auditable_type = 'BaseRule'"
+    execute "UPDATE audits SET associated_type = 'Rule' WHERE associated_type = 'BaseRule'"
+
+    # === 10. Add NOT NULL on rules.srg_rule_id (every Rule must ref SRG) ===
+    change_column_null :rules, :srg_rule_id, false
+
+    # === 11. Add composite unique index (v3 suggestion) ===
+    add_index :rules, [:component_id, :srg_rule_id], unique: true,
+              name: 'idx_rules_component_srg_unique'
   end
 
-  # [FIX] Explicit irreversible declaration
   def down
     raise ActiveRecord::IrreversibleMigration,
-      'STI split cannot be reversed -- restore from backup'
+      'STI split cannot be reversed -- restore from Phase 0 checkpoint'
   end
 end
 ```
 
-### Phase 2.5: Reviews FK Migration [NEW]
+### Phase 2.5: Reviews FK Migration (Combined Deploy with Phase 2)
 
 **Claude-pace estimate: 15-25 min**
-**Dependency: Phase 2 must be complete**
+**Deploys WITH Phase 2** (not independently — v3 review fix I8)
+
+**v3 review corrections applied:**
+- Keep `on_delete: :restrict` (was incorrectly changed to `:nullify` — C4)
+- Update `commentable_type` in DB AND Ruby code (8+ files — C7)
 
 ```ruby
 # db/migrate/YYYYMMDD_migrate_review_fks_to_rules.rb
 class MigrateReviewFksToRules < ActiveRecord::Migration[8.0]
   def up
-    # Remove old FK pointing to base_rules
-    remove_foreign_key :reviews, :base_rules, column: :rule_id, if_exists: true
+    # Remove old FK (was pointing to base_rules, now renamed to rules)
+    remove_foreign_key :reviews, :rules, column: :rule_id, if_exists: true
 
-    # Re-add FK pointing to new rules table (IDs preserved from Phase 2)
-    add_foreign_key :reviews, :rules, column: :rule_id, on_delete: :nullify
+    # Re-add FK with RESTRICT (v3 review fix C4 — keep original behavior)
+    add_foreign_key :reviews, :rules, column: :rule_id, on_delete: :restrict
 
     # Update polymorphic type column
-    execute <<~SQL
-      UPDATE reviews
-      SET commentable_type = 'Rule'
-      WHERE commentable_type = 'BaseRule'
-    SQL
+    execute "UPDATE reviews SET commentable_type = 'Rule' WHERE commentable_type = 'BaseRule'"
   end
 
   def down
@@ -1591,9 +1955,19 @@ class MigrateReviewFksToRules < ActiveRecord::Migration[8.0]
 end
 ```
 
-### Phase 3: Add Override Tables
+**Required code changes (deploy alongside migration):**
+Update all hardcoded `'BaseRule'` strings to `'Rule'` in:
+- `app/models/project.rb` (lines 39, 135)
+- `app/models/component.rb` (lines 414, 428, 629, 641, 658, 668)
+- `app/controllers/users_controller.rb` (line 288)
+- `app/controllers/components_controller.rb` (line 153)
+- `app/models/concerns/severity_counts.rb` (references `base_rules` table name — update to `rules`)
+
+### Phase 3: Add Override Tables + Update Display Scope
 
 **Claude-pace estimate: 25-45 min**
+**Also:** Update `with_display_fallbacks` scope to include `:check_override, :description_override` (safe now that tables exist).
+**Also:** Create `rule_reference_overrides` table for references (v3 review fix C1).
 
 ```ruby
 # db/migrate/YYYYMMDD_create_override_tables.rb
@@ -1604,7 +1978,7 @@ class CreateOverrideTables < ActiveRecord::Migration[8.0]
       t.text :content
       t.string :system
       # [FIX] Explicit override tracking to disambiguate NULLs
-      t.text :overridden_fields, array: true, default: []
+      t.text :overridden_fields, array: true, default: '{}'
       t.timestamps
     end
 
@@ -1821,35 +2195,43 @@ namespace :db do
 end
 ```
 
-### Phase 8: Remove Legacy Columns
+### Phase 8: Remove Legacy Columns & Drop Empty Tables
 
 **Claude-pace estimate: 8-15 min**
+**Checkpoint:** `pg_dump -Fc --no-owner --no-acl` BEFORE running.
+**Run:** `db:validate` + `db:benchmark` before AND after.
+
+**v3 review corrections applied:**
+- `base_rules` was renamed to `rules` in Phase 2 — no `drop_table :base_rules`
+- Added `drop_table :references` (old table, replaced by srg/stig/rule_reference_overrides)
+- Added `drop_table :rule_descriptions` (confirmed empty — C6)
 
 ```ruby
 # db/migrate/YYYYMMDD_remove_legacy_columns.rb
 class RemoveLegacyColumns < ActiveRecord::Migration[8.0]
   def up
-    # Remove old STI columns from rules table
+    # Remove old STI columns from rules table (renamed from base_rules in Phase 2)
     remove_column :rules, :type
     remove_column :rules, :security_requirements_guide_id
     remove_column :rules, :stig_id
-    remove_column :rules, :stig_rule_id
 
-    # Remove duplicate content columns (now in override tables)
+    # Remove duplicate content columns (now in override tables from Phase 3)
+    # ... title, fixtext etc. that are now nullable overrides
 
-    # Drop old tables
-    drop_table :base_rules  # After verifying all data migrated
-    drop_table :checks      # Replaced by srg_checks + rule_check_overrides
-    drop_table :disa_rule_descriptions  # Replaced by srg_descriptions + overrides
+    # Drop old dependent tables (data migrated in Phase 2)
+    drop_table :checks               # → srg_checks + rule_check_overrides
+    drop_table :disa_rule_descriptions # → srg_descriptions + rule_description_overrides
+    drop_table :references            # → srg_references + rule_reference_overrides (v3 fix C1)
+    drop_table :rule_descriptions     # Empty, confirmed in live data audit (v3 fix C6)
 
-    # Drop metadata tables (merged into parent)
-    drop_table :project_metadata
-    drop_table :component_metadata
+    # Drop empty metadata tables
+    drop_table :project_metadata      # 0 rows in live data audit
+    drop_table :component_metadata    # 0 rows in live data audit
   end
 
   def down
     raise ActiveRecord::IrreversibleMigration,
-      'Legacy table removal cannot be reversed -- restore from backup'
+      'Legacy table removal cannot be reversed -- restore from Phase 7 checkpoint'
   end
 end
 ```
@@ -1938,6 +2320,112 @@ where it was addressed.
 | 4 | Redundant satisfaction index | PG Expert | Drop standalone (rule_id), keep composite unique |
 | 5 | STI split needs setval() on sequences | PG Expert | Added to Phase 2 migration |
 | 6 | Phase 7 cleanup needs transaction + idempotency | Rails Expert | Wrapped in transaction |
+
+---
+
+## Three-Agent Expert Review (v3)
+
+**Conducted 2026-05-21** using three specialized agents: Database Normalization Architect, Drizzle ORM Specialist, and Migration Best Practices Expert. Each independently reviewed the full plan, current schema, prior v3.x plans, and live data profile.
+
+### CRITICAL — Must Fix Before Implementation
+
+| # | Finding | Agent | Resolution |
+|---|---------|-------|------------|
+| C1 | `references` table (5,480 rows) completely absent from plan. FK to `base_rules` will break when dropped in Phase 8 | DB Arch + Migration | **Added to Phase 2** — split into srg_references + stig_references + rule_reference_overrides |
+| C2 | Phase 2 never creates the `rules` table. `srg_rules` and `stig_rules` extracted but no `CREATE TABLE rules` or `RENAME TABLE base_rules TO rules` | DB Arch + Migration | **Phase 2 must include explicit `ALTER TABLE base_rules RENAME TO rules`** after extracting SRG/STIG rows |
+| C3 | Phase 2 has no dual-write period — labeled expand-contract but performs big-bang split | Migration | **Accept 5-min maintenance window for Phase 2** rather than claim false zero-downtime |
+| C4 | `reviews.rule_id` FK silently changes from `on_delete: :restrict` to `on_delete: :nullify` — business logic change | Migration | **Keep RESTRICT** — this was an intentional constraint, document the decision |
+| C5 | `additional_answers.rule_id` FK to `base_rules` not addressed | Migration | **Added to FK checklist** — re-point in Phase 2 |
+| C6 | `rule_descriptions` table absent from plan (0 rows but modeled) | DB Arch | **Drop in Phase 8** — confirmed empty in live data |
+| C7 | 8+ hardcoded `commentable_type: 'BaseRule'` strings in Ruby code | Migration | **Code change required alongside Phase 2.5** — see FK checklist |
+| C8 | `audits.auditable_type = 'BaseRule'` (3,899 rows) not mentioned | Migration | **UPDATE in Phase 2** — see polymorphic audit |
+
+### IMPORTANT — Should Fix
+
+| # | Finding | Agent | Resolution |
+|---|---------|-------|------------|
+| I1 | Phase 1 `with_display_fallbacks` scope includes `:check_override`/`:description_override` but those tables don't exist until Phase 3. Deploy Phase 1 alone = crash | DB Arch | **Phase 1 scope must only `includes(:srg_rule)`** — add override includes in Phase 3 |
+| I2 | `display_field(field)` uses `public_send` — injection risk if field from user input | DB Arch | **Add DISPLAYABLE_FIELDS allowlist** |
+| I3 | `setval()` race condition if Rails running during Phase 2 migration | Migration | **Wrap INSERT + setval in transaction with SHARE MODE lock on base_rules** |
+| I4 | No GIN index creation uses `disable_ddl_transaction!` + concurrent algorithm | Migration | **All GIN indexes in separate migration files with `disable_ddl_transaction!`** |
+| I5 | Counter caches have no periodic recalculation cron | DB Arch | **Add scheduled `stats:recalculate` job** (not just manual rake task) |
+| I6 | `benchmark_changesets` uses polymorphic type strings, not actual FK constraints | DB Arch | **Use dual nullable FKs** (`from_srg_id`, `from_stig_id`) with CHECK exactly-one-non-null |
+| I7 | Phase 7 cleanup wraps all dedup in single transaction — locks entire table | Migration | **Use batched transactions** (100 records per commit) |
+| I8 | Consolidate Phase 2 + 2.5 into single deploy — can't ship independently | Migration | **Merge into one deploy with 5-min maintenance window** |
+
+### VALIDATED — Plan Gets Right
+
+| Finding | Agent |
+|---------|-------|
+| Override-not-copy design eliminates 70% duplication (confirmed: 94.8% by live data) | DB Arch |
+| STI split is correct — three types have divergent FKs, lifecycle, column sets | DB Arch |
+| Counter caches replacing matviews avoids deadlock risk | DB Arch |
+| `overridden_fields text[]` to disambiguate NULL semantics is solid | DB Arch |
+| ID-preserving migration for FK stability is the right approach | Migration |
+| `IrreversibleMigration` guards on destructive phases | Migration |
+| Existing `db:validate` task is comprehensive (232 lines) | Migration |
+| CHECK constraint on `pg_column_size(changes)` prevents JSONB bloat | Migration |
+| Expand-contract checkpoint protocol is production-grade | DB Arch |
+
+### SUGGESTIONS
+
+| Finding | Agent |
+|---------|-------|
+| Add `NOT NULL` constraint on `rules.srg_rule_id` (every Rule must ref an SRG requirement) | DB Arch |
+| Add composite unique index `(component_id, srg_rule_id)` on rules table | DB Arch |
+| `overridden_fields` default should be `'{}'` not `[]` in Rails migration | DB Arch |
+| Tag benchmarks with phase number: `PHASE=2 rails db:benchmark` | Migration |
+| Run `db:validate` + `db:benchmark` before AND after every irreversible phase | Migration |
+| Run FK audit script before Phase 0 to enumerate all base_rules dependencies | Migration |
+| Add `--no-owner --no-acl` to `pg_dump` checkpoints for cross-environment restore | Migration |
+| Explicitly list `search_abbreviations` and `session_histories` as "no change needed" | DB Arch |
+
+---
+
+## ORM Strategy
+
+### v2.x (Rails 8): ActiveRecord — No Change
+
+The v2.x migration uses ActiveRecord migrations exclusively. ActiveRecord handles every query pattern in this plan:
+- `DisplayFallback` concern with `includes` for eager loading
+- Counter caches via `after_commit` callbacks
+- Complex SQL via `execute` / `find_by_sql` for the ~5% that needs it
+- Expand-contract migrations with `reversible`, `disable_ddl_transaction!`, advisory locks
+
+**Do not introduce any JavaScript/TypeScript ORM into the Rails app.**
+
+### ActiveRecord vs Drizzle Comparison
+
+| Dimension | ActiveRecord (Rails) | Drizzle (TypeScript) |
+|-----------|---------------------|---------------------|
+| Query builder | Ruby DSL, very expressive | SQL-like TypeScript, fully typed |
+| Type safety | None at query level (Ruby) | Full — query result types inferred |
+| Raw SQL escape | Easy (`execute`, `find_by_sql`) | Easy (`sql` template tag) |
+| Migrations | Best in class — reversible, expand-contract, `disable_ddl_transaction!`, advisory locks | Immature — forward-only, no rollback, no concurrent index |
+| PG-native features | GIN, partial indexes, CHECK all supported | Same, first-class in schema DSL |
+| N+1 prevention | `includes`/`preload`/`eager_load` | Manual joins (more explicit) |
+| Polymorphic | Built-in pattern | DIY |
+| Ecosystem maturity | 20+ years, Shopify/GitHub/GitLab scale | ~2 years, growing fast |
+
+### Future Rewrite (Nuxt/Hono): Drizzle
+
+When Vulcan is rewritten in TypeScript, Drizzle is the correct ORM:
+- 85-90% of query patterns expressible without raw SQL
+- `drizzle-zod` eliminates schema/validation duplication
+- GIN, partial indexes, CHECK constraints are first-class
+- `union()`, `groupBy().having()` typed and composable
+- Bulk upsert for XCCDF import in a single statement
+
+**Migration path:** Complete the 3NF migration with ActiveRecord in v2.x → `drizzle-kit pull` to introspect the migrated schema → `drizzle-kit generate` manages evolution from there. Fork Heimdall's `libs/schemas/` Drizzle patterns.
+
+### Drizzle vs Prisma (for Future Rewrite)
+
+Drizzle recommended over Prisma. Key reasons:
+- Prisma requires 40-60% raw SQL fallback for this schema (UNION, GROUP BY with HAVING, partial indexes, GIN containment queries)
+- Drizzle: 10-15% raw SQL fallback (only polymorphic queries and JSONB operators)
+- Prisma's Rust query engine is an opaque binary — complicates RPM/container packaging
+- Drizzle's `drizzle-zod` generates validators from schema — single source of truth
+- Drizzle's migration tooling (`drizzle-kit`) handles the target schema's indexes natively
 
 ---
 
@@ -2163,8 +2651,8 @@ namespace :db do
     puts "\n=== Performance Baseline ==="
     results.each { |k, v| puts "  #{k}: #{v.is_a?(Float) ? '%.4fs' % v : v}" }
 
-    File.write('tmp/db_benchmark_baseline.json', JSON.pretty_generate(results))
-    puts "\nSaved to tmp/db_benchmark_baseline.json"
+    File.write('db/benchmarks/db_benchmark_baseline.json', JSON.pretty_generate(results))
+    puts "\nSaved to db/benchmarks/db_benchmark_baseline.json"
   end
 end
 ```
@@ -2214,81 +2702,246 @@ No endpoint may regress more than **10% on p95 response time** or gain more than
 
 ---
 
-## ORM Evaluation: Drizzle over Prisma
+## Performance Analysis (2026-05-21)
 
-The full database rebuild requires an ORM that can express Vulcan's query patterns natively. Prisma was evaluated and rejected; Drizzle is recommended.
+Benchmarked against dev database: Component "Photon OS 3" with 203 rules.
 
-### Why Not Prisma
+### Where Time Actually Goes
 
-Prisma cannot express the following patterns that this schema requires:
+| Operation | Time | % of Total |
+|-----------|-----:|----------:|
+| DB fetch (eager loaded, 6 queries) | 16.5ms | 3.8% |
+| Blueprint :navigator (203 rules) | 8.2ms | 1.9% |
+| Blueprint :viewer (203 rules + associations) | 96.5ms | 22.2% |
+| Blueprint :editor (203 rules + reviews + SRG) | ~620ms | ~71% |
+| JSON.generate | 0.16ms | negligible |
 
-| Pattern | Vulcan Usage | Prisma Support |
-|---------|-------------|----------------|
-| UNION / UNION ALL queries | `pending_comment_counts`, `paginated_comments` polymorphic union | `$queryRaw` only |
-| GROUP BY with HAVING | Status counts, counter cache recalculation | `$queryRaw` only |
-| Partial indexes | `WHERE deleted_at IS NULL` on rules | Not expressible in schema |
-| GIN indexes | JSONB containment, full-text search | Not expressible in schema |
-| CHECK constraints | `pg_column_size(changes) < 256000` | Not expressible in schema |
-| Polymorphic associations | `reviews.commentable_type/id → Rule or Component` | No concept — manual workarounds |
-| Covering indexes (INCLUDE) | `UNIQUE (rule_id) INCLUDE (content)` on override tables | Not supported |
+**The bottleneck is serialization volume, not database queries or frontend architecture.**
 
-**Estimated raw SQL fallback rate with Prisma: 40-60%** of this schema's query patterns. At that point the ORM is overhead, not help.
+Blueprint :editor costs 3.05ms per rule because it serializes: reviews, SRG data, satisfactions, additional answers, check content, description fields, and the comment_summary computation — for all 203 rules.
 
-Prisma's migration system also **silently drops** PostgreSQL-specific features it doesn't understand. A GIN index defined in a Prisma schema is simply ignored. For a security compliance application where data integrity is non-negotiable, silent feature drops are unacceptable.
+### Per-Rule Serialization Cost
 
-### Why Drizzle
+| Blueprint View | Per Rule | 203 Rules | Purpose |
+|---------------|--------:|----------:|---------|
+| Default (comment_summary) | 0.061ms | 12.4ms | Sidebar badges |
+| :navigator | 0.040ms | 8.2ms | Rule list |
+| :viewer | 0.475ms | 96.5ms | Read-only detail |
+| :editor | 3.047ms | ~620ms | Editing form |
 
-| Capability | Drizzle Support | Notes |
-|-----------|----------------|-------|
-| UNION / GROUP BY / HAVING | First-class, typed | `union(q1, q2)`, `.groupBy().having()` |
-| Partial indexes | `index().where()` in schema | Native `drizzle-kit` support |
-| GIN indexes | `.using('gin')` in schema | Native support |
-| CHECK constraints | `check()` in table definition | Native support |
-| Polymorphic joins | Manual typed `relations()` | Same as any typed ORM — no magic, no footguns |
-| Covering indexes | `index().include()` | Supported |
-| Bulk insert/upsert | `.values([...]).onConflictDoUpdate()` | Single statement, 10K+ rows |
-| Relational queries (preloading) | `findMany({ with: { reviews: true } })` | Typed equivalent of AR `includes()` |
-| Raw SQL fallback | `sql` tagged template (typed, composable) | Not a string escape hatch |
+### Why 3NF Migration IS the Performance Fix
 
-**Estimated raw SQL fallback rate with Drizzle: 10-15%** (materialized views, complex CTEs).
+Current state: **94.8% of check/description records are byte-identical copies of SRG templates** that get serialized for nothing.
 
-### Drizzle Ecosystem for This Project
+| Metric | Current (copies) | Post-3NF (overrides) | Improvement |
+|--------|-----------------:|--------------------:|------------:|
+| Check records per component | 203 | ~10 (overrides only) | 95% fewer |
+| Description records per component | 203 | ~10 (overrides only) | 95% fewer |
+| Reference records per component | ~185 | ~10 (overrides only) | 95% fewer |
+| Estimated :viewer serialization | 96.5ms | ~30ms | ~3x faster |
+| Estimated :editor serialization | ~620ms | ~100-150ms | ~4-6x faster |
+| DB storage | 18.34 MB | ~6.42 MB | 65% reduction |
 
-| Tool | Package | Source | Use Case |
-|------|---------|--------|----------|
-| Schema → Zod validation | `drizzle-zod` | Official (1.57M/wk) | Input validation from schema — no manual Zod duplication |
-| Deterministic seeding | `drizzle-seed` | Official (257K/wk) | Dev/test seeds with typed generators |
-| Row-Level Security | `pgTable.withRLS()` | Official (core) | PostgreSQL RLS policies in schema |
-| In-memory test DB | `@electric-sql/pglite` | Official driver (8.59M/wk) | WASM Postgres for tests — no Docker |
-| Migration diffing | `drizzle-kit` | Official (7.97M/wk) | Schema diff → reviewed SQL, snapshots for CI |
-| Logging | Built-in `Logger` interface | Official (core) | Custom `logQuery(sql, params)` |
+The `display_*` fallback methods push "merge override with template" to one COALESCE per field in SQL — fewer objects for Blueprinter to iterate, fewer JSON keys to generate, less data over the wire.
 
-### Gaps (DIY Required)
+### What Does NOT Improve Performance
 
-| Need | Approach |
-|------|----------|
-| Soft deletes | `deletedAt` column + query wrapper (no plugin exists) |
-| Audit trails | PostgreSQL `AFTER INSERT/UPDATE/DELETE` trigger — more reliable than app-layer auditing for compliance |
-| JSONB typed operators | `sql` template for `@>`, `?` operators — functional but untyped |
-| Full-text search | `sql` template for `to_tsvector()`, `@@` — documented pattern, no abstraction |
-| Nuxt integration | Manual wiring in `server/utils/db.ts` — no official module |
+Adding frontend abstraction layers (Pinia stores, composables, typed API wrappers) is a **developer experience and maintainability** win, not a performance win. The same JSON travels through more layers. Port those patterns during the Vue 3 migration, not during the 3NF migration.
 
-### Recommendation
+---
 
-**Use Drizzle for the full database rebuild.** It handles 85-90% of Vulcan's query patterns natively with type safety, versus Prisma's 40-60%. The schema-as-TypeScript-code approach means the 3NF schema in this document can be directly translated to Drizzle table definitions with all PostgreSQL-specific features (partial indexes, GIN, CHECK constraints, RLS) preserved.
+## Performance Regression Testing Strategy
 
-For the gaps (soft deletes, audit trails, FTS), PostgreSQL-native solutions are actually superior to ORM plugins for a compliance application — trigger-based auditing is tamper-resistant and doesn't depend on application code paths.
+### Principle
+
+Performance gains from the 3NF migration must be **validated per phase** and **protected permanently**. Every phase runs benchmarks before and after. The test suite enforces query count budgets and response time ceilings that cannot silently regress.
+
+### Per-Phase Benchmark Protocol
+
+```bash
+# BEFORE each phase:
+PHASE=N_pre bundle exec rails db:benchmark
+bundle exec rails db:validate
+
+# Run the migration
+
+# AFTER each phase:
+PHASE=N_post bundle exec rails db:benchmark
+bundle exec rails db:validate
+
+# Compare:
+# db:benchmark auto-compares with previous baseline (±10% threshold)
+# Review db/benchmarks/db_benchmark_*.json files for per-metric deltas
+```
+
+### Permanent Test Suite Guards
+
+These specs run on every CI build, not just during migration:
+
+```ruby
+# spec/requests/performance/component_query_budget_spec.rb
+RSpec.describe 'Component query budgets', type: :request do
+  let!(:component) { create(:component, :with_rules, rule_count: 50) }
+
+  before do
+    Rails.application.reload_routes!
+    sign_in create(:user, admin: true)
+  end
+
+  it 'loads component show within query budget' do
+    assert_query_count_at_most(8, 'Component show exceeded query budget') do
+      get "/components/#{component.id}.json"
+    end
+  end
+
+  it 'loads paginated comments within query budget' do
+    assert_query_count_at_most(6, 'Paginated comments exceeded query budget') do
+      get "/components/#{component.id}/comments.json", params: { page: 1, per_page: 25 }
+    end
+  end
+
+  it 'loads component show within response time ceiling' do
+    start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    get "/components/#{component.id}.json"
+    elapsed = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000
+
+    expect(elapsed).to be < 500, "Component show took #{elapsed.round(1)}ms (ceiling: 500ms)"
+  end
+end
+```
+
+### Bullet Gem Integration
+
+```ruby
+# spec/support/bullet.rb (add to spec/rails_helper.rb)
+if Bullet.enable?
+  config.before(:each) { Bullet.start_request }
+  config.after(:each) do
+    Bullet.perform_out_of_channel_notifications if Bullet.notification?
+    Bullet.end_request
+  end
+end
+
+# config/environments/test.rb
+config.after_initialize do
+  Bullet.enable = true
+  Bullet.raise = true  # Fail tests on N+1 or unused eager loads
+end
+```
+
+### CI Integration
+
+```yaml
+# .github/workflows/ci.yml (add to backend job)
+- name: Performance regression check
+  run: |
+    bundle exec rails db:benchmark
+    bundle exec rspec spec/requests/performance/ --format documentation
+```
+
+### What Gets Tested
+
+| Guard | Where | Catches |
+|-------|-------|---------|
+| `assert_query_count_at_most` | Request specs | N+1 queries from missing `includes`, new associations |
+| Response time ceiling | Request specs | Serialization bloat, missing indexes |
+| `Bullet.raise = true` | All specs | N+1 anywhere in the app, unused eager loads |
+| `db:benchmark` comparison | CI job | Per-phase regressions, gradual drift over time |
+| `db:validate` | CI job | Orphaned FKs, NULL violations, counter cache drift |
+
+### Long-Term: Performance Dashboard
+
+After the migration stabilizes, consider:
+- **rack-mini-profiler** badge in dev (already recommended in Tooling section)
+- **Grafana dashboard** tracking p50/p95 response times per endpoint (if deployed with observability stack)
+- **Quarterly `db:benchmark` baseline refresh** committed to repo (track growth over months)
+
+---
+
+## Frontend Data Access & Abstraction Layer
+
+### Current v2.x Architecture (No Centralized Store)
+
+v2.x has NO Pinia, no Vuex, no centralized data store. Data flows as:
+
+```
+HAML template → mounts Vue component → component calls axios → controller → Blueprint → JSON
+```
+
+The abstraction between database shape and frontend is the **Blueprint layer** (18 files). If blueprints use `display_*` methods from the DisplayFallback concern, the JSON API shape stays identical through the migration — the frontend sees no change.
+
+### Abstraction Layers
+
+| Layer | v2.x (current) | v3.x (reference) | Migration Impact |
+|-------|----------------|-------------------|-----------------|
+| HTTP | Direct `axios` calls in 20+ components | `apis/*.api.ts` (typed) | No change needed if API shape preserved |
+| State | None (props from HAML, local component data) | Pinia stores (`stores/*.store.ts`) | No change needed |
+| Business logic | Mixins (15 files) | Composables (`composables/use*.ts`) | Minimal — operate on JSON, not DB columns |
+| Serialization | **Blueprinters (18 files)** | Same blueprints | **KEY LAYER** — must use `display_*` methods |
+| Type contract | None (untyped JS) | TypeScript interfaces (`types/`) | No change needed |
+
+### What Must Change in Frontend
+
+Only **3 frontend files** reference `BaseRule` directly:
+
+| File | Line | Current | Change To |
+|------|------|---------|-----------|
+| `mixins/HumanizedTypesMixIn.vue` | 9 | `BaseRule: "Rule"` | `Rule: "Rule"` (or remove entry) |
+| `components/shared/ControlsSidepanels.vue` | 136 | `abbreviate-type="BaseRule"` | `abbreviate-type="Rule"` |
+
+### What Must Change in Backend (API Shape Preservation)
+
+**20+ controller actions bypass blueprints** (`render json:` directly). These leak raw model attributes and could break if column names change. Actions needed:
+
+1. **Phase 1:** Audit all `render json:` calls — identify which return rule/check/description data
+2. **Phase 2+:** Ensure no raw `base_rule_id` or `BaseRule` type leaks through to JSON
+3. **Ongoing:** Migrate remaining `render json:` calls to use blueprints
+
+### v3.x Reference Architecture (For Future)
+
+v3.x already has the full three-layer data access pattern in `app/javascript/`:
+
+```
+apis/rules.api.ts       → HTTP layer (axios wrapper, typed requests/responses)
+stores/rules.store.ts   → Pinia store (cache, state management, computed)
+composables/useRules.ts → Business logic (toast, error handling, exposed to components)
+```
+
+Pattern: `Component → Composable → Store → API → Controller → Blueprint → Model`
+
+This pattern completely decouples components from database shape. When the v2.x Vue 3 migration happens, port these patterns from the v3.x worktree rather than building from scratch:
+- 14 API files in `apis/`
+- 14 Pinia stores in `stores/`
+- 30+ composables in `composables/`
+- Full TypeScript interfaces in `types/`
+
+### Key Principle
+
+**The Blueprint is the contract.** If `RuleBlueprint` returns `title` using `rule.display_title` instead of `rule.title`, the frontend JSON stays `{ "title": "..." }` regardless of whether the value came from the rule's override or the SRG template fallback. No frontend changes needed for the data model change.
 
 ---
 
 ## Next Steps
 
-1. **Review this v2 document** -- Get stakeholder alignment on expert-review changes
-2. **Create feature branch** -- `feat/database-3nf-v3`
-3. **Start Phase 0** -- Backups and baseline metrics
-4. **Incremental implementation** -- One phase per session, each independently shippable
-5. **Phase ordering** -- Phases 0-1 are independent; Phase 2 unlocks 2.5 and 4; Phases 3, 5-8 are independent of each other
+1. **Build beads epic** -- Create Phase 0-8 child cards with corrected scope from this v3 review
+2. **Run FK audit script** -- Enumerate all `base_rules` dependencies before any migration
+3. **Start Phase 0** -- Backups, baseline metrics (`db:benchmark`), data validation (`db:validate`)
+4. **Phase 1** -- DisplayFallback concern (scope only includes `:srg_rule`, NOT override tables)
+5. **Phase 2 + 2.5 (combined deploy)** -- STI split + reviews FK + polymorphic type updates + `references` table split. Plan 5-min maintenance window.
+6. **Phase 3** -- Override tables (add `:check_override`/`:description_override` to display scope)
+7. **Phase 4** -- Satisfaction model fix (if `rule_satisfactions` has data by then)
+8. **Phases 5-8** -- Independent: changesets, counter caches, metadata merge, legacy cleanup
+
+### Key Corrections from v3 Review
+- Phase 2 must rename `base_rules` to `rules` (not just extract SRG/STIG rows)
+- Phase 2 must handle `references` table (5,480 rows — was completely missing)
+- Phase 2 must update polymorphic 'BaseRule' strings in DB (audits: 3,899 rows, reviews)
+- Phase 2+2.5 must deploy together (not independently shippable)
+- Phase 1 display scope must NOT reference Phase 3 tables
+- Keep `reviews.rule_id` as ON DELETE RESTRICT (not nullify)
+- All GIN indexes use `disable_ddl_transaction!` + concurrent creation
+- Run `db:validate` + `db:benchmark` before AND after every irreversible phase
 
 ---
 
-**Ready to begin?** Start with Phase 0 (backup) and Phase 1 (display methods + eager-loading scope).
+**ORM:** ActiveRecord for all v2.x migration work. Drizzle for future Nuxt/Hono rewrite (fork Heimdall's `libs/schemas/` patterns, use `drizzle-kit pull` to introspect the migrated schema). See [ORM Strategy](#orm-strategy) section for full comparison.
