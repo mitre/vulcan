@@ -27,7 +27,7 @@ ARG NODE_VERSION=24.18.0
 # =============================================================================
 # BASE STAGE - Common foundation for all stages
 # =============================================================================
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.7@sha256:907b68736aa798b2d38255b7aa070b2a70acb90803864a40f05d0ec47556ddd0 AS base
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.8@sha256:8eb2830d0936237fc13a1f2f7e45aecf90d69043380ad167fad0343632937f41 AS base
 
 USER 0
 
