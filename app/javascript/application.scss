@@ -650,6 +650,21 @@
     color: var(--vulcan-body-color);
   }
 
+  // Disabled state (e.g. the source-SRG picker before a kind is chosen).
+  // vue-multiselect's own CSS hardcodes #ededed on the control and its arrow,
+  // which reads as an unstyled light-gray box in dark mode; theme it so the
+  // disabled control matches the rest of the form. The default opacity stays,
+  // so it still reads as disabled.
+  .multiselect--disabled {
+    background: var(--vulcan-component-bg);
+  }
+
+  .multiselect--disabled .multiselect__current,
+  .multiselect--disabled .multiselect__select {
+    background: var(--vulcan-component-bg);
+    color: var(--vulcan-text-muted);
+  }
+
   // ── fad.4: Navbar, sidebar, breadcrumbs, tabs ────────────────────
   .breadcrumb {
     background-color: var(--vulcan-component-bg-alt);
