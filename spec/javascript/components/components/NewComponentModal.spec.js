@@ -105,6 +105,44 @@ describe("NewComponentModal", () => {
   });
 
   // ==========================================
+  // CREATION PROGRESS TOAST
+  // Requirement: every component is created FROM a source SRG, and the delay
+  // scales with that source's requirement count. The progress toast must not
+  // read as if the created component itself were an SRG (a STIG author seeing
+  // "large SRGs" reasonably read it as a mislabel) — it names the source copy.
+  // ==========================================
+  describe("creation progress toast", () => {
+    it("describes the source SRG copy, not the created component's kind", async () => {
+      wrapper = shallowMount(NewComponentModal, {
+        localVue,
+        propsData: { ...defaultProps },
+        mocks: { $refs: { AddComponentModal: { show: () => {} } } },
+      });
+      const toastSpy = vi.spyOn(wrapper.vm.$bvToast, "toast").mockImplementation(() => {});
+      vi.spyOn(wrapper.vm.$bvToast, "hide").mockImplementation(() => {});
+      // Minimal valid state so validation passes and we reach the progress
+      // toast: the picker flow needs a chosen document_type (here STIG, the
+      // reported scenario), plus a prefix, name, and source SRG.
+      await wrapper.setData({
+        document_type: "stig",
+        prefix: "ABCD",
+        name: "My STIG",
+        security_requirements_guide_id: 1,
+      });
+
+      wrapper.vm.createComponent();
+
+      const progress = toastSpy.mock.calls.find(([msg]) => /creating component/i.test(msg));
+      expect(progress).toBeTruthy();
+      const [message] = progress;
+      // Names the source SRG being copied, and never claims the OUTPUT is an SRG
+      // or a STIG.
+      expect(message).toMatch(/source SRG/i);
+      expect(message).not.toMatch(/large STIGs/i);
+    });
+  });
+
+  // ==========================================
   // PROGRAMMATIC ACCESS
   // ==========================================
   describe("programmatic modal triggering", () => {
