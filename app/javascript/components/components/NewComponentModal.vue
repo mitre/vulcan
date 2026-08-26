@@ -528,16 +528,13 @@ export default {
       }
 
       // Modal closes naturally (no preventDefault) — show background progress
-      this.$bvToast.toast(
-        "Creating component — copying the source SRG may take a moment for large SRGs...",
-        {
-          title: "Creating Component",
-          variant: "info",
-          solid: true,
-          noAutoHide: true,
-          id: "create-component-progress",
-        },
-      );
+      this.$bvToast.toast("Creating component — this may take a moment...", {
+        title: "Creating Component",
+        variant: "info",
+        solid: true,
+        noAutoHide: true,
+        id: "create-component-progress",
+      });
 
       let formData = new FormData();
       formData.append(

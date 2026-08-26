@@ -106,13 +106,12 @@ describe("NewComponentModal", () => {
 
   // ==========================================
   // CREATION PROGRESS TOAST
-  // Requirement: every component is created FROM a source SRG, and the delay
-  // scales with that source's requirement count. The progress toast must not
-  // read as if the created component itself were an SRG (a STIG author seeing
-  // "large SRGs" reasonably read it as a mislabel) — it names the source copy.
+  // Requirement: the progress toast is kind-neutral. A STIG author seeing
+  // "large SRGs" read it as a mislabel, so the toast names neither SRG nor
+  // STIG — it only signals that creation may take a moment.
   // ==========================================
   describe("creation progress toast", () => {
-    it("describes the source SRG copy, not the created component's kind", async () => {
+    it("is kind-neutral — names neither SRG nor STIG", async () => {
       wrapper = shallowMount(NewComponentModal, {
         localVue,
         propsData: { ...defaultProps },
@@ -135,10 +134,10 @@ describe("NewComponentModal", () => {
       const progress = toastSpy.mock.calls.find(([msg]) => /creating component/i.test(msg));
       expect(progress).toBeTruthy();
       const [message] = progress;
-      // Names the source SRG being copied, and never claims the OUTPUT is an SRG
-      // or a STIG.
-      expect(message).toMatch(/source SRG/i);
-      expect(message).not.toMatch(/large STIGs/i);
+      // Kind-neutral: mentions neither SRG nor STIG, so creating a STIG never
+      // shows a mismatched "SRG".
+      expect(message).not.toMatch(/\bSRGs?\b/i);
+      expect(message).not.toMatch(/\bSTIGs?\b/i);
     });
   });
 
