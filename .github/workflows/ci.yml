@@ -367,8 +367,70 @@ jobs:
         run: docker compose down -v
 
   # ─── GATE — single required status check for branch protection ───
+  # Test/CI databases are built with `db:schema:load`, so a migration's `up`
+  # path is never executed before merge — a strong_migrations-unsafe or
+  # otherwise broken migration only surfaces in Heroku's release phase (as it
+  # did for AddSrgAuthoringColumns). This job runs every migration from an
+  # EMPTY database, exactly as the release phase does, and checks that the
+  # result stays consistent with the committed schema.
+  migrations:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    services:
+      db:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: vulcan_vue_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_INITDB_ARGS: "--nosync"
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 500ms
+          --health-timeout 3s
+          --health-retries 20
+
+    env:
+      DATABASE_HOST: localhost
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      RAILS_ENV: test
+      RUBY_YJIT_ENABLE: "1"
+      CI: "true"
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 1
+      # TEMPORARY: source-build Ruby because ruby-builder has no prebuilt binary
+      # for the pinned version yet. Revert to ruby/setup-ruby once it does.
+      - uses: ./.github/actions/setup-ruby-source
+
+      # Run every migration's `up` against an empty database under
+      # strong_migrations — the same path Heroku's release phase takes. No JS or
+      # docs build is needed: this boots Rails only to run migrations.
+      - name: Migrate a fresh database from scratch
+        run: |
+          bundle exec rails db:create
+          bundle exec rails db:migrate
+
+      # A migration whose result drifts from the committed schema is the same
+      # class of latent bug. db:migrate re-dumps schema.rb in this env
+      # (dump_schema_after_migration is only disabled in production), so any
+      # drift surfaces as a diff.
+      - name: Schema stays consistent with the migrations
+        run: git diff --exit-code db/schema.rb
+
   ci-gate:
-    needs: [lint, frontend, backend, seed-pipeline, docker]
+    needs: [lint, frontend, backend, seed-pipeline, docker, migrations]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 2
