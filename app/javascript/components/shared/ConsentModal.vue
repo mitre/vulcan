@@ -13,6 +13,9 @@
   >
     <!-- eslint-disable-next-line vue/no-v-html -- Content is sanitized via DOMPurify -->
     <div class="consent-content" v-html="sanitizedContent" />
+    <b-alert :show="!!errorMessage" variant="danger" class="mt-3 mb-0" data-testid="consent-error">
+      {{ errorMessage }}
+    </b-alert>
     <template #modal-footer>
       <b-button variant="primary" data-testid="consent-agree" @click="onAgree"> I Agree </b-button>
     </template>
@@ -45,6 +48,7 @@ export default {
     return {
       showModal: false,
       acknowledged: false,
+      errorMessage: "",
     };
   },
   computed: {
@@ -62,12 +66,18 @@ export default {
   },
   methods: {
     async onAgree() {
+      this.errorMessage = "";
       try {
         await acknowledgeConsent();
         this.acknowledged = true;
         this.showModal = false;
       } catch {
-        // POST failed — keep modal visible, consent not recorded
+        // POST failed — keep modal visible, consent not recorded, and tell the
+        // user (a silent catch made a failed acknowledgment look like a dead
+        // button). A successful bodyless 200 no longer lands here — baseApi's
+        // parseBody resolves an empty response instead of throwing on it.
+        this.errorMessage =
+          "We couldn't record your acknowledgment. Please check your connection and try again.";
         this.showModal = true;
       }
     },
