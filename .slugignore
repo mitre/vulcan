@@ -39,10 +39,18 @@ Procfile.dev
 vitest.config.js
 setup-docker-secrets.sh
 
-# Documentation files not needed at runtime
+# Documentation files not needed at runtime.
+#
+# ONLY list a file here if NO page under docs/site symlinks to it. The served
+# documentation site symlinks several repo-root docs into its tree (e.g.
+# docs/site/getting-started/environment-variables.md -> ../../../ENVIRONMENT_VARIABLES.md)
+# and builds them during `assets:precompile`, which runs AFTER .slugignore has
+# already deleted matches. Listing a symlink target here removes it before the
+# build, leaving a DANGLING symlink that VitePress drops from the page set —
+# silently 404ing the page, and failing the build outright if any page links to
+# it. That is exactly what broke the Heroku docs build.
+#
+# The following are therefore intentionally NOT listed (each is a live symlink
+# target under docs/site): CODE_OF_CONDUCT.md, CONTRIBUTING.md,
+# ENVIRONMENT_VARIABLES.md, ROADMAP.md, SECURITY.md.
 BENCHMARK-VIEWER-DESIGN.md
-CODE_OF_CONDUCT.md
-CONTRIBUTING.md
-ENVIRONMENT_VARIABLES.md
-ROADMAP.md
-SECURITY.md
