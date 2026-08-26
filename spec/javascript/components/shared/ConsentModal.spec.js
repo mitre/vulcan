@@ -119,6 +119,35 @@ describe("ConsentModal", () => {
       expect(acknowledgeConsent).toHaveBeenCalled();
       expect(wrapper.vm.showModal).toBe(true);
     });
+
+    it("surfaces a visible error message when the POST fails (not a silent catch)", async () => {
+      acknowledgeConsent.mockRejectedValue(new Error("Network error"));
+      wrapper = createWrapper();
+
+      await wrapper.vm.onAgree();
+      await wrapper.vm.$nextTick();
+
+      // errorMessage drives the b-alert (:show="!!errorMessage") rendered in the
+      // modal body; the modal content is teleported, so assert on state like the
+      // title/content tests above rather than reaching into the portal.
+      expect(wrapper.vm.errorMessage).toContain("couldn't record your acknowledgment");
+    });
+
+    it("clears any prior error and closes the modal on a successful retry", async () => {
+      acknowledgeConsent.mockRejectedValueOnce(new Error("Network error"));
+      wrapper = createWrapper();
+
+      await wrapper.vm.onAgree();
+      await wrapper.vm.$nextTick();
+      expect(wrapper.vm.errorMessage).not.toBe("");
+
+      acknowledgeConsent.mockResolvedValueOnce({ status: 200 });
+      await wrapper.vm.onAgree();
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.vm.errorMessage).toBe("");
+      expect(wrapper.vm.showModal).toBe(false);
+    });
   });
 
   describe("when required is false (already acknowledged server-side)", () => {

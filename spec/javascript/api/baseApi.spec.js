@@ -52,8 +52,7 @@ describe("baseApi", () => {
       kyPut.mockResolvedValueOnce({
         status: 200,
         headers: new Headers({ "content-type": "application/problem+json; charset=utf-8" }),
-        json: () => Promise.resolve({ type: "/docs/api/errors#not_found", title: "Not found" }),
-        text: () => Promise.resolve("SHOULD NOT BE USED"),
+        text: () => Promise.resolve('{"type":"/docs/api/errors#not_found","title":"Not found"}'),
       });
       const { data, status } = await api.put("/anything", {});
       expect(status).toBe(200);
@@ -64,8 +63,7 @@ describe("baseApi", () => {
       kyPut.mockResolvedValueOnce({
         status: 200,
         headers: new Headers({ "content-type": "application/json; charset=utf-8" }),
-        json: () => Promise.resolve({ ok: true }),
-        text: () => Promise.resolve("SHOULD NOT BE USED"),
+        text: () => Promise.resolve('{"ok":true}'),
       });
       const { data } = await api.put("/anything", {});
       expect(data).toEqual({ ok: true });
@@ -80,6 +78,42 @@ describe("baseApi", () => {
       });
       const { data } = await api.put("/anything", {});
       expect(data).toEqual("a,b,c");
+    });
+  });
+
+  // ── Empty-body success responses ───────────────────────────────────
+  // REQUIREMENT: a bodyless success — HTTP 204/205, or a Rails `head :ok`
+  // (a 200 with no content) — must RESOLVE to { data: null }, never reject.
+  // Calling response.json() on an empty body throws SyntaxError, which turned
+  // a successful bodyless action (consent acknowledge, template delete) into a
+  // rejected request: the consent modal stayed open even though the server had
+  // recorded the acknowledgment.
+  describe("empty-body success responses", () => {
+    const empty = () => Promise.resolve("");
+    const jsonOnEmpty = () => Promise.reject(new SyntaxError("Unexpected end of JSON input"));
+
+    it("resolves a 204 No Content to null data", async () => {
+      kyPut.mockResolvedValueOnce({
+        status: 204,
+        headers: new Headers(),
+        json: jsonOnEmpty,
+        text: empty,
+      });
+      const { data, status } = await api.put("/anything", {});
+      expect(status).toBe(204);
+      expect(data).toBeNull();
+    });
+
+    it("resolves a bodyless 200 (Rails head :ok) to null even when typed application/json", async () => {
+      kyPut.mockResolvedValueOnce({
+        status: 200,
+        headers: new Headers({ "content-type": "application/json; charset=utf-8" }),
+        json: jsonOnEmpty,
+        text: empty,
+      });
+      const { data, status } = await api.put("/anything", {});
+      expect(status).toBe(200);
+      expect(data).toBeNull();
     });
   });
 

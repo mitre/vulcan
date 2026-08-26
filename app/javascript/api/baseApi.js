@@ -66,9 +66,17 @@ const client = ky.create({
 });
 
 /**
- * Parse response body as JSON or text based on Content-Type header.
+ * Parse a response body as JSON or text based on Content-Type header.
+ *
+ * The body is read exactly once, as text, then parsed. A bodyless success —
+ * HTTP 204/205, or a Rails `head :ok` (a 200 with no content) — yields an empty
+ * string and resolves to `null`: there is nothing to parse, and calling
+ * `response.json()` on an empty body throws SyntaxError, which would turn a
+ * successful bodyless action (consent acknowledge, template delete) into a
+ * rejected request.
+ *
  * @param {Response} response - Fetch API Response object.
- * @returns {Promise<Object|string>} Parsed JSON object, or raw text for non-JSON responses.
+ * @returns {Promise<Object|string|null>} Parsed JSON, raw text, or null for an empty body.
  */
 async function parseBody(response) {
   // Match application/json AND +json structured-syntax suffixes
@@ -79,7 +87,11 @@ async function parseBody(response) {
     .trim()
     .toLowerCase();
   const [, subtype = ""] = mimeType.split("/", 2);
-  return subtype === "json" || /[.+-]json$/.test(subtype) ? response.json() : response.text();
+  const isJson = subtype === "json" || /[.+-]json$/.test(subtype);
+
+  const text = await response.text();
+  if (text === "") return null;
+  return isJson ? JSON.parse(text) : text;
 }
 
 /**
