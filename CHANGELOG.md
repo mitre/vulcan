@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v2.4.1] - 2026-08-26
+
 ### Added
 
 - **Three-column triage split-pane** — triagers see a persistent rule sidebar (col-2), rule content (col-5), and comment + triage form (col-5) side by side, replacing the prev/next nav + modal workflow. Sidebar shows rules grouped with pending/total counts, search filter, and keyboard navigation. Reuses BenchmarkViewer layout pattern. (PR #746)
@@ -49,6 +51,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Copying a personal access token works in non-HTTPS deployments (clipboard API fallback + failure toast). (PR #746)
 - Admin token-revoke justification is captured in a modal instead of `window.prompt`, which is blockable in sandboxed contexts and silent on cancel. (PR #746)
 - Navbar global search input has an accessible name for screen readers. (PR #746)
+- **Consent "I Agree" no longer looks like a dead button** — a bodyless success (Rails `head :ok`) made the API client throw while parsing the empty body, so the consent modal stayed open even though consent had been recorded server-side; the client now resolves empty (204 / `head :ok`) responses instead of failing on them, and a genuine failure surfaces a visible error. (PR #766)
+- **Component-creation progress toast is kind-neutral** — creating a STIG no longer shows an "SRG" reference in the progress toast. (PR #766, #767)
+- **Source-SRG picker is themed while disabled** — before a document kind is chosen, the multi-select source picker matches the dark theme instead of rendering as an unstyled light-gray box. (PR #767)
+- **SRG-authoring migration is release-phase-safe** — `AddSrgAuthoringColumns` builds its index concurrently and adds its foreign key and check constraint unvalidated-then-validated, so a `db:migrate` on a populated database no longer aborts under strong_migrations or blocks writes.
 
 ### Security
 
