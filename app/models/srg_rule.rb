@@ -68,6 +68,21 @@ class SrgRule < BaseRule
     !locked
   end
 
+  # Row-editability contract shared with Rule (the spreadsheet-update pipeline
+  # gates each row on it). An authored SRG requirement has no satisfaction graph,
+  # so the row is editable exactly when it is not locked.
+  def row_editable?
+    !locked
+  end
+
+  # CSV positional attributes for the spreadsheet round-trip, in the same order
+  # as Rule#csv_attributes. Built through the kind-aware ExportableRule (the
+  # source-reference / satisfies / InSpec columns are blank for an authored
+  # SrgRule) so the export and the re-import agree on the column layout.
+  def csv_attributes
+    Export::ExportableRule.new(self).values_for(Export::ExportableRule::CSV_KEYS)
+  end
+
   private
 
   # An authored row belongs to a component. During a nested build (the

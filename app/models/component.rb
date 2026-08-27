@@ -793,22 +793,12 @@ class Component < ApplicationRecord
     ).call
   end
 
-  # An SRG component's requirements are authored SrgRules; the spreadsheet
-  # pipeline addresses the Rule family, so against an srg component an update
-  # would silently no-op at best and write to the wrong rows at worst. Both
-  # entry points below refuse through this one message — the single door for
-  # every caller.
-  SPREADSHEET_UPDATE_UNSUPPORTED_FOR_SRG =
-    'Spreadsheet update is not available for SRG components — their ' \
-    'requirements are authored in the editor, not imported from a spreadsheet.'
-
   # Preview changes from a spreadsheet without saving.
   # Returns a hash with :updated, :unchanged, :skipped_locked, :warnings keys,
-  # or { error: "message" } on validation failure.
+  # or { error: "message" } on validation failure. Works for both kinds — the
+  # requirement rows are loaded through the kind seam below.
   def update_from_spreadsheet(spreadsheet, _user = nil)
-    return { error: SPREADSHEET_UPDATE_UNSUPPORTED_FOR_SRG } if document_type == 'srg'
-
-    result = SpreadsheetParser.new(spreadsheet, security_requirements_guide_id).parse_and_validate
+    result = spreadsheet_parser(spreadsheet).parse_and_validate
     return { error: result[:error] } if result.key?(:error)
 
     build_update_comparison(result[:rows])
@@ -817,13 +807,10 @@ class Component < ApplicationRecord
   # Apply changes from a spreadsheet to the database.
   # Returns { success: true, count: N } or { error: "message" }.
   def apply_spreadsheet_update(spreadsheet, _user = nil)
-    return { error: SPREADSHEET_UPDATE_UNSUPPORTED_FOR_SRG } if document_type == 'srg'
-
-    result = SpreadsheetParser.new(spreadsheet, security_requirements_guide_id).parse_and_validate
+    result = spreadsheet_parser(spreadsheet).parse_and_validate
     return { error: result[:error] } if result.key?(:error)
 
-    loaded_rules = rules.eager_load(:disa_rule_descriptions, :checks, :satisfies, :satisfied_by,
-                                    srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
+    loaded_rules = spreadsheet_pipeline_requirements
     rule_by_rule_id = loaded_rules.index_by(&:rule_id)
     rule_by_srg_id = loaded_rules.index_by(&:srg_identifier)
     updated_count = 0
@@ -844,8 +831,30 @@ class Component < ApplicationRecord
       end
     end
 
-    create_rule_satisfactions if updated_count.positive?
+    # The satisfaction graph is STIG-only; authored SRG requirements have none.
+    create_rule_satisfactions if updated_count.positive? && document_type != 'srg'
     { success: true, count: updated_count }
+  end
+
+  # The requirement rows the spreadsheet-update pipeline reads, per kind. STIG
+  # components load Rules with the satisfaction/source-SRG associations the
+  # comparison uses; SRG components load their authored SrgRules with only the
+  # BaseRule-shared associations (no satisfies/satisfied_by/srg_rule).
+  def spreadsheet_pipeline_requirements
+    if document_type == 'srg'
+      requirements.eager_load(:disa_rule_descriptions, :rule_descriptions, :checks, :references)
+    else
+      rules.eager_load(:disa_rule_descriptions, :checks, :satisfies, :satisfied_by,
+                       srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
+    end
+  end
+
+  # Kind-aware spreadsheet parser. STIG components validate the upload's SRG ids
+  # against their source SRG's rules; an SRG component's authored requirements
+  # carry their own versions (not in the source SRG), so validate against those.
+  def spreadsheet_parser(spreadsheet)
+    valid_versions = requirements.map(&:version) if document_type == 'srg'
+    SpreadsheetParser.new(spreadsheet, security_requirements_guide_id, valid_versions: valid_versions)
   end
 
   private
@@ -900,8 +909,7 @@ class Component < ApplicationRecord
   # Build a comparison of spreadsheet rows vs current rule data.
   # Match by STIG ID (unique per rule) to handle multiple rules sharing the same SRG ID.
   def build_update_comparison(rows)
-    loaded_rules = rules.eager_load(:disa_rule_descriptions, :checks, :satisfies, :satisfied_by,
-                                    srg_rule: %i[disa_rule_descriptions rule_descriptions checks])
+    loaded_rules = spreadsheet_pipeline_requirements
     # Build lookup by rule_id (numeric portion of STIG ID)
     rule_by_rule_id = loaded_rules.index_by(&:rule_id)
     # Also build SRG ID lookup for rows without STIG ID

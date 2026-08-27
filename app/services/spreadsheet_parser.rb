@@ -48,9 +48,15 @@ class SpreadsheetParser
 
   # @param spreadsheet [String, ActionDispatch::Http::UploadedFile] path or uploaded file
   # @param srg_id [Integer] SecurityRequirementsGuide ID to validate against
-  def initialize(spreadsheet, srg_id)
+  # @param valid_versions [Array<String>, nil] override the set of acceptable
+  #   SRG-id (version) values. STIG components validate against their source
+  #   SRG's rules (the default); an SRG component's authored requirements carry
+  #   their OWN versions, which are not in the source SRG, so the caller passes
+  #   the component's own requirement versions here.
+  def initialize(spreadsheet, srg_id, valid_versions: nil)
     @spreadsheet = spreadsheet
     @srg_id = srg_id
+    @valid_versions = valid_versions
     @errors = []
   end
 
@@ -69,7 +75,7 @@ class SpreadsheetParser
     return error_result("Missing required headers: #{missing_headers.join(', ')}") unless missing_headers.empty?
 
     srg_rules = SecurityRequirementsGuide.find(@srg_id).srg_rules
-    database_srg_ids = srg_rules.map(&:version)
+    database_srg_ids = @valid_versions || srg_rules.map(&:version)
     spreadsheet_srg_ids = parsed.pluck(IMPORT_MAPPING[:srg_id]).compact_blank
     missing_from_srg = spreadsheet_srg_ids - database_srg_ids
 
