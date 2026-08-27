@@ -90,10 +90,10 @@ setup and first steps.
 ## Latest Release
 
 ::: info Current Version
-**v2.3.7** - Released May 2026
+**v2.4.1** - Released August 2026
 
-Component-level comments via polymorphic reviews, project-aggregate disposition matrix CSV export, "Comment" toolbar button rename, replies allowed on active threads after a comment period closes.
-[View Release Notes →](/release-notes/v2.3.7)
+Redesigned three-column comment-triage split-pane with a click-to-filter progress bar, accessibility improvements, SRG-authoring foundations, login-path security hardening (JSON login lockout + throttling), and a broad set of fixes.
+[View Release Notes →](/release-notes/v2.4.1)
 :::
 
 ## Why Vulcan?
