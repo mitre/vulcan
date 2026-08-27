@@ -92,8 +92,8 @@ jobs:
         with:
           name: Vulcan
           version: ${{ steps.version.outputs.version }}
-          ironbank_pat: ${{ secrets.SAF_IRONBANK_CLI_TOKEN }}
-          ironbank_username: ${{ secrets.SAF_IRONBANK_CLI_USERNAME }}
+          ironbank_pat: ${{ secrets.SAF_IRONBANK_REPO1_PAT }}
+          ironbank_username: ${{ secrets.SAF_IRONBANK_REPO1_USERNAME }}
           ironbank_project_id: 17073
           ironbank_project_clone_url: repo1.dso.mil/dsop/mitre/security-automation-framework/vulcan.git
           git_commit_author_name: "Automated Vulcan Release"
