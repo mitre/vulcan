@@ -212,8 +212,8 @@ describe("ExportModal", () => {
 
     it("select-all skips excluded SRG components and the tri-state counts only selectable ones", async () => {
       wrapper = createWrapper({ components: withSrg });
-      // working_copy has no SRG meaning → SRG components are excluded.
-      wrapper.vm.selectedMode = "working_copy";
+      // vendor_submission has no SRG meaning → SRG components are excluded.
+      wrapper.vm.selectedMode = "vendor_submission";
       await wrapper.vm.$nextTick();
 
       expect(wrapper.vm.isSrgExcludedSelection).toBe(true);
@@ -1437,7 +1437,9 @@ describe("ExportModal", () => {
     it("disables purposes with no srg meaning when every component is srg", () => {
       wrapper = createWrapper({ components: [srgComponent], availableModes: allModes });
 
-      expect(modeInput("working_copy").attributes("disabled")).toBeDefined();
+      // working_copy now serves SRG components (same-as-STIG export), so it is
+      // enabled; vendor_submission still has no SRG meaning and stays disabled.
+      expect(modeInput("working_copy").attributes("disabled")).toBeUndefined();
       expect(modeInput("vendor_submission").attributes("disabled")).toBeDefined();
       expect(modeInput("published_stig").attributes("disabled")).toBeUndefined();
       expect(modeInput("backup").attributes("disabled")).toBeUndefined();
@@ -1451,7 +1453,7 @@ describe("ExportModal", () => {
       });
 
       wrapper.vm.selectedComponentIds = [1, 9];
-      wrapper.vm.selectedMode = "working_copy";
+      wrapper.vm.selectedMode = "vendor_submission";
       await wrapper.vm.$nextTick();
 
       expect(wrapper.vm.selectedComponentIds).toEqual([1]);
@@ -1467,6 +1469,20 @@ describe("ExportModal", () => {
 
       wrapper.vm.selectedComponentIds = [1, 9];
       wrapper.vm.selectedMode = "published_stig";
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.vm.selectedComponentIds).toEqual([1, 9]);
+      expect(wrapper.find('[data-testid="srg-exclusion-warning"]').exists()).toBe(false);
+    });
+
+    it("keeps srg components selectable under the working-copy purpose (same-as-STIG export)", async () => {
+      wrapper = createWrapper({
+        components: [stigComponent, srgComponent],
+        availableModes: allModes,
+      });
+
+      wrapper.vm.selectedComponentIds = [1, 9];
+      wrapper.vm.selectedMode = "working_copy";
       await wrapper.vm.$nextTick();
 
       expect(wrapper.vm.selectedComponentIds).toEqual([1, 9]);

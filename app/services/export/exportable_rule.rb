@@ -54,6 +54,14 @@ module Export
 
     private
 
+    # An authored SRG requirement is an SrgRule, not a STIG Rule: it has no
+    # source-SRG reference (srg_rule), no satisfaction graph (satisfied_by), and
+    # no InSpec body. Those columns are blanked; the requirement's own content
+    # fills the authored columns.
+    def srg_kind?
+      rule.is_a?(SrgRule)
+    end
+
     def fetch_nist_control_family
       rule.nist_control_family
     end
@@ -71,6 +79,8 @@ module Export
     end
 
     def fetch_srg_title
+      return nil if srg_kind?
+
       rule.srg_rule.title
     end
 
@@ -79,6 +89,8 @@ module Export
     end
 
     def fetch_srg_vuln_discussion
+      return nil if srg_kind?
+
       rule.srg_rule.disa_rule_descriptions.first&.vuln_discussion
     end
 
@@ -91,10 +103,13 @@ module Export
     end
 
     def fetch_srg_check
+      return nil if srg_kind?
+
       rule.srg_rule.checks.first&.content
     end
 
     def fetch_check_content
+      return rule.checks.first&.content if srg_kind?
       return nil if rule.status == RuleConstants::STATUS_APPLICABLE_DNM && rule.satisfied_by.any?
 
       if rule.satisfied_by.size.positive?
@@ -105,10 +120,13 @@ module Export
     end
 
     def fetch_srg_fix
+      return nil if srg_kind?
+
       rule.srg_rule.fixtext
     end
 
     def fetch_fixtext
+      return rule.fixtext if srg_kind?
       return nil if rule.status == RuleConstants::STATUS_APPLICABLE_DNM && rule.satisfied_by.any?
 
       if rule.satisfied_by.size.positive?
@@ -139,14 +157,20 @@ module Export
     end
 
     def fetch_satisfies
+      return nil if srg_kind?
+
       rule.satisfaction_text(format: :stig, direction: :satisfies)
     end
 
     def fetch_inspec_control_body
+      return nil if srg_kind?
+
       rule.inspec_control_body
     end
 
     def fetch_source
+      return 'Direct' if srg_kind?
+
       rule.satisfied_by.any? ? 'Inherited' : 'Direct'
     end
   end

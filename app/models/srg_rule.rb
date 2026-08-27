@@ -56,6 +56,18 @@ class SrgRule < BaseRule
     version
   end
 
+  # Field-editability contract shared with Rule (the export/cell-styling layer
+  # calls this on every requirement). An authored SRG requirement locks as a
+  # whole — there are no per-section locks — so a field is editable exactly when
+  # the requirement is not locked. The field key is still validated so an
+  # unknown column is a loud error, matching Rule#field_editable?.
+  def field_editable?(field_key)
+    section = RuleConstants::FIELD_TO_SECTION[field_key.to_sym]
+    raise ArgumentError, "Unknown field for editability check: #{field_key}" unless section
+
+    !locked
+  end
+
   private
 
   # An authored row belongs to a component. During a nested build (the
