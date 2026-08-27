@@ -1,7 +1,7 @@
 openapi: 3.2.0
 info:
   title: Vulcan API
-  version: 2.3.7
+  version: 2.4.1
   description: |
     REST API for Vulcan — STIG-ready security guidance authoring platform.
     All endpoints require session-based authentication via cookie unless noted otherwise.
@@ -330,7 +330,7 @@ paths:
                   summary: Typical production response
                   value:
                     name: Vulcan
-                    version: 2.3.7
+                    version: 2.4.1
                     rails: 8.1.3.1
                     ruby: 3.4.10
                     environment: production
@@ -7794,7 +7794,7 @@ components:
         version:
           type: string
           description: Current Vulcan application version.
-          example: 2.3.7
+          example: 2.4.1
         rails:
           type: string
           description: Rails framework version running the application.

@@ -1,7 +1,7 @@
 openapi: 3.2.0
 info:
   title: Vulcan API
-  version: 2.3.7
+  version: 2.4.1
   description: >
     REST API for Vulcan — STIG-ready security guidance authoring platform.
 
