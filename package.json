@@ -32,7 +32,7 @@
   },
   "version": "2.4.1",
   "devDependencies": {
-    "@eslint/js": "^9.33.0",
+    "@eslint/js": "^10.0.1",
     "@pinia/testing": "^2.0.1",
     "@redocly/cli": "^2.31.5",
     "@vitejs/plugin-vue2": "^2.3.4",
