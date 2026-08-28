@@ -5,10 +5,9 @@ require 'puma'
 require 'puma/configuration'
 
 # REQUIREMENT: config/puma.rb must honor WEB_CONCURRENCY. The stock Rails puma.rb
-# documents the knob but ships no `workers` line, so WEB_CONCURRENCY is silently
-# ignored (every dyno runs single-mode regardless of the setting). This guards
-# the fix: unset => single mode (the container default, unchanged); set => that
-# many workers with copy-on-write preloading.
+# documents the knob but ships no `workers` line, so it is silently ignored and
+# the app always runs single-mode. Guards the fix: unset => single mode; set =>
+# that many workers with copy-on-write preloading.
 RSpec.describe 'config/puma.rb worker configuration' do
   def resolved_puma_options
     config = Puma::Configuration.new(config_files: [Rails.root.join('config/puma.rb').to_s])

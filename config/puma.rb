@@ -29,19 +29,13 @@
 threads_count = ENV.fetch('RAILS_MAX_THREADS', 3)
 threads threads_count, threads_count
 
-# Cluster mode: fork WEB_CONCURRENCY worker processes, each serving requests
-# from the thread pool above. Defaults to 0 (single mode), so this stays a
-# no-op unless the platform sets WEB_CONCURRENCY — the container image does not
-# set it, so container behavior is unchanged. Each worker adds baseline memory,
-# so on a memory-constrained dyno keep WEB_CONCURRENCY at 0-1 and give the dyno
-# headroom (and jemalloc) before raising it.
+# Cluster mode: run WEB_CONCURRENCY worker processes. Defaults to 0 (single
+# mode), so it is a no-op unless WEB_CONCURRENCY is set.
 web_concurrency = ENV.fetch('WEB_CONCURRENCY', 0).to_i
 workers web_concurrency
 
-# When clustering, boot the app once in the parent process and fork the workers
-# from it so they share loaded code and gems copy-on-write — far cheaper than
-# booting each worker cold. The forked workers must re-establish their own
-# database connections after the fork.
+# Preload so forked workers share the app copy-on-write; each reconnects its
+# own database pool after the fork.
 if web_concurrency.positive?
   preload_app!
 
