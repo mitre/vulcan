@@ -211,6 +211,42 @@ describe("ComponentCard", () => {
       expect(html).toContain("patch-check-fill");
     });
 
+    // REQUIREMENT: locking a component's requirements must be visible on the
+    // project page. A solid lock (lock-fill) means every requirement is locked;
+    // an open lock (unlock-fill) with an "N of M locked" tooltip means partial;
+    // nothing locked shows no badge (absence is the meaningful state).
+    describe("lock indicator", () => {
+      const withLock = (lock_summary) => ({
+        component: { ...defaultComponent, lock_summary },
+      });
+
+      it("shows a solid lock (lock-fill) when every requirement is locked", () => {
+        wrapper = createWrapper(withLock({ locked: 10, total: 10, all_locked: true }));
+        expect(wrapper.find(".bi-lock-fill").exists()).toBe(true);
+        expect(wrapper.find(".bi-unlock-fill").exists()).toBe(false);
+        expect(wrapper.html()).toMatch(/All \w+ locked/);
+      });
+
+      it("shows an open lock (unlock-fill) with N-of-M when only some are locked", () => {
+        wrapper = createWrapper(withLock({ locked: 3, total: 10, all_locked: false }));
+        expect(wrapper.find(".bi-unlock-fill").exists()).toBe(true);
+        expect(wrapper.find(".bi-lock-fill").exists()).toBe(false);
+        expect(wrapper.html()).toMatch(/3 of 10 \w+ locked/);
+      });
+
+      it("shows no lock indicator when nothing is locked", () => {
+        wrapper = createWrapper(withLock({ locked: 0, total: 10, all_locked: false }));
+        expect(wrapper.find(".bi-lock-fill").exists()).toBe(false);
+        expect(wrapper.find(".bi-unlock-fill").exists()).toBe(false);
+      });
+
+      it("shows no lock indicator when lock_summary is absent", () => {
+        wrapper = createWrapper();
+        expect(wrapper.find(".bi-lock-fill").exists()).toBe(false);
+        expect(wrapper.find(".bi-unlock-fill").exists()).toBe(false);
+      });
+    });
+
     // REQUIREMENT: pending-comment pill links to the full-page triage view
     // (the slideover was retired). Anchor must point at /components/:id/triage,
     // NOT the legacy /components/:id#comments hash URL.

@@ -186,6 +186,33 @@ class Component < ApplicationRecord
     document_type == 'srg' ? authored_srg_rules.count : rules_count
   end
 
+  # Lock progress for the project-page card indicator: how many of this
+  # component's requirements are locked, and whether they all are. Kind-agnostic
+  # via the requirements accessor. On list pages prefer the batched
+  # Component.lock_summaries; this per-component form is the fallback.
+  def lock_summary
+    total = requirements.count
+    locked = requirements.where(locked: true).count
+    { locked: locked, total: total, all_locked: total.positive? && locked == total }
+  end
+
+  # Batched lock summaries keyed by component_id so a project page renders every
+  # card's lock indicator without N+1 — one grouped scan of base_rules (the
+  # type-agnostic requirement table the severity-count scope also counts).
+  # Components with no requirements are absent; callers fall back to an empty
+  # summary.
+  def self.lock_summaries(component_ids)
+    ids = Array(component_ids).compact
+    return {} if ids.empty?
+
+    BaseRule.where(component_id: ids)
+            .group(:component_id)
+            .pluck(:component_id, Arel.sql('COUNT(*)'), Arel.sql('COUNT(*) FILTER (WHERE locked)'))
+            .each_with_object({}) do |(cid, total, locked), acc|
+      acc[cid] = { locked: locked, total: total, all_locked: total.positive? && locked == total }
+    end
+  end
+
   # Requirements that relocated OUT of this component — a lifecycle fact
   # from executed relocation records, never a status bucket. The source
   # rows are tombstoned, so the join reads base_rules unscoped.

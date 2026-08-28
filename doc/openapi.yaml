@@ -9352,6 +9352,26 @@ components:
                 - 'null'
               description: ID of the source component if this is an overlay. Null for original components.
               example: null
+            lock_summary:
+              type: object
+              description: Lock progress for this component's requirements, powering the project-page lock indicator (an all-locked badge versus an "N of M locked" partial indicator).
+              required:
+                - locked
+                - total
+                - all_locked
+              properties:
+                locked:
+                  type: integer
+                  description: Number of requirements that are locked.
+                  example: 12
+                total:
+                  type: integer
+                  description: Total number of requirements in the component.
+                  example: 30
+                all_locked:
+                  type: boolean
+                  description: True when the component has requirements and every one is locked.
+                  example: false
     ProjectShowResponse:
       description: Full project detail for the project show page. Serialized by ProjectBlueprint :show view. 18 total fields including nested components, memberships, users, access_requests.
       allOf:

@@ -127,6 +127,15 @@ class ComponentBlueprint < Blueprinter::Base
     field :releasable do |component, _options|
       component.releasable
     end
+
+    # Lock progress for the card's lock indicator (all-locked vs N-of-M).
+    # Batched via options[:lock_summaries] on the project show page; falls back
+    # to a per-component summary elsewhere. Reads the requirements association,
+    # not a component column, so it is safe under the column-limited
+    # available_components query (which does not select requirement columns).
+    field :lock_summary do |component, options|
+      (options[:lock_summaries] || {})[component.id] || component.lock_summary
+    end
   end
 
   # === Related view: related_rules parents (includes project for display name) ===
