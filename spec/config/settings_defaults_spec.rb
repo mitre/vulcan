@@ -208,8 +208,6 @@ RSpec.describe 'Settings defaults' do
       'password.min_lowercase' => -> { Settings.password.min_lowercase },
       'password.min_number' => -> { Settings.password.min_number },
       'password.min_special' => -> { Settings.password.min_special },
-      'local_login.session_timeout' => -> { Settings.local_login.session_timeout },
-      'local_login.remember_me_duration' => -> { Settings.local_login.remember_me_duration },
       'lockout.maximum_attempts' => -> { Settings.lockout.maximum_attempts },
       'lockout.unlock_in_minutes' => -> { Settings.lockout.unlock_in_minutes },
       'session_limits.max_sessions' => -> { Settings.session_limits.max_sessions },
@@ -223,6 +221,23 @@ RSpec.describe 'Settings defaults' do
         value = accessor.call
         expect(value).to be_a(Integer),
                          "Expected Settings.#{path} to be Integer, got #{value.class} (#{value.inspect})"
+      end
+    end
+  end
+
+  # session_timeout and remember_me_duration are duration INPUTS, not raw
+  # integers: the template emits the raw value (plain seconds or a suffix like
+  # "5m"/"1h") and TimeoutParser interprets it at consumption. Casting them to
+  # Integer in the template would strip the suffix ("5m" -> 5 -> 5 hours) and
+  # silently defeat the parser, so they are validated on their EFFECTIVE value.
+  describe 'timeout duration settings resolve to a positive number of seconds' do
+    {
+      'local_login.session_timeout' => -> { Settings.local_login.session_timeout },
+      'local_login.remember_me_duration' => -> { Settings.local_login.remember_me_duration }
+    }.each do |path, accessor|
+      it "TimeoutParser.parse(Settings.#{path}) is a positive Integer" do
+        parsed = TimeoutParser.parse(accessor.call)
+        expect(parsed).to be_a(Integer).and be_positive
       end
     end
   end
