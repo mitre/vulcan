@@ -90,10 +90,10 @@ setup and first steps.
 ## Latest Release
 
 ::: info Current Version
-**v2.4.1** - Released August 2026
+**v2.4.2** - Released August 2026
 
-Redesigned three-column comment-triage split-pane with a click-to-filter progress bar, accessibility improvements, SRG-authoring foundations, login-path security hardening (JSON login lockout + throttling), and a broad set of fixes.
-[View Release Notes →](/release-notes/v2.4.1)
+Full SRG-component export and spreadsheet re-import parity with STIG components, a project-page component lock indicator, and session-timeout fixes (restored the 1-hour default; corrected VULCAN_SESSION_TIMEOUT suffix parsing).
+[View Release Notes →](/release-notes/v2.4.2)
 :::
 
 ## Why Vulcan?

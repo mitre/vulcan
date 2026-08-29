@@ -4,9 +4,11 @@ All Vulcan releases with changelogs and migration notes.
 
 ## Current Release
 
-- **[v2.4.1](v2.4.1)** — Redesigned three-column comment-triage split-pane with a click-to-filter progress bar and accessibility landmarks, SRG-authoring foundations (persisted minted-identifier sequence), login-path security hardening (JSON login lockout + throttling, server-side local-login guard), and a broad set of fixes. **Self-hosted: the 2.4 line standardizes database names (`DB_SUFFIX` → `DATABASE_NAME`) — read the upgrade notes.**
+- **[v2.4.2](v2.4.2)** — Full SRG-component export and spreadsheet re-import parity with STIG components, a project-page component lock indicator, and session-timeout fixes (restored the 1-hour default that had been dropped to 10 minutes; corrected `VULCAN_SESSION_TIMEOUT`/`VULCAN_REMEMBER_ME_DURATION` suffix parsing).
 
 ## Previous Releases
+
+- **[v2.4.1](v2.4.1)** — Redesigned three-column comment-triage split-pane with a click-to-filter progress bar and accessibility landmarks, SRG-authoring foundations (persisted minted-identifier sequence), login-path security hardening (JSON login lockout + throttling, server-side local-login guard), and a broad set of fixes. **Self-hosted: the 2.4 line standardizes database names (`DB_SUFFIX` → `DATABASE_NAME`) — read the upgrade notes.**
 
 - **[v2.3.7](v2.3.7)** — Component-level comments via polymorphic reviews, project-aggregate disposition matrix CSV export, "Comment" toolbar rename, replies allowed on active threads after the comment period closes, vocabulary refresh ("Overall Requirement" replaces "(general)").
 - **[v2.3.6](v2.3.6)** — UBI9 base image (Iron Bank / DISA-aligned), public-comment-review workflow with triage + adjudication, viewer-can-comment, comment reactions (👍/👎), structured 403s with admin contacts. **Includes breaking Docker / Compose volume changes — read the release notes before upgrading.**

@@ -30,7 +30,7 @@
     "vue-router": "3",
     "vue-template-compiler": "~2.7.16"
   },
-  "version": "2.4.1",
+  "version": "2.4.2",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@pinia/testing": "^2.0.1",
