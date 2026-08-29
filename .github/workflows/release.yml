@@ -15,7 +15,7 @@ jobs:
   # ─── DOCKER RELEASE (multi-arch via Build Cloud) ───
   docker-release:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 45
     permissions:
       contents: write   # Required for anchore/sbom-action dependency-snapshot submission
       packages: write
