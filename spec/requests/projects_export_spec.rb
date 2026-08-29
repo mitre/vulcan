@@ -44,9 +44,11 @@ RSpec.describe 'Project Exports' do
   # ==========================================================================
   # REQUIREMENT (kind routing): project exports serve BOTH document kinds.
   # xccdf kind-routes each component (srg -> published_srg, exactly like the
-  # per-component route); purposes with no srg meaning (working copy csv,
-  # excel, inspec, vendor submission) EXCLUDE srg components from the output
-  # — never a silently empty archive member. An export whose every component
+  # per-component route). The WORKING COPY serves both kinds directly — SRGs
+  # and STIGs are XCCDF documents authored the same way, so csv/excel carry
+  # srg components rather than skipping them. Purposes with no srg meaning
+  # (inspec, vendor submission) EXCLUDE srg components from the output —
+  # never a silently empty archive member. An export whose every component
   # is excluded refuses loudly instead of producing an empty artifact.
   # ==========================================================================
   describe 'kind routing for SRG components' do
@@ -60,43 +62,35 @@ RSpec.describe 'Project Exports' do
                                    status: 'Applicable', title: 'Exportable authored requirement')
     end
 
-    def zip_entries(body)
-      entries = {}
-      Zip::File.open_buffer(StringIO.new(body)) do |zip|
-        zip.each { |e| entries[e.name] = zip.read(e.name) }
-      end
-      entries
-    end
-
     it 'project xccdf export renders the srg component through the published_srg mode' do
       get "/projects/#{project.id}/export/xccdf", headers: { 'Accept' => 'text/html' }
       expect(response).to have_http_status(:success)
 
-      entries = zip_entries(response.body)
-      srg_entry = entries.keys.find { |n| n.start_with?('PXPT-00') }
-      expect(srg_entry).to be_present, "srg member missing from archive: #{entries.keys}"
+      names = zip_entries(response.body)
+      srg_entry = names.find { |n| n.start_with?('PXPT-00') }
+      expect(srg_entry).to be_present, "srg member missing from archive: #{names}"
 
-      doc = Nokogiri::XML(entries[srg_entry])
-      groups = doc.css('Group')
-      expect(groups.size).to eq(1)
-      expect(entries[srg_entry]).to include('Exportable authored requirement')
+      srg_xml = zip_read(response.body, srg_entry)
+      expect(Nokogiri::XML(srg_xml).css('Group').size).to eq(1)
+      expect(srg_xml).to include('Exportable authored requirement')
 
       # The stig component still exports through its own mode in the same archive.
-      stig_entry = entries.keys.find { |n| n.start_with?(component.prefix) }
-      expect(stig_entry).to be_present
+      expect(names.find { |n| n.start_with?(component.prefix) }).to be_present
     end
 
-    it 'excludes the srg component from the project csv export with no empty member' do
+    it 'serves the srg component in the project csv export' do
       get "/projects/#{project.id}/export/csv", headers: { 'Accept' => 'text/html' }
       expect(response).to have_http_status(:success)
 
-      # With the srg component excluded, one CSV remains and Packager passes
-      # it through directly (no single-member zip) — the established
-      # one-result semantics.
-      expect(response.headers['Content-Type']).to include('text/csv')
-      expect(response.headers['Content-Disposition']).to include(component.prefix)
-      expect(response.headers['Content-Disposition']).not_to include('PXPT')
-      expect(response.body).not_to include('Exportable authored requirement')
+      # The working copy has srg meaning, so BOTH components produce a CSV and
+      # Packager zips the pair — the srg member carries its authored
+      # requirement rather than being dropped from the run.
+      names = zip_entries(response.body)
+      srg_entry = names.find { |n| n.include?('PXPT-00') }
+      expect(srg_entry).to be_present, "srg member missing from archive: #{names}"
+      expect(zip_read(response.body, srg_entry)).to include('Exportable authored requirement')
+
+      expect(names.find { |n| n.include?(component.prefix) }).to be_present
     end
 
     it 'excludes the srg component from the project inspec export' do
@@ -105,16 +99,20 @@ RSpec.describe 'Project Exports' do
 
       # InSpec batch archives name entries by component NAME directory,
       # not prefix — grep the directory the srg component would get.
-      entries = zip_entries(response.body)
-      expect(entries.keys.grep(/Project-Export-SRG/)).to be_empty
-      expect(entries.keys.grep(/#{component.name.tr(' ', '-')}/)).not_to be_empty
+      names = zip_entries(response.body)
+      expect(names.grep(/Project-Export-SRG/)).to be_empty
+      expect(names.grep(/#{component.name.tr(' ', '-')}/)).not_to be_empty
     end
 
     it 'refuses loudly when every selected component is excluded by the purpose' do
-      get "/projects/#{project.id}/export/csv?component_ids=#{srg_component.id}",
+      # vendor_submission is the purpose with no srg meaning now that the
+      # working copy serves both kinds.
+      get "/projects/#{project.id}/export/excel?mode=vendor_submission&component_ids=#{srg_component.id}",
           headers: { 'Accept' => 'text/html' }
 
       expect(response).to have_http_status(:unprocessable_content)
+      # Pin the reason: a 422 from any other guard must not satisfy this.
+      expect(response.body).to include('None of the selected components support this export purpose.')
     end
   end
 end

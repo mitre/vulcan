@@ -37,6 +37,14 @@
               class="ml-2"
               title="Component Released"
             />
+            <b-icon
+              v-if="lockState"
+              v-b-tooltip.hover
+              :icon="lockState === 'all' ? 'lock-fill' : 'unlock-fill'"
+              variant="secondary"
+              class="ml-2"
+              :title="lockTooltip"
+            />
           </div>
           <!-- Identity / configuration indicator (top-right): rules-count
                only. The pending-triage signal is an action affordance
@@ -217,7 +225,7 @@ import { useConfirmRelease, RELEASE_CONFIRM_COPY } from "../../composables/useCo
 import LockControlsModal from "../components/LockControlsModal.vue";
 import NewComponentModal from "../components/NewComponentModal.vue";
 import UserBadge from "../shared/UserBadge.vue";
-import { messageLabels, ruleCountLabel } from "../../constants/terminology";
+import { messageLabels, ruleCountLabel, ruleTerm } from "../../constants/terminology";
 
 export default {
   name: "ComponentCard",
@@ -265,6 +273,22 @@ export default {
   computed: {
     msg: function () {
       return messageLabels(this.component.document_type);
+    },
+    // Lock indicator state for the card: null (no badge) when nothing is
+    // locked, "all" when every requirement is locked, "partial" otherwise.
+    lockState: function () {
+      const summary = this.component.lock_summary;
+      if (!summary || !summary.total || !summary.locked) return null;
+      return summary.all_locked ? "all" : "partial";
+    },
+    // Kind-aware tooltip: "All rules/requirements locked" or "N of M ... locked".
+    lockTooltip: function () {
+      const summary = this.component.lock_summary;
+      if (!summary) return "";
+      const noun = ruleTerm(this.component.document_type).plural.toLowerCase();
+      return summary.all_locked
+        ? `All ${noun} locked`
+        : `${summary.locked} of ${summary.total} ${noun} locked`;
     },
     releaseComponentTooltip: function () {
       if (this.component.released) {

@@ -496,4 +496,42 @@ RSpec.describe Component, '#update_from_spreadsheet / #apply_spreadsheet_update'
       expect(rule.title).to eq(original_title)
     end
   end
+
+  # ========================================================================
+  # 15. SRG components get the same round-trip (dump -> edit -> re-upload)
+  # ========================================================================
+  describe 'SRG component round-trip' do
+    let_it_be(:srg_component) do
+      create(:component, :skip_rules, document_type: 'srg', prefix: 'SRGT-00')
+    end
+    let_it_be(:srg_requirement) do
+      create(:srg_rule, :authored,
+             component: srg_component,
+             title: 'Original SRG requirement title',
+             status: 'Applicable', rule_severity: 'medium')
+    end
+
+    it 'persists an edited title back to the authored SrgRule' do
+      parsed = export_and_parse_csv(srg_component)
+      parsed[0]['Requirement'] = 'EDITED SRG REQUIREMENT TITLE'
+
+      path = csv_to_tempfile(parsed)
+      result = srg_component.apply_spreadsheet_update(path, user)
+
+      expect(result[:error]).to be_nil
+      expect(result[:success]).to be true
+      expect(result[:count]).to be >= 1
+
+      expect(srg_requirement.reload.title).to eq('EDITED SRG REQUIREMENT TITLE')
+    end
+
+    it 'is idempotent: re-uploading an unedited export makes 0 changes' do
+      parsed = export_and_parse_csv(srg_component)
+      path = csv_to_tempfile(parsed)
+      result = srg_component.update_from_spreadsheet(path, user)
+
+      expect(result[:error]).to be_nil
+      expect(result[:updated]).to be_empty
+    end
+  end
 end

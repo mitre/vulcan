@@ -56,6 +56,33 @@ class SrgRule < BaseRule
     version
   end
 
+  # Field-editability contract shared with Rule (the export/cell-styling layer
+  # calls this on every requirement). An authored SRG requirement locks as a
+  # whole — there are no per-section locks — so a field is editable exactly when
+  # the requirement is not locked. The field key is still validated so an
+  # unknown column is a loud error, matching Rule#field_editable?.
+  def field_editable?(field_key)
+    section = RuleConstants::FIELD_TO_SECTION[field_key.to_sym]
+    raise ArgumentError, "Unknown field for editability check: #{field_key}" unless section
+
+    !locked
+  end
+
+  # Row-editability contract shared with Rule (the spreadsheet-update pipeline
+  # gates each row on it). An authored SRG requirement has no satisfaction graph,
+  # so the row is editable exactly when it is not locked.
+  def row_editable?
+    !locked
+  end
+
+  # CSV positional attributes for the spreadsheet round-trip, in the same order
+  # as Rule#csv_attributes. Built through the kind-aware ExportableRule (the
+  # source-reference / satisfies / InSpec columns are blank for an authored
+  # SrgRule) so the export and the re-import agree on the column layout.
+  def csv_attributes
+    Export::ExportableRule.new(self).values_for(Export::ExportableRule::CSV_KEYS)
+  end
+
   private
 
   # An authored row belongs to a component. During a nested build (the

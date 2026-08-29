@@ -61,6 +61,9 @@ export const ALL_FORMATS = ["csv", "excel", "xccdf", "inspec", "json_archive"];
 // EXCLUDES srg components — mirrors the export service's kind routing,
 // keep in sync.
 export const SRG_VALID_MODE_FORMATS = {
+  // SRGs and STIGs are both XCCDF documents authored the same way, so the
+  // working copy (dump -> bulk-edit -> re-upload) is available for both.
+  working_copy: ["csv", "excel"],
   published_stig: ["xccdf"],
   backup: ["json_archive"],
 };

@@ -69,11 +69,13 @@ class ProjectsController < ApplicationController
     # component cards and the project-level total render without N+1.
     component_ids = @project.components.ids
     pending_comment_counts = Component.pending_comment_counts(component_ids)
+    lock_summaries = Component.lock_summaries(component_ids)
     @project_json = ProjectBlueprint.render(
       @project,
       view: :show,
       current_user: current_user,
-      pending_comment_counts: pending_comment_counts
+      pending_comment_counts: pending_comment_counts,
+      lock_summaries: lock_summaries
     )
     respond_to do |format|
       format.html
