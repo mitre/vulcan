@@ -63,13 +63,19 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    # Setup steps run sequentially in the foreground; `bash -e` aborts the
+    # container if any of them fail, so a failed db:prepare surfaces as a dead
+    # container instead of a booted server that raises PendingMigrationError on
+    # every request. Only the asset watcher is backgrounded — `;` separators
+    # scope the trailing `&` to `yarn build:watch` alone. `exec` hands PID 1 to
+    # Puma so docker stop/Ctrl-C signals reach it directly.
     command: >
-      bash -c "rm -f tmp/pids/server.pid &&
-      bin/rails db:prepare &&
-      yarn install --frozen-lockfile &&
-      yarn build &&
+      bash -ec "rm -f tmp/pids/server.pid;
+      bin/rails db:prepare;
+      yarn install --frozen-lockfile;
+      yarn build;
       yarn build:watch &
-      bundle exec rails server -b 0.0.0.0 -p 3000"
+      exec bundle exec rails server -b 0.0.0.0 -p 3000"
 
 volumes:
   vulcan_dev_dbdata:

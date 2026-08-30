@@ -121,7 +121,8 @@ RSpec.describe Export::Base do
     end
 
     it 'raises NoExportableComponents for an srg-only selection on a purpose with no srg meaning' do
-      export = described_class.new(exportable: refusal_component, mode: :working_copy, format: :csv)
+      # vendor_submission has no srg meaning (working_copy now serves both kinds).
+      export = described_class.new(exportable: refusal_component, mode: :vendor_submission, format: :excel)
       expect { export.call }.to raise_error(
         Export::Base::NoExportableComponents,
         'None of the selected components support this export purpose.'
@@ -130,18 +131,20 @@ RSpec.describe Export::Base do
 
     it 'refuses a counterpart mode that does not opt into srg kind' do
       # No shipped mode misroutes today — construct the misconfiguration: a
-      # published_stig whose counterpart is working_copy (a valid Registry
-      # combination for :inspec, but NOT srg-capable). Without the mode_for
-      # guard this export would produce a silently empty archive.
-      misrouting_mode = Class.new(Export::Modes::PublishedStig) do
+      # vendor_submission (a valid Registry combination for :excel, but NOT
+      # srg-capable) whose counterpart is itself, another non-srg-capable mode.
+      # Without the mode_for guard this export would produce a silently empty
+      # archive. (working_copy can no longer play the non-srg counterpart — it
+      # now serves both kinds.)
+      misrouting_mode = Class.new(Export::Modes::VendorSubmission) do
         def srg_counterpart
-          :working_copy
+          :vendor_submission
         end
       end
       allow(Export::Registry).to receive(:mode_class).and_call_original
-      allow(Export::Registry).to receive(:mode_class).with(:published_stig).and_return(misrouting_mode)
+      allow(Export::Registry).to receive(:mode_class).with(:vendor_submission).and_return(misrouting_mode)
 
-      export = described_class.new(exportable: refusal_component, mode: :published_stig, format: :inspec)
+      export = described_class.new(exportable: refusal_component, mode: :vendor_submission, format: :excel)
       expect { export.call }.to raise_error(Export::Base::NoExportableComponents)
     end
   end

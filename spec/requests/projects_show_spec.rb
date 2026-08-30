@@ -81,6 +81,54 @@ RSpec.describe 'GET /projects/:id' do
     end
   end
 
+  describe 'lock_summary (ComponentBlueprint :index)' do
+    it 'reports all_locked when every requirement is locked' do
+      locked_component = create(:component, :skip_rules, project: project, document_type: 'srg',
+                                                         prefix: 'LSRG-00', name: 'Locked SRG',
+                                                         title: 'Locked SRG')
+      create(:srg_rule, :authored, component: locked_component, rule_id: '000001',
+                                   status: 'Applicable', locked: true)
+      create(:srg_rule, :authored, component: locked_component, rule_id: '000002',
+                                   status: 'Applicable', locked: true)
+
+      get "/projects/#{project.id}", as: :json
+
+      row = response.parsed_body['components'].find { |c| c['id'] == locked_component.id }
+      expect(row['lock_summary']).to include('locked' => 2, 'total' => 2, 'all_locked' => true)
+    end
+
+    it 'reports a partial lock when only some requirements are locked' do
+      partial = create(:component, :skip_rules, project: project, document_type: 'srg',
+                                                prefix: 'PLSR-00', name: 'Partial SRG',
+                                                title: 'Partial SRG')
+      create(:srg_rule, :authored, component: partial, rule_id: '000001',
+                                   status: 'Applicable', locked: true)
+      create(:srg_rule, :authored, component: partial, rule_id: '000002',
+                                   status: 'Applicable', locked: false)
+
+      get "/projects/#{project.id}", as: :json
+
+      row = response.parsed_body['components'].find { |c| c['id'] == partial.id }
+      expect(row['lock_summary']).to include('locked' => 1, 'total' => 2, 'all_locked' => false)
+    end
+
+    it 'serves lock_summary through the column-limited available_components path' do
+      other_project = create(:project)
+      released = create(:component, :skip_rules, project: other_project, document_type: 'srg',
+                                                 prefix: 'ALSR-00', name: 'Available Locked SRG',
+                                                 title: 'Available Locked SRG')
+      create(:srg_rule, :authored, component: released, rule_id: '000001',
+                                   status: 'Applicable', locked: true)
+      released.update!(released: true, via_release_flow: true)
+
+      get "/projects/#{project.id}", as: :json
+
+      expect(response).to have_http_status(:success)
+      row = response.parsed_body['available_components'].find { |c| c['id'] == released.id }
+      expect(row['lock_summary']).to include('locked' => 1, 'total' => 1, 'all_locked' => true)
+    end
+  end
+
   describe 'effective_permissions in JSON response' do
     it 'includes effective_permissions=admin for project admin' do
       get "/projects/#{project.id}", as: :json

@@ -11,6 +11,15 @@ module Export
         Export::ExportableRule::ALL_KEYS
       end
 
+      # SRGs and STIGs are both XCCDF documents authored the same way, so the
+      # working copy is available for both. SRG components load their authored
+      # requirements through srg_eager_load_associations (BaseMode default) and
+      # ExportableRule blanks the source-reference / satisfies / InSpec columns,
+      # which have no meaning for an authored SrgRule.
+      def supports_srg_kind?
+        true
+      end
+
       def headers
         ExportConstants::EXPORT_HEADERS
       end
