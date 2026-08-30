@@ -216,9 +216,10 @@ export default defineConfig({
         ],
       },
       {
-        text: "v2.4.1",
+        text: "v2.4.2",
         items: [
-          { text: "Release Notes", link: "/release-notes/v2.4.1" },
+          { text: "Release Notes", link: "/release-notes/v2.4.2" },
+          { text: "v2.4.1", link: "/release-notes/v2.4.1" },
           { text: "v2.3.7", link: "/release-notes/v2.3.7" },
           { text: "v2.3.6", link: "/release-notes/v2.3.6" },
           { text: "v2.3.5", link: "/release-notes/v2.3.5" },

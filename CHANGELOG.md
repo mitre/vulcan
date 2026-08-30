@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v2.4.2] - 2026-08-29
+
+### Added
+
+- **SRG component export/import parity.** SRG components now support the full working-copy round-trip — export to CSV/Excel and re-import an edited spreadsheet — matching STIG components. Previously SRG components were excluded from the tabular working-copy export and the spreadsheet re-upload refused them entirely.
+- **Component lock indicator on the project page.** Each component card shows whether its requirements are locked — a solid lock when all are locked, an "N of M locked" indicator when only some are. Adds a `lock_summary` object (`{ locked, total, all_locked }`) to component entries in the project API response (`GET /projects/:id`).
+
+### Fixed
+
+- **Session timeout no longer logs out active users prematurely.** The default was restored to 1 hour after a prior change dropped it to 10 minutes. Vulcan's session timer resets on *server requests*, and 10 minutes was short enough that normal work (reading/reviewing a page without navigating or saving) exceeded it. A true reset-on-user-activity timeout — which would allow a safely shorter window — is tracked as a follow-up.
+- **`VULCAN_SESSION_TIMEOUT` / `VULCAN_REMEMBER_ME_DURATION` suffix parsing.** Suffix values were cast to an integer before the duration parser saw them, so `5m` resolved to 5 _hours_ and `30s` to 30 _minutes_. Suffixes now parse correctly (`5m` = 5 minutes).
+- **Development/CI:** fixed a docker-compose boot race, added migration retry for the `based_on` NOT NULL constraint, and stabilized the SRG export specs.
+
+### Changed
+
+- **Release image build:** raised the Docker build-job timeout from 20 to 45 minutes so the multi-arch (jemalloc + YJIT compiled from source) release build completes without a manual re-run.
+- Dev dependency bumps: `@redocly/cli` 2.46.0 → 2.47.0, `@eslint/js` 9.39.5 → 10.0.1.
+
+### Behavior changes
+
+No breaking changes. One behavior change to note: if you set `VULCAN_SESSION_TIMEOUT` with a unit suffix like `5m` or `30s`, the effective timeout changes with this release because the suffix is now honored. Plain-seconds values (e.g. `900`) and `1h`/`15m`-style values are unaffected — review your value if you set one with a unit.
+
 ## [v2.4.1] - 2026-08-26
 
 ### Added
