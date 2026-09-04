@@ -37,7 +37,7 @@
     "@redocly/cli": "^2.47.0",
     "@vitejs/plugin-vue2": "^2.3.4",
     "@vitest/coverage-v8": "^4.0.18",
-    "@vue/test-utils": "1",
+    "@vue/test-utils": "2",
     "chokidar-cli": "^3.0.0",
     "concurrently": "^9.1.2",
     "esbuild": "^0.25.0",
