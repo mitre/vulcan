@@ -45,7 +45,7 @@
     "esbuild-vue": "^1.2.2",
     "eslint": "8.57.1",
     "eslint-config-prettier": "10.1.8",
-    "eslint-plugin-prettier": "5.2.1",
+    "eslint-plugin-prettier": "5.5.6",
     "eslint-plugin-prettier-vue": "^3.1.0",
     "eslint-plugin-rulesdir": "^0.2.2",
     "eslint-plugin-vue": "^9.6.0",
