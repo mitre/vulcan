@@ -163,7 +163,7 @@ end
 # Windows and Mac do not include zoneinfo files, so bundle the tzinfo-data gem
 gem 'tzinfo-data'
 
-gem 'highline', '~> 2.0'
+gem 'highline', '~> 3.1'
 # Ruby wrapper around slack API
 gem 'slack-ruby-client', '~> 3.2'
 # Slack notification formatting
