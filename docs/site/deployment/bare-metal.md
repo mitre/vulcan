@@ -53,9 +53,9 @@ source ~/.bashrc
 # Install ruby-build
 git clone https://github.com/rbenv/ruby-build.git ~/.rbenv/plugins/ruby-build
 
-# Install Ruby 3.4.10
-rbenv install 3.4.10
-rbenv global 3.4.10
+# Install Ruby 3.4.12
+rbenv install 3.4.12
+rbenv global 3.4.12
 ruby -v  # Verify installation
 ```
 
@@ -66,9 +66,9 @@ ruby -v  # Verify installation
 curl -sSL https://get.rvm.io | bash -s stable
 source ~/.rvm/scripts/rvm
 
-# Install Ruby 3.4.10
-rvm install 3.4.10
-rvm use 3.4.10 --default
+# Install Ruby 3.4.12
+rvm install 3.4.12
+rvm use 3.4.12 --default
 ruby -v  # Verify installation
 ```
 

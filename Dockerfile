@@ -16,11 +16,13 @@
 #   docker buildx build --platform linux/amd64,linux/arm64 --target production -t vulcan:prod .
 # =============================================================================
 
-ARG RUBY_VERSION=3.4.10
+ARG RUBY_VERSION=3.4.12
 # Upstream SHA256 from https://www.ruby-lang.org/en/news/<release>/
-# 3.4.10 (2026-06-30) ships default gem erb 4.0.4.1 (CVE-2026-41316) and
-# net-imap 0.5.15 (CVE-2026-4224x) — clears the ruby-layer default-gem findings.
-ARG RUBY_SHA256=ecee2d072a14f2d14347dd56dfd8fe5c3130abf5117bfaacbda0f4ef9cc429ec
+# 3.4.12 (2026-10-23) fixes the Onigmo regexp compilation bugs behind
+# CVE-2026-89078, CVE-2026-93577, CVE-2026-97229 and CVE-2026-110264. It ships
+# the same default gems as 3.4.10: erb 4.0.4.1 (CVE-2026-41316) and net-imap
+# 0.5.15 (CVE-2026-4224x), which clear the ruby-layer default-gem findings.
+ARG RUBY_SHA256=5e5d85ad93b0adcccbad47733680f4892bd0078e3342437f7babce01c1872479
 ARG BUNDLER_VERSION=2.7.2
 ARG NODE_VERSION=24.18.0
 
