@@ -53,6 +53,12 @@ class ApplicationController < ActionController::Base
 
   rescue_from NotAuthorizedError, with: :not_authorized
 
+  # Declared after StandardError for the same reason as NotAuthorizedError:
+  # a failed authenticity check is a client error the caller can repair
+  # (fetch a token, retry once), so it must not fall into helpful_errors'
+  # generic 500 toast where it is indistinguishable from a server fault.
+  rescue_from ActionController::InvalidAuthenticityToken, with: :invalid_authenticity_token
+
   # toast helper. The Vue frontend's
   # alertOrNotifyResponse (useToast) reads `{ toast: { title, message, variant } }`
   # from JSON responses and renders a Bootstrap-Vue toast. Pre-fix the JSON
@@ -370,6 +376,23 @@ class ApplicationController < ActionController::Base
       format.json do
         render_permission_denied(exception)
       end
+    end
+  end
+
+  # JSON callers get an RFC 9457 problem (422) they can act on. HTML callers
+  # still get a flash alert and a redirect back, as under helpful_errors, but
+  # the flash now names the cause instead of showing the exception message
+  # (admins) or the contact-an-administrator line (everyone else).
+  def invalid_authenticity_token(exception)
+    Rails.logger.warn("[invalid_authenticity_token] #{exception.class}: #{exception.message}")
+
+    respond_to do |format|
+      format.html do
+        flash.alert = 'Your form session expired. Please try again.'
+        redirect_back_or_to(root_path)
+      end
+      format.json { render_invalid_authenticity_token }
+      format.any { render_invalid_authenticity_token }
     end
   end
 

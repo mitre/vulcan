@@ -201,6 +201,8 @@ paths:
                     title: Account locked
                     status: 401
                     detail: This account is temporarily locked due to too many failed sign-in attempts. Please try again later or reset your password.
+        '422':
+          $ref: '#/components/responses/InvalidAuthenticityToken'
         4XX:
           $ref: '#/components/responses/ErrorResponse'
   /api/auth/logout:
@@ -13516,6 +13518,66 @@ components:
                 how_to_authenticate:
                   session: Sign in through the web UI (/users/sign_in) and retry with the session cookie.
                   token: 'Create a personal access token (your profile page, or POST /personal_access_tokens) and send it in the request header: Authorization: Token <your-token>.'
+    InvalidAuthenticityToken:
+      description: The request carried no authenticity token, or a token that does not belong to the caller's session (RFC 9457 problem details). Fetch a fresh token from GET /api/auth/csrf, send it as X-CSRF-Token and retry once. Carries a legacy `toast` extension for older consumers.
+      content:
+        application/problem+json:
+          schema:
+            type: object
+            additionalProperties: false
+            required:
+              - type
+              - title
+              - status
+              - detail
+            properties:
+              type:
+                type: string
+                description: Stable machine identifier for the error class, a URI reference into the API docs.
+                example: /docs/api/errors#invalid_authenticity_token
+              title:
+                type: string
+                description: Short human summary of the error class.
+                example: Invalid authenticity token
+              status:
+                type: integer
+                description: HTTP status code, repeated in the body.
+                example: 422
+              detail:
+                type: string
+                description: Occurrence-specific human explanation and how to repair it.
+                example: The request carried no authenticity token, or a token that does not belong to this session. Fetch a fresh token from GET /api/auth/csrf, send it as X-CSRF-Token, and retry once.
+              toast:
+                type: object
+                additionalProperties: false
+                description: Legacy toast extension for older consumers.
+                properties:
+                  title:
+                    type: string
+                    description: Toast heading.
+                    example: Your form session expired.
+                  message:
+                    type: array
+                    description: Toast body lines.
+                    items:
+                      type: string
+                  variant:
+                    type: string
+                    description: Bootstrap alert variant.
+                    example: danger
+          examples:
+            missing_token:
+              summary: Mutation sent without X-CSRF-Token
+              value:
+                type: /docs/api/errors#invalid_authenticity_token
+                title: Invalid authenticity token
+                status: 422
+                detail: The request carried no authenticity token, or a token that does not belong to this session. Fetch a fresh token from GET /api/auth/csrf, send it as X-CSRF-Token, and retry once.
+                toast:
+                  title: Your form session expired.
+                  message:
+                    - The request carried no authenticity token, or a token that does not belong to this session. Fetch a fresh token from GET /api/auth/csrf, send it as X-CSRF-Token, and retry once.
+                  variant: danger
     NotFound:
       description: Resource not found (RFC 9457 problem details). The body is identical for a truly nonexistent resource and one the caller may not learn exists.
       content:

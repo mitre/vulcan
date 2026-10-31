@@ -37,16 +37,15 @@ RSpec.describe 'Auth endpoint contracts', type: :request do
       ActionController::Base.allow_forgery_protection = previous
     end
 
-    it 'refuses a login that carries no token and leaves the caller signed out' do
+    it 'refuses a login that carries no token with a 422 problem and leaves the caller signed out' do
       post '/api/auth/login',
            params: { email: user.email, password: 'S3cure!#Pass999' },
            headers: json_headers, as: :json
-      # ApplicationController rescues StandardError outside development with
-      # helpful_errors, which renders a JSON toast with status 500, so an
-      # InvalidAuthenticityToken surfaces as 500 here, not Rails' default 422.
-      # A dedicated 422 problem+json for forgery failures is a separate change.
-      expect(response).to have_http_status(:internal_server_error)
-      expect(response.parsed_body.dig('toast', 'variant')).to eq('danger')
+      body = validate_and_parse!(expected_status: :unprocessable_content)
+
+      expect(response.media_type).to eq('application/problem+json')
+      expect(body['type']).to eq('/docs/api/errors#invalid_authenticity_token')
+      expect(body.dig('toast', 'variant')).to eq('danger')
 
       get '/api/auth/me', headers: json_headers
       expect(response).to have_http_status(:unauthorized)
