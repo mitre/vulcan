@@ -93,8 +93,7 @@ VULCAN_SESSION_TIMEOUT=10m     # Required: 10 min for admin, 15 min for users
                                # Formats: 30s, 15m, 1h, or plain (900 = seconds)
 ```
 
-⚠️ **Known Gaps:**
-- Logout confirmation message (Issue #635) - In development
+**Logoff message (AC-12(02)):** after a local or OIDC sign-out, the sign-in page shows "Signed out successfully."
 
 #### System Use Notification (AC-08)
 
@@ -586,7 +585,6 @@ end
 
 | Control | Gap | Workaround | Target Resolution |
 |---------|-----|------------|-------------------|
-| AC-12(02) | No logout confirmation | Check audit logs | Q1 2025 (Issue #635) |
 | AU-05 | No built-in log overflow handling | External log rotation | Use log management system |
 
 ### Security Roadmap
@@ -655,7 +653,7 @@ Based on source code analysis, the following clarifications apply:
 |--------------|---------------------|----------------------|-----------------|
 | **Session Timeout** | 10 minutes required | Defaults to 1 hour | ⚠️ **Must set** `VULCAN_SESSION_TIMEOUT=10m` (or `600`) |
 | **Admin Timeout** | Separate timeout | Uses same timeout | ℹ️ No separate admin timeout available |
-| **CSRF Protection** | Enabled | Rails default (enabled) | ✅ No action needed |
+| **CSRF Protection** | Enabled | `protect_from_forgery with: :exception` in `ApplicationController`; separately served frontends get the token from `GET /api/auth/csrf` | ✅ No action needed |
 | **Strong Parameters** | Required | Rails default (enabled) | ✅ No action needed |
 | **Log Rotation** | External required | Logs to stdout | ⚠️ **Must configure** log management system |
 
@@ -666,8 +664,6 @@ The following improvements are tracked as GitHub issues:
 | Priority | Issue | Description | Target |
 |----------|-------|-------------|--------|
 | **High** | [#685](https://github.com/mitre/vulcan/issues/685) | Change default session timeout to 10 minutes | v2.3.0 |
-| **High** | [#635](https://github.com/mitre/vulcan/issues/635) | Add logout confirmation message | v2.3.0 |
-| **Medium** | [#686](https://github.com/mitre/vulcan/issues/686) | Document CSRF protection explicitly | v2.3.0 |
 
 These improvements will be addressed as part of the Vue 3 migration and Turbolinks removal work in v2.3.0.
 
