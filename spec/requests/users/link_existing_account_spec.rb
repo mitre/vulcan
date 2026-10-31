@@ -42,9 +42,52 @@ RSpec.describe 'Link Existing Account on cold-match' do
       expect(response).to redirect_to(new_user_session_path)
     end
 
-    # Full complete_link integration (session persistence across OmniAuth redirects)
-    # is verified via Playwright live test — ActiveRecord session store + OmniAuth
-    # mock redirects don't preserve session in RSpec request specs.
+    # The session persists across the OmniAuth mock redirects in a request
+    # spec, so the full cold-match -> sign-in page -> complete_link flow runs here.
+    def start_cold_match(uid)
+      OmniAuth.config.test_mode = true
+      OmniAuth.config.mock_auth[provider_name] = OmniAuth::AuthHash.new(
+        provider: provider_name.to_s, uid: uid,
+        info: { email: local_user.email, name: 'Cold Match' },
+        credentials: { id_token: 'fake' }, extra: { raw_info: {} }
+      )
+      post "/users/auth/#{provider_name}"
+      follow_redirect!
+      expect(response.location).to include('link_pending=true')
+      follow_redirect!
+    end
+
+    it 'names the provider on the sign-in page link form' do
+      start_cold_match('name-uid')
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("<strong>#{OidcProviderRegistry.title_for(provider_name)}</strong>")
+    end
+
+    it 'links the identity and signs the user in with the current password' do
+      start_cold_match('link-uid')
+
+      post '/users/complete_link', params: { current_password: password }
+
+      expect(response).to redirect_to(root_path)
+      expect(local_user.identities.find_by(provider: provider_name.to_s).uid).to eq('link-uid')
+      get '/api/auth/me', as: :json
+      expect(response).to have_http_status(:ok)
+    end
+
+    it 'rotates the session CSRF token when it signs the linked user in' do
+      start_cold_match('rotate-uid')
+      get '/api/auth/csrf', as: :json
+      pre_link_token = session[:_csrf_token]
+      expect(pre_link_token).to be_present
+
+      post '/users/complete_link', params: { current_password: password }
+      expect(response).to redirect_to(root_path)
+
+      get '/api/auth/csrf', as: :json
+      expect(session[:_csrf_token]).to be_present
+      expect(session[:_csrf_token]).not_to eq(pre_link_token)
+    end
   end
 
   describe 'User#link_identity! (model layer — the core of complete_link)' do

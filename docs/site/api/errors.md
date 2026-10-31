@@ -60,6 +60,10 @@ The request requires a scope (named in `detail`) that the presented token does n
 
 Creating or managing API tokens re-verifies your identity, and the current password provided does not match. The caller is already signed in — the re-verification challenge failed — so the status is 422, not 401.
 
+### invalid_authenticity_token
+
+A session-authenticated state-changing request (POST, PUT, PATCH, DELETE) carried no `X-CSRF-Token`, or a token that does not belong to the current session. Fetch a fresh token from `GET /api/auth/csrf`, send it in `X-CSRF-Token`, and retry once; a second failure is not a token problem. Requests authenticated with a personal access token are not subject to this check. Carries a legacy `toast` extension.
+
 ## Request errors (400 and 404)
 
 ### not_found

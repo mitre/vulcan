@@ -70,7 +70,9 @@ class SessionsController < Devise::SessionsController
   end
 
   def complete_link
-    pending = session[:pending_link]
+    # The conflict handler stores the hash with symbol keys and the Marshal
+    # session serializer keeps them; read it with indifferent keys.
+    pending = session[:pending_link]&.with_indifferent_access
     unless pending
       flash.alert = 'No pending account link. Please try signing in again.'
       redirect_to new_user_session_path
@@ -105,7 +107,8 @@ class SessionsController < Devise::SessionsController
     )
     session.delete(:pending_link)
 
-    sign_in(user)
+    # event: :authentication resets the CSRF token, as the form login does.
+    sign_in(user, event: :authentication)
     flash.notice = "Your account has been linked to #{title} and you are now signed in."
     redirect_to root_path
   end

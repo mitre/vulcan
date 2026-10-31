@@ -88,6 +88,20 @@ module ErrorRendering
     )
   end
 
+  # 422, not 403: the request carried no usable authenticity token for this
+  # session. The caller repairs it by fetching a token (GET /api/auth/csrf)
+  # and retrying once; the legacy toast extension keeps older consumers
+  # rendering a message until they read the problem fields directly.
+  def render_invalid_authenticity_token
+    detail = 'The request carried no authenticity token, or a token that does not belong to this ' \
+             'session. Fetch a fresh token from GET /api/auth/csrf, send it as X-CSRF-Token, and retry once.'
+    render_problem(
+      type: :invalid_authenticity_token, title: 'Invalid authenticity token', status: :unprocessable_content,
+      detail: detail,
+      toast: Toast.new(title: 'Your form session expired.', message: detail, variant: 'danger')
+    )
+  end
+
   # 403 with the who-to-ask extension. The legacy toast extension keeps
   # older consumers rendering a basic toast until they read the problem
   # fields directly.

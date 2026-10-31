@@ -61,6 +61,75 @@ RSpec.describe 'Devise Passwords JSON', openapi: false do
       expect(body.dig('toast', 'variant')).to eq('success')
     end
 
+    # sign_in_after_reset_password ships off, so the reset does not sign the
+    # user in and the toast must not say it did.
+    it 'says the password changed without claiming a sign-in' do
+      token = user.send_reset_password_instructions
+
+      put '/users/password',
+          params: { user: { reset_password_token: token,
+                            password: 'N3wS3cure!#Pass',
+                            password_confirmation: 'N3wS3cure!#Pass' } },
+          headers: json_headers, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body.dig('toast', 'message')).to eq([I18n.t('devise.passwords.updated_not_active')])
+      get '/api/auth/me', headers: json_headers
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it 'flashes the password-changed text without a sign-in claim on the HTML path' do
+      token = user.send_reset_password_instructions
+
+      put '/users/password',
+          params: { user: { reset_password_token: token,
+                            password: 'N3wS3cure!#Pass',
+                            password_confirmation: 'N3wS3cure!#Pass' } }
+
+      expect(response).to have_http_status(:redirect)
+      expect(flash[:notice]).to eq(I18n.t('devise.passwords.updated_not_active'))
+    end
+
+    # config/initializers/devise.rb ships sign_in_after_reset_password = false;
+    # this covers deployments that turn it on, where the reset signs the user in.
+    context 'when the reset signs the user in' do
+      before { allow(User).to receive(:sign_in_after_reset_password).and_return(true) }
+
+      it 'rotates the session CSRF token' do
+        token = user.send_reset_password_instructions
+        get '/api/auth/csrf', headers: json_headers
+        pre_reset_token = session[:_csrf_token]
+        expect(pre_reset_token).to be_present
+
+        put '/users/password',
+            params: { user: { reset_password_token: token,
+                              password: 'N3wS3cure!#Pass',
+                              password_confirmation: 'N3wS3cure!#Pass' } },
+            headers: json_headers, as: :json
+        expect(response).to have_http_status(:ok)
+
+        get '/api/auth/me', headers: json_headers
+        expect(response).to have_http_status(:ok)
+
+        get '/api/auth/csrf', headers: json_headers
+        expect(session[:_csrf_token]).to be_present
+        expect(session[:_csrf_token]).not_to eq(pre_reset_token)
+      end
+
+      it 'says the user is now signed in' do
+        token = user.send_reset_password_instructions
+
+        put '/users/password',
+            params: { user: { reset_password_token: token,
+                              password: 'N3wS3cure!#Pass',
+                              password_confirmation: 'N3wS3cure!#Pass' } },
+            headers: json_headers, as: :json
+
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body.dig('toast', 'message')).to eq([I18n.t('devise.passwords.updated')])
+      end
+    end
+
     it 'returns 422 with toast for invalid token' do
       put '/users/password',
           params: { user: { reset_password_token: 'badtoken',

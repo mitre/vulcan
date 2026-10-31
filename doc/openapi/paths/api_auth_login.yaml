@@ -98,5 +98,7 @@ post:
                 detail: >-
                   This account is temporarily locked due to too many failed
                   sign-in attempts. Please try again later or reset your password.
+    '422':
+      $ref: ../components/responses/InvalidAuthenticityToken.yaml
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml

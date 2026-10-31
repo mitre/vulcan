@@ -141,15 +141,40 @@ RSpec.describe 'API Token Authentication' do
   end
 
   describe 'CSRF bypass for token auth' do
+    # config/environments/test.rb disables forgery protection suite-wide, so
+    # these examples turn it on for their duration; with it off, a token
+    # request would pass the check whether or not the bypass exists.
+    around do |example|
+      previous = ActionController::Base.allow_forgery_protection
+      ActionController::Base.allow_forgery_protection = true
+      example.run
+    ensure
+      ActionController::Base.allow_forgery_protection = previous
+    end
+
+    let(:json_request_headers) { { 'Accept' => 'application/json', 'Content-Type' => 'application/json' } }
+
     it 'allows POST without CSRF token when using API token' do
       write_token = create(:personal_access_token, user: user, scopes: %w[write])
 
-      post '/projects', headers: token_headers(write_token.raw_token)
-                                 .merge('Accept' => 'application/json', 'Content-Type' => 'application/json'),
+      post '/projects', headers: token_headers(write_token.raw_token).merge(json_request_headers),
                         params: { project: { name: 'No CSRF Project' } }.to_json
 
       # Should NOT get 422 ActionController::InvalidAuthenticityToken
       expect(response).not_to have_http_status(:unprocessable_content)
+      expect(Project.exists?(name: 'No CSRF Project')).to be(true)
+    end
+
+    it 'refuses a session-authenticated POST without a CSRF token' do
+      sign_in user
+
+      post '/projects', headers: json_request_headers,
+                        params: { project: { name: 'Session No CSRF Project' } }.to_json
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.media_type).to eq('application/problem+json')
+      expect(response.parsed_body['type']).to eq('/docs/api/errors#invalid_authenticity_token')
+      expect(Project.exists?(name: 'Session No CSRF Project')).to be(false)
     end
   end
 
