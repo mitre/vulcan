@@ -1,10 +1,23 @@
 # frozen_string_literal: true
 
 module Api
-  # JSON auth endpoints for SPA consumption: /api/auth/me, login, logout.
+  # JSON auth endpoints for SPA consumption: /api/auth/csrf, me, login, logout.
   class AuthController < BaseController
-    skip_before_action :authenticate_user!, only: [:login]
+    skip_before_action :authenticate_user!, only: %i[csrf login]
     before_action :require_local_login_enabled!, only: [:login]
+
+    # Issues the authenticity token bound to the caller's session, creating
+    # the session when none exists. A frontend that is not rendered by the
+    # Rails layout needs this before it can POST login (login is
+    # CSRF-protected), and Devise redirects signed-in users away from the
+    # sign-in page, so the layout's meta tag is unreachable to it. The token
+    # is only usable together with the session cookie, so the response must
+    # never be cached. This issues a token; it exempts nothing from
+    # verify_authenticity_token.
+    def csrf
+      no_store
+      render json: { csrf_token: form_authenticity_token }
+    end
 
     def me
       render json: CurrentUserBlueprint.render(current_user)

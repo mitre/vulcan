@@ -1,0 +1,33 @@
+get:
+  operationId: getAuthCsrf
+  tags:
+    - Auth
+  security: []
+  summary: Issue the CSRF token for the current session
+  description: >-
+    Returns the authenticity token bound to the caller's session, creating a
+    session when none exists. Does not require authentication. A frontend
+    that is not rendered by the server's HTML layout calls this before its
+    first state-changing request. Send the value in the X-CSRF-Token header
+    on POST, PUT, PATCH and DELETE requests. The response carries
+    Cache-Control: no-store and must never be cached.
+  responses:
+    '200':
+      description: Token issued; a session cookie is set when none existed
+      headers:
+        Cache-Control:
+          description: Always no-store. The token is session-bound and must not be cached.
+          schema:
+            type: string
+            example: no-store
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/CsrfTokenResponse.yaml
+          examples:
+            token:
+              summary: Token for the current session
+              value:
+                csrf_token: ablKiE91Uc5-POdKUVYtj6i_dtyEVdVLA4klsLgcJzs72TdAB9f9P-TGGl8_v0mhoggETWULHFKLMfubDR_u0w
+    4XX:
+      $ref: ../components/responses/ErrorResponse.yaml
