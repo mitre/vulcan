@@ -198,7 +198,7 @@ RSpec.describe Review do
     it 'rejects an unknown action string' do
       review = Review.new(action: 'definitely_not_a_real_action', comment: '...', user: p_admin, rule: rule)
       expect(review).not_to be_valid
-      expect(review.errors[:action].join).to match(/not a recognized review action/)
+      expect(review.errors[:action].join).to include('not a recognized review action')
     end
 
     it 'accepts every action listed in Review::VALID_ACTIONS' do

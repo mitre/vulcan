@@ -140,9 +140,8 @@ class Review < ApplicationRecord
   # callback-free. Chainable onto a relation, e.g.
   # `Review.where(id: ids).repair_missing_commentable!`.
   def self.repair_missing_commentable!
-    # rubocop:disable Rails/SkipsModelValidations
+    # rubocop:disable-next Rails/SkipsModelValidations
     missing_commentable.update_all("commentable_type = 'BaseRule', commentable_id = rule_id")
-    # rubocop:enable Rails/SkipsModelValidations
   end
 
   # The user who filed the latest review request on a requirement row —
@@ -300,9 +299,8 @@ class Review < ApplicationRecord
   ACTION_COMMENT = 'comment'
 
   validates :comment, :action, presence: true
-  # rubocop:disable Rails/I18nLocaleTexts
+  # rubocop:disable-next Rails/I18nLocaleTexts
   validates :action, inclusion: { in: VALID_ACTIONS, message: 'is not a recognized review action' }
-  # rubocop:enable Rails/I18nLocaleTexts
   validates :action, length: { maximum: ->(_r) { Settings.input_limits.short_string } }
   # Comment-action reviews are capped at min(Settings.input_limits.review_comment, 4000)
   # to limit abuse surface for external commenters posting via the public-comment path.
@@ -330,17 +328,15 @@ class Review < ApplicationRecord
   # it will never produce an error under normal operation. If the callback
   # is ever removed, this validator catches the gap. The DB CHECK
   # constraint (chk_review_duplicate_fk_consistency) is the final safety net.
-  # rubocop:disable Rails/I18nLocaleTexts -- consistent with neighbor validators on this model
+  # rubocop:disable-next Rails/I18nLocaleTexts -- consistent with neighbor validators on this model
   validates :duplicate_of_review_id, absence: { message: 'must be blank when triage_status is not duplicate' },
                                      unless: -> { triage_status == 'duplicate' }
-  # rubocop:enable Rails/I18nLocaleTexts
   validate :addressed_by_status_requires_rule
   # Same layered defense as duplicate_of_review_id above — see
   # chk_review_addressed_by_fk_consistency DB CHECK constraint.
-  # rubocop:disable Rails/I18nLocaleTexts -- consistent with neighbor validators on this model
+  # rubocop:disable-next Rails/I18nLocaleTexts -- consistent with neighbor validators on this model
   validates :addressed_by_rule_id, absence: { message: 'must be blank when triage_status is not addressed_by' },
                                    unless: -> { triage_status == 'addressed_by' }
-  # rubocop:enable Rails/I18nLocaleTexts
   validate :no_self_responding_reference
   validate :no_self_duplicate_reference
   validate :responding_to_must_be_same_rule

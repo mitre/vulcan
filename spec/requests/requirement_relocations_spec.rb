@@ -250,7 +250,7 @@ RSpec.describe 'Requirement relocations' do
         expect(response).to have_http_status(:ok)
         body = response.parsed_body
         expect(body['valid']).to be false
-        expect(body['errors'].join).to match(/SRG component/)
+        expect(body['errors'].join).to include('SRG component')
       end
     end
 
@@ -285,7 +285,7 @@ RSpec.describe 'Requirement relocations' do
              params: { target_component_id: stig_target.id }
 
         expect(response).to have_http_status(:unprocessable_content)
-        expect(response.parsed_body.dig('toast', 'message').join).to match(/SRG component/)
+        expect(response.parsed_body.dig('toast', 'message').join).to include('SRG component')
         expect(record.reload.executed_at).to be_nil
       end
 
@@ -305,7 +305,7 @@ RSpec.describe 'Requirement relocations' do
 
         expect(response).to have_http_status(:unprocessable_content)
         expect(response.parsed_body.dig('toast', 'message').join)
-          .to match(/does not declare SRG-CORE-RELOCAPI as a source SRG/)
+          .to include('does not declare SRG-CORE-RELOCAPI as a source SRG')
         expect(record.reload.executed_at).to be_nil
       end
 
@@ -423,7 +423,7 @@ RSpec.describe 'Requirement relocations' do
                        requirement_relocation: { adjudication_rationale: 'Not ours.' } }
 
         expect(response).to have_http_status(:unprocessable_content)
-        expect(response.parsed_body.dig('toast', 'message').join).to match(/SRG component/)
+        expect(response.parsed_body.dig('toast', 'message').join).to include('SRG component')
         expect(record.reload.declined_at).to be_nil
       end
 
@@ -448,7 +448,7 @@ RSpec.describe 'Requirement relocations' do
              params: { target_component_id: released.id,
                        requirement_relocation: { adjudication_rationale: 'From a released doc.' } }
         expect(response).to have_http_status(:unprocessable_content)
-        expect(response.parsed_body.dig('toast', 'message').join).to match(/released/)
+        expect(response.parsed_body.dig('toast', 'message').join).to include('released')
 
         expect(record.reload.declined_at).to be_nil
       end
@@ -462,7 +462,7 @@ RSpec.describe 'Requirement relocations' do
                        requirement_relocation: { adjudication_rationale: 'Self-decline attempt.' } }
 
         expect(response).to have_http_status(:unprocessable_content)
-        expect(response.parsed_body.dig('toast', 'message').join).to match(/source component/)
+        expect(response.parsed_body.dig('toast', 'message').join).to include('source component')
         expect(record.reload.declined_at).to be_nil
       end
 

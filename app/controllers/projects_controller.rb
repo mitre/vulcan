@@ -535,12 +535,11 @@ class ProjectsController < ApplicationController
   end
 
   def project_params
-    # rubocop:disable Rails/StrongParametersExpect -- params.expect breaks partial param payloads
+    # rubocop:disable-next Rails/StrongParametersExpect -- params.expect breaks partial param payloads
     params.require(:project).permit(
       :name, :description, :visibility,
       project_metadata_attributes: { data: {} }
     )
-    # rubocop:enable Rails/StrongParametersExpect
   end
 
   def check_permission_to_update

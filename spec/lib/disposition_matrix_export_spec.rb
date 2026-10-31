@@ -184,9 +184,8 @@ RSpec.describe DispositionMatrixExport do
              rule: component.rules.first, user: commenter,
              comment: "\rCR-leading", triage_status: 'pending')
       out = CSV.parse(described_class.generate(component: component), headers: true)
-      # rubocop:disable Rails/Pluck -- CSV::Table rows are not ActiveRecord
+      # rubocop:disable-next Rails/Pluck -- CSV::Table rows are not ActiveRecord
       comments = out.map { |r| r['Comment'] }
-      # rubocop:enable Rails/Pluck
       expect(comments).to include("'+danger", "'-danger", "'@danger")
       expect(comments).to include(start_with("'\t"))
       expect(comments).to include(start_with("'\r"))

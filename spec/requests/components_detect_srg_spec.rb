@@ -53,7 +53,7 @@ RSpec.describe 'Components - detect_srg' do
         post '/components/detect_srg', params: { file: upload }
 
         expect(response).to have_http_status(:unprocessable_content)
-        expect(response.parsed_body['error']).to match(/No SRG IDs found/)
+        expect(response.parsed_body['error']).to include('No SRG IDs found')
       end
     end
 
@@ -63,7 +63,7 @@ RSpec.describe 'Components - detect_srg' do
         post '/components/detect_srg', params: { file: upload }
 
         expect(response).to have_http_status(:unprocessable_content)
-        expect(response.parsed_body['error']).to match(/Could not identify/)
+        expect(response.parsed_body['error']).to include('Could not identify')
       end
     end
 
@@ -122,7 +122,7 @@ RSpec.describe 'Components - detect_srg' do
         post '/components/detect_srg', params: { file: upload }
 
         expect(response).to have_http_status(:unprocessable_content)
-        expect(response.parsed_body['error']).to match(/No SRG IDs found/)
+        expect(response.parsed_body['error']).to include('No SRG IDs found')
 
         bad_file.unlink
       end

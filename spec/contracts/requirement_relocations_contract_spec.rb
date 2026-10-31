@@ -183,7 +183,7 @@ RSpec.describe 'Requirement relocations endpoint contracts', type: :request do
       body = validate_and_parse!(expected_status: :unprocessable_content)
 
       expect(body.dig('toast', 'variant')).to eq('danger')
-      expect(body.dig('toast', 'message').join).to match(/does not declare SRG-CORE-RELCON as a source SRG/)
+      expect(body.dig('toast', 'message').join).to include('does not declare SRG-CORE-RELCON as a source SRG')
       expect(record.reload.declined_at).to be_nil
     end
 

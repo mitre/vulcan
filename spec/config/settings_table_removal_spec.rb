@@ -9,7 +9,7 @@ RSpec.describe 'settings table cleanup' do
 
   it 'schema.rb does not contain a settings table' do
     schema = Rails.root.join('db/schema.rb').read
-    expect(schema).not_to match(/create_table "settings"/)
+    expect(schema).not_to include('create_table "settings"')
   end
 
   it 'a migration exists to drop the settings table' do

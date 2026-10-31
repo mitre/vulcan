@@ -11,7 +11,7 @@ RSpec.describe 'JSON parameter safety' do
   let(:projects_controller) { Rails.root.join('app/controllers/projects_controller.rb').read }
 
   it 'component_filter rescues JSON::ParserError' do
-    expect(projects_controller).to match(/rescue JSON::ParserError/),
+    expect(projects_controller).to include('rescue JSON::ParserError'),
                                    'component_filter must rescue JSON::ParserError to prevent 500 on invalid input'
   end
 end

@@ -10,7 +10,7 @@ RSpec.describe 'database.yml name isolation' do
     database_line = test_section.lines.find { |l| l.strip.start_with?('database:') }
 
     expect(database_line).not_to(
-      match(/DATABASE_NAME/),
+      include('DATABASE_NAME'),
       'test database must NOT use DATABASE_NAME — it collides with development when set'
     )
   end
@@ -31,11 +31,11 @@ RSpec.describe 'database.yml name isolation' do
     database_line = prod_section.lines.find { |l| l.strip.start_with?('database:') }
 
     expect(database_line).not_to(
-      match(/POSTGRES_DB/),
+      include('POSTGRES_DB'),
       'production should use DATABASE_NAME for consistency, not POSTGRES_DB'
     )
     expect(database_line).to(
-      match(/DATABASE_NAME/),
+      include('DATABASE_NAME'),
       'production database should be configurable via DATABASE_NAME'
     )
   end

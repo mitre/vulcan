@@ -21,7 +21,7 @@ RSpec.describe 'parallel test database sync hook' do
     expect(binstub).to exist, 'bin/parallel_rspec must exist as the standard way to run parallel tests'
 
     content = binstub.read
-    expect(content).to match(/PARALLEL_TEST_PROCESSORS/),
+    expect(content).to include('PARALLEL_TEST_PROCESSORS'),
                        'binstub must set PARALLEL_TEST_PROCESSORS to cap CPU usage'
   end
 end

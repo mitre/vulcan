@@ -35,7 +35,7 @@ RSpec.describe Component do
         component.comment_phase = 'open'
         component.closed_reason = 'adjudicating'
         expect(component).not_to be_valid
-        expect(component.errors[:closed_reason].join).to match(/comment_phase is "closed"/)
+        expect(component.errors[:closed_reason].join).to include('comment_phase is "closed"')
       end
 
       it 'rejects an invalid closed_reason value' do
