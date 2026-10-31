@@ -15,9 +15,8 @@ module Api
     # never be cached. This issues a token; it exempts nothing from
     # verify_authenticity_token.
     #
-    # login resets the token, so the caller fetches it again after signing
-    # in. logout keeps the session, and the token with it; the HTML sign-out
-    # (DELETE /users/sign_out) resets both.
+    # login resets the token and logout resets the whole session, so the
+    # caller fetches a token again after either.
     def csrf
       no_store
       render json: { csrf_token: form_authenticity_token }
@@ -52,8 +51,12 @@ module Api
       end
     end
 
+    # sign_out with no scope takes Devise's sign_out_all_scopes path:
+    # warden.logout resets the whole session, as the HTML sign-out does, so
+    # the authenticity token, auth_method and the consent acknowledgment go
+    # with it.
     def logout
-      sign_out(current_user)
+      sign_out
       render json: { message: 'Signed out successfully' }
     end
 

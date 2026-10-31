@@ -172,4 +172,27 @@ RSpec.describe 'Api::Auth' do
       expect(response).to have_http_status(:unauthorized)
     end
   end
+
+  describe 'DELETE /api/auth/logout after a password sign-in' do
+    # Same reset as the HTML sign-out: the whole session goes, including the
+    # authenticity token, auth_method and the consent acknowledgment.
+    it 'resets the whole session' do
+      post '/consent/acknowledge'
+      post '/api/auth/login', params: { email: user.email, password: 'S3cure!#Pass999' }, as: :json
+      get '/api/auth/csrf', as: :json
+      expect(session[:_csrf_token]).to be_present
+      expect(session[:auth_method]).to be_present
+      expect(session[:consent_acknowledged_at]).to be_present
+      session_cookie_before = cookies['_vulcan_session']
+
+      delete '/api/auth/logout', as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.headers['Set-Cookie']).to include('_vulcan_session=')
+      expect(cookies['_vulcan_session']).not_to eq(session_cookie_before)
+      expect(session[:_csrf_token]).to be_nil
+      expect(session[:auth_method]).to be_nil
+      expect(session[:consent_acknowledged_at]).to be_nil
+    end
+  end
 end

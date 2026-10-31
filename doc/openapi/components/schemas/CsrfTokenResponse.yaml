@@ -6,5 +6,5 @@ required:
 properties:
   csrf_token:
     type: string
-    description: URL-safe Base64 authenticity token, masked differently on every response, bound to the session cookie that accompanies this response. POST /api/auth/login replaces the session's token; DELETE /api/auth/logout keeps it.
+    description: URL-safe Base64 authenticity token, masked differently on every response, bound to the session cookie that accompanies this response. Reset on POST /api/auth/login; DELETE /api/auth/logout resets the whole session.
     example: ablKiE91Uc5-POdKUVYtj6i_dtyEVdVLA4klsLgcJzs72TdAB9f9P-TGGl8_v0mhoggETWULHFKLMfubDR_u0w

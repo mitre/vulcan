@@ -86,6 +86,31 @@ RSpec.describe 'Auth endpoint contracts', type: :request do
 
       expect(body['message']).to include('Signed out')
     end
+
+    it 'resets the session on logout, so the pre-logout token is refused on the next login' do
+      get '/api/auth/csrf', headers: json_headers
+      post '/api/auth/login',
+           params: { email: user.email, password: 'S3cure!#Pass999' },
+           headers: json_headers.merge('X-CSRF-Token' => response.parsed_body['csrf_token']), as: :json
+      expect(response).to have_http_status(:ok)
+
+      get '/api/auth/csrf', headers: json_headers
+      pre_logout_token = response.parsed_body['csrf_token']
+      delete '/api/auth/logout', headers: json_headers.merge('X-CSRF-Token' => pre_logout_token), as: :json
+      validate_and_parse!
+
+      post '/api/auth/login',
+           params: { email: user.email, password: 'S3cure!#Pass999' },
+           headers: json_headers.merge('X-CSRF-Token' => pre_logout_token), as: :json
+      body = validate_and_parse!(expected_status: :unprocessable_content)
+      expect(body['type']).to eq('/docs/api/errors#invalid_authenticity_token')
+
+      get '/api/auth/csrf', headers: json_headers
+      post '/api/auth/login',
+           params: { email: user.email, password: 'S3cure!#Pass999' },
+           headers: json_headers.merge('X-CSRF-Token' => response.parsed_body['csrf_token']), as: :json
+      expect(validate_and_parse!['id']).to eq(user.id)
+    end
   end
 
   describe 'GET /api/auth/me (authenticated)' do
