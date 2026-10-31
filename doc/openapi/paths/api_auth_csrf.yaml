@@ -30,6 +30,6 @@ get:
             token:
               summary: Token for the current session
               value:
-                csrf_token: ablKiE91Uc5-POdKUVYtj6i_dtyEVdVLA4klsLgcJzs72TdAB9f9P-TGGl8_v0mhoggETWULHFKLMfubDR_u0w
+                csrf_token: abc123def456
     4XX:
       $ref: ../components/responses/ErrorResponse.yaml
