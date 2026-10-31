@@ -9,7 +9,7 @@ RSpec.describe 'API authentication argument forwarding' do
   let(:controller) { Rails.root.join('app/controllers/api/base_controller.rb').read }
 
   it 'accepts arguments in authenticate_user! signature' do
-    expect(controller).to match(/def authenticate_user!\(\*\)/),
+    expect(controller).to include('def authenticate_user!(*)'),
                           'authenticate_user! must accept * args for Devise compatibility'
   end
 end

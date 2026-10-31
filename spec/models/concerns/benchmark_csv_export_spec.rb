@@ -3,7 +3,7 @@
 require 'rails_helper'
 require 'csv'
 
-# rubocop:disable RSpec/IndexedLet, RSpec/VerifiedDoubleReference
+# rubocop:disable-next RSpec/IndexedLet, RSpec/VerifiedDoubleReference
 RSpec.describe BenchmarkCsvExport do
   let(:rule_id_header) { 'Rule ID' }
   let(:stig_id_header) { 'STIG ID' }
@@ -237,4 +237,3 @@ RSpec.describe BenchmarkCsvExport do
     end
   end
 end
-# rubocop:enable RSpec/IndexedLet, RSpec/VerifiedDoubleReference

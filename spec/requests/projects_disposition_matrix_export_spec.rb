@@ -113,7 +113,7 @@ RSpec.describe 'GET /projects/:id/export/disposition_csv' do
       get "/projects/#{project.id}/export/disposition_csv", as: :json
       expect(response).to have_http_status(:forbidden)
       expect(response.parsed_body['type']).to eq('/docs/api/errors#permission_denied')
-      expect(response.parsed_body['detail']).to match(/author tier or higher/)
+      expect(response.parsed_body['detail']).to include('author tier or higher')
     end
 
     it 'redirects with a flash alert on browser navigations' do

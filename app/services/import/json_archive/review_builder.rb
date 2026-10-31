@@ -100,9 +100,8 @@ module Import
         rows = reactions_data.filter_map { |r| build_reaction_row(review_db_id, r) }
         return if rows.empty?
 
-        # rubocop:disable Rails/SkipsModelValidations -- bulk insert mirrors insert_review path
+        # rubocop:disable-next Rails/SkipsModelValidations -- bulk insert mirrors insert_review path
         Reaction.insert_all(rows, unique_by: %i[review_id user_id])
-        # rubocop:enable Rails/SkipsModelValidations
       end
 
       def build_reaction_row(review_db_id, reaction_data)
