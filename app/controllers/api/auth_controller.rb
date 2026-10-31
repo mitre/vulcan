@@ -14,6 +14,10 @@ module Api
     # is only usable together with the session cookie, so the response must
     # never be cached. This issues a token; it exempts nothing from
     # verify_authenticity_token.
+    #
+    # login resets the token, so the caller fetches it again after signing
+    # in. logout keeps the session, and the token with it; the HTML sign-out
+    # (DELETE /users/sign_out) resets both.
     def csrf
       no_store
       render json: { csrf_token: form_authenticity_token }
@@ -35,7 +39,10 @@ module Api
       # in the shared rack_attack login throttles.
       if user&.valid_for_authentication? { user.valid_password?(params[:password]) } &&
          user.active_for_authentication?
-        sign_in(user)
+        # event: :authentication runs Devise's CSRF cleanup hook, which
+        # resets the session's authenticity token as the form login does; a
+        # plain sign_in records a :set_user event and skips it.
+        sign_in(user, event: :authentication)
         session[:auth_method] = :local
         render json: CurrentUserBlueprint.render(user)
       elsif user&.access_locked?

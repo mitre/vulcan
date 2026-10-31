@@ -62,6 +62,30 @@ RSpec.describe 'Auth endpoint contracts', type: :request do
 
       expect(body['id']).to eq(user.id)
     end
+
+    it 'refuses the pre-login token after sign-in and accepts a freshly fetched one' do
+      get '/api/auth/csrf', headers: json_headers
+      pre_login_token = response.parsed_body['csrf_token']
+
+      post '/api/auth/login',
+           params: { email: user.email, password: 'S3cure!#Pass999' },
+           headers: json_headers.merge('X-CSRF-Token' => pre_login_token), as: :json
+      expect(response).to have_http_status(:ok)
+
+      delete '/api/auth/logout', headers: json_headers.merge('X-CSRF-Token' => pre_login_token), as: :json
+      body = validate_and_parse!(expected_status: :unprocessable_content)
+
+      expect(response.media_type).to eq('application/problem+json')
+      expect(body['type']).to eq('/docs/api/errors#invalid_authenticity_token')
+
+      get '/api/auth/csrf', headers: json_headers
+      fresh_token = response.parsed_body['csrf_token']
+
+      delete '/api/auth/logout', headers: json_headers.merge('X-CSRF-Token' => fresh_token), as: :json
+      body = validate_and_parse!
+
+      expect(body['message']).to include('Signed out')
+    end
   end
 
   describe 'GET /api/auth/me (authenticated)' do

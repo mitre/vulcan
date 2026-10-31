@@ -93,6 +93,23 @@ RSpec.describe 'Api::Auth' do
       expect(response.parsed_body['id']).to eq(user.id)
     end
 
+    # Devise resets the CSRF token in a Warden after_authentication hook,
+    # which runs only when the sign-in is recorded as an authentication
+    # event. Without the reset, a token obtained before sign-in stays valid
+    # for the signed-in session (CSRF token fixation).
+    it 'rotates the session CSRF token on sign-in' do
+      get '/api/auth/csrf', as: :json
+      pre_login_token = session[:_csrf_token]
+      expect(pre_login_token).to be_present
+
+      post '/api/auth/login', params: { email: user.email, password: 'S3cure!#Pass999' }, as: :json
+      expect(response).to have_http_status(:ok)
+
+      get '/api/auth/csrf', as: :json
+      expect(session[:_csrf_token]).to be_present
+      expect(session[:_csrf_token]).not_to eq(pre_login_token)
+    end
+
     # Local users below (never the shared let_it_be) — these mutate
     # failed_attempts / locked_at, which must not bleed across examples.
 

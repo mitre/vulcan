@@ -59,7 +59,8 @@ module Users
         resource.unlock_access! if unlockable?(resource)
         if sign_in_after_reset_password?
           resource.after_database_authentication
-          sign_in(resource_name, resource)
+          # event: :authentication resets the CSRF token, as the form login does.
+          sign_in(resource_name, resource, event: :authentication)
         end
 
         respond_to do |format|

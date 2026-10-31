@@ -8,8 +8,10 @@ get:
     Returns the authenticity token bound to the caller's session, creating a
     session when none exists. Does not require authentication. A frontend
     that is not rendered by the server's HTML layout calls this before its
-    first state-changing request. Send the value in the X-CSRF-Token header
-    on POST, PUT, PATCH and DELETE requests. The response carries
+    first state-changing request. POST /api/auth/login resets the token, so
+    call this again after signing in; DELETE /api/auth/logout keeps the
+    session and its token. Send the value in the X-CSRF-Token header on
+    POST, PUT, PATCH and DELETE requests. The response carries
     Cache-Control: no-store and must never be cached.
   responses:
     '200':
