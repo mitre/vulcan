@@ -87,7 +87,7 @@ target "production" {
     "org.opencontainers.image.vendor"      = "MITRE"
     "org.opencontainers.image.source"      = "https://github.com/mitre/vulcan"
     "org.opencontainers.image.version"     = "${VERSION}"
-    "org.opencontainers.image.base.name"   = "registry.access.redhat.com/ubi9/ubi-minimal:9.7"
+    "org.opencontainers.image.base.name"   = "registry.access.redhat.com/ubi9/ubi-minimal:9.8"
   }
 
   // Build cache configuration (only for CI/registry push)
