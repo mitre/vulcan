@@ -35,10 +35,6 @@ variable "TAG_SUFFIXES" {
   default = "latest"
 }
 
-variable "VULCAN_BUNDLER_VERSION" {
-  default = "2.7.2"
-}
-
 variable "VULCAN_RUBY_VERSION" {
   default = "3.4.12"
 }
@@ -76,7 +72,6 @@ target "production" {
   platforms = ["linux/amd64"]
 
   args = {
-    BUNDLER_VERSION = "${VULCAN_BUNDLER_VERSION}"
     RUBY_VERSION = "${VULCAN_RUBY_VERSION}"
     NODE_VERSION = "${VULCAN_NODE_VERSION}"
   }
