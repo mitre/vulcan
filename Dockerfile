@@ -23,7 +23,6 @@ ARG RUBY_VERSION=3.4.12
 # the same default gems as 3.4.10: erb 4.0.4.1 (CVE-2026-41316) and net-imap
 # 0.5.15 (CVE-2026-4224x), which clear the ruby-layer default-gem findings.
 ARG RUBY_SHA256=5e5d85ad93b0adcccbad47733680f4892bd0078e3342437f7babce01c1872479
-ARG BUNDLER_VERSION=2.7.2
 ARG NODE_VERSION=24.18.0
 
 # =============================================================================
@@ -88,7 +87,6 @@ FROM base AS build-base
 
 ARG RUBY_VERSION
 ARG RUBY_SHA256
-ARG BUNDLER_VERSION
 
 USER 0
 
@@ -119,6 +117,9 @@ RUN microdnf update -y && \
 # findutils, tar, xz are kept here (build-time only) and intentionally
 # excluded from the base stage — they're not needed at runtime.
 
+# `gem update --system` upgrades RubyGems and its bundled Bundler together
+# (they release in lockstep). Bundler then runs the version recorded in
+# Gemfile.lock's BUNDLED WITH, so the lockfile is the only Bundler pin.
 RUN curl -fsSL --proto '=https' --proto-redir '=https' https://cache.ruby-lang.org/pub/ruby/${RUBY_VERSION%.*}/ruby-${RUBY_VERSION}.tar.gz -o /tmp/ruby.tar.gz && \
     echo "${RUBY_SHA256}  /tmp/ruby.tar.gz" | sha256sum -c - && \
     tar --no-same-owner -xzf /tmp/ruby.tar.gz -C /tmp && \
@@ -129,7 +130,6 @@ RUN curl -fsSL --proto '=https' --proto-redir '=https' https://cache.ruby-lang.o
     make -j"$(nproc)" && \
     make install && \
     gem update --system --no-document && \
-    gem install bundler:${BUNDLER_VERSION} --no-document && \
     chown -R 1000:0 /usr/local/bundle && \
     chmod -R g=u /usr/local/bundle && \
     cd /tmp && \
