@@ -20,6 +20,12 @@ const svg = ref("");
 const renderMermaid = async () => {
   mermaid.initialize({
     startOnLoad: false,
+    // Mermaid 12 changed the flowchart defaults (ELK layout, neo look,
+    // 120px label wrapping and minimum width). Keep the dagre layout, classic
+    // look and 200px wrapping the site's diagrams were drawn for.
+    layout: "dagre",
+    look: "classic",
+    flowchart: { wrappingWidth: 200, minNodeWidth: 0 },
     theme: "default",
     themeVariables: {
       primaryColor: "#3eaf7c",
@@ -31,7 +37,13 @@ const renderMermaid = async () => {
     },
   });
 
-  const { svg: renderedSvg } = await mermaid.render("mermaid-" + Date.now(), props.graph);
+  // Render inside this component's element so labels are measured with the
+  // same page styles they are displayed with.
+  const { svg: renderedSvg } = await mermaid.render(
+    "mermaid-" + Date.now(),
+    props.graph,
+    mermaidRef.value,
+  );
   svg.value = renderedSvg;
 };
 
