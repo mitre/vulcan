@@ -2,7 +2,7 @@
 <Benchmark xmlns="http://checklists.nist.gov/xccdf/1.1" xmlns:dc="http://purl.org/dc/elements/1.1/" id="Operating_System_Core" xml:lang="en">
   <status>accepted</status>
   <title>Operating System Core Security Requirements Guide</title>
-  <description>This Security Requirements Guide was converted from the DISA STIGTemplate XLSX for vendoring into the Bifrost corpus (Core SRG). See scripts/convert-stigtemplate-to-xccdf.ts.</description>
+  <description>This Security Requirements Guide was converted from the DISA STIGTemplate XLSX (Core SRG).</description>
   <plain-text id="release-info">Release: 1</plain-text>
   <version>3</version>
   <Group id="V-SRG-OS-000001">
