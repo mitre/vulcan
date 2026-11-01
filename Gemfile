@@ -84,7 +84,7 @@ gem 'amoeba'
 # For writing excel files with xml:space="preserve" (fixes whitespace round-trip)
 gem 'caxlsx'
 # For reading excel files
-gem 'roo', '~> 3.0'
+gem 'roo', '~> 4.0'
 
 # REXML - required explicitly in Ruby 3.0+
 gem 'rexml'
