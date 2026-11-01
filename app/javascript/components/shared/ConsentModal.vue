@@ -35,13 +35,6 @@ export default {
     config: {
       type: Object,
       required: true,
-      default: () => ({
-        enabled: false,
-        required: false,
-        version: "1",
-        title: "Terms of Use",
-        content: "",
-      }),
     },
   },
   data() {
