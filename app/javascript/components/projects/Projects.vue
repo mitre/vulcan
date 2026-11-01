@@ -66,7 +66,6 @@ export default {
     is_vulcan_admin: {
       type: Boolean,
       required: true,
-      default: false,
     },
     can_create_project: {
       type: Boolean,

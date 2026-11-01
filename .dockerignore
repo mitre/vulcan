@@ -64,7 +64,7 @@
 /.beads
 /lefthook.yml
 /.rubocop.yml
-/.eslintrc.js
+/eslint.config.mjs
 /.prettierrc
 /vitest.config.js
 /babel.config.js

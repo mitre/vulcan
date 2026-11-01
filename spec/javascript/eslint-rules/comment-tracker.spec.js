@@ -8,7 +8,7 @@ RuleTester.describe = describe;
 RuleTester.it = it;
 
 const ruleTester = new RuleTester({
-  parserOptions: { ecmaVersion: 2020, sourceType: "module" },
+  languageOptions: { ecmaVersion: 2020, sourceType: "module" },
 });
 
 ruleTester.run("comment-tracker", rule, {

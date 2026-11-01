@@ -23,7 +23,7 @@ bin/vulcan
 .github/
 
 # Linter and code quality configs (not used at runtime)
-.eslintrc.js
+eslint.config.mjs
 .prettierrc
 .rspec
 .rubocop.yml
