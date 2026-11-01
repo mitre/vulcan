@@ -20,7 +20,7 @@
     "monaco-editor": "0.32.1",
     "pinia": "^2",
     "popper.js": "^1.16.1",
-    "shiki": "^3.22.0",
+    "shiki": "^4.5.0",
     "v-linkify": "^1.0.12",
     "vue": "~2.7.16",
     "vue-highlight-words": "1.2.0",
