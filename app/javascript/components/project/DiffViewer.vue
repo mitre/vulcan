@@ -123,8 +123,8 @@
           v-if="diffControl || baseControl"
           :key="`${selectedRuleId}-${editorKey}`"
           diff
-          :original="diffControl"
-          :value="baseControl"
+          :original="baseControl"
+          :value="diffControl"
           :options="monacoEditorOptions"
           :language="monacoEditorOptions.language"
           :theme="monacoEditorOptions.theme"
