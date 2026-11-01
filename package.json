@@ -17,7 +17,7 @@
     "lodash": "^4.17.21",
     "marked": "^18.0.11",
     "moment": "^2.29.4",
-    "monaco-editor": "0.32.1",
+    "monaco-editor": "0.57.0",
     "pinia": "^2",
     "popper.js": "^1.16.1",
     "shiki": "^4.5.0",
@@ -25,7 +25,6 @@
     "vue": "~2.7.16",
     "vue-highlight-words": "1.2.0",
     "vue-loader": "^15.10.0",
-    "vue-monaco": "^1.2.2",
     "vue-multiselect": "^2.1.9",
     "vue-router": "3",
     "vue-template-compiler": "~2.7.16"

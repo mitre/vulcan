@@ -55,7 +55,6 @@
 <script>
 import _ from "lodash";
 import { getComponentHistory } from "../../api/componentsApi";
-import MonacoEditor from "vue-monaco";
 import { useToast } from "../../composables/useToast";
 import FilterDropdown from "../shared/FilterDropdown.vue";
 

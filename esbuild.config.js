@@ -76,8 +76,29 @@ const buildOptions = {
   inject: ["./node_modules/bootstrap/dist/js/bootstrap.js"],
   // Fix for CSS paths - allow both node_modules and relative paths
   resolveExtensions: [".js", ".json", ".vue", ".css", ".scss"],
-  // Standard asset naming with content hash for proper caching
-  assetNames: "[name]-[hash]",
+  // Content-hashed asset names marked as already digested, so Propshaft
+  // serves them under the same name the bundles reference (jsbundling-rails'
+  // documented setting) instead of adding a second digest.
+  assetNames: "[name]-[hash].digested",
+};
+
+// Monaco's web workers have no DOM, so they are built on their own: no
+// injected bootstrap.js and no Vue or Sass plugins (Monaco's esbuild sample).
+// app/javascript/utils/monaco.js points the editor at these files.
+const monacoWorkerBuildOptions = {
+  entryPoints: {
+    "monaco-editor.worker": "node_modules/monaco-editor/esm/vs/editor/editor.worker.js",
+    "monaco-json.worker":
+      "node_modules/monaco-editor/esm/vs/languages/features/json/json.worker.js",
+  },
+  bundle: true,
+  outdir: "app/assets/builds",
+  absWorkingDir: path.resolve(__dirname),
+  sourcemap: true,
+  format: "iife",
+  define: {
+    "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
+  },
 };
 
 // Add watch option only if in watch mode
@@ -85,6 +106,8 @@ if (watch) {
   buildOptions.watch = true;
 }
 
-require("esbuild")
-  .build(buildOptions)
-  .catch(() => process.exit(1));
+const esbuild = require("esbuild");
+
+Promise.all([esbuild.build(buildOptions), esbuild.build(monacoWorkerBuildOptions)]).catch(() =>
+  process.exit(1),
+);

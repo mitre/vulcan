@@ -39,13 +39,14 @@
       :options="monacoEditorOptions"
       class="editor"
       :language="monacoEditorOptions.language"
+      :theme="monacoEditorOptions.theme"
       @change="$root.$emit('update:rule', { ...rule, [field]: $event })"
     />
   </div>
 </template>
 
 <script>
-import MonacoEditor from "vue-monaco";
+import MonacoEditor from "../shared/MonacoEditor.vue";
 
 export default {
   name: "InspecControlEditor",
