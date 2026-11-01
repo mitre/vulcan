@@ -16,18 +16,19 @@
 #   docker buildx build --platform linux/amd64,linux/arm64 --target production -t vulcan:prod .
 # =============================================================================
 
-ARG RUBY_VERSION=3.4.10
+ARG RUBY_VERSION=3.4.12
 # Upstream SHA256 from https://www.ruby-lang.org/en/news/<release>/
-# 3.4.10 (2026-06-30) ships default gem erb 4.0.4.1 (CVE-2026-41316) and
-# net-imap 0.5.15 (CVE-2026-4224x) — clears the ruby-layer default-gem findings.
-ARG RUBY_SHA256=ecee2d072a14f2d14347dd56dfd8fe5c3130abf5117bfaacbda0f4ef9cc429ec
-ARG BUNDLER_VERSION=2.7.2
+# 3.4.12 (2026-10-23) fixes the Onigmo regexp compilation bugs behind
+# CVE-2026-89078, CVE-2026-93577, CVE-2026-97229 and CVE-2026-110264. It ships
+# the same default gems as 3.4.10: erb 4.0.4.1 (CVE-2026-41316) and net-imap
+# 0.5.15 (CVE-2026-4224x), which clear the ruby-layer default-gem findings.
+ARG RUBY_SHA256=5e5d85ad93b0adcccbad47733680f4892bd0078e3342437f7babce01c1872479
 ARG NODE_VERSION=24.18.0
 
 # =============================================================================
 # BASE STAGE - Common foundation for all stages
 # =============================================================================
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.8@sha256:8eb2830d0936237fc13a1f2f7e45aecf90d69043380ad167fad0343632937f41 AS base
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.8@sha256:bba2b4bbf0ed15cfe7dd72a1e17ae7d2015a141f306b304e1a2785c41400e39c AS base
 
 USER 0
 
@@ -86,7 +87,6 @@ FROM base AS build-base
 
 ARG RUBY_VERSION
 ARG RUBY_SHA256
-ARG BUNDLER_VERSION
 
 USER 0
 
@@ -117,6 +117,9 @@ RUN microdnf update -y && \
 # findutils, tar, xz are kept here (build-time only) and intentionally
 # excluded from the base stage — they're not needed at runtime.
 
+# `gem update --system` upgrades RubyGems and its bundled Bundler together
+# (they release in lockstep). Bundler then runs the version recorded in
+# Gemfile.lock's BUNDLED WITH, so the lockfile is the only Bundler pin.
 RUN curl -fsSL --proto '=https' --proto-redir '=https' https://cache.ruby-lang.org/pub/ruby/${RUBY_VERSION%.*}/ruby-${RUBY_VERSION}.tar.gz -o /tmp/ruby.tar.gz && \
     echo "${RUBY_SHA256}  /tmp/ruby.tar.gz" | sha256sum -c - && \
     tar --no-same-owner -xzf /tmp/ruby.tar.gz -C /tmp && \
@@ -127,7 +130,6 @@ RUN curl -fsSL --proto '=https' --proto-redir '=https' https://cache.ruby-lang.o
     make -j"$(nproc)" && \
     make install && \
     gem update --system --no-document && \
-    gem install bundler:${BUNDLER_VERSION} --no-document && \
     chown -R 1000:0 /usr/local/bundle && \
     chmod -R g=u /usr/local/bundle && \
     cd /tmp && \

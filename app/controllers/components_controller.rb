@@ -661,9 +661,8 @@ class ComponentsController < ApplicationController
   # reviews. The editor renders at most ~25 visible
   # reviews per page; 100 gives ample headroom and stops the two
   # 3000+ row GROUP BYs that used to fire on every editor refresh.
-  # rubocop:disable Lint/UselessConstantScoping -- co-located with sole consumer
+  # rubocop:disable-next Lint/UselessConstantScoping -- co-located with sole consumer
   REACTION_SUMMARY_LIMIT = 100
-  # rubocop:enable Lint/UselessConstantScoping
 
   def blueprint_render_options
     review_ids = if @component
@@ -866,7 +865,7 @@ class ComponentsController < ApplicationController
   end
 
   def component_update_params
-    # rubocop:disable Rails/StrongParametersExpect -- params.expect breaks nested array attributes (issue #692)
+    # rubocop:disable-next Rails/StrongParametersExpect -- params.expect breaks nested array attributes (issue #692)
     params.require(:component).permit(
       :released, :name, :version, :release, :title, :prefix,
       :description, :admin_name, :admin_email, :advanced_fields,
@@ -874,7 +873,6 @@ class ComponentsController < ApplicationController
       additional_questions_attributes: [:id, :name, :question_type, :_destroy, { options: [] }],
       component_metadata_attributes: { data: {} }
     )
-    # rubocop:enable Rails/StrongParametersExpect
   end
 
   def validate_component_upload
@@ -885,7 +883,7 @@ class ComponentsController < ApplicationController
   end
 
   def component_create_params
-    # rubocop:disable Rails/StrongParametersExpect -- params.expect breaks nested array attributes (issue #692)
+    # rubocop:disable-next Rails/StrongParametersExpect -- params.expect breaks nested array attributes (issue #692)
     params.require(:component).permit(
       :id, :duplicate, :copy_component, :component_id, :project_id,
       :security_requirements_guide_id, :name, :prefix, :version, :release,
@@ -896,6 +894,5 @@ class ComponentsController < ApplicationController
       additional_questions_attributes: [:name, :question_type, { options: [] }],
       component_metadata_attributes: { data: {} }
     )
-    # rubocop:enable Rails/StrongParametersExpect
   end
 end

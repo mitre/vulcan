@@ -88,6 +88,9 @@ AGENT-STATUS/
 .dolt/
 *.db
 .beads-credential-key
+.beads/proxieddb/
+# Workspace gate file bd writes beside .beads/
+*.gate.lock*
 # Beads auto-exports to issues.jsonl on each bd write.
 # The .beads/ copy is tracked for team visibility.
 issues.jsonl

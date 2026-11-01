@@ -127,7 +127,7 @@ RSpec.describe Import::JsonArchive::ReviewBuilder do
       count = described_class.new(data, rule_id_map, result).build_all
       expect(count).to eq(2)
       expect(result.warnings.size).to eq(1)
-      expect(result.warnings.first).to match(/5002/)
+      expect(result.warnings.first).to include('5002')
     end
 
     it 'deletes children before parents when both are invalid (FK RESTRICT safety)' do

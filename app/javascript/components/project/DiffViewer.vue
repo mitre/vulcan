@@ -122,9 +122,9 @@
         <MonacoEditor
           v-if="diffControl || baseControl"
           :key="`${selectedRuleId}-${editorKey}`"
-          :diff-editor="true"
-          :original="diffControl"
-          :value="baseControl"
+          diff
+          :original="baseControl"
+          :value="diffControl"
           :options="monacoEditorOptions"
           :language="monacoEditorOptions.language"
           :theme="monacoEditorOptions.theme"
@@ -141,7 +141,7 @@ import { searchBasedOnSameSrg, compareComponents } from "../../api/componentsApi
 // Compare spans components of both kinds, so the filter label reads the
 // deployment-default noun rather than a per-kind term.
 import { RULE_TERM } from "../../constants/terminology";
-import MonacoEditor from "vue-monaco";
+import MonacoEditor from "../shared/MonacoEditor.vue";
 import { useToast } from "../../composables/useToast";
 import FilterDropdown from "../shared/FilterDropdown.vue";
 

@@ -73,7 +73,9 @@ RSpec.describe 'Multi-parent derivation schema' do
       expect(column).to be_present
       expect(column.type).to eq(:boolean)
       expect(column.null).to be false
-      expect(column.default).to be(false)
+      # Column#default is the raw database value (a string such as "false"),
+      # so the typed default is read through the model.
+      expect(SecurityRequirementsGuide.column_defaults['core']).to be(false)
     end
 
     it 'defaults a newly created SRG to non-core' do

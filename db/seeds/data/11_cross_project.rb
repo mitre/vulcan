@@ -28,7 +28,7 @@ Project.where.not(id: container_platform&.id).find_each do |proj|
   cross_project_membership.call(other_voice, proj, 'viewer')
   cross_project_membership.call(author_user, proj, 'author')
 
-  # rubocop:disable Style/CaseLikeIf
+  # rubocop:disable-next Style/CaseLikeIf
   if proj.name == 'Photon 3'
     comp = components_with_rules.first
     r = comp.rules.first
@@ -73,7 +73,6 @@ Project.where.not(id: container_platform&.id).find_each do |proj|
       comment: 'vSphere 7.0: fix command targets ESXi 6.7 path — should reference 7.0 layout.'
     )
   end
-  # rubocop:enable Style/CaseLikeIf
 end
 
 puts '  Cross-project comments seeded'

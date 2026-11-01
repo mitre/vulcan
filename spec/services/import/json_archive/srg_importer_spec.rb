@@ -93,7 +93,7 @@ RSpec.describe Import::JsonArchive::SrgImporter do
         ).import_all
 
         expect(count).to eq(0)
-        expect(result.warnings).to include(match(/nonexistent\.xml/))
+        expect(result.warnings).to include(include('nonexistent.xml'))
       end
     end
   end

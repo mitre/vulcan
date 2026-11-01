@@ -39,7 +39,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0  # Required: VitePress lastUpdated uses git log timestamps
 
@@ -75,6 +75,28 @@ jobs:
           yarn install --frozen-lockfile
           yarn build
 
+      - name: Install Playwright browser
+        working-directory: docs
+        # Not cached: Playwright's CI guide notes restoring the cache takes
+        # about as long as downloading, and the OS dependencies cannot be
+        # cached.
+        run: yarn playwright install --with-deps chromium
+
+      - name: Test the built docs site in a browser
+        working-directory: docs
+        env:
+          # Same target as the build, so the tests use the same base path.
+          VULCAN_DOCS_TARGET: "pages"
+        run: yarn test:e2e
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report
+          path: docs/playwright-report/
+          retention-days: 30
+
       - name: Upload artifact
         if: github.event_name == 'push'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
@@ -96,4 +118,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
