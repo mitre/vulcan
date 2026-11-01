@@ -7,9 +7,11 @@
   "scripts": {
     "dev": "vitepress dev .",
     "build": "vitepress build .",
-    "preview": "vitepress preview ."
+    "preview": "vitepress preview .",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "sharp": "^0.35.0",
     "svgo": "^4.0.0",
     "vite-plugin-image-optimizer": "^2.0.2",

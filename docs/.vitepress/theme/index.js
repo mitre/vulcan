@@ -68,69 +68,75 @@ export default {
   async enhanceApp({ app, siteData }) {
     const target = siteData.value.themeConfig.docsTarget;
 
-    useOpenapi({
-      spec: specForTarget(target),
-      config: {
-        spec: {
-          groupByTags: true,
-        },
-        operation: {
-          // Served in-app the specification's own same-origin server is
-          // correct, so no default is imposed.
-          ...(target.api.defaultBaseUrl
-            ? { defaultBaseUrl: target.api.defaultBaseUrl }
-            : {}),
-        },
-        server: {
-          // Pointing the playground at another host from inside a running
-          // instance is a footgun rather than a feature.
-          allowCustomServer: target.api.allowCustomServer,
-
-          // Served in-app, requests go to the instance the reader is already
-          // signed in to. Two constraints, both learned from the library's
-          // source rather than its documentation:
-          //
-          // The value must be an ABSOLUTE origin. The playground builds
-          // `${server}${path}` and passes it to `new URL()` with no base, so a
-          // relative server such as "/" throws before anything is sent.
-          //
-          // Entries must be OBJECTS carrying a `url`. The documented signature
-          // says an array of strings, but OAOperationContext reads
-          // `servers[0]?.url`, so strings resolve to undefined and the base
-          // silently falls back to somewhere that is not this origin — which
-          // the connect-src policy then correctly refuses.
-          //
-          // Resolved in the browser because a static build has no origin to
-          // bake in.
-          ...(target.api.sameOrigin
-            ? {
-                getServers: () =>
-                  typeof window === "undefined"
-                    ? []
-                    : [{ url: window.location.origin }],
-              }
-            : {}),
-        },
-        storage: {
-          persistAuth: true,
-        },
-      },
-    });
-
-    // A reader inside an instance is already authenticated by their session,
-    // so there is no placeholder to prefill. Reads work as they are; writes
-    // need a personal access token, because the application rejects
-    // session-authenticated writes without a CSRF token and this playground
-    // has no hook for one.
-    if (target.api.prefillToken) {
-      const playground = usePlayground();
-      playground.setSecuritySchemeDefaultValues({
-        tokenAuth: target.api.prefillToken,
-      });
-    }
+    // useOpenapi() and usePlayground() call Vue's inject(). enhanceApp runs
+    // outside any component, so give them the app as their injection context.
+    app.runWithContext(() => configureOpenapi(target));
 
     theme.enhanceApp({ app });
     app.component("Mermaid", Mermaid);
     app.component("ColorSwatch", ColorSwatch);
   },
 };
+
+function configureOpenapi(target) {
+  useOpenapi({
+    spec: specForTarget(target),
+    config: {
+      spec: {
+        groupByTags: true,
+      },
+      operation: {
+        // Served in-app the specification's own same-origin server is
+        // correct, so no default is imposed.
+        ...(target.api.defaultBaseUrl ? { defaultBaseUrl: target.api.defaultBaseUrl } : {}),
+      },
+      server: {
+        // Pointing the playground at another host from inside a running
+        // instance is a footgun rather than a feature.
+        allowCustomServer: target.api.allowCustomServer,
+
+        // Served in-app, requests go to the instance the reader is already
+        // signed in to. Two constraints, both learned from the library's
+        // source rather than its documentation:
+        //
+        // The value must be an ABSOLUTE origin. The playground builds
+        // `${server}${path}` and passes it to `new URL()` with no base, so a
+        // relative server such as "/" throws before anything is sent.
+        //
+        // Entries must be OBJECTS carrying a `url`. The documented signature
+        // says an array of strings, but OAOperationContext reads
+        // `servers[0]?.url`, so strings resolve to undefined and the base
+        // silently falls back to somewhere that is not this origin — which
+        // the connect-src policy then correctly refuses.
+        //
+        // Resolved in the browser because a static build has no origin to
+        // bake in.
+        ...(target.api.sameOrigin
+          ? {
+              getServers: () =>
+                typeof window === "undefined" ? [] : [{ url: window.location.origin }],
+            }
+          : {}),
+      },
+      storage: {
+        persistAuth: true,
+      },
+    },
+  });
+
+  // A reader inside an instance is already authenticated by their session,
+  // so there is no placeholder to prefill. Reads work as they are; writes
+  // need a personal access token, because the application rejects
+  // session-authenticated writes without a CSRF token and this playground
+  // has no hook for one.
+  //
+  // Defaults are keyed by scheme type, not scheme name: the playground reads
+  // "http-bearer" for every http scheme other than basic, which is what
+  // tokenAuth (http, scheme "token") is.
+  if (target.api.prefillToken) {
+    const playground = usePlayground();
+    playground.setSecuritySchemeDefaultValues({
+      "http-bearer": target.api.prefillToken,
+    });
+  }
+}
