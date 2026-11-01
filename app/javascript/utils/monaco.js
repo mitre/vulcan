@@ -13,7 +13,7 @@
  * getWorkerUrl, Monaco wraps the URL in a blob: bootstrap, which the
  * Content-Security-Policy (script-src 'self') blocks.
  */
-import * as monaco from "monaco-editor/editor";
+export * as monaco from "monaco-editor/editor";
 import "monaco-editor/features/register.all";
 import "monaco-editor/languages/definitions/ruby/register";
 import "monaco-editor/languages/definitions/markdown/register";
@@ -31,5 +31,3 @@ self.MonacoEnvironment = {
     return new Worker(url, { name: label });
   },
 };
-
-export { monaco };
