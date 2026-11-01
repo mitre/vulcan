@@ -30,8 +30,13 @@ const entryPoints = {
   user_tokens: "app/javascript/packs/user_tokens.js",
 };
 
-// Check if we're in watch mode
-const watch = process.argv.includes("--watch");
+// assets:precompile runs this build with RAILS_ENV=production (the Dockerfile
+// and Heroku both set it). The Dockerfile leaves NODE_ENV unset, because yarn
+// would then skip the devDependencies that build the assets, so NODE_ENV alone
+// cannot mark a production build. Production builds are minified and define
+// process.env.NODE_ENV as "production", which selects Vue's production mode.
+const production = process.env.RAILS_ENV === "production" || process.env.NODE_ENV === "production";
+const nodeEnv = production ? "production" : process.env.NODE_ENV || "development";
 
 const buildOptions = {
   entryPoints,
@@ -45,6 +50,9 @@ const buildOptions = {
       style: "expanded", // Use expanded style for better debugging
     }),
     vuePlugin({
+      // esbuild-vue otherwise reads NODE_ENV itself, which the Docker build
+      // leaves unset, and would compile single-file components in dev mode.
+      production,
       enableDevtools: true, // Enable Vue devtools for development
       cssInline: true, // Extract CSS for better loading performance
       useFullVue: true, // Use full Vue build with template compiler
@@ -63,9 +71,10 @@ const buildOptions = {
   // Make files available at their expected paths with correct prefix
   publicPath: "/assets",
   sourcemap: true,
+  minify: production,
   format: "iife", // IIFE format for Vue 2 browser compatibility
   define: {
-    "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
+    "process.env.NODE_ENV": JSON.stringify(nodeEnv),
     __VUE_OPTIONS_API__: "true", // Enable Vue Options API
     __VUE_PROD_DEVTOOLS__: "true", // Enable Vue devtools even in production
   },
@@ -95,16 +104,12 @@ const monacoWorkerBuildOptions = {
   outdir: "app/assets/builds",
   absWorkingDir: path.resolve(__dirname),
   sourcemap: true,
+  minify: production,
   format: "iife",
   define: {
-    "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
+    "process.env.NODE_ENV": JSON.stringify(nodeEnv),
   },
 };
-
-// Add watch option only if in watch mode
-if (watch) {
-  buildOptions.watch = true;
-}
 
 const esbuild = require("esbuild");
 
