@@ -10,9 +10,12 @@ import { monaco } from "../../utils/monaco";
  *
  * `value` is the editor's text (the modified side of a diff); `original` is
  * the original side of a diff. Edits are emitted as `change` with the new
- * text. When `value` comes back from the parent unchanged the editor is left
- * alone; when it differs, an editable editor applies it as an edit so the undo
- * history and cursor survive, following @monaco-editor/react.
+ * text. When `value` comes back from the parent unchanged (the parent echoing
+ * an edit) the editor, its cursor and its undo history are left alone. When
+ * it differs, the parent is showing a different document (another rule was
+ * selected, or the text was regenerated): the content is replaced outright,
+ * which resets the undo history so undo cannot bring the previous document
+ * back, and the replacement is not reported as a `change`.
  */
 export default {
   name: "MonacoEditor",
@@ -77,7 +80,10 @@ export default {
         value: this.value,
         language: this.language,
       });
-      this.editor.onDidChangeModelContent(() => {
+      this.editor.onDidChangeModelContent((event) => {
+        // setValue flushes the model; that is applyValue replacing the
+        // document, not the user editing it.
+        if (event.isFlush) return;
         this.$emit("change", this.editor.getValue());
       });
     }
@@ -99,18 +105,7 @@ export default {
       return [this.editor.getModel()];
     },
     applyValue(editor, value) {
-      if (editor.getOption(monaco.editor.EditorOption.readOnly)) {
-        editor.setValue(value);
-      } else if (value !== editor.getValue()) {
-        editor.executeEdits("", [
-          {
-            range: editor.getModel().getFullModelRange(),
-            text: value,
-            forceMoveMarkers: true,
-          },
-        ]);
-        editor.pushUndoStop();
-      }
+      if (value !== editor.getValue()) editor.setValue(value);
     },
   },
 };
