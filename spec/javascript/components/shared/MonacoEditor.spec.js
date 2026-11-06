@@ -8,8 +8,10 @@ import { localVue } from "@test/testHelper";
  * 1. EDITOR: creates a Monaco editor with the value, language, theme and
  *    options props, and emits `change` with the editor text on every edit.
  * 2. VALUE SYNC: a `value` equal to the editor text leaves the editor alone
- *    (no cursor or undo reset); a different value is applied as an edit with
- *    an undo stop; a read-only editor takes the value with setValue.
+ *    (no cursor or undo reset); a different value is a different document and
+ *    replaces the content with setValue, editable or not. What Monaco does
+ *    with that (undo reset, no `change`) is covered against the real editor
+ *    in MonacoEditor.integration.spec.js.
  * 3. LANGUAGE / THEME / OPTIONS: changes are applied to the live editor.
  * 4. DIFF: `diff` creates a diff editor with `original` as the original model
  *    and `value` as the modified model; prop changes update those models.
@@ -48,9 +50,9 @@ function fakeEditor(model, readOnly = false) {
     updateOptions: vi.fn(),
     dispose: vi.fn(),
     onDidChangeModelContent: vi.fn((fn) => listeners.push(fn)),
-    fireChange(text) {
+    fireChange(text, event = { isFlush: false }) {
       model.text = text;
-      listeners.forEach((fn) => fn());
+      listeners.forEach((fn) => fn(event));
     },
   };
 }
@@ -125,24 +127,30 @@ describe("MonacoEditor", () => {
       expect(created.editor.setValue).not.toHaveBeenCalled();
     });
 
-    it("applies a different value as an edit with an undo stop", async () => {
+    it("replaces the document when the value differs", async () => {
       const wrapper = mountEditor({ value: "a" });
 
       await wrapper.setProps({ value: "b" });
 
-      expect(created.editor.executeEdits).toHaveBeenCalledWith("", [
-        { range: "full-range", text: "b", forceMoveMarkers: true },
-      ]);
-      expect(created.editor.pushUndoStop).toHaveBeenCalled();
+      expect(created.editor.setValue).toHaveBeenCalledWith("b");
+      expect(created.editor.executeEdits).not.toHaveBeenCalled();
     });
 
-    it("sets the value directly on a read-only editor", async () => {
+    it("replaces the document of a read-only editor the same way", async () => {
       const wrapper = mountEditor({ value: "a", options: { readOnly: true } });
 
       await wrapper.setProps({ value: "b" });
 
       expect(created.editor.setValue).toHaveBeenCalledWith("b");
       expect(created.editor.executeEdits).not.toHaveBeenCalled();
+    });
+
+    it("does not report the replacement as a change", async () => {
+      const wrapper = mountEditor({ value: "a" });
+
+      created.editor.fireChange("b", { isFlush: true });
+
+      expect(wrapper.emitted("change")).toBeUndefined();
     });
   });
 
