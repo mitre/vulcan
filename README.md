@@ -95,10 +95,8 @@ yarn docs:preview  # Preview production build
 
 ### Prerequisites
 
-- Ruby 3.4.12 (use rbenv or rvm)
+- [mise](https://mise.jdx.dev), which installs the pinned Ruby, Node.js and Yarn
 - PostgreSQL 18
-- Node.js 24 LTS
-- Yarn package manager
 
 ### Local Installation
 
@@ -106,6 +104,9 @@ yarn docs:preview  # Preview production build
 # Clone the repository
 git clone https://github.com/mitre/vulcan.git
 cd vulcan
+
+# Install Ruby, Node.js and Yarn at the versions in mise.lock
+mise trust && mise install
 
 # Install Ruby dependencies
 bundle install
