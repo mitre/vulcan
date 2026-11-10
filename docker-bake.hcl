@@ -40,7 +40,7 @@ variable "VULCAN_RUBY_VERSION" {
 }
 
 variable "VULCAN_NODE_VERSION" {
-  default = "24.18.0"
+  default = "24.22.2"
 }
 
 // ============================================================================

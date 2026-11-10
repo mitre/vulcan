@@ -82,7 +82,7 @@
 /.safety-net.json
 /.slugignore
 /.sonarcloud.properties
-/.tool-versions
+/.yarn
 /app.json
 /cliff.toml
 /issues.jsonl
