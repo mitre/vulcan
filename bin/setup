@@ -22,7 +22,7 @@ FileUtils.chdir APP_ROOT do
   system("bundle check") || system!("bundle install")
 
   puts "\n== Installing JavaScript dependencies =="
-  system! "yarn install --frozen-lockfile"
+  system! "yarn install --immutable"
 
   puts "\n== Building JavaScript assets =="
   system! "yarn build"
