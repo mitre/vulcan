@@ -66,18 +66,20 @@
     "openapi:bundle": "redocly bundle doc/openapi/openapi.yaml -o doc/openapi.yaml",
     "openapi:docs": "redocly bundle doc/openapi/openapi.yaml -o docs/site/data/openapi.json --ext json && mkdir -p docs/site/public/api && cp docs/site/data/openapi.json docs/site/public/api/openapi.json && cp doc/openapi.yaml docs/site/public/api/openapi.yaml",
     "openapi:lint": "redocly lint doc/openapi/openapi.yaml",
-    "docs:dev": "cd docs && yarn install --frozen-lockfile --silent && yarn dev",
-    "docs:build": "cd docs && yarn install --frozen-lockfile --silent && yarn build",
-    "docs:preview": "cd docs && yarn install --frozen-lockfile --silent && yarn preview"
+    "docs:dev": "cd docs && yarn install --immutable && yarn dev",
+    "docs:build": "cd docs && yarn install --immutable && yarn build",
+    "docs:preview": "cd docs && yarn install --immutable && yarn preview"
   },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
+  "engines": {
+    "node": "24.x"
+  },
+  "packageManager": "yarn@4.18.1",
   "resolutions": {
     "loader-utils": ">=1.4.1",
     "json5": ">=1.0.2",
     "postcss": ">=8.4.31",
     "brace-expansion": ">=1.1.12",
     "vite": "^7.3.6",
-    "@vue/test-utils/**/minimatch": "^9.0.7",
     "flatted": "^3.4.2",
     "ws": "^8.21.0",
     "rollup": "^4.59.0",
