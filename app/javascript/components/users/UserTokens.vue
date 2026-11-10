@@ -113,13 +113,15 @@ import { listTokens, revokeToken } from "../../api/tokensApi";
 import CreateTokenModal from "./CreateTokenModal.vue";
 import ConfirmDeleteModal from "../shared/ConfirmDeleteModal.vue";
 import { useToast } from "../../composables/useToast";
+import { useClipboard } from "../../composables/useClipboard";
 
 export default {
   name: "UserTokens",
   components: { CreateTokenModal, ConfirmDeleteModal },
   setup() {
     const { alertOrNotifyResponse } = useToast();
-    return { alertOrNotifyResponse };
+    const { copyText } = useClipboard();
+    return { alertOrNotifyResponse, copyText };
   },
   data() {
     return {
@@ -171,18 +173,11 @@ export default {
       this.newlyCreatedToken = null;
       this.copied = false;
     },
-    copyToken() {
-      // navigator.clipboard is only defined in a secure context. Vulcan
-      // defaults RAILS_FORCE_SSL=false, so an internal HTTP deployment has no
-      // clipboard API — guard for it, fall back to execCommand, and surface a
-      // toast rather than silently failing to copy the show-once token.
-      if (navigator.clipboard?.writeText) {
-        navigator.clipboard
-          .writeText(this.newlyCreatedToken)
-          .then(() => this.flagCopied())
-          .catch(() => this.legacyCopy());
-      } else {
-        this.legacyCopy();
+    async copyToken() {
+      // The token is shown once, so a failed copy must say so: the composable
+      // falls back to execCommand over plain HTTP and warns when nothing works.
+      if (await this.copyText(this.newlyCreatedToken, { what: "the token" })) {
+        this.flagCopied();
       }
     },
     flagCopied() {
@@ -190,33 +185,6 @@ export default {
       setTimeout(() => {
         this.copied = false;
       }, 3000);
-    },
-    legacyCopy() {
-      try {
-        const textarea = document.createElement("textarea");
-        textarea.value = this.newlyCreatedToken;
-        textarea.setAttribute("readonly", "");
-        textarea.style.position = "fixed";
-        textarea.style.opacity = "0";
-        document.body.appendChild(textarea);
-        textarea.select();
-        const ok = document.execCommand("copy");
-        document.body.removeChild(textarea);
-        if (!ok) throw new Error("execCommand copy returned false");
-        this.flagCopied();
-      } catch {
-        this.alertOrNotifyResponse({
-          response: {
-            data: {
-              toast: {
-                title: "Copy failed",
-                message: ["Could not copy the token automatically — select and copy it manually."],
-                variant: "warning",
-              },
-            },
-          },
-        });
-      }
     },
     confirmRevoke(token) {
       this.tokenToRevoke = token;

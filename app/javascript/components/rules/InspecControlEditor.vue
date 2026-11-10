@@ -47,6 +47,8 @@
 
 <script>
 import MonacoEditor from "../shared/MonacoEditor.vue";
+import { useClipboard } from "../../composables/useClipboard";
+import { useToast } from "../../composables/useToast";
 
 export default {
   name: "InspecControlEditor",
@@ -64,6 +66,11 @@ export default {
       type: Boolean,
       default: false,
     },
+  },
+  setup() {
+    const { copyText: copyToClipboard } = useClipboard();
+    const { showSuccess } = useToast();
+    return { copyToClipboard, showSuccess };
   },
   data: function () {
     return {
@@ -127,13 +134,10 @@ export default {
     if (this._themeObserver) this._themeObserver.disconnect();
   },
   methods: {
-    copyText: function () {
-      navigator.clipboard.writeText(this.value);
-      this.$bvToast.toast("Copied to clipboard", {
-        title: "Copy",
-        variant: "success",
-        solid: true,
-      });
+    copyText: async function () {
+      if (await this.copyToClipboard(this.value, { what: "the control text" })) {
+        this.showSuccess("Copied to clipboard", "Copy");
+      }
     },
     updateLanguage: function (value) {
       this.monacoEditorOptions.language = value;

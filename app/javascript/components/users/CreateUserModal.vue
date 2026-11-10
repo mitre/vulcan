@@ -114,6 +114,7 @@
 <script>
 import { createUser } from "../../api/usersApi";
 import { useToast } from "../../composables/useToast";
+import { useClipboard } from "../../composables/useClipboard";
 import PasswordField from "../shared/PasswordField.vue";
 
 export default {
@@ -138,8 +139,9 @@ export default {
     },
   },
   setup() {
-    const { alertOrNotifyResponse } = useToast();
-    return { alertOrNotifyResponse };
+    const { alertOrNotifyResponse, showSuccess } = useToast();
+    const { copyText } = useClipboard();
+    return { alertOrNotifyResponse, showSuccess, copyText };
   },
   data() {
     return {
@@ -207,8 +209,10 @@ export default {
         this.alertOrNotifyResponse(error);
       }
     },
-    copyResetUrl() {
-      navigator.clipboard.writeText(this.createdResetUrl);
+    async copyResetUrl() {
+      if (await this.copyText(this.createdResetUrl, { what: "the reset link" })) {
+        this.showSuccess("Copied to clipboard", "Copy");
+      }
     },
     closeAfterCreate() {
       this.createdResetUrl = null;

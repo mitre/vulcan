@@ -287,6 +287,7 @@ import {
 } from "../../api/usersApi";
 import { adminListTokens, adminRevokeToken as apiAdminRevoke } from "../../api/tokensApi";
 import { useToast } from "../../composables/useToast";
+import { useClipboard } from "../../composables/useClipboard";
 import PasswordField from "../shared/PasswordField.vue";
 import { EVENTS, dispatch } from "../../utils/notificationEvents";
 
@@ -324,8 +325,9 @@ export default {
     },
   },
   setup() {
-    const { alertOrNotifyResponse } = useToast();
-    return { alertOrNotifyResponse };
+    const { alertOrNotifyResponse, showSuccess } = useToast();
+    const { copyText } = useClipboard();
+    return { alertOrNotifyResponse, showSuccess, copyText };
   },
   data() {
     return {
@@ -505,8 +507,10 @@ export default {
         this.settingPassword = false;
       }
     },
-    copyResetUrl() {
-      navigator.clipboard.writeText(this.generatedResetUrl);
+    async copyResetUrl() {
+      if (await this.copyText(this.generatedResetUrl, { what: "the reset link" })) {
+        this.showSuccess("Copied to clipboard", "Copy");
+      }
     },
     onHidden() {
       this.$emit("update:visible", false);

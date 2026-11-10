@@ -230,6 +230,52 @@ describe("EditUserModal", () => {
     });
   });
 
+  describe("copy reset link", () => {
+    // Requirement: "Copied to clipboard" only after the link was copied; when it
+    // could not be copied (plain HTTP has no clipboard API, or it was refused,
+    // and the fallback failed) the admin is told to copy it manually instead.
+    const url = "http://localhost:3000/users/password/edit?reset_password_token=abc123";
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      delete document.execCommand;
+    });
+
+    it("confirms the copy once the link is on the clipboard", async () => {
+      const writeText = vi.fn(() => Promise.resolve());
+      vi.stubGlobal("navigator", { clipboard: { writeText }, userAgent: navigator.userAgent });
+      mountModal();
+      await wrapper.setData({ generatedResetUrl: url });
+
+      const toast = await captureVulcanToast(() => wrapper.vm.copyResetUrl(), wrapper);
+
+      expect(writeText).toHaveBeenCalledWith(url);
+      expect(toast).toMatchObject({
+        title: "Copy",
+        variant: "success",
+        message: "Copied to clipboard",
+      });
+    });
+
+    it("warns, and does not claim success, when the link could not be copied", async () => {
+      vi.stubGlobal("navigator", { userAgent: navigator.userAgent });
+      document.execCommand = vi.fn(() => false);
+      mountModal();
+      await wrapper.setData({ generatedResetUrl: url });
+      const seen = [];
+      const listener = (event) => seen.push(event.detail);
+      document.addEventListener("vulcan:toast", listener);
+
+      try {
+        await captureVulcanToast(() => wrapper.vm.copyResetUrl(), wrapper);
+      } finally {
+        document.removeEventListener("vulcan:toast", listener);
+      }
+
+      expect(seen).toEqual([expect.objectContaining({ title: "Copy failed", variant: "warning" })]);
+    });
+  });
+
   describe("set password directly (no SMTP)", () => {
     beforeEach(() =>
       mountModal({
