@@ -60,6 +60,15 @@ export function useRelocations(component) {
     destinations.value = response.data || [];
   };
 
+  // Markers and destinations are independent: load them in parallel, let one
+  // fail without losing the other, and hand every failure to onError.
+  const fetchAll = async (onError) => {
+    const results = await Promise.allSettled([fetchMarkers(), fetchDestinations()]);
+    results
+      .filter((result) => result.status === "rejected")
+      .forEach((result) => onError(result.reason));
+  };
+
   const openProposal = (marker) => !marker.declined_at;
 
   const markersByRuleId = computed(() => {
@@ -152,6 +161,7 @@ export function useRelocations(component) {
     proposalDestinationOptions,
     fetchMarkers,
     fetchDestinations,
+    fetchAll,
     markersByRuleId,
     backlogFor,
     technologyToken,

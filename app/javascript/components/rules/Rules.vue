@@ -120,51 +120,50 @@ export default {
      * Updates relationship arrays locally to preserve unsaved changes.
      * Previously called refreshRule() which overwrote local changes with server data.
      */
-    addSatisfiedRule: function (rule_id, satisfied_by_rule_id, successCallback = null) {
-      addSatisfaction(rule_id, satisfied_by_rule_id)
-        .then((response) => {
-          this.alertOrNotifyResponse(response);
+    addSatisfiedRule: async function (rule_id, satisfied_by_rule_id, successCallback = null) {
+      try {
+        const response = await addSatisfaction(rule_id, satisfied_by_rule_id);
+        this.alertOrNotifyResponse(response);
 
-          // Update relationships locally instead of full refresh
-          // This preserves any unsaved local changes (status, title, etc.)
-          const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule_id);
-          const satisfiedByIndex = this.reactiveRules.findIndex(
-            (r) => r.id == satisfied_by_rule_id,
-          );
+        // Update relationships locally instead of full refresh
+        // This preserves any unsaved local changes (status, title, etc.)
+        const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule_id);
+        const satisfiedByIndex = this.reactiveRules.findIndex((r) => r.id == satisfied_by_rule_id);
 
-          if (ruleIndex >= 0 && satisfiedByIndex >= 0) {
-            const rule = this.reactiveRules[ruleIndex];
-            const satisfiedByRule = this.reactiveRules[satisfiedByIndex];
+        if (ruleIndex >= 0 && satisfiedByIndex >= 0) {
+          const rule = this.reactiveRules[ruleIndex];
+          const satisfiedByRule = this.reactiveRules[satisfiedByIndex];
 
-            // Add to satisfied_by array (rule is satisfied by satisfiedByRule)
-            if (!rule.satisfied_by) rule.satisfied_by = [];
-            if (!rule.satisfied_by.some((r) => r.id === satisfied_by_rule_id)) {
-              rule.satisfied_by.push({
-                id: satisfiedByRule.id,
-                rule_id: satisfiedByRule.rule_id,
-                srg_id: satisfiedByRule.srg_id,
-                fixtext: satisfiedByRule.fixtext,
-              });
-            }
-
-            // Add to satisfies array (satisfiedByRule satisfies rule)
-            if (!satisfiedByRule.satisfies) satisfiedByRule.satisfies = [];
-            if (!satisfiedByRule.satisfies.some((r) => r.id === rule_id)) {
-              satisfiedByRule.satisfies.push({
-                id: rule.id,
-                rule_id: rule.rule_id,
-                srg_id: rule.srg_id,
-              });
-            }
+          // Add to satisfied_by array (rule is satisfied by satisfiedByRule)
+          if (!rule.satisfied_by) rule.satisfied_by = [];
+          if (!rule.satisfied_by.some((r) => r.id === satisfied_by_rule_id)) {
+            rule.satisfied_by.push({
+              id: satisfiedByRule.id,
+              rule_id: satisfiedByRule.rule_id,
+              srg_id: satisfiedByRule.srg_id,
+              fixtext: satisfiedByRule.fixtext,
+            });
           }
 
-          if (successCallback) {
-            try {
-              successCallback(response);
-            } catch (_) {}
+          // Add to satisfies array (satisfiedByRule satisfies rule)
+          if (!satisfiedByRule.satisfies) satisfiedByRule.satisfies = [];
+          if (!satisfiedByRule.satisfies.some((r) => r.id === rule_id)) {
+            satisfiedByRule.satisfies.push({
+              id: rule.id,
+              rule_id: rule.rule_id,
+              srg_id: rule.srg_id,
+            });
           }
-        })
-        .catch(this.alertOrNotifyResponse);
+        }
+
+        if (successCallback) {
+          try {
+            successCallback(response);
+          } catch (_) {}
+        }
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     /**
      * Event handler for @removeSatisfied:rule
@@ -172,79 +171,80 @@ export default {
      * Updates relationship arrays locally to preserve unsaved changes.
      * Previously called refreshRule() which overwrote local changes with server data.
      */
-    removeSatisfiedRule: function (rule_id, satisfied_by_rule_id, successCallback = null) {
-      removeSatisfaction(rule_id, satisfied_by_rule_id)
-        .then((response) => {
-          this.alertOrNotifyResponse(response);
+    removeSatisfiedRule: async function (rule_id, satisfied_by_rule_id, successCallback = null) {
+      try {
+        const response = await removeSatisfaction(rule_id, satisfied_by_rule_id);
+        this.alertOrNotifyResponse(response);
 
-          // Update relationships locally instead of full refresh
-          // This preserves any unsaved local changes (status, title, etc.)
-          const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule_id);
-          const satisfiedByIndex = this.reactiveRules.findIndex(
-            (r) => r.id == satisfied_by_rule_id,
+        // Update relationships locally instead of full refresh
+        // This preserves any unsaved local changes (status, title, etc.)
+        const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule_id);
+        const satisfiedByIndex = this.reactiveRules.findIndex((r) => r.id == satisfied_by_rule_id);
+
+        if (ruleIndex >= 0) {
+          const rule = this.reactiveRules[ruleIndex];
+          // Remove from satisfied_by array
+          rule.satisfied_by = ruleArray(rule, "satisfied_by").filter(
+            (r) => r.id !== satisfied_by_rule_id,
           );
+        }
 
-          if (ruleIndex >= 0) {
-            const rule = this.reactiveRules[ruleIndex];
-            // Remove from satisfied_by array
-            rule.satisfied_by = ruleArray(rule, "satisfied_by").filter(
-              (r) => r.id !== satisfied_by_rule_id,
-            );
-          }
+        if (satisfiedByIndex >= 0) {
+          const satisfiedByRule = this.reactiveRules[satisfiedByIndex];
+          // Remove from satisfies array
+          satisfiedByRule.satisfies = ruleArray(satisfiedByRule, "satisfies").filter(
+            (r) => r.id !== rule_id,
+          );
+        }
 
-          if (satisfiedByIndex >= 0) {
-            const satisfiedByRule = this.reactiveRules[satisfiedByIndex];
-            // Remove from satisfies array
-            satisfiedByRule.satisfies = ruleArray(satisfiedByRule, "satisfies").filter(
-              (r) => r.id !== rule_id,
-            );
-          }
-
-          if (successCallback) {
-            try {
-              successCallback(response);
-            } catch (_) {}
-          }
-        })
-        .catch(this.alertOrNotifyResponse);
+        if (successCallback) {
+          try {
+            successCallback(response);
+          } catch (_) {}
+        }
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     /**
      * Event handler for @delete:rule
      */
-    deleteRule: function (rule_id, successCallback = null) {
-      deleteRule(rule_id)
-        .then((response) => {
-          this.alertOrNotifyResponse(response);
+    deleteRule: async function (rule_id, successCallback = null) {
+      try {
+        const response = await deleteRule(rule_id);
+        this.alertOrNotifyResponse(response);
 
-          // remove the rule
-          const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule_id);
-          if (ruleIndex >= 0) {
-            this.reactiveRules.splice(ruleIndex, 1);
-          }
+        // remove the rule
+        const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule_id);
+        if (ruleIndex >= 0) {
+          this.reactiveRules.splice(ruleIndex, 1);
+        }
 
-          if (successCallback) {
-            try {
-              successCallback(response);
-            } catch (_) {}
-          }
-        })
-        .catch(this.alertOrNotifyResponse);
+        if (successCallback) {
+          try {
+            successCallback(response);
+          } catch (_) {}
+        }
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     /**
      * Event handler for @create:rule
      */
-    createRule: function (rule, successCallback = null) {
-      createRuleInComponent(this.reactiveComponent.id, rule)
-        .then((response) => {
-          this.alertOrNotifyResponse(response);
-          this.ruleFetchSuccess(response);
-          if (successCallback) {
-            try {
-              successCallback(response);
-            } catch (_) {}
-          }
-        })
-        .catch(this.alertOrNotifyResponse);
+    createRule: async function (rule, successCallback = null) {
+      try {
+        const response = await createRuleInComponent(this.reactiveComponent.id, rule);
+        this.alertOrNotifyResponse(response);
+        this.ruleFetchSuccess(response);
+        if (successCallback) {
+          try {
+            successCallback(response);
+          } catch (_) {}
+        }
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     /**
      * Event handler for @add:description
@@ -367,10 +367,13 @@ export default {
      * id: The rule ID
      * updated: How the rule is expected to have been changed. Expects any of ['all', 'comments']
      */
-    refreshRule: function (id, updated = "all") {
-      getRule(id)
-        .then((response) => this.ruleFetchSuccess(response, updated))
-        .catch(this.alertOrNotifyResponse);
+    refreshRule: async function (id, updated = "all") {
+      try {
+        const response = await getRule(id);
+        this.ruleFetchSuccess(response, updated);
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     /**
      * Update data with a fetched rule.

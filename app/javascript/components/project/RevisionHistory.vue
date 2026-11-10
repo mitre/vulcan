@@ -88,20 +88,19 @@ export default {
     },
   },
   methods: {
-    fetchRevisionHistory: function () {
-      if (this.componentName) {
-        this.loading = true;
-        getComponentHistory({
+    fetchRevisionHistory: async function () {
+      if (!this.componentName) return;
+      this.loading = true;
+      try {
+        const response = await getComponentHistory({
           project_id: this.project.id,
           name: this.componentName,
-        })
-          .then((response) => {
-            this.revisionHistory = response.data;
-          })
-          .catch(this.alertOrNotifyResponse)
-          .then(() => {
-            this.loading = false;
-          });
+        });
+        this.revisionHistory = response.data;
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      } finally {
+        this.loading = false;
       }
     },
   },

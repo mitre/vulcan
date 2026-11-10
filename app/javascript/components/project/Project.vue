@@ -308,16 +308,17 @@ export default {
       this.pendingVisibility = newValue;
       this.showVisibilityModal = true;
     },
-    updateVisibility: function () {
+    updateVisibility: async function () {
       this.showVisibilityModal = false;
-      updateProject(this.project.id, {
-        visibility: this.pendingVisibility ? "discoverable" : "hidden",
-      })
-        .then((response) => {
-          this.alertOrNotifyResponse(response);
-          this.refreshProject();
-        })
-        .catch(this.alertOrNotifyResponse);
+      try {
+        const response = await updateProject(this.project.id, {
+          visibility: this.pendingVisibility ? "discoverable" : "hidden",
+        });
+        this.alertOrNotifyResponse(response);
+        this.refreshProject();
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     cancelVisibilityChange() {
       this.showVisibilityModal = false;
@@ -392,15 +393,16 @@ export default {
     // Having deleteComponent on the `ComponentCard` causes it to
     // disappear almost immediately because the component gets
     // destroyed once `refreshProject` executes
-    deleteComponent: function (componentId) {
-      deleteComponent(componentId)
-        .then((response) => {
-          this.alertOrNotifyResponse(response);
-          this.refreshProject();
-        })
-        .catch(this.alertOrNotifyResponse);
+    deleteComponent: async function (componentId) {
+      try {
+        const response = await deleteComponent(componentId);
+        this.alertOrNotifyResponse(response);
+        this.refreshProject();
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
-    downloadExport: function (
+    downloadExport: async function (
       type,
       componentIds,
       mode,
@@ -408,17 +410,18 @@ export default {
       includeMemberships,
       excludeSatisfiedBy,
     ) {
-      exportProjectData(this.project.id, type, {
-        componentIds,
-        mode,
-        includeSrg,
-        includeMemberships,
-        excludeSatisfiedBy,
-      })
-        .then((url) => {
-          window.open(url);
-        })
-        .catch(this.alertOrNotifyResponse);
+      try {
+        const url = await exportProjectData(this.project.id, type, {
+          componentIds,
+          mode,
+          includeSrg,
+          includeMemberships,
+          excludeSatisfiedBy,
+        });
+        window.open(url);
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
   },
 };

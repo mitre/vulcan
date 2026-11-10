@@ -97,23 +97,24 @@ export default {
       this.reviewComment = "";
       this.selectedReviewAction = null;
     },
-    submitReview() {
+    async submitReview() {
       if (!this.reviewComment.trim() || !this.selectedReviewAction) {
         return;
       }
 
-      createRuleReview(this.rule.id, {
-        component_id: this.rule.component_id,
-        action: this.selectedReviewAction,
-        comment: this.reviewComment.trim(),
-      })
-        .then((response) => {
-          this.alertOrNotifyResponse(response);
-          this.resetForm();
-          this.$bvModal.hide("review-modal");
-          this.$emit("reviewSubmitted");
-        })
-        .catch(this.alertOrNotifyResponse);
+      try {
+        const response = await createRuleReview(this.rule.id, {
+          component_id: this.rule.component_id,
+          action: this.selectedReviewAction,
+          comment: this.reviewComment.trim(),
+        });
+        this.alertOrNotifyResponse(response);
+        this.resetForm();
+        this.$bvModal.hide("review-modal");
+        this.$emit("reviewSubmitted");
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
   },
 };

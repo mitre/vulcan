@@ -118,7 +118,7 @@ export default {
     setSelectedComponent: function (component) {
       this.selectedComponent = component;
     },
-    addComponent: function () {
+    addComponent: async function () {
       // Guard if no component project selected
       if (!this.selectedComponent) {
         return;
@@ -131,9 +131,12 @@ export default {
         },
       };
 
-      createComponentInProject(this.project_id, payload)
-        .then(this.addComponentSuccess)
-        .catch(this.alertOrNotifyResponse);
+      try {
+        const response = await createComponentInProject(this.project_id, payload);
+        this.addComponentSuccess(response);
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     addComponentSuccess: function (response) {
       this.alertOrNotifyResponse(response);

@@ -102,13 +102,16 @@ export default {
       currentQuestion._destroy = true;
       this.deleted_questions.push(currentQuestion);
     },
-    updateQuestions: function () {
+    updateQuestions: async function () {
       this.$refs["addQuestionsToComponentModal"].hide();
-      updateComponent(this.component.id, {
-        additional_questions_attributes: this.questions.concat(this.deleted_questions),
-      })
-        .then(this.updateAdditionalQuestionsSuccess)
-        .catch(this.alertOrNotifyResponse);
+      try {
+        const response = await updateComponent(this.component.id, {
+          additional_questions_attributes: this.questions.concat(this.deleted_questions),
+        });
+        this.updateAdditionalQuestionsSuccess(response);
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     updateAdditionalQuestionsSuccess: function (response) {
       this.alertOrNotifyResponse(response);
