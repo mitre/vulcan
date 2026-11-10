@@ -14,7 +14,7 @@ Vulcan is a Rails-based web application designed for creating and managing Secur
 
 ### Backend
 - **Ruby 3.4.12** - Programming language
-- **Rails 8.1.4** - Web application framework
+- **Rails 8.1.4.1** - Web application framework
 - **PostgreSQL** - Primary database
 
 ### Frontend

@@ -40,6 +40,8 @@ heroku config:set VULCAN_CONTACT_EMAIL=admin@example.com
 heroku config:set VULCAN_APP_URL=https://your-vulcan-app.herokuapp.com
 ```
 
+   The buildpacks are listed in `app.json`: `heroku/nodejs`, jemalloc, then `heroku/ruby`. The Node.js buildpack takes the Node.js release line from `engines.node` in `package.json` and installs the Yarn release `packageManager` names; the Ruby buildpack installs the Ruby version recorded in `Gemfile.lock`.
+
 4. **Deploy the application**:
 ```bash
 git push heroku main

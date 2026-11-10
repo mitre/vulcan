@@ -29,15 +29,17 @@ sudo yum update -y
 sudo apt-get install -y build-essential git curl wget \
   libpq-dev libssl-dev libreadline-dev zlib1g-dev \
   libyaml-dev libffi-dev libgdbm-dev libncurses5-dev \
-  automake libtool bison nodejs npm nginx
+  automake libtool bison nginx
 
 # RHEL/CentOS
 sudo yum groupinstall -y "Development Tools"
 sudo yum install -y git curl wget postgresql-devel \
   openssl-devel readline-devel zlib-devel libyaml-devel \
   libffi-devel gdbm-devel ncurses-devel automake \
-  libtool bison nodejs npm nginx
+  libtool bison nginx
 ```
+
+Node.js and Yarn are installed with [mise](https://mise.jdx.dev) from the application checkout, at the versions the project pins (step 3 of the application setup).
 
 ## Ruby Installation
 
@@ -58,6 +60,8 @@ rbenv install 3.4.12
 rbenv global 3.4.12
 ruby -v  # Verify installation
 ```
+
+rbenv compiles Ruby against the system OpenSSL. If you install Ruby with mise instead, set `MISE_RUBY_COMPILE=true` first so it does the same; mise's default prebuilt Ruby carries its own OpenSSL, which does not use the host's FIPS-validated module on a FIPS-enabled host.
 
 ### Using RVM (Alternative)
 
@@ -129,9 +133,10 @@ bundle config set --local deployment 'true'
 bundle config set --local without 'development test'
 bundle install
 
-# Install Node.js dependencies
-npm install -g yarn
-yarn install --production
+# Install Node.js and Yarn at the versions in mise.lock, then the
+# JavaScript dependencies (asset compilation needs devDependencies)
+mise trust && mise install node yarn
+yarn install --immutable
 ```
 
 ### 4. Configure Application
