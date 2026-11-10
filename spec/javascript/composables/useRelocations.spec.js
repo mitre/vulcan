@@ -201,6 +201,31 @@ describe("useRelocations", () => {
       expect(onError).not.toHaveBeenCalled();
     });
 
+    it("requests both before either answers, so neither waits on the other", async () => {
+      let resolveMarkers;
+      let resolveDestinations;
+      getRelocations.mockReturnValue(new Promise((resolve) => (resolveMarkers = resolve)));
+      getRelocationDestinations.mockReturnValue(
+        new Promise((resolve) => (resolveDestinations = resolve)),
+      );
+      const onError = vi.fn();
+      const { markers, destinations, fetchAll } = useRelocations({ id: 5, prefix: "CNTR-00" });
+
+      const loading = fetchAll(onError);
+      await Promise.resolve();
+
+      expect(getRelocations).toHaveBeenCalledTimes(1);
+      expect(getRelocationDestinations).toHaveBeenCalledTimes(1);
+
+      resolveDestinations({ data: [{ token: "CTR", name: "Container SRG" }] });
+      resolveMarkers({ data: MARKERS });
+      await loading;
+
+      expect(markers.value).toHaveLength(MARKERS.length);
+      expect(destinations.value).toHaveLength(1);
+      expect(onError).not.toHaveBeenCalled();
+    });
+
     it("still loads destinations when the marker request fails, and reports it", async () => {
       const failure = new Error("markers unavailable");
       getRelocations.mockRejectedValue(failure);
