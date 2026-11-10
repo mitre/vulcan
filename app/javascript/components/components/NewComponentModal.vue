@@ -473,7 +473,7 @@ export default {
       if (!srg) return;
       this.security_requirements_guide_id = srg.id;
     },
-    createComponent: function (bvModalEvt) {
+    createComponent: async function (bvModalEvt) {
       // Prevent double submissions (B7 fix)
       if (this.loading) return;
       this.loading = true;
@@ -588,10 +588,14 @@ export default {
         formData.append("component[slack_channel_id]", this.slackChannelId);
       }
 
-      createComponentInProject(this.project_id, formData)
-        .then(this.addComponentSuccess)
-        .catch(this.alertOrNotifyResponse)
-        .finally(this.completeLoading);
+      try {
+        const response = await createComponentInProject(this.project_id, formData);
+        this.addComponentSuccess(response);
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      } finally {
+        this.completeLoading();
+      }
     },
     completeLoading: function () {
       this.loading = false;

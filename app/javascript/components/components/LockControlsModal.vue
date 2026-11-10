@@ -143,27 +143,36 @@ export default {
         this.lockSections();
       }
     },
-    lockControls: function () {
+    lockControls: async function () {
       this.loading = true;
-      lockComponent(this.component_id, { action: "lock_control", comment: this.comment })
-        .then(this.lockControlsSuccess)
-        .catch(this.alertOrNotifyResponse)
-        .finally(this.completeLoading);
+      try {
+        const response = await lockComponent(this.component_id, {
+          action: "lock_control",
+          comment: this.comment,
+        });
+        this.lockControlsSuccess(response);
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      } finally {
+        this.completeLoading();
+      }
     },
-    lockSections: function () {
+    lockSections: async function () {
       this.loading = true;
-      lockSectionsApi(this.component_id, {
-        sections: this.selectedSections,
-        locked: true,
-        comment: this.comment,
-      })
-        .then((response) => {
-          this.alertOrNotifyResponse(response);
-          this.$refs["LockControlsModal"].hide();
-          this.$emit("projectUpdated");
-        })
-        .catch(this.alertOrNotifyResponse)
-        .finally(this.completeLoading);
+      try {
+        const response = await lockSectionsApi(this.component_id, {
+          sections: this.selectedSections,
+          locked: true,
+          comment: this.comment,
+        });
+        this.alertOrNotifyResponse(response);
+        this.$refs["LockControlsModal"].hide();
+        this.$emit("projectUpdated");
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      } finally {
+        this.completeLoading();
+      }
     },
     completeLoading: function () {
       this.loading = false;

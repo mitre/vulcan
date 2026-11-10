@@ -202,13 +202,18 @@ export default {
       this.revertComment = "";
       this.selectedRevertRows = [];
     },
-    revertHistory: function (comment) {
+    revertHistory: async function (comment) {
       let payload = {
         audit_id: this.history.id,
         fields: this.selectedRevertFields,
         audit_comment: comment,
       };
-      revertRule(this.rule.id, payload).then(this.revertSuccess).catch(this.alertOrNotifyResponse);
+      try {
+        const response = await revertRule(this.rule.id, payload);
+        this.revertSuccess(response);
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     revertSuccess: function (response) {
       this.alertOrNotifyResponse(response);

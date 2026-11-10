@@ -221,24 +221,24 @@ export default {
       this.total_results_match = 0;
       this.total_results_control = 0;
     },
-    find: function () {
+    find: async function () {
       this.loading = true;
       this.find_text = this.fr.find;
-      findInComponent(this.componentId, this.find_text)
-        .then((response) => {
-          this.find_results = this.groupFindResults(
-            response.data,
-            this.find_text,
-            this.fr.matchCase,
-            this.fr.fields,
-          );
-          this.find_results_ver += 1;
-          this.countTotalResults();
-        })
-        .catch(this.alertOrNotifyResponse)
-        .finally(() => {
-          this.loading = false;
-        });
+      try {
+        const response = await findInComponent(this.componentId, this.find_text);
+        this.find_results = this.groupFindResults(
+          response.data,
+          this.find_text,
+          this.fr.matchCase,
+          this.fr.fields,
+        );
+        this.find_results_ver += 1;
+        this.countTotalResults();
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      } finally {
+        this.loading = false;
+      }
     },
     countTotalResults: function () {
       const resultValues = Object.values(this.find_results);
@@ -256,18 +256,18 @@ export default {
         );
       }, 0);
     },
-    replace_one: function (rule_id, result, comment) {
+    replace_one: async function (rule_id, result, comment) {
       this.loading = true;
       const original_rule = this.rules.find((rule) => rule.id == rule_id);
       this.replaceTextInRule(original_rule, result.field, result.segments, this.fr.replace);
-      return updateRule(rule_id, { ...original_rule, audit_comment: comment })
-        .then((response) => {
-          this.saveRuleSuccess(response, rule_id);
-        })
-        .catch(this.alertOrNotifyResponse)
-        .then(() => {
-          this.find();
-        });
+      try {
+        const response = await updateRule(rule_id, { ...original_rule, audit_comment: comment });
+        this.saveRuleSuccess(response, rule_id);
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
+      // Refresh the results whether or not the save succeeded.
+      await this.find();
     },
     replace_all: function (comment) {
       const self = this;

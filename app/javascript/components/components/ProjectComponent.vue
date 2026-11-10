@@ -383,6 +383,7 @@ export default {
       relocDestinationOptions: relocations.destinationOptions,
       relocFetch: relocations.fetchMarkers,
       relocFetchDestinations: relocations.fetchDestinations,
+      relocFetchAll: relocations.fetchAll,
       compareRules,
       alertOrNotifyResponse,
       showModal,
@@ -443,17 +444,16 @@ export default {
       return roleGteTo(this.effective_permissions, "author");
     },
   },
-  created() {
+  async created() {
     this.composerBridge.onOpen = () => this.$bvModal.show("comment-composer-modal");
     this.composerBridge.afterPosted = (parentReviewId, snapshot) =>
       this.afterComposerPosted(parentReviewId, snapshot);
     // Relocation markers exist only for SRG authoring; a load failure
     // surfaces as a toast rather than silently hiding the badges.
+    // The backlog filter's vocabulary loads with them — named SRG options,
+    // never a blank menu after the last proposal is adjudicated.
     if (this.isSrgComponent) {
-      this.relocFetch().catch(this.alertOrNotifyResponse);
-      // The backlog filter's vocabulary — named SRG options, never a
-      // blank menu after the last proposal is adjudicated.
-      this.relocFetchDestinations().catch(this.alertOrNotifyResponse);
+      await this.relocFetchAll(this.alertOrNotifyResponse);
     }
   },
   mounted() {
@@ -589,18 +589,19 @@ export default {
     // A response that is not a requirement is ignored rather than written in:
     // overwriting a good row with an empty payload loses the row from the
     // sidebar entirely, which is worse than missing the detail we came for.
-    refreshRule(ruleId) {
-      getRule(ruleId)
-        .then((response) => {
-          const fetched = response && response.data;
-          if (!fetched || fetched.id === undefined) return;
+    async refreshRule(ruleId) {
+      try {
+        const response = await getRule(ruleId);
+        const fetched = response && response.data;
+        if (!fetched || fetched.id === undefined) return;
 
-          const idx = this.localRules.findIndex((r) => r.id === ruleId);
-          if (idx >= 0) {
-            this.localRules.splice(idx, 1, fetched);
-          }
-        })
-        .catch(this.alertOrNotifyResponse);
+        const idx = this.localRules.findIndex((r) => r.id === ruleId);
+        if (idx >= 0) {
+          this.localRules.splice(idx, 1, fetched);
+        }
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     onOpenComponentComposer() {
       this.openComponentComposer(this.component.id);
@@ -630,14 +631,15 @@ export default {
           this.alertOrNotifyResponse(error);
         });
     },
-    toggleAdvancedFields(advanced_fields) {
+    async toggleAdvancedFields(advanced_fields) {
       // Confirmation is now handled in RuleEditor component
-      patchComponent(this.component.id, { advanced_fields })
-        .then((response) => {
-          this.alertOrNotifyResponse(response);
-          this.localAdvancedFields = advanced_fields;
-        })
-        .catch(this.alertOrNotifyResponse);
+      try {
+        const response = await patchComponent(this.component.id, { advanced_fields });
+        this.alertOrNotifyResponse(response);
+        this.localAdvancedFields = advanced_fields;
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     /**
      * open the unified Download/ExportModal. Listened from
@@ -652,7 +654,7 @@ export default {
      * component. Disposition data piggybacks the CSV/Excel formats per
      * Steps 3 and 4 — no extra wiring needed here.
      */
-    executeExport({
+    async executeExport({
       type,
       mode,
       componentIds,
@@ -660,17 +662,18 @@ export default {
       includeMemberships,
       excludeSatisfiedBy,
     }) {
-      exportProjectData(this.project.id, type, {
-        componentIds,
-        mode,
-        includeSrg,
-        includeMemberships,
-        excludeSatisfiedBy,
-      })
-        .then((url) => {
-          window.open(url);
-        })
-        .catch(this.alertOrNotifyResponse);
+      try {
+        const url = await exportProjectData(this.project.id, type, {
+          componentIds,
+          mode,
+          includeSrg,
+          includeMemberships,
+          excludeSatisfiedBy,
+        });
+        window.open(url);
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
   },
 };

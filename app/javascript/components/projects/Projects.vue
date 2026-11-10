@@ -102,12 +102,13 @@ export default {
       this.showNewProjectModal = false;
       this.refreshProjects();
     },
-    refreshProjects: function () {
-      getProjects()
-        .then((response) => {
-          this.projectlist = response.data;
-        })
-        .catch(this.alertOrNotifyResponse);
+    refreshProjects: async function () {
+      try {
+        const response = await getProjects();
+        this.projectlist = response.data;
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
   },
 };

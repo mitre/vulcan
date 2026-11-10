@@ -69,18 +69,21 @@ export default {
     addMetadata: function () {
       this.metadata.push({ key: "", value: "" });
     },
-    updateMetadata: function () {
+    updateMetadata: async function () {
       this.$refs["updateMetadataModal"].hide();
-      updateComponent(this.component.id, {
-        component_metadata_attributes: {
-          data: this.metadata.reduce((acc, curr) => {
-            acc[curr.key] = curr.value;
-            return acc;
-          }, {}),
-        },
-      })
-        .then(this.updateMetadataSuccess)
-        .catch(this.alertOrNotifyResponse);
+      try {
+        const response = await updateComponent(this.component.id, {
+          component_metadata_attributes: {
+            data: this.metadata.reduce((acc, curr) => {
+              acc[curr.key] = curr.value;
+              return acc;
+            }, {}),
+          },
+        });
+        this.updateMetadataSuccess(response);
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     updateMetadataSuccess: function (response) {
       this.alertOrNotifyResponse(response);

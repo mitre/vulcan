@@ -451,6 +451,7 @@ export default {
       relocProposalDestinationOptions: relocations.proposalDestinationOptions,
       relocFetch: relocations.fetchMarkers,
       relocFetchDestinations: relocations.fetchDestinations,
+      relocFetchAll: relocations.fetchAll,
       relocMark: relocations.mark,
       relocUnmark: relocations.unmark,
       relocDryRun: relocations.dryRun,
@@ -531,18 +532,16 @@ export default {
       return this.component.document_type === "srg";
     },
   },
-  created() {
+  async created() {
     this.composerBridge.onOpen = () => this.$bvModal.show("comment-composer-modal");
     this.composerBridge.afterPosted = (parentReviewId, snapshot) =>
       this.afterComposerPosted(parentReviewId, snapshot);
     // Relocation markers exist only for SRG authoring; a load failure
     // surfaces as a toast rather than silently hiding the badges.
+    // The backlog filter's vocabulary is fetched with the markers so the
+    // filter is never empty; the propose modal still refreshes it on open.
     if (this.isSrgComponent) {
-      this.relocFetch().catch(this.alertOrNotifyResponse);
-      // The backlog filter's vocabulary — fetched with the markers so
-      // the filter is never empty; the propose modal still refreshes it
-      // on open.
-      this.relocFetchDestinations().catch(this.alertOrNotifyResponse);
+      await this.relocFetchAll(this.alertOrNotifyResponse);
     }
   },
   mounted() {
@@ -585,22 +584,32 @@ export default {
     // Fetch fresh destination options as the modal opens — a failed
     // fetch surfaces as a toast and the modal still opens with the
     // free-abbreviation entry available.
-    openRelocationModal() {
-      this.relocFetchDestinations().catch(this.alertOrNotifyResponse);
+    async openRelocationModal() {
+      // The modal opens at once; the refresh lands while it is open.
+      const refresh = this.relocFetchDestinations();
       this.relocationModalVisible = true;
+      try {
+        await refresh;
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
-    onMarkRelocation(token) {
-      this.relocMark(this.selectedRule.id, token)
-        .then((response) => {
-          this.relocationModalVisible = false;
-          this.alertOrNotifyResponse(response);
-        })
-        .catch(this.alertOrNotifyResponse);
+    async onMarkRelocation(token) {
+      try {
+        const response = await this.relocMark(this.selectedRule.id, token);
+        this.relocationModalVisible = false;
+        this.alertOrNotifyResponse(response);
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
-    onUnmarkRelocation(relocationId) {
-      this.relocUnmark(relocationId)
-        .then(this.alertOrNotifyResponse)
-        .catch(this.alertOrNotifyResponse);
+    async onUnmarkRelocation(relocationId) {
+      try {
+        const response = await this.relocUnmark(relocationId);
+        this.alertOrNotifyResponse(response);
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     // Receiver-side adjudication: the dry-run preview IS the review
     // artifact — the modal opens immediately and confirm stays disabled
@@ -622,28 +631,30 @@ export default {
           this.adjudicationLoading = false;
         });
     },
-    onConfirmAccept() {
-      this.relocAccept(this.adjudicatingMarker.id)
-        .then((response) => {
-          this.acceptModalVisible = false;
-          this.alertOrNotifyResponse(response);
-          // Materialize the landed row through the established per-rule
-          // refresh path — unknown ids are inserted.
-          this.$root.$emit("refresh:rule", response.data.landed_rule_id);
-        })
-        .catch(this.alertOrNotifyResponse);
+    async onConfirmAccept() {
+      try {
+        const response = await this.relocAccept(this.adjudicatingMarker.id);
+        this.acceptModalVisible = false;
+        this.alertOrNotifyResponse(response);
+        // Materialize the landed row through the established per-rule
+        // refresh path — unknown ids are inserted.
+        this.$root.$emit("refresh:rule", response.data.landed_rule_id);
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     onDeclineRequest(marker) {
       this.adjudicatingMarker = marker;
       this.declineModalVisible = true;
     },
-    onConfirmDecline(rationale) {
-      this.relocDecline(this.adjudicatingMarker.id, rationale)
-        .then((response) => {
-          this.declineModalVisible = false;
-          this.alertOrNotifyResponse(response);
-        })
-        .catch(this.alertOrNotifyResponse);
+    async onConfirmDecline(rationale) {
+      try {
+        const response = await this.relocDecline(this.adjudicatingMarker.id, rationale);
+        this.declineModalVisible = false;
+        this.alertOrNotifyResponse(response);
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     toggleFilterBar() {
       this.filterBarVisible = !this.filterBarVisible;
@@ -740,27 +751,29 @@ export default {
     onAddSatisfied(ruleId, parentRuleId) {
       this.$root.$emit("addSatisfied:rule", ruleId, parentRuleId);
     },
-    saveRule(comment) {
+    async saveRule(comment) {
       const rule = this.selectedRule;
       if (!rule) return;
       this.resetAutosaveTimer();
-      updateRule(rule.id, { ...rule, audit_comment: comment })
-        .then((response) => {
-          this.alertOrNotifyResponse(response);
-          this.$root.$emit("refresh:rule", rule.id);
-        })
-        .catch(this.alertOrNotifyResponse);
+      try {
+        const response = await updateRule(rule.id, { ...rule, audit_comment: comment });
+        this.alertOrNotifyResponse(response);
+        this.$root.$emit("refresh:rule", rule.id);
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
-    commentFormSubmitted(comment) {
+    async commentFormSubmitted(comment) {
       if (!comment.trim()) return;
       const rule = this.selectedRule;
       if (!rule) return;
-      createRuleReview(rule.id, { action: "comment", comment: comment })
-        .then((response) => {
-          this.alertOrNotifyResponse(response);
-          this.$root.$emit("refresh:rule", rule.id, "all");
-        })
-        .catch(this.alertOrNotifyResponse);
+      try {
+        const response = await createRuleReview(rule.id, { action: "comment", comment: comment });
+        this.alertOrNotifyResponse(response);
+        this.$root.$emit("refresh:rule", rule.id, "all");
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     handleReviewSubmitted() {
       const rule = this.selectedRule;
@@ -784,69 +797,76 @@ export default {
         comment: "",
       };
     },
-    confirmSectionLock() {
+    async confirmSectionLock() {
       const { section, isLocking, comment } = this.sectionLockModal;
       const rule = this.selectedRule;
       if (!rule) return;
       this.sectionLockModal.visible = false;
-      updateSectionLocks(rule.id, {
-        section,
-        locked: isLocking,
-        comment: comment.trim() || undefined,
-      })
-        .then((response) => {
-          this.alertOrNotifyResponse(response);
-          this.$root.$emit("refresh:rule", rule.id, "all");
-        })
-        .catch(this.alertOrNotifyResponse);
+      try {
+        const response = await updateSectionLocks(rule.id, {
+          section,
+          locked: isLocking,
+          comment: comment.trim() || undefined,
+        });
+        this.alertOrNotifyResponse(response);
+        this.$root.$emit("refresh:rule", rule.id, "all");
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     cancelSectionLock() {
       this.sectionLockModal.visible = false;
     },
-    toggleAdvancedFields(advancedFields) {
-      patchComponent(this.component.id, { advanced_fields: advancedFields })
-        .then((response) => {
-          this.alertOrNotifyResponse(response);
-          this.localAdvancedFields = advancedFields;
-        })
-        .catch(this.alertOrNotifyResponse);
+    async toggleAdvancedFields(advancedFields) {
+      try {
+        const response = await patchComponent(this.component.id, {
+          advanced_fields: advancedFields,
+        });
+        this.alertOrNotifyResponse(response);
+        this.localAdvancedFields = advancedFields;
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
-    lockRule(comment) {
+    async lockRule(comment) {
       const rule = this.selectedRule;
       if (!rule) return;
-      createRuleReview(rule.id, {
-        component_id: rule.component_id,
-        action: "lock_control",
-        comment: (comment || "").trim() || "Locked",
-      })
-        .then((response) => {
-          this.alertOrNotifyResponse(response);
-          this.$root.$emit("refresh:rule", rule.id, "all");
-        })
-        .catch(this.alertOrNotifyResponse);
+      try {
+        const response = await createRuleReview(rule.id, {
+          component_id: rule.component_id,
+          action: "lock_control",
+          comment: (comment || "").trim() || "Locked",
+        });
+        this.alertOrNotifyResponse(response);
+        this.$root.$emit("refresh:rule", rule.id, "all");
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
-    unlockRule(comment) {
+    async unlockRule(comment) {
       const rule = this.selectedRule;
       if (!rule) return;
-      createRuleReview(rule.id, {
-        component_id: rule.component_id,
-        action: "unlock_control",
-        comment: (comment || "").trim() || "Unlocked",
-      })
-        .then((response) => {
-          this.alertOrNotifyResponse(response);
-          this.$root.$emit("refresh:rule", rule.id, "all");
-        })
-        .catch(this.alertOrNotifyResponse);
+      try {
+        const response = await createRuleReview(rule.id, {
+          component_id: rule.component_id,
+          action: "unlock_control",
+          comment: (comment || "").trim() || "Unlocked",
+        });
+        this.alertOrNotifyResponse(response);
+        this.$root.$emit("refresh:rule", rule.id, "all");
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
-    refreshComponent() {
-      getComponent(this.component.id)
-        .then((response) => {
-          Object.keys(response.data).forEach((key) => {
-            this.$set(this.component, key, response.data[key]);
-          });
-        })
-        .catch(this.alertOrNotifyResponse);
+    async refreshComponent() {
+      try {
+        const response = await getComponent(this.component.id);
+        Object.keys(response.data).forEach((key) => {
+          this.$set(this.component, key, response.data[key]);
+        });
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
   },
 };
