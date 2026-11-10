@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { shallowMount } from "@vue/test-utils";
-import { localVue, flushPromises } from "@test/testHelper";
+import { localVue, flushPromises, captureVulcanToast } from "@test/testHelper";
 import Rules from "@/components/rules/Rules.vue";
 vi.mock("@/api/baseApi", () => ({
   default: {
@@ -164,6 +164,31 @@ describe("Rules", () => {
 
       expect(wrapper.vm.reactiveRules.find((r) => r && r.id === 777)).toEqual(createdRule);
       expect(callback).toHaveBeenCalled();
+      wrapper.destroy();
+    });
+
+    // REQUIREMENT: a failure after the create succeeded (here, selecting the
+    // new requirement) is reported, never swallowed — a silent failure is how
+    // the dropped insert above went unnoticed.
+    it("reports an error thrown by the success callback", async () => {
+      createRuleInComponent.mockResolvedValueOnce({
+        data: {
+          toast: { title: "Control created.", message: [], variant: "success" },
+          data: { id: 778, component_id: 100, satisfied_by: [], satisfies: [] },
+        },
+      });
+      const callback = vi.fn(() => {
+        throw new Error("selection failed");
+      });
+      const wrapper = createWrapper();
+
+      const toast = await captureVulcanToast(
+        () => wrapper.vm.$root.$emit("create:rule", { duplicate: false }, callback),
+        wrapper,
+      );
+
+      expect(callback).toHaveBeenCalled();
+      expect(toast).toMatchObject({ variant: "danger", message: "selection failed" });
       wrapper.destroy();
     });
   });

@@ -120,7 +120,7 @@ export default {
      * Updates relationship arrays locally to preserve unsaved changes.
      * Previously called refreshRule() which overwrote local changes with server data.
      */
-    addSatisfiedRule: async function (rule_id, satisfied_by_rule_id, successCallback = null) {
+    addSatisfiedRule: async function (rule_id, satisfied_by_rule_id) {
       try {
         const response = await addSatisfaction(rule_id, satisfied_by_rule_id);
         this.alertOrNotifyResponse(response);
@@ -155,12 +155,6 @@ export default {
             });
           }
         }
-
-        if (successCallback) {
-          try {
-            successCallback(response);
-          } catch (_) {}
-        }
       } catch (error) {
         this.alertOrNotifyResponse(error);
       }
@@ -171,7 +165,7 @@ export default {
      * Updates relationship arrays locally to preserve unsaved changes.
      * Previously called refreshRule() which overwrote local changes with server data.
      */
-    removeSatisfiedRule: async function (rule_id, satisfied_by_rule_id, successCallback = null) {
+    removeSatisfiedRule: async function (rule_id, satisfied_by_rule_id) {
       try {
         const response = await removeSatisfaction(rule_id, satisfied_by_rule_id);
         this.alertOrNotifyResponse(response);
@@ -196,12 +190,6 @@ export default {
             (r) => r.id !== rule_id,
           );
         }
-
-        if (successCallback) {
-          try {
-            successCallback(response);
-          } catch (_) {}
-        }
       } catch (error) {
         this.alertOrNotifyResponse(error);
       }
@@ -209,7 +197,7 @@ export default {
     /**
      * Event handler for @delete:rule
      */
-    deleteRule: async function (rule_id, successCallback = null) {
+    deleteRule: async function (rule_id) {
       try {
         const response = await deleteRule(rule_id);
         this.alertOrNotifyResponse(response);
@@ -218,12 +206,6 @@ export default {
         const ruleIndex = this.reactiveRules.findIndex((r) => r.id == rule_id);
         if (ruleIndex >= 0) {
           this.reactiveRules.splice(ruleIndex, 1);
-        }
-
-        if (successCallback) {
-          try {
-            successCallback(response);
-          } catch (_) {}
         }
       } catch (error) {
         this.alertOrNotifyResponse(error);
@@ -237,11 +219,7 @@ export default {
         const response = await createRuleInComponent(this.reactiveComponent.id, rule);
         this.alertOrNotifyResponse(response);
         this.ruleFetchSuccess(response);
-        if (successCallback) {
-          try {
-            successCallback(response);
-          } catch (_) {}
-        }
+        if (successCallback) successCallback(response);
       } catch (error) {
         this.alertOrNotifyResponse(error);
       }
