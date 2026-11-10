@@ -37,14 +37,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
-      # TEMPORARY: source-build Ruby because ruby-builder has no prebuilt binary
-      # for the pinned version yet. Revert to ruby/setup-ruby once it does.
-      - uses: ./.github/actions/setup-ruby-source
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'yarn'
-      - run: yarn install --frozen-lockfile
+      - uses: ./.github/actions/setup-toolchain
       - name: RuboCop
         run: bundle exec rubocop --parallel
       - name: ESLint
@@ -64,11 +57,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: ./.github/actions/setup-toolchain
         with:
-          node-version-file: '.nvmrc'
-          cache: 'yarn'
-      - run: yarn install --frozen-lockfile
+          ruby: 'false'
       - name: Vitest with coverage
         run: yarn test:unit --coverage
       - name: Upload frontend coverage
@@ -144,15 +135,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
-      # TEMPORARY: source-build Ruby because ruby-builder has no prebuilt binary
-      # for the pinned version yet. Revert to ruby/setup-ruby once it does.
-      # (This action also installs libpq-dev and the gem bundle.)
-      - uses: ./.github/actions/setup-ruby-source
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'yarn'
-      - run: yarn install --frozen-lockfile
+      # Ruby, Node.js and Yarn from mise.lock; also installs libpq-dev, the gem
+      # bundle and the Yarn dependencies.
+      - uses: ./.github/actions/setup-toolchain
 
       - name: Cache JS build
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -238,14 +223,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
-      # TEMPORARY: source-build Ruby because ruby-builder has no prebuilt binary
-      # for the pinned version yet. Revert to ruby/setup-ruby once it does.
-      - uses: ./.github/actions/setup-ruby-source
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'yarn'
-      - run: yarn install --frozen-lockfile
+      - uses: ./.github/actions/setup-toolchain
 
       # rails_helper aborts every spec run unless app/assets/builds has
       # compiled JS (builds are gitignored) — same cache key as the backend
@@ -410,9 +388,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
-      # TEMPORARY: source-build Ruby because ruby-builder has no prebuilt binary
-      # for the pinned version yet. Revert to ruby/setup-ruby once it does.
-      - uses: ./.github/actions/setup-ruby-source
+      - uses: ./.github/actions/setup-toolchain
+        with:
+          node: 'false'
 
       # Run every migration's `up` against an empty database under
       # strong_migrations — the same path Heroku's release phase takes. No JS or
