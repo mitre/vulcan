@@ -1,0 +1,102 @@
+name: 'Set up the toolchain'
+description: >-
+  Installs Ruby, Node.js and Yarn at the versions mise.lock records (verified
+  against its checksums; Ruby is jdx/ruby's prebuilt, attested build), then
+  installs the gem bundle and the Yarn dependencies, each from its own cache.
+  The versions come from .ruby-version, .nvmrc and packageManager in
+  package.json, read through mise.toml. The repository must be checked out
+  first.
+
+inputs:
+  ruby:
+    description: "'true' to install Ruby and the gem bundle"
+    required: false
+    default: 'true'
+  node:
+    description: "'true' to install Node.js, Yarn and the Yarn dependencies"
+    required: false
+    default: 'true'
+
+runs:
+  using: 'composite'
+  steps:
+    # Native gem extensions are compiled during bundle install (pg needs
+    # libpq-dev, etc.). A runner's apt mirror occasionally stalls with no
+    # output; bound each attempt with `timeout` and retry, so a stall fails the
+    # step loudly instead of eating the job timeout.
+    - name: Install native build dependencies for gems
+      if: inputs.ruby == 'true'
+      shell: bash
+      run: |
+        retry() {
+          local attempt
+          for attempt in 1 2 3; do
+            "$@" && return 0
+            echo "attempt ${attempt} failed or stalled; retrying: $*" >&2
+            sleep 5
+          done
+          echo "giving up after 3 attempts: $*" >&2
+          return 1
+        }
+        apt_opts="-o Acquire::Retries=3 -o Acquire::http::Timeout=30"
+        retry timeout 120 sudo apt-get $apt_opts update -qq
+        retry timeout 300 sudo apt-get $apt_opts install -yqq --no-install-recommends \
+          build-essential libffi-dev libgmp-dev libpq-dev libreadline-dev libssl-dev \
+          libyaml-dev zlib1g-dev
+
+    # mise-action runs `mise install --locked` because mise.lock exists, so a
+    # version or checksum that does not match the lock fails the step.
+    - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+      with:
+        version: 2026.11.5
+        install_args: >-
+          ${{ inputs.ruby == 'true' && 'ruby' || '' }}
+          ${{ inputs.node == 'true' && 'node yarn' || '' }}
+
+    - name: Install Bundler at the version Gemfile.lock records
+      if: inputs.ruby == 'true'
+      shell: bash
+      run: |
+        bundler_version="$(ruby -e 'puts File.read("Gemfile.lock")[/^BUNDLED WITH\n\s+(\S+)/, 1]')"
+        gem install bundler -v "$bundler_version" --no-document
+
+    - name: Read the Ruby version for the bundle cache key
+      if: inputs.ruby == 'true'
+      id: ruby
+      shell: bash
+      run: echo "version=$(ruby -e 'print RUBY_VERSION')" >> "$GITHUB_OUTPUT"
+
+    - name: Restore gem bundle
+      if: inputs.ruby == 'true'
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: vendor/bundle
+        key: bundle-${{ runner.os }}-ruby-${{ steps.ruby.outputs.version }}-${{ hashFiles('Gemfile.lock') }}
+
+    - name: Install gems
+      if: inputs.ruby == 'true'
+      shell: bash
+      run: |
+        bundle config set --local path vendor/bundle
+        bundle config set --local deployment true
+        bundle install --jobs 4
+
+    - name: Locate the Yarn cache
+      if: inputs.node == 'true'
+      id: yarn-cache
+      shell: bash
+      run: echo "dir=$(yarn config get cacheFolder)" >> "$GITHUB_OUTPUT"
+
+    - name: Restore the Yarn cache
+      if: inputs.node == 'true'
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: ${{ steps.yarn-cache.outputs.dir }}
+        # Both lockfiles: docs/ installs into the same Yarn cache folder.
+        key: yarn-${{ runner.os }}-${{ hashFiles('yarn.lock', 'docs/yarn.lock') }}
+
+    # --immutable fails if the lockfile would change (Yarn 1's --frozen-lockfile).
+    - name: Install Yarn dependencies
+      if: inputs.node == 'true'
+      shell: bash
+      run: yarn install --immutable
