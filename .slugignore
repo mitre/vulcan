@@ -30,9 +30,9 @@ eslint.config.mjs
 .sonarcloud.properties
 
 # Dev-only version manager configs (Heroku uses buildpacks)
-.node-version
 .nvmrc
-.tool-versions
+mise.toml
+mise.lock
 
 # Dev-only files
 Procfile.dev
