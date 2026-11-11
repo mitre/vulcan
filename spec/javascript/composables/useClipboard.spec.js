@@ -70,26 +70,17 @@ describe("useClipboard", () => {
     expect(textareas()).toBe(0);
   });
 
-  it("warns and resolves false when no method can copy", async () => {
+  it.each([
+    ["execCommand reports failure", () => false],
+    [
+      "execCommand throws",
+      () => {
+        throw new Error("unsupported");
+      },
+    ],
+  ])("warns and resolves false when no method can copy (%s)", async (_case, execCommand) => {
     vi.stubGlobal("navigator", { userAgent: navigator.userAgent });
-    document.execCommand = vi.fn(() => false);
-    const { copyText } = useClipboard();
-
-    let result;
-    const toast = await captureVulcanToast(async () => {
-      result = await copyText("secret-value");
-    });
-
-    expect(result).toBe(false);
-    expect(toast).toMatchObject({ title: "Copy failed", variant: "warning" });
-    expect(textareas()).toBe(0);
-  });
-
-  it("treats a throwing execCommand as a failed copy", async () => {
-    vi.stubGlobal("navigator", { userAgent: navigator.userAgent });
-    document.execCommand = vi.fn(() => {
-      throw new Error("unsupported");
-    });
+    document.execCommand = vi.fn(execCommand);
     const { copyText } = useClipboard();
 
     let result;
