@@ -28,9 +28,7 @@ jobs:
   # ─── LINT + SECURITY ─────────────────────────────────────
   lint:
     runs-on: ubuntu-24.04
-    # Higher than the usual 10 to absorb a cold Ruby-from-source compile on the
-    # first run after a version bump; cached runs are back to normal.
-    timeout-minutes: 20
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
@@ -73,9 +71,7 @@ jobs:
   # ─── BACKEND TESTS + COVERAGE (6 shards) ─────────────────
   backend:
     runs-on: ubuntu-24.04
-    # Higher than the usual 25 to absorb a cold Ruby-from-source compile on the
-    # first run after a version bump; cached runs are back to normal.
-    timeout-minutes: 35
+    timeout-minutes: 25
     permissions:
       contents: read
     strategy:
