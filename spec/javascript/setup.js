@@ -100,8 +100,16 @@ if (typeof window !== "undefined" && typeof window.matchMedia !== "function") {
 }
 if (typeof globalThis.ResizeObserver !== "function") {
   globalThis.ResizeObserver = class {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
+    observe() {
+      // jsdom does no layout, so there is never a resize to report.
+    }
+
+    unobserve() {
+      // Nothing is observed (see observe), so there is nothing to stop.
+    }
+
+    disconnect() {
+      // Nothing is observed (see observe), so there is nothing to release.
+    }
   };
 }

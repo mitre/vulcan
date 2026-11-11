@@ -1,5 +1,24 @@
 import { useToast } from "./useToast";
 
+// Copies through a hidden, read-only textarea and execCommand("copy"), the
+// fallback for pages without the Clipboard API. Returns whether it copied.
+function legacyCopy(text) {
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  try {
+    textarea.select();
+    return document.execCommand("copy") === true;
+  } catch {
+    return false;
+  } finally {
+    textarea.remove();
+  }
+}
+
 /**
  * useClipboard — copy text to the user's clipboard and report whether it
  * actually happened.
@@ -16,23 +35,6 @@ import { useToast } from "./useToast";
  */
 export function useClipboard() {
   const { showWarning } = useToast();
-
-  function legacyCopy(text) {
-    const textarea = document.createElement("textarea");
-    textarea.value = text;
-    textarea.setAttribute("readonly", "");
-    textarea.style.position = "fixed";
-    textarea.style.opacity = "0";
-    document.body.appendChild(textarea);
-    try {
-      textarea.select();
-      return document.execCommand("copy") === true;
-    } catch {
-      return false;
-    } finally {
-      textarea.remove();
-    }
-  }
 
   /**
    * @param {string} text - The text to copy.
