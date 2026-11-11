@@ -35,7 +35,7 @@ RSpec.describe 'Toolchain version consistency' do
 
   def locked_platform(tool, platform)
     lock.fetch('tools').fetch(tool).filter_map { |entry| entry["platforms.#{platform}"] }.first ||
-      raise("mise.lock has no #{platform} entry for #{tool}")
+      raise(KeyError, "mise.lock has no #{platform} entry for #{tool}")
   end
 
   def sha256(platform_entry)
