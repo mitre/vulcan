@@ -350,20 +350,20 @@ export default {
   },
   computed: {
     isLocalUser() {
-      return !this.localUser || !this.localUser.provider;
+      return !this.localUser?.provider;
     },
     isLocked() {
       return this.localUser && !!this.localUser.locked_at;
     },
     providerLabel() {
-      if (!this.localUser || !this.localUser.provider) return "Local";
+      if (!this.localUser?.provider) return "Local";
       return this.localUser.provider.toUpperCase();
     },
     passwordsMatch() {
       return this.directPassword && this.directPassword === this.directPasswordConfirm;
     },
     providerVariant() {
-      if (!this.localUser || !this.localUser.provider) return "secondary";
+      if (!this.localUser?.provider) return "secondary";
       const variants = {
         github: "dark",
         ldap: "info",

@@ -401,9 +401,9 @@ export default {
     // and ProjectComponent.
     const composerBridge = { onOpen: null, afterPosted: null };
     const composer = useReplyComposer({
-      onOpen: () => composerBridge.onOpen && composerBridge.onOpen(),
+      onOpen: () => composerBridge.onOpen?.(),
       afterPosted: (parentReviewId, snapshot) =>
-        composerBridge.afterPosted && composerBridge.afterPosted(parentReviewId, snapshot),
+        composerBridge.afterPosted?.(parentReviewId, snapshot),
     });
 
     const selectedRuleId = computed(() => ruleStore.selectedRuleId);
@@ -789,7 +789,7 @@ export default {
     toggleSectionLock(section) {
       const rule = this.selectedRule;
       if (!rule) return;
-      const isLocked = !!(rule.locked_fields || {})[section];
+      const isLocked = !!rule.locked_fields?.[section];
       this.sectionLockModal = {
         visible: true,
         section,

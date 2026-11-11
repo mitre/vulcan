@@ -143,9 +143,7 @@ export default {
   },
   setup(props) {
     const { friendlyDateTime } = useDateFormat();
-    const { humanizedType } = useHumanizedTypes(
-      () => props.component && props.component.document_type,
-    );
+    const { humanizedType } = useHumanizedTypes(() => props.component?.document_type);
     const { alertOrNotifyResponse } = useToast();
     return { friendlyDateTime, humanizedType, alertOrNotifyResponse };
   },
