@@ -5481,6 +5481,9 @@ __metadata:
     vue-multiselect: "npm:^2.1.9"
     vue-router: "npm:3"
     vue-template-compiler: "npm:~2.7.16"
+  dependenciesMeta:
+    vue-demi:
+      built: true
   languageName: unknown
   linkType: soft
 

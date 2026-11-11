@@ -88,5 +88,10 @@
     "js-cookie": "^3.0.7",
     "chokidar/picomatch": "^2.3.2",
     "anymatch/picomatch": "^2.3.2"
+  },
+  "dependenciesMeta": {
+    "vue-demi": {
+      "built": true
+    }
   }
 }
