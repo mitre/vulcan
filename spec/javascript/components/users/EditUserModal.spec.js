@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { localVue, captureVulcanToast } from "@test/testHelper";
 import EditUserModal from "@/components/users/EditUserModal.vue";
-import { adminRevokeToken as apiAdminRevoke } from "@/api/tokensApi";
+import { adminRevokeToken as apiAdminRevoke, adminListTokens } from "@/api/tokensApi";
 import {
   lockUser,
   unlockUser,
@@ -568,6 +568,21 @@ describe("EditUserModal", () => {
       await wrapper.vm.confirmAdminRevoke();
 
       expect(apiAdminRevoke).toHaveBeenCalledWith(7, "compromised");
+    });
+
+    // Resolves on a later task, so only a caller that awaits sees the result.
+    const later = (value) => new Promise((resolve) => setTimeout(() => resolve(value), 0));
+
+    it("confirmAdminRevoke resolves once the user's token list has reloaded", async () => {
+      mountModal();
+      await wrapper.setData({ revokeTokenTarget: { id: 7 }, revokeComment: "compromised" });
+      expect(wrapper.vm.localUser).toBeTruthy();
+      const remaining = [{ id: 8, name: "ci" }];
+      adminListTokens.mockReturnValueOnce(later({ data: { personal_access_tokens: remaining } }));
+
+      await wrapper.vm.confirmAdminRevoke();
+
+      expect(wrapper.vm.userTokens).toEqual(remaining);
     });
   });
 });

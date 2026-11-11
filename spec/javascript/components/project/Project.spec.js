@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { shallowMount } from "@vue/test-utils";
-import { localVue, flushPromises } from "@test/testHelper";
+import { localVue, flushPromises, captureVulcanToast } from "@test/testHelper";
 import Project from "@/components/project/Project.vue";
 
 vi.mock("@/api/baseApi", () => ({
@@ -478,6 +478,35 @@ describe("Project", () => {
       await flushPromises(wrapper);
       expect(openSpy).toHaveBeenCalledWith("/projects/1/export/csv?component_ids=1");
       openSpy.mockRestore();
+    });
+
+    // Resolves on a later task, so only a caller that awaits sees the result.
+    const later = (value) => new Promise((resolve) => setTimeout(() => resolve(value), 0));
+
+    it("executeExport resolves once the export has been opened", async () => {
+      const { exportProjectData } = await import("@/api/projectsApi");
+      exportProjectData.mockReturnValueOnce(later("/projects/1/export/csv?component_ids=1"));
+      const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+      wrapper = createWrapper();
+
+      await wrapper.vm.executeExport({ type: "csv", mode: "working_copy", componentIds: [1] });
+
+      expect(openSpy).toHaveBeenCalledWith("/projects/1/export/csv?component_ids=1");
+      openSpy.mockRestore();
+    });
+
+    it("refreshProject reports a failed reload as an error toast", async () => {
+      const { getProject } = await import("@/api/projectsApi");
+      wrapper = createWrapper();
+      getProject.mockRejectedValueOnce(new Error("Project unavailable"));
+
+      const toastDetail = await captureVulcanToast(() => wrapper.vm.refreshProject(), wrapper);
+
+      expect(toastDetail).toEqual({
+        title: "Error",
+        variant: "danger",
+        message: "Project unavailable",
+      });
     });
 
     it("renders ExportModal component", () => {

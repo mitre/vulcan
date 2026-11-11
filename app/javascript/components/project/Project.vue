@@ -298,11 +298,14 @@ export default {
     sortedRegularComponents: function () {
       return this.sortedComponents().filter((e) => e.component_id == null);
     },
-    refreshProject: function () {
-      getProject(this.project.id).then((response) => {
+    refreshProject: async function () {
+      try {
+        const response = await getProject(this.project.id);
         this.project = response.data;
         this.visible = this.project.visibility === "discoverable";
-      });
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     showVisibilityConfirm(newValue) {
       this.pendingVisibility = newValue;
@@ -372,7 +375,7 @@ export default {
     openMembersModal() {
       this.$bvModal.show("project-members-modal");
     },
-    executeExport({
+    async executeExport({
       type,
       mode,
       componentIds,
@@ -381,7 +384,7 @@ export default {
       excludeSatisfiedBy,
     }) {
       // Called by ExportModal when user confirms export
-      this.downloadExport(
+      await this.downloadExport(
         type,
         componentIds,
         mode,
