@@ -495,6 +495,20 @@ describe("Project", () => {
       openSpy.mockRestore();
     });
 
+    it.each([
+      ["updateVisibility", (vm) => vm.updateVisibility()],
+      ["deleteComponent", (vm) => vm.deleteComponent(5)],
+    ])("%s resolves once the project has reloaded", async (_name, run) => {
+      const { getProject } = await import("@/api/projectsApi");
+      wrapper = createWrapper();
+      const reloaded = { ...wrapper.vm.project, name: "Reloaded" };
+      getProject.mockReturnValueOnce(later({ data: reloaded }));
+
+      await run(wrapper.vm);
+
+      expect(wrapper.vm.project.name).toBe("Reloaded");
+    });
+
     it("refreshProject reports a failed reload as an error toast", async () => {
       const { getProject } = await import("@/api/projectsApi");
       wrapper = createWrapper();

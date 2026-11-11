@@ -318,7 +318,7 @@ export default {
           visibility: this.pendingVisibility ? "discoverable" : "hidden",
         });
         this.alertOrNotifyResponse(response);
-        this.refreshProject();
+        await this.refreshProject();
       } catch (error) {
         this.alertOrNotifyResponse(error);
       }
@@ -400,7 +400,7 @@ export default {
       try {
         const response = await deleteComponent(componentId);
         this.alertOrNotifyResponse(response);
-        this.refreshProject();
+        await this.refreshProject();
       } catch (error) {
         this.alertOrNotifyResponse(error);
       }
