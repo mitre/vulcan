@@ -100,3 +100,5 @@ jobs:
           git_commit_author_email: "saf@mitre.org"
           update_commands: |
             yq e -i '.tags[0]=\"${{ steps.version.outputs.version }}\" | .labels.\"org.opencontainers.image.version\"=\"${{ steps.version.outputs.version }}\" | .resources[0].tag=\"mitre/vulcan:${{ steps.version.outputs.version }}\" | .resources[0].url=\"docker://docker.io/mitre/vulcan@${{ steps.digests.outputs.amd64 }}\" | .resources[1].tag=\"mitre/vulcan:${{ steps.version.outputs.version }}.arm64\" | .resources[1].url=\"docker://docker.io/mitre/vulcan@${{ steps.digests.outputs.arm64 }}\"' hardening_manifest.yaml
+            sed -i 's/^ARG VULCAN_VERSION=.*/ARG VULCAN_VERSION=${{ steps.version.outputs.version }}/' Dockerfile
+            sed -i 's/^ARG VULCAN_VERSION=.*/ARG VULCAN_VERSION=${{ steps.version.outputs.version }}.arm64/' Dockerfile.arm64
