@@ -386,8 +386,8 @@ rails tmp:clear
 yarn cache clean
 
 # Reinstall dependencies
-rm -rf node_modules yarn.lock
-yarn install
+rm -rf node_modules
+yarn install --immutable
 
 # Rebuild
 yarn build
@@ -548,7 +548,7 @@ bundle exec bundler-audit check --update
 bundle exec brakeman
 
 # JavaScript audit
-yarn audit
+yarn npm audit --all --recursive
 ```
 
 ## Useful Commands
