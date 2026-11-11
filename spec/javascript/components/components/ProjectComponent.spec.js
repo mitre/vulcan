@@ -671,6 +671,21 @@ describe("ProjectComponent", () => {
       expect(wrapper.vm.composerActive).toBe(false);
     });
 
+    // Resolves on a later task, so only a caller that awaits sees the result.
+    const later = (value) => new Promise((resolve) => setTimeout(() => resolve(value), 0));
+
+    it("afterComposerPosted resolves once the posted rule has been refreshed", async () => {
+      wrapper = createWrapper();
+      await flushPromises(wrapper);
+      wrapper.vm.selectRule(1);
+      await flushPromises(wrapper);
+      getRule.mockReturnValueOnce(later({ data: { ...mockRules[0], title: "after post" } }));
+
+      await wrapper.vm.afterComposerPosted(99, { mode: "rule", ruleId: 1 });
+
+      expect(wrapper.vm.localRules.find((rule) => rule.id === 1).title).toBe("after post");
+    });
+
     // The collection no longer carries a requirement's audit trail, so selecting
     // one fetches it. That fetch must never be able to damage the sidebar: if the
     // response is not a requirement, the row already in hand is kept.

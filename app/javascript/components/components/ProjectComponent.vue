@@ -575,14 +575,14 @@ export default {
           : null,
       });
     },
-    afterComposerPosted(parentReviewId, snapshot) {
+    async afterComposerPosted(parentReviewId, snapshot) {
       const ruleId =
         snapshot.mode === "component" ? null : this.selectedRule?.id || snapshot.ruleId;
       if (!ruleId) {
         this.refreshComponent();
         return;
       }
-      this.refreshRule(ruleId);
+      await this.refreshRule(ruleId);
     },
     // Replaces one requirement in the list with the full record from the
     // per-requirement endpoint, which carries the detail the collection omits.

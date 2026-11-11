@@ -98,9 +98,9 @@ export default {
     openRestoreProjectModal() {
       this.$refs.restoreProjectModal.showModal();
     },
-    onProjectCreated() {
+    async onProjectCreated() {
       this.showNewProjectModal = false;
-      this.refreshProjects();
+      await this.refreshProjects();
     },
     refreshProjects: async function () {
       try {

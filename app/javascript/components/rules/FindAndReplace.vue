@@ -269,7 +269,7 @@ export default {
       // Refresh the results whether or not the save succeeded.
       await this.find();
     },
-    replace_all: function (comment) {
+    replace_all: async function (comment) {
       const self = this;
       this.loading = true;
       const promises = [];
@@ -286,9 +286,10 @@ export default {
             .catch(self.alertOrNotifyResponse),
         );
       });
-      Promise.all(promises).then(function () {
-        self.find();
-      });
+      // Each save reports its own failure, so this waits for every save to
+      // settle and then refreshes the results.
+      await Promise.all(promises);
+      await this.find();
     },
     saveRuleSuccess: function (response, rule_id) {
       this.alertOrNotifyResponse(response);

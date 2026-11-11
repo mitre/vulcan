@@ -123,7 +123,7 @@ export default {
       this.selectedSections = [];
       this.$refs["LockControlsModal"].show();
     },
-    handleOk: function (bvModalEvt) {
+    handleOk: async function (bvModalEvt) {
       if (bvModalEvt && bvModalEvt.preventDefault) {
         bvModalEvt.preventDefault();
       }
@@ -138,9 +138,9 @@ export default {
       }
 
       if (this.lockMode === "full") {
-        this.lockControls();
+        await this.lockControls();
       } else {
-        this.lockSections();
+        await this.lockSections();
       }
     },
     lockControls: async function () {

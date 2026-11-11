@@ -135,6 +135,30 @@ describe("FindAndReplace", () => {
       );
     });
 
+    it("replace_all() resolves once the results have been searched again", async () => {
+      const { updateRule } = await import("@/api/rulesApi");
+      updateRule.mockResolvedValueOnce({
+        data: { toast: { title: "ok", message: [], variant: "success" } },
+      });
+      findInComponent.mockClear();
+      wrapper = createWrapper(
+        { rules: [{ id: 10, rule_id: "001", status: "NYD" }] },
+        {
+          find_results: {
+            10: {
+              rule_id: "001",
+              results: [{ field: "fixtext", segments: [{ text: "x", highlighted: true }] }],
+            },
+          },
+        },
+      );
+
+      await wrapper.vm.replace_all("bulk comment");
+
+      expect(findInComponent).toHaveBeenCalledTimes(1);
+      expect(wrapper.vm.loading).toBe(false);
+    });
+
     it("replace_all() calls updateRule for each rule in results", async () => {
       const { updateRule, findInComponent } = await import("@/api/rulesApi");
       updateRule.mockResolvedValue({

@@ -429,29 +429,49 @@ export default {
       this.admin_email = user.email;
       this.admin_name = user.name;
     },
-    fetchData: function (_bvModalEvt) {
-      getSrgs().then((response) => {
+    fetchData: async function (_bvModalEvt) {
+      // The two lists load independently: a failure in one is reported and
+      // the other still fills in.
+      await Promise.all([this.loadSrgs(), this.loadProjects()]);
+    },
+    loadSrgs: async function () {
+      try {
+        const response = await getSrgs();
         this.srgs = response.data;
         this.srgs.forEach((srg) => {
           srg.displayed = `${srg.title} (${srg.version})`;
         });
-      });
-      getProjects().then((response) => {
-        this.projects = response.data;
-      });
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
-    setSelectedProject: function (project) {
+    loadProjects: async function () {
+      try {
+        const response = await getProjects();
+        this.projects = response.data;
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
+    },
+    setSelectedProject: async function (project) {
       if (!project) return;
-      if (!this.selected_project_id || this.selected_project_id !== project.id) {
+      const changed = !this.selected_project_id || this.selected_project_id !== project.id;
+      if (changed) {
         this.selected_component_id = null;
         this.security_requirements_guide_id = null;
         this.security_requirements_guide_displayed = null;
-        getProject(project.id).then((response) => {
-          this.components = this.addDisplayNameToComponents(response.data.components);
-          this.componentKey += 1;
-        });
       }
       this.selected_project_id = project.id;
+      if (changed) await this.loadProjectComponents(project.id);
+    },
+    loadProjectComponents: async function (projectId) {
+      try {
+        const response = await getProject(projectId);
+        this.components = this.addDisplayNameToComponents(response.data.components);
+        this.componentKey += 1;
+      } catch (error) {
+        this.alertOrNotifyResponse(error);
+      }
     },
     setSelectedComponent: function (component) {
       if (!component) return;

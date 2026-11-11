@@ -540,7 +540,7 @@ export default {
       try {
         const res = await apiAdminRevoke(token.id, comment);
         this.alertOrNotifyResponse(res);
-        if (this.localUser) this.loadUserTokens(this.localUser.id);
+        if (this.localUser) await this.loadUserTokens(this.localUser.id);
       } catch (err) {
         this.alertOrNotifyResponse(err);
       } finally {

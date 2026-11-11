@@ -202,5 +202,25 @@ describe("LockControlsModal", () => {
         comment: "Locking sections",
       });
     });
+
+    // Resolves on a later task, so only a caller that awaits sees the result.
+    const later = (value) => new Promise((resolve) => setTimeout(() => resolve(value), 0));
+
+    it.each(["full", "sections"])(
+      "handleOk resolves once the %s lock request has finished",
+      async (lockMode) => {
+        const api = await import("@/api/componentsApi");
+        api.lockComponent.mockReturnValueOnce(later({ data: {} }));
+        api.lockSections.mockReturnValueOnce(later({ data: {} }));
+        wrapper = createWrapper();
+        wrapper.vm.comment = "Locking";
+        wrapper.vm.lockMode = lockMode;
+        wrapper.vm.selectedSections = ["fixtext"];
+
+        await wrapper.vm.handleOk();
+
+        expect(wrapper.vm.loading).toBe(false);
+      },
+    );
   });
 });
