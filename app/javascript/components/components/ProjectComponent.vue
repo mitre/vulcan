@@ -341,9 +341,9 @@ export default {
     // contract. Pattern established in ComponentComments.
     const composerBridge = { onOpen: null, afterPosted: null };
     const composer = useReplyComposer({
-      onOpen: () => composerBridge.onOpen && composerBridge.onOpen(),
+      onOpen: () => composerBridge.onOpen?.(),
       afterPosted: (parentReviewId, snapshot) =>
-        composerBridge.afterPosted && composerBridge.afterPosted(parentReviewId, snapshot),
+        composerBridge.afterPosted?.(parentReviewId, snapshot),
     });
 
     // Persistence lives in useRuleNavigation (it watches this same filters
@@ -468,7 +468,7 @@ export default {
       this.ruleStore.deselectRule(this.ruleStore.selectedRuleId);
     }
 
-    if (this.queriedRule && this.queriedRule.id) {
+    if (this.queriedRule?.id) {
       this.ruleStore.selectRule(this.queriedRule.id);
     } else if (this.ruleStore.selectedRuleId === null && this.localRules.length > 0) {
       const firstVisible = getFirstVisibleRule(this.localRules);
@@ -592,8 +592,8 @@ export default {
     async refreshRule(ruleId) {
       try {
         const response = await getRule(ruleId);
-        const fetched = response && response.data;
-        if (!fetched || fetched.id === undefined) return;
+        const fetched = response?.data;
+        if (fetched?.id === undefined) return;
 
         const idx = this.localRules.findIndex((r) => r.id === ruleId);
         if (idx >= 0) {
@@ -607,7 +607,7 @@ export default {
       this.openComponentComposer(this.component.id);
     },
     async onConfirmRelease(bvModalEvt) {
-      if (bvModalEvt && bvModalEvt.preventDefault) bvModalEvt.preventDefault();
+      bvModalEvt?.preventDefault?.();
       const { success, response, error } = await this.confirmRelease();
       if (success) {
         this.alertOrNotifyResponse(response);

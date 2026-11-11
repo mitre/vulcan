@@ -124,7 +124,7 @@ export default {
       this.$refs["LockControlsModal"].show();
     },
     handleOk: async function (bvModalEvt) {
-      if (bvModalEvt && bvModalEvt.preventDefault) {
+      if (bvModalEvt?.preventDefault) {
         bvModalEvt.preventDefault();
       }
 
