@@ -515,7 +515,8 @@ find /var/www/vulcan -type f -exec chmod 644 {} \;
 cd /var/www/vulcan
 git pull origin main
 bundle install
-yarn install
+mise install node yarn
+yarn install --immutable
 bundle exec rails db:migrate
 bundle exec rails assets:precompile
 sudo systemctl restart vulcan
